@@ -126,7 +126,7 @@ def test_a_path_include_that_leaves_the_module_is_flagged(tmp_path):
     the name of a header of the module."""
     m = module(tmp_path)
     for target in ("../other/include/x.h", "../include/wire.h",
-                   "/usr/include/wire.h"):
+                   "/usr/include/wire.h", "..\\other\\x.h"):
         c = m / "wire.c"
         c.write_text('#include "%s"\n' % target
                      + c.read_text().split("\n", 1)[1])
@@ -683,3 +683,203 @@ def test_a_brand_in_a_path_or_a_code_block_needs_the_heading(tmp_path):
                  "```\nKST 1;\n```\n", "<!-- Futaba -->\n"):
         readme.write_text("# wire\n\n## Interface\n\n" + text)
         assert len(cp.readme_problems(m)) == 1, text
+
+
+def test_a_raw_string_hides_no_include(tmp_path):
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(c.read_text()
+                 + 'static const char *const rcb_raw = R"x(" /* )x";\n'
+                 '#include "../../outside.h"\n/* */\n')
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+@pytest.mark.parametrize("prefix", ["", "u8", "u", "U", "L"])
+def test_a_raw_string_is_one_literal(prefix):
+    text = prefix + 'R"d(/* "#include "x.h" )d" ;\n#include "a.h"\n/* */\n'
+    assert cp.includes(text) == [('"', "a.h")]
+    assert cp.includes(prefix + 'R"(a" __has_include(x) ")";\n') == []
+
+
+def test_an_identifier_ending_in_r_before_a_string_is_no_raw_string():
+    """`FOOR"x("` is an identifier and a string; the comment after it runs
+    to the next `*/`, as the compiler reads it."""
+    assert cp.includes('FOOR"x(" /* )x";\n#include "a.h"\n/* */\n') == []
+
+
+def test_a_digit_separator_hides_no_include_in_a_header(tmp_path):
+    m = module(tmp_path, driver=False)
+    h = m / "include" / "wire.h"
+    h.write_text(h.read_text() + "#ifdef __cplusplus\n"
+                 "static const int rcb_k = 1'0 + sizeof \"'/*\";\n"
+                 '#include "../../../outside.h"\n'
+                 "static const int rcb_o = OUTSIDE_VALUE + rcb_k;\n"
+                 "// */\n#endif\n")
+    found = cp.include_problems(m)
+    assert len(found) == 1 and "outside.h" in found[0]
+
+
+@pytest.mark.parametrize("number", ["1'000", "0x1'F", "0b1'0", "1.5e+3'1",
+                                    "1e+3'1", ".5'5", "0x1p+4"])
+def test_a_number_with_separators_is_one_token(number):
+    text = "int k = %s + sizeof \"'/*\";\n#include \"a.h\"\n// */\n" % number
+    assert cp.includes(text) == [('"', "a.h")]
+
+
+def test_a_character_literal_with_a_prefix_is_not_a_number():
+    text = "x = u8'a'; y = '/*';\n#include \"a.h\"\n/* */\n"
+    assert cp.includes(text) == [('"', "a.h")]
+
+
+def pio_with(m, text):
+    pio = m / cp.DRIVER / "wire.pio"
+    pio.write_text(text)
+    return cp.include_problems(m)
+
+
+def test_a_semicolon_comment_in_a_pio_file_hides_no_include(tmp_path):
+    m = module(tmp_path)
+    found = pio_with(
+        m, ".program t\n; see /* below\n    nop\n% c-sdk {\n"
+        '#include "../../../shared/x.h"\n%}\n; */\n')
+    assert len(found) == 1 and "x.h" in found[0]
+
+
+def test_a_semicolon_in_a_pio_c_block_starts_no_pio_comment(tmp_path):
+    m = module(tmp_path)
+    found = pio_with(
+        m, ".program t\n    nop\n% c-sdk {\nint a; /* x */ int b;\n"
+        '#include "../../../shared/x.h"\n%}\n')
+    assert len(found) == 1
+    # The block ends at `%}`: a `;` comment after it is blanked again.
+    found = pio_with(
+        m, ".program t\n% c-sdk {\n%}\n; /* c\n"
+        '% c-sdk {\n#include "../../../shared/x.h"\n%}\n; */\n')
+    assert len(found) == 1
+
+
+def test_a_semicolon_comment_in_a_pio_file_may_name_an_include(tmp_path):
+    m = module(tmp_path)
+    assert pio_with(m, '.program t\n; #include "../x.h"\n    nop\n') == []
+
+
+def test_a_semicolon_in_a_c_file_is_no_comment():
+    assert cp.includes('int a; /* x */ int b;\n#include "a.h"\n') == [
+        ('"', "a.h")]
+
+
+@pytest.mark.parametrize("text", [
+    "see protocols/hitec_x/hitec_x.c\n", "type kst_session_t\n",
+    "link rcbench_kst\n", "dshot_tx and jeti_ex\n", "kst_core.h\n"])
+def test_a_brand_in_an_identifier_or_file_name_is_a_brand(tmp_path, text):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + text)
+    assert len(cp.readme_problems(m)) == 1
+    assert "has no heading" in cp.readme_problems(m)[0]
+
+
+@pytest.mark.parametrize("text", ["the KSTART byte\n", "DShotty\n",
+                                  "AKST and 3KST and x.KST\n"])
+def test_a_brand_inside_a_longer_word_or_number_is_no_brand(tmp_path, text):
+    m = module(tmp_path)
+    readme = m / "README.md"
+    readme.write_text(readme.read_text() + text)
+    assert cp.readme_problems(m) == []
+
+
+def library_header(m, body):
+    (m / "include" / "wire.h").write_text(header(body))
+    return cp.header_problems(m, *cp.compilers())
+
+
+@needs_compilers
+@pytest.mark.parametrize("body, flag", [
+    ("static inline void wire_u(void) { int u; }\n",
+     "-Werror=unused-variable"),
+    ("static inline int wire_f(int a, int b) { return a; }\n",
+     "-Werror=unused-parameter")])
+def test_a_warning_fails_the_header(tmp_path, body, flag):
+    """-Wall alone finds the first, -Wextra the second, -Werror makes both
+    an error.  The message names the compiler's error line, not the
+    `In file included` line before it."""
+    m = module(tmp_path, driver=False)
+    found = library_header(m, body)
+    assert found, flag
+    assert found[0].startswith("wire/include/wire.h does not compile as C11: ")
+    assert flag in found[0]
+    assert "In file included" not in found[0]
+
+
+@needs_compilers
+def test_the_flags_are_wall_wextra_werror():
+    assert cp.WARNINGS == ("-Wall", "-Wextra", "-Werror")
+
+
+def test_callers_under_build_and_managed_components_are_not_read(tmp_path):
+    m = module(tmp_path, driver=False)
+    (m / "include" / "wire.h").write_text(header("#define WIRE_MAX 8\n"))
+    for rel in ("shared/build_x/a.c", "firmware/managed_components/b/b.c",
+                "firmware/build/c.c"):
+        caller(tmp_path, '_Static_assert(WIRE_MAX == 8, "limit");\n', rel)
+    assert asserted_problems(tmp_path, {}) == []
+    caller(tmp_path, '_Static_assert(WIRE_MAX == 8, "limit");\n',
+           "firmware/panel/p.c")
+    out = asserted_problems(tmp_path, {})
+    assert len(out) == 1 and "firmware/panel/p.c" in out[0]
+
+
+@pytest.mark.parametrize("readme", [
+    "```\n~~~\n## Interface\n```\n",
+    "~~~\n```\n## Interface\n~~~\n",
+    "````\n```\n## Interface\n````\n",
+    "```\n``` text\n## Interface\n```\n",
+    "```\n## Interface\n"])
+def test_a_fence_closes_only_on_a_matching_bare_fence(tmp_path, readme):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# wire\n\n" + readme)
+    assert cp.readme_problems(m) == [
+        'wire/README.md has no heading with "Interface"']
+
+
+@pytest.mark.parametrize("readme", [
+    "```\n```\n## Interface\n", "```\n````\n## Interface\n",
+    "~~~~\n~~~~~\n## Interface\n", "```\n```  \n## Interface\n"])
+def test_a_matching_fence_closes(tmp_path, readme):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# wire\n\n" + readme)
+    assert cp.readme_problems(m) == []
+
+
+@pytest.mark.parametrize("sentence", [
+    "No Pin Driver", "NO PIN DRIVER", "no  pin\ndriver", "no\tpin driver"])
+def test_no_pin_driver_is_read_in_any_case_and_spacing(tmp_path, sentence):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text("# wire\n\n## Interface\n\n%s.\n"
+                                 % sentence)
+    assert cp.readme_problems(m) == []
+
+
+@pytest.mark.parametrize("text", [
+    "idf_component_register(SRCS wire.c PRIV_REQUIRES driver)\n",
+    "idf_component_register(SRCS wire.c REQUIRES driver)\n"])
+def test_requires_and_priv_requires_are_flagged(tmp_path, text):
+    m = module(tmp_path)
+    (m / "CMakeLists.txt").write_text(text)
+    assert cp.cmake_problems(m) == [
+        "wire/CMakeLists.txt carries REQUIRES: a module needs no other "
+        "component"]
+
+
+@pytest.mark.parametrize("heading", [
+    "Inter**face**", "Inter_face_", "Inter`face`", "[Inter](x)face"])
+def test_markup_inside_a_word_of_a_heading_is_stripped(tmp_path, heading):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# wire\n\n## %s\n" % heading)
+    assert cp.readme_problems(m) == []
+
+
+def test_a_crlf_line_continuation_joins_the_include():
+    assert cp.includes('#include \\\r\n  "../x.h"\r\n') == [
+        ('"', "../x.h")]

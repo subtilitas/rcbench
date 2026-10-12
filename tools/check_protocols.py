@@ -28,16 +28,19 @@ This tool reads each module and fails when one of these does not hold:
   `__has_include_next` outside a string literal fail, because the tool does
   not expand macros; `#ifdef __has_include` passes.  A line of only `#` or
   `%:` and a line that opens with the trigraph `??=` fail, because a
-  comment across a line break or a trigraph can hide an include.  A C++14
-  digit separator (`1'000`) can pair with a later `'` and report a
-  commented-out include;
+  comment across a line break or a trigraph can hide an include.  Raw string
+  literals (`R"x(...)x"`) are kept whole, and a number with C++14 digit
+  separators (`1'000`) is one token, so neither opens a comment or a
+  character literal.  In a .pio file a `;` comment ends at the line end, as
+  in pioasm, outside the `% name {` ... `%}` blocks of C;
 - the module's README.md has a heading with "Interface" in it; a heading
   with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
   sentence "no pin driver".  The Interface heading and "no pin driver" are
   read outside fenced code blocks and HTML comments.  A brand is matched
   anywhere in the file, in any case, in paths, code blocks and comments
-  too;
+  too, and also as part of an identifier or file name (`kst_session_t`,
+  `hitec_x.c`), not as part of a longer word (`KSTART`);
 - the module's CMake files name no ESP-IDF (Espressif Internet-of-Things
   Development Framework) requirement and no `rcbench_` library of another
   module;
@@ -111,17 +114,28 @@ INCLUDE_RE = re.compile(DIRECTIVE + WS + r"*(.*)$", re.M)
 # opens with the trigraph `??=` for `#`.
 BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
 TRIGRAPH_RE = re.compile(r"^" + WS + r"*\?\?=")
-STRING_RE = re.compile(r"""\"(?:\\.|[^"\\\n])*\"|'(?:\\.|[^'\\\n])*'""")
+# A C++11 raw string literal, `R"x(...)x"`, which gnu11 also accepts.
+RAW_RE = (r'(?<!\w)(?:u8|[uUL])?R"(?P<delim>[^()\\ \t\f\v\n]{0,16})\('
+          r'.*?\)(?P=delim)"')
+# A preprocessing number, which holds C++14 digit separators: `1'000`.
+NUMBER_RE = r"(?<!\w)\.?\d(?:'?[\w.])*"
+STRING_RE = re.compile(
+    RAW_RE + r"""|\"(?:\\.|[^"\\\n])*\"|'(?:\\.|[^'\\\n])*'""", re.S)
 OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
 HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\s*\(")
+# The start and the end of a block of C in a .pio program.
+PIO_BLOCK_RE = re.compile(r"^" + WS + r"*%" + WS + r"*[\w-]+" + WS + r"*\{")
+PIO_BLOCK_END_RE = re.compile(r"^" + WS + r"*%\}")
 CONTINUATION_RE = re.compile(r"\\\r?\n")
 # One token that the comment remover keeps or drops: the operand of an
-# include directive and string and character literals are kept whole, so a
-# `//` inside them starts no comment.
+# include directive, raw, string and character literals and numbers are kept
+# whole, so a `//` inside them starts no comment and a digit separator opens
+# no character literal.
 SOURCE_TOKEN_RE = re.compile(
     "(" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
-    r"""|("(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')"""
-    r"|(/\*.*?\*/|//[^\n]*)", re.M | re.S)
+    "|(" + RAW_RE + "|" + NUMBER_RE
+    + r"""|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')"""
+    r"|(?P<comment>/\*.*?\*/|//[^\n]*)", re.M | re.S)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
 
@@ -130,8 +144,9 @@ SOURCE_SUFFIXES = (".c", ".h", ".pio")
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
           "FrSky", "FlySky")
-# A brand is found in any case and with a version suffix: DShot300, S.BUS2.
-BRAND_RE = re.compile(r"(?<![\w.])(?:%s)(?![A-Za-z_])"
+# A brand is found in any case, with a version suffix (DShot300, S.BUS2) and
+# inside an identifier or file name (kst_session_t, hitec_x.c).
+BRAND_RE = re.compile(r"(?<![A-Za-z0-9.])(?:%s)(?![A-Za-z])"
                       % "|".join(re.escape(b) for b in BRANDS), re.I)
 HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.S)
 EMPHASIS_RE = re.compile(r"[*_`]")
@@ -202,20 +217,36 @@ def strip_comments(text: str) -> str:
     """@p text with its comments blanked, line continuations joined, and
     string literals and include operands left whole."""
     def blank(m: re.Match) -> str:
-        if m.group(3) is None:
+        if m.group("comment") is None:
             return m.group(0)
         return re.sub(r"[^\n]", " ", m.group(0))
     return SOURCE_TOKEN_RE.sub(blank, CONTINUATION_RE.sub("", text))
 
 
-def includes(text: str) -> list[tuple[str, str]]:
+def blank_pio_comments(text: str) -> str:
+    """@p text of a .pio file with each `;` comment blanked to the end of its
+    line, outside the `% name {` ... `%}` blocks that hold C.  pioasm ends a
+    `;` comment at the line end, so a `/*` in it opens no C comment."""
+    out, inside = [], False
+    for line in text.split("\n"):
+        if inside:
+            inside = PIO_BLOCK_END_RE.match(line) is None
+        elif PIO_BLOCK_RE.match(line):
+            inside = True
+        elif ";" in line:
+            line = line[:line.index(";")] + " " * len(line[line.index(";"):])
+        out.append(line)
+    return "\n".join(out)
+
+
+def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
     """(form, name) for every include directive of @p text outside a C
     comment, in order: form is `<` or `"`, or `?` when the operand is
     neither (a macro) and name is the operand as written.  A line of only
     `#` or `%:` is form `#`, a line that opens with `??=` is form `??=`, and
     a call of `__has_include` outside a string literal is form `?`, listed
-    after the includes."""
-    blanked = strip_comments(text)
+    after the includes.  @p pio is true for the text of a .pio file."""
+    blanked = strip_comments(blank_pio_comments(text) if pio else text)
     found = []
     for m in re.finditer(r"^.*$", blanked, re.M):
         line = m.group(0)
@@ -274,7 +305,8 @@ def include_problems(module: pathlib.Path) -> list[str]:
     for path in files:
         rel = path.relative_to(module.parent).as_posix()
         in_driver = is_driver(path, module)
-        for form, name in includes(path.read_text(encoding="utf-8-sig")):
+        for form, name in includes(path.read_text(encoding="utf-8-sig"),
+                                   path.suffix == ".pio"):
             if form == "#":
                 problems.append(
                     f"{rel} has a line of only {name}: a comment across "

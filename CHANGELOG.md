@@ -44,13 +44,17 @@ history is in git.
   HTML comments only. The Trademarks heading is any heading that contains
   "trademark", in any case, emphasis and link markup ignored. Brand names
   match anywhere in the file (paths, code blocks and comments included), in
-  any case and with a version suffix (`DShot300`, `S.BUS2`). An include path
+  any case, with a version suffix (`DShot300`, `S.BUS2`) and inside an
+  identifier or file name (`kst_session_t`, `hitec_x.c`), not inside a
+  longer word (`KSTART`). An include path
   with a `..` component or an absolute path in a module fails; so does an
   include the tool cannot resolve (a macro operand or a call of
   `__has_include`; `#ifdef __has_include` passes), a line of only `#` or
   `%:`, and a `??=` trigraph directive. `#include_next`, `#import`, the `%:`
-  digraph, line continuations, `//` inside a string, a leading byte order
-  mark, form feed and vertical tab are read. The CMake include directories and link targets
+  digraph, line continuations (LF and CRLF), `//` inside a string or a raw
+  string literal, a number with digit separators (`1'000`), a leading byte
+  order mark, form feed and vertical tab are read; a `;` comment in a `.pio`
+  file ends at the line end. The CMake include directories and link targets
   of a module are not checked.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave

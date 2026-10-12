@@ -230,13 +230,17 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   macros; a call of `__has_include` outside a string literal fails, and
   `#ifdef __has_include` passes; a line of only `#` or `%:` and a `??=`
   trigraph directive fail, because they can hide an include; a leading
-  UTF-8 byte order mark, form feed and vertical tab are read; that
+  UTF-8 byte order mark, form feed and vertical tab are read; a raw string literal and a number
+  with C++14 digit separators are read whole, and a `;` comment in a `.pio`
+  file ends at the line end outside its `% name {` blocks; that
   the `README.md` has a heading with "Interface", a heading with
   "Trademark" in it where it names a brand from the tool's `BRANDS` list,
   and the words "no pin driver" where the module has no `rp2350/` folder;
   the Interface heading and "no pin driver" count outside fenced code
   blocks and HTML comments only, while a brand is matched anywhere in the
-  file, in any case, in paths, code blocks and comments included; and that every `_Static_assert` in the C files under
+  file, in any case, in paths, code blocks and comments included, also
+  inside an identifier or file name such as `kst_session_t`, but not inside
+  a longer word such as `KSTART`; and that every `_Static_assert` in the C files under
   `shared/` and `firmware/` on a module constant is listed in the tool's
   `ASSERTED` table and every listed one exists. Assertions under `test/`
   are not checked. The CMake include directories and link targets of a
