@@ -45,6 +45,7 @@ static bool g_set_read;      /* the panel reads an output that is on */
 static uint16_t g_set_mv;    /* and what it is set to                */
 static uint16_t g_sup_mv, g_sup_ma;
 static uint8_t g_target;       /* LINK_PG_TARGET as the control task reads */
+static int  g_pin_value = -1;  /* the pin the binding gives CH, or -1: PIN */
 static bool g_pin_unknown;     /* the panel has no pin for any port */
 
 /* The control task's side of the programmer. */
@@ -81,7 +82,8 @@ static unsigned g_starts_at_save;   /* g_starts when a save was asked */
 static uint8_t hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    return (port == CH && !g_no_pin) ? PIN : 0xFFu;
+    return (port == CH && !g_no_pin)
+               ? (uint8_t)(g_pin_value >= 0 ? g_pin_value : (int)PIN) : 0xFFu;
 }
 
 static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
@@ -4721,6 +4723,10 @@ TEST_CASE(the_record_names_a_pin_of_the_coprocessor_only)
           false, 0 },
         { "RCBENCH KST 3\n" REC_IMAGES "port=2\npin=0D\ncheck=53E7\n",
           false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npon=0D\ncheck=E101\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=0D;check=4A92\n",
+          false, 0 },
     };
 
     for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -4776,6 +4782,32 @@ TEST_CASE(the_journal_records_the_pin_of_its_port_at_the_write)
     CHECK(strstr(g_file, "\nport=0\npin=FF\ncheck=") != NULL);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+}
+
+/* The bounds of the pin the feed gives: GP47 is recorded, GP48 and above
+ * are not a pin of the coprocessor and the record stands by its port. */
+TEST_CASE(the_journal_records_a_pin_up_to_gp47_only)
+{
+    static const struct { int pin; uint8_t want; const char *line; } k[] = {
+        { 0,  0,                 "\nport=0\npin=00\ncheck=" },
+        { 47, 47,                "\nport=0\npin=2F\ncheck=" },
+        { 48, KST_PROG_NO_PIN,   "\nport=0\npin=FF\ncheck=" },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        up_enabled();
+        g_pin_value = k[i].pin;
+        g_card = true;
+        frame();
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        frames(2);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK_EQ(kst_prog_journal_pin(&g_p), k[i].want);
+        CHECK(strstr(g_file, k[i].line) != NULL);
+        settle();
+    }
+    g_pin_value = -1;
 }
 
 TEST_CASE(a_file_that_is_not_whole_changes_nothing)
@@ -7088,6 +7120,7 @@ int main(void)
     RUN(a_record_of_version_1_stands_and_names_its_port);
     RUN(the_record_names_a_pin_of_the_coprocessor_only);
     RUN(the_journal_records_the_pin_of_its_port_at_the_write);
+    RUN(the_journal_records_a_pin_up_to_gp47_only);
     RUN(the_file_is_written_once_per_change_and_only_to_a_card);
     RUN(every_outcome_of_a_write_says_what_it_wrote);
     RUN(a_nack_after_the_command_leaves_the_image_unusable);

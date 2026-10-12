@@ -994,6 +994,8 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
             rig_step(&r);                    /* powered, in the menu */
         }
         CHECK(r.on && r.armed);
+        /* The supply the run switched on is ESC STICK's. */
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_PROGRAMMER);
         CHECK(programmer_screen_stick_profile() != NULL);
         esc_stick_reason_t want = ESC_STICK_R_LEFT;
         if (k == 0) {
@@ -1022,11 +1024,29 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
         CHECK(!green);
         CHECK(!r.armed);
         CHECK(!r.on);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
         CHECK_EQ(r.sim.stores, 0u);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 0);
         CHECK(lit() > 20000);
     }
+}
+
+/* The backstop in the leave: a supply ESC STICK switched on that no run
+ * owns any more -- the run is over, the output is not -- goes off with
+ * the screen. */
+TEST_CASE(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run)
+{
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_PROGRAMMER);
+    supply_cmd_t sc;
+    CHECK(supply_screen_poll_cmd(&sc) && sc.on);
+    supply_screen_set_output(true);
+    CHECK(!esc_stick_running(programmer_screen_stick()));
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
 }
 
 /* Refused, not adjusted: a voltage over the SUPPLY cap, or a live output,
@@ -4018,6 +4038,7 @@ int main(void)
     RUN(a_hold_that_is_interrupted_starts_nothing);
     RUN(a_whole_run_on_the_modelled_bench_stores_and_lets_go);
     RUN(leaving_abort_and_stop_end_a_run_and_let_go);
+    RUN(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run);
     RUN(a_run_the_supply_cannot_give_is_refused);
     RUN(timing_steps_the_settings_and_closing_asks_for_a_save);
     RUN(an_item_steps_from_keep_and_stops_at_its_ends);

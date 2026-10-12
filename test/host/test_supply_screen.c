@@ -589,6 +589,65 @@ TEST_CASE(an_off_owed_under_a_held_port_goes_when_the_port_lets_go)
     CHECK(c.off);
 }
 
+/*
+ * An ON on its way is an output to switch off: the supply may still report
+ * the old off state after the ON was taken, and that stale report neither
+ * drops the owner nor excuses the leave.
+ */
+TEST_CASE(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way)
+{
+    supply_cmd_t c;
+
+    static const supply_by_t by[] = { SUPPLY_BY_SERVO, SUPPLY_BY_SUPPLY };
+    for (size_t k = 0; k < 2; ++k) {
+        fresh();
+        supply_screen_ask_on(by[k]);
+        drain();                                /* taken, not yet reported */
+        supply_screen_set_output(false);        /* the old state, still off */
+        CHECK_EQ(supply_screen_owner(), by[k]);
+        supply_screen_left(by[k]);
+        CHECK(supply_screen_poll_cmd(&c));
+        CHECK(c.off);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    }
+}
+
+/*
+ * A hold on OUTPUT ON that loses its touch after the ON was taken and
+ * before the supply reported it leaves the output off and nobody's: the
+ * servo programmer's CONNECT that switches the PD mini on afterwards is
+ * claimed, and left, as SERVO's.
+ */
+TEST_CASE(a_dropped_hold_releases_the_owner_so_a_later_claim_works)
+{
+    supply_cmd_t c;
+
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);                       /* the ON is asked */
+    drain();
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    scr->cancel();                              /* the touch is lost */
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    supply_screen_set_output(true);             /* CONNECT's PD mini */
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+}
+
+/* An output being switched off is nobody's to claim. */
+TEST_CASE(an_output_being_switched_off_is_not_claimed)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(OUT_X, OUT_Y);                          /* OUTPUT OFF, not yet sent */
+    CHECK(supply_screen_off_pending());
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+}
+
 TEST_CASE(reset_peaks_posts_its_own_command)
 {
     fresh();
@@ -1994,6 +2053,9 @@ int main(void)
     RUN(a_leave_switches_off_only_the_screens_own_output);
     RUN(an_output_nobody_asked_for_is_claimed_once);
     RUN(an_off_owed_under_a_held_port_goes_when_the_port_lets_go);
+    RUN(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way);
+    RUN(a_dropped_hold_releases_the_owner_so_a_later_claim_works);
+    RUN(an_output_being_switched_off_is_not_claimed);
     RUN(reset_peaks_posts_its_own_command);
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
     RUN(a_tap_on_a_track_sets_a_value_the_supply_takes);

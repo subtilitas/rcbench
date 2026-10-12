@@ -53,7 +53,8 @@ history is in git.
   programmer on SERVO are no leave. A PD mini output switched on by the
   servo programmer's CONNECT is SERVO's; leaving SERVO while the programmer
   holds the port keeps it on until the port lets go, then switches it off
-  unless SERVO is shown again first.
+  unless SERVO is shown again first. MOTOR & ESC switches no supply; an ESC
+  run there is powered from its own source.
 - The servo programmer's record of an interrupted write (`KST/KST.TXT`) is
   version 2: `RCBENCH KST 2` with a `pin=` line, the GPIO the port drove.
   The record's lines name that pin (`Connect it on GP13 and READ ALL.`). A

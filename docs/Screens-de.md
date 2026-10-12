@@ -948,7 +948,12 @@ Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet hat: einen,
 der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC STICK tun
 dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein Ausgang
 nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet hat.
-Ein Servo oder ein ESC wird von dem Bildschirm aus versorgt, der es testet.
+Die Ausnahme ist der PD mini, den das CONNECT des Servo-Programmierers
+eingeschaltet hat: er bleibt nach dem Verlassen von SERVO an, solange der
+Programmierer seinen Port hält, bis der Port loslässt (siehe SERVO). Ein
+Servo wird von SERVO versorgt, ein ESC von ESC STICK. MOTOR & ESC schaltet
+keine Versorgung; ein ESC, der dort läuft, wird aus seiner eigenen Quelle
+versorgt.
 Ein Ausgang, den ein anderer Bildschirm eingeschaltet hat, bleibt beim
 Verlassen von SUPPLY, wie er ist. Das Tastenfeld, die HV-Frage und die
 übrigen Overlays von SUPPLY sind kein Verlassen. Der Bildschirm für den

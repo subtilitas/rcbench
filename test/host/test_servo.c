@@ -5076,6 +5076,44 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
 }
 
+/*
+ * The ON a run asks for, and the ON the HV warning's hold sends, belong to
+ * SERVO as the switch's own hold does: leaving SERVO switches each off.
+ */
+TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
+{
+    supply_cmd_t c;
+
+    /* A run's ON. */
+    bench_fresh();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    CHECK(supply_cmd(&c) && c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_set_output(true);
+    scr->leave();
+    bool off = false;
+    while (supply_cmd(&c)) {
+        off = off || c.off;
+    }
+    CHECK(off);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+
+    /* The HV warning's ON. */
+    fresh();
+    supply_screen_put(7.4f, 1.0f);
+    scr->tick(0.025f);
+    tap(SUP_OUT_X, SUP_ROW_Y);
+    scr->tick(0.025f);
+    hold_apply(2.3f);
+    CHECK(supply_cmd(&c) && c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_set_output(true);
+    scr->leave();
+    CHECK(supply_cmd(&c));
+    CHECK(c.off && !c.on);
+}
+
 /* A set point raised past 6.0 V during OUTPUT ON's ordinary hold -- on
  * SUPPLY, or a run's end putting it back -- switches nothing on when the
  * hold completes: HV SERVOS ONLY opens instead. */
@@ -7897,6 +7935,7 @@ int main(void)
     RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
     RUN(the_hv_hold_stands_for_the_live_question);
     RUN(output_on_past_6_v_takes_the_hv_hold);
+    RUN(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked);
     RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
     RUN(a_servo_question_for_a_dropped_on_goes);
     RUN(an_apply_held_as_the_output_goes_off_applies_nothing);

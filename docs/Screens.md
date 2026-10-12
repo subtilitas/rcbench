@@ -862,8 +862,12 @@ to stay armed -- and a supply that stops answering, and a trip. The output
 stays off until it is switched on again. Leaving the screen switches off an
 output SUPPLY switched on: one reported on, or an ON on its way. SERVO and
 ESC STICK do the same for the output each switched on, so an output is on
-only while the screen that switched it on is shown. A servo or an ESC is
-powered from the screen that tests it. An output another screen switched on
+only while the screen that switched it on is shown. The exception is the
+PD mini that the servo programmer's CONNECT switched on: it stays on after
+SERVO is left while the programmer holds its port, until the port lets go
+(see SERVO). A servo is powered from SERVO and an ESC from ESC STICK.
+MOTOR & ESC switches no supply; an ESC run there is powered from its own
+source. An output another screen switched on
 stays as it is when SUPPLY is left. The keypad, the HV question and the
 other overlays of SUPPLY are no leave. The link-lost screen, which has no
 STOP, does not open while the output is on.
