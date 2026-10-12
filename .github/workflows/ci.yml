@@ -140,12 +140,10 @@ jobs:
       # a copy so a mistake fails here rather than there.
       - name: The wiki link rewrite still works
         run: |
+          python3 -m pip install --quiet markdown-it-py==3.0.0
           cp -a docs /tmp/wikicheck
           python3 tools/wiki_links.py /tmp/wikicheck
-          if grep -rnoE '\]\([A-Za-z0-9_-]+\.md[)#]' /tmp/wikicheck; then
-            echo "::error::links to .md files survived the rewrite"
-            exit 1
-          fi
+          python3 tools/wiki_links.py --verify /tmp/wikicheck
 
       # Frame rate on this panel is bandwidth-bound, so the regression guard
       # is cache-line traffic per frame, not wall-clock on a runner that
@@ -329,7 +327,7 @@ jobs:
       # end-to-end cases of the mutation tool build a three-file project
       # with; a case skips when one is missing.
       - name: Install pytest
-        run: python3 -m pip install --quiet pytest==9.1.1
+        run: python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
 
       # The checks are a gate, so each rule of a check has a case that
       # breaks it: a flag taken out of the sanitizer build, a source left

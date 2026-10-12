@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.18. [Reference](docs/Link.md).
+4.16. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -206,7 +206,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 99 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -215,7 +215,7 @@ The host suite is 98 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
-`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_touch_loss`, `test_servo_limit`,
+`test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card` and `test_prog_link`. The harness is
@@ -325,6 +325,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
 | `shared/safety/arming.c` | 179 | 173 | 96.7% |
 | `shared/safety/safety_gate.c` | 53 | 53 | 100.0% |
+| `shared/safety/flash_gate.c` | 2 | 2 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
 | `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
 | `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
@@ -370,7 +371,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/link/link_artxfer.c` | 61 | 60 | 98.4% |
 | `shared/link/link_control.c` | 35 | 35 | 100.0% |
 | `shared/link/link_port.c` | 38 | 38 | 100.0% |
-| `shared/artwork/art_store.c` | 104 | 96 | 92.3% |
+| `shared/artwork/art_store.c` | 175 | 169 | 96.6% |
 | `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
@@ -386,14 +387,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/sense_page.c` | 494 | 494 | 100.0% |
 | `shared/outputs/tone_page.c` | 241 | 241 | 100.0% |
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
-| `shared/bench/supply.c` | 169 | 167 | 98.8% |
+| `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 565 | 557 | 98.6% |
-| `shared/bench/supply_link.c` | 291 | 281 | 96.6% |
+| `shared/bench/supply_link.c` | 292 | 282 | 96.6% |
 | `shared/bench/sense_link.c` | 777 | 749 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 395 | 390 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
-| `shared/bench/log_writer.c` | 147 | 135 | 91.8% |
+| `shared/bench/log_writer.c` | 152 | 140 | 92.1% |
 | `shared/bench/log_cadence.c` | 42 | 42 | 100.0% |
 | `shared/sense/sense_bus.c` | 133 | 132 | 99.2% |
 | `shared/sense/ina228.c` | 198 | 198 | 100.0% |
@@ -405,7 +406,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **35279** | **34522** | **97.9%** |
+| **total** | **35359** | **34604** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -417,7 +418,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control page under measurement | the paths a session has to provoke rather than pass through are the failsafe clear, a STOP mid-throttle, the link unplugged while armed, a coprocessor reset while armed, a panel armed with the coprocessor unpowered and then powered, the first arm after a STOP, and an arm refused for each of its four reasons (a servo release still owed, the servo frame rate not known, the heartbeat not reported trusted within 300 ms, a NACK from the coprocessor). The arm latch and the panel's stop on a lost link are host-tested in `test_safety_gate` | a session with both boards that provokes them one at a time, and writes down what the band said. For the reset: a motor channel on GP0, a scope on GP0 and GP3, armed at 70 %, the RUN pin held low for 100 ms; pulses must not return on GP0 until ARM is held again |
 | Output driver timing | no timing has been seen on an instrument. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172) answers | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
 | The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
-| Screens that do not name the output they drive | the rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). These screens do not meet it: the SERVO screen shows no pin for its PWM target on the right card or under its overlays; the MOTOR screen drives the throttle pins from its slider and names none of them; the servo programmer overlay names a port number instead of its pin; the SUPPLY header names no UART pins; RUN on ESC STICK starts with no throttle pin bound; a PD mini output switched on from SUPPLY, SERVO or the servo programmer stays on after that screen is left, and no other screen names it. A user can then drive a pin other than the one they expect | a TARGET row on the SERVO right card; the bound throttle pins named on the MOTOR screen; a pin list that names up to three pins and the count of the rest ("GP2 GP4 GP5 +2") wherever more pins than fit are driven; the programmer naming its pin; the PD mini's TX and RX pins in the SUPPLY header; RUN on ESC STICK refused with the reason; a supply switched off when the screen that switched it on is left |
+| Screens that do not name the output they drive | the rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). These screens do not meet it: the SERVO screen shows no pin for its PWM target on the right card or under its overlays; the MOTOR screen drives the throttle pins from its slider and names none of them; ARM on SERVO and MOTOR arms the whole bank and names none of it; the servo programmer overlay names a port number instead of its pin; the SUPPLY header names no UART pins; RUN on ESC STICK starts with no throttle pin bound; a PD mini output switched on from SUPPLY, SERVO or the servo programmer stays on after that screen is left, and no other screen names it. A user can then drive a pin other than the one they expect | a TARGET row on the SERVO right card; the bound throttle pins named on the MOTOR screen; ARM limited to the screen's role; a pin list that names up to three pins and the count of the rest ("GP2 GP4 GP5 +2") wherever more pins than fit are driven; the programmer naming its pin; the PD mini's TX and RX pins in the SUPPLY header; RUN on ESC STICK refused with the reason; a supply switched off when the screen that switched it on is left |
 | A card swapped while running is not re-mounted | `storage_mounted()` is cleared only by `storage_deinit()`, so a card removed after boot leaves a stale mount and RESCAN keeps reading the old volume. The viewer does not unmount to recover: it lists from the render task while the `runlog` task writes the run log to the same volume, and unmounting under an open handle frees the SPI bus beneath a write from another task | one task owning the card's lifetime, so a remount can be sequenced against the writer |
 | The browse list shows 48 of a card's entries | a card takes 999 runs and the list holds `LOG_VIEWER_MAX_FILES`, so it keeps the newest runs -- by the number in `BENCHnnn.CSV`, the only age on a card whose every FAT timestamp is 1980-01-01 -- and its tab says how many entries the card holds. A run is the only entry with a known age, so on a card holding 48 or more runs nothing else is listed: an imported `SWEEP.CSV` is outranked by every run and cannot be reached | a second page, or a filter on the browse list |
 | Betaflight logs are listed nowhere | the log viewer opens `.csv` only. Nothing in the tree decodes a Betaflight blackbox log, so `.bfl` is neither offered on the card nor named on the screen | a BFL decoder, and the suffix back in `CARD_SUFFIXES` and in the viewer's empty-card line |

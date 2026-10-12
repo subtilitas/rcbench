@@ -21,13 +21,19 @@ static const char *const k_header =
     "ina voltage (V);ina current (A);esc current (A);window;"
     "ch1 current (A);ch1 max (A);ch1 voltage (V);"
     "ch2 current (A);ch2 max (A);ch2 voltage (V);"
-    "ch3 current (A);ch3 max (A);ch3 voltage (V)\n";
+    "ch3 current (A);ch3 max (A);ch3 voltage (V);source\n";
+
+/* The last column of both files: what produced the row's values. */
+static const char *source_word(bool modelled)
+{
+    return modelled ? LOG_WRITER_SRC_MODEL : LOG_WRITER_SRC_MEASURED;
+}
 
 /* A supply run's file: what was asked beside what was delivered, and which
  * of the two the supply was holding. */
 static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"
-    "charge (mAh);energy (Wh)\n";
+    "charge (mAh);energy (Wh);source\n";
 
 /*
  * A short write latches the writer, and the bytes the sink took stay in the
@@ -217,7 +223,8 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
         && cell(line, cap, &n, (s->counted & BENCH_COUNTED_CHARGE) != 0u,
                 s->charge_mah, 0)
         && cell(line, cap, &n, (s->counted & BENCH_COUNTED_ENERGY) != 0u,
-                s->energy_wh, 2);
+                s->energy_wh, 2)
+        && text_cell(line, cap, &n, source_word(s->modelled));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
@@ -262,7 +269,7 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
     };
 
-    /* In the writer, not on the stack: 22 cells, every one checked
+    /* In the writer, not on the stack: 23 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
@@ -321,6 +328,8 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
                && cell(line, cap, &n, i, (float)b->servo_max_ma[c] / 1000.0f, 3)
                && cell(line, cap, &n, v, (float)b->servo_min_mv[c] / 1000.0f, 3);
     }
+    fits = fits && text_cell(line, cap, &n,
+                             source_word(bench_state_simulated(b)));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;

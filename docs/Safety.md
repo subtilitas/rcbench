@@ -194,6 +194,21 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   written.
 - Arming is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Disarming is a press.
+- The panel writes its own flash only on a bench that is disarmed, with no
+  arm waiting, and with the supply output off and no ON queued. Flash
+  auto-suspend is off, so each erase or write stalls both of the panel's
+  cores, the control task with its heartbeat, STOP, OUTPUT OFF and the
+  supply trips included. The rule is `flash_gate_open()` in
+  `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
+  settings save and the board photograph's keep. Arming and the supply are
+  never refused for a write: the write waits. The keep (about 52 erases and
+  52 writes of 4 kB for a 206 kB picture) runs one sector per 5 ms control
+  pass and stops between two sectors when the bench is armed or the supply
+  comes on. It resumes from the same sector on the first safe pass. Its
+  header is erased first and written last, so a keep that is paused or cut
+  by a power loss leaves no photograph findable for the board, and the
+  board is drawn from its outline until the keep completes. The duration of
+  one erase on the panel's flash is not measured.
 - A stick run on PROGRAMMER arms through the same policy, after its warning
   (NO PROPELLER, MOTOR SECURED?) is held for 2 s. It then sets the throttle
   to the profile's entry position before it switches the supply on, which
