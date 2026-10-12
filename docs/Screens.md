@@ -870,9 +870,13 @@ dashes and no trip, peak or total takes a reading, and after 3000 ms (`SUPPLY_LI
 output that is on is switched off and the band says
 `supply sends no readings -- output off`. A set point changed faster than
 the module takes it -- the slider dragged with SLIDER AND STEPS off, about
-one new set point every 50 ms -- does not hold the readings back: a display
-read 500 ms late (`PDMINI_DISPLAY_LATE_MS`) goes before the next set-point
-write. The
+one new set point every 50 ms -- does not hold the readings back: a reading
+400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
+write, one at a time with another transaction between two. The display is
+then read about 500 ms after the last display read and the output state
+about 900 ms after the last state read, each with up to two transactions
+more. An output the module switches on while it is off on the panel, or
+switches off itself, is seen during the drag. The
 output is also switched off, with a line in the band, when the coprocessor
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on
@@ -1154,7 +1158,7 @@ counts its beeps from the supply current.
 | `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
 | `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
 | `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
-| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere, or the coprocessor runs no capture since its boot (core 1 not started); the second clears only with a restart of the coprocessor |
+| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere, or the coprocessor runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the coprocessor |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
 
 PITCH and LOST are the page's values from the last status read. They read
@@ -1612,7 +1616,7 @@ current monitors:
 | `coprocessor has no tone page -- phase tap not read` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
 | `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older coprocessor, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
 | `phase tap split, gap or periods refused -- see SETUP INTERFACES` | the coprocessor refused the second frame; not written again until a value changes |
-| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE, the band then says `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES`, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run |
+| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run. The band says `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` only for a set-up other than the one the coprocessor kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `phase tap capture overrun -- beeps cut` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values

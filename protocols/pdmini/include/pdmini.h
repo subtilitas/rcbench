@@ -23,7 +23,15 @@
  * which argument means off; before that, the state is read back to back
  * for 1000 ms from the ON and the output switched off the moment it reads
  * on.  An ON that comes later than that is an output on while OFF is
- * asked, switched off at the next state read, at most 500 ms on.
+ * asked, switched off at the next state read, at most 500 ms on -- about
+ * 900 ms while set points change faster than they are written, see below.
+ *
+ * The readings come round on their periods: the display every 100 ms, the
+ * state and the input every 500 ms, the slot every 1000 ms.  One
+ * PDMINI_POLL_LATE_MS past its due goes before the next set point, one at a
+ * time with another transaction between two, so set points changed faster
+ * than a write and its read-back take -- a slider dragged -- hold no reading
+ * back for long, and still go out.
  *
  * An ON waits for the set points: it is written only once the active slot
  * reads back what is asked, read again straight before the ON together
@@ -164,11 +172,12 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         is known, watched this long         */
 #define PDMINI_GAP_MS       10u    /**< pins at rest between transactions  */
 #define PDMINI_DISPLAY_MS  100u    /**< how often the output is read       */
-#define PDMINI_DISPLAY_LATE_MS 500u /**< a display read this late goes
-                                        before a set-point write: set points
-                                        changed faster than a write and its
-                                        read-back take would otherwise hold
-                                        the readings back                  */
+#define PDMINI_POLL_LATE_MS 400u  /**< a reading this far past its due
+                                        goes before the next set-point
+                                        write: set points changed faster
+                                        than a write and its read-back take
+                                        would otherwise hold the readings
+                                        back                               */
 #define PDMINI_STATE_MS    500u    /**< the output state and the input     */
 #define PDMINI_IDENTIFY_MS 1000u   /**< WHO_AM_I again while nothing answers */
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
@@ -271,6 +280,8 @@ typedef struct {
     bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
+    bool     polled_late;    /* the last job an overdue reading that went
+                                before the set points                   */
     uint8_t  sag_reads;      /* input reads in a row under a live output's
                                 set point and the headroom              */
     uint8_t  check;          /* pdmini_check_t, PDMINI_CHECK_SENT between */

@@ -1098,6 +1098,24 @@ def a_d_line_ends_the_command_it_names() -> None:
     # cmd= past 32 bits is no number of the line.
     r = tool(str(work("big.log", let_go_log(3, str(1 << 32)))), "--no-csv")
     check(r.returncode == 1 and "no whole line" in r.stdout, "cmd= range")
+    # A command of channel 1 in the same 0.1 ms tick as channel 2's first,
+    # either line first: the $D line of channel 1 at that time ends channel
+    # 1's move alone.
+    for first in (2, 1):
+        lines = synthetic(1000, [(0, 1501), (1000, 1101)]).splitlines()
+        lines[0] = lines[0].replace("v=2", "v=3")
+        at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+        lines.insert(at + (1 if first == 2 else 0),
+                     "$C t=1000 ch=1 us=1301")
+        lines.insert(at + 2, "$D t=9800 ch=1 us=1700 cmd=1000")
+        lines[-1] = lines[-1].replace("m=2", "m=4")
+        r = tool(str(work(f"tick{first}.log", "\n".join(lines) + "\n")),
+                 "--no-csv")
+        check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+        check("channel 2 to 1501 us" in r.stdout
+              and "channel 1 to 1700 us" in r.stdout
+              and "channel 2 to 1700 us" not in r.stdout,
+              f"one tick, channel {first} first: {r.stdout[-900:]}")
 
 
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:

@@ -97,10 +97,14 @@ history is in git.
   with the last values kept. A count that stands for 3 s
   (`SUPPLY_LINK_BLIND_MS`) behind a page that answers switches an output
   that is on off, and the band says `supply sends no readings -- output
-  off`. The PD mini driver reads the display before the next set-point
-  write when the last display read is 500 ms old
-  (`PDMINI_DISPLAY_LATE_MS`), so a slider dragged with SLIDER AND STEPS
-  off, a new set point about every 50 ms, keeps the count moving. The
+  off`. The PD mini driver takes a reading 400 ms past its due
+  (`PDMINI_POLL_LATE_MS`) -- the display, the output state, the input or
+  the slot -- before the next set-point write, one at a time with another
+  transaction between two. A slider dragged with SLIDER AND STEPS off, a
+  new set point about every 50 ms, then gets a display read 500 ms after
+  the last one and a state read 900 ms after the last one, so the count
+  keeps moving, and an output the module switches on while an OFF is
+  asked, or off by its protection, is seen during the drag. The
   INA228 temperature and diagnostic flags go with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
   sample. A mark kind passed as a trace trigger is ignored, and the trace
   drops a sample while a shunt or configuration record is owed and counts
@@ -122,7 +126,9 @@ history is in git.
   for now, with the new NACK reason BUSY (6), and keeps BAD_VALUE for values
   no freed pin makes good and for an enabled tap on a coprocessor whose core
   1 did not start at boot. The panel shows that last case as `PIN NOT
-  FREE` as well; it clears only with a restart of the coprocessor. The
+  FREE` as well when the coprocessor's saved set-up has the tap enabled,
+  and otherwise the refused message and `NOT RUNNING`; it clears only with
+  a restart of the coprocessor. The
   panel offers a first frame refused with BUSY
   again every 5 s and writes one refused with BAD_VALUE again only after the
   next change of the set-up or link-up. From a 4.16 or older coprocessor,

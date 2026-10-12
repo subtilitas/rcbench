@@ -22,7 +22,12 @@ The module has two parts.
   rest 10 ms between transactions.
 - Between transactions both pins are inputs with a pull-down. A transmit
   line idling high back-feeds an unpowered module.
-- The output is read every 100 ms, its state and the input every 500 ms.
+- The output is read every 100 ms, its state and the input every 500 ms,
+  the active slot every 1000 ms.
+- A reading 400 ms past its due goes before the next set-point write, one at
+  a time with another transaction between two. Set points changed every
+  50 ms delay a display read to about 500 ms and a state read to about
+  900 ms after the last one.
 - 3 failed state reads in a row take the module for gone.
 - A voltage set point is capped 700 mV under the input the module reports,
   rounded down to 10 mV, and is never under 1000 mV.

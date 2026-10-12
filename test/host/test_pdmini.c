@@ -9,8 +9,9 @@
  * a state read asked for and what it shows; the SUPPLY page taking a
  * wiring change only on such a read showing the output off; a live output
  * switched off when its input sags under the set point on two reads; a
- * display read that goes before set points dragged faster than they are
- * written.
+ * display, state and slot read that go before set points dragged faster
+ * than they are written, so an output switched on or off by the module
+ * itself during the drag is seen.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -53,9 +54,12 @@ typedef struct {
     unsigned en_writes, sends, sends_detached;
     bool     switched_on_by_off;   /* an OFF request turned it on      */
     unsigned reads[256];      /* requests by command                     */
+    uint8_t  log[1024];       /* commands taken, in order, the first ones */
+    unsigned log_n;
     unsigned data_writes;
     bool     ignore_data;     /* OUTPUT_DATA taken and not applied       */
     uint32_t display_delay;   /* extra ms before a display reply         */
+    uint32_t reply_delay;     /* extra ms before every reply             */
     uint16_t on_at_mv;        /* the active slot's mV when it came on    */
     bool     mute;            /* takes writes, answers nothing           */
     int      id_says;         /* READ_ID answers this, -1 the slot       */
@@ -116,7 +120,7 @@ static void reply(const uint8_t *p, size_t n, bool crc)
     }
     m.out_n = n + 1u;
     m.out_i = 0u;
-    m.out_at = now + 2u;
+    m.out_at = now + 2u + m.reply_delay;
 }
 
 static void m_send(void *ctx, const uint8_t *p, size_t n)
@@ -131,6 +135,9 @@ static void m_send(void *ctx, const uint8_t *p, size_t n)
         return;
     }
     ++m.reads[p[0]];
+    if (m.log_n < sizeof(m.log)) {
+        m.log[m.log_n++] = p[0];
+    }
     if (p[0] == PDMINI_SYSTEM_RESET) {
         ++m.resets;
         m.output  = false;
@@ -1448,9 +1455,10 @@ TEST_CASE(a_dragged_slider_does_not_starve_the_input)
  * A live output, its set point changed every 50 ms for 5 s with the confirm
  * slide off: the write and its read-back take longer than 50 ms, and a new
  * set point is waiting after each.  The display is still read at least every
- * PDMINI_DISPLAY_LATE_MS and a transaction, so the panel, reading the count
- * of readings off the page every 50 ms, never sees it stand for
- * SUPPLY_LINK_STALE_MS and never cuts the output for readings stopped.
+ * PDMINI_DISPLAY_MS + PDMINI_POLL_LATE_MS and two transactions, so the
+ * panel, reading the count of readings off the page every 50 ms, never sees
+ * it stand for SUPPLY_LINK_STALE_MS and never cuts the output for readings
+ * stopped.
  */
 TEST_CASE(a_dragged_live_set_point_does_not_starve_the_display)
 {
@@ -1487,8 +1495,224 @@ TEST_CASE(a_dragged_live_set_point_does_not_starve_the_display)
     CHECK(m.output);                           /* still on, never cut */
     CHECK(m.data_writes > writes + 20u);       /* the drag went on writing */
     CHECK(m.reads[PDMINI_READ_DISPLAY] >= displays + 5000u / 600u);
-    CHECK(gap_most < PDMINI_DISPLAY_LATE_MS + 100u);
+    CHECK(gap_most < PDMINI_DISPLAY_MS + PDMINI_POLL_LATE_MS + 100u);
     CHECK(gap_most < SUPPLY_LINK_STALE_MS);
+}
+
+/*
+ * OFF asked, the voltage dragged every 50 ms for 5 s -- live with the output
+ * off, whatever the confirm slide says -- and the module switches its output
+ * on by itself (its button or AUTO OUT) 500 ms into the drag.  The state
+ * read, overdue, goes before the next set point, and the OFF follows it
+ * within 1.5 s.  The set points still go out during the drag.
+ */
+TEST_CASE(a_drag_does_not_hold_back_the_off_for_an_output_switched_on)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    CHECK(!m.output);
+    const unsigned writes = m.data_writes;
+    const unsigned states = m.reads[PDMINI_READ_STATE];
+    unsigned en_at_on = 0u;
+    uint32_t on_at = 0u;
+    uint32_t off_written = 0u;
+    uint32_t off_seen = 0u;
+    for (int k = 0; k < 100; ++k) {
+        pdmini_want(&d, false, (uint16_t)(6000u + 100u * (unsigned)(k % 40)),
+                    1000u);
+        if (k == 10) {
+            m.output = true;                   /* AUTO OUT, or its button */
+            on_at = now;
+            en_at_on = m.en_writes;
+        }
+        for (int t = 0; t < 50; ++t) {
+            run(1u, false);
+            if (on_at != 0u && off_written == 0u && m.en_writes > en_at_on) {
+                off_written = now;
+            }
+            if (on_at != 0u && off_seen == 0u && !m.output) {
+                off_seen = now;
+            }
+        }
+    }
+    CHECK(off_written != 0u);
+    CHECK((uint32_t)(off_written - on_at) <= 1500u);
+    CHECK(off_seen != 0u);
+    CHECK((uint32_t)(off_seen - on_at) <= 1500u);
+    CHECK(!m.output);
+    CHECK(m.reads[PDMINI_READ_STATE] >= states + 4u);
+    CHECK(m.data_writes >= writes + 75u);      /* 84 in this model */
+}
+
+/*
+ * A live output, its set point dragged every 50 ms for 5 s, and the
+ * module's protection switches the output off 500 ms into the drag: the
+ * overdue state read goes before the next set point and shows it tripped
+ * within 1.5 s.  The set points still go out until then.
+ */
+TEST_CASE(a_drag_does_not_hide_a_tripped_output)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 6000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    CHECK(pdmini_status(&d)->output);
+    const unsigned writes = m.data_writes;
+    uint32_t off_at = 0u;
+    uint32_t tripped_at = 0u;
+    unsigned writes_at_off = 0u;
+    for (int k = 0; k < 100; ++k) {
+        pdmini_want(&d, true, (uint16_t)(6000u + 100u * (unsigned)(k % 40)),
+                    1000u);
+        if (k == 10) {
+            m.output = false;                  /* its overcurrent protection */
+            off_at = now;
+            writes_at_off = m.data_writes;
+        }
+        for (int t = 0; t < 50; ++t) {
+            run(1u, false);
+            if (off_at != 0u && tripped_at == 0u
+                && pdmini_status(&d)->tripped) {
+                tripped_at = now;
+            }
+        }
+    }
+    CHECK(tripped_at != 0u);
+    CHECK((uint32_t)(tripped_at - off_at) <= 1500u);
+    CHECK(!pdmini_status(&d)->output);
+    CHECK(!m.output);                          /* held off, not on again */
+    CHECK(writes_at_off >= writes + 6u);       /* the drag was writing */
+}
+
+/*
+ * A module that answers every read 180 ms late, a live output dragged every
+ * 50 ms for 10 s: the overdue readings go ahead one at a time, so the set
+ * points still go out, and the display still comes round before the panel
+ * cuts the output for readings stopped.
+ */
+TEST_CASE(a_drag_on_a_slow_module_still_writes_set_points)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, true, 6000u, 1000u);
+    run(1500u, false);
+    CHECK(m.output);
+    m.reply_delay = 180u;
+    run(1000u, false);
+    const unsigned writes = m.data_writes;
+    uint32_t seen = pdmini_status(&d)->samples;
+    uint32_t seen_at = now;
+    uint32_t gap_most = 0u;
+    for (int k = 0; k < 200; ++k) {
+        pdmini_want(&d, true, (uint16_t)(6000u + 100u * (unsigned)(k % 40)),
+                    1000u);
+        for (int t = 0; t < 50; ++t) {
+            run(1u, false);
+            if (pdmini_status(&d)->samples != seen) {
+                seen = pdmini_status(&d)->samples;
+                seen_at = now;
+            }
+            if ((uint32_t)(now - seen_at) > gap_most) {
+                gap_most = (uint32_t)(now - seen_at);
+            }
+        }
+    }
+    CHECK(m.output);
+    CHECK(m.data_writes >= writes + 3u);
+    CHECK(gap_most < SUPPLY_LINK_BLIND_MS);
+}
+
+/*
+ * The driver at rest at the bench's set point with OFF asked, every
+ * reading just taken, and a new set point asked: the job chosen now, with
+ * the display read @p display_ms and the state read @p state_ms ago.
+ */
+static uint8_t job_with_readings_aged(uint32_t display_ms, uint32_t state_ms)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    for (unsigned k = 0u; k < 2000u; ++k) {
+        run(1u, false);
+        if (d.phase == PD_IDLE) {
+            break;                             /* nothing was due */
+        }
+    }
+    CHECK(d.phase == PD_IDLE);
+    d.last_display = now - display_ms;
+    d.last_state   = now - state_ms;
+    d.last_input   = now;
+    d.last_slot    = now;
+    pdmini_want(&d, false, 6000u, 1000u);
+    pdmini_step(&d, now);
+    CHECK(d.phase == PD_ATTACH);
+    return d.cmd;
+}
+
+/* A reading goes before a waiting set point from PDMINI_POLL_LATE_MS past
+ * its due, not 1 ms sooner: the display 500 ms after the last display read,
+ * the state 900 ms after the last state read. */
+TEST_CASE(a_reading_goes_before_a_set_point_from_400_ms_past_its_due)
+{
+    const uint32_t disp = PDMINI_DISPLAY_MS + PDMINI_POLL_LATE_MS;
+    const uint32_t state = PDMINI_STATE_MS + PDMINI_POLL_LATE_MS;
+    CHECK_EQ(disp, 500u);
+    CHECK_EQ(state, 900u);
+    CHECK_EQ(job_with_readings_aged(disp - 1u, 0u), PDMINI_OUTPUT_DATA);
+    CHECK_EQ(job_with_readings_aged(disp, 0u), PDMINI_READ_DISPLAY);
+    CHECK_EQ(job_with_readings_aged(0u, state - 1u), PDMINI_OUTPUT_DATA);
+    CHECK_EQ(job_with_readings_aged(0u, state), PDMINI_READ_STATE);
+    /* Both overdue: the one further past its due. */
+    CHECK_EQ(job_with_readings_aged(disp + 1u, state), PDMINI_READ_DISPLAY);
+    CHECK_EQ(job_with_readings_aged(disp, state + 1u), PDMINI_READ_STATE);
+}
+
+/* The next command the module is sent. */
+static uint8_t next_command(void)
+{
+    const unsigned n = m.log_n;
+    for (unsigned k = 0u; k < 1000u && m.log_n == n; ++k) {
+        run(1u, false);
+    }
+    CHECK(m.log_n > n);
+    return m.log_n > n ? m.log[n] : 0u;
+}
+
+/*
+ * The reads before an ON -- the set points, then the slot -- and the ON go
+ * one straight after the other: a display and a state read 600 ms and
+ * 1000 ms past their due wait until the ON is written.
+ */
+TEST_CASE(no_overdue_reading_splits_the_reads_before_an_on)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    for (unsigned k = 0u; k < 1000u && d.on_step != 2u; ++k) {
+        run(1u, false);
+    }
+    CHECK_EQ(d.on_step, 2u);           /* the set points read back */
+    d.last_display = now - 700u;
+    d.last_state   = now - 1500u;
+    d.last_input   = now;
+    m.log_n = 0u;
+    CHECK_EQ(next_command(), PDMINI_READ_ID);
+    for (unsigned k = 0u; k < 1000u && d.on_step != 4u; ++k) {
+        run(1u, false);
+    }
+    CHECK_EQ(d.on_step, 4u);           /* the slot read back */
+    d.last_display = now - 700u;
+    d.last_state   = now - 1500u;
+    d.last_input   = now;
+    CHECK_EQ(next_command(), PDMINI_OUTPUT_EN);
+    run(1000u, false);
+    CHECK(m.output);
 }
 
 /* An ON after a pause is judged on a fresh input: the source sagged since
@@ -2210,6 +2434,7 @@ TEST_CASE(a_session_is_the_same_wherever_the_tick_wraps_in_it)
     }
 }
 
+
 int main(void)
 {
     RUN(the_crc_matches_every_value_the_sheet_prints);
@@ -2256,6 +2481,11 @@ int main(void)
     RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(a_dragged_slider_does_not_starve_the_input);
     RUN(a_dragged_live_set_point_does_not_starve_the_display);
+    RUN(a_drag_does_not_hold_back_the_off_for_an_output_switched_on);
+    RUN(a_drag_does_not_hide_a_tripped_output);
+    RUN(a_drag_on_a_slow_module_still_writes_set_points);
+    RUN(a_reading_goes_before_a_set_point_from_400_ms_past_its_due);
+    RUN(no_overdue_reading_splits_the_reads_before_an_on);
     RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(a_restart_goes_with_the_output_off_and_is_followed);
     RUN(an_argument_outlasts_a_module_that_comes_back);
