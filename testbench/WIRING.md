@@ -607,9 +607,9 @@ Split it before injecting anything, which is what the two links are for:
    next step is not contention.
 2. **Have the RP2350 drive the junction from GP22** with one edge every
    20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
-   so `heartbeat_poll()` on the coprocessor never expires. Twice that rate is
-   rejected by the monitor's 4 ms floor only well beyond it, so a wrong
-   reading here is injected rather than caught.
+   so `heartbeat_poll()` on the coprocessor never expires. The monitor rejects only
+   edges closer than 4 ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10 ms is
+   accepted and a wrong rate here is injected rather than caught.
 
 The monostable's trigger branch stays **closed** for now, and that is the
 change that makes the test measurable. Both the firmware and the interlock are
@@ -754,9 +754,8 @@ In this order, and stop at the first step that does not do what it says:
 4. The panel.
 
 The panel shows the splash, runs its CAN self-test inside it, and comes up
-with `LINK` and `SAFE`. With 0.7.0 or later there should be no `FAULT` at
-power-up: the coprocessor no longer counts the wait for the panel's first
-request as silence.
+with `LINK` and `SAFE`. There should be no `FAULT` at power-up: the
+coprocessor does not count the wait for the panel's first request as silence.
 
 **A `FAULT 01` here has two causes and they look identical.** Bit 0 is "the
 link was silent once", it latches, and nothing clears it until an arm writes

@@ -38,9 +38,9 @@ Duration: the host test holds a full search against the modelled servo to under
 | Stall timeout | above 1.0 A for 400 ms | abort |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
-The limit search and the synchroniser are state machines fed measurements. The
-host suite runs them against a modelled servo. Neither firmware image calls
-them, so the protections above act on no hardware.
+The limit search and the synchroniser are modules in `shared/servo`, tested on
+the host against a modelled servo. Neither firmware image calls them, so the
+protections above are not active on the bench.
 
 ### Results
 
@@ -66,9 +66,10 @@ The search holds servo A and sweeps a correction on servo B, at centre and at
 - a difference at centre is an offset error (trim);
 - a difference at an end is a travel error for that end.
 
-The first scan covers ±40 µs around the stage's starting point in 7 steps. Two
-further scans cover a narrower window around the best point of the one before,
-so a stage runs 3 scans. Each point waits 120 ms plus the travel time at an assumed 0.8
+Each stage runs 3 scans of 7 points. The first scan covers ±40 µs around the
+stage's start point: 0 µs for the centre stage, the ±300 µs deflection for the
+end stages. Each later scan is centred on the best point of the scan before and
+covers ±13 µs, then ±4 µs. Each point waits 120 ms plus the travel time at an assumed 0.8
 µs/ms, then averages the current over 100 ms. A minimum is accepted when the
 current varies by at least 0.08 A across the scan. The current ceiling is 4.0 A
 for the pair.
@@ -396,8 +397,8 @@ angle error.
 
 The count wraps from 4095 to 0, so every angle is a position on one turn and
 no two are subtracted or averaged as plain numbers. A move's distance from
-its start is taken the shortest way round, 0 to 180 degrees: 2 counts either
-side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
+its start is taken the shortest way round, 0 to 180 degrees: two positions 1 count
+either side of the half turn from the centre are 0.18 degrees apart, not 359.8. A
 step's end angles at one end are averaged as offsets from the first of them
 and the mean is put back on the circle, so ends read at +179.9 and -179.9
 degrees average to 180 (shown as -180.00), not 0. The angle error is wrapped

@@ -493,6 +493,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PG_WRITE_N]             = "SCHREIBEN %d",
     [TX_PG_WRITE]               = "SCHREIBEN",
     [TX_PG_READ]                = "LESEN",
+    [TX_PG_MODELLED]            = "SIMULIERT",
+    [TX_PG_MODEL_NOTE]          = "Vom Panel simuliert: kein Gerät wird erreicht.",
 
     /* ------------------------------------------------------- ESC STICK */
     [TX_SP_NEEDS_V]             = "%u.%u V, Obergrenze %u.%u V",

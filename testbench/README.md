@@ -10,8 +10,10 @@ in the tree was written from a specification and exercised only against frames
 the same code builds. `docs/FirstRun.md` section 7 is the list of numbers
 nobody has measured. This bench is what answers it.
 
-**Nothing here has been run.** The hardware is being assembled, the channel
-map is a proposal to be checked against the wiring as built, and three of the
+**The host side has been run; the wiring has not.** The sigrok build, the
+analyser scan, a 948-line capture, the PWM1 tables, the udev rules and the
+`pinctrl` pull readings are measured on the bench host. The hardware is being
+assembled, the channel map is a proposal to be checked against the wiring as built, and three of the
 pieces are described rather than written -- the panel's debug touch address,
 the decoders and the recipes. Each says so where it is described, and they are
 listed together under *What is not built yet*.
@@ -43,12 +45,13 @@ Seven things the tree does that only an instrument can confirm:
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
 | KST wire | Manchester coding, half-cell 25.4 µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600 µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
-And the programmer's four ESC protocols and one servo protocol (the KST
-wire above is a second one), which the
-panel can drive but which no test exercises against a device: the one-wire
-bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud), the
-text command line of ESCape32 firmware over the signal line, the framed
-packets of VESC firmware (115,200 baud) and the Hitec D-series servo protocol.
+The programmer's four ESC protocols and one servo protocol are not on this
+list. The panel models them and has no transport for them, so nothing of
+them reaches a wire: the one-wire bootloader protocols of BLHeli_S firmware
+and AM32 firmware (19,200 baud), the text command line of ESCape32 firmware
+over the signal line, the framed packets of VESC firmware (115,200 baud) and
+the Hitec D-series servo protocol. The PROGRAMMER screen marks these classes
+MODELLED.
 
 ---
 
@@ -387,7 +390,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 0 | GP0 output | coprocessor | whatever OUTPUTS binds first |
 | 1 | GP1 output | coprocessor | |
 | 2 | GP2 output | coprocessor | the servo screen's own pin |
-| 3 | heartbeat | panel J8 / GPIO6 to coprocessor GP3 | 20 ms square, the safety line |
+| 3 | heartbeat | panel J8 / GPIO6 to coprocessor GP3 | an edge every 20 ms (40 ms cycle), the safety line |
 | 4 | CAN SCK | coprocessor GP10, pad 14 | the XL2515's SPI clock |
 | 5 | CAN MOSI | coprocessor GP11, pad 15 | |
 | 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
@@ -571,8 +574,7 @@ between runs.
 
 ## Touch, which is the one that matters
 
-Fifty-one review findings on one branch were about arming, and every one was
-argued rather than measured, because the panel's control task is outside the
+The arming logic is argued rather than measured, because the panel's control task is outside the
 host suite and a gesture needs a finger. The cases were: a press held for two
 seconds, a finger that slides off the button, a second contact landing on it,
 a stop pressed while a hold is running, and touch that stops answering
@@ -626,8 +628,7 @@ holds the gesture and what the bench did about it:
 | STOP while a hold is running | the heartbeat stops being asserted within 150 ms |
 | the emulator stops answering | the bank comes down, and the far end fails safe |
 
-That last one is the case that took four review rounds to get right and still
-has no test. Here it is a wire going quiet on purpose.
+That last one has no test. Here it is a wire going quiet on purpose.
 
 It also gives the failure that cannot be staged any other way: a touch
 controller that answers slowly, or that reports a contact that was never
@@ -674,7 +675,7 @@ controller that has crashed or lost power leaves both boards alone.
 
 What that makes possible:
 
-- **A cold start on demand.** The link-silent fault, the 1,200 ms splash, the
+- **A cold start on demand.** The link-silent fault, the 1.6 s splash hold, the
   CAN self-test and the heartbeat's first acquisition all happen once per
   power-up and have never been seen across a hundred of them. A reset under a
   script turns that into a loop.
@@ -760,7 +761,7 @@ firmware and the decoder agree, and no more than that.
     testbench/
       README.md      this: what the bench is for, and why each part is there
       WIRING.md      what to connect, in order, with a check after each step
-      host/          the scripts the Pi runs: capture, decode, self-test
+      host/          the scripts the Pi runs: capture, self-test
       decoders/      protocol decoders, and their offline verification
       captures/      run artefacts, not committed; reference/ is
 

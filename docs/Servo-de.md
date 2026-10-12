@@ -40,10 +40,10 @@ Servo auf unter 12 s. Auf Hardware nicht gemessen.
 | Stall-Timeout | über 1,0 A für 400 ms | Abbruch |
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
-Die Endlagensuche und der Abgleich sind Zustandsautomaten, die Messwerte
-bekommen. Die Host-Suite lässt sie gegen ein Servomodell laufen. Keines der
-beiden Firmware-Images ruft sie auf, die Schutzfunktionen oben wirken also an
-keiner Hardware.
+Die Endlagensuche und die Synchronisation sind Module in `shared/servo`, auf
+dem Host gegen einen modellierten Servo getestet. Keines der beiden
+Firmware-Images ruft sie auf; die obigen Schutzmaßnahmen sind am Prüfstand
+nicht aktiv.
 
 ### Ergebnisse
 
@@ -71,9 +71,10 @@ durch, in der Mitte und bei ±300 µs Ausschlag:
 - ein Unterschied in der Mitte ist ein Offsetfehler (Trimmung);
 - ein Unterschied an einem Ende ist ein Wegfehler für dieses Ende.
 
-Der erste Suchlauf deckt ±40 µs um den Startpunkt der Stufe in 7 Schritten ab.
-Zwei weitere Läufe decken ein engeres Fenster um den besten Punkt des
-vorigen ab, eine Stufe fährt also 3 Läufe. Jeder Punkt wartet 120 ms plus die Fahrzeit bei angenommenen
+Jede Stufe führt 3 Suchläufe mit je 7 Punkten aus. Der erste Suchlauf deckt
+±40 µs um den Startpunkt der Stufe ab: 0 µs bei der Mittenstufe, der Ausschlag
+von ±300 µs bei den Endstufen. Jeder spätere Suchlauf ist auf den besten Punkt
+des vorigen zentriert und deckt ±13 µs, dann ±4 µs ab. Jeder Punkt wartet 120 ms plus die Fahrzeit bei angenommenen
 0,8 µs/ms und mittelt den Strom dann über 100 ms. Ein Minimum gilt, wenn der
 Strom über den Suchlauf um mindestens 0,08 A schwankt. Die Stromobergrenze
 für das Paar liegt bei 4,0 A.
@@ -429,7 +430,7 @@ befohlenen Ende zeigt dann keinen Fehler. Ein Servo, das über diese Spanne weni
 Der Zählerstand springt von 4095 auf 0, jeder Winkel ist also eine Position
 auf einer Umdrehung, und keine zwei werden als bloße Zahlen subtrahiert oder
 gemittelt. Der Abstand einer Bewegung von ihrem Start wird auf dem kürzeren
-Weg genommen, 0 bis 180 Grad: 2 Schritte beiderseits der halben Umdrehung von
+Weg genommen, 0 bis 180 Grad: zwei Positionen 1 Schritt beiderseits der halben Umdrehung von
 der Mitte liegen 0,18 Grad auseinander, nicht 359,8. Die Endwinkel einer Stufe
 an einem Ende werden als Abstände vom ersten von ihnen gemittelt, und der
 Mittelwert wird auf den Kreis zurückgelegt; Enden bei +179,9 und -179,9 Grad
