@@ -220,13 +220,16 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
 ## The active output
 
 A screen, tab, overlay, prompt or automatic run that drives an output names
-that output while it is shown: the pin (`GP4`), the port (`PROG PORT GP13`)
-or the supply and its voltage (`PD MINI 7.40 V`). Nothing bound, a binding
-not yet read and a target out of reach show as a warning. The label reads the
-state the drive path reads, not the setting that asks for it
-(`prog_link_target()`, not `SET_SERVO_TARGET`), and a host test holds the two
+that output while it is shown: the pin, the port with its pin, or the supply
+with its voltage. Examples of the form, not texts of a screen today: `GP4`,
+`PROG PORT GP13`, `PD MINI 7.40 V`. Nothing bound, a binding not yet read and
+a target out of reach show as a warning. The label reads the state the drive
+path reads, not the setting that asks for it (`prog_link_target()`, not
+`SET_SERVO_TARGET`). A screen added or changed from here on meets the rule
+and comes with a host test that holds the label and the drive path's state
 equal. A user who cannot tell from the screen what it drives meets a defect
-of the screen.
+of the screen. The screens that do not meet it yet are listed in
+[STATUS.md](STATUS.md#open-items).
 
 ## Style
 

@@ -11,7 +11,8 @@ history is in git.
 - `CONTRIBUTING.md`, section "The active output": every screen, tab,
   overlay, prompt and automatic run that drives an output names the pin,
   port or supply it drives, from the state the drive path reads, with a
-  warning when nothing is bound.
+  warning when nothing is bound. A screen added or changed meets it with a
+  host test; `STATUS.md` lists the screens that do not meet it yet.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
   table lists 10 modules; it listed 4.
