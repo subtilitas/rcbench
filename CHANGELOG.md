@@ -21,6 +21,16 @@ history is in git.
 
 ### Changed
 
+- `testbench/host/capture.sh` warns when a capture holds no samples or the
+  read-back fails, and still prints the path. `selftest.sh` no longer reports
+  `sigrok-cli --scan` error output as the analyser found, and skips a
+  non-numeric `SWD_SWCLK` or `SWD_SWDIO`.
+- `docs/Servo.md` and `docs/Servo-de.md` state that the limit search and the
+  synchroniser are not called by the coprocessor image, give the scan windows
+  of the synchroniser (±40, ±13, ±4 µs) and correct the half-turn example.
+  The testbench documents carry no development history and the corrected
+  splash hold (1.6 s), heartbeat rate and run state.
+
 - The bench configurator describes release 0.17.0. Every repository source
   of its data is a file and line at the tag `v0.17.0`: 11 sources carry the
   line of that tag, and the source of the entry on serial ESC programming
