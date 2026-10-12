@@ -128,6 +128,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       ina228Board: selection.options.ina228Board,
       connection: selection.options.connection,
       servoPower: selection.options.servoPower,
+      servoPort: selection.options.servoPort,
     },
   };
   assert.deepEqual(resolve(catalogue, mixed), setup, `another input order differs for ${where}`);

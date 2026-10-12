@@ -335,19 +335,25 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  * its input down: the voltage under test would change unasked mid-run, and
  * a sag that lasts switches the output off instead (sag_check()).
  */
+uint16_t pdmini_cap_mv(uint32_t vin_mv)
+{
+    /* On the 10 mV grid the screen offers, rounded down; an input with no
+     * room for the lowest set point gets the lowest, and an ON is then not
+     * written (sag_hold()). */
+    uint32_t cap = PDMINI_V_MIN_MV;
+    if (vin_mv >= PDMINI_V_MIN_MV + PDMINI_CAP_MV) {
+        cap = (vin_mv - PDMINI_CAP_MV) / 10u * 10u;
+    }
+    return (cap > PDMINI_V_MAX_MV) ? (uint16_t)PDMINI_V_MAX_MV
+                                   : (uint16_t)cap;
+}
+
 static uint16_t target_mv(const pdmini_t *d)
 {
     if (!d->input_known) {
         return d->want_mv;      /* not read yet */
     }
-    const uint32_t vin = d->st.vin_mv;
-    /* On the 10 mV grid the screen offers, rounded down; an input with no
-     * room for the lowest set point gets the lowest, and an ON is then not
-     * written (sag_hold()). */
-    uint32_t cap = PDMINI_V_MIN_MV;
-    if (vin >= PDMINI_V_MIN_MV + PDMINI_CAP_MV) {
-        cap = (vin - PDMINI_CAP_MV) / 10u * 10u;
-    }
+    uint32_t cap = pdmini_cap_mv(d->st.vin_mv);
     if (d->st.output && d->want_output && d->st.set_mv > cap
         && d->st.set_mv <= d->want_mv) {
         cap = d->st.set_mv;

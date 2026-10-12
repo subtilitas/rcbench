@@ -813,7 +813,10 @@ The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
 widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
 vendor's page, not measured. The PD mini is a buck converter and gives no
 more than it is fed: its voltage is also capped 0.7 V under the input it
-reports, so a 5 V input allows at most 4.3 V. A set point over the input
+reports, so a 5 V input allows at most 4.3 V. An input under 1.7 V
+leaves the 1 V minimum, which the screen shows as the cap, and one under
+1.5 V holds the output off; until an input is read the cap is 20 V. A set
+point over the input
 puts the module into ERR until it is power cycled; the margin it needs is
 not measured. The cap lies 0.2 V above the line the output is cut at (see
 below), so the input can drop 0.2 V under load before a set point at the

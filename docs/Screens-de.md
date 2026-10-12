@@ -896,7 +896,7 @@ Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini
 ist ein Abwärtswandler und gibt nicht mehr ab, als er bekommt: seine
 Spannung ist zusätzlich auf 0,7 V unter der Eingangsspannung begrenzt, die
-er meldet, an 5 V Eingang also höchstens 4,3 V. Ein Sollwert über dem
+er meldet, an 5 V Eingang also höchstens 4,3 V. Unter 1,7 V Eingang bleibt der Mindestwert von 1 V, den der Bildschirm als Grenze zeigt, und unter 1,5 V bleibt der Ausgang aus; solange kein Eingang gelesen ist, gilt 20 V. Ein Sollwert über dem
 Eingang bringt das Modul in ERR, bis es stromlos war; welchen Abstand es
 braucht, ist nicht gemessen. Die Grenze liegt 0,2 V über der Linie, an der
 der Ausgang abgeschaltet wird (siehe unten): der Eingang darf unter Last um

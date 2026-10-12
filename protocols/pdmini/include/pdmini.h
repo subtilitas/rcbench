@@ -342,6 +342,14 @@ const pdmini_status_t *pdmini_status(const pdmini_t *d);
  *  Its wiring is not to be taken from under it while this holds. */
 bool pdmini_may_be_on(const pdmini_t *d);
 
+/** The highest voltage set point written for an input of vin_mv, as read:
+ *  vin_mv - PDMINI_CAP_MV rounded down to 10 mV, at least PDMINI_V_MIN_MV
+ *  (an input under PDMINI_V_MIN_MV + PDMINI_CAP_MV, 1700 mV, gets the
+ *  1000 mV floor, and one under 1500 mV is held off), at most
+ *  PDMINI_V_MAX_MV.  The caller treats an input not known as
+ *  PDMINI_V_MAX_MV. */
+uint16_t pdmini_cap_mv(uint32_t vin_mv);
+
 #ifdef __cplusplus
 }
 #endif

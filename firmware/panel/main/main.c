@@ -8347,11 +8347,9 @@ void app_main(void)
         unsigned vcap = 0u;
         if (supply_real) {
             const unsigned vin = atomic_load(&s_supply_vin_mv);
-            vcap = 20000u;
-            if (vin > PDMINI_V_MIN_MV + PDMINI_CAP_MV
-                && vin - PDMINI_CAP_MV < vcap) {
-                vcap = vin - PDMINI_CAP_MV;
-            }
+            /* 0 is an input not read: the full range.  Any other input
+             * gets the cap the driver writes, floor included. */
+            vcap = (vin == 0u) ? PDMINI_V_MAX_MV : pdmini_cap_mv(vin);
         }
         const unsigned vcap_moved = (vcap > supply_vcap_shown)
                                         ? vcap - supply_vcap_shown

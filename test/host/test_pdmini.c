@@ -1855,6 +1855,24 @@ TEST_CASE(the_cap_holds_at_its_line_and_its_floor)
     CHECK_EQ(set_from(1u, 20000u), PDMINI_V_MIN_MV);
 }
 
+/* The cap the panel shows is the function the driver writes with: every
+ * edge of the input range, and the set point written for it. */
+TEST_CASE(the_shown_cap_is_the_one_written)
+{
+    static const struct { uint32_t vin, cap; } e[] = {
+        { 0u, 1000u }, { 1u, 1000u }, { 1499u, 1000u }, { 1500u, 1000u },
+        { 1501u, 1000u }, { 1700u, 1000u }, { 1701u, 1000u },
+        { 1709u, 1000u }, { 1710u, 1010u }, { 20700u, 20000u },
+        { 65535u, 20000u },
+    };
+    for (size_t i = 0; i < sizeof e / sizeof e[0]; i++) {
+        CHECK_EQ(pdmini_cap_mv(e[i].vin), e[i].cap);
+        if (e[i].vin != 0u) {
+            CHECK_EQ(set_from(e[i].vin, 20000u), e[i].cap);
+        }
+    }
+}
+
 /* An input under 1500 mV leaves no room for the lowest set point: an ON is
  * not written, and the output is held off as for a sag until an OFF is
  * asked.  At 1500 mV and 1 mV over, the ON is written and stays. */
@@ -2212,6 +2230,7 @@ int main(void)
     RUN(a_10_mv_dip_at_the_cap_leaves_the_output_on);
     RUN(a_sag_at_the_cap_cuts_only_under_the_line);
     RUN(the_cap_holds_at_its_line_and_its_floor);
+    RUN(the_shown_cap_is_the_one_written);
     RUN(an_on_under_the_line_is_not_written);
     RUN(a_stuck_on_held_for_the_input_is_no_longer_stuck);
     RUN(the_who_failed_count_wraps_and_still_steps_the_scan);

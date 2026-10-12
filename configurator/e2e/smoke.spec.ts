@@ -83,8 +83,8 @@ for (const size of SIZES) {
         await expect(page.locator('#g-base legend')).toHaveText(STRINGS.gBase[lang === 'en' ? 0 : 1]);
         await expect(page.locator('#g-base ul.base li')).toHaveCount(base.length);
         await expect(page.locator('#g-base ul.base input')).toHaveCount(0);
-        // The group holds the 2 ticks that connect a test object, and no other control.
-        expect(await page.locator('#g-base input').evaluateAll((list) => list.map((el) => el.id))).toEqual(['f-servo', 'f-esc']);
+        // The group holds the 3 ticks that connect a test object, and no other control.
+        expect(await page.locator('#g-base input').evaluateAll((list) => list.map((el) => el.id))).toEqual(['f-servo', 'f-servoprog', 'f-esc']);
         for (const fn of base) {
           await expect(page.locator(`#f-${fn.id}`)).toHaveCount(0);
           await expect(page.locator('#result')).toContainText(fn.name[lang]);
