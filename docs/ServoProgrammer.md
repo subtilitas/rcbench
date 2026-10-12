@@ -525,7 +525,7 @@ done: `Register 03, 1 write done.`
 
 | Backup | Held by | Lives until |
 | --- | --- | --- |
-| Of the session | the coprocessor: the first image read after **CONNECT** | **LEAVE**, a restart of the coprocessor |
+| Of the session | the coprocessor: the first image read after **CONNECT** | **LEAVE**, a power cycle of the servo, a restart of the coprocessor |
 | The session's file | the card: the servo's 32 registers as they stand before the session's first write. None while no card is mounted | the file is removed from the card |
 | Before a write | the panel, in `KST/KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
@@ -802,6 +802,14 @@ hold.
 Two servos equal in every field the session did not write are not told
 apart. After a link loss or a start of the panel under a session the
 session's writes are not known, and the comparison is not made.
+
+A power cycle of the servo ends the session's backup and the record of the
+session's writes. The servo on the port may be another one after it. Such
+a power cycle is a PD mini's supply switched off under the session, a
+supply cycle the port runs, or the POWER_CYCLED operation the panel sends
+in place of LEAVE. The port is then in PWM, and the restore list holds no
+session backup. **CONNECT** begins a session whose backup is the servo as
+its first **READ ALL** finds it. A backup file on the card stays there.
 
 ![Another servo than the backup's](img/servo-kst-swapped.png)
 

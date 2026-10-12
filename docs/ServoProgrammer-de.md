@@ -568,7 +568,7 @@ Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgang erfolgt.`
 
 | Backup | Gehalten von | Lebt bis |
 | --- | --- | --- |
-| Der Sitzung | dem Koprozessor: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Neustart des Koprozessors |
+| Der Sitzung | dem Koprozessor: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Aus- und Einschalten des Servos, ein Neustart des Koprozessors |
 | Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen. Keine, solange keine Karte eingehängt ist | die Datei wird von der Karte entfernt |
 | Vor einem Schreiben | dem Panel, in `KST/KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
@@ -870,6 +870,16 @@ nicht geschrieben hat, werden nicht unterschieden. Nach einem
 Verbindungsverlust oder einem Start des Panels unter einer Sitzung sind die
 Schreibvorgänge der Sitzung nicht bekannt, und der Vergleich findet nicht
 statt.
+
+Ein Aus- und Einschalten des Servos beendet das Backup der Sitzung und den
+Vermerk ihrer Schreibvorgänge. Danach kann ein anderes Servo am Port
+stecken. Ein solches Aus- und Einschalten ist die Versorgung eines PD mini,
+die unter der Sitzung ausgeschaltet wird, ein Versorgungszyklus, den der
+Port ausführt, oder der Vorgang POWER_CYCLED, den das Panel statt LEAVE
+sendet. Der Port ist dann in PWM, und die Liste zum Zurückspielen enthält
+kein Backup der Sitzung. **VERBINDEN** beginnt eine Sitzung, deren Backup
+das Servo ist, wie die erste **ALLES LESEN** es vorfindet. Eine
+Backup-Datei auf der Karte bleibt dort.
 
 ![Ein anderes Servo als das des Backups](img/de/servo-kst-swapped.png)
 

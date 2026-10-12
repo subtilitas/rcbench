@@ -720,7 +720,7 @@ all the same. With PORT PWM off the port renders no pulse, and the line adds
 in the warning colour, and the tester sends no command in either:
 `TARGET: NO LINK` while no coprocessor answers, and `TARGET: NOT KNOWN`
 while the coprocessor's programming-port page has not been read since the
-link came up, or a write to it was not acknowledged. The page is read every
+link came up, a write to it was not acknowledged, or a read of it went unanswered. The page is read every
 500 ms. A coprocessor without that page (protocol older than 4.13) has the
 standard outputs as target. The line follows the target the coprocessor
 holds, not the setting: a PWM TARGET change waits for a quiet bench and

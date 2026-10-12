@@ -4575,6 +4575,9 @@ static void draw_left(gfx_canvas_t *c)
      * cleared -- the case and the dial below it are chrome. */
     gfx_fill_rect(c, PAD + 1, PAD + 1, LCARD_W - 2, H - 2 * PAD - 2,
                   ui_theme_color(UI_C_PANEL));
+    /* Before the dial: the dial's rows leave the frame cache, and the box
+     * painted after them would be repainted on every dial redraw. */
+    draw_target(c);
     draw_dial(c);
     /* The case first: the horn bolts to the top of it and must be drawn over
      * it, not under. */
@@ -4613,7 +4616,6 @@ static void draw_left(gfx_canvas_t *c)
     if (s.test_box) {
         draw_test_box(c);
     }
-    draw_target(c);
 }
 
 static void row_in(gfx_canvas_t *c, int y, const char *label,

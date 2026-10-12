@@ -794,8 +794,8 @@ die Zeile hängt `PWM AUS` an: `ZIEL: PROG-PORT GP13 PWM AUS`. Zwei Zustände
 nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der Tester
 einen Befehl: `ZIEL: KEIN LINK`, solange kein Koprozessor antwortet, und
 `ZIEL: UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit
-dem Linkaufbau nicht gelesen wurde oder ein Schreiben auf sie nicht
-bestätigt wurde. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
+dem Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht
+bestätigt wurde oder ein Lesen nicht beantwortet wurde. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
 diese Seite (Protokoll älter als 4.13) hat die Standardausgänge als Ziel.
 Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung:
 eine Änderung von PWM-ZIEL wartet auf einen ruhigen Prüfstand und erscheint
