@@ -2008,6 +2008,11 @@ confirmed](#a-binding-that-is-not-confirmed).
 
 Described on its own page: [Balancing](Balance.md).
 
+The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
+vibration, 0.35 g mass to add) until a sensor is fitted. The MODELLED pill and
+the words "Not measured." stand under the readings, 20 px high and 88 px wide.
+The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
+
 ## Screens that are not ready
 
 A tile marked SOON names what the screen will do and the part or decision it

@@ -397,6 +397,45 @@ TEST_CASE(a_current_that_stays_high_is_reported_once)
     CHECK_EQ(stuck, 1);
 }
 
+/* A pulse that ends on tick 0 has ended.  Counting restarted while the line
+ * has been quiet since that fall takes the gap already heard as quiet: the
+ * wait for a quiet gap (700 ms) ends 700 ms after the fall, not after the
+ * reading that follows it.  The readings before the fall are before the
+ * 32-bit wrap. */
+TEST_CASE(a_pulse_ending_on_tick_zero_starts_the_quiet_at_the_fall)
+{
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    CHECK_EQ(t.group_gap_ms, 700u);
+    esc_det_init(&det, &t, 0u);
+    uint32_t at = 0u - 21u * 50u;
+    (void)esc_det_reading(&det, at, 150, false);
+    esc_det_count(&det);
+    for (int i = 0; i < 15; ++i) {
+        at += 50u;
+        (void)esc_det_reading(&det, at, 150, false);
+    }
+    for (int i = 0; i < 5; ++i) {
+        at += 50u;
+        (void)esc_det_reading(&det, at, 750, false);
+    }
+    at += 50u;
+    CHECK_EQ(at, 0u);                       /* the first low reading */
+    CHECK_EQ(esc_det_reading(&det, at, 150, false), ESC_DET_PULSE);
+    CHECK_EQ(det.fall_ms, 0u);
+    esc_det_count(&det);
+    CHECK(det.quiet_known);
+    CHECK_EQ(det.quiet_from, 0u);
+    for (int i = 0; i < 13; ++i) {
+        at += 50u;
+        (void)esc_det_reading(&det, at, 150, false);
+    }
+    CHECK(det.wait_quiet);                  /* 650 ms after the fall */
+    at += 50u;
+    (void)esc_det_reading(&det, at, 150, false);
+    CHECK(!det.wait_quiet);                 /* 700 ms after it */
+}
+
 /* The floor while the ESC starts is the lowest current seen, so a tone in
  * the entry does not lift it. */
 TEST_CASE(the_floor_is_the_lowest_current_before_counting)
@@ -3317,6 +3356,7 @@ int main(void)
     RUN(pulses_and_gaps_outside_their_lengths_spoil_the_group);
     RUN(hysteresis_holds_a_beep_through_a_dip);
     RUN(a_current_that_stays_high_is_reported_once);
+    RUN(a_pulse_ending_on_tick_zero_starts_the_quiet_at_the_fall);
     RUN(the_floor_is_the_lowest_current_before_counting);
     RUN(the_profiles_the_engine_runs_are_the_counted_menus);
     RUN(a_run_that_cannot_work_is_refused_before_it_starts);
