@@ -601,7 +601,7 @@ static const row_t *row_at(int page, int row, int col)
             return &k_rows[i];
         }
     }
-    return &k_rows[0];
+    return NULL;
 }
 
 gfx_rect_t kst_panel_tab_rect(int page)
@@ -617,12 +617,16 @@ gfx_rect_t kst_panel_close_rect(void)
 
 gfx_rect_t kst_panel_value_rect(int page, int row, int col)
 {
-    return value_rect(row_at(page, row, col));
+    const row_t *r = row_at(page, row, col);
+
+    return r != NULL ? value_rect(r) : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t kst_panel_step_rect(int page, int row, bool up)
 {
-    return step_rect(row_at(page, row, 0), up);
+    const row_t *r = row_at(page, row, 0);
+
+    return r != NULL ? step_rect(r, up) : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t kst_panel_choice_rect(int i)
@@ -686,7 +690,9 @@ int kst_panel_warning_level(int i)
 
 const char *kst_panel_label(int page, int row, int col)
 {
-    return row_label(row_at(page, row, col));
+    const row_t *r = row_at(page, row, col);
+
+    return r != NULL ? row_label(r) : NULL;
 }
 
 const char *kst_panel_choice_title(void)

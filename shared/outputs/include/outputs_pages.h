@@ -115,6 +115,13 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
 void    outputs_chan_cfg_apply(outputs_t *o, const uint16_t *regs);
 
 /**
+ * The CHAN_CFG page @p saved, kept in flash, into @p regs at start.  A slew
+ * above LINK_CC_SLEW_MAX, which no write takes, becomes LINK_CC_SLEW_MAX;
+ * every other register is copied as kept.  Nothing without both.
+ */
+void    outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved);
+
+/**
  * Give every channel @p regs marks as a throttle the endpoints @p min_us and
  * @p max_us, and leave every other channel as it is.
  *
