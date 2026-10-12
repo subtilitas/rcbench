@@ -1289,8 +1289,8 @@ TEST_CASE(an_abort_whose_status_read_goes_unanswered_ends_as_no_answer)
     CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
     until_cmds(1);
     kst_link_abort(&g_k);
-    /* The command and two status reads unanswered: KST_LINK_RETRIES. */
-    g_lose_any = 2;
+    /* The status read that decides unanswered KST_LINK_RETRIES times. */
+    g_lose_any = 3;
     out = outcome();
     CHECK_EQ(out.kind, KST_LINK_OUT_NO_ANSWER);
     CHECK_EQ(out.op, LINK_KST_OP_WRITE);
@@ -1307,6 +1307,52 @@ TEST_CASE(an_abort_whose_status_read_goes_unanswered_ends_as_no_answer)
     run_ms(500);
     CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 1);
     CHECK_EQ(g_sim.n_writes, 0);
+    conduct();
+}
+
+TEST_CASE(the_deciding_status_read_has_its_own_tries)
+{
+    kst_link_request_t r;
+    kst_link_outcome_t out;
+
+    /* The command goes twice unanswered, then the abort: two unanswered
+     * reads after it are not the end, the third answers. */
+    up();
+    r = small_write();
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 2;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(2);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_SENDING);
+    kst_link_abort(&g_k);
+    g_lose_any = 2;
+    out = outcome();
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK(!out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 2);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+
+    /* The abort comes while the command is on its way for the third
+     * time and that try goes unanswered too: the page is read before the
+     * outcome. */
+    g_cmds = 0;
+    memset(g_op_cmds, 0, sizeof(g_op_cmds));
+    g_lose_cmd = 3;
+    CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
+    until_cmds(2);
+    g_abort_in_flight = true;
+    out = outcome();
+    CHECK(!g_abort_in_flight);
+    CHECK_EQ(out.kind, KST_LINK_OUT_DROPPED);
+    CHECK(!out.taken);
+    run_ms(500);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_WRITE], 3);
+    CHECK_EQ(g_op_cmds[LINK_KST_OP_ABORT], 1);
+    CHECK_EQ(g_sim.n_writes, 0);
+    CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     conduct();
 }
 
@@ -2300,6 +2346,7 @@ int main(void)
     RUN(an_abort_after_a_lost_command_frame_sends_it_no_more);
     RUN(an_abort_after_the_silence_latch_drops_the_command_unrefused);
     RUN(an_abort_whose_status_read_goes_unanswered_ends_as_no_answer);
+    RUN(the_deciding_status_read_has_its_own_tries);
     RUN(an_abort_at_every_state_of_a_request_sends_its_command_once_at_most);
     RUN(a_leave_sends_its_wait_and_then_the_command);
     RUN(a_leave_with_a_wait_above_10_000_ms_sends_nothing);

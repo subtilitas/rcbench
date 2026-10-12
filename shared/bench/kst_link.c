@@ -247,11 +247,13 @@ kst_link_start_t kst_link_fetch(kst_link_t *k)
 }
 
 /* The request's command went and no answer came: it is not sent again.
- * Whether the page took it, the next status read says (on_status()). */
+ * Whether the page took it, the next status read says (on_status()).  That
+ * read has KST_LINK_RETRIES tries of its own. */
 static void cmd_in_doubt(kst_link_t *k)
 {
     k->cmd_live = false;
     k->cmd_doubt = true;
+    k->tries = 0;
 }
 
 void kst_link_abort(kst_link_t *k)
@@ -509,7 +511,12 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             && result != (int)LINK_NACK_BAD_PAGE)) {
         /* A status read refused for another reason than "no such page"
          * says nothing about the page: it is asked again. */
-        if (++k->tries >= KST_LINK_RETRIES) {
+        if (kind == X_CMD && !k->cmd_abort && k->abort_wanted
+            && k->active) {
+            /* An abort came while the command was on its way, on any of
+             * its tries. */
+            cmd_in_doubt(k);
+        } else if (++k->tries >= KST_LINK_RETRIES) {
             /* Given up: what the page holds is read again before
              * anything else is sent. */
             k->tries = 0;
@@ -518,10 +525,6 @@ void kst_link_done(kst_link_t *k, int result, const uint16_t *regs)
             k->cmd_abort = false;
             finish(k, KST_LINK_OUT_NO_ANSWER, 0u);
             k->phase = (uint8_t)KST_LINK_SYNC;
-        } else if (kind == X_CMD && !k->cmd_abort && k->abort_wanted
-                   && k->active) {
-            /* An abort came while the command was on its way. */
-            cmd_in_doubt(k);
         }
         return;
     }
