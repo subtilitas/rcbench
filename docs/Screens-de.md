@@ -784,14 +784,22 @@ ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
 einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
 wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
 `ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
-Koprozessor für den Programmierport meldet, und die Ausgänge an den
-SERVO-PWM-Pins führen keinen Puls. Ein Port als Ziel ohne nutzbaren Pin
-(keiner, beim Start abgelehnt, oder ein Port, den der Koprozessor nicht hat)
-lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
-trotzdem an den Port. Die Zeile folgt dem Ziel, das der Koprozessor hält,
-nicht der Einstellung: eine Änderung von PWM-ZIEL wartet auf einen ruhigen
-Prüfstand und erscheint in der Zeile, sobald der Koprozessor sie übernommen
-hat.
+Koprozessor für den Programmierport meldet. Die Befehle des Testers
+erreichen dann die SERVO-PWM-Ausgänge nicht; bei scharf geschalteter Bank
+halten diese ihren Ruhepuls, die Mitte zwischen ihren Endpunkten. Ein Port
+als Ziel ohne nutzbaren Pin (keiner, beim Start abgelehnt, oder ein Port,
+den der Koprozessor nicht hat) lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
+trotzdem an den Port. Mit PORT-PWM aus gibt der Port keinen Puls aus, und
+die Zeile hängt `PWM AUS` an: `ZIEL: PROG-PORT GP13 PWM AUS`. Zwei Zustände
+nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der Tester
+einen Befehl: `ZIEL: KEIN LINK`, solange kein Koprozessor antwortet, und
+`ZIEL: UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit
+dem Linkaufbau nicht gelesen wurde oder ein Schreiben auf sie nicht
+bestätigt wurde. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
+diese Seite (Protokoll älter als 4.13) hat die Standardausgänge als Ziel.
+Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung:
+eine Änderung von PWM-ZIEL wartet auf einen ruhigen Prüfstand und erscheint
+in der Zeile, sobald der Koprozessor sie übernommen hat.
 
 ![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
 

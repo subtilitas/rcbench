@@ -5717,38 +5717,54 @@ static void target_box(gfx_color_t *out)
 /* One state of the target line. */
 typedef struct {
     int      target;        /* SET_SERVO_TARGET */
-    uint8_t  drive;         /* the drive's target: 0, or 1 + n for port n */
+    uint8_t  drive;         /* the drive's target: 0, 1 + n for port n,
+                               SERVO_SCREEN_TARGET_UNKNOWN or _NO_LINK */
     uint64_t pins;          /* GPIOs bound as SERVO PWM */
     bool     known;
     uint8_t  prog_pin;
+    bool     pwm;           /* the port renders its pulse */
     bool     warn;          /* the warning colour */
 } tgt_state_t;
 
 #define PIN(n) ((uint64_t)1u << (n))
 #define PINS_40_47 (0xFFull << 40)
+#define T_UNKNOWN SERVO_SCREEN_TARGET_UNKNOWN
+#define T_NO_LINK SERVO_SCREEN_TARGET_NO_LINK
 
 static const tgt_state_t k_tgt[] = {
-    { 0, 0, PIN(2),                              true,  0xFFu, false },
-    { 0, 0, PIN(4),                              true,  0xFFu, false },
-    { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false },
-    { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false },
-    { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false },
-    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true, 0xFFu, false },
-    { 0, 0, PINS_40_47,                          true,  0xFFu, false },
-    { 0, 0, 0,                                   true,  0xFFu, true  },
-    { 0, 0, 0,                                   false, 0xFFu, true  },
-    { 1, 1, PIN(2),                              true,  0xFFu, true  },
-    { 1, 1, PIN(2),                              true,  13u,   true  },
+    { 0, 0, PIN(2),                              true,  0xFFu, false, false },
+    { 0, 0, PIN(4),                              true,  0xFFu, false, false },
+    { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false, false },
+    { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false, false },
+    { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false, false },
+    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true, 0xFFu, false,
+      false },
+    { 0, 0, PINS_40_47,                          true,  0xFFu, false, false },
+    { 0, 0, 0,                                   true,  0xFFu, false, true  },
+    { 0, 0, 0,                                   false, 0xFFu, false, true  },
+    { 1, 1, PIN(2),                              true,  0xFFu, true,  true  },
+    { 1, 1, PIN(2),                              true,  13u,   true,  true  },
+    /* The port's pulse off: the longest lines, with a two-digit pin. */
+    { 1, 1, PIN(2),                              true,  63u,   false, true  },
+    { 1, 1, PIN(2),                              true,  0xFFu, false, true  },
+    /* Not known and no link, with GP2 bound: the tester sends nothing. */
+    { 1, T_UNKNOWN, PIN(2),                      true,  0xFFu, false, true  },
+    { 1, T_NO_LINK, PIN(2),                      true,  0xFFu, false, true  },
 };
 #define TGT_N ((int)(sizeof(k_tgt) / sizeof(k_tgt[0])))
 #define TGT_NONE   7        /* k_tgt: no SERVO PWM pin */
 #define TGT_PORT   9        /* k_tgt: the port, its pin not known */
+#define TGT_PORT_PIN 10     /* k_tgt: the port on GP13, its pulse on */
+#define TGT_UNKNOWN 13      /* k_tgt: the target not known */
+#define TGT_NO_LINK 14      /* k_tgt: no link */
 
 /* The active PWM target is on the SERVO screen in both languages: the pins
  * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and the
- * warning colour for the port, for no pin and for a binding not read.  Every
- * state reads differently, and no line reaches the edges of its box: the
- * longest are 4 two-digit pins and 3 two-digit pins with a count. */
+ * warning colour for the port, for no pin, for a binding not read, for a
+ * target not known and for no link.  Every state reads differently, and no
+ * line reaches the edges of its box: the longest are 4 two-digit pins, 3
+ * two-digit pins with a count, and the port on a two-digit pin with its
+ * pulse off. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -5762,7 +5778,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
             ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
             settings_set(SET_SERVO_TARGET, (float)st->target);
             servo_screen_set_pins(st->pins, st->known);
-            servo_screen_set_drive(st->drive, st->prog_pin);
+            servo_screen_set_drive(st->drive, st->prog_pin, st->pwm);
             scr->render(&cv, 0);
             gfx_color_t *bx = box[lang * TGT_N + i];
             target_box(bx);
@@ -5790,7 +5806,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     fresh();
     servo_screen_set_pins(PIN(2), true);
     scr->render(&cv, 0);
-    gfx_color_t *a = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+    static gfx_color_t a[TGT_W * TGT_H];
     target_box(a);
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
@@ -5800,16 +5816,15 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     scr->render(&cv, 0);
     target_box(box[0]);
     CHECK_EQ(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
-    free(a);
 
     /* The line follows the drive, not the setting.  PROG PORT chosen while
      * the drive still uses the outputs shows the pins the outputs carry, as
      * GP2 does; with no such pin it is the warning, as no pin does. */
-    gfx_color_t *d = malloc(TGT_W * TGT_H * sizeof(gfx_color_t));
+    static gfx_color_t d[TGT_W * TGT_H];
     fresh();
     settings_set(SET_SERVO_TARGET, 1.0f);
     servo_screen_set_pins(PIN(2), true);
-    servo_screen_set_drive(0u, 13u);
+    servo_screen_set_drive(0u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
     CHECK_EQ(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
@@ -5822,84 +5837,129 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     fresh();
     settings_set(SET_SERVO_TARGET, 0.0f);
     servo_screen_set_pins(PIN(2), true);
-    servo_screen_set_drive(1u, 13u);
+    servo_screen_set_drive(1u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
-    CHECK_EQ(memcmp(d, box[TGT_N - 1], TGT_W * TGT_H * sizeof(gfx_color_t)),
+    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     /* The port driven with no pin known (none, refused, or a port the page
      * does not have): still the port, not the GP2 the outputs carry. */
-    servo_screen_set_drive(1u, SERVO_SCREEN_NO_PIN);
+    servo_screen_set_drive(1u, SERVO_SCREEN_NO_PIN, true);
     scr->render(&cv, 0);
     target_box(d);
     CHECK_EQ(memcmp(d, box[TGT_PORT], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     CHECK(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
-    free(d);
+    /* The link lost with the binding still held: no link, not the GP2 the
+     * outputs carry; then the page not known after the link comes back;
+     * then the outputs once it is read. */
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, 13u, true);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[TGT_NO_LINK], TGT_W * TGT_H * sizeof(gfx_color_t)),
+             0);
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[TGT_UNKNOWN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+             0);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
     for (int i = 0; i < 2 * TGT_N; ++i) {
         free(box[i]);
     }
 }
 
 /* One line of text and its colour for a drive and a set of pins. */
-static void check_line(uint8_t target, uint8_t gpio, uint64_t pins,
+static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
                        bool known, const char *want, bool warn)
 {
     char line[40];
     memset(line, 'x', sizeof(line));
-    CHECK_EQ(servo_target_line(line, sizeof(line), target, gpio, pins, known),
+    CHECK_EQ(servo_target_line(line, sizeof(line), target, gpio, pwm, pins,
+                               known),
              warn);
     CHECK_STR_EQ(line, want);
 }
 
 /* The target line's text: up to 4 pins named, from 5 the first 3 and the
- * count of the rest, the port with its pin or without, in both languages. */
+ * count of the rest, the port with its pin or without and with its pulse on
+ * or off, the target not known and no link, in both languages. */
 TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PIN(2), true, "TARGET: GP2", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PIN(2) | PIN(4) | PIN(5), true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "TARGET: GP2",
+               false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
                "TARGET: GP2 GP4 GP5", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(12) | PIN(13) | PIN(14) | PIN(15), true,
                "TARGET: GP12 GP13 GP14 GP15", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
                "TARGET: GP2 GP4 GP5 +2", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PINS_40_47, true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
                "TARGET: GP40 GP41 GP42 +5", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, ~0ull, true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
                "TARGET: GP0 GP1 GP2 +61", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PIN(63), true, "TARGET: GP63",
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "TARGET: GP63",
                false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, 0u, true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "TARGET: NO SERVO PWM PIN", true);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PIN(2), false,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), false,
                "TARGET: PINS NOT READ", true);
     /* With the outputs as target a port pin names nothing. */
-    check_line(0u, 13u, PIN(2), true, "TARGET: GP2", false);
+    check_line(0u, 13u, false, PIN(2), true, "TARGET: GP2", false);
     /* A port target is the port, its pin known or not, pins bound or not. */
-    check_line(1u, 13u, PIN(2), true, "TARGET: PROG PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, PIN(2), true, "TARGET: PROG PORT",
+    check_line(1u, 13u, true, PIN(2), true, "TARGET: PROG PORT GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true,
+               "TARGET: PROG PORT", true);
+    check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "TARGET: PROG PORT",
                true);
-    check_line(2u, SERVO_SCREEN_NO_PIN, 0u, false, "TARGET: PROG PORT",
-               true);
+    /* The pulse off: the port is still the target, and renders nothing.
+     * GP63 is the longest, 30 of the 34 cells the box holds. */
+    check_line(1u, 13u, false, PIN(2), true,
+               "TARGET: PROG PORT GP13 PWM OFF", true);
+    check_line(1u, 63u, false, PIN(2), true,
+               "TARGET: PROG PORT GP63 PWM OFF", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
+               "TARGET: PROG PORT PWM OFF", true);
+    /* Not known and no link name no pin and no port, pins bound or not;
+     * a pin and a pulse passed with them are ignored. */
+    check_line(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, PIN(2), true,
+               "TARGET: NOT KNOWN", true);
+    check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false, 0u,
+               false, "TARGET: NOT KNOWN", true);
+    check_line(SERVO_SCREEN_TARGET_NO_LINK, 13u, true, PIN(2), true,
+               "TARGET: NO LINK", true);
+    check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false, 0u,
+               false, "TARGET: NO LINK", true);
     ui_text_set_language(UI_LANG_DE);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PIN(2) | PIN(4) | PIN(5), true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
                "ZIEL: GP2 GP4 GP5", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, PINS_40_47, true,
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
                "ZIEL: GP40 GP41 GP42 +5", false);
-    check_line(1u, 13u, PIN(2), true, "ZIEL: PROG-PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, PIN(2), true, "ZIEL: PROG-PORT",
+    check_line(1u, 13u, true, PIN(2), true, "ZIEL: PROG-PORT GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "ZIEL: PROG-PORT",
                true);
+    check_line(1u, 63u, false, PIN(2), true, "ZIEL: PROG-PORT GP63 PWM AUS",
+               true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
+               "ZIEL: PROG-PORT PWM AUS", true);
+    check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false,
+               PIN(2), true, "ZIEL: UNBEKANNT", true);
+    check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false,
+               PIN(2), true, "ZIEL: KEIN LINK", true);
     ui_text_set_language(UI_LANG_EN);
     /* A short buffer is cut, not overrun; none is no line. */
     char small[8];
     memset(small, 'x', sizeof(small));
-    CHECK(servo_target_line(small, sizeof(small), 1u, 13u, 0u, true));
+    CHECK(servo_target_line(small, sizeof(small), 1u, 13u, true, 0u, true));
     CHECK_STR_EQ(small, "TARGET:");
-    CHECK(!servo_target_line(NULL, 8u, 1u, 13u, 0u, true));
-    CHECK(!servo_target_line(small, 0u, 1u, 13u, 0u, true));
+    CHECK(!servo_target_line(NULL, 8u, 1u, 13u, true, 0u, true));
+    CHECK(!servo_target_line(small, 0u, 1u, 13u, true, 0u, true));
     CHECK_STR_EQ(small, "TARGET:");
 }
 

@@ -370,12 +370,20 @@ void servo_screen_set_enc_held(bool held);
 
 /** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu
+/** The target servo_screen_set_drive() takes while the coprocessor's page
+ *  is there and not known: the tester sends no command. */
+#define SERVO_SCREEN_TARGET_UNKNOWN 0xFEu
+/** The target servo_screen_set_drive() takes with no coprocessor
+ *  answering. */
+#define SERVO_SCREEN_TARGET_NO_LINK 0xFFu
 
 /** Where the tester's commands go now (prog_link_drive()): @p target 0 for
- *  the standard outputs or 1 + n for programming port n, and @p gpio that
- *  port's GPIO or SERVO_SCREEN_NO_PIN.  The target line follows it, not the
- *  PWM TARGET setting.  @p gpio is ignored with target 0. */
-void servo_screen_set_drive(uint8_t target, uint8_t gpio);
+ *  the standard outputs, 1 + n for programming port n,
+ *  SERVO_SCREEN_TARGET_UNKNOWN or SERVO_SCREEN_TARGET_NO_LINK; @p gpio that
+ *  port's GPIO or SERVO_SCREEN_NO_PIN, and @p pwm whether the port renders
+ *  its pulse.  The target line follows it, not the PWM TARGET setting.
+ *  @p gpio and @p pwm are ignored without a port target. */
+void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
 /** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
  *  the tester drives, and whether a binding has been read.  The target line
@@ -385,14 +393,16 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
  * The target line's text in the current language, into @p out of @p size
- * bytes, for the drive @p target / @p gpio (as servo_screen_set_drive()) and
- * the SERVO PWM pins @p pins / @p known (as servo_screen_set_pins()).
- * Returns whether the line takes the warning colour: a port target, no
- * SERVO PWM pin, or no binding read.  A port target reads
- * "TARGET: PROG PORT GPn", or "TARGET: PROG PORT" without a known pin.
+ * bytes, for the drive @p target / @p gpio / @p pwm (as
+ * servo_screen_set_drive()) and the SERVO PWM pins @p pins / @p known (as
+ * servo_screen_set_pins()).  Returns whether the line takes the warning
+ * colour: a port target, no SERVO PWM pin, no binding read, the target not
+ * known, or no link.  A port target reads "TARGET: PROG PORT GPn", or
+ * "TARGET: PROG PORT" without a known pin, each with " PWM OFF" after it
+ * while the port renders no pulse.
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
-                       uint64_t pins, bool known);
+                       bool pwm, uint64_t pins, bool known);
 
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */

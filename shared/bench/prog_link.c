@@ -20,6 +20,7 @@ void prog_link_came_up(prog_link_t *p, uint16_t minor)
     if (p == NULL) {
         return;
     }
+    p->up        = true;
     p->page      = minor >= LINK_MINOR_PROG;
     p->known     = false;
     p->read_once = false;
@@ -30,6 +31,7 @@ void prog_link_lost(prog_link_t *p)
     if (p == NULL) {
         return;
     }
+    p->up        = false;
     p->page      = false;
     p->known     = false;
     p->read_once = false;
@@ -233,10 +235,22 @@ uint8_t prog_link_pin(const prog_link_t *p, uint8_t port)
 
 prog_link_drive_t prog_link_drive(const prog_link_t *p)
 {
-    prog_link_drive_t d = { prog_link_target(p), PROG_LINK_NO_PIN };
+    prog_link_drive_t d = { 0u, PROG_LINK_NO_PIN, false };
 
-    if (d.target != 0u) {
-        d.pin = prog_link_pin(p, (uint8_t)(d.target - 1u));
+    if (p == NULL) {
+        return d;
+    }
+    if (!p->up) {
+        d.target = PROG_LINK_TARGET_NO_LINK;
+    } else if (!prog_link_ready(p)) {
+        /* The gate prog_link_command() takes first. */
+        d.target = PROG_LINK_TARGET_UNKNOWN;
+    } else {
+        d.target = prog_link_target(p);
+        if (d.target != 0u) {
+            d.pin = prog_link_pin(p, (uint8_t)(d.target - 1u));
+            d.pwm = prog_link_pwm(p);
+        }
     }
     return d;
 }

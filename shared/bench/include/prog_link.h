@@ -45,10 +45,16 @@ extern "C" {
 #define PROG_LINK_POLL_MS 500u
 /** What prog_link_pin() returns for a port without a pin. */
 #define PROG_LINK_NO_PIN 0xFFu
+/** prog_link_drive()'s target while the page is there and not known: where
+ *  the commands would go is not known, and the tester sends none. */
+#define PROG_LINK_TARGET_UNKNOWN 0xFEu
+/** prog_link_drive()'s target with no coprocessor answering. */
+#define PROG_LINK_TARGET_NO_LINK 0xFFu
 /** The registers prog_link_cfg() fills: SLEW, MIN_US, MAX_US of a port. */
 #define PROG_LINK_CFG_REGS 3u
 
 typedef struct {
+    bool     up;                   /**< a coprocessor answers              */
     bool     page;                 /**< the coprocessor has the page       */
     bool     known;                /**< regs holds a read of it            */
     bool     read_once;            /**< read_ms is a time                  */
@@ -65,14 +71,14 @@ typedef struct {
     uint16_t value;
 } prog_link_write_t;
 
-/** No page, nothing wanted. */
+/** No link, no page, nothing wanted. */
 void prog_link_init(prog_link_t *p);
 
 /** A coprocessor answered with protocol minor @p minor.  What is wanted
  *  stays; the page is unknown. */
 void prog_link_came_up(prog_link_t *p, uint16_t minor);
 
-/** The link is down: no page. */
+/** The link is down: no page, no link. */
 void prog_link_lost(prog_link_t *p);
 
 /** What the screen wants: @p target 0 for the standard outputs or 1 + n for
@@ -161,20 +167,34 @@ bool prog_link_pwm(const prog_link_t *p);
  *  read, no such port, no pin, or a pin the coprocessor refused. */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);
 
-/** What the tester drives: the target and, with a port, its pin. */
+/** What the tester drives: the target, and with a port its pin and pulse. */
 typedef struct {
-    uint8_t target;     /**< prog_link_target(): 0, or 1 + n for port n */
+    uint8_t target;     /**< prog_link_target(): 0, or 1 + n for port n;
+                             PROG_LINK_TARGET_UNKNOWN or
+                             PROG_LINK_TARGET_NO_LINK                    */
     uint8_t pin;        /**< that port's prog_link_pin(), else
                              PROG_LINK_NO_PIN                            */
+    bool    pwm;        /**< that port renders its pulse (prog_link_pwm()) */
 } prog_link_drive_t;
 
 /**
  * Where the tester's commands go now, for the SERVO screen's target line.
- * The target is prog_link_target(), the one the commands use; the pin is
- * the target port's GPIO, or PROG_LINK_NO_PIN with the standard outputs as
- * target or a port without a usable pin (none, refused, or a port the page
- * does not have).  A port target without a pin stays a port target: the
- * commands still go to the port and the outputs get no pulse.
+ *
+ * PROG_LINK_TARGET_NO_LINK with no coprocessor answering (before the first
+ * prog_link_came_up() and after prog_link_lost()), PROG_LINK_TARGET_UNKNOWN
+ * while the page is there and not known (not read yet, a read not
+ * answered, a write not acknowledged).  The tester sends no command in
+ * either: nothing crosses a link that is down, and prog_link_command() is
+ * false while the page is not known.  A coprocessor without the page has
+ * target 0.
+ *
+ * Otherwise the target is prog_link_target(), the one the commands use; the
+ * pin is the target port's GPIO, or PROG_LINK_NO_PIN with the standard
+ * outputs as target or a port without a usable pin (none, refused, or a
+ * port the page does not have); pwm is prog_link_pwm(), false with target
+ * 0.  A port target without a pin stays a port target: the commands still
+ * go to the port and do not reach the SERVO PWM outputs, which an armed
+ * bank holds at their rest, the centre between their endpoints.
  */
 prog_link_drive_t prog_link_drive(const prog_link_t *p);
 
