@@ -19,6 +19,7 @@
 #include "kst_panel.h"
 #include "kst_reg.h"
 #include "kst_rig.h"
+#include "pdmini.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -920,8 +921,8 @@ TEST_CASE(a_supply_that_cannot_give_the_voltage_is_refused_by_name)
         fresh();
         ui_text_set_language((ui_lang_t)lang);
         g_rig.rail = true;
-        /* A 5.4 V source: 5.0 V out is 100 mV too much. */
-        g_rig.vin_mv = 5400u;
+        /* A 5.5 V source: 5.0 V out is 200 mV over its cap, 4.8 V. */
+        g_rig.vin_mv = 4800u + PDMINI_CAP_MV;
         link_up();
         tap(val(PG_SERVO, 0, 0));
         settle();

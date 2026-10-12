@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "skipLibCheck": true
   },
-  "include": ["*.ts", "tools/*.ts", "test/*.ts", "../contract.ts"]
+  "include": ["*.ts", "tools/*.ts", "test/*.ts", "../contract.ts", "../release.ts"]
 }

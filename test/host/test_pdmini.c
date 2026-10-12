@@ -1142,7 +1142,7 @@ TEST_CASE(an_unanswered_input_read_is_given_up)
     }
     pdmini_want(&d, false, 8000u, 1000u);
     run(1500u, false);
-    CHECK_EQ(m.mv[0], 4380u);                 /* 4885 - 500, rounded down */
+    CHECK_EQ(m.mv[0], 4180u);                 /* 4885 - 700, rounded down */
 }
 
 /* The same module, on, goes quiet, answers again and goes quiet again: the
@@ -1359,7 +1359,7 @@ TEST_CASE(an_output_the_module_switched_off_stays_off)
 }
 
 /* Fed 4.88 V and asked for 5.88 V: the module is given no more than its
- * input less the headroom, and comes on at that. */
+ * input less PDMINI_CAP_MV, and comes on at that. */
 TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
 {
     fresh();
@@ -1367,9 +1367,9 @@ TEST_CASE(a_set_point_over_the_input_is_kept_under_it)
     pdmini_want(&d, true, 5880u, 1000u);      /* asked before anything read */
     run(3000u, false);
     CHECK_EQ(m.data_writes, 1u);              /* one write, already capped */
-    CHECK_EQ(m.mv[0], 4880u - PDMINI_HEADROOM_MV);
+    CHECK_EQ(m.mv[0], 4880u - PDMINI_CAP_MV);
     CHECK(m.output);
-    CHECK_EQ(m.on_at_mv, 4880u - PDMINI_HEADROOM_MV);
+    CHECK_EQ(m.on_at_mv, 4880u - PDMINI_CAP_MV);
     CHECK(!pdmini_status(&d)->set_stuck);
     /* Under the cap, the set point is the one asked. */
     pdmini_want(&d, true, 3300u, 1000u);
@@ -1438,7 +1438,7 @@ TEST_CASE(a_dragged_slider_does_not_starve_the_input)
     CHECK(m.reads[PDMINI_READ_INPUT] >= inputs + 3u);
     pdmini_want(&d, false, 7000u, 1000u);
     run(1500u, false);
-    CHECK_EQ(m.mv[0], 5000u - PDMINI_HEADROOM_MV);
+    CHECK_EQ(m.mv[0], 5000u - PDMINI_CAP_MV);
 }
 
 /* An ON after a pause is judged on a fresh input: the source sagged since
@@ -1455,7 +1455,7 @@ TEST_CASE(an_on_after_a_pause_reads_the_input_first)
     d.last_input = now - PDMINI_STATE_MS;     /* the reading is due */
     pdmini_want(&d, true, 8000u, 1000u);
     run(2000u, false);
-    CHECK_EQ(m.on_at_mv, 6000u - PDMINI_HEADROOM_MV);
+    CHECK_EQ(m.on_at_mv, 6000u - PDMINI_CAP_MV);
 }
 
 /* A restart waits for the output to be off, goes alone, and the module is
@@ -1774,6 +1774,200 @@ TEST_CASE(an_unknown_input_switches_nothing_off)
     CHECK(!pdmini_status(&d)->sagged);
 }
 
+/* On at the cap: 20000 mV asked from a 19990 mV input gives 19290 mV,
+ * PDMINI_CAP_MV under it on the 10 mV grid.  The cut line is 19790 mV. */
+static void on_at_cap(void)
+{
+    fresh();
+    m.input_mv = 19990u;
+    pdmini_want(&d, true, 20000u, 1000u);
+    run(3000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.mv[0], 19290u);
+}
+
+/* A 10 mV dip on the input readings at the cap is not a sag: the output
+ * stays on. */
+TEST_CASE(a_10_mv_dip_at_the_cap_leaves_the_output_on)
+{
+    on_at_cap();
+    m.input_mv = 19980u;
+    input_reads(4u);
+    run(600u, false);
+    CHECK(m.output);
+    CHECK(!pdmini_status(&d)->sagged);
+    CHECK_EQ(m.mv[0], 19290u);                 /* not lowered either */
+}
+
+/* The cut line at the cap, exactly and 1 mV over: on; 1 mV under, on
+ * PDMINI_SAG_READS readings, off within PDMINI_SAG_READS input periods and
+ * one transaction of the input falling. */
+TEST_CASE(a_sag_at_the_cap_cuts_only_under_the_line)
+{
+    static const uint16_t kept[2] = {
+        19290u + PDMINI_HEADROOM_MV, 19290u + PDMINI_HEADROOM_MV + 1u,
+    };
+    for (unsigned k = 0; k < 2u; ++k) {
+        on_at_cap();
+        m.input_mv = kept[k];
+        input_reads(4u);
+        run(600u, false);
+        CHECK(m.output);
+        CHECK(!pdmini_status(&d)->sagged);
+    }
+    on_at_cap();
+    m.input_mv = 19290u + PDMINI_HEADROOM_MV - 1u;
+    const uint32_t t0 = now;
+    while (m.output && (uint32_t)(now - t0) < 5000u) {
+        run(1u, false);
+    }
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->sagged);
+    CHECK((uint32_t)(now - t0)
+          <= PDMINI_SAG_READS * PDMINI_STATE_MS + PDMINI_TXN_MS);
+}
+
+/* The set point given for @p want mV from an input reading @p vin mV, the
+ * output off. */
+static uint16_t set_from(uint16_t vin, uint16_t want)
+{
+    fresh();
+    m.input_mv = vin;
+    pdmini_want(&d, false, want, 1000u);
+    run(1500u, false);
+    return m.mv[0];
+}
+
+/* The cap: PDMINI_CAP_MV under the input, rounded down to 10 mV, and no
+ * lower than PDMINI_V_MIN_MV, however low the input reads. */
+TEST_CASE(the_cap_holds_at_its_line_and_its_floor)
+{
+    CHECK_EQ(set_from(6000u + PDMINI_CAP_MV - 1u, 6000u), 5990u);
+    CHECK_EQ(set_from(6000u + PDMINI_CAP_MV, 6000u), 6000u);
+    CHECK_EQ(set_from(6000u + PDMINI_CAP_MV + 1u, 6000u), 6000u);
+    CHECK_EQ(set_from(PDMINI_V_MIN_MV + PDMINI_CAP_MV + 10u, 6000u), 1010u);
+    CHECK_EQ(set_from(PDMINI_V_MIN_MV + PDMINI_CAP_MV + 9u, 6000u), 1000u);
+    CHECK_EQ(set_from(PDMINI_V_MIN_MV + PDMINI_CAP_MV + 1u, 6000u), 1000u);
+    CHECK_EQ(set_from(PDMINI_V_MIN_MV + PDMINI_CAP_MV, 6000u), 1000u);
+    CHECK_EQ(set_from(PDMINI_V_MIN_MV + PDMINI_CAP_MV - 1u, 6000u), 1000u);
+    CHECK_EQ(set_from(1499u, 20000u), PDMINI_V_MIN_MV);
+    CHECK_EQ(set_from(1u, 20000u), PDMINI_V_MIN_MV);
+}
+
+/* The cap the panel shows is the function the driver writes with: every
+ * edge of the input range, and the set point written for it. */
+TEST_CASE(the_shown_cap_is_the_one_written)
+{
+    static const struct { uint32_t vin, cap; } e[] = {
+        { 0u, 1000u }, { 1u, 1000u }, { 1499u, 1000u }, { 1500u, 1000u },
+        { 1501u, 1000u }, { 1700u, 1000u }, { 1701u, 1000u },
+        { 1709u, 1000u }, { 1710u, 1010u }, { 20700u, 20000u },
+        { 65535u, 20000u },
+    };
+    for (size_t i = 0; i < sizeof e / sizeof e[0]; i++) {
+        CHECK_EQ(pdmini_cap_mv(e[i].vin), e[i].cap);
+        if (e[i].vin != 0u) {
+            CHECK_EQ(set_from(e[i].vin, 20000u), e[i].cap);
+        }
+    }
+}
+
+/* An input under 1500 mV leaves no room for the lowest set point: an ON is
+ * not written, and the output is held off as for a sag until an OFF is
+ * asked.  At 1500 mV and 1 mV over, the ON is written and stays. */
+TEST_CASE(an_on_under_the_line_is_not_written)
+{
+    fresh();
+    m.input_mv = PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV - 1u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(3000u, false);
+    CHECK_EQ(m.mv[0], PDMINI_V_MIN_MV);
+    CHECK_EQ(m.en_writes, 0u);
+    CHECK(!m.output);
+    CHECK(pdmini_status(&d)->sagged);
+    CHECK(!pdmini_may_be_on(&d));
+    for (int k = 0; k < 20; ++k) {             /* ON asked every pass */
+        pdmini_want(&d, true, 5000u, 1000u);
+        run(50u, false);
+    }
+    CHECK_EQ(m.en_writes, 0u);
+    pdmini_want(&d, false, 5000u, 1000u);
+    CHECK(!pdmini_status(&d)->sagged);
+    m.input_mv = 12000u;
+    run(1000u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(2000u, false);
+    CHECK(m.output);
+    CHECK_EQ(m.mv[0], 5000u);
+
+    static const uint16_t room[2] = {
+        PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV,
+        PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV + 1u,
+    };
+    for (unsigned k = 0; k < 2u; ++k) {
+        fresh();
+        m.input_mv = room[k];
+        pdmini_want(&d, true, 5000u, 1000u);
+        run(3000u, false);
+        CHECK(m.output);
+        CHECK_EQ(m.on_at_mv, PDMINI_V_MIN_MV);
+        input_reads(4u);
+        run(600u, false);
+        CHECK(m.output);
+        CHECK(!pdmini_status(&d)->sagged);
+    }
+}
+
+/* An ON stuck on an input not ready, and the input then read under the
+ * line: the output is held off for the input, sagged and no longer stuck,
+ * and no further ON is written. */
+TEST_CASE(a_stuck_on_held_for_the_input_is_no_longer_stuck)
+{
+    fresh();
+    m.input_ok = false;
+    run(100u, false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    run(2000u, false);
+    CHECK(pdmini_status(&d)->stuck);
+    CHECK_EQ(m.en_writes, 4u);
+    m.input_mv = PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV - 1u;
+    unsigned ms = 0u;
+    while (!pdmini_status(&d)->sagged && ms < 3000u) {
+        run(1u, false);
+        ++ms;
+    }
+    CHECK(pdmini_status(&d)->sagged);
+    CHECK(!pdmini_status(&d)->stuck);          /* from the hold on */
+    run(3000u, false);
+    CHECK(pdmini_status(&d)->sagged);
+    CHECK(!pdmini_status(&d)->stuck);
+    CHECK_EQ(m.en_writes, 4u);
+    CHECK(!m.output);
+}
+
+/* who_failed is a count compared for a change: at 65535, the next WHO_AM_I
+ * without an answer takes it to 0, and the SUPPLY page's AUTO scan still
+ * steps to the next rate. */
+TEST_CASE(the_who_failed_count_wraps_and_still_steps_the_scan)
+{
+    fresh();
+    m.powered = false;
+    outputs_init(&po, 0u);
+    supply_page_init(&pg);
+    const uint16_t w[4] = { 1u, 8u, 9u, SUPPLY_BAUD_AUTO };
+    CHECK_EQ(supply_page_write(&pg, LINK_SP_ENABLE, 4u, w, &po, true), 0u);
+    d.who_failed = UINT16_MAX;
+    const uint8_t before = supply_page_rate(&pg, &d);
+    CHECK_EQ(supply_page_rate(&pg, &d), before);    /* no change, no step */
+    const uint32_t t0 = now;
+    while (d.who_failed == UINT16_MAX && (uint32_t)(now - t0) < 3000u) {
+        run(1u, false);
+    }
+    CHECK_EQ(d.who_failed, 0u);
+    CHECK_EQ(supply_page_rate(&pg, &d),
+             (uint8_t)((before + 1u) % SUPPLY_BAUD_COUNT));
+}
+
 /* The output off, or an OFF asked: low readings switch nothing. */
 TEST_CASE(a_sag_under_an_output_not_live_is_not_counted)
 {
@@ -2032,6 +2226,13 @@ int main(void)
     RUN(a_failed_input_read_neither_counts_nor_clears_a_sag);
     RUN(an_unknown_input_switches_nothing_off);
     RUN(a_sag_under_an_output_not_live_is_not_counted);
+    RUN(a_10_mv_dip_at_the_cap_leaves_the_output_on);
+    RUN(a_sag_at_the_cap_cuts_only_under_the_line);
+    RUN(the_cap_holds_at_its_line_and_its_floor);
+    RUN(the_shown_cap_is_the_one_written);
+    RUN(an_on_under_the_line_is_not_written);
+    RUN(a_stuck_on_held_for_the_input_is_no_longer_stuck);
+    RUN(the_who_failed_count_wraps_and_still_steps_the_scan);
     RUN(the_confirming_read_goes_out_250_ms_after_the_write);
     RUN(a_session_is_the_same_wherever_the_tick_wraps_in_it);
     return test_summary("pdmini");

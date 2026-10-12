@@ -1,9 +1,10 @@
 // Chrome strings of the page in English and German. Data strings (part names,
 // roles, notes, checks, safety, stages) come from the catalogue.
 
+import { VERSION } from '../release.ts';
 import type { Lang, SignalClass, Text } from '../contract.ts';
 
-export const RELEASE = '0.17.0';
+export const RELEASE = VERSION;
 
 const S = {
   title: ['rcbench bench configurator', 'rcbench Prüfstand-Konfigurator'],
