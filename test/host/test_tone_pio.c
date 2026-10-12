@@ -105,6 +105,13 @@ static unsigned mov_dst(const char *t)
 /* Split @p line into tokens at spaces and commas; a "[n]" is the delay. */
 static size_t tokens(char *line, char *tok[8], unsigned *delay)
 {
+    /* The places past the last token read as an empty word, so an
+     * instruction missing an operand compares unequal rather than reading
+     * an unset pointer. */
+    static char none[] = "";
+    for (size_t i = 0; i < 8u; ++i) {
+        tok[i] = none;
+    }
     size_t n = 0;
     *delay = 0;
     for (char *p = strtok(line, " \t,\r\n"); p != NULL && n < 8;

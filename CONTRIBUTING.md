@@ -78,10 +78,12 @@ python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
 python3 tools/pinmap_check.py hardware/docs/pinmap.json --sdk "$PICO_SDK_PATH"
 
+mkdir -p /tmp/cppcheck-build
 cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
+         --cppcheck-build-dir=/tmp/cppcheck-build \
          --enable=warning,style,performance,portability \
          --inline-suppr --suppressions-list=.cppcheck-suppress --check-level=exhaustive \
-         -Itest/host \
+         -Itest/host -Ifirmware/iomcu/include \
          $(git ls-files 'shared/**/include/*' 'protocols/**/include/*' \
              | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
          $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' | grep -v -e gfx_font -e /rp2350/) \

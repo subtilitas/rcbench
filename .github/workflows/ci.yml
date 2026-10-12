@@ -258,12 +258,16 @@ jobs:
 
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
+      # A build directory keeps the whole-program checks under -j, which
+      # cppcheck drops without one; test_settings.c includes iomcu_pins.h.
       - name: cppcheck
         run: |
+          mkdir -p "$RUNNER_TEMP/cppcheck"
           cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 --quiet \
+            --cppcheck-build-dir="$RUNNER_TEMP/cppcheck" \
             --enable=warning,style,performance,portability \
             --inline-suppr --suppressions-list=.cppcheck-suppress \
-            --check-level=exhaustive -Itest/host \
+            --check-level=exhaustive -Itest/host -Ifirmware/iomcu/include \
             $(git ls-files 'shared/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             $(git ls-files 'protocols/**/include/*' \

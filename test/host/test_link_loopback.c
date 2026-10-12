@@ -195,7 +195,8 @@ TEST_CASE(the_pieces_may_arrive_in_any_order)
 {
     fresh();
     bus.reverse = true;
-    link_msg_t req, got;
+    link_msg_t req = { 0 };
+    link_msg_t got = { 0 };
     CHECK(link_host_read(&host, LINK_PAGE_BENCH, 0, LINK_BN_COUNT, 0, &req));
     CHECK(exchange(&req, 100, &got));
     for (unsigned i = 0; i < LINK_BN_COUNT; ++i) {
