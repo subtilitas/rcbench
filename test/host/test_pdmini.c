@@ -1867,7 +1867,7 @@ TEST_CASE(the_shown_cap_is_the_one_written)
     for (size_t i = 0; i < sizeof e / sizeof e[0]; i++) {
         CHECK_EQ(pdmini_cap_mv(e[i].vin), e[i].cap);
         if (e[i].vin != 0u) {
-            CHECK_EQ(set_from(e[i].vin, 20000u), e[i].cap);
+            CHECK_EQ(set_from((uint16_t)e[i].vin, 20000u), e[i].cap);
         }
     }
 }
