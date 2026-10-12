@@ -1562,9 +1562,44 @@ TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
     CHECK_EQ(changed(), 1);
 }
 
+/* A frame that stalls is credited 0.25 s and no more: a 1 s stall, before
+ * the delay ends, while the repeat runs at 8 Hz and while it runs at 30 Hz,
+ * steps at most as often as 0.25 s of hold does, plus the step the
+ * crossing of the delay adds. */
+TEST_CASE(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key)
+{
+    gesture_screen(SET_CAT_IFACE);
+    feed_tick_per_report(0.0f);
+    const int y = row_y(row_of(SET_INA3221_MOHM));
+    finger(FEED_LONE, XP, y);
+
+    /* Before the delay: 1 s in one frame is 0.25 s of hold, no step. */
+    ui_router_tick(1.0f);
+    CHECK_EQ(steps_off(SET_INA3221_MOHM), 0);
+
+    /* The slow rate: 0.25 s held, then 0.2 s more, then a 1 s stall. */
+    ui_router_tick(0.2f);
+    ui_router_tick(0.2f);
+    int before = steps_off(SET_INA3221_MOHM);
+    ui_router_tick(1.0f);
+    int stall = steps_off(SET_INA3221_MOHM) - before;
+    CHECK(stall >= 1 && stall <= 2);            /* 0.25 s at 8 Hz */
+
+    /* The fast rate, from 2.25 s held. */
+    for (int i = 0; i < 20; ++i) {
+        ui_router_tick(0.1f);
+    }
+    before = steps_off(SET_INA3221_MOHM);
+    ui_router_tick(1.0f);
+    stall = steps_off(SET_INA3221_MOHM) - before;
+    CHECK(stall >= 1 && stall <= 8);            /* 0.25 s at 30 Hz */
+    lift(FEED_LONE);
+}
+
 /* The hold's limit: 449 ms is a tap that has not stepped yet, 450 ms is the
- * first step of the repeat.  One frame of exactly that length; the timer
- * adds frame times and reads no tick counter, so it has no wrap. */
+ * first step of the repeat.  Frames of at most 0.2 s, under the 0.25 s a
+ * frame is credited with; the timer adds frame times and reads no tick
+ * counter, so it has no wrap. */
 TEST_CASE(the_repeat_starts_at_450_ms)
 {
     static const struct { float held; int while_down; } k[] = {
@@ -1575,7 +1610,8 @@ TEST_CASE(the_repeat_starts_at_450_ms)
         feed_tick_per_report(0.0f);
         const int y = row_y(row_of(SET_INA3221_MOHM));
         finger(FEED_LONE, XP, y);
-        ui_router_tick(k[i].held);
+        ui_router_tick(0.2f);
+        ui_router_tick(k[i].held - 0.2f);
         CHECK_EQ(steps_off(SET_INA3221_MOHM), k[i].while_down);
         lift(FEED_LONE);
         /* One step either way: the tap's, or the repeat's first. */
@@ -2682,6 +2718,7 @@ int main(void)
     RUN(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins);
     RUN(a_tap_steps_each_kind_of_key_once);
     RUN(a_held_key_repeats_five_times_in_one_second_and_38_in_three);
+    RUN(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key);
     RUN(the_repeat_starts_at_450_ms);
     RUN(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop);
     RUN(a_tap_may_move_8_px_and_not_9);

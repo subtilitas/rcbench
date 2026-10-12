@@ -30,6 +30,9 @@
 #define TAB_H   28
 #define BODY_Y  44
 
+/* The MODELLED pill under the readings, above the rule at BODY_Y + 296. */
+#define MARK_DY 270
+
 #define LCARD_W 494
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)
@@ -112,6 +115,17 @@ int  balance_screen_rotor(void)  { return s.rotor; }
  * between-blades wording is exercised.
  */
 float balance_screen_angle(void) { return 265.0f; }
+
+const char *balance_screen_model_mark(void)
+{
+    return (s.tabs.selected == BALANCE_PANE_MEASURE) ? TR(BAL_MODELLED) : NULL;
+}
+
+const char *balance_screen_model_note(void)
+{
+    return (s.tabs.selected == BALANCE_PANE_MEASURE) ? TR(BAL_MODEL_NOTE)
+                                                     : NULL;
+}
 
 static void event(const touch_event_t *evt)
 {
@@ -557,12 +571,25 @@ static void draw_readings(gfx_canvas_t *c)
                     GFX_ALIGN_RIGHT);
     }
 
-    gfx_hline(c, x, BODY_Y + 288, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, BODY_Y + 300, TR(BAL_NOTE_1), UI_FONT_LABEL,
+    /*
+     * The angle and both masses are fixed values, not a measurement: the
+     * overview's pill, 88 px or as wide as a longer word, 20 px high, and
+     * the words beside it.
+     */
+    int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(BAL_MODELLED), 1);
+    mw = (mw < 88) ? 88 : mw;
+    ui_pill(c, (gfx_rect_t){ (int16_t)x, BODY_Y + MARK_DY, (int16_t)mw, 20 },
+            TR(BAL_MODELLED), ui_theme_color(UI_C_WARN),
+            ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text(c, x + mw + 8, BODY_Y + MARK_DY + 2, TR(BAL_MODEL_NOTE),
+             UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    gfx_hline(c, x, BODY_Y + 296, w, ui_theme_color(UI_C_EDGE));
+    gfx_text(c, x, BODY_Y + 308, TR(BAL_NOTE_1), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 318, TR(BAL_NOTE_2), UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 326, TR(BAL_NOTE_2), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BODY_Y + 342, TR(BAL_NOTE_3), UI_FONT_LABEL,
+    gfx_text(c, x, BODY_Y + 350, TR(BAL_NOTE_3), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
