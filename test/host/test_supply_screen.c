@@ -639,8 +639,11 @@ TEST_CASE(a_dropped_hold_releases_the_owner_so_a_later_claim_works)
 
 /*
  * A hold on OUTPUT ON that loses its touch after the ON was taken keeps
- * that ON's owner: the ON is on the wire and lands, and leaving SUPPLY
- * switches it off.  An ON the application then drops lets the owner go.
+ * that ON's owner until the application reports what became of it.  The
+ * panel's control task drops such an ON or switches the output off with
+ * the touch-loss alert; the screen's part is that an ON reported on is
+ * switched off by the leave, and an ON the application drops lets the
+ * owner go.
  */
 TEST_CASE(a_dropped_hold_keeps_the_owner_of_an_on_already_taken)
 {
