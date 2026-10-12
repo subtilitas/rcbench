@@ -1,6 +1,6 @@
 /*
- * A hero numeral: the live value, its unit, and the peak (or minimum) in a
- * footer under it.
+ * The description of one hero readout: its name, unit, colour and the label
+ * of its second number.  The motor screen draws it as a rail card.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,10 +23,6 @@ typedef struct {
      */
     const char *extreme_label;
 } ui_hero_def_t;
-
-/** Draw one readout inside @p r.  Pass NAN as @p peak to omit it. */
-void ui_hero_render(gfx_canvas_t *c, gfx_rect_t r, const ui_hero_def_t *def,
-                    float value, float peak);
 
 #ifdef __cplusplus
 }

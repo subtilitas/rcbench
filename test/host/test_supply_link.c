@@ -556,6 +556,19 @@ TEST_CASE(the_state_is_what_the_page_says)
     CHECK(st.online);                           /* the page answers */
     CHECK_EQ(st.samples, (uint16_t)(70001u & 0xFFFFu));
     CHECK_EQ(st.taken_ms, first);
+    CHECK_EQ(st.ok, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    /* Past SUPPLY_LINK_STALE_MS with the count standing still, the page
+     * still answering and ONLINE: the values are the last ones and no
+     * longer a reading, so no total or trip takes them as new. */
+    for (int k = 0; k < 11; ++k) {
+        now += 100u;
+        far_step_and_read(true);
+    }
+    supply_link_state(&sl, now, &st);
+    CHECK(st.online);
+    CHECK((uint32_t)(now - first) >= SUPPLY_LINK_STALE_MS);
+    CHECK_EQ(st.ok, 0u);
+    CHECK_EQ(st.taken_ms, first);
     /* And three readings between two page reads: the count says so. */
     drv.st.samples = 70004u;
     now += 100u;
@@ -832,6 +845,7 @@ static void a_read_is_fresh_until_the_stale_time(uint32_t t0)
     drv.st.v_mv   = 8990u;
     drv.st.i_ma   = 800u;
     now = t0;
+    drv.st.samples = (uint16_t)(drv.st.samples + 1u);   /* a new reading */
     far_step_and_read(true);
     supply_state_t st;
     memset(&st, 0, sizeof(st));

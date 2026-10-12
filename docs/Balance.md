@@ -20,6 +20,11 @@ Set the blade count (2 to 6) and the rotor type. The screen converts the
 measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
+The readings (vibration 0.42 g, angle 265°, mass to add 0.35 g) are fixed
+values and not a measurement. A MODELLED mark and the words "Not measured."
+stand under them, in the same pill the menu uses. Only the BALANCE pane carries
+the mark.
+
 For a ducted fan the correction is given as an angle on the hub, because a
 blade tip inside a duct is not accessible:
 

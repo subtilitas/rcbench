@@ -21,7 +21,9 @@ liegt. Die beiden Enden des Ruderwegs unterscheiden sich; beide messen.
 ### Verfahren
 
 Die Suche schreitet von der Mitte nach außen, in Schritten von 10 µs Pulsweite
-(etwa 0,9° bei einem Servo mit 11 µs je Grad Weg), bis 600 µs von der Mitte.
+(etwa 0,9° bei einem Servo mit 11 µs je Grad Weg), bis 600 µs von der Mitte
+und nie über 500 oder 2500 µs hinaus. Ein letzter Schritt unter 10 µs erreicht
+dieses Ende, so wird das Ende selbst gemessen.
 Nach jedem Schritt wartet sie 120 ms, bis das Servo steht, und mittelt den
 Strom über 80 ms. Solange die Fläche frei läuft, ist der Strom flach und
 niedrig. Das Gestänge gilt als angelaufen, wenn der Strom das 1,8-Fache des
@@ -41,14 +43,16 @@ Servo auf unter 12 s. Auf Hardware nicht gemessen.
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
 Die Endlagensuche und die Synchronisation sind Module in `shared/servo`, auf
-dem Host gegen einen modellierten Servo getestet. Das Koprozessor-Image ruft
-sie nicht auf; die obigen Schutzmaßnahmen sind am Prüfstand nicht aktiv.
+dem Host gegen einen modellierten Servo getestet. Keines der beiden
+Firmware-Images ruft sie auf; die obigen Schutzmaßnahmen sind am Prüfstand
+nicht aktiv.
 
 ### Ergebnisse
 
 - Ein Endpunkt wird bereits um 25 µs zurückgenommen gemeldet.
-- „Keine Endlage gefunden“ heißt: die Suche hat 600 µs von der Mitte erreicht,
-  ohne dass das Gestänge angelaufen ist.
+- „Keine Endlage gefunden“ heißt: die Suche hat das Ende ihres Wegs gemessen,
+  600 µs von der Mitte oder das Ende von 500 bis 2500 µs, ohne dass das
+  Gestänge angelaufen ist.
 - Eine Endlage nahe der Mitte kann eine Schwergängigkeit im Gestänge sein,
   etwa ein klemmender Umlenkhebel oder eine streifende Schubstange, statt des
   Endes des Ruderwegs.
@@ -672,6 +676,25 @@ gezählten Bewegungen verspätet. Ein abgebrochener Lauf zeigt `Ergebnis: ABGEBR
 <Grund>`, eine abgeschnittene Stufe ist mit `(verkürzt)` markiert, eine nie
 erreichte mit `nicht gelaufen`. `Kann zerstören` nennt das rote Schild, wenn
 ein Heli-Typ oder eine Frame Rate über 60 Hz gilt.
+
+Ein Lauf am INA3221 hat diese Zeilen anstelle derer des PD mini, hier vom
+modellierten Prüfstand der Host-Suite:
+
+```
+Log:             die .CSV mit der Nummer dieser Datei, eine Zeile je Fenster des INA3221
+Netzteil:        PD mini
+Strom:           INA3221 CH1, Shunt 100.0 mOhm, Bereich 1.638 A
+Spannung:        INA3221 CH1, Lastseite des Shunts
+Shunt:           bis 0.164 V fallen am Bereichsende an ihm ab; der Sollwert wird dafür nicht angehoben
+Messwerte:       20.0 /s Fenster vom INA3221 geschlossen, 20.0 /s erreichten den Test
+Übersprungen:    0 Fenster des INA3221 erreichten den Test nie
+Auflösung:       ein Fenster alle 50 ms: eine Stellzeit ist um bis zu zwei Fenster und den Poll, der sie liest, zu lang
+Verzögerung:     etwa 50 ms von einer Stromänderung bis zum Messwert, der sie zeigt
+Stellzeiten:     eine Obergrenze, nicht gegen die Grenze geprüft
+...
+Position: nichts misst das Ruderhorn; jedes Ergebnis ist der Strom des INA3221 auf CH1.
+Strom zwischen zwei 1-ms-Messwerten von CH1: ein Fenster enthält deren Mittel, Höchst- und Tiefstwert.
+```
 
 ### Was nicht gemessen ist
 

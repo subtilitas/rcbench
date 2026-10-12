@@ -210,6 +210,7 @@ gebautes Programm nennt.
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000 s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
 | `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release; daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
+| `pages.yml` | Pull Request und Push auf `main`, der `configurator/` berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages |
 
 clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
 die Header von ESP-IDF und pico-sdk, die der Analyse-Job nicht hat. Die

@@ -81,6 +81,10 @@ sie mit der Zahl, die es empfangen hat.
 | `Testframes weg ohne Busfehler` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
 | `alle Testframes intakt zurück` (Konsole: `every probe came back intact`) | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
 
+Die Konsole schreibt die englischen Urteile. Startbildschirm und
+Bus-Fehler-Bildschirm zeigen die deutschen aus der Tabelle; jedes passt in
+29 Zellen.
+
 Tritt beides auf, wird Verfälschung vor Verlust gemeldet, weil ein
 grenzwertiger Bus beides erzeugt und die Verfälschung die Ursache benennt.
 
