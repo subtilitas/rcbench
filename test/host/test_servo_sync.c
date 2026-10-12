@@ -8,6 +8,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -322,6 +323,101 @@ TEST_CASE(progress_runs_from_nothing_to_all_of_it)
     CHECK_NEAR(servo_sync_progress(&sy), 1.0f, 0.001f);
 }
 
+/*
+ * A correction beyond the first window's reach (40 + 13 + 4 = 57 us with the
+ * defaults) puts the lowest point of the first scan at the window's end.
+ * That point is the reach of the window, not the answer: a fault, not DONE
+ * with a trim of 57.
+ */
+TEST_CASE(a_minimum_at_the_edge_of_the_window_is_no_answer)
+{
+    servo_pair_cfg_t pc;
+    servo_pair_defaults(&pc, 1500);
+    pc.offset_us = -100;       /* the trim wanted is +100 us: out of reach */
+    pc.travel    = 1.0f;
+    servo_pair_t pair;
+    servo_pair_init(&pair, &pc);
+
+    servo_sync_cfg_t sc;
+    servo_sync_defaults(&sc, 1500);
+    servo_sync_t sy;
+    servo_sync_init(&sy, &sc);
+    run(&sy, &pair, 300000);
+    CHECK_EQ(sy.state, SERVO_SYNC_FAULT);
+    CHECK_EQ(sy.fault, SERVO_SYNC_FAULT_NO_MINIMUM);
+
+    /* The same at the other end of the window. */
+    pc.offset_us = 100;
+    servo_pair_init(&pair, &pc);
+    servo_sync_init(&sy, &sc);
+    run(&sy, &pair, 300000);
+    CHECK_EQ(sy.state, SERVO_SYNC_FAULT);
+    CHECK_EQ(sy.fault, SERVO_SYNC_FAULT_NO_MINIMUM);
+}
+
+/* No command leaves 500 to 2500 us. */
+TEST_CASE(no_command_leaves_the_pulse_range)
+{
+    servo_pair_cfg_t pc;
+    servo_pair_defaults(&pc, 2400);
+    servo_pair_t pair;
+    servo_pair_init(&pair, &pc);
+    servo_sync_cfg_t sc;
+    servo_sync_defaults(&sc, 2400);
+    servo_sync_t sy;
+    servo_sync_init(&sy, &sc);
+    uint16_t a = 0, b = 0;
+    uint16_t hi = 0;
+    uint32_t t = 0;
+    while (sy.state == SERVO_SYNC_RUNNING && t < 300000u) {
+        servo_sync_step(&sy, servo_pair_step(&pair, a, b, t), t, &a, &b);
+        hi = (a > hi) ? a : hi;
+        hi = (b > hi) ? b : hi;
+        t += SAMPLE_MS;
+    }
+    CHECK(hi <= 2500u);
+    CHECK(a >= 500u && b >= 500u);
+}
+
+/* A reading that is not a number is not under the ceiling. */
+TEST_CASE(a_current_that_is_not_a_number_stops_the_search)
+{
+    servo_sync_cfg_t sc;
+    servo_sync_defaults(&sc, 1500);
+    servo_sync_t sy;
+    servo_sync_init(&sy, &sc);
+    servo_sync_step(&sy, 0.1f, 0u, NULL, NULL);
+    servo_sync_step(&sy, NAN, 5u, NULL, NULL);
+    CHECK_EQ(sy.state, SERVO_SYNC_FAULT);
+    CHECK_EQ(sy.fault, SERVO_SYNC_FAULT_OVERCURRENT);
+}
+
+/* A scan of no round is one round: progress then runs from 0 to 1. */
+TEST_CASE(a_scan_of_no_round_is_one_round)
+{
+    servo_sync_cfg_t sc;
+    servo_sync_defaults(&sc, 1500);
+    sc.rounds = 0;
+    servo_sync_t sy;
+    servo_sync_init(&sy, &sc);
+    CHECK_EQ(sy.cfg.rounds, 1);
+    servo_pair_cfg_t pc;
+    servo_pair_defaults(&pc, 1500);
+    servo_pair_t pair;
+    servo_pair_init(&pair, &pc);
+    uint16_t a = 1500, b = 1500;
+    uint32_t t = 0;
+    float most = 0.0f;
+    while (sy.state == SERVO_SYNC_RUNNING && t < 300000u) {
+        servo_sync_step(&sy, servo_pair_step(&pair, a, b, t), t, &a, &b);
+        const float p = servo_sync_progress(&sy);
+        most = (p > most) ? p : most;
+        t += SAMPLE_MS;
+    }
+    CHECK(most > 0.3f);
+    CHECK_NEAR(servo_sync_progress(&sy), 1.0f, 0.001f);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     servo_sync_defaults(NULL, 1500);
@@ -381,6 +477,10 @@ int main(void)
     RUN(a_sensor_that_cannot_see_the_fight_says_so);
     RUN(the_two_ends_get_their_own_corrections);
     RUN(the_hard_ceiling_aborts_the_search);
+    RUN(a_minimum_at_the_edge_of_the_window_is_no_answer);
+    RUN(no_command_leaves_the_pulse_range);
+    RUN(a_current_that_is_not_a_number_stops_the_search);
+    RUN(a_scan_of_no_round_is_one_round);
     RUN(the_search_takes_a_workable_amount_of_time);
     RUN(progress_runs_from_nothing_to_all_of_it);
     RUN(null_arguments_are_refused_rather_than_dereferenced);

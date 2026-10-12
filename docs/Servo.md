@@ -20,7 +20,7 @@ surface's travel differ; measure both.
 
 ### Method
 
-The search steps outward from centre in 10 µs of pulse width per step (about 0.9° on a servo with 11 µs per degree of travel), up to 600 µs from centre. After each step it waits
+The search steps outward from centre in 10 µs of pulse width per step (about 0.9° on a servo with 11 µs per degree of travel), up to 600 µs from centre and never past 500 or 2500 µs. A last step shorter than 10 µs reaches that end, so the end itself is measured. After each step it waits
 120 ms for the servo to settle and averages the current over 80 ms. While the
 surface moves freely the current is flat and low. The linkage counts as bound
 when the current exceeds 1.8 times the free-running baseline and exceeds it by
@@ -45,7 +45,8 @@ the protections above are not active on the bench.
 ### Results
 
 - An endpoint is reported already backed off by 25 µs.
-- "No limit found" means the search reached 600 µs from centre without binding.
+- "No limit found" means the search measured the end of its travel, 600 µs
+  from centre or the end of 500 to 2500 µs, without binding.
 - A limit close to centre may be a tight spot in the linkage, such as a binding
   bellcrank or a rubbing pushrod, rather than the end of travel.
 

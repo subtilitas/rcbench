@@ -28,6 +28,16 @@
  *   clear     a full-screen clear, for reference
  *   vlines    17 full-height vertical lines, the pathological case
  *   hlines    the same pixel count as horizontal lines
+ *   held      the motor screen between two runs, its plot full and the
+ *             bench disarmed
+ *   throttle  `frame` with the throttle control changing every frame, the
+ *             drag case
+ *   <screen>  one steady frame of analyser, logs, settings, battery,
+ *             balance, programmer or picker
+ *   <screen>-chrome  the same, repainted in full every frame
+ *   <screen>-sim     the same with the SIMULATION watermark
+ *
+ * Any other mode name runs as `frame`; no error is raised for a typo.
  *
  * SPDX-License-Identifier: MIT
  */
