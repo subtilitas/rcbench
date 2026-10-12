@@ -2575,14 +2575,12 @@ TEST_CASE(a_power_cycle_under_a_write_forgets_the_servo_when_the_write_ends)
 {
     const kst_image_t a = image_of(k_long_a);
     const kst_image_t b = image_of(k_long_b);
-    kst_ses_t r = KST_SES_BUSY;
 
     up_with(&g_sim, &g_ses, &a);
     g_sim.n_writes = 0;
     CHECK_EQ(kst_session_edit(&g_ses, &b, ~(kst_field_set_t)0), KST_SES_BUSY);
     for (unsigned i = 0; i < 200000u && g_sim.n_writes == 0u; ++i) {
-        r = kst_session_step(&g_ses);
-        CHECK_EQ(r, KST_SES_BUSY);
+        CHECK_EQ(kst_session_step(&g_ses), KST_SES_BUSY);
         g_sim.now_us += 100u;
     }
     CHECK(g_sim.n_writes > 0u);
