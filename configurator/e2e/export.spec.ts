@@ -297,7 +297,8 @@ test.describe('PDF export, failure paths and limits', () => {
     await page.waitForLoadState('networkidle');
     await context.setOffline(true);
     await button.click();
-    await expect(page.locator('#pdfmsg')).toHaveText(say('en', 'pdfFail'));
+    // The page stores the picked language. The link has no key `l` and opens in it.
+    await expect(page.locator('#pdfmsg')).toHaveText(say('de', 'pdfFail'));
     await context.setOffline(false);
   });
 
