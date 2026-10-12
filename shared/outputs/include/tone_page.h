@@ -47,6 +47,8 @@ typedef struct {
     uint16_t   gen;        /**< moves with every change of the set-up     */
     uint16_t   cap_gen;    /**< moves each time the capture starts again  */
     bool       refused;    /**< enabled, and the pin could not be taken   */
+    bool       no_capture; /**< no capture runs this boot: core 1 did not
+                                start (tone_page_no_capture())            */
     /* What core 1 last said, under set-up gen. */
     bool       running, overrun, beep, tone;
     uint16_t   window, win_freq_dhz, win_periods;
@@ -74,7 +76,9 @@ void tone_page_defaults(uint16_t *cfg);
  * read only.  Refused: off the page (BAD_RANGE); a read-only register
  * (READ_ONLY); a value out of its range, register 7 other than 0, a set-up
  * tone_init() refuses, and with the tap enabled a pin past the bank, an
- * ADC pin or one the board reserves (BAD_VALUE); with the tap enabled a pin
+ * ADC pin or one the board reserves (BAD_VALUE); with the tap enabled on a
+ * page that runs no capture this boot (tone_page_no_capture(), BAD_VALUE:
+ * no freed pin makes it good before a restart); with the tap enabled a pin
  * in @p taken or bound to an output (BUSY, since 4.17: freed, the same
  * write is taken).  A
  * write of the set-up in force is taken, unless the tap is refused: then it
@@ -106,6 +110,12 @@ void tone_page_revert(tone_page_t *p, const uint16_t *cfg, bool refused);
 
 /** The wiring could not take the pin of an enabled set-up. */
 void tone_page_refuse(tone_page_t *p);
+
+/** No capture runs this boot (core 1 did not start): an enabled set-up is
+ *  refused as tone_page_refuse() does, and every later write that enables
+ *  the tap is refused with LINK_NACK_BAD_VALUE until the coprocessor
+ *  restarts.  A write with ENABLE clear is taken. */
+void tone_page_no_capture(tone_page_t *p);
 
 /** The capture starts again (the tap enabled, or its pin moved): the ring
  *  empties and the order carries a new capture generation. */

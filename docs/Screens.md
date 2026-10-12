@@ -858,7 +858,13 @@ the output is on.
 the panel owes it, and the coprocessor switches the output off itself when
 the panel's heartbeat stops. An enabled PD mini reads NOT ANSWERING while no
 coprocessor that speaks protocol 4.3 answers, or while the page's readings
-are older than 1500 ms; an output that is on is switched off then. The
+are older than 1500 ms; an output that is on is switched off then. A page
+that answers while the module's reading count (SAMPLES) stands -- a display
+read that fails while the other reads answer -- keeps ONLINE: after
+1500 ms without a new reading the voltage, current and power cards show
+dashes and no trip, peak or total takes a reading, and after 3000 ms (`SUPPLY_LINK_BLIND_MS`) an
+output that is on is switched off and the band says
+`supply sends no readings -- output off`. The
 output is also switched off, with a line in the band, when the coprocessor
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on

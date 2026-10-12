@@ -876,6 +876,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_PDMINI_WIRING]    = "Verdrahtung des PD mini in SETUP geändert -- Ausgang aus",
     [TX_ALERT_SUPPLY_CHANGED]   = "Netzteil in SETUP geändert -- Ausgang aus",
     [TX_ALERT_SUPPLY_SILENT]    = "Netzteil antwortet nicht -- Ausgang aus",
+    [TX_ALERT_SUPPLY_NO_READING] = "Netzteil liefert keine Messwerte -- Ausgang aus",
     [TX_ALERT_SUPPLY_TRIP]      = "Netzteil abgeschaltet über %u.%02u %s -- Ausgang aus",
     [TX_ALERT_TOUCH_ARM_AGAIN]  = "Touch verloren beim ARM -- erneut ARM",
     [TX_ALERT_TOUCH_STOPPED]    = "Touch antwortet nicht mehr -- DISARMED",

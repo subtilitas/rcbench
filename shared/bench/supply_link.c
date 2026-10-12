@@ -430,6 +430,12 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                  ? (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT) : 0u;
 }
 
+bool supply_link_blind(const supply_link_t *s, uint32_t now_ms)
+{
+    return s != NULL && s->read_any
+           && (uint32_t)(now_ms - s->sample_ms) >= SUPPLY_LINK_BLIND_MS;
+}
+
 bool supply_link_adopted(supply_link_t *s, bool *on, uint16_t *mv,
                          uint16_t *ma)
 {

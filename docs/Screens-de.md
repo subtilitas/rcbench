@@ -942,7 +942,14 @@ das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
 wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
 ANTWORTET NICHT, solange kein Koprozessor antwortet, der Protokoll 4.3
 spricht, oder solange die Messwerte der Page älter als 1500 ms sind; ein
-Ausgang, der an ist, wird dann abgeschaltet. Ebenfalls abgeschaltet, mit
+Ausgang, der an ist, wird dann abgeschaltet. Antwortet die Page, während der
+Messwertzähler des Moduls (SAMPLES) steht -- ein Lesen der Anzeige, das
+fehlschlägt, während die anderen Lesungen antworten --, bleibt ONLINE: nach
+1500 ms ohne neuen Messwert zeigen die Karten für Spannung, Strom und
+Leistung Striche, und keine Abschaltschwelle, kein Spitzenwert und keine
+Summe übernimmt einen Messwert; nach
+3000 ms (`SUPPLY_LINK_BLIND_MS`) wird ein Ausgang, der an ist, abgeschaltet,
+und das Band sagt `Netzteil liefert keine Messwerte -- Ausgang aus`. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
 ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein

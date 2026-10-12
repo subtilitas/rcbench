@@ -386,7 +386,10 @@ uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 /** Core 0, every pass, for each PWM slot: the output channel @p ch it
  *  renders and the pulse, 0 for none.  A slot seen with another channel
  *  than before is watched afresh.  True when this is a command: the caller then gives the time of
- *  the frame that carries it to sense_trace_trigger(). */
+ *  the frame that carries it to sense_trace_trigger(), as a
+ *  SENSE_TRACE_TRIG_CMD for every true return.  That trigger sets the
+ *  command time the slot's later $D line carries; without it the line
+ *  carries an earlier command's time, or 0 on a slot that has none. */
 bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
                        uint16_t pulse_us, uint64_t now_us);
 

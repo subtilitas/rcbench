@@ -184,6 +184,11 @@ uint8_t tone_page_write(tone_page_t *p, uint8_t off, uint8_t n,
     if (!values_ok(p, next)) {
         return LINK_NACK_BAD_VALUE;
     }
+    if ((next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u && p->no_capture) {
+        /* Nothing runs a capture before a restart: not BUSY, which the
+         * panel offers again, as no freed pin makes this write good. */
+        return LINK_NACK_BAD_VALUE;
+    }
     if ((next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u) {
         const uint8_t why = pin_refusal(p, o, next[LINK_TN_PIN], taken);
         if (why != 0u) {
@@ -236,6 +241,14 @@ void tone_page_refuse(tone_page_t *p)
         p->refused = true;
         ++p->gen;
         forget_status(p);
+    }
+}
+
+void tone_page_no_capture(tone_page_t *p)
+{
+    if (p != NULL) {
+        p->no_capture = true;
+        tone_page_refuse(p);
     }
 }
 

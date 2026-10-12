@@ -4187,6 +4187,13 @@ static void supply_step(float step_s)
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
         control_alert(TR(ALERT_SUPPLY_SILENT));
+    } else if (s_supply_is_real && s_supply_on
+               && supply_link_blind(&s_supply_link, now_ms())) {
+        /* The page answers and the module reads ONLINE, but its reading
+         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
+         * valid, which no trip acts on.  Off, as for a supply gone. */
+        supply_switch(false);
+        control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
         if (s_supply_fresh) {

@@ -6,7 +6,9 @@
  * detector refuses (a gap shorter than the lowest tone's period); the pin
  * refused past the bank, on a reserved pin and on an ADC pin with
  * BAD_VALUE, and on an output's, SENSE's or SUPPLY's with BUSY, while
- * enabled, and a busy pin taken once freed; the pin reserved from the
+ * enabled, and a busy pin taken once freed; a page that runs no capture
+ * this boot (core 1 not started) refusing every enabled set-up with
+ * BAD_VALUE, never BUSY, and taking the tap off; the pin reserved from the
  * outputs while the tap runs; a refused write storing nothing; read-only
  * registers and the page end; the 64-beep ring read without consuming,
  * numbered from 1 to 65535 and round again, and a beep that has left it;
@@ -269,6 +271,46 @@ TEST_CASE(a_busy_pin_is_taken_once_freed_and_bad_values_stay_bad_value)
     const out_slot_t none = { .driver = OUT_DRIVER_NONE };
     CHECK(outputs_configure(&o, 0, &none));
     CHECK_EQ(on(4u), 0u);
+}
+
+/* Core 1 did not start: nothing runs a capture before a restart, so an
+ * enabled set-up is refused with BAD_VALUE, which the panel does not offer
+ * again every 5 s, and never with BUSY, which it does -- on a free pin and
+ * on a busy one alike.  The tap may still be switched off. */
+TEST_CASE(a_page_without_a_capture_refuses_the_tap_with_bad_value)
+{
+    fresh();
+    CHECK_EQ(on(22u), 0u);
+    CHECK(tone_page_wanted(&pg));
+    tone_page_no_capture(&pg);
+    CHECK(tone_page_enabled(&pg));
+    CHECK(!tone_page_wanted(&pg));
+    CHECK_EQ(tone_page_pins(&pg), 0u);
+    CHECK((reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED) != 0u);
+    /* The set-up in force, tried again, and another free pin. */
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(on(21u), LINK_NACK_BAD_VALUE);
+    /* A pin something else holds: still not BUSY. */
+    CHECK_EQ(setup(1u, 16u, 400u, 6500u, 8u, 3u, 3u, BIT(16)),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(on(4u), LINK_NACK_BAD_VALUE);
+    CHECK(!tone_page_wanted(&pg));
+    /* Switched off: taken, and the refusal goes with it. */
+    const uint16_t off = 0u;
+    CHECK_EQ(tone_page_write(&pg, LINK_TN_ENABLE, 1u, &off, &o, 0u), 0u);
+    CHECK(!tone_page_enabled(&pg));
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED, 0u);
+    /* A range alone with the tap off is taken; enabling it again is not. */
+    CHECK_EQ(setup(0u, 22u, 500u, 6500u, 8u, 3u, 3u, 0u), 0u);
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    CHECK(!tone_page_enabled(&pg));
+    /* On a page with the tap off, nothing is refused by it. */
+    fresh();
+    tone_page_no_capture(&pg);
+    CHECK(!tone_page_enabled(&pg));
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED, 0u);
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    tone_page_no_capture(NULL);
 }
 
 TEST_CASE(a_refused_write_stores_none_of_its_registers)
@@ -749,6 +791,7 @@ int main(void)
     RUN(a_gap_shorter_than_the_lowest_tones_period_is_refused);
     RUN(the_pin_is_refused_where_something_else_holds_it);
     RUN(a_busy_pin_is_taken_once_freed_and_bad_values_stay_bad_value);
+    RUN(a_page_without_a_capture_refuses_the_tap_with_bad_value);
     RUN(a_refused_write_stores_none_of_its_registers);
     RUN(the_pin_is_the_taps_while_it_runs_and_no_slot_binds_it);
     RUN(a_write_of_the_set_up_in_force_changes_nothing);

@@ -760,7 +760,9 @@ enum {
  *     detector refuses (tone_init()), and, while the tap is enabled, a pin
  *     past the bank, one the board reserves, or an ADC (analog to digital
  *     converter) pin: GP26 to GP29 on the RP2350A and GP40 to GP47 on the
- *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant.  Refused with
+ *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant, and any pin on
+ *     a coprocessor whose core 1 did not start at boot: no capture runs
+ *     before a restart.  Refused with
  *     BUSY (since 4.17, BAD_VALUE before): while the tap is enabled, a pin
  *     bound to an output or held by the SENSE, SUPPLY or PROG page, and a
  *     capture the wiring cannot start for now -- core 1 in a pass, or no
