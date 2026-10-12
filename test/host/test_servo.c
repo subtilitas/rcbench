@@ -5860,6 +5860,17 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     CHECK_EQ(memcmp(d, box[TGT_PORT], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     CHECK(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
+    /* Only the pin changed, port and pulse kept: the line follows. */
+    servo_screen_set_drive(1u, 13u, true);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
+             0);
+    servo_screen_set_drive(1u, 14u, true);
+    scr->render(&cv, 0);
+    target_box(d);
+    CHECK(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t))
+          != 0);
     /* The link lost with the binding still held: no link, not the GP2 the
      * outputs carry; then the page not known after the link comes back;
      * then the outputs once it is read. */
