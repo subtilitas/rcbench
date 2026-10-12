@@ -183,7 +183,6 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,080 | 3,088 |
 | `control` | `control_task` | 6,144 | 4,432 | 688 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
-| `artkeep` | `art_keep_task` | 4,096 | 944 | 2,128 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 
@@ -195,7 +194,9 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table: 188 such calls are
+  which the tool reads out of every screen's table, and the link port's and
+  the photograph store's flash callbacks, which it follows by name
+  (`PORT_CALLS`, `FLASH_CALLS`): 188 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
