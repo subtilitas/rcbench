@@ -5759,6 +5759,32 @@ static const tgt_state_t k_tgt[] = {
 #define TGT_UNKNOWN 13      /* k_tgt: the target not known */
 #define TGT_NO_LINK 14      /* k_tgt: no link */
 
+/* The exact English text of each k_tgt state, written out here and not taken
+ * from servo_target_line(). */
+static const char *const k_tgt_en[] = {
+    "TARGET: GP2", "TARGET: GP4", "TARGET: GP2 GP4", "TARGET: GP2 GP4 GP5",
+    "TARGET: GP12 GP13 GP14 GP15", "TARGET: GP2 GP4 GP5 +2",
+    "TARGET: GP40 GP41 GP42 +5", "TARGET: NO SERVO PWM PIN",
+    "TARGET: PINS NOT READ", "TARGET: PROG PORT", "TARGET: PROG PORT GP13",
+    "TARGET: PROG PORT GP63 PWM OFF", "TARGET: PROG PORT PWM OFF",
+    "TARGET: NOT KNOWN", "TARGET: NO LINK",
+};
+
+/* The box a text gives, drawn over the screen's with the screen's font,
+ * colours and rectangle (left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26 px). */
+static void target_reference(gfx_color_t *out, const char *text, bool warn)
+{
+    const gfx_rect_t r = { 6 + 200, (H - UI_BAND_H) - 6 - 36, 488 - 200 - 10, 26 };
+    gfx_fill_rect(&cv, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    gfx_fill_round_rect(&cv, r.x, r.y, r.w, r.h, 4,
+                        warn ? ui_theme_color(UI_C_WARN)
+                             : ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text_in(&cv, r, text, UI_FONT_LABEL,
+                warn ? ui_theme_color(UI_C_BG) : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+    target_box(out);
+}
+
 /* The active PWM target is on the SERVO screen in both languages: the pins
  * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and the
  * warning colour for the port, for no pin, for a binding not read, for a
@@ -5786,6 +5812,12 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
             target_box(bx);
             const gfx_color_t fill = bx[2 * TGT_W + 4];
             CHECK_EQ(fill == ui_theme_color(UI_C_WARN), st->warn);
+            if (lang == 0) {
+                /* The pixels of the text the state must give. */
+                static gfx_color_t want_box[TGT_W * TGT_H];
+                target_reference(want_box, k_tgt_en[i], st->warn);
+                CHECK_EQ(memcmp(want_box, bx, sizeof(want_box)), 0);
+            }
             /* Text stays clear of the box's left and right edges. */
             for (int y = 6; y < TGT_H - 6; ++y) {
                 for (int x = 0; x < 3; ++x) {

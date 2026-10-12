@@ -395,11 +395,27 @@ TEST_CASE(a_port_names_its_pin_unless_it_has_none_or_was_refused)
     g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 300u;
     read_at(4u);
     CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
+    /* A register above one byte never truncates into a pin. */
+    g_page[LINK_PG_REG(0, LINK_PG_PIN)] = 0x0100u;
+    read_at(5u);
+    CHECK_EQ(prog_link_pin(&g_p, 0u), PROG_LINK_NO_PIN);
 }
 
-/* While the servo programmer holds the port, the line keeps naming the port:
- * the programmer drives it at that moment, the tester sends nothing. */
-TEST_CASE(the_drive_keeps_naming_the_port_while_the_programmer_holds_it)
+/* A malformed page: a port count above the ports the page has room for
+ * names no pin for the port past the last one, whose registers lie beyond
+ * the page. */
+TEST_CASE(a_count_above_the_ports_the_page_holds_names_no_pin)
+{
+    fresh();
+    g_page[LINK_PG_COUNT] = LINK_PG_PORTS_MAX + 1u;
+    read_at(0u);
+    CHECK_EQ(prog_link_pin(&g_p, LINK_PG_PORTS_MAX), PROG_LINK_NO_PIN);
+}
+
+/* While the servo programmer holds the port, the drive does not change: it
+ * keeps the target the coprocessor holds, a port or the standard outputs;
+ * the programmer drives the port and the tester sends nothing. */
+TEST_CASE(the_drive_keeps_its_target_while_the_programmer_holds_the_port)
 {
     prog_link_drive_t d;
 
@@ -414,6 +430,16 @@ TEST_CASE(the_drive_keeps_naming_the_port_while_the_programmer_holds_it)
     d = prog_link_drive(&g_p);
     CHECK_EQ(d.target, 1u);
     CHECK_EQ(d.pin, 13u);
+
+    /* Held with the standard outputs as target: still target 0, no pin. */
+    fresh();
+    g_page[LINK_PG_TARGET] = 0u;
+    read_at(1u);
+    prog_link_hold(&g_p, true);
+    d = prog_link_drive(&g_p);
+    CHECK_EQ(d.target, 0u);
+    CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
+    CHECK(!d.pwm);
 }
 
 /* What the tester drives: the target the commands use, that port's pin and
@@ -711,7 +737,8 @@ int main(void)
     RUN(a_coprocessor_that_started_again_is_brought_back);
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
-    RUN(the_drive_keeps_naming_the_port_while_the_programmer_holds_it);
+    RUN(a_count_above_the_ports_the_page_holds_names_no_pin);
+    RUN(the_drive_keeps_its_target_while_the_programmer_holds_the_port);
     RUN(the_drive_names_the_target_and_the_port_pin);
     RUN(a_write_not_acknowledged_leaves_the_drive_unknown);
     RUN(a_channel_configuration_maps_onto_a_port);

@@ -53,9 +53,10 @@ history is in git.
   shows while no coprocessor answers and `TARGET: NOT KNOWN`
   (`ZIEL: UNBEKANNT`) while the PROG page is not read or a write to it was
   not acknowledged; the tester sends no command in either. While the servo
-  programmer holds the port, the line keeps naming the port. The warning
-  colour marks the programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding not read, no link
-  and a target not known. The pins come from the binding the tester
+  programmer holds the port, the line does not change: it keeps naming the
+  target the coprocessor holds. The warning colour marks five states: the
+  programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding
+  not read, no link and a target not known. The pins come from the binding the tester
   drives. The line follows the target the coprocessor holds
   (`prog_link_drive()`), not the PWM TARGET setting.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw

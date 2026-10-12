@@ -189,8 +189,9 @@ typedef struct {
  * target 0.
  *
  * While the servo programmer holds the port (prog_link_hold(true)) the
- * target is unchanged: the line keeps naming the port, because the
- * programmer drives that port and the tester sends nothing.
+ * target is unchanged: the line keeps naming the target the coprocessor
+ * holds, a port or the standard outputs.  The programmer drives the port
+ * and the tester sends nothing.
  *
  * Otherwise the target is prog_link_target(), the one the commands use; the
  * pin is the target port's GPIO, or PROG_LINK_NO_PIN with the standard
