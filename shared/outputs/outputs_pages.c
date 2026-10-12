@@ -94,6 +94,18 @@ uint8_t outputs_chan_cfg_write(uint16_t *regs, uint8_t off, uint8_t n,
     return 0u;
 }
 
+void outputs_chan_cfg_restore(uint16_t *regs, const uint16_t *saved)
+{
+    if (regs == NULL || saved == NULL) {
+        return;
+    }
+    for (unsigned i = 0; i < (unsigned)LINK_CC_COUNT; ++i) {
+        const uint16_t v = saved[i];
+        regs[i] = (i % LINK_CC_STRIDE == (unsigned)LINK_CC_SLEW
+                   && v > LINK_CC_SLEW_MAX) ? (uint16_t)LINK_CC_SLEW_MAX : v;
+    }
+}
+
 uint8_t outputs_chan_cfg_armed_check(const uint16_t *regs,
                                      const uint16_t *next, bool armed)
 {
