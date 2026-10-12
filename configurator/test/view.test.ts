@@ -103,8 +103,8 @@ test('the chooser holds one group per set of parts, each function in one group, 
         assert.deepEqual(always, [], group.key);
         for (const id of [...group.also, ...group.oneOf.flat()]) assert.ok(text(body).includes(short(id, lang)), `${group.key}: ${id}`);
       } else {
-        // The 2 functions that drive a test object on the base setup: a tick each, under their own sentence.
-        assert.deepEqual(ticks, ['servo', 'esc']);
+        // The 3 functions that drive a test object on the base setup: a tick each, under their own sentence.
+        assert.deepEqual(ticks, ['servo', 'servoprog', 'esc']);
         assert.ok(body.indexOf('id="basetick"') > body.indexOf('</ul>') && body.indexOf('id="basetick"') < body.indexOf('id="f-servo"'));
         assert.ok(body.includes(STRINGS.baseTick[col(lang)]));
         assert.ok(!body.slice(0, body.indexOf('</ul>')).includes('<input') && !body.includes('<button'), 'the list of the base setup holds a control');

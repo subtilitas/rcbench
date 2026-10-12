@@ -243,7 +243,8 @@ export function checkRefs(c: Catalogue): Finding[] {
   const forced = new Map<string, string>();
   for (const fn of c.functions) {
     const id = `function.${fn.id}`;
-    if (fn.needs.length === 0 && fn.forces !== undefined) out.push(err(id, 'needs no part and forces an option'));
+    // A function that needs no part and drives no test object is in every setup: it has no option to force.
+    if (fn.needs.length === 0 && fn.drives === undefined && fn.forces !== undefined) out.push(err(id, 'needs no part, drives no test object and forces an option'));
     for (const partId of fn.needs) {
       if (!parts.has(partId)) out.push(err(id, `needs the unknown part ${partId}`));
       else if (parts.get(partId)?.testObject === true) out.push(err(id, `needs the test object ${partId}; a test object belongs in \`drives\``));

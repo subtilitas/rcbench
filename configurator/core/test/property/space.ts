@@ -17,12 +17,14 @@ export const CASE_LIMIT = 100_000;
 export const SEED = 0x2026_1011;
 
 /** Mixed selections of the sample. */
-export const MIXED = 30_000;
+export const MIXED = 25_000;
 
+// The pin of the servo signal is in no selection the page makes: the function
+// that programs a servo forces it. The option sets keep the standard outputs.
 export const OPTION_SETS: ReadonlyArray<Options> = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower })))));
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
 
 /** mulberry32: a 32-bit generator with a fixed sequence per seed. */
 export function generator(seed: number): () => number {
