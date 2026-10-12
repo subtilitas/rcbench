@@ -292,8 +292,8 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `voltage`, `current` and `power` are what the screen shows. `source` is
 `measured` on a row whose values a meter produced and `model` on a row the
 panel's model produced (the MODELLED mark); a supply file has the same last
-column. A file written before the column existed ends at `ch3 voltage` or
-`energy`, and the log viewer and the tools read it as before: `source` is a
+column. A file without the column ends at `ch3 voltage` or `energy`, and the
+log viewer and the tools read both forms: `source` is a
 text column and is never plotted. `ina voltage` and
 `ina current` are the INA228's and are empty while it is not the source;
 `esc current` is the ESC's own telemetry current, from the SENSE page while

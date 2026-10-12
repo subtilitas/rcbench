@@ -321,9 +321,9 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `voltage`, `current` und `power` sind, was der Bildschirm zeigt. `source`
 ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
 `model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
-MODELLED); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei aus der
-Zeit vor der Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und
-die Werkzeuge lesen sie wie bisher, denn `source` ist eine Textspalte und
+SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
+die Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und die
+Werkzeuge lesen beide Formen, denn `source` ist eine Textspalte und
 wird nie gezeichnet.
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
 nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,

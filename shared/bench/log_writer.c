@@ -269,7 +269,7 @@ bool log_writer_row(log_writer_t *w, float t_s, const bench_state_t *b)
         { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY },
     };
 
-    /* In the writer, not on the stack: 22 cells, every one checked
+    /* In the writer, not on the stack: 23 cells, every one checked
      * against the end. */
     char *line = w->line;
     const size_t cap = sizeof(w->line);
