@@ -143,7 +143,15 @@ static void supply_off(kst_port_t *p)
     }
 }
 
-/* Whether the PD mini gives a servo in programming mode @p mv and @p ma. */
+/* The voltage a session asked for at @p mv runs at: an output that is on is
+ * lowered to it or left, never raised. */
+static uint16_t supply_runs_at(const supply_port_view_t *v, uint16_t mv)
+{
+    return (v->asked_on && v->set_mv < mv) ? v->set_mv : mv;
+}
+
+/* Whether the PD mini gives a servo in programming mode @p mv and @p ma.
+ * The cap under the input holds for the voltage the output runs at. */
 static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
                             uint16_t ma)
 {
@@ -152,14 +160,7 @@ static bool supply_range_ok(const supply_port_view_t *v, uint16_t mv,
         return false;
     }
     return v->vin_mv == 0u
-           || (uint32_t)mv + PDMINI_CAP_MV <= v->vin_mv;
-}
-
-/* The voltage a session asked for at @p mv runs at: an output that is on is
- * lowered to it or left, never raised. */
-static uint16_t supply_runs_at(const supply_port_view_t *v, uint16_t mv)
-{
-    return (v->asked_on && v->set_mv < mv) ? v->set_mv : mv;
+           || (uint32_t)supply_runs_at(v, mv) + PDMINI_CAP_MV <= v->vin_mv;
 }
 
 /* --- operations --------------------------------------------------------------- */

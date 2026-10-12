@@ -159,7 +159,7 @@ Overlay wieder offen.
 | `Der Koprozessor hat diesen Programmier-Port nicht.` | der Koprozessor hat weniger Ports als den angefragten |
 | `Programmierspannung oder -strom über den SUPPLY-Grenzen.` und `Unter WEITERES senken oder Grenze anheben. Nichts gesetzt.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMGRENZE über seiner Stromgrenze; nichts wird gesendet |
 | `Erst DISARM: bei ARM wird der Port nicht übernommen.` | ARM gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
-| `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung liegt weniger als 0,7 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
+| `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8 V. Programmieren braucht 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
 | `Versorgung schaltete nicht in 3000 ms. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
 | `Koprozessor vertraut dem Link noch nicht. Neu versuchen.` | der Koprozessor vertraut dem Heartbeat nicht, oder der Link war still |

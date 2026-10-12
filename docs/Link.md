@@ -689,7 +689,7 @@ register 0 reads 1 while a PD mini answers; the port then switches it.
 ENTER takes the programming voltage and current limit from write registers
 26 and 27. With a PD mini answering, ENTER is refused with SUPPLY_RANGE
 unless the voltage is at most 8400 mV, the current 50 to 3000 mA and the
-voltage at least 700 mV under the PD mini's input. 8400 mV is the highest
+session's voltage at least 700 mV under the PD mini's input. 8400 mV is the highest
 servo rail of the IO board. The session's voltage is the staged one, or
 the lower of it and the voltage of an output that is on; under 4800 mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
