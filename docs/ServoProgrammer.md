@@ -144,7 +144,7 @@ overlay is open again at the next entry.
 | `The coprocessor has no such programming port.` | the coprocessor has fewer ports than the one asked for |
 | `Programming voltage or current is over the SUPPLY limits.` and `Lower it under MORE, or raise the limit. Nothing was set.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
 | `DISARM first: the port is not taken on an armed bench.` | the bench is armed or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
-| `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage less than 0.5 V under the PD mini's input; the supply is not changed |
+| `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage the session runs at less than 0.7 V under the PD mini's input; the supply is not changed |
 | `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the coprocessor |
 | `The supply did not switch within 3000 ms. Check it.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
 | `The coprocessor does not trust the link yet. Try again.` | the coprocessor does not trust the heartbeat, or the link was silent |
@@ -192,7 +192,7 @@ raised. Leaving programming does not restore a value **CONNECT** lowered.
 The port programs at 4.8 V or more. The supply voltage a servo needs to
 store a register is not measured. An
 output that is on under 4.8 V is not programmed at and stays as it is; the
-operator raises it first. A PD mini whose input is under 5.3 V cannot give
+operator raises it first. A PD mini whose input is under 5.5 V cannot give
 4.8 V, and no session starts on it.
 
 While the port is out of PWM the supply's set points are the port's. The

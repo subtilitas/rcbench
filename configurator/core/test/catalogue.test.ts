@@ -6,6 +6,7 @@ import { dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { TAG, VERSION } from '../../release.ts';
 import type { Catalogue, Picture } from '../../contract.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import {
@@ -158,7 +159,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   );
   assert.equal(CATALOGUE.stages.length, 5);
   assert.equal(CATALOGUE.safety.length, 7);
-  assert.equal(CATALOGUE.release, '0.17.0');
+  assert.equal(CATALOGUE.release, VERSION);
   assert.equal(CATALOGUE.hashVersion, 1);
 });
 
@@ -756,35 +757,35 @@ test('src: a broken repository anchor is reported', () => {
   const tree = fakeTree(CATALOGUE);
 
   const path = copy();
-  path.functions[SERVO]!.src = { kind: 'repo', path: 'docs/Gone.md', line: 3, tag: 'v0.17.0' };
+  path.functions[SERVO]!.src = { kind: 'repo', path: 'docs/Gone.md', line: 3, tag: TAG };
   reports(checkSrc(path, tree).findings, 'function.servo', /does not exist/);
 
   const line = copy();
-  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: 'v0.17.0' };
+  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2001, tag: TAG };
   reports(checkSrc(line, tree).findings, 'function.servo', /past the end/);
-  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: 'v0.17.0' };
+  line.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2000, tag: TAG };
   const lastLine = [...ANCHOR_TEXTS, { path: 'STATUS.md', line: 2000, has: 'text' }];
   assert.deepEqual(checkSrc(line, tree, lastLine).findings, []);
 
   const zero = copy();
-  zero.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: 'v0.17.0' };
+  zero.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 0, tag: TAG };
   reports(checkSrc(zero, tree).findings, 'function.servo', /no line number/);
 
   const blank = copy();
   const emptyLine = fakeTree(CATALOGUE, (files) => {
     files.set('STATUS.md', ['# Status', '', 'text']);
   });
-  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2, tag: 'v0.17.0' };
+  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 2, tag: TAG };
   reports(checkSrc(blank, emptyLine).findings, 'function.servo', /empty line/);
-  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 4, tag: 'v0.17.0' };
+  blank.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 4, tag: TAG };
   reports(checkSrc(blank, emptyLine).findings, 'function.servo', /STATUS\.md:4 is past the end of the file \(3 lines\)/);
 
   const tag = copy();
-  tag.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 3, tag: 'v0.16.0' as 'v0.17.0' };
+  tag.functions[SERVO]!.src = { kind: 'repo', path: 'STATUS.md', line: 3, tag: 'v0.16.0'  };
   reports(checkSrc(tag, tree).findings, 'function.servo', /v0\.16\.0/);
 
   const absolute = copy();
-  absolute.functions[SERVO]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: 'v0.17.0' };
+  absolute.functions[SERVO]!.src = { kind: 'repo', path: '/etc/passwd', line: 1, tag: TAG };
   reports(checkSrc(absolute, tree).findings, 'function.servo', /no repository path/);
 });
 
@@ -792,7 +793,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   const tree = fakeTree(CATALOGUE);
   const moved = copy();
   const at = (line: number): Catalogue['functions'][number]['src'] => (
-    { kind: 'repo', path: 'docs/Building.md', line, tag: 'v0.17.0' }
+    { kind: 'repo', path: 'docs/Building.md', line, tag: TAG }
   );
 
   // A line that is present and holds another row: no text is named for it.
@@ -852,7 +853,7 @@ test('src: every repository anchor of the data names a text of its own', () => {
   assert.equal(line('GPO'), 119);
   assert.equal(line('OUT'), 120);
   const strap = CATALOGUE.wires.find((w) => w.n === 54)?.src;
-  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 119, tag: 'v0.17.0' });
+  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 119, tag: TAG });
   const board = CATALOGUE.checks.find((k) => k.id === 'as5600-board')?.src;
   assert.deepEqual(board, strap);
 });
@@ -1027,7 +1028,7 @@ test('tree: stale pin defaults are reported', () => {
   reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
 
   const anchor = copy();
-  anchor.pinDefaults[1]!.src = { kind: 'repo', path: SETTINGS, line: 170, tag: 'v0.17.0' };
+  anchor.pinDefaults[1]!.src = { kind: 'repo', path: SETTINGS, line: 170, tag: TAG };
   reports(checkTree(anchor, fakeTree(CATALOGUE)), 'pin.sda', /not inside SET_SENSE_SDA/);
 
   const heartbeat = fakeTree(CATALOGUE, (files) => {
@@ -1045,7 +1046,7 @@ test('tree: a newer release tag is a warning, not an error', () => {
   const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.18.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: 'the data describes 0.17.0; the newest release tag is v0.18.0' },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.18.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
 });
