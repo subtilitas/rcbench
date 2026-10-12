@@ -324,27 +324,61 @@ static bool holds(const uint8_t *p, size_t n, const char *s)
  */
 /*
  * The voltage set point the module is given: the one asked, but no more
- * than PDMINI_HEADROOM_MV under the input it reports.  A buck cannot put
- * out more than it is fed, and a module asked to shows ERR and needs a
- * power cycle.  As asked while the input is not known.
+ * than PDMINI_CAP_MV under the input it reports, and no less than
+ * PDMINI_V_MIN_MV.  A buck cannot put out more than it is fed, and a module
+ * asked to shows ERR and needs a power cycle.  The cap sits
+ * PDMINI_CAP_MV - PDMINI_HEADROOM_MV above the line sag_check() cuts at, so
+ * an input that moves by less than that after the set point is written cuts
+ * nothing.  As asked while the input is not known.
  *
  * A live output's set point, up to the one asked, is not lowered to follow
  * its input down: the voltage under test would change unasked mid-run, and
  * a sag that lasts switches the output off instead (sag_check()).
  */
+uint16_t pdmini_cap_mv(uint32_t vin_mv)
+{
+    /* On the 10 mV grid the screen offers, rounded down; an input with no
+     * room for the lowest set point gets the lowest, and an ON is then not
+     * written (sag_hold()). */
+    uint32_t cap = PDMINI_V_MIN_MV;
+    if (vin_mv >= PDMINI_V_MIN_MV + PDMINI_CAP_MV) {
+        cap = (vin_mv - PDMINI_CAP_MV) / 10u * 10u;
+    }
+    return (cap > PDMINI_V_MAX_MV) ? (uint16_t)PDMINI_V_MAX_MV
+                                   : (uint16_t)cap;
+}
+
 static uint16_t target_mv(const pdmini_t *d)
 {
-    const uint32_t vin = d->input_known ? d->st.vin_mv : 0u;
-    if (vin <= PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV) {
-        return d->want_mv;      /* not read yet, or no room to cap into */
+    if (!d->input_known) {
+        return d->want_mv;      /* not read yet */
     }
-    /* On the 10 mV grid the screen offers, rounded down. */
-    uint32_t cap = (vin - PDMINI_HEADROOM_MV) / 10u * 10u;
+    uint32_t cap = pdmini_cap_mv(d->st.vin_mv);
     if (d->st.output && d->want_output && d->st.set_mv > cap
         && d->st.set_mv <= d->want_mv) {
         cap = d->st.set_mv;
     }
     return (d->want_mv > cap) ? (uint16_t)cap : d->want_mv;
+}
+
+/* Whether the input last read lies under the set point read back and
+ * PDMINI_HEADROOM_MV: the line a live output is cut at. */
+static bool under_line(const pdmini_t *d)
+{
+    return (uint32_t)d->st.vin_mv
+           < (uint32_t)d->st.set_mv + PDMINI_HEADROOM_MV;
+}
+
+/* The output switched off for the input, or its ON not written, and held
+ * off until an OFF is asked. */
+static void sag_hold(pdmini_t *d)
+{
+    d->sag_reads   = 0u;
+    d->held_off    = true;
+    d->want_output = false;
+    d->en_tries    = 0u;
+    d->st.stuck    = false;
+    d->st.sagged   = true;
 }
 
 /*
@@ -359,20 +393,14 @@ static void sag_check(pdmini_t *d)
 {
     const bool live = d->st.output && d->want_output && d->state_known
                       && d->st.set_mv != 0u;
-    if (!live || (uint32_t)d->st.vin_mv
-                     >= (uint32_t)d->st.set_mv + PDMINI_HEADROOM_MV) {
+    if (!live || !under_line(d)) {
         d->sag_reads = 0u;
         return;
     }
     if (++d->sag_reads < PDMINI_SAG_READS) {
         return;
     }
-    d->sag_reads   = 0u;
-    d->held_off    = true;
-    d->want_output = false;
-    d->en_tries    = 0u;
-    d->st.stuck    = false;
-    d->st.sagged   = true;
+    sag_hold(d);
 }
 
 static void learn_on(pdmini_t *d)
@@ -792,8 +820,15 @@ static bool next_job(pdmini_t *d, uint32_t now)
     const bool set_ok = d->want_set && d->data_known
                         && d->st.set_mv == target_mv(d)
                         && d->st.set_ma == d->want_ma;
-    if (!d->en_pending && !d->st.output && d->want_output && set_ok && input_ok
-        && en_ready(d, now)) {
+    const bool on_due = !d->en_pending && !d->st.output && d->want_output
+                        && set_ok && input_ok;
+    if (on_due && d->input_known && under_line(d)) {
+        /* The input already under the line for the set point: read under
+         * PDMINI_V_MIN_MV + PDMINI_HEADROOM_MV, 1500 mV, with no room for
+         * the lowest set point.  An ON sag_check() would cut 2 readings on
+         * is not written. */
+        sag_hold(d);
+    } else if (on_due && en_ready(d, now)) {
         if (on_step == 4u && write_en(d, now)) {
             return true;
         }
