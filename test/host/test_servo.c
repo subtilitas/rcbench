@@ -4247,6 +4247,7 @@ static void bench_fresh(void)
     st.set_v = supply_screen_set_v();
     st.samples = ++b.samples;
     st.taken_ms = b.now;
+    st.stamped = true;
     servo_screen_supply(&st);
     scr->tick(0.02f);
 }
@@ -4325,7 +4326,7 @@ static void bench_frames(uint32_t ms)
                 .number = ++b.win_number, .current = true, .voltage = true,
                 .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma,
                 .min_ma = (int16_t)ma, .mean_mv = (uint16_t)mv,
-                .min_mv = (uint16_t)mv, .taken_ms = b.now,
+                .min_mv = (uint16_t)mv, .taken_ms = b.now, .stamped = true,
             };
             window(&w);
             ++b.wins;
@@ -4346,6 +4347,7 @@ static void bench_frames(uint32_t ms)
                         : cc   ? SUPPLY_MODE_CC : SUPPLY_MODE_CV;
             st.samples  = ++b.samples;
             st.taken_ms = b.now;
+            st.stamped = true;
             if (b.behind) {
                 /* Taken under a meter replaced since. */
                 servo_screen_supply_at(&st, SERVO_SOURCE_INA3221,
@@ -5027,6 +5029,7 @@ static void bench_frames_on(uint32_t ms, bool accept_on, float *on_v_max)
             st.mode   = b.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
             st.samples  = ++b.samples;
             st.taken_ms = b.now;
+            st.stamped = true;
             servo_screen_supply(&st);
         }
         servo_screen_service();
@@ -5127,6 +5130,7 @@ TEST_CASE(the_set_points_go_back_whichever_screen_is_up)
                 st.set_v = supply_screen_set_v();
                 st.samples = ++b.samples;
                 st.taken_ms = b.now;
+                st.stamped = true;
                 servo_screen_supply(&st);
             }
             servo_screen_service();
@@ -5170,6 +5174,7 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     st.set_v = supply_screen_set_v();
     st.samples = ++b.samples;
     st.taken_ms = b.now;
+    st.stamped = true;
     servo_screen_supply(&st);
     servo_screen_service();
     servo_screen_service();
@@ -5182,6 +5187,7 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     servo_screen_service();
     st.samples = ++b.samples;
     st.taken_ms = b.now;
+    st.stamped = true;
     st.mode = SUPPLY_MODE_CV;
     servo_screen_supply(&st);
     servo_screen_service();
@@ -5199,6 +5205,47 @@ TEST_CASE(the_set_points_wait_for_a_sample_after_the_off)
     servo_screen_supply(&st);
     servo_screen_service();
     CHECK(fabsf(supply_screen_set_v() - 8.4f) < 1e-4f);
+}
+
+/* A reading stamped on tick 0 is stamped.  The restore compares the
+ * stamp with the clock at the stage's start: a stamp of 0 older than that
+ * is a sample from before the OFF and is not enough, and one newer, across
+ * the 32-bit wrap, is. */
+TEST_CASE(a_supply_reading_stamped_on_tick_zero_keeps_its_stamp)
+{
+    static const struct { uint32_t base; bool restores; } k_case[] = {
+        { 0u,           false },    /* restore_ms 20: stamp 0 is older     */
+        { 0xFFFFFFF0u,  false },    /* restore_ms 4, past the wrap         */
+        { 0xFFFFFFE0u,  true },     /* restore_ms -12: stamp 0 is newer    */
+    };
+    for (size_t k = 0; k < sizeof(k_case) / sizeof(k_case[0]); ++k) {
+        bench_fresh();
+        short_runs();
+        supply_screen_put(8.4f, 1.0f);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        servo_screen_cancel_arm();
+        supply_cmd_t c;
+        while (supply_screen_poll_cmd(&c)) { }
+        servo_screen_clock(k_case[k].base);
+        servo_screen_service();                 /* OFF sent                */
+        servo_screen_clock(k_case[k].base + 20u);
+        servo_screen_service();                 /* waiting for a sample    */
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.online   = true;
+        st.ok       = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.set_v    = supply_screen_set_v();
+        st.mode     = SUPPLY_MODE_OFF;
+        st.samples  = ++b.samples;
+        st.taken_ms = 0u;
+        st.stamped  = true;
+        servo_screen_supply(&st);
+        servo_screen_service();
+        servo_screen_service();
+        const bool back = fabsf(supply_screen_set_v() - 8.4f) < 1e-4f;
+        CHECK_EQ(back, k_case[k].restores);
+    }
 }
 
 /* START TEST twice without a fresh screen: the second hold starts a second
@@ -5272,6 +5319,7 @@ TEST_CASE(the_start_line_follows_the_report_being_taken)
                 st.i = amps;
                 st.samples = ++b.samples;
                 st.taken_ms = b.now;
+                st.stamped = true;
                 servo_screen_supply(&st);
             }
             scr->tick(0.02f);
@@ -5482,6 +5530,7 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
             st.set_v = supply_screen_set_v();
             st.samples = ++b.samples;
             st.taken_ms = b.now;
+            st.stamped = true;
             servo_screen_supply(&st);
         }
         servo_screen_service();
@@ -7286,6 +7335,51 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
     CHECK(strstr(b.report, "INA3221 range") == NULL);
 }
 
+/* A window stamped on tick 0 is stamped: its row sits where tick 0 is on the
+ * run's clock, not where the window arrived.  Before the run began the row
+ * is at 0.000 s; after a wrap it is the stretch from the run's start. */
+TEST_CASE(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp)
+{
+    static const uint32_t k_base[] = { 5000u, 0xFFFFFFFFu - 2500u };
+    for (size_t k = 0; k < sizeof(k_base) / sizeof(k_base[0]); ++k) {
+        bench_fresh();
+        b.now = k_base[k];
+        b.next = b.now;
+        servo_screen_clock(b.now);
+        settings_set(SET_INA3221_EN, 1.0f);
+        short_runs();
+        meter(SERVO_SOURCE_PDMINI);
+        meter(SERVO_SOURCE_INA3221);
+        b.ina = true;
+        b.win_next = b.now;
+        bench_frames(200u);
+        hold_start(2.3f);
+        CHECK(servo_screen_testing());
+        /* Run the clock past tick 0 when it started before it. */
+        while ((int32_t)b.now < 1000) {
+            bench_frames(100u);
+        }
+        bench_frames(1000u);
+        b.csv_last[0] = '\0';
+        sense_link_win_t w = rail_win(120, 4800u);
+        w.number    = (uint16_t)(b.win_number + 1u);
+        ++b.win_number;
+        w.taken_ms  = 0u;
+        w.stamped   = true;
+        window(&w);
+        bench_drain();
+        CHECK(servo_screen_testing());
+        if (k == 0u) {
+            CHECK(strncmp(b.csv_last, "0.000;", 6) == 0);
+        } else {
+            /* Tick 0 is under 0.5 s after the run began and over 1 s
+             * before the clock reads what it does now. */
+            CHECK(strncmp(b.csv_last, "0.", 2) == 0);
+        }
+        run_out_bench();
+    }
+}
+
 /* Each condition that takes the INA3221 off the rail ends a run that
  * reads it, on whichever of the three paths the change arrives first: the
  * frame's meter, a window, a supply sample.  The run is ABORTED with the
@@ -7344,6 +7438,7 @@ TEST_CASE(the_meter_changing_ends_a_run_on_the_ina3221)
                 st.set_v = supply_screen_set_v();
                 st.samples = ++b.samples;
                 st.taken_ms = b.now;
+                st.stamped = true;
                 servo_screen_supply_at(&st, meter_id, meter_changes);
             }
             CHECK(!servo_screen_testing());
@@ -7601,6 +7696,7 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
         st.set_v = supply_screen_set_v();
         st.samples = ++b.samples;
         st.taken_ms = b.now;
+        st.stamped = true;
         switch (how) {
         case 0: {                       /* a window under another meter */
             servo_screen_source_dropped(SERVO_SOURCE_WHY_SILENT,
@@ -7624,6 +7720,7 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
             b.now += 600u;
             servo_screen_clock(b.now);
             st.taken_ms = b.now;
+            st.stamped = true;
             servo_screen_supply(&st);
             CHECK(told.running);
             scr->tick(0.02f);
@@ -7813,6 +7910,7 @@ int main(void)
     RUN(output_ons_hold_looks_at_the_set_point_again_as_it_completes);
     RUN(the_set_points_go_back_whichever_screen_is_up);
     RUN(the_set_points_wait_for_a_sample_after_the_off);
+    RUN(a_supply_reading_stamped_on_tick_zero_keeps_its_stamp);
     RUN(start_test_starts_a_second_run);
     RUN(the_knob_moves_the_horn_by_how_far_it_turned);
     RUN(the_knob_stops_at_the_servos_travel);
@@ -7856,6 +7954,7 @@ int main(void)
     RUN(the_plot_keeps_one_point_for_each_window);
     RUN(a_run_reads_the_supply_while_the_meter_changes);
     RUN(a_run_started_under_the_ina3221_reads_its_windows);
+    RUN(an_ina3221_window_stamped_on_tick_zero_keeps_its_stamp);
     RUN(the_meter_changing_ends_a_run_on_the_ina3221);
     RUN(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter);
     RUN(a_run_on_the_modelled_supply_reads_the_model);

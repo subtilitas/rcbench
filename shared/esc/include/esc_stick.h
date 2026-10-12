@@ -266,6 +266,7 @@ typedef struct {
     uint32_t quiet_from;         /**< the quiet began here               */
     bool     busy;               /**< not quiet while waiting            */
     uint32_t busy_from;
+    bool     fell;               /**< a pulse has ended (fall_ms is set) */
     uint32_t fall_ms;            /**< first low reading after a pulse    */
     uint32_t n_low;
 

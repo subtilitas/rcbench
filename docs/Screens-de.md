@@ -2164,6 +2164,12 @@ ist](#eine-bindung-die-nicht-bestätigt-ist).
 
 Auf einer eigenen Seite beschrieben: [Auswuchten](Balance-de.md).
 
+Der Reiter WUCHTEN zeigt einen festen Winkel (265°) und zwei feste Werte
+(0,42 g Vibration, 0,35 g zuzufügende Masse), solange kein Sensor verbaut ist.
+Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
+20 px hoch und 88 px breit. Die Reiter TESTGESTELL und FLUGMODELL zeigen
+Platzierungshilfen und tragen keine Marke.
+
 ## Unbekannte Bildschirm-IDs
 
 Eine Bildschirm-ID, die keinen Bildschirm benennt, zeigt die Übersicht.
