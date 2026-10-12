@@ -86,20 +86,33 @@ the checks import them. The anchor table `drawings/anchors.json` is written
 by `npm run drawings` from the data file, and `npm run drawings:check` fails
 when it names another release.
 
-To move to a new release, change 2 places in the same pull request:
+The release moves in 2 steps, because the data check reads the files at the
+git tag and the tag exists only after the release pull request is merged:
 
-1. `version` in `configurator/package.json` (and the 2 `version` fields at
-   the top of `package-lock.json`).
-2. `RCBENCH_VERSION_MAJOR`, `_MINOR` and `_PATCH` in
-   `shared/link/include/rcbench_version.h`.
+1. In the release pull request, set `RCBENCH_VERSION_MAJOR`, `_MINOR` and
+   `_PATCH` in `shared/link/include/rcbench_version.h`. `npm run check` in
+   `core/` then reports a warning: the header is ahead of the configurator
+   data. The warning does not fail `--strict`.
+2. After the tag `vX.Y.Z` exists, set `version` in `configurator/package.json`
+   (and the 2 `version` fields at the top of `package-lock.json`), run
+   `npm run drawings` to rewrite `drawings/anchors.json`, and replace the
+   release number in the prose of the 3 README files of the configurator.
 
-Then run `npm run drawings` to rewrite `drawings/anchors.json`, and replace
-the release number in the prose of the 3 README files of the configurator.
-`core/tools/release-sources.ts`, run by `npm run check` in `core/`, fails
-when the 2 places differ or when a README names another release. The
-Configurator workflow runs it on a change of either place. Source links
-point at the git tag `TAG`; the data check reads the files at that tag, so
-the tag must exist in the clone.
+`core/tools/release-sources.ts`, run by `npm run check` in `core/`, compares
+`package.json` with the header and with `package-lock.json`:
+
+| State | Level |
+|---|---|
+| `package.json` equals the header | none |
+| Header ahead, tag of the header version absent | warning |
+| Header ahead, tag of the header version present | error |
+| `package.json` ahead of the header | error |
+| A `version` field of `package-lock.json` differs from `package.json` | error |
+| A README names another release, in prose or as `"release": "X.Y.Z"` | error |
+
+The Configurator workflow runs the check on a change of the header or of
+the configurator. Source links point at the git tag `TAG`; the data check
+reads the files at that tag, so the tag must exist in the clone.
 
 ## Commands
 
