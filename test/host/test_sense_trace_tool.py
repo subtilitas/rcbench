@@ -16,30 +16,33 @@ with CR LF and with LF line ends; a log cut off inside a trace, with a
 sample line missing, with a trace starting inside another, with records
 the coprocessor dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
-count; clipped samples; edge lines with the command line nearest to
-each, a command line with no edge line and an edge line with no command
-line; commands within 30 ms of each other; the report of record without
---loaded-channel, and with it the commands, $D lines and edge lines of
-the other channels left out, a command of another channel 30 ms and 31 ms
-from a move, two loaded channels in one frame, every channel loaded, a
-loaded channel with no command in the log, a log with no command line and
-the option's values; a trace with trigger lines not
-written, a move with records missing inside it and a slewed command with
-its $D line before and after its $C line; what the traces alone give; a
-servo CSV that pairs at two offsets, one set by hand, and one without the
-columns; two boots whose rows lie in their order, among each other and
-alike; the grammar of every line type, with each field missing, doubled,
-out of its range and out of its order; lines that are no line of a trace
-inside a trace and a trace's lines outside one; line ends; a second $H
-line and one after a record; a trace length and a sample period version 2
-does not write; samples out of the order of time and two voltages for
-one; a $S line that changes nothing; clipped samples, missing records and
-a state change in each window a move's levels come from, and a trace with
-no sample before its first command; a replay that answers fewer moves
-than sent; files that cannot be read or written; the range of every
-number on the command line; and every line of a log with every line type
-cut at every byte, which is damage or changes nothing, but for a cut
-inside a line's last number.
+count; clipped samples and their mark in the CSV file; edge lines with
+the command line nearest to each, a command line with no edge line and an
+edge line with no command line; commands within 30 ms of each other; the
+report of record without --loaded-channel, and with it the commands, $D
+lines and edge lines of the other channels left out, a command of another
+channel 30 ms and 31 ms from a move, two loaded channels in one frame,
+every channel loaded, a loaded channel with no command in the log, a log
+with no command line and the option's values; a trace with trigger lines
+not written, a move with records missing inside it and a slewed command
+with its $D line before and after its $C line; a version 3 $D line bound
+to the command its cmd= names, a version 2 one to the latest command
+30 ms after it, one naming no command line, and each version's $D line in
+a trace of the other; what the traces alone give; a servo CSV that pairs
+at two offsets, one set by hand, and one without the columns; two boots
+whose rows lie in their order, among each other and alike; the grammar of
+every line type, with each field missing, doubled, out of its range and
+out of its order; lines that are no line of a trace inside a trace and a
+trace's lines outside one; line ends; a second $H line and one after a
+record; a trace length and a sample period versions 2 and 3 do not write;
+samples out of the order of time and two voltages for one; a $S line that
+changes nothing; clipped samples, missing records and a state change in
+each window a move's levels come from, and a trace with no sample before
+its first command; a replay that answers fewer moves than sent; files
+that cannot be read or written; the range of every number on the command
+line; and every line of a log with every line type cut at every byte,
+which is damage or changes nothing, but for a cut inside a line's last
+number.
 
 Regenerate the fixtures after a change that moves them:
 
@@ -176,15 +179,18 @@ def the_report_on_the_fixture() -> None:
     # The CSV files: a row a sample, the voltage on the rows that have one.
     one = (out_dir / "sense-trace-sim-trace-1.csv").read_text().splitlines()
     two = (out_dir / "sense-trace-sim-trace-2.csv").read_text().splitlines()
-    check(one[0] == "time (ms);current (A);bus voltage (V)", "the header")
+    check(one[0] == "time (ms);current (A);bus voltage (V);clipped",
+          "the header")
     check(len(one) == 1 + 561 and len(two) == 1 + 8881, "a row a sample")
-    check(one[1] == "-61.0;0.1148;", f"the first row: {one[1]}")
-    check(sum(1 for row in one[1:] if not row.endswith(";")) == 28,
+    check(one[1] == "-61.0;0.1148;;0", f"the first row: {one[1]}")
+    check(all(row.endswith(";0") for row in one[1:] + two[1:]),
+          "no clipped sample in the fixture")
+    check(sum(1 for row in one[1:] if row.split(";")[2]) == 28,
           "28 voltages in trace 1")
-    check(sum(1 for row in two[1:] if not row.endswith(";")) == 444,
+    check(sum(1 for row in two[1:] if row.split(";")[2]) == 444,
           "444 voltages in trace 2")
     volts = [float(row.split(";")[2]) for row in two[1:]
-             if not row.endswith(";")]
+             if row.split(";")[2]]
     # 6.0 V less 0.4 V an ampere: 5.952 V holding, 5.62 V moving.
     check(max(volts) == 5.952 and min(volts) == 5.616, "the rail's sag")
     times = [float(row.split(";")[0]) for row in two[1:]]
@@ -295,17 +301,21 @@ def a_log_with_no_trace() -> None:
 
 
 def another_version_and_a_trace_without_a_shunt() -> None:
-    text = ("$T v=3 n=7 trig=key t=100 ms=10 len=10000\n"
+    text = ("$T v=4 n=7 trig=key t=100 ms=10 len=10000\n"
             "$H dt_us=1000 shunt_uohm=0 cfg=0x0000 on=0 rst=0\n"
             "$K t=100\n"
             "$Z n=7 s=0 v=0 l=0 m=1 ml=0 e=t\n")
-    r = tool(str(work("v3.log", text)))
+    r = tool(str(work("v4.log", text)))
     check(r.returncode == 1, f"exit {r.returncode}")
-    check("PROBLEM: format version 3; this tool reads version 2"
+    check("PROBLEM: format version 4; this tool reads versions 2 and 3"
           in r.stdout, "the version")
     check("part not online" in r.stdout, "the part")
-    check(not (ARGS.work / "v3-trace-7.csv").exists(),
+    check(not (ARGS.work / "v4-trace-7.csv").exists(),
           "no CSV without a shunt")
+    # Version 1 is no version this tool reads either.
+    r = tool(str(work("v1.log", text.replace("v=4", "v=1"))))
+    check("PROBLEM: format version 1; this tool reads versions 2 and 3"
+          in r.stdout, "version 1")
     # A header lost by the terminal.
     r = tool(str(work("noh.log", "$T v=2 n=1 trig=key t=100 ms=10 len=10\n"
                                  "$Z n=1 s=0 v=0 l=0 m=0 ml=0 e=t\n")))
@@ -389,6 +399,27 @@ def clipped_samples_are_said_and_time_no_arrival() -> None:
     r = tool(str(work("low2.log", synthetic(1000, [(0, 1900)], high=-4095))),
              "--no-csv")
     check("at the end of the range" not in r.stdout, "-4095 is a value")
+
+
+def a_clipped_sample_is_marked_in_the_csv() -> None:
+    """Each end code and the code next to it, at the top and the bottom:
+    the end codes are clipped rows, the codes inside are values."""
+    for high, clip in ((4095, "1"), (4094, "0"), (-4096, "-1"),
+                       (-4095, "0")):
+        log = work(f"csv{high}.log", synthetic(1000, [(0, 1900)], high=high))
+        r = tool(str(log), "--out", str(ARGS.work))
+        check(r.returncode == 0, f"exit {r.returncode}: {r.stderr}")
+        rows = (ARGS.work / f"csv{high}-trace-1.csv").read_text().splitlines()
+        check(rows[0].split(";") == ["time (ms)", "current (A)",
+                                     "bus voltage (V)", "clipped"],
+              f"the header at {high}")
+        cells = [row.split(";") for row in rows[1:]]
+        check(all(len(c) == 4 for c in cells), f"four columns at {high}")
+        moving = [c for c in cells if 13.0 <= float(c[0]) < 113.0]
+        check(len(moving) == 100 and all(c[3] == clip for c in moving),
+              f"{high} reads clipped {clip}")
+        check(all(c[3] == "0" for c in cells if c not in moving),
+              f"the held level at {high} is a value")
 
 
 def edge_lines_are_the_moves_when_there_are_any() -> None:
@@ -1011,6 +1042,57 @@ def a_slewed_command_ends_at_its_d_line() -> None:
           and "1234" not in r.stdout and "1777" not in r.stdout, "move 1")
 
 
+def let_go_log(version: int, cmd: str | None, t0: int = 1000) -> str:
+    """Two commands of channel 2 at 0 and 1000 ms; the first slews to
+    1700 us and is let go at 980 ms, 20 ms before the second.  Its $D
+    line names @p cmd as its command (version 3), or none."""
+    lines = synthetic(t0, [(0, 1501), (1000, 1101)]).splitlines()
+    lines[0] = lines[0].replace("v=2", f"v={version}")
+    at = next(k for k, line in enumerate(lines) if line.startswith("$C"))
+    d_t = (t0 + 9800) & 0xFFFFFFFF
+    lines.insert(at + 1, f"$D t={d_t} ch=2 us=1700"
+                 + (f" cmd={cmd}" if cmd is not None else ""))
+    lines[-1] = lines[-1].replace("m=2", "m=3")
+    return "\n".join(lines) + "\n"
+
+
+def a_d_line_ends_the_command_it_names() -> None:
+    # Version 3: the $D line is the first command's end, also with its
+    # command's time across the wrap of the 0.1 ms count.
+    for t0 in (1000, (1 << 32) - 200):
+        r = tool(str(work(f"let3-{t0}.log", let_go_log(3, str(t0), t0))),
+                 "--no-csv")
+        check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+        check("move 1 at 0.0 ms, channel 2 to 1700 us" in r.stdout,
+              f"v3 move 1 at {t0}")
+        check("move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
+              f"v3 move 2 at {t0}")
+    # Version 2, the same lines with no cmd=: the latest command no more
+    # than 30 ms after the $D line's time takes it, as before.
+    r = tool(str(work("let2.log", let_go_log(2, None))), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout, "v2 move 1")
+    check("move 2 at 1000.0 ms, channel 2 to 1700 us" in r.stdout,
+          "v2 move 2")
+    # A command time no $C line of the channel has: the line ends no move
+    # of this trace, and nothing is wrong with it.
+    r = tool(str(work("let3x.log", let_go_log(3, "999"))), "--no-csv")
+    check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[-600:]}")
+    check("move 1 at 0.0 ms, channel 2 to 1501 us" in r.stdout
+          and "move 2 at 1000.0 ms, channel 2 to 1101 us" in r.stdout,
+          "an unknown command")
+    # A $D line of the other version's form is damage.
+    for name, text in (("v3-old-d", let_go_log(3, None)),
+                       ("v2-new-d", let_go_log(2, "1000"))):
+        r = tool(str(work(f"{name}.log", text)), "--no-csv")
+        check(r.returncode == 1
+              and "1 line(s) that are no whole line of a trace" in r.stdout,
+              f"{name}: {r.stdout[-400:]}")
+    # cmd= past 32 bits is no number of the line.
+    r = tool(str(work("big.log", let_go_log(3, str(1 << 32)))), "--no-csv")
+    check(r.returncode == 1 and "no whole line" in r.stdout, "cmd= range")
+
+
 def a_move_with_no_end_reads_cut_and_one_unseen_unseen() -> None:
     # The second command 50 ms into the first move's burst; the third
     # with no burst at all.
@@ -1461,7 +1543,11 @@ WHOLE = {
     "$H dt_us=9999 shunt_uohm=4294967295 cfg=0xFFFF on=1 rst=255": "H",
     "$H dt_us=0 shunt_uohm=0 cfg=0x0000 on=0 rst=0": "H",
     "$C t=0 ch=65535 us=65535": "C",
-    "$D t=4294967295 ch=0 us=0": "C",
+    "$C t=4294967295 ch=65535 us=65535": "C",
+    "$D t=4294967295 ch=65535 us=65535 cmd=4294967295": "D",
+    "$D t=0 ch=0 us=0 cmd=0": "D",
+    "$D t=4294967295 ch=0 us=0": "D2",
+    "$D t=4294967295 ch=65535 us=65535": "D2",
     "$E t=0": "E",
     "$K t=4294967295": "E",
     "$S on=0 rst=255": "S",
@@ -1532,6 +1618,14 @@ NOT_WHOLE = [
     "$D t=1 ch=2",
     "$D t=1 ch=2 us=",
     "$D t=1 ch=2 us=65536",
+    # A $D line's cmd= is its command's time
+    "$D t=1 ch=2 us=1500 cmd=",
+    "$D t=1 ch=2 us=1500 cmd=4294967296",
+    "$D t=1 ch=2 us=1500 cmd=01",
+    "$D t=1 ch=2 us=1500 cmd=-1",
+    "$D t=1 ch=2 cmd=1 us=1500",
+    "$D t=1 ch=2 us=1500 cmd=1 ",
+    "$C t=1 ch=2 us=1500 cmd=1",
     # $E and $K carry a time and nothing else
     "$E",
     "$E t=",
@@ -1683,8 +1777,9 @@ def the_longest_line_of_each_type_is_62_characters() -> None:
     longest = {}
     for line, kind in WHOLE.items():
         longest[kind] = max(longest.get(kind, 0), len(line))
-    check(longest == {"T": 61, "H": 59, "C": 25, "E": 15, "S": 15, "L": 13,
-                      "Z": 61, "s": 17, "v": 12}, f"{longest}")
+    check(longest == {"T": 61, "H": 59, "C": 33, "D": 48, "D2": 33, "E": 15,
+                      "S": 15, "L": 13, "Z": 61, "s": 17, "v": 12},
+          f"{longest}")
     # One more digit anywhere is out of a range.
     for line in WHOLE:
         for k, c in enumerate(line):
@@ -2138,7 +2233,7 @@ def every_type_log() -> str:
     """A log with every type of line: a key trace with voltages, state
     changes and dropped records, and a command trace with an edge line, a
     slewed command and a console line inside it."""
-    key = ["$T v=2 n=7 trig=key t=50000 ms=5000 len=10000",
+    key = ["$T v=3 n=7 trig=key t=50000 ms=5000 len=10000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=12",
            "$K t=50012"]
     for k in range(40):
@@ -2155,7 +2250,7 @@ def every_type_log() -> str:
                    if sense_trace.read_line(line)[0] == kind)
          for kind in "sv"}
     key.append(f"$Z n=7 s={n['s']} v={n['v']} l=12 m=1 ml=0 e=k")
-    cmd = ["$T v=2 n=8 trig=cmd t=90000 ms=9000 len=4000",
+    cmd = ["$T v=3 n=8 trig=cmd t=90000 ms=9000 len=4000",
            "$H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=13"]
     for ms in range(-60, 130):
         if ms == 0:
@@ -2163,7 +2258,7 @@ def every_type_log() -> str:
         if ms == 5:
             cmd.append("rcbench-iomcu: CAN up")
         if ms == 20:
-            cmd.append("$D t=89990 ch=2 us=1950")
+            cmd.append("$D t=89990 ch=2 us=1950 cmd=90000")
         cmd.append(f"{-600 if ms == -60 else 10},"
                    f"{2000 if 13 <= ms < 53 else 300 + ms % 3}")
         if ms % 50 == 0:
@@ -2196,7 +2291,7 @@ def a_line_cut_at_any_byte_is_damage_or_changes_nothing() -> None:
           and moves[0][2] == 1950, f"two traces, one move: {moves}")
     lines = text.splitlines()
     kinds = {(sense_trace.read_line(line) or "-")[0] for line in lines}
-    check(kinds == set("THCESLZsv-"), f"every type: {sorted(kinds)}")
+    check(kinds == set("THCDESLZsv-"), f"every type: {sorted(kinds)}")
     # Each line cut to each shorter length, its line end kept: the tool
     # reports damage or makes the same of the log.  The format has no
     # check value, so one kind of cut is neither: digits off the last
@@ -2216,16 +2311,17 @@ def a_line_cut_at_any_byte_is_damage_or_changes_nothing() -> None:
             kind = sense_trace.read_line(line)[0]
             unseen[kind] = unseen.get(kind, 0) + 1
     # What cannot be told: sample codes, voltages, the pulse widths of
-    # $C and $D, the times of $E and $K, the reset counts of $H and $S.
+    # $C, the command times of $D, the times of $E and $K, the reset
+    # counts of $H and $S.
     # A cut of $T's length, $L's count and every number of $Z is told.
-    check(set(unseen) == set("svCESH"), f"{unseen}")
+    check(set(unseen) == set("svCDESH"), f"{unseen}")
     check(sum(unseen.values()) == UNSEEN_CUTS and cuts == ALL_CUTS,
           f"{sum(unseen.values())} of {cuts} cuts: {unseen}")
     # The log stopping at each byte: damage, the same, or a log that
     # stops between its two traces, which is a log of one trace, or
     # after them, which is a log with a console line fewer.
     between = text.index("rcbench-iomcu: between")
-    second = text.index("$T v=2 n=8")
+    second = text.index("$T v=3 n=8")
     after = text.index("rcbench-iomcu: after")
     for k in range(len(text)):
         got = judged(text[:k])
@@ -2239,8 +2335,8 @@ def a_line_cut_at_any_byte_is_damage_or_changes_nothing() -> None:
 
 
 # The cuts of every_type_log()'s lines, and those of them no check tells.
-ALL_CUTS = 1924
-UNSEEN_CUTS = 544
+ALL_CUTS = 1934
+UNSEEN_CUTS = 545
 
 
 def a_fixture_line_cut_at_any_byte_is_no_other_line() -> None:
@@ -2301,6 +2397,7 @@ CASES = [
     another_version_and_a_trace_without_a_shunt,
     times_run_across_the_wrap_of_the_count,
     clipped_samples_are_said_and_time_no_arrival,
+    a_clipped_sample_is_marked_in_the_csv,
     edge_lines_are_the_moves_when_there_are_any,
     an_edge_takes_the_command_line_nearest_to_it,
     a_command_with_no_edge_line_is_a_move,
@@ -2320,6 +2417,7 @@ CASES = [
     a_move_the_part_went_offline_in_is_not_replayed,
     settings_are_compared_on_the_moves_both_time,
     a_slewed_command_ends_at_its_d_line,
+    a_d_line_ends_the_command_it_names,
     a_move_with_no_end_reads_cut_and_one_unseen_unseen,
     the_servo_csv_pairs_by_time,
     the_offset_that_pairs_the_most_is_found_between_the_obvious,

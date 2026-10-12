@@ -450,7 +450,10 @@ auf 4 s (bei `t` 10 s) nach sich selbst, wenn das später liegt: Bewegungen
 mit weniger als 4 s Abstand sind ein Trace. Ein Kommando mit Slew ändert
 die Pulsbreite in jedem Durchlauf: seine Zeile `$C` trägt die erste
 Pulsbreite, und eine Zeile `$D` die, bei der es endete, sobald der Ausgang
-50 ms still gehalten hat. Ein Kommando, das auf den nächsten Trace wartet,
+50 ms still gehalten hat. `cmd=` der Zeile `$D` ist die Zeit der Zeile `$C`
+ihres Kommandos, und das Tool beendet dieses Kommando dort, auch wenn der
+Ausgang losgelassen wurde und das nächste Kommando innerhalb von 30 ms
+kam. Ein Kommando, das auf den nächsten Trace wartet,
 nimmt seine späteren Änderungen mit: dieser Trace endet 4 s nach der
 letzten davon und enthält die Zeile `$D`. Ein Ausgang, der losgelassen
 wird, beendet dort ein Kommando mit Slew; der nächste Puls auf ihm ist ein
@@ -478,7 +481,7 @@ ist nicht gemessen.
 **Die Zeilen** (`shared/sense/sense_trace.h` nennt jedes Feld):
 
 ```text
-$T v=2 n=2 trig=cmd t=220200 ms=22020 len=4000
+$T v=3 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
 -810,289
 10,277
@@ -586,7 +589,14 @@ der Ankunft je Einstellung und sein Abstand zur Einstellung des Capture
 Bewegung auseinanderlegen. Die Ausgabe endet mit `not compared with the
 horn`: ohne Encoder ist eine Ankunft der Strom zurück auf seinem
 Haltepegel, und das kann dem Arm vor- oder nachlaufen. Je Trace eine
-`<log>-trace-<n>.csv` mit Zeit in ms, Strom in A und Busspannung in V.
+`<log>-trace-<n>.csv` mit vier Spalten, getrennt durch `;`: Zeit in ms,
+Strom in A, die Busspannung in V auf den Zeilen, die eine haben, und
+`clipped`. `clipped` ist 1 für ein Sample am oder über dem oberen Ende des
+Bereichs, -1 am oder unter dem unteren Ende und 0 für einen Wert. Der
+Strom einer geclippten Zeile ist das Ende des Bereichs, eine Grenze und
+kein Wert: 1,6380 A oder -1,6384 A an einem Shunt von 0,1 Ω. Eine Datei
+mit drei Spalten hat keine Clip-Markierung, und ihre geclippten Zeilen
+lesen sich als Werte.
 
 **Was das Tool ablehnt.** Zwischen der Zeile `$T` und der Zeile `$Z` eines
 Trace ist jede Zeile eine ganze Zeile des Formats oder eine eigene
@@ -594,7 +604,13 @@ Konsolenzeile des Koprozessors, die mit `rcbench-iomcu:` beginnt. Ganz ist
 eine Zeile mit jedem Feld ihres Typs in seiner Reihenfolge, mit nichts
 vor, zwischen oder hinter den Feldern und mit jeder Zahl in dem Bereich,
 in dem der Koprozessor sie hält: eine Zeile `$C` oder `$D` hat `ch=` und
-`us=`, eine Zeile `$E` oder `$K` keines von beiden. Eine Zeile endet mit
+`us=`, eine Zeile `$D` danach `cmd=`, eine Zeile `$E` oder `$K` keines von
+beiden. Das Tool liest die Formatversionen 3 und 2 (`$T v=`). Eine Zeile
+`$D` der Version 2 hat kein `cmd=`, und das Tool beendet mit ihr das
+späteste Kommando ihres Kanals, das höchstens 30 ms nach ihrem `t=` liegt:
+ein Kommando, das innerhalb von 30 ms auf einen losgelassenen Ausgang
+folgt, nimmt diese Zeile `$D` als seine eigene. Eine Zeile `$D` in der Form
+der anderen Version ist ein Schaden. Eine Zeile endet mit
 LF oder CR LF. Alles andere ist ein Schaden. Ebenso eine zweite Zeile
 `$H`, eine andere Zeile als `$L` vor der Zeile `$H`, eine andere
 Trace-Länge als 4000 ms (10000 ms bei `t`), eine andere Sample-Periode als
@@ -730,7 +746,8 @@ gewählt, nicht gemessen.
 - Das Zeilenformat hat keinen Prüfwert. Eine Zeile, die in ihrer letzten
   Zahl abgeschnitten ist, ist eine ganze Zeile mit einer anderen Zahl, und
   das Tool liest sie so: der Code eines Samples, eine Spannung, die
-  Pulsbreite einer Zeile `$C` oder `$D`, die Zeit einer Zeile `$E` oder
+  Pulsbreite einer Zeile `$C`, die Kommandozeit einer Zeile `$D`, die
+  Zeit einer Zeile `$E` oder
   `$K`, der Reset-Zähler einer Zeile `$H` oder `$S`. Ein Schnitt an jeder
   anderen Stelle einer Zeile wird gemeldet, ebenso eine verlorene Sample-,
   Spannungs- oder Trigger-Zeile. Eine verlorene Zeile `$S` wird gemeldet,

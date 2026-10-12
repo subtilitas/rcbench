@@ -38,6 +38,27 @@ history is in git.
   signed difference. The `$D` line is documented as written about 50 ms after
   its `t=`, and `servo_move.h`, `bench_frame.c` and `servo_sync.h` describe
   what the code does.
+- Link protocol 4.17: the TONE page refuses a pin held by an output, SENSE,
+  SUPPLY or a programming port, and a capture the coprocessor cannot start
+  for now, with the new NACK reason BUSY (6), and keeps BAD_VALUE for values
+  no freed pin makes good. The panel offers a first frame refused with BUSY
+  again every 5 s and writes one refused with BAD_VALUE again only after the
+  next change of the set-up or link-up. From a 4.16 or older coprocessor,
+  which says BAD_VALUE for both, it offers the frame again every 5 s when
+  its tone range and gap are valid.
+- The phase tap readout shows `WAITING` when the TONE page's flags say the
+  tap runs and its window number has not moved for 1.5 s
+  (`TONE_LINK_WINDOW_STALE_MS`).
+- A read-back of FFFFh of the INA228's ADC_CONFIG or the INA3221's
+  Configuration takes the part offline on that one read and counts in
+  `RESETS`; another value that differs is still read a second time. The
+  readings themselves are not checked for all ones.
+- The CSV file of `tools/sense_trace.py` has a fourth column, `clipped`: 1
+  at or past the top of the range, -1 at or past the bottom, 0 for a value.
+- Trace format version 3: a `$D` line ends `cmd=` with its command's `$C`
+  time, and `tools/sense_trace.py` ends that command with it, also when the
+  output was let go and the next command came within 30 ms. The tool reads
+  version 2 files with the 30 ms rule as before.
 - `testbench/host/capture.sh` warns when a capture holds no samples or the
   read-back fails, and still prints the path. `selftest.sh` no longer reports
   `sigrok-cli --scan` error output as the analyser found, and skips a

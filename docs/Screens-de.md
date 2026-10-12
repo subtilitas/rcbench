@@ -1239,7 +1239,7 @@ Pieptöne weiter aus dem Netzteilstrom.
 | --- | --- |
 | `LÄUFT` | die Aufnahme läuft |
 | `ÜBERLAUF` | sie läuft, und der Aufnahmering oder die FIFO ist seit dem Einschalten des Abgriffs übergelaufen |
-| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet |
+| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet, oder ihre Flags sagen, dass der Abgriff läuft, und ihre Fensternummer hat sich 1,5 s nicht bewegt, oder der Abgriff wurde ausgeschaltet, und die Page hält ihn noch an |
 | `KEINE TONE-PAGE` | der Koprozessor spricht ein Protokoll älter als 4.8 |
 | `PIN BELEGT` | der Koprozessor hält den Abgriff aus: sein Pin ist anderweitig gebunden |
 | `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
@@ -1701,7 +1701,13 @@ er steigt. Einem Koprozessor älter als 4.8 wird nichts gesendet.
 Solange die Page den Abgriff eingeschaltet hält, liest das Panel ihre 16
 Leseregister alle 50 ms: die Flags, die Tonhöhe des letzten 8-ms-Fensters,
 die Nummer des neuesten Pieptons und die Zähler der verlorenen Pieptöne und
-der ignorierten Tiefs. Die Pieptöne holt es einzeln nach Nummer. Der
+der ignorierten Tiefs. Ein Lesen, dessen Flags sagen, dass der Abgriff
+läuft, spricht für ihn, solange sich seine Fensternummer bewegt: der
+Koprozessor schließt alle 8 ms ein Fenster, eine Nummer, die 1,5 s
+(`TONE_LINK_WINDOW_STALE_MS`) stehen bleibt, ist also eine Aufnahme, die
+anhielt, während die Page noch antwortet, und der Bildschirm zeigt `WARTET`
+wie bei einem Lesen, das älter als 500 ms ist. Die Pieptöne holt es einzeln
+nach Nummer. Der
 Koprozessor hält die letzten 64 Pieptöne, nummeriert von 1 bis 65535 und
 dann wieder ab 1, und ein Lesen entfernt keinen, eine auf dem Link verlorene
 Antwort kostet also keinen Piepton. Ein Piepton, der den Ring verlassen hat,
@@ -1716,7 +1722,7 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `Koprozessor ohne TONE-Page -- Phasenabgriff nicht gelesen` | der Abgriff ist eingeschaltet und der Koprozessor spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt oder der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons). Alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet |
+| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt oder der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut geschrieben. Von einem Koprozessor mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5 s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
 | `Phasenabgriff: Pin GP22 nicht frei -- Abgriff läuft nicht` | der Koprozessor meldet den Pin als abgelehnt: eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung |
 | `Phasenabgriff: Aufnahme übergelaufen -- Pieptöne abgeschnitten` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des Koprozessors ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |

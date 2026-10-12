@@ -341,9 +341,9 @@ static void lost_add(uint32_t *n, uint32_t span[2], uint32_t add,
 }
 
 /* A line for the console's queue, or counted when it is full.  Whether
- * it found a place. */
+ * it found a place.  @p cmd_t is a $D line's command's time. */
 static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
-                 uint64_t at_us, uint16_t ch, uint16_t us)
+                 uint64_t at_us, uint16_t ch, uint16_t us, uint32_t cmd_t)
 {
     if (o->q_n >= SENSE_TRACE_MARKS) {
         lost_add(&o->n_mlost, o->mlost_t, 1u, t, t);
@@ -356,6 +356,7 @@ static bool mark(sense_trace_out_t *o, sense_trace_trig_t kind, uint32_t t,
     m->at_us = at_us;
     m->ch    = ch;
     m->us    = us;
+    m->cmd_t = cmd_t;
     ++o->q_n;
     /* In the order of their times: two slots' frames need not start in
      * the order the slots are looked at. */
@@ -416,10 +417,11 @@ static place_t trigger(sense_trace_t *tr, sense_trace_trig_t kind,
         o->wait[o->wait_n].at_us = at_us;
         o->wait[o->wait_n].ch    = ch;
         o->wait[o->wait_n].us    = us;
+        o->wait[o->wait_n].cmd_t = t;
         ++o->wait_n;
         return TRIG_WAITS;
     }
-    return mark(o, kind, t, at_us, ch, us) ? TRIG_PLACED : TRIG_LOST;
+    return mark(o, kind, t, at_us, ch, us, t) ? TRIG_PLACED : TRIG_LOST;
 }
 
 void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
@@ -429,12 +431,17 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
     if (tr->buf == NULL || (unsigned)kind > (unsigned)SENSE_TRACE_TRIG_KEY) {
         return;                 /* a mark kind is no trigger */
     }
-    if (trigger(tr, kind, at_us, ch, us) == TRIG_LOST
-        && kind == SENSE_TRACE_TRIG_CMD) {
-        /* No line of this command: what its slot does until the next one
-         * would be read as an earlier command's. */
-        for (unsigned k = 0u; k < SENSE_TRACE_SLOTS; ++k) {
-            if (o->watch[k].have && o->watch[k].ch == ch) {
+    const place_t placed = trigger(tr, kind, at_us, ch, us);
+    if (kind != SENSE_TRACE_TRIG_CMD) {
+        return;
+    }
+    for (unsigned k = 0u; k < SENSE_TRACE_SLOTS; ++k) {
+        if (o->watch[k].have && o->watch[k].ch == ch) {
+            /* The $D line that ends a slew names this command's line. */
+            o->watch[k].cmd_t = to_t(at_us);
+            if (placed == TRIG_LOST) {
+                /* No line of this command: what its slot does until the
+                 * next one would be read as an earlier command's. */
                 o->watch[k].orphan = true;
             }
         }
@@ -447,7 +454,7 @@ void sense_trace_trigger(sense_trace_t *tr, sense_trace_trig_t kind,
  * for the command.  A command that does not wait has its line in a trace
  * that is over, or none. */
 static void wait_slew(sense_trace_out_t *o, sense_trace_trig_t kind,
-                      uint16_t ch, uint32_t t, uint16_t us)
+                      uint16_t ch, uint32_t t, uint16_t us, uint32_t cmd_t)
 {
     if (o->stage == SENSE_TRACE_IDLE) {
         return;
@@ -481,6 +488,7 @@ static void wait_slew(sense_trace_out_t *o, sense_trace_trig_t kind,
     m->at_us = 0u;
     m->ch    = ch;
     m->us    = us;
+    m->cmd_t = cmd_t;
 }
 
 /* A slewed command of @p w has ended, at its last change: said in the
@@ -490,9 +498,11 @@ static void slew_ends(sense_trace_out_t *o, sense_trace_watch_t *w,
 {
     if (w->slewed && !w->orphan) {
         if (open_at(o, w->changed_t)) {
-            mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, 0u, ch, w->pulse);
+            mark(o, SENSE_TRACE_MARK_DEST, w->changed_t, 0u, ch, w->pulse,
+                 w->cmd_t);
         } else {
-            wait_slew(o, SENSE_TRACE_MARK_DEST, ch, w->changed_t, w->pulse);
+            wait_slew(o, SENSE_TRACE_MARK_DEST, ch, w->changed_t, w->pulse,
+                      w->cmd_t);
         }
     }
     w->slewed = false;
@@ -547,7 +557,7 @@ bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
     if (open_at(o, now_t)) {
         extend(o, now_t + SENSE_TRACE_EDGE_MS * SENSE_TRACE_T_PER_MS);
     } else if (!w->orphan) {
-        wait_slew(o, SENSE_TRACE_MARK_STEP, ch, now_t, pulse_us);
+        wait_slew(o, SENSE_TRACE_MARK_STEP, ch, now_t, pulse_us, w->cmd_t);
     }
     return false;
 }
@@ -683,6 +693,9 @@ static void line_mark(const sense_trace_mark_t *m, line_t *l)
         || m->kind == SENSE_TRACE_MARK_DEST) {
         put_kv(l, " ch=", m->ch, 65535u);
         put_kv(l, " us=", m->us, 65535u);
+    }
+    if (m->kind == SENSE_TRACE_MARK_DEST) {
+        put_kv(l, " cmd=", m->cmd_t, UINT32_MAX);
     }
     put_eol(l);
 }
@@ -967,10 +980,11 @@ static void ended(sense_trace_t *tr, const uint32_t *cut)
             extend(o, e->t + SENSE_TRACE_EDGE_MS * SENSE_TRACE_T_PER_MS);
             if (e->kind == SENSE_TRACE_MARK_DEST) {
                 (void)mark(o, SENSE_TRACE_MARK_DEST, e->t, 0u, e->ch,
-                           e->us);
+                           e->us, e->cmd_t);
             }
         } else if (placed[k] == TRIG_WAITS) {
-            wait_slew(o, (sense_trace_trig_t)e->kind, e->ch, e->t, e->us);
+            wait_slew(o, (sense_trace_trig_t)e->kind, e->ch, e->t, e->us,
+                      e->cmd_t);
         }
     }
     if (o->stage == SENSE_TRACE_IDLE) {
@@ -981,7 +995,7 @@ static void ended(sense_trace_t *tr, const uint32_t *cut)
         if (left[k].kind == SENSE_TRACE_MARK_DEST
             && open_at(o, left[k].t)) {
             mark(o, SENSE_TRACE_MARK_DEST, left[k].t, 0u, left[k].ch,
-                 left[k].us);
+                 left[k].us, left[k].cmd_t);
         }
     }
     lost_add(&o->n_mlost, o->mlost_t, lost, lost_t[0], lost_t[1]);
