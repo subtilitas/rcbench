@@ -32,7 +32,7 @@ This tool reads each module and fails when one of these does not hold:
   digit separator (`1'000`) can pair with a later `'` and report a
   commented-out include;
 - the module's README.md has a heading with "Interface" in it; a heading
-  with "Trademarks" in it, in any case, when the text names a brand listed
+  with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
   sentence "no pin driver".  The Interface heading and "no pin driver" are
   read outside fenced code blocks and HTML comments.  A brand is matched
@@ -126,7 +126,7 @@ C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
 
 # Brand names that a module README names; a README that names one carries a
-# "Trademarks" section.
+# section whose heading has "Trademark" in it.
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
           "FrSky", "FlySky")
@@ -377,7 +377,7 @@ def prose(text: str) -> str:
 
 def readme_problems(module: pathlib.Path) -> list[str]:
     """What the README of @p module lacks: an Interface heading, a
-    Trademarks heading where a brand is named, and for a module without a
+    heading with "Trademark" where a brand is named, and for a module without a
     pin driver the statement that there is none."""
     path = module / "README.md"
     if not path.is_file():
@@ -393,7 +393,7 @@ def readme_problems(module: pathlib.Path) -> list[str]:
     brands = sorted(set(BRAND_RE.findall(text)))
     if brands and not any("trademark" in h for h in headings):
         problems.append(f'{rel} names {", ".join(brands)} and has no '
-                        'heading "Trademarks"')
+                        'heading with "Trademark"')
     if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(shown):
         problems.append(f'{rel} does not say "no pin driver": the module '
                         f"has no {DRIVER}/ folder")

@@ -232,7 +232,7 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   trigraph directive fail, because they can hide an include; a leading
   UTF-8 byte order mark, form feed and vertical tab are read; that
   the `README.md` has a heading with "Interface", a heading with
-  "Trademarks" in it where it names a brand from the tool's `BRANDS` list,
+  "Trademark" in it where it names a brand from the tool's `BRANDS` list,
   and the words "no pin driver" where the module has no `rp2350/` folder;
   the Interface heading and "no pin driver" count outside fenced code
   blocks and HTML comments only, while a brand is matched anywhere in the

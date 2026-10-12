@@ -487,8 +487,8 @@ def test_a_readme_naming_a_brand_needs_a_trademarks_heading(tmp_path):
     readme = m / "README.md"
     readme.write_text(readme.read_text() + "Works with Futaba, S.BUS.\n")
     assert cp.readme_problems(m) == [
-        'wire/README.md names Futaba, S.BUS and has no heading '
-        '"Trademarks"']
+        'wire/README.md names Futaba, S.BUS and has no heading with '
+        '"Trademark"']
     readme.write_text(readme.read_text() + "\n## Trademarks\n\nNotice.\n")
     assert cp.readme_problems(m) == []
 
