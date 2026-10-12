@@ -3823,6 +3823,17 @@ static prog_link_t        s_prog_link;
 static atomic_uint        s_prog_want_target;
 static atomic_bool        s_prog_want_pwm;
 static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
+/* Where the tester's commands go, for the SERVO screen's target line:
+ * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
+ * pulse in bit 16.  One word, so the screen never reads one drive's target
+ * with another's pin or pulse.  No link until a coprocessor answers. */
+#define DRIVE_PWM_BIT (1u << 16)
+static atomic_uint        s_drive =
+    ((unsigned)PROG_LINK_TARGET_NO_LINK << 8) | PROG_LINK_NO_PIN;
+_Static_assert(PROG_LINK_NO_PIN == SERVO_SCREEN_NO_PIN
+               && PROG_LINK_TARGET_UNKNOWN == SERVO_SCREEN_TARGET_UNKNOWN
+               && PROG_LINK_TARGET_NO_LINK == SERVO_SCREEN_TARGET_NO_LINK,
+               "the drive crosses to the SERVO screen unchanged");
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -4675,6 +4686,10 @@ static bool write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
+/* The GPIOs of those channels' slots, for the SERVO screen's target line;
+ * whether a binding was read. */
+static atomic_ullong s_servo_pins;
+static atomic_bool   s_servo_pins_known;
 /* For the screen's SWEEP: a binding read, with a surface in it. */
 static atomic_bool s_servo_surfaces;
 /* For the screen's runs: the SENSE page holds the encoder enabled. */
@@ -6684,6 +6699,15 @@ static __attribute__((noinline)) void kst_link_service(void)
     }
 }
 
+/* Where the tester's commands go, into s_drive for the SERVO screen: from
+ * each pass of prog_link_service() and from the link-lost edge. */
+static void prog_drive_publish(void)
+{
+    const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
+    atomic_store(&s_drive, ((unsigned)drive.target << 8) | drive.pin
+                           | (drive.pwm ? DRIVE_PWM_BIT : 0u));
+}
+
 /*
  * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
  * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
@@ -6733,6 +6757,7 @@ static __attribute__((noinline)) void prog_link_service(void)
         prog_link_written(&s_prog_link, &w, ack);
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
+    prog_drive_publish();
     servo_surfaces_publish();
 }
 
@@ -7032,6 +7057,9 @@ static void read_outputs_binding(void)
         s_servo_channels = outputs_role_channels(r.slots, r.cfg,
                                                  OUT_ROLE_SURFACE);
         s_servo_known    = true;
+        atomic_store(&s_servo_pins,
+                     outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
+        atomic_store(&s_servo_pins_known, true);
         servo_surfaces_publish();
         post_reading(&r);
         return;
@@ -7044,6 +7072,8 @@ static void read_outputs_binding(void)
      */
     s_servo_channels = 0u;
     s_servo_known    = false;
+    atomic_store(&s_servo_pins, 0u);
+    atomic_store(&s_servo_pins_known, false);
     servo_surfaces_publish();
     post_reading(&r);
     switch (r.state) {
@@ -7157,6 +7187,7 @@ static void link_came_up(const link_msg_t *reply)
     kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    prog_drive_publish();
 
     /*
      * A board this build ships no catalogue for describes its own pins, so a
@@ -7352,9 +7383,11 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* An operation under way ends unanswered; the programmer
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
-            /* And no port is the target or names a pin. */
+            /* And no port is the target or names a pin, and the SERVO
+             * screen's target line says no link. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
+            prog_drive_publish();
             servo_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
@@ -8367,6 +8400,12 @@ void app_main(void)
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
+            servo_screen_set_pins(atomic_load(&s_servo_pins),
+                                  atomic_load(&s_servo_pins_known));
+            const unsigned drive = atomic_load(&s_drive);
+            servo_screen_set_drive((uint8_t)(drive >> 8),
+                                   (uint8_t)(drive & 0xFFu),
+                                   (drive & DRIVE_PWM_BIT) != 0u);
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
