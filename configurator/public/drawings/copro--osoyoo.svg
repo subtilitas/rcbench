@@ -250,6 +250,7 @@
 <circle cx="239" cy="68" r="2.2" fill="url(#cos-gold)"/>
 <circle cx="250" cy="68" r="2.2" fill="url(#cos-gold)"/>
 <text x="239" y="90" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="middle">3V3 / 5V</text>
+<text x="256" y="101" font-size="9" font-weight="600" fill="#f2f2f2" text-anchor="end">5V for the servo</text>
 <g filter="url(#cos-s3)"><circle cx="279" cy="76" r="11" fill="url(#cos-tin)"/><path d="M270 69A11 11 0 0 1 288 69Z" fill="#1b1c20"/><circle cx="305" cy="76" r="11" fill="url(#cos-tin)"/><path d="M296 69A11 11 0 0 1 314 69Z" fill="#1b1c20"/></g>
 <g transform="translate(262,113) rotate(0)" filter="url(#cos-s2)"><rect x="-12" y="-6.1" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="-2.9" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="0.3" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-12" y="3.5" width="24" height="2.6" fill="url(#cos-tin)"/><rect x="-9" y="-8" width="18" height="16" rx="1.5" fill="url(#cos-body)"/><rect x="-9" y="-8" width="18" height="2.6" rx="1.5" fill="#fff" opacity=".07"/><circle cx="-5" cy="-4" r="1.4" fill="#6a6e76"/><g fill="#9aa0a8" font-size="6" text-anchor="middle"></g></g>
 <rect x="284" y="98" width="30" height="30" rx="4" fill="#33363c" filter="url(#cos-s2)"/><circle cx="299" cy="113" r="9" fill="#4a4e56"/>

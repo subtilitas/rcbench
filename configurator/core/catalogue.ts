@@ -1694,7 +1694,7 @@ const checks: Check[] = [
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
   {
-    id: 'strip-dc', kind: 'measure',
+    id: 'strip-dc', kind: 'note',
     text: t(
       'Osoyoo breakout board, DC supply: connect exactly 1 supply, either at the DC jack or at the VIN terminal, never both. The vendor states not to use the DC jack and the screw terminal together. The vendor recommends 7 to 12 V.',
       'Osoyoo-Breakout-Platine, DC-Versorgung: Genau 1 Versorgung anschließen, entweder an der DC-Buchse oder an der VIN-Klemme, nie an beiden. Der Hersteller gibt an, die DC-Buchse und die Schraubklemme nicht zusammen zu verwenden. Der Hersteller empfiehlt 7 bis 12 V.',

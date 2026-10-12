@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { TAG, VERSION } from '../../release.ts';
-import type { Catalogue, Picture } from '../../contract.ts';
+import type { Catalogue, Picture, Src } from '../../contract.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import {
   ANCHOR_TEXT_MIN, BANNED_WORDS, RELEASE_TAG, checkAll, checkCounts, checkEnds, checkFunctions, checkIds,
@@ -751,6 +751,20 @@ test('src: every item carries one', () => {
   const c = copy();
   delete (c.wires[0] as Partial<Catalogue['wires'][number]>).src;
   reports(checkSrc(c, null).findings, 'wire.1', /no src/);
+});
+
+test('src: a doc source needs a title, an https address with a path and a reference', () => {
+  const at = (src: Src): Finding[] => {
+    const c = copy();
+    c.functions[SERVO]!.src = src;
+    return checkSrc(c, null).findings;
+  };
+  const ok = { kind: 'doc', title: 'Schematic', url: 'https://example.com/a.pdf', ref: 'page 2' } as const;
+  assert.deepEqual(at(ok), []);
+  reports(at({ ...ok, title: '' }), 'function.servo', /src "doc" has no title/);
+  reports(at({ ...ok, url: 'http://example.com/a.pdf' }), 'function.servo', /no https address/);
+  reports(at({ ...ok, url: 'https://example.com' }), 'function.servo', /no https address/);
+  reports(at({ ...ok, ref: '' }), 'function.servo', /names no page, net or table/);
 });
 
 test('src: a broken repository anchor is reported', () => {
