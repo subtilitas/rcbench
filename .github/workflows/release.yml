@@ -46,6 +46,9 @@ jobs:
   version:
     name: The tag matches the images
     runs-on: ubuntu-latest
+    # ci_gate.py waits up to 5400 s (90 min) for CI; 100 min leaves 10 min
+    # for the checkouts and the version check.
+    timeout-minutes: 100
     # Resolved once, here, and every job below builds this SHA rather than
     # fetching the tag again.  A tag can be force-moved while a run is in
     # flight, and four independent fetches of a moving ref can each land on a
@@ -116,6 +119,7 @@ jobs:
     needs: [version]
     name: Panel image
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
         with:
@@ -149,6 +153,7 @@ jobs:
     name: Coprocessor image
     needs: [version]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -235,6 +240,7 @@ jobs:
     name: Package and publish
     needs: [version, panel, iomcu]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
         with:
