@@ -334,10 +334,16 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V)
+time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
-`voltage`, `current` und `power` sind, was der Bildschirm zeigt.
+`voltage`, `current` und `power` sind, was der Bildschirm zeigt. `source`
+ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
+`model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
+SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
+die Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und die
+Werkzeuge lesen beide Formen, denn `source` ist eine Textspalte und
+wird nie gezeichnet.
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
 nicht die Quelle ist; `esc current` ist der eigene Telemetriestrom des ESC,
 von der SENSE-Page, solange der INA228 die Quelle ist, sonst von der
@@ -795,6 +801,34 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
+Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
+weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
+AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
+als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; so viele Pins,
+wie in die 34 Zeichen der Zeile passen, dann `+N`: 6 Pins ab GP40 lauten
+`ZIEL: GP40 GP41 GP42 GP43 GP44 +1`. Sie ist in der Warnfarbe ohne
+einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
+wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
+`ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
+Koprozessor für den Programmierport meldet. Die Befehle des Testers
+erreichen dann die SERVO-PWM-Ausgänge nicht; bei scharf geschalteter Bank
+halten diese ihren Ruhepuls, die Mitte zwischen ihren Endpunkten. Ein Port
+als Ziel ohne nutzbaren Pin (keiner, beim Start abgelehnt, oder ein Port,
+den der Koprozessor nicht hat) lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
+trotzdem an den Port. Mit PORT-PWM aus gibt der Port keinen Puls aus, und
+die Zeile hängt `PWM AUS` an: `ZIEL: PROG-PORT GP13 PWM AUS`. Zwei Zustände
+nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der Tester
+einen Befehl: `ZIEL: KEIN LINK`, solange kein Koprozessor antwortet, und
+`ZIEL: UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit
+dem Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht
+bestätigt wurde oder ein Lesen nicht beantwortet wurde. Solange der Servo-Programmer den Port hält, ändert sich die Zeile nicht: sie nennt weiter das Ziel, das der Koprozessor hält, einen Port oder die Ausgänge; der Programmer treibt den Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
+diese Seite (Protokoll älter als 4.13) hat die Standardausgänge als Ziel.
+Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung:
+eine Änderung von PWM-ZIEL wartet auf einen ruhigen Prüfstand und erscheint
+in der Zeile, sobald der Koprozessor sie übernommen hat.
+
+![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
+
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
 | STANDARD PWM | 1500 us | 1000-2000 us | 50, 60, 100, 150, 200, 250, 300, 333 Hz |
@@ -998,8 +1032,9 @@ OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
-in dem der Prüfstand unscharf ist, der Ausgang des Netzteils aus ist und nicht
-das Foto der Platine geladen wird, und mit ihr jede ungespeicherte Änderung
+in dem der Prüfstand unscharf ist und kein Scharfschalten wartet, der Ausgang
+des Netzteils aus ist und kein ON eingereiht ist und das Foto der Platine
+weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
 Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
 (der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
@@ -1055,11 +1090,12 @@ Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
 50 ms:
 
 ```
-time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh)
+time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);energy (Wh);source
 ```
 
 Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
-OFF und leer, solange das Netzteil nicht antwortet. Der Prüfstand hat beim
+OFF und leer, solange das Netzteil nicht antwortet. `source` ist `measured`
+für die Werte des PD mini und `model` für das Modell des Panels. Der Prüfstand hat beim
 Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
 Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
 Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
@@ -1778,7 +1814,9 @@ Der Druck fordert an, er schreibt nicht. Einstellungen zu schreiben committet
 eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
 ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
 keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
-Prüfstand disarmed ist und kein Platinenfoto geholt oder abgelegt wird. Auf
+Prüfstand disarmed ist und kein Scharfschalten wartet, der Ausgang des
+Netzteils aus ist und kein ON eingereiht ist und kein Platinenfoto geholt oder
+abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
 steht auf `GESPEICHERT`, so schnell wie das Auge dem Druck folgt. Armed steht die
 Anforderung als `BEI STILLSTAND`, bis der Prüfstand disarmed wird.
@@ -2116,8 +2154,12 @@ Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
 
 Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
 behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
-gesehen wird, und danach nichts. Eine Platine ohne Foto, oder eine, deren
-Übertragung nicht fertig wurde, wird gezeichnet statt leer gelassen.
+gesehen wird, und danach nichts. Das Schreiben in den Flash wartet auf einen
+entschärften Prüfstand mit ausgeschaltetem Netzteil und hält zwischen zwei
+Sektoren von 4 kB an, wenn der Prüfstand scharf wird oder das Netzteil
+einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
+Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht
+fertig wurde, wird gezeichnet statt leer gelassen.
 
 Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
 anderen beiden sind auf der Platine selbst markiert: eine Masse trägt ein
