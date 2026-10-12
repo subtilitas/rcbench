@@ -56,6 +56,89 @@ static uint16_t reg(unsigned i)
     return v;
 }
 
+/* A PWM slot on @p pin rendering channel @p ch at @p hz. */
+static void pwm_slot(uint8_t slot, uint8_t pin, uint8_t ch, uint16_t hz)
+{
+    const out_slot_t sl = {
+        .driver = OUT_DRIVER_PWM, .first_channel = ch, .channels = 1u,
+        .pin = pin, .rate_hz = hz,
+    };
+    CHECK(outputs_configure(&o, slot, &sl));
+}
+
+static uint8_t frame_hz(uint16_t hz)
+{
+    return servo_page_write(&pg, LINK_SV_FRAME_HZ, 1u, &hz, &o, T0);
+}
+
+/*
+ * A frame rate under which a surface would carry a pulse longer than its
+ * frame is refused, and the page keeps the rate it had: 1000 to 2000 us
+ * refuses 560 Hz (period 1785 us) and 500 Hz (2000 us) and takes 400 Hz;
+ * 1000 to 1784 us takes 560 Hz, 1000 to 1785 us does not.  The throttle
+ * keeps its own rate and is not judged at the page's.
+ */
+TEST_CASE(a_frame_rate_too_fast_for_the_surface_endpoints_is_refused)
+{
+    fresh(false);
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 2000u));
+    CHECK(outputs_set_endpoints(&o, 1u, 1000u, 2000u));
+    pwm_slot(0u, 0u, 0u, 50u);   /* surface, slice 0 */
+    pwm_slot(1u, 4u, 1u, 50u);   /* throttle, slice 2 */
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
+    CHECK_EQ(frame_hz(500u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(400u), 0u);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 400u);
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 400u);
+
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 1785u));
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 1784u));
+    CHECK_EQ(frame_hz(560u), 0u);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 560u);
+}
+
+/*
+ * Going back to 0 is a rate change too: a surface at its own 400 Hz with
+ * 2500 us, taken under a 50 Hz page rate, refuses 0.
+ */
+TEST_CASE(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate)
+{
+    fresh(false);
+    pwm_slot(0u, 0u, 0u, 400u);
+    CHECK_EQ(frame_hz(50u), 0u);
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 2500u));
+    CHECK_EQ(frame_hz(0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 50u);
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 2499u));
+    CHECK_EQ(frame_hz(0u), 0u);
+}
+
+/*
+ * A programming port whose pulse is on renders at the page's rate as well,
+ * so its channel is judged with the slots: channel 9 at 1000 to 2000 us
+ * refuses 560 Hz though no slot is bound; at 410 to 1110 us, a 760 us tail
+ * servo's, 560 Hz is taken.  A rate of 0 does not judge it: the port is
+ * back at 50 Hz.
+ */
+TEST_CASE(a_frame_rate_is_judged_against_a_pulsing_ports_endpoints)
+{
+    fresh(false);
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
+    CHECK_EQ(frame_hz(560u), 0u);   /* no port named */
+    CHECK_EQ(frame_hz(0u), 0u);
+    servo_page_ports(&pg, (uint16_t)(1u << 9));
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
+    CHECK_EQ(frame_hz(499u), 0u);
+    CHECK_EQ(frame_hz(0u), 0u);
+    CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
+    CHECK_EQ(frame_hz(560u), 0u);
+    servo_page_ports(NULL, 0u);   /* no page, nothing to do */
+}
+
 TEST_CASE(a_sweep_needs_the_bench_armed)
 {
     fresh(false);
@@ -880,6 +963,9 @@ TEST_CASE(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap)
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
+    RUN(a_frame_rate_too_fast_for_the_surface_endpoints_is_refused);
+    RUN(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate);
+    RUN(a_frame_rate_is_judged_against_a_pulsing_ports_endpoints);
     RUN(a_sweep_out_of_range_is_refused_whole);
     RUN(a_sweep_drives_the_surfaces_and_nothing_else);
     RUN(a_repeated_sweep_keeps_its_curve_and_a_changed_one_starts_over);

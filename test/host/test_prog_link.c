@@ -141,6 +141,44 @@ TEST_CASE(the_port_becomes_the_target_and_then_renders_its_pulse)
     CHECK(!prog_link_next(&g_p, true, &w));
 }
 
+/*
+ * The write that switches a port's pulse on names the port, so the panel
+ * can state the port's range before it: a coprocessor from protocol 4.16
+ * refuses the pulse while the range is longer than the frame.  The target
+ * write, a write that switches the pulse off, a write naming no new port,
+ * and any write on an unknown page name none.
+ */
+TEST_CASE(the_write_that_switches_a_pulse_on_names_its_port)
+{
+    prog_link_write_t w;
+
+    fresh();
+    read_at(0u);
+    prog_link_want(&g_p, 1u, true);
+    CHECK(prog_link_next(&g_p, true, &w));
+    CHECK_EQ(w.off, LINK_PG_TARGET);
+    CHECK_EQ(prog_link_pulse_on(&g_p, &w), 0u);
+    g_page[w.off] = w.value;
+    prog_link_written(&g_p, &w, true);
+    CHECK(prog_link_next(&g_p, true, &w));
+    CHECK_EQ(w.off, LINK_PG_PWM);
+    CHECK_EQ(prog_link_pulse_on(&g_p, &w), 1u);
+    /* Port 2's bit alone names port 2. */
+    const prog_link_write_t two = { .off = LINK_PG_PWM, .value = 0x0004u };
+    CHECK_EQ(prog_link_pulse_on(&g_p, &two), 3u);
+    g_page[w.off] = w.value;
+    prog_link_written(&g_p, &w, true);
+    /* A pulse already on is not switched on again, and off is not on. */
+    CHECK_EQ(prog_link_pulse_on(&g_p, &w), 0u);
+    const prog_link_write_t off = { .off = LINK_PG_PWM, .value = 0u };
+    CHECK_EQ(prog_link_pulse_on(&g_p, &off), 0u);
+    /* Unknown page, no write, no object: none. */
+    prog_link_written(&g_p, &off, false);
+    CHECK_EQ(prog_link_pulse_on(&g_p, &two), 0u);
+    CHECK_EQ(prog_link_pulse_on(&g_p, NULL), 0u);
+    CHECK_EQ(prog_link_pulse_on(NULL, &two), 0u);
+}
+
 TEST_CASE(the_pulse_goes_off_at_any_time_and_before_the_target_changes)
 {
     prog_link_write_t w;
@@ -494,6 +532,7 @@ int main(void)
     RUN(nothing_is_written_before_the_page_is_read);
     RUN(the_page_is_read_every_500_ms_and_the_clock_may_wrap);
     RUN(the_port_becomes_the_target_and_then_renders_its_pulse);
+    RUN(the_write_that_switches_a_pulse_on_names_its_port);
     RUN(the_pulse_goes_off_at_any_time_and_before_the_target_changes);
     RUN(a_port_the_page_does_not_have_is_no_target);
     RUN(a_port_that_loses_its_pin_gives_the_target_back);

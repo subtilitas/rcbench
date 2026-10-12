@@ -15,7 +15,8 @@
  * both limits; the slew refused above 3000 and a kept one above it started
  * at 3000; the read-only registers and the page end; a port the build
  * does not have; a slot refused on a port's pin and beside it; a write
- * taken back.
+ * taken back; no endpoint longer than the frame on a port whose pulse is
+ * on.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -726,6 +727,80 @@ TEST_CASE(a_write_is_taken_back_whole)
     prog_port_init(NULL, 1u);
 }
 
+/*
+ * Protocol 4.16: no port whose pulse is on carries an endpoint longer than
+ * its frame -- one microsecond under the period of the rate the ports run
+ * at.  At 560 Hz (period 1785 us) 1784 us is taken and 1785 and 1786 us are
+ * refused; at 500 Hz (2000 us) 1999 is taken and 2000 refused; at 50 Hz the
+ * 2500 us ceiling governs.  A pulse switched on under a range that does
+ * not fit is refused as well, and a port whose pulse is off is not judged.
+ */
+TEST_CASE(a_pulsing_port_takes_no_endpoint_longer_than_its_frame)
+{
+    static const struct {
+        uint16_t hz;
+        uint16_t period;
+    } k[] = { { 560u, 1785u }, { 500u, 2000u } };
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh(1u);
+        CHECK_EQ(pg.hz, PROG_PORT_RATE_HZ);
+        bind(0u, 13u);
+        prog_port_rate(&pg, k[i].hz);
+        /* 1000 to 2000 us does not fit: the pulse stays off. */
+        if (k[i].period <= 2000u) {
+            CHECK_EQ(put(LINK_PG_PWM, 1u), LINK_NACK_BAD_VALUE);
+            CHECK_EQ(reg(LINK_PG_PWM), 0u);
+        }
+        /* With the pulse off any range is taken. */
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US),
+                     (uint16_t)(k[i].period - 1u)), 0u);
+        CHECK_EQ(put(LINK_PG_PWM, 1u), 0u);
+        CHECK_EQ(prog_port_pwm_channels(&pg), (uint16_t)(1u << 9));
+        /* Pulsing: the period and one more are refused, on either end. */
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), k[i].period),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US),
+                     (uint16_t)(k[i].period + 1u)), LINK_NACK_BAD_VALUE);
+        CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MIN_US), k[i].period),
+                 LINK_NACK_BAD_VALUE);
+        CHECK_EQ(reg(LINK_PG_REG(0u, LINK_PG_MAX_US)), k[i].period - 1u);
+        CHECK_EQ(o.channel[9].max_us, k[i].period - 1u);
+        /* The pulse and its range in one frame are judged together. */
+        const uint16_t frame[2] = { 1u, 0u };
+        CHECK_EQ(prog_port_write(&pg, LINK_PG_PWM, 1u, frame, &o, 0u, false,
+                                 0u), 0u);
+        const uint16_t off_range[3] = { 0u, 1000u, k[i].period };
+        CHECK_EQ(prog_port_write(&pg, LINK_PG_REG(0u, LINK_PG_SLEW), 3u,
+                                 off_range, &o, 0u, false, 0u),
+                 LINK_NACK_BAD_VALUE);
+        /* Off, the range is the port's again. */
+        CHECK_EQ(put(LINK_PG_PWM, 0u), 0u);
+        CHECK_EQ(prog_port_pwm_channels(&pg), 0u);
+        CHECK_EQ(prog_port_write(&pg, LINK_PG_REG(0u, LINK_PG_SLEW), 3u,
+                                 off_range, &o, 0u, false, 0u), 0u);
+        CHECK_EQ(put(LINK_PG_PWM, 1u), LINK_NACK_BAD_VALUE);
+    }
+    /* At 50 Hz the frame holds the ceiling. */
+    fresh(2u);
+    bind(0u, 13u);
+    bind(1u, 14u);
+    prog_port_rate(&pg, 50u);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2500u), 0u);
+    CHECK_EQ(put(LINK_PG_PWM, 3u), 0u);
+    CHECK_EQ(prog_port_pwm_channels(&pg), (uint16_t)((1u << 9) | (1u << 10)));
+    /* The rate the page judges by is the one last named, and every port
+     * that pulses is judged: port 0 at 2500 us refuses a write to port 1
+     * at 400 Hz until it is shortened. */
+    prog_port_rate(&pg, 400u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MAX_US), 2400u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(put(LINK_PG_REG(0u, LINK_PG_MAX_US), 2499u), 0u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MAX_US), 2499u), 0u);
+    CHECK_EQ(put(LINK_PG_REG(1u, LINK_PG_MAX_US), 2500u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(prog_port_pwm_channels(NULL), 0u);
+    prog_port_rate(NULL, 50u);
+}
+
 int main(void)
 {
     RUN(a_page_starts_with_no_pin_on_any_port);
@@ -745,5 +820,6 @@ int main(void)
     RUN(a_slot_is_refused_on_a_ports_pin_and_beside_it);
     RUN(a_slot_is_refused_on_a_ports_bank_channel);
     RUN(a_write_is_taken_back_whole);
+    RUN(a_pulsing_port_takes_no_endpoint_longer_than_its_frame);
     return test_summary("prog_port");
 }
