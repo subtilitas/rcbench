@@ -5,7 +5,7 @@
 Der Prüfstand misst und treibt die Teile eines RC-Antriebs (RC: Radio
 Control, Funkfernsteuerung): Motor und ESC (Electronic Speed Controller,
 Motorregler), Servos, Empfängerbusse, Propellerwucht und Akkuzustand. Diese
-Seite listet die ursprünglichen Anforderungen und den Stand jeder einzelnen.
+Seite listet die ursprünglichen Anforderungen und ihre Umsetzung.
 
 ## Anforderungen
 
@@ -21,16 +21,18 @@ Die ursprüngliche Anforderungsliste:
 >   Reverse Engineering klappt, respektive über EX-Bus
 > - Logviewer für diverse Formate
 
-## Stand jeder Anforderung
+## Umsetzung
 
-| Anforderung | Umsetzung | Stand |
-| --- | --- | --- |
-| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-Koprozessors, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. | Schnittstelle festgelegt; kein Treiber. Bauteile gewählt: INA228 (Motor), INA745A (Servoschiene). |
-| ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) | Bildschirm gebaut und tabellengesteuert für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware; kein Protokoll wird gesendet. Die Parameter von ESCs mit BLHeli_32-Firmware werden nicht unterstützt: [Details](BLHeli32-de.md). |
-| Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet | Bildschirm und Platzierungsanleitungen gebaut; die Messung wartet auf die Sensoren |
-| Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll | Bildschirm gebaut und steuert über den Link. Keine Impulsbreite, Rahmenperiode oder Jitter wurde an einem Messgerät gelesen |
-| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden | Parametertabelle für Servos der Hitec-D-Serie im Programmierer-Bildschirm; KST- und Chaservo-Servos (zwei Marken mit einem Programmierprotokoll): der Protokollkern, der RP2350-Pin-Treiber, der Programmierport des Koprozessors (eigener Pin, ohne gespeicherten Pin GP13, mit Servo-PWM vom Servotester oder dem Programmierprotokoll und dem PD mini als Versorgung des Servos), die Link-Pages 0x32 und 0x33 und das Link-Modul des Panels sind gebaut und auf dem Host gegen ein Servo-, Leitungs- und Versorgungsmodell getestet; kein Bildschirm nutzt sie |
-| Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert | Gebaut: Durchsehen, Importansicht, Plot. Läufe werden auf die Karte geschrieben, solange der Prüfstand scharf ist. |
+| Anforderung | Umsetzung |
+| --- | --- |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-Koprozessors, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. |
+| ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) |
+| Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet |
+| Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll |
+| Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden |
+| Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert |
+
+Der Stand jeder Anforderung steht in [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).
 
 ## Nicht geplant
 
