@@ -1614,6 +1614,29 @@ TEST_CASE(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched)
     CHECK_EQ(p_throttle, 0);
 }
 
+/*
+ * A role ARM in the register with the gate unable to arm reports no roles:
+ * the answer to the outputs is "none", not what the register says.
+ */
+TEST_CASE(a_gate_that_may_not_arm_reports_no_roles)
+{
+    gate_init(0);
+    g_control[LINK_CT_ARM] = LINK_ARM_THROTTLE;
+    g_dev.last_request_ms = 1u;
+    g_dev.heard = true;
+    safety_gate_t g = safety_gate_step(&g_beat, false, &g_dev, g_control, 1u);
+    CHECK(!g.arm);
+    CHECK_EQ(g.roles, 0u);
+
+    gate_init(0);
+    (void)gate_run(1, 200);
+    (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
+    CHECK_EQ(gate_write(LINK_CT_ARM, LINK_ARM_SURFACE), 0u);
+    g = gate_run(200, 301);
+    CHECK(g.arm);
+    CHECK_EQ(g.roles, LINK_ARM_SURFACE);
+}
+
 int main(void)
 {
     RUN(a_start_is_latched_and_reports_no_fault);
@@ -1636,6 +1659,7 @@ int main(void)
     RUN(a_link_that_goes_while_an_arm_waits_is_a_stop);
     RUN(an_arm_the_far_end_never_trusts_is_given_up_latched);
     RUN(a_touch_outage_disarms_and_the_next_arm_is_taken);
+    RUN(a_gate_that_may_not_arm_reports_no_roles);
     RUN(a_keep_alive_nobody_answers_stops_the_panel_in_that_poll);
     RUN(any_exchange_nobody_answers_stops_an_armed_panel_at_once);
     RUN(a_slow_handshake_is_given_up_at_the_deadline_and_left_latched);

@@ -580,3 +580,12 @@ uint16_t outputs_arm_value_of(uint8_t roles)
     }
     return arm;
 }
+
+uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles)
+{
+    if (far_minor < LINK_MINOR_ARM_ROLE) {
+        return LINK_ARM_ALL;
+    }
+    const uint16_t v = outputs_arm_value_of((uint8_t)(roles & OUT_ROLES_ALL));
+    return (v != 0u) ? v : (uint16_t)LINK_ARM_ALL;
+}

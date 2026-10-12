@@ -2171,6 +2171,49 @@ TEST_CASE(the_armed_chip_names_the_role)
     CHECK_STR_EQ(ui_band_armed_label(0xF0u | UI_ARMED_SERVO), "ARMED SERVO");
 }
 
+/* The band draws the label, not only the label function returns it: an arm
+ * for one role paints a wider chip than ARMED alone, and the two roles paint
+ * different ones. */
+static void band_look(uint8_t roles, int *danger, uint32_t *hash)
+{
+    const ui_bench_status_t st = {
+        .link_up = true, .armed = true, .armed_roles = roles,
+        .run_seconds = 0, .mode = NULL,
+    };
+    fresh();
+    to_overview();
+    ui_router_set_status(&st);
+    ui_router_invalidate();
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    ui_router_render(&cv, 0);
+    *danger = 0;
+    *hash   = 2166136261u;
+    for (int y = 0; y < UI_BAND_H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            const gfx_color_t px = fb[(size_t)y * W + x];
+            if (px == ui_theme_color(UI_C_DANGER)) { ++*danger; }
+            *hash = (*hash ^ (uint32_t)px) * 16777619u;
+        }
+    }
+}
+
+TEST_CASE(the_band_renders_the_role_of_the_arm)
+{
+    int d_none, d_motor, d_servo, d_both;
+    uint32_t h_none, h_motor, h_servo, h_both;
+    band_look(0u, &d_none, &h_none);
+    band_look(UI_ARMED_MOTOR, &d_motor, &h_motor);
+    band_look(UI_ARMED_SERVO, &d_servo, &h_servo);
+    band_look(UI_ARMED_MOTOR | UI_ARMED_SERVO, &d_both, &h_both);
+    CHECK(d_motor > d_none);
+    CHECK(d_servo > d_none);
+    CHECK_EQ(d_both, d_none);
+    CHECK_EQ(h_both, h_none);
+    CHECK(h_motor != h_none);
+    CHECK(h_servo != h_none);
+    CHECK(h_motor != h_servo);
+}
+
 int main(void)
 {
     RUN(the_navigation_count_sees_away_and_back);
@@ -2244,5 +2287,6 @@ int main(void)
     RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
     RUN(servo_settings_and_close_carried_into_the_band_do_nothing);
     RUN(the_armed_chip_names_the_role);
+    RUN(the_band_renders_the_role_of_the_arm);
     return test_summary("nav");
 }

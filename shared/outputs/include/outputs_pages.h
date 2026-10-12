@@ -48,6 +48,14 @@ uint8_t outputs_arm_roles_of(uint16_t arm);
  */
 uint16_t outputs_arm_value_of(uint8_t roles);
 
+/**
+ * The ARM value the panel writes to arm @p roles, OUT_ROLE_BIT()s, at a
+ * coprocessor of protocol minor @p far_minor: LINK_ARM_ALL below
+ * LINK_MINOR_ARM_ROLE, else outputs_arm_value_of(@p roles), and LINK_ARM_ALL
+ * when no role of OUT_ROLES_ALL is named.  Never 0.
+ */
+uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles);
+
 /* --- SERVO: the frame rate of every PWM output rendering a surface; the
  *     page itself is servo_page.h */
 

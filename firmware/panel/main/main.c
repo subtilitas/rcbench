@@ -3308,12 +3308,7 @@ static uint16_t s_arm_value;
  */
 static uint16_t arm_value_wanted(void)
 {
-    if (s_far_minor < LINK_MINOR_ARM_ROLE) {
-        return LINK_ARM_ALL;
-    }
-    const uint16_t v =
-        outputs_arm_value_of((uint8_t)(arming_roles(&s_arm) & OUT_ROLES_ALL));
-    return (v != 0u) ? v : (uint16_t)LINK_ARM_ALL;
+    return outputs_arm_value_for(s_far_minor, arming_roles(&s_arm));
 }
 
 static bool control_write(bool armed, link_msg_t *reply)

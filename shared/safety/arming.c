@@ -310,6 +310,9 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         if (a->armed) {
             a->armed  = false;
             a->in_run = false;
+            /* The new arm follows the ARM = 0 write by the settle, not the
+             * request: the disarm can come a pass after it. */
+            a->settle_until_ms = now_ms + a->settle_ms;
             return ARMING_ACT_DISARM;
         }
     }

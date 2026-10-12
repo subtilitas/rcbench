@@ -1610,6 +1610,72 @@ TEST_CASE(other_roles_while_settling_replace_the_arm)
     CHECK_EQ(arming_roles(&a), ROLE_B);
 }
 
+/*
+ * The new arm follows the ARM = 0 write by the settle, whenever the DISARM
+ * step comes after the request.
+ */
+TEST_CASE(a_late_role_switch_disarm_still_gets_the_whole_settle)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_roles_by(100, ROLE_A);
+    arming_request_arm_roles(&a, t, ROLE_B);
+    const uint32_t disarm_at = t + 60u;
+    arming_touch_seen(&a, disarm_at);
+    CHECK_EQ(arming_step(&a, disarm_at), ARMING_ACT_DISARM);
+    CHECK(arming_link_needed(&a, false));       /* the re-arm is still owed */
+    for (uint32_t k = 1; k < SETTLE_MS; k += 10u) {
+        arming_touch_seen(&a, disarm_at + k);
+        CHECK_EQ(arming_step(&a, disarm_at + k), ARMING_ACT_NONE);
+        CHECK(arming_link_needed(&a, false));
+    }
+    arming_touch_seen(&a, disarm_at + SETTLE_MS);
+    CHECK_EQ(arming_step(&a, disarm_at + SETTLE_MS), ARMING_ACT_ARM);
+    CHECK(a.armed);
+}
+
+/* The same across the wrap of the millisecond clock. */
+TEST_CASE(a_late_role_switch_disarm_settles_across_the_clock_wrap)
+{
+    arming_init(&a, 0xFFFFFF00u, SETTLE_MS);
+    uint32_t t = arm_roles_by(0xFFFFFF10u, ROLE_A);
+    arming_request_arm_roles(&a, t, ROLE_B);
+    const uint32_t disarm_at = t + 60u;
+    arming_touch_seen(&a, disarm_at);
+    CHECK_EQ(arming_step(&a, disarm_at), ARMING_ACT_DISARM);
+    arming_touch_seen(&a, disarm_at + SETTLE_MS - 1u);
+    CHECK_EQ(arming_step(&a, disarm_at + SETTLE_MS - 1u), ARMING_ACT_NONE);
+    arming_touch_seen(&a, disarm_at + SETTLE_MS);
+    CHECK_EQ(arming_step(&a, disarm_at + SETTLE_MS), ARMING_ACT_ARM);
+}
+
+/* A role switch is a new run: the clock stops at the disarm and starts
+ * again at the arm. */
+TEST_CASE(a_role_switch_restarts_the_run_clock)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t t = arm_roles_by(100, ROLE_A);
+    t += 5000;
+    arming_touch_seen(&a, t);
+    (void)arming_step(&a, t);
+    CHECK(a.in_run);
+    CHECK_EQ(arming_run_seconds(&a), 5u);
+
+    arming_request_arm_roles(&a, t, ROLE_B);
+    CHECK_EQ(arming_step(&a, t), ARMING_ACT_DISARM);
+    CHECK(!a.in_run);
+    /* No pass between the disarm and the arm: the run still starts anew. */
+    t += SETTLE_MS;
+    arming_touch_seen(&a, t);
+    CHECK_EQ(arming_step(&a, t), ARMING_ACT_ARM);
+    t += 2000;
+    arming_touch_seen(&a, t);
+    (void)arming_step(&a, t);
+    CHECK_EQ(arming_run_seconds(&a), 2u);
+}
+
+/* The settle the docs state is 100 ms. */
+_Static_assert(HEARTBEAT_SETTLE_MS == 100u, "the role switch settles 100 ms");
+
 int main(void)
 {
     RUN(a_stop_latches_until_an_explicit_arm);
@@ -1651,6 +1717,9 @@ int main(void)
     RUN(a_run_across_the_wrap_ends_and_holds_whatever_ends_it);
     RUN(an_arm_carries_the_roles_it_was_asked_for);
     RUN(a_role_switch_while_armed_disarms_first);
+    RUN(a_late_role_switch_disarm_still_gets_the_whole_settle);
+    RUN(a_late_role_switch_disarm_settles_across_the_clock_wrap);
+    RUN(a_role_switch_restarts_the_run_clock);
     RUN(the_same_roles_again_do_not_disarm);
     RUN(a_stop_during_a_role_switch_arms_nothing);
     RUN(other_roles_while_settling_replace_the_arm);

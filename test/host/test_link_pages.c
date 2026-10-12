@@ -1450,6 +1450,48 @@ TEST_CASE(an_old_style_arm_of_one_arms_every_role)
     CHECK_EQ(link_arm_roles(g.control[LINK_CT_ARM]), LINK_ARM_ROLES);
 }
 
+/* The wire values are the ones the docs and an older or newer panel state. */
+_Static_assert(LINK_ARM_THROTTLE == 0x0002u && LINK_ARM_SURFACE == 0x0004u,
+               "the role bits are wire values");
+
+TEST_CASE(the_arm_values_are_the_documented_literals)
+{
+    CHECK(link_arm_value_ok(0x0002u));
+    CHECK(link_arm_value_ok(0x0004u));
+    CHECK(link_arm_value_ok(0x0006u));
+    CHECK(!link_arm_value_ok(0x0003u));
+    CHECK(!link_arm_value_ok(0x0010u));
+    CHECK(!link_arm_value_ok(0x0020u));
+    CHECK_EQ(link_arm_roles(0x0002u), 0x0002u);
+    CHECK_EQ(link_arm_roles(0x0004u), 0x0004u);
+    CHECK_EQ(link_arm_roles(1u), 0x0006u);
+}
+
+/*
+ * Every non-zero to different non-zero write is refused, whether the sets
+ * overlap or not, and leaves ARM as it was.
+ */
+TEST_CASE(a_change_between_overlapping_sets_is_refused)
+{
+    static const uint16_t pairs[][2] = {
+        { 0x0002u, 0x0006u }, { 0x0006u, 0x0002u }, { 0x0004u, 0x0006u },
+        { 0x0006u, 0x0004u }, { 1u, 0x0006u }, { 0x0006u, 1u },
+        { 1u, 0x0002u }, { 0x0002u, 1u },
+    };
+    for (size_t i = 0; i < sizeof(pairs) / sizeof(pairs[0]); ++i) {
+        fresh();
+        link_msg_t r;
+        const uint16_t first[1] = { pairs[i][0] };
+        const uint16_t next[1]  = { pairs[i][1] };
+        CHECK(write_control(LINK_CT_ARM, 1, first, &r));
+        CHECK_EQ(r.op, LINK_OP_ACK);
+        CHECK(write_control(LINK_CT_ARM, 1, next, &r));
+        CHECK_EQ(r.op, LINK_OP_NACK);
+        CHECK_EQ(r.regs[0], LINK_NACK_BAD_VALUE);
+        CHECK_EQ(g.control[LINK_CT_ARM], pairs[i][0]);
+    }
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -1497,5 +1539,7 @@ int main(void)
     RUN(an_armed_bench_changes_its_roles_only_through_a_disarm);
     RUN(a_bad_arm_value_is_refused_ahead_of_not_armed);
     RUN(an_old_style_arm_of_one_arms_every_role);
+    RUN(the_arm_values_are_the_documented_literals);
+    RUN(a_change_between_overlapping_sets_is_refused);
     return test_summary("link_pages");
 }
