@@ -442,7 +442,9 @@ transmit buffer has, and nothing when no terminal is connected, so its
 loop does not wait for the host. A full ring drops the newest record: the
 trace has a `$L n=` line where records are missing and their sum in its
 end line. The end line counts every dropped record from before the
-trace's end, with or without a record kept after it. The time a pass of core 0 gains from writing the lines is not
+trace's end, with or without a record kept after it. A sample dropped
+while a set-up record waits for room is counted after that record, so a
+trace that ends at the set-up change does not count it. The time a pass of core 0 gains from writing the lines is not
 measured.
 
 **The lines** (`shared/sense/sense_trace.h` has every field):
@@ -459,8 +461,10 @@ $C t=220200 ch=0 us=1800
 $Z n=2 s=8881 v=444 l=0 m=4 ml=0 e=t
 ```
 
-The lines after the first two stand in the order of their times: a trigger
-line follows the samples taken before it. Core 0 writes a trigger line and
+The lines after the first two stand in the order of their times, except a
+`$D` line: a trigger line follows the samples taken before it. A `$D` line
+is written once the output's pulse has stood still for 50 ms, so it follows
+samples up to about 50 ms later than its `t=`; its `t=` is its time. Core 0 writes a trigger line and
 the end line once core 1 has finished a tick that started at or after the
 line's time. The end line's `e=` is the reason the trace ended: `t` its
 time, `s` a changed set-up, `k` the console. A capital letter (`T`, `S`,

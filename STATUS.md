@@ -261,8 +261,7 @@ ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
 (`test/host/test_sense_trace_tool.py`).
 
-Coverage floors: 94% overall, 85% for every file except `stub_screen.c`, which
-is exempt by name. `tools/coverage.py --check` fails on drift of the table
+Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
 `render_ui.py --check` holds 286 committed screenshots to the current
@@ -292,14 +291,12 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_band.c` | 37 | 35 | 94.6% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
-| `shared/ui/ui_hero.c` | 29 | 28 | 96.5% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
 | `shared/ui/ui_text.c` | 91 | 90 | 98.9% |
-| `shared/ui/ui_router.c` | 247 | 243 | 98.4% |
+| `shared/ui/ui_router.c` | 246 | 243 | 98.8% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 85 | 81 | 95.3% |
-| `shared/ui/stub_screen.c` | 52 | 14 | 26.9% |
+| `shared/ui/overview_screen.c` | 83 | 80 | 96.4% |
 | `shared/ui/motor_screen.c` | 595 | 582 | 97.8% |
 | `shared/ui/supply_screen.c` | 1034 | 1017 | 98.4% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
@@ -307,7 +304,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_screen.c` | 3038 | 2986 | 98.3% |
 | `shared/ui/kst_panel.c` | 1520 | 1498 | 98.5% |
 | `shared/ui/analyser_screen.c` | 224 | 221 | 98.7% |
-| `shared/ui/balance_screen.c` | 311 | 311 | 100.0% |
+| `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
 | `shared/ui/programmer_screen.c` | 2397 | 2296 | 95.8% |
 | `shared/ui/log_viewer_screen.c` | 1022 | 961 | 94.0% |
@@ -325,8 +322,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/safety/arming.c` | 165 | 159 | 96.4% |
 | `shared/safety/safety_gate.c` | 52 | 52 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
-| `shared/servo/servo_limit.c` | 120 | 116 | 96.7% |
-| `shared/servo/servo_sync.c` | 172 | 167 | 97.1% |
+| `shared/servo/servo_limit.c` | 142 | 136 | 95.8% |
+| `shared/servo/servo_sync.c` | 183 | 177 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
 | `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
@@ -336,7 +333,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 893 | 844 | 94.5% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 1039 | 1007 | 96.9% |
+| `shared/esc/esc_stick.c` | 1040 | 1008 | 96.9% |
 | `shared/esc/esc_sim.c` | 367 | 343 | 93.5% |
 | `shared/servo/servo_sim.c` | 122 | 122 | 100.0% |
 | `protocols/sbus/sbus.c` | 54 | 53 | 98.2% |
@@ -355,7 +352,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
 | `shared/outputs/prog_port.c` | 261 | 261 | 100.0% |
 | `shared/bench/kst_link.c` | 399 | 397 | 99.5% |
-| `shared/bench/kst_prog.c` | 1643 | 1614 | 98.2% |
+| `shared/bench/kst_prog.c` | 1637 | 1608 | 98.2% |
 | `shared/bench/kst_card.c` | 134 | 130 | 97.0% |
 | `shared/bench/prog_link.c` | 122 | 122 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
@@ -387,8 +384,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
 | `shared/bench/supply.c` | 169 | 167 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 565 | 557 | 98.6% |
-| `shared/bench/supply_link.c` | 290 | 280 | 96.5% |
-| `shared/bench/sense_link.c` | 776 | 748 | 96.4% |
+| `shared/bench/supply_link.c` | 291 | 281 | 96.6% |
+| `shared/bench/sense_link.c` | 777 | 749 | 96.4% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 395 | 390 | 98.7% |
 | `shared/bench/knob.c` | 37 | 37 | 100.0% |
@@ -398,13 +395,13 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/sense/ina228.c` | 198 | 198 | 100.0% |
 | `shared/sense/ina3221.c` | 130 | 130 | 100.0% |
 | `shared/sense/as5600.c` | 75 | 75 | 100.0% |
-| `shared/sense/sense_sched.c` | 451 | 451 | 100.0% |
+| `shared/sense/sense_sched.c` | 459 | 459 | 100.0% |
 | `shared/sense/sense_svc.c` | 160 | 160 | 100.0% |
-| `shared/sense/sense_trace.c` | 621 | 621 | 100.0% |
+| `shared/sense/sense_trace.c` | 633 | 633 | 100.0% |
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **34999** | **34208** | **97.7%** |
+| **total** | **34977** | **34224** | **97.8%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -25,9 +25,8 @@
  * separate measurement with the accelerometer on the surface.
  *
  * Fed measurements and returning commands, as servo_limit is: the host suite
- * runs it against a modelled pair.  The coprocessor image does not call it
- * yet; it takes measurements and returns commands, so a real pair needs no
- * change here.
+ * runs it against a modelled pair, and a real pair needs no change here.
+ * No firmware calls it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -48,12 +47,16 @@ typedef enum {
     /** Current crossed the hard ceiling. Stops where it stands. */
     SERVO_SYNC_FAULT_OVERCURRENT,
     /**
-     * The scan found no minimum distinguishable from the noise.
+     * The scan found no minimum distinguishable from the noise, or none
+     * inside its window.
      *
      * A pair that is already synchronised still produces a minimum, at zero
      * correction, because the scan moves one servo away from agreement.  So
      * this fault means the sensor cannot resolve the difference, and it is
-     * reported rather than a correction derived from noise.
+     * reported rather than a correction derived from noise.  The first
+     * round's lowest point at an end of the window says the minimum lies
+     * outside it (a correction of more than window_us, or a mirrored pair);
+     * that is reported the same way, not taken as the answer.
      */
     SERVO_SYNC_FAULT_NO_MINIMUM,
 } servo_sync_fault_t;
@@ -108,6 +111,10 @@ typedef struct {
 
     float    hard_limit_a;
 } servo_sync_cfg_t;
+
+/** The pulse widths the search commands stay within, microseconds. */
+#define SERVO_SYNC_MIN_US 500u
+#define SERVO_SYNC_MAX_US 2500u
 
 typedef struct {
     servo_sync_cfg_t   cfg;

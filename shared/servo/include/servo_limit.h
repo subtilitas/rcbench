@@ -49,7 +49,14 @@ typedef enum {
      *  surface is free over that range or the sensor does not resolve the
      *  bind; reported as such rather than as a limit. */
     SERVO_LIMIT_FAULT_NO_LIMIT,
+    /** step_us is 0: no step can reach a stop.  Set by servo_limit_init(),
+     *  which then commands nothing but the centre. */
+    SERVO_LIMIT_FAULT_BAD_CONFIG,
 } servo_limit_fault_t;
+
+/** The pulse widths the search commands stay within, microseconds. */
+#define SERVO_LIMIT_MIN_US 500u
+#define SERVO_LIMIT_MAX_US 2500u
 
 typedef struct {
     uint16_t centre_us;      /**< where the search starts */

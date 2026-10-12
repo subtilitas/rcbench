@@ -92,7 +92,6 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
   assert.deepEqual(wireNumbers(setup), [1, 2, 3, 4]);
   assert.deepEqual(setup.checks.map((c) => c.id), ['can-60', 'panel-terminals', 'same-release']);
   assert.deepEqual(setup.unknown.map((u) => u.id), []);
-  assert.deepEqual(setup.conflicts, []);
   assert.deepEqual(setup.ignored, []);
   for (const p of setup.parts) {
     assert.deepEqual(p.addedBy, [{ kind: 'always' }]);
@@ -787,7 +786,7 @@ test('an empty catalogue resolves to an empty setup', () => {
     ...CATALOGUE, parts: [], pads: [], wires: [], functions: [], rules: [], checks: [], powerSources: [],
   };
   assert.deepEqual(resolve(empty, select(['servo'], ['esc'])), {
-    parts: [], functions: [], wires: [], checks: [], unknown: [], conflicts: [], power: [],
+    parts: [], functions: [], wires: [], checks: [], unknown: [], power: [],
     ignored: ['esc', 'servo'],
     options: [
       { key: 'connection', value: 'pads', visible: true, forcedBy: null },
