@@ -189,9 +189,9 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   2 input reads in a row is switched off by the coprocessor, which tells the
   panel afterwards. A conservative rule chosen without a measurement: it may
   cut a run that would have survived. Set points are capped 0.7 V under the
-  input, 0.2 V above that line, so an input dropping less than 0.2 V under
-  load cuts nothing. An ON asked while the input reads under 1.5 V is not
-  written.
+  input voltage, 0.2 V above that line, so an input voltage dropping less
+  than 0.2 V under load cuts nothing. An ON asked while the input voltage
+  reads under 1.5 V is not written.
 - Switching to ARMED is a two-second hold on ARM, and the command goes when the hold
   completes rather than when the finger lifts. Switching to SAFE (DISARM) is a press.
 - The panel writes its own flash only while the bench is SAFE, with no

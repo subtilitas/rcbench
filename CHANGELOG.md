@@ -106,6 +106,12 @@ history is in git.
 
 ### Changed
 
+- Docs, configurator and the panel band name the input voltage of the PD mini
+  and of the boards as "input voltage" (DE "Eingangsspannung") where a
+  voltage is meant. The band text `ALERT_PDMINI_SAG` reads "PD mini input
+  voltage ...". The German configurator and docs use the glossary terms
+  Frame Rate, Ruderhorn and Pieptöne.
+
 - The T-plug of the PD mini (`usbtap`) has no tick in the bench
   configurator: the PD mini brings it by the rule `pd-tplug`, and it stays in
   the setup, the parts list, the wires and the drawings whenever the PD mini

@@ -17,7 +17,7 @@ Was sie nicht weiß:
   ihn ohne neues Image ersetzen kann.
 - Kein Profil ist verifiziert. Punkt- und Wertnummern und Einstiegsgesten
   sind die der Handbücher.
-- Die eigenen Töne des ESCs nach einer Auswahl werden nicht ausgewertet.
+- Die eigenen Pieptöne des ESCs nach einer Auswahl werden nicht ausgewertet.
   FERTIG heißt: jede Auswahlbewegung kam auf eine gezählte Gruppe in der
   Reihenfolge des Menüs, nicht, dass der ESC sie gespeichert hat.
 
@@ -276,7 +276,7 @@ Netzteils aus ist.
 
 Manche ESCs gehen nur in ihren Programmiermodus, wenn ein Mensch außer Gas
 und Versorgung etwas am ESC tut: vor dem Einschalten einen Jumper auf zwei
-Kontakte stecken und ihn nach den ersten Tönen abziehen, oder danach einen
+Kontakte stecken und ihn nach den ersten Pieptönen abziehen, oder danach einen
 Taster am ESC drücken. Jeder Kontronik-ESC im Satz gehört dazu. Das Profil
 listet diese Schritte in `manual` ([ESC-Profile](EscProfiles-de.md)), jeden
 mit dem Zeitpunkt, an dem er fällig ist:
@@ -287,7 +287,7 @@ mit dem Zeitpunkt, an dem er fällig ist:
 | `at_power_up` | hält vor jedem Einschalten mit ausgeschaltetem Netzteil an und fragt; ERLEDIGT schaltet das Netzteil ein, und der Lauf zählt das Halten herunter, das das Profil nennt |
 | `before_menu` | fragt, sobald der Einstieg seine Zeit hatte, mit versorgtem ESC und dem Knüppel in der Einschaltstellung. Ein Schritt mit `starts_menu` ist die Handlung, die das Menü startet, und der Lauf zählt die Pieptöne ab dem Moment, in dem er fragt (siehe unten); jeder andere wartet auf ERLEDIGT |
 | `during_menu` | kann den Zeitpunkt nicht kennen: das Profil läuft nicht, `Handgriff` |
-| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Niemand berührt den ESC: der Bediener beobachtet, wie er den Wert bestätigt (Töne, LED) |
+| `before_power_off` | hält nach der letzten Bewegung des Speicherns an, mit versorgtem ESC und dem Knüppel, wo das Speichern ihn ließ, und schaltet das Netzteil erst auf ERLEDIGT aus. Niemand berührt den ESC: der Bediener beobachtet, wie er den Wert bestätigt (Pieptöne, LED) |
 | `after_programming` | zeigt ihn auf dem Ergebnis |
 
 Ein Profil mit Handgriffen zeigt im Kopf seiner Punktliste rot MANUELLER
@@ -338,7 +338,7 @@ und schaltet den Prüfstand auf SAFE.
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
 **Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC bestätigt einen
-gespeicherten Modus, indem er ihn als Töne wiederholt (die Kontrollausgabe
+gespeicherten Modus, indem er ihn als Pieptöne wiederholt (die Kontrollausgabe
 der Handbücher), Modus 7 als sieben, und die Handbücher stecken den Akku
 erst danach ab. SPEICHERN (vorgegeben 2000 ms) kann vor einer langen
 Wiederholung enden. Jedes Profil für einen Kontronik-ESC, das läuft, und die fünf
@@ -387,7 +387,7 @@ abgezogenen Jumper oder den gedrückten Taster mit einem Dreiklang und gibt
 danach Modus 1, 2, 3 ... aus (zum Beispiel Kontronik_Jazz.pdf S. 6,
 "Jumper abziehen", gefolgt von der Tonfolge und der Folge;
 Kontronik_Pix1000_3000.pdf S. 4 Schritte 5 und 6, "Taster drücken",
-gefolgt von den absteigenden Tönen und der Folge; KOSMIK S. 8 Schritt 6).
+gefolgt von den absteigenden Pieptönen und der Folge; KOSMIK S. 8 Schritt 6).
 CYBER-Line und HELI-Line, deren Jumper beim Anstecken des Akkus abgezogen
 wird und die etwa 5 s auf ein Signal warten, kennzeichnen ihn nicht. Die
 Hand des Bedieners ist dann am ESC, nicht am Bildschirm. Deshalb zählt
@@ -453,15 +453,15 @@ Schritt, bevor das Netzteil ausschaltet:
 | Profil | Schritte | Werte, bei MID eingeschaltet |
 | --- | --- | --- |
 | `kontronik-3sl` | Jumper vor dem Einschalten auf, nach 2 s oder dem Dreiklang ab | Modus 6 |
-| `kontronik-beat` | Jumper auf 2 beliebige der 3 Kontakte, ab nach 2 s oder den Tönen | Modi 6, 8 |
+| `kontronik-beat` | Jumper auf 2 beliebige der 3 Kontakte, ab nach 2 s oder den Pieptönen | Modi 6, 8 |
 | `kontronik-beat-car` | wie BEAT | Modi 2 bis 6, 8 |
 | `kontronik-beat-fai` | wie BEAT | keine |
-| `kontronik-jazz` | JAZZ: Jumper wie BEAT; MINIJAZZ: Taster nach 2 s oder den Tönen | Modi 6, 8 |
-| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Tönen; der Schritt vor dem Ausschalten kennzeichnet die Sperre | Modus 3 |
-| `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Tönen | keine |
-| `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Tönen | Modus 6 |
-| `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Tönen ab | Modus 6 |
-| `kontronik-sun-plus` | Taster nach den Tönen: 2 s, 5 s bei Modi 4 bis 6 | Modus 6 |
+| `kontronik-jazz` | JAZZ: Jumper wie BEAT; MINIJAZZ: Taster nach 2 s oder den Pieptönen | Modi 6, 8 |
+| `kontronik-kontrol-x` | Taster unter dem Schrumpfschlauch nach 2 s oder den Pieptönen; der Schritt vor dem Ausschalten kennzeichnet die Sperre | Modus 3 |
+| `kontronik-pix` | Taster mit der Aufschrift Taster nach 2 s oder den Pieptönen | keine |
+| `kontronik-smile` | Taster drücken und loslassen nach 2 s oder den Pieptönen | Modus 6 |
+| `kontronik-star-line` | Jumper vor dem Einschalten auf, nach 5 s oder den Pieptönen ab | Modus 6 |
+| `kontronik-sun-plus` | Taster nach den Pieptönen: 2 s, 5 s bei Modi 4 bis 6 | Modus 6 |
 
 Die anderen 14 zeigen ihre Schritte und nennen den Grund in ihrer Zeile:
 `Handgriff` bei `kontronik-3p`, `kontronik-cyber-line`,
@@ -694,7 +694,7 @@ ruhte.
 | kein nutzbares Verfahren | `automatable` ist `none` |
 | Einstieg nach Einschalten | `scheme.entry.when` ist `after_power_on` |
 | Melodie-Menü, Ja/Nein-Menü, Stickpositions-Menü, Menü eigener Art | `scheme.type` |
-| Töne nach Tonhöhe getrennt | `scheme.announce.encoding` ist `melody` oder `yes_no` |
+| Pieptöne nach Tonhöhe getrennt | `scheme.announce.encoding` ist `melody` oder `yes_no` |
 | Punkt und Wert: 1 Bewegung | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |
 | 2 Bewegungen, ohne Werttöne | `value_select` ohne `item_then_value` |
 | viele Änderungen, einstufig | einstufig mit `"changes_per_entry": "many"` |

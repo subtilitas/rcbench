@@ -2,6 +2,7 @@
 // reports a broken copy of the data.
 
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -1369,7 +1370,7 @@ test('the Osoyoo strip: the operative text of every check, in English and German
     ['strip-feed', /jumper on 5V and no DC supply the V pins carry 0 V/, /Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0 V/],
     ['strip-feed', /joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS/, /verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS/],
     ['strip-converter', /7 to 40 V.*4\.8 to 5\.2 V at 0\.2 to 2 A.*150 kHz \(127 to 173 kHz\).*limit 4 A.*82 % typical at 12 V in and 2 A/, /7 bis 40 V.*4,8 bis 5,2 V bei 0,2 bis 2 A.*150 kHz \(127 bis 173 kHz\).*grenze 4 A.*82 % bei 12 V Eingang und 2 A/],
-    ['strip-input', /7 to 12 V and limits the input to 7 to 18 V/, /7 bis 12 V und begrenzt den Eingang auf 7 bis 18 V/],
+    ['strip-input', /7 to 12 V and limits the input voltage to 7 to 18 V/, /7 bis 12 V und begrenzt die Eingangsspannung auf 7 bis 18 V/],
     ['strip-input', /5 V and 2 A, or 3\.3 V and 500 mA/, /5 V und 2 A oder 3,3 V und 500 mA/],
     ['strip-print', /reads 7 to 16 V.*100 uF 16 V/, /Aufdruck 7 bis 16 V.*100 uF 16 V/],
     ['strip-regulator', /ME6210A33M3G.*3\.3 V and 500 mA.*VSYS.*more than 0\.5 A/, /ME6210A33M3G.*3,3 V und 500 mA.*VSYS.*mehr als 0,5 A/],
@@ -1764,4 +1765,11 @@ test('the Osoyoo strip: every text names the selector "jumper V Selector", in En
     'osoyoo-terminals', 'strip-esc', 'strip-servo-plus', 'servo-bench-supply', 'strip-jumper', 'strip-measure', 'strip-feed',
     'strip-v desc', 'wire 61', 'wire 62',
   ]);
+});
+
+test('the German catalogue texts use the glossary words, not Servohorn, Frame-Rate or Töne for beeps', () => {
+  const source = readFileSync(fileURLToPath(new URL('../catalogue.ts', import.meta.url)), 'utf8');
+  assert.doesNotMatch(source, /Servohorn|Frame-Rate|\bTöne\b/);
+  assert.match(source, /Ruderhorns/);
+  assert.match(source, /Pieptöne/);
 });
