@@ -389,8 +389,8 @@ void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
 /** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
  *  the tester drives, and whether a binding has been read.  The TARGET row
- *  names them while the drive uses the outputs: up to 4 pins, else the
- *  first 3 and a count. */
+ *  names them while the drive uses the outputs: as many pins as the row's
+ *  23 cells hold, then "+N" (ui_pinlist()). */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
@@ -399,8 +399,8 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
  * servo_screen_set_drive()) and the SERVO PWM pins @p pins / @p known (as
  * servo_screen_set_pins()).  Returns whether the line takes the warning
  * colour: a port target, no SERVO PWM pin, no binding read, the target not
- * known, or no link.  The outputs read "GP2 GP4 GP5", up to 4 pins, else the
- * first 3 and a count ("GP2 GP4 GP5 +2").  A port target reads
+ * known, or no link.  The outputs read "GP2 GP4 GP5": as many pins as the
+ * 23 cells hold, then a count ("GP2 GP4 GP5 +2").  A port target reads
  * "PROG PORT GPn", or "PROG PORT" without a known pin, each with " PWM OFF"
  * after it while the port renders no pulse: 22 characters at most, of the
  * 23 cells the row's value holds.

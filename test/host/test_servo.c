@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -5787,8 +5788,8 @@ static const tgt_state_t k_tgt[] = {
     { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false, false },
     { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false, false },
     { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false, false },
-    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true, 0xFFu, false,
-      false },
+    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
+      0xFFu, false, false },
     { 0, 0, PINS_40_47,                          true,  0xFFu, false, false },
     { 0, 0, 0,                                   true,  0xFFu, false, true  },
     { 0, 0, 0,                                   false, 0xFFu, false, true  },
@@ -5813,11 +5814,11 @@ static const tgt_state_t k_tgt[] = {
  * written out here and not taken from servo_target_line(). */
 static const char *const k_tgt_txt[2][TGT_N] = {
     { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 +2", "GP40 GP41 GP42 +5", "NO SERVO PWM PIN",
+      "GP2 GP4 GP5 GP6 GP7", "GP40 GP41 GP42 GP43 +4", "NO SERVO PWM PIN",
       "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
       "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "NOT KNOWN", "NO LINK" },
     { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 +2", "GP40 GP41 GP42 +5", "KEIN SERVO-PWM-PIN",
+      "GP2 GP4 GP5 GP6 GP7", "GP40 GP41 GP42 GP43 +4", "KEIN SERVO-PWM-PIN",
       "PINS NICHT GELESEN", "PROG-PORT", "PROG-PORT GP13",
       "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
       "KEIN LINK" },
@@ -5856,9 +5857,9 @@ static int warn_pixels(const gfx_color_t *bx)
  * languages: the pins bound as SERVO PWM for OUTPUTS, the programming port
  * with its pin, and the warning colour for the port, for no pin, for a
  * binding not read, for a target not known and for no link.  Every state
- * reads differently, and no value runs into the label: the longest are 4
- * two-digit pins, 3 two-digit pins with a count, and the port on a
- * two-digit pin with its pulse off, 22 of the 23 cells. */
+ * reads differently, and no value runs into the label: the longest are
+ * two-digit pins filling the 23 cells, with or without a count, and the
+ * port on a two-digit pin with its pulse off, 22 of the 23 cells. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -6048,10 +6049,10 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
     CHECK_STR_EQ(line, want);
 }
 
-/* The target row's value: up to 4 pins named, from 5 the first 3 and the
+/* The target row's value: as many pins as the 23 cells hold, then the
  * count of the rest, the port with its pin or without and with its pulse on
  * or off, the target not known and no link, in both languages. */
-TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
+TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "GP2", false);
@@ -6062,11 +6063,19 @@ TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
                "GP12 GP13 GP14 GP15", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
-               "GP2 GP4 GP5 +2", false);
+               "GP2 GP4 GP5 GP6 GP7", false);
+    /* The list ends exactly at the 23 cells: no count. */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8), true,
+               "GP2 GP4 GP5 GP6 GP7 GP8", false);
+    /* One pin more overflows it: 5 pins and " +2". */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8) | PIN(9),
+               true, "GP2 GP4 GP5 GP6 GP7 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "GP40 GP41 GP42 +5", false);
+               "GP40 GP41 GP42 GP43 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
-               "GP0 GP1 GP2 +61", false);
+               "GP0 GP1 GP2 GP3 GP4 +59", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "GP63", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "NO SERVO PWM PIN", true);
@@ -6099,7 +6108,7 @@ TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
                "GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "GP40 GP41 GP42 +5", false);
+               "GP40 GP41 GP42 GP43 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "KEIN SERVO-PWM-PIN", true);
     check_line(1u, 13u, true, PIN(2), true, "PROG-PORT GP13", true);
@@ -6915,15 +6924,14 @@ static bool pill_reads(const char *word)
 {
     scr->render(&cv, 0);
     const bool model = supply_screen_model();
-    gfx_color_t *seen = malloc((size_t)W * H * sizeof(gfx_color_t));
-    memcpy(seen, fb, (size_t)W * H * sizeof(gfx_color_t));
+    static gfx_color_t seen[(size_t)W * H];
+    memcpy(seen, fb, sizeof(seen));
     supply_screen_set_model(false);
     scr->tick(1.0f / 39.0f);
     scr->render(&cv, 0);
     want_fresh();
     memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
-    memcpy(fb, seen, (size_t)W * H * sizeof(gfx_color_t));
-    free(seen);
+    memcpy(fb, seen, sizeof(seen));
     supply_screen_set_model(model);
     scr->tick(1.0f / 39.0f);
     const int w = pill_w(word);
@@ -8353,7 +8361,7 @@ int main(void)
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
-    RUN(the_target_line_names_up_to_4_pins_and_counts_the_rest);
+    RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
     RUN(the_target_row_stays_in_sight_under_the_settings_and_a_keypad);
     RUN(the_tag_row_carries_the_pulse_range);
     RUN(the_rail_line_names_the_pd_mini_and_a_modelled_supply);

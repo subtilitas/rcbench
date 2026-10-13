@@ -296,6 +296,9 @@ static const char *const k_text[TX_COUNT] = {
     [TX_MO_CONTROL]             = "STEUERUNG",
     [TX_MO_NO_RUN]              = "kein Lauf aufgezeichnet",
     [TX_MO_HINT]                = "BALKEN ZIEHEN ODER AN DEN ENDEN UM EINEN PUNKT ÄNDERN",
+    [TX_MO_TARGET]              = "ZIEL: %s",
+    [TX_MO_TARGET_NONE]         = "ZIEL: KEIN PIN ALS MOTOR GEBUNDEN",
+    [TX_MO_TARGET_UNREAD]       = "ZIEL: BINDUNG NICHT GELESEN",
     [TX_MO_RESET_PEAKS]         = "SPITZEN ZURÜCKSETZEN",
 
     /* ---------------------------------------------------------- SUPPLY */
@@ -320,6 +323,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SUP_LINE_CV]            = "an der Spannung",
     [TX_SUP_LINE_PORT]          = "Servo-Programmierer",
     [TX_SUP_MODEL]              = "NETZTEIL SIMULIERT",
+    [TX_SUP_PD_PINS]            = "PD MINI TX GP%d RX GP%d",
+    [TX_SUP_PD_NO_PINS]         = "PD MINI OHNE PINS",
     [TX_SUP_ONLINE]             = "ONLINE",
     [TX_SUP_NOT_ANSWERING]      = "ANTWORTET NICHT",
     [TX_SUP_SETTINGS]           = "OPTIONEN",

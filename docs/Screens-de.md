@@ -112,6 +112,25 @@ die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren. Bei eingeschaltetem Drehknopf bewegt dessen Drehung das Gas
 ([der Knopf](#anwendung-der-drehknopf)).
+
+### Das Gas-Panel nennt seine Pins
+
+Das Gas-Panel nennt links neben der Prozentzahl die Pins, die das Gas
+treibt: `ZIEL: GP0 GP1`. Es sind die Pins, die als MOTOR PWM oder als
+DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
+SETUP > AUSGÄNGE, die auch die Gas-Rolle des Koprozessors liest. Die Liste
+steht in Pin-Reihenfolge und enthält so viele Pins, wie in das Feld von 49
+Zeichen passen; der Rest wird gezählt. Sind GP0 bis GP15 gebunden, steht dort
+`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6`. Zwei Zustände erscheinen
+in der Warnfarbe:
+
+| Zeile | Bedingung |
+|---|---|
+| `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
+| `ZIEL: BINDUNG NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
+
+Das Gas bewegt sich in beiden Zuständen weiter. ARM schaltet die ganze Bank
+scharf, nicht nur die hier genannten Pins.
 ### Der Plot zeigt einen Lauf
 
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
@@ -814,9 +833,9 @@ TEMPO und ZENTRIEREN. Die rechte Karte bleibt unter den Einstellungen, ihren
 Tastenfeldern und dem Servo-Programmer sichtbar, die Zeile nennt den Pin also
 auch, während einer davon die linke Karte bedeckt. Mit AUSGÄNGE nennt die
 Zeile die GPIOs, die in der vom Tester getriebenen Bindung als SERVO PWM
-gebunden sind: `GP4`, `GP2 GP4`; ab 5 Pins die ersten 3 und eine Zahl,
-`GP2 GP4 GP5 +2`. Der Wert steht rechtsbündig in 23 Zeichen neben dem
-Namen. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+gebunden sind: `GP4`, `GP2 GP4`; so viele Pins, wie in die 23
+Zeichen des Werts passen, dann `+N`: 6 Pins ab GP40 lauten
+`GP40 GP41 GP42 GP43 +2`. Der Wert steht rechtsbündig neben dem Namen. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
 (`PINS NICHT GELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
 Warnfarbe; der Pin ist der GPIO, den der Koprozessor für den Programmierport
@@ -933,8 +952,10 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 Koprozessor steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
-in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
-abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
+in SETUP unter ANSCHLÜSSE eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des Koprozessors, an denen
+es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
+PD mini RX. Ist einer der beiden Pins nicht gesetzt, steht `PD MINI OHNE PINS`
+in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
 SIMULIERT.
 

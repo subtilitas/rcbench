@@ -14,6 +14,15 @@ history is in git.
   the column is read as before; the column is text and is never plotted. The
   servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
+- The MOTOR & ESC throttle panel names the pins the throttle drives
+  (`TARGET: GP0 GP1`), from the output pages the coprocessor's throttle role
+  reads. No pin bound as a motor and a binding not read show in the warning
+  colour. The SUPPLY header names the PD mini's UART pins
+  (`PD MINI TX GP12 RX GP13`; `PD MINI NO PINS` when either is not set).
+- `ui_pinlist()` formats a GPIO mask as a pin list within a cell budget:
+  the pins that fit, then the count of the rest (`GP2 GP4 GP5 +2`).
+  `outputs_role_pins()` returns the GPIOs of the slots whose channels carry a
+  role.
 - The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
   (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
   `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
@@ -72,8 +81,8 @@ history is in git.
   does not read a version 2 record.
 - The SERVO screen's right card has a TARGET row (German ZIEL) between SPEED
   and CENTRE that names the active PWM TARGET with its pins: `GP4` or
-  `GP2 GP4` for the pins bound as SERVO PWM (from 5 pins the first 3 and a
-  count), `PROG PORT GP13` for the programming port (German
+  `GP2 GP4` for the pins bound as SERVO PWM (as many pins as fit the 23
+  cells of the value, then `+N`), `PROG PORT GP13` for the programming port (German
   `PROG-PORT GP13`), `PROG PORT` for a port target without a usable pin,
   with `PWM OFF` after either while PORT PWM is off
   (`PROG-PORT GP13 PWM AUS`). `NO LINK` (`KEIN LINK`) shows while no
