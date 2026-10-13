@@ -117,6 +117,10 @@ void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known);
 bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
                            unsigned cells);
 
+/** The throttle panel's target field in 8-pixel cells: from the panel's
+ *  inner edge to 8 px before the widest throttle reading, 100.0. */
+unsigned motor_target_cells(void);
+
 float motor_screen_throttle(void);
 /** The application's hook: sets the slider on an armed or a disarmed bench
  *  and posts nothing.  Not a control, and not held to the armed state. */

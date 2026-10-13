@@ -1811,7 +1811,9 @@ TEST_CASE(the_panel_field_of_49_cells_shows_the_documented_examples)
 
 TEST_CASE(the_throttle_prefix_is_shorter_than_its_49_cell_field)
 {
-    /* The field is 49 cells (motor_screen.c, from the pixel width). */
+    /* The panel's field is 49 cells, the width the documented examples
+     * use. */
+    CHECK_EQ(motor_target_cells(), 49u);
     for (int l = 0; l < 2; ++l) {
         ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
         CHECK(snprintf(NULL, 0, TR(MO_TARGET), "") < 49);

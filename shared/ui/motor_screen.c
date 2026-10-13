@@ -543,6 +543,16 @@ void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known)
     }
 }
 
+/* The field ends where the widest reading, 100.0, begins, less 8 px. */
+unsigned motor_target_cells(void)
+{
+    const gfx_seg_style_t seg = ui_seg_hero();
+    const int x0   = LEFT_X + INNER;
+    const int xmax = LEFT_X + LEFT_W - INNER - 20
+                     - gfx_seg_width("100.0", &seg) - 8;
+    return (unsigned)((xmax - x0) / 8);
+}
+
 bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
                            unsigned cells)
 {
@@ -1336,17 +1346,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const int pw = gfx_seg_width(pct, &seg);
     const int px = LEFT_X + LEFT_W - INNER - 20 - pw;
 
-    /* The pins this throttle drives, left of the numerals.  The field ends
-     * where the widest reading, 100.0, begins. */
+    /* The pins this throttle drives, left of the numerals. */
     {
-        const int x0   = LEFT_X + INNER;
-        const int xmax = LEFT_X + LEFT_W - INNER - 20
-                         - gfx_seg_width("100.0", &seg) - 8;
         char line[96];
         const bool warn = motor_throttle_target(
             line, sizeof(line), s.thr_pins, s.thr_pins_known,
-            (unsigned)((xmax - x0) / 8));
-        gfx_text(c, x0, ROW_Y + 9, line, &gfx_font_8x16,
+            motor_target_cells());
+        gfx_text(c, LEFT_X + INNER, ROW_Y + 9, line, &gfx_font_8x16,
                  warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
                  1);
     }
