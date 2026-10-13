@@ -89,12 +89,12 @@ Programmierport. **OPTIONEN**, Reiter PRÜFLING, hält die zwei Zeilen:
 Beide Zeilen werden mit den SERVO-Einstellungen gehalten. Der
 SERVO-Bildschirm nennt das aktive Ziel mit den Pins in der Zeile ZIEL der
 rechten Karte: `PROG-PORT GP13` in der Warnfarbe oder `GP4` für die als
-SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
+SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei gesichertem Prüfstand, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
 aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
-läuft, bei scharfem wie bei nicht scharfem Prüfstand: **STOP** und
+läuft, bei scharfem wie bei gesichertem Prüfstand: **STOP** und
 **DISARM** beenden einen Sweep oder einen Test. Mit **AUSGÄNGE** als Ziel
 ist **PORT-PWM** gesperrt.
 
@@ -1032,7 +1032,7 @@ Das Warten, das ein Servo braucht, ist nicht gemessen.
 | Während des Wartens | Wirkung |
 | --- | --- |
 | **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
-| **STOP** oder ein Disarm des Prüfstands, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
+| **STOP** oder ein Sichern des Prüfstands, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
 | Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 2000 ms aus, dann ist der Port in PWM |
 | Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
 
@@ -1259,7 +1259,7 @@ fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
-Warten des Verlassens, ein Abbruch, ein Disarm und eine Versorgung, die im
+Warten des Verlassens, ein Abbruch, ein Sichern und eine Versorgung, die im
 Warten ausgeht, ein Verlassen an den Link-Versionen 4.13 und 4.14 mit und
 ohne PD mini, **STOP** während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2 s
 auf beiden

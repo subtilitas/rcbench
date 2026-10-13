@@ -53,8 +53,8 @@ Drei Fälle, und der mittlere ist die Lücke:
 
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
-| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | sichert nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts sichert, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | sichert die Bank nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
+| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts sichert die Bank, sie treibt weiter | die Ausgänge fallen trotzdem weg |
 | Das Panel ist gesund und der Koprozessor verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
 
 Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
@@ -346,7 +346,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   nichts stoppen, und der Bediener hat STOP bereits gedrückt. Was das aufgibt:
   Ein Druck, der auf STOP begann und vor dem Abheben davon weggeführt worden
   wäre, kommandiert heute nichts und stoppt stattdessen.
-- Wird bei einem scharfen Prüfstand ein Disarm abgebrochen, wird trotzdem
+- Wird bei einem scharfen Prüfstand ein Sichern abgebrochen, wird trotzdem
   gesichert. Eine Geste abzubrechen kommandiert nichts, und bei einem
   scharfen Prüfstand ist das für eine von ihnen die falsche Richtung: Das
   Sichern ist ein Druck, sein Release ist also das ganze Kommando, und
@@ -385,12 +385,12 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   nichts Gefährliches kommandieren, etwa die Sweep-Geschwindigkeit des
   Servobildschirms, behalten Tap-to-set.
 - Ein Ausgangswert ändert sich nur auf einem scharfen Prüfstand, auf
-  MOTOR & ESC wie auf SERVO. Solange der Prüfstand nicht scharf ist, ändert
+  MOTOR & ESC wie auf SERVO. Solange der Prüfstand gesichert ist, ändert
   kein Bedienelement der beiden Bildschirme den Wert, den es kommandiert:
   Nichts wird gepostet, der Wert und seine Anzeige bleiben, das
   Bedienelement wird gedimmt gezeichnet, und der Bildschirm zeigt
   `ZUERST ARM`. Eine Drehung des Drehknopfs in dieser Zeit wird nicht
-  aufgehoben. Nicht scharf reicht vom DISARM, bis der Prüfstand scharf
+  aufgehoben. Gesichert reicht vom DISARM, bis der Prüfstand scharf
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
   ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
   anfordert, oder einem STOP auf einem scharfen Prüfstand, bis der Prüfstand
@@ -427,15 +427,15 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   zu dieser Ruhelage, wie bei einem ARM: Ein laufender Drag endet, und die
   erste Eingabe danach beginnt bei der Ruhelage. Die Freigabe, mit der ein
   Lauf des automatischen Tests endet, tut dasselbe.
-- Das Verlassen eines Prüfstandsbildschirms sichert.
+- Das Verlassen eines Prüfstandsbildschirms sichert den Prüfstand.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
   Regeln. Er schärft nie: Das einzige Schärfen ist der ARM-Hold. Auf beiden
-  Bildschirmen bewegt eine Drehung auf einem nicht scharfen Prüfstand nichts
+  Bildschirmen bewegt eine Drehung auf einem gesicherten Prüfstand nichts
   und wird nicht aufgehoben; nach einem ARM bewegt der Knopf auf MOTOR & ESC
   von 0 % aus weiter und auf SERVO von der Ruhelage aus. Das Verlassen des
-  Bildschirms sichert. Die
+  Bildschirms sichert den Prüfstand. Die
   erste Messung nach dem
   Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
   schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein

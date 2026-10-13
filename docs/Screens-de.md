@@ -23,7 +23,7 @@ Der Arm-Chip nennt, was ein ARM treibt:
 | ARMED SERVO | die Surfaces und ein pulsender PROG PORT, von SERVO; kein Throttle-Ausgang |
 | ARMED | jeder gebundene Ausgang, an einem Koprozessor älter als Protokoll 4.18 |
 
-STOP funktioniert auf jedem Bildschirm. Es sichert und rastet ein: der
+STOP funktioniert auf jedem Bildschirm. Es sichert den Prüfstand und rastet ein: der
 Prüfstand bleibt gesichert, bis er erneut scharf geschaltet wird. Ein
 Bildschirmwechsel, ein ablaufender Hinweis oder ein zurückkehrender Link hebt
 einen Stopp nicht auf.
@@ -184,17 +184,17 @@ den Enden des Tracks schalten um einen Prozentpunkt.
 Das Gas ändert sich nur auf einem scharfen Prüfstand. Was jedes
 Bedienelement tut:
 
-| Bedienelement | Nicht scharf | Scharf |
+| Bedienelement | Gesichert | Scharf |
 | --- | --- | --- |
 | Der Track | abgelehnt: kein Kommando, Schieberegler und Anzeige bleiben; gedimmt gezeichnet | bewegt das Gas um den Weg des Fingers |
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
-| ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | sichert bei einem Tap |
+| ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | sichert den Prüfstand bei einem Tap |
 | SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
-Nicht scharf zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
-vom Sichern an nicht scharf, bis er scharf meldet: Auch ein
+Gesichert zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
+vom Sichern an gesichert, bis er scharf meldet: Auch ein
 Bedienelement, das nach dem durchgelaufenen Halten auf ARM und vor dieser
 Meldung berührt wird, wird abgelehnt. Von einem DISARM an, das der
 Bildschirm anfordert, durch den Tap oder durch das Verlassen, oder einem
@@ -369,7 +369,7 @@ mit Protokoll 4.11 und eingeschaltetem CH1 steht jedes Fenster von CH1 in
 der Datei, solange zwei Lesezugriffe höchstens 200 ms auseinanderliegen,
 und ein Schritt in `window` von mehr als 1 ist ein verlorenes Fenster oder
 eine Nummer, die der Koprozessor übersprungen hat. Ein Fenster, das bei
-nicht scharfem Prüfstand genommen wurde, steht in keiner Datei. Die Werte
+gesichertem Prüfstand genommen wurde, steht in keiner Datei. Die Werte
 von CH1 zählen eine übersteuerte Messung am Ende des Bereichs, 1,638 A am
 0,1-Ω-Shunt, und behalten das Vorzeichen eines negativen Stroms. CH2 und
 CH3 stehen in der Zeile ihres Fensters, wenn das Panel beide Pages
@@ -395,7 +395,7 @@ SERVO_HOLD_MS, ein Servo bleibt also stehen, wo es hingestellt wurde. Erst
 **FREIGEBEN**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
 und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Sichern oder durch das
-Verlassen des Bildschirms, was sichert. Bei eingeschaltetem Drehknopf
+Verlassen des Bildschirms, was den Prüfstand sichert. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
 ([der Knopf](#anwendung-der-drehknopf)).
 
@@ -427,8 +427,8 @@ einen Impuls der Länge null, und der
 Bildschirm nimmt keine Stellung an: Der befohlene Wert ändert sich nur,
 solange das Servo ihm folgt. Der Knopf ist ein
 Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
-und ein Druck darauf im scharfen Zustand sichert. Das Verlassen des
-Bildschirms sichert und gibt den Pin frei: ein Bildschirm, den man
+und ein Druck darauf im scharfen Zustand den Prüfstand sichert. Das Verlassen des
+Bildschirms sichert den Prüfstand und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
 
@@ -684,7 +684,7 @@ gezeichnet, wie der Koprozessor die Surfaces 500 ms nach dem letzten
 Schreiben in Ruhe setzt; kein vorher verlangter Sweep und kein Halten
 wird gesendet, wenn der Link zurückkommt, und das nächste Tippen startet
 einen Sweep. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
-Disarm und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
+Sichern und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
 angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
 geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
 Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Mit
@@ -755,7 +755,7 @@ Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
 Lauf führt das Servo und die Sollwerte und den Schalter von SUPPLY, bis er
 endet. Er endet vorzeitig, mit ausgeschaltetem
 Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
-Karte oder der TEST-Seite), STOP, einem Disarm, wenn der Link geht, beim
+Karte oder der TEST-Seite), STOP, einem Sichern, wenn der Link geht, beim
 Verlassen der Seite, bei einem Finger auf der Skala, ZENTRIEREN, SWEEP,
 FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
@@ -836,7 +836,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
 | PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
 | PRÜFLING | PWM-ZIEL | was der Tester treibt: AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. PROG-PORT braucht der Programmierer. Gesperrt, solange scharf geschaltet ist, während eines Sweeps oder Tests und solange der Programmierer den Port hält ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
-| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS bei scharfem wie nicht scharfem Prüfstand, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
+| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS bei scharfem wie bei gesichertem Prüfstand, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
@@ -1483,7 +1483,7 @@ nach dem letzten Zeilenvorschub sind keine Zeile, ebenso Tabs und
 Wagenrückläufe (CR).
 Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
 `BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
-Scharfschalten oder, solange der Prüfstand nicht scharf ist, ein Einschalten
+Scharfschalten oder, solange der Prüfstand gesichert ist, ein Einschalten
 des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
 Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
 Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt. Eine Nummer, die eine der
@@ -1687,7 +1687,7 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   wird nicht aufgehoben. Das ARM setzt das Horn auf die Ruhelage, und die
   nächste Drehung zählt von dort. Eine gepostete und noch nicht gesendete
   Drehung wird zurückgenommen, wenn der Prüfstand gesichert wird oder stoppt.
-  Auch auf MOTOR & ESC bewegt eine Drehung auf einem nicht scharfen
+  Auch auf MOTOR & ESC bewegt eine Drehung auf einem gesicherten
   Prüfstand nichts und wird nicht aufgehoben; das Sichern setzt den
   Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
   dort.
@@ -2005,7 +2005,7 @@ ein Bildschirm, der bei jedem Zucken übernimmt, ist einer, den man wegklickt.
 **Niemals bei armiertem Prüfstand.** Der Bildschirm hat kein STOP, und einem
 Prüfstand, an dem sich etwas dreht, darf keine Diagnose die Stopptaste
 verdecken. Armiert sagt das Alert-Band, dass der Link weg ist, und der
-Bildschirm wartet auf das Disarmieren.
+Bildschirm wartet auf das Sichern.
 
 Dieselben Zahlen gehen in `RCBENCH.LOG` auf der SD-Karte, eine Zeile je
 Report, solange der Link unten ist:

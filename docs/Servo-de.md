@@ -480,7 +480,7 @@ hatte (ein als ungültig markierter Messwert oder einer, der auf Messwerte
 folgt, die nach einem Stillstand der Anzeige von 320 ms oder mehr auf dem Weg
 zum Bildschirm verloren gingen, löscht den Winkelverlauf), wenn
 sie keinen Startwinkel hat und wenn der Lauf aus einem anderen Grund als dem
-Abschluss endet (STOP, Disarm, Linkverlust, Versorgungsfehler, Blockade),
+Abschluss endet (STOP, Sichern, Linkverlust, Versorgungsfehler, Blockade),
 bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die
 Ergebnisse aus dem Strom zählen so eine Bewegung auch nicht. Eine Bewegung,
 die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
@@ -523,10 +523,10 @@ Sensor keinen Magneten meldet.
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
-Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen der Seite, die sichern. Ein Schritt, den der Lauf gepostet und
+Prüfstand bleibt scharf, außer das Ende war ein Sichern, STOP oder das
+Verlassen der Seite, die den Prüfstand sichern. Ein Schritt, den der Lauf gepostet und
 das Panel noch nicht gesendet hat, wenn der Prüfstand gesichert wird oder
-stoppt, wird nicht gesendet. Nach einem Lauf, den ein Disarm, STOP oder das
+stoppt, wird nicht gesendet. Nach einem Lauf, den ein Sichern, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und PULSBREITE auf der
 Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
 Prüfstand scharf lässt, zeigen sie die Ruhelage, in die die Freigabe die Pins
@@ -749,8 +749,8 @@ der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIM
 verschiebt befohlene Stellungen und nicht die Ruhelage: Mit TRIM +20 zeigt
 das ARM 1500 us, und eine Stellung bei 0 deg ist 1520 us.
 
-Ein Sweep endet bei einem Disarm, und seine zuletzt gezeichnete Stellung
-bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Disarm
+Ein Sweep endet beim Sichern, und seine zuletzt gezeichnete Stellung
+bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Sichern
 gesendet. Die Bedienelemente im Einzelnen:
 [Bildschirme](Screens-de.md#servo).
 

@@ -266,9 +266,8 @@ Zeile den Rest.
 
 ![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
 
-TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
-gespeichert wird, während der Prüfstand gesichert ist und der Ausgang des
-Netzteils aus ist.
+TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an. Dabei ist der Prüfstand gesichert
+(DISARMED) und der Ausgang des Netzteils aus.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
 
@@ -333,7 +332,7 @@ Kein ERLEDIGT innerhalb von 60 s (`ESC_STICK_HAND_WAIT_MS`) beendet den
 Lauf mit NICHT BESTÄTIGT. Während er wartet, hält der Lauf jede Regel, die er
 sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
 Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
-und sichert.
+und sichert den Prüfstand.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
@@ -747,7 +746,7 @@ Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
 als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
 Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
-Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und sichert;
+Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und sichert den Prüfstand;
 ein Abbruch tut alle drei in einem Schritt.
 Ein Stopp rastet ein wie jeder Stopp: der nächste Lauf schaltet erst über
 seine eigene Warnung wieder scharf.

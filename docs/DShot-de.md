@@ -221,7 +221,7 @@ und liegt weit innerhalb des Signal-Timeouts jedes ESC.
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
 keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Statt
 dessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
-ein disarmter Prüfstand von der ESC-Seite aus nicht aussehen.
+ein gesicherter Prüfstand von der ESC-Seite aus nicht aussehen.
 
 ## Bidirektionales DShot
 
@@ -344,7 +344,7 @@ Das Wiederholen ist für ESCs mit AM32-Firmware. Ein ESC mit AM32 2.21 nimmt
 ein Command nur an, solange er scharf ist und der Motor steht, und er schaltet
 sich nach 1 s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
 hört (`Src/dshot.c:157`,
-`Src/main.c:1353-1356`). Ein nicht scharfer Prüfstand sendet keine Frames, und
+`Src/main.c:1353-1356`). Ein gesicherter Prüfstand sendet keine Frames, und
 die AM32-Firmware startet nach 0,5 s ohne Frame neu, wenn der ESC scharf ist,
 und nach 2 s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
 scharf ist. Eine Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor

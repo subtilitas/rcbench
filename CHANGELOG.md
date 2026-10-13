@@ -59,6 +59,9 @@ history is in git.
 
 - The German docs and the bench configurator name the disarmed state
   "gesichert" and the act of disarming "sichern" (armed stays "scharf").
+  "Nicht scharf" for the disarmed bench and "Disarm" as a German noun in
+  prose become "gesichert" and "Sichern"; "nicht scharf" stays where it
+  means not armed for one role.
   The firmware's German UI texts are unchanged.
 
 - The bench configurator states the supply of the V pins of the Osoyoo

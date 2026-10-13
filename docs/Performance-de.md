@@ -202,7 +202,7 @@ abzüglich 1024 Bytes überschreitet.
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
-der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)
+der Frames auf: 320 für den gespeicherten Zustand der FPU (Floating-Point Unit)
 und Vektoreinheit am oberen Ende jedes Stacks, 192 für den Frame, den ein
 Interrupt ablegt, und 16 unter dem tiefsten Frame. Die übrigen 496 Bytes
 decken ab, was das Werkzeug nicht sieht, und jede Tiefe oben ist deshalb eine

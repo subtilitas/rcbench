@@ -112,7 +112,7 @@ und der Multiplexer wählt eines aus:
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
 | Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er sichert nach 150 ms Stille. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er sichert die Bank nach 150 ms Stille. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
@@ -247,7 +247,7 @@ Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
 wurde. **FREIGEBEN** führt die Ruderflächen auf die Mitte zurück; es löscht den
 Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
-Sichern, STOP oder das Verlassen des Bildschirms, was sichert. Am
+Sichern, STOP oder das Verlassen des Bildschirms, was den Prüfstand sichert. Am
 Oszilloskop prüfen, dass FREIGEBEN den Impuls in die Mitte des Kanalwegs führt
 und dass ein Sichern ihn beendet.
 
@@ -378,7 +378,7 @@ der Strom von CH1 ist dann eine Grenze, kein Wert.
 ### 8.4 Ein Lauf: Spitzen und Zähler
 
 Auf MOTOR & ESC scharf schalten, 60 s einen gleichmäßigen Strom halten, dann
-sichern.
+den Prüfstand sichern.
 
 **Gut:** `bench flags` liest 0x63 (dazu 0x04 und 0x08, wenn ein
 bidirektionaler ESC antwortet). `mAh` zählt Strom × Zeit: 2,00 A über 60 s
