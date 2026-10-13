@@ -48,18 +48,18 @@ bevor man sich auf ein Schreiben verlässt.
 - Der Port ist in PWM (Pulsweitenmodulation) oder im Programmieren, nie in
   beidem. Solange der Port im Programmieren ist, sendet der Tester keinen
   Puls darauf, und seine Zeile **PULSBREITE** zeigt `---`.
-- Programmieren und ein Prüfstand unter ARM schließen sich aus.
+- Programmieren und ein Prüfstand in ARMED schließen sich aus.
   **VERBINDEN** wird abgelehnt mit
-  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM für
+  `Erst DISARM: bei ARMED wird der Port nicht übernommen.`, wenn ARMED für
   irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
-  den Prüfstand unter ARM: **ARM** auf SERVO und auf MOTOR & ESC ist
+  den Prüfstand auf ARMED: **ARM** auf SERVO und auf MOTOR & ESC ist
   gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des
   ESC-Stick-Programmierers startet nicht und meldet
   `Servo-Programmierer hält einen Port: erst VERLASSEN.` Ein ARM, das den
   Prüfstand auf anderem Weg erreicht, wird mit dem Hinweis
   `kein ARM: der Servo-Programmierer hält einen Port` abgelehnt. **DISARM**
-  und **STOP** wirken in jedem Zustand. Unter ARM werden das Lesen, das
+  und **STOP** wirken in jedem Zustand. In ARMED werden das Lesen, das
   Prüfen, das Schreiben, das Zurückspielen und das Lösen der Kopplung mit
   derselben Zeile wie **VERBINDEN** abgelehnt; **VERLASSEN** wird
   angenommen.
@@ -89,12 +89,12 @@ Programmierport. **OPTIONEN**, Reiter PRÜFLING, hält die zwei Zeilen:
 Beide Zeilen werden mit den SERVO-Einstellungen gehalten. Der
 SERVO-Bildschirm nennt das aktive Ziel mit den Pins in der Zeile ZIEL der
 rechten Karte: `PROG-PORT GP13` in der Warnfarbe oder `GP4` für die als
-SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
+SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
 aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
-läuft, bei scharfem wie bei nicht scharfem Prüfstand: **STOP** und
+läuft, in ARMED wie in SAFE: **STOP** und
 **DISARM** beenden einen Sweep oder einen Test. Mit **AUSGÄNGE** als Ziel
 ist **PORT-PWM** gesperrt.
 
@@ -160,7 +160,7 @@ Overlay wieder offen.
 | `Der Programmier-Port hat keinen Pin. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
 | `Der Koprozessor hat diesen Programmier-Port nicht.` | der Koprozessor hat weniger Ports als den angefragten |
 | `Programmierspannung oder -strom über den SUPPLY-Grenzen.` und `Unter WEITERES senken oder Grenze anheben. Nichts gesetzt.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMGRENZE über seiner Stromgrenze; nichts wird gesendet |
-| `Erst DISARM: bei ARM wird der Port nicht übernommen.` | ARM gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
+| `Erst DISARM: bei ARMED wird der Port nicht übernommen.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
 | `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8 V. Programmieren braucht 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
 | `Versorgung schaltete nicht in 3000 ms. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
@@ -1032,7 +1032,7 @@ Das Warten, das ein Servo braucht, ist nicht gemessen.
 | Während des Wartens | Wirkung |
 | --- | --- |
 | **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
-| **STOP** oder ein Disarm des Prüfstands, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
+| **STOP** oder ein Wechsel des Prüfstands auf SAFE, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
 | Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 2000 ms aus, dann ist der Port in PWM |
 | Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
 
@@ -1259,7 +1259,7 @@ fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
-Warten des Verlassens, ein Abbruch, ein Disarm und eine Versorgung, die im
+Warten des Verlassens, ein Abbruch, ein Wechsel auf SAFE und eine Versorgung, die im
 Warten ausgeht, ein Verlassen an den Link-Versionen 4.13 und 4.14 mit und
 ohne PD mini, **STOP** während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2 s
 auf beiden

@@ -517,6 +517,23 @@ for (const size of SIZES) {
       await expect(page).toHaveURL(/#v=1&f=esc&o=pd$/);
       await expect(page.locator('#o-escPower-pd')).toBeChecked();
       await expect(page.locator('#rm-batt')).toHaveCount(0);
+
+      // The DC supply of the Osoyoo breakout board leaves by servo power A, and the servo supply comes in.
+      await open(page, '#v=1&f=servo&o=osoyoo,servo5v');
+      await tabTo(page, 'rm-dcsup');
+      await page.keyboard.press('Enter');
+      const dc = page.getByRole('alertdialog', { name: `Remove ${short('dcsup')}?` });
+      await expect(dc).toBeVisible();
+      await expect(dc).toContainText('No function goes off.');
+      await expect(dc).toContainText('Variant that changes: Servo power A.');
+      await expect(dc).toContainText(`Parts that come in: ${short('ssup')}.`);
+      await expect(page.locator('#rm-yes')).toHaveText('Remove part');
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Enter');
+      await expect(page).toHaveURL(/#v=1&f=servo&o=osoyoo$/);
+      await expect(page.locator('#o-servoPower-external')).toBeChecked();
+      await expect(page.locator('#rm-dcsup')).toHaveCount(0);
+      await expect(page.locator('#rm-ssup')).toHaveCount(1);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 

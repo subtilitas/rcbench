@@ -65,9 +65,36 @@ history is in git.
   current limit are stored and not applied, and that the level of the
   servo's reply on GP13 is not measured. Existing links keep their meaning:
   `kst` stays an unknown id.
+- The bench configurator adds the DC supply of the Osoyoo breakout board,
+  7 to 12 V DC (part `dcsup`, rule `osoyoo-dc`), to every setup in which the
+  servo takes the V pin of a strip: a servo, no PD mini, servo power B
+  (`servoPower: bench`) and the Osoyoo connection. In these setups the
+  jumper V Selector sits on 5V, which takes its power from the DC input
+  alone. The supply has 2 leads, wires 65 and 66, drawn as stubs to the DC
+  jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-), exactly
+  1 of them. The DC jack takes a 5.5 x 2.1 mm plug, centre positive; its
+  minus is GND of the board, with no reverse-polarity protection. The
+  product page names the socket DC005-2.1: the 2.1 mm pin follows from that
+  name, and the 5.5 mm outer diameter is the usual size of that socket
+  family, not stated by the vendor. The SI2302 in the lead VIN- protects the
+  VIN terminal and H4 only, and the board notes state so. Above 12 V the
+  gate-source voltage of the SI2302 exceeds its ±12 V rating: its gate sits
+  at PWRIN through R7. The current the supply must deliver is not stated.
+  The supply is the first modelled part (`Part.modelled`): the data states
+  the range it needs, not a product, and the page and the PDF tag it
+  "Modelled part: no product chosen". The drawing `dcsup` is a generic
+  plug-in supply.
 
 ### Changed
 
+- The bench states are named SAFE and ARMED in English and German, as the
+  status band shows them: in the panel texts, the docs and the configurator.
+  The action reads "switches the bench to SAFE" / "schaltet den Prüfstand
+  auf SAFE". The ESC STICK red-light results DISARMED and NOT ARMED read SAFE
+  and STILL SAFE (German NOCH SAFE); the servo report's abort reason reads
+  `bench SAFE`. The ARM and DISARM buttons, the protocol's command, register
+  and error names (NOT_ARMED) and the OpenYGE state `DISARMED` keep their
+  names.
 - `tools/check_protocols.py` checks that a module's `README.md` has an
   "Interface" heading, a heading with "Trademark" in it where it names a
   brand, and the words "no pin driver" where the module has no `rp2350/`

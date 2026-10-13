@@ -137,6 +137,7 @@ function partItem(view: View, r: View['setup']['parts'][number], why: string): I
   const variant = part.variantName ? part.variantName.names[options[part.variantName.option]] : undefined;
   const tags: string[] = [];
   if (part.release !== 'released') tags.push(t(lang, 'nir'));
+  if (part.modelled) tags.push(t(lang, 'modelled'));
   const lines: Sub[] = [];
   if (part.role) lines.push({ text: tx(lang, part.role), muted: true });
   if (why !== '') lines.push({ text: why, muted: false });

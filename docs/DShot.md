@@ -6,7 +6,7 @@ What the coprocessor puts on an output pin, and what comes back. Four drivers:
 servo PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, and
 bidirectional DShot.
 
-The rules every output obeys — travel, role, rest, slew, clamping, arming and
+The rules every output obeys — travel, role, rest, slew, clamping, the ARMED state and
 the silence timeout — are in `shared/outputs/` and are the same for all four.
 This page is about the wire.
 
@@ -206,7 +206,7 @@ signal timeout.
 
 **Nothing is sent while the bench is not driving.** No frames means no edges,
 and an ESC stops on silence after its own timeout. Sending explicit zeros
-instead would keep it armed and waiting, which is not what a disarmed bench
+instead would keep it armed and waiting, which is not what a bench that is SAFE
 should look like from the ESC's side.
 
 ## Bidirectional DShot
@@ -274,7 +274,7 @@ An ESC reports electrical periods and has no idea what it is bolted to, so
 mechanical rpm (revolutions per minute) needs the motor's magnet count. That is
 the one number the wire does not carry. The panel sends it from the `Motor
 poles` setting when a coprocessor starts answering, again whenever the setting
-changes, and again before the write that arms if a change is still owed, on
+changes, and again before the write that switches to ARMED if a change is still owed, on
 the [CONTROL page](Link.md#page-map). A write nobody answers stays owed and
 goes out again at the next 50 ms poll; one the coprocessor refuses is not
 retried, and waits for the next edit or link-up edge.
@@ -318,7 +318,7 @@ is inside the command range, so nothing turns while it goes out:
 The repetition is for ESCs with AM32 firmware. An ESC with AM32 2.21 takes a
 command only while it is armed and its motor is stopped, and it arms itself
 after 1 s of zero throttle, counted from the first frame it hears (`Src/dshot.c:157`,
-`Src/main.c:1353-1356`). A disarmed bench sends no frames, and the AM32
+`Src/main.c:1353-1356`). A bench that is SAFE sends no frames, and the AM32
 firmware restarts after 0.5 s without one when armed and 2 s when not, so
 every run starts from an ESC that has not armed. An ask made only in a run's
 first 10 ms arrives before the ESC can take it. `test_dshot_edt` holds the
@@ -405,7 +405,7 @@ is unconfirmed beyond that one ESC:
 | --- | --- |
 | Frames, group code, checksum, speed, sampler | `protocols/dshot/` |
 | PPM frame layout | `protocols/ppm/` |
-| Travel, role, rest, slew, arming, timeout | `shared/outputs/` |
+| Travel, role, rest, slew, the ARMED state, timeout | `shared/outputs/` |
 | Which PWM slice and channel a GPIO reaches | `shared/outputs/out_pwm_map.c` |
 | PIO programs and their drivers for PPM and DShot | `protocols/ppm/rp2350/`, `protocols/dshot/rp2350/` |
 | Hardware PWM backend | `firmware/iomcu/src/out_pwm.c` |

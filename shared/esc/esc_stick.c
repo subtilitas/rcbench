@@ -791,13 +791,13 @@ const char *esc_stick_reason_text(esc_stick_reason_t r)
     case ESC_STICK_R_NONE:        return "";
     case ESC_STICK_R_STOP:        return "STOP";
     case ESC_STICK_R_BENCH_STOP:  return "BENCH STOPPED";
-    case ESC_STICK_R_DISARMED:    return "DISARMED";
+    case ESC_STICK_R_DISARMED:    return "SAFE";
     case ESC_STICK_R_LINK:        return "LINK LOST";
     case ESC_STICK_R_SUPPLY_OFF:  return "SUPPLY OFF";
     case ESC_STICK_R_SUPPLY_LOST: return "SUPPLY NOT ANSWERING";
     case ESC_STICK_R_STALE:       return "NO READINGS";
     case ESC_STICK_R_RATE:        return "READ RATE";
-    case ESC_STICK_R_NOT_ARMED:   return "NOT ARMED";
+    case ESC_STICK_R_NOT_ARMED:   return "STILL SAFE";
     case ESC_STICK_R_NO_POWER:    return "NO POWER";
     case ESC_STICK_R_SUPPLY_ON:   return "SUPPLY STAYS ON";
     case ESC_STICK_R_TOUCH:       return "TOUCH LOST";

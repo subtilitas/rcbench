@@ -47,7 +47,7 @@ test('the README of the drawings carries the palette table and the counts of the
 test('the check mode passes on the committed files and writes nothing', () => {
   const r = spawnSync(process.execPath, [cli, '--check'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /^drawings: 23 drawings in 2 languages, 177 anchors, \d+ wires, 0 findings\n$/);
+  assert.match(r.stdout, /^drawings: 24 drawings in 2 languages, 179 anchors, \d+ wires, 0 findings\n$/);
   assert.doesNotMatch(r.stdout, /written/);
 });
 
@@ -82,7 +82,7 @@ test('writing and reading round-trips, and a file the generator does not write i
     // A name that only ends in the letters is no SVG file.
     writeFileSync(join(t.svg, 'notsvg'), 'x');
     assert.ok(!('notsvg' in readSvgs(t.svg)));
-    assert.equal(writeFiles(good, t.svg, t.anchors), 47);
+    assert.equal(writeFiles(good, t.svg, t.anchors), 49);
     assert.ok(!existsSync(join(t.svg, 'upper.SVG')));
     assert.ok(!existsSync(join(t.svg, 'de', 'mixed.Svg')));
     assert.ok(existsSync(join(t.svg, 'notsvg')));
@@ -92,7 +92,7 @@ test('writing and reading round-trips, and a file the generator does not write i
     assert.ok(!existsSync(join(t.svg, 'de', 'archive', 'old.svg')));
     assert.ok(!existsSync(join(t.svg, 'de', 'archive', 'deep', 'old.svg')));
     assert.ok(existsSync(join(t.svg, 'keep.txt')));
-    assert.equal(writeFiles(good, t.svg, t.anchors), 47);
+    assert.equal(writeFiles(good, t.svg, t.anchors), 49);
     assert.deepEqual(readFiles(t.svg, t.anchors), good);
   } finally {
     rmSync(t.dir, { recursive: true, force: true });

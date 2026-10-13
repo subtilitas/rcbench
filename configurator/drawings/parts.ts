@@ -301,6 +301,19 @@ function ssup(d: Dwg): void {
   d.add(d.pin('NEG', 196, 130, 'E', 142, 137, { sz: 20, a: 'middle' }));
 }
 
+// ---------------------------------------------------------------- DC supply of the Osoyoo breakout board
+// A generic plug-in adapter: no product is chosen, the part is modelled.
+function dcsup(d: Dwg): void {
+  d.add(`<rect x="6" y="76" width="18" height="8" rx="2" fill="${d.u('tin')}"/><rect x="6" y="116" width="18" height="8" rx="2" fill="${d.u('tin')}"/>`);
+  d.add(`<g filter="${d.u('sh')}"><rect x="22" y="44" width="116" height="112" rx="12" fill="${d.grad('dc', ['#4a4f57', '#33373e', '#22252a'])}"/></g>`);
+  d.add(`<rect x="40" y="62" width="70" height="40" rx="3" fill="${d.grad('dcl', ['#f4f1ea', '#dcd8cd'])}" opacity=".9"/><rect x="48" y="72" width="46" height="6" rx="2" fill="#b9b4a6"/><rect x="48" y="86" width="30" height="6" rx="2" fill="#cfcabd"/>`);
+  d.add(`<rect x="132" y="90" width="16" height="20" rx="4" fill="#17181c"/>`);
+  d.add(d.lead('M148 100C176 100 190 72 224 72H238', '#c8261d', 8), d.lead('M148 100C176 100 190 132 224 132H238', '#17181c', 8));
+  d.add(d.contact(260, 72, 'E', { len: 24, wd: 12, gold: true }), d.contact(260, 132, 'E', { len: 24, wd: 12, gold: true }));
+  d.add(d.pin('POS', 260, 72, 'E', 250, 56, { f: INK, sz: 20, a: 'middle' }));
+  d.add(d.pin('NEG', 260, 132, 'E', 250, 160, { f: INK, sz: 20, a: 'middle' }));
+}
+
 // ---------------------------------------------------------------- ESC battery
 function batt(d: Dwg): void {
   d.add(`<g filter="${d.u('sh')}"><rect x="20" y="42" width="150" height="116" rx="10" fill="${d.grad('bt', ['#3f86d6', '#2462ad', '#18447d'])}"/></g>`);
@@ -684,6 +697,8 @@ export const LIST: Entry[] = [
     desc: T('Illustration of a USB-C PD charger.', 'Illustration eines USB-C-PD-Ladegeräts.') },
   { file: 'ssup', part: 'ssup', pfx: 'ssu', w: 230, h: 200, draw: ssup,
     desc: T('Illustration of a servo supply with a plus and a minus terminal.', 'Illustration einer Servoversorgung mit Plus- und Minusklemme.') },
+  { file: 'dcsup', part: 'dcsup', pfx: 'dcs', w: 290, h: 200, draw: dcsup,
+    desc: T('Illustration of a plug-in DC supply with a plus and a minus lead. No product is chosen.', 'Illustration einer steckbaren DC-Versorgung mit Plus- und Minusleitung. Kein Produkt ist gewählt.') },
   { file: 'batt', part: 'batt', pfx: 'bat', w: 290, h: 200, draw: batt,
     desc: T('Illustration of a battery pack with a plus and a minus lead.', 'Illustration eines Akkupacks mit Plus- und Minusleitung.') },
   { file: 'sim', part: 'sim', pfx: 'sim', w: 300, h: 264, draw: sim,
