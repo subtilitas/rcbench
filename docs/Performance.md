@@ -54,8 +54,8 @@ settings-chrome       23,979     2997 KiB     78.7       9.8
 battery-chrome       36,962     4620 KiB    121.3       7.8
 balance-chrome       40,776     5097 KiB    133.8       6.5
 programmer-chrome       29,203     3650 KiB     95.8       9.8
-picker             880      110 KiB      2.9      39.0
-picker-chrome       15,854     1982 KiB     52.0      13.0
+picker             892      112 KiB      2.9      39.0
+picker-chrome       22,075     2759 KiB     72.5      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -195,8 +195,8 @@ bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
   which the tool reads out of every screen's table, and the link port's and
-  the photograph store's flash callbacks, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`): 189 such calls are
+  the drawing store's flash callbacks, which it follows by name
+  (`PORT_CALLS`, `FLASH_CALLS`): 190 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

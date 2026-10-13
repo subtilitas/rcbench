@@ -56,7 +56,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 The coprocessor build prints its own size check:
 
-    -- rcbench: image 272040 bytes, 6% of the 4186112 bytes a four-megabyte
+    -- rcbench: image 184360 bytes, 4% of the 4186112 bytes a four-megabyte
        module leaves below the store
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
@@ -131,43 +131,47 @@ long is allowed to run there.
 
 ---
 
-## 4. First link-up — expect about a minute of unusual traffic
+## 4. First link-up: the board drawing
 
-**This is new and will happen on your first ever link-up.** The coprocessor
-now carries a 201 kB photograph of itself, and the panel fetches it once and
-keeps it in flash.
+The coprocessor carries a 1,560-byte drawing of its own board. The panel
+fetches it at the first link-up and keeps it in flash.
 
 On the panel console, in this order:
 
     I (…) rcbench: coprocessor answered
     I (…) rcbench: hardware 1 says where its pads are
     I (…) rcbench: hardware 1 says which pads are grounds and rails
-    I (…) rcbench: fetching hardware 1's photograph: 500 x 206, 206000 bytes
-    …
-    I (…) rcbench: hardware 1's photograph kept
+    I (…) rcbench: fetching hardware 1's drawing: 1560 bytes, hash 8f99cd48
+    I (…) rcbench: hardware 1's drawing kept
 
 **What to expect while it runs:**
 
-- Extra CAN traffic for tens of seconds. It takes 15 ms of each 50 ms poll,
-  so it is slower in wall clock than the bus alone would need.
-- **Visible display stalls** when it finishes and writes to flash: one per
-  erase or write of a 4 kB sector, about 104 for a 206 kB picture. A flash
-  operation closes the cache the panel's bounce-buffer refill reads PSRAM
-  through, so the panel stops for the length of each. Settings saves
-  already do this.
-- **The write waits for a safe bench.** It takes one sector per 5 ms control
-  pass, and only while the bench is SAFE with the supply off. ARMED or
-  with the supply on, `photograph waits for a disarmed bench with the supply
-  off` appears once on the console and `kept` follows after the switch to SAFE.
+- 26 blocks of 62 bytes over CAN, in a 15 ms slice of each 50 ms poll.
+- **A display stall** when it writes to flash: one per flash operation, 4
+  for this drawing (2 sector erases of 4 kB, the payload, the header). A
+  flash operation closes the cache the panel's bounce-buffer refill reads
+  PSRAM through, so the panel stops for the length of each. Settings saves
+  do the same.
+- **The write waits for a safe bench.** It takes one step per 5 ms control
+  pass, and only while the bench is SAFE with the supply off. ARMED or with
+  the supply on, `keeping hardware 1's drawing waits for a bench in SAFE
+  with the supply off` appears once on the console and `kept` follows after
+  the switch to SAFE.
 - **It must not disturb the heartbeat.** The transfer is sliced and the flash
-  write is held back while ARMED for exactly that reason. **If the heartbeat
-  drops during this minute, stop and write it down** — that is the most
-  important thing this first run can find.
+  write is held back while ARMED for that reason. If the heartbeat drops
+  during the fetch, stop and write it down.
 
-On the **second** link-up the photograph is already kept and none of this
-happens. If you want to skip it entirely, a coprocessor built with the
-artwork removed reports zero blocks and the panel draws the board from its
-outline instead.
+On the next link-up the panel reads the drawing's length, CRC (cyclic
+redundancy check) and hash from the coprocessor and shows the kept copy
+when all three match:
+
+    I (…) rcbench: hardware 1's drawing is kept: 1560 bytes, hash 8f99cd48
+
+A coprocessor flashed with another drawing reports another hash, and the
+panel fetches the drawing again. A coprocessor on protocol 4.19 or older
+serves no drawing; the panel logs `hardware 1 serves no board drawing
+(protocol 4.19); PICK A PIN draws its shape` and draws the board from its
+outline.
 
 ---
 
@@ -212,7 +216,7 @@ the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
 **Setup → PICK A PIN**, choose `SERVO PWM` in its list and tap one key on the
-board picture — grounds are marked `G`, rails carry their voltage.
+board drawing — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
 
@@ -720,8 +724,8 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 | Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150 ms. Scope GP3. |
 | Switch to ARMED refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
-| Heartbeat drops in the first minute | **The artwork transfer or the flash keeper.** See §4. |
-| Display freezes briefly | A flash write. Expected while the photograph is kept, once per 4 kB sector erased or written. |
+| Heartbeat drops at the first link-up | **The drawing transfer or the flash keeper.** See §4. |
+| Display freezes briefly | A flash write. Expected while the board drawing is kept, once per flash operation, 4 for the RP2350-CAN's drawing. |
 | Coprocessor does not boot after flashing | Image past 4 MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
 | Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
@@ -733,12 +737,12 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 **If the bench misbehaves in a way that points at the panel**, the three
 newest and least proven things are all mine and all only compiler-checked:
 
-- the **photograph keep** in the control task, one flash sector a pass,
-- the **artwork slice** inside the control task's poll loop, and
+- the **drawing keep** in the control task, one flash step a pass,
+- the **drawing slice** inside the control task's poll loop, and
 - the **run log task** (`runlog`), which owns every write to the SD (Secure
   Digital) card.
 
-The first two are inert on a coprocessor that reports no photograph, which is
+The first two are inert on a coprocessor that reports no drawing, which is
 the quickest way to rule them out. The third is inert with no card in the
 slot. With a card it appends a line to `RCBENCH.LOG` whenever a fault is
 raised, ARMED or not; the run file is what waits for a switch to ARMED, and for the

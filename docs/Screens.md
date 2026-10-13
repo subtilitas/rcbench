@@ -1039,7 +1039,7 @@ settings over the left column. Each is kept in the panel's NVS (non-volatile
 storage) and survives a restart. A value opens the keypad; a switch flips on
 the tap. Every change is written at the next frame the bench is SAFE with
 no switch to ARMED waiting, the supply's output is off with no ON queued and the board's
-photograph is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
+drawing is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
 WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
 change made on SETUP and left without SAVE, which nothing writes until SAVE
@@ -1772,7 +1772,7 @@ The press asks; it does not write. Writing settings commits a page of NVS
 (non-volatile storage), and a flash operation on the ESP32-S3 disables the
 instruction cache, so neither core runs for its duration. The write is taken
 on the first frame at which the bench is SAFE with no switch to ARMED waiting, the
-supply's output is off with no ON queued, and no board photograph is being
+supply's output is off with no ON queued, and no board drawing is being
 fetched or kept. On the settings screen that is the next frame, and
 the label goes to `SAVED` as fast as the eye follows the press. While ARMED, the
 request stands as `WHEN IDLE` until the bench is SAFE.
@@ -2130,19 +2130,32 @@ guessed shape points at the wrong pad as confidently as the right one, and
 this screen's whole job is finding a pad on the board in front of you. Its
 pins are still on the Outputs screen.
 
-The photograph is separate again. With one, the board on screen is the board
-in your hands; without one, the outline and every pad are drawn from the
-shape and the keys are in the same places:
+The board's drawing comes from the board as well. The coprocessor carries a
+drawing of itself, the one the configurator draws: the outline, the parts as
+flat shapes and every pad, to scale in 0.01 mm ([The board
+drawing](Link.md#the-board-drawing)). The panel draws it on the shape's pad
+grid, so the board on screen is laid out like the board in your hands.
+Without a drawing, the outline and every pad are drawn from the shape and
+the keys are in the same places:
 
-![The picker without a photograph](img/picker-drawn.png)
+![The picker without a drawing](img/picker-drawn.png)
 
-The photograph is fetched over the link once per board and kept in the
-panel's flash, so it costs about ten seconds the first time a board is seen
-and nothing after that. Writing it to flash waits for a bench that is SAFE with
-the supply off and pauses between two 4 kB sectors when the bench is ARMED or
-the supply comes on ([Safety](Safety.md#deliberate-behaviours)). A board with
-no photograph, or one whose transfer or write has not finished, is drawn
-rather than left blank.
+The panel shows a drawing only when it describes the board the panel binds:
+the outline and every pad position match the shape, every pin pad carries
+the catalogue's GPIO, and every other pad the catalogue's ground or rail. A
+drawing that disagrees is not shown, and the shape is drawn instead.
+
+The drawing of the RP2350-CAN is 1,560 bytes, fetched over the link in 26
+blocks of 62 bytes in a 15 ms slice of each 50 ms poll. The time this takes
+on a bench is not measured. The panel keeps it in its flash with the
+drawing's length, CRC (cyclic redundancy check) and hash, and shows the kept
+copy only while the coprocessor still reports the same three; a coprocessor
+flashed with another drawing is fetched again. Writing it to flash waits for
+a bench that is SAFE with the supply off and pauses between two 4 kB sectors
+when the bench is ARMED or the supply comes on
+([Safety](Safety.md#deliberate-behaviours)).
+A board with no drawing, or one whose transfer has not finished, is drawn
+from the shape rather than left blank.
 
 A servo lead has three wires and the keys describe one. The other two are
 marked on the board itself, on a short trace in from the pad:

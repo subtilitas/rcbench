@@ -66,9 +66,9 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
  * The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
  * side, pad 1 at the bottom left with the numbers running away from it.
  *
- * The outline's own numbers.  The picker's photograph needs a different
- * inset because a photograph is not cropped to the outline, and it carries
- * that calibration itself.
+ * The outline's own numbers.  The board drawing the coprocessor serves
+ * places its pads on the same grid, and the picker refuses a drawing that
+ * does not (board_drawing_agrees()).
  */
 static const outbind_shape_t k_pico_shape = {
     5100u, 2100u, 254u, 161u, 20u, (uint8_t)LINK_SH_BOTTOM_LEFT,

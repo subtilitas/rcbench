@@ -1,12 +1,12 @@
 /*
- * Fetching a board's photograph: the order of the transactions, without the
+ * Fetching a board's drawing: the order of the transactions, without the
  * link underneath them.
  *
- * The panel asks the coprocessor what its picture is, then asks for it a
- * block at a time -- thousands of round trips for two hundred kilobytes. The
- * sequence is small and the failures are all quiet ones: a block skipped, a
- * reply for a block nobody asked for, a picture that arrives whole and wrong.
- * Those are worth a test, and the task it runs in cannot be one.
+ * The panel asks the coprocessor what its drawing is, then asks for it a
+ * block at a time. The sequence is small and the failures are all quiet
+ * ones: a block skipped, a reply for a block nobody asked for, a drawing
+ * that arrives whole and wrong. Those are worth a test, and the task it
+ * runs in cannot be one.
  *
  * So the transport is passed in. On the panel it is the CAN (Controller Area
  * Network) link; in the suite it is a device answering out of memory, which
@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "art_store.h"
 #include "link_artxfer.h"
 
 #ifdef __cplusplus
@@ -47,7 +48,7 @@ typedef struct {
 typedef enum {
     ART_FETCH_IDLE = 0,  /**< nothing under way                            */
     ART_FETCH_RUNNING,   /**< more blocks to ask for                       */
-    ART_FETCH_DONE,      /**< whole, and it is the picture it claimed      */
+    ART_FETCH_DONE,      /**< whole, and it is the drawing it claimed      */
     ART_FETCH_FAILED,    /**< art_fetch_why() says what stopped it         */
 } art_fetch_state_t;
 
@@ -58,23 +59,33 @@ typedef struct {
 } art_fetch_t;
 
 /**
- * What the far end says its picture is.
+ * What the far end says its drawing is: LINK_AW_COUNT registers into
+ * @p meta_regs.
  *
  * False when it has none, when the page is not there at all -- a coprocessor
- * built before it -- or when what it says cannot be a picture. Those are
+ * built before it -- or when what it says cannot be a drawing. Those are
  * different things to somebody reading a log, so @p why is set to which; it
  * may be NULL, and it is never left pointing at nothing.
  *
- * Everything that can be checked without knowing where the picture would go
+ * Everything that can be checked without knowing where the drawing would go
  * is checked here, and @p bytes is left zero when any of it fails: the
- * caller finds room from that number, and a page that cannot be a picture
+ * caller finds room from that number, and a page that cannot be a drawing
  * should not size an allocation first and be refused second.
  */
 bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
                     uint32_t *bytes, const char **why);
 
+/**
+ * The cache entry @p meta_regs describe for @p board: the content key a
+ * kept drawing has to match field for field (art_store_read_same()) before
+ * it is shown.  False, with @p out zeroed, when the registers cannot
+ * describe a drawing.
+ */
+bool art_fetch_key(const uint16_t *meta_regs, uint16_t board,
+                   art_entry_t *out);
+
 /** Get ready to assemble into @p buf. False when the metadata cannot
- *  describe a picture that fits. */
+ *  describe a drawing that fits. */
 bool art_fetch_begin(art_fetch_t *f, const uint16_t *meta_regs, uint8_t *buf,
                      uint32_t cap);
 
@@ -82,16 +93,18 @@ bool art_fetch_begin(art_fetch_t *f, const uint16_t *meta_regs, uint8_t *buf,
  * Ask for up to @p blocks of it.
  *
  * Returns what to do next. DONE means the whole payload arrived and matched
- * the checksum the far end declared, so the buffer is the picture; FAILED
- * means it did not, and nothing should be kept.
+ * the CRC and the hash the far end declared, so the buffer is the drawing;
+ * FAILED means it did not, and nothing should be kept.
  */
 art_fetch_state_t art_fetch_step(art_fetch_t *f, const art_transport_t *t,
                                  unsigned blocks);
 
-/** What the picture is, once it is whole. */
+/** What the drawing is, once it is whole. */
+uint16_t art_fetch_format(const art_fetch_t *f);
 uint16_t art_fetch_width(const art_fetch_t *f);
 uint16_t art_fetch_height(const art_fetch_t *f);
 uint16_t art_fetch_crc(const art_fetch_t *f);
+uint32_t art_fetch_hash(const art_fetch_t *f);
 uint32_t art_fetch_bytes(const art_fetch_t *f);
 
 /** Why it stopped, for a log line. Never NULL. */

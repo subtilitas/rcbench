@@ -1147,7 +1147,7 @@ des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
 in dem der Prüfstand SAFE ist und kein Schalten auf ARMED wartet, der Ausgang
-des Netzteils aus ist und kein ON eingereiht ist und das Foto der Platine
+des Netzteils aus ist und kein ON eingereiht ist und die Zeichnung der Platine
 weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
 Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
@@ -1940,8 +1940,8 @@ eine Page im NVS (Non-Volatile Storage), und eine Flash-Operation auf dem
 ESP32-S3 schaltet den Instruction Cache ab, es läuft also für ihre Dauer auf
 keinem der beiden Kerne Code. Geschrieben wird im ersten Frame, in dem der
 Prüfstand SAFE ist und kein Schalten auf ARMED wartet, der Ausgang des
-Netzteils aus ist und kein ON eingereiht ist und kein Platinenfoto geholt oder
-abgelegt wird. Auf
+Netzteils aus ist und kein ON eingereiht ist und keine Zeichnung der Platine geholt
+oder abgelegt wird. Auf
 dem Einstellungs-Bildschirm ist das der nächste Frame, und die Beschriftung
 steht auf `GESPEICHERT`, so schnell wie das Auge dem Druck folgt. In ARMED steht die
 Anforderung als `BEI STILLSTAND`, bis der Prüfstand auf SAFE schaltet.
@@ -2327,20 +2327,35 @@ gezeichnet — ein Bild aus einer geratenen Form zeigt mit derselben
 dieses Bildschirms ist es, einen Pad auf der Platine vor dir zu finden. Ihre
 Pins stehen weiterhin auf dem Outputs-Bildschirm.
 
-Das Foto ist wieder davon getrennt. Mit einem ist die Platine auf dem
-Bildschirm die Platine in deinen Händen; ohne eines werden Umriss und jedes
-Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
+Auch die Zeichnung der Platine kommt von der Platine. Der Koprozessor trägt
+eine Zeichnung von sich selbst, die, die der Konfigurator zeichnet: den
+Umriss, die Bauteile als flache Formen und jedes Pad, maßstäblich in
+0,01 mm ([Die Zeichnung der Platine](Link-de.md#die-zeichnung-der-platine)).
+Das Panel zeichnet sie auf das Pad-Raster der Form, die Platine auf dem
+Bildschirm ist also angeordnet wie die Platine in deinen Händen. Ohne
+Zeichnung werden Umriss und jedes Pad aus der Form gezeichnet, und die
+Tasten liegen an denselben Stellen:
 
-![Der Picker ohne Foto](img/de/picker-drawn.png)
+![Der Picker ohne Zeichnung](img/de/picker-drawn.png)
 
-Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
-behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
-gesehen wird, und danach nichts. Das Schreiben in den Flash wartet auf einen
-Prüfstand in SAFE mit ausgeschaltetem Netzteil und hält zwischen zwei
-Sektoren von 4 kB an, wenn der Prüfstand auf ARMED schaltet oder das Netzteil
-einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
-Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht
-fertig wurde, wird gezeichnet statt leer gelassen.
+Das Panel zeigt eine Zeichnung nur, wenn sie die Platine beschreibt, die das
+Panel bindet: Umriss und jede Pad-Position stimmen mit der Form überein, jedes
+Pin-Pad trägt den GPIO des Katalogs und jedes andere Pad die Masse oder
+Versorgung des Katalogs. Eine Zeichnung, die widerspricht, wird nicht
+gezeigt, und die Form wird stattdessen gezeichnet.
+
+Die Zeichnung des RP2350-CAN hat 1 560 Bytes und wird über den Link in 26
+Blöcken zu 62 Bytes geholt, in einem Abschnitt von 15 ms je Abfrage von
+50 ms. Wie lange das auf einem Prüfstand dauert, ist nicht gemessen. Das
+Panel behält sie in seinem Flash mit Länge, CRC (zyklische Redundanzprüfung)
+und Hash der Zeichnung und zeigt die behaltene Kopie nur, solange der
+Koprozessor dieselben drei meldet; ein Koprozessor, der mit einer anderen
+Zeichnung geflasht wurde, wird neu geholt. Das Schreiben in den Flash wartet
+auf einen Prüfstand in SAFE mit ausgeschaltetem Netzteil und hält zwischen
+zwei Sektoren von 4 kB an, wenn der Prüfstand auf ARMED schaltet oder das
+Netzteil einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
+Eine Platine ohne Zeichnung, oder eine, deren Übertragung nicht fertig wurde,
+wird aus der Form gezeichnet statt leer gelassen.
 
 Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
 anderen beiden sind auf der Platine selbst markiert, an einer kurzen Leitung

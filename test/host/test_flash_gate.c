@@ -1,5 +1,5 @@
 /*
- * When the panel may write its own flash, and the board photograph's keep
+ * When the panel may write its own flash, and the board drawing's keep
  * under that rule.
  *
  * A flash operation on the panel stalls both cores, the control task's STOP,
@@ -23,6 +23,7 @@
 #include "flash_gate.h"
 #include "heartbeat.h"
 #include "link_crc.h"
+#include "link_pages.h"
 
 #define SECTOR  4096u
 #define PART    (2u * ART_SLOT_BYTES)
@@ -30,7 +31,9 @@
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
 /* The control task's period, CONTROL_PERIOD_MS in main.c. */
 #define PASS_MS 5u
-#define PICTURE 206000u
+/* 51 sectors, so a keep runs long enough to be stopped part way.  The
+ * store keeps any length up to a slot; a drawing is at most 5328 bytes. */
+#define PAYLOAD 206000u
 
 static uint8_t *g_flash;
 static unsigned g_ops;     /* erases and writes */
@@ -82,7 +85,7 @@ static bool          g_bank;      /* this end's bank, as outputs_arm() sets */
 static bool          g_supply;    /* on, or an ON queued */
 static uint32_t      g_now;
 static art_keep_t    g_keep;
-static uint8_t      *g_pic;
+static uint8_t      *g_payload;
 static art_entry_t   g_entry;
 
 static void bench_fresh(void)
@@ -99,18 +102,20 @@ static void bench_fresh(void)
     arming_init(&g_arm, 0u, SETTLE_MS);
     arming_touch_seen(&g_arm, g_now);
 
-    if (g_pic == NULL) {
-        g_pic = malloc(PICTURE);
-        REQUIRE_ALLOC(g_pic);
+    if (g_payload == NULL) {
+        g_payload = malloc(PAYLOAD);
+        REQUIRE_ALLOC(g_payload);
     }
-    for (uint32_t i = 0; i < PICTURE; ++i) {
-        g_pic[i] = (uint8_t)(i * 7u + 3u);
+    for (uint32_t i = 0; i < PAYLOAD; ++i) {
+        g_payload[i] = (uint8_t)(i * 7u + 3u);
     }
     g_entry.board  = 1u;
-    g_entry.width  = 500u;
-    g_entry.height = 206u;
-    g_entry.bytes  = PICTURE;
-    g_entry.crc    = link_crc(0u, g_pic, PICTURE);
+    g_entry.format = (uint16_t)LINK_ART_DRAWING;
+    g_entry.width  = 5100u;
+    g_entry.height = 2100u;
+    g_entry.bytes  = PAYLOAD;
+    g_entry.crc    = link_crc(0u, g_payload, PAYLOAD);
+    g_entry.hash   = link_fnv1a32(LINK_FNV_INIT, g_payload, PAYLOAD);
 }
 
 /*
@@ -132,17 +137,17 @@ static art_keep_status_t pass(void)
     return art_keep_step(&g_keep, open);
 }
 
-/* The picture is kept, whole. */
+/* The payload is kept, whole. */
 static bool kept_whole(void)
 {
     art_entry_t got;
-    if (!art_store_find(&k_flash, 1u, &got) || got.bytes != PICTURE) {
+    if (!art_store_find(&k_flash, 1u, &got) || got.bytes != PAYLOAD) {
         return false;
     }
-    uint8_t *back = malloc(PICTURE);
+    uint8_t *back = malloc(PAYLOAD);
     const bool same = back != NULL
-                      && art_store_read(&k_flash, 1u, back, PICTURE)
-                      && memcmp(back, g_pic, PICTURE) == 0;
+                      && art_store_read(&k_flash, 1u, back, PAYLOAD)
+                      && memcmp(back, g_payload, PAYLOAD) == 0;
     free(back);
     return same;
 }
@@ -150,7 +155,7 @@ static bool kept_whole(void)
 TEST_CASE(an_arm_asked_for_during_the_keep_stops_it_before_the_next_sector)
 {
     bench_fresh();
-    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_pic));
+    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
     for (int i = 0; i < 10; ++i) {
         CHECK_EQ(pass(), ART_KEEP_RUNNING);
     }
@@ -195,7 +200,7 @@ TEST_CASE(a_keep_handed_over_on_an_armed_bench_starts_at_the_disarm)
         (void)pass();
     }
     CHECK(g_bank);
-    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_pic));
+    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
     for (int i = 0; i < 100; ++i) {
         CHECK_EQ(pass(), ART_KEEP_WAITING);
     }
@@ -216,7 +221,7 @@ TEST_CASE(a_keep_handed_over_on_an_armed_bench_starts_at_the_disarm)
 TEST_CASE(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it)
 {
     bench_fresh();
-    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_pic));
+    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
     /* Paused in each phase in turn: mid-erase, mid-write, mid-read-back. */
     const unsigned at[] = { 1u, 60u, 120u };
     unsigned done = 0;
@@ -244,7 +249,7 @@ TEST_CASE(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it)
 TEST_CASE(an_arm_and_the_supply_both_hold_it_until_both_are_gone)
 {
     bench_fresh();
-    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_pic));
+    CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
     CHECK_EQ(pass(), ART_KEEP_RUNNING);
     arming_request_arm(&g_arm, g_now);
     g_supply = true;
@@ -266,6 +271,6 @@ int main(void)
     RUN(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it);
     RUN(an_arm_and_the_supply_both_hold_it_until_both_are_gone);
     free(g_flash);
-    free(g_pic);
+    free(g_payload);
     return test_summary("flash_gate");
 }

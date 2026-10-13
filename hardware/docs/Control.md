@@ -135,7 +135,7 @@ P5's budget in T5, as its critic upheld it
 | ADC (analogue-to-digital converter) inputs | 0 of 8 with the external ADC of Q4; up to 4 with the reference option | yes |
 | SPI (Serial Peripheral Interface) controllers | in the draft pin map, 7 devices on 3 controllers of the two chips: the 2 CAN controllers on one main coprocessor controller, the 2 accelerometer ADCs on measurement SPI0, and the load-cell ADC, the thermocouple converter and the cell monitor on measurement SPI1; the main coprocessor's SPI0 is free ([Pins](Pins.md)). The timing between the two CAN controllers on one bus is not checked. In T5: up to 5 devices on 2 controllers | yes |
 | UART controllers | 2 of 2 on the main coprocessor: the inter-chip link and the separate lines for VESC controllers at 115,200 baud; the UART socket (OpenYGE protocol) runs as a PIO UART (owner, 2026-09-30; [Pins](Pins.md)). In T5: the UART socket (OpenYGE protocol) and the lines for VESC controllers | yes |
-| In-package flash | image limit 2,088,960 bytes against a build of 272,040 bytes plus the IO board's picture, whose size is not known (the module's is 206,000 bytes) | yes |
+| In-package flash | image limit 2,088,960 bytes against a build of 184,360 bytes, the module's board drawing of 1,560 bytes included; the IO board's drawing is not drawn yet, at most 5,328 bytes | yes |
 | Enable polarity | R4's buffer enable and R3's enable node are both high for enabled | yes |
 | Power-up sequence | the 3.3 V ramp time is not stated, so the reset supervisor's delay margin is not computed | yes |
 | Allowlist | every kept part is from a maker on S1, S2 or S9 | yes |

@@ -1,20 +1,22 @@
 /*
- * Keeping a board's photograph, so it is fetched once and not every time the
+ * Keeping a board's drawing, so it is fetched once and not every time the
  * link comes up.
  *
- * The picture costs about ten seconds of link. That is fine once for a board
- * that has never been seen and absurd on every connect, so it is written to
- * a partition of the panel's own flash and looked up by the identity the
- * coprocessor reports.
+ * The drawing is written to a partition of the panel's own flash with the
+ * identity the coprocessor reports and everything its ARTWORK page says
+ * about the payload: format, outline, length, CRC (cyclic redundancy check)
+ * and hash.  The kept drawing is the board's only while all of those still
+ * match the page, so a coprocessor flashed with another drawing under the
+ * same board ID is fetched again instead of shown from the cache.
  *
  * Fixed slots rather than a packed heap. A slot is erased, filled, and only
  * then given a header; nothing has to be moved when one is replaced, and the
  * store cannot be left half compacted by a power cut. The cost is the tail of
- * a slot a smaller picture does not use, which buys simplicity in code that
+ * a slot a smaller drawing does not use, which buys simplicity in code that
  * runs while a bench is live.
  *
  * The order of a write is the whole point: payload, read it back, and write
- * the header last. A header is what makes a slot findable, so a picture
+ * the header last. A header is what makes a slot findable, so a drawing
  * interrupted by an unplugged board or a power cut is never found -- rather
  * than found and wrong, which is the failure that would survive in flash
  * until somebody wired a lead by it.
@@ -35,7 +37,7 @@
 extern "C" {
 #endif
 
-/** One slot: a sector of header and the picture after it. */
+/** One slot: a sector of header and the payload after it. */
 #define ART_SLOT_BYTES  (256u * 1024u)
 
 /**
@@ -44,7 +46,7 @@ extern "C" {
  * @p erase and @p write take offsets from the start of the partition. Erase
  * is whole sectors; write is anywhere in an erased one. Any of them may fail
  * and saying so is not optional: a store that believes a write that did not
- * happen is a store that hands back a picture that is not there.
+ * happen is a store that hands back a drawing that is not there.
  */
 typedef struct {
     bool (*read)(void *ctx, uint32_t off, void *dst, uint32_t len);
@@ -55,23 +57,32 @@ typedef struct {
     uint32_t sector;  /**< erase granularity, 4096 on this part            */
 } art_flash_t;
 
-/** What a slot says it holds. */
+/** What a slot says it holds: the board and the ARTWORK page it came from. */
 typedef struct {
     uint16_t board;
+    uint16_t format;  /**< a link_art_format_t, never LINK_ART_NONE         */
     uint16_t width;
     uint16_t height;
-    uint16_t crc;     /**< over the payload                                */
+    uint16_t crc;     /**< link_crc() over the payload, seeded zero        */
+    uint32_t hash;    /**< link_fnv1a32() over the payload                 */
     uint32_t bytes;
 } art_entry_t;
 
-/** How many pictures this partition has room for. */
+/**
+ * Whether two entries describe the same payload: every field equal.  The
+ * content key of the cache -- a kept drawing is shown only for an ARTWORK
+ * page that says exactly what the entry says.
+ */
+bool art_entry_same(const art_entry_t *a, const art_entry_t *b);
+
+/** How many drawings this partition has room for. */
 uint32_t art_store_slots(const art_flash_t *f);
 
-/** The most bytes a picture may be for this partition to hold it. */
+/** The most bytes a drawing may be for this partition to hold it. */
 uint32_t art_store_capacity(const art_flash_t *f);
 
 /**
- * What is kept for @p board, without reading the picture itself.
+ * What is kept for @p board, without reading the drawing itself.
  *
  * False when nothing is, which includes a slot whose header did not survive
  * being written. The header carries its own checksum, so a half-written one
@@ -80,15 +91,25 @@ uint32_t art_store_capacity(const art_flash_t *f);
 bool art_store_find(const art_flash_t *f, uint16_t board, art_entry_t *out);
 
 /**
- * Read the picture for @p board into @p dst.
+ * Read the drawing for @p board into @p dst.
  *
- * Checks the payload against the checksum the header carries, so a picture
- * that decayed in flash is a miss rather than a wrong picture. False when
- * there is nothing kept, when @p cap cannot hold it, or when it does not
- * check out.
+ * Checks the payload against the CRC and the hash the header carries, so a
+ * drawing that decayed in flash is a miss rather than a wrong drawing. False
+ * when there is nothing kept, when @p cap cannot hold it, or when it does
+ * not check out.
  */
 bool art_store_read(const art_flash_t *f, uint16_t board, uint8_t *dst,
                     uint32_t cap);
+
+/**
+ * Read the drawing @p key describes into @p dst: only when the entry kept
+ * for key->board equals @p key in every field (art_entry_same()) and the
+ * payload checks out.  False for nothing kept, for another drawing kept
+ * under the same board, and for one that decayed -- each a fetch, never a
+ * stale or wrong drawing.
+ */
+bool art_store_read_same(const art_flash_t *f, const art_entry_t *key,
+                         uint8_t *dst, uint32_t cap);
 
 /**
  * Keep @p payload for @p board, replacing anything kept for it already.
@@ -118,7 +139,7 @@ typedef enum {
     ART_KEEP_IDLE = 0,  /**< nothing is being kept                          */
     ART_KEEP_WAITING,   /**< not allowed to write: nothing was touched      */
     ART_KEEP_RUNNING,   /**< one operation done, more to come               */
-    ART_KEEP_DONE,      /**< the header is written: the picture is findable */
+    ART_KEEP_DONE,      /**< the header is written: the drawing is findable */
     ART_KEEP_FAILED,    /**< an operation failed: nothing findable for it   */
 } art_keep_status_t;
 
@@ -148,6 +169,7 @@ typedef struct {
     uint32_t           span;     /**< bytes from the slot's start to erase   */
     uint32_t           done;     /**< bytes of the phase done                */
     uint16_t           crc;      /**< of what has been read back so far      */
+    uint32_t           hash;     /**< the same, link_fnv1a32()               */
     uint8_t            buf[ART_KEEP_READ_BYTES];
 } art_keep_t;
 
@@ -155,9 +177,9 @@ typedef struct {
  * Set @p k up to keep @p payload for @p board.  Touches no flash.
  *
  * False, with @p k idle, for what art_store_put() refuses before it writes,
- * except the payload's checksum: computing it here is a pass over the whole
- * picture in one call, and the read-back checks the same thing before the
- * header is written.  A caller that has not already checked the payload
+ * except the payload's checksums: computing them here is a pass over the
+ * whole payload in one call, and the read-back checks the same thing before
+ * the header is written.  A caller that has not already checked the payload
  * (art_fetch_step() does) uses art_store_put().
  */
 bool art_keep_begin(art_keep_t *k, const art_flash_t *f, uint16_t board,

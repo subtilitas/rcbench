@@ -1,5 +1,5 @@
 /*
- * The board-photograph partition, as an art_flash_t. See art_flash_esp.h.
+ * The board-drawing partition, as an art_flash_t. See art_flash_esp.h.
  *
  * Nothing here decides anything: art_store owns the format and the order of
  * a write, and this is the three operations it needs on real flash.
@@ -127,9 +127,9 @@ const art_flash_t *art_flash_esp(void)
                                           (esp_partition_subtype_t)0x40,
                                           "boardart");
         if (s_part == NULL) {
-            /* An older partition table.  Pictures are then fetched on every
-             * link-up, which is slow and correct. */
-            ESP_LOGW(TAG, "no boardart partition; photographs will not be kept");
+            /* An older partition table.  Drawings are then fetched on every
+             * link-up, which is slower and correct. */
+            ESP_LOGW(TAG, "no boardart partition; drawings will not be kept");
         } else {
             s_flash.read   = part_read;
             s_flash.erase  = part_erase;
@@ -137,7 +137,7 @@ const art_flash_t *art_flash_esp(void)
             s_flash.ctx    = NULL;
             s_flash.size   = s_part->size;
             s_flash.sector = SPI_FLASH_SEC_SIZE;
-            ESP_LOGI(TAG, "%u kB for board photographs, %u slots",
+            ESP_LOGI(TAG, "%u kB for board drawings, %u slots",
                      (unsigned)(s_part->size / 1024u),
                      (unsigned)art_store_slots(&s_flash));
         }

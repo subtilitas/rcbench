@@ -14,15 +14,18 @@
  *
  * Where the pads are comes from the board, not from this file: the shape page
  * carries the outline, the pitch and the corner pad 1 sits at, and
- * outbind_pad_xy() turns a pad number into a position on it. A board that
- * does not carry a shape page is not drawn at all, because a picture from a
- * guessed one points at the wrong pad as confidently as the right one; its
- * pins are still offered on the outputs screen.
+ * outbind_pad_xy() turns a pad number into a position on it; the board's
+ * drawing carries every pad's position itself. A board with neither is not
+ * drawn at all, because a picture from a guessed shape points at the wrong
+ * pad as confidently as the right one; its pins are still offered on the
+ * outputs screen.
  *
- * The photograph is optional in the same way. With one, the board on screen
- * is the board in the operator's hands; without one, its outline and pads are
- * drawn from the shape. The picture is cropped to the outline, so a pad's
- * position in millimetres is its position in the picture.
+ * The coprocessor's drawing of its board is optional in the same way. With
+ * one, the board on screen shows the parts of the board in the operator's
+ * hands, to scale; without one, its outline and pads are drawn from the
+ * shape. The drawing is checked against the catalogue before it is shown
+ * (board_drawing_agrees()), so the pads it draws are the pads the buttons
+ * bind.
  *
  * The protocol a tap binds to is chosen here or on the outputs screen, with
  * the same list; the two screens show one selection.
@@ -52,7 +55,9 @@ void picker_screen_invalidate(void);
 /** The current choice, for anything that has to write it. */
 const outbind_t *picker_screen_binding(void);
 
-/** Set the choice: this screen and the outputs screen are two views of one. */
+/** Set the choice: this screen and the outputs screen are two views of one.
+ *  A binding that names another board asks the drawing source
+ *  (picker_screen_set_drawing_source()) for that board's drawing. */
 void picker_screen_set_binding(const outbind_t *b);
 
 /**
@@ -203,28 +208,39 @@ typedef void (*picker_apply_fn)(const outbind_t *b);
 void picker_screen_set_apply(picker_apply_fn fn);
 
 /**
- * The board's photograph, or NULL to draw its outline instead.
+ * The coprocessor's drawing of the board the binding names (LINK_ART_DRAWING
+ * bytes, link_drawing.h), or NULL to draw its outline instead.
  *
- * RGB565 (red, green, blue, five, six and five bits), @p w by @p h, cropped
- * to the board's outline -- which is what makes a pad's position in
- * millimetres its position in the picture. The pixels are not copied and
- * must outlive the screen; on the panel they are the flash the store keeps
- * them in.
+ * Parsed and checked against the board's catalogue, pads and shape here;
+ * a drawing that fails either is not shown, and @p why (may be NULL) names
+ * the first thing found. The bytes are not copied and must stay unchanged
+ * until the next call. Returns whether the drawing is shown.
  */
-void picker_screen_set_artwork(const gfx_color_t *px, uint16_t w, uint16_t h);
+bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
+                               const char **why);
 
 /**
  * Asked on entering the screen, for the board the binding names.
  *
- * The photograph lives in the panel's flash and is two hundred kilobytes;
- * reading it on entry rather than holding it is what keeps that out of the
- * screen. The function calls picker_screen_set_artwork(), with NULL when
- * there is nothing kept for that board.
+ * The function calls picker_screen_set_drawing(), with NULL when there is
+ * no drawing for that board, so a drawing that arrived since the last visit
+ * is the one shown and one for a board that has been swapped is not.
  */
-typedef void (*picker_artwork_fn)(uint16_t board);
-void picker_screen_set_artwork_source(picker_artwork_fn fn);
+typedef void (*picker_drawing_fn)(uint16_t board);
+void picker_screen_set_drawing_source(picker_drawing_fn fn);
 
-/** Whether this board can be drawn at all: it has a catalogue and a shape. */
+/**
+ * The size in pixels a board outline of @p ow x @p oh (any unit) draws at:
+ * 500 wide and the height its aspect gives, or, when that is taller than
+ * 240, 240 high and the width its aspect gives.  A zero side gives 500 x 240.
+ */
+void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
+
+/** Whether the board is drawn from the coprocessor's drawing. */
+bool picker_screen_has_drawing(void);
+
+/** Whether this board can be drawn at all: it has a catalogue, and a
+ *  drawing or a shape. */
 bool picker_screen_can_draw(void);
 
 #ifdef __cplusplus

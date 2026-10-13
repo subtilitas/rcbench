@@ -1527,7 +1527,7 @@ static void panel_fresh(uint16_t minor)
     picker_screen()->reset();
     outputs_screen_set_apply(on_apply);
     picker_screen_set_apply(on_apply);
-    picker_screen_set_artwork(NULL, 0, 0);
+    (void)picker_screen_set_drawing(NULL, 0u, NULL);
     panel_poll();
     outputs_screen()->enter();
 }

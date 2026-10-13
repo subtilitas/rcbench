@@ -61,7 +61,7 @@ stays on the part.
 | `src/view/` | Chooser, result document, table, parts list (`buy.ts`: rows, search link, text and CSV), heat calculation of the motor simulator (`sim.ts`). |
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
-| `drawings/` | Generator and check of the part drawings, anchor table, wire palette. See `drawings/README.md`. |
+| `drawings/` | Generator and check of the part drawings, anchor table, wire palette, and the panel drawing of the coprocessor board (`panel.json`). See `drawings/README.md`. |
 | `public/drawings/` | The part drawings, written by `npm run drawings`: 23 SVG files in English, 23 in German under `de/`. |
 | `test/`, `drawings/test/` | Unit tests, run by `node --test`. |
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
@@ -127,7 +127,7 @@ cd configurator
 npm ci
 npm run typecheck   # tsc --noEmit
 npm test            # unit tests
-npm run drawings    # writes public/drawings/ and drawings/anchors.json
+npm run drawings    # writes public/drawings/, drawings/anchors.json and drawings/panel.json
 npm run drawings:check   # fails on a finding or on drift, writes nothing
 npm run build       # runs the drawings check, then writes dist/
 npm run size        # initial load at most 250 kB, dist/ without pictures at most 1 MB

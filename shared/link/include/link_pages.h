@@ -42,8 +42,8 @@ typedef enum {
     LINK_PAGE_CHAN_CFG = 0x23, /**< what each channel is and how it moves  */
     LINK_PAGE_CATALOGUE = 0x24, /**< the board's own pins, read-only       */
     LINK_PAGE_SHAPE     = 0x25, /**< where those pins are, read-only       */
-    LINK_PAGE_ARTWORK   = 0x26, /**< what a picture of the board is        */
-    LINK_PAGE_ART_DATA  = 0x27, /**< and the picture itself, a block at a time */
+    LINK_PAGE_ARTWORK   = 0x26, /**< what the board's drawing is           */
+    LINK_PAGE_ART_DATA  = 0x27, /**< and the drawing itself, a block at a time */
     LINK_PAGE_PADS      = 0x28, /**< the pads that are not pins, read-only  */
     LINK_PAGE_SERVO     = 0x29, /**< the target's frame rate, not kept      */
     LINK_PAGE_SUPPLY    = 0x2A, /**< the PD mini on a PIO UART; wiring kept */
@@ -90,12 +90,14 @@ typedef enum {
  * ports' surfaces, or the one programming port PROG's TARGET names) and a
  * TARGET change returns it to 0; the panel then counts the rate as 0 after
  * a TARGET change it saw, and as not known after a TARGET write that went
- * unacknowledged.  A
- * coprocessor never asks the panel's minor; a
- * page an older panel does not know is a page it never writes.
+ * unacknowledged.  From 4.20 ARTWORK serves the board's drawing
+ * (LINK_ART_DRAWING) with a hash of its payload in registers 7 and 8; the
+ * panel reads ARTWORK from 4.20 only and draws an older coprocessor's board
+ * from its shape page.  A coprocessor never asks the panel's minor; a page
+ * an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 19u
+#define LINK_PROTOCOL_MINOR 20u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -143,6 +145,11 @@ typedef enum {
  *  every PWM surface and every programming port at the one SERVO rate,
  *  whatever the TARGET. */
 #define LINK_MINOR_SERVO_TARGET_RATE 19u
+/** The first minor whose ARTWORK page serves the board's drawing
+ *  (LINK_ART_DRAWING) and the hash of its payload in LINK_AW_HASH_LO and
+ *  LINK_AW_HASH_HI.  An older minor serves a photograph (LINK_ART_RGB565)
+ *  in seven registers, which this panel does not read. */
+#define LINK_MINOR_DRAWING 20u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1207,9 +1214,8 @@ enum {
     LINK_SH_LAYOUT     = 2, /**< (corner << 8) | pads in one row          */
     LINK_SH_PITCH_CMM  = 3, /**< centre to centre, 254 for 0.1 inch       */
     /**
-     * Edge to the centre of the pad row.  The outline's own edge, not a
-     * photograph's: artwork carries its own calibration because a photo is
-     * not cropped to the outline.
+     * Edge to the centre of the pad row, from the outline's own edge.  A
+     * board drawing (LINK_ART_DRAWING) places its pads on the same grid.
      */
     LINK_SH_INSET_CMM  = 4,
     LINK_SH_COUNT      = 5,
@@ -1232,55 +1238,124 @@ typedef enum {
 /* ----------------------------------------------------------------- artwork */
 
 /*
- * A photograph of the board, so the picker shows the thing in the
- * operator's hands rather than an outline of it.
+ * The board's drawing: its outline, its parts as flat shapes, and every pad
+ * with what it is, so the picker shows the board in the operator's hands and
+ * not only its outline.  The coprocessor carries the drawing of its own
+ * board; a new board brings its drawing in its own firmware image, and the
+ * panel needs no change for it.
  *
- * Two pages because a page is thirty-two registers and no more.  The
- * picture is two hundred kilobytes, which is three thousand-odd reads
- * however it is cut, so every register the metadata takes out of the data
- * page costs another sixty round trips.  Metadata here, payload next door,
- * and a block stays sixty-two bytes.
+ * Two pages because a page is thirty-two registers and no more.  Metadata
+ * here, payload next door, and a block stays sixty-two bytes.  The drawing
+ * of the RP2350-CAN is under 2 kB, at most 33 blocks: at 1 Mbit/s a block
+ * is a write to say which one and a read to fetch it, about 1.4 ms the pair.
  *
- * It is transferred once and kept.  At 1 Mbit/s a block is a write to say
- * which one and a read to fetch it, about 1.4 ms the pair, so the whole
- * picture is roughly ten seconds of link -- fine once for a board that has
- * never been seen, and absurd every time the link comes up.
+ * LINK_AW_BLOCKS of zero means this coprocessor carries no drawing of
+ * itself.  That is the ordinary answer, not a fault: the board is then drawn
+ * from its shape page, and used from its catalogue when there is no shape.
  *
- * LINK_AW_BLOCKS of zero means this coprocessor carries no picture of
- * itself.  That is the ordinary answer, not a fault: a board is drawn from
- * its shape page when there is no photograph, and used from its catalogue
- * when there is no shape.
+ * The panel keeps a drawing in its flash under the coprocessor's board ID
+ * together with every register of this page from LINK_AW_WIDTH on, and
+ * shows the kept one only while all of them still match: a coprocessor
+ * flashed with another drawing for the same board ID fetches the new one.
  */
 enum {
     LINK_AW_BLOCKS   = 0, /**< blocks of payload; 0 when there is none    */
-    LINK_AW_WIDTH    = 1, /**< pixels                                     */
-    LINK_AW_HEIGHT   = 2, /**< pixels                                     */
+    LINK_AW_WIDTH    = 1, /**< the outline along the pad rows, 0.01 mm    */
+    LINK_AW_HEIGHT   = 2, /**< the outline across them, 0.01 mm           */
     LINK_AW_FORMAT   = 3, /**< a link_art_format_t                        */
     LINK_AW_BYTES_LO = 4, /**< payload length, low half                   */
     LINK_AW_BYTES_HI = 5,
     /**
-     * link_crc() over the whole payload, seeded zero.  The transfer is long
-     * enough that a block lost and silently skipped would otherwise be
-     * found by an operator looking at a corrupted board photograph months
-     * later, and cached in flash until then.
+     * link_crc() over the whole payload, seeded zero.  A block lost and
+     * silently skipped would otherwise be cached in flash and shown until
+     * somebody wired a lead by it.
      */
     LINK_AW_CRC      = 6,
-    LINK_AW_COUNT    = 7,
+    /**
+     * link_fnv1a32() over the whole payload, low half then high half.  The
+     * content key of the panel's cache, next to the CRC: two drawings that
+     * share a sixteen-bit CRC and a length differ here.
+     */
+    LINK_AW_HASH_LO  = 7,
+    LINK_AW_HASH_HI  = 8,
+    LINK_AW_COUNT    = 9,
 };
 
 typedef enum {
-    LINK_ART_NONE   = 0,
-    LINK_ART_RGB565 = 1, /**< two bytes a pixel, low byte first           */
+    LINK_ART_NONE    = 0,
+    /** A photograph, two bytes a pixel.  Minor 19 and older serve it; this
+     *  panel does not read it. */
+    LINK_ART_RGB565  = 1,
+    /** The board drawing laid out below (LINK_DRAW_*). */
+    LINK_ART_DRAWING = 2,
 } link_art_format_t;
+
+/*
+ * The board drawing, LINK_ART_DRAWING.  Little-endian, 0.01 mm throughout,
+ * origin the top-left corner of the outline seen from the component side,
+ * x along the pad rows, y across them.  Every pad ring and every shape lies
+ * inside the outline; a payload with anything else is refused whole.
+ *
+ * Header, LINK_DRAW_HEAD_BYTES:
+ *   0  u8   LINK_DRAW_VERSION
+ *   1  u8   pads, 1 to LINK_DRAW_MAX_PADS
+ *   2  u16  shapes, 0 to LINK_DRAW_MAX_SHAPES
+ *   4  u16  outline width, the same as LINK_AW_WIDTH
+ *   6  u16  outline height, the same as LINK_AW_HEIGHT
+ *   8  u16  board colour, RGB565
+ *   10 u16  pad ring colour, RGB565
+ *   12 u8   corner radius of the outline
+ *   13 u8   ring radius
+ *   14 u8   hole radius, below the ring radius
+ *   15 u8   0
+ * Then the pads, LINK_DRAW_PAD_BYTES each, in ascending pad order:
+ *   0  u8   pad, 1 to 63
+ *   1  u8   kind: LINK_PAD_GROUND, LINK_PAD_POWER, LINK_PAD_OTHER or
+ *           LINK_DRAW_PAD_GPIO
+ *   2  u8   the GPIO of a LINK_DRAW_PAD_GPIO pad, the rail of a POWER pad in
+ *           tenths of a volt (0: not a fixed voltage), else 0
+ *   3  u8   flags: LINK_DRAW_PAD_SQUARE
+ *   4  u16  x of the pad centre
+ *   6  u16  y of the pad centre
+ * Then the shapes, LINK_DRAW_SHAPE_BYTES each, drawn in order over the board
+ * colour and under the rings:
+ *   0  u8   kind: a link_draw_shape_kind_t
+ *   1  u8   corner radius of an RRECT, width of a LINE, else 0
+ *   2  u16  colour, RGB565
+ *   4  u16  a   RECT, RRECT: left x;  DISC: centre x;  LINE: x0
+ *   6  u16  b   RECT, RRECT: top y;   DISC: centre y;  LINE: y0
+ *   8  u16  c   RECT, RRECT: width;   DISC: radius;    LINE: x1
+ *   10 u16  d   RECT, RRECT: height;  DISC: 0;         LINE: y1
+ * The length is exactly the header, the pads and the shapes.
+ */
+#define LINK_DRAW_VERSION      1u
+#define LINK_DRAW_HEAD_BYTES   16u
+#define LINK_DRAW_PAD_BYTES    8u
+#define LINK_DRAW_SHAPE_BYTES  12u
+#define LINK_DRAW_MAX_PADS     64u
+#define LINK_DRAW_MAX_SHAPES   400u
+#define LINK_DRAW_MAX_BYTES    (LINK_DRAW_HEAD_BYTES \
+                                + LINK_DRAW_MAX_PADS * LINK_DRAW_PAD_BYTES \
+                                + LINK_DRAW_MAX_SHAPES * LINK_DRAW_SHAPE_BYTES)
+/** A pad that is a GPIO, the fourth kind next to link_pad_kind_t's three. */
+#define LINK_DRAW_PAD_GPIO     4u
+/** The pad's ring is square: pad 1 of a header, by convention. */
+#define LINK_DRAW_PAD_SQUARE   0x01u
+
+typedef enum {
+    LINK_DRAW_RECT  = 1,
+    LINK_DRAW_RRECT = 2,
+    LINK_DRAW_DISC  = 3,
+    LINK_DRAW_LINE  = 4,
+} link_draw_shape_kind_t;
 
 /*
  * The payload, a block at a time: write LINK_AD_BLOCK to say which, then
  * read the page.  Two transactions rather than one because a block that
  * advanced on being read would resend nothing after a reply went missing,
- * and the host would assemble a picture with a hole in it.
+ * and the host would assemble a drawing with a hole in it.
  *
- * Bytes little-endian within a register, the low byte first, which is the
- * order an RGB565 framebuffer is already in on both parts.  A final block
+ * Bytes little-endian within a register, the low byte first.  A final block
  * carrying an odd count leaves the high byte of its last register unused.
  */
 enum {

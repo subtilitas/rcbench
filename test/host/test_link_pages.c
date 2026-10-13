@@ -1511,12 +1511,38 @@ TEST_CASE(a_change_between_overlapping_sets_is_refused)
  */
 TEST_CASE(the_servo_rate_follows_the_target_without_a_new_register)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 19u);
+    CHECK(LINK_PROTOCOL_MINOR >= 19u);
     CHECK_EQ(LINK_MINOR_SERVO_TARGET_RATE, 19u);
     CHECK(LINK_MINOR_SERVO_TARGET_RATE > LINK_MINOR_ARM_ROLE);
     CHECK_EQ(LINK_SV_FRAME_HZ, 0);
     CHECK_EQ(LINK_PG_TARGET, 3);
     CHECK_EQ(LINK_PAGE_SERVO, 0x29);
+}
+
+/*
+ * 4.20 keeps ARTWORK and ART_DATA where they were and grows ARTWORK by the
+ * two hash registers after the CRC; the payload is a drawing, and the
+ * largest one still fits the 32-bit length the page carries.
+ */
+TEST_CASE(the_artwork_page_serves_a_drawing_with_its_hash)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 20u);
+    CHECK_EQ(LINK_MINOR_DRAWING, 20u);
+    CHECK(LINK_MINOR_DRAWING > LINK_MINOR_SERVO_TARGET_RATE);
+    CHECK_EQ(LINK_PAGE_ARTWORK, 0x26);
+    CHECK_EQ(LINK_PAGE_ART_DATA, 0x27);
+    CHECK_EQ(LINK_AW_CRC, 6);
+    CHECK_EQ(LINK_AW_HASH_LO, 7);
+    CHECK_EQ(LINK_AW_HASH_HI, 8);
+    CHECK_EQ(LINK_AW_COUNT, 9);
+    CHECK(LINK_AW_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_ART_DRAWING, 2);
+    CHECK_EQ(LINK_DRAW_MAX_BYTES, 16u + 64u * 8u + 400u * 12u);
+    CHECK(LINK_DRAW_MAX_BYTES <= 0xFFFFu);
+    /* The fourth pad kind does not collide with the PADS page's three. */
+    CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_GROUND);
+    CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_POWER);
+    CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_OTHER);
 }
 
 int main(void)
@@ -1570,5 +1596,6 @@ int main(void)
     RUN(the_arm_values_are_the_documented_literals);
     RUN(a_change_between_overlapping_sets_is_refused);
     RUN(the_servo_rate_follows_the_target_without_a_new_register);
+    RUN(the_artwork_page_serves_a_drawing_with_its_hash);
     return test_summary("link_pages");
 }

@@ -1,5 +1,5 @@
 /*
- * Keeping a board's photograph. See art_store.h.
+ * Keeping a board's drawing. See art_store.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,19 +20,26 @@
  * sits at the end.
  */
 #define ART_MAGIC   0x61626372uL   /* "rcba" */
-#define ART_VERSION 1u
+/* Version 2 carries the format and the hash.  A slot of version 1 holds a
+ * photograph, which this panel does not show, and is found as empty. */
+#define ART_VERSION 2u
 
 typedef struct {
     uint32_t magic;
     uint16_t version;
     uint16_t board;
+    uint16_t format;
     uint16_t width;
     uint16_t height;
     uint16_t crc;      /* of the payload */
-    uint16_t pad;      /* keeps bytes aligned and the layout explicit */
+    uint32_t hash;     /* of the payload */
     uint32_t bytes;
     uint16_t head;     /* of everything above */
 } art_head_t;
+
+_Static_assert(offsetof(art_head_t, hash) == 16u
+               && offsetof(art_head_t, head) == 24u,
+               "the header has no padding before its checksum");
 
 static uint16_t head_crc(const art_head_t *h)
 {
@@ -71,7 +78,8 @@ static bool slot_head(const art_flash_t *f, uint32_t i, art_head_t *out)
     if (h.head != head_crc(&h)) {
         return false;      /* never finished being written */
     }
-    if (h.bytes == 0u || h.bytes > art_store_capacity(f)) {
+    if (h.bytes == 0u || h.bytes > art_store_capacity(f)
+        || h.format == 0u) {
         return false;      /* a length this slot could not hold */
     }
     *out = h;
@@ -105,11 +113,21 @@ bool art_store_find(const art_flash_t *f, uint16_t board, art_entry_t *out)
         return false;
     }
     out->board  = h.board;
+    out->format = h.format;
     out->width  = h.width;
     out->height = h.height;
     out->crc    = h.crc;
+    out->hash   = h.hash;
     out->bytes  = h.bytes;
     return true;
+}
+
+bool art_entry_same(const art_entry_t *a, const art_entry_t *b)
+{
+    return a != NULL && b != NULL && a->board == b->board
+           && a->format == b->format && a->width == b->width
+           && a->height == b->height && a->crc == b->crc
+           && a->hash == b->hash && a->bytes == b->bytes;
 }
 
 bool art_store_read(const art_flash_t *f, uint16_t board, uint8_t *dst,
@@ -125,13 +143,25 @@ bool art_store_read(const art_flash_t *f, uint16_t board, uint8_t *dst,
     }
     /*
      * Checked on the way out as well as on the way in.  Flash that decayed
-     * since it was written should be a miss, which costs ten seconds of link
-     * to fetch again, rather than a picture that is wrong.
+     * since it was written should be a miss, which costs a fetch over the
+     * link, rather than a drawing that is wrong.
      */
-    return link_crc(0u, dst, e.bytes) == e.crc;
+    return link_crc(0u, dst, e.bytes) == e.crc
+           && link_fnv1a32(LINK_FNV_INIT, dst, e.bytes) == e.hash;
 }
 
-/* A slot to put a picture in: the board's own, else an empty one, else the
+bool art_store_read_same(const art_flash_t *f, const art_entry_t *key,
+                         uint8_t *dst, uint32_t cap)
+{
+    art_entry_t kept;
+    if (key == NULL || !art_store_find(f, key->board, &kept)
+        || !art_entry_same(&kept, key)) {
+        return false;
+    }
+    return art_store_read(f, key->board, dst, cap);
+}
+
+/* A slot to put a drawing in: the board's own, else an empty one, else the
  * first -- something has to give, and a store this small is not worth an
  * eviction policy nobody can predict. */
 static uint32_t slot_for(const art_flash_t *f, uint16_t board)
@@ -152,19 +182,14 @@ static uint32_t slot_for(const art_flash_t *f, uint16_t board)
 
 /*
  * What art_store_put() and art_keep_begin() both refuse before anything is
- * written: an entry this flash cannot hold, or whose pixels are not its
- * length.  A header saying 500 x 206 over a payload that is not that many
- * bytes would be believed by whatever sized a buffer from it later; sixty-four
- * bits because two sixteen-bit sides multiplied are not sixteen bits.  An
- * empty picture is refused by its sides: no two of them that are not zero
- * make zero bytes.
+ * written: an entry this flash cannot hold, an empty payload, one with no
+ * format, or one with no outline.  What the payload says inside is the
+ * reader's to check (link_drawing_parse()); the store keeps bytes.
  */
 static bool entry_fits(const art_flash_t *f, const art_entry_t *e)
 {
-    return e->bytes <= art_store_capacity(f)
-           && e->width != 0u && e->height != 0u
-           && (uint64_t)e->width * (uint64_t)e->height * 2u
-                  == (uint64_t)e->bytes;
+    return e->bytes != 0u && e->bytes <= art_store_capacity(f)
+           && e->format != 0u && e->width != 0u && e->height != 0u;
 }
 
 bool art_store_put(const art_flash_t *f, uint16_t board,
@@ -174,8 +199,10 @@ bool art_store_put(const art_flash_t *f, uint16_t board,
         || !entry_fits(f, entry)) {
         return false;
     }
-    if (link_crc(0u, payload, entry->bytes) != entry->crc) {
-        return false;      /* not the picture it says it is */
+    if (link_crc(0u, payload, entry->bytes) != entry->crc
+        || link_fnv1a32(LINK_FNV_INIT, payload, entry->bytes)
+               != entry->hash) {
+        return false;      /* not the drawing it says it is */
     }
     art_keep_t k;
     if (!art_keep_begin(&k, f, board, entry, payload)) {
@@ -266,6 +293,7 @@ static bool keep_write(art_keep_t *k)
     if (k->done >= k->entry.bytes) {
         k->phase = KEEP_VERIFY;
         k->done  = 0u;    /* crc is zero from art_keep_begin() */
+        k->hash  = LINK_FNV_INIT;
     }
     return true;
 }
@@ -273,7 +301,7 @@ static bool keep_write(art_keep_t *k)
 /*
  * Read back before the header is written.  A write that reported success and
  * did not take would otherwise be sealed with a header saying it did, and the
- * store would hand out a corrupt picture for as long as the board is known.
+ * store would hand out a corrupt drawing for as long as the board is known.
  */
 static bool keep_verify(art_keep_t *k)
 {
@@ -290,11 +318,12 @@ static bool keep_verify(art_keep_t *k)
         if (!f->read(f->ctx, k->at + f->sector + k->done, k->buf, n)) {
             return false;
         }
-        k->crc = link_crc(k->crc, k->buf, n);
+        k->crc  = link_crc(k->crc, k->buf, n);
+        k->hash = link_fnv1a32(k->hash, k->buf, n);
         k->done += n;
     }
     if (k->done >= k->entry.bytes) {
-        if (k->crc != k->entry.crc) {
+        if (k->crc != k->entry.crc || k->hash != k->entry.hash) {
             return false;
         }
         k->phase = KEEP_HEAD;
@@ -310,9 +339,11 @@ static bool keep_head(art_keep_t *k)
     h.magic   = ART_MAGIC;
     h.version = ART_VERSION;
     h.board   = k->board;
+    h.format  = k->entry.format;
     h.width   = k->entry.width;
     h.height  = k->entry.height;
     h.crc     = k->entry.crc;
+    h.hash    = k->entry.hash;
     h.bytes   = k->entry.bytes;
     h.head    = head_crc(&h);
     return f->write(f->ctx, k->at, &h, sizeof(h));
@@ -358,8 +389,6 @@ bool art_store_forget(const art_flash_t *f, uint16_t board)
     if (i >= art_store_slots(f)) {
         return true;       /* nothing kept is the state asked for */
     }
-    /* The header sector alone: the payload is unreachable without it, and
-     * erasing a quarter of a megabyte to forget one board is time the bench
-     * does not have to spend. */
+    /* The header sector alone: the payload is unreachable without it. */
     return f->erase(f->ctx, i * ART_SLOT_BYTES, f->sector);
 }
