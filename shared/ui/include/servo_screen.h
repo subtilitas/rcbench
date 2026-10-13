@@ -77,8 +77,10 @@ typedef struct {
     uint16_t         slew_per_s;
     /**
      * The frame rate the profile in force runs at, in Hz.  The panel writes
-     * it to the coprocessor's SERVO page, which runs every PWM output whose
-     * first channel is a surface at it; see servo_screen_rate().
+     * it to the coprocessor's SERVO page, which runs the PWM target at it:
+     * every PWM output whose first channel is a surface, or from protocol
+     * 4.19 the one programming port the target names; see
+     * servo_screen_rate().
      */
     uint16_t         frame_hz;
     /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):
@@ -167,7 +169,9 @@ void servo_screen_encoder(const servo_test_enc_t *e);
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
 /**
- * What the bench is, so the button can say it.
+ * Whether the bench is armed for the surfaces, so the button can say it.
+ * An arm for the motor alone is not one: ARM on this screen arms the
+ * surfaces, and a bench armed for the motor disarms before it does.
  *
  * The screen does not decide whether it is armed: arming is asked of the
  * policy and the answer comes back from the bench, the same way MOTOR & ESC
@@ -196,6 +200,14 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * the automatic test end where it was asked.
  */
 void servo_screen_set_armed(bool armed);
+
+/**
+ * Whether the bench is armed for any role.  servo_screen_set_armed() is
+ * told whether the surfaces are armed, which an arm for the motor alone
+ * leaves false; this is what keeps the servo programmer from taking a port
+ * under a motor that is armed, as it is kept from one under armed surfaces.
+ */
+void servo_screen_set_bench_armed(bool armed);
 
 /**
  * Abandon a hold that is under way, because the bench has been stopped.
@@ -342,12 +354,44 @@ float servo_screen_power_sample(int series, int back);
 /** What became of a frame rate the panel wrote to the SERVO page. */
 typedef enum {
     SERVO_RATE_UNSENT = 0,  /**< not written yet: it goes with a position   */
-    SERVO_RATE_IN_FORCE,    /**< every PWM surface runs at it               */
-    SERVO_RATE_REFUSED,     /**< a surface shares a PWM slice with an output
-                                 at another rate; the pins kept theirs      */
+    SERVO_RATE_IN_FORCE,    /**< the target the coprocessor holds runs at
+                                 it (servo_in_force_note())                 */
+    SERVO_RATE_REFUSED,     /**< a pulse longer than the frame, or a pin
+                                 sharing a PWM slice with an output at
+                                 another rate; the pins kept theirs         */
     SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
                                  4.0 runs each slot at its binding's rate   */
+    SERVO_RATE_IN_FORCE_SURFACES, /**< every PWM surface runs at it,
+                                       whatever the target: protocol 4.1 to
+                                       4.18                                 */
 } servo_rate_state_t;
+
+/** The state an acknowledged rate is shown in, by the coprocessor's protocol
+ *  minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *  (4.19), where the rate reaches the PWM TARGET alone, and
+ *  SERVO_RATE_IN_FORCE_SURFACES below it. */
+servo_rate_state_t servo_rate_in_force(uint16_t minor);
+
+/**
+ * The OUTPUT page's note while a rate is SERVO_RATE_IN_FORCE: two lines into
+ * @p l1 and @p l2 of @p size bytes each, for the rate @p hz, the drive
+ * @p target / @p gpio / @p pwm (as servo_screen_set_drive()) and the PWM
+ * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
+ * target the panel asks for).  The first line names the target the
+ * coprocessor holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
+ * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
+ * or the target not known (the page not known).  With no link it names no
+ * rate: "No link: the rate in force is not known.".  The second line
+ * says "The PWM TARGET setting is not in force." while the setting and the
+ * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
+ * that a PPM output keeps its own frame.  Returns whether the note takes
+ * the warning colour: the setting and the drive differ, no link, the
+ * target not known, a port without a known pin, or a port with its pulse
+ * off.  Neither line is written with a NULL buffer or a @p size of 0, and
+ * false is returned.
+ */
+bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
+                         uint8_t target, uint8_t gpio, bool pwm, int setting);
 
 /**
  * What the panel last heard about the frame rate @p hz.  Called every frame;

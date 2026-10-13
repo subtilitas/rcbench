@@ -18,6 +18,7 @@
 #include "touch_feed.h"
 
 #include "gfx.h"
+#include "kst_panel.h"
 #include "outputs.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -1111,6 +1112,26 @@ TEST_CASE(a_press_on_the_dial_drives_a_released_servo_again)
     CHECK(c.value_us < 1500);
 }
 
+/*
+ * The programmer keeps off the port while the bench is armed for the motor,
+ * though this screen's surfaces are not armed: the coprocessor refuses a
+ * session on any arm, and the panel says so before asking.
+ */
+TEST_CASE(the_programmer_sees_an_arm_for_the_motor)
+{
+    fresh();
+    servo_screen_set_armed(false);
+    servo_screen_set_bench_armed(false);
+    frames(1);
+    CHECK(!kst_panel_model()->armed);
+    servo_screen_set_bench_armed(true);
+    frames(1);
+    CHECK(kst_panel_model()->armed);
+    servo_screen_set_bench_armed(false);
+    frames(1);
+    CHECK(!kst_panel_model()->armed);
+}
+
 int main(void)
 {
     RUN(no_position_control_moves_the_value_before_the_first_arm);
@@ -1146,5 +1167,6 @@ int main(void)
     RUN(the_value_follows_the_rest_through_a_change_of_type_after_a_release);
     RUN(release_moves_no_value_on_a_bench_that_is_not_armed);
     RUN(a_press_on_the_dial_drives_a_released_servo_again);
+    RUN(the_programmer_sees_an_arm_for_the_motor);
     return test_summary("servo_arm");
 }

@@ -29,6 +29,7 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "outputs_pages.h"
+#include "prog_link.h"
 
 #define W 800
 #define H 480
@@ -1390,6 +1391,337 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
         CHECK(warn > 0);
     }
     free(unsent);
+}
+
+/*
+ * What an acknowledged rate reaches depends on the coprocessor.  From 4.19
+ * the PWM TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
+ * surface at it, whatever the target, and the note says that instead in
+ * its first line.  Both are news, not a warning.
+ */
+/* The rate note on the OUTPUT page, mirrored from servo_screen.c: its first
+ * line at OV_NOTE_Y + 2 * 18 (306), its second 18 px below, each 16 px high,
+ * from x 16 to x 490, inside the overlay's border at x 493. */
+#define NOTE_X    16
+#define NOTE_L1_Y 306
+#define NOTE_L2_Y (NOTE_L1_Y + 18)
+#define NOTE_R    490
+
+/* Whether one line's 16 rows are the same in @p was as in the screen. */
+static bool note_rows_equal(const gfx_color_t *was, int y0)
+{
+    for (int y = y0; y < y0 + 16; ++y) {
+        if (memcmp(fb + y * W, was + y * W, W * sizeof(gfx_color_t)) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/* Whether the note's two lines on the screen are the pixels of @p l1 and
+ * @p l2 drawn as the screen draws them: the 8x16 face, faint, or in the
+ * warning colour with @p warn. */
+static bool note_matches(const char *l1, const char *l2, bool warn)
+{
+    static gfx_color_t want[(size_t)W * H];
+    gfx_canvas_t c;
+    memcpy(want, fb, sizeof(want));
+    gfx_canvas_init(&c, want, W, H, W);
+    const gfx_color_t bg = fb[NOTE_L1_Y * W + NOTE_X - 4];
+    gfx_fill_rect(&c, NOTE_X, NOTE_L1_Y, NOTE_R - NOTE_X, 34, bg);
+    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
+                                 : ui_theme_color(UI_C_TEXT_FAINT);
+    gfx_text(&c, NOTE_X, NOTE_L1_Y, l1, &gfx_font_8x16, col, 1);
+    gfx_text(&c, NOTE_X, NOTE_L2_Y, l2, &gfx_font_8x16, col, 1);
+    return memcmp(want, fb, sizeof(want)) == 0;
+}
+
+TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
+{
+    CHECK_EQ(servo_rate_in_force(LINK_MINOR_SERVO_TARGET_RATE),
+             SERVO_RATE_IN_FORCE);
+    CHECK_EQ(servo_rate_in_force(18u), SERVO_RATE_IN_FORCE_SURFACES);
+    CHECK_EQ(servo_rate_in_force(1u), SERVO_RATE_IN_FORCE_SURFACES);
+    CHECK_STR_EQ(ui_tr(TX_SV_IN_FORCE_SURFACES_1),
+                 "In force: every PWM surface runs at %u Hz.");
+
+    fresh();
+    two_buffers();
+    open_settings();
+    servo_screen_rate(servo_rate_in_force(LINK_MINOR_SERVO_TARGET_RATE), 50u);
+    CHECK(both_whole());
+    gfx_color_t *target = malloc(FB_BYTES);
+    REQUIRE_ALLOC(target);
+    memcpy(target, fb, FB_BYTES);
+    servo_screen_rate(servo_rate_in_force(18u), 50u);
+    CHECK(both_whole());
+    CHECK(memcmp(fb, target, FB_BYTES) != 0);
+    int warn = 0;
+    for (int y = 260; y < 400; ++y) {
+        for (int x = 6; x < 494; ++x) {
+            warn += fb[y * W + x] == ui_theme_color(UI_C_WARN);
+        }
+    }
+    CHECK_EQ(warn, 0);
+    /* Only the first line differs, inside its own rows: the second is the
+     * same "in force" line. */
+    int first = -1, last = -1;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            if (fb[y * W + x] != target[y * W + x]) {
+                if (first < 0) {
+                    first = y;
+                }
+                last = y;
+                break;
+            }
+        }
+    }
+    CHECK(first >= NOTE_L1_Y);
+    CHECK(last < NOTE_L1_Y + 16);
+    CHECK(note_rows_equal(target, NOTE_L2_Y));
+
+    /* The rate is in the "every PWM surface" line: 50 Hz and 60 Hz read
+     * differently there, and the second line stays. */
+    memcpy(target, fb, FB_BYTES);
+    tap(ROW_L_X, ROW_Y(1));                    /* FRAME RATE */
+    tap(CH_X(1), CH_Y(1));                     /* 60 Hz */
+    CHECK_EQ(servo_screen_frame_hz(), 60);
+    servo_screen_rate(servo_rate_in_force(18u), 60u);
+    CHECK(both_whole());
+    CHECK(!note_rows_equal(target, NOTE_L1_Y));
+    CHECK(note_rows_equal(target, NOTE_L2_Y));
+    CHECK(note_matches("In force: every PWM surface runs at 60 Hz.",
+                       ui_tr(TX_SV_IN_FORCE_2), false));
+    free(target);
+}
+
+/* The states the note is held to: the PWM TARGET setting, the drive the
+ * coprocessor holds, the English lines it must give and the warning colour. */
+typedef struct {
+    int         setting;    /* SET_SERVO_TARGET */
+    uint8_t     target;     /* the drive: 0, 1 + n, _UNKNOWN or _NO_LINK */
+    uint8_t     gpio;
+    bool        pwm;
+    const char *l1;
+    const char *l2;
+    bool        warn;
+} note_state_t;
+
+#define PPM_LINE "A PPM output keeps its own frame."
+#define NOT_SET  "The PWM TARGET setting is not in force."
+static const note_state_t k_note[] = {
+    { 0, 0u, SERVO_SCREEN_NO_PIN, false, "In force: OUTPUTS run at 50 Hz.",
+      PPM_LINE, false },
+    { 1, 1u, 13u, true, "In force: PROG PORT GP13 runs at 50 Hz.", PPM_LINE,
+      false },
+    /* PROG PORT set and the port unbound: the outputs stay the target. */
+    { 1, 0u, SERVO_SCREEN_NO_PIN, false, "In force: OUTPUTS run at 50 Hz.",
+      NOT_SET, true },
+    /* The port held while OUTPUTS is set: the change waits for rest. */
+    { 0, 1u, 13u, true, "In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+      true },
+    { 1, 1u, SERVO_SCREEN_NO_PIN, true,
+      "In force: 50 Hz on PROG PORT, which has no pin.", PPM_LINE, true },
+    { 1, 1u, 63u, false, "In force: PROG PORT GP63 runs at 50 Hz.",
+      "PORT PWM is OFF: the port renders no pulse.", true },
+    /* The port with no pin and its pulse off: the first line still says
+     * there is no pin, the second that no pulse goes out. */
+    { 1, 1u, SERVO_SCREEN_NO_PIN, false,
+      "In force: 50 Hz on PROG PORT, which has no pin.",
+      "PORT PWM is OFF: the port renders no pulse.", true },
+    { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, true,
+      "In force: 50 Hz. The target is not known.", PPM_LINE, true },
+    /* No link: the coprocessor may have restarted, so no rate is named. */
+    { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, true,
+      "No link: the rate in force is not known.", PPM_LINE, true },
+};
+#define NOTE_N ((int)(sizeof(k_note) / sizeof(k_note[0])))
+
+/* The note on the OUTPUT page follows the target the coprocessor holds, not
+ * the PWM TARGET setting: the outputs, the port with its pin, the port
+ * without one, and a target not known.  The warning colour marks a setting
+ * the drive does not follow, a port without a pin or with its pulse off,
+ * and a target not known. */
+TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
+{
+    for (int i = 0; i < NOTE_N; ++i) {
+        const note_state_t *st = &k_note[i];
+        fresh();
+        two_buffers();
+        settings_set(SET_SERVO_TARGET, (float)st->setting);
+        servo_screen_set_drive(st->target, st->gpio, st->pwm);
+        open_settings();
+        servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        CHECK(both_whole());
+        CHECK(note_matches(st->l1, st->l2, st->warn));
+
+        char l1[96], l2[96];
+        CHECK_EQ(servo_in_force_note(l1, l2, sizeof(l1), 50u, st->target,
+                                     st->gpio, st->pwm, st->setting),
+                 st->warn);
+        CHECK_STR_EQ(l1, st->l1);
+        CHECK_STR_EQ(l2, st->l2);
+    }
+
+    /* A drive change with the page open redraws the note, without a tap:
+     * the port's pin, then the outputs once more. */
+    servo_screen_set_drive(1u, 13u, true);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+                       true));
+    servo_screen_set_drive(1u, 13u, false);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+                       true));
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: OUTPUTS run at 50 Hz.", PPM_LINE, false));
+
+    /* German, the same states: protocol and setting names as the UI writes
+     * them. */
+    static const char *const de[NOTE_N][2] = {
+        { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
+          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+        { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
+          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+        { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
+          "Die Einstellung PWM-ZIEL ist nicht aktiv." },
+        { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
+          "Die Einstellung PWM-ZIEL ist nicht aktiv." },
+        { "Aktiv: 50 Hz auf PROG-PORT, der keinen Pin hat.",
+          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+        { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
+          "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
+        { "Aktiv: 50 Hz auf PROG-PORT, der keinen Pin hat.",
+          "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
+        { "Aktiv: 50 Hz. Das Ziel ist unbekannt.",
+          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+        { "Kein Link: die aktive Rate ist unbekannt.",
+          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+    };
+    ui_text_set_language(UI_LANG_DE);
+    for (int i = 0; i < NOTE_N; ++i) {
+        const note_state_t *st = &k_note[i];
+        char l1[96], l2[96];
+        CHECK_EQ(servo_in_force_note(l1, l2, sizeof(l1), 50u, st->target,
+                                     st->gpio, st->pwm, st->setting),
+                 st->warn);
+        CHECK_STR_EQ(l1, de[i][0]);
+        CHECK_STR_EQ(l2, de[i][1]);
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    /* The rate is the one passed; a NULL buffer or no room writes nothing. */
+    char a[96], b[96];
+    CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 1u, 13u, true, 1));
+    CHECK_STR_EQ(a, "In force: PROG PORT GP13 runs at 560 Hz.");
+    CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 0u, 13u, true, 0));
+    CHECK_STR_EQ(a, "In force: OUTPUTS run at 560 Hz.");
+    memset(a, 'x', sizeof(a));
+    memset(b, 'x', sizeof(b));
+    CHECK(!servo_in_force_note(NULL, b, sizeof(b), 50u, 0u, 0xFFu, false, 1));
+    CHECK(!servo_in_force_note(a, NULL, sizeof(a), 50u, 0u, 0xFFu, false, 1));
+    CHECK(!servo_in_force_note(a, b, 0u, 50u, 0u, 0xFFu, false, 1));
+    CHECK_EQ(a[0], 'x');
+    CHECK_EQ(b[0], 'x');
+    /* A setting out of range is not the drive's target. */
+    CHECK(servo_in_force_note(a, b, sizeof(a), 50u, 0u, 0xFFu, false, -1));
+    CHECK_STR_EQ(b, NOT_SET);
+}
+
+/* The note carries the rate the screen runs, not 50 Hz: HELI TAIL 760's
+ * 560 Hz on the port's pin as drawn, and in the lines for a target not
+ * known and for a port with no pin.  No link names no rate at all, also
+ * for a coprocessor before 4.19 whose note says "every PWM surface". */
+TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
+{
+    fresh();
+    two_buffers();
+    choose_type(4);                            /* HELI TAIL 760, 560 Hz */
+    CHECK_EQ(servo_screen_frame_hz(), 560);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
+    open_settings();
+    servo_screen_rate(SERVO_RATE_IN_FORCE, 560u);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: PROG PORT GP13 runs at 560 Hz.", PPM_LINE,
+                       false));
+
+    char a[96], b[96];
+    CHECK(servo_in_force_note(a, b, sizeof(a), 560u,
+                              SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, 1));
+    CHECK_STR_EQ(a, "In force: 560 Hz. The target is not known.");
+    CHECK(servo_in_force_note(a, b, sizeof(a), 560u, 1u, SERVO_SCREEN_NO_PIN,
+                              true, 1));
+    CHECK_STR_EQ(a, "In force: 560 Hz on PROG PORT, which has no pin.");
+
+    /* The link goes: the drawn note names no rate, in the warning colour. */
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN,
+                           false);
+    CHECK(both_whole());
+    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+                       true));
+    /* A 4.1 to 4.18 coprocessor's "every PWM surface" line too. */
+    servo_screen_rate(servo_rate_in_force(18u), 560u);
+    CHECK(both_whole());
+    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+                       true));
+    /* And back with the link: the surfaces at the rate again. */
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN,
+                           false);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: every PWM surface runs at 560 Hz.",
+                       PPM_LINE, false));
+}
+
+/* The note and the drive come from the same record: PROG PORT set with no
+ * pin bound to port 0 leaves the coprocessor on the standard outputs, and
+ * the note says OUTPUTS in the warning colour; with GP13 bound the TARGET
+ * write lands and the note names the port's pin. */
+TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
+{
+    static prog_link_t p;
+    uint16_t page[LINK_PG_REGS];
+    for (int bound = 0; bound < 2; ++bound) {
+        memset(page, 0, sizeof(page));
+        page[LINK_PG_COUNT] = 1u;
+        page[LINK_PG_FLAGS] = bound ? LINK_PG_F_BOUND(0) : 0u;
+        page[LINK_PG_REG(0, LINK_PG_PIN)] = bound ? 13u : LINK_PG_PIN_NONE;
+        page[LINK_PG_PWM] = 1u;                 /* port 0 renders its pulse */
+        for (unsigned n = 1; n < LINK_PG_PORTS_MAX; ++n) {
+            page[LINK_PG_REG(n, LINK_PG_PIN)] = LINK_PG_PIN_NONE;
+        }
+        prog_link_init(&p);
+        prog_link_came_up(&p, LINK_MINOR_SERVO_TARGET_RATE);
+        prog_link_want(&p, 1u, true);
+        prog_link_read(&p, page, 0u);
+        prog_link_write_t w;
+        int writes = 0;
+        while (writes < 10 && prog_link_next(&p, true, &w)) {
+            page[w.off] = w.value;
+            prog_link_written(&p, &w, true);
+            prog_link_read(&p, page, 1u);
+            ++writes;
+        }
+        const prog_link_drive_t d = prog_link_drive(&p);
+        CHECK_EQ(d.target, bound ? 1u : 0u);
+
+        fresh();
+        two_buffers();
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        servo_screen_set_drive(d.target, d.pin, d.pwm);
+        open_settings();
+        servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        CHECK(both_whole());
+        if (bound) {
+            CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.",
+                               PPM_LINE, false));
+        } else {
+            CHECK(note_matches("In force: OUTPUTS run at 50 Hz.", NOT_SET,
+                               true));
+        }
+    }
 }
 
 /*
@@ -8424,6 +8756,10 @@ int main(void)
     RUN(each_face_of_the_overlay_draws_as_a_full_redraw_would);
     RUN(a_refused_save_repaints_only_the_save_line);
     RUN(the_output_page_says_whether_the_rate_reached_the_pins);
+    RUN(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate);
+    RUN(the_in_force_note_names_the_target_the_coprocessor_holds);
+    RUN(the_in_force_note_carries_the_rate_and_names_none_without_a_link);
+    RUN(the_in_force_note_follows_the_prog_page_not_the_setting);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
     RUN(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps);
     RUN(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is);

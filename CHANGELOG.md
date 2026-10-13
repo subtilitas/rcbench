@@ -36,7 +36,12 @@ history is in git.
   host test; `STATUS.md` lists the screens that do not meet it.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
-  table lists 10 modules; it listed 4.
+  table holds the modules the name rule finds plus the forced ones in the
+  tool, `shared/settings` (values and texts from NVS, non-volatile storage)
+  and `shared/touch` (GT911 point list): 19 modules; it listed 4. The check also finds functions named
+  `*_write`, `*_read`, `*_done` and `*_utf8_next`; `NOT_UNTRUSTED` is empty.
+  A forced entry that names a missing module or one the name rule finds
+  fails the check.
 - `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
   each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
@@ -81,6 +86,40 @@ history is in git.
   without them. The drawing of the board shows the jumper cap on the 5V
   pair, labelled "cap on 5V".
 
+- An arm drives only the outputs of the screen's role (link protocol 4.18).
+  ARM on the CONTROL page takes 0, 1 (every output), 0x0002 (throttle
+  channels), 0x0004 (surfaces and programming ports) or 0x0006; any other
+  value is refused with BAD_VALUE, and so is a change from one non-zero ARM
+  to another. MOTOR & ESC and a PROGRAMMER stick run write 0x0002, SERVO
+  writes 0x0004. A pin of a role the arm does not name sends no pulse. An
+  arm for the other role disarms first and arms after 100 ms. SERVO sweeps,
+  RESUME and SERVO_SENSE captures need the surfaces armed and answer
+  NOT_ARMED on a bench armed for the throttle alone. STOP, heartbeat loss,
+  link silence and a disarm still zero the whole ARM. A 4.18 panel writes 1
+  to a coprocessor older than 4.18, which arms every output.
+- The band's arm chip reads ARMED MOTOR, ARMED SERVO or, for an arm of every
+  output, ARMED.
+- The servo programmer takes no port while the bench is armed for the motor.
+- Protocol 4.19: SERVO's frame rate drives the PWM target alone. With
+  OUTPUTS as target it runs every PWM slot whose first channel is a surface,
+  every programming port at 50 Hz. With PROG PORT as target it runs that
+  port's pin alone; every slot keeps its OUTPUTS rate and every other port
+  runs at 50 Hz. A SERVO rate change moves no throttle and no other output,
+  and the pulse-longer-than-frame refusal (BAD_VALUE) judges the target
+  alone. A change of PROG `TARGET` sets the rate to 0, and the panel sends
+  it again with the next position. A port whose pin shares its RP2350 PWM
+  slice with another port's pin takes 0 or 50 Hz only; a `PIN` write onto
+  the slice of a target running at another rate is refused with BAD_VALUE.
+  The SERVO screen's note in force names the target the coprocessor holds
+  (`prog_link_drive()`): "OUTPUTS run at" or "PROG PORT GP13 runs at", in
+  the warning colour while that target differs from the PWM TARGET setting,
+  while the port has no pin, while PORT PWM is OFF and while the target is
+  not known. The refusal note reads "a pin shares a PWM slice"; against a
+  4.1 to 4.18 coprocessor the note in force reads "every PWM surface runs
+  at". With no link the note in force names no rate: "No link: the rate in
+  force is not known.". A PROG write refused because the silicon
+  cannot bind a pin leaves SERVO's rate, its sweep and the slots' rates as
+  they were.
 - RUN on ESC STICK is refused while no pin is bound as a throttle, while the
   output binding is not read, and while the supply is the panel's model; the
   line beside RUN names the reason, in English and German, and such a reason
@@ -322,6 +361,11 @@ history is in git.
 
 ### Fixed
 
+- `gfx_utf8_next` rejects a four-byte sequence above U+10FFFF (lead `F4`,
+  second byte `90` to `BF`) as malformed, one `?` cell per byte.
+- `as5600_cdeg` computes in 64 bits. It overflowed `int32_t` above
+  |counts| 59,652; the result now saturates at +-2,147,483,647 above
+  |counts| 244,335,917.
 - The wiki mirror points each link that leaves `docs/` at the repository on
   GitHub: `blob/main/<path>` for a file, `tree/main/<path>/` for a directory
   and `raw/main/<path>` for an image, with the anchor, the title, angle

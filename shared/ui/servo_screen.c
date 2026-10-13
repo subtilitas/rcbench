@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "link_pages.h"
 #include "log_name.h"
 #include "outputs.h"
 #include "rcbench_version.h"
@@ -369,6 +370,10 @@ static struct {
      * been written -- and a DISARM or STOP not yet answered.  gate.armed is
      * what the ARM button reads. */
     ui_value_gate_t gate;
+    /* The bench is armed for any role, the motor's included: what keeps the
+     * programmer off the port while the motor is armed and this screen's
+     * surfaces are not (servo_screen_set_bench_armed()). */
+    bool       bench_armed;
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
@@ -2291,6 +2296,13 @@ uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
 const char *servo_screen_type_name(void) { return type()->name; }
 
+servo_rate_state_t servo_rate_in_force(uint16_t minor)
+{
+    return (minor >= LINK_MINOR_SERVO_TARGET_RATE)
+               ? SERVO_RATE_IN_FORCE
+               : SERVO_RATE_IN_FORCE_SURFACES;
+}
+
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
 {
     if (st == s.rate_st && hz == s.rate_hz) {
@@ -3287,10 +3299,16 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
-/* Armed, asked to arm, or a finger on ARM: the programmer takes no port. */
+/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port. */
 static bool bench_arming(void)
 {
-    return s.gate.armed || s.gate.arm_asked || s.arm_down;
+    return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
+}
+
+void servo_screen_set_bench_armed(bool armed)
+{
+    s.bench_armed = armed;
 }
 
 /* ARM takes no press while the programmer holds the port: programming and
@@ -5019,6 +5037,52 @@ static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
     }
 }
 
+bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
+                         uint8_t target, uint8_t gpio, bool pwm, int setting)
+{
+    if (l1 == NULL || l2 == NULL || size == 0u) {
+        return false;
+    }
+    /* No link: the coprocessor may have restarted since the rate landed,
+     * and a restart puts every pin back at its own rate, so no rate is
+     * named.  The link-up resets the rate before a target is known. */
+    if (target == SERVO_SCREEN_TARGET_NO_LINK) {
+        snprintf(l1, size, "%s", TR(SV_IN_FORCE_NO_LINK));
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+        return true;
+    }
+    /* The page not known: the rate was acknowledged, where it runs is not
+     * known. */
+    if (target == SERVO_SCREEN_TARGET_UNKNOWN) {
+        snprintf(l1, size, TR(SV_IN_FORCE_UNKNOWN), (unsigned)hz);
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+        return true;
+    }
+    /* The target the coprocessor holds, not the setting: the setting waits
+     * for a bench at rest, and PROG PORT with no pin bound to the port
+     * leaves the standard outputs the target. */
+    const bool other = setting < 0 || (unsigned)setting != target;
+    bool warn = other;
+    if (target == 0u) {
+        snprintf(l1, size, TR(SV_IN_FORCE_OUT), (unsigned)hz);
+    } else if (gpio == SERVO_SCREEN_NO_PIN) {
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT), (unsigned)hz);
+        warn = true;
+    } else {
+        snprintf(l1, size, TR(SV_IN_FORCE_PORT_PIN), (unsigned)gpio,
+                 (unsigned)hz);
+    }
+    if (other) {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));
+    } else if (target != 0u && !pwm) {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_PWM_OFF));
+        warn = true;
+    } else {
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+    }
+    return warn;
+}
+
 /* Whether the frame rate reached the pins, in two lines. */
 static void draw_rate_note(gfx_canvas_t *c, int x, int y)
 {
@@ -5030,7 +5094,21 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     bool warn = true;
     switch (st) {
     case SERVO_RATE_IN_FORCE:
-        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_1), (unsigned)s.frame_hz);
+        warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
+                                   s.drive_target, s.drive_pin, s.drive_pwm,
+                                   settings_get_int(SET_SERVO_TARGET));
+        break;
+    case SERVO_RATE_IN_FORCE_SURFACES:
+        /* With no link the same "not known" line as from 4.19. */
+        if (s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
+            warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
+                                       s.drive_target, s.drive_pin,
+                                       s.drive_pwm,
+                                       settings_get_int(SET_SERVO_TARGET));
+            break;
+        }
+        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),
+                 (unsigned)s.frame_hz);
         snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
         warn = false;
         break;

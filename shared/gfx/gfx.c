@@ -745,9 +745,10 @@ uint32_t gfx_utf8_next(const char **s)
         }
         cp = (cp << 6) | (p[i] & 0x3Fu);
     }
-    /* An overlong three- or four-byte form, or a surrogate, is malformed. */
+    /* An overlong three- or four-byte form, a surrogate, or a code point
+     * above U+10FFFF is malformed. */
     if ((len == 3u && cp < 0x800u) || (len == 4u && cp < 0x10000u)
-        || (cp >= 0xD800u && cp <= 0xDFFFu)) {
+        || (cp >= 0xD800u && cp <= 0xDFFFu) || cp > 0x10FFFFu) {
         *s += 1;
         return '?';
     }

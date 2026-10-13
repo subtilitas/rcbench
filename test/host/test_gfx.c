@@ -723,6 +723,13 @@ TEST_CASE(utf8_malformed_is_one_cell_each)
     CHECK_EQ(gfx_utf8_next(&surrogate), '?');
     const char *too_high = "\xf5\x80\x80\x80";
     CHECK_EQ(gfx_utf8_next(&too_high), '?');
+    const char *last = "\xf4\x8f\xbf\xbf";    /* U+10FFFF: the last valid */
+    CHECK_EQ(gfx_utf8_next(&last), 0x10FFFF);
+    CHECK_EQ(gfx_utf8_next(&last), 0);
+    const char *beyond = "\xf4\x90\x80\x80"; /* U+110000 */
+    CHECK_EQ(gfx_utf8_next(&beyond), '?');
+    CHECK_EQ(gfx_utf8_next(&beyond), '?');      /* each byte is one cell */
+    CHECK_EQ(gfx_text_cells("\xf4\x90\x80\x80"), 4);
 
     CHECK_EQ(gfx_text_cells("\xc3" "A\xff"), 3);
 }

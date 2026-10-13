@@ -27,6 +27,9 @@
  *   - Touch that has stopped answering disarms and refuses to arm: the panel
  *     is the only place a STOP button exists.
  *   - The run clock times a run, not the panel.
+ *   - An arm covers the roles it was asked for.  Asking for other roles
+ *     while armed passes through a disarm: ARMING_ACT_DISARM first, then
+ *     ARMING_ACT_ARM for the new roles after the settle, and a new run.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -78,7 +81,7 @@ typedef enum {
 typedef enum {
     ARMING_ACT_NONE = 0,
     ARMING_ACT_DISARM,   /**< write ARM = 0                          */
-    ARMING_ACT_ARM,      /**< write CLEAR, then ARM = 1              */
+    ARMING_ACT_ARM,      /**< write CLEAR, then ARM = arming_roles() */
     /** The far end did not come to trust the line within the bound: the arm
      *  is given up, nothing is written, the operator is told. */
     ARMING_ACT_GIVE_UP,
@@ -116,6 +119,14 @@ typedef struct {
      */
     bool     disarm_pending;
     bool     arming;          /**< an arm is waiting for the line         */
+    /**
+     * The roles of the arm in force or waiting, the caller's bits; see
+     * arming_request_arm_roles().
+     */
+    uint8_t  roles;
+    /** A request for other roles found the bench armed: the next step
+     *  disarms before the arm for them. */
+    bool     switching;
     uint32_t settle_ms;       /**< how long the line is given             */
     uint32_t settle_until_ms;
     /**
@@ -215,8 +226,27 @@ void arming_touch_poll(arming_t *a, uint32_t now_ms);
 /** STOP. Latches; abandons an arm that is waiting for the line. */
 void arming_stop(arming_t *a);
 
-/** The operator asked to arm. Ignored while touch is dead. */
+/** Every role: what arming_request_arm() asks for. */
+#define ARMING_ROLES_ALL 0xFFu
+
+/** The operator asked to arm every role: arming_request_arm_roles() with
+ *  ARMING_ROLES_ALL. */
 void arming_request_arm(arming_t *a, uint32_t now_ms);
+
+/**
+ * The operator asked to arm the outputs of @p roles, a non-zero set of the
+ * caller's role bits; 0 is ignored.  Ignored while touch is dead.
+ *
+ * Asked while armed for other roles, the bench is not re-armed in place: the
+ * next arming_step() returns ARMING_ACT_DISARM, and the arm for @p roles
+ * follows the settle as any arm does.  The outputs of the old roles have
+ * stopped before those of the new ones start, and the run clock starts a
+ * new run.  A STOP in between wins, as it does over any arm that waits.
+ */
+void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles);
+
+/** The roles of the arm in force or waiting: 0 before any request. */
+uint8_t arming_roles(const arming_t *a);
 
 /** The operator asked to disarm. */
 void arming_request_disarm(arming_t *a);

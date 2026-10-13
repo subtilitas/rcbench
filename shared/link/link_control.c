@@ -36,6 +36,20 @@ static bool poles_ok(uint16_t poles)
            && (poles % 2u) == 0u;
 }
 
+bool link_arm_value_ok(uint16_t arm)
+{
+    return arm == 0u || arm == LINK_ARM_ALL
+           || ((arm & (uint16_t)~LINK_ARM_ROLES) == 0u);
+}
+
+uint16_t link_arm_roles(uint16_t arm)
+{
+    if (!link_arm_value_ok(arm)) {
+        return 0u;
+    }
+    return (arm == LINK_ARM_ALL) ? (uint16_t)LINK_ARM_ROLES : arm;
+}
+
 uint8_t link_control_write(uint16_t *regs, uint8_t off, uint8_t n,
                            const uint16_t *in, bool may_arm, bool *cleared)
 {
@@ -45,6 +59,17 @@ uint8_t link_control_write(uint16_t *regs, uint8_t off, uint8_t n,
             return LINK_NACK_BAD_VALUE;
         }
         if (reg == LINK_CT_CLEAR && in[i] != LINK_CLEAR_MAGIC) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        /* A value that names no role, and a change of roles while armed,
+         * are refused ahead of the failsafe check: neither is a request to
+         * arm that the failsafe could answer, so neither latches it.  The
+         * roles change through a disarm, which every output passes through
+         * at rest. */
+        if (reg == LINK_CT_ARM
+            && (!link_arm_value_ok(in[i])
+                || (in[i] != 0u && regs[LINK_CT_ARM] != 0u
+                    && in[i] != regs[LINK_CT_ARM]))) {
             return LINK_NACK_BAD_VALUE;
         }
         /* Refusing to arm while in failsafe is the coprocessor's decision:

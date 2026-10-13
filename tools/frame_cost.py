@@ -113,6 +113,7 @@ SOURCES = [
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
     "shared/link/link_crc.c",
+    "shared/link/link_control.c",
 ]
 INCLUDES = [
     "shared/gfx/include",

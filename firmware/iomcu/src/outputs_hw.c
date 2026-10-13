@@ -408,9 +408,10 @@ static void service_dshot(const outputs_t *o, const out_slot_t *s,
     out_dshot_send(s->pin, value, false);
 }
 
-void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
+void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
+                      uint8_t channel0)
 {
-    if (pin == NULL) {
+    if (pin == NULL || rate_hz == NULL) {
         return;
     }
     /* Every port that moved is released before any is bound, as the slots
@@ -421,7 +422,7 @@ void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
         const bool wanted = pin[i] <= OUT_MAX_PIN;
         moved[i] = wanted != p->bound
                    || (wanted && (p->as.pin != pin[i]
-                                  || p->as.rate_hz != rate_hz));
+                                  || p->as.rate_hz != rate_hz[i]));
         if (moved[i] && p->bound) {
             out_pwm_release(p->as.pin);
         }
@@ -439,8 +440,8 @@ void outputs_hw_ports(const uint8_t *pin, uint16_t rate_hz, uint8_t channel0)
         p->as.first_channel = (uint8_t)(channel0 + i);
         p->as.channels      = 1u;
         p->as.pin           = pin[i];
-        p->as.rate_hz       = rate_hz;
-        p->bound            = out_pwm_bind(pin[i], rate_hz);
+        p->as.rate_hz       = rate_hz[i];
+        p->bound            = out_pwm_bind(pin[i], rate_hz[i]);
     }
 }
 
@@ -499,22 +500,44 @@ static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
     st->pwm_have = true;
 }
 
+/*
+ * Whether the bank is armed for the role of a channel of @p s, the slot as
+ * this layer bound it.  The shadow rather than the bank's slot: the shadow is
+ * what the pin is doing.
+ */
+static bool slot_driving(const outputs_t *o, const out_slot_t *s)
+{
+    for (unsigned k = 0; k < s->channels; ++k) {
+        const unsigned ch = (unsigned)s->first_channel + k;
+        if (ch < OUT_MAX_CHANNELS && outputs_channel_driving(o, (uint8_t)ch)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void outputs_hw_service(const outputs_t *o)
 {
     if (o == NULL) {
         return;
     }
     /*
-     * One question for the whole bank: is it armed.  Asking it per slot would
-     * let one output keep driving on a stale answer while another had already
-     * stopped.  Whether a channel is still being commanded is a separate
-     * question, per channel, and it is not asked here: what reaches a pin is
+     * One answer for the whole bank per pass: which roles it is armed for.
+     * Every slot and port is judged against the same answer, so one output
+     * cannot keep driving on a stale one while another has already stopped.
+     * A slot drives when the arm covers the role of one of its channels; an
+     * arm for the throttle leaves a surface without a pulse, and an arm for
+     * the surface leaves a motor and its ESC without one.  A programming port
+     * is a surface.
+     *
+     * Whether a channel is still being commanded is a separate question, per
+     * channel, and it is not asked here: what reaches a pin is
      * outputs_actual(), whatever last wrote it.  The main loop calls
      * outputs_step() immediately before this, so an overdue channel is at its
      * rest by then, and what goes on the pin is that rest rather than nothing.
      * outputs_off() calls this with no step in front of it and needs none: it
-     * disarms first, which puts every channel at its rest and makes drive
-     * false.
+     * disarms first, which puts every channel at its rest and makes every
+     * answer false.
      */
     const bool drive = outputs_driving(o);
 
@@ -523,17 +546,19 @@ void outputs_hw_service(const outputs_t *o)
             continue;
         }
         const out_slot_t *s = &s_shadow[i];
+        const bool slot_drive = drive && slot_driving(o, s);
         switch (s->driver) {
         case OUT_DRIVER_PWM:
             service_pwm(&s_state[i], s,
-                        drive ? outputs_pulse_us(o, s->first_channel) : 0u);
+                        slot_drive ? outputs_pulse_us(o, s->first_channel)
+                                   : 0u);
             break;
         case OUT_DRIVER_PPM:
-            service_ppm(o, s, drive);
+            service_ppm(o, s, slot_drive);
             break;
         case OUT_DRIVER_DSHOT:
         case OUT_DRIVER_DSHOT_BIDIR:
-            service_dshot(o, s, &s_state[i], i, drive);
+            service_dshot(o, s, &s_state[i], i, slot_drive);
             break;
         case OUT_DRIVER_NONE:
         case OUT_DRIVER_COUNT:
@@ -547,6 +572,7 @@ void outputs_hw_service(const outputs_t *o)
         if (p->bound) {
             service_pwm(&p->st, &p->as,
                         drive && (s_port_drive & (1u << i)) != 0u
+                            && outputs_channel_driving(o, p->as.first_channel)
                             ? outputs_pulse_us(o, p->as.first_channel) : 0u);
         }
     }

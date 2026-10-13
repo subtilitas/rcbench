@@ -180,7 +180,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,080 | 3,088 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,096 | 3,072 |
 | `control` | `control_task` | 6,144 | 4,432 | 688 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
@@ -221,7 +221,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,636 | 528 | 1,676 |
+| core 0 | `main` | 4,096 | 1,708 | 528 | 1,604 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc

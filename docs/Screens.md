@@ -8,10 +8,19 @@ operated.
 ## The status band
 
 The top band is shared by every screen. From the right: STOP, the run clock
-(while armed or after a run), ARMED or SAFE, a FAULT code when one is reported,
+(while armed or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the coprocessor's outputs, and SIM while no coprocessor answers
 and the panel runs on its own models.
+
+The arm chip names what an arm drives:
+
+| Chip | Outputs that drive |
+| --- | --- |
+| SAFE | none |
+| ARMED MOTOR | the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER; no surface and no programming port |
+| ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
+| ARMED | every bound output, on a coprocessor older than protocol 4.18 |
 
 STOP works on every screen. It disarms and latches: the bench stays disarmed
 until it is armed again. Navigating away, an alert expiring or the link
@@ -167,7 +176,7 @@ The throttle changes only on an armed bench. What each control does:
 | The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | arms after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
+| ARM | arms the throttle outputs after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch the pane | switch the pane |
 
@@ -368,9 +377,11 @@ as 90%. It applies to a held output as soon as it is changed. Without
 feedback the horn is drawn moving at the same rate, and at 100% at the
 command at once.
 
-**ARM before anything moves.** While the bench is not armed the coprocessor
-writes a pulse of length zero to every PWM pin, and the screen takes no
-position: the commanded value changes only while the servo follows it. The
+**ARM before anything moves.** ARM here arms the surfaces and a pulsing PROG
+PORT; a throttle output sends no pulse ([An arm for one
+role](Link.md#an-arm-for-one-role)). While the bench is not armed for the
+surfaces the coprocessor writes a pulse of length zero to every PWM pin, and
+the screen takes no position: the commanded value changes only while the servo follows it. The
 button is a two-second hold, the same
 gesture and the same fade as the one on MOTOR & ESC, and a press on it while
 armed disarms. Leaving the screen disarms and lets go of the pin: a screen
@@ -810,8 +821,15 @@ another one.
 ![The warning](img/servo-warning.png)
 
 **The frame rate reaches the pins** through the coprocessor's SERVO page
-(protocol 4.1). It applies to every PWM output whose first channel is a
-surface; a PPM output keeps its own frame. It goes with every held position,
+(protocol 4.1). It applies to the PWM TARGET alone. With OUTPUTS, the standard
+servo ports, as target that is every PWM output whose first channel is a surface; a
+PPM output keeps its own frame. With PROG PORT as target it is the
+programming port's pin, and every slot keeps its own rate (protocol 4.19).
+Every other programming port runs at 50 Hz. A port whose pin shares its PWM
+slice with another programming port's pin runs at 50 Hz only: the RP2350
+gives both pins of a slice one divider and one wrap, so a faster rate there
+is refused. A change of PWM TARGET puts the rate back to 0, each output at
+its own rate, and the screen sends its rate again with the next position. It goes with every held position,
 and a profile changed while the armed servo rests restates the rest with it;
 one changed while an arm is on its way is the one the arm uses.
 A faster rate goes after the pulse widths, once all of them have landed; any
@@ -821,9 +839,9 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | every PWM surface runs at the rate shown |
+| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `In force: OUTPUTS run at 330 Hz.` or `In force: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the PWM TARGET setting (second line `The PWM TARGET setting is not in force.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF: the port renders no pulse.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the PWM TARGET. With no link both read `No link: the rate in force is not known.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
-| REFUSED | a pulse of a surface or a pulsing port is longer than the frame at that rate, or a surface shares a PWM slice with an output at another rate; the pins keep the rate they had |
+| REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
 A coprocessor restart, and every binding written on OUTPUTS, put each slot
@@ -831,7 +849,7 @@ back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
-does not arm, from any screen, while the rate the surfaces run at is not
+does not arm, from any screen, while the rate the PWM TARGET runs at is not
 known: the arm is refused with `servo frame rate not known -- arm again`, and
 an arm made while the link was down reaches the coprocessor only once the
 reset has landed.
@@ -2101,8 +2119,8 @@ configured over there. After a panel restart, what this screen shows and what
 is driving pins are the same thing.
 
 Restoring configures the outputs. It does not drive them: every driver is
-gated on the bank being armed, which the coprocessor grants only while the ARM
-register is set, the link is out of failsafe and the heartbeat is trusted, so
+gated on the pin's role being armed, which the coprocessor grants only while
+the ARM register names that role, the link is out of failsafe and the heartbeat is trusted, so
 a restored binding claims its pins and holds them at idle until somebody arms.
 Channel commands are not restored — a configuration survives a power cycle and
 a throttle position does not.
