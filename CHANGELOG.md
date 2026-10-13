@@ -116,13 +116,13 @@ history is in git.
   separators (`1'000`; a `'` before a `.`, a `$`, a universal character
   name or a character outside ASCII ends it), an exponent sign (`1e-x`),
   `$`, universal character names (also `\u{e9}` and `\N{...}` in gnu11,
-  gnu17, gnu23, C++23 and gnu++14 or later) and the characters outside
+  gnu17, gnu23, gnu++11 or later and C++23) and the characters outside
   ASCII that GCC 13 takes into an identifier (the ranges of ISO C11 Annex
   D.1; a number starts only at an ASCII digit, and a number or raw string
   literal starts after any character outside the ranges, as in C), a leading
   byte order mark, form feed and vertical tab are read. Each file is read under the literal rules
-  of ISO C11 and C17, gnu11 and gnu17 (raw strings and delimited and
-  named universal character names), C23 (digit separators), C++14 to
+  of ISO C11 and C17, C++11 (raw strings), gnu11, gnu17 and gnu++11 (raw
+  strings and delimited and named universal character names), C23 (digit separators), C++14 to
   C++20 (raw strings and digit separators), and gnu23, C++23 and gnu++14
   or later (all three); an include found under any of them counts. A line continuation inside a raw string literal is
   kept. The C of a `.pio` file is the text pioasm 2.3.0 writes into the

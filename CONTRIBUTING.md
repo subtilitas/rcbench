@@ -253,8 +253,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   a backslash before that line end escaping nothing, as GCC reads them;
   each file is
   read under the literal rules of ISO C11 and C17 (no raw strings, no digit
-  separators, no delimited or named universal character names), gnu11 and
-  gnu17 (raw strings and delimited and named universal character names),
+  separators, no delimited or named universal character names), C++11 (raw
+  strings), gnu11, gnu17 and gnu++11 (raw strings and delimited and named
+  universal character names),
   C23 (digit separators), C++14 to C++20 (raw strings and digit
   separators), and gnu23, C++23 and gnu++14 or later (all three), and an
   include found under any of them counts; a raw string literal is one token, with the line continuations
@@ -262,12 +263,12 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   but not a `'` before a `.`, a `$`, a universal character name or a
   character outside ASCII), exponent signs (`1e-x`), `$`, universal
   character names (`\u00e9`, `\U000000E9`, and in gnu11, gnu17, gnu23,
-  C++23 and gnu++14 or later also `\u{e9}` and
+  gnu++11 or later and C++23 also `\u{e9}` and
   `\N{LATIN SMALL LETTER E WITH ACUTE}`) and the characters outside
   ASCII that GCC 13 takes into an identifier, the ranges of ISO C11
   Annex D.1 (`1$'a` in C23), and starts at an ASCII digit (0 to 9) after
   any character but a letter, a digit, `_`, `$` and a character of these
-  ranges, and in gnu11, gnu17, gnu23, C++23 and gnu++14 or later not after
+  ranges, and in gnu11, gnu17, gnu23, gnu++11 or later and C++23 not after
   a delimited or named universal character name (`é1`, `€1`, `\u{e9}1`
   and `٠1` with the Arabic-Indic digit U+0660 are identifiers); a
   character outside ASCII and outside the ranges ends a number and a name,

@@ -1153,11 +1153,14 @@ def test_a_nul_byte_in_a_pio_file_fails_it(tmp_path):
 # Each set of literal rules is the only one that finds the include in one
 # text: a raw string, a digit separator, a delimited universal character
 # name, or none of them, opens a comment that hides it under the other
-# four.  The second is gnu11 and gnu17: `\u{e9}R` is an identifier, so no
-# raw string opens.
+# five.  The second is C++11: `\u{e9}` is no identifier character, so
+# `R"(" /* )"` is a raw string.  The third is gnu11, gnu17 and gnu++11:
+# `\u{e9}R` is an identifier, so no raw string opens.
 VIEW_ONLY = {
     (False, False, False):
         'R"(")" /*"\n1\'a /* \'\n#include "b.h"\n*/\n',
+    (True, False, False):
+        'R"(a" /* ")"\n1\'a /* \'\n\\u{e9}R"(" /* )"\n#include "b.h"\n*/\n',
     (True, False, True):
         'R"(a" /* ")"\n1\'a /* \'\n\\u{e9}R"(" \'/*)" /*\'\n#include "b.h"\n'
         '*/\n',
@@ -1172,7 +1175,7 @@ VIEW_ONLY = {
 }
 
 
-def test_the_check_reads_five_sets_of_literal_rules():
+def test_the_check_reads_six_sets_of_literal_rules():
     assert sorted(cp.LITERAL_VIEWS) == sorted(VIEW_ONLY)
 
 
@@ -1203,8 +1206,8 @@ def test_a_repeated_include_is_listed_each_time():
 # Differential: the check against the compilers and pioasm.  Each case puts
 # `#include "../outside.h"` somewhere; the check finds it exactly when one
 # of the compilers includes the file, under any of the C standards and, for
-# a header, C++17.  The C of a .pio file is read from the header pioasm
-# writes.  A missing tool skips the case.
+# a header, C++11 and C++17.  The C of a .pio file is read from the header
+# pioasm writes.  A missing tool skips the case.
 
 GCC = shutil.which("gcc") or shutil.which("cc")
 GXX = shutil.which("g++") or shutil.which("c++")
@@ -1216,7 +1219,7 @@ OUT = '#include "../outside.h"\n'
 # A digit, then a character that continues a GCC preprocessing number
 # besides a letter, digit and `_`: `$`, universal character names with
 # lowercase and uppercase hex digits, delimited and named ones (gnu11,
-# gnu17, gnu23, C++23 and gnu++14 on), and characters outside ASCII
+# gnu17, gnu23, gnu++11 on and C++23), and characters outside ASCII
 # (U+00E9, U+0301, U+203F, U+00B7, U+200D).
 NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
                            "1\\u00E9", "1\\u00AA", "1\\U000000E9",
@@ -1231,7 +1234,7 @@ NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
 # `<` and the character literal `'a'`.
 NUMBER_STARTS = {"\u00d71": True, "\u00a01": True, "1<": False}
 # A delimited or named universal character name after a digit: gnu11,
-# gnu17, gnu23, C++23 and gnu++14 on read it as part of the number; C23 and
+# gnu17, gnu23, gnu++11 on and C++23 read it as part of the number; C23 and
 # C++14 to C++20 end the number before the `\`, so after a digit separator
 # earlier on the line `'x /* '` is a character literal there.
 DELIMITED_ENDS = tuple("#define Z 0'0 1" + u + "'x /* '\n" + OUT + "/* */\n"
@@ -1240,7 +1243,7 @@ DELIMITED_ENDS = tuple("#define Z 0'0 1" + u + "'x /* '\n" + OUT + "/* */\n"
 # Characters outside the identifier ranges of GCC 13 (cp.EXTENDED_RANGES):
 # `\u2e2f`, which Python's `\\w` matches, and `\u00d7`.  In C each is a token
 # of its own, so a number or raw string starts after it, and it ends a
-# number.  In gnu11, gnu17, gnu23, C++23 and gnu++14 on, an identifier
+# number.  In gnu11, gnu17, gnu23, gnu++11 on and C++23, an identifier
 # that starts at a
 # delimited universal character name runs through the digit after it, so
 # `'a /* '` is a character literal; C++14 to C++20 end a number before the
@@ -1429,7 +1432,7 @@ DIFF_PIO = [
 def compiler_runs(header):
     runs = [(GCC, "c", std) for std in C_STDS]
     if header:
-        runs.append((GXX, "c++", "-std=c++17"))
+        runs += [(GXX, "c++", std) for std in ("-std=c++11", "-std=c++17")]
     return runs
 
 
@@ -1451,6 +1454,27 @@ def compilers_include(path, header, tmp_path):
 
 needs_gcc = pytest.mark.skipif(not (GCC and GXX),
                                reason="no gcc and g++ on PATH")
+
+
+@needs_gcc
+@pytest.mark.parametrize("std, found", [
+    ("-std=c++11", True), ("-std=c++0x", True), ("-std=gnu++11", False),
+    ("-std=c++14", False)])
+def test_cxx11_alone_reads_the_raw_string_after_a_delimited_name(
+        tmp_path, std, found):
+    """The C++11 text of VIEW_ONLY: g++ 13 includes the file in C++11 only,
+    and the check finds it."""
+    text = VIEW_ONLY[(True, False, False)].replace(
+        '#include "b.h"', '#include "../outside.h"')
+    src = tmp_path / "d" / "case.h"
+    src.parent.mkdir()
+    src.write_text(text)
+    (tmp_path / "outside.h").write_text("int %s;\n" % MARK)
+    run = subprocess.run([GXX, "-x", "c++", std, "-E", str(src)],
+                         capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    assert (MARK in run.stdout) == found
+    assert cp.includes(text) == [('"', "../outside.h")]
 
 
 @needs_gcc
@@ -1715,13 +1739,15 @@ def test_gcc_evaluates_has_include_in_a_body_a_comment_continues(tmp_path,
 
 
 def test_python_word_characters_outside_the_identifier_ranges():
-    """Of the 137,873 characters outside ASCII that Python's `\\w` matches,
-    U+2E2F is the only one outside cp.EXTENDED_RANGES: a check on `\\w` in
-    place of the ranges would join it to a name."""
+    """Of the characters outside ASCII that Python's `\\w` matches, U+2E2F
+    is the only one outside cp.EXTENDED_RANGES: a check on `\\w` in place of
+    the ranges would join it to a name.  The size of the set follows the
+    Unicode version of the interpreter (133,485 under Unicode 14.0, 137,873
+    under 15.0, 142,877 under 16.0), so only its relation to the ranges is
+    checked; it holds under all three."""
     ranges = cp.EXTENDED_RANGES
     word = [c for c in range(0x80, 0x110000)
             if re.match(r"\w", chr(c))]
-    assert len(word) == 137873
     assert [c for c in word
             if not any(lo <= c <= hi for lo, hi in ranges)] == [0x2E2F]
 
