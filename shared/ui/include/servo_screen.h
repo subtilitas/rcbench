@@ -387,8 +387,8 @@ void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
 /** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
  *  the tester drives, and whether a binding has been read.  The target line
- *  names them while the drive uses the outputs: up to 4 pins, else the
- *  first 3 and a count. */
+ *  names them while the drive uses the outputs: as many pins as
+ *  the 34-cell line holds after its prefix, then "+N" (ui_pinlist()). */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
