@@ -1,0 +1,13 @@
+# Target -------------------------------------------------------------------
+CONFIG_IDF_TARGET="esp32p4"
+# Chip revision v3.x (the X parts, e.g. ESP32-P4NRW32X).  v1.x needs its own
+# image with CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y.
+# CONFIG_ESP32P4_SELECTS_REV_LESS_V3 is not set
+
+# Flash --------------------------------------------------------------------
+# 16 MB boots on the 16 MB and the 32 MB parts.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# PSRAM --------------------------------------------------------------------
+# The frame buffer (800 x 480 x 2 bytes = 750 KiB) lives in PSRAM.
+CONFIG_SPIRAM=y

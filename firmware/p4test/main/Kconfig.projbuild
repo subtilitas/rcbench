@@ -1,0 +1,15 @@
+menu "rcbench P4 bring-up test"
+
+choice P4TEST_BOARD
+    prompt "Board and display"
+    default P4TEST_BOARD_WIFI6_HOSYOND7
+    help
+        The hardware the test runs on.  Each choice fixes the display's
+        I2C (Inter-Integrated Circuit) pins, its timings and the touch
+        controller.
+
+config P4TEST_BOARD_WIFI6_HOSYOND7
+    bool "Waveshare ESP32-P4-WIFI6 + Hosyond 7in 800x480 DSI"
+endchoice
+
+endmenu
