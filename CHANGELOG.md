@@ -62,9 +62,11 @@ history is in git.
   the setup, the parts list, the wires and the drawings whenever the PD mini
   is there. A link with `p=usbtap` loads; the id is dropped without a notice,
   and without the PD mini the setup holds no T-plug. A part that a rule adds
-  reads "Included with these parts: PD mini." ("Enthalten bei diesen Teilen:
-  PD mini."); functions that the parts of the setup bring read "Enthalten bei
-  diesen Teilen." in German. The sweep covers 8 selectable parts, 4096 sets.
+  along with a bench part reads "Included with these parts: PD mini."
+  ("Enthalten bei diesen Teilen: PD mini."); a part that a rule adds for
+  another cause keeps "Needed by: ". The copied link and the PDF link drop
+  `p=usbtap`; `f=usbtap` and `o=usbtap` keep their notice. Functions that the parts of the setup bring read
+  "Enthalten bei diesen Teilen." in German. The sweep covers 8 selectable parts, 4096 sets.
 
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the

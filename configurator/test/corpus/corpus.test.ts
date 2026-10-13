@@ -139,18 +139,20 @@ for (const entry of corpus.entries) {
     assert.ok(!rest.owned.some((id) => OBJECTS.includes(id)), 'a test object is a ticked part');
 
     if (namesLater(entry, corpus)) return;
-    // A retired part under the owned parts is dropped without a notice: the setup it gave before is not stored any more.
+    // A retired part under the owned parts is dropped without a notice and without a tick.
     const names = namesRetired(entry, corpus);
-    if (names.length > 0) {
-      for (const id of names) assert.ok(!rest.owned.includes(id) && !rest.reported.split(', ').includes(id), `${id} is not dropped silently`);
-      assert.equal(rest.notices.includes('note'), parseHash(hash, DEFAULT_OPTIONS).unknown.length > 0, `${entry.name} gives a note for ${names.join(', ')}`);
-      return;
-    }
+    for (const id of names) assert.ok(!rest.owned.includes(id) && !rest.reported.split(', ').includes(id), `${id} is not dropped silently`);
+    // The stored setup holds the part as a tick. A rule that brings the part keeps it in the setup, so with the PD mini the
+    // stored parts and wires stand; without it the part and the wires it carried are not compared.
+    const kept = names.length === 0 || rest.parts.includes('pdmini');
     // Both sides are compared in the ids the corpus starts with: a later entry stores every id.
     const reduced = withObjects(entry.expect);
     const expected = {
       ...reduced,
-      parts: reduced.parts.filter((id) => corpus.ids.parts.includes(id)),
+      owned: reduced.owned.filter((id) => !names.includes(id)),
+      // The hash the page writes does not hold the retired part: the stored one is not compared.
+      canonical: names.length > 0 ? rest.canonical : reduced.canonical,
+      parts: reduced.parts.filter((id) => corpus.ids.parts.includes(id) && (kept || !names.includes(id))),
       enabled: reduced.enabled.filter((id) => corpus.ids.functions.includes(id)),
     };
     const got = inCorpusIds(rest, entry.expect);
@@ -165,7 +167,7 @@ for (const entry of corpus.entries) {
     } else {
       assert.deepEqual(got, expected);
     }
-    assert.deepEqual(actualWires, wires[entry.name], 'the wires differ: see README.md, "When a wire of the catalogue changes"');
+    if (kept) assert.deepEqual(actualWires, wires[entry.name], 'the wires differ: see README.md, "When a wire of the catalogue changes"');
   });
 }
 

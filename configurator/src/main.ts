@@ -13,7 +13,7 @@ import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts'
 import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { HASH_VERSION, formatHash, namesSetup, parseHash, reportable, reportIds, shareHash, testObjectTicks } from './hash.ts';
+import { HASH_VERSION, formatHash, namesSetup, parseHash, withoutFormerTicks, reportIds, shareHash, testObjectTicks } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { benchParts, optionsOf } from './names.ts';
 import { browserStore, readStore, writeStore } from './store.ts';
@@ -86,12 +86,12 @@ function readHash(): void {
   } else {
     if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
     // A test object under the owned parts of a link is the tick of its function.
-    const given = testObjectTicks(parsed.selection, CATALOGUE);
+    const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
     const setup = tryResolve(given);
     selection = known(given);
     const dropped = [...given.functions, ...given.owned]
       .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
-    const unknown = reportable([...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped], CATALOGUE);
+    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
     if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
   }
   // What the browser kept stands in the address like a change on the page: the link to copy and the PDF read it there.

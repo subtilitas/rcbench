@@ -751,6 +751,12 @@ for (const size of SIZES) {
         const reason = lang === 'en' ? 'Included with these parts: PD mini.' : 'Enthalten bei diesen Teilen: PD mini.';
         await expect(page.locator('#result ul.parts:not([id]) > li', { hasText: short('usbtap', lang) })).toContainText(reason);
         await fits(page);
+        // The id was never a function or an option value: those links keep their notice.
+        for (const key of ['f', 'o']) {
+          await open(page, `#v=1&${key}=usbtap${tail}`);
+          await expect(page.locator('.msg')).toHaveCount(1);
+          await expect(page.locator('.msg')).toContainText('usbtap');
+        }
       }
       expect(seen).toEqual({ foreign: [], errors: [] });
     });

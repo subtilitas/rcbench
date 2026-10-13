@@ -146,12 +146,11 @@ export function formatHash(selection: Selection, lang: Lang, startLang: Lang, ca
 export const FORMER_TICKS: readonly string[] = ['usbtap'];
 
 /**
- * The ids a link names that the notice of left-out ids reports. A former tick
- * the catalogue still holds as a part is dropped without a notice. Every other
- * id stays, also the id of a part that was never a tick, such as a locked part.
+ * The selection of a link without its former ticks. Only the owned parts hold
+ * them: a function or an option key of that spelling stays and is reported.
  */
-export function reportable(ids: string[], catalogue: Catalogue): string[] {
-  return ids.filter((id) => !(FORMER_TICKS.includes(id) && catalogue.parts.some((p) => p.id === id && !p.selectable)));
+export function withoutFormerTicks(selection: Selection): Selection {
+  return { ...selection, owned: selection.owned.filter((id) => !FORMER_TICKS.includes(id)) };
 }
 
 /** The ids of a notice as text: at most MAX_REPORTED, each cut to 32 characters. */
@@ -164,15 +163,15 @@ export function reportIds(ids: string[]): string {
 /**
  * A hash as it goes into a document, with '#'. The page keeps the link that
  * opened it until a change, so its address can name a function every setup
- * runs, or a test object as an owned part. Such a hash is written again from
+ * runs, a test object or a former tick as an owned part. Such a hash is written again from
  * its selection: the function ids are left out, the test object becomes the
- * tick of its function; the language key stays. Every other hash is returned
+ * tick of its function, the former tick is dropped; the language key stays. Every other hash is returned
  * as it is.
  */
 export function shareHash(hash: string, defaults: Options, catalogue: Catalogue): string {
   const parsed = parseHash(hash, defaults);
   const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && alwaysOn(catalogue, f)))
-    || parsed.selection.owned.some((id) => catalogue.parts.some((p) => p.id === id && p.testObject === true));
+    || parsed.selection.owned.some((id) => FORMER_TICKS.includes(id) || catalogue.parts.some((p) => p.id === id && p.testObject === true));
   if (!named) return hash;
   const lang = parsed.lang;
   // The start language is set so that a language key in the hash is written and none is added.

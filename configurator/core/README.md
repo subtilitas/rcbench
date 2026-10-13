@@ -98,7 +98,7 @@ The order of work:
 
 1. Locked parts.
 2. Parts needed by the chosen functions, and the test object each of them drives.
-3. Owned parts. A test object and the T-plug (`usbtap`, which only the rule `pd-tplug` adds) are not selectable and go to `ignored`; the page does not report the id of a former tick.
+3. Owned parts. A test object and the T-plug (`usbtap`, which only the rule `pd-tplug` adds) are not selectable and go to `ignored`; the page removes the id of a former tick from the owned parts before it resolves, so none is reported.
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
 6. Wires, check entries and power sources whose condition holds.

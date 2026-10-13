@@ -143,7 +143,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
 | `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
-| `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
+| `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. The page writes the link again without the id once it is copied or printed. An id of that spelling under `f` or `o` keeps its notice. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
 
@@ -233,6 +233,8 @@ state in words:
 | Runs on the base setup | "Included with the base setup." | none |
 | Not active, needs the test object only | "Connects: Servo." | no |
 | Not active | "Adds: <parts>" or the reason | no |
+
+A part carries one reason line. A part that a rule adds along with a bench part reads "Included with these parts: PD mini." (German: "Enthalten bei diesen Teilen: PD mini."), as the T-plug and the charger do. A part that a rule adds for another cause, such as an option or a test object, reads "Needed by: ESC power B." (German: "Nötig für: ESC-Versorgung B."). A part that a function needs reads "Needed by: <function>."
 
 4 variants follow the setup: connection to the coprocessor, INA228 board, ESC
 power and servo power. Servo power is A, the visitor's own supply (default),

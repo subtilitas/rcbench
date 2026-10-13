@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import type { Lang, Options, Selection } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
-import { formatHash, parseHash, reportIds, reportable, testObjectTicks } from '../../src/hash.ts';
+import { formatHash, parseHash, reportIds, withoutFormerTicks, testObjectTicks } from '../../src/hash.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
 export type Built = { prefix: string; unit: string; count: number; suffix: string };
@@ -79,7 +79,7 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   const notices: Array<'err' | 'note'> = [];
   if (parsed.badVersion) notices.push('err');
   // A test object under the owned parts of a link is the tick of its function.
-  const given = testObjectTicks(parsed.selection, CATALOGUE);
+  const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
   const setup = resolve(CATALOGUE, given);
   const selection: Selection = {
     functions: given.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id)),
@@ -88,7 +88,7 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   };
   const dropped = [...given.functions, ...given.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
-  const unknown = reportable([...parsed.unknown, ...setup.ignored, ...dropped], CATALOGUE);
+  const unknown = [...parsed.unknown, ...setup.ignored, ...dropped];
   if (unknown.length > 0) notices.push('note');
   // The page draws the selection reduced to known ids.
   const shown = resolve(CATALOGUE, selection);
