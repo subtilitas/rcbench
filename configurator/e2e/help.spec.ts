@@ -214,6 +214,53 @@ test.describe('1280 px, keyboard and pointer', () => {
     await expect(shown).toHaveCount(1);
   });
 
+  test('the focus of one tick and the pointer on the mark of another show one bubble, the latest', async ({ page }) => {
+    await open(page, '#v=1');
+    const shown = page.locator('#choose .bubble:visible');
+    const far = 'f-servocur';
+    await tabTo(page, 'f-servo');
+    // The row of f-servo at the top of the chooser: the mark of f-servocur shows in the chooser, clear of the
+    // bubbles of f-servo and f-servoprog, and nothing scrolls while the pointer rests on it.
+    await page.locator('.row:has(#f-servo)').evaluate((row) => {
+      const c = document.getElementById('choose')!;
+      c.scrollTop += row.getBoundingClientRect().top - (c.getBoundingClientRect().top + c.clientTop);
+    });
+    const chooseTop = (): Promise<number> => page.evaluate(() => document.getElementById('choose')!.scrollTop);
+    const top = await chooseTop();
+    const markBox = (await mark(page, far).boundingBox())!;
+    const servoprog = (await page.locator('#hb-f-servoprog').evaluate((box) => {
+      box.style.setProperty('display', 'block', 'important');
+      const r = box.getBoundingClientRect();
+      box.style.removeProperty('display');
+      return r.bottom;
+    }));
+    expect(markBox.y).toBeGreaterThan(servoprog);
+    expect(markBox.y + markBox.height).toBeLessThan(800);
+    await expect(page.locator('#hb-f-servo')).toBeVisible();
+
+    // Focus first, then the pointer: the bubble of the mark under the pointer shows alone.
+    await page.mouse.move(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
+    await expect(page.locator(`#hb-${far}`)).toBeVisible();
+    await expect(shown).toHaveCount(1);
+    // Pointer first, then the focus: Tab moves the focus while the pointer rests on the mark of f-servocur, and
+    // the bubble of the newly focused tick shows alone.
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#f-servoprog')).toBeFocused();
+    await expect(page.locator('#hb-f-servoprog')).toBeVisible();
+    await expect(shown).toHaveCount(1);
+    expect(await chooseTop()).toBe(top);
+    // The pointer entering the mark again makes it the latest trigger. The pointer leaves to the result column,
+    // which scrolls nothing.
+    await page.mouse.move(900, 400);
+    await page.mouse.move(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
+    await expect(page.locator(`#hb-${far}`)).toBeVisible();
+    await expect(shown).toHaveCount(1);
+    // Shift+Tab back to f-servo: its bubble shows again, alone.
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('#hb-f-servo')).toBeVisible();
+    await expect(shown).toHaveCount(1);
+  });
+
   test('a second click on the mark closes the bubble while the pointer rests on the mark', async ({ page }) => {
     await open(page, '#v=1');
     const bubble = page.locator('#hb-f-esc');

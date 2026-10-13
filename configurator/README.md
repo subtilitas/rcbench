@@ -69,7 +69,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
-| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark and between the focus of a tick and the pointer on another mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
@@ -280,8 +280,10 @@ the resolver in the variants of the page:
   absence the rule asks for: "2 × 2.2 kΩ (only without INA3221)".
 - "Connects: ..." names the test object the item connects.
 - "Variant: ..." names the variant the function sets.
-- A part names its supply wires, with the note of the wire: "Supply, 3.3 V:
-  Coprocessor 3V3 (pad 36).".
+- A part names its supply wires, the wires of class logic and power that
+  end on it, with the note of the wire: "Supply, 3.3 V: Coprocessor 3V3
+  (pad 36).", and for the PD mini its power input, "PD in: T-plug OUT, USB-C
+  socket." and the note of the USB-C cable.
 - Without a further part the line reads "Needs no further part of the
   bench.".
 
@@ -293,7 +295,9 @@ click or tap on the mark opens or closes the bubble and never changes the
 tick; a tap on the label still toggles it. A press anywhere else
 (`pointerdown`), Escape and the loss of the focus close it. One bubble shows
 at a time: the focus of a tick and the pointer entering a mark close a
-bubble that a click opened on another row. A click that closes a bubble
+bubble that a click opened on another row, and keep the bubble of every
+other row hidden (`data-quiet`) until the focus or the pointer comes back
+to it. A click that closes a bubble
 keeps it closed while the pointer rests on the mark; the pointer leaving and
 entering the mark again opens it. The mark has
 `cursor: pointer`: iOS Safari delivers a tap on an element without it and

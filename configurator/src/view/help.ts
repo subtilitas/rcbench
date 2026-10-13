@@ -98,13 +98,17 @@ function needsLines(view: View, setup: Setup, self: PartId | null, forces: Recor
 /** The first letter in upper case: "supply, 3.3 V" gives "Supply, 3.3 V". */
 const upper = (lang: Lang, s: string): string => s.charAt(0).toLocaleUpperCase(lang) + s.slice(1);
 
-/** The supply wires of a part in the setup with it: "Supply, 3.3 V: Coprocessor 3V3 (pad 36)." and the note of the wire. */
+/**
+ * The supply wires of a part in the setup with it, each with its note: the logic supply ("Supply, 3.3 V:
+ * Coprocessor 3V3 (pad 36).") and the power input ("PD in: T-plug OUT, USB-C socket."), the wires of class logic and power that
+ * end on the part.
+ */
 function supplyLines(view: View, setup: Setup, id: PartId): string[] {
   const { lang, catalogue } = view;
   const ctx = { lang, catalogue, options: view.options };
   const out: string[] = [];
   for (const w of setup.wires) {
-    if (w.cls !== 'logic' || w.b === null || splitRef(w.b)[0] !== id) continue;
+    if ((w.cls !== 'logic' && w.cls !== 'power') || w.b === null || splitRef(w.b)[0] !== id) continue;
     out.push(`${upper(lang, tx(lang, w.signal))}: ${endName(w.a, ctx)}.${w.note ? ` ${tx(lang, w.note)}` : ''}`);
   }
   return out;

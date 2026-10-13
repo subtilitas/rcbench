@@ -332,6 +332,17 @@ function placeShownHelp(): void {
 document.addEventListener('scroll', placeShownHelp, { capture: true, passive: true });
 window.addEventListener('resize', placeShownHelp, { passive: true });
 
+/**
+ * Makes `row` the latest trigger of a bubble: the focus of its tick or the pointer entering its mark. Every other
+ * row keeps its bubble hidden (data-quiet) until it is the latest trigger again, so the focus of one tick and the
+ * pointer on the mark of another never show two bubbles.
+ */
+function triggerHelp(row: HTMLElement): void {
+  for (const other of document.querySelectorAll<HTMLElement>('#choose .row')) {
+    other.toggleAttribute('data-quiet', other !== row);
+  }
+}
+
 /** Closes every bubble a tap or a click opened, but that of `keep`. */
 function closeOpenHelp(keep: Element | null): void {
   for (const open of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
@@ -369,8 +380,8 @@ document.addEventListener('pointerdown', (event) => {
 
 // A bubble closed with Escape opens again when the focus comes back to its tick from elsewhere, or the pointer
 // enters its mark again. The focus and the pointer show one bubble at a time: the focus of a tick and the pointer
-// entering a mark close the bubbles a tap or a click opened on other rows. The bubble of the focused tick or of
-// the mark under the pointer is placed before it shows.
+// entering a mark close the bubbles a tap or a click opened on other rows and quiet the bubbles of the other rows.
+// The bubble of the focused tick or of the mark under the pointer is placed before it shows.
 document.addEventListener('focusin', (event) => {
   const target = event.target instanceof Node ? event.target : null;
   for (const row of document.querySelectorAll<HTMLElement>('#choose .row[data-shut]')) {
@@ -379,6 +390,7 @@ document.addEventListener('focusin', (event) => {
   const row = target instanceof Element ? target.closest<HTMLElement>('#choose .row') : null;
   closeOpenHelp(row);
   if (row) {
+    triggerHelp(row);
     placeHelp(row);
     placeShownHelp();
   }
@@ -388,6 +400,7 @@ document.addEventListener('pointerover', (event) => {
   const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement;
   if (!row) return;
   closeOpenHelp(row);
+  triggerHelp(row);
   row.removeAttribute('data-shut');
   row.removeAttribute('data-nohover');
   placeHelp(row);

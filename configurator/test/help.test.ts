@@ -150,7 +150,12 @@ test('the needs of a part are the parts it brings and the wires of its supply in
     }
   }
   const needs = (id: string, options: Options = DEFAULT_OPTIONS, lang: Lang = 'en'): string[] => partHelp(view({ options }, lang), id)!.needs;
-  assert.deepEqual(needs('pdmini'), ['Needs: PD charger, T-plug.']);
+  // The power input of the PD mini is a supply wire too: the USB-C cable from the T-plug.
+  assert.deepEqual(needs('pdmini'), [
+    'Needs: PD charger, T-plug.',
+    'PD in: T-plug OUT, USB-C socket. USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at most input less 0.5 V.',
+  ]);
+  assert.match(needs('pdmini', DEFAULT_OPTIONS, 'de')[1]!, /^PD-Eingang: T-Stecker OUT, USB-C-Buchse\. USB-C-Kabel, /);
   assert.deepEqual(needs('sd'), ['Needs no further part of the bench.']);
   assert.deepEqual(needs('ina3221'), ['Needs no further part of the bench.', 'Supply, 3.3 V: Coprocessor 3V3 (pad 36).']);
   // The INA228 board decides the supply: 5 V from VBUS for the MATEK board, 3.3 V for the XT90 board.
@@ -159,6 +164,33 @@ test('the needs of a part are the parts it brings and the wires of its supply in
   assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' }, 'de')[1]!, /^Versorgung, 3,3 V: Koprozessor 3V3 \(Pad 36\)\. /);
   // On the Osoyoo breakout board the supply is a terminal.
   assert.equal(needs('ina3221', { ...DEFAULT_OPTIONS, connection: 'osoyoo' })[1], 'Supply, 3.3 V: terminal 3V3.');
+});
+
+test('a part names every wire of its supply, logic and power, that ends on it, in every variant', () => {
+  // Each wire of class logic or power that ends on the part in the setup with it alone is one line of its
+  // bubble, after the lines of the needs; no other wire is. The PD mini is the one part with a power input.
+  const variants: Partial<Options>[] = [{}, { connection: 'osoyoo' }, { ina228Board: 'xt90' }, { escPower: 'pd' }, { servoPower: 'bench' }];
+  const withPower = new Set<string>();
+  for (const lang of LANGS) {
+    for (const v of variants) {
+      const options = { ...DEFAULT_OPTIONS, ...v };
+      for (const id of OWNABLE) {
+        const help = partHelp(view({ options }, lang), id);
+        if (!help) continue;
+        const setup = resolve(CATALOGUE, { functions: [], owned: [id], options });
+        const supply = setup.wires.filter((w) => (w.cls === 'logic' || w.cls === 'power') && w.b !== null && w.b.split('.')[0] === id);
+        if (supply.some((w) => w.cls === 'power')) withPower.add(id);
+        const lines = help.needs.slice(help.needs.length - supply.length);
+        assert.equal(lines.length, supply.length, `${lang} ${id}`);
+        supply.forEach((w, i) => {
+          assert.ok(w.note === null || lines[i]!.endsWith(` ${w.note[lang]}`), `${lang} ${id} wire ${w.n}: ${lines[i]}`);
+        });
+        const before = help.needs.slice(0, help.needs.length - supply.length);
+        assert.ok(before.length >= 1 && before.every((l) => !l.includes(': ') || /^(?:Needs|Braucht|Connects|Schließt an|Variant|Variante): /.test(l)), `${lang} ${id}: ${help.needs.join(' | ')}`);
+      }
+    }
+  }
+  assert.deepEqual([...withPower], ['pdmini']);
 });
 
 test('the bubble follows the variants of the page, after the variants a function sets', () => {
