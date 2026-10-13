@@ -986,12 +986,26 @@ schneller ändert, als das Modul ihn übernimmt -- der Slider gezogen mit
 SLIDER, SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
 Messwerte nicht auf: eine Lesung, die 400 ms über ihre Fälligkeit hinaus
 ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
-eine nach der anderen mit einer anderen Transaktion dazwischen. Die Anzeige
+eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
+des Zustands darf auch direkt auf eine andere Lesung folgen. Die Anzeige
 wird dann etwa 500 ms nach dem letzten Lesen der Anzeige gelesen und der
 Zustand des Ausgangs etwa 900 ms nach dem letzten Lesen des Zustands, jeweils
 mit bis zu zwei Transaktionen mehr. Ein Ausgang, den das Modul einschaltet,
 während er am Panel aus ist, oder selbst abschaltet, wird auch während des
-Ziehens erkannt. Ebenfalls abgeschaltet, mit
+Ziehens erkannt. Der Eingang wird vor dem Schreiben eines Sollwerts oder
+einem ON nur gelesen, wenn eines davon wartet, und nicht zwischen den
+Lesungen für ein ON. Sollwerte und ein ON erreichen ein Modul, das bis zu
+390 ms spät antwortet (der Treiber wartet 400 ms): ein Sollwert innerhalb
+von 2,4 s, ein ON innerhalb von 3,6 s; ein Modul, das seinen Ausgang selbst
+schaltet, wird während des Ziehens innerhalb von 2,0 s erkannt (Host-Modell,
+40 Startphasen). Die echte Antwortzeit des Moduls ist nicht gemessen.
+Aktuelle Einschränkung: antwortet das Modul 279 ms oder später und wird der
+Slider gezogen, wird die Anzeige erst 3,7 s bis 5,0 s nach dem letzten
+Lesen der Anzeige gelesen (5,0 s bei 390 ms), über `SUPPLY_LINK_BLIND_MS`
+hinaus; ein Ausgang, der an ist, wird abgeschaltet, und das Band sagt
+`Netzteil liefert keine Messwerte -- Ausgang aus`. In Ruhe steht das Lesen
+der Anzeige bis zu 2,5 s bei 390 ms, die Karten zeigen also ab 280 ms
+Striche. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
 ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein

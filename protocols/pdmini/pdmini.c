@@ -808,18 +808,32 @@ static bool next_job(pdmini_t *d, uint32_t now)
         read1(d, now, PDMINI_READ_INPUT);
         return true;
     }
-    /* Due, it is read before a set point or an ON as well: set points
+    /*
+     * Due, it is read before a set point write or an ON as well: set points
      * changing faster than the readings come round -- a slider dragged --
-     * or an ON after a pause, are judged on a fresh reading. */
+     * or an ON after a pause, are judged on a fresh reading.  Only with a
+     * set point to write or an ON to make: at rest it is a reading like the
+     * others, and a module slow to answer leaves the display its share.
+     * Before the reads for an ON, not between them: a module answering
+     * 145 ms or more late takes longer than PDMINI_STATE_MS for them, and
+     * the ON would never be written.  It counts as the reading that goes
+     * ahead of a set point (polled_late), so a set point follows it.
+     */
     const bool fallback_due = !d->input_seen
                               && d->input_misses >= PDMINI_INPUT_MISSES
                               && (uint32_t)(now - d->last_input)
                                      >= PDMINI_INPUT_RETRY_MS;
-    if (d->want_set
+    const bool to_write =
+        d->want_set
+        && ((d->slot >= 0 && d->data_known && !d->data_pending
+             && (d->st.set_mv != target_mv(d) || d->st.set_ma != d->want_ma))
+            || (d->want_output && !d->st.output && !d->en_pending));
+    if (to_write && on_step == 0u
         && ((d->input_known
              && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS)
             || fallback_due)) {
         d->last_input = now;
+        d->polled_late = true;
         read1(d, now, PDMINI_READ_INPUT);
         return true;
     }
@@ -846,15 +860,27 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * -- long enough for the panel to take the readings as stopped and cut
      * the output -- and the state, which shows an output the module
      * switched on while an OFF is asked, or off by its protection.  One at
-     * a time, with another job between two, so the set points go on as
-     * well with a module slow to answer; with one that answers at once,
-     * each reading goes ahead at most once per its period and
-     * PDMINI_POLL_LATE_MS.  Not between the reads before an ON, which go
-     * one after the other.
+     * a time, with a set-point job or the reads for an ON between two, so
+     * those still go out with a module that answers late; with one that
+     * answers at once, each reading goes ahead at most once per its period
+     * and PDMINI_POLL_LATE_MS.  Not between the reads before an ON, which
+     * go one after the other.
      */
     if (on_step == 0u && !polled_late
         && poll(d, now, PDMINI_POLL_LATE_MS)) {
         d->polled_late = true;
+        return true;
+    }
+    /* The state is not held back by the one-at-a-time rule: an overdue
+     * state read goes straight after another reading, so a tripped output,
+     * or one on while an OFF is asked, is seen within about 2 s on a module
+     * answering up to 390 ms late -- the display waiting instead. */
+    if (on_step == 0u && polled_late && !d->en_pending
+        && (uint32_t)(now - d->last_state)
+               >= PDMINI_STATE_MS + PDMINI_POLL_LATE_MS) {
+        d->last_state  = now;
+        d->polled_late = true;
+        read1(d, now, PDMINI_READ_STATE);
         return true;
     }
     if (d->want_set && !data_paused && input_ok) {

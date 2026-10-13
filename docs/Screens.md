@@ -898,11 +898,23 @@ output that is on is switched off and the band says
 the module takes it -- the slider dragged with SLIDER AND STEPS off, about
 one new set point every 50 ms -- does not hold the readings back: a reading
 400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
-write, one at a time with another transaction between two. The display is
-then read about 500 ms after the last display read and the output state
-about 900 ms after the last state read, each with up to two transactions
-more. An output the module switches on while it is off on the panel, or
-switches off itself, is seen during the drag. The
+write, one at a time with another transaction between two; the state read
+may also follow another reading straight away. The display is then read
+about 500 ms after the last display read and the output state about 900 ms
+after the last state read, each with up to two transactions more. An
+output the module switches on while it is off on the panel, or switches
+off itself, is seen during the drag. The input is read before a set-point
+write or an ON only when one is waiting, and not between the reads for an
+ON. Set points and an ON reach a module that answers up to 390 ms late (the
+driver waits 400 ms): one set point within 2.4 s, an ON within 3.6 s, a
+module switching its output itself seen within 2.0 s during a drag (host
+model, 40 start phases). The real module's reply time is not measured.
+Current limitation: with a module answering 279 ms or more late and the
+slider dragged, the display is read only 3.7 s to 5.0 s after the last
+display read (5.0 s at 390 ms), past `SUPPLY_LINK_BLIND_MS`; an output that
+is on is switched off and the band says
+`supply sends no readings -- output off`. At rest the display read stands
+up to 2.5 s at 390 ms, so the cards show dashes from 280 ms. The
 output is also switched off, with a line in the band, when the coprocessor
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on

@@ -1155,6 +1155,43 @@ TEST_CASE(an_unanswered_input_read_is_given_up)
     CHECK_EQ(m.mv[0], 4180u);                 /* 4885 - 700, rounded down */
 }
 
+/*
+ * A module that has answered the input read once and then stops answering
+ * it: three misses do not make it firmware without the read.  With nothing
+ * asked, the input is still asked once a second (PDMINI_SLOT_MS), not every
+ * PDMINI_INPUT_RETRY_MS; with a set point asked, the set point waits for an
+ * input reading rather than going out uncapped.
+ */
+TEST_CASE(an_input_read_that_stops_answering_is_asked_once_a_second)
+{
+    fresh();
+    run(1500u, false);
+    CHECK(d.input_seen);
+    m.no_input = true;
+    run(4000u, false);
+    CHECK_EQ(d.input_misses, PDMINI_INPUT_MISSES);
+    CHECK(d.input_seen);
+    const unsigned asked = m.reads[PDMINI_READ_INPUT];
+    run(6000u, false);
+    CHECK(m.reads[PDMINI_READ_INPUT] >= asked + 5u);
+    CHECK(m.reads[PDMINI_READ_INPUT] <= asked + 7u);
+    CHECK(pdmini_status(&d)->online);
+
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    m.no_input = true;
+    run(4000u, false);
+    CHECK_EQ(d.input_misses, PDMINI_INPUT_MISSES);
+    pdmini_want(&d, false, 6000u, 1000u);
+    run(3000u, false);
+    CHECK_EQ(m.mv[0], 5000u);                  /* held, not written blind */
+    m.no_input = false;
+    run(2000u, false);
+    CHECK_EQ(m.mv[0], 6000u);
+}
+
 /* The same module, on, goes quiet, answers again and goes quiet again: the
  * argument it showed is kept, and an OFF still reaches it blind. */
 TEST_CASE(an_argument_outlasts_a_module_that_comes_back)
@@ -1625,6 +1662,153 @@ TEST_CASE(a_drag_on_a_slow_module_still_writes_set_points)
     CHECK(gap_most < SUPPLY_LINK_BLIND_MS);
 }
 
+/* The driver settled with the output @p on at 5000 mV and the module
+ * answering every read @p late ms late for 3 s. */
+static void settle_late(bool on, uint32_t late)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, on, 5000u, 1000u);
+    run(1500u, false);
+    CHECK_EQ(m.output, on);
+    m.reply_delay = late;
+    run(3000u, false);
+}
+
+/*
+ * One set point changed, nothing else asked, the module answering 250 ms
+ * and 390 ms late -- close to the 400 ms reply window -- with the output off
+ * and live: the set point reaches the module within 5 s.
+ */
+TEST_CASE(one_set_point_reaches_a_module_answering_late)
+{
+    static const uint32_t lates[] = { 250u, 390u };
+    for (size_t i = 0u; i < sizeof(lates) / sizeof(lates[0]); ++i) {
+        for (int on = 0; on < 2; ++on) {
+            settle_late(on != 0, lates[i]);
+            pdmini_want(&d, on != 0, 6000u, 1000u);
+            for (unsigned k = 0u; k < 5000u && m.mv[0] != 6000u; ++k) {
+                run(1u, false);
+            }
+            CHECK_EQ(m.mv[0], 6000u);
+            CHECK_EQ(m.output, on != 0);
+            CHECK(pdmini_status(&d)->online);
+        }
+    }
+}
+
+/*
+ * An ON asked of a module answering 120 ms and 180 ms late: the input read
+ * goes before the reads for the ON, not between them, and the ON is
+ * written within 3 s -- at the cap of an input read just before, which has
+ * sagged since the last reading.
+ */
+TEST_CASE(an_on_reaches_a_module_answering_late)
+{
+    static const uint32_t lates[] = { 120u, 180u };
+    for (size_t i = 0u; i < sizeof(lates) / sizeof(lates[0]); ++i) {
+        settle_late(false, lates[i]);
+        CHECK_EQ(m.mv[0], 5000u);
+        m.input_mv = 5500u;                    /* sagged, unread */
+        d.last_input = now - PDMINI_STATE_MS;  /* the reading is due */
+        pdmini_want(&d, true, 5000u, 1000u);
+        for (unsigned k = 0u; k < 3000u && !m.output; ++k) {
+            run(1u, false);
+        }
+        CHECK(m.output);
+        CHECK_EQ(m.on_at_mv, 5500u - PDMINI_CAP_MV);
+    }
+}
+
+/*
+ * A live output dragged every 50 ms for 10 s, the module answering 300 ms
+ * late: set points still go out during the drag, and the last one asked
+ * reaches the module within 5 s of the drag's end.
+ */
+TEST_CASE(a_drag_on_a_module_answering_300_ms_late_still_writes)
+{
+    settle_late(true, 300u);
+    const unsigned writes = m.data_writes;
+    uint16_t mv = 0u;
+    for (int k = 0; k < 200; ++k) {
+        mv = (uint16_t)(6000u + 100u * (unsigned)(k % 40));
+        pdmini_want(&d, true, mv, 1000u);
+        run(50u, false);
+    }
+    CHECK(m.data_writes >= writes + 2u);
+    for (unsigned k = 0u; k < 5000u && m.mv[0] != mv; ++k) {
+        run(1u, false);
+    }
+    CHECK_EQ(m.mv[0], mv);
+    CHECK(m.output);
+}
+
+/*
+ * A live output dragged every 50 ms, the module answering 250 ms and
+ * 350 ms late and its protection switching the output off 500 ms into the
+ * drag: an overdue state read goes before the set points and the next
+ * display read alike, and shows the output tripped within 2 s -- over 40
+ * start phases 13 ms apart.
+ */
+TEST_CASE(a_drag_on_a_slow_module_shows_a_trip_first)
+{
+    uint32_t worst = 0u;
+    for (unsigned ph = 0u; ph < 80u; ++ph) {
+        settle_late(true, (ph < 40u) ? 250u : 350u);
+        run((ph % 40u) * 13u, false);
+        uint32_t off_at = 0u;
+        uint32_t tripped_at = 0u;
+        for (int k = 0; k < 100; ++k) {
+            pdmini_want(&d, true,
+                        (uint16_t)(6000u + 100u * (unsigned)(k % 40)), 1000u);
+            if (k == 10) {
+                m.output = false;              /* its overcurrent protection */
+                off_at = now;
+            }
+            for (int t = 0; t < 50; ++t) {
+                run(1u, false);
+                if (off_at != 0u && tripped_at == 0u
+                    && pdmini_status(&d)->tripped) {
+                    tripped_at = now;
+                }
+            }
+        }
+        CHECK(tripped_at != 0u);
+        CHECK(!m.output);
+        if (tripped_at != 0u && (uint32_t)(tripped_at - off_at) > worst) {
+            worst = (uint32_t)(tripped_at - off_at);
+        }
+    }
+    CHECK(worst <= 2000u);
+}
+
+/*
+ * A live output at rest, the module answering 390 ms late: the input read
+ * that goes before a set point or an ON waits while there is none to
+ * write, and the display still comes round inside SUPPLY_LINK_BLIND_MS --
+ * the panel does not cut an output at rest.
+ */
+TEST_CASE(a_slow_module_at_rest_keeps_the_display_coming)
+{
+    settle_late(true, 390u);
+    uint32_t seen = pdmini_status(&d)->samples;
+    uint32_t seen_at = now;
+    uint32_t gap_most = 0u;
+    for (unsigned k = 0u; k < 10000u; ++k) {
+        run(1u, false);
+        if (pdmini_status(&d)->samples != seen) {
+            seen = pdmini_status(&d)->samples;
+            seen_at = now;
+        }
+        if ((uint32_t)(now - seen_at) > gap_most) {
+            gap_most = (uint32_t)(now - seen_at);
+        }
+    }
+    CHECK(m.output);
+    CHECK(gap_most < SUPPLY_LINK_BLIND_MS);
+    CHECK(pdmini_status(&d)->errors == 0u);
+}
+
 /*
  * The driver at rest at the bench's set point with OFF asked, every
  * reading just taken, and a new set point asked: the job chosen now, with
@@ -1669,6 +1853,60 @@ TEST_CASE(a_reading_goes_before_a_set_point_from_400_ms_past_its_due)
     /* Both overdue: the one further past its due. */
     CHECK_EQ(job_with_readings_aged(disp + 1u, state), PDMINI_READ_DISPLAY);
     CHECK_EQ(job_with_readings_aged(disp, state + 1u), PDMINI_READ_STATE);
+}
+
+/* Two readings equally far past their due: the display, first in the
+ * table, goes first. */
+TEST_CASE(a_tie_between_late_readings_goes_to_the_display)
+{
+    CHECK_EQ(job_with_readings_aged(PDMINI_DISPLAY_MS + 450u,
+                                    PDMINI_STATE_MS + 450u),
+             PDMINI_READ_DISPLAY);
+}
+
+/*
+ * The driver at rest with OFF asked and nothing to write: the job chosen
+ * now with the display, state, input and slot read @p disp, @p state,
+ * @p input and @p slot ms ago, or 0 for none.
+ */
+static uint8_t job_at_rest(uint32_t disp, uint32_t state, uint32_t input,
+                           uint32_t slot)
+{
+    fresh();
+    run(100u, false);
+    pdmini_want(&d, false, 5000u, 1000u);
+    run(1500u, false);
+    for (unsigned k = 0u; k < 2000u; ++k) {
+        run(1u, false);
+        if (d.phase == PD_IDLE) {
+            break;
+        }
+    }
+    CHECK(d.phase == PD_IDLE);
+    CHECK(d.input_known);
+    d.last_display = now - disp;
+    d.last_state   = now - state;
+    d.last_input   = now - input;
+    d.last_slot    = now - slot;
+    pdmini_step(&d, now);
+    return (d.phase == PD_ATTACH) ? d.cmd : 0u;
+}
+
+/* At rest, each reading starts at the millisecond it is due, not 1 ms
+ * before or after. */
+TEST_CASE(a_reading_at_rest_starts_when_it_is_due)
+{
+    const uint32_t dp = PDMINI_DISPLAY_MS;
+    const uint32_t sp = PDMINI_STATE_MS;
+    const uint32_t lp = PDMINI_SLOT_MS;
+    CHECK_EQ(job_at_rest(dp - 1u, 0u, 0u, 0u), 0u);
+    CHECK_EQ(job_at_rest(dp, 0u, 0u, 0u), PDMINI_READ_DISPLAY);
+    CHECK_EQ(job_at_rest(0u, sp - 1u, 0u, 0u), 0u);
+    CHECK_EQ(job_at_rest(0u, sp, 0u, 0u), PDMINI_READ_STATE);
+    CHECK_EQ(job_at_rest(0u, 0u, sp - 1u, 0u), 0u);
+    CHECK_EQ(job_at_rest(0u, 0u, sp, 0u), PDMINI_READ_INPUT);
+    CHECK_EQ(job_at_rest(0u, 0u, 0u, lp - 1u), 0u);
+    CHECK_EQ(job_at_rest(0u, 0u, 0u, lp), PDMINI_READ_ID);
 }
 
 /* The next command the module is sent. */
@@ -2477,6 +2715,7 @@ int main(void)
     RUN(a_learnt_argument_that_stops_working_is_doubted);
     RUN(stale_set_points_are_not_sent);
     RUN(an_unanswered_input_read_is_given_up);
+    RUN(an_input_read_that_stops_answering_is_asked_once_a_second);
     RUN(a_set_point_over_the_input_is_kept_under_it);
     RUN(nothing_is_switched_on_before_the_input_is_read);
     RUN(a_dragged_slider_does_not_starve_the_input);
@@ -2484,7 +2723,14 @@ int main(void)
     RUN(a_drag_does_not_hold_back_the_off_for_an_output_switched_on);
     RUN(a_drag_does_not_hide_a_tripped_output);
     RUN(a_drag_on_a_slow_module_still_writes_set_points);
+    RUN(one_set_point_reaches_a_module_answering_late);
+    RUN(an_on_reaches_a_module_answering_late);
+    RUN(a_drag_on_a_module_answering_300_ms_late_still_writes);
+    RUN(a_drag_on_a_slow_module_shows_a_trip_first);
+    RUN(a_slow_module_at_rest_keeps_the_display_coming);
     RUN(a_reading_goes_before_a_set_point_from_400_ms_past_its_due);
+    RUN(a_tie_between_late_readings_goes_to_the_display);
+    RUN(a_reading_at_rest_starts_when_it_is_due);
     RUN(no_overdue_reading_splits_the_reads_before_an_on);
     RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(a_restart_goes_with_the_output_off_and_is_followed);

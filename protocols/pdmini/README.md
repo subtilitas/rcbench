@@ -25,9 +25,23 @@ The module has two parts.
 - The output is read every 100 ms, its state and the input every 500 ms,
   the active slot every 1000 ms.
 - A reading 400 ms past its due goes before the next set-point write, one at
-  a time with another transaction between two. Set points changed every
-  50 ms delay a display read to about 500 ms and a state read to about
-  900 ms after the last one.
+  a time with another transaction between two; the state read may also
+  follow another reading straight away. Set points changed every 50 ms
+  delay a display read to about 500 ms and a state read to about 900 ms
+  after the last one.
+- The input is read before a set-point write or an ON only when one is
+  waiting and the last input read is 500 ms old, and not between the reads
+  for an ON.
+- Set points and an ON reach a module that answers up to 390 ms late: one
+  set point within 2.4 s, an ON within 3.6 s, an output state the module
+  changes itself seen within 2.0 s while set points change every 50 ms
+  (host model, 40 start phases). The real module's reply time is not
+  measured.
+- Current limitation: with replies 279 ms or more late and a set point
+  changed every 50 ms, the display is read 3.7 s to 5.0 s after the last
+  display read (5.0 s at 390 ms). A user that switches the output off after
+  3 s without a reading, as the rcbench panel does, switches it off then.
+  At rest the display read stands up to 2.5 s at 390 ms (1.8 s at 280 ms).
 - 3 failed state reads in a row take the module for gone.
 - A voltage set point is capped 700 mV under the input the module reports,
   rounded down to 10 mV, and is never under 1000 mV.

@@ -29,9 +29,17 @@
  * The readings come round on their periods: the display every 100 ms, the
  * state and the input every 500 ms, the slot every 1000 ms.  One
  * PDMINI_POLL_LATE_MS past its due goes before the next set point, one at a
- * time with another transaction between two, so set points changed faster
- * than a write and its read-back take -- a slider dragged -- hold no reading
- * back for long, and still go out.
+ * time with a set-point job or a read for an ON between two, so set points
+ * changed faster than a write and its read-back take -- a slider dragged --
+ * hold no reading back for long.  The state read alone may follow another reading straight
+ * away.  The input is read before a set point write or an ON once it is
+ * PDMINI_STATE_MS old, and not between the reads for an ON.  Set points and
+ * an ON reach a module answering up to 390 ms late (host model, 40 start
+ * phases): one set point within 2.4 s, an ON within 3.6 s.  With replies
+ * 279 ms or more late and a set point changed every 50 ms, the display read
+ * stands 3.7 s to 5.0 s, past the 3 s the panel allows (see the README);
+ * at rest it stands up to 2.5 s at 390 ms.  The real module's reply time
+ * is not measured.
  *
  * An ON waits for the set points: it is written only once the active slot
  * reads back what is asked, read again straight before the ON together
@@ -280,8 +288,9 @@ typedef struct {
     bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
-    bool     polled_late;    /* the last job an overdue reading that went
-                                before the set points                   */
+    bool     polled_late;    /* the last job a reading that went before
+                                the set points: an overdue one, or the
+                                input read before a set point or an ON  */
     uint8_t  sag_reads;      /* input reads in a row under a live output's
                                 set point and the headroom              */
     uint8_t  check;          /* pdmini_check_t, PDMINI_CHECK_SENT between */
