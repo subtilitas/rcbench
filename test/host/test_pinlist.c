@@ -129,6 +129,33 @@ TEST_CASE(a_pin_and_a_count_of_ten_are_two_digits_at_the_cell_boundary)
     CHECK_STR_EQ(fmt(m, 6u), "+11");
     /* 11 pins in all; 2 cells cut "+11" to "+1". */
     CHECK_STR_EQ(fmt(m, 2u), "+1");
+    /* GP9 is one digit: 3 cells hold it whole. */
+    CHECK_STR_EQ(fmt(BIT(9), 3u), "GP9");
+    /* Nine pins left out: " +9" is 3 cells after "GP0 GP1 GP2". */
+    CHECK_STR_EQ(fmt(((uint64_t)1u << 12) - 1u, 14u), "GP0 GP1 GP2 +9");
+}
+
+TEST_CASE(the_cells_close_to_the_buffer_size_keep_length_and_text_whole)
+{
+    char b[8];
+    memset(b, 'x', sizeof(b));
+    /* Cells equal to the size: 7 characters fit.  "GP1 GP22" is 8, so
+     * the list gives way to the count and the length equals strlen. */
+    size_t n = ui_pinlist(b, sizeof(b), BIT(1) | BIT(22), 8u);
+    CHECK_EQ(n, strlen(b));
+    CHECK_STR_EQ(b, "GP1 +1");
+    memset(b, 'x', sizeof(b));
+    n = ui_pinlist(b, sizeof(b), BIT(1) | BIT(2) | BIT(3), 8u);
+    CHECK_EQ(n, strlen(b));
+    CHECK_STR_EQ(b, "GP1 +2");
+    /* Cells one under the size, and far over it: "GP1 GP2" is exactly 7. */
+    const unsigned cells[] = {7u, 40u};
+    for (size_t i = 0u; i < sizeof(cells) / sizeof(cells[0]); ++i) {
+        memset(b, 'x', sizeof(b));
+        n = ui_pinlist(b, sizeof(b), BIT(1) | BIT(2), cells[i]);
+        CHECK_EQ(n, strlen(b));
+        CHECK_STR_EQ(b, "GP1 GP2");
+    }
 }
 
 TEST_CASE(a_buffer_smaller_than_the_cells_ends_with_nul_inside_it)
@@ -168,6 +195,7 @@ int main(void)
     RUN(all_64_pins_show_a_count);
     RUN(the_buffer_bounds_the_text_too);
     RUN(a_pin_and_a_count_of_ten_are_two_digits_at_the_cell_boundary);
+    RUN(the_cells_close_to_the_buffer_size_keep_length_and_text_whole);
     RUN(a_buffer_smaller_than_the_cells_ends_with_nul_inside_it);
     return test_summary("pinlist");
 }

@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -1796,6 +1797,28 @@ TEST_CASE(many_throttle_pins_end_in_a_count_within_the_budget)
     CHECK_STR_EQ(line, "TARGET: GP47");
 }
 
+TEST_CASE(the_panel_field_of_49_cells_shows_the_documented_examples)
+{
+    char line[96];
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
+    CHECK_STR_EQ(line, "ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6");
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(the_throttle_prefix_is_shorter_than_its_49_cell_field)
+{
+    /* The field is 49 cells (motor_screen.c, from the pixel width). */
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(snprintf(NULL, 0, TR(MO_TARGET), "") < 49);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(no_throttle_pin_and_an_unread_binding_are_warnings)
 {
     char line[96];
@@ -1982,6 +2005,8 @@ int main(void)
     RUN(every_arm_starts_from_zero);
     RUN(the_throttle_panel_names_the_pins_it_drives);
     RUN(many_throttle_pins_end_in_a_count_within_the_budget);
+    RUN(the_panel_field_of_49_cells_shows_the_documented_examples);
+    RUN(the_throttle_prefix_is_shorter_than_its_49_cell_field);
     RUN(no_throttle_pin_and_an_unread_binding_are_warnings);
     RUN(the_target_line_is_drawn_in_the_colour_of_its_state);
     RUN(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it);

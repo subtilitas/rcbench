@@ -121,7 +121,7 @@ DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
 SETUP > AUSGÄNGE, die auch die Gas-Rolle des Koprozessors liest. Die Liste
 steht in Pin-Reihenfolge und enthält so viele Pins, wie in das Feld von 49
 Zeichen passen; der Rest wird gezählt. Sind GP0 bis GP15 gebunden, steht dort
-`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7`. Zwei Zustände erscheinen in der
+`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6`. Zwei Zustände erscheinen in der
 Warnfarbe:
 
 | Zeile | Bedingung |

@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -5939,6 +5940,16 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
 /* The target line's text: as many pins as the 34 cells hold after the prefix
  * (26 in English, 28 in German), then the count of the rest, the port with its pin or without and with its pulse on
  * or off, the target not known and no link, in both languages. */
+TEST_CASE(the_target_prefix_is_shorter_than_its_34_cell_box)
+{
+    /* The box is 34 cells (servo_screen.c, TARGET_CELLS). */
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(snprintf(NULL, 0, TR(SV_TARGET_OUT), "") < 34);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
@@ -8117,6 +8128,7 @@ int main(void)
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
+    RUN(the_target_prefix_is_shorter_than_its_34_cell_box);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
