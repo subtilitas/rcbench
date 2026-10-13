@@ -323,8 +323,10 @@ SERVO_REPORT_C = REPO / "shared" / "servo" / "servo_report.c"
 
 # Quotes on a German page that stay English although the screen translates
 # the same word: values of the servo test's CSV, which is English in every
-# language, and values of an ESC profile's fields.
+# language, values of an ESC profile's fields, and the register names of a
+# link page.
 ENGLISH_QUOTES = {
+    ("Link-de.md", "TARGET"),
     ("Servo-de.md", "STEP"),
     ("Servo-de.md", "SET"),
     ("Servo-de.md", "SETTLE"),

@@ -2047,6 +2047,11 @@ int main(int argc, char **argv)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-model") == 0) {
+            /* No PD mini: the panel's model is the supply, and the line
+             * over the plot carries the MODELLED pill. */
+            supply_screen_set_model(true);
+        }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
@@ -2070,6 +2075,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo") != 0
                    && strcmp(view, "servo-ina") != 0
                    && strcmp(view, "servo-target") != 0
+                   && strcmp(view, "servo-model") != 0
                    && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);

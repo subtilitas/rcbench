@@ -254,10 +254,12 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
  * reading.  SERVO_SOURCE_INA3221: the last CH1 window -- mean current, mean
  * bus voltage at the load side of the shunt and their product -- under the
  * label INA3221 CH1.  SERVO_SOURCE_PDMINI and SERVO_SOURCE_MODEL: the
- * supply's last sample under the label SUPPLY, the PD mini's reading or the
- * model's.  SERVO_SOURCE_MODEL until the first call.  The name takes its
- * cells from the readings beside it: beside INA3221 CH1 they are 60, 64 and
- * 56 px wide, and a power wider than that is drawn in whole watts.
+ * supply's last sample under the label PD MINI, the PD mini's reading or the
+ * model's; with the model (supply_screen_model()) the MODELLED pill sits on
+ * the plot's top-left corner.  SERVO_SOURCE_MODEL until the first call.  The
+ * name takes its cells from the readings beside it: beside INA3221 CH1 they
+ * are 60, 64 and 56 px wide, and a power wider than that is drawn in whole
+ * watts.
  *
  * The row is `---` and a reading on the line `--` while the meter has no
  * reading: no window since the link came up, a window without samples of
@@ -381,25 +383,27 @@ void servo_screen_set_enc_held(bool held);
  *  the standard outputs, 1 + n for programming port n,
  *  SERVO_SCREEN_TARGET_UNKNOWN or SERVO_SCREEN_TARGET_NO_LINK; @p gpio that
  *  port's GPIO or SERVO_SCREEN_NO_PIN, and @p pwm whether the port renders
- *  its pulse.  The target line follows it, not the PWM TARGET setting.
+ *  its pulse.  The TARGET row follows it, not the PWM TARGET setting.
  *  @p gpio and @p pwm are ignored without a port target. */
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
 /** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
- *  the tester drives, and whether a binding has been read.  The target line
- *  names them while the drive uses the outputs: as many pins as
- *  the 34-cell line holds after its prefix, then "+N" (ui_pinlist()). */
+ *  the tester drives, and whether a binding has been read.  The TARGET row
+ *  names them while the drive uses the outputs: as many pins as the row's
+ *  23 cells hold, then "+N" (ui_pinlist()). */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
- * The target line's text in the current language, into @p out of @p size
+ * The TARGET row's value in the current language, into @p out of @p size
  * bytes, for the drive @p target / @p gpio / @p pwm (as
  * servo_screen_set_drive()) and the SERVO PWM pins @p pins / @p known (as
  * servo_screen_set_pins()).  Returns whether the line takes the warning
  * colour: a port target, no SERVO PWM pin, no binding read, the target not
- * known, or no link.  A port target reads "TARGET: PROG PORT GPn", or
- * "TARGET: PROG PORT" without a known pin, each with " PWM OFF" after it
- * while the port renders no pulse.
+ * known, or no link.  The outputs read "GP2 GP4 GP5": as many pins as the
+ * 23 cells hold, then a count ("GP2 GP4 GP5 +2").  A port target reads
+ * "PROG PORT GPn", or "PROG PORT" without a known pin, each with " PWM OFF"
+ * after it while the port renders no pulse: 22 characters at most, of the
+ * 23 cells the row's value holds.
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known);

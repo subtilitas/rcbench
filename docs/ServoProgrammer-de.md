@@ -87,8 +87,8 @@ Programmierport. **OPTIONEN**, Reiter PRÜFLING, hält die zwei Zeilen:
 | PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
 Beide Zeilen werden mit den SERVO-Einstellungen gehalten. Der
-SERVO-Bildschirm nennt das aktive Ziel mit den Pins auf der linken Karte:
-`ZIEL: PROG-PORT GP13` in der Warnfarbe oder `ZIEL: GP4` für die als
+SERVO-Bildschirm nennt das aktive Ziel mit den Pins in der Zeile ZIEL der
+rechten Karte: `PROG-PORT GP13` in der Warnfarbe oder `GP4` für die als
 SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
