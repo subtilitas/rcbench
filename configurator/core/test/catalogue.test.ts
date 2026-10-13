@@ -1607,8 +1607,8 @@ test('the DC supply of the Osoyoo breakout board: a modelled part with its range
   assert.deepEqual(dc.short, { en: 'Osoyoo DC supply', de: 'Osoyoo-DC-Versorgung' });
   assert.deepEqual(dc.slot, { column: 'L', order: 12, sub: { en: '7 to 12 V DC', de: '7 bis 12 V DC' } });
   assert.deepEqual(dc.role, {
-    en: 'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). It connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm (socket DC005-2.1), centre positive. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
-    de: 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Sie wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm (Buchse DC005-2.1), Mittelstift Plus. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
+    en: 'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). Above 12 V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12 V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16 V and the vendor limit of 18 V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm, centre positive. The product page names the socket DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
+    de: 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Über 12 V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12 V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1 mm folgt aus diesem Namen; der Außendurchmesser von 5,5 mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
   });
   // No source states the input current, so the part names none.
   assert.doesNotMatch(dc.role!.en, /\d+(\.\d+)? ?m?A\b/);
@@ -1653,8 +1653,8 @@ test('the DC supply of the Osoyoo breakout board: a modelled part with its range
   for (const w of leads) {
     assert.deepEqual(w.signal, { en: 'DC input of the Osoyoo breakout board, 7 to 12 V', de: 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V' });
     assert.deepEqual(w.note, {
-      en: 'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: plug 5.5 x 2.1 mm, centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
-      de: 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
+      en: 'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1 mm (2.1 mm from the socket name, 5.5 mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
+      de: 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1 mm (2,1 mm aus dem Namen der Buchse, 5,5 mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
     });
   }
 });
@@ -1685,6 +1685,28 @@ test('the DC jack of the Osoyoo breakout board: centre positive, minus on GND, t
   assert.match(parts.text.de, /schützt nur die Klemme und H4 gegen Verpolung\. Das Minus der DC-Buchse liegt direkt an GND: Die Buchse hat keinen Verpolschutz\./);
   assert.doesNotMatch(parts.text.en, /minus lead of the DC input/);
   assert.doesNotMatch(parts.text.de, /Minusleitung des DC-Eingangs/);
+});
+
+test('the DC jack of the Osoyoo breakout board: the plug size names its basis, the SI2302 gate limits the input to 12 V', () => {
+  // The product page names the socket DC005-2.1 only. The 2.1 mm pin follows
+  // from that name; the 5.5 mm outer diameter is the usual size of the socket
+  // family. Every text that gives the plug size says so.
+  const dc = CATALOGUE.parts.find((p) => p.id === 'dcsup')!;
+  const w66 = CATALOGUE.wires.find((w) => w.n === 66)!;
+  for (const [what, text] of [['role', dc.role!], ['note of wire 66', w66.note!]] as const) {
+    assert.match(text.en, /DC005-2\.1/, `${what} en`);
+    assert.match(text.de, /DC005-2\.1/, `${what} de`);
+    assert.match(text.en, /usual size of that socket family.*not stated by the vendor/, `${what} en`);
+    assert.match(text.de, /übliche Maß dieser Buchsenfamilie.*vom Hersteller nicht angegeben/, `${what} de`);
+  }
+  assert.match(dc.role!.en, /The product page names the socket DC005-2\.1: the 2\.1 mm pin follows from that name/);
+  assert.match(dc.role!.de, /Die Produktseite nennt die Buchse DC005-2\.1: Der Stift von 2,1 mm folgt aus diesem Namen/);
+  // Schematic REV 1.0: the gate of Q3 sits at PWRIN through R7 with no clamp,
+  // its source at GND; the HXY datasheet rates the gate-source voltage at ±12 V.
+  assert.match(dc.role!.en, /Above 12 V the gate-source voltage of the SI2302 \(Q3\) exceeds its rating of ±12 V \(datasheet linked on the product page\) at every input: the gate sits at PWRIN through R7, with no clamp\. The print of 16 V and the vendor limit of 18 V are above that\./);
+  assert.match(dc.role!.de, /Über 12 V überschreitet die Gate-Source-Spannung des SI2302 \(Q3\) an jedem Eingang ihren Grenzwert von ±12 V \(Datenblatt, verlinkt auf der Produktseite\): Das Gate liegt über R7 ohne Begrenzung an PWRIN\. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber\./);
+  // The range stays 7 to 12 V.
+  assert.deepEqual(dc.slot!.sub, { en: '7 to 12 V DC', de: '7 bis 12 V DC' });
 });
 
 test('the Osoyoo strip: the whole advantage, drawbacks and the USB drawback that name the strip supply', () => {

@@ -477,6 +477,11 @@ file names no stage, so the checks follow the stages as one list.
 - DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1 mm, centre positive) has no reverse-polarity
   protection. A centre-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
   and H4 only.
+- DC jack of the Osoyoo breakout board: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that
+  name. The 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor.
+- Osoyoo breakout board above 12 V at any input: the gate of the SI2302 (Q3) sits at PWRIN through R7, and its
+  gate-source voltage exceeds the ±12 V rating of its datasheet. The print of 16 V and the vendor limit of 18 V are
+  above that.
 - What powers an ESC during programming other than ESC STICK is not stated.
 - 8 of 20 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap,
   DC supply of the Osoyoo breakout board and cables: no picture.
