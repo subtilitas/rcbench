@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Lang, Selection } from '../contract.ts';
+import type { Lang, ResolvedPart, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, groups, removalEffect, resolve } from '../src/core.ts';
-import { STRINGS, t, esc } from '../src/i18n.ts';
+import { STRINGS, t, tx, esc } from '../src/i18n.ts';
 import { benchParts, optionsOf, testObjectsOf } from '../src/names.ts';
 import { describe, sweep } from './geometry.ts';
-import { chooser, deselectText, groupId, removalWarning, removeControl, statusText } from '../src/view/chooser.ts';
+import { chooser, deselectText, groupId, reasonText, removalWarning, removeControl, statusText } from '../src/view/chooser.ts';
 import type { Pending, View } from '../src/view/chooser.ts';
 import { NOTICE_URL, result, resultError } from '../src/view/result.ts';
 
@@ -49,9 +49,9 @@ function row(html: string, id: string): string {
 
 test('a drawn part with pins and no wire is named in the build order', () => {
   for (const lang of LANGS) {
-    const v = view({ owned: ['usbtap'] }, lang);
-    assert.ok(!v.setup.wires.some((w) => w.a.startsWith('usbtap.') || w.b?.startsWith('usbtap.')));
-    assert.ok(order(v).includes(short('usbtap', lang)), order(v));
+    const v = view({ owned: ['sim'] }, lang);
+    assert.ok(!v.setup.wires.some((w) => w.a.startsWith('sim.') || w.b?.startsWith('sim.')));
+    assert.ok(order(v).includes(short('sim', lang)), order(v));
   }
 });
 
@@ -254,10 +254,10 @@ test('the question names a variant that changes and a function that comes on', (
 test('a removal that changes nothing else asks as well, and says so in words', () => {
   for (const lang of LANGS) {
     for (const at of ['result', 'own'] as const) {
-      const v: View = { ...view({ owned: ['usbtap', 'sd'] }, lang), pending: { part: 'usbtap', at } };
+      const v: View = { ...view({ owned: ['sim', 'sd'] }, lang), pending: { part: 'sim', at } };
       const warning = removalWarning(v);
       const said = text(warning);
-      assert.ok(said.startsWith(t(lang, 'rmAsk', { p: short('usbtap', lang) })), said);
+      assert.ok(said.startsWith(t(lang, 'rmAsk', { p: short('sim', lang) })), said);
       assert.ok(said.includes(STRINGS.rmPlain[col(lang)]), said);
       assert.ok(!said.includes(STRINGS.rmNone[col(lang)]), said);
       assert.ok(said.endsWith(`${STRINGS.rmPlain[col(lang)]} ${STRINGS.rmYesPlain[col(lang)]} ${STRINGS.rmNo[col(lang)]}`), said);
@@ -327,7 +327,9 @@ test('"Parts you own" ticks every selectable part of the setup and states why a 
   }
   assert.ok(row(html, 'p-pdmini').includes(STRINGS.neededBy[0]));
   assert.ok(!row(html, 'p-sd').includes(STRINGS.neededBy[0]));
-  assert.ok(ticked >= 3);
+  assert.ok(ticked >= 2);
+  // The T-plug has no row: the PD mini brings it.
+  assert.ok(!html.includes('id="p-usbtap"'));
   assert.ok(html.includes(`<span class="tag">${t('en', 'ownN', { n: ticked })}</span>`));
   assert.ok(html.includes(STRINGS.ownHint[0]));
 });
@@ -594,5 +596,38 @@ test('the footer links to the trademark notice of the repository in both languag
       assert.ok(html.includes(`${STRINGS.foot[col(lang)]} <a id="noticelink"`));
       assert.ok(!/<a id="noticelink"[^>]*tabindex/.test(html));
     }
+  }
+});
+
+test('the reason line of a rule part: "Included with these parts" after a bench part, "Needed by" after any other cause', () => {
+  const follows = CATALOGUE.rules.filter((r) => 'has' in (r.when ?? {}) && !CATALOGUE.parts.find((p) => p.id === (r.when as { has: string }).has)?.testObject);
+  // The data decides: the rules whose condition is one bench part.
+  assert.deepEqual(follows.map((r) => r.id), ['pd-charger', 'pd-tplug']);
+  for (const lang of LANGS) {
+    for (const rule of CATALOGUE.rules) {
+      const reason: ResolvedPart['addedBy'][number] = { kind: 'rule', id: rule.id, because: rule.because };
+      const part = { part: CATALOGUE.parts.find((p) => p.id === rule.adds)!, addedBy: [reason] } as ResolvedPart;
+      const line = reasonText(part, view({}, lang));
+      const label = follows.includes(rule) ? STRINGS.stIncBy[lang === 'en' ? 0 : 1] : STRINGS.neededBy[lang === 'en' ? 0 : 1];
+      assert.equal(line, `${label}${tx(lang, rule.because)}.`, `${rule.id} ${lang}`);
+    }
+  }
+  // In a resolved setup: ESC power B is a cause, not a part.
+  const v = view({ functions: ['esc'], options: { ...DEFAULT_OPTIONS, escPower: 'pd' } }, 'en');
+  assert.equal(reasonText(v.setup.parts.find((r) => r.part.id === 'pdmini')!, v), 'Needed by: ESC power B.');
+});
+
+test('a part a rule adds reads "Included with these parts" in English and "Enthalten bei diesen Teilen" in German', () => {
+  assert.equal(STRINGS.stInc[0], 'Included with these parts.');
+  assert.equal(STRINGS.stInc[1], 'Enthalten bei diesen Teilen.');
+  const reasons = { en: 'Included with these parts: PD mini.', de: 'Enthalten bei diesen Teilen: PD mini.' };
+  for (const lang of LANGS) {
+    const v = view({ owned: ['pdmini'] }, lang);
+    const tap = v.setup.parts.find((r) => r.part.id === 'usbtap')!;
+    assert.deepEqual(tap.addedBy.map((a) => a.kind), ['rule']);
+    assert.equal(reasonText(tap, v), reasons[lang]);
+    assert.ok(text(result(v, URL, [])).includes(reasons[lang]), lang);
+    // The T-plug has no tick in the chooser.
+    assert.ok(!chooser(v, true).includes('id="p-usbtap"'));
   }
 });

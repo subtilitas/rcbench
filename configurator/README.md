@@ -143,9 +143,17 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 |---|---|
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
 | `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
-| `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. |
+| `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. Copy link, the print header and the PDF name the link without the id; the address of the page keeps it until a change. An id of that spelling under `f` or `o` keeps its notice. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
+
+Copy link, the field it shows when the clipboard refuses, the print header
+and the PDF name the same link. A link that names a function without a tick,
+a test object under `p` or `p=usbtap` is written again from its selection:
+those ids leave, a test object stands as the tick of its function, and the
+key `l` stays as the link has it. Every other link is named as it stands in
+the address. The address that the browser prints in its own page margin is
+the address of the page.
 
 Limits: 2000 characters per hash, 64 ids per key, 32 characters per id of
 lowercase letters and digits. A longer hash gives the base setup and the
@@ -228,11 +236,13 @@ state in words:
 | State | Text | Tick |
 |---|---|---|
 | Ticked by the visitor | "Selected by you." | yes |
-| Active through the parts of the setup | "Included with these parts." | no |
+| Active through the parts of the setup | "Included with these parts." (German: "Enthalten bei diesen Teilen.") | no |
 | Active through a connected test object | "Active: Servo is connected." | no |
 | Runs on the base setup | "Included with the base setup." | none |
 | Not active, needs the test object only | "Connects: Servo." | no |
 | Not active | "Adds: <parts>" or the reason | no |
+
+A part carries one reason line. A part that a rule adds along with a bench part reads "Included with these parts: PD mini." (German: "Enthalten bei diesen Teilen: PD mini."), as the T-plug and the charger do. A part that a rule adds for another cause, such as an option or a test object, reads "Needed by: ESC power B." (German: "Nötig für: ESC-Versorgung B."). A part that a function needs reads "Needed by: <function>."
 
 4 variants follow the setup: connection to the coprocessor, INA228 board, ESC
 power and servo power. Servo power is A, the visitor's own supply (default),
@@ -297,7 +307,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the 12 functions with a tick and every subset of the 9 selectable parts, in all 16
+subset of the 12 functions with a tick and every subset of the 8 selectable parts, in all 16
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,

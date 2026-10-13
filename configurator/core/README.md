@@ -115,7 +115,7 @@ The order of work:
 
 1. Locked parts.
 2. Parts needed by the chosen functions, and the test object each of them drives.
-3. Owned parts. A test object is not selectable and goes to `ignored`.
+3. Owned parts. A test object and the T-plug (`usbtap`, which only the rule `pd-tplug` adds) are not selectable and go to `ignored`; the page removes the id of a former tick from the owned parts before it resolves, so none is reported.
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
 6. Wires, check entries and power sources whose condition holds.
@@ -250,7 +250,7 @@ The 7 pin rules:
 
 The suite runs 2 full sweeps and 1 seeded sample through the resolver:
 
-- 512 sets of the 9 selectable parts times 16 option combinations: 8192 setups.
+- 256 sets of the 8 selectable parts times 16 option combinations: 4096 setups.
 - 4096 sets of the 12 functions with a tick times 16 option combinations: 65536 setups. The option combinations hold `servoPort: outputs`; the function `servoprog` sets `prog`.
 - 2000 mixed selections from a fixed seed.
 
@@ -285,7 +285,7 @@ The data is checked for its power paths:
 `test/groups.test.ts` runs every removal the data file allows:
 
 - 4096 sets of functions times 2 values of `escPower`, each part of each setup removed.
-- 512 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
+- 256 sets of owned parts times 2 values of `escPower`, each part of each setup removed.
 - 1500 mixed selections from a fixed seed under all 16 option combinations.
 - 4096 sets of functions, each function deselected.
 

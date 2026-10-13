@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import type { Lang, Options, Selection } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
-import { formatHash, parseHash, reportIds, testObjectTicks } from '../../src/hash.ts';
+import { formatHash, parseHash, reportIds, withoutFormerTicks, testObjectTicks } from '../../src/hash.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
 export type Built = { prefix: string; unit: string; count: number; suffix: string };
@@ -79,7 +79,7 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   const notices: Array<'err' | 'note'> = [];
   if (parsed.badVersion) notices.push('err');
   // A test object under the owned parts of a link is the tick of its function.
-  const given = testObjectTicks(parsed.selection, CATALOGUE);
+  const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
   const setup = resolve(CATALOGUE, given);
   const selection: Selection = {
     functions: given.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id)),
@@ -119,6 +119,19 @@ export function idsOf(): Corpus['ids'] {
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
     parts: CATALOGUE.parts.map((p) => p.id),
   };
+}
+
+/**
+ * The owned parts an entry names that the corpus started with as ticks and the
+ * catalogue offers no tick for now, test objects aside (a link reads those as
+ * the tick of their function). The page leaves such a part out of the owned
+ * parts without a notice; a rule may still bring it into the setup.
+ */
+export function namesRetired(entry: Pick<Entry, 'hash'>, corpus: Corpus): string[] {
+  const now = idsOf();
+  const objects = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id);
+  const gone = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !objects.includes(id));
+  return parseHash(hashOf(entry), DEFAULT_OPTIONS).selection.owned.filter((id) => gone.includes(id));
 }
 
 /**

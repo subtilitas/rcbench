@@ -130,7 +130,7 @@ test('the catalogue passes against the repository at the release tag', (t) => {
 
 test('counts: parts, pads, wires, functions, stages, safety notes', () => {
   assert.equal(CATALOGUE.parts.length, 20);
-  assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 9);
+  assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 8);
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id), ['servo', 'esc']);
   assert.equal(CATALOGUE.pads.length, 40);

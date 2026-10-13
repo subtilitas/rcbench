@@ -64,10 +64,23 @@ function functionName(view: View, id: FunctionId): string {
 
 const partList = (view: View, ids: PartId[]): string => ids.map((id) => shortName(view, id)).join(', ');
 
-/** Why a part is in the setup, as one line: "Needed by: Servo. You own it." */
+/** Whether the rule's condition is one bench part that is no test object: the rule brings a part along with a part. */
+export function ruleFollowsPart(catalogue: View['catalogue'], ruleId: string): boolean {
+  const rule = catalogue.rules.find((r) => r.id === ruleId);
+  const when = rule?.when;
+  if (!when || !('has' in when)) return false;
+  return catalogue.parts.some((p) => p.id === when.has && p.testObject !== true);
+}
+
+/**
+ * Why a part is in the setup, as one line: "Needed by: Servo. You own it."
+ * A part a rule adds along with another bench part reads "Included with these
+ * parts: PD mini."; any other rule reads "Needed by: " and its cause.
+ */
 export function reasonText(part: ResolvedPart, view: View): string {
   const { lang, catalogue } = view;
   const by: string[] = [];
+  const included: string[] = [];
   let always = false;
   let own = false;
   for (const r of part.addedBy) {
@@ -76,12 +89,13 @@ export function reasonText(part: ResolvedPart, view: View): string {
     else if (r.kind === 'function') {
       const fn = catalogue.functions.find((f) => f.id === r.id);
       by.push(fn ? tx(lang, fn.name) : r.id);
-    } else if (r.kind === 'rule') by.push(tx(lang, r.because));
+    } else if (r.kind === 'rule') (ruleFollowsPart(catalogue, r.id) ? included : by).push(tx(lang, r.because));
     else by.push(variantShort(lang, r.key, r.value));
   }
   const out: string[] = [];
   if (always) out.push(t(lang, 'always'));
   if (by.length > 0) out.push(t(lang, 'neededBy') + [...new Set(by)].join(', '));
+  if (included.length > 0) out.push(`${t(lang, 'stIncBy')}${[...new Set(included)].join(', ')}`);
   if (own) out.push(t(lang, 'youOwn'));
   return out.length > 0 ? `${out.join('. ')}.` : '';
 }
