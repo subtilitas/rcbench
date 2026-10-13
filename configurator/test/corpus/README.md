@@ -24,12 +24,12 @@ Entries by name:
 
 | Prefix | Count | Input |
 |---|---:|---|
-| `page-` | 55 | Hashes the page writes. 6 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`. |
-| `hand-` | 10 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. |
+| `page-` | 58 | Hashes the page writes. 9 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`, 3 for the key `m` of the motor simulator. |
+| `hand-` | 11 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. 1 of them is added after the start: the default values of the key `m`. |
 | `bad-empty`, `bad-number-sign`, `bad-two-number-signs` | 3 | No hash, the number sign alone, two number signs. |
 | `bad-cut-` | 14 | A link cut short. |
 | `bad-version-` | 18 | Another version, no version, the version twice. |
-| `bad-id-` | 23 | Unknown ids, ids of the wrong kind, ids in upper case. |
+| `bad-id-` | 25 | Unknown ids, ids of the wrong kind, ids in upper case. 2 of them are added after the start: values of the key `m` the page does not offer, a value of the key `m` twice. |
 | `bad-limit-` | 7 | 64 and 65 ids, 2000 and 2001 characters, 3 hashes of 64 kB. |
 | `bad-percent-` | 20 | Percent-encoding: encoded separators, broken escapes, a byte that is no UTF-8, a plus sign. |
 | `bad-shape-` | 20 | Input that is no key-value list: script text, repeated separators, other separators. |

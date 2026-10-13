@@ -135,6 +135,14 @@ noscript .msg { margin: 12px 16px; }
 .pics img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 4px; background: var(--grey-bg); }
 .parts small { color: var(--muted); display: block; font-size: 14px; }
 .why { font-size: 14px; display: block; }
+.sim { margin-top: 8px; font-size: 14px; }
+.sim fieldset { margin: 0; }
+.sim legend { margin: 0 0 4px; }
+.simin { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 12px; }
+.simin label { display: block; color: var(--muted); }
+.simin select { display: block; width: 100%; font: inherit; min-height: 44px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); }
+.sim p { margin: 6px 0; }
+.sim .msg { font-size: 14px; }
 .buy .qty { font-variant-numeric: tabular-nums; }
 .buy .links { display: flex; flex-wrap: wrap; gap: 0 16px; font-size: 14px; }
 .buy .links a { display: inline-block; padding: 12px 0; }
@@ -274,6 +282,8 @@ footer { color: var(--muted); font-size: 13.5px; margin-top: 28px; border-top: 1
   @page { size: A4; margin: 15mm; }
   body { padding: 0; font-size: 11pt; }
   #choose, .bar, .lang, button.act, .linkbox, .pdfmsg, .hint.pan-hint, .warn { display: none !important; }
+  /* The inputs of the motor simulator stay on screen: the name of the part and the load case name the values. */
+  .sim fieldset { display: none !important; }
   .page { display: block; padding: 0; max-width: none; }
   #result { margin-top: 0; }
   .pan { overflow: visible; border: 0; }

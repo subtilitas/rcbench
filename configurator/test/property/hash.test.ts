@@ -22,8 +22,8 @@ import {
   MIXED, OPTION_SETS, SEED, enumerate, generator, sample, shuffled, spaceOf,
 } from '../../core/test/property/space.ts';
 import { OPTION_KEYS, OPTION_VALUES } from '../../core/resolve.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
-import { MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds } from '../../src/hash.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, resolve, validSim } from '../../src/core.ts';
+import { MAX_HASH, MAX_IDS, MAX_REPORTED, SIM_TOKENS, formatHash, parseHash, reportIds } from '../../src/hash.ts';
 import type { Parsed } from '../../src/hash.ts';
 
 const SPACE = spaceOf(CATALOGUE);
@@ -75,6 +75,7 @@ function assertWellFormed(parsed: Parsed, where: string): void {
   for (const key of OPTION_KEYS) {
     assert.ok((OPTION_VALUES[key] as ReadonlyArray<string>).includes(parsed.selection.options[key]), where);
   }
+  assert.ok(validSim(parsed.sim), `the values of the motor simulator for ${where}`);
   assert.ok(parsed.lang === null || parsed.lang === 'en' || parsed.lang === 'de', where);
   assert.equal(typeof parsed.badVersion, 'boolean', where);
   assert.ok(Array.isArray(parsed.unknown) && parsed.unknown.every((x) => typeof x === 'string'), where);
@@ -203,8 +204,37 @@ test('4 and 5: 20 000 random inputs from the generator parse to a well-formed se
   }
 });
 
+test('4: 5000 random inputs under the key m give 1 offered value each, the default for a token that names none', () => {
+  const random = generator(SEED + 11);
+  const pick = <T>(list: ReadonlyArray<T>): T => list[Math.floor(random() * list.length)] as T;
+  const good = SIM_TOKENS.map((x) => x[0]);
+  const bad = ['0s', '7s', '10s', '4S', '471r', '470', '0r', '10k', '4k70', '0w', '0w75', '2W', 'w2', 'triangle', 'Delta', '', '%2C', '1k2,', ' '];
+  for (let index = 0; index < 5000; index++) {
+    const tokens = Array.from({ length: Math.floor(random() * 8) }, () => (random() < 0.6 ? pick(good) : pick(bad)));
+    const hash = `#v=1&m=${tokens.join(',')}`;
+    const where = `${JSON.stringify(hash)} (seed 0x${(SEED + 11).toString(16)}, case ${index})`;
+    const parsed = parseOf(hash, where);
+    assertWellFormed(parsed, where);
+    // The first offered token of each value counts; every other token is named.
+    const want: Record<string, number | string> = { ...DEFAULT_SIM };
+    const set = new Set<string>();
+    for (const token of (new URLSearchParams(hash.slice(1)).get('m') ?? '').split(',')) {
+      const known = SIM_TOKENS.find((x) => x[0] === token);
+      if (known && !set.has(known[1])) {
+        want[known[1]] = known[2];
+        set.add(known[1]);
+      }
+    }
+    assert.deepEqual(parsed.sim, want, where);
+    // The hash the page writes for the values parses back to them, without a notice.
+    const again = parseHash(`#${formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.sim)}`, DEFAULT_OPTIONS);
+    assert.deepEqual(again.sim, parsed.sim, where);
+    assert.deepEqual(again.unknown, [], where);
+  }
+});
+
 test('4: values that are no hash parse to the base setup', () => {
-  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, lang: null, badVersion: false, unknown: [] };
+  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [] };
   for (const value of [undefined, null, 0, 1, true, {}, [], () => '', Symbol('x')]) {
     assert.deepEqual(parseHash(value as unknown as string, DEFAULT_OPTIONS), base);
   }

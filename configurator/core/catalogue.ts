@@ -709,8 +709,8 @@ const parts: Part[] = [
   {
     id: 'sim',
     name: t(
-      'Motor simulator, self-built: 3 resistors, 470 Ω, 2 W',
-      'Motorsimulator, selbst gebaut: 3 Widerstände, 470 Ω, 2 W',
+      'Motor simulator, self-built: 3 resistors in delta, 470 Ω, 2 W',
+      'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck, 470 Ω, 2 W',
     ),
     short: t('Motor simulator', 'Motorsimulator'),
     role: t(
@@ -728,8 +728,8 @@ const parts: Part[] = [
     ],
     buy: [
       buy(null, t('Resistor 470 Ω, 2 W', 'Widerstand 470 Ω, 2 W'), t(
-        'Rated 2 W each, not 0.25 W.',
-        'Je 2 W belastbar, nicht 0,25 W.',
+        'Rated 2 W each, not less.',
+        'Je 2 W belastbar, nicht weniger.',
       ), { qty: 3 }),
     ],
     src: guide('parts'),

@@ -18,6 +18,8 @@ import type { View } from '../view/chooser.ts';
 import { orderStages } from '../view/order.ts';
 import { buyNote, lineName, partsList, qtyText, searchQuery } from '../view/buy.ts';
 import type { BuyLine } from '../view/buy.ts';
+import { simPdfLines } from '../view/sim.ts';
+import { SIM_PART } from '../core.ts';
 import { wiringDiagram } from './diagram.ts';
 import type { Diagram } from './diagram.ts';
 import { lineWords, p } from './text.ts';
@@ -95,7 +97,7 @@ export function shortHash(text: string): string {
 
 /** `rcbench-setup-<hash>-<lang>.pdf`. The hash names the selection, not the language. */
 export function fileName(view: View): string {
-  return `rcbench-setup-${shortHash(formatHash(view.selection, view.lang, view.lang, view.catalogue))}-${view.lang}.pdf`;
+  return `rcbench-setup-${shortHash(formatHash(view.selection, view.lang, view.lang, view.catalogue, view.sim))}-${view.lang}.pdf`;
 }
 
 /** Local calendar date as YYYY-MM-DD. */
@@ -144,6 +146,7 @@ function partItem(view: View, r: View['setup']['parts'][number], why: string): I
   const lines: Sub[] = [];
   if (part.role) lines.push({ text: tx(lang, part.role), muted: true });
   if (why !== '') lines.push({ text: why, muted: false });
+  if (part.id === SIM_PART) lines.push(...simPdfLines(view));
   return { runs: [{ text: tx(lang, part.name) + (variant ? `, ${tx(lang, variant)}` : ''), bold: true }], tags, lines };
 }
 

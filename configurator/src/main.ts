@@ -9,8 +9,10 @@
 // it, and the language when the visitor picks one.
 
 import './style.css';
-import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, removalEffect, resolve } from './core.ts';
+import type { Catalogue, Lang, OptionKey, Options, Selection, Setup, SimSettings } from '../contract.ts';
+import {
+  CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, alwaysOn, deselectEffect, removalEffect, resolve, sameSim, validSim, withSim,
+} from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
 import { HASH_VERSION, formatHash, namesSetup, parseHash, withoutFormerTicks, reportIds, shareAddress, testObjectTicks } from './hash.ts';
@@ -21,6 +23,7 @@ import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
 import { listCsv, listText } from './view/buy.ts';
 import { result, resultError, summary } from './view/result.ts';
+import { simSaid } from './view/sim.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
 
@@ -30,6 +33,8 @@ const storage = browserStore();
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
 
 let selection: Selection = base();
+/** The values of the motor simulator. Part of the link: key `m`. */
+let sim: SimSettings = { ...DEFAULT_SIM };
 let lang: Lang = startLang;
 /** Notices of the link the page opened with. Each is built in the language of the render. */
 let notices: Array<(l: Lang) => Notice> = [];
@@ -47,9 +52,21 @@ const PAN_START = 351;
 
 const byId = (id: string): HTMLElement | null => document.getElementById(id);
 
+/** The catalogue with the motor simulator named for its values. Kept while the values stay. */
+let named: { sim: SimSettings; catalogue: Catalogue } = { sim: { ...DEFAULT_SIM }, catalogue: CATALOGUE };
+function catalogue(): Catalogue {
+  if (!sameSim(named.sim, sim)) named = { sim: { ...sim }, catalogue: withSim(CATALOGUE, sim) };
+  return named.catalogue;
+}
+
+/** The state of a render: the language, the catalogue for the values of the motor simulator, the selection. */
+function viewOf(setup: Setup): View {
+  return { lang, catalogue: catalogue(), setup, options: optionsOf(setup), selection, sim, pending, note };
+}
+
 function tryResolve(sel: Selection): Setup | null {
   try {
-    return resolve(CATALOGUE, sel);
+    return resolve(catalogue(), sel);
   } catch {
     return null;
   }
@@ -65,11 +82,15 @@ function known(sel: Selection): Selection {
   return { functions, owned, options: { ...sel.options } };
 }
 
-/** The stored selection, or null: none is stored, or the catalogue resolves no setup from it. */
-function storedSelection(setup: string | null): Selection | null {
+/**
+ * The stored selection and values of the motor simulator, or null: none is stored, or the catalogue resolves no
+ * setup from it.
+ */
+function storedSelection(setup: string | null): { selection: Selection; sim: SimSettings } | null {
   if (setup === null) return null;
-  const kept = known(testObjectTicks(parseHash(setup, DEFAULT_OPTIONS).selection, CATALOGUE));
-  return tryResolve(kept) ? kept : null;
+  const parsed = parseHash(setup, DEFAULT_OPTIONS);
+  const kept = known(testObjectTicks(parsed.selection, CATALOGUE));
+  return tryResolve(kept) ? { selection: kept, sim: parsed.sim } : null;
 }
 
 function readHash(): void {
@@ -83,8 +104,10 @@ function readHash(): void {
   pending = null;
   note = null;
   if (kept) {
-    selection = kept;
+    selection = kept.selection;
+    sim = kept.sim;
   } else {
+    sim = parsed.sim;
     if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
     // A test object under the owned parts of a link is the tick of its function.
     const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
@@ -97,7 +120,7 @@ function readHash(): void {
   }
   // What the browser kept stands in the address like a change on the page: the link to copy and the PDF read it there.
   // A link stays as it is until a change.
-  const hash = formatHash(selection, lang, startLang, CATALOGUE);
+  const hash = formatHash(selection, lang, startLang, CATALOGUE, sim);
   const restored = kept !== null || (parsed.lang === null && stored.lang !== null);
   if (!linked && restored && hash !== `v=${HASH_VERSION}`) history.replaceState(null, '', `#${hash}`);
 }
@@ -111,12 +134,12 @@ function shareUrl(): string {
 }
 
 function writeHash(): void {
-  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE)}`);
+  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE, sim)}`);
 }
 
 /** Stores the selection of the page. The stored language stays. */
 function storeSetup(): void {
-  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE) });
+  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE, sim) });
 }
 
 /** Stores the language of the page. The stored selection stays. */
@@ -159,13 +182,13 @@ function render(focusId?: string): void {
   if (setup) {
     const asked = pending;
     if (asked && !setup.parts.some((r) => r.part.id === asked.part)) pending = null;
-    const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note };
+    const view = viewOf(setup);
     choose.innerHTML = chooser(view, ownOpen);
     res.innerHTML = result(view, shareUrl(), notices.map((n) => n(lang)), mode);
     sub = `<small>${t(lang, 'bSub', { p: benchParts(setup).length, w: setup.wires.length })}</small>`;
   } else {
     choose.innerHTML = `<h2 id="h-choose">${t(lang, 'choose')}</h2>`;
-    res.innerHTML = resultError(lang, CATALOGUE, shareUrl());
+    res.innerHTML = resultError(lang, catalogue(), shareUrl());
   }
   bar.innerHTML = `<a href="#choose" data-jump="choose">${t(lang, 'bChoose')}</a>`
     + `<a href="#result" data-jump="result"><span>${t(lang, 'bWiring')}${sub}</span></a>`;
@@ -190,7 +213,7 @@ function announce(text: string): void {
 function announceSummary(said: (view: View) => string = () => ''): void {
   const setup = tryResolve(selection);
   if (!setup) return;
-  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  const view = viewOf(setup);
   announce(`${said(view)} ${summary(view)}`.trim());
 }
 
@@ -279,7 +302,7 @@ function showListField(text: string): void {
 function copyList(button: HTMLElement, form: 'text' | 'csv'): void {
   const setup = tryResolve(selection);
   if (!setup) return;
-  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  const view = viewOf(setup);
   const text = form === 'text' ? listText(view, shareUrl()) : listCsv(view);
   const said = t(lang, form === 'text' ? 'copiedText' : 'copiedCsv');
   const done = (): void => {
@@ -469,9 +492,10 @@ document.addEventListener('click', (event) => {
     keepPart();
   } else if (el.id === 'b-pdf') {
     const setup = tryResolve(selection);
-    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, shareUrl());
+    if (setup) void exportPdf(viewOf(setup), shareUrl());
   } else if (el.id === 'b-reset') {
     selection = base();
+    sim = { ...DEFAULT_SIM };
     notices = [];
     pending = null;
     note = null;
@@ -486,7 +510,28 @@ document.addEventListener('click', (event) => {
   }
 });
 
+/** A value of the motor simulator: 1 of the offered ones, or the value stays. */
+function changeSim(select: HTMLSelectElement): void {
+  const key = select.dataset.sim as keyof SimSettings;
+  const value = key === 'wiring' ? select.value : Number(select.value);
+  const next = { ...sim, [key]: value } as SimSettings;
+  if (!(key in sim) || !validSim(next)) return;
+  sim = next;
+  notices = [];
+  pending = null;
+  note = null;
+  writeHash();
+  storeSetup();
+  render(select.id);
+  const setup = tryResolve(selection);
+  if (setup) announce(simSaid(viewOf(setup)));
+}
+
 document.addEventListener('change', (event) => {
+  if (event.target instanceof HTMLSelectElement && event.target.dataset.sim) {
+    changeSim(event.target);
+    return;
+  }
   const input = event.target instanceof HTMLInputElement ? event.target : null;
   if (!input) return;
   if (input.getAttribute('aria-disabled') === 'true') {

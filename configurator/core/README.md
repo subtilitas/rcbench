@@ -20,8 +20,9 @@ data and is not asserted.
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
 | `buy.ts` | `buyRows(part, options)` returns the rows of the parts list that apply to a set of options; `brought(part)` tells whether the visitor brings the part. |
+| `sim.ts` | The motor simulator: the values a visitor chooses (1S to 6S, the E12 values from 100 Ω to 4.7 kΩ, 6 ratings, delta or star), `simHeat(sim)` with the current and the power of each resistor, `withSim(catalogue, sim)` with the part named and listed for the values. See "Motor simulator". |
 | `help.ts` | `FUNCTION_HELP`: what each of the 12 functions with a tick does, in English and German. The help bubble of the chooser opens with it. |
-| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and `buy.ts`, `FUNCTION_HELP` and the default export `core`. |
+| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts`, `buy.ts` and `sim.ts`, `FUNCTION_HELP` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
 | `tools/release-sources.ts` | The check of `../package.json` against `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h` and against the release numbers in the Markdown files of the configurator. `tools/check.ts` runs it. |
 | `tools/check-annotate.sh` | Runs `tools/check.ts --strict` in a GitHub Actions job and shows each warning as an annotation and in the summary of the run. |
@@ -226,6 +227,38 @@ Osoyoo Breakout Board for Pico series, WeAct Studio PD Power Mini V1 Buck (the
 maker's GitHub repository) and Matek I2C-INA-BM. Each answered with HTTP 200 on
 2026-10-13. The DAOKAI INA3221 board has no known maker page.
 
+## Motor simulator
+
+The part `sim` is 3 resistors on the phase wires of the ESC. The data file
+names it for the default values: 470 Ω, 2 W, delta. `withSim(catalogue, sim)`
+returns the catalogue with the name of the part and the order name and the
+check line of its row for other values; every other record is the same
+object, and the default values return the catalogue itself. The values change
+no wire, no rule and no function, and the resolver does not read them.
+
+| Value | Offered | Default |
+| --- | --- | --- |
+| `cells` | 1 to 6, at `CELL_VOLTS` = 4.2 V per cell | 4 |
+| `ohms` | 100, 120, 150, 180, 220, 270, 330, 390, 470, 560, 680, 820, 1000, 1200, 1500, 1800, 2200, 2700, 3300, 3900, 4700 | 470 |
+| `watts` | 0.25, 0.5, 1, 2, 3, 5 | 2 |
+| `wiring` | `delta`, `star` | `delta` |
+
+`simHeat(sim)` takes 1 commutation step held at the full pack voltage V:
+
+- delta: the resistor across the driven pair carries V/R and takes V²/R, the
+  other 2 carry V/(2R) and take V²/(4R) each;
+- star: 2 resistors carry V/(2R) and take V²/(4R) each, the third carries no
+  current.
+
+Its `level` is `over` above the rating, `hint` from `HINT_SHARE` (0.5) of the
+rating, else `ok`. The current limit of the ESC is not modelled.
+
+`test/sim.test.ts` holds the formulas to both check figures (470 Ω at 6S in
+delta: 53.6 mA, 1.35 W; 450 Ω at 16.8 V in star: 18.7 mA, 0.157 W), to both
+wirings at 1S and 6S, to the sum of the 3 powers over all 1512 combinations,
+to the grid points next to both thresholds, and every name and row to the
+text rules.
+
 ## Checks
 
 `tools/check.ts` reports each finding with the id of the record.
@@ -359,7 +392,7 @@ reachable, English and German for every text, no word of the list in
 
 ## Coverage
 
-Line coverage of the resolver and the groups, measured by `node --test --experimental-test-coverage`.
+Line coverage of the resolver, the groups and the motor simulator, measured by `node --test --experimental-test-coverage`.
 `tools/check.ts` and `catalogue.ts` are not part of the figure.
 
 <!-- coverage:begin -->
@@ -368,6 +401,7 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 | `resolve.ts` | 215 | 215 | 100.0 % |
 | `cond.ts` | 51 | 51 | 100.0 % |
 | `groups.ts` | 416 | 416 | 100.0 % |
+| `sim.ts` | 120 | 120 | 100.0 % |
 <!-- coverage:end -->
 
 ## Unknown in the data

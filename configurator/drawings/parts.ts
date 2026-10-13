@@ -328,8 +328,8 @@ function batt(d: Dwg): void {
 // ---------------------------------------------------------------- motor simulator
 function sim(d: Dwg): void {
   const A = [150, 62], B = [62, 196], C = [238, 196];
-  const bands: Array<[number, string]> = [[0.2, '#e2c21f'], [0.34, '#7d3fb0'], [0.48, '#6b4423'], [0.8, '#c9a54a']];
-  const o = { len: 78, wd: 20, colour: '#4f93c8', bands };
+  // No colour bands: the visitor chooses the resistance on the page, and the drawing names no value.
+  const o = { len: 78, wd: 20, colour: '#4f93c8' };
   d.add(d.axial(A[0], A[1], B[0], B[1], o), d.axial(B[0], B[1], C[0], C[1], o), d.axial(C[0], C[1], A[0], A[1], o));
   const stub = (p: number[], q: number[]): string => d.bare(p[0]!, p[1]!, q[0]!, q[1]!);
   const eA = [150, 28], eB = [30, 214], eC = [270, 214];

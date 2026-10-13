@@ -168,5 +168,11 @@
   "page-f-servoprog": [1,2,3,4,8,9,10,64],
   "page-f-servoprog-p-pdmini": [1,2,3,4,8,16,17,18,19,20,21,63,64],
   "page-f-servoprog-o-osoyoo-servo5v": [1,2,3,4,8,61,64,65,66],
-  "page-f-servo-o-osoyoo-servo5v": [1,2,3,4,7,8,61,65,66]
+  "page-f-servo-o-osoyoo-servo5v": [1,2,3,4,7,8,61,65,66],
+  "page-m-sim": [1,2,3,4],
+  "page-m-tap-de": [1,2,3,4,11,12,13,14,15,48,49,50,51,52,53],
+  "page-m-without-sim": [1,2,3,4,7,8,9,10],
+  "hand-m-defaults": [1,2,3,4],
+  "bad-id-m-unknown": [1,2,3,4],
+  "bad-id-m-twice": [1,2,3,4]
 }

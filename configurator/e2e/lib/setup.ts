@@ -3,8 +3,8 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
-import type { Lang, Options, Selection } from '../../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
+import type { Lang, Options, Selection, SimSettings } from '../../contract.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, resolve, withSim } from '../../src/core.ts';
 import { formatHash } from '../../src/hash.ts';
 
 /** The selectors of the page the tests share. A change of the markup is made here once. */
@@ -22,7 +22,8 @@ export const SEL = {
   rowNumber: 'table.wires tbody tr td.n b',
   // The cards of the bench parts and of the test objects. The cards of the power sources and the rows of the parts list are no parts.
   part: '.parts:not(.power):not(.buy) > li',
-  notice: '.msg:not(#note)',
+  // The warning and the hint of the motor simulator belong to its card, not to the selection.
+  notice: '.msg:not(#note):not([id^="sim-"])',
   note: '#note',
   summary: '#result .sum p',
   own: '#own',
@@ -138,9 +139,9 @@ function inOrder(ids: string[], order: string[]): string[] {
 }
 
 /** The name on the card of each part under a set of options. */
-function cardNames(lang: Lang, options: Options): Map<string, string> {
+function cardNames(lang: Lang, options: Options, sim: SimSettings): Map<string, string> {
   const names = new Map<string, string>();
-  for (const part of CATALOGUE.parts) {
+  for (const part of withSim(CATALOGUE, sim).parts) {
     const variant = part.variantName ? part.variantName.names[options[part.variantName.option]] : undefined;
     names.set(part.name[lang] + (variant ? `, ${variant[lang]}` : ''), part.id);
   }
@@ -162,6 +163,7 @@ export async function readSetup(page: Page): Promise<Shown> {
       owned: all<HTMLInputElement>('input[data-p]').filter((i) => i.checked).map((i) => i.dataset.p ?? ''),
       removable: all<HTMLElement>('button[data-rm]').map((b) => b.dataset.rm ?? ''),
       options,
+      sim: Object.fromEntries(all<HTMLSelectElement>('select[data-sim]').map((s) => [s.dataset.sim ?? '', s.value])),
       partNames: all(`${sel.part} > div:first-child > b:first-of-type`).map((b) => (b.textContent ?? '').trim()),
       wires: all(sel.rowNumber).map((b) => Number(b.textContent)),
       drawn: all(sel.wire).length,
@@ -171,12 +173,15 @@ export async function readSetup(page: Page): Promise<Shown> {
     };
   }, { part: SEL.part, rowNumber: SEL.rowNumber, wire: SEL.wire, notice: SEL.notice, note: SEL.note, summary: SEL.summary });
   const lang: Lang = raw.lang === 'de' ? 'de' : 'en';
-  const names = cardNames(lang, { ...DEFAULT_OPTIONS, ...raw.options } as Options);
+  const sim: SimSettings = raw.sim.cells === undefined ? DEFAULT_SIM
+    : { cells: Number(raw.sim.cells), ohms: Number(raw.sim.ohms), watts: Number(raw.sim.watts), wiring: raw.sim.wiring === 'star' ? 'star' : 'delta' };
+  const { sim: _sim, ...rest } = raw;
+  const names = cardNames(lang, { ...DEFAULT_OPTIONS, ...raw.options } as Options, sim);
   const cards = raw.partNames
     .map((name) => ({ name, id: names.get(name) ?? `?${name}` }))
     .sort((a, b) => place(PARTS, a.id) - place(PARTS, b.id));
   return {
-    ...raw,
+    ...rest,
     functions: inOrder(raw.functions, FUNCTIONS),
     owned: inOrder(raw.owned, PARTS),
     removable: inOrder(raw.removable, PARTS),

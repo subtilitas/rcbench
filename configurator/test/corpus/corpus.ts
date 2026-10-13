@@ -8,8 +8,8 @@
 
 import { readFileSync } from 'node:fs';
 
-import type { Lang, Options, Selection } from '../../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
+import type { Lang, Options, Selection, SimSettings } from '../../contract.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, resolve, sameSim } from '../../src/core.ts';
 import { formatHash, parseHash, reportIds, withoutFormerTicks, testObjectTicks } from '../../src/hash.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
@@ -33,6 +33,8 @@ export type Outcome = {
   parts: string[];
   /** The functions the setup enables, in catalogue order. */
   enabled: string[];
+  /** The values of the motor simulator. Absent when they are the default. */
+  sim?: SimSettings;
 };
 
 export type Entry = {
@@ -99,9 +101,10 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
     lang,
     notices,
     reported: unknown.length > 0 ? reportIds(unknown) : '',
-    canonical: `#${formatHash(selection, lang, startLang, CATALOGUE)}`,
+    canonical: `#${formatHash(selection, lang, startLang, CATALOGUE, parsed.sim)}`,
     parts: shown.parts.map((p) => p.part.id),
     enabled: shown.functions.filter((f) => f.enabled).map((f) => f.fn.id),
+    ...(sameSim(parsed.sim, DEFAULT_SIM) ? {} : { sim: parsed.sim }),
     wires: shown.wires.map((w) => w.n),
   };
 }

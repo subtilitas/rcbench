@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- Configurator: the card of the motor simulator calculates the heat per
+  resistor. Inputs: the LiPo pack (1S to 6S at 4.2 V per cell, default 4S,
+  16.8 V), the resistance (the 21 E12 values from 100 Ω to 4.7 kΩ, default
+  470 Ω), the rating (0.25, 0.5, 1, 2, 3 or 5 W, default 2 W) and the wiring
+  (delta, the default, or star). The load case is 1 commutation step held at
+  the full pack voltage V: in delta 1 resistor takes V²/R and 2 take V²/(4R),
+  in star 2 take V²/(4R) and 1 none. The card shows current in mA, power in
+  W and the share of the rating, a warning above the rating and a hint from
+  50 % of it. The current limit of the ESC is not modelled. The link key `m`
+  stores the values that differ from the default; a link without it opens
+  the default values. The name of the part, its row in the parts list, the
+  text and CSV copies and the PDF follow the values. The drawing of the
+  motor simulator shows no colour bands and names no resistance.
 - Configurator: every function with a tick and every part under "Parts you
   own" has a help bubble in English and German. It says what the item does
   and what it needs: the bench parts, the test object and the variant the
