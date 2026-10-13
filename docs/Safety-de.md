@@ -115,7 +115,7 @@ STATUS-Page lesen das Failsafe und den Heartbeat und nicht den Latch: nach
 einem Start meldet STATUS Idle ohne Fault-Bit, und ein ON der Versorgung wird
 vor dem ersten Schalten auf ARMED angenommen. Der Latch steht nicht auf STATUS. Ein
 Koprozessor mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
-Panel als `Koprozessor SAFE -- erneut ARM` meldet.
+Panel als `Koprozessor auf SAFE -- erneut ARM` meldet.
 
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
 Koprozessor nicht mehr, während der Prüfstand ARMED ist oder ein Schalten auf ARMED

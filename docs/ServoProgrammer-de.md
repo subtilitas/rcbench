@@ -50,7 +50,7 @@ bevor man sich auf ein Schreiben verlässt.
   Puls darauf, und seine Zeile **PULSBREITE** zeigt `---`.
 - Programmieren und ein Prüfstand in ARMED schließen sich aus.
   **VERBINDEN** wird abgelehnt mit
-  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARMED für
+  `Erst DISARM: bei ARMED wird der Port nicht übernommen.`, wenn ARMED für
   irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
   den Prüfstand auf ARMED: **ARM** auf SERVO und auf MOTOR & ESC ist
@@ -160,7 +160,7 @@ Overlay wieder offen.
 | `Der Programmier-Port hat keinen Pin. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
 | `Der Koprozessor hat diesen Programmier-Port nicht.` | der Koprozessor hat weniger Ports als den angefragten |
 | `Programmierspannung oder -strom über den SUPPLY-Grenzen.` und `Unter WEITERES senken oder Grenze anheben. Nichts gesetzt.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMGRENZE über seiner Stromgrenze; nichts wird gesendet |
-| `Erst DISARM: bei ARM wird der Port nicht übernommen.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
+| `Erst DISARM: bei ARMED wird der Port nicht übernommen.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
 | `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter dem Eingang des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8 V. Programmieren braucht 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
 | `Versorgung schaltete nicht in 3000 ms. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |

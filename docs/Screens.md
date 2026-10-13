@@ -67,7 +67,7 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
-- "touch did not answer -- the bench will not arm", shown at start, stays
+- "touch did not answer -- the bench will not switch to ARMED", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
 
@@ -102,7 +102,7 @@ the same protocol and be different builds, and this is where that shows.
 
 A missing card or an unusable NVS (non-volatile storage) is a warning. A
 touch controller that does not answer, or a coprocessor with a different
-protocol major version, is a failure and the bench will not arm.
+protocol major version, is a failure and the bench does not switch to ARMED.
 
 When every step has answered, the splash hands over to the menu after a hold
 of 1.6 s; a tap skips the hold.

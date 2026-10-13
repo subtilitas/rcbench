@@ -57,6 +57,14 @@ history is in git.
 
 ### Changed
 
+- The bench states are named SAFE and ARMED in English and German, as the
+  status band shows them: in the panel texts, the docs and the configurator.
+  The action reads "switches the bench to SAFE" / "schaltet den Prüfstand
+  auf SAFE". The ESC STICK red-light results DISARMED and NOT ARMED read SAFE
+  and STILL SAFE (German NOCH SAFE); the servo report's abort reason reads
+  `bench SAFE`. The ARM and DISARM buttons, the protocol's command, register
+  and error names (NOT_ARMED) and the OpenYGE state `DISARMED` keep their
+  names.
 - `tools/check_protocols.py` checks that a module's `README.md` has an
   "Interface" heading, a heading with "Trademark" in it where it names a
   brand, and the words "no pin driver" where the module has no `rp2350/`

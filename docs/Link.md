@@ -76,7 +76,7 @@ register is added at the end, which an older panel can ignore.
 A coprocessor reporting a protocol major other than the panel's is treated as
 absent: the link stays down, the splash screen marks the coprocessor step
 failed beside the version it reported, the panel logs both majors and raises
-the alert `protocol mismatch -- will not arm`, and no write reaches the
+the alert `protocol mismatch -- will not switch to ARMED`, and no write reaches the
 coprocessor. Its outputs stay off, and the panel runs as it does with no
 coprocessor connected. A panel and a coprocessor on different sides of a
 major bump are therefore flashed together.

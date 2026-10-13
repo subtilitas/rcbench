@@ -47,7 +47,7 @@ before a write is relied on.
   its **COMMANDED** row reads `---`.
 - Programming and the ARMED state are exclusive. **CONNECT** on a bench that
   is ARMED for any role, asked to arm or has a finger on **ARM** is refused with
-  `DISARM first: the port is not taken on an armed bench.` While the port
+  `DISARM first: the port is not taken while ARMED.` While the port
   is held, from **CONNECT** until it reports PWM, no screen switches the bench to ARMED:
   **ARM** on SERVO and on MOTOR & ESC is drawn disabled and takes no press,
   and a run of the ESC stick programmer does not start and says
@@ -147,7 +147,7 @@ overlay is open again at the next entry.
 | `The programming port holds no pin. Nothing was sent.` | a slot of OUTPUTS holds the port's pin |
 | `The coprocessor has no such programming port.` | the coprocessor has fewer ports than the one asked for |
 | `Programming voltage or current is over the SUPPLY limits.` and `Lower it under MORE, or raise the limit. Nothing was set.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
-| `DISARM first: the port is not taken on an armed bench.` | the bench is ARMED or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
+| `DISARM first: the port is not taken while ARMED.` | the bench is ARMED or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
 | `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage the session runs at less than 0.7 V under the PD mini's input; the supply is not changed |
 | `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the coprocessor |
 | `The supply did not switch within 3000 ms. Check it.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
