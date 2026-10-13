@@ -55,7 +55,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SPLASH_LINK]            = "LINK",
     [TX_SPLASH_IOMCU]           = "KOPROZESSOR",
     [TX_SPLASH_TAGLINE]         = "Prüfstand für Motor, ESC und Servo",
-    [TX_SPLASH_CREDIT]          = "erstellt mit Claude Code",
+    [TX_SPLASH_CREDIT]          = "Designed by JuWi",
 
     /* ------------------------------------------------------- bus fault */
     [TX_BF_BUS_OFF_TEXT]        = "Panel ist vom Bus getrennt",
