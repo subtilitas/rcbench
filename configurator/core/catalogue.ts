@@ -1882,7 +1882,7 @@ const safety: Catalogue['safety'] = [
   {
     text: t(
       '<b>STOP</b> disarms, switches the PD mini output off, and latches until the next ARM. Arming is a 2 s hold on ARM; disarming is a press; leaving a bench screen disarms.',
-      '<b>STOP</b> entschärft, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Scharf schalten: ARM 2 s halten. Entschärfen: kurz tippen. Auch das Verlassen einer Prüfstandsseite entschärft.',
+      '<b>STOP</b> sichert, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Scharf schalten: ARM 2 s halten. Sichern: kurz tippen. Auch das Verlassen einer Prüfstandsseite sichert.',
     ),
     src: guide('safety'),
   },

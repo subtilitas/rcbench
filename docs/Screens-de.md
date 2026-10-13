@@ -23,8 +23,8 @@ Der Arm-Chip nennt, was ein ARM treibt:
 | ARMED SERVO | die Surfaces und ein pulsender PROG PORT, von SERVO; kein Throttle-Ausgang |
 | ARMED | jeder gebundene Ausgang, an einem Koprozessor älter als Protokoll 4.18 |
 
-STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
-Prüfstand bleibt entschärft, bis er erneut scharf geschaltet wird. Ein
+STOP funktioniert auf jedem Bildschirm. Es sichert und rastet ein: der
+Prüfstand bleibt gesichert, bis er erneut scharf geschaltet wird. Ein
 Bildschirmwechsel, ein ablaufender Hinweis oder ein zurückkehrender Link hebt
 einen Stopp nicht auf.
 
@@ -145,7 +145,7 @@ scharf, nicht nur die hier genannten Pins.
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
 
 Die Kurve ist die Aufzeichnung eines Laufs. Sie läuft nur, solange der
-Prüfstand scharf ist: das Scharfschalten löscht sie, das Entschärfen hält sie
+Prüfstand scharf ist: das Scharfschalten löscht sie, das Sichern hält sie
 so an, wie sie stand. Die Beschriftung der Fläche liest `TELEMETRIE LIVE`,
 solange sie läuft, `TELEMETRIE, LETZTER LAUF`, solange sie einen Lauf hält, und
 `TELEMETRIE RUHT` vor dem ersten Scharfschalten, wenn im Plot
@@ -158,7 +158,7 @@ Das Fenster ist 534 Spalten breit bei 20 Abtastungen je Sekunde, also 26,7 s.
 Ein längerer Lauf hält seine letzten 26,7 s; was davor liegt, steht in der
 CSV-Datei und nicht auf dem Bildschirm.
 
-Die Kurve endet beim Entschärfen, nicht wenn der Motor steht. Das Entschärfen
+Die Kurve endet beim Sichern, nicht wenn der Motor steht. Das Sichern
 kommandiert null Gas, und die Luftschraube läuft danach aus. Dieses Auslaufen
 steht auf den Anzeigen und nicht im Plot, und auch nicht in der CSV-Datei, die
 an derselben Flanke schliesst.
@@ -189,19 +189,19 @@ Bedienelement tut:
 | Der Track | abgelehnt: kein Kommando, Schieberegler und Anzeige bleiben; gedimmt gezeichnet | bewegt das Gas um den Weg des Fingers |
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
-| ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | entschärft bei einem Tap |
+| ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | sichert bei einem Tap |
 | SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
 Nicht scharf zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
-vom Entschärfen an nicht scharf, bis er scharf meldet: Auch ein
+vom Sichern an nicht scharf, bis er scharf meldet: Auch ein
 Bedienelement, das nach dem durchgelaufenen Halten auf ARM und vor dieser
 Meldung berührt wird, wird abgelehnt. Von einem DISARM an, das der
 Bildschirm anfordert, durch den Tap oder durch das Verlassen, oder einem
-STOP auf einem scharfen Prüfstand, bis der Prüfstand entschärft meldet,
+STOP auf einem scharfen Prüfstand, bis der Prüfstand gesichert meldet,
 werden die Bedienelemente ebenfalls abgelehnt.
 
-Ein Entschärfen setzt das Gas auf 0 %, gleich wie es geschieht: der Tap auf
+Ein Sichern setzt das Gas auf 0 %, gleich wie es geschieht: der Tap auf
 DISARM, STOP, eine verlorene Verbindung, ein Touch-Controller, der nicht
 mehr antwortet, oder das Verlassen des Bildschirms. Schieberegler, Anzeige
 und die Schritte `-1` und `+1` bleiben dann bis zum nächsten Scharfschalten
@@ -209,9 +209,9 @@ auf 0,0 %; das erste `+1` nach einem Scharfschalten fordert also 1,0 % an,
 und die erste Knopfdrehung von 1 % fordert 1,0 % an. Auch ein Prüfstand, der
 ohne das Halten auf ARM scharf wird, durch einen Knüppel-Lauf auf
 PROGRAMMER, beginnt bei 0 %. Ein Gas, das der Bildschirm gepostet und das
-Panel noch nicht gesendet hat, wenn der Prüfstand entschärft, wird nicht
+Panel noch nicht gesendet hat, wenn der Prüfstand gesichert wird, wird nicht
 gesendet. Ein Finger, der auf dem Track liegt, wenn der Prüfstand scharf
-wird oder entschärft, bewegt nichts, bis er abhebt und neu drückt.
+wird oder gesichert wird, bewegt nichts, bis er abhebt und neu drückt.
 
 ARM wird gehalten. Die Füllung blendet über zwei Sekunden von Grün ins
 Gefahrenrot, und der Prüfstand schaltet scharf, wenn die Blende
@@ -222,7 +222,7 @@ Der Finger muss auf dem Button bleiben. Verlässt er ihn, ist das Halten
 abgebrochen — die Geste ist der Kontakt mit dem Bedienelement und nicht mit
 dem Panel. Zurückrutschen setzt es nicht fort: der Kontakt ist für ARM
 beendet, und Scharfschalten verlangt danach, den Finger abzuheben und neu zu
-drücken. Wird der Prüfstand unter einem noch gehaltenen Finger unscharf,
+drücken. Wird der Prüfstand unter einem noch gehaltenen Finger gesichert,
 endet die Geste ebenfalls — sonst würde genau der Kontakt, mit dem angehalten
 wurde, zwei Sekunden später wieder scharf schalten. Das Scharfschalten lässt den ganzen Button
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
@@ -394,8 +394,8 @@ lässt noch nicht los: Der Bildschirm wiederholt die letzte Stellung alle
 SERVO_HOLD_MS, ein Servo bleibt also stehen, wo es hingestellt wurde. Erst
 **FREIGEBEN**, die Schaltfläche, führt die Ruderflächen auf die Mitte zurück --
 und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
-ihres Wegs. Beendet werden die Flanken durch ein Entschärfen oder durch das
-Verlassen des Bildschirms, was entschärft. Bei eingeschaltetem Drehknopf
+ihres Wegs. Beendet werden die Flanken durch ein Sichern oder durch das
+Verlassen des Bildschirms, was sichert. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
 ([der Knopf](#anwendung-der-drehknopf)).
 
@@ -427,14 +427,14 @@ einen Impuls der Länge null, und der
 Bildschirm nimmt keine Stellung an: Der befohlene Wert ändert sich nur,
 solange das Servo ihm folgt. Der Knopf ist ein
 Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
-und ein Druck darauf im scharfen Zustand schaltet unscharf. Das Verlassen des
-Bildschirms schaltet unscharf und gibt den Pin frei: ein Bildschirm, den man
+und ein Druck darauf im scharfen Zustand sichert. Das Verlassen des
+Bildschirms sichert und gibt den Pin frei: ein Bildschirm, den man
 nicht sieht, darf weder ein Servo halten noch den Prüfstand scharf
 zurücklassen.
 
-Was jedes Bedienelement auf einem unscharfen Prüfstand tut:
+Was jedes Bedienelement auf einem gesicherten Prüfstand tut:
 
-| Bedienelement | Unscharf | Scharf |
+| Bedienelement | Gesichert | Scharf |
 | --- | --- | --- |
 | Das Zifferblatt | abgelehnt: kein Kommando, Horn und PULSBREITE bleiben | befiehlt die Stellung unter dem Finger |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Horn vom befohlenen Wert aus |
@@ -446,13 +446,13 @@ Was jedes Bedienelement auf einem unscharfen Prüfstand tut:
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
 
-Unscharf wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
+Gesichert wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
 ARM`. Horn und PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
-Neustart PULS CENTRE. Eine unscharf geänderte Pulsbreiten-Einstellung ändert
+Neustart PULS CENTRE. Eine im gesicherten Zustand geänderte Pulsbreiten-Einstellung ändert
 die Mikrosekunden, die PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
 ihn nicht. Von einem DISARM an, das der Bildschirm anfordert, durch den Tap
 oder durch das Verlassen, oder einem STOP auf einem scharfen Prüfstand, bis
-der Prüfstand unscharf meldet, gilt die Spalte Unscharf ebenfalls, und ein
+der Prüfstand gesichert meldet, gilt die Spalte Gesichert ebenfalls, und ein
 Sweep, eine Pause, eine gehaltene Stellung und ein Lauf des automatischen
 Tests enden dort, wo es angefordert wird.
 
@@ -466,9 +466,9 @@ Pulsbreite, die auf einem scharfen Prüfstand vor der ersten Stellung geändert
 wird, verschiebt die Ruhelage und den Wert mit ihr.
 
 Ein Finger auf dem Zifferblatt bewegt nichts, wenn der Prüfstand scharf wird,
-unscharf wird oder stoppt, bis er abhebt und neu drückt. Eine Stellung, ein
+gesichert wird oder stoppt, bis er abhebt und neu drückt. Eine Stellung, ein
 Sweep oder eine Pause, die der Bildschirm gepostet und das Panel noch nicht
-gesendet hat, wenn der Prüfstand unscharf wird oder stoppt, wird nicht
+gesendet hat, wenn der Prüfstand gesichert wird oder stoppt, wird nicht
 gesendet, und eine Knopfdrehung in diesem Zustand wird zurückgenommen: Der
 Wert kehrt auf den vor der Drehung zurück.
 
@@ -1146,7 +1146,7 @@ OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
 des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
 des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
 Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
-in dem der Prüfstand unscharf ist und kein Scharfschalten wartet, der Ausgang
+in dem der Prüfstand gesichert ist und kein Scharfschalten wartet, der Ausgang
 des Netzteils aus ist und kein ON eingereiht ist und das Foto der Platine
 weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
@@ -1211,7 +1211,7 @@ Ein Messwert, der nicht ankam, ist eine leere Zelle. `mode` ist CV, CC oder
 OFF und leer, solange das Netzteil nicht antwortet. `source` ist `measured`
 für die Werte des PD mini und `model` für das Modell des Panels. Der Prüfstand hat beim
 Log Vorrang: ARM während eines Netzteil-Laufs beendet dessen Datei, und ein
-Ausgang, der beim Unscharfschalten noch an ist, beginnt eine neue. Ladung und
+Ausgang, der beim Sichern noch an ist, beginnt eine neue. Ladung und
 Energie dieser Datei zählen von den Summen seit dem Einschalten des Ausgangs
 weiter, wie auf dem Bildschirm; ihre erste Zeile beginnt also nicht bei 0. Das
 Netzteil wird in seinem eigenen 50-ms-Takt geführt und geloggt, auch während
@@ -1403,7 +1403,7 @@ versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
 beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
-entschärft. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
+gesichert. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
 ist, mindestens 150 ms:
 
 ![Ein Lauf](img/de/programmer-stick-run.png)
@@ -1680,15 +1680,15 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   verlorene Touch-Ereignisse, wird das Kommando zurückgenommen, und der
   Regler kehrt auf seinen Wert vor dem Knopf zurück.
 - Der Knopf ersetzt nur ein Gas oder eine Horn-Position. Wartet ein anderes
-  Kommando auf den Frame (ein eben vollendetes Schärfen, ein Entschärfen, ein
+  Kommando auf den Frame (ein eben vollendetes Schärfen, ein Sichern, ein
   Zurücksetzen der Spitzen, ein Freigeben), wird die Bewegung des Knopfs in
   diesem Frame verworfen, nicht aufgehoben.
-- Auf SERVO bewegt eine Drehung auf einem unscharfen Prüfstand nichts und
+- Auf SERVO bewegt eine Drehung auf einem gesicherten Prüfstand nichts und
   wird nicht aufgehoben. Das ARM setzt das Horn auf die Ruhelage, und die
   nächste Drehung zählt von dort. Eine gepostete und noch nicht gesendete
-  Drehung wird zurückgenommen, wenn der Prüfstand unscharf wird oder stoppt.
+  Drehung wird zurückgenommen, wenn der Prüfstand gesichert wird oder stoppt.
   Auch auf MOTOR & ESC bewegt eine Drehung auf einem nicht scharfen
-  Prüfstand nichts und wird nicht aufgehoben; das Entschärfen setzt den
+  Prüfstand nichts und wird nicht aufgehoben; das Sichern setzt den
   Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
   dort.
 - Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
@@ -1741,7 +1741,7 @@ Takt. Ein Messwert am oberen Ende des Bereichs des INA3221, 163,8 mV über dem
 Shunt, wird als übersteuert gezeigt und nie als Wert.
 
 Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung auf die
-SENSE-Page des Koprozessors (Protokoll 4.7), nur bei unscharfem Prüfstand,
+SENSE-Page des Koprozessors (Protokoll 4.7), nur bei gesichertem Prüfstand,
 und nur, was von dem abweicht, was die Page hält: der Koprozessor lehnt eine
 Änderung ab, solange er Ausgänge treibt, und legt jede Änderung im Flash ab.
 Bei jedem Link-Aufbau liest es die Page zuerst, eine Einstellung, die der
@@ -1798,7 +1798,7 @@ SETUP ändert. Pins, die das Paar eines I2C-Blocks sind und abgelehnt wurden,
 weil ein Ausgang, der PD mini oder die Platine einen davon hält, werden alle
 5 s ohne weiteren Alert erneut angeboten; einen Pin unter OUTPUTS oder
 NETZTEIL freizugeben öffnet den Bus also. Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand
-nicht unscharf: auf den Messwerten der Monitore löst nichts aus.
+nicht gesichert: auf den Messwerten der Monitore löst nichts aus.
 
 #### Eine Zeile, die der Koprozessor nicht hält
 
@@ -1817,7 +1817,7 @@ Perioden.
 
 | Die Marke steht | Bis |
 | --- | --- |
-| ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei unscharfem Prüfstand |
+| ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei gesichertem Prüfstand |
 | auf einem Wert, den der Koprozessor abgelehnt hat | der Wert auf einen geändert ist, den er annimmt; bei anderswo belegten Pins, bis der Versuch alle 5 s angenommen wird |
 | auf INA228, INA3221 oder AS5600 auf EIN, während die Page das Bauteil aus hat | die Ursache weg ist: ein abgelehnter Frame, Sensor-SDA auf −1, beide Monitore auf einer Adresse, ein Koprozessor älter als das Bauteil |
 | nach einem Neustart des Koprozessors oder einem Link-Aufbau auf dem, was seine Page anders liest | das Panel es geschrieben hat |
@@ -1839,7 +1839,7 @@ Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
 | AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. ENC-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
 
 Das Panel schreibt das Freigabe-Bit mit dem Rest des Bus-Frames, 500 ms nach
-der letzten Änderung und nur bei unscharfem Prüfstand, an einen Koprozessor,
+der letzten Änderung und nur bei gesichertem Prüfstand, an einen Koprozessor,
 der Protokoll 4.9 nennt; einem älteren wird nichts gesendet. Solange der Encoder
 freigegeben ist, liest es die Register 12 bis 31 von SENSE alle 40 ms. Das Band
 sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
@@ -1868,7 +1868,7 @@ des Koprozessors liest die Phase über einen Vorwiderstand und eine
 Zener-Klemme; der Koprozessor misst die Zeiten der Flanken am Pin und meldet
 Länge und Tonhöhe jedes Pieptons. Die Verdrahtung steht nicht im Bauhandbuch.
 Der Abgriff ist ein Eingang: er treibt nichts, und der Koprozessor nimmt eine
-Änderung bei scharfem wie bei unscharfem Prüfstand an. Seine Zeilen folgen den
+Änderung bei scharfem wie bei gesichertem Prüfstand an. Seine Zeilen folgen den
 Pins des Busses:
 
 | Einstellung | Bereich | Standard | |
@@ -2068,10 +2068,10 @@ beiden Einstellungen gehen an die als Motor gebundenen Kanäle und an keine
 anderen: ein SERVO-PWM-Kanal behält 1000 bis 2000 us oder den Bereich, den der
 SERVO-Bildschirm für das dort gewählte Servo sendet. Eine Änderung erreicht
 den Coprozessor 300 ms nach der letzten Eingabe, solange der Prüfstand nicht
-scharf ist; eine Änderung im scharfen Zustand wartet auf das Entschärfen.
+scharf ist; eine Änderung im scharfen Zustand wartet auf das Sichern.
 Ein Coprozessor, der sich verbindet, bekommt die beiden Einstellungen, bevor
 der Prüfstand ihn treibt: bei einem schon scharfen Prüfstand bleibt er
-entschärft, bis er sie hat. Ein
+gesichert, bis er sie hat. Ein
 Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das
 Band zeigt `Leerlaufpuls muss unter dem Vollpuls liegen -- nicht gesendet`.
 
@@ -2280,7 +2280,7 @@ Pad aus der Form gezeichnet, und die Tasten liegen an denselben Stellen:
 Das Foto wird einmal je Platine über den Link geholt und im Flash des Panels
 behalten. Es kostet also etwa zehn Sekunden, wenn eine Platine zum ersten Mal
 gesehen wird, und danach nichts. Das Schreiben in den Flash wartet auf einen
-entschärften Prüfstand mit ausgeschaltetem Netzteil und hält zwischen zwei
+gesicherten Prüfstand mit ausgeschaltetem Netzteil und hält zwischen zwei
 Sektoren von 4 kB an, wenn der Prüfstand scharf wird oder das Netzteil
 einschaltet ([Sicherheit](Safety-de.md#verhaltensweisen-die-absicht-sind)).
 Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht

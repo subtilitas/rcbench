@@ -413,10 +413,10 @@ gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
 Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei entschärfter
+Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei gesicherter
 Bank. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
 eingeschaltet hält: wird AS5600 bei scharfer Bank eingeschaltet, hat der Lauf
-keine Winkelspalten, bis das Setup in entschärftem Zustand übernommen ist.
+keine Winkelspalten, bis das Setup in gesichertem Zustand übernommen ist.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
 oder ENC-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
@@ -524,8 +524,8 @@ Sensor keinen Magneten meldet.
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
 Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen der Seite, die entschärfen. Ein Schritt, den der Lauf gepostet und
-das Panel noch nicht gesendet hat, wenn der Prüfstand unscharf wird oder
+Verlassen der Seite, die sichern. Ein Schritt, den der Lauf gepostet und
+das Panel noch nicht gesendet hat, wenn der Prüfstand gesichert wird oder
 stoppt, wird nicht gesendet. Nach einem Lauf, den ein Disarm, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und PULSBREITE auf der
 Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
@@ -542,7 +542,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | Grund im Bericht | Ursache |
 | --- | --- |
 | `STOP` | STOP in der Leiste |
-| `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
+| `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand gesichert hat |
 | `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, PROGRAMM. |
@@ -730,7 +730,7 @@ Prüfstand scharf ist, also solange ein Pin ihr folgt.
 
 | Prüfstand | Befohlene Stellung |
 | --- | --- |
-| unscharf | die zuletzt gefahrene Stellung; Zifferblatt, Drehknopf, ZENTRIEREN und SWEEP werden abgelehnt, und nichts wird gesendet |
+| gesichert | die zuletzt gefahrene Stellung; Zifferblatt, Drehknopf, ZENTRIEREN und SWEEP werden abgelehnt, und nichts wird gesendet |
 | beim ARM | die Ruhelage der Ruderfläche: die Mitte zwischen den Endpunkten des Kanals, ohne TRIM |
 | scharf | was Zifferblatt, Knopf, ZENTRIEREN, ein Sweep oder ein Lauf befehlen |
 

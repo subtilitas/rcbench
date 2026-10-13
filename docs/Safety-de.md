@@ -16,13 +16,13 @@ verifiziert.
 | Stille-Watchdog des Koprozessors, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 
-Ein gedrücktes STOP stoppt den Heartbeat, entschärft das eigene
+Ein gedrücktes STOP stoppt den Heartbeat, sichert das eigene
 Ausgangsmodell des Panels und schreibt ARM = 0 auf die Control-Page. Bei
 stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50 ms;
 ein bewusstes Schärfen wartet, bis der Koprozessor meldet, dass er dem
 Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
 und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
-Koprozessors auf eines von beiden lässt das Panel entschärft.
+Koprozessors auf eines von beiden lässt das Panel gesichert.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
@@ -53,8 +53,8 @@ Drei Fälle, und der mittlere ist die Lücke:
 
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
-| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | entschärft nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts entschärft, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | sichert nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
+| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts sichert, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
 | Das Panel ist gesund und der Koprozessor verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
 
 Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
@@ -77,7 +77,7 @@ Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
 wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
 weg. Der Koprozessor verweigert das Schärfen, solange der Leitung nicht
-vertraut wird, und entschärft seine Ausgänge und setzt seinen Arm-Latch,
+vertraut wird, und sichert seine Ausgänge und setzt seinen Arm-Latch,
 sobald sie ausbleibt.
 
 Der Heartbeat wird vom Control-Task erzeugt, der STOP besitzt und alle 5 ms
@@ -87,14 +87,14 @@ Panel, das nicht mehr zeichnet, lässt sich noch stoppen. Den Touch-Controller
 liest eine eigene Task, Priorität 5 auf Kern 0, dem Kern, der zeichnet. Der
 Control-Task nimmt deren Ereignisse aus einer Queue und beurteilt den
 Controller nach der Zeit seit dessen letzter Antwort: 500 ms ohne Antwort
-entschärfen den Prüfstand und stoppen den Heartbeat. Der Eingang des
+sichern den Prüfstand und stoppen den Heartbeat. Der Eingang des
 Koprozessors hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
 Panel als Leitung ohne Flanken gelesen wird.
 
 ## Arm-Latch
 
 Der Koprozessor hält einen Arm-Latch. Solange er gesetzt ist, wird ein
-Schreiben von ARM mit NOT_ARMED abgewiesen, und die Bank bleibt entschärft,
+Schreiben von ARM mit NOT_ARMED abgewiesen, und die Bank bleibt gesichert,
 was immer im Register ARM steht.
 
 | Setzt den Latch | Bedingung |
@@ -120,7 +120,7 @@ Panel als `Koprozessor DISARMED -- erneut ARM` meldet.
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
 Koprozessor nicht mehr, während der Prüfstand scharf ist oder ein Schärfen
 auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
-eigene Bank wird entschärft, das Gas geht auf null, eine gehaltene
+eigene Bank wird gesichert, das Gas geht auf null, eine gehaltene
 Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
 Antwort wird nach dem Timeout von 1000 ms bemerkt, oder sofort, wenn der
 CAN-Controller (Controller Area Network) des Panels bus-off ist. Jeder
@@ -184,13 +184,13 @@ den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
 CLEAR oder der Frame, der schärft --, hat den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schärfen
 ausfällt, und am Panel rastet ein Stopp ein wie oben. Eine Ablehnung ist
-eine Antwort und lässt das Panel entschärft und ohne Stopp. Ohne
+eine Antwort und lässt das Panel gesichert und ohne Stopp. Ohne
 angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
 100 ms.
 
 ## Verhaltensweisen, die Absicht sind
 
-- STOP rastet ein. Der Prüfstand bleibt entschärft, bis er erneut scharf
+- STOP rastet ein. Der Prüfstand bleibt gesichert, bis er erneut scharf
   geschaltet wird.
 - STOP schließt die Rückfrage AUSGANG IST EIN auf SUPPLY und SERVO. Jeder
   Bildschirm zählt die Stopps, die ihm gemeldet werden, und eine Rückfrage
@@ -212,8 +212,8 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   liest, wird nicht geschrieben.
 - Das Scharfschalten ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
-  abhebt. Das Entschärfen ist ein Druck.
-- Das Panel schreibt seinen eigenen Flash nur bei einem entschärften
+  abhebt. Das Sichern ist ein Druck.
+- Das Panel schreibt seinen eigenen Flash nur bei einem gesicherten
   Prüfstand, ohne wartendes Scharfschalten, mit ausgeschaltetem
   Netzteil-Ausgang und ohne eingereihtes ON. Flash-Auto-Suspend ist aus,
   also hält jedes Löschen und Schreiben beide Kerne des Panels an, den
@@ -242,9 +242,9 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   einen fest montierten Motor ohne Propeller. Das ARM
   des Haltens wartet einen Frame im Bildschirm; ein STOP oder ein verlorenes
   Touch-Ereignis in diesem Frame nimmt es zurück und beendet den Lauf, damit
-  es den Stopp nicht aufheben kann. STOP, ein Entschärfen, ein verlorener
+  es den Stopp nicht aufheben kann. STOP, ein Sichern, ein verlorener
   Link, ABBRECHEN und das Verlassen des Bildschirms beenden den Lauf mit dem Gas
-  auf Minimum, dem Netzteil aus und dem Prüfstand entschärft, in einem
+  auf Minimum, dem Netzteil aus und dem Prüfstand gesichert, in einem
   Schritt. Ein Lauf, der wie geplant endet, schaltet zuerst das Netzteil aus
   und bewegt den Knüppel, wenn das Netzteil selbst den Ausgang aus meldet.
   [Stick-Programmierung](StickProgramming-de.md).
@@ -347,10 +347,10 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Ein Druck, der auf STOP begann und vor dem Abheben davon weggeführt worden
   wäre, kommandiert heute nichts und stoppt stattdessen.
 - Wird bei einem scharfen Prüfstand ein Disarm abgebrochen, wird trotzdem
-  entschärft. Eine Geste abzubrechen kommandiert nichts, und bei einem
+  gesichert. Eine Geste abzubrechen kommandiert nichts, und bei einem
   scharfen Prüfstand ist das für eine von ihnen die falsche Richtung: Das
-  Entschärfen ist ein Druck, sein Release ist also das ganze Kommando, und
-  ein Release, das eine volle Queue verschluckt hat, ist ein Entschärfen,
+  Sichern ist ein Druck, sein Release ist also das ganze Kommando, und
+  ein Release, das eine volle Queue verschluckt hat, ist ein Sichern,
   das der Bediener gemacht und der Prüfstand nie gesehen hat. Das
   Scharfschalten hat sein Kommando schon abgesetzt, wenn der Finger abhebt,
   ein halb abgebrochenes Scharfschalten kommandiert also nichts, und das ist
@@ -373,10 +373,10 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   sicheren Zustand, wie lang der Rückstau hinter dem Scharfschalten auch
   ist. Ein Frame, der
   vor dem Veröffentlichen begann, bricht Seiten ab, die den Prüfstand noch
-  für entschärft halten, und die setzen kein Entschärfen ab; also muss der
+  für gesichert halten, und die setzen kein Sichern ab; also muss der
   Control-Task es tun. Nach der Bestätigung sehen die Seiten einen Verlust
   gegen einen scharfen Prüfstand. Über einen Verlust hinweg schaltet also
-  nichts scharf. Ein abgesetztes Entschärfen bleibt.
+  nichts scharf. Ein abgesetztes Sichern bleibt.
 - Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
   Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
   Berührung am Ende fordert also nichts an; ein Drag über den ganzen Track
@@ -394,7 +394,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
   ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
   anfordert, oder einem STOP auf einem scharfen Prüfstand, bis der Prüfstand
-  entschärft meldet, werden die Bedienelemente
+  gesichert meldet, werden die Bedienelemente
   ebenfalls abgelehnt und gedimmt gezeichnet, solange das DISARM auf das
   Abholen wartet und danach. Auf SERVO enden ein Sweep, eine Pause, eine
   gehaltene Stellung und ein Lauf des automatischen Tests dort, wo das DISARM
@@ -415,19 +415,19 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
     dieses Halten nicht angefordert hat, wie bei einem Knüppel-Lauf auf
     PROGRAMMER.
   - SERVO: Das Zifferblatt, der Drehknopf, ZENTRIEREN und SWEEP sind die
-    Bedienelemente. Unscharf bleiben das Horn und die gezeigte Pulsbreite
+    Bedienelemente. Gesichert bleiben das Horn und die gezeigte Pulsbreite
     auf der zuletzt gefahrenen Stellung. Bei einem ARM wird der Wert zur
     Ruhelage der Ruderfläche, die die Pins treiben, sobald das ARM seine
     Freigabe bezahlt hat: die Mitte zwischen den Endpunkten des Kanals,
     1500 us über 1000 bis 2000 us und 760 us über 660 bis 860 us. Die erste
     Eingabe nach einem ARM beginnt dort.
-- FREIGEBEN auf SERVO ist keine Stellung und wird auf einem unscharfen
+- FREIGEBEN auf SERVO ist keine Stellung und wird auf einem gesicherten
   Prüfstand angenommen, wo es keinen Wert bewegt. Auf einem scharfen
   Prüfstand stellt es die Pins in die Ruhelage, und der gezeigte Wert wird
   zu dieser Ruhelage, wie bei einem ARM: Ein laufender Drag endet, und die
   erste Eingabe danach beginnt bei der Ruhelage. Die Freigabe, mit der ein
   Lauf des automatischen Tests endet, tut dasselbe.
-- Das Verlassen eines Prüfstandsbildschirms entschärft.
+- Das Verlassen eines Prüfstandsbildschirms sichert.
 - Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
@@ -435,7 +435,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Bildschirmen bewegt eine Drehung auf einem nicht scharfen Prüfstand nichts
   und wird nicht aufgehoben; nach einem ARM bewegt der Knopf auf MOTOR & ESC
   von 0 % aus weiter und auf SERVO von der Ruhelage aus. Das Verlassen des
-  Bildschirms entschärft. Die
+  Bildschirms sichert. Die
   erste Messung nach dem
   Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
   schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein
@@ -451,7 +451,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Touch-Ereignisse, wird das Kommando zurückgenommen, und der Wert kehrt auf
   den Stand vor dem Knopf zurück. Der Knopf ersetzt nie ein
   anderes wartendes Kommando als ein Gas oder eine Horn-Position: Ein
-  vollendetes Schärfen, ein Entschärfen, ein Freigeben und ein Zurücksetzen
+  vollendetes Schärfen, ein Sichern, ein Freigeben und ein Zurücksetzen
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
   benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede der drei
@@ -463,7 +463,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse
   0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht
   lesen.
-- Antwortet der Touch-Controller 500 ms lang nicht, entschärft der Prüfstand
+- Antwortet der Touch-Controller 500 ms lang nicht, wird der Prüfstand gesichert
   und verweigert das Schärfen. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.
 - Nach einem Link-Failsafe schaltet der Koprozessor nicht wieder scharf, wenn
@@ -478,7 +478,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   CHAN_CFG, das die Rolle eines Kanals oder irgendetwas an einem
   Throttle-Kanal ändert. Slew und Pulsbereich einer Surface werden scharf
   angenommen: der SERVO-Bildschirm schreibt sie mit jeder Position. Das Panel
-  schreibt eine Bindung und den Pulsbereich des Throttle nur entschärft.
+  schreibt eine Bindung und den Pulsbereich des Throttle nur gesichert.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
 - Ein ARM nennt die Rollen, die es treibt ([Link, Ein Arm für eine
@@ -486,15 +486,15 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   Stick-Lauf auf PROGRAMMER schalten die Throttle-Ausgänge scharf, ARM
   0x0002. SERVO schaltet die Surfaces und den Pin des PROG PORT scharf, ARM
   0x0004. Ein Pin einer Rolle, die das ARM nicht nennt, sendet keinen Puls,
-  wie bei einem entschärften Prüfstand. Ein Koprozessor älter als Protokoll
+  wie bei einem gesicherten Prüfstand. Ein Koprozessor älter als Protokoll
   4.18 nimmt jedes ARM ungleich 0 als ganze Bank; an ihm treibt also jeder
   gebundene Pin.
-- Ein ARM für die andere Rolle geht über ein Entschärfen. Das Panel schreibt
+- Ein ARM für die andere Rolle geht über ein Sichern. Das Panel schreibt
   ARM = 0, wartet mindestens 100 ms und schreibt dann die neuen Rollen; den
   Wechsel von einem ARM ungleich 0 zu einem anderen weist der Koprozessor
   mit BAD_VALUE ab.
 - STOP, das Ausbleiben des Heartbeat, Stille auf dem Link und ein
-  Entschärfen setzen jeweils das ganze ARM auf 0, gleich welche Rollen es
+  Sichern setzen jeweils das ganze ARM auf 0, gleich welche Rollen es
   nannte, und jeder Ausgang hört auf.
 - Ein scharfer Prüfstand treibt jeden gebundenen Pin der scharfen Rollen, ob
   ihn etwas kommandiert oder nicht. Ein Kanal, der 500 ms lang kein Kommando bekommt,
@@ -503,7 +503,7 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   — 1500 us über den voreingestellten 1000 bis 2000 us, 760 us über den 660
   bis 860 us eines schmalen Servos. Das Timeout legt den Kanal auf diese
   Ruhelage und lässt den Pin weiter treiben; beendet werden die Flanken durch
-  Entschärfen.
+  Sichern.
 - 1500 us an einem Empfängerausgang sind etwa halbes Gas. Was ein ESC tut,
   der noch keinen Puls gesehen hat und dann 1500 us bekommt, ist an diesem
   Prüfstand nicht gemessen: er kann mit etwa halbem Gas laufen, und er kann
@@ -515,13 +515,13 @@ angeschlossenen Koprozessor schärft das Panel seine eigene Bank nach den
   und nicht über die Rolle.
 - In den ersten 500 ms nach dem Scharfschalten steht ein Kanal nicht auf
   seiner Ruhelage. Das Scharfschalten stempelt die Uhr jedes Kanals, sodass
-  ein Kommando, das im entschärften Zustand gegeben wurde, nicht überfällig
+  ein Kommando, das im gesicherten Zustand gegeben wurde, nicht überfällig
   ist und ausgegeben wird, bis es überfällig wird. Was ausgegeben wird, hängt
   vom Slew des Kanals ab: ohne Slew ist der erste Schritt die ganze Strecke,
-  der Kanal steht also auf diesem Kommando; mit Slew hat das Entschärfen ihn
+  der Kanal steht also auf diesem Kommando; mit Slew hat das Sichern ihn
   bereits auf die Ruhelage gestellt und er rampt von dort, höchstens
   `slew_per_s * 500 / 1000` weit, bevor der Timeout ihn zurückholt. In beiden
-  Fällen treibt er, und beendet wird das durch ein Entschärfen.
+  Fällen treibt er, und beendet wird das durch ein Sichern.
 - Die Einstellung `Rampengrenze`, 5 bis 300 %/s, gilt für die Gas-Bank des
   Panels. Diese Bank ist der modellierte Prüfstand: ihr geslewter Wert wird
   vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange der

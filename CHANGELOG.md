@@ -57,6 +57,10 @@ history is in git.
 
 ### Changed
 
+- The German docs and the bench configurator name the disarmed state
+  "gesichert" and the act of disarming "sichern" (armed stays "scharf").
+  The firmware's German UI texts are unchanged.
+
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the
   product page. The jumper V Selector (header H3, print 5V and 3V3) sets the

@@ -32,7 +32,7 @@ der Propellerebene bleiben.
 
 Das Scharfschalten ist bewusst: ein zwei Sekunden langes Halten auf ARM, wobei
 das Kommando abgeht, wenn das Halten durchgelaufen ist, und nicht wenn der
-Finger abhebt. Entschärfen und STOP sind ein einzelner Druck.
+Finger abhebt. Sichern und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando

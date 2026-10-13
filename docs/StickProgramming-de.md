@@ -267,7 +267,7 @@ Zeile den Rest.
 ![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
 
 TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
-gespeichert wird, während der Prüfstand entschärft und der Ausgang des
+gespeichert wird, während der Prüfstand gesichert ist und der Ausgang des
 Netzteils aus ist.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
@@ -333,7 +333,7 @@ Kein ERLEDIGT innerhalb von 60 s (`ESC_STICK_HAND_WAIT_MS`) beendet den
 Lauf mit NICHT BESTÄTIGT. Während er wartet, hält der Lauf jede Regel, die er
 sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
 Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
-und entschärft.
+und sichert.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
@@ -509,8 +509,8 @@ gezeichnet.
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
 | AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
-| FERTIG | MIN | aus | entschärft |
-| ABGEBROCHEN | MIN | aus | entschärft, alles in einem Schritt |
+| FERTIG | MIN | aus | gesichert |
+| ABGEBROCHEN | MIN | aus | gesichert, alles in einem Schritt |
 
 MIN, MID und MAX sind 0, 50 und 100 % des Wegs des Throttle-Ausgangs. Die
 Ruhestellung ist `scheme.listen` des Profils, oder die Einstiegsstellung, wo
@@ -718,7 +718,7 @@ Liste.
 | FERTIG | jede Auswahl getroffen | aus |
 | STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
 | PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Scharfschalten, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
-| DISARMED | der Prüfstand wurde entschärft | an |
+| DISARMED | der Prüfstand wurde gesichert | an |
 | LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
 | NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
@@ -747,7 +747,7 @@ Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
 als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
 Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
-Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und entschärft;
+Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und sichert;
 ein Abbruch tut alle drei in einem Schritt.
 Ein Stopp rastet ein wie jeder Stopp: der nächste Lauf schaltet erst über
 seine eigene Warnung wieder scharf.
@@ -843,7 +843,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Netzteil vor dem Ende seiner Modusbestätigung ausschaltet, sperrt sich
   (8- bis 10-fach Blinken, je nach Familie). Der Lauf schaltet das Netzteil
   vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60 s),
-  STOP, ABBRECHEN, einem Entschärfen, einem verlorenen Link und jeder
+  STOP, ABBRECHEN, einem Sichern, einem verlorenen Link und jeder
   Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
   Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
   Wort des Bedieners, dass die Bestätigung zu Ende ist.
