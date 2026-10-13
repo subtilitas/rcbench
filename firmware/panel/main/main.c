@@ -3102,7 +3102,7 @@ static void art_keep_service(void)
         if (!s_keep_waited) {
             s_keep_waited = true;
             ESP_LOGI(TAG, "keeping hardware %u's drawing waits for a "
-                          "disarmed bench with the supply off",
+                          "bench in SAFE with the supply off",
                      (unsigned)s_keepentry.board);
         }
         break;

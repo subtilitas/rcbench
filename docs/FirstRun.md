@@ -154,7 +154,7 @@ On the panel console, in this order:
   do the same.
 - **The write waits for a safe bench.** It takes one step per 5 ms control
   pass, and only while the bench is SAFE with the supply off. ARMED or with
-  the supply on, `keeping hardware 1's drawing waits for a disarmed bench
+  the supply on, `keeping hardware 1's drawing waits for a bench in SAFE
   with the supply off` appears once on the console and `kept` follows after
   the switch to SAFE.
 - **It must not disturb the heartbeat.** The transfer is sliced and the flash

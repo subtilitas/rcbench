@@ -162,7 +162,7 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
 - **Das Schreiben wartet auf SAFE.** Es nimmt einen Schritt pro
   5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand SAFE ist und
   das Netzteil aus. In ARMED oder mit eingeschaltetem Netzteil erscheint
-  einmal `keeping hardware 1's drawing waits for a disarmed bench with the
+  einmal `keeping hardware 1's drawing waits for a bench in SAFE with the
   supply off` auf der Konsole, und `kept` folgt nach dem Schalten auf SAFE.
 - **Der Heartbeat darf davon nicht gestört werden.** Die Übertragung ist in
   Scheiben geteilt und das Flash-Schreiben wird in ARMED deswegen
