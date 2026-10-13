@@ -161,7 +161,7 @@ for (const size of SIZES) {
         await expect(page.locator('#g-pdmini')).toContainText(t(lang, 'gAlso', { x: ['charger', 'usbtap'].map((id) => short(id, lang)).join(', ') }));
         // The 3 ticks of the base group stand under their own sentence.
         await expect(page.locator('#basetick')).toHaveText(STRINGS.baseTick[col(lang)]);
-        await expect(page.locator('#basetick ~ label input[data-f]')).toHaveCount(PLAIN.length);
+        await expect(page.locator('#basetick ~ .row input[data-f]')).toHaveCount(PLAIN.length);
         // A function that forces an option names the option a tick sets; the others name the test object.
         for (const id of PLAIN) {
           const fn = CATALOGUE.functions.find((f) => f.id === id)!;

@@ -1,15 +1,17 @@
 // Entry point of the core: the data, the resolver, the default options, the
-// groups of functions and the effects of taking a function or a part out.
+// groups of functions, the effects of taking a function or a part out, and the
+// help text of each function with a tick.
 
 import type { Core } from '../contract.ts';
 import { CATALOGUE } from './catalogue.ts';
 import {
   alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
 } from './groups.ts';
+import { FUNCTION_HELP } from './help.ts';
 import { DEFAULT_OPTIONS, PICTURES_MAX, resolve } from './resolve.ts';
 
 export {
-  CATALOGUE, DEFAULT_OPTIONS, PICTURES_MAX, resolve, alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect,
+  CATALOGUE, DEFAULT_OPTIONS, FUNCTION_HELP, PICTURES_MAX, resolve, alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect,
   removalIsPlain, testObjects,
 };
 export type { Deselect, Group, GroupVariant, OptionChange, Refusal, Removal } from './groups.ts';

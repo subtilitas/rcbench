@@ -76,6 +76,22 @@ legend { font-weight: 600; font-size: 14px; color: var(--muted); padding: 0; mar
 .opt[data-state="inc"] { border-left: 4px double var(--accent); padding-left: 6px; }
 .opt[data-locked] { cursor: default; }
 .opt[data-locked] input { accent-color: var(--muted); }
+/* A tick with its help bubble. The bubble opens under the row: on the keyboard focus of the tick, on the pointer
+   over the mark or the bubble, and on a tap on the mark. Escape closes it (data-shut). */
+.row { position: relative; display: flex; align-items: stretch; }
+.row > .opt { flex: 1 1 auto; min-width: 0; }
+.row > .info { flex: none; width: 44px; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; border-top: 1px solid var(--hair); cursor: help; }
+.row > .info::before { content: "i"; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border: 1.5px solid var(--border); border-radius: 50%; color: var(--muted); font: italic 600 14px/1 Georgia, "Times New Roman", serif; }
+.row[data-open] > .info::before { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.bubble { display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 6; margin-top: -1px; padding: 8px 10px; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgb(0 0 0 / .25); font-size: 14px; line-height: 1.4; cursor: auto; }
+.bubble p { margin: 0; }
+.bubble p + p { margin-top: 4px; color: var(--muted); }
+.row:has(input:focus-visible) > .bubble, .row[data-open] > .bubble { display: block; }
+@media (hover: hover) {
+  .row > .info:hover + .bubble, .row > .bubble:hover { display: block; }
+}
+/* Escape wins over the focus and the pointer until the focus or the pointer moves to another element. */
+.row[data-shut] > .bubble { display: none !important; }
 .radios { margin: 0 0 8px; }
 .radios .hint { font-weight: 600; margin: 8px 0 4px; }
 .tag { display: inline-block; font-size: 12.5px; line-height: 1.3; border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; color: var(--muted); background: var(--grey-bg); font-weight: 400; }

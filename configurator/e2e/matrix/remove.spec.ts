@@ -155,7 +155,7 @@ for (const setup of SETUPS) {
 
       // The question stands under the row, and the part stays until an answer.
       await expectQuestion(page, effect, lang);
-      await expect(page.locator(`label:has(${SEL.owned(owned)}) + ${SEL.question}`)).toHaveCount(1);
+      await expect(page.locator(`.row:has(${SEL.owned(owned)}) + ${SEL.question}`)).toHaveCount(1);
       await expect(tick).toBeChecked();
       await expectNoHorizontalScroll(page);
       await page.keyboard.press('Enter');

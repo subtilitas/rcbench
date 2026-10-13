@@ -18,6 +18,8 @@ import { TAG } from '../../release.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
+import { alwaysOn } from '../groups.ts';
+import { FUNCTION_HELP } from '../help.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
 import { PICTURE_DIR, checkPictures, pictureFolder } from './pictures.ts';
 import type { PictureFolder } from './pictures.ts';
@@ -572,6 +574,28 @@ export function checkFunctions(c: Catalogue): Finding[] {
   return out;
 }
 
+/**
+ * The help text of each function with a tick: one entry per such function, in
+ * both languages, under the text rules of the data. A function every setup
+ * runs has no tick and no entry.
+ */
+export function checkHelp(c: Catalogue, help: Readonly<Record<string, unknown>> = FUNCTION_HELP): Finding[] {
+  const out: Finding[] = [];
+  const ticked = new Set(c.functions.filter((fn) => !alwaysOn(c, fn)).map((fn) => fn.id));
+  for (const id of ticked) {
+    const text = help[id];
+    if (!isTextLike(text)) {
+      out.push(err(`help.${id}`, 'the function has a tick and no help text'));
+      continue;
+    }
+    out.push(...checkString(`help.${id}.en`, text.en, false), ...checkString(`help.${id}.de`, text.de, false));
+  }
+  for (const id of Object.keys(help)) {
+    if (!ticked.has(id)) out.push(err(`help.${id}`, 'no function with a tick has this id'));
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Invariant 8: pins
 // ---------------------------------------------------------------------------
@@ -905,6 +929,7 @@ export function checkAll(
     ...guarded('texts', () => checkTexts(c)),
     ...guarded('counts', () => checkCounts(c)),
     ...guarded('functions', () => checkFunctions(c)),
+    ...guarded('help', () => checkHelp(c)),
     ...guarded('pins', () => checkPins(c)),
     ...guarded('routes', () => checkRoutes(c)),
   ];

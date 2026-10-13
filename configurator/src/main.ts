@@ -264,6 +264,45 @@ function copyLink(button: HTMLElement): void {
 const toggle = (list: string[], id: string, on: boolean): string[] =>
   on ? [...list.filter((x) => x !== id), id] : list.filter((x) => x !== id);
 
+/** The tick rows whose help bubble shows now: by focus, pointer or tap. */
+function shownHelp(): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>('#choose .row')].filter((row) => {
+    const box = row.querySelector('.bubble');
+    return box !== null && getComputedStyle(box).display !== 'none';
+  });
+}
+
+// A tap or a click on the mark of a tick opens its bubble and closes the others; a second one closes it. The
+// mark stands outside the label: the tick stays as it is. A tap anywhere else, the bubble included, closes
+// every bubble a tap opened: an open bubble covers the rows under it.
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const mark = target?.closest<HTMLElement>('#choose .row > .info');
+  const row = mark?.parentElement ?? null;
+  for (const other of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
+    if (other !== row) other.removeAttribute('data-open');
+  }
+  if (!row) return;
+  if (row.hasAttribute('data-open')) row.removeAttribute('data-open');
+  else {
+    row.setAttribute('data-open', '');
+    row.removeAttribute('data-shut');
+  }
+});
+
+// A bubble closed with Escape opens again when the focus comes back to its tick from elsewhere, or the pointer
+// enters its mark again.
+document.addEventListener('focusin', (event) => {
+  const target = event.target instanceof Node ? event.target : null;
+  for (const row of document.querySelectorAll<HTMLElement>('#choose .row[data-shut]')) {
+    if (!target || !row.contains(target)) row.removeAttribute('data-shut');
+  }
+});
+document.addEventListener('pointerover', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  target?.closest<HTMLElement>('#choose .row > .info')?.parentElement?.removeAttribute('data-shut');
+});
+
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const el = target?.closest<HTMLElement>('button, a[data-jump], input[aria-disabled="true"]');
@@ -341,8 +380,19 @@ document.addEventListener('change', (event) => {
   announceSummary((view) => (left ? deselectText(view, left) : ''));
 });
 
+// Escape closes a bubble that shows first, then the question before a removal.
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || !pending) return;
+  if (event.key !== 'Escape') return;
+  const shown = shownHelp();
+  if (shown.length > 0) {
+    event.preventDefault();
+    for (const row of shown) {
+      row.setAttribute('data-shut', '');
+      row.removeAttribute('data-open');
+    }
+    return;
+  }
+  if (!pending) return;
   event.preventDefault();
   keepPart();
 });

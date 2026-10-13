@@ -19,7 +19,8 @@ data and is not asserted.
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
-| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
+| `help.ts` | `FUNCTION_HELP`: what each of the 12 functions with a tick does, in English and German. The help bubble of the chooser opens with it. |
+| `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts`, `FUNCTION_HELP` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
 | `tools/release-sources.ts` | The check of `../package.json` against `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h` and against the release numbers in the Markdown files of the configurator. `tools/check.ts` runs it. |
 | `tools/check-annotate.sh` | Runs `tools/check.ts --strict` in a GitHub Actions job and shows each warning as an annotation and in the summary of the run. |
@@ -192,6 +193,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Wire ends | A wire end is not a pad or a declared pin of a part, or a power wire ends on a signal pad. |
 | References | A function, rule, condition, power source or stage names an id that does not exist. A function needs a test object, or drives a part that is none. A rule adds a test object. A test object is locked or selectable, has no function that drives it on the base setup, or has no power source. A power source feeds neither the logic nor a test object, has no advantage or no drawback, or holds a range that is not ordered. No power source feeds the logic. |
 | Text | A string is empty in one language, starts or ends with white space, or holds an exclamation mark, a listed marketing word, a character outside the allowed set or a tag other than `<b>` in a safety note. |
+| Help | A function with a tick has no entry in `FUNCTION_HELP`, an entry names a function of the base setup or no function, or its text breaks a rule of the row Text. |
 | Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known, or a document source (`doc`) has no title, no https address or no place in the document. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |

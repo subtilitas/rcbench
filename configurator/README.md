@@ -69,6 +69,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
@@ -253,6 +254,33 @@ of the servo power variant, and the programming voltage and current limit
 are stored and not applied; the level of the servo's reply on GP13 is not
 measured. The pin is no visible variant and the hash holds no token for it:
 the function sets it.
+
+Every function with a tick and every part under "Parts you own" has a help
+bubble. Its first line says what the item does: the text of `core/help.ts`
+for a function, the `role` of the part in the data file for a part. The
+lines after it say what the item needs, derived by `src/view/help.ts` from
+the resolver in the variants of the page:
+
+- "Needs: ..." lists the bench parts the setup with the item alone holds
+  beyond the base setup. A part that only a rule adds carries the parts whose
+  absence the rule asks for: "2 × 2.2 kΩ (only without INA3221)".
+- "Connects: ..." names the test object the item connects.
+- "Variant: ..." names the variant the function sets.
+- A part names its supply wires, with the note of the wire: "Supply, 3.3 V:
+  Coprocessor 3V3 (pad 36).".
+- Without a further part the line reads "Needs no further part of the
+  bench.".
+
+The functions of the base setup, the test objects and the parts that are not
+selectable have no bubble. The bubble opens when its tick has the keyboard
+focus and when the pointer rests on the round "i" mark at the right end of
+the row, 44 px wide. The pointer can move from the mark into the bubble. A
+click or tap on the mark opens or closes the bubble and never changes the
+tick; a tap on the label still toggles it. A tap anywhere else, Escape and
+the loss of the focus close it. The mark and the bubble take no focus, so the
+Tab order is that of the ticks. Each tick names its bubble in
+`aria-describedby`; the bubble has the role `tooltip`. The bubble spans the
+width of the row under it, so it stays inside a viewport of 360 px.
 
 Removing the tick of a function removes it from the selection. A note under
 the row states whether the function stays active, which of its parts stay

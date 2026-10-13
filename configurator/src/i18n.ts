@@ -41,6 +41,9 @@ const S = {
   stConn: ['Active: {x} is connected.', 'Aktiv: {x} ist angeschlossen.'],
   stObj: ['Connects: {x}.', 'Schließt an: {x}.'],
   stVar: ['Not active: needs {v}.', 'Nicht aktiv: braucht {v}.'],
+  hNone: ['Needs no further part of the bench.', 'Braucht kein weiteres Teil des Prüfstands.'],
+  hVar: ['Variant: {x}.', 'Variante: {x}.'],
+  hWithout: ['only without {x}', 'nur ohne {x}'],
   dsOn: [
     '{f} is no longer in your selection. It stays active.',
     '{f} ist nicht mehr in deiner Auswahl. Die Funktion bleibt aktiv.',
