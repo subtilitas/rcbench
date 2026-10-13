@@ -311,6 +311,146 @@ function copyList(button: HTMLElement, form: 'text' | 'csv'): void {
 const toggle = (list: string[], id: string, on: boolean): string[] =>
   on ? [...list.filter((x) => x !== id), id] : list.filter((x) => x !== id);
 
+/** The tick rows whose help bubble shows now: by focus, pointer or tap. */
+function shownHelp(): HTMLElement[] {
+  return [...document.querySelectorAll<HTMLElement>('#choose .row')].filter((row) => {
+    const box = row.querySelector('.bubble');
+    return box !== null && getComputedStyle(box).display !== 'none';
+  });
+}
+
+/**
+ * The band of the viewport a bubble of `row` shows in: above the bar of the narrow layout, and inside each
+ * scrolling ancestor, #choose at 1024 px and wider, which clips what lies outside its box.
+ */
+function helpRoom(row: HTMLElement): { top: number; bottom: number } {
+  let top = 0;
+  let bottom = window.innerHeight;
+  const bar = byId('bar');
+  if (bar && getComputedStyle(bar).display !== 'none') bottom = Math.min(bottom, bar.getBoundingClientRect().top);
+  for (let el = row.parentElement; el && el !== document.body; el = el.parentElement) {
+    if (getComputedStyle(el).overflowY === 'visible') continue;
+    const box = el.getBoundingClientRect();
+    top = Math.max(top, box.top + el.clientTop);
+    bottom = Math.min(bottom, box.top + el.clientTop + el.clientHeight);
+  }
+  return { top, bottom };
+}
+
+/**
+ * Opens the bubble of `row` over the row (data-up) when the room under the row is less than the bubble's height
+ * and the room over it holds the whole bubble, else under it. A bubble that fits neither way opens under the row:
+ * #choose and the page scroll down to what reaches past their lower edge, never up to what reaches past the top.
+ * A hidden bubble is measured without being shown.
+ */
+function placeHelp(row: HTMLElement): void {
+  const box = row.querySelector<HTMLElement>(':scope > .bubble');
+  if (!box) return;
+  const hidden = getComputedStyle(box).display === 'none';
+  if (hidden) {
+    box.style.setProperty('display', 'block', 'important');
+    box.style.setProperty('visibility', 'hidden');
+  }
+  const height = box.offsetHeight;
+  if (hidden) {
+    box.style.removeProperty('display');
+    box.style.removeProperty('visibility');
+  }
+  const r = row.getBoundingClientRect();
+  const room = helpRoom(row);
+  const below = room.bottom - r.bottom;
+  const above = r.top - room.top;
+  row.toggleAttribute('data-up', height > below && above >= height);
+}
+
+// The rows move under a shown bubble when the page or the chooser scrolls, the focus of a tick scrolls it into
+// view, or the window changes size: each shown bubble is placed again, once per frame.
+let placing = false;
+function placeShownHelp(): void {
+  if (placing) return;
+  placing = true;
+  requestAnimationFrame(() => {
+    placing = false;
+    for (const row of shownHelp()) placeHelp(row);
+  });
+}
+document.addEventListener('scroll', placeShownHelp, { capture: true, passive: true });
+window.addEventListener('resize', placeShownHelp, { passive: true });
+
+/**
+ * Makes `row` the latest trigger of a bubble: the focus of its tick or the pointer entering its mark. Every other
+ * row keeps its bubble hidden (data-quiet) until it is the latest trigger again, so the focus of one tick and the
+ * pointer on the mark of another never show two bubbles.
+ */
+function triggerHelp(row: HTMLElement): void {
+  for (const other of document.querySelectorAll<HTMLElement>('#choose .row')) {
+    other.toggleAttribute('data-quiet', other !== row);
+  }
+}
+
+/** Closes every bubble a tap or a click opened, but that of `keep`. */
+function closeOpenHelp(keep: Element | null): void {
+  for (const open of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
+    if (open !== keep) open.removeAttribute('data-open');
+  }
+}
+
+// A tap or a click on the mark of a tick opens its bubble and closes the others; a second one closes it, and the
+// pointer resting on the mark does not hold it open (data-nohover) until it enters the mark again. The mark
+// stands outside the label: the tick stays as it is.
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const mark = target?.closest<HTMLElement>('#choose .row > .info');
+  const row = mark?.parentElement ?? null;
+  closeOpenHelp(row);
+  if (!row) return;
+  if (row.hasAttribute('data-open')) {
+    row.removeAttribute('data-open');
+    row.setAttribute('data-nohover', '');
+  } else {
+    placeHelp(row);
+    row.setAttribute('data-open', '');
+    row.removeAttribute('data-shut');
+    row.removeAttribute('data-nohover');
+  }
+});
+
+// A press anywhere but on the mark of an open bubble, the bubble included, closes every bubble a tap opened: an
+// open bubble covers the rows next to it. iOS Safari sends no click to the document for a tap on text or on an
+// empty area, and a pointerdown for every tap.
+document.addEventListener('pointerdown', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  closeOpenHelp(target?.closest<HTMLElement>('#choose .row > .info')?.parentElement ?? null);
+});
+
+// A bubble closed with Escape opens again when the focus comes back to its tick from elsewhere, or the pointer
+// enters its mark again. The focus and the pointer show one bubble at a time: the focus of a tick and the pointer
+// entering a mark close the bubbles a tap or a click opened on other rows and quiet the bubbles of the other rows.
+// The bubble of the focused tick or of the mark under the pointer is placed before it shows.
+document.addEventListener('focusin', (event) => {
+  const target = event.target instanceof Node ? event.target : null;
+  for (const row of document.querySelectorAll<HTMLElement>('#choose .row[data-shut]')) {
+    if (!target || !row.contains(target)) row.removeAttribute('data-shut');
+  }
+  const row = target instanceof Element ? target.closest<HTMLElement>('#choose .row') : null;
+  closeOpenHelp(row);
+  if (row) {
+    triggerHelp(row);
+    placeHelp(row);
+    placeShownHelp();
+  }
+});
+document.addEventListener('pointerover', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement;
+  if (!row) return;
+  closeOpenHelp(row);
+  triggerHelp(row);
+  row.removeAttribute('data-shut');
+  row.removeAttribute('data-nohover');
+  placeHelp(row);
+});
+
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const el = target?.closest<HTMLElement>('button, a[data-jump], input[aria-disabled="true"]');
@@ -394,8 +534,19 @@ document.addEventListener('change', (event) => {
   announceSummary((view) => (left ? deselectText(view, left) : h ? t(view.lang, input.checked ? 'haveOn' : 'haveOff') : ''));
 });
 
+// Escape closes a bubble that shows first, then the question before a removal.
 document.addEventListener('keydown', (event) => {
-  if (event.key !== 'Escape' || !pending) return;
+  if (event.key !== 'Escape') return;
+  const shown = shownHelp();
+  if (shown.length > 0) {
+    event.preventDefault();
+    for (const row of shown) {
+      row.setAttribute('data-shut', '');
+      row.removeAttribute('data-open');
+    }
+    return;
+  }
+  if (!pending) return;
   event.preventDefault();
   keepPart();
 });

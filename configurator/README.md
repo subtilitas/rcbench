@@ -70,6 +70,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark and between the focus of a tick and the pointer on another mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/buy.spec.ts` | Playwright test of the parts list: rows, owned parts, variants, copy buttons, links and no request to Google before a click. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
@@ -275,6 +276,52 @@ of the servo power variant, and the programming voltage and current limit
 are stored and not applied; the level of the servo's reply on GP13 is not
 measured. The pin is no visible variant and the hash holds no token for it:
 the function sets it.
+
+Every function with a tick and every part under "Parts you own" has a help
+bubble. Its first line says what the item does: the text of `core/help.ts`
+for a function, the `role` of the part in the data file for a part. The
+lines after it say what the item needs, derived by `src/view/help.ts` from
+the resolver in the variants of the page:
+
+- "Needs: ..." lists the bench parts the setup with the item alone holds
+  beyond the base setup. A part that only a rule adds carries the parts whose
+  absence the rule asks for: "2 × 2.2 kΩ (only without INA3221)".
+- "Connects: ..." names the test object the item connects.
+- "Variant: ..." names the variant the function sets.
+- A part names its supply wires, the wires of class logic and power that
+  end on it, with the note of the wire: "Supply, 3.3 V: Coprocessor 3V3
+  (pad 36).", and for the PD mini its power input, "PD in: T-plug OUT, USB-C
+  socket." and the note of the USB-C cable.
+- Without a further part the line reads "Needs no further part of the
+  bench.".
+
+The functions of the base setup, the test objects and the parts that are not
+selectable have no bubble. The bubble opens when its tick has the keyboard
+focus and when the pointer rests on the round "i" mark at the right end of
+the row, 44 px wide. The pointer can move from the mark into the bubble. A
+click or tap on the mark opens or closes the bubble and never changes the
+tick; a tap on the label still toggles it. A press anywhere else
+(`pointerdown`), Escape and the loss of the focus close it. One bubble shows
+at a time: the focus of a tick and the pointer entering a mark close a
+bubble that a click opened on another row, and keep the bubble of every
+other row hidden (`data-quiet`) until the focus or the pointer comes back
+to it. A click that closes a bubble
+keeps it closed while the pointer rests on the mark; the pointer leaving and
+entering the mark again opens it. The mark has
+`cursor: pointer`: iOS Safari delivers a tap on an element without it and
+without a handler of its own to no click listener of the document. The mark
+and the bubble take no focus, so the Tab order is that of the ticks. Each
+tick names its bubble in `aria-describedby`; the bubble has the role
+`tooltip`. The bubble spans the width of the row, so it stays inside a
+viewport of 360 px. It opens under the row, and over it when the room under
+the row is less than the height of the bubble and the room over it holds the
+whole bubble. The room is the viewport above the bar of the narrow layout,
+cut by the box of the chooser, which scrolls on its own at 1024 px and wider.
+The page places a shown bubble again when the page or the chooser scrolls or
+the window changes size. A bubble taller than both rooms opens under the
+row: its top shows, and the chooser or the page scrolls down to its end. At
+1280 × 800 px every bubble shows whole, in English and German; at
+1100 × 450 px and 1024 × 500 px the top of every bubble shows.
 
 Removing the tick of a function removes it from the selection. A note under
 the row states whether the function stays active, which of its parts stay

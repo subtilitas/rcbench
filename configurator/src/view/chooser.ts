@@ -10,6 +10,8 @@ import { alwaysOn, groups, removalEffect, removalIsPlain } from '../core.ts';
 import type { Deselect, Group } from '../core.ts';
 import { esc, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
+import { bubble, functionHelp, partHelp } from './help.ts';
+import type { Help } from './help.ts';
 
 /** The part whose removal waits for an answer, and the list that shows the question. */
 export type Pending = { part: PartId; at: 'result' | 'own' };
@@ -232,6 +234,18 @@ function baseRows(view: View, fixed: ResolvedFunction[]): string {
 }
 
 /**
+ * A tick row with its help bubble: the label, the mark that opens the bubble
+ * by pointer or tap, and the bubble. The mark stands outside the label, so a
+ * tap on it never changes the tick; it takes no focus, so the Tab order stays.
+ * The tick names the bubble as its description.
+ */
+function tickRow(label: string, help: Help | null): string {
+  if (!help) return label;
+  const described = label.replace(/<input /, `<input aria-describedby="${esc(help.id)}" `);
+  return `<div class="row">${described}<span class="info" aria-hidden="true"></span>${bubble(help)}</div>`;
+}
+
+/**
  * The rows of a group: the functions every setup runs as a list, then one
  * tick row per other function. In the group without a part a tick connects
  * a test object.
@@ -245,9 +259,9 @@ function functionRows(view: View, group: Group): string {
   for (const f of rows) {
     if (fixed.includes(f)) continue;
     const status = statusText(view, f);
-    h += `<label class="opt" data-state="${functionState(f)}"><input type="checkbox" id="f-${esc(f.fn.id)}" data-f="${esc(f.fn.id)}"${f.chosen ? ' checked' : ''}>`
+    h += tickRow(`<label class="opt" data-state="${functionState(f)}"><input type="checkbox" id="f-${esc(f.fn.id)}" data-f="${esc(f.fn.id)}"${f.chosen ? ' checked' : ''}>`
       + `<span><b>${esc(tx(lang, f.fn.name))}</b></span>`
-      + `${status ? `<small>${esc(status)}</small>` : ''}</label>`;
+      + `${status ? `<small>${esc(status)}</small>` : ''}</label>`, functionHelp(view, f.fn.id));
     if (note && note.changed && note.fn === f.fn.id && !f.chosen) {
       h += `<p class="msg" id="note" role="status">${esc(deselectText(view, note))}</p>`;
     }
@@ -340,8 +354,8 @@ function ownedRows(view: View): string {
     const r = setup.parts.find((x) => x.part.id === part.id);
     // A part the setup holds without a tick of its own: the row states why.
     const sub = r !== undefined && !r.ownedTick ? reasonText(r, view) : part.role ? tx(lang, part.role) : '';
-    h += `<label class="opt"><input type="checkbox" id="p-${esc(part.id)}" data-p="${esc(part.id)}"${r ? ' checked' : ''}>`
-      + `<span><b>${esc(tx(lang, part.name))}</b></span><small>${esc(sub)}</small></label>`;
+    h += tickRow(`<label class="opt"><input type="checkbox" id="p-${esc(part.id)}" data-p="${esc(part.id)}"${r ? ' checked' : ''}>`
+      + `<span><b>${esc(tx(lang, part.name))}</b></span><small>${esc(sub)}</small></label>`, partHelp(view, part.id));
     if (pending?.at === 'own' && pending.part === part.id) h += removalWarning(view);
   }
   return h;
