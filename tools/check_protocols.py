@@ -17,6 +17,71 @@ This tool reads each module and fails when one of these does not hold:
   interface is read without the SDK (software development kit);
 - every header under include/ and rp2350/ carries `extern "C"` and
   compiles by itself as C11 and as C++17, with `-Wall -Wextra -Werror`;
+- an include of a module file names no path with a `..` component and no
+  absolute path, also when the file it reaches has the name of a header of the
+  module.  The scan reads `#include`, `#include_next`, `#import` and their `%:`
+  digraph forms, joins line continuations first (a backslash, then optional
+  spaces, tabs, form feeds or vertical tabs, then a newline), except inside a
+  raw string literal, and keeps string, character and raw string literals and
+  numbers out of comment removal.  A string or character literal without its
+  closing quote runs to the line end, as GCC lexes it; a backslash before that
+  line end escapes nothing.  A file is read as UTF-8 bytes with an optional
+  byte order mark; CRLF, LF and a lone CR end a line, and form feed and
+  vertical tab count as white space in a directive.  An operand that is neither
+  `<...>` nor `"..."` (a macro include) fails, because the tool does not expand
+  macros.  The name `__has_include` or `__has_include_next` outside a literal
+  fails for the same reason, as a call and also as the body of a macro, which
+  GCC evaluates as the call.  It passes as the operand of `#ifdef`, `#ifndef`,
+  `#elifdef` and `#elifndef`, and as the operand of a `defined` term
+  (`defined NAME`, `defined(NAME)`) on an `#if` or `#elif` line that holds
+  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`.  Any
+  other token on that line fails it (`#if X || defined(__has_include)`),
+  because a macro can take `defined` into an argument and paste it to
+  another name, and so does a `defined` joined to the identifier before it
+  (`$defined`).  A token after the operand fails the include as well.  An
+  `#include_next` fails unless it names a C standard header or, in a C file
+  under rp2350/, a pico-sdk header: it searches the include path after the
+  directory of the file, so it reaches the next file of that name outside the
+  module.  A line of only `#` or `%:` fails, because a
+  comment across a line break can hide the include that follows.  A trigraph
+  (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C, also in a
+  comment or a literal (in a .pio file, in the C written, as below), fails: ISO
+  C11 and C17 replace it before the file is read, so `??/` is a backslash that
+  joins lines and escapes quotes, `??'` is a `^` that removes a quote, and
+  `??=` is a `#`.  A file with a NUL byte fails, so no NUL takes part in a line
+  continuation or a directive.  A file is read under the literal rules of every
+  language it can be compiled as, and an include found under any of them
+  counts: ISO C11 and C17 (no raw strings, no digit separators), gnu11 and
+  gnu17 (raw strings), C23 (digit separators), gnu23 and C++14 or later
+  (both).  A raw string literal
+  (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
+  a number is one preprocessing number, through digit separators (`1'000`, but
+  not a `'` before a `.`, a `$`, a universal character name or a character
+  outside ASCII), exponent signs (`1e-x`), `$`, universal character names
+  (`\\u00e9`, `\\U000000E9`, and in gnu23, C++23 and gnu++14 or later also
+  `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters
+  outside ASCII (`1$'a` in C23).  A number starts at a digit after any
+  character but a letter, a digit, `_` and `$`; a letter or digit outside
+  ASCII continues an identifier (`é1`), and after any other character
+  outside ASCII a number starts (`×1'a`).  The C of a .pio file is
+  the text pioasm 2.3.0 writes into the header it generates: the lines of each
+  `% c-sdk {` block after the first `.program`, in order.  The blocks are found
+  as pioasm's lexer finds them, on the file as written: a `;` or `//` comment
+  runs to the line end, a `;` inside a `/* */` comment ends nothing, the rest
+  of a `.lang_opt` line is one string, a block name is trimmed of spaces and
+  tabs and an empty one is c-sdk, a lone CR is a character of its line, and a
+  block ends only at a line of `%}` in column 0 with nothing but spaces, tabs
+  and CRs after it.  CRLF and a lone CR end a line of the C written;
+- the module's README.md has a heading with "Interface" in it; a heading
+  with "Trademark" in it, in any case, when the text names a brand listed
+  in BRANDS below; and, for a module without an rp2350/ folder, the
+  sentence "no pin driver".  The Interface heading and "no pin driver" are
+  read outside fenced code blocks and HTML comments.  A brand is matched
+  anywhere in the file, in any case, in paths, addresses, code blocks and
+  comments too, and also as part of an identifier, file name or number
+  (`kst_session_t`, `hitec_x.c`, `www.futaba.com`, `2kst`).  A brand next
+  to a letter is part of a longer word and does not match: `KSTART`, and
+  also a CamelCase identifier such as `KstSession`;
 - the module's CMake files name no ESP-IDF (Espressif Internet-of-Things
   Development Framework) requirement and no `rcbench_` library of another
   module;
@@ -27,7 +92,50 @@ This tool reads each module and fails when one of these does not hold:
   file and by condition, and each listed condition is still asserted in its
   file.  Conditions compare with whitespace collapsed and the message
   dropped.  The list is checked in both directions, so a new assertion is
-  recorded and a removed one fails, also when its file keeps another.
+  recorded and a removed one fails, also when its file keeps another.  The
+  form is a table of the assertions that exist, read from the callers, and
+  not a search for expressions that mix a module macro with a LINK_ macro:
+  the table fails on a removed assertion and on a new one that is not
+  recorded, and the search would flag every comparison that is not a pinned
+  limit.
+
+Current limitation: the CMake include directories and link targets of a
+module are not checked.  A module that adds a project directory with
+`target_include_directories` or links a project library other than an
+`rcbench_` one passes, and a header found there can shadow a module header
+of the same name.  Only `REQUIRES` and `rcbench_` names are read.
+
+Current limitation: a digit after a character outside ASCII that is neither
+a letter nor a digit starts a number, as GCC 13 reads it after `×` and a
+no-break space.  GCC 13 reads `€` and `·` as identifier characters,
+so `€1'a' /* '` fails the include after it, which GCC reads as part of
+a comment.
+
+Current limitation: a `__has_include` that a macro pastes together with `##`
+(`#define CAT(a, b) a##b`, then `#if CAT(__has_, include)("../x.h")`) passes,
+and GCC 13 evaluates it as the call.
+
+Current limitation: a delimited or named universal character name
+(`\\u{e9}`, `\\N{...}`) continues a number under every set of literal
+rules, also where GCC 13 ends the number before it (C23 and C++14 to C++20
+without GNU extensions).  After a digit separator earlier on the line,
+`0'0 1\\u{e9}'x /* '` hides the include on the next line from the tool,
+and GCC 13 with `-std=c++17` reads it.
+
+Current limitation: a comment or raw string literal across a line break
+ends the line for the `defined` rule, while GCC 13 continues the
+directive.  In a function-like macro with the parameters `if` and
+`defined`, a body line `*/ #if ) defined __has_include` after
+`DROP( /*` passes, and GCC 13 evaluates `__has_include` as the call when
+the macro is expanded in an `#if`.
+
+Current limitation: U+2E2F (`ⸯ`) before a digit counts as a letter, so no
+number starts after it, while GCC 13 starts one there in C23:
+`ⸯ1'a' /* '` hides the include on the next line from the tool, and GCC 13
+with `-std=c2x` reads it.
+
+The SPDX (Software Package Data Exchange) line of the .c and .h files under
+protocols/ is held by tools/check_docs.py.
 
     python3 tools/check_protocols.py            # the modules, then the check
     python3 tools/check_protocols.py --check    # the check alone
@@ -40,6 +148,7 @@ SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
+import bisect
 import pathlib
 import re
 import shutil
@@ -64,10 +173,144 @@ C_STANDARD = frozenset("""
 # What a pin driver may include from the pico-sdk.
 SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
 
-INCLUDE_RE = re.compile(r'^[ \t]*#[ \t]*include[ \t]*([<"])([^>"]+)[>"]',
-                        re.M)
+# A directive that includes a file: `#` or its digraph `%:`.
+# White space between the tokens of a directive: space, tab, form feed and
+# vertical tab.
+WS = r"[ \t\f\v]"
+DIRECTIVE = (r"^" + WS + r"*(?:#|%:)" + WS
+             + r"*(?:include_next|include|import)\b")
+# An include directive: its word (group 1) and its operand (group 2).
+INCLUDE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS
+                        + r"*(include_next|include|import)\b" + WS
+                        + r"*(.*)$", re.M)
+# A line with nothing but `#` or `%:` (a null directive, or a directive
+# whose name a comment across a line break has cut off).
+BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
+# A trigraph, which ISO C11 and C17 replace anywhere in the file, also in a
+# comment, before lines are joined: `??/` is a backslash, which joins two
+# lines before a newline and escapes a quote in a literal, `??'` is a `^`,
+# which removes a quote, and `??=` is a `#`.
+TRIGRAPH_RE = re.compile(r"\?\?[=/'()!<>-]")
+# The opening of a raw string literal, `R"x(...)x"`: C++11 and the GNU
+# dialects of C.  Inside it, from its first `"` on, line continuations are
+# not joined, so its body is matched on the text as written.
+RAW_OPEN_RE = r'(?<!\w)(?:u8|[uUL])?R(?=")'
+RAW_BODY_RE = re.compile(
+    r'"(?P<delim>[^()\\ \t\f\v\n]{0,16})\(.*?\)(?P=delim)"', re.S)
+# A string or character literal.  One without its closing quote runs to the
+# line end, as GCC lexes it, so a `/*` after it on the line opens nothing.
+# A backslash escapes any character but a newline: a backslash before the
+# line end ends the literal there.
+STRING_LITERAL = r'"(?:\\[^\n]|[^"\\\n])*"?'
+CHAR_LITERAL = r"'(?:\\[^\n]|[^'\\\n])*'?"
+# A character that continues a GCC identifier or preprocessing number
+# besides a letter, digit and `_`: `$`, a universal character name
+# (`\u00e9`, `\U000000e9`, and the delimited `\u{e9}` and named
+# `\N{LATIN SMALL LETTER E WITH ACUTE}` of gnu23, C++23 and gnu++14 or
+# later) and a character outside ASCII.
+IDENTIFIER_CHAR = (r"(?:[\w$]|[^\x00-\x7f]|\\u[0-9A-Fa-f]{4}"
+                   r"|\\U[0-9A-Fa-f]{8}|\\u\{[0-9A-Fa-f]+\}"
+                   r"|\\N\{[A-Za-z0-9 _-]+\})")
+
+
+def number_re(separators: bool) -> str:
+    """A preprocessing number: a digit, after an optional `.`, then digits,
+    letters, `_`, `.`, an exponent sign after e, E, p or P, `$`, universal
+    character names and characters outside ASCII, as GCC's lex_number reads
+    it; with digit separators (C23, C++14) also a `'` before a digit, letter
+    or `_`.  It starts at a digit after no letter, digit, `_` or `$`.  A
+    `'` before a `.`, a `$`, a universal character name or a character
+    outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1` and the
+    character literal `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then
+    a `'` that opens a character literal."""
+    sep = "'?" if separators else ""
+    return (r"(?<![\w$])\.?\d(?:[eEpP][+-]|" + sep + r"[A-Za-z0-9_]|\.|"
+            + IDENTIFIER_CHAR + ")*")
+
+
+# The literal rules of the languages a module file is compiled as, as (raw
+# strings, digit separators): ISO C11 and C17 have neither, gnu11 and
+# gnu17 have raw strings, C23 has digit separators, gnu23 and C++14 on have
+# both.  A file is read under each and the includes found are joined, so an
+# include that one of them leaves outside a comment is found.
+LITERAL_VIEWS = ((False, False), (True, False), (False, True), (True, True))
+
+
+def source_token_re(raw: bool, separators: bool) -> re.Pattern:
+    """One token that the comment remover keeps or drops: the operand of an
+    include directive, and string, character and raw string literals and
+    numbers, are kept whole, so a `//` or `/*` inside them starts no comment
+    and a digit separator opens no character literal."""
+    return re.compile(
+        "(?P<directive>" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
+        + ("|(?P<raw>" + RAW_OPEN_RE + ")" if raw else "")
+        + "|(?P<literal>" + number_re(separators) + "|" + STRING_LITERAL
+        + "|" + CHAR_LITERAL + ")"
+        r"|(?P<comment>/\*.*?\*/|//[^\n]*)", re.M | re.S)
+
+
+SOURCE_TOKEN_RES = tuple(source_token_re(raw, sep)
+                         for raw, sep in LITERAL_VIEWS)
+OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
+# The name `__has_include` or `__has_include_next` anywhere outside a
+# literal: a call, and also a macro that stands for it (`#define P
+# __has_include`, then `#if P("x.h")`), which GCC evaluates as the call.
+HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
+# What tests the name as a macro and includes nothing: `#ifdef`, `#ifndef`,
+# `#elifdef` and `#elifndef` before it on its line, and a `defined NAME` or
+# `defined(NAME)` term of an `#if` or `#elif` line whose other text is only
+# such terms, white space, `(`, `)`, `!`, `&` and `|`.  The line holds no
+# other identifier, so no macro on it takes `defined` into an argument or
+# pastes it to another name, and no `$` or other identifier character joins
+# it to the name before it.  A macro body continued across a comment or raw
+# string is read as separate lines (a current limitation, above).
+IF_LINE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*(?:el)?if\b(.*)$")
+DEFINED_TERM_RE = re.compile(
+    r"\bdefined" + WS + r"*(?:\(" + WS + r"*[A-Za-z_]\w*" + WS + r"*\)"
+    + r"|" + WS + r"+[A-Za-z_]\w*)")
+LOGIC_ONLY_RE = re.compile(r"[ \t\f\v()!&|]*")
+IFDEF_BEFORE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS
+                             + r"*(?:ifdef|ifndef|elifdef|elifndef)" + WS
+                             + r"+\Z")
+# A line continuation: a backslash, then spaces, tabs, form feeds or
+# vertical tabs, then a newline, as GCC and Clang join it.
+CONTINUATION_RE = re.compile(r"\\[ \t\f\v]*\r?\n")
+# A line end: CRLF, LF and a lone CR, which GCC reads as a newline.
+NEWLINE_RE = re.compile(r"\r\n?")
+# pioasm 2.3.0 (pico-sdk tools/pioasm/lexer.ll) outside a code block: a `;`
+# or `//` comment to the line end, a `/* */` comment, the rest of a
+# `.lang_opt` line, and the start of a code block, `%`, a name of anything
+# but `%` and newline, up to the last `{` of the line.  The name is trimmed
+# of spaces and tabs; an empty one is c-sdk.  A block ends at a line of `%}`
+# in column 0 followed by spaces, tabs and carriage returns only.
+PIO_BLOCK_RE = re.compile(r"%([^%\n]+)\{")
+PIO_BLOCK_END_RE = re.compile(r"%\}[ \t\r]*")
+PIO_DIRECTIVE_RE = re.compile(r"\.(lang_opt|program)(?![A-Za-z0-9_])", re.I)
 C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 SOURCE_SUFFIXES = (".c", ".h", ".pio")
+
+# Brand names that a module README names; a README that names one carries a
+# section whose heading has "Trademark" in it.
+BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
+          "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
+          "FrSky", "FlySky")
+# A brand is found in any case, with a version suffix (DShot300, S.BUS2),
+# inside an identifier, file name, path or address (kst_session_t,
+# hitec_x.c, www.futaba.com, 2kst), and not next to a letter: KSTART is no
+# brand, and neither is a brand joined to a word without a separator, as
+# in the CamelCase identifier KstSession.
+BRAND_RE = re.compile(r"(?<![A-Za-z])(?:%s)(?![A-Za-z])"
+                      % "|".join(re.escape(b) for b in BRANDS), re.I)
+HTML_COMMENT_RE = re.compile(r"<!--.*?(?:-->|\Z)", re.S)
+EMPHASIS_RE = re.compile(r"[*_`]")
+LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+# An ATX heading's text: an optional closing sequence of `#` is no part of it.
+HEADING_RE = re.compile(
+    r"^[ ]{0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$", re.M)
+FENCE_RE = re.compile(r"^[ ]{0,3}(`{3,}|~{3,})")
+# A backtick fence takes no backtick in its info string (CommonMark).
+BACKTICK_FENCE_RE = re.compile(r"^[ ]{0,3}`{3,}[^`\n]*$")
+NO_DRIVER_RE = re.compile(r"\bno\s+pin\s+driver\b", re.I)
 
 CMAKE_COMMENT_RE = re.compile(r"#[^\n]*")
 REQUIRES_RE = re.compile(r"\b(?:PRIV_)?REQUIRES\b")
@@ -123,12 +366,209 @@ WARNINGS = ("-Wall", "-Wextra", "-Werror")
 LANGUAGES = (("C11", "c", "-std=c11"), ("C++17", "c++", "-std=c++17"))
 
 
-def includes(text: str) -> list[tuple[str, str]]:
-    """(form, name) for every #include of @p text outside a C comment, in
-    order: form is `<` or `"`."""
-    blanked = C_COMMENT_RE.sub(
-        lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
-    return INCLUDE_RE.findall(blanked)
+def join_lines(text: str) -> tuple[str, list[int], list[int], list[int]]:
+    """@p text with its line continuations joined; for each continuation
+    removed, its index in @p text, its index in the joined text, and the
+    number of characters removed up to and including it."""
+    starts, at, removed, total, out, last = [], [], [], 0, [], 0
+    for m in CONTINUATION_RE.finditer(text):
+        out.append(text[last:m.start()])
+        starts.append(m.start())
+        at.append(m.start() - total)
+        total += m.end() - m.start()
+        removed.append(total)
+        last = m.end()
+    out.append(text[last:])
+    return "".join(out), starts, at, removed
+
+
+def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
+    """@p text with line continuations joined and comments blanked, read
+    with the literal rules of @p token_re: once with literals left whole, so
+    an include operand stays, and once with each literal and include operand
+    replaced by `""`, newlines kept, for the search of `__has_include`.  A
+    raw string literal is matched on @p text as written, from its `"` on,
+    because a line continuation inside it is not joined."""
+    joined, starts, at, removed = join_lines(text)
+
+    def to_text(j: int) -> int:
+        k = bisect.bisect_right(at, j)
+        return j + (removed[k - 1] if k else 0)
+
+    def to_joined(t: int) -> int:
+        k = bisect.bisect_left(starts, t)
+        return t - (removed[k - 1] if k else 0)
+
+    kept, bare, pos = [], [], 0
+    while True:
+        m = token_re.search(joined, pos)
+        if m is None:
+            break
+        kept.append(joined[pos:m.start()])
+        bare.append(joined[pos:m.start()])
+        end, token = m.end(), m.group(0)
+        if m.lastgroup == "raw":
+            body = RAW_BODY_RE.match(text, to_text(m.end()))
+            if body is None:
+                # No end: no raw string here, `R` is an identifier.
+                kept.append(token)
+                bare.append(token)
+                pos = end
+                continue
+            end = to_joined(body.end())
+            token = joined[m.start():end]
+        if m.lastgroup == "comment":
+            blank = re.sub(r"[^\n]", " ", token)
+            kept.append(blank)
+            bare.append(blank)
+        elif m.lastgroup == "directive":
+            kept.append(token)
+            bare.append(re.sub(r"[^\n]", " ", token))
+        else:
+            kept.append(token)
+            bare.append('""' + re.sub(r"[^\n]", "", token))
+        pos = end
+    kept.append(joined[pos:])
+    bare.append(joined[pos:])
+    return "".join(kept), "".join(bare)
+
+
+def pio_c_code(text: str) -> str:
+    """The C that pioasm writes from the .pio @p text into the header it
+    generates with `-o c-sdk`: the lines of each `% c-sdk {` block after the
+    first `.program`, in order, without its blank lines, each block ended
+    by a newline.  The code blocks are found as pioasm 2.3.0 lexes the file
+    (PIO_BLOCK_RE): a `;` inside a `/* */` comment ends nothing, a `/*` in a
+    `;` comment opens nothing, and a block of another language and a block
+    before the first program are not written."""
+    blocks, program, i, n = [], False, 0, len(text)
+    while i < n:
+        if text.startswith((";", "//"), i):
+            i = text.find("\n", i)
+        elif text.startswith("/*", i):
+            i = text.find("*/", i + 2)
+            i = -1 if i < 0 else i + 2
+        elif text[i] == "%" and PIO_BLOCK_RE.match(text, i):
+            start = PIO_BLOCK_RE.match(text, i)
+            name = start.group(1).strip(" \t") or "c-sdk"
+            lines, i = [], start.end()
+            while i <= n:
+                eol = text.find("\n", i)
+                eol = n if eol < 0 else eol
+                line = text[i:eol]
+                if PIO_BLOCK_END_RE.fullmatch(line):
+                    break
+                if line.strip(" \t\r"):
+                    lines.append(line + "\n")
+                i = eol + 1
+            else:
+                eol = n
+            i = eol
+            if program and name == "c-sdk":
+                blocks.append("".join(lines) + "\n")
+        elif text[i] == "." and PIO_DIRECTIVE_RE.match(text, i):
+            word = PIO_DIRECTIVE_RE.match(text, i)
+            if word.group(1).lower() == "lang_opt":
+                i = text.find("\n", i)
+            else:
+                program = True
+                i = word.end()
+        else:
+            i += 1
+        if i < 0:
+            break
+    return "".join(blocks)
+
+
+def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
+    """includes() of @p text under the literal rules of @p token_re."""
+    kept, bare = blank_source(text, token_re)
+    found = []
+    for line in kept.split("\n"):
+        if BARE_DIRECTIVE_RE.match(line):
+            found.append(("#", line.strip()))
+            continue
+        hit = INCLUDE_RE.match(line)
+        if hit:
+            operand = hit.group(2).strip()
+            op = OPERAND_RE.match(operand)
+            if op and hit.group(1) == "include_next":
+                found.append(("next", operand))
+            elif op:
+                found.append(("<", op.group(1)) if op.group(1) is not None
+                             else ('"', op.group(2)))
+            else:
+                found.append(("?", operand))
+    for use in HAS_INCLUDE_RE.finditer(bare):
+        if not tested_as_macro(bare, use.start()):
+            found.append(("?", use.group(0)))
+    return found
+
+
+def tested_as_macro(bare: str, start: int) -> bool:
+    """True when the name `__has_include` at @p start of @p bare (the text
+    with comments blanked and literals replaced by `""`) is the operand of
+    `#ifdef`, `#ifndef`, `#elifdef` or `#elifndef`, or of a `defined` term
+    on an `#if` or `#elif` line that holds nothing but such terms, white
+    space, `(`, `)`, `!`, `&` and `|`."""
+    line_start = bare.rfind("\n", 0, start) + 1
+    if IFDEF_BEFORE_RE.match(bare[line_start:start]):
+        return True
+    line_end = bare.find("\n", start)
+    line = bare[line_start:None if line_end < 0 else line_end]
+    cond = IF_LINE_RE.match(line)
+    if cond is None:
+        return False
+    at = start - line_start
+    if not any(term.start() < at < term.end()
+               for term in DEFINED_TERM_RE.finditer(line)):
+        return False
+    rest = HAS_INCLUDE_RE.sub(" ", DEFINED_TERM_RE.sub(" ", cond.group(1)))
+    return LOGIC_ONLY_RE.fullmatch(rest) is not None
+
+
+def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
+    """(form, name) for every include directive of @p text outside a C
+    comment: form is `<` or `"`, or `?` when the operand is neither (a
+    macro) and name is the operand as written; for `#include_next` with a
+    `<...>` or `"..."` operand, form is `next` and name is the operand with
+    its delimiters.  A line of only `#` or `%:`
+    is form `#`, each trigraph of the C is form `??` with the trigraph as
+    name, a NUL byte anywhere in @p text is form `NUL` with the number of
+    the line of the first one (CRLF, LF and a lone CR end a line), and the
+    name `__has_include` or `__has_include_next` outside a literal, except
+    as the operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` and
+    of a `defined` term on an `#if` or `#elif` line of nothing but such
+    terms and `( ) ! & |` (tested_as_macro()), is form `?`.  The text is
+    read under each set of literal rules in LITERAL_VIEWS, and an entry
+    found under any of them is listed, in the order of the first view that
+    finds it, as often as the view that finds it most often.  @p pio is
+    true for the text of a .pio file, whose C is read as pioasm writes it
+    into the generated header (pio_c_code()).  CRLF and a lone CR end a
+    line of C, after pio_c_code(), because pioasm keeps a CR as a
+    character of the line."""
+    found: list[tuple[str, str]] = []
+    if "\0" in text:
+        before = NEWLINE_RE.sub("\n", text[:text.index("\0")])
+        found.append(("NUL", str(before.count("\n") + 1)))
+    if pio:
+        text = pio_c_code(text)
+    text = NEWLINE_RE.sub("\n", text)
+    for token_re in SOURCE_TOKEN_RES:
+        seen: dict[tuple[str, str], int] = {}
+        for entry in view_includes(text, token_re):
+            seen[entry] = seen.get(entry, 0) + 1
+            if seen[entry] > found.count(entry):
+                found.append(entry)
+    found.extend(("??", tri) for tri in TRIGRAPH_RE.findall(text))
+    return found
+
+
+def source_includes(path: pathlib.Path) -> list[tuple[str, str]]:
+    """includes() of the file at @p path: its bytes as UTF-8 with an
+    optional byte order mark, a .pio file read as pioasm reads it."""
+    return includes(path.read_bytes().decode("utf-8-sig"),
+                    path.suffix == ".pio")
 
 
 def modules(root: pathlib.Path = PROTOCOLS) -> list[pathlib.Path]:
@@ -166,8 +606,44 @@ def include_problems(module: pathlib.Path) -> list[str]:
     for path in files:
         rel = path.relative_to(module.parent).as_posix()
         in_driver = is_driver(path, module)
-        for form, name in includes(path.read_text(encoding="utf-8")):
+        for form, name in source_includes(path):
+            if form == "#":
+                problems.append(
+                    f"{rel} has a line of only {name}: a comment across "
+                    "a line break can hide the include that follows")
+                continue
+            if form == "??":
+                problems.append(
+                    f"{rel} has the trigraph {name}, which ISO C11 and C17 "
+                    "replace and the check does not read")
+                continue
+            if form == "NUL":
+                problems.append(
+                    f"{rel} has a NUL byte on line {name}, which GCC reads "
+                    "as white space and the check does not read")
+                continue
+            if form == "?":
+                problems.append(
+                    f"{rel} includes {name}: an include the check cannot "
+                    "resolve (a macro or __has_include)")
+                continue
+            if form == "next":
+                inner = name[1:-1]
+                if not (inner in C_STANDARD or (
+                        in_driver and SDK_RE.match(inner) is not None)):
+                    problems.append(
+                        f"{rel} has #include_next {name}: it includes the "
+                        "next file of that name on the search path, outside "
+                        "the module")
+                    continue
+                form, name = name[0], inner
             if name in C_STANDARD:
+                continue
+            parts = re.split(r"[/\\]", name)
+            if ".." in parts or name.startswith(("/", "\\")):
+                problems.append(
+                    f"{rel} includes {name}: a path with a .. component "
+                    "or an absolute path")
                 continue
             if form == '"' and name in core:
                 continue
@@ -212,6 +688,62 @@ def layout_problems(module: pathlib.Path) -> list[str]:
                              (".h", "header")):
             if not list((module / DRIVER).glob("*" + suffix)):
                 problems.append(f"{name}/{DRIVER}/ has no {what}")
+    return problems
+
+
+def prose(text: str) -> str:
+    """@p text without its HTML comments and fenced code blocks: a
+    `# comment` in a CMake or shell example is no heading.  Comments go
+    first, so a fence marker inside one opens nothing.  A fence closes on a
+    fence of the same character, at least as long, or at the end of the
+    text.  A backtick fence takes no backtick in its info string.
+
+    Not supported: a `<!--` inside inline code or a fenced block drops the
+    text up to the next `-->` or the end; a fence indented 4 or more spaces
+    in a list item is not a fence here.  The first fails by demanding
+    headings, the second counts a heading inside it."""
+    text = HTML_COMMENT_RE.sub(
+        lambda m: re.sub(r"[^\n]", "", m.group(0)), text)
+    out, fence = [], ""
+    for line in text.splitlines(keepends=True):
+        m = FENCE_RE.match(line)
+        if m and m.group(1)[0] == "`" and not fence \
+                and not BACKTICK_FENCE_RE.match(line):
+            m = None
+        if fence:
+            if (m and m.group(1)[0] == fence[0]
+                    and len(m.group(1)) >= len(fence)
+                    and not line[m.end():].strip()):
+                fence = ""
+        elif m:
+            fence = m.group(1)
+        else:
+            out.append(line)
+    return "".join(out)
+
+
+def readme_problems(module: pathlib.Path) -> list[str]:
+    """What the README of @p module lacks: an Interface heading, a
+    heading with "Trademark" where a brand is named, and for a module without a
+    pin driver the statement that there is none."""
+    path = module / "README.md"
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8")
+    rel = path.relative_to(module.parent).as_posix()
+    shown = prose(text)
+    headings = [EMPHASIS_RE.sub("", LINK_RE.sub(r"\1", h)).strip().lower()
+                for h in HEADING_RE.findall(shown)]
+    problems = []
+    if not any("interface" in h for h in headings):
+        problems.append(f'{rel} has no heading with "Interface"')
+    brands = sorted(set(BRAND_RE.findall(text)))
+    if brands and not any("trademark" in h for h in headings):
+        problems.append(f'{rel} names {", ".join(brands)} and has no '
+                        'heading with "Trademark"')
+    if not (module / DRIVER).is_dir() and not NO_DRIVER_RE.search(shown):
+        problems.append(f'{rel} does not say "no pin driver": the module '
+                        f"has no {DRIVER}/ folder")
     return problems
 
 
@@ -342,6 +874,7 @@ def check(root: pathlib.Path = PROTOCOLS) -> list[str]:
     for module in modules(root):
         problems += layout_problems(module)
         problems += include_problems(module)
+        problems += readme_problems(module)
         problems += cmake_problems(module)
         problems += header_problems(module, cc, cxx)
     problems += assertion_problems(root, ASSERTED if root == PROTOCOLS

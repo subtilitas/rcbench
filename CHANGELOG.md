@@ -67,6 +67,59 @@ history is in git.
 
 ### Changed
 
+- `tools/check_protocols.py` checks that a module's `README.md` has an
+  "Interface" heading, a heading with "Trademark" in it where it names a
+  brand, and the words "no pin driver" where the module has no `rp2350/`
+  folder; the Interface heading and "no pin driver" count outside fenced
+  code blocks and HTML comments only. That heading is any heading that contains
+  "trademark", in any case, emphasis and link markup ignored. Brand names
+  match anywhere in the file (paths, addresses, code blocks and comments
+  included), in any case, with a version suffix (`DShot300`, `S.BUS2`) and
+  inside an identifier, file name or number (`kst_session_t`, `hitec_x.c`,
+  `www.futaba.com`, `2kst`), not next to a letter (`KSTART`, `KstSession`).
+  An include path
+  with a `..` component or an absolute path in a module fails; so does an
+  include the tool cannot resolve (a macro operand, or the name
+  `__has_include` outside a literal, also as the body of a macro; as the
+  operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` it passes, and
+  as the operand of a `defined` term on an `#if` or `#elif` line that holds
+  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`), an
+  `#include_next` of anything but a C standard header or, in a
+  C file under `rp2350/`, a pico-sdk header, a line
+  of only `#` or `%:`, any trigraph (`??` followed by one of
+  `= / ' ( ) ! < > -`) anywhere in the C of the file, a token after an
+  include operand, and a NUL byte anywhere in the file.
+  `#import`, the `%:` digraph, line continuations (LF
+  and CRLF, also with blanks between the backslash and the newline), a
+  lone CR as a line end, `//` inside a string or a raw string literal, a
+  quote without its closing quote, which runs to the line end (a
+  backslash before that line end escapes nothing), a number with digit
+  separators (`1'000`; a `'` before a `.`, a `$`, a universal character
+  name or a character outside ASCII ends it), an exponent sign (`1e-x`),
+  `$`, universal character names (also `\u{e9}` and `\N{...}` in gnu23,
+  C++23 and gnu++14 or later) and characters outside ASCII, a leading
+  byte order mark, form feed and vertical tab are read. Each file is read under the literal rules
+  of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit
+  separators), and gnu23 and C++14 or later (both); an include found under
+  any of them counts. A line continuation inside a raw string literal is
+  kept. The C of a `.pio` file is the text pioasm 2.3.0 writes into the
+  generated header: the `% c-sdk {` blocks after the first `.program`,
+  found as pioasm lexes the file (a `;` inside a `/* */` comment ends
+  nothing, an empty block name is c-sdk, a lone CR is a character of its
+  line, a block ends only at `%}` in column 0). The CMake include
+  directories and link targets of a module are not checked, a
+  `__has_include` that a macro pastes together with `##` passes, and a
+  number after `€` or `·` fails the include after it although GCC 13
+  reads both as identifier characters. Current limitations that let an
+  include through: a delimited or named universal character name
+  (`\u{e9}`, `\N{...}`) continues a number also in C23 and C++14 to
+  C++20, where GCC 13 ends it (`0'0 1\u{e9}'x /* '` hides the include on
+  the next line under `-std=c++17`); a comment or raw string literal
+  across a line break ends the line for the `defined` rule while GCC 13
+  continues the directive (a macro body line `*/ #if ) defined
+  __has_include` passes); and no number starts after U+2E2F (`ⸯ`), while
+  GCC 13 starts one there in C23.
+
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the
   product page. The jumper V Selector (header H3, print 5V and 3V3) sets the
