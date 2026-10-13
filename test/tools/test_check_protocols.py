@@ -12,6 +12,10 @@ import pytest
 
 import check_protocols as cp
 
+# A scan that loops forever ends the run with a dump of every thread's stack
+# instead of hanging it (conftest.py, no_hang).
+pytestmark = pytest.mark.usefixtures("no_hang")
+
 GUARD_OPEN = '#ifdef __cplusplus\nextern "C" {\n#endif\n'
 GUARD_CLOSE = "#ifdef __cplusplus\n}\n#endif\n"
 
@@ -1198,11 +1202,22 @@ MARK = "rcb_outside_marker"
 OUT = '#include "../outside.h"\n'
 
 # A digit, then a character that continues a GCC preprocessing number
-# besides a letter, digit and `_`: `$`, universal character names, and
-# characters outside ASCII (U+00E9, U+0301, U+203F, U+00B7, U+200D).
+# besides a letter, digit and `_`: `$`, universal character names with
+# lowercase and uppercase hex digits, delimited and named ones (gnu23, C++23
+# and gnu++14 on), and characters outside ASCII (U+00E9, U+0301, U+203F,
+# U+00B7, U+200D).
 NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
+                           "1\\u00E9", "1\\u00AA", "1\\U000000E9",
+                           "1\\u{e9}", "1\\u{E9}", ".1\\u{e9}",
+                           "1\\N{LATIN SMALL LETTER E WITH ACUTE}",
+                           "1\\N{CJK UNIFIED IDEOGRAPH-4E00}",
                            "1\u00e9", "1\u0301", "1\u203f", "1\u00b7",
                            "1\u200d")
+# A character before a digit that starts the number there: `×` and a
+# no-break space are no identifier characters, so C23 reads `1'a`, then the
+# character literal `' /* '`.  A punctuator ends a number: `1<'a'` is `1`,
+# `<` and the character literal `'a'`.
+NUMBER_STARTS = {"\u00d71": True, "\u00a01": True, "1<": False}
 
 DIFF_C = [
     ("c", "#define RCB_IGNORE(...)\nRCB_IGNORE(0x1'2' \" ' /*\")\n" + OUT
@@ -1281,6 +1296,8 @@ DIFF_C = [
     *[("h", "#define Z " + n + "'a' /* '\n" + OUT + "/* */\n")
       for n in NUMBER_IDENTIFIER_CHARS],
     ("h", "#define Z 1'$a' /* '\n" + OUT + "/* */\n"),
+    *[("c", "#define Z " + n + "'a' /* '\n" + OUT + "/* */\n")
+      for n in NUMBER_STARTS],
 ]
 # The C pioasm writes for these .pio texts, read by gcc: True where the
 # include is live.  Run without pioasm too, as fixed expectations.
@@ -1434,6 +1451,8 @@ def test_a_pio_file_gives_the_c_pioasm_writes(text):
     *[("#define Z " + n + "'a' /* '\n" + OUT + "/* */\n", True)
       for n in NUMBER_IDENTIFIER_CHARS],
     ("#define Z 1'$a' /* '\n" + OUT + "/* */\n", False),
+    *[("#define Z " + n + "'a' /* '\n" + OUT + "/* */\n", found)
+      for n, found in NUMBER_STARTS.items()],
     ("#define Z 1'\u00e9a' /* '\n" + OUT + "/* */\n", False),
     ("#define Z $1'a' /* '\n" + OUT + "/* */\n", False)])
 def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
@@ -1533,10 +1552,26 @@ def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
     ("#undef __has_include\n", "__has_include"),
     ("#ifdef A __has_include\n#endif\n", "__has_include"),
     ("#if !defined(A) && __has_include(<a.h>)\n#endif\n", "__has_include"),
-    ("int undefined __has_include;\n", "__has_include")])
+    ("int undefined __has_include;\n", "__has_include"),
+    # `defined` that is no `#if` operator: part of the identifier `$defined`
+    # or `x\u00b7defined`, a macro parameter, or pasted to `un` in a macro
+    # argument.  GCC 13 evaluates each call.
+    *[("#define " + n + "\n#if " + n + ' __has_include("../../x.h")\n'
+       "#endif\n", "__has_include") for n in ("$defined", "x\u00b7defined")],
+    ('#define F(defined) defined __has_include\n#if F()("../../x.h")\n'
+     "#endif\n", "__has_include"),
+    ("#define undefined\n#define G(x) un##x\n"
+     '#if G(defined __has_include)("../../x.h")\n#endif\n', "__has_include"),
+    ("#define undefined\n#define P(x) x##defined __has_include\n"
+     '#if P(un)("../../x.h")\n#endif\n', "__has_include"),
+    # Any other token on the line fails the `defined` term too.
+    ("#if X || defined(__has_include)\n#endif\n", "__has_include"),
+    ("#if defined(__has_include) && 1\n#endif\n", "__has_include")])
 def test_the_name_has_include_outside_a_literal_fails(text, name):
     """GCC evaluates a macro that stands for `__has_include` as the call, so
-    the name fails wherever it stands outside a literal."""
+    the name fails wherever it stands outside a literal, except as the
+    operand of a `defined` term on an `#if` line of nothing but such terms
+    and `( ) ! & |`."""
     assert cp.includes(text) == [("?", name)]
 
 
@@ -1547,6 +1582,13 @@ def test_the_name_has_include_outside_a_literal_fails(text, name):
     "#if defined __has_include && defined(__has_include_next)\n#endif\n",
     "#if defined ( __has_include ) || defined\t__has_include\n#endif\n",
     "#if defined /* x */ ( /* y */ __has_include )\n#endif\n",
+    "#if !(defined(__has_include) || defined __has_include_next)\n#endif\n",
+    "#if 0\n%:elif defined(__has_include)\n#endif\n",
+    # No limit on the white space and comments between `defined` and the
+    # name: 60 and 100 characters.
+    *["#if defined" + gap + "__has_include\n#endif\n"
+      for gap in (" " * 60, " " * 100, "/*" + "x" * 96 + "*/")],
+    "#if defined(" + " " * 100 + "__has_include)\n#endif\n",
     "#if foo__has_include || __has_include_x || __has_include__\n#endif\n",
     'puts("__has_include"); /* __has_include */\n'])
 def test_has_include_as_the_operand_of_defined_or_ifdef_passes(text):

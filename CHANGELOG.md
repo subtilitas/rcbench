@@ -71,8 +71,10 @@ history is in git.
   with a `..` component or an absolute path in a module fails; so does an
   include the tool cannot resolve (a macro operand, or the name
   `__has_include` outside a literal, also as the body of a macro; as the
-  operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` it
-  passes), an `#include_next` of anything but a C standard header or, in a
+  operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` it passes, and
+  as the operand of a `defined` term on an `#if` or `#elif` line that holds
+  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`), an
+  `#include_next` of anything but a C standard header or, in a
   C file under `rp2350/`, a pico-sdk header, a line
   of only `#` or `%:`, any trigraph (`??` followed by one of
   `= / ' ( ) ! < > -`) anywhere in the C of the file, a token after an
@@ -84,7 +86,8 @@ history is in git.
   backslash before that line end escapes nothing), a number with digit
   separators (`1'000`; a `'` before a `.`, a `$`, a universal character
   name or a character outside ASCII ends it), an exponent sign (`1e-x`),
-  `$`, universal character names and characters outside ASCII, a leading
+  `$`, universal character names (also `\u{e9}` and `\N{...}` in gnu23,
+  C++23 and gnu++14 or later) and characters outside ASCII, a leading
   byte order mark, form feed and vertical tab are read. Each file is read under the literal rules
   of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit
   separators), and gnu23 and C++14 or later (both); an include found under
@@ -94,8 +97,10 @@ history is in git.
   found as pioasm lexes the file (a `;` inside a `/* */` comment ends
   nothing, an empty block name is c-sdk, a lone CR is a character of its
   line, a block ends only at `%}` in column 0). The CMake include
-  directories and link targets of a module are not checked, and a
-  `__has_include` that a macro pastes together with `##` passes.
+  directories and link targets of a module are not checked, a
+  `__has_include` that a macro pastes together with `##` passes, and a
+  number after `€` or `·` fails the include after it although GCC 13
+  reads both as identifier characters.
 
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the

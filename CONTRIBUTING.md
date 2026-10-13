@@ -232,8 +232,15 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   because the tool does not expand macros, and so does a token after an
   include operand; the name `__has_include` or `__has_include_next`
   outside a literal fails, as a call and as the body of a macro, and passes
-  as the operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and
-  `#elifndef`; a line of only `#` or `%:`, any trigraph
+  as the operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef`, and as
+  the operand of a `defined` term (`defined NAME`, `defined(NAME)`) on an
+  `#if` or `#elif` line that holds nothing but such terms, white space,
+  `(`, `)`, `!`, `&` and `|`; with any other token on that line the name
+  fails (`#if X || defined(__has_include)`), because a macro can take
+  `defined` into an argument and paste it to another name, and it fails
+  after a `defined` joined to the identifier before it (`$defined`); a
+  line of only `#` or
+  `%:`, any trigraph
   (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C (in a
   `.pio` file, the C pioasm writes) and a NUL byte anywhere in the file
   fail, because they can hide an include (ISO C11 and C17 read `??/` as a
@@ -250,7 +257,11 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   inside it kept, and a number runs through digit separators (`1'000`,
   but not a `'` before a `.`, a `$`, a universal character name or a
   character outside ASCII), exponent signs (`1e-x`), `$`, universal
-  character names and characters outside ASCII (`1$'a` in C23); the C of a
+  character names (`\u00e9`, `\U000000E9`, and in gnu23, C++23 and
+  gnu++14 or later also `\u{e9}` and
+  `\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters outside ASCII
+  (`1$'a` in C23), and starts at a digit after any character but a letter,
+  a digit, `_` and `$` (`×1'a` is a number, `é1` an identifier); the C of a
   `.pio` file is what pioasm 2.3.0
   writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
@@ -273,7 +284,10 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   are not checked. The CMake include directories and link targets of a
   module are not checked: only `REQUIRES` and `rcbench_` library names are
   read. A `__has_include` that a macro pastes together with `##`
-  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call.
+  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call. A
+  digit after `€` or `·` starts a number, while GCC 13 reads both as
+  identifier characters, so `€1'a' /* '` fails the include after it, which
+  GCC reads as part of a comment.
   The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls

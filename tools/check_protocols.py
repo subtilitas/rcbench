@@ -31,12 +31,18 @@ This tool reads each module and fails when one of these does not hold:
   `<...>` nor `"..."` (a macro include) fails, because the tool does not expand
   macros.  The name `__has_include` or `__has_include_next` outside a literal
   fails for the same reason, as a call and also as the body of a macro, which
-  GCC evaluates as the call; as the operand of `defined`, `#ifdef`, `#ifndef`,
-  `#elifdef` and `#elifndef` it passes.  A token after the operand fails the
-  include as well.  An `#include_next` fails unless it names a C standard
-  header or, in a C file under rp2350/, a pico-sdk header: it searches the
-  include path after the directory of the file, so it reaches the next file of
-  that name outside the module.  A line of only `#` or `%:` fails, because a
+  GCC evaluates as the call.  It passes as the operand of `#ifdef`, `#ifndef`,
+  `#elifdef` and `#elifndef`, and as the operand of a `defined` term
+  (`defined NAME`, `defined(NAME)`) on an `#if` or `#elif` line that holds
+  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`.  Any
+  other token on that line fails it (`#if X || defined(__has_include)`),
+  because a macro can take `defined` into an argument and paste it to
+  another name, and so does a `defined` joined to the identifier before it
+  (`$defined`).  A token after the operand fails the include as well.  An
+  `#include_next` fails unless it names a C standard header or, in a C file
+  under rp2350/, a pico-sdk header: it searches the include path after the
+  directory of the file, so it reaches the next file of that name outside the
+  module.  A line of only `#` or `%:` fails, because a
   comment across a line break can hide the include that follows.  A trigraph
   (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C, also in a
   comment or a literal (in a .pio file, in the C written, as below), fails: ISO
@@ -51,8 +57,13 @@ This tool reads each module and fails when one of these does not hold:
   (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
   a number is one preprocessing number, through digit separators (`1'000`, but
   not a `'` before a `.`, a `$`, a universal character name or a character
-  outside ASCII), exponent signs (`1e-x`), `$`, universal character names and
-  characters outside ASCII (`1$'a` in C23).  The C of a .pio file is
+  outside ASCII), exponent signs (`1e-x`), `$`, universal character names
+  (`\\u00e9`, `\\U000000E9`, and in gnu23, C++23 and gnu++14 or later also
+  `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters
+  outside ASCII (`1$'a` in C23).  A number starts at a digit after any
+  character but a letter, a digit, `_` and `$`; a letter or digit outside
+  ASCII continues an identifier (`é1`), and after any other character
+  outside ASCII a number starts (`×1'a`).  The C of a .pio file is
   the text pioasm 2.3.0 writes into the header it generates: the lines of each
   `% c-sdk {` block after the first `.program`, in order.  The blocks are found
   as pioasm's lexer finds them, on the file as written: a `;` or `//` comment
@@ -93,6 +104,12 @@ module are not checked.  A module that adds a project directory with
 `target_include_directories` or links a project library other than an
 `rcbench_` one passes, and a header found there can shadow a module header
 of the same name.  Only `REQUIRES` and `rcbench_` names are read.
+
+Current limitation: a digit after a character outside ASCII that is neither
+a letter nor a digit starts a number, as GCC 13 reads it after `×` and a
+no-break space.  GCC 13 reads `€` and `·` as identifier characters,
+so `€1'a' /* '` fails the include after it, which GCC reads as part of
+a comment.
 
 Current limitation: a `__has_include` that a macro pastes together with `##`
 (`#define CAT(a, b) a##b`, then `#if CAT(__has_, include)("../x.h")`) passes,
@@ -168,10 +185,13 @@ RAW_BODY_RE = re.compile(
 STRING_LITERAL = r'"(?:\\[^\n]|[^"\\\n])*"?'
 CHAR_LITERAL = r"'(?:\\[^\n]|[^'\\\n])*'?"
 # A character that continues a GCC identifier or preprocessing number
-# besides a letter, digit and `_`: `$`, a universal character name and a
-# character outside ASCII.
+# besides a letter, digit and `_`: `$`, a universal character name
+# (`\u00e9`, `\U000000e9`, and the delimited `\u{e9}` and named
+# `\N{LATIN SMALL LETTER E WITH ACUTE}` of gnu23, C++23 and gnu++14 or
+# later) and a character outside ASCII.
 IDENTIFIER_CHAR = (r"(?:[\w$]|[^\x00-\x7f]|\\u[0-9A-Fa-f]{4}"
-                   r"|\\U[0-9A-Fa-f]{8})")
+                   r"|\\U[0-9A-Fa-f]{8}|\\u\{[0-9A-Fa-f]+\}"
+                   r"|\\N\{[A-Za-z0-9 _-]+\})")
 
 
 def number_re(separators: bool) -> str:
@@ -179,10 +199,11 @@ def number_re(separators: bool) -> str:
     letters, `_`, `.`, an exponent sign after e, E, p or P, `$`, universal
     character names and characters outside ASCII, as GCC's lex_number reads
     it; with digit separators (C23, C++14) also a `'` before a digit, letter
-    or `_`.  A `'` before a `.`, a `$`, a universal character name or a
-    character outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1`
-    and the character literal `'.x'`, and in C23 `1$'a'` is the number
-    `1$'a`, then a `'` that opens a character literal."""
+    or `_`.  It starts at a digit after no letter, digit, `_` or `$`.  A
+    `'` before a `.`, a `$`, a universal character name or a character
+    outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1` and the
+    character literal `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then
+    a `'` that opens a character literal."""
     sep = "'?" if separators else ""
     return (r"(?<![\w$])\.?\d(?:[eEpP][+-]|" + sep + r"[A-Za-z0-9_]|\.|"
             + IDENTIFIER_CHAR + ")*")
@@ -216,10 +237,18 @@ OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
 # literal: a call, and also a macro that stands for it (`#define P
 # __has_include`, then `#if P("x.h")`), which GCC evaluates as the call.
 HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
-# What tests the name as a macro and includes nothing: `defined`, with or
-# without a parenthesis, before it, and `#ifdef`, `#ifndef`, `#elifdef` and
-# `#elifndef` before it on its line.
-DEFINED_BEFORE_RE = re.compile(r"\bdefined\s*(?:\(\s*)?\Z")
+# What tests the name as a macro and includes nothing: `#ifdef`, `#ifndef`,
+# `#elifdef` and `#elifndef` before it on its line, and a `defined NAME` or
+# `defined(NAME)` term of an `#if` or `#elif` line whose other text is only
+# such terms, white space, `(`, `)`, `!`, `&` and `|`.  The line holds no
+# other identifier, so no macro takes `defined` into an argument or pastes
+# it to another name, and no `$` or other identifier character joins it to
+# the name before it.
+IF_LINE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*(?:el)?if\b(.*)$")
+DEFINED_TERM_RE = re.compile(
+    r"\bdefined" + WS + r"*(?:\(" + WS + r"*[A-Za-z_]\w*" + WS + r"*\)"
+    + r"|" + WS + r"+[A-Za-z_]\w*)")
+LOGIC_ONLY_RE = re.compile(r"[ \t\f\v()!&|]*")
 IFDEF_BEFORE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS
                              + r"*(?:ifdef|ifndef|elifdef|elifndef)" + WS
                              + r"+\Z")
@@ -451,13 +480,31 @@ def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
             else:
                 found.append(("?", operand))
     for use in HAS_INCLUDE_RE.finditer(bare):
-        start = use.start()
-        line_start = bare.rfind("\n", 0, start) + 1
-        if (DEFINED_BEFORE_RE.search(bare, max(0, start - 80), start)
-                or IFDEF_BEFORE_RE.match(bare[line_start:start])):
-            continue
-        found.append(("?", use.group(0)))
+        if not tested_as_macro(bare, use.start()):
+            found.append(("?", use.group(0)))
     return found
+
+
+def tested_as_macro(bare: str, start: int) -> bool:
+    """True when the name `__has_include` at @p start of @p bare (the text
+    with comments blanked and literals replaced by `""`) is the operand of
+    `#ifdef`, `#ifndef`, `#elifdef` or `#elifndef`, or of a `defined` term
+    on an `#if` or `#elif` line that holds nothing but such terms, white
+    space, `(`, `)`, `!`, `&` and `|`."""
+    line_start = bare.rfind("\n", 0, start) + 1
+    if IFDEF_BEFORE_RE.match(bare[line_start:start]):
+        return True
+    line_end = bare.find("\n", start)
+    line = bare[line_start:None if line_end < 0 else line_end]
+    cond = IF_LINE_RE.match(line)
+    if cond is None:
+        return False
+    at = start - line_start
+    if not any(term.start() < at < term.end()
+               for term in DEFINED_TERM_RE.finditer(line)):
+        return False
+    rest = HAS_INCLUDE_RE.sub(" ", DEFINED_TERM_RE.sub(" ", cond.group(1)))
+    return LOGIC_ONLY_RE.fullmatch(rest) is not None
 
 
 def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
@@ -470,8 +517,9 @@ def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
     name, a NUL byte anywhere in @p text is form `NUL` with the number of
     the line of the first one (CRLF, LF and a lone CR end a line), and the
     name `__has_include` or `__has_include_next` outside a literal, except
-    as the operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and
-    `#elifndef`, is form `?`.  The text is
+    as the operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` and
+    of a `defined` term on an `#if` or `#elif` line of nothing but such
+    terms and `( ) ! & |` (tested_as_macro()), is form `?`.  The text is
     read under each set of literal rules in LITERAL_VIEWS, and an entry
     found under any of them is listed, in the order of the first view that
     finds it, as often as the view that finds it most often.  @p pio is
