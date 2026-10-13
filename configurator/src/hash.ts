@@ -174,10 +174,24 @@ export function reportIds(ids: string[]): string {
 }
 
 /**
+ * Every token of the key `h` as the hash writes it, well-formed or not. None
+ * for a hash of another version, which the page reads as the base setup.
+ */
+function writtenHave(hash: string, parsed: Parsed): string[] {
+  if (parsed.badVersion) return [];
+  try {
+    const body = hash.startsWith('#') ? hash.slice(1) : hash;
+    return (new URLSearchParams(body).get('h') ?? '').split(',').filter((token) => token !== '');
+  } catch {
+    return [];
+  }
+}
+
+/**
  * A hash as it goes into a document, with '#'. The page keeps the link that
  * opened it until a change, so its address can name a function every setup
- * runs, a test object or a former tick as an owned part, or a "have it" tick
- * that names no row to buy of the setup. Such a hash is written again from
+ * runs, a test object or a former tick as an owned part, or a token under `h`
+ * that is malformed or names no row to buy of the setup. Such a hash is written again from
  * its selection: the function ids are left out, the test object becomes the
  * tick of its function, the former tick is dropped, the "have it" ticks are
  * `have`; the language key stays. `have` holds the ticks the page shows; when
@@ -188,7 +202,7 @@ export function shareHash(hash: string, defaults: Options, catalogue: Catalogue,
   const parsed = parseHash(hash, defaults);
   const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && alwaysOn(catalogue, f)))
     || parsed.selection.owned.some((id) => FORMER_TICKS.includes(id) || catalogue.parts.some((p) => p.id === id && p.testObject === true))
-    || (have !== undefined && parsed.have.some((token) => !have.includes(token)));
+    || (have !== undefined && writtenHave(hash, parsed).some((token) => !have.includes(token)));
   if (!named) return hash;
   const lang = parsed.lang;
   // The start language is set so that a language key in the hash is written and none is added.

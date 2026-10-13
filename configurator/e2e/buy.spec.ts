@@ -225,11 +225,12 @@ for (const size of SIZES) {
       await expect(page.locator('#have')).toHaveCount(0);
       await expect(page.locator('#buy [data-h="ina228.xt90"]')).not.toBeChecked();
       await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&o=xt90');
-      // A link with the stale tick opens with the note that names it, and Copy link leaves it out.
-      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,panel');
-      await expect(page.locator('.msg.note')).toContainText('ina228.matek');
+      // A link with a stale and a malformed tick opens with the note that names both; the link of the print header leaves both out.
+      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,Panel,panel');
+      await expect(page.locator('.msg.note')).toContainText('Panel, ina228.matek');
       await expect(page.locator('#have > li')).toHaveCount(1);
       await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
+      await expect(page.locator('p.printonly')).toContainText(/#v=1&f=escpow&o=xt90&h=panel$/);
     });
 
     test('Copy as text, Copy as CSV and Copy link follow the "have it" ticks', async ({ page, context }) => {

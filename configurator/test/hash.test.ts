@@ -432,6 +432,13 @@ test('the hash of a document holds the "have it" ticks the page shows', () => {
   // A stale tick of the link leaves; the rest and the language stay.
   assert.equal(share('#v=1&f=escpow&o=xt90&h=wire.dmm,ina228.matek&l=de', ['wire.dmm']), '#v=1&f=escpow&o=xt90&h=wire.dmm&l=de');
   assert.equal(share('#v=1&h=wire.nope', []), '#v=1');
+  // A malformed token beside a kept one leaves as well: the parser rejects it, the page drops it.
+  assert.equal(share('#v=1&h=Wire.DMM,panel', ['panel']), '#v=1&h=panel');
+  assert.equal(share('#v=1&f=servo&h=panel,wire.dmm.x&l=de', ['panel']), '#v=1&f=servo&h=panel&l=de');
+  // A repeated token is no dropped token: the hash stays as it is.
+  assert.equal(share('#v=1&h=panel,panel', ['panel']), '#v=1&h=panel,panel');
+  // A hash of another version stays as it is.
+  assert.equal(share('#v=2&h=Wire.DMM', []), '#v=2&h=Wire.DMM');
   // A test object leaves as before and the ticks stay.
   assert.equal(share('#v=1&p=servo&h=panel', ['panel']), '#v=1&f=servo&h=panel');
   const page = 'https://subtilitas.github.io/rcbench/configurator/';
