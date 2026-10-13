@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import type { Lang, Options, Selection } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
-import { formatHash, parseHash, reportIds, testObjectTicks } from '../../src/hash.ts';
+import { formatHash, parseHash, reportIds, reportable, testObjectTicks } from '../../src/hash.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
 export type Built = { prefix: string; unit: string; count: number; suffix: string };
@@ -88,7 +88,7 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   };
   const dropped = [...given.functions, ...given.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
-  const unknown = [...parsed.unknown, ...setup.ignored, ...dropped];
+  const unknown = reportable([...parsed.unknown, ...setup.ignored, ...dropped], CATALOGUE);
   if (unknown.length > 0) notices.push('note');
   // The page draws the selection reduced to known ids.
   const shown = resolve(CATALOGUE, selection);
@@ -125,7 +125,7 @@ export function idsOf(): Corpus['ids'] {
  * The owned parts an entry names that the corpus started with as ticks and the
  * catalogue offers no tick for now, test objects aside (a link reads those as
  * the tick of their function). The page leaves such a part out of the owned
- * parts and reports it; a rule may still bring it into the setup.
+ * parts without a notice; a rule may still bring it into the setup.
  */
 export function namesRetired(entry: Pick<Entry, 'hash'>, corpus: Corpus): string[] {
   const now = idsOf();

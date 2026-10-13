@@ -57,17 +57,15 @@ history is in git.
 
 ### Changed
 
-- The bench configurator no longer offers the T-plug of the PD mini as a part
-  you own. The PD mini brings it, by the rule `pd-tplug`; the part stays in
+- The T-plug of the PD mini (`usbtap`) has no tick in the bench
+  configurator: the PD mini brings it by the rule `pd-tplug`, and it stays in
   the setup, the parts list, the wires and the drawings whenever the PD mini
-  is there. A link with `p=usbtap` loads: the id is left out of the owned
-  parts and named in the notice of ids that are left out, and the PD mini of
-  the same setup still brings the T-plug. Without the PD mini the setup holds
-  no T-plug. A part that a rule adds reads "Included with these parts: PD
-  mini." ("Enthalten bei diesen Teilen: PD mini."), the wording of the
-  functions that the parts of the setup bring; the German wording of those
-  functions changes from "Mit diesen Teilen enthalten." to "Enthalten bei
-  diesen Teilen.". The sweep covers 8 selectable parts, 4096 sets.
+  is there. A link with `p=usbtap` loads; the id is dropped without a notice,
+  and without the PD mini the setup holds no T-plug. A part that a rule adds
+  reads "Included with these parts: PD mini." ("Enthalten bei diesen Teilen:
+  PD mini."); functions that the parts of the setup bring read "Enthalten bei
+  diesen Teilen." in German. The sweep covers 8 selectable parts, 4096 sets.
+
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the
   product page. The jumper V Selector (header H3, print 5V and 3V3) sets the

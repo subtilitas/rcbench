@@ -3,7 +3,7 @@
 // first change, and neither throws nor logs. An entry that names an id the
 // catalogue has added since the corpus started is exempt from the stored
 // setup, alone. An entry that names a part the catalogue no longer offers a tick
-// for is held to the note that names it. A test object under the owned parts of an entry is the tick
+// for is held to no notice for it. A test object under the owned parts of an entry is the tick
 // of the function that drives it alone: the page shows that tick and writes
 // the function in place of the part.
 
@@ -31,13 +31,12 @@ for (const entry of corpus.entries) {
       expectQuiet(seen);
       return;
     }
-    // An entry that names a part without a tick today gets a note that names it, and no tick for it.
+    // An entry that names a part without a tick today gets no tick for it and no notice for it.
     const retired = namesRetired(entry, corpus);
     if (retired.length > 0) {
       const gone = await readSetup(page);
       expect(gone.lang).toBe(want.lang);
-      expect(gone.notices.map((n) => n.kind)).toContain('note');
-      for (const id of retired) expect(gone.notices.map((n) => n.text).join(' ')).toContain(id);
+      for (const id of retired) expect(gone.notices.map((n) => n.text).join(' ')).not.toContain(id);
       expectQuiet(seen);
       return;
     }

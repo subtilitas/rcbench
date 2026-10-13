@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash, testObjectTicks } from '../src/hash.ts';
+import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, reportable, shareHash, testObjectTicks } from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -291,7 +291,7 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
       if (parsed.selection.owned.some((id) => id === 'servo' || id === 'esc')) objects += 1;
       const setup = resolve(CATALOGUE, testObjectTicks(parsed.selection, CATALOGUE));
       // The T-plug has no tick any more. A stored link that names it gets the T-plug from the PD mini when the
-      // setup holds the PD mini, as stored, and none otherwise: there it is reported as ignored.
+      // setup holds the PD mini, as stored, and none otherwise: there the resolver lists it as ignored.
       if (parsed.selection.owned.includes('usbtap')) {
         assert.deepEqual(setup.ignored, ['usbtap'], link);
         if (!setup.parts.some((r) => r.part.id === 'pdmini')) {
@@ -320,13 +320,16 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
   assert.ok(objects > 300, `${objects} links with a test object as an owned part`);
 });
 
-test('an old link that holds the T-plug loads: the part is left out of the owned parts and reported, the PD mini still brings it', () => {
+test('an old link that holds the T-plug loads: the part is dropped without a notice, the PD mini still brings it', () => {
   // Before the T-plug lost its tick, p=usbtap was a valid owned part.
   const alone = parseHash('#v=1&f=supply&p=usbtap', DEFAULT_OPTIONS);
   assert.deepEqual([alone.badVersion, alone.unknown], [false, []]);
   assert.deepEqual(alone.selection.owned, ['usbtap']);
   const setup = resolve(CATALOGUE, alone.selection);
   assert.deepEqual(setup.ignored, ['usbtap']);
+  // No notice: a former tick is not reported; an unknown id and the id of a part that was never a tick are.
+  assert.deepEqual(reportable([...alone.unknown, ...setup.ignored], CATALOGUE), []);
+  assert.deepEqual(reportable(['usbtap', 'kst', 'charger', 'panel'], CATALOGUE), ['kst', 'charger', 'panel']);
   // The function supply needs the PD mini, which brings the T-plug.
   assert.ok(setup.parts.some((r) => r.part.id === 'usbtap' && r.addedBy.every((a) => a.kind === 'rule' && a.id === 'pd-tplug')));
   // The page draws the selection reduced to the parts it offers a tick for: the T-plug is no part of the written hash.

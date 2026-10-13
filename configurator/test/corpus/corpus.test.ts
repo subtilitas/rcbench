@@ -39,8 +39,8 @@ const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => 
 /**
  * Parts the corpus starts with as ticks and the page no longer offers a tick for.
  * A part of them is in a setup when a rule adds it. A link that names one
- * leaves it out of the owned parts and reports it, so its stored outcome
- * no longer holds; the check in each entry holds it to a note and no tick.
+ * leaves it out of the owned parts without a notice, so its stored outcome
+ * no longer holds; the check in each entry holds it to no tick and no notice.
  */
 const RETIRED = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !OBJECTS.includes(id));
 
@@ -139,11 +139,11 @@ for (const entry of corpus.entries) {
     assert.ok(!rest.owned.some((id) => OBJECTS.includes(id)), 'a test object is a ticked part');
 
     if (namesLater(entry, corpus)) return;
-    // A retired part under the owned parts is reported and left out: the setup it gave before is not stored any more.
+    // A retired part under the owned parts is dropped without a notice: the setup it gave before is not stored any more.
     const names = namesRetired(entry, corpus);
     if (names.length > 0) {
-      assert.ok(rest.notices.includes('note'), `${entry.name} names ${names.join(', ')} and gives no note`);
-      for (const id of names) assert.ok(!rest.owned.includes(id) && rest.reported.split(', ').includes(id), `${id} is not left out`);
+      for (const id of names) assert.ok(!rest.owned.includes(id) && !rest.reported.split(', ').includes(id), `${id} is not dropped silently`);
+      assert.equal(rest.notices.includes('note'), parseHash(hash, DEFAULT_OPTIONS).unknown.length > 0, `${entry.name} gives a note for ${names.join(', ')}`);
       return;
     }
     // Both sides are compared in the ids the corpus starts with: a later entry stores every id.

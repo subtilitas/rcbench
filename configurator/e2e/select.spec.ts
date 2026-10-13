@@ -738,7 +738,7 @@ for (const size of SIZES) {
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
-    test('a link from before the T-plug lost its tick loads: the part is reported and the PD mini still brings it', async ({ page }) => {
+    test('a link from before the T-plug lost its tick loads: the id is dropped without a notice and the PD mini still brings it', async ({ page }) => {
       const seen = watch(page);
       for (const lang of LANGS) {
         const tail = lang === 'en' ? '' : '&l=de';
@@ -746,7 +746,7 @@ for (const size of SIZES) {
         // No tick for the T-plug, in the chooser or among the parts you own.
         await expect(page.locator('#p-usbtap')).toHaveCount(0);
         expect(await page.locator('input[data-p]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.p))).toEqual(['pdmini']);
-        await expect(page.locator('.msg')).toContainText(t(lang, 'badId', { x: 'usbtap' }));
+        await expect(page.locator('.msg')).toHaveCount(0);
         // The T-plug is in the parts list with its reason.
         const reason = lang === 'en' ? 'Included with these parts: PD mini.' : 'Enthalten bei diesen Teilen: PD mini.';
         await expect(page.locator('#result ul.parts:not([id]) > li', { hasText: short('usbtap', lang) })).toContainText(reason);

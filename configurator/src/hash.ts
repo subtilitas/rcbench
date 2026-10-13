@@ -139,6 +139,21 @@ export function formatHash(selection: Selection, lang: Lang, startLang: Lang, ca
   return keys.join('&');
 }
 
+/**
+ * Parts that were a tick under "Parts you own" in links of version 1 and are
+ * brought by a rule now. A link that names one stays valid.
+ */
+export const FORMER_TICKS: readonly string[] = ['usbtap'];
+
+/**
+ * The ids a link names that the notice of left-out ids reports. A former tick
+ * the catalogue still holds as a part is dropped without a notice. Every other
+ * id stays, also the id of a part that was never a tick, such as a locked part.
+ */
+export function reportable(ids: string[], catalogue: Catalogue): string[] {
+  return ids.filter((id) => !(FORMER_TICKS.includes(id) && catalogue.parts.some((p) => p.id === id && !p.selectable)));
+}
+
 /** The ids of a notice as text: at most MAX_REPORTED, each cut to 32 characters. */
 export function reportIds(ids: string[]): string {
   const unique = [...new Set(ids)];

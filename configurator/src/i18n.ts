@@ -37,6 +37,7 @@ const S = {
   adds: ['Adds: ', 'Kommt dazu: '],
   stOwn: ['Selected by you.', 'Von dir gewählt.'],
   stInc: ['Included with these parts.', 'Enthalten bei diesen Teilen.'],
+  stIncBy: ['Included with these parts: ', 'Enthalten bei diesen Teilen: '],
   stBase: ['Included with the base setup.', 'Im Grundaufbau enthalten.'],
   stConn: ['Active: {x} is connected.', 'Aktiv: {x} ist angeschlossen.'],
   stObj: ['Connects: {x}.', 'Schließt an: {x}.'],

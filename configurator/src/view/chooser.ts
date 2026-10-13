@@ -86,7 +86,7 @@ export function reasonText(part: ResolvedPart, view: View): string {
   const out: string[] = [];
   if (always) out.push(t(lang, 'always'));
   if (by.length > 0) out.push(t(lang, 'neededBy') + [...new Set(by)].join(', '));
-  if (included.length > 0) out.push(`${t(lang, 'stInc').slice(0, -1)}: ${[...new Set(included)].join(', ')}`);
+  if (included.length > 0) out.push(`${t(lang, 'stIncBy')}${[...new Set(included)].join(', ')}`);
   if (own) out.push(t(lang, 'youOwn'));
   return out.length > 0 ? `${out.join('. ')}.` : '';
 }
