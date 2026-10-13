@@ -8,12 +8,12 @@ operated.
 ## The status band
 
 The top band is shared by every screen. From the right: STOP, the run clock
-(while armed or after a run), the arm chip, a FAULT code when one is reported,
+(while ARMED or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the coprocessor's outputs, and SIM while no coprocessor answers
 and the panel runs on its own models.
 
-The arm chip names what an arm drives:
+The arm chip names what the switch to ARMED drives:
 
 | Chip | Outputs that drive |
 | --- | --- |
@@ -22,8 +22,8 @@ The arm chip names what an arm drives:
 | ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
 | ARMED | every bound output, on a coprocessor older than protocol 4.18 |
 
-STOP works on every screen. It disarms and latches: the bench stays disarmed
-until it is armed again. Navigating away, an alert expiring or the link
+STOP works on every screen. It switches to SAFE and latches: the bench stays SAFE
+until it is ARMED again. Navigating away, an alert expiring or the link
 recovering does not clear a stop.
 
 ARM is at the bottom of a bench screen; STOP is at the top of the band.
@@ -67,7 +67,7 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
-- "touch did not answer -- the bench will not arm", shown at start, stays
+- "touch did not answer -- the bench will not switch to ARMED", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
 
@@ -102,7 +102,7 @@ the same protocol and be different builds, and this is where that shows.
 
 A missing card or an unusable NVS (non-volatile storage) is a warning. A
 touch controller that does not answer, or a coprocessor with a different
-protocol major version, is a failure and the bench will not arm.
+protocol major version, is a failure and the bench does not switch to ARMED.
 
 When every step has answered, the splash hands over to the menu after a hold
 of 1.6 s; a tap skips the hold.
@@ -131,31 +131,31 @@ Two states show in the warning colour:
 | `TARGET: NO PIN BOUND AS MOTOR` | the binding is read and no pin is bound as a motor |
 | `TARGET: BINDING NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
 
-The throttle still moves in either state. ARM arms the whole bank, not only
+The throttle still moves in either state. ARM switches the whole bank to ARMED, not only
 the pins named here.
 ### The plot covers one run
 
 ![Motor and ESC, telemetry held](img/motor-held.png)
 
-The trace is the record of a run. It advances only while the bench is armed:
-arming clears it, disarming holds it as it stood. The panel tag reads
+The trace is the record of a run. It advances only while the bench is ARMED:
+switching to ARMED clears it, switching to SAFE holds it as it stood. The panel tag reads
 `LIVE TELEMETRY` while it advances, `TELEMETRY HELD` while it holds a run, and
-`TELEMETRY IDLE` before the first arm, when the plot reads `no run recorded`.
+`TELEMETRY IDLE` before the first switch to ARMED, when the plot reads `no run recorded`.
 The right-hand axis label reads `NOW` while it advances and `END` where a held
 one stopped. The readouts, the TABLE pane, the totals and the temperature
-strip are live at all times, armed or not.
+strip are live at all times, ARMED or not.
 
 The window is 534 columns at 20 samples per second, 26.7 s. A longer run holds
 its last 26.7 s; what came before is in the CSV file and not on the screen.
 
-The trace ends at the disarm, not when the motor stops. Disarming commands
+The trace ends at the switch to SAFE, not when the motor stops. Switching to SAFE commands
 zero throttle and the propeller coasts down after it. That coast-down is on
 the readouts and not on the plot, and not in the CSV file either, which closes
 on the same edge.
 
-Arming clears the plot, and a latched stop is cleared by arming, so the trace
+Switching to ARMED clears the plot, and a latched stop is cleared by switching to ARMED, so the trace
 of a run a STOP ended does not survive making the bench usable again. One
-arming writes one CSV file, and the log viewer plots it.
+switching to ARMED writes one CSV file, and the log viewer plots it.
 
 
 The strip above both columns carries the poll rate, the link's error count
@@ -169,46 +169,45 @@ on the track commands nothing, so a touch at the far end asks for nothing; a
 drag across the whole track asks for the whole span, and the pin follows it
 unramped. `-1` and `+1` at the ends of the track step one percentage point.
 
-The throttle changes only on an armed bench. What each control does:
+The throttle changes only while the bench is ARMED. What each control does:
 
-| Control | Not armed | Armed |
+| Control | SAFE | ARMED |
 | --- | --- | --- |
 | The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | arms the throttle outputs after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
+| ARM | switches the throttle outputs to ARMED after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | switches to SAFE on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch the pane | switch the pane |
 
-Not armed, the line under the track reads `ARM FIRST`. The bench is not armed
-from the disarm until it reports armed: a control touched after the ARM hold
-completes and before that report is refused as well. From a DISARM the
-screen asks for, by the tap or by leaving, or a STOP on an armed bench,
-until the bench reports disarmed, the controls are refused too.
+While SAFE, the line under the track reads `ARM FIRST`. The refusal runs
+from the switch to SAFE until the bench reports ARMED: a control touched after
+the ARM hold completes and before that report is refused too. From a DISARM the
+screen asks for, by the tap or by leaving, or a STOP while the bench is ARMED,
+until the bench reports SAFE, the controls are refused too.
 
-A disarm returns the throttle to 0 %, however it happens: the DISARM tap,
+A switch to SAFE returns the throttle to 0 %, however it happens: the DISARM tap,
 STOP, a lost link, a touch controller that stops answering, or leaving the
 screen. The slider, the readout and the `-1` and `+1` steps then stay at
-0.0 % until the next arm, so the first `+1` after an arm asks for 1.0 % and
-the first 1 % turn of the knob asks for 1.0 %. A bench armed without the ARM
+0.0 % until the next switch to ARMED, so the first `+1` after a switch to ARMED asks for 1.0 % and
+the first 1 % turn of the knob asks for 1.0 %. A bench switched to ARMED without the ARM
 hold, by a stick run on PROGRAMMER, starts from 0 % as well. A throttle the
-screen has posted and the panel has not sent when the bench disarms is not
-sent. A finger on the track when the bench arms or disarms moves nothing
+screen has posted and the panel has not sent when the bench switches to SAFE is not
+sent. A finger on the track when the bench switches to ARMED or to SAFE moves nothing
 until it lifts and presses again.
 
 ARM is a hold. The fill fades from green to the danger red across two
-seconds, and the bench arms when the fade completes; letting go before then
-arms nothing, and the release itself arms nothing either.
+seconds, and the bench switches to ARMED when the fade completes; letting go before then
+switches nothing, and the release itself switches nothing either.
 
 The finger has to stay on the button. One that leaves it abandons the hold,
 because the gesture is contact with the control and not with the panel.
 Coming back is not resuming: the contact is finished as far as ARM is
-concerned, so arming after that takes lifting the finger and pressing again.
-A bench that disarms under a finger still held on the button ends the gesture
-too — otherwise the contact made to stop it would arm it again two seconds
-later. Arming flashes the
-whole button twice: white, black, red, and again, one drawn frame each. An
-armed bench carries the danger red, and DISARM is a press rather than a hold:
+concerned, so a switch to ARMED after that takes lifting the finger and pressing again.
+A bench that switches to SAFE under a finger still held on the button ends the gesture
+too — otherwise the contact made to stop it would switch it to ARMED again two seconds
+later. The switch to ARMED flashes the
+whole button twice: white, black, red, and again, one drawn frame each. While ARMED, the button carries the danger red, and DISARM is a press rather than a hold:
 stopping never needs a hold. DISARM and STOP stop the output immediately, with
 no ramp. RESET PEAKS clears the peak markers and leaves the live readings.
 
@@ -263,7 +262,7 @@ bit 5), voltage, current and power are the INA228's: the means of the
 coprocessor's last 50 ms window, read at 20 Hz, with the run's peaks from its
 500 Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
 while a current read the end of the part's range in the last window or since
-the arm: current and power, or their peaks, are then bounds and not values.
+the switch to ARMED: current and power, or their peaks, are then bounds and not values.
 Under the channels, `ESC SAYS` lists the ESC's own telemetry voltage and
 current from the SENSE page, and `diff` is the ESC's figure less the
 INA228's. An ESC that reports a current it does not measure shows a
@@ -274,11 +273,11 @@ shown, here and on the rail. Without the INA228, the channels are the
 ESC's telemetry and `ESC SAYS` is not shown.
 
 The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is
-set: its charge and energy since the arm, accumulated in the part at every
+set: its charge and energy since the switch to ARMED, accumulated in the part at every
 conversion and read in 0.01 mAh and 0.01 Wh steps. The coprocessor takes
-the last run's totals and bit 6 off the bench page on the arm, and the panel
+the last run's totals and bit 6 off the bench page on the switch to ARMED, and the panel
 counts the first 100 ms of a run itself as well, so a page built before the
-arm cannot carry the last run's totals into this one. Without bit 6 the panel counts both from the current
+switch cannot carry the last run's totals into this one. Without bit 6 the panel counts both from the current
 and power shown. When the INA228 stops
 answering mid-run, the count carries on from its last total and does not go
 back.
@@ -300,7 +299,7 @@ without one:
 - Nothing else gates a row. A row the card's queue cannot take is dropped
   and counted, and the band says so at the run's end (see [Logs](#logs)).
 
-`time` is the wall time since the arm in seconds, written to 1 ms, and is
+`time` is the wall time since the switch to ARMED in seconds, written to 1 ms, and is
 not a row count: the first row is not at 0, and a stretch without samples or
 with dropped rows is a step in `time` of that length. The value keeps 1 ms
 of resolution for the first 4.5 h of a run and 2 ms up to 9.1 h.
@@ -336,7 +335,7 @@ coprocessor of protocol 4.11 and
 CH1 enabled every CH1 window is in the file while two reads lie at most
 200 ms apart, and a step in `window` of more than 1 is a window that was
 lost or a number the coprocessor skipped. A window taken while the bench
-was disarmed is in no file. CH1's figures count a clipped sample at the end
+was SAFE is in no file. CH1's figures count a clipped sample at the end
 of the range, 1.638 A on the 0.1 Ω shunt, and keep the sign of a negative
 current. CH2 and CH3 are on the row of their window when the panel read
 both pages within that window, and empty on a row the poll caught up. With
@@ -350,14 +349,14 @@ columns under INA3221.
 
 ![Servo](img/servo.png)
 
-On an armed bench, drag anywhere on the sweep to command a position. The solid arm is the measured
+While the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
 driven. Lifting the finger does not let go: the screen keeps saying the last
 position every SERVO_HOLD_MS, so a servo stays where it was put. **RELEASE**,
 the button, is what returns the surfaces to centre -- and even that leaves the
-pins bound and driving, at the middle of their travel. A disarm, or leaving
-the screen, which disarms, is what stops the edges. With the rotary knob on,
+pins bound and driving, at the middle of their travel. A switch to SAFE, or leaving
+the screen, which switches to SAFE, is what stops the edges. With the rotary knob on,
 turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)).
 
 One finger drags the dial. A press by a second finger anywhere on the screen
@@ -377,20 +376,20 @@ as 90%. It applies to a held output as soon as it is changed. Without
 feedback the horn is drawn moving at the same rate, and at 100% at the
 command at once.
 
-**ARM before anything moves.** ARM here arms the surfaces and a pulsing PROG
-PORT; a throttle output sends no pulse ([An arm for one
-role](Link.md#an-arm-for-one-role)). While the bench is not armed for the
+**ARM before anything moves.** ARM here switches the surfaces and a pulsing PROG
+PORT to ARMED; a throttle output sends no pulse ([An arm for one
+role](Link.md#an-arm-for-one-role)). While the bench is SAFE for the
 surfaces the coprocessor writes a pulse of length zero to every PWM pin, and
 the screen takes no position: the commanded value changes only while the servo follows it. The
 button is a two-second hold, the same
 gesture and the same fade as the one on MOTOR & ESC, and a press on it while
-armed disarms. Leaving the screen disarms and lets go of the pin: a screen
+ARMED switches to SAFE. Leaving the screen switches to SAFE and lets go of the pin: a screen
 that is not visible must not be holding a servo somewhere, or leaving the
-bench armed behind it.
+bench ARMED behind it.
 
-What each control does on a disarmed bench:
+What each control does while the bench is SAFE:
 
-| Control | Disarmed | Armed |
+| Control | SAFE | ARMED |
 | --- | --- | --- |
 | The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
@@ -402,30 +401,30 @@ What each control does on a disarmed bench:
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
-Disarmed, the horn is drawn dimmed and the left card reads `ARM FIRST`. The
+While SAFE, the horn is drawn dimmed and the left card reads `ARM FIRST`. The
 horn and COMMANDED show the position last driven; after a restart, PULSE
-CENTRE. A pulse-width setting changed while disarmed changes the
+CENTRE. A pulse-width setting changed while SAFE changes the
 microseconds COMMANDED shows for that angle, and TRAVEL does not clamp it.
-From a DISARM the screen asks for, by the tap or by leaving, or a STOP on an
-armed bench, until the bench reports disarmed, the Disarmed column holds as
+From a DISARM the screen asks for, by the tap or by leaving, or a STOP while the
+bench is ARMED, until the bench reports SAFE, the SAFE column holds as
 well, and a sweep, a pause, a held position and a run of the automatic test
 end where it is asked.
 
-When the bench arms, the commanded value becomes the rest the pins drive:
+When the bench switches to ARMED, the commanded value becomes the rest the pins drive:
 the midpoint of the channel's endpoints, 1500 us for STANDARD PWM and 760 us
 for NARROW 760, without TRIM. Without feedback the horn is drawn there at
-once. The first drag or knob turn after an arm starts from that value,
+once. The first drag or knob turn after a switch to ARMED starts from that value,
 whatever the screen showed before; a 1 % turn of the knob on STANDARD PWM
-asks for 1510 us. A type or pulse width changed on an armed bench before the
+asks for 1510 us. A type or pulse width changed while the bench is ARMED before the
 first position moves the rest, and the value with it.
 
-A finger on the dial when the bench arms, disarms or stops moves nothing
+A finger on the dial when the bench switches to ARMED, switches to SAFE or stops moves nothing
 until it lifts and presses again. A position, a sweep or a pause the screen
-has posted and the panel has not sent when the bench disarms or stops is not
+has posted and the panel has not sent when the bench switches to SAFE or stops is not
 sent, and a knob turn in that state is withdrawn: the value returns to the
 one before the turn.
 
-RELEASE on an armed bench is the arm's rule again. The pins go to the rest,
+RELEASE while the bench is ARMED follows the rule of the switch to ARMED again. The pins go to the rest,
 and the commanded value becomes that rest: 1500 us for STANDARD PWM, 760 us
 for NARROW 760, without TRIM. The horn is drawn moving there at SPEED. A
 drag under way ends. A press on the dial drives the servo again, and the
@@ -615,7 +614,7 @@ sweep or a pause too, and the horn is drawn at rest, as the coprocessor
 rests the surfaces 500 ms after the last write it heard; no sweep or hold
 asked for before is sent when the link comes back, and the next tap starts
 a sweep.
-A finger on the dial, CENTRE, RELEASE, STOP, a disarm and leaving the screen
+A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the screen
 end a sweep, running or paused, and the button reads SWEEP again. A changed
 type, frame rate, pulse, trim, travel or reverse ends a pause too, and the
 servo is held at the paused angle as a position. With feedback the paused
@@ -629,8 +628,8 @@ then the old curve is drawn on, as the coprocessor runs it, under the
 pulses and TRAVEL it was sent with. Each acknowledgement is matched to the
 command it answers: a SPEED or curve changed while a start waits does not
 let the earlier command's acknowledgement draw the newer one. A changed
-profile or frame rate goes with it at once. SWEEP is offered on an armed
-bench, with a surface bound and the link up, and a coprocessor speaking
+profile or frame rate goes with it at once. SWEEP is offered while the
+bench is ARMED, with a surface bound and the link up, and a coprocessor speaking
 protocol 4.2;
 greyed otherwise; the coprocessor stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
@@ -653,7 +652,7 @@ clears at SPEED 63 %, and for a triangle at 40 %.
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. START TEST needs an armed bench and a supply that answers; the line
+files. START TEST needs the bench in ARMED and a supply that answers; the line
 under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
@@ -678,7 +677,7 @@ of the left card, with the meter the run reads beside STOP TEST: `PD mini`,
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
 the servo and SUPPLY's set points and switch until it ends. It ends early, the output switched off and the servo released
 to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
-disarm, the link going, leaving the screen, a finger on the dial, CENTRE,
+switch to SAFE, the link going, leaving the screen, a finger on the dial, CENTRE,
 SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
 trim, travel, reverse or SPEED, touch events going missing, and on the
 supply: see [the list](Servo.md#what-ends-a-run). Once a run is over, whichever screen is up, SUPPLY's set points go back to
@@ -746,7 +745,7 @@ name opens a keyboard.
 | TEST | DWELL, SETTLE | held at each end; waited after a supply step before measuring |
 | TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
 | TEST | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
-| TEST | START TEST | the automatic test: a 2 s hold on an armed bench; STOP TEST while it runs |
+| TEST | START TEST | the automatic test: a 2 s hold while the bench is ARMED; STOP TEST while it runs |
 | LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
 | LIMITS | STALL AT | above this current the servo counts as stalled |
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
@@ -754,8 +753,8 @@ name opens a keyboard.
 | DUT | REPORT | a text report beside each test's log |
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
 | DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
-| DUT | PWM TARGET | what the tester drives: OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. PROG PORT is what the programmer needs. Locked while armed, during a sweep or a test, and while the programmer holds the port ([the target](ServoProgrammer.md#the-target)) |
-| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; ON under the rule of PWM TARGET, OFF armed or not but not during a sweep or a test, and neither while the programmer holds the port |
+| DUT | PWM TARGET | what the tester drives: OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. PROG PORT is what the programmer needs. Locked while ARMED, during a sweep or a test, and while the programmer holds the port ([the target](ServoProgrammer.md#the-target)) |
+| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; ON under the rule of PWM TARGET, OFF ARMED or not but not during a sweep or a test, and neither while the programmer holds the port |
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
@@ -770,7 +769,7 @@ such pin (`NO SERVO PWM PIN`) and before a binding has been read
 (`PINS NOT READ`). With PROG PORT the row reads `PROG PORT GP13` in the
 warning colour; the pin is the GPIO the coprocessor reports for the
 programming port. The tester's commands then do not reach the SERVO PWM
-outputs; while the bank is armed they hold their rest pulse, the centre
+outputs; while the bank is ARMED they hold their rest pulse, the centre
 between their endpoints. A port target without a usable pin (none, refused
 at start, or a port the coprocessor does not have) reads `PROG PORT`, also in
 the warning colour: the commands go to the port all the same. With PORT PWM
@@ -830,8 +829,8 @@ slice with another programming port's pin runs at 50 Hz only: the RP2350
 gives both pins of a slice one divider and one wrap, so a faster rate there
 is refused. A change of PWM TARGET puts the rate back to 0, each output at
 its own rate, and the screen sends its rate again with the next position. It goes with every held position,
-and a profile changed while the armed servo rests restates the rest with it;
-one changed while an arm is on its way is the one the arm uses.
+and a profile changed while the servo rests ARMED restates the rest with it;
+one changed while a switch to ARMED is on its way is the one that switch uses.
 A faster rate goes after the pulse widths, once all of them have landed; any
 other rate goes before them, and nothing wider goes out until it has landed,
 so the pins never carry a fast rate with a slower profile's wider pulses. The
@@ -849,9 +848,9 @@ back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
-does not arm, from any screen, while the rate the PWM TARGET runs at is not
-known: the arm is refused with `servo frame rate not known -- arm again`, and
-an arm made while the link was down reaches the coprocessor only once the
+does not switch to ARMED, from any screen, while the rate the PWM TARGET runs at is not
+known: the switch to ARMED is refused with `servo frame rate not known -- arm again`, and
+a switch to ARMED made while the link was down reaches the coprocessor only once the
 reset has landed.
 
 The OUTPUT settings and HV SERVO are kept for the session; the rest of the
@@ -944,7 +943,7 @@ separately.
 OFF is a tap. STOP switches the output off on every screen. So does every
 other stop the bench counts -- touch that stops answering, an ON whose touch
 events went missing before a whole frame saw the output on, and the
-coprocessor refusing to stay armed -- and a supply that stops answering, and a
+coprocessor refusing to stay ARMED -- and a supply that stops answering, and a
 trip. The output stays off until it is switched on again. Leaving the screen
 switches off an output SUPPLY switched on: one reported on, or an ON on its
 way. SERVO and ESC STICK do the same for the output each switched on, so an
@@ -1038,8 +1037,8 @@ second finger does nothing anywhere on the screen.
 SETTINGS, at the right of the strip above both columns, opens the supply's
 settings over the left column. Each is kept in the panel's NVS (non-volatile
 storage) and survives a restart. A value opens the keypad; a switch flips on
-the tap. Every change is written at the next frame the bench is disarmed with
-no arm waiting, the supply's output is off with no ON queued and the board's
+the tap. Every change is written at the next frame the bench is SAFE with
+no switch to ARMED waiting, the supply's output is off with no ON queued and the board's
 photograph is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
 WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
@@ -1095,8 +1094,8 @@ time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;charge (mAh);e
 
 A reading that did not arrive is an empty cell. `mode` is CV, CC or OFF, and
 empty while the supply does not answer. `source` is `measured` for the PD mini's
-readings and `model` for the panel's model. The bench takes the log: arming during
-a supply run ends that run's file, and an output still on at the disarm starts
+readings and `model` for the panel's model. The bench takes the log: switching to ARMED during
+a supply run ends that run's file, and an output still on at the switch to SAFE starts
 a new file. That file's charge and energy go on from the totals counted since
 the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
 the control task waits on the link, so an unanswered coprocessor does not thin
@@ -1273,7 +1272,7 @@ where it stored, until DONE:
 
 While it runs, the page shows the phase, the beeps of the group under way
 and the last group. ABORT, STOP and leaving the screen end it with the
-throttle at MIN, the supply off and the bench disarmed. The stack light's
+throttle at MIN, the supply off and the bench SAFE. The stack light's
 green is on while a beep is detected, for at least 150 ms:
 
 ![A run](img/programmer-stick-run.png)
@@ -1348,7 +1347,7 @@ file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
 feed are no row. Runs recorded by the bench are written as
 `BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
-arming, or one switch-on of the SUPPLY output while the bench is not armed.
+switching to ARMED, or one switch-on of the SUPPLY output while the bench is SAFE.
 An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
 which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
 does not show. A number carried by either file is taken, and DELETE on a run
@@ -1378,7 +1377,7 @@ The plot places the rows evenly by row number. The labels under it and the
 cursor's read-out are the file's time column, counted from the file's first
 row, and the header's duration is the last row's time less the first's. A
 gap in the rows is a jump in those times, not a wider stretch of plot. For
-an armed bench's run the time is wall time, so the duration is the run's;
+a run with the bench in ARMED the time is wall time, so the duration is the run's;
 for a file written by firmware 0.15.0 or older it is shorter than the run
 (see Motor & ESC, the CSV file).
 
@@ -1504,7 +1503,7 @@ across a third of its travel from -travel to +travel.
   turn adds to the throttle or the horn's angle and stops at 0 and 100 % or
   at the travel limit. Turning past an end and back moves the value from the
   end.
-- It never arms. ARM is the same hold on the same button.
+- It never switches to ARMED. ARM is the same hold on the same button.
 - The first reading after power-up and the first one after the sensor stopped
   answering set a reference and move nothing, so a knob that comes back
   turned does not jump the slider.
@@ -1522,15 +1521,15 @@ across a third of its travel from -travel to +travel.
   if that frame finds lost touch events first, the command is withdrawn and
   the slider returns to its value from before the knob.
 - The knob replaces only a throttle or a horn position. While another
-  command waits for the frame (an arm that has just completed, a disarm, a
+  command waits for the frame (a switch to ARMED that has just completed, a switch to SAFE, a
   peak reset, a release), the knob's motion in that frame is dropped, not
   held.
-- On SERVO a turn on a disarmed bench moves nothing and is not kept. The arm
+- On SERVO a turn while the bench is SAFE moves nothing and is not kept. The switch to ARMED
   sets the horn to the rest, and the next turn counts from there. A turn
-  posted and not yet sent when the bench disarms or stops is withdrawn. On
-  MOTOR & ESC a turn on a bench that is not armed moves nothing and is not
-  kept either; the disarm returns the slider to 0 %, and the next turn after
-  an arm counts from there.
+  posted and not yet sent when the bench switches to SAFE or stops is withdrawn. On
+  MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
+  kept either; the switch to SAFE returns the slider to 0 %, and the next turn after
+  a switch to ARMED counts from there.
 - Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
 
 ### INTERFACES: the current monitors
@@ -1577,7 +1576,7 @@ the coprocessor takes no other clock. A reading at the top of the INA3221's
 range, 163.8 mV across the shunt, is shown as clipped and never as a value.
 
 The panel writes the set-up to the coprocessor's SENSE page (protocol 4.7)
-500 ms after the last edit, only while the bench is disarmed, and only what
+500 ms after the last edit, only while the bench is SAFE, and only what
 differs from what the page holds: the coprocessor refuses a change while it
 drives, and keeps each change in flash. It reads the page at every link-up
 first, so a set-up the coprocessor already keeps is not written again. When
@@ -1619,7 +1618,7 @@ both said. In order:
 | `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
 | `INA228 not answering at 0x45` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `-- 0x44 answers` is added when the coprocessor's address scan found something where the part could be |
 | `0x40 answers 1408h, not an INA3221 -- not used` | something answers at the part's address with another identity |
-| `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the arm |
+| `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
 | `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
 | `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
 | `coprocessor older than 4.11 -- servo current read from PD mini` | the INA3221 is on with CH1 and the coprocessor speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
@@ -1629,7 +1628,7 @@ A refused set-up is not written again until it changes on SETUP. Pins that
 are one I2C block's pair, refused because an output, the PD mini or the
 board holds one, are offered again every 5 s without another alert, so
 freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
-that stops answering does not disarm the bench: nothing trips on the
+that stops answering does not switch the bench to SAFE: nothing trips on the
 monitors' readings.
 
 #### A row the coprocessor does not hold
@@ -1647,7 +1646,7 @@ pitch split, Tap gap and Tap min periods.
 
 | The mark shows | Until |
 | --- | --- |
-| from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is disarmed |
+| from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is SAFE |
 | on a value the coprocessor refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
 | on INA228, INA3221 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, both monitors on one address, a coprocessor older than the part |
 | after a coprocessor restart or a link-up, on what its page reads differently | the panel has written it |
@@ -1668,7 +1667,7 @@ sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
 | AS5600 centre | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTRE sets it from the live reading |
 
 The panel writes the enable bit with the rest of the bus frame, 500 ms after
-the last edit and only while the bench is disarmed, to a coprocessor that
+the last edit and only while the bench is SAFE, to a coprocessor that
 names protocol 4.9; an older one is sent nothing. While the encoder is
 enabled it reads SENSE's registers 12 to 31 every 40 ms. The band says, each
 once and one at a time like the monitors':
@@ -1696,7 +1695,7 @@ The phase tap hears an ESC's beeps on one motor phase. One coprocessor
 GPIO reads the phase through a series resistor and a zener clamp; the
 coprocessor times the pin's edges and reports each beep's length and pitch.
 The wiring is not in the build guide. The tap is an input: it drives
-nothing, and the coprocessor takes a change armed or not. Its rows follow
+nothing, and the coprocessor takes a change ARMED or not. Its rows follow
 the bus's pins:
 
 | Setting | Range | Default | |
@@ -1772,11 +1771,11 @@ screen is in:
 The press asks; it does not write. Writing settings commits a page of NVS
 (non-volatile storage), and a flash operation on the ESP32-S3 disables the
 instruction cache, so neither core runs for its duration. The write is taken
-on the first frame at which the bench is disarmed with no arm waiting, the
+on the first frame at which the bench is SAFE with no switch to ARMED waiting, the
 supply's output is off with no ON queued, and no board photograph is being
 fetched or kept. On the settings screen that is the next frame, and
-the label goes to `SAVED` as fast as the eye follows the press. Armed, the
-request stands as `WHEN IDLE` until the bench is disarmed.
+the label goes to `SAVED` as fast as the eye follows the press. While ARMED, the
+request stands as `WHEN IDLE` until the bench is SAFE.
 
 A store that refuses leaves the label at `NOT SAVED` in the danger colour
 until the next successful write or the next edit. A refusal does not undo what
@@ -1808,7 +1807,7 @@ column is what both ends counted.
 Leaving it takes a two-second hold, the ARM gesture and the same fade.
 Acknowledging repairs nothing: the bench runs in simulation, nothing drives an
 output, and the test runs again at the next start-up. There is no band and no
-STOP, because nothing can be armed behind it.
+STOP, because the bench cannot switch to ARMED behind it.
 
 ### A link that stops
 
@@ -1829,9 +1828,9 @@ the wire carried frames a moment ago.
 Four seconds, not one: the link drops for a poll now and then, and a screen
 that took over on every blip is a screen operators learn to dismiss.
 
-**Never while armed.** The screen has no STOP, and a bench with something
-spinning must not have its stop button covered by a diagnosis. Armed, the
-alert band says the link is gone and the screen waits for the disarm.
+**Never while ARMED.** The screen has no STOP, and a bench with something
+spinning must not have its stop button covered by a diagnosis. While ARMED, the
+alert band says the link is gone and the screen waits for the switch to SAFE.
 
 The same numbers go to `RCBENCH.LOG` on the SD card, one line per report while
 the link is down:
@@ -1888,10 +1887,10 @@ steps of 10 us (Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us). The
 two settings reach the channels bound as a motor and no others: a SERVO PWM
 channel keeps 1000 to 2000 us, or the range the SERVO screen sends for the
 servo chosen there. An edit reaches the coprocessor 300 ms after the last
-change while the bench is disarmed; one made while it is armed waits for the
-disarm. A coprocessor that links up is brought to the two settings before
-the bench drives it: on a bench already armed, the coprocessor is held
-disarmed until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
+change while the bench is SAFE; one made while it is ARMED waits for the
+switch to SAFE. A coprocessor that links up is brought to the two settings before
+the bench drives it: with the bench already ARMED, the coprocessor is held
+SAFE until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
 band says `idle pulse must be below full pulse -- not sent`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
@@ -1943,7 +1942,7 @@ of the write is under the protocol, as LAST WRITE:
 | `NOT WRITTEN` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
 | `WRITTEN` | the coprocessor acknowledged every exchange of the write |
 | `NO LINK` | an exchange of the write got no answer within 1000 ms, or the link was down |
-| `REFUSED` | the coprocessor answered and refused: a pin it cannot bind, a change while the bench is armed, or a frame rate it could not put back |
+| `REFUSED` | the coprocessor answered and refused: a pin it cannot bind, a change while the bench is ARMED, or a frame rate it could not put back |
 
 To a coprocessor speaking protocol 4.10 the binding is written whole: the
 two pages are prepared beside the ones in force and taken together by one
@@ -2085,8 +2084,8 @@ shape and the buttons are in the same places:
 
 The photograph is fetched over the link once per board and kept in the
 panel's flash, so it costs about ten seconds the first time a board is seen
-and nothing after that. Writing it to flash waits for a disarmed bench with
-the supply off and pauses between two 4 kB sectors when the bench is armed or
+and nothing after that. Writing it to flash waits for a bench that is SAFE with
+the supply off and pauses between two 4 kB sectors when the bench is ARMED or
 the supply comes on ([Safety](Safety.md#deliberate-behaviours)). A board with
 no photograph, or one whose transfer or write has not finished, is drawn
 rather than left blank.
@@ -2119,9 +2118,9 @@ configured over there. After a panel restart, what this screen shows and what
 is driving pins are the same thing.
 
 Restoring configures the outputs. It does not drive them: every driver is
-gated on the pin's role being armed, which the coprocessor grants only while
+gated on the pin's role being ARMED, which the coprocessor grants only while
 the ARM register names that role, the link is out of failsafe and the heartbeat is trusted, so
-a restored binding claims its pins and holds them at idle until somebody arms.
+a restored binding claims its pins and holds them at idle until somebody switches to ARMED.
 Channel commands are not restored — a configuration survives a power cycle and
 a throttle position does not.
 
