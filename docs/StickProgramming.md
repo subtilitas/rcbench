@@ -51,7 +51,7 @@ What it does not know:
    (`ESC_STICK_STALE_MS`) in which the supply itself reports its output
    off with the current at or under 20 mA for 200 ms. No reading, an older
    one, or a supply that does not answer refuses RUN with `no fresh
-   reading says the supply is off`. A run arms the bench: while the
+   reading says the supply is off`. A run switches the bench to ARMED: while the
    [servo programmer](ServoProgrammer.md) holds a port, RUN is refused with
    `Servo programmer holds a port: LEAVE on SERVO first.`
 
@@ -237,7 +237,7 @@ run the reason. Past five changes the last line counts the rest.
 ![Ended by the supply: SUPPLY OFF, red lit](img/programmer-stick-failed.png)
 
 TIMING opens the settings below. CLOSE asks for them to be saved; the save
-is taken while the bench is disarmed and the supply's output is off.
+is taken while the bench is SAFE and the supply's output is off.
 
 ![The timing settings](img/programmer-stick-timing.png)
 
@@ -294,12 +294,12 @@ A step asked during the run covers the page: the step, where the supply
 and the stick are, and how long the run waits. DONE goes on; it is dark for
 the first 1000 ms (`ESC_STICK_HAND_MIN_MS`), so one tap meant for the step
 before cannot confirm the next, and it is acted on in the next frame, after
-the frame has judged STOP, the arm, the link and the supply. ABORT ends the
+the frame has judged STOP, the switch to ARMED, the link and the supply. ABORT ends the
 run, and so does STOP in the band. No DONE within 60 s
 (`ESC_STICK_HAND_WAIT_MS`) ends the run with NOT CONFIRMED. While it waits
 the run keeps every rule it keeps elsewhere: a powered wait watches the
 supply and its readings, and every end sets the throttle to MIN, switches
-the supply off and disarms.
+the supply off and switches to SAFE.
 
 ![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
 
@@ -446,7 +446,7 @@ A change of either light repaints both screen buffers.
 
 | Phase | Throttle | Supply | Ends |
 | --- | --- | --- | --- |
-| ARMING | MIN | off, asked off | when the bench reports armed; after 3000 ms: NOT ARMED |
+| ARMING | MIN | off, asked off | when the bench reports ARMED; after 3000 ms: STILL SAFE |
 | SIGNAL | MIN, then the power-up position | off | the stick stays at MIN until the supply reads off in readings taken since the run asked it off (its own state off, the current at or under 20 mA for 200 ms), then goes to the power-up position and is held there 1000 ms, so the ESC sees the signal when it starts; not off within 3000 ms: SUPPLY STAYS ON. Once the stick has moved, a reading with the output on or the current up ends the run at once with SUPPLY STAYS ON, and no reading for 1000 ms with NO READINGS |
 | MANUAL STEP | the power-up position | off, read off | before a power-up with a step due, asked only once the supply reads off: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED; a reading with the output on or the current up: SUPPLY STAYS ON at once; no reading for 1000 ms: NO READINGS |
 | POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
@@ -458,8 +458,8 @@ A change of either light repaints both screen buffers.
 | STORING | the value move, then the store move, then the value's own moves (`after_select`) | on | after STORE, and after STORE again for each move: the profile's store move, then each of the value's |
 | POWER CYCLE | where it stored, then entry position | off | the supply reports the output off and the current down for 200 ms, then OFF TIME (at least 1000 ms) at the entry position, then POWER ON again; not off within 3000 ms: SUPPLY STAYS ON. Once the stick has moved, a reading with the output on or the current up ends the run at once with SUPPLY STAYS ON, and no reading for 1000 ms with NO READINGS; the next power-up, or a step before it, needs a reading no older than 1000 ms |
 | POWER OFF | where it stored | off | the supply reports the output off and the current down for 200 ms; not within 3000 ms: SUPPLY STAYS ON |
-| DONE | MIN | off | disarmed |
-| ABORTED | MIN | off | disarmed, all in one step |
+| DONE | MIN | off | SAFE |
+| ABORTED | MIN | off | SAFE, all in one step |
 
 MIN, MID and MAX are 0, 50 and 100 % of the throttle output's travel. The
 rest position is the profile's `scheme.listen`, or the entry position where
@@ -491,7 +491,7 @@ Two parts of this rule are not measured:
 
 Every move goes out as the MOTOR screen's commands do: ARM through the arming
 policy, THROTTLE onto the throttle channels, and the supply through SUPPLY's
-own ON and OFF. Nothing bypasses STOP or the arming rules.
+own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
 ## How the beeps are counted
 
@@ -566,7 +566,7 @@ the SUPPLY cap, are refused. The run's set points become the SUPPLY screen's
 set points.
 
 The model's own ratings hold the set points too, on its row, on its page
-and on RUN, the last check before the run arms:
+and on RUN, the last check before the run switches to ARMED:
 
 | Set point | Refused when | Row says | RUN says |
 | --- | --- | --- | --- |
@@ -643,17 +643,17 @@ A profile corrected on the SD card is listed with its correction.
 | --- | --- | --- |
 | DONE | every selection made | dark |
 | STOP | STOP pressed, in the band or on a screen, while the run was under way | dark |
-| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the arm, or the coprocessor's refusal or failsafe; the band names which | lit |
-| DISARMED | the bench disarmed | lit |
+| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the switch to ARMED, or the coprocessor's refusal or failsafe; the band names which | lit |
+| SAFE | the bench was switched to SAFE during the run | lit |
+| STILL SAFE | the bench did not report ARMED within 3000 ms | lit |
 | LINK LOST | the coprocessor answered at some time during the run and stopped answering | lit |
 | SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
 | SUPPLY NOT ANSWERING | the supply stopped answering | lit |
 | NO READINGS | the reading count unmoved for 1000 ms | lit |
 | READ RATE | 3 late readings in a row | lit |
-| NOT ARMED | not armed within 3000 ms | lit |
 | NO POWER | the output not reported on within 3000 ms | lit |
 | SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off -- at the start, before a power-up or at the end -- or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
-| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet armed | lit |
+| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet ARMED | lit |
 | NO BEEPS | no beep for SILENCE | lit |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
 | TIMEOUT | no wanted group acted on within TIMEOUT | lit |
@@ -672,9 +672,9 @@ same call as the stop). A run that sees more stops than presses since it
 began ends with BENCH STOPPED, so a stop the bench raised is not hidden by
 a press that came with it.
 
-Every end sets the throttle to MIN, switches the supply off and disarms; an
+Every end sets the throttle to MIN, switches the supply off and switches to SAFE; an
 abort does all three in one step. A stop latches as any stop does: the next
-run arms again from its own warning.
+run switches to ARMED again from its own warning.
 
 ## The read rate
 
@@ -759,7 +759,7 @@ engine's stores no value other than the one asked for.
 - A KOBY, JIVE Pro, KOLIBRI, KONTROL-X / KOLIBRI-X or KOSMIK whose supply
   goes off before its mode confirmation has ended locks itself (8 to 10
   LED flashes, by family). The run switches the supply off before DONE
-  on NOT CONFIRMED (no DONE within 60 s), STOP, ABORT, a disarm, a lost
+  on NOT CONFIRMED (no DONE within 60 s), STOP, ABORT, a switch to SAFE, a lost
   link and every supply rule, and then says the ESC may be locked. The
   bench does not see the confirmation or the lock; DONE is the operator's
   word that the confirmation has ended.

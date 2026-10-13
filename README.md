@@ -13,8 +13,8 @@ requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
 **Status: under construction.** The project is under development and its
 functions are not verified on hardware. The panel boots and every screen
-exists. The output drivers are built. An arm names the roles it drives: the
-throttle outputs from MOTOR & ESC, the surfaces from SERVO. An armed role
+exists. The output drivers are built. Switching to ARMED names the roles it drives: the
+throttle outputs from MOTOR & ESC, the surfaces from SERVO. A role in ARMED
 drives every pin bound to it at its rest whether or not anything commands it. What is unmeasured is
 the timing on an instrument -- no bit width, frame period or reply delay in
 this tree has been seen on a scope or an analyser. Most other measurements
@@ -27,10 +27,10 @@ planned.
 ## Safety
 
 This bench drives motors and servos. Keep clear of the propeller plane whenever
-the bench is armed.
+the bench is ARMED.
 
-Arming is deliberate: a two-second hold on ARM, with the command sent when the
-hold completes rather than when the finger lifts. Disarming and STOP are a
+Switching to ARMED is deliberate: a two-second hold on ARM, with the command sent when the
+hold completes rather than when the finger lifts. DISARM and STOP are a
 single press.
 
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
@@ -56,7 +56,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
-| Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while armed or while the supply's output is on | built |
+| Logs | browse, import and plot CSV (comma-separated values) from the card; runs are recorded while ARMED or while the supply's output is on | built |
 | Setup | settings in both themes, stored in NVS | built |
 
 ## Building

@@ -38,7 +38,7 @@ in [Safety](docs/Safety.md).
 - **Refuse and clamp are different answers.** A configuration mistake (an
   endpoint no servo can take) is refused, atomically, leaving the previous
   value. A command outside its range is clamped.
-- **A stop latches.** Nothing re-arms on its own, including the link coming
+- **A stop latches.** Nothing switches back to ARMED on its own, including the link coming
   back.
 - **The coprocessor does not ask permission** to protect hardware. It acts and
   reports afterwards.
@@ -303,7 +303,7 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
-  the module: link pages, the binding of an output to a pin, arming, STOP,
+  the module: link pages, the binding of an output to a pin, switching to ARMED, STOP,
   the stores and the screens.
 - `firmware/` is hardware access and wiring. A rule in a firmware file belongs
   in `shared/` or in a protocol core, with a test.
