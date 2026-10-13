@@ -8253,9 +8253,11 @@ void app_main(void)
     outputs_screen_set_apply(outputs_apply);
     /*
      * The picker is the same choice seen as the board, so it applies through
-     * the same seam and reads its photograph out of the store.
+     * the same seam, selects its protocol on the outputs screen, and reads
+     * its photograph out of the store.
      */
     picker_screen_set_apply(outputs_apply);
+    picker_screen_set_select(outputs_screen_select);
     picker_screen_set_artwork_source(art_for_picker);
     /* The supply screen shows the panel's model, and the range a PPS
      * (Programmable Power Supply) source offers; see supply.h. */
@@ -8505,12 +8507,15 @@ void app_main(void)
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
             /* What the tester drives and whether the port renders its
-             * pulse, to the control task; the port's pin, to the picker. */
+             * pulse, to the control task; the port's pin, to both views of
+             * the binding, from one read. */
             atomic_store(&s_prog_want_target,
                          (unsigned)settings_get_int(SET_SERVO_TARGET));
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
-            outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
+            const uint8_t prog_pin = (uint8_t)atomic_load(&s_prog_pin);
+            outputs_screen_set_prog_pin(prog_pin);
+            picker_screen_set_prog_pin(prog_pin);
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
@@ -8661,12 +8666,12 @@ void app_main(void)
              * showing the same thing when the operator reaches it.
              *
              * The outputs screen first, and the picker takes what came out of
-             * it rather than what came off the wire.  The protocol is that
-             * screen's to choose -- the picker has no control for it and only
-             * reads it to know which group a tap joins -- and an empty page
-             * carries no protocol at all, so handing the picker the raw read
-             * would leave it on OFF and unable to add a pin, however the
-             * outputs screen had reconciled it.
+             * it rather than what came off the wire.  The outputs screen
+             * holds the selected protocol -- the picker's list selects
+             * through it -- and an empty page carries no protocol at all, so
+             * handing the picker the raw read would leave it on OFF and
+             * unable to add a pin, however the outputs screen had
+             * reconciled it.
              */
             outputs_screen_set_reading(&got);
             picker_screen_set_binding(outputs_screen_binding());
@@ -8678,9 +8683,9 @@ void app_main(void)
                 : 0u;
         }
         programmer_screen_set_throttle(got_read, got_throttle);
-        /* A pick on the outputs screen writes nothing and so reads nothing
-         * back: the picker follows the selection, and whether the binding
-         * is one a read confirmed, every frame. */
+        /* A pick in either list writes nothing and so reads nothing back:
+         * the picker follows the outputs screen's selection, and whether
+         * the binding is one a read confirmed, every frame. */
         picker_screen_follow(outputs_screen_binding()->proto,
                              outputs_screen_editable());
         outputs_screen_set_result(

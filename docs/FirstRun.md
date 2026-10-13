@@ -211,8 +211,8 @@ first one's pulse width. The OUTPUTS page carries no bit saying "bound", so
 the screen goes on looking configured while the lead produces no pulse.
 
 On the panel: **Setup → OUTPUTS**, choose `SERVO PWM`, tick one pin. Or
-**Setup → PICK A PIN** for the board picture — grounds are marked `G`, rails
-carry their voltage.
+**Setup → PICK A PIN**, choose `SERVO PWM` in its list and tap one key on the
+board picture — grounds are marked `G`, rails carry their voltage.
 
 **Scope the pin before connecting the servo.**
 
