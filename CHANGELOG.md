@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- Configurator: every function with a tick and every part under "Parts you
+  own" has a help bubble in English and German. It says what the item does
+  and what it needs: the bench parts, the test object and the variant the
+  resolver adds for it, and for a part its supply wires, logic and power.
+  The bubble opens on the keyboard focus of the tick and on the "i" mark at
+  the end of the row; a tap on the mark opens it without changing the tick.
+  Escape, the loss of the focus and a press elsewhere close it. One bubble
+  shows at a time. It opens under the row, or over it when the room under
+  the row in the viewport and the scrolling chooser is too small and the
+  room over it holds the whole bubble. `core/help.ts` holds the text of the
+  12 functions; `tools/check.ts` checks it.
 - The bench log and the supply log end in a column `source`: `measured` for a
   row a meter or the PD mini produced, `model` for a row the panel's model
   produced (`LINK_BN_SIMULATED`, `supply_state_t.modelled`). A file without
@@ -474,6 +485,9 @@ history is in git.
 
 ### Fixed
 
+- Configurator: the part "Emergency stop" states that the coprocessor
+  switches the bench to SAFE and the PD mini output off when the heartbeat
+  stops; the button breaks no power line.
 - `gfx_utf8_next` rejects a four-byte sequence above U+10FFFF (lead `F4`,
   second byte `90` to `BF`) as malformed, one `?` cell per byte.
 - `as5600_cdeg` computes in 64 bits. It overflowed `int32_t` above
