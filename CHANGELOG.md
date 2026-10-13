@@ -104,6 +104,18 @@ history is in git.
   not https or carries a tracking parameter, and a brought part that names a
   maker.
 
+- Every test of `test/host` stops after 120 s unless it sets its own limit,
+  and every CI job has a `timeout-minutes` limit.
+- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
+  "Where code goes": the files outside `protocols/` with an assertion on a
+  module's macros or enumerators are listed in the tool, and a new or a
+  removed assertion fails the check.
+- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
+  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
+  `docs/Building.md`, `docs/Performance.md` and their German pages to
+  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
+  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
+
 ### Changed
 
 - Docs, configurator and the panel band name the input voltage of the PD mini
@@ -711,20 +723,6 @@ history is in git.
   stored setup holds ids alone, so it is the same in English and German. A
   blocked or full store and an entry of another shape give the base setup
   without an error.
-
-### Added
-
-- Every test of `test/host` stops after 120 s unless it sets its own limit,
-  and every CI job has a `timeout-minutes` limit.
-- `tools/check_protocols.py` checks the `_Static_assert` rule of CONTRIBUTING
-  "Where code goes": the files outside `protocols/` with an assertion on a
-  module's macros or enumerators are listed in the tool, and a new or a
-  removed assertion fails the check.
-- `tools/check_docs.py` checks every "N binaries" count of `STATUS.md` and the
-  "N `test_kst_*` binaries" count, holds the pico-sdk and ESP-IDF tags of
-  `docs/Building.md`, `docs/Performance.md` and their German pages to
-  `ci.yml` and `release.yml`, and requires the SPDX line in the scripts
-  under `tools/` and `test/tools/`. The 18 scripts without one carry it.
 
 ## 0.17.0 - 2026-10-12
 
