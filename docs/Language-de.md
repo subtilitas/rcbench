@@ -60,10 +60,9 @@ Sicherheitsbedienelemente, die in jeder Sprache gleich lauten. Ein
 übersetztes ARM würde nicht zum Wort in der Anleitung neben dem Prüfstand
 passen.
 
-- Die Sicherheits- und Antriebsbedienung: ARM, DISARM, ARMED, DISARMED,
-  STOP, SWEEP, PAUSE, TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch
-  (PULS CENTRE); die Taste auf SERVO, die das Servo dorthin fährt, heißt
-  ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
+- Die Sicherheits- und Antriebsbedienung: ARM, DISARM, STOP, SWEEP, PAUSE,
+  TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die
+  Taste auf SERVO, die das Servo dorthin fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
@@ -75,8 +74,9 @@ passen.
   Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV
   (Constant Voltage), CC (Constant Current), STANDARD PWM, HELI CYCLIC,
   ESC STICK, BUS OFF, und BENCH und SIM im Statusband.
-- Zwei Zustandswörter, kurz genug für ihren Platz: SAFE im Statusband und
-  SILENT im Urteil des ANALYSER.
+- Die Zustandswörter des Prüfstands, kurz genug für ihren Platz: SAFE und
+  ARMED im Statusband, und SILENT im Urteil des ANALYSER. ARM und DISARM sind
+  die Tasten, SAFE und ARMED die Zustände.
 - Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
   Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
   Bad tail, tx err, rx err, bus err, Frame.

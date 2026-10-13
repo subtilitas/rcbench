@@ -250,6 +250,30 @@ const parts: Part[] = [
     ],
     src: guide('stage-1'),
   },
+  // The supply that position 5V of the jumper V Selector needs. No product is
+  // chosen: the part states the range the board takes, so it is modelled.
+  {
+    id: 'dcsup',
+    name: t(
+      'DC supply for the Osoyoo breakout board, 7 to 12 V DC (yours)',
+      'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12 V DC (eigene)',
+    ),
+    short: t('Osoyoo DC supply', 'Osoyoo-DC-Versorgung'),
+    role: t(
+      'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). Above 12 V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12 V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16 V and the vendor limit of 18 V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm, centre positive. The product page names the socket DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
+      'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Über 12 V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12 V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1 mm folgt aus diesem Namen; der Außendurchmesser von 5,5 mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
+    ),
+    locked: false,
+    selectable: false,
+    modelled: true,
+    release: 'released',
+    slot: { column: 'L', order: 12, sub: t('7 to 12 V DC', '7 bis 12 V DC') },
+    pins: [
+      pin('POS', same('+'), OSOYOO_SCHEMATIC),
+      pin('NEG', same('−'), OSOYOO_SCHEMATIC),
+    ],
+    src: OSOYOO_PAGE,
+  },
   {
     id: 'esc',
     name: t('ESC and motor (yours)', 'ESC und Motor (eigene)'),
@@ -746,6 +770,19 @@ const STRIP_V = t(
   'V pin of the S V G strip at GP2 of the Osoyoo breakout board',
   'V-Pin der S-V-G-Leiste an GP2 der Osoyoo-Breakout-Platine',
 );
+const DC_IN_POS = t(
+  'plus of the DC input of the Osoyoo breakout board: the centre pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
+  'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: Mittelstift der DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
+);
+const DC_IN_NEG = t(
+  'minus of the same DC input of the Osoyoo breakout board: VIN- at the minus pole of the 2-pole VIN terminal or at H4 pin 1, GND at the outer contact of the DC jack',
+  'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse',
+);
+const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12 V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V');
+const DC_IN_NOTE = t(
+  'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1 mm (2.1 mm from the socket name, 5.5 mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
+  'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1 mm (2,1 mm aus dem Namen der Buchse, 5,5 mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
+);
 
 const wires: Wire[] = [
   {
@@ -777,7 +814,7 @@ const wires: Wire[] = [
     signal: HB,
     note: t(
       'The interlock. The coprocessor refuses to arm without it.',
-      'Die Verriegelung. Ohne ihn schaltet der Koprozessor nicht scharf.',
+      'Die Verriegelung. Ohne ihn schaltet der Koprozessor nicht auf ARMED.',
     ),
     when: { not: { has: 'estop' } }, stage: 1, route: { kind: 'L', lane: 3 }, pin: 'fixed',
     src: guide('wires'),
@@ -1263,6 +1300,21 @@ const wires: Wire[] = [
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
+  // The DC supply of the Osoyoo breakout board, for the jumper on 5V. The DC
+  // input is no pad of the coprocessor, so both leads end as stubs with their
+  // target in words. The converter U9 joins this input to the V pins.
+  {
+    n: 65, kind: 'stub', a: 'dcsup.POS', b: null, to: DC_IN_POS, net: 'osoyoo_vin', cls: 'power',
+    signal: DC_IN_SIGNAL,
+    note: DC_IN_NOTE,
+    when: SERVO_STRIP, stage: 1, route: { kind: 'S' }, src: OSOYOO_SCHEMATIC,
+  },
+  {
+    n: 66, kind: 'stub', a: 'dcsup.NEG', b: null, to: DC_IN_NEG, net: 'osoyoo_vin_neg', cls: 'power',
+    signal: DC_IN_SIGNAL,
+    note: DC_IN_NOTE,
+    when: SERVO_STRIP, stage: 1, route: { kind: 'S' }, src: OSOYOO_SCHEMATIC,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1454,6 +1506,15 @@ const rules: Rule[] = [
     adds: 'pull',
     because: t('sensor bus without the INA3221', 'Sensorbus ohne den INA3221'),
     src: guide('wires'),
+  },
+  {
+    // The servo on the V pin of a strip: the jumper V Selector goes to 5V,
+    // which feeds the V pins only from the DC input.
+    id: 'osoyoo-dc',
+    when: SERVO_STRIP,
+    adds: 'dcsup',
+    because: t('servo on the V pin, jumper on 5V', 'Servo am V-Pin, Jumper auf 5V'),
+    src: OSOYOO_SCHEMATIC,
   },
 ];
 
@@ -1761,8 +1822,8 @@ const checks: Check[] = [
   {
     id: 'strip-parts', kind: 'note',
     text: t(
-      'Osoyoo breakout board, other chips: the 5 SN74HC04 hex inverters take the Pico pins as inputs and drive only the LEDs of the IO pins, with their supply at VSYS. They sit neither on the V net nor in the path from S to the terminal: S joins the Pico pin directly and nothing is level-shifted or inverted. The SI2302 is an N-channel MOSFET in the minus lead of the DC input and protects against reverse polarity. A second MOSFET Q1 joins VOUT_5V to VSYS, its gate at VBUS: it passes the converter to VSYS only while no USB voltage is present.',
-      'Osoyoo-Breakout-Platine, weitere Chips: Die 5 Sechsfach-Inverter SN74HC04 nehmen die Pico-Pins als Eingänge und treiben nur die LEDs der IO-Pins, ihre Versorgung liegt an VSYS. Sie liegen weder am V-Netz noch im Weg von S zur Klemme: S liegt direkt am Pico-Pin, nichts wird im Pegel gewandelt oder invertiert. Der SI2302 ist ein N-Kanal-MOSFET in der Minusleitung des DC-Eingangs und schützt gegen Verpolung. Ein zweiter MOSFET Q1 verbindet VOUT_5V mit VSYS, sein Gate liegt an VBUS: Er gibt den Wandler nur auf VSYS, solange keine USB-Spannung anliegt.',
+      'Osoyoo breakout board, other chips: the 5 SN74HC04 hex inverters take the Pico pins as inputs and drive only the LEDs of the IO pins, with their supply at VSYS. They sit neither on the V net nor in the path from S to the terminal: S joins the Pico pin directly and nothing is level-shifted or inverted. The SI2302 (Q3) is an N-channel MOSFET in the lead VIN- of the VIN terminal and of H4 and protects the terminal and H4 only against reverse polarity. The minus of the DC jack is GND directly: the jack has no reverse-polarity protection. A second MOSFET Q1 joins VOUT_5V to VSYS, its gate at VBUS: it passes the converter to VSYS only while no USB voltage is present.',
+      'Osoyoo-Breakout-Platine, weitere Chips: Die 5 Sechsfach-Inverter SN74HC04 nehmen die Pico-Pins als Eingänge und treiben nur die LEDs der IO-Pins, ihre Versorgung liegt an VSYS. Sie liegen weder am V-Netz noch im Weg von S zur Klemme: S liegt direkt am Pico-Pin, nichts wird im Pegel gewandelt oder invertiert. Der SI2302 (Q3) ist ein N-Kanal-MOSFET in der Leitung VIN- der VIN-Klemme und von H4 und schützt nur die Klemme und H4 gegen Verpolung. Das Minus der DC-Buchse liegt direkt an GND: Die Buchse hat keinen Verpolschutz. Ein zweiter MOSFET Q1 verbindet VOUT_5V mit VSYS, sein Gate liegt an VBUS: Er gibt den Wandler nur auf VSYS, solange keine USB-Spannung anliegt.',
     ),
     when: { opt: 'connection', is: 'osoyoo' }, src: OSOYOO_SCHEMATIC,
   },
@@ -1881,22 +1942,22 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      '<b>STOP</b> disarms, switches the PD mini output off, and latches until the next ARM. Arming is a 2 s hold on ARM; disarming is a press; leaving a bench screen disarms.',
-      '<b>STOP</b> entschärft, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Scharf schalten: ARM 2 s halten. Entschärfen: kurz tippen. Auch das Verlassen einer Prüfstandsseite entschärft.',
+      '<b>STOP</b> switches the bench to SAFE, switches the PD mini output off, and latches until the next ARM. Switching to ARMED takes a 2 s hold on ARM; switching to SAFE takes a press; leaving a bench screen switches to SAFE.',
+      '<b>STOP</b> schaltet den Prüfstand auf SAFE, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Auf ARMED schalten: ARM 2 s halten. Auf SAFE schalten: kurz tippen. Auch das Verlassen einer Prüfstandsseite schaltet auf SAFE.',
     ),
     src: guide('safety'),
   },
   {
     text: t(
-      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. A coprocessor that hangs while armed is not stopped by anything.',
-      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der Koprozessor im scharfen Zustand, stoppt ihn nichts.',
+      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. A coprocessor that hangs while ARMED is not stopped by anything.',
+      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der Koprozessor in ARMED, stoppt ihn nichts.',
     ),
     src: guide('safety'),
   },
   {
     text: t(
-      'An armed bench drives every bound pin. A pin bound as SERVO PWM rests at 1500 µs, which an ESC can read as about half throttle. Bind an ESC as MOTOR PWM or DShot only.',
-      'Ein scharfer Prüfstand treibt jeden gebundenen Pin. Ein als SERVO PWM gebundener Pin ruht bei 1500 µs, für einen ESC etwa Halbgas. Einen ESC deshalb nur als MOTOR PWM oder DShot binden.',
+      'An ARMED bench drives every bound pin. A pin bound as SERVO PWM rests at 1500 µs, which an ESC can read as about half throttle. Bind an ESC as MOTOR PWM or DShot only.',
+      'Ein Prüfstand in ARMED treibt jeden gebundenen Pin. Ein als SERVO PWM gebundener Pin ruht bei 1500 µs, für einen ESC etwa Halbgas. Einen ESC deshalb nur als MOTOR PWM oder DShot binden.',
     ),
     src: guide('safety'),
   },
@@ -2055,8 +2116,8 @@ const powerSources: PowerSource[] = [
         'Warnung: Der Jumper muss vor dem Einstecken eines Servos geprüft werden. In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt.',
       ),
       t(
-        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is not in the parts list.',
-        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht nicht in der Teileliste.',
+        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is in the parts list as a modelled part.',
+        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht als modelliertes Teil in der Teileliste.',
       ),
       t(
         'The rating is 2 A at 5 V and 500 mA at 3.3 V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.',

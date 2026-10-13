@@ -22,7 +22,7 @@ rcbench/
     link/                 page protocol · CAN framing · watchdogs · diagnosis
     artwork/              the panel's cache of board photographs
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
-    outputs/              channels · driver table · arming, slew and staleness
+    outputs/              channels · driver table · the ARMED state, slew and staleness
     safety/               heartbeat generator (panel) and monitor (coprocessor)
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test

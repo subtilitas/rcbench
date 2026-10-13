@@ -239,7 +239,11 @@ power and servo power. Servo power is A, the visitor's own supply (default),
 or B, from the bench for a small servo: the 5 V pin of the coprocessor (pad
 40), or the V pin of the strip of the Osoyoo breakout board. With B the result
 and the PDF carry a note: the servo draws from the supply of the logic, which
-is prone to problems. "Small" carries no number: no source states a current
+is prone to problems. On the V pin of the strip the jumper V Selector sits on
+5V, and the setup adds the DC supply of the board, 7 to 12 V DC, with its 2
+leads, wires 65 and 66. It is a modelled part: the page and the PDF tag it
+"Modelled part: no product chosen", and its text gives the range and "not
+stated" for the current. "Small" carries no number: no source states a current
 limit. An ESC takes signal and GND only, in every variant.
 
 "Program a KST or Chaservo servo" (`servoprog`) needs the panel and the
@@ -321,7 +325,7 @@ wire point of `drawings/anchors.json`.
 | Parallel wires | Side by side in lanes, 5 px clear between the edges of 2 wires. |
 | Crossing | At a right angle. 2 wires of different numbers share no segment. |
 | Width | 7 px for a wire that carries load current, 3 px for every other wire, 2 px for a lead of a component. |
-| Load current | A wire of class `power` in the data file: 23 of 64 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
+| Load current | A wire of class `power` in the data file: 25 of 66 wires. The phase wires 48 to 51 and wire 52 are 3 px: the data file states no current for them. |
 | Colour | Supply plus red, supply minus black with a light casing, signals in the other colours of `drawings/wires.ts`. No signal is red or black. |
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
@@ -412,7 +416,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 46 files, 451.9 kB.
+Drawing folder: 48 files, 460.6 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 
@@ -470,9 +474,17 @@ file names no stage, so the checks follow the stages as one list.
   Osoyoo breakout board are vendor values (2 A at 5 V, 500 mA at 3.3 V), not measured.
   The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and
   the product page disagree.
+- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1 mm, centre positive) has no reverse-polarity
+  protection. A centre-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
+  and H4 only.
+- DC jack of the Osoyoo breakout board: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that
+  name. The 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor.
+- Osoyoo breakout board above 12 V at any input: the gate of the SI2302 (Q3) sits at PWRIN through R7, and its
+  gate-source voltage exceeds the ±12 V rating of its datasheet. The print of 16 V and the vendor limit of 18 V are
+  above that.
 - What powers an ESC during programming other than ESC STICK is not stated.
-- 8 of 19 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
-  and cables: no picture.
+- 8 of 20 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap,
+  DC supply of the Osoyoo breakout board and cables: no picture.
 - Photo `02-pd-mini`: the left third is out of focus.
 - The schematic has no zoom control. Below 1024 px width it scrolls sideways in its box.
 - Wiring picture: wire 31 ends on no wire point and is not drawn; the table lists it.

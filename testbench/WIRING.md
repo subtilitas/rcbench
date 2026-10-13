@@ -622,16 +622,16 @@ took four seconds and one that was never asserted at all are the same picture.
 Firmware is being told the panel is alive, and so is the interlock -- until the
 capture is running and the branch comes out.
 
-**Bind first, then arm.** Binding is done on SETTINGS/OUTPUTS, and both bench
-screens disarm as they are left (`shared/ui/motor_screen.c`,
-`shared/ui/servo_screen.c`), so arming and then walking to OUTPUTS to bind
-undoes the arm on the way. In order:
+**Bind first, then switch to ARMED.** Binding is done on SETTINGS/OUTPUTS, and both bench
+screens switch to SAFE as they are left (`shared/ui/motor_screen.c`,
+`shared/ui/servo_screen.c`), so switching to ARMED and then walking to OUTPUTS to bind
+undoes it on the way. In order:
 
 1. **SETTINGS/OUTPUTS**: bind the output the capture watches, which is GP0 on
    D0 here.
-2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and arm there.
+2. **MOTOR & ESC**, or **SERVO** for a pulse output: open it and press ARM there.
 3. **Command it away from rest** -- throttle above zero, or the horn off
-   centre. Arming is what makes the pin drive at all; a command away from rest
+   centre. ARMED is what makes the pin drive at all; a command away from rest
    is what makes the trace unambiguous, since a DShot zero-throttle frame and
    a 1500 us centre pulse are both edges and neither is distinctive.
 
@@ -700,13 +700,13 @@ Four things have to be seen, and each answers a different question:
 
 | | Where | What it has to show |
 |---|---|---|
-| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the arm worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
+| D0, the raw pin | both captures | **changing.** This is the precondition, not the evidence: it says the switch to ARMED worked, the binding took and the pin is wired. Flat here and the test proved nothing -- a bench with no interlock at all would look identical |
 | D3, the monostable's trigger input | the window capture | edges, then none. The last one is where the window starts, and without it in the trace there is no window to measure against. Past the removable link, not on the junction: the junction keeps edging from GP22 |
 | D14, the enable | the window capture | deasserted, within 150 ms of that last edge |
 | D15, the load side | both captures | it stops in the window capture, and the 24 MHz one is what says it is quiet rather than carrying something too narrow for 1 MHz to see |
 
 An actively driven input, blocked downstream, is the whole of the claim.
-Leaving D0 out of the capture turns a failed arm into a passing interlock
+Leaving D0 out of the capture turns a failed switch to ARMED into a passing interlock
 test.
 
 D0 keeps toggling throughout, and expecting it to stop is the mistake that
@@ -720,7 +720,7 @@ open, and closing that branch while GP22 still drives is the push-pull
 contention this section opened by warning about -- the panel's GPIO6 against
 the RP2350's output, at whatever levels the two happen to be on.
 
-1. **Disarm the bench**, so nothing is driving an output while the interlock
+1. **Switch the bench to SAFE**, so nothing is driving an output while the interlock
    is about to change state.
 2. **Tri-state GP22.** Not "drive it high" and not "drive it low": an input,
    off the node entirely. This is the step that makes the next two safe.
@@ -758,7 +758,7 @@ with `LINK` and `SAFE`. There should be no `FAULT` at power-up: the
 coprocessor does not count the wait for the panel's first request as silence.
 
 **A `FAULT 01` here has two causes and they look identical.** Bit 0 is "the
-link was silent once", it latches, and nothing clears it until an arm writes
+link was silent once", it latches, and nothing clears it until a switch to ARMED writes
 the CLEAR register -- so the link can be back and showing `LINK` while the bit
 is still displayed. It says something happened, not that something is wrong
 now.

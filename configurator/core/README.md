@@ -15,7 +15,7 @@ data and is not asserted.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 20 parts of which 2 are test objects and 1 is modelled, 40 pads, 66 wires, 22 functions of which 10 run on every setup, 7 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -36,6 +36,7 @@ part is bench hardware.
 | Field | Meaning |
 | --- | --- |
 | `Part.testObject` | The part is a test object. It is neither locked nor selectable, and no rule adds it. |
+| `Part.modelled` | The part is modelled: the data states what it has to do, not which product does it. Its name gives the required range, its role the values a source states and "not stated" for the rest. It has no picture. The page and the PDF tag it "Modelled part: no product chosen". 1 part: `dcsup`, the DC supply of the Osoyoo breakout board. |
 | `Fn.needs` | The bench hardware the function needs. It holds no test object. |
 | `Fn.drives` | The test object the function acts on. The resolver adds it with the function, so its pins and wires are in the setup. |
 
@@ -69,6 +70,22 @@ regulator on VSYS). The current limit of pad 40 is not stated; the check entry
 `servo-5v-pin` says so. The currents of the strip and whether USB alone powers
 the 3V3 position are not measured; the check entry `strip-supply` says so. The ESC
 takes signal and GND from the bench in every setup, never a supply.
+
+On the V pin of the strip the jumper sits on 5V, and position 5V takes its
+power from the DC input of the board alone. The rule `osoyoo-dc` adds the part
+`dcsup`, a DC supply of 7 to 12 V, under the condition of that warning: a
+servo, no PD mini, `servoPower: bench`, `connection: osoyoo`. Its wires 65
+(plus, net `osoyoo_vin`) and 66 (minus, net `osoyoo_vin_neg`) are stubs to the
+DC jack, the VIN terminal or the header H4. The plus is PWRIN at all 3. The
+minus is VIN- at the VIN terminal and at H4, and GND of the board at the DC
+jack (schematic REV 1.0: DC1 pin 1 PWRIN, pins 2 and 3 GND). The jack takes a
+5.5 x 2.1 mm plug, centre positive. The product page names the socket
+DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is
+the usual size of that socket family and is not stated by the vendor. The jack
+has no reverse-polarity protection: the SI2302 (Q3) joins VIN- to GND and
+protects the VIN terminal and H4 only. The gate of Q3 sits at PWRIN through
+R7, so above 12 V its gate-source voltage exceeds the ±12 V of its datasheet.
+The current the supply must deliver is not stated.
 
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown
 and the hash holds no token for it: the function `servoprog` forces `prog`.
@@ -241,8 +258,10 @@ Each setup is checked for: the same result on a second call, no exception, no
 pin of a part on two nets, no power wire on a pad, every wire end a declared
 pin of a part that is present, catalogue order of every output array, the
 check entry `servo-bench-supply` exactly when a wire of the servo supply
-ends on a pin of the bench. One power wire ends on a pad by intent: the plus
-of the servo on pad 40 (VBUS) under `servoPower: bench`.
+ends on a pin of the bench, and the part `dcsup` with its wires 65 and 66
+exactly when the servo takes the V pin of the strip of the Osoyoo breakout
+board. One power wire ends on a pad by intent: the plus of the servo on pad 40
+(VBUS) under `servoPower: bench`.
 The sweep refuses a catalogue with more than 16 selectable parts or 16
 functions that need a part.
 
@@ -253,7 +272,10 @@ both run in outer lane 4.
 The data is checked for its power paths:
 
 - A part that a rule adds for another part has a wire to that part, or a wire
-  on a net other than ground that a wire of that part is on.
+  on a net other than ground that a wire of that part is on. A net may reach
+  that net through a part outside the data: the test lists such bridges in
+  `THROUGH`. 1 bridge: `osoyoo_vin` to `strip_v`, the XL1509 converter of the
+  Osoyoo breakout board with the jumper on 5V.
 - A part with `between` has a wire to each of the 2 parts it names. A part whose
   role text says "sits between" carries `between`. The T-plug names the PD
   charger and the PD mini: wire 19 runs from the charger to its socket IN,
@@ -330,5 +352,9 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
 - Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2 A at 5 V and 500 mA at 3.3 V are vendor values, not measured. The DC input range differs between the print (7 to 16 V), the vendor (7 to 12 V recommended, 7 to 18 V limit) and the chip (7 to 40 V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.
+- DC supply of the Osoyoo breakout board (`dcsup`): the current it must deliver is not stated. The product page rates the output of the board at 2 A at 5 V; no source states the input current.
+- DC jack of the Osoyoo breakout board: no reverse-polarity protection. A centre-negative plug puts the reverse voltage through the switch OFF/ON on the input of the XL1509 converter. The SI2302 (Q3) protects the VIN terminal and H4 only.
+- DC jack of the Osoyoo breakout board, plug size: the product page names the socket DC005-2.1. The 2.1 mm pin follows from that name. The 5.5 mm outer diameter is the usual size of that socket family; no vendor source states it.
+- SI2302 (Q3) of the Osoyoo breakout board above 12 V: its gate sits at PWRIN through R7 with no clamp and its source at GND (schematic REV 1.0), so its gate-source voltage is the input voltage at every input. The datasheet linked on the product page rates the gate-source voltage at ±12 V (absolute maximum). Above 12 V Q3 is outside that rating; the print of 16 V and the vendor limit of 18 V are above it. The data keeps the range at 7 to 12 V.
 - ESC STICK programming: `docs/StickProgramming.md` at `v0.17.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
 - 9 check entries of kind `unknown` state each open point in the text of a setup.

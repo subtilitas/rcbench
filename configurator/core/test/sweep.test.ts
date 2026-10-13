@@ -21,7 +21,7 @@ const FUNCTIONS = CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map
 const BASE = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
 const TEST_OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id);
 /** Parts no set of parts you own reaches: the test objects and what only they bring. */
-const MISSING_OWNED = ['servo', 'ssup', 'esc', 'batt'];
+const MISSING_OWNED = ['servo', 'ssup', 'dcsup', 'esc', 'batt'];
 const LOCKED = CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id);
 
 // The pin of the servo signal is in no selection the page makes: the function
@@ -187,6 +187,16 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
     assert.equal(power('servo.NEG'), benchFed ? 0 : 1, `power wires on servo.NEG for ${where}`);
   } else {
     assert.ok(!benchFed, `a servo supply without a servo for ${where}`);
+  }
+  // The DC supply of the Osoyoo breakout board, with its 2 leads, exactly while
+  // the servo takes the V pin of a strip: the jumper V Selector on 5V.
+  const strip = present.has('servo') && !present.has('pdmini') && options.servoPower === 'bench' && options.connection === 'osoyoo';
+  assert.equal(present.has('dcsup'), strip, `dcsup for ${where}`);
+  assert.equal(numbers.has(65) && numbers.has(66), strip, `wires 65 and 66 for ${where}`);
+  assert.equal(numbers.has(65) || numbers.has(66), strip, `wire 65 or 66 for ${where}`);
+  if (strip) {
+    assert.equal(power('dcsup.POS'), 1, `power wires on dcsup.POS for ${where}`);
+    assert.equal(power('dcsup.NEG'), 1, `power wires on dcsup.NEG for ${where}`);
   }
 
   // 22: no power wire on a pad, but the servo supply on pad 40 (VBUS) under
@@ -363,6 +373,22 @@ test('the sweep reports a servo fed from the bench without the warning, and a pl
   failsSweep((c) => { c.powerSources = c.powerSources.filter((s) => s.feeds !== 'esc'); }, /power sources of esc|no source of esc/);
   failsSweep((c) => { c.powerSources = c.powerSources.filter((s) => s.id !== 'copro-5v'); }, /no source of servo in use/);
   failsSweep((c) => { delete c.powerSources.find((s) => s.id === 'own-supply')!.choice; }, /sources lipo-2s, own-supply of servo are in use at once/);
+});
+
+test('the sweep reports the DC supply of the Osoyoo breakout board outside the strip setups, or missing in them', () => {
+  // Without the rule the supply is missing where the servo takes the V pin.
+  failsSweep((c) => { c.rules = c.rules.filter((r) => r.id !== 'osoyoo-dc'); }, /dcsup for |part outside the setup/);
+  // On every Osoyoo setup with a servo, the external supply included.
+  failsSweep((c) => {
+    c.rules.find((r) => r.id === 'osoyoo-dc')!.when = { all: [{ has: 'servo' }, { opt: 'connection', is: 'osoyoo' }] };
+  }, /dcsup for /);
+  // With the PD mini in the setup the V pin stays free.
+  failsSweep((c) => {
+    c.rules.find((r) => r.id === 'osoyoo-dc')!.when = { all: [{ has: 'servo' }, { opt: 'servoPower', is: 'bench' }, { opt: 'connection', is: 'osoyoo' }] };
+  }, /dcsup for /);
+  // A lead that stays when the supply leaves, and a lead that is missing.
+  failsSweep((c) => { c.wires.find((w) => w.n === 66)!.when = { has: 'servo' }; }, /wire 65 or 66 for |part outside the setup/);
+  failsSweep((c) => { c.wires = c.wires.filter((w) => w.n !== 65); }, /wires 65 and 66 for /);
 });
 
 test('the sweep reports a second power wire on a supply pin and a missing centre wire', () => {

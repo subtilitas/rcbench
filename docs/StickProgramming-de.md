@@ -267,7 +267,7 @@ Zeile den Rest.
 ![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
 
 TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
-gespeichert wird, während der Prüfstand entschärft und der Ausgang des
+gespeichert wird, während der Prüfstand SAFE ist und der Ausgang des
 Netzteils aus ist.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
@@ -327,13 +327,13 @@ Ein Schritt, nach dem der Lauf fragt, deckt die Seite ab: der Schritt, wo
 Netzteil und Knüppel stehen und wie lange der Lauf wartet. ERLEDIGT geht
 weiter; es ist die ersten 1000 ms dunkel (`ESC_STICK_HAND_MIN_MS`), damit
 ein Tippen für den Schritt davor nicht den nächsten bestätigt, und es wirkt
-im nächsten Frame, nachdem dieser STOP, das Scharfschalten, den Link und
+im nächsten Frame, nachdem dieser STOP, das Schalten auf ARMED, den Link und
 das Netzteil beurteilt hat. ABBRECHEN beendet den Lauf, ebenso STOP im Band.
 Kein ERLEDIGT innerhalb von 60 s (`ESC_STICK_HAND_WAIT_MS`) beendet den
 Lauf mit NICHT BESTÄTIGT. Während er wartet, hält der Lauf jede Regel, die er
 sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
 Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
-und entschärft.
+und schaltet den Prüfstand auf SAFE.
 
 ![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
 
@@ -497,7 +497,7 @@ gezeichnet.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand scharf meldet; nach 3000 ms: NICHT ARMED |
+| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand ARMED meldet; nach 3000 ms: NOCH SAFE |
 | SIGNAL | MIN, dann Einschaltstellung | aus | der Knüppel bleibt auf MIN, bis das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet (sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA), geht dann in die Einschaltstellung und bleibt dort 1000 ms, damit der ESC das Signal beim Start sieht; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE |
 | HANDGRIFF | Einschaltstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
@@ -509,8 +509,8 @@ gezeichnet.
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
 | AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
-| FERTIG | MIN | aus | entschärft |
-| ABGEBROCHEN | MIN | aus | entschärft, alles in einem Schritt |
+| FERTIG | MIN | aus | auf SAFE geschaltet |
+| ABGEBROCHEN | MIN | aus | auf SAFE geschaltet, alles in einem Schritt |
 
 MIN, MID und MAX sind 0, 50 und 100 % des Wegs des Throttle-Ausgangs. Die
 Ruhestellung ist `scheme.listen` des Profils, oder die Einstiegsstellung, wo
@@ -545,7 +545,7 @@ Zwei Teile dieser Regel sind nicht gemessen:
 Jede Bewegung geht hinaus wie die Befehle des Bildschirms MOTOR: ARM über
 die Arming-Policy, THROTTLE auf die Throttle-Kanäle, und das Netzteil über
 das eigene ON und OFF von SUPPLY. Nichts umgeht STOP oder die Regeln zum
-Scharfschalten.
+Schalten auf ARMED.
 
 ## Wie die Pieptöne gezählt werden
 
@@ -630,7 +630,7 @@ des Bildschirms SUPPLY.
 
 Auch die eigenen Grenzen des Modells halten die Sollwerte, in seiner
 Zeile, auf seiner Seite und bei RUN, der letzten Prüfung, bevor der Lauf
-scharf schaltet:
+auf ARMED schaltet:
 
 | Sollwert | Abgelehnt, wenn | Die Zeile sagt | RUN sagt |
 | --- | --- | --- | --- |
@@ -717,17 +717,17 @@ Liste.
 | --- | --- | --- |
 | FERTIG | jede Auswahl getroffen | aus |
 | STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
-| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Scharfschalten, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
-| DISARMED | der Prüfstand wurde entschärft | an |
+| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Schalten auf ARMED, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
+| SAFE | der Prüfstand wurde auf SAFE geschaltet | an |
 | LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
 | NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
 | KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert | an |
 | MESSRATE | 3 späte Messwerte hintereinander | an |
-| NICHT ARMED | nicht scharf innerhalb von 3000 ms | an |
+| NOCH SAFE | nicht ARMED innerhalb von 3000 ms | an |
 | AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
 | NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten -- beim Start, vor einem Einschalten oder am Ende --, oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
-| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht scharf war | an |
+| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht ARMED war | an |
 | KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
 | ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert | an |
@@ -747,10 +747,10 @@ Aufruf wie der Stopp gezählt). Ein Lauf, der seit seinem Beginn mehr Stopps
 als Drücke sieht, endet mit PRÜFSTAND GESTOPPT, damit ein Stopp des
 Prüfstands nicht hinter einem Druck verschwindet, der mit ihm kam.
 
-Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und entschärft;
+Jedes Ende setzt das Gas auf MIN, schaltet das Netzteil aus und schaltet den Prüfstand auf SAFE;
 ein Abbruch tut alle drei in einem Schritt.
 Ein Stopp rastet ein wie jeder Stopp: der nächste Lauf schaltet erst über
-seine eigene Warnung wieder scharf.
+seine eigene Warnung wieder auf ARMED.
 
 ## Die Leserate
 
@@ -843,7 +843,7 @@ und nach dem des Ablaufs speichert keinen anderen Wert als den verlangten.
   Netzteil vor dem Ende seiner Modusbestätigung ausschaltet, sperrt sich
   (8- bis 10-fach Blinken, je nach Familie). Der Lauf schaltet das Netzteil
   vor ERLEDIGT aus bei NICHT BESTÄTIGT (kein ERLEDIGT innerhalb von 60 s),
-  STOP, ABBRECHEN, einem Entschärfen, einem verlorenen Link und jeder
+  STOP, ABBRECHEN, einem Schalten auf SAFE, einem verlorenen Link und jeder
   Netzteilregel, und sagt dann, dass der ESC gesperrt sein kann. Der
   Prüfstand sieht weder die Bestätigung noch die Sperre; ERLEDIGT ist das
   Wort des Bedieners, dass die Bestätigung zu Ende ist.
