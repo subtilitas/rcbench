@@ -86,7 +86,7 @@ with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
 coprocessor for the other target. **PORT PWM** goes on under the same
 rule. It goes off with the port not in programming, no sweep and no test
-running, while the bench is ARMED as on a SAFE one: **STOP** and **DISARM**
+running, with the bench ARMED as with the bench SAFE: **STOP** and **DISARM**
 end a sweep or a test. With **OUTPUTS** as target **PORT PWM** is locked.
 
 While the programmer has the port neither row changes: from **CONNECT** to

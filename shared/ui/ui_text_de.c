@@ -864,7 +864,7 @@ static const char *const k_text[TX_COUNT] = {
 
     /* ----------- the alert band: the panel's control task raises these */
     [TX_ALERT_TOUCH_LOST_STOP]  = "Touch verloren, während STOP gehalten wurde -- gestoppt",
-    [TX_ALERT_TOUCH_LOST_ARMING]= "Touch verloren beim ARM -- gestoppt",
+    [TX_ALERT_TOUCH_LOST_ARMING]= "Touch verloren beim Schalten auf ARMED -- gestoppt",
     [TX_ALERT_NO_CARD_RUN]      = "keine Karte -- dieser Lauf wird nicht aufgezeichnet",
     [TX_ALERT_CARD_UNREADABLE]  = "Karte nicht lesbar -- Lauf nicht aufgezeichnet",
     [TX_ALERT_CARD_FULL]        = "Karte voll oder nicht beschreibbar -- Lauf nicht aufgezeichnet",
@@ -883,7 +883,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_SUPPLY_SILENT]    = "Netzteil antwortet nicht -- Ausgang aus",
     [TX_ALERT_SUPPLY_NO_READING] = "Netzteil liefert keine Messwerte -- Ausgang aus",
     [TX_ALERT_SUPPLY_TRIP]      = "Netzteil abgeschaltet über %u.%02u %s -- Ausgang aus",
-    [TX_ALERT_TOUCH_ARM_AGAIN]  = "Touch verloren beim ARM -- erneut ARM",
+    [TX_ALERT_TOUCH_ARM_AGAIN]  = "Touch verloren beim Schalten auf ARMED -- erneut ARM",
     [TX_ALERT_TOUCH_STOPPED]    = "Touch antwortet nicht mehr -- SAFE",
     [TX_ALERT_SERVO_NOT_RELEASED]= "Servoausgang nicht freigegeben -- erneut ARM",
     [TX_ALERT_SERVO_RATE]       = "Frame Rate des Servos unbekannt -- erneut ARM",

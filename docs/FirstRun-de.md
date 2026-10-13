@@ -114,7 +114,7 @@ und der Multiplexer wählt eines aus:
 | Koprozessor-Seite | **GP3** |
 | Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er schaltet nach 150 ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
-Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
+Ohne diesen Draht verweigert der Koprozessor jedes Schalten auf ARMED, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
 
 **Die Zahlen, an denen er gemessen wird:**
@@ -129,7 +129,7 @@ Die Leitung muss also rund **80 ms** flanken, bevor ein Arm gelingen kann.
 
 **Am Oszilloskop, an GP3:** ein Rechteck, Flanke zu Flanke 20 ms.
 Überschreitet die Lücke je 150 ms, verwirft der Koprozessor sie und das
-nächste Arm wird verweigert.
+nächste Schalten auf ARMED wird verweigert.
 
 **Woher die Flanken kommen:** aus der Control-Task des Panels, innerhalb
 ihrer Poll-Schleife. Alles, was diese Task anhält, hält den Heartbeat an —
@@ -711,7 +711,7 @@ des Arms ist, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei Prüfstand in SAFE. Auf der Seite
+1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, ENC-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.
@@ -780,7 +780,7 @@ gewählt, nicht gemessen.
 
 | Symptom | Zuerst hier nachsehen |
 |---|---|
-| Arm verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150 ms. GP3 messen. |
+| Schalten auf ARMED verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150 ms. GP3 messen. |
 | Arm verweigert, kein offensichtlicher Grund | Touch 500 ms tot sperrt es. Das Panel berühren. |
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
 | Heartbeat fällt in der ersten Minute aus | **Die Artwork-Übertragung oder der Flash-Keeper.** Siehe §4. |
@@ -803,7 +803,9 @@ neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 
 Die ersten beiden sind bei einem Koprozessor, der kein Foto meldet, wirkungslos —
 das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
-Schacht wirkungslos und tut nichts, bevor der Prüfstand ARMED ist.
+Schacht wirkungslos. Mit Karte hängt sie bei jedem Fehler eine Zeile an
+`RCBENCH.LOG`, ob ARMED oder nicht; die Lauf-Datei wartet auf das Schalten auf
+ARMED und auf die erste Zeile danach.
 
 ---
 

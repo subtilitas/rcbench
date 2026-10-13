@@ -670,7 +670,7 @@ is set until another `PIN` is written.
 
 `test_prog_port` runs the page: every pin refusal in both directions, the
 endpoints at 399, 400, 2500 and 2501 µs, the slew at 3000 and 3001 and a kept
-slew of 3001 and 65535, a pin move under an armed bank, a
+slew of 3001 and 65535, a pin move under a bank in ARMED, a
 set `PWM` bit and a `TARGET`, 0 and 5 ports asked of a 4-port model, a
 stored pin taken at start, the SERVO rate reaching the target port alone, a
 target change judged at 50 Hz, a pin refused onto the slice of a target at
@@ -1027,7 +1027,7 @@ the supply: SUPPLY switches the PD mini off when the heartbeat stops, and
 the panel writes SUPPLY's output off at every STOP.
 
 The panel's STOP is therefore three things at the coprocessor: a switch to SAFE of
-an armed bank, SUPPLY's output written 0, and the command ABORT from
+a bank in ARMED, SUPPLY's output written 0, and the command ABORT from
 `kst_link_abort()`.
 
 | State | A switch to SAFE alone | The panel's STOP | Heartbeat lost, link silent |

@@ -179,9 +179,9 @@ innerhalb von 150 ms. Die Grenze der Frist ist der Frame, der auf ARMED schaltet
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000 ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
 Koprozessor hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
-für MOTOR & ESC und PROGRAMMER, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Ein Austausch des Schaltens auf ARMED, auf
-den niemand antwortet -- das Lesen von STATUS, das Freigeben des Servos,
-CLEAR oder der Frame, der auf ARMED schaltet --, hat den Timeout von 1000 ms abgewartet
+für MOTOR & ESC und PROGRAMMER, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
+unbeantwortet -- das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
+der Frame, der auf ARMED schaltet --, hat er den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schalten auf ARMED
 ausfällt, und am Panel rastet ein Stopp ein wie oben. Eine Ablehnung ist
 eine Antwort und lässt das Panel SAFE und ohne Stopp. Ohne
@@ -369,7 +369,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   ein Frame nur, wenn er in ARMED begann und den Strom vollständig fand. Der
   Control-Task sieht in jeder Wartezeit einer Link-Transaktion nach, nicht
   nur einmal pro Durchlauf, und stoppt von dort wie bei STOP: der Heartbeat
-  fällt sofort ab, und der Coprozessor geht innerhalb von 150 ms auf
+  fällt sofort ab, und der Koprozessor geht innerhalb von 150 ms auf
   SAFE, wie lang der Rückstau hinter dem Schalten auf ARMED auch
   ist. Ein Frame, der
   vor dem Veröffentlichen begann, bricht Seiten ab, die den Prüfstand noch
@@ -390,7 +390,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Nichts wird gepostet, der Wert und seine Anzeige bleiben, das
   Bedienelement wird gedimmt gezeichnet, und der Bildschirm zeigt
   `ZUERST ARM`. Eine Drehung des Drehknopfs in dieser Zeit wird nicht
-  aufgehoben. SAFE reicht vom DISARM, bis der Prüfstand ARMED
+  aufgehoben. Die Ablehnung reicht vom DISARM, bis der Prüfstand ARMED
   meldet, umfasst also die Zeit zwischen einem durchgelaufenen Halten auf
   ARM und der Antwort des Prüfstands. Von einem DISARM an, das ein Bildschirm
   anfordert, oder einem STOP auf einem Prüfstand in ARMED, bis der Prüfstand
@@ -471,7 +471,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Werts (0x5AFE) auf die Control-Page verlassen. Dasselbe gilt nach einem
   Start des Koprozessors und nach einem Heartbeat, dem nicht mehr vertraut
   wurde: siehe [Arm-Latch](#arm-latch).
-- Ein Link, der bei Prüfstand in ARMED ausfällt, ist am Panel ein Stopp. Er
+- Ein Link, der bei einem Prüfstand in ARMED ausfällt, ist am Panel ein Stopp. Er
   rastet ein wie STOP und wird vom nächsten Schalten auf ARMED gelöst.
 - Solange der Prüfstand ARMED ist, weist der Koprozessor mit BAD_VALUE ein
   Schreiben auf OUTPUTS ab, das einen Slot ändert, und ein Schreiben auf

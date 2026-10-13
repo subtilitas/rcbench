@@ -193,8 +193,8 @@ Bedienelement tut:
 | SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
-In SAFE zeigt die Zeile unter dem Track `ZUERST ARM`. Der Prüfstand ist
-vom Schalten auf SAFE an SAFE, bis er ARMED meldet: Auch ein
+In SAFE zeigt die Zeile unter dem Track `ZUERST ARM`. Die Ablehnung reicht
+vom Schalten auf SAFE, bis der Prüfstand ARMED meldet: Auch ein
 Bedienelement, das nach dem durchgelaufenen Halten auf ARM und vor dieser
 Meldung berührt wird, wird abgelehnt. Von einem DISARM an, das der
 Bildschirm anfordert, durch den Tap oder durch das Verlassen, oder einem
@@ -701,7 +701,7 @@ zugeordnet, den sie beantwortet: ein TEMPO oder eine Kurve, die geändert
 wird, während ein Start wartet, wird nicht von der Quittung des früheren
 Befehls gezeichnet. Ein geändertes
 Profil oder eine geänderte Frame Rate geht sofort mit.
-SWEEP gibt es bei Prüfstand in ARMED, mit einer gebundenen Surface und
+SWEEP gibt es bei einem Prüfstand in ARMED, mit einer gebundenen Surface und
 stehendem Link und einem Koprozessor mit Protokoll 4.2, sonst ist der Knopf ausgegraut;
 der Koprozessor hält eine Kurve an, die das Panel 500 ms nicht wiederholt hat,
 und lässt jede Surface dort stehen, wo ihr Ausgang gerade ist.
@@ -827,7 +827,7 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | TEST | VERWEILEN, EINSCHWINGEN | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
 | TEST | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
 | TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
-| TEST | TEST STARTEN | der automatische Test: 2 s Halten bei Prüfstand in ARMED; TEST BEENDEN, solange er läuft |
+| TEST | TEST STARTEN | der automatische Test: 2 s Halten bei einem Prüfstand in ARMED; TEST BEENDEN, solange er läuft |
 | GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
 | GRENZEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
 | GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
@@ -852,7 +852,7 @@ Zeichen des Werts passen, dann `+N`: 6 Pins ab GP40 lauten
 (`PINS NICHT GELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
 Warnfarbe; der Pin ist der GPIO, den der Koprozessor für den Programmierport
 meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
-bei Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
+bei einer Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
 ihren Endpunkten. Ein Port als Ziel ohne nutzbaren Pin (keiner, beim Start
 abgelehnt, oder ein Port, den der Koprozessor nicht hat) lautet `PROG-PORT`,
 ebenfalls in der Warnfarbe: die Befehle gehen trotzdem an den Port. Mit
@@ -1741,7 +1741,7 @@ Takt. Ein Messwert am oberen Ende des Bereichs des INA3221, 163,8 mV über dem
 Shunt, wird als übersteuert gezeigt und nie als Wert.
 
 Das Panel schreibt die Einstellung 500 ms nach der letzten Änderung auf die
-SENSE-Page des Koprozessors (Protokoll 4.7), nur bei Prüfstand in SAFE,
+SENSE-Page des Koprozessors (Protokoll 4.7), nur bei einem Prüfstand in SAFE,
 und nur, was von dem abweicht, was die Page hält: der Koprozessor lehnt eine
 Änderung ab, solange er Ausgänge treibt, und legt jede Änderung im Flash ab.
 Bei jedem Link-Aufbau liest es die Page zuerst, eine Einstellung, die der
@@ -1817,7 +1817,7 @@ Perioden.
 
 | Die Marke steht | Bis |
 | --- | --- |
-| ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei Prüfstand in SAFE |
+| ab einer Änderung | das Schreiben bestätigt ist: 500 ms nach der letzten Änderung, und bei den Strommonitoren erst bei einem Prüfstand in SAFE |
 | auf einem Wert, den der Koprozessor abgelehnt hat | der Wert auf einen geändert ist, den er annimmt; bei anderswo belegten Pins, bis der Versuch alle 5 s angenommen wird |
 | auf INA228, INA3221 oder AS5600 auf EIN, während die Page das Bauteil aus hat | die Ursache weg ist: ein abgelehnter Frame, Sensor-SDA auf −1, beide Monitore auf einer Adresse, ein Koprozessor älter als das Bauteil |
 | nach einem Neustart des Koprozessors oder einem Link-Aufbau auf dem, was seine Page anders liest | das Panel es geschrieben hat |
@@ -1839,7 +1839,7 @@ Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
 | AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. ENC-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
 
 Das Panel schreibt das Freigabe-Bit mit dem Rest des Bus-Frames, 500 ms nach
-der letzten Änderung und nur bei Prüfstand in SAFE, an einen Koprozessor,
+der letzten Änderung und nur bei einem Prüfstand in SAFE, an einen Koprozessor,
 der Protokoll 4.9 nennt; einem älteren wird nichts gesendet. Solange der Encoder
 freigegeben ist, liest es die Register 12 bis 31 von SENSE alle 40 ms. Das Band
 sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
@@ -2002,7 +2002,7 @@ tut — der Draht hat eben noch Frames getragen.
 Vier Sekunden, nicht eine: der Link fällt gelegentlich für einen Poll aus, und
 ein Bildschirm, der bei jedem Zucken übernimmt, ist einer, den man wegklickt.
 
-**Niemals bei Prüfstand in ARMED.** Der Bildschirm hat kein STOP, und einem
+**Niemals bei einem Prüfstand in ARMED.** Der Bildschirm hat kein STOP, und einem
 Prüfstand, an dem sich etwas dreht, darf keine Diagnose die Stopptaste
 verdecken. In ARMED sagt das Alert-Band, dass der Link weg ist, und der
 Bildschirm wartet auf das Schalten auf SAFE.
@@ -2126,7 +2126,7 @@ Protokoll als LETZTER SCHREIBVORGANG:
 | `NICHT GESCHR.` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
 | `GESCHRIEBEN` | der Koprozessor hat jeden Austausch des Schreibvorgangs bestätigt |
 | `KEIN LINK` | ein Austausch des Schreibvorgangs blieb 1000 ms ohne Antwort, oder der Link war unten |
-| `ABGELEHNT` | der Koprozessor hat geantwortet und abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei Prüfstand in ARMED oder eine Frame Rate, die er nicht zurücksetzen konnte |
+| `ABGELEHNT` | der Koprozessor hat geantwortet und abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei einem Prüfstand in ARMED oder eine Frame Rate, die er nicht zurücksetzen konnte |
 
 An einen Koprozessor mit Protokoll 4.10 wird die Bindung als Ganzes
 geschrieben: die beiden Pages werden neben den geltenden vorbereitet und von

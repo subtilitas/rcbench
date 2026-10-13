@@ -858,7 +858,7 @@ UI_TEXT(SV_HV_LIVE,                56, "The output is on: the voltage changes at
 
 /* --------------- the alert band: the panel's control task raises these */
 UI_TEXT(ALERT_TOUCH_LOST_STOP,     94, "touch lost while STOP was held -- stopped")
-UI_TEXT(ALERT_TOUCH_LOST_ARMING,   94, "touch lost while arming -- stopped")
+UI_TEXT(ALERT_TOUCH_LOST_ARMING,   94, "touch lost while switching to ARMED -- stopped")
 UI_TEXT(ALERT_NO_CARD_RUN,         94, "no card -- this run is not recorded")
 UI_TEXT(ALERT_CARD_UNREADABLE,     94, "card unreadable -- run not recorded")
 UI_TEXT(ALERT_CARD_FULL,           94, "card full or unwritable -- run not recorded")
@@ -877,7 +877,7 @@ UI_TEXT(ALERT_SUPPLY_CHANGED,      94, "supply changed in SETUP -- output off")
 UI_TEXT(ALERT_SUPPLY_SILENT,       94, "supply not answering -- output off")
 UI_TEXT(ALERT_SUPPLY_NO_READING,   94, "supply sends no readings -- output off")
 UI_TEXT(ALERT_SUPPLY_TRIP,         94, "supply tripped over %u.%02u %s -- output off")
-UI_TEXT(ALERT_TOUCH_ARM_AGAIN,     94, "touch lost while arming -- arm again")
+UI_TEXT(ALERT_TOUCH_ARM_AGAIN,     94, "touch lost while switching to ARMED -- arm again")
 UI_TEXT(ALERT_TOUCH_STOPPED,       94, "touch stopped answering -- SAFE")
 UI_TEXT(ALERT_SERVO_NOT_RELEASED,  94, "servo output not released -- arm again")
 UI_TEXT(ALERT_SERVO_RATE,          94, "servo frame rate not known -- arm again")

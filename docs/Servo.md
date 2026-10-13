@@ -127,7 +127,7 @@ trim not applied. With the defaults (RANGE 80 %, TRAVEL +/-90 deg, PULSE MIN
 only.
 
 A run that completes also switches the output off and releases the servo to
-its centre. On the bench it leaves ARMED, the commanded value shown is then
+its centre. On a bench it leaves in ARMED, the commanded value shown is then
 the rest, as after RELEASE: 1500 us for STANDARD PWM whatever the trim, and
 the next drag or knob turn starts from it. A step's first two moves, centre to the low end and on to the
 high end, are not counted: they measure each end's holding level. The counted moves then go

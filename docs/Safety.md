@@ -339,8 +339,8 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   SERVO alike. While the bench is SAFE, no control on either screen
   changes the value it commands: nothing is posted, the value and its
   readout stay, the control is drawn dimmed and the screen reads
-  `ARM FIRST`. A turn of the rotary knob made then is not kept. SAFE
-  runs from the DISARM until the bench reports ARMED, so it covers the time
+  `ARM FIRST`. A turn of the rotary knob made then is not kept. The
+  refusal runs from the DISARM until the bench reports ARMED, so it covers the time
   between a completed ARM hold and the bench's answer. From a DISARM a
   screen asks for, or a STOP while the bench is ARMED, until the bench reports
   SAFE the controls are refused

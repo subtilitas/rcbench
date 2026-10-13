@@ -413,8 +413,8 @@ gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
 Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
-eingeschaltet hält: wird AS5600 bei Bank in ARMED eingeschaltet, hat der Lauf
+Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei einer Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
+eingeschaltet hält: wird AS5600 bei einer Bank in ARMED eingeschaltet, hat der Lauf
 keine Winkelspalten, bis das Setup in SAFE übernommen ist.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte

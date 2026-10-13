@@ -180,9 +180,9 @@ The throttle changes only while the bench is ARMED. What each control does:
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch the pane | switch the pane |
 
-While SAFE, the line under the track reads `ARM FIRST`. The bench is SAFE
-from the switch to SAFE until it reports ARMED: a control touched after the ARM hold
-completes and before that report is refused as well. From a DISARM the
+While SAFE, the line under the track reads `ARM FIRST`. The refusal runs
+from the switch to SAFE until the bench reports ARMED: a control touched after
+the ARM hold completes and before that report is refused too. From a DISARM the
 screen asks for, by the tap or by leaving, or a STOP while the bench is ARMED,
 until the bench reports SAFE, the controls are refused too.
 
