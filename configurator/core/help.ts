@@ -19,7 +19,7 @@ function t(en: string, de: string): Text {
 export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object.freeze({
   servo: t(
     'Sends a PWM signal to a servo from the SERVO screen: pulse width, trim, travel and reverse, at a frame rate of 50 Hz unless another is set.',
-    'Gibt vom SERVO-Bildschirm ein PWM-Signal an ein Servo aus: Pulsbreite, TRIM, WEG und REVERSE, mit einer Frame-Rate von 50 Hz, wenn keine andere eingestellt ist.',
+    'Gibt vom SERVO-Bildschirm ein PWM-Signal an ein Servo aus: Pulsbreite, TRIM, WEG und REVERSE, mit einer Frame Rate von 50 Hz, wenn keine andere eingestellt ist.',
   ),
   servotest: t(
     'Measures the current of the servo at rest, moving and at each end, its travel time from end to end, and the voltage below which it stops moving. The PD mini sets the steps 4.8 V and 6.0 V, with HV SERVO on also 7.4 V and 8.4 V.',
@@ -31,7 +31,7 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
   ),
   angle: t(
     'Reads the angle of the servo horn with an AS5600 magnetic sensor on the output shaft: 12 bit, 500 readings per second.',
-    'Liest den Winkel des Servohorns mit einem AS5600-Magnetsensor an der Abtriebswelle: 12 Bit, 500 Messungen pro Sekunde.',
+    'Liest den Winkel des Ruderhorns mit einem AS5600-Magnetsensor an der Abtriebswelle: 12 Bit, 500 Messungen pro Sekunde.',
   ),
   servoprog: t(
     'Reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servo signal moves to the programming port, GP13.',
@@ -47,19 +47,19 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
   ),
   stick: t(
     'Sets an ESC through its throttle-stick menu; 24 of the 72 ESC profiles run. The bench moves the throttle to the positions of the ESC profile and counts the beeps of the menu as pulses in the supply current of the PD mini. Load: a resistor load or a motor mounted solid, without propeller.',
-    'Stellt einen ESC über das Menü am Gasknüppel ein; 24 der 72 ESC-Profile laufen. Der Prüfstand fährt das Gas auf die Stellungen des ESC-Profils und zählt die Töne des Menüs als Pulse im Versorgungsstrom des PD mini. Last: eine Widerstandslast oder ein fest montierter Motor ohne Propeller.',
+    'Stellt einen ESC über das Menü am Gasknüppel ein; 24 der 72 ESC-Profile laufen. Der Prüfstand fährt das Gas auf die Stellungen des ESC-Profils und zählt die Pieptöne des Menüs als Pulse im Versorgungsstrom des PD mini. Last: ein Lastwiderstand oder ein fest montierter Motor ohne Propeller.',
   ),
   tap: t(
     'Reads the pitch and the length of the beeps of the ESC on phase A through the phase tap. The motor simulator stands in for the motor.',
-    'Liest Tonhöhe und Länge der ESC-Töne an Phase A über den Phasenabgriff. Der Motorsimulator ersetzt den Motor.',
+    'Liest Tonhöhe und Länge der ESC-Pieptöne an Phase A über den Phasenabgriff. Der Motorsimulator ersetzt den Motor.',
   ),
   supply: t(
-    'The PD mini gives an output set on the panel: 1 to 20 V, 0.05 to 3 A (vendor values, not measured), the voltage at most 0.5 V under the input of the module. The bench reads the module every 102 to 106 ms.',
-    'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung höchstens 0,5 V unter dem Eingang des Moduls. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
+    'The PD mini gives an output set on the panel: 1 to 20 V, 0.05 to 3 A (vendor values, not measured), the voltage at most the input of the module less 0.5 V. The bench reads the module every 102 to 106 ms.',
+    'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung höchstens Eingang des Moduls minus 0,5 V. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
   ),
   logs: t(
     'Writes a log of each run to the microSD card: while the bench is ARMED, and while it is SAFE with the supply output on. The log viewer of the panel reads these files.',
-    'Schreibt ein Protokoll jedes Laufs auf die microSD-Karte: solange der Prüfstand ARMED ist, und solange er SAFE ist und der Ausgang der Versorgung an ist. Der Log-Viewer des Panels liest diese Dateien.',
+    'Schreibt ein Log jedes Laufs auf die microSD-Karte, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist. Der Log-Viewer des Panels liest diese Dateien.',
   ),
   estop: t(
     'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',

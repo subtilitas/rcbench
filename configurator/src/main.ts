@@ -292,7 +292,9 @@ function helpRoom(row: HTMLElement): { top: number; bottom: number } {
 
 /**
  * Opens the bubble of `row` over the row (data-up) when the room under the row is less than the bubble's height
- * and the room over it is more, else under it. A hidden bubble is measured without being shown.
+ * and the room over it holds the whole bubble, else under it. A bubble that fits neither way opens under the row:
+ * #choose and the page scroll down to what reaches past their lower edge, never up to what reaches past the top.
+ * A hidden bubble is measured without being shown.
  */
 function placeHelp(row: HTMLElement): void {
   const box = row.querySelector<HTMLElement>(':scope > .bubble');
@@ -311,7 +313,7 @@ function placeHelp(row: HTMLElement): void {
   const room = helpRoom(row);
   const below = room.bottom - r.bottom;
   const above = r.top - room.top;
-  row.toggleAttribute('data-up', height > below && above > below);
+  row.toggleAttribute('data-up', height > below && above >= height);
 }
 
 // The rows move under a shown bubble when the page or the chooser scrolls, the focus of a tick scrolls it into

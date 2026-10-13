@@ -35,21 +35,30 @@ async function tabTo(page: Page, id: string): Promise<void> {
 
 const mark = (page: Page, input: string): Locator => page.locator(`.row:has(#${input}) > .info`);
 
-/** The document is not wider than the viewport, and the bubble lies inside it from left to right. */
+/**
+ * The document is not wider than the viewport, the bubble lies inside it from left to right, and from top to
+ * bottom between the top of the viewport and the top of the bar of the narrow layout.
+ */
 async function onScreen(page: Page, bubble: Locator): Promise<void> {
-  const [scroll, width] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
-  expect(scroll).toBeLessThanOrEqual(width as number);
+  const [scroll, width, barTop] = await page.evaluate(() => [
+    document.documentElement.scrollWidth,
+    window.innerWidth,
+    document.getElementById('bar')!.getBoundingClientRect().top,
+  ]);
+  expect(scroll).toBeLessThanOrEqual(width);
   const box = await bubble.boundingBox();
   expect(box).not.toBeNull();
   expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(width as number);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(barTop + 0.5);
 }
 
 /**
- * How far the box of `bubble` reaches past the part of the viewport that shows it: the viewport, cut by the
- * client box of #choose where #choose scrolls (1024 px and wider). 0 when the whole bubble shows.
+ * How far the box of `bubble` reaches over the top and under the bottom of the part of the viewport that shows
+ * it: the viewport, cut by the client box of #choose where #choose scrolls (1024 px and wider).
  */
-const cutOff = (bubble: Locator): Promise<number> => bubble.evaluate((box) => {
+const cut = (bubble: Locator): Promise<{ top: number; bottom: number }> => bubble.evaluate((box) => {
   const choose = document.getElementById('choose')!;
   const b = box.getBoundingClientRect();
   let top = 0;
@@ -59,8 +68,42 @@ const cutOff = (bubble: Locator): Promise<number> => bubble.evaluate((box) => {
     top = Math.max(top, c.top + choose.clientTop);
     bottom = Math.min(bottom, c.top + choose.clientTop + choose.clientHeight);
   }
-  return Math.max(0, top - b.top) + Math.max(0, b.bottom - bottom);
+  return { top: Math.max(0, top - b.top), bottom: Math.max(0, b.bottom - bottom) };
 });
+
+/** The sum of both parts of `cut`: 0 when the whole bubble shows. */
+const cutOff = async (bubble: Locator): Promise<number> => {
+  const c = await cut(bubble);
+  return c.top + c.bottom;
+};
+
+/**
+ * Tabs from the top of the page through every tick, functions and the parts you own, and runs `each` on the
+ * bubble of each tick as the focus reaches it.
+ */
+async function tabSweep(page: Page, each: (id: string, bubble: Locator) => Promise<void>): Promise<void> {
+  await page.locator('#own-summary').click();
+  const ids = await page.locator('#choose .row input').evaluateAll((inputs) => inputs.map((i) => i.id));
+  expect(ids).toEqual(expect.arrayContaining(['f-stick', `f-${FUNCTIONS.at(-1)}`, `p-${OWNED.at(-1)}`]));
+  expect(ids).toHaveLength(FUNCTIONS.length + OWNED.length);
+  // The page scrolls smoothly: a smooth scroll to the top would go on after the first Tab and undo its scroll.
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.getElementById('choose')!.scrollTop = 0;
+  });
+  const seen: string[] = [];
+  for (let i = 0; i < 400 && seen.length < ids.length; i++) {
+    await page.keyboard.press('Tab');
+    const id = await focused(page);
+    if (!ids.includes(id) || seen.includes(id)) continue;
+    seen.push(id);
+    const bubble = page.locator(`#hb-${id}`);
+    await expect(bubble).toBeVisible();
+    await each(id, bubble);
+  }
+  expect(seen.sort()).toEqual([...ids].sort());
+}
 
 test.describe('1280 px, keyboard and pointer', () => {
   test.use({ viewport: { width: 1280, height: 800 }, locale: 'en-GB' });
@@ -180,27 +223,9 @@ test.describe('1280 px, keyboard and pointer', () => {
     test(`the bubble of every tick shows whole when Tab reaches it, ${lang}`, async ({ page }) => {
       // #choose scrolls at this width and clips its content: a bubble under a row at the lower edge opens over it.
       await open(page, `#v=1&l=${lang}`);
-      await page.locator('#own-summary').click();
-      const ids = await page.locator('#choose .row input').evaluateAll((inputs) => inputs.map((i) => i.id));
-      expect(ids).toEqual(expect.arrayContaining(['f-stick', `f-${FUNCTIONS.at(-1)}`, `p-${OWNED.at(-1)}`]));
-      expect(ids).toHaveLength(FUNCTIONS.length + OWNED.length);
-      // The page scrolls smoothly: a smooth scroll to the top would go on after the first Tab and undo its scroll.
-      await page.evaluate(() => {
-        (document.activeElement as HTMLElement | null)?.blur();
-        window.scrollTo({ top: 0, behavior: 'instant' });
-        document.getElementById('choose')!.scrollTop = 0;
-      });
-      const seen: string[] = [];
-      for (let i = 0; i < 400 && seen.length < ids.length; i++) {
-        await page.keyboard.press('Tab');
-        const id = await focused(page);
-        if (!ids.includes(id) || seen.includes(id)) continue;
-        seen.push(id);
-        const bubble = page.locator(`#hb-${id}`);
-        await expect(bubble).toBeVisible();
+      await tabSweep(page, async (id, bubble) => {
         await expect.poll(() => cutOff(bubble), { message: `the bubble of #${id} is cut off` }).toBe(0);
-      }
-      expect(seen.sort()).toEqual([...ids].sort());
+      });
     });
   }
 
@@ -222,6 +247,30 @@ test.describe('1280 px, keyboard and pointer', () => {
     await expect.poll(() => cutOff(bubble)).toBe(0);
   });
 });
+
+// A window too short for the tallest bubbles: the bubble of a row in the middle fits neither under nor over the
+// row. It opens under the row, where #choose scrolls down to its end; its top is never cut off.
+for (const viewport of [{ width: 1100, height: 450 }, { width: 1024, height: 500 }]) {
+  test.describe(`${viewport.width} x ${viewport.height} px, keyboard`, () => {
+    test.use({ viewport, locale: 'en-GB' });
+
+    for (const lang of ['en', 'de'] as const) {
+      test(`the top of every bubble shows when Tab reaches it, and #choose scrolls to its end, ${lang}`, async ({ page }) => {
+        await open(page, `#v=1&l=${lang}`);
+        let under = 0;
+        await tabSweep(page, async (id, bubble) => {
+          await expect.poll(async () => (await cut(bubble)).top, { message: `the top of the bubble of #${id} is cut off` }).toBe(0);
+          if ((await cut(bubble)).bottom > 0) under++;
+          // Scrolled into view, the whole bubble shows, to the rounding of the scroll position (under 1 px).
+          await bubble.evaluate((box) => box.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
+          await expect.poll(() => cutOff(bubble), { message: `the bubble of #${id} is cut off after a scroll` }).toBeLessThan(1);
+        });
+        // The case this window is for: at least one bubble reached past the lower edge before the scroll.
+        if (lang === 'de') expect(under).toBeGreaterThan(0);
+      });
+    }
+  });
+}
 
 test.describe('360 px, touch', () => {
   test.use({ viewport: { width: 360, height: 740 }, hasTouch: true, isMobile: true, locale: 'en-GB' });

@@ -77,7 +77,7 @@ legend { font-weight: 600; font-size: 14px; color: var(--muted); padding: 0; mar
 .opt[data-locked] { cursor: default; }
 .opt[data-locked] input { accent-color: var(--muted); }
 /* A tick with its help bubble. The bubble opens under the row, or over it (data-up) when the room under the row
-   inside the viewport and the scrolling chooser is less than the bubble's height and the room over it is more: on
+   inside the viewport and the scrolling chooser is less than the bubble's height and the room over it holds it: on
    the keyboard focus of the tick, on the pointer over the mark or the bubble, and on a tap on the mark. Escape
    closes it (data-shut). The mark has cursor: pointer, so iOS Safari delivers a tap on it as a click. */
 .row { position: relative; display: flex; align-items: stretch; }

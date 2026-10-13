@@ -60,11 +60,28 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
   // The two states of the bench carry the names of the status band of the panel, SAFE and ARMED, in both
   // languages; no text names them in prose.
   assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on\./);
-  assert.match(help('logs').de, /solange der Prüfstand ARMED ist, und solange er SAFE ist und der Ausgang der Versorgung an ist\./);
+  assert.match(help('logs').de, /, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist\./);
+  // A state word in prose, any case but the band's ARMED; the German words of the glossary and their forms.
+  const stateEn = /\b(?:un|dis)?armed\b|\bArmed\b|\bdisarm\w*|\bDisarm\w*|\bDISARM\w*/;
+  const stateDe = /scharf|schärf|gesichert|entschärf|\bDISARM\w*|NICHT ARMED|\bnach ARM\b/i;
+  for (const word of ['armed', 'Armed', 'unarmed', 'disarmed', 'Disarmed', 'DISARMED', 'disarms', 'DISARM']) {
+    assert.match(`the bench is ${word}`, stateEn, word);
+  }
+  for (const word of ['scharf', 'unscharf', 'geschärft', 'schärfen', 'entschärft', 'gesichert', 'DISARMED', 'NICHT ARMED', 'nach ARM']) {
+    assert.match(`der Prüfstand ist ${word}`, stateDe, word);
+  }
+  assert.doesNotMatch('while the bench is ARMED or SAFE', stateEn);
+  assert.doesNotMatch('solange der Prüfstand ARMED oder SAFE ist', stateDe);
   const parts = CATALOGUE.parts.filter((p) => p.selectable && p.role).map((p) => p.role!);
   for (const text of [...Object.values(FUNCTION_HELP).map((x) => x!), ...parts]) {
-    assert.doesNotMatch(text.en, /\b(?:armed|disarm\w*|DISARM)\b/, text.en);
-    assert.doesNotMatch(text.de, /scharf|gesichert|entschärf|\bDISARM\b|\bnach ARM\b/i, text.de);
+    assert.doesNotMatch(text.en, stateEn, text.en);
+    assert.doesNotMatch(text.de, stateDe, text.de);
+  }
+  // German: one word per English term, as the glossary of docs/Language-de.md and the German docs name it: Log,
+  // Netzteil, Piepton, Ruderhorn, Lastwiderstand, and Frame Rate stays English.
+  const names = CATALOGUE.functions.filter((fn) => TICKED.includes(fn.id)).map((fn) => fn.name.de);
+  for (const text of [...Object.values(FUNCTION_HELP).map((x) => x!.de), ...parts.map((x) => x.de), ...names]) {
+    assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame-Rate/, text);
   }
   assert.doesNotMatch(help('esc').de, /Leistung/);
   // The emergency stop breaks no power line, and the coprocessor switches the PD mini off.
@@ -79,6 +96,9 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
     assert.match(text, /trennt keine Versorgungsleitung/);
     assert.match(text, /Ausgang des PD mini (?:aus|gehen aus)/);
   }
+  // Both name the bench switching to SAFE, not the PD mini alone.
+  assert.match(estopPart.role!.en, /the coprocessor switches the bench to SAFE and the output of the PD mini off\./);
+  assert.match(estopPart.role!.de, /der Koprozessor schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus\./);
   assert.match(help('estop').en, /the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off\./);
   assert.match(help('estop').de, /schaltet der Koprozessor den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus\./);
   assert.match(help('estop').en, /an ESC battery or a servo supply of your own stays connected/);
@@ -113,19 +133,26 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   const iMin = define(pd, 'PDMINI_I_MIN_MA')!;
   const iMax = define(pd, 'PDMINI_I_MAX_MA')!;
   assert.match(help('supply').en, new RegExp(`${vMin / 1000} to ${vMax / 1000} V, ${iMin / 1000} to ${iMax / 1000} A`));
-  assert.match(help('supply').en, new RegExp(`the voltage at most ${volts(cap, 'en')} under the input of the module`));
-  assert.match(help('supply').de, new RegExp(`die Spannung höchstens ${volts(cap, 'de')} unter dem Eingang des Moduls`));
-  // Every text of the data file that states the cap states the same number.
+  // Every text that states the cap, the bubble of the supply among them, states it in one form: at most the
+  // input less the cap, and the same number.
+  assert.match(help('supply').en, /the voltage at most the input of the module less \d/);
+  assert.match(help('supply').de, /die Spannung höchstens Eingang des Moduls minus \d/);
   const texts = [
+    help('supply'),
     ...CATALOGUE.safety.map((s) => s.text),
     ...CATALOGUE.wires.flatMap((w) => (w.note ? [w.note] : [])),
     ...CATALOGUE.powerSources.map((p) => p.text),
   ];
   const stated = texts.flatMap((x) => [
-    ...[...x.en.matchAll(/input(?: voltage)? less (\d+(?:\.\d+)?) V/g)].map((m) => `${m[1]} V`),
-    ...[...x.de.matchAll(/Eingang(?:sspannung)? minus (\d+(?:,\d+)?) V/g)].map((m) => `${m[1]} V`),
+    ...[...x.en.matchAll(/input(?: voltage| of the module)? less (\d+(?:\.\d+)?) V/g)].map((m) => `${m[1]} V`),
+    ...[...x.de.matchAll(/Eingang(?:sspannung| des Moduls)? minus (\d+(?:,\d+)?) V/g)].map((m) => `${m[1]} V`),
   ]);
-  assert.ok(stated.length >= 8, `${stated.length} statements of the cap`);
+  assert.ok(stated.length >= 10, `${stated.length} statements of the cap`);
+  // The cap is never stated as a gap under the input: that reads as "within 0.5 V of the input".
+  for (const x of texts) {
+    assert.doesNotMatch(x.en, /at most \d+(?:\.\d+)? V under/, x.en);
+    assert.doesNotMatch(x.de, /höchstens \d+(?:,\d+)? V unter/, x.de);
+  }
   assert.deepEqual([...new Set(stated)].sort(), [volts(cap, 'de'), volts(cap, 'en')].sort());
 
   // stick: the share of the ESC profiles the ESC STICK class runs.

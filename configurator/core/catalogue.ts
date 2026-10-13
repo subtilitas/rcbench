@@ -392,7 +392,7 @@ const parts: Part[] = [
     short: same('AS5600'),
     role: t(
       'Angle of the servo horn, 12 bit. I2C 0x36, fixed.',
-      'Winkel des Servohorns, 12 Bit. I2C 0x36, fest.',
+      'Winkel des Ruderhorns, 12 Bit. I2C 0x36, fest.',
     ),
     locked: false,
     selectable: true,
@@ -516,8 +516,8 @@ const parts: Part[] = [
     ),
     short: t('Emergency stop', 'Not-Aus'),
     role: t(
-      'Its NC (normally closed) contact opens the heartbeat wire. It breaks no power line; the coprocessor switches the output of the PD mini off.',
-      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er trennt keine Versorgungsleitung; der Koprozessor schaltet den Ausgang des PD mini aus.',
+      'Its NC (normally closed) contact opens the heartbeat wire. It breaks no power line; the coprocessor switches the bench to SAFE and the output of the PD mini off.',
+      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er trennt keine Versorgungsleitung; der Koprozessor schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus.',
     ),
     locked: false,
     selectable: true,
@@ -579,7 +579,7 @@ const parts: Part[] = [
     short: t('Phase tap', 'Phasenabgriff'),
     role: t(
       'Reads pitch and length of the beeps of the ESC on phase A.',
-      'Liest Tonhöhe und Länge der ESC-Töne an Phase A.',
+      'Liest Tonhöhe und Länge der ESC-Pieptöne an Phase A.',
     ),
     locked: false,
     selectable: true,
@@ -1353,7 +1353,7 @@ const functions: Fn[] = [
   },
   {
     id: 'angle', group: 'servo',
-    name: t('Angle of the servo horn', 'Winkel des Servohorns'),
+    name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
     needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 121, 'Output encoder (AS5600)'),
   },
   {
@@ -1386,7 +1386,7 @@ const functions: Fn[] = [
   },
   {
     id: 'tap', group: 'esc',
-    name: t('Read the beeps of the ESC (phase tap)', 'ESC-Töne lesen (Phasenabgriff)'),
+    name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
     needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 122, 'Phase tap (ESC tones)'),
   },
   {

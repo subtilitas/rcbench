@@ -69,7 +69,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
-| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, every bubble whole inside the chooser at 1280 × 800 px. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
@@ -284,12 +284,14 @@ and the bubble take no focus, so the Tab order is that of the ticks. Each
 tick names its bubble in `aria-describedby`; the bubble has the role
 `tooltip`. The bubble spans the width of the row, so it stays inside a
 viewport of 360 px. It opens under the row, and over it when the room under
-the row is less than the height of the bubble and the room over it is more.
-The room is the viewport above the bar of the narrow layout, cut by the box
-of the chooser, which scrolls on its own at 1024 px and wider. The page
-places a shown bubble again when the page or the chooser scrolls or the
-window changes size. A bubble taller than both rooms is cut off; at
-1280 × 800 px every bubble shows whole, in English and German.
+the row is less than the height of the bubble and the room over it holds the
+whole bubble. The room is the viewport above the bar of the narrow layout,
+cut by the box of the chooser, which scrolls on its own at 1024 px and wider.
+The page places a shown bubble again when the page or the chooser scrolls or
+the window changes size. A bubble taller than both rooms opens under the
+row: its top shows, and the chooser or the page scrolls down to its end. At
+1280 × 800 px every bubble shows whole, in English and German; at
+1100 × 450 px and 1024 × 500 px the top of every bubble shows.
 
 Removing the tick of a function removes it from the selection. A note under
 the row states whether the function stays active, which of its parts stay
