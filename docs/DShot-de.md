@@ -221,7 +221,7 @@ und liegt weit innerhalb des Signal-Timeouts jedes ESC.
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
 keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Statt
 dessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll
-ein disarmter Prüfstand von der ESC-Seite aus nicht aussehen.
+ein Prüfstand in SAFE von der ESC-Seite aus nicht aussehen.
 
 ## Bidirektionales DShot
 
@@ -292,7 +292,7 @@ mechanische rpm (Revolutions per Minute) brauchen also die Magnetzahl des
 Motors. Das ist die eine Zahl, die die Leitung nicht trägt. Das Panel sendet sie
 aus der Einstellung `Motorpole`, sobald ein Coprozessor zu antworten beginnt,
 erneut bei jeder Änderung der Einstellung und erneut vor dem Schreibvorgang,
-der scharfschaltet, sofern eine Änderung noch offen ist, auf der
+der auf ARMED schaltet, sofern eine Änderung noch offen ist, auf der
 [CONTROL-Page](Link-de.md#page-map). Ein
 Schreibvorgang, den niemand beantwortet, bleibt offen und geht beim nächsten
 50-ms-Poll erneut hinaus; einen, den der Coprozessor ablehnt, wiederholt sie
@@ -344,7 +344,7 @@ Das Wiederholen ist für ESCs mit AM32-Firmware. Ein ESC mit AM32 2.21 nimmt
 ein Command nur an, solange er scharf ist und der Motor steht, und er schaltet
 sich nach 1 s Throttle null selbst scharf, gezählt ab dem ersten Frame, den er
 hört (`Src/dshot.c:157`,
-`Src/main.c:1353-1356`). Ein nicht scharfer Prüfstand sendet keine Frames, und
+`Src/main.c:1353-1356`). Ein Prüfstand in SAFE sendet keine Frames, und
 die AM32-Firmware startet nach 0,5 s ohne Frame neu, wenn der ESC scharf ist,
 und nach 2 s, wenn nicht. Jeder Lauf beginnt also mit einem ESC, der nicht
 scharf ist. Eine Anfrage nur in den ersten 10 ms eines Laufs kommt an, bevor
