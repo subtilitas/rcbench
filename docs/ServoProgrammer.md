@@ -46,7 +46,7 @@ before a write is relied on.
   While the port is in programming, the tester sends no pulse to it, and
   its **COMMANDED** row reads `---`.
 - Programming and an armed bench are exclusive. **CONNECT** on a bench that
-  is armed, asked to arm or has a finger on **ARM** is refused with
+  is armed for any role, asked to arm or has a finger on **ARM** is refused with
   `DISARM first: the port is not taken on an armed bench.` While the port
   is held, from **CONNECT** until it reports PWM, no screen arms the bench:
   **ARM** on SERVO and on MOTOR & ESC is drawn disabled and takes no press,

@@ -50,8 +50,8 @@ bevor man sich auf ein Schreiben verlässt.
   Puls darauf, und seine Zeile **PULSBREITE** zeigt `---`.
 - Programmieren und ein Prüfstand unter ARM schließen sich aus.
   **VERBINDEN** wird abgelehnt mit
-  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM gilt,
-  angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
+  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM für
+  irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
   den Prüfstand unter ARM: **ARM** auf SERVO und auf MOTOR & ESC ist
   gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des

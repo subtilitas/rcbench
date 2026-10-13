@@ -8,10 +8,19 @@ operated.
 ## The status band
 
 The top band is shared by every screen. From the right: STOP, the run clock
-(while armed or after a run), ARMED or SAFE, a FAULT code when one is reported,
+(while armed or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
 panel drives the coprocessor's outputs, and SIM while no coprocessor answers
 and the panel runs on its own models.
+
+The arm chip names what an arm drives:
+
+| Chip | Outputs that drive |
+| --- | --- |
+| SAFE | none |
+| ARMED MOTOR | the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER; no surface and no programming port |
+| ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
+| ARMED | every bound output, on a coprocessor older than protocol 4.18 |
 
 STOP works on every screen. It disarms and latches: the bench stays disarmed
 until it is armed again. Navigating away, an alert expiring or the link
@@ -167,7 +176,7 @@ The throttle changes only on an armed bench. What each control does:
 | The track | refused: no command, the slider and the readout stay; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | arms after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
+| ARM | arms the throttle outputs after its 2 s hold; drawn disabled and without effect while the [servo programmer](ServoProgrammer.md) holds a port | disarms on a tap |
 | RESET PEAKS | resets the peaks | resets the peaks |
 | PLOT, TABLE | switch the pane | switch the pane |
 
@@ -368,9 +377,11 @@ as 90%. It applies to a held output as soon as it is changed. Without
 feedback the horn is drawn moving at the same rate, and at 100% at the
 command at once.
 
-**ARM before anything moves.** While the bench is not armed the coprocessor
-writes a pulse of length zero to every PWM pin, and the screen takes no
-position: the commanded value changes only while the servo follows it. The
+**ARM before anything moves.** ARM here arms the surfaces and a pulsing PROG
+PORT; a throttle output sends no pulse ([An arm for one
+role](Link.md#an-arm-for-one-role)). While the bench is not armed for the
+surfaces the coprocessor writes a pulse of length zero to every PWM pin, and
+the screen takes no position: the commanded value changes only while the servo follows it. The
 button is a two-second hold, the same
 gesture and the same fade as the one on MOTOR & ESC, and a press on it while
 armed disarms. Leaving the screen disarms and lets go of the pin: a screen
@@ -2101,8 +2112,8 @@ configured over there. After a panel restart, what this screen shows and what
 is driving pins are the same thing.
 
 Restoring configures the outputs. It does not drive them: every driver is
-gated on the bank being armed, which the coprocessor grants only while the ARM
-register is set, the link is out of failsafe and the heartbeat is trusted, so
+gated on the pin's role being armed, which the coprocessor grants only while
+the ARM register names that role, the link is out of failsafe and the heartbeat is trusted, so
 a restored binding claims its pins and holds them at idle until somebody arms.
 Channel commands are not restored — a configuration survives a power cycle and
 a throttle position does not.

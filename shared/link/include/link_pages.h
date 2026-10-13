@@ -83,12 +83,14 @@ typedef enum {
  * as well.  From 4.17 the
  * TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
  * a set-up no freed pin makes good; the panel offers the first frame again
- * after a BUSY only.  A
+ * after a BUSY only.  From 4.18 CONTROL's ARM names the roles it arms
+ * (LINK_ARM_THROTTLE, LINK_ARM_SURFACE); the panel writes LINK_ARM_ALL to an
+ * older coprocessor, which arms its whole bank on any non-zero ARM.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 17u
+#define LINK_PROTOCOL_MINOR 18u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -124,6 +126,11 @@ typedef enum {
  *  no freed pin makes good.  Minor 16 and older refuse both with
  *  LINK_NACK_BAD_VALUE. */
 #define LINK_MINOR_TONE_BUSY 17u
+/** The first minor whose CONTROL ARM arms only the roles it names:
+ *  LINK_ARM_THROTTLE, LINK_ARM_SURFACE or both.  It refuses any other
+ *  non-zero value but LINK_ARM_ALL with LINK_NACK_BAD_VALUE.  An older minor arms
+ *  every output on any non-zero ARM. */
+#define LINK_MINOR_ARM_ROLE 18u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1611,7 +1618,7 @@ enum {
  * frame, so the clear is its own transaction ahead of the arm.
  */
 enum {
-    LINK_CT_ARM        = 0, /**< non-zero asks for ARMED                    */
+    LINK_CT_ARM        = 0, /**< 0 disarms; LINK_ARM_* asks for ARMED       */
     LINK_CT_THROTTLE   = 1, /**< 0..10000, hundredths of a percent          */
     /*
      * The magnet count of the motor under test, so an electrical speed can
@@ -1639,6 +1646,24 @@ enum {
  * on its own.
  */
 #define LINK_CLEAR_MAGIC 0x5AFEu
+
+/*
+ * What a non-zero ARM arms, from LINK_MINOR_ARM_ROLE.
+ *
+ * An arm is limited to the roles it names.  A channel of another role stays
+ * at no pulse, and a programming port is a surface.  LINK_ARM_ALL is every
+ * role, which is what a panel older than LINK_MINOR_ARM_ROLE writes as 1.
+ * Any other value is refused with LINK_NACK_BAD_VALUE, ahead of the failsafe
+ * check, so a refused value never latches anything.
+ *
+ * The roles of an arm change only through a disarm: a non-zero ARM that
+ * differs from the non-zero ARM in force is refused with LINK_NACK_BAD_VALUE.
+ * Writing the value in force again is not a change.
+ */
+#define LINK_ARM_ALL       0x0001u /**< every role                          */
+#define LINK_ARM_THROTTLE  0x0002u /**< outputs bound as a motor            */
+#define LINK_ARM_SURFACE   0x0004u /**< outputs bound as a servo, and ports */
+#define LINK_ARM_ROLES     (LINK_ARM_THROTTLE | LINK_ARM_SURFACE)
 
 /** Throttle is hundredths of a percent: 0..10000 inclusive. */
 #define LINK_THROTTLE_MAX 10000u

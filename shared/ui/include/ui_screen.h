@@ -134,9 +134,19 @@ void ui_router_invalidate(void);
  * What the band shows.  The application fills it in from the link and hands
  * it over; the router computes none of it.
  */
+/** What an arm covers, for the band's chip: the motor's outputs, the
+ *  servos' and the programming ports'. */
+#define UI_ARMED_MOTOR 0x01u
+#define UI_ARMED_SERVO 0x02u
+
 typedef struct {
     bool     link_up;
     bool     armed;
+    /**
+     * UI_ARMED_* bits while armed.  One of them names the role on the chip,
+     * ARMED MOTOR or ARMED SERVO; both, or none, read ARMED: every output.
+     */
+    uint8_t  armed_roles;
     uint16_t faults;        /**< a link_fault_t bitmap; 0 is quiet          */
     uint32_t run_seconds;
     const char *mode;       /**< ui_band_mode(): BENCH or SIM, or NULL      */

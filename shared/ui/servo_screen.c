@@ -369,6 +369,10 @@ static struct {
      * been written -- and a DISARM or STOP not yet answered.  gate.armed is
      * what the ARM button reads. */
     ui_value_gate_t gate;
+    /* The bench is armed for any role, the motor's included: what keeps the
+     * programmer off the port while the motor is armed and this screen's
+     * surfaces are not (servo_screen_set_bench_armed()). */
+    bool       bench_armed;
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
@@ -3287,10 +3291,16 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
-/* Armed, asked to arm, or a finger on ARM: the programmer takes no port. */
+/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port. */
 static bool bench_arming(void)
 {
-    return s.gate.armed || s.gate.arm_asked || s.arm_down;
+    return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
+}
+
+void servo_screen_set_bench_armed(bool armed)
+{
+    s.bench_armed = armed;
 }
 
 /* ARM takes no press while the programmer holds the port: programming and

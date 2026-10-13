@@ -8,11 +8,20 @@ einzelnen Bildschirme bedient werden.
 ## Das Statusband
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
-Laufzeituhr (im scharfen Zustand oder nach einem Lauf), ARMED oder SAFE, ein
+Laufzeituhr (im scharfen Zustand oder nach einem Lauf), der Arm-Chip, ein
 FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEIN LINK.
 Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
 Koprozessors ansteuert, und SIM, solange kein Koprozessor antwortet und das
 Panel mit seinen eigenen Modellen rechnet.
+
+Der Arm-Chip nennt, was ein ARM treibt:
+
+| Chip | Ausgänge, die treiben |
+| --- | --- |
+| SAFE | keine |
+| ARMED MOTOR | die Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER; keine Surface und kein Programmierport |
+| ARMED SERVO | die Surfaces und ein pulsender PROG PORT, von SERVO; kein Throttle-Ausgang |
+| ARMED | jeder gebundene Ausgang, an einem Koprozessor älter als Protokoll 4.18 |
 
 STOP funktioniert auf jedem Bildschirm. Es entschärft und rastet ein: der
 Prüfstand bleibt entschärft, bis er erneut scharf geschaltet wird. Ein
@@ -180,7 +189,7 @@ Bedienelement tut:
 | Der Track | abgelehnt: kein Kommando, Schieberegler und Anzeige bleiben; gedimmt gezeichnet | bewegt das Gas um den Weg des Fingers |
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
-| ARM | schaltet nach seinem Halten von 2 s scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | entschärft bei einem Tap |
+| ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge scharf; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | entschärft bei einem Tap |
 | SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
@@ -410,8 +419,11 @@ also dreimal so lange wie 90 %. Die Änderung wirkt sofort auf einen
 gehaltenen Ausgang. Ohne Rückmeldung wird das Horn mit derselben Rate
 bewegt gezeichnet, bei 100 % sofort am Befehl.
 
-**Vor jeder Bewegung ARM.** Solange der Prüfstand nicht scharf ist, schreibt
-der Koprozessor auf jeden PWM-Pin einen Impuls der Länge null, und der
+**Vor jeder Bewegung ARM.** ARM schaltet hier die Surfaces und einen
+pulsenden PROG PORT scharf; ein Throttle-Ausgang sendet keinen Puls ([Ein Arm
+für eine Rolle](Link-de.md#ein-arm-für-eine-rolle)). Solange der Prüfstand
+nicht für die Surfaces scharf ist, schreibt der Koprozessor auf jeden PWM-Pin
+einen Impuls der Länge null, und der
 Bildschirm nimmt keine Stellung an: Der befohlene Wert ändert sich nur,
 solange das Servo ihm folgt. Der Knopf ist ein
 Zwei-Sekunden-Halten, dieselbe Geste und dieselbe Blende wie auf MOTOR & ESC,
@@ -2297,8 +2309,8 @@ Panel-Neustart sind das, was dieser Bildschirm zeigt, und das, was Pins treibt,
 dieselbe Sache.
 
 Das Wiederherstellen konfiguriert die Outputs. Es treibt sie nicht: jeder
-Treiber ist daran gebunden, dass die Bank armed ist, was der Koprozessor nur
-gewährt, solange das ARM-Register gesetzt ist, der Link nicht im Failsafe ist
+Treiber ist daran gebunden, dass die Rolle seines Pins armed ist, was der
+Koprozessor nur gewährt, solange das ARM-Register diese Rolle nennt, der Link nicht im Failsafe ist
 und der Heartbeat vertraut wird. Eine wiederhergestellte Bindung belegt also
 ihre Pins und hält sie im Idle, bis jemand armed. Kanalbefehle werden nicht
 wiederhergestellt — eine Konfiguration überlebt einen Power-Cycle, eine

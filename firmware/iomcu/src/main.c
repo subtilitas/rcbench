@@ -2252,7 +2252,12 @@ int main(void)
          * armed bank are exclusive at this end too, and the port takes no
          * ENTER while the bank is armed. */
         const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u;
-        outputs_arm(&s_outputs, arm_now, now);
+        /* Only the roles ARM names: an arm for the throttle leaves the
+         * servos and the programming ports without a pulse, and an arm for
+         * the surfaces leaves the motors without one. */
+        outputs_arm_roles(&s_outputs,
+                          arm_now ? outputs_arm_roles_of(gate.roles) : 0u,
+                          now);
         kst_port_bench_armed(&s_kst, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
@@ -2282,11 +2287,12 @@ int main(void)
         s_pass_driving = driving_now;
         /* The sweep's command for this pass, before the step slews to it. */
         (void)servo_page_step(&s_servo, &s_outputs, now);
-        /* A capture ends with the run it was timing, and one on a
-         * programming port with the port's pulse; one core 1 has finished
-         * meanwhile keeps its result, so the page takes core 1's view
-         * first. */
-        const bool timing_now = driving_now
+        /* A capture ends with the run it was timing -- the arm for the
+         * surfaces it times -- and one on a programming port with the
+         * port's pulse; one core 1 has finished meanwhile keeps its result,
+         * so the page takes core 1's view first. */
+        const bool timing_now = outputs_role_armed(&s_outputs,
+                                                   OUT_ROLE_SURFACE)
                                 && !sense_page_port_gone(&s_sense);
         if (!timing_now && sense_capture_open()) {
             sense_sync();

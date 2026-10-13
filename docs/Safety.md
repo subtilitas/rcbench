@@ -100,7 +100,7 @@ holds.
 
 One thing clears it: a write of 0x5AFE to CLEAR on the control page. The
 panel writes CLEAR in one place, the arm an operator completes by holding
-ARM for 2 s. The ARM = 1 the panel writes at every 50 ms poll of an armed
+ARM for 2 s. The ARM the panel writes at every 50 ms poll of an armed
 bench carries no CLEAR, so it never brings a latched coprocessor back.
 
 The latch is separate from the link failsafe. The supply's ON and the STATUS
@@ -134,7 +134,7 @@ cases:
 - The panel notices the outage. It latches a stop and writes ARM = 0 from
   then on.
 - The panel does not notice it, because the request was retransmitted until
-  the restarted coprocessor answered. Its next write of ARM = 1 is refused
+  the restarted coprocessor answered. Its next write of ARM is refused
   with NOT_ARMED, and the panel latches a stop on that answer.
 
 In both the outputs stay off until an operator holds ARM. Host-tested in
@@ -165,7 +165,8 @@ coprocessor sets its latch when it stops trusting the line, within 150 ms.
 The limit of the bound is the frame that arms itself. It is written at or
 before the deadline, and its acknowledgement can arrive up to the 1000 ms
 exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the coprocessor has then
-armed the bank, at rest: throttle 0, surfaces centred. The panel does not
+armed the role it was asked for, at rest: throttle 0 for MOTOR & ESC and
+PROGRAMMER, surfaces centred for SERVO. The panel does not
 undo it. An exchange of the arm that nobody
 answers -- the STATUS read, the servo release, CLEAR or the frame that arms
 -- has waited the 1000 ms exchange timeout or did not reach the wire: that is
@@ -413,8 +414,19 @@ coprocessor connected the panel arms its own bank after the 100 ms.
   writes a binding and the throttle's pulse range only while disarmed.
 - The coprocessor acts on overcurrent, over-temperature, stall timeout and a
   lost link on its own authority and reports the fault at the next poll.
-- An armed bench drives every bound pin, whether or not anything is commanding
-  it. A channel that has had no command for 500 ms is rendered at its role's
+- An arm names the roles it drives ([Link, An arm for one
+  role](Link.md#an-arm-for-one-role)). MOTOR & ESC and a PROGRAMMER stick
+  run arm the throttle outputs, ARM 0x0002. SERVO arms the surfaces and the
+  PROG PORT pin, ARM 0x0004. A pin of a role the arm does not name sends no
+  pulse, as on a disarmed bench. A coprocessor older than protocol 4.18
+  takes any non-zero ARM as the whole bank, so on it every bound pin drives.
+- An arm for the other role goes through a disarm. The panel writes ARM = 0,
+  waits at least 100 ms, then writes the new roles; the coprocessor refuses
+  a change from one non-zero ARM to another with BAD_VALUE.
+- STOP, the heartbeat stopping, link silence and a disarm each zero the
+  whole ARM, whatever roles it named, and every output stops.
+- An armed bench drives every bound pin of the armed roles, whether or not
+  anything is commanding it. A channel that has had no command for 500 ms is rendered at its role's
   rest: stopped for a throttle, centred for a surface. Centred is the midpoint
   of that channel's own endpoints — 1500 us across the default 1000 to 2000 us,
   and 760 us across the 660 to 860 us of a narrow servo. The timeout moves the

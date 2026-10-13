@@ -195,7 +195,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 080 | 3 088 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 096 | 3 072 |
 | `control` | `control_task` | 6 144 | 4 432 | 688 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -238,7 +238,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 636 | 528 | 1 676 |
+| Kern 0 | `main` | 4 096 | 1 628 | 528 | 1 684 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
