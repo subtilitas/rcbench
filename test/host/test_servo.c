@@ -6906,16 +6906,30 @@ static int pill_w(const char *word)
     return w < 88 ? 88 : w;
 }
 
-/* Whether buffer 0, drawn, carries the pill reading @p word: its fill and
- * text compared away from the round ends, which show the plot behind. */
+/* Whether buffer 0, drawn, carries the pill reading @p word: the area around
+ * it, one pixel wider on every side, compared with the plot as drawn
+ * without the model and the overview's pill drawn on it.  The fill is the
+ * plot's own colour, so the pill's width and height show where it covers a
+ * grid line or the plot's edge. */
 static bool pill_reads(const char *word)
 {
     scr->render(&cv, 0);
+    const bool model = supply_screen_model();
+    gfx_color_t *seen = malloc((size_t)W * H * sizeof(gfx_color_t));
+    memcpy(seen, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_screen_set_model(false);
+    scr->tick(1.0f / 39.0f);
+    scr->render(&cv, 0);
     want_fresh();
+    memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
+    memcpy(fb, seen, (size_t)W * H * sizeof(gfx_color_t));
+    free(seen);
+    supply_screen_set_model(model);
+    scr->tick(1.0f / 39.0f);
     const int w = pill_w(word);
     ui_pill(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 20 }, word,
             ui_theme_color(UI_C_WARN), ui_theme_color(UI_C_PANEL_SUNK));
-    return same_in(fb, want_fb, PILL_X + 10, PILL_Y, w - 20, 20);
+    return same_in(fb, want_fb, PILL_X - 1, PILL_Y - 1, w + 2, 22);
 }
 
 TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)

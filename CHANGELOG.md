@@ -94,7 +94,8 @@ history is in git.
 - The SERVO screen names the supply on the line over the power plot
   `PD MINI` in both languages, in place of `SUPPLY` (`NETZTEIL`). While the
   panel's model stands in for the PD mini, a MODELLED pill (`SIMULIERT`),
-  88 px by 20 px, sits on the plot's top-left corner. With INA3221 CH1 as
+  20 px high and 24 px plus the word wide, at least 88 px (88 px for
+  MODELLED, 96 px for SIMULIERT), sits on the plot's top-left corner. With INA3221 CH1 as
   the meter the line shows no pill.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave

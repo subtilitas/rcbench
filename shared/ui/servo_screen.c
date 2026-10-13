@@ -4663,8 +4663,9 @@ static void draw_power(gfx_canvas_t *c)
     const gfx_rect_t r = power_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
     const bool ina = (s.source == SERVO_SOURCE_INA3221);
-    /* The supply is the PD mini, in both languages as SUPPLY's header
-     * names it; the panel's model of it carries the pill below. */
+    /* The supply is the PD mini, named so in both languages, also while
+     * the panel's model stands in for it; the model carries the pill
+     * below. */
     gfx_text(c, RC_X, PWR_TXT_Y, ina ? TR(SV_SOURCE_INA) : "PD MINI",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     const rail_t m = rail_now();

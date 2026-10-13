@@ -428,7 +428,8 @@ at once.
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
 SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
-then a MODELLED pill (SIMULIERT in German), 88 px wide and 20 px high, sits
+then a MODELLED pill (SIMULIERT in German), 20 px high and 24 px plus the word
+wide but at least 88 px (88 px for MODELLED, 96 px for SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
 name holds the three readings. The pill comes and goes with the model,
 without a tap. With INA3221 CH1 as the meter the line names the INA3221 and

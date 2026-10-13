@@ -476,8 +476,9 @@ erscheint sofort in der Zeile.
 
 Der Name bleibt in beiden Sprachen `PD MINI`. Solange der PD mini in SETUP
 unter ANSCHLÜSSE abgeschaltet ist, ist das Netzteil das Modell des Panels,
-wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch MODELLED), 88 px
-breit und 20 px hoch, auf der oberen linken Ecke des Plots unter dem Namen,
+wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch MODELLED), 20 px
+hoch und 24 px plus das Wort breit, mindestens 88 px (88 px für MODELLED,
+96 px für SIMULIERT), auf der oberen linken Ecke des Plots unter dem Namen,
 weil die Zeile neben dem Namen die drei Messwerte trägt. Die Pille kommt und
 geht mit dem Modell, ohne Tippen. Mit INA3221 CH1 als Messgerät nennt die
 Zeile den INA3221 und trägt keine Pille, ob das Netzteil simuliert ist oder
