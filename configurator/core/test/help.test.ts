@@ -2,11 +2,13 @@
 // none for another id, each under the text rules of the data.
 
 import assert from 'node:assert/strict';
+import { dirname } from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { CATALOGUE } from '../catalogue.ts';
 import { alwaysOn } from '../groups.ts';
 import { FUNCTION_HELP } from '../help.ts';
-import { checkAll, checkHelp } from '../tools/check.ts';
+import { RELEASE_TAG, checkAll, checkHelp, gitTree } from '../tools/check.ts';
 
 const TICKED = CATALOGUE.functions.filter((fn) => !alwaysOn(CATALOGUE, fn)).map((fn) => fn.id);
 
@@ -34,4 +36,101 @@ test('the check finds a missing entry, an entry of a function without a tick and
 test('the check of the data file runs the check of the help text', () => {
   const report = checkAll(CATALOGUE, null);
   assert.deepEqual(report.findings.filter((f) => f.id.startsWith('help')), []);
+});
+
+const help = (id: string): { en: string; de: string } => FUNCTION_HELP[id as keyof typeof FUNCTION_HELP]!;
+
+/** A `#define NAME value` of a C header, as a number, or null. */
+function define(source: string, name: string): number | null {
+  const m = new RegExp(`#define\\s+${name}\\s+(\\d+)u?\\b`).exec(source);
+  return m ? Number(m[1]) : null;
+}
+
+/** Millivolts as the text writes them: "0.5 V" in English, "0,5 V" in German. */
+const volts = (mv: number, lang: 'en' | 'de'): string => {
+  const v = String(mv / 1000);
+  return `${lang === 'de' ? v.replace('.', ',') : v} V`;
+};
+
+test('the wording of the texts: no pad, the German labels of the panel, scharf and gesichert', () => {
+  // The Osoyoo variant names terminals, not pads: the function text names the pin alone.
+  assert.doesNotMatch(help('servoprog').en, /\bpad\b/i);
+  assert.doesNotMatch(help('servoprog').de, /\bPad\b/);
+  assert.match(help('servoprog').en, /programming port, GP13\./);
+  assert.match(help('logs').de, /solange der Prüfstand scharf ist, und bei gesichertem Prüfstand, solange der Ausgang der Versorgung an ist/);
+  assert.doesNotMatch(help('logs').de, /nach ARM|nach DISARM/);
+  // The German texts name the disarmed bench "gesichert", never "unscharf".
+  for (const text of Object.values(FUNCTION_HELP)) assert.doesNotMatch(text!.de, /unscharf/i);
+  assert.doesNotMatch(help('esc').de, /Leistung/);
+  // The emergency stop breaks no power line, and the coprocessor switches the PD mini off.
+  const estopPart = CATALOGUE.parts.find((p) => p.id === 'estop')!;
+  for (const text of [help('estop').en, estopPart.role!.en]) {
+    assert.doesNotMatch(text, /switches off no supply/);
+    assert.match(text, /breaks no power line/);
+    assert.match(text, /output of the PD mini off/);
+  }
+  for (const text of [help('estop').de, estopPart.role!.de]) {
+    assert.doesNotMatch(text, /schaltet keine Versorgung ab/);
+    assert.match(text, /trennt keine Versorgungsleitung/);
+    assert.match(text, /Ausgang des PD mini aus/);
+  }
+  assert.match(help('estop').en, /an ESC battery or a servo supply of your own stays connected/);
+});
+
+test('the numbers of the texts match the sources at the release tag', (t) => {
+  const tree = gitTree(dirname(fileURLToPath(import.meta.url)));
+  if (tree === null) {
+    t.skip(`git or the tag ${RELEASE_TAG} is absent`);
+    return;
+  }
+  const read = (path: string): string => {
+    const text = tree.read(path);
+    assert.ok(text !== null, `${path} at ${RELEASE_TAG}`);
+    return text;
+  };
+
+  // estop: the heartbeat ceiling, and SUPPLY switches the output off when the heartbeat is lost.
+  const gap = define(read('shared/safety/include/heartbeat.h'), 'HEARTBEAT_MAX_GAP_MS');
+  assert.equal(gap, 150);
+  assert.match(help('estop').en, new RegExp(`after ${gap} ms without a heartbeat edge`));
+  assert.match(help('estop').de, new RegExp(`nach ${gap} ms ohne Heartbeat-Flanke`));
+  assert.match(read('shared/outputs/supply_page.c'), /if \(!beat_alive\)/);
+
+  // supply: the range of the module and the cap of the set point under its input. The cap is
+  // PDMINI_CAP_MV where the header defines it, PDMINI_HEADROOM_MV before that.
+  const pd = read('protocols/pdmini/include/pdmini.h');
+  const cap = define(pd, 'PDMINI_CAP_MV') ?? define(pd, 'PDMINI_HEADROOM_MV');
+  assert.ok(cap !== null);
+  const vMin = define(pd, 'PDMINI_V_MIN_MV')!;
+  const vMax = define(pd, 'PDMINI_V_MAX_MV')!;
+  const iMin = define(pd, 'PDMINI_I_MIN_MA')!;
+  const iMax = define(pd, 'PDMINI_I_MAX_MA')!;
+  assert.match(help('supply').en, new RegExp(`${vMin / 1000} to ${vMax / 1000} V, ${iMin / 1000} to ${iMax / 1000} A`));
+  assert.match(help('supply').en, new RegExp(`the voltage at most ${volts(cap, 'en')} under the input of the module`));
+  assert.match(help('supply').de, new RegExp(`die Spannung höchstens ${volts(cap, 'de')} unter dem Eingang des Moduls`));
+  // Every text of the data file that states the cap states the same number.
+  const texts = [
+    ...CATALOGUE.safety.map((s) => s.text),
+    ...CATALOGUE.wires.flatMap((w) => (w.note ? [w.note] : [])),
+    ...CATALOGUE.powerSources.map((p) => p.text),
+  ];
+  const stated = texts.flatMap((x) => [
+    ...[...x.en.matchAll(/input(?: voltage)? less (\d+(?:\.\d+)?) V/g)].map((m) => `${m[1]} V`),
+    ...[...x.de.matchAll(/Eingang(?:sspannung)? minus (\d+(?:,\d+)?) V/g)].map((m) => `${m[1]} V`),
+  ]);
+  assert.ok(stated.length >= 8, `${stated.length} statements of the cap`);
+  assert.deepEqual([...new Set(stated)].sort(), [volts(cap, 'de'), volts(cap, 'en')].sort());
+
+  // stick: the share of the ESC profiles the ESC STICK class runs.
+  const runs = /runs (\d+) of the (\d+) profiles/.exec(read('STATUS.md'));
+  assert.ok(runs !== null);
+  assert.match(help('stick').en, new RegExp(`; ${runs[1]} of the ${runs[2]} ESC profiles run\\.`));
+  assert.match(help('stick').de, new RegExp(`; ${runs[1]} der ${runs[2]} ESC-Profile laufen\\.`));
+
+  // servo, German: the controls carry the labels of the German panel.
+  const de = read('shared/ui/ui_text_de.c');
+  const label = (key: string): string => new RegExp(`\\[${key}\\]\\s*=\\s*"([^"]+)"`).exec(de)![1]!;
+  const controls = ['TX_SV_ROW_TRIM', 'TX_SV_ROW_TRAVEL', 'TX_SV_ROW_REVERSE'].map(label);
+  assert.deepEqual(controls, ['TRIM', 'WEG', 'REVERSE']);
+  assert.match(help('servo').de, new RegExp(`Pulsbreite, ${controls[0]}, ${controls[1]} und ${controls[2]},`));
 });

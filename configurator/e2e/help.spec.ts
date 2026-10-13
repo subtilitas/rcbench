@@ -45,6 +45,23 @@ async function onScreen(page: Page, bubble: Locator): Promise<void> {
   expect(box!.x + box!.width).toBeLessThanOrEqual(width as number);
 }
 
+/**
+ * How far the box of `bubble` reaches past the part of the viewport that shows it: the viewport, cut by the
+ * client box of #choose where #choose scrolls (1024 px and wider). 0 when the whole bubble shows.
+ */
+const cutOff = (bubble: Locator): Promise<number> => bubble.evaluate((box) => {
+  const choose = document.getElementById('choose')!;
+  const b = box.getBoundingClientRect();
+  let top = 0;
+  let bottom = window.innerHeight;
+  if (getComputedStyle(choose).overflowY !== 'visible') {
+    const c = choose.getBoundingClientRect();
+    top = Math.max(top, c.top + choose.clientTop);
+    bottom = Math.min(bottom, c.top + choose.clientTop + choose.clientHeight);
+  }
+  return Math.max(0, top - b.top) + Math.max(0, b.bottom - bottom);
+});
+
 test.describe('1280 px, keyboard and pointer', () => {
   test.use({ viewport: { width: 1280, height: 800 }, locale: 'en-GB' });
 
@@ -158,6 +175,52 @@ test.describe('1280 px, keyboard and pointer', () => {
     await expect(page.locator('#hb-p-ina228')).toContainText(role('ina228', 'de'));
     await expect(page.locator('#hb-p-ina228')).toContainText('Versorgung, 5 V: Koprozessor VBUS (Pad 40).');
   });
+
+  for (const lang of ['en', 'de'] as const) {
+    test(`the bubble of every tick shows whole when Tab reaches it, ${lang}`, async ({ page }) => {
+      // #choose scrolls at this width and clips its content: a bubble under a row at the lower edge opens over it.
+      await open(page, `#v=1&l=${lang}`);
+      await page.locator('#own-summary').click();
+      const ids = await page.locator('#choose .row input').evaluateAll((inputs) => inputs.map((i) => i.id));
+      expect(ids).toEqual(expect.arrayContaining(['f-stick', `f-${FUNCTIONS.at(-1)}`, `p-${OWNED.at(-1)}`]));
+      expect(ids).toHaveLength(FUNCTIONS.length + OWNED.length);
+      // The page scrolls smoothly: a smooth scroll to the top would go on after the first Tab and undo its scroll.
+      await page.evaluate(() => {
+        (document.activeElement as HTMLElement | null)?.blur();
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.getElementById('choose')!.scrollTop = 0;
+      });
+      const seen: string[] = [];
+      for (let i = 0; i < 400 && seen.length < ids.length; i++) {
+        await page.keyboard.press('Tab');
+        const id = await focused(page);
+        if (!ids.includes(id) || seen.includes(id)) continue;
+        seen.push(id);
+        const bubble = page.locator(`#hb-${id}`);
+        await expect(bubble).toBeVisible();
+        await expect.poll(() => cutOff(bubble), { message: `the bubble of #${id} is cut off` }).toBe(0);
+      }
+      expect(seen.sort()).toEqual([...ids].sort());
+    });
+  }
+
+  test('the pointer over the mark of a row at the lower edge of the chooser opens a bubble that shows whole', async ({ page }) => {
+    await open(page, '#v=1&l=de');
+    await page.locator('#own-summary').click();
+    const last = `p-${OWNED.at(-1)}`;
+    // The chooser sticks at the top of the viewport; the row of the last part sits on its lower edge.
+    await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+    const gap = await page.locator(`.row:has(#${last})`).evaluate((row) => {
+      const c = document.getElementById('choose')!;
+      c.scrollTop += row.getBoundingClientRect().bottom - (c.getBoundingClientRect().top + c.clientTop + c.clientHeight);
+      return c.getBoundingClientRect().top + c.clientTop + c.clientHeight - row.getBoundingClientRect().bottom;
+    });
+    expect(Math.abs(gap)).toBeLessThan(2);
+    await mark(page, last).hover();
+    const bubble = page.locator(`#hb-${last}`);
+    await expect(bubble).toBeVisible();
+    await expect.poll(() => cutOff(bubble)).toBe(0);
+  });
 });
 
 test.describe('360 px, touch', () => {
@@ -208,5 +271,21 @@ test.describe('360 px, touch', () => {
     await expect(page.locator('#f-servo')).not.toBeChecked();
     await expect(page.locator('#choose .bubble:visible')).toHaveCount(0);
     expect(seen).toEqual({ foreign: [], errors: [] });
+  });
+
+  test('the mark has a pointer cursor, and a pointerdown elsewhere closes the bubble without a click', async ({ page }) => {
+    // iOS Safari sends a click to a document listener only for a target with cursor: pointer or a handler of its
+    // own; it sends pointerdown for every tap.
+    await open(page, '#v=1');
+    await expect(mark(page, 'f-esc')).toHaveCSS('cursor', 'pointer');
+    await mark(page, 'f-esc').tap();
+    await expect(page.locator('#hb-f-esc')).toBeVisible();
+    await page.locator('#h-choose').dispatchEvent('pointerdown', { bubbles: true, pointerType: 'touch' });
+    await expect(page.locator('#hb-f-esc')).toBeHidden();
+    // A pointerdown on the mark of the open bubble leaves it to the click that follows.
+    await mark(page, 'f-esc').tap();
+    await mark(page, 'f-esc').dispatchEvent('pointerdown', { bubbles: true, pointerType: 'touch' });
+    await expect(page.locator('#hb-f-esc')).toBeVisible();
+    await expect(page.locator('#f-esc')).not.toBeChecked();
   });
 });

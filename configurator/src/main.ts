@@ -272,9 +272,64 @@ function shownHelp(): HTMLElement[] {
   });
 }
 
+/**
+ * The band of the viewport a bubble of `row` shows in: above the bar of the narrow layout, and inside each
+ * scrolling ancestor, #choose at 1024 px and wider, which clips what lies outside its box.
+ */
+function helpRoom(row: HTMLElement): { top: number; bottom: number } {
+  let top = 0;
+  let bottom = window.innerHeight;
+  const bar = byId('bar');
+  if (bar && getComputedStyle(bar).display !== 'none') bottom = Math.min(bottom, bar.getBoundingClientRect().top);
+  for (let el = row.parentElement; el && el !== document.body; el = el.parentElement) {
+    if (getComputedStyle(el).overflowY === 'visible') continue;
+    const box = el.getBoundingClientRect();
+    top = Math.max(top, box.top + el.clientTop);
+    bottom = Math.min(bottom, box.top + el.clientTop + el.clientHeight);
+  }
+  return { top, bottom };
+}
+
+/**
+ * Opens the bubble of `row` over the row (data-up) when the room under the row is less than the bubble's height
+ * and the room over it is more, else under it. A hidden bubble is measured without being shown.
+ */
+function placeHelp(row: HTMLElement): void {
+  const box = row.querySelector<HTMLElement>(':scope > .bubble');
+  if (!box) return;
+  const hidden = getComputedStyle(box).display === 'none';
+  if (hidden) {
+    box.style.setProperty('display', 'block', 'important');
+    box.style.setProperty('visibility', 'hidden');
+  }
+  const height = box.offsetHeight;
+  if (hidden) {
+    box.style.removeProperty('display');
+    box.style.removeProperty('visibility');
+  }
+  const r = row.getBoundingClientRect();
+  const room = helpRoom(row);
+  const below = room.bottom - r.bottom;
+  const above = r.top - room.top;
+  row.toggleAttribute('data-up', height > below && above > below);
+}
+
+// The rows move under a shown bubble when the page or the chooser scrolls, the focus of a tick scrolls it into
+// view, or the window changes size: each shown bubble is placed again, once per frame.
+let placing = false;
+function placeShownHelp(): void {
+  if (placing) return;
+  placing = true;
+  requestAnimationFrame(() => {
+    placing = false;
+    for (const row of shownHelp()) placeHelp(row);
+  });
+}
+document.addEventListener('scroll', placeShownHelp, { capture: true, passive: true });
+window.addEventListener('resize', placeShownHelp, { passive: true });
+
 // A tap or a click on the mark of a tick opens its bubble and closes the others; a second one closes it. The
-// mark stands outside the label: the tick stays as it is. A tap anywhere else, the bubble included, closes
-// every bubble a tap opened: an open bubble covers the rows under it.
+// mark stands outside the label: the tick stays as it is.
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const mark = target?.closest<HTMLElement>('#choose .row > .info');
@@ -285,22 +340,43 @@ document.addEventListener('click', (event) => {
   if (!row) return;
   if (row.hasAttribute('data-open')) row.removeAttribute('data-open');
   else {
+    placeHelp(row);
     row.setAttribute('data-open', '');
     row.removeAttribute('data-shut');
   }
 });
 
+// A press anywhere but on the mark of an open bubble, the bubble included, closes every bubble a tap opened: an
+// open bubble covers the rows next to it. iOS Safari sends no click to the document for a tap on text or on an
+// empty area, and a pointerdown for every tap.
+document.addEventListener('pointerdown', (event) => {
+  const target = event.target instanceof Element ? event.target : null;
+  const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement ?? null;
+  for (const open of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
+    if (open !== row) open.removeAttribute('data-open');
+  }
+});
+
 // A bubble closed with Escape opens again when the focus comes back to its tick from elsewhere, or the pointer
-// enters its mark again.
+// enters its mark again. The bubble of the focused tick or of the mark under the pointer is placed before it
+// shows.
 document.addEventListener('focusin', (event) => {
   const target = event.target instanceof Node ? event.target : null;
   for (const row of document.querySelectorAll<HTMLElement>('#choose .row[data-shut]')) {
     if (!target || !row.contains(target)) row.removeAttribute('data-shut');
   }
+  const row = target instanceof Element ? target.closest<HTMLElement>('#choose .row') : null;
+  if (row) {
+    placeHelp(row);
+    placeShownHelp();
+  }
 });
 document.addEventListener('pointerover', (event) => {
   const target = event.target instanceof Element ? event.target : null;
-  target?.closest<HTMLElement>('#choose .row > .info')?.parentElement?.removeAttribute('data-shut');
+  const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement;
+  if (!row) return;
+  row.removeAttribute('data-shut');
+  placeHelp(row);
 });
 
 document.addEventListener('click', (event) => {

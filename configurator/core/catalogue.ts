@@ -516,8 +516,8 @@ const parts: Part[] = [
     ),
     short: t('Emergency stop', 'Not-Aus'),
     role: t(
-      'Its NC (normally closed) contact opens the heartbeat wire. It switches off no supply.',
-      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er schaltet keine Versorgung ab.',
+      'Its NC (normally closed) contact opens the heartbeat wire. It breaks no power line; the coprocessor switches the output of the PD mini off.',
+      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er trennt keine Versorgungsleitung; der Koprozessor schaltet den Ausgang des PD mini aus.',
     ),
     locked: false,
     selectable: true,
