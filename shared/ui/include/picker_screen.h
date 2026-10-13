@@ -70,7 +70,8 @@ void picker_screen_follow(uint8_t proto, bool editable);
 /**
  * Called with the protocol picked in this screen's list, so the outputs
  * screen selects the same one (outputs_screen_select()).  A pick writes
- * nothing; the apply function is not called for it.
+ * nothing; the apply function is not called for it.  OFF picked here ends
+ * when this screen is left, on both screens (outputs_screen_end_off()).
  */
 typedef void (*picker_select_fn)(uint8_t proto);
 void picker_screen_set_select(picker_select_fn fn);
@@ -135,6 +136,41 @@ typedef struct {
 
 /** Line @p k of the PINS table, in catalogue order; false past the last. */
 bool picker_screen_row(uint8_t k, picker_row_t *out);
+
+/**
+ * A line of the IN USE table, right of the board: the programming port's
+ * pin first, then each other protocol's pins under its name, groups in the
+ * order their first pin falls.
+ *
+ * Every line is drawn.  The rows are 20 px for a name and 28 px for a pin,
+ * with the GPIO in the head face; when that runs past the table's foot, as
+ * with OFF selected, the port listed and 8 pins over 6 protocols, every pin
+ * row is 20 px with the GPIO in the label face.  At 20 px the largest
+ * table any binding gives -- the port, 7 names, 8 pins -- is 340 px of the
+ * 360 the table has under its heading.
+ */
+typedef enum {
+    PICKER_USE_NAME = 0,  /**< a protocol's name, or PROG PORT              */
+    PICKER_USE_PIN,       /**< a pin of the group named above it            */
+} picker_use_kind_t;
+
+/** The group of the programming port's lines, in picker_use_t.proto. */
+#define PICKER_USE_PROG 0xFFu
+
+/** The most lines the table can have: the port's two, 7 names, 8 pins. */
+#define PICKER_USE_MAX  17u
+
+typedef struct {
+    picker_use_kind_t kind;
+    uint8_t    proto;    /**< the group: a protocol, or PICKER_USE_PROG     */
+    uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
+    int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
+    bool       compact;  /**< drawn in the 20 px pin rows                   */
+    gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
+} picker_use_t;
+
+/** Line @p k of the IN USE table; false past the last. */
+bool picker_screen_in_use(uint8_t k, picker_use_t *out);
 
 /** The count under the protocol list: slots in use of 8, every protocol. */
 void picker_screen_count(char *buf, size_t cap);

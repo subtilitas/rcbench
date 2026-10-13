@@ -329,20 +329,26 @@ static void enter(void)
     touched();
 }
 
-static void leave(void)
+/*
+ * A picked OFF ends with the visit, on this screen or on the pin picker.
+ * The picker joins its taps to the protocol selected here, and left on OFF
+ * it could add no pin; the next entry opens on the lowest-numbered protocol
+ * that holds one.
+ */
+void outputs_screen_end_off(void)
 {
-    s.open = false;
-    drop_clear_hold();
-    /*
-     * A picked OFF ends with the visit.  The pin picker joins its taps to
-     * the protocol selected here, and left on OFF it could add no pin; the
-     * next entry opens on the lowest-numbered protocol that holds one.
-     */
     if (s.off_picked) {
         s.off_picked = false;
         outbind_set_proto(&s.bind, outbind_wire_proto(&s.bind));
         touched();
     }
+}
+
+static void leave(void)
+{
+    s.open = false;
+    drop_clear_hold();
+    outputs_screen_end_off();
 }
 
 /* UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for

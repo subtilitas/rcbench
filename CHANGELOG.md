@@ -19,7 +19,12 @@ history is in git.
   marker with a large G, 40 px in from its pad; a rail is a 32 px amber round
   marker with its voltage (5V0, 3V3, PWR), 30 px or 78 px in, alternating;
   RUN and 3V3_EN carry a dim cross. `ui_choice_face()`, `ui_choice_list()`
-  and `ui_choice_row()` draw the protocol list on both screens.
+  and `ui_choice_row()` draw the protocol list on both screens. OFF picked
+  on PICK A PIN ends when the screen is left, as on the Outputs screen
+  (`outputs_screen_end_off()`). IN USE lists every pin: when 28 px pin rows
+  run past the table's foot, as with OFF selected, the programming port
+  listed and 8 pins over 6 protocols, the pin rows are 20 px;
+  `picker_screen_in_use()` returns each line and its box.
 - Configurator: every function with a tick and every part under "Parts you
   own" has a help bubble in English and German. It says what the item does
   and what it needs: the bench parts, the test object and the variant the

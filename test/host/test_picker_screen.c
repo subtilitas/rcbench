@@ -1032,6 +1032,217 @@ TEST_CASE(switching_the_protocol_keeps_the_pins_and_writes_nothing)
     picker_screen_set_select(NULL);
 }
 
+/*
+ * OFF picked on this screen ends when the screen is left, as it does on the
+ * Outputs screen.  Kept there, the panel's follow selected it here again
+ * every frame, a read-back kept it, and the next visit opened on a board
+ * where no key added a pin.
+ */
+TEST_CASE(off_picked_here_ends_when_the_screen_is_left)
+{
+    fresh();
+    static const uint8_t dshot[2] = { 6, 7 };
+    bind_more("DSHOT300", dshot, 2u, "SERVO PWM");
+    outputs_screen()->reset();
+    outputs_screen_set_binding(picker_screen_binding());
+    picker_screen_set_select(outputs_screen_select);
+
+    pick("OFF");
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    CHECK_EQ(picker_screen_pin(idx(5u), NULL, 0), PICKER_PIN_REFUSED);
+
+    scr()->leave();
+    /* A frame on another screen follows the outputs screen, and a read-back
+     * arrives naming the protocol the pins name, as one off the wire does. */
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    outbind_t b = *outputs_screen_binding();
+    outbind_set_proto(&b, outbind_wire_proto(&b));
+    outputs_screen_set_binding(&b);
+    picker_screen_set_binding(outputs_screen_binding());
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+
+    scr()->enter();
+    CHECK_EQ(outputs_screen_binding()->proto, proto_named("DSHOT300"));
+    CHECK_EQ(picker_screen_binding()->proto, proto_named("DSHOT300"));
+    CHECK_STR_EQ(reason(), "");
+    CHECK_EQ(picker_screen_pin(idx(5u), NULL, 0), PICKER_PIN_FREE);
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(5u), &r));
+    tap_rect(r);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, idx(5u)), proto_named("DSHOT300"));
+
+    /* Another protocol picked here is still picked after a leave. */
+    pick("MOTOR PWM");
+    scr()->leave();
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(outputs_screen_binding()->proto, proto_named("MOTOR PWM"));
+    CHECK_EQ(picker_screen_binding()->proto, proto_named("MOTOR PWM"));
+
+    /* With no pin bound OFF is what a leave gives, on both screens, as it
+     * is on the Outputs screen. */
+    fresh();
+    outputs_screen()->reset();
+    outputs_screen_set_binding(picker_screen_binding());
+    picker_screen_set_select(outputs_screen_select);
+    pick("OFF");
+    scr()->leave();
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    picker_screen_set_select(NULL);
+}
+
+/*
+ * The tallest IN USE table a binding gives: OFF selected, so every bound pin
+ * is another protocol's; the programming port listed; and the 8 slots spread
+ * over the 6 protocols that take one channel a pin.  Every pin is listed
+ * once under its own protocol, and every line is inside the table and the
+ * canvas, clear of every other line, key, marker and text area, and drawn
+ * on -- with the photograph and with the drawn board, in both languages.
+ */
+TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
+{
+    static gfx_color_t art[500 * 206];
+    static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
+    static const struct { const char *proto; uint8_t gp[2]; unsigned n; }
+    spread[6] = {
+        { "SERVO PWM",      { 0, 1 }, 2u },
+        { "MOTOR PWM",      { 2, 4 }, 2u },
+        { "DSHOT300",       { 5, 0 }, 1u },
+        { "DSHOT600",       { 6, 0 }, 1u },
+        { "DSHOT300 BIDIR", { 7, 0 }, 1u },
+        { "DSHOT600 BIDIR", { 14, 0 }, 1u },
+    };
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int pass = 0; pass < 2; ++pass) {
+            fresh();
+            if (pass == 1) { picker_screen_set_artwork(art, 500, 206); }
+            picker_screen_set_prog_pin(13u);
+            for (unsigned g = 0; g < 6u; ++g) {
+                bind_more(spread[g].proto, spread[g].gp, spread[g].n, "OFF");
+            }
+            const outbind_t *b = picker_screen_binding();
+            CHECK_EQ(b->proto, 0);
+            CHECK_EQ(outbind_chosen_total(b), 8);
+            CHECK_EQ(picker_screen_prog_listed(), 13u);
+
+            guard_canvas_t g;
+            gfx_canvas_t c;
+            guard_canvas_init(&g, &c, px, 800, 432);
+            scr()->render(&c, 0);
+            if (guard_canvas_touched(&g) != 0u) {
+                T_FAIL("language %d, pass %d drew outside", lang, pass);
+            }
+
+            picker_use_t line[PICKER_USE_MAX + 1u];
+            uint8_t lines = 0;
+            while (lines <= PICKER_USE_MAX
+                   && picker_screen_in_use(lines, &line[lines])) {
+                ++lines;
+            }
+            CHECK_EQ(lines, 16);      /* the port's 2, 6 names, 8 pins */
+
+            /* Every pin bound, and the port's, listed once in its group. */
+            unsigned found = 0;
+            uint8_t group = 0xFEu;
+            for (uint8_t k = 0; k < lines; ++k) {
+                if (line[k].kind == PICKER_USE_NAME) {
+                    group = line[k].proto;
+                    continue;
+                }
+                CHECK_EQ(line[k].proto, group);
+                if (group == PICKER_USE_PROG) {
+                    CHECK_EQ(line[k].gpio, 13u);
+                    CHECK_EQ(line[k].channel, -1);
+                } else {
+                    CHECK_EQ(outbind_group_of(b, idx(line[k].gpio)), group);
+                    CHECK(line[k].channel >= 0);
+                }
+                found |= 1u << line[k].gpio;
+            }
+            CHECK_EQ(found, (1u << 0) | (1u << 1) | (1u << 2) | (1u << 4)
+                            | (1u << 5) | (1u << 6) | (1u << 7) | (1u << 13)
+                            | (1u << 14));
+
+            const gfx_rect_t area = picker_screen_area(PICKER_AREA_IN_USE);
+            const gfx_rect_t other[3] = {
+                picker_screen_area(PICKER_AREA_HEAD),
+                picker_screen_area(PICKER_AREA_PINS),
+                picker_screen_list_face(),
+            };
+            const outbind_board_t *bd = outbind_board(BOARD);
+            for (uint8_t k = 0; k < lines; ++k) {
+                const gfx_rect_t r = line[k].rect;
+                CHECK(line[k].compact);
+                if (r.x < area.x || r.y < area.y
+                    || r.x + r.w > area.x + area.w
+                    || r.y + r.h > area.y + area.h
+                    || r.x + r.w > SCREEN_W || r.y + r.h > SCREEN_H) {
+                    T_FAIL("line %u at %d,%d %dx%d is outside the table", k,
+                           r.x, r.y, r.w, r.h);
+                }
+                for (uint8_t o = (uint8_t)(k + 1u); o < lines; ++o) {
+                    if (overlap(r, line[o].rect)) {
+                        T_FAIL("lines %u and %u overlap", k, o);
+                    }
+                }
+                for (int a = 0; a < 3; ++a) {
+                    if (overlap(r, other[a])) {
+                        T_FAIL("line %u covers text area %d", k, a);
+                    }
+                }
+                for (uint8_t i = 0; i < bd->count; ++i) {
+                    gfx_rect_t key;
+                    if (picker_screen_button_rect(i, &key)
+                        && overlap(r, key)) {
+                        T_FAIL("line %u covers GP%u's key", k,
+                               bd->pins[i].gpio);
+                    }
+                }
+                for (uint8_t m = 0; m < outbind_pad_count(BOARD); ++m) {
+                    gfx_rect_t mk;
+                    if (picker_screen_marker_rect(m, &mk) && overlap(r, mk)) {
+                        T_FAIL("line %u covers pad %u's marker", k,
+                               outbind_pads(BOARD)[m].pad);
+                    }
+                }
+                /* Drawn on: something other than the background in it. */
+                unsigned ink = 0;
+                for (int y = r.y; y < r.y + r.h; ++y) {
+                    for (int x = r.x; x < r.x + r.w; ++x) {
+                        ink += (c.pixels[(size_t)y * c.stride + (size_t)x]
+                                != UI_BG) ? 1u : 0u;
+                    }
+                }
+                if (ink == 0u) {
+                    T_FAIL("line %u is not drawn", k);
+                }
+            }
+            picker_screen_set_prog_pin(PICKER_NO_PIN);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    /* A table that fits in 28 px pin rows keeps them, with the GPIO in the
+     * head face. */
+    fresh();
+    static const uint8_t servo[2] = { 0, 1 };
+    bind_more("SERVO PWM", servo, 2u, "DSHOT300");
+    picker_use_t one;
+    CHECK(picker_screen_in_use(1u, &one));
+    CHECK_EQ(one.kind, PICKER_USE_PIN);
+    CHECK(!one.compact);
+    CHECK_EQ(one.rect.h, 28);
+    CHECK(!picker_screen_in_use(3u, &one));
+    CHECK(picker_screen_in_use(2u, NULL));
+}
+
 /* The PINS table: one line a pin of the protocol selected, in catalogue
  * order, with the channel the page gives it and the pad printed on the
  * board beside it. */
@@ -1128,6 +1339,8 @@ TEST_CASE(queries_past_the_end_answer_nothing)
 int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
+    RUN(off_picked_here_ends_when_the_screen_is_left);
+    RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);
     RUN(every_button_binds_its_own_pin_and_no_other);

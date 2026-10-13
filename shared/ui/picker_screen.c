@@ -84,10 +84,24 @@
 #define PINS_W      128
 #define ROW_H       28
 
-/* The IN USE table, right of the board. */
+/*
+ * The IN USE table, right of the board.  Its lines start under the heading,
+ * the rule and the BY OTHERS line, and end at the area's foot.  A name is
+ * 20 px; a pin is 28 px with the GPIO in the head face, or 20 px with it in
+ * the label face when the 28 px rows run past the foot.
+ */
 #define USE_X       (SCREEN_W - 132)
 #define USE_Y       8
 #define USE_W       126
+#define USE_TOP     (USE_Y + 60)
+#define USE_FOOT    (SCREEN_H - 4)
+#define USE_NAME_H  20
+#define USE_PIN_H   28
+#define USE_PIN_H_C 20
+
+/* The largest table, at 20 px a line, is under the heading. */
+_Static_assert(USE_TOP + (int)PICKER_USE_MAX * USE_PIN_H_C <= USE_FOOT,
+               "the IN USE table cannot hold every line");
 
 #define IVORY GFX_RGB(236, 235, 228)
 #define EBONY GFX_RGB(22, 23, 28)
@@ -817,13 +831,83 @@ static void draw_mine(gfx_canvas_t *c)
     }
 }
 
-/* The right column: the programming port's pin, then pins another protocol
- * holds, and which one. */
-static void draw_theirs(gfx_canvas_t *c)
+/* A line of the IN USE table, its box not yet placed. */
+static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
+                       uint8_t proto, uint8_t gpio, int8_t channel)
+{
+    if (n >= PICKER_USE_MAX) {
+        return n;               /* no binding gives more; kept in bounds */
+    }
+    t[n].kind    = kind;
+    t[n].proto   = proto;
+    t[n].gpio    = gpio;
+    t[n].channel = channel;
+    return (uint8_t)(n + 1u);
+}
+
+/*
+ * The IN USE table: the programming port's pin first, because a pin the port
+ * drives is the one a lead must not go on without knowing; then the pins
+ * other protocols hold, groups in the order their first pin falls, so the
+ * channels count down the page rather than jumping about with the protocol
+ * numbering.  Returns the number of lines.
+ */
+static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
 {
     const uint8_t proto = proto_shown();
     const outbind_pin_t *pins = outbind_pins(s.bind.board);
     const uint8_t n = outbind_pin_count(s.bind.board);
+    uint8_t k = 0;
+
+    const uint8_t prog = picker_screen_prog_listed();
+    if (prog != PICKER_NO_PIN) {
+        k = use_add(t, k, PICKER_USE_NAME, PICKER_USE_PROG, prog, -1);
+        k = use_add(t, k, PICKER_USE_PIN, PICKER_USE_PROG, prog, -1);
+    }
+    uint32_t listed = 0u;
+    for (uint8_t first = 0; first < n; ++first) {
+        const uint8_t g = outbind_group_of(&s.bind, first);
+        if (g == 0u || g == proto) { continue; }
+        if ((listed & ((uint32_t)1u << g)) != 0u) { continue; }
+        listed |= (uint32_t)1u << g;
+        k = use_add(t, k, PICKER_USE_NAME, g, 0u, -1);
+        for (uint8_t i = first; i < n; ++i) {
+            if (outbind_group_of(&s.bind, i) != g) { continue; }
+            k = use_add(t, k, PICKER_USE_PIN, g, pins[i].gpio, channel_of(i));
+        }
+    }
+
+    /* 28 px pin rows while they reach no further than the foot. */
+    int full = 0;
+    for (uint8_t i = 0; i < k; ++i) {
+        full += (t[i].kind == PICKER_USE_PIN) ? USE_PIN_H : USE_NAME_H;
+    }
+    const bool compact = (USE_TOP + full > USE_FOOT);
+    int y = USE_TOP;
+    for (uint8_t i = 0; i < k; ++i) {
+        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H
+                      : (compact ? USE_PIN_H_C : USE_PIN_H);
+        t[i].compact = compact;
+        t[i].rect = gfx_rect_make(USE_X, y, USE_W, h);
+        y += h;
+    }
+    return k;
+}
+
+bool picker_screen_in_use(uint8_t k, picker_use_t *out)
+{
+    picker_use_t t[PICKER_USE_MAX];
+    if (!picker_screen_can_draw() || k >= in_use(t)) {
+        return false;
+    }
+    if (out != NULL) { *out = t[k]; }
+    return true;
+}
+
+/* The right column: the programming port's pin, then pins another protocol
+ * holds, and which one. */
+static void draw_theirs(gfx_canvas_t *c)
+{
     const int tx = USE_X;
     int ty = USE_Y;
     const gfx_color_t grey = GFX_RGB(150, 154, 162);
@@ -833,45 +917,37 @@ static void draw_theirs(gfx_canvas_t *c)
     gfx_fill_rect(c, tx, ty, USE_W, 2, UI_EDGE_HI);
     ty += 8;
     gfx_text(c, tx, ty, TR(PK_BY_OTHERS), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-    ty += 22;
 
-    int shown = 0;
+    picker_use_t t[PICKER_USE_MAX];
+    const uint8_t lines = in_use(t);
     char row[24];
-    /* First, because a pin the port drives is the one a lead must not go
-     * on without knowing: the port has no channel, so no CH. */
-    const uint8_t prog = picker_screen_prog_listed();
-    if (prog != PICKER_NO_PIN) {
-        gfx_text(c, tx, ty, TR(OUT_PROG_PORT), UI_FONT_LABEL, UI_DANGER, 1);
-        ty += 20;
-        snprintf(row, sizeof(row), "GP%u", (unsigned)prog);
-        gfx_text(c, tx + 44, ty - 6, row, UI_FONT_HEAD, grey, 1);
-        ty += ROW_H;
-        ++shown;
-    }
-
-    /* In the order their first pin falls, so the channels count down the
-     * page rather than jumping about with the protocol numbering. */
-    uint32_t listed = 0u;
-    for (uint8_t first = 0; first < n && ty < SCREEN_H - 24; ++first) {
-        const uint8_t g = outbind_group_of(&s.bind, first);
-        if (g == 0u || g == proto) { continue; }
-        if ((listed & ((uint32_t)1u << g)) != 0u) { continue; }
-        listed |= (uint32_t)1u << g;
-        gfx_text(c, tx, ty, outbind_protos()[g].name, UI_FONT_LABEL,
-                 UI_TEAL, 1);
-        ty += 20;
-        for (uint8_t i = first; i < n && ty < SCREEN_H - 24; ++i) {
-            if (outbind_group_of(&s.bind, i) != g) { continue; }
-            snprintf(row, sizeof(row), "CH%d", channel_of(i));
-            gfx_text(c, tx + 4, ty, row, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-            snprintf(row, sizeof(row), "GP%u", (unsigned)pins[i].gpio);
-            gfx_text(c, tx + 44, ty - 6, row, UI_FONT_HEAD, grey, 1);
-            ty += ROW_H;
-            ++shown;
+    for (uint8_t i = 0; i < lines; ++i) {
+        const gfx_rect_t r = t[i].rect;
+        if (t[i].kind == PICKER_USE_NAME) {
+            const bool port = (t[i].proto == PICKER_USE_PROG);
+            const char *name = port ? TR(OUT_PROG_PORT)
+                                    : outbind_protos()[t[i].proto].name;
+            gfx_text(c, r.x, r.y + 2, name, UI_FONT_LABEL,
+                     port ? UI_DANGER : UI_TEAL, 1);
+            continue;
+        }
+        /* The port has no channel, so no CH. */
+        const int label_y = t[i].compact ? (r.y + 2) : (r.y + 6);
+        if (t[i].channel >= 0) {
+            snprintf(row, sizeof(row), "CH%d", t[i].channel);
+            gfx_text(c, r.x + 4, label_y, row, UI_FONT_LABEL, UI_TEXT_FAINT,
+                     1);
+        }
+        snprintf(row, sizeof(row), "GP%u", (unsigned)t[i].gpio);
+        if (t[i].compact) {
+            gfx_text(c, r.x + 44, label_y, row, UI_FONT_LABEL, grey, 1);
+        } else {
+            gfx_text(c, r.x + 44, r.y, row, UI_FONT_HEAD, grey, 1);
         }
     }
-    if (shown == 0) {
-        gfx_text(c, tx, ty, TR(PK_NONE), UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+    if (lines == 0u) {
+        gfx_text(c, tx, USE_TOP, TR(PK_NONE), UI_FONT_LABEL, UI_TEXT_FAINT,
+                 1);
     }
 }
 
@@ -1018,6 +1094,17 @@ static void leave(void)
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.open = false;
+    /*
+     * OFF picked here ends with the visit, as it does on the Outputs
+     * screen.  Kept there, the next frame's follow would select it here
+     * again, and the next visit would open on a board where no key adds a
+     * pin.
+     */
+    outputs_screen_end_off();
+    if (s.bind.proto == 0u) {
+        outbind_set_proto(&s.bind, outbind_wire_proto(&s.bind));
+        touched();
+    }
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)

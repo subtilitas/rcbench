@@ -1954,9 +1954,32 @@ int main(int argc, char **argv)
             (void)outbind_toggle(&b,
                 outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 5));
         }
+        if (strcmp(view, "picker-off") == 0) {
+            /*
+             * The tallest IN USE table: OFF picked, so every bound pin is
+             * another protocol's, the programming port on GP13, and the 8
+             * slots over the 6 protocols that take one channel a pin.  GP1
+             * and GP2 go from SERVO PWM to the two BIDIR protocols.
+             */
+            static const struct { const char *proto; uint8_t gp; } move[8] = {
+                { "SERVO PWM", 1 },      { "SERVO PWM", 2 },
+                { "SERVO PWM", 4 },      { "MOTOR PWM", 5 },
+                { "MOTOR PWM", 7 },      { "DSHOT600", 14 },
+                { "DSHOT300 BIDIR", 1 }, { "DSHOT600 BIDIR", 2 },
+            };
+            for (unsigned i = 0; i < 8u; ++i) {
+                outbind_set_proto(&b, proto_named(move[i].proto));
+                (void)outbind_toggle(&b,
+                    outbind_index_of(OUTBIND_BOARD_PICO_HEADER, move[i].gp));
+            }
+        }
         outbind_set_proto(&b, proto_named("SERVO PWM"));
+        if (strcmp(view, "picker-off") == 0) {
+            outbind_set_proto(&b, 0u);
+        }
         picker_screen_set_binding(&b);
-        if (strcmp(view, "picker-prog") == 0) {
+        if (strcmp(view, "picker-prog") == 0
+            || strcmp(view, "picker-off") == 0) {
             /* The coprocessor's programming port on GP13: drawn held, and
              * named first under IN USE. */
             picker_screen_set_prog_pin(13u);

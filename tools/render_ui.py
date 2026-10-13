@@ -321,6 +321,9 @@ SCREENS = {
     "picker-full": ("picker-full.png", "picker", "dark"),
     # The protocol list open over the board.
     "picker-protocol": ("picker-protocol.png", "picker", "dark"),
+    # OFF picked, GP13 the programming port's, 8 pins over 6 protocols:
+    # the tallest IN USE table, in its 20 px rows.
+    "picker-off": ("picker-off.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),

@@ -2072,6 +2072,9 @@ Top left is the protocol list, the same control as on the Outputs screen. It
 names the selected protocol. A tap opens it over the board; a pick selects
 the protocol a tap on a key joins, on this screen and on the Outputs screen,
 and writes nothing. A tap outside the open list closes it and picks nothing.
+OFF picked here ends when the screen is left, as on the Outputs screen: the
+next visit to either screen opens on the lowest-numbered protocol that holds
+a pin.
 
 ![The protocol list on the picker](img/picker-protocol.png)
 
@@ -2104,6 +2107,15 @@ stored binding holds that pin keeps it, the coprocessor gives the port no pin
 then, and the key is that protocol's like any other.
 
 ![GP13 held by the programming port](img/picker-prog.png)
+
+IN USE lists every pin it holds. A protocol's name takes a 20 px line and a
+pin a 28 px line. When those run past the foot of the table, every pin line
+is 20 px with the GPIO in the smaller face. The tallest table is OFF
+selected, the programming port listed and the 8 slots over the 6 protocols
+that take one channel a pin: 16 lines, 320 px of the 360 px under the
+heading.
+
+![The tallest IN USE table](img/picker-off.png)
 
 A tap on a key writes the binding through the same sequence as a tick on the
 Outputs screen, with the same results. While the binding is not confirmed — a

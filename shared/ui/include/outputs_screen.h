@@ -129,11 +129,21 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 /**
  * Select protocol @p proto, as a pick in the list does: the set shown and
  * the group the next tick joins.  Writes nothing and calls nothing.  OFF
- * (0) stays selected until another protocol is selected or the screen is
- * left.  An index past the table is ignored.  The pin picker's list
- * selects through this, so the two screens show one selection.
+ * (0) stays selected until another protocol is selected or this screen or
+ * the pin picker is left.  An index past the table is ignored.  The pin
+ * picker's list selects through this, so the two screens show one
+ * selection.
  */
 void outputs_screen_select(uint8_t proto);
+
+/**
+ * End a picked OFF as leaving this screen does: the selection moves to the
+ * lowest-numbered protocol that holds a pin, or stays OFF when none does.
+ * Nothing changes when OFF was not picked.  Writes nothing and calls
+ * nothing.  The pin picker calls it when it is left, so OFF picked there
+ * ends with that visit too.
+ */
+void outputs_screen_end_off(void);
 
 #ifdef __cplusplus
 }

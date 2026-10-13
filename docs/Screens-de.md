@@ -2264,7 +2264,9 @@ Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
 über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
 Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
 schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
-nichts.
+nichts. Hier gewähltes OFF endet, wenn der Bildschirm verlassen wird, wie
+auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
+öffnet mit dem Protokoll der niedrigsten Nummer, das einen Pin hält.
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
@@ -2300,6 +2302,15 @@ Koprozessor gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.
 
 ![GP13 beim Programmierport](img/de/picker-prog.png)
+
+BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
+Zeile von 20 px, ein Pin eine von 28 px. Reichen diese über den Fuß der
+Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
+Schrift. Die höchste Tabelle ergibt sich mit OFF gewählt, dem Programmierport
+aufgeführt und den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin
+nehmen: 16 Zeilen, 320 px der 360 px unter der Überschrift.
+
+![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
 
 Ein Tippen auf eine Taste schreibt die Bindung über dieselbe Folge wie ein
 Haken auf dem Outputs-Bildschirm, mit denselben Ergebnissen. Solange die
