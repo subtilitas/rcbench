@@ -13,7 +13,7 @@ const sorted = (s: Selection): Selection => ({
 
 test('an empty hash is the base setup without a notice', () => {
   for (const hash of ['', '#']) {
-    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), lang: null, badVersion: false, unknown: [] });
+    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), lang: null, badVersion: false, unknown: [], have: [] });
   }
 });
 
@@ -379,4 +379,68 @@ test('the address to copy, print and put in a document is the page address with 
   for (const href of [`${page}#v=1&f=servo,esc&p=pdmini`, `${page}#v=1&f=usbtap`, page, `${page}#`, `${page}#v=2&p=usbtap`]) {
     assert.equal(address(href), href, href);
   }
+});
+
+test('"have it" ticks: the key h survives format and parse, in catalogue order, each once', () => {
+  const sel: Selection = { ...base(), functions: ['escpow'] };
+  const hash = formatHash(sel, 'en', 'en', CATALOGUE, ['ina228.matek', 'wire.dmm', 'panel', 'wire.dmm']);
+  assert.equal(hash, 'v=1&f=escpow&h=panel,wire.dmm,ina228.matek');
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['panel', 'wire.dmm', 'ina228.matek']);
+  assert.deepEqual(parsed.unknown, []);
+  assert.deepEqual(parsed.selection, sel);
+  assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have), hash);
+  // The key stands after the option tokens and before the language.
+  assert.equal(formatHash({ ...sel, options: { ...DEFAULT_OPTIONS, ina228Board: 'xt90' } }, 'de', 'en', CATALOGUE, ['ina228.xt90']), 'v=1&f=escpow&o=xt90&h=ina228.xt90&l=de');
+  // A token that names no row of the catalogue is not written.
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, ['wire.nope', 'warp', 'panel']), 'v=1&h=panel');
+});
+
+test('a link without the key h opens the same setup with no "have it" tick', () => {
+  for (const hash of ['#v=1', '#v=1&f=servo,escpow&p=sd&o=xt90', '#v=1&f=supply&l=de']) {
+    const parsed = parseHash(hash, DEFAULT_OPTIONS);
+    assert.deepEqual(parsed.have, [], hash);
+    assert.equal(parsed.badVersion, false, hash);
+    assert.equal(`#${formatHash(parsed.selection, parsed.lang ?? 'en', 'en', CATALOGUE, parsed.have)}`, hash);
+  }
+  assert.equal(HASH_VERSION, 1);
+});
+
+test('a malformed row token is reported; a well-formed unknown one passes to the page', () => {
+  const parsed = parseHash('#v=1&h=wire.dmm,Wire.DMM,wire.,wire..dmm,wire.dmm.x,.dmm,wire.abcdefghijklm,wire.nope', DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['wire.dmm', 'wire.nope']);
+  assert.deepEqual(parsed.unknown, ['Wire.DMM', 'wire.', 'wire..dmm', 'wire.dmm.x', '.dmm', 'wire.abcdefghijklm']);
+  // A row id of 12 characters is well-formed.
+  assert.deepEqual(parseHash('#v=1&h=wire.abcdefghijkl', DEFAULT_OPTIONS).have, ['wire.abcdefghijkl']);
+  // At most MAX_IDS tokens are kept.
+  const many = Array.from({ length: MAX_IDS + 5 }, (_, i) => `p${i}`).join(',');
+  assert.equal(parseHash(`#v=1&h=${many}`, DEFAULT_OPTIONS).have.length, MAX_IDS);
+});
+
+test('the key h without a version gives the base setup and the version notice', () => {
+  const parsed = parseHash('#h=wire.dmm', DEFAULT_OPTIONS);
+  assert.equal(parsed.badVersion, true);
+  assert.deepEqual(parsed.have, []);
+  assert.equal(parseHash('#v=2&h=wire.dmm', DEFAULT_OPTIONS).badVersion, true);
+});
+
+test('the hash of a document holds the "have it" ticks the page shows', () => {
+  const share = (hash: string, have?: string[]): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE, have);
+  // The ticks of the page are the ticks of the hash: the hash stays as it is.
+  assert.equal(share('#v=1&h=panel,wire.dmm', ['panel', 'wire.dmm']), '#v=1&h=panel,wire.dmm');
+  assert.equal(share('#v=1&h=panel,wire.dmm'), '#v=1&h=panel,wire.dmm');
+  // A stale tick of the link leaves; the rest and the language stay.
+  assert.equal(share('#v=1&f=escpow&o=xt90&h=wire.dmm,ina228.matek&l=de', ['wire.dmm']), '#v=1&f=escpow&o=xt90&h=wire.dmm&l=de');
+  assert.equal(share('#v=1&h=wire.nope', []), '#v=1');
+  // A malformed token beside a kept one leaves as well: the parser rejects it, the page drops it.
+  assert.equal(share('#v=1&h=Wire.DMM,panel', ['panel']), '#v=1&h=panel');
+  assert.equal(share('#v=1&f=servo&h=panel,wire.dmm.x&l=de', ['panel']), '#v=1&f=servo&h=panel&l=de');
+  // A repeated token is no dropped token: the hash stays as it is.
+  assert.equal(share('#v=1&h=panel,panel', ['panel']), '#v=1&h=panel,panel');
+  // A hash of another version stays as it is.
+  assert.equal(share('#v=2&h=Wire.DMM', []), '#v=2&h=Wire.DMM');
+  // A test object leaves as before and the ticks stay.
+  assert.equal(share('#v=1&p=servo&h=panel', ['panel']), '#v=1&f=servo&h=panel');
+  const page = 'https://subtilitas.github.io/rcbench/configurator/';
+  assert.equal(shareAddress(`${page}#v=1&h=pdmini,panel`, DEFAULT_OPTIONS, CATALOGUE, ['panel']), `${page}#v=1&h=panel`);
 });

@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import type { Lang, Options, Selection } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../../src/core.ts';
 import { formatHash, parseHash, reportIds, withoutFormerTicks, testObjectTicks } from '../../src/hash.ts';
+import { haveTicks } from '../../src/view/buy.ts';
 
 /** A hash too long to write out: `prefix`, then `unit` `count` times, then `suffix`. */
 export type Built = { prefix: string; unit: string; count: number; suffix: string };
@@ -33,6 +34,11 @@ export type Outcome = {
   parts: string[];
   /** The functions the setup enables, in catalogue order. */
   enabled: string[];
+  /**
+   * The "have it" ticks of the parts list, in catalogue order. Present when
+   * the hash names a row token under `h`; the first 164 entries name none.
+   */
+  have?: string[];
 };
 
 export type Entry = {
@@ -88,21 +94,26 @@ export function outcome(hash: string, startLang: Lang = 'en'): Outcome & { wires
   };
   const dropped = [...given.functions, ...given.owned]
     .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id));
-  const unknown = [...parsed.unknown, ...setup.ignored, ...dropped];
-  if (unknown.length > 0) notices.push('note');
   // The page draws the selection reduced to known ids.
   const shown = resolve(CATALOGUE, selection);
+  const options = Object.fromEntries(shown.options.map((o) => [o.key, o.value])) as Options;
+  // A "have it" tick counts while it names a row to buy of the setup; any other is left out with the note.
+  const have = haveTicks(shown, options, parsed.have);
+  const stale = parsed.have.filter((token) => !have.includes(token));
+  const unknown = [...parsed.unknown, ...setup.ignored, ...dropped, ...stale];
+  if (unknown.length > 0) notices.push('note');
   return {
     functions: inOrder(selection.functions, CATALOGUE.functions.map((f) => f.id)),
     owned: inOrder(selection.owned, CATALOGUE.parts.map((p) => p.id)),
-    options: Object.fromEntries(shown.options.map((o) => [o.key, o.value])) as Options,
+    options,
     lang,
     notices,
     reported: unknown.length > 0 ? reportIds(unknown) : '',
-    canonical: `#${formatHash(selection, lang, startLang, CATALOGUE)}`,
+    canonical: `#${formatHash(selection, lang, startLang, CATALOGUE, have)}`,
     parts: shown.parts.map((p) => p.part.id),
     enabled: shown.functions.filter((f) => f.enabled).map((f) => f.fn.id),
     wires: shown.wires.map((w) => w.n),
+    ...(parsed.have.length > 0 ? { have } : {}),
   };
 }
 

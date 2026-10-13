@@ -204,7 +204,7 @@ test('4 and 5: 20 000 random inputs from the generator parse to a well-formed se
 });
 
 test('4: values that are no hash parse to the base setup', () => {
-  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, lang: null, badVersion: false, unknown: [] };
+  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, lang: null, badVersion: false, unknown: [], have: [] };
   for (const value of [undefined, null, 0, 1, true, {}, [], () => '', Symbol('x')]) {
     assert.deepEqual(parseHash(value as unknown as string, DEFAULT_OPTIONS), base);
   }

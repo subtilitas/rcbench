@@ -5,7 +5,8 @@
 // setup, alone. An entry that names a part the catalogue no longer offers a tick
 // for is held to no notice for it and to the stored setup without that tick. A test object under the owned parts of an entry is the tick
 // of the function that drives it alone: the page shows that tick and writes
-// the function in place of the part.
+// the function in place of the part. The "have it" ticks the entry stores
+// stand under "You have".
 
 import { expect, test } from '@playwright/test';
 
@@ -55,6 +56,9 @@ for (const entry of corpus.entries) {
     for (const [key, value] of Object.entries(shown.options)) expect(value, key).toBe(options[key as keyof Options]);
     expect(shown.notices.map((n) => n.kind)).toEqual(want.notices);
     if (want.reported !== '') expect(shown.notices.map((n) => n.text).join(' ')).toContain(want.reported);
+    // The "have it" ticks the page keeps stand under "You have", checked.
+    const have = await page.locator('#have input[data-h]').evaluateAll((els) => els.map((e) => [(e as HTMLInputElement).dataset.h, (e as HTMLInputElement).checked]));
+    expect(have).toEqual((want.have ?? []).map((token) => [token, true]));
     if (kept) expect(shown.wires).toEqual([...(wires[entry.name] ?? [])].sort((a, b) => a - b));
     expect(shown.drawn).toBe(shown.wires.length);
     await expectNoHorizontalScroll(page);

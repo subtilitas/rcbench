@@ -172,14 +172,16 @@ for (const entry of corpus.entries) {
 }
 
 test('malformed input falls back to the base setup', () => {
-  // The entries whose hash carries no selection the page can read.
-  const fallback = corpus.entries.filter((e) => e.name.startsWith('bad-') && e.expect.functions.length === 0 && e.expect.owned.length === 0);
+  // The entries whose hash carries no selection the page can read. A "have it" tick the page keeps is a selection.
+  const fallback = corpus.entries.filter((e) => e.name.startsWith('bad-') && e.expect.functions.length === 0 && e.expect.owned.length === 0
+    && (e.expect.have ?? []).length === 0);
   assert.ok(fallback.length >= 60, `${fallback.length} entries fall back`);
   for (const entry of fallback) {
     const parsed = parseHash(hashOf(entry), DEFAULT_OPTIONS);
     if (parsed.badVersion) assert.deepEqual(parsed.selection, BASE, entry.name);
     assert.deepEqual(entry.expect.parts, CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), entry.name);
-    assert.deepEqual(entry.expect.enabled, [], entry.name);
+    // A function every setup runs is a later id: an entry added later stores it.
+    assert.deepEqual(entry.expect.enabled.filter((id) => corpus.ids.functions.includes(id)), [], entry.name);
     assert.equal(entry.expect.canonical, entry.expect.lang === 'de' ? '#v=1&l=de' : '#v=1', entry.name);
   }
 });
