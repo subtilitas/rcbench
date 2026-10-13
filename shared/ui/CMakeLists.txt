@@ -14,6 +14,7 @@ set(SRCS
     ui_tabs.c
     ui_keypad.c
     ui_textkey.c
+    ui_pinlist.c
     ui_router.c
     ui_text.c
     ui_text_de.c

@@ -7024,10 +7024,22 @@ static void learn_board_pins(void)
     }
 }
 
+/* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
+ * for the MOTOR & ESC screen's target line, and whether a binding was read.
+ * The same pages the coprocessor's throttle role reads. */
+static atomic_ullong s_throttle_pins;
+static atomic_bool   s_throttle_pins_known;
+
 /* A reading, into the snapshot the outputs and picker screens take. */
 static void post_reading(const bind_reading_t *r)
 {
     s_bind_read = r->state;
+    /* A binding that did not read names no pin: the screen says so. */
+    const bool known = (r->state == BIND_READ_OK);
+    atomic_store(&s_throttle_pins,
+                 known ? outputs_role_pins(r->slots, r->cfg, OUT_ROLE_THROTTLE)
+                       : 0u);
+    atomic_store(&s_throttle_pins_known, known);
     if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
         s_outputs_read = *r;
         s_outputs_read_fresh = true;
@@ -8442,6 +8454,8 @@ void app_main(void)
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
+            motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
+                                           atomic_load(&s_throttle_pins_known));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
@@ -8509,6 +8523,10 @@ void app_main(void)
             supply_screen_set_caps(supply_real ? &pdmini : &pps);
             supply_screen_set_model(!supply_real);
             overview_screen_set_supply_real(supply_real);
+        }
+        {
+            const supply_wiring_t wiring = pdmini_wiring();
+            supply_screen_set_pins(wiring.tx, wiring.rx);
         }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);

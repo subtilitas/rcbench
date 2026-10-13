@@ -34,6 +34,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_keypad.h"
+#include "ui_pinlist.h"
 #include "ui_plot.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
@@ -4491,6 +4492,9 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+/* Characters the target line holds: the box is 278 px of the 8x16 face. */
+#define TARGET_CELLS 34u
+
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)
 {
@@ -4526,32 +4530,17 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
         snprintf(out, size, "%s", TR(SV_TARGET_UNREAD));
         return true;
     }
-    unsigned n = 0u;
-    for (unsigned g = 0u; g < 64u; ++g) {
-        n += (unsigned)((pins >> g) & 1u);
-    }
-    if (n == 0u) {
+    if (pins == 0u) {
         snprintf(out, size, "%s", TR(SV_TARGET_NONE));
         return true;
     }
-    /* Up to 4 pins, else the first 3 and a count: "GP40 GP41 GP42" is 14
-     * characters, 4 two-digit pins 19. */
-    char list[24] = "";
-    const unsigned shown = n > 4u ? 3u : n;
-    unsigned seen = 0u;
-    for (unsigned g = 0u; g < 64u && seen < shown; ++g) {
-        if (((pins >> g) & 1u) != 0u) {
-            const size_t len = strlen(list);
-            snprintf(list + len, sizeof(list) - len, "%sGP%u",
-                     seen ? " " : "", g);
-            ++seen;
-        }
-    }
-    if (n > shown) {
-        snprintf(out, size, TR(SV_TARGET_OUT_MORE), list, n - shown);
-    } else {
-        snprintf(out, size, TR(SV_TARGET_OUT), list);
-    }
+    /* As many pins as the box holds after the prefix, then "+N". */
+    const int prefix = snprintf(NULL, 0, TR(SV_TARGET_OUT), "");
+    char list[UI_PINLIST_PINS * 5u];
+    ui_pinlist(list, sizeof(list), pins,
+               TARGET_CELLS > (unsigned)prefix
+                   ? TARGET_CELLS - (unsigned)prefix : 0u);
+    snprintf(out, size, TR(SV_TARGET_OUT), list);
     return false;
 }
 
