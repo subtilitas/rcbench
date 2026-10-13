@@ -302,6 +302,34 @@ for (const size of SIZES) {
       expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(page.url());
     });
 
+    test('Copy link, its field and the print header name a link from before the T-plug lost its tick without p=usbtap', async ({ page, context }) => {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      for (const [hash, shared, copied] of [
+        ['#v=1&f=supply&p=usbtap', '#v=1&f=supply', 'Link copied.'],
+        ['#v=1&f=supply&p=usbtap&l=de', '#v=1&f=supply&l=de', 'Link kopiert.'],
+        ['#v=1&p=sd,usbtap&o=osoyoo,pd&l=en', '#v=1&p=sd&o=osoyoo,pd&l=en', 'Link copied.'],
+      ]) {
+        await open(page, hash);
+        // The address keeps the link until a change; what leaves the page is the link without the former tick.
+        expect(page.url()).toContain(hash);
+        const want = page.url().replace(hash, shared);
+        await expect(page.locator('.printonly')).toContainText(want);
+        await expect(page.locator('.printonly')).not.toContainText('usbtap');
+        await page.locator('#b-copy').click();
+        await expect(page.locator('#live')).toHaveText(copied);
+        const clip = await page.evaluate(() => navigator.clipboard.readText());
+        expect(clip).toBe(want);
+        expect(clip).not.toContain('usbtap');
+
+        await open(page, hash);
+        await page.evaluate(() => {
+          Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('denied')) } });
+        });
+        await page.locator('#b-copy').click();
+        await expect(page.locator('#linkfield')).toHaveValue(want);
+      }
+    });
+
     test('rows and buttons are 44 px tall and the theme follows the system', async ({ page }) => {
       await open(page, FULL);
       const small = await page.evaluate(() => {

@@ -4,7 +4,8 @@
 
 import { expect, test } from '@playwright/test';
 
-import { CATALOGUE } from '../../src/core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS } from '../../src/core.ts';
+import { shareHash } from '../../src/hash.ts';
 import { BASE_FUNCTIONS, SEL, expectSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
 import { SETUPS, cellOf, openCase } from './setups.ts';
@@ -85,7 +86,10 @@ for (const setup of SETUPS) {
     expect(await page.locator('input:visible, button:not(.wn):visible, select:visible, summary:visible').count()).toBe(0);
     await expect(page.locator(`${SEL.row} button.wn:visible`)).toHaveCount(shown.wires.length);
     await expect(page.locator('.printonly')).toBeVisible();
-    await expect(page.locator('.printonly')).toContainText(shown.hash);
+    // The header names the link that Copy link copies: a function without a tick in the link is not in it.
+    const shared = shareHash(shown.hash, DEFAULT_OPTIONS, CATALOGUE);
+    await expect(page.locator('.printonly')).toContainText(shared);
+    if (shared !== shown.hash) await expect(page.locator('.printonly')).not.toContainText(shown.hash);
     // Both views of the wiring are on paper.
     await expect(page.locator(SEL.picture)).toBeVisible();
     await expect(page.locator(SEL.drawing)).toBeVisible();

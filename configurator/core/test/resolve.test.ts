@@ -160,7 +160,6 @@ test('every single part you own resolves to itself, what it needs, and the locke
     estop: ['estop'],
     sim: ['sim'],
     tap: ['tap'],
-    usbtap: ['usbtap'],
   };
   assert.deepEqual(Object.keys(expected), SELECTABLE);
   for (const id of SELECTABLE) {
@@ -219,7 +218,7 @@ test('rule: a servo without the PD mini adds the servo supply; with it, none', (
   // The T-plug carries the serial lines of the PD mini.
   assert.ok(partIds(supplied).includes('usbtap'));
   assert.deepEqual(part(supplied, 'usbtap').addedBy, [
-    { kind: 'rule', id: 'pd-tplug', because: { en: 'UART of the PD mini', de: 'UART des PD mini' } },
+    { kind: 'rule', id: 'pd-tplug', because: { en: 'PD mini', de: 'PD mini' } },
   ]);
   assert.equal(part(supplied, 'usbtap').derived, true);
   assert.equal(part(supplied, 'usbtap').ownedTick, false);
@@ -228,10 +227,31 @@ test('rule: a servo without the PD mini adds the servo supply; with it, none', (
     supplied.wires.filter((w) => [16, 17, 18].includes(w.n)).map((w) => [w.a, w.b]),
     [['pad.10', 'usbtap.DM'], ['usbtap.DP', 'pad.9'], ['pad.18', 'usbtap.G']],
   );
-  // Owned without the PD mini it has no wire.
-  const tapAlone = resolve(CATALOGUE, select([], ['usbtap']));
-  assert.deepEqual(wireNumbers(tapAlone), [1, 2, 3, 4]);
-  assert.ok(tapAlone.checks.some((c) => c.id === 'usbtap-v'));
+  assert.ok(supplied.checks.some((c) => c.id === 'usbtap-v'));
+});
+
+test('the T-plug arrives only through the PD mini: it has no tick, and a selection that names it gets none', () => {
+  const tap = CATALOGUE.parts.find((p) => p.id === 'usbtap');
+  assert.ok(tap);
+  assert.equal(tap.selectable, false);
+  assert.ok(!SELECTABLE.includes('usbtap'));
+  // The PD mini brings it, by the rule pd-tplug alone, and it is no owned part.
+  const pd = resolve(CATALOGUE, select([], ['pdmini']));
+  assert.ok(partIds(pd).includes('usbtap'));
+  assert.deepEqual(part(pd, 'usbtap').addedBy, [{ kind: 'rule', id: 'pd-tplug', because: { en: 'PD mini', de: 'PD mini' } }]);
+  assert.equal(part(pd, 'usbtap').derived, true);
+  assert.equal(part(pd, 'usbtap').ownedTick, false);
+  assert.ok(wireNumbers(pd).includes(19) && wireNumbers(pd).includes(63));
+  // Named as an owned part without the PD mini, it is reported as ignored and stays out of the setup, with no wire.
+  const alone = resolve(CATALOGUE, select([], ['usbtap']));
+  assert.deepEqual(alone.ignored, ['usbtap']);
+  assert.deepEqual(partIds(alone), [...LOCKED]);
+  assert.deepEqual(wireNumbers(alone), [1, 2, 3, 4]);
+  // Named next to the PD mini, it is reported and the setup is the one of the PD mini.
+  const both = resolve(CATALOGUE, select([], ['pdmini', 'usbtap']));
+  assert.deepEqual(both.ignored, ['usbtap']);
+  assert.deepEqual(partIds(both), partIds(pd));
+  assert.deepEqual(part(both, 'usbtap').addedBy, part(pd, 'usbtap').addedBy);
 });
 
 test('rule: the ESC takes its battery, or with ESC power B the PD mini and its charger', () => {

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash, testObjectTicks } from '../src/hash.ts';
+import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareAddress, shareHash, testObjectTicks, withoutFormerTicks } from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -282,6 +282,7 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
   const entries = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Entry[];
   let links = 0;
   let objects = 0;
+  let retired = 0;
   for (const entry of entries) {
     for (const link of entry.links) {
       links += 1;
@@ -289,6 +290,16 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
       assert.deepEqual([parsed.badVersion, parsed.unknown], [false, []], link);
       if (parsed.selection.owned.some((id) => id === 'servo' || id === 'esc')) objects += 1;
       const setup = resolve(CATALOGUE, testObjectTicks(parsed.selection, CATALOGUE));
+      // The T-plug has no tick any more. A stored link that names it gets the T-plug from the PD mini when the
+      // setup holds the PD mini, as stored, and none otherwise: there the resolver lists it as ignored.
+      if (parsed.selection.owned.includes('usbtap')) {
+        assert.deepEqual(setup.ignored, ['usbtap'], link);
+        if (!setup.parts.some((r) => r.part.id === 'pdmini')) {
+          retired += 1;
+          assert.ok(!setup.parts.some((r) => r.part.id === 'usbtap'), link);
+          continue;
+        }
+      }
       const got = [
         setup.parts.map((r) => r.part.id).join(','),
         setup.wires.map((w) => w.n).filter((n) => n !== 63).join(','),
@@ -305,5 +316,67 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
     }
   }
   assert.equal(links, 1192);
+  assert.ok(retired > 0, 'no link names the T-plug without the PD mini');
   assert.ok(objects > 300, `${objects} links with a test object as an owned part`);
+});
+
+test('an old link that holds the T-plug loads: the part is dropped without a notice, the PD mini still brings it', () => {
+  // Before the T-plug lost its tick, p=usbtap was a valid owned part.
+  const alone = parseHash('#v=1&f=supply&p=usbtap', DEFAULT_OPTIONS);
+  assert.deepEqual([alone.badVersion, alone.unknown], [false, []]);
+  assert.deepEqual(alone.selection.owned, ['usbtap']);
+  const setup = resolve(CATALOGUE, alone.selection);
+  assert.deepEqual(setup.ignored, ['usbtap']);
+  // No notice: the former tick leaves the owned parts before the setup is resolved.
+  const given = withoutFormerTicks(alone.selection);
+  assert.deepEqual(given.owned, []);
+  assert.deepEqual(resolve(CATALOGUE, given).ignored, []);
+  // Only the owned parts hold it: f=usbtap and o=usbtap keep their notice, and so does the id of a part that was never a tick.
+  for (const hash of ['#v=1&f=usbtap', '#v=1&o=usbtap']) {
+    const p = parseHash(hash, DEFAULT_OPTIONS);
+    const given = withoutFormerTicks(p.selection);
+    assert.deepEqual(given, p.selection, hash);
+    // The id stays in the selection the page resolves, where the resolver or the page's own filter reports it.
+    assert.ok([...given.functions, ...given.owned, ...Object.values(given.options)].includes('usbtap') || p.unknown.includes('usbtap'), hash);
+  }
+  assert.deepEqual(withoutFormerTicks({ functions: ['usbtap'], owned: ['usbtap', 'sd'], options: { ...DEFAULT_OPTIONS } }), { functions: ['usbtap'], owned: ['sd'], options: { ...DEFAULT_OPTIONS } });
+  for (const id of ['kst', 'charger', 'panel']) {
+    const p = parseHash(`#v=1&p=${id}`, DEFAULT_OPTIONS);
+    assert.equal([...p.unknown, ...resolve(CATALOGUE, withoutFormerTicks(p.selection)).ignored].length > 0, true, id);
+  }
+  // The function supply needs the PD mini, which brings the T-plug.
+  assert.ok(setup.parts.some((r) => r.part.id === 'usbtap' && r.addedBy.every((a) => a.kind === 'rule' && a.id === 'pd-tplug')));
+  // The page draws the selection reduced to the parts it offers a tick for: the T-plug is no part of the written hash.
+  const ticks = alone.selection.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
+  assert.deepEqual(ticks, []);
+  assert.equal(formatHash({ ...alone.selection, owned: ticks }, 'en', 'en', CATALOGUE), 'v=1&f=supply');
+  assert.equal(formatHash(alone.selection, 'en', 'en', CATALOGUE), 'v=1&f=supply');
+  // Without the PD mini the link gives the base setup and no T-plug.
+  const bare = resolve(CATALOGUE, parseHash('#v=1&p=usbtap', DEFAULT_OPTIONS).selection);
+  assert.deepEqual(bare.ignored, ['usbtap']);
+  assert.ok(!bare.parts.some((r) => r.part.id === 'usbtap'));
+});
+
+test('the hash of a document holds no former tick', () => {
+  const share = (hash: string): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE);
+  assert.equal(share('#v=1&f=supply&p=usbtap'), '#v=1&f=supply');
+  assert.equal(share('#v=1&p=usbtap'), '#v=1');
+  assert.equal(share('#v=1&p=sd,usbtap&o=osoyoo,pd&l=de'), '#v=1&p=sd&o=osoyoo,pd&l=de');
+  // An id of that spelling under f= or o= is no former tick: the hash stays as it is.
+  assert.equal(share('#v=1&f=usbtap'), '#v=1&f=usbtap');
+});
+
+test('the address to copy, print and put in a document is the page address with the hash of a document', () => {
+  const address = (href: string): string => shareAddress(href, DEFAULT_OPTIONS, CATALOGUE);
+  const page = 'https://subtilitas.github.io/rcbench/configurator/';
+  // The former tick, a function without a tick and a test object leave the hash; the part before '#' stays.
+  assert.equal(address(`${page}#v=1&f=supply&p=usbtap`), `${page}#v=1&f=supply`);
+  assert.equal(address(`${page}#v=1&f=supply&p=usbtap&l=de`), `${page}#v=1&f=supply&l=de`);
+  assert.equal(address(`${page}#v=1&p=sd,usbtap&o=osoyoo,pd&l=en`), `${page}#v=1&p=sd&o=osoyoo,pd&l=en`);
+  assert.equal(address(`${page}#v=1&p=servo`), `${page}#v=1&f=servo`);
+  assert.equal(address(`http://localhost:4611/?p=usbtap#v=1&p=usbtap`), 'http://localhost:4611/?p=usbtap#v=1');
+  // An address the page writes, one without a hash and one with an empty hash stay as they are.
+  for (const href of [`${page}#v=1&f=servo,esc&p=pdmini`, `${page}#v=1&f=usbtap`, page, `${page}#`, `${page}#v=2&p=usbtap`]) {
+    assert.equal(address(href), href, href);
+  }
 });

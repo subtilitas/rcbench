@@ -87,6 +87,21 @@ history is in git.
 
 ### Changed
 
+- The T-plug of the PD mini (`usbtap`) has no tick in the bench
+  configurator: the PD mini brings it by the rule `pd-tplug`, and it stays in
+  the setup, the parts list, the wires and the drawings whenever the PD mini
+  is there. A link with `p=usbtap` loads; the id is dropped without a notice,
+  and without the PD mini the setup holds no T-plug. A part that a rule adds
+  along with a bench part reads "Included with these parts: PD mini."
+  ("Enthalten bei diesen Teilen: PD mini."); a part that a rule adds for
+  another cause keeps "Needed by: ". Copy link, its fallback field, the print
+  header and the PDF link drop `p=usbtap`, the id of a function without a
+  tick and a test object under `p`, which they name as the tick of its
+  function; the address of the page keeps the link until a change. `f=usbtap`
+  and `o=usbtap` keep their notice. Functions that the parts of the setup
+  bring read "Enthalten bei diesen Teilen." in German. The sweep covers 8
+  selectable parts, 4096 sets.
+
 - The bench states are named SAFE and ARMED in English and German, as the
   status band shows them: in the panel texts, the docs and the configurator.
   The action reads "switches the bench to SAFE" / "schaltet den Prüfstand

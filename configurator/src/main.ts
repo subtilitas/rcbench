@@ -13,7 +13,7 @@ import type { Lang, OptionKey, Options, Selection, Setup } from '../contract.ts'
 import { CATALOGUE, DEFAULT_OPTIONS, alwaysOn, deselectEffect, removalEffect, resolve } from './core.ts';
 import type { Deselect, Removal } from './core.ts';
 import { exportPdf, syncPdf } from './export/button.ts';
-import { HASH_VERSION, formatHash, namesSetup, parseHash, reportIds, shareHash, testObjectTicks } from './hash.ts';
+import { HASH_VERSION, formatHash, namesSetup, parseHash, withoutFormerTicks, reportIds, shareAddress, testObjectTicks } from './hash.ts';
 import { browserLang, t } from './i18n.ts';
 import { benchParts, optionsOf } from './names.ts';
 import { browserStore, readStore, writeStore } from './store.ts';
@@ -86,7 +86,7 @@ function readHash(): void {
   } else {
     if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
     // A test object under the owned parts of a link is the tick of its function.
-    const given = testObjectTicks(parsed.selection, CATALOGUE);
+    const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
     const setup = tryResolve(given);
     selection = known(given);
     const dropped = [...given.functions, ...given.owned]
@@ -101,10 +101,12 @@ function readHash(): void {
   if (!linked && restored && hash !== `v=${HASH_VERSION}`) history.replaceState(null, '', `#${hash}`);
 }
 
-/** The link the PDF prints: the address of the page without the id of a function that has no tick. */
+/**
+ * The link that Copy link copies, the print header shows and the PDF prints: the address of the page
+ * without the id of a function that has no tick or of a former tick, a test object as the tick of its function.
+ */
 function shareUrl(): string {
-  const at = location.href.indexOf('#');
-  return at < 0 ? location.href : location.href.slice(0, at) + shareHash(location.href.slice(at), DEFAULT_OPTIONS, CATALOGUE);
+  return shareAddress(location.href, DEFAULT_OPTIONS, CATALOGUE);
 }
 
 function writeHash(): void {
@@ -158,11 +160,11 @@ function render(focusId?: string): void {
     if (asked && !setup.parts.some((r) => r.part.id === asked.part)) pending = null;
     const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note };
     choose.innerHTML = chooser(view, ownOpen);
-    res.innerHTML = result(view, location.href, notices.map((n) => n(lang)), mode);
+    res.innerHTML = result(view, shareUrl(), notices.map((n) => n(lang)), mode);
     sub = `<small>${t(lang, 'bSub', { p: benchParts(setup).length, w: setup.wires.length })}</small>`;
   } else {
     choose.innerHTML = `<h2 id="h-choose">${t(lang, 'choose')}</h2>`;
-    res.innerHTML = resultError(lang, CATALOGUE, location.href);
+    res.innerHTML = resultError(lang, CATALOGUE, shareUrl());
   }
   bar.innerHTML = `<a href="#choose" data-jump="choose">${t(lang, 'bChoose')}</a>`
     + `<a href="#result" data-jump="result"><span>${t(lang, 'bWiring')}${sub}</span></a>`;
@@ -242,7 +244,7 @@ function showLinkField(): void {
   const field = byId('linkfield') as HTMLInputElement | null;
   if (!box || !field) return;
   box.hidden = false;
-  field.value = location.href;
+  field.value = shareUrl();
   field.focus();
   field.select();
 }
@@ -254,7 +256,7 @@ function copyLink(button: HTMLElement): void {
   };
   let pending: Promise<void>;
   try {
-    pending = navigator.clipboard ? navigator.clipboard.writeText(location.href) : Promise.reject(new Error('no clipboard'));
+    pending = navigator.clipboard ? navigator.clipboard.writeText(shareUrl()) : Promise.reject(new Error('no clipboard'));
   } catch (error) {
     pending = Promise.reject(error);
   }

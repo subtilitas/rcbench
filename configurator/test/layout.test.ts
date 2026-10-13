@@ -138,13 +138,11 @@ test('the T-plug is a module with the UART wires of the PD mini', () => {
   for (const p of CATALOGUE.parts) assert.ok(p.role !== null, `${p.id} states its role`);
 });
 
-test('the T-plug without the PD mini is drawn without a wire', () => {
+test('the T-plug named without the PD mini is not drawn: only the PD mini brings it', () => {
   const setup = resolve(CATALOGUE, { ...base, owned: ['usbtap'] });
   const l = layout(setup, CATALOGUE, 'de');
   assert.deepEqual(findings(l, setup), []);
-  const plug = l.modules.find((m) => m.id === 'usbtap');
-  assert.ok(plug);
-  assert.ok(plug.pins.every((p) => !p.used));
+  assert.equal(l.modules.find((m) => m.id === 'usbtap'), undefined);
 });
 
 test('the INA228 module with XT90 plugs differs from the MATEK board in the supply wire and its pin', () => {
