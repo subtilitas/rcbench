@@ -18,7 +18,7 @@ const text = (s: string) => ({ en: s, de: s });
 function part(id: string, flags: Partial<Part> = {}): Part {
   return {
     id, name: text(id), short: text(id), role: null, locked: false, selectable: true, release: 'released',
-    slot: { column: 'none', order: 0 }, pins: [], src: SRC, ...flags,
+    slot: { column: 'none', order: 0 }, pins: [], buy: [], src: SRC, ...flags,
   };
 }
 

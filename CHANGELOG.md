@@ -73,6 +73,25 @@ history is in git.
   the range it needs, not a product, and the page and the PDF tag it
   "Modelled part: no product chosen". The drawing `dcsup` is a generic
   plug-in supply.
+- The bench configurator lists the parts to buy for a setup, under "Parts
+  to buy" ("Teile zum Kaufen") on the page and in the PDF export. Each row
+  gives quantity, maker, ordering name, a check line, the maker page and a
+  web search link (`https://www.google.com/search?q=` with the quoted maker
+  and ordering name, or the quoted spec of a generic or modelled part). A
+  disclaimer above the list names the release of the data. A part with a
+  tick of its own under "Parts you own" is left out. The variant of a setup
+  names its row: `o=osoyoo` adds the Osoyoo breakout board, `o=xt90` lists
+  the XT90 INA228 module in place of the Matek board. The servo, the ESC,
+  the servo supply and the ESC battery stand in a separate list "You bring"
+  without links. "Copy as text" copies the setup link and the list; "Copy as
+  CSV" copies 6 columns per row (RFC 4180). The links open in a new tab with
+  `rel="noopener noreferrer"`; the page requests nothing from Google or a
+  maker before a click. In the PDF each maker page and web search is a link
+  annotation. Data: `Part.buy` with `maker`, `order`, `check`, `page`, `qty`
+  and `only`, and `Part.yours`; `npm run check` reports a part without a row
+  for a set of options, a variant without a row of its own, a page that is
+  not https or carries a tracking parameter, and a brought part that names a
+  maker.
 
 ### Changed
 

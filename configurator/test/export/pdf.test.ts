@@ -11,6 +11,8 @@ import { PAGE } from '../../src/export/layout.ts';
 import { deflate, fnv, literal, num, textString, uri, writePdf } from '../../src/export/pdf.ts';
 import { PDF_STRINGS } from '../../src/export/text.ts';
 import { t, tx } from '../../src/i18n.ts';
+import { partsList } from '../../src/view/buy.ts';
+import type { View } from '../../src/view/chooser.ts';
 import { EMPTY, FONT_BYTES, LANGS, LARGEST, NOW, SMALLEST, build, fonts, latin, readPdf, squeeze, urlOf, viewOf } from './helpers.ts';
 import type { Read } from './helpers.ts';
 
@@ -20,6 +22,9 @@ const CASES = [
   { name: 'empty selection', sample: { selection: EMPTY, setup: resolve(CATALOGUE, EMPTY), key: '' } },
 ];
 const plain = (text: string): string => text.replace(/<\/?b>/g, '');
+/** The link targets of the export: the share link, then the maker pages and web searches of the parts list. */
+const targetsOf = (view: View): string[] =>
+  [...new Set([urlOf(view), ...partsList(view).buy.flatMap((l) => [l.page, l.search]).filter((u): u is string => u !== null)])].sort();
 
 const made = new Map<string, Promise<{ out: Exported; read: Read }>>();
 /** One export per case and language, shared by the tests. */
@@ -106,7 +111,7 @@ for (const [index, c] of CASES.entries()) {
       assert.equal(read.creator, t(lang, 'title'));
       assert.equal(read.lang, lang);
       assert.ok(read.links.length >= 1);
-      assert.deepEqual([...new Set(read.links)], [urlOf(view)]);
+      assert.deepEqual([...new Set(read.links)].sort(), targetsOf(view));
       const first = squeeze(read.text[0] as string);
       assert.ok(first.includes(squeeze(urlOf(view))));
       assert.ok(first.includes(squeeze(`${CATALOGUE.release}`)));
@@ -148,7 +153,7 @@ test('the file holds no script, no form, no attachment, no image and no referenc
     }
     const targets = [...text.matchAll(/\/URI \(([^)]*)\)/g)].map((m) => m[1]);
     assert.ok(targets.length >= 1);
-    assert.deepEqual([...new Set(targets)], [urlOf(view)]);
+    assert.deepEqual([...new Set(targets)].sort(), targetsOf(view));
     const actions = [...text.matchAll(/\/S \/(\w+)/g)].map((m) => m[1]);
     assert.deepEqual([...new Set(actions)], ['URI']);
   }

@@ -2,7 +2,7 @@
 // of blocks. Pure: no document, no fonts, no page geometry. Every fact comes
 // from the catalogue and the setup; chrome strings come from the string tables.
 //
-// Section order: title, safety, parts, tested, power, functions, wiring,
+// Section order: title, safety, parts, tested, buy, power, functions, wiring,
 // order, nir.
 
 import type { Check, Lang, OptionKey, SignalClass } from '../../contract.ts';
@@ -16,12 +16,15 @@ import {
 } from '../view/chooser.ts';
 import type { View } from '../view/chooser.ts';
 import { orderStages } from '../view/order.ts';
+import { buyNote, lineName, partsList, qtyText, searchQuery } from '../view/buy.ts';
+import type { BuyLine } from '../view/buy.ts';
 import { wiringDiagram } from './diagram.ts';
 import type { Diagram } from './diagram.ts';
 import { lineWords, p } from './text.ts';
 
 export type Run = { text: string; bold?: boolean };
-export type Sub = { text: string; muted: boolean };
+/** A line in small type. `url`: the line is a link to that address. */
+export type Sub = { text: string; muted: boolean; url?: string };
 /** One list entry: a first line with tags in brackets, then lines in small type. */
 export type Item = { runs: Run[]; tags: string[]; lines: Sub[] };
 export type Row = {
@@ -49,7 +52,7 @@ export type Block =
   | { kind: 'drawing'; svg: string }
   | { kind: 'table'; caption: string; head: string[]; noteLabel: string; rows: Row[] };
 
-export type SectionId = 'title' | 'safety' | 'parts' | 'tested' | 'power' | 'functions' | 'wiring' | 'order' | 'nir';
+export type SectionId = 'title' | 'safety' | 'parts' | 'tested' | 'buy' | 'power' | 'functions' | 'wiring' | 'order' | 'nir';
 export type Section = { id: SectionId; blocks: Block[] };
 export type Doc = {
   lang: Lang;
@@ -63,7 +66,7 @@ export type Doc = {
 };
 
 export const SECTION_ORDER: readonly SectionId[] = [
-  'title', 'safety', 'parts', 'tested', 'power', 'functions', 'wiring', 'order', 'nir',
+  'title', 'safety', 'parts', 'tested', 'buy', 'power', 'functions', 'wiring', 'order', 'nir',
 ];
 
 const KIND: Record<Check['kind'], Key> = { measure: 'kM', unknown: 'kU', note: 'kN' };
@@ -166,6 +169,30 @@ function testedSection(view: View): Section {
       items.length === 0 ? para(t(lang, 'testedNone')) : { kind: 'list', items, bullet: false },
     ],
   };
+}
+
+/** One row of the parts list: quantity and name, then the check line and the 2 links. */
+function buyItem(lang: Lang, l: BuyLine, bring: boolean): Item {
+  const tags: string[] = [];
+  if (l.part.modelled) tags.push(t(lang, 'modelled'));
+  else if (l.maker === null && !bring) tags.push(t(lang, 'buyAny'));
+  const lines: Sub[] = [{ text: t(lang, 'buyCheck') + l.check, muted: false }];
+  if (l.page !== null) lines.push({ text: `${t(lang, 'buyPage')}: ${l.page}`, muted: false, url: l.page });
+  if (l.search !== null) lines.push({ text: `${t(lang, 'buySearch')}: ${searchQuery(l.maker, l.order)}`, muted: false, url: l.search });
+  return { runs: [{ text: `${qtyText(l)} `, bold: true }, { text: bring ? l.order : lineName(l), bold: true }], tags, lines };
+}
+
+/** The parts to buy, with the release they hold for, then what the visitor brings. */
+function buySection(view: View): Section {
+  const { lang } = view;
+  const list = partsList(view);
+  const blocks: Block[] = [heading(t(lang, 'buy')), para(buyNote(view)), para(p(lang, 'buyHint'), true)];
+  if (list.buy.length === 0) blocks.push(para(t(lang, 'buyNone')));
+  else blocks.push({ kind: 'list', items: list.buy.map((l) => buyItem(lang, l, false)), bullet: false });
+  if (list.bring.length > 0) {
+    blocks.push(heading(t(lang, 'bring'), 3), para(t(lang, 'bringHint'), true), { kind: 'list', items: list.bring.map((l) => buyItem(lang, l, true)), bullet: false });
+  }
+  return { id: 'buy', blocks };
 }
 
 /** The power sources of the logic and of each connected test object, as the catalogue states them. */
@@ -296,6 +323,7 @@ export function documentModel(view: View, url: string, now: Date, diagram: Diagr
     { id: 'safety', blocks: [{ kind: 'safety', title: t(lang, 'safety'), notes: catalogue.safety.map((s) => boldRuns(tx(lang, s.text))) }] },
     partsSection(view),
     testedSection(view),
+    buySection(view),
     powerSection(view),
     functionsSection(view),
     wiringSection(view, diagram),

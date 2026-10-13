@@ -61,6 +61,27 @@ export type Picture = {
 };
 
 /**
+ * One row of the parts list: what to order, or what the visitor brings.
+ *
+ * - `maker`: the maker's name, as the trademark notice lists it. `null` for a
+ *   generic part and for a modelled part: `order` then states the spec.
+ * - `order`: the ordering name or model as the maker writes it, else the spec.
+ * - `check`: what to check when buying, the variant traps. One short line.
+ * - `page`: the maker's product page, https. Absent when no stable maker page
+ *   exists. No shop, no tracking parameter.
+ * - `qty`: pieces, 1 when absent.
+ * - `only`: the options the row applies to.
+ */
+export type Buy = {
+  maker: string | null;
+  order: Text;
+  check: Text;
+  page?: string;
+  qty?: number;
+  only?: Partial<Options>;
+};
+
+/**
  * A part of the bench, or a test object.
  *
  * A test object (`testObject: true`) is the device a visitor connects and
@@ -90,6 +111,13 @@ export type Part = {
   variantName?: { option: OptionKey; names: Record<string, Text> };
   /** Pictures of the part, the main one first. At most 2 apply to one set of options. */
   pictures?: Picture[];
+  /**
+   * The visitor brings the part: its spec follows the test object, so the
+   * page names no product. A test object is always brought.
+   */
+  yours?: true;
+  /** The rows of the parts list. Every part has at least 1 for each set of options. */
+  buy: Buy[];
   src: Src;
 };
 
