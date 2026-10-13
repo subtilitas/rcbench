@@ -54,6 +54,17 @@ history is in git.
   current limit are stored and not applied, and that the level of the
   servo's reply on GP13 is not measured. Existing links keep their meaning:
   `kst` stays an unknown id.
+- The bench configurator adds the DC supply of the Osoyoo breakout board,
+  7 to 12 V DC (part `dcsup`, rule `osoyoo-dc`), to every setup in which
+  the servo takes the V pin of a strip: a servo, no PD mini, servo power B
+  (`servoPower: bench`) and the Osoyoo connection. In these setups the
+  jumper V Selector sits on 5V, which takes its power from the DC input
+  alone. The supply has 2 leads, wires 65 and 66, drawn as stubs to the DC
+  jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-), exactly
+  1 of them. The current it must deliver is not stated. It is the first
+  modelled part (`Part.modelled`): the data states the range it needs, not
+  a product, and the page and the PDF tag it "Modelled part: no product
+  chosen". The drawing `dcsup` is a generic plug-in supply.
 
 ### Changed
 

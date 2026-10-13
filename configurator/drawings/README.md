@@ -2,11 +2,11 @@
 
 Generator and check of the part drawings of the bench configurator.
 
-- 23 drawings: 21 of the 19 parts of the data file (`core/catalogue.ts`), 2 of
+- 24 drawings: 22 of the 20 parts of the data file (`core/catalogue.ts`), 2 of
   boards outside it. The coprocessor and the INA228 have 2 boards each.
 - Each drawing is 1 SVG (Scalable Vector Graphics) file per language: English
   in `public/drawings/<file>.svg`, German in `public/drawings/de/<file>.svg`.
-- `anchors.json` holds the wire point of each of the 177 pins in px of the
+- `anchors.json` holds the wire point of each of the 179 pins in px of the
   viewBox of its drawing.
 - The generator reads the data file and nothing else: no file, no clock, no
   random number. The same data file gives the same bytes.
@@ -124,9 +124,12 @@ A wire of the pictorial wiring view has 1 of 15 colours. The colours are the
 same in the light and in the dark theme. A wire of the kind `component` is
 the lead of a part and has no colour.
 
-- Supply plus is red: the 8 nets of `PLUS_NETS` (battery plus, PD input and
-  output, servo supply, the output of both shunts, 3.3 V, VBUS).
-- Ground and supply minus are black: the 3 nets of `MINUS_NETS`.
+- Supply plus is red: the 10 nets of `PLUS_NETS` (battery plus, PD input and
+  output, servo supply, the output of both shunts, 3.3 V, VBUS, the V pin of
+  a strip of the Osoyoo breakout board and the plus of its DC input).
+- Ground and supply minus are black: the 4 nets of `MINUS_NETS` (ground,
+  battery minus, ESC (electronic speed controller) minus and the minus of
+  the DC input of the Osoyoo breakout board).
 - A signal has 1 of the other 13 colours: its net decides first (`BY_NET`),
   its signal class second (`BY_CLASS`). No signal is red or black.
 - A wire of the class `power` or `gnd` on a net outside the 2 sets has no
@@ -196,5 +199,5 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
   of the emergency stop button open on a press, which side of the INA228
   module with XT90 plugs is the battery side.
 - The shapes follow photos of the boards where one exists. Servo, ESC, PD
-  charger, battery, servo supply, motor simulator, phase tap and pull-up
-  resistors are generic pictures.
+  charger, battery, servo supply, DC supply of the Osoyoo breakout board,
+  motor simulator, phase tap and pull-up resistors are generic pictures.

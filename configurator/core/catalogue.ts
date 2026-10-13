@@ -250,6 +250,30 @@ const parts: Part[] = [
     ],
     src: guide('stage-1'),
   },
+  // The supply that position 5V of the jumper V Selector needs. No product is
+  // chosen: the part states the range the board takes, so it is modelled.
+  {
+    id: 'dcsup',
+    name: t(
+      'DC supply for the Osoyoo breakout board, 7 to 12 V DC (yours)',
+      'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12 V DC (eigene)',
+    ),
+    short: t('Osoyoo DC supply', 'Osoyoo-DC-Versorgung'),
+    role: t(
+      'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). It connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). The switch OFF/ON is on ON. Current it must deliver: not stated.',
+      'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Sie wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
+    ),
+    locked: false,
+    selectable: false,
+    modelled: true,
+    release: 'released',
+    slot: { column: 'L', order: 12, sub: t('7 to 12 V DC', '7 bis 12 V DC') },
+    pins: [
+      pin('POS', same('+'), OSOYOO_SCHEMATIC),
+      pin('NEG', same('−'), OSOYOO_SCHEMATIC),
+    ],
+    src: OSOYOO_PAGE,
+  },
   {
     id: 'esc',
     name: t('ESC and motor (yours)', 'ESC und Motor (eigene)'),
@@ -745,6 +769,19 @@ const SERVO_STRIP_NOTE = t(
 const STRIP_V = t(
   'V pin of the S V G strip at GP2 of the Osoyoo breakout board',
   'V-Pin der S-V-G-Leiste an GP2 der Osoyoo-Breakout-Platine',
+);
+const DC_IN_POS = t(
+  'plus of the DC input of the Osoyoo breakout board: the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
+  'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
+);
+const DC_IN_NEG = t(
+  'minus of the same DC input of the Osoyoo breakout board: the DC jack, the minus pole of the 2-pole VIN terminal or H4 pin 1 VIN-',
+  'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: DC-Buchse, Minuspol der 2-poligen VIN-Klemme oder H4 Pin 1 VIN-',
+);
+const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12 V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V');
+const DC_IN_NOTE = t(
+  'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. The switch OFF/ON on ON. USB does not feed the V pins.',
+  'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
 );
 
 const wires: Wire[] = [
@@ -1263,6 +1300,21 @@ const wires: Wire[] = [
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
+  // The DC supply of the Osoyoo breakout board, for the jumper on 5V. The DC
+  // input is no pad of the coprocessor, so both leads end as stubs with their
+  // target in words. The converter U9 joins this input to the V pins.
+  {
+    n: 65, kind: 'stub', a: 'dcsup.POS', b: null, to: DC_IN_POS, net: 'osoyoo_vin', cls: 'power',
+    signal: DC_IN_SIGNAL,
+    note: DC_IN_NOTE,
+    when: SERVO_STRIP, stage: 1, route: { kind: 'S' }, src: OSOYOO_SCHEMATIC,
+  },
+  {
+    n: 66, kind: 'stub', a: 'dcsup.NEG', b: null, to: DC_IN_NEG, net: 'osoyoo_vin_neg', cls: 'power',
+    signal: DC_IN_SIGNAL,
+    note: DC_IN_NOTE,
+    when: SERVO_STRIP, stage: 1, route: { kind: 'S' }, src: OSOYOO_SCHEMATIC,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1454,6 +1506,15 @@ const rules: Rule[] = [
     adds: 'pull',
     because: t('sensor bus without the INA3221', 'Sensorbus ohne den INA3221'),
     src: guide('wires'),
+  },
+  {
+    // The servo on the V pin of a strip: the jumper V Selector goes to 5V,
+    // which feeds the V pins only from the DC input.
+    id: 'osoyoo-dc',
+    when: SERVO_STRIP,
+    adds: 'dcsup',
+    because: t('servo on the V pin, jumper on 5V', 'Servo am V-Pin, Jumper auf 5V'),
+    src: OSOYOO_SCHEMATIC,
   },
 ];
 
@@ -2055,8 +2116,8 @@ const powerSources: PowerSource[] = [
         'Warnung: Der Jumper muss vor dem Einstecken eines Servos geprüft werden. In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt.',
       ),
       t(
-        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is not in the parts list.',
-        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht nicht in der Teileliste.',
+        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is in the parts list as a modelled part.',
+        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht als modelliertes Teil in der Teileliste.',
       ),
       t(
         'The rating is 2 A at 5 V and 500 mA at 3.3 V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.',

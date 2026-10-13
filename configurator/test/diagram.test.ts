@@ -549,7 +549,7 @@ test('pathOf rounds a right angle by 2 px, never by more than half a segment', (
 test('a wire that carries load current is thick, in the scene and in the markup, and the legend names both widths', () => {
   // Every wire of the data file: the class power is the load current of the ESC or of the servo.
   const load = CATALOGUE.wires.filter((w) => w.cls === 'power').map((w) => w.n);
-  assert.deepEqual(load, [9, 10, 14, 15, 19, 20, 21, 22, 23, 28, 29, 30, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63]);
+  assert.deepEqual(load, [9, 10, 14, 15, 19, 20, 21, 22, 23, 28, 29, 30, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63, 65, 66]);
   const seen = new Map<number, boolean>();
   for (const s of samples) for (const w of sceneOf(s.setup, ANCHORS).wires) seen.set(w.n, w.thick);
   for (const w of CATALOGUE.wires) {

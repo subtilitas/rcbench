@@ -3,7 +3,7 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Catalogue, Lang } from '../../contract.ts';
+import type { Catalogue, Lang, Selection } from '../../contract.ts';
 import { CATALOGUE, resolve, alwaysOn } from '../../src/core.ts';
 import { missing } from '../../src/export/font.ts';
 import { SECTION_ORDER, boldRuns, documentModel, fileName, isoDate, shortHash, strings } from '../../src/export/model.ts';
@@ -112,7 +112,9 @@ test('every setup of the sweep gives the sections in order, every part, every wi
         bench.forEach((r, i) => {
           const item = parts.items[i];
           if (!item?.runs[0]?.text.startsWith(tx(lang, r.part.name))) say(`part ${r.part.id} is out of place`);
-          if ((item?.tags.length ?? 0) > 0) say(`part ${r.part.id} carries a mark`);
+          // A part carries a mark only for a reason: not in a release, or modelled.
+          const marks = [...(r.part.release !== 'released' ? [t(lang, 'nir')] : []), ...(r.part.modelled ? [t(lang, 'modelled')] : [])];
+          if (JSON.stringify(item?.tags ?? []) !== JSON.stringify(marks)) say(`part ${r.part.id} carries the marks ${JSON.stringify(item?.tags)}`);
         });
       }
 
@@ -298,6 +300,26 @@ test('a part that is in no release carries the mark of the page', () => {
     assert.equal(items.indexOf(marked[0] as (typeof items)[number]), setup.parts.findIndex((r) => r.part.id === target));
     // The released catalogue marks no part.
     assert.equal(lists(model(lang), 'parts')[0]?.items.some((item) => item.tags.includes(STRINGS.nir[lang === 'de' ? 1 : 0])), false);
+  }
+});
+
+test('the DC supply of the Osoyoo breakout board carries the mark of a modelled part, no other part does', () => {
+  const strip: Selection = { ...EMPTY, functions: ['servo'], options: { ...EMPTY.options, servoPower: 'bench', connection: 'osoyoo' } };
+  const pin: Selection = { ...strip, options: { ...strip.options, connection: 'pads' } };
+  for (const lang of LANGS) {
+    const mark = lang === 'en' ? 'Modelled part: no product chosen' : 'Modelliertes Teil: kein Produkt gewählt';
+    assert.equal(t(lang, 'modelled'), mark);
+    const marked = (selection: Selection): string[] => {
+      const setup = resolve(CATALOGUE, selection);
+      const view = viewOf(selection, setup, lang);
+      const items = lists(documentModel(view, urlOf(view), NOW), 'parts')[0]?.items ?? [];
+      return items.filter((item) => item.tags.includes(mark)).map((item) => item.runs.map((r) => r.text).join(''));
+    };
+    const name = CATALOGUE.parts.find((p) => p.id === 'dcsup')!.name[lang];
+    const got = marked(strip);
+    assert.equal(got.length, 1, JSON.stringify(got));
+    assert.ok(got[0]!.includes(name), got[0]);
+    assert.deepEqual(marked(pin), []);
   }
 });
 

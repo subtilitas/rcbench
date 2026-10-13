@@ -76,6 +76,12 @@ export type Part = {
   locked: boolean;
   selectable: boolean;
   testObject?: true;
+  /**
+   * A modelled part: the catalogue states what the part has to do, not which
+   * product does it. Its name gives the required range and its role the
+   * values a source states; no maker, model or picture is chosen.
+   */
+  modelled?: true;
   /** The part sits in the path between these 2 parts: a wire joins it to each of them. */
   between?: [PartId, PartId];
   release: Release;

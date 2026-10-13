@@ -168,8 +168,9 @@ test('groups of the data file: every function is in exactly one group, keyed by 
   const escpow = g.find((x) => x.functions.includes('escpow'));
   assert.deepEqual(escpow?.variants, [{ part: 'ina228', option: 'ina228Board', values: ['matek', 'xt90'] }]);
   assert.deepEqual(escpow?.oneOf, [['batt'], ['pdmini', 'charger', 'usbtap']]);
-  // A servo takes its power from the servo supply or, under the other variant, from the bench.
-  assert.deepEqual(g.find((x) => x.key === 'ina3221')?.oneOf, [['ssup'], []]);
+  // A servo takes its power from the servo supply or, under the other variant, from the bench:
+  // the 5 V pin with no further part, or the V pin of the Osoyoo breakout board with its DC supply.
+  assert.deepEqual(g.find((x) => x.key === 'ina3221')?.oneOf, [['ssup'], [], ['dcsup']]);
   // No group names a test object: not as a part it needs, not as a part the rules add.
   const objects = testObjects(CATALOGUE);
   assert.deepEqual(objects, ['servo', 'esc']);
