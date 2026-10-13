@@ -100,7 +100,15 @@ history is in git.
   directories and link targets of a module are not checked, a
   `__has_include` that a macro pastes together with `##` passes, and a
   number after `€` or `·` fails the include after it although GCC 13
-  reads both as identifier characters.
+  reads both as identifier characters. Current limitations that let an
+  include through: a delimited or named universal character name
+  (`\u{e9}`, `\N{...}`) continues a number also in C23 and C++14 to
+  C++20, where GCC 13 ends it (`0'0 1\u{e9}'x /* '` hides the include on
+  the next line under `-std=c++17`); a comment or raw string literal
+  across a line break ends the line for the `defined` rule while GCC 13
+  continues the directive (a macro body line `*/ #if ) defined
+  __has_include` passes); and no number starts after U+2E2F (`ⸯ`), while
+  GCC 13 starts one there in C23.
 
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the

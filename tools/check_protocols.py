@@ -115,6 +115,25 @@ Current limitation: a `__has_include` that a macro pastes together with `##`
 (`#define CAT(a, b) a##b`, then `#if CAT(__has_, include)("../x.h")`) passes,
 and GCC 13 evaluates it as the call.
 
+Current limitation: a delimited or named universal character name
+(`\\u{e9}`, `\\N{...}`) continues a number under every set of literal
+rules, also where GCC 13 ends the number before it (C23 and C++14 to C++20
+without GNU extensions).  After a digit separator earlier on the line,
+`0'0 1\\u{e9}'x /* '` hides the include on the next line from the tool,
+and GCC 13 with `-std=c++17` reads it.
+
+Current limitation: a comment or raw string literal across a line break
+ends the line for the `defined` rule, while GCC 13 continues the
+directive.  In a function-like macro with the parameters `if` and
+`defined`, a body line `*/ #if ) defined __has_include` after
+`DROP( /*` passes, and GCC 13 evaluates `__has_include` as the call when
+the macro is expanded in an `#if`.
+
+Current limitation: U+2E2F (`ⸯ`) before a digit counts as a letter, so no
+number starts after it, while GCC 13 starts one there in C23:
+`ⸯ1'a' /* '` hides the include on the next line from the tool, and GCC 13
+with `-std=c2x` reads it.
+
 The SPDX (Software Package Data Exchange) line of the .c and .h files under
 protocols/ is held by tools/check_docs.py.
 
@@ -241,9 +260,10 @@ HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
 # `#elifdef` and `#elifndef` before it on its line, and a `defined NAME` or
 # `defined(NAME)` term of an `#if` or `#elif` line whose other text is only
 # such terms, white space, `(`, `)`, `!`, `&` and `|`.  The line holds no
-# other identifier, so no macro takes `defined` into an argument or pastes
-# it to another name, and no `$` or other identifier character joins it to
-# the name before it.
+# other identifier, so no macro on it takes `defined` into an argument or
+# pastes it to another name, and no `$` or other identifier character joins
+# it to the name before it.  A macro body continued across a comment or raw
+# string is read as separate lines (a current limitation, above).
 IF_LINE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*(?:el)?if\b(.*)$")
 DEFINED_TERM_RE = re.compile(
     r"\bdefined" + WS + r"*(?:\(" + WS + r"*[A-Za-z_]\w*" + WS + r"*\)"

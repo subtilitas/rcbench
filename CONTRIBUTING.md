@@ -261,7 +261,7 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   gnu++14 or later also `\u{e9}` and
   `\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters outside ASCII
   (`1$'a` in C23), and starts at a digit after any character but a letter,
-  a digit, `_` and `$` (`×1'a` is a number, `é1` an identifier); the C of a
+  a digit, `_` and `$` (in C23 `×1'a` is a number; `é1` is an identifier); the C of a
   `.pio` file is what pioasm 2.3.0
   writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
@@ -287,7 +287,19 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call. A
   digit after `€` or `·` starts a number, while GCC 13 reads both as
   identifier characters, so `€1'a' /* '` fails the include after it, which
-  GCC reads as part of a comment.
+  GCC reads as part of a comment. A delimited or named universal character
+  name (`\u{e9}`, `\N{...}`) continues a number under every set of
+  literal rules, also in C23 and C++14 to C++20 without GNU extensions,
+  where GCC 13 ends the number before it: after a digit separator earlier
+  on the line, `0'0 1\u{e9}'x /* '` hides the include on the next line
+  from the tool, and GCC 13 with `-std=c++17` reads it. A comment or raw
+  string literal across a line break ends the line for the `defined` rule,
+  while GCC 13 continues the directive: in a function-like macro with the
+  parameters `if` and `defined`, a body line `*/ #if ) defined
+  __has_include` after `DROP( /*` passes, and GCC 13 evaluates the call
+  when the macro is expanded in an `#if`. U+2E2F (`ⸯ`) before a digit
+  counts as a letter, while GCC 13 starts a number after it in C23:
+  `ⸯ1'a' /* '` hides the include on the next line from the tool.
   The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
