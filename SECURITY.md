@@ -29,6 +29,13 @@ Everything that parses input somebody else produced:
 | `protocols/phase_tap` | words from the DMA (direct memory access) ring of the motor-phase capture: 31-bit counts extended to 64 bits, overrun detection |
 | `shared/link` | CAN (Controller Area Network) frames between the two boards |
 | `shared/can` | CAN controller frames and the CAN self-test status frame |
+| `shared/bench` | coprocessor page registers (KST, programming port, SENSE and SERVO windows, SUPPLY, TONE), AS5600 knob register bytes, SD card servo-file listings and `kst_file_parse` results |
+| `shared/gfx` | UTF-8 text from the SD card (file names, CSV column names and cells, servo file names) decoded for drawing |
+| `shared/outputs` | link page writes from the panel (offset, count and values for the OUTPUTS, CHAN_CFG, CHANNELS, SERVO, SUPPLY, SENSE, TONE, KST and programming-port pages) and the output set-up read back from flash |
+| `shared/sense` | INA228, INA3221 and AS5600 register bytes (fixed length per register) and the SENSE set-up from the link |
+| `shared/ui` | SD card directory listings and CSV column names and cells as drawn, touch coordinates turned into row and key indexes |
+| `shared/artwork` | board picture chunks fetched over the link and picture records read back from flash (payload checked against a 16-bit CRC before use) |
+| `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
 
 `tools/security_parsers.py --check` derives this list from the public headers
 under `shared/` and `protocols/` and fails when the table and the headers

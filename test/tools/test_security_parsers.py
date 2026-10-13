@@ -95,3 +95,31 @@ def test_check_exit_codes(capsys):
     assert sp.main(["--check"]) == 0
     assert sp.main([]) == 0
     assert "protocols/kst" in capsys.readouterr().out
+
+
+def test_page_handlers_and_utf8_decoder_count(tmp_path, monkeypatch):
+    empty_exclusions(monkeypatch)
+    root = tree(tmp_path,
+                {"shared/h/include/h.h": "uint8_t h_page_write(int x);\n",
+                 "shared/i/include/i.h": "bool i_page_read(int x);\n",
+                 "shared/j/include/j.h": "void j_link_done(int x);\n",
+                 "shared/k/include/k.h":
+                 "uint32_t k_utf8_next(const char **s);\n"},
+                [])
+    assert [p.split(" ")[0] for p in sp.problems(root)] == [
+        "shared/h", "shared/i", "shared/j", "shared/k"]
+
+
+def test_names_that_only_contain_the_suffix_do_not_count(tmp_path,
+                                                         monkeypatch):
+    empty_exclusions(monkeypatch)
+    root = tree(tmp_path,
+                {"shared/m/include/m.h":
+                 "int m_written(int x);\nint m_readout(int x);\n"
+                 "int m_done_count(int x);\nint m_next(int x);\n"},
+                [])
+    assert sp.problems(root) == []
+
+
+def test_the_exclusion_table_is_empty():
+    assert sp.NOT_UNTRUSTED == {}

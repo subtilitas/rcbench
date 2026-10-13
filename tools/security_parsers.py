@@ -3,9 +3,12 @@
 
 A module under shared/ or protocols/ parses input somebody else produced when
 its public header (include/*.h) declares a function whose name ends in
-`parse`, `decode`, `unpack`, `_rx` or `_feed` (also with a suffix after
-`parse`, `decode` or `unpack`).  The table in SECURITY.md, "Input parsing",
-names one module per row, or several joined with "and", in the first column.
+`parse`, `decode`, `unpack`, `_rx`, `_feed`, `_write`, `_read`, `_done` or
+`_utf8_next` (also with a suffix after `parse`, `decode` or `unpack`).  The
+`_write`, `_read` and `_done` names find the page handlers that take link
+frames, flash records and card results; `_utf8_next` finds the UTF-8 decoder.
+The table in SECURITY.md, "Input parsing", names one module per row, or
+several joined with "and", in the first column.
 
 The tool fails when
 
@@ -34,21 +37,14 @@ SECURITY = REPO / "SECURITY.md"
 # A declaration at the start of a line, then the name and its opening
 # parenthesis.  Comment lines start with `*` or `/` and do not match.
 NAME = re.compile(
-    r"^[A-Za-z_][\w \t\*]*?\b(\w*_(?:parse\w*|decode\w*|unpack\w*|rx|feed))\(",
+    r"^[A-Za-z_][\w \t\*]*?\b(\w*_(?:parse\w*|decode\w*|unpack\w*"
+    r"|rx|feed|write|read|done|utf8_next))\(",
     re.M)
 
 # Modules with a matching function whose input is not somebody else's file
-# or frame.  Each reason is checked only for the module being listed.
-NOT_UNTRUSTED = {
-    "shared/bench": "knob words from the bench's own sensor and the KST "
-                    "programmer's session; card text goes through "
-                    "protocols/kst",
-    "shared/gfx": "unpacks a colour value the firmware built itself",
-    "shared/outputs": "reads the page the board's own link code stored",
-    "shared/sense": "samples from the bench's own scheduler",
-    "shared/ui": "calls into shared/bench and protocols/kst with text "
-                 "those modules check",
-}
+# or frame.  Each reason is checked only for the module being listed.  Empty:
+# every candidate module has a row in the SECURITY.md table.
+NOT_UNTRUSTED: dict[str, str] = {}
 
 
 def candidates(root: pathlib.Path = REPO) -> set[str]:
