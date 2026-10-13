@@ -6,6 +6,7 @@ SPDX-License-Identifier: MIT
 import os
 import shutil
 import subprocess
+import threading
 
 import pytest
 
@@ -585,7 +586,7 @@ def test_includes_reads_continuations_digraphs_and_literal_slashes():
             '#define H "g.h"\n#include H\n'
             'char *s = "/* #include \\"no.h\\" */";\n')
     assert cp.includes(text) == [
-        ("<", "a.h"), ('"', "b.h"), ('"', "c.h"), ('"', "d.h"),
+        ("next", "<a.h>"), ('"', "b.h"), ('"', "c.h"), ('"', "d.h"),
         ('"', "e//f.h"), ("?", "H")]
 
 
@@ -646,6 +647,8 @@ def test_has_include_is_refused_as_an_operator_only():
     assert cp.includes("#if defined(__has_include) && __has_include\n(<x>)\n"
                        ) == [("?", "__has_include")]
     assert cp.includes("#ifdef __has_include\n#endif\n") == []
+    assert cp.includes("#if __has_include  (<a.h>)\n#endif\n") == [
+        ("?", "__has_include")]
     # A digit separator opens no character literal before the call.
     assert cp.includes("#if 0x1'0 && __has_include(<hardware/gpio.h>) "
                        "&& '1' == 49\n") == [("?", "__has_include")]
@@ -1194,6 +1197,13 @@ C_STDS = ("-std=c11", "-std=gnu11", "-std=c2x", "-std=gnu2x")
 MARK = "rcb_outside_marker"
 OUT = '#include "../outside.h"\n'
 
+# A digit, then a character that continues a GCC preprocessing number
+# besides a letter, digit and `_`: `$`, universal character names, and
+# characters outside ASCII (U+00E9, U+0301, U+203F, U+00B7, U+200D).
+NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
+                           "1\u00e9", "1\u0301", "1\u203f", "1\u00b7",
+                           "1\u200d")
+
 DIFF_C = [
     ("c", "#define RCB_IGNORE(...)\nRCB_IGNORE(0x1'2' \" ' /*\")\n" + OUT
      + "// */\n"),
@@ -1264,6 +1274,13 @@ DIFF_C = [
      + "// */\n"),
     ("c", '#if 0\n#include "a\n#endif\nconst char *s = "/*";\n' + OUT
      + "// */\n"),
+    # A number runs through `$`, a universal character name and a
+    # character outside ASCII, and a digit separator after them: C23 and
+    # C++ read `1$'a`, then the character literal `' /* '`.  A `'` before
+    # any of them ends the number.
+    *[("h", "#define Z " + n + "'a' /* '\n" + OUT + "/* */\n")
+      for n in NUMBER_IDENTIFIER_CHARS],
+    ("h", "#define Z 1'$a' /* '\n" + OUT + "/* */\n"),
 ]
 # The C pioasm writes for these .pio texts, read by gcc: True where the
 # include is live.  Run without pioasm too, as fixed expectations.
@@ -1413,7 +1430,12 @@ def test_a_pio_file_gives_the_c_pioasm_writes(text):
     ('#if 0\n#include <a\n#endif\nconst char *s = "> /*";\n' + OUT
      + "// */\n", True),
     ('#if 0\n#include "a\n#endif\nconst char *s = "/*";\n' + OUT
-     + "// */\n", True)])
+     + "// */\n", True),
+    *[("#define Z " + n + "'a' /* '\n" + OUT + "/* */\n", True)
+      for n in NUMBER_IDENTIFIER_CHARS],
+    ("#define Z 1'$a' /* '\n" + OUT + "/* */\n", False),
+    ("#define Z 1'\u00e9a' /* '\n" + OUT + "/* */\n", False),
+    ("#define Z $1'a' /* '\n" + OUT + "/* */\n", False)])
 def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
                                                                   found):
     """The expectations of the DIFF_C cases on raw string prefixes and
@@ -1501,3 +1523,211 @@ def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
     m = module(tmp_path, driver=False)
     (m / "README.md").write_text("# Interface\n%s\n" % sentence)
     assert len(cp.readme_problems(m)) == 1, sentence
+
+
+@pytest.mark.parametrize("text, name", [
+    ('#define PROBE __has_include\n#if PROBE("../../x.h")\n#endif\n',
+     "__has_include"),
+    ("#define PROBE __has_include_next\n", "__has_include_next"),
+    ("#if X(__has_include)\n#endif\n", "__has_include"),
+    ("#undef __has_include\n", "__has_include"),
+    ("#ifdef A __has_include\n#endif\n", "__has_include"),
+    ("#if !defined(A) && __has_include(<a.h>)\n#endif\n", "__has_include"),
+    ("int undefined __has_include;\n", "__has_include")])
+def test_the_name_has_include_outside_a_literal_fails(text, name):
+    """GCC evaluates a macro that stands for `__has_include` as the call, so
+    the name fails wherever it stands outside a literal."""
+    assert cp.includes(text) == [("?", name)]
+
+
+@pytest.mark.parametrize("text", [
+    "#ifdef __has_include\n#endif\n", "#ifndef __has_include_next\n#endif\n",
+    "#if 0\n#elifdef __has_include\n#elifndef __has_include\n#endif\n",
+    "%:ifdef __has_include\n#endif\n", "  #  ifdef\t__has_include\n#endif\n",
+    "#if defined __has_include && defined(__has_include_next)\n#endif\n",
+    "#if defined ( __has_include ) || defined\t__has_include\n#endif\n",
+    "#if defined /* x */ ( /* y */ __has_include )\n#endif\n",
+    "#if foo__has_include || __has_include_x || __has_include__\n#endif\n",
+    'puts("__has_include"); /* __has_include */\n'])
+def test_has_include_as_the_operand_of_defined_or_ifdef_passes(text):
+    """`defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` test the
+    name as a macro and include nothing; a longer identifier is another
+    name."""
+    assert cp.includes(text) == []
+
+
+def test_a_has_include_alias_fails_the_module(tmp_path):
+    m = module(tmp_path)
+    c = m / "wire.c"
+    c.write_text(c.read_text() + "#define PROBE __has_include\n"
+                 '#if PROBE("../../proj/priv.h")\nint wire_probe;\n#endif\n')
+    assert cp.include_problems(m) == [
+        "wire/wire.c includes __has_include: an include the check cannot "
+        "resolve (a macro or __has_include)"]
+
+
+def include_next_problems(m, rel, line):
+    f = m / rel
+    f.write_text(line + "\n" + f.read_text())
+    return cp.include_problems(m)
+
+
+@pytest.mark.parametrize("rel, line", [
+    ("wire.c", '#include_next "wire.h"'),
+    ("wire.c", "#include_next <wire.h>"),
+    ("include/wire.h", '#include_next "wire.h"'),
+    ("wire.c", "#include_next <hardware/pio.h>"),
+    ("wire.c", "#include_next <unistd.h>"),
+    ("wire.c", '%:include_next "../x.h"'),
+    ("rp2350/wire_pin.c", '#include_next "wire_pin.h"'),
+    ("rp2350/wire_pin.c", '#include_next "wire.pio.h"'),
+    ("rp2350/wire_pin.c", '#include_next "wire.h"')])
+def test_include_next_of_a_module_header_fails(tmp_path, rel, line):
+    """`#include_next` searches the include path after the directory the
+    file was found in: it reaches the next file of that name, the
+    consuming project's or a system header, never the module's own."""
+    m = module(tmp_path)
+    name = line.split(None, 1)[1]
+    assert include_next_problems(m, rel, line) == [
+        "wire/%s has #include_next %s: it includes the next file of that "
+        "name on the search path, outside the module" % (rel, name)]
+
+
+@pytest.mark.parametrize("rel, line", [
+    ("wire.c", "#include_next <stdint.h>"),
+    ("wire.c", '#include_next "stddef.h"'),
+    ("rp2350/wire_pin.c", "#include_next <hardware/pio.h>"),
+    ("rp2350/wire_pin.c", "#include_next <pico.h>")])
+def test_include_next_of_a_standard_or_sdk_header_passes(tmp_path, rel,
+                                                         line):
+    m = module(tmp_path)
+    assert include_next_problems(m, rel, line) == []
+
+
+def test_include_next_of_an_sdk_header_in_a_drivers_header_fails(tmp_path):
+    m = module(tmp_path)
+    assert include_next_problems(
+        m, "rp2350/wire_pin.h", "#include_next <hardware/pio.h>") == [
+        "wire/rp2350/wire_pin.h includes hardware/pio.h: a driver's header "
+        "is read without the pico-sdk"]
+
+
+def test_a_macro_include_next_is_unresolved():
+    assert cp.includes("#include_next H\n") == [("?", "H")]
+    assert cp.includes('#include_next "a.h" x\n') == [("?", '"a.h" x')]
+
+
+def within(seconds, fn, *args):
+    """fn(*args), or a failure after @p seconds: a scan that loops forever
+    fails the case instead of hanging the suite."""
+    out = []
+
+    def run():
+        try:
+            out.append((True, fn(*args)))
+        except Exception as e:  # handed to the test thread below
+            out.append((False, e))
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(seconds)
+    assert out, "no result after %s s" % seconds
+    ok, value = out[0]
+    if not ok:
+        raise value
+    return value
+
+
+@pytest.mark.parametrize("text, found", [
+    # A `/*` without its `*/` runs to the end of the file.
+    ('.program p\n/* never closed\n% c-sdk {\n#include "../x.h"\n%}\n', []),
+    # A `;` comment and a .lang_opt line at the end, without a newline.
+    (".program p\n; comment", []),
+    (".program p\n.lang_opt c-sdk x", []),
+    # A block without `%}` and without a final newline runs to the end.
+    ('.program p\n% c-sdk {\n#include "../x.h"', [('"', "../x.h")]),
+    # The file ends in a `;` after the block.
+    ('.program p\n% c-sdk {\n#include "../x.h"\n%}\n;', [('"', "../x.h")]),
+    # A `%` that opens no block.
+    (".program p\n%x\n", [])])
+def test_a_pio_file_is_read_to_its_end(text, found):
+    assert within(5, cp.includes, text, True) == found
+
+
+@pytest.mark.parametrize("text, found", [
+    # `/**/` is a whole comment.
+    ('.program p\n/**/\n% c-sdk {\n#include "../x.h"\n%}\n', True),
+    # A `*` alone closes nothing: the block start is inside the comment.
+    ('.program p\n/* a * b % c-sdk {\n#include "../x.h"\n*/\n%}\n', False),
+    # A block name takes no `%`: the block starts at the second `%`.
+    ('.program p\n% c-sdk % {\n#include "../x.h"\n%}\n', True),
+    # A block start needs a name character between `%` and `{`.
+    ('.program p\n%{\n#include "../x.h"\n%}\n', False)])
+def test_pio_comments_and_block_starts(text, found):
+    assert within(5, cp.includes, text, True) == (
+        [('"', "../x.h")] if found else [])
+
+
+@pytest.mark.parametrize("text, found", [
+    # An empty comment ends at its own `*/`.
+    ('/**/ int a;\n#include "../x.h"\n/* x */\n', True),
+    # A division sign opens no comment.
+    ("#if 2 / __has_include(<a.h>)\n#endif\n", "?"),
+    # A `+` after a digit is no exponent sign; after P it is.
+    ("#if 1+__has_include(<a.h>)\n#endif\n", "?"),
+    ("#if 0x1P+__has_include(<a.h>)\n#endif\n", False),
+    # An empty literal is whole, and two literals side by side are two.
+    ('x = ""; /* s\n#include "../x.h"\n*/\n', False),
+    ('x = "a""/*";\n#include "../x.h"\n/* e */\n', True),
+    ("x = ''; /* s\n#include \"../x.h\"\n*/\n", False),
+    ("x = 'a''/*';\n#include \"../x.h\"\n/* e */\n", True),
+    # CRLF, then an LF: the continuation joins one line, not two.
+    ('#define A \\\r\n\n#include "../x.h"\n', True),
+    # A raw string after three continuations is matched where it stands.
+    ('a\\\nb\\\nc\\\nd R"(x)"\n/* c\n#include "../x.h"\n*/\n', False)])
+def test_comment_literal_and_number_tokens(text, found):
+    want = {True: [('"', "../x.h")], False: [],
+            "?": [("?", "__has_include")]}[found]
+    assert cp.includes(text) == want
+
+
+@pytest.mark.parametrize("readme, found", [
+    # Four backticks open a fence that three do not close.
+    ("````\n# Interface\n````\n", False),
+    ("````\ncode\n   ```\n# Interface\n", False),
+    # A fence closes on an indented fence of the same length.
+    ("```\ncode\n ```\n# Interface\n", True),
+    # A backtick in the info string of an indented fence: no fence.
+    ("   ``` a`b\n# Interface\n", True),
+    # `<!-` and `<!---->`: no comment, and an empty comment.
+    ("<!- x\n# Interface\n", True),
+    ("<!---->\n# Interface\n", True),
+    # `->` does not end a comment.
+    ("<!-- a ->\n# Interface\n-->\n", False)])
+def test_fences_and_comments_end_where_commonmark_ends_them(tmp_path, readme,
+                                                            found):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# Title\n\n" + readme)
+    assert cp.readme_problems(m) == (
+        [] if found else ['wire/README.md has no heading with "Interface"'])
+
+
+@pytest.mark.parametrize("sentence, found", [
+    ("no pin  driver", True), ("no pin\n  driver", True),
+    ("nopin driver", False), ("no pindriver", False)])
+def test_no_pin_driver_takes_white_space_between_its_words(tmp_path,
+                                                           sentence, found):
+    m = module(tmp_path, driver=False)
+    (m / "README.md").write_text("# Interface\nThe module has %s.\n"
+                                 % sentence)
+    assert (cp.readme_problems(m) == []) == found, sentence
+
+
+@pytest.mark.parametrize("text, brand", [
+    ("The kst-tool is supported.\n", "kst"), ("The --kst tool.\n", "kst"),
+    ("KST-compatible.\n", "KST"), ("docs/futaba-notes\n", "futaba")])
+def test_a_brand_next_to_a_hyphen_is_a_brand(tmp_path, text, brand):
+    m = module(tmp_path)
+    (m / "README.md").write_text("# Interface\n" + text)
+    assert cp.readme_problems(m) == [
+        'wire/README.md names %s and has no heading with "Trademark"' % brand]

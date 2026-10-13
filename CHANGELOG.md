@@ -58,10 +58,10 @@ history is in git.
 ### Changed
 
 - `tools/check_protocols.py` checks that a module's `README.md` has an
-  "Interface" heading, a "Trademarks" heading where it names a brand, and
-  the words "no pin driver" where the module has no `rp2350/` folder; the
-  Interface heading and "no pin driver" count outside fenced code blocks and
-  HTML comments only. The Trademarks heading is any heading that contains
+  "Interface" heading, a heading with "Trademark" in it where it names a
+  brand, and the words "no pin driver" where the module has no `rp2350/`
+  folder; the Interface heading and "no pin driver" count outside fenced
+  code blocks and HTML comments only. That heading is any heading that contains
   "trademark", in any case, emphasis and link markup ignored. Brand names
   match anywhere in the file (paths, addresses, code blocks and comments
   included), in any case, with a version suffix (`DShot300`, `S.BUS2`) and
@@ -69,19 +69,23 @@ history is in git.
   `www.futaba.com`, `2kst`), not next to a letter (`KSTART`, `KstSession`).
   An include path
   with a `..` component or an absolute path in a module fails; so does an
-  include the tool cannot resolve (a macro operand or a call of
-  `__has_include` outside a literal; `#ifdef __has_include` passes), a line
+  include the tool cannot resolve (a macro operand, or the name
+  `__has_include` outside a literal, also as the body of a macro; as the
+  operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` it
+  passes), an `#include_next` of anything but a C standard header or, in a
+  C file under `rp2350/`, a pico-sdk header, a line
   of only `#` or `%:`, any trigraph (`??` followed by one of
   `= / ' ( ) ! < > -`) anywhere in the C of the file, a token after an
   include operand, and a NUL byte anywhere in the file.
-  `#include_next`, `#import`, the `%:` digraph, line continuations (LF
+  `#import`, the `%:` digraph, line continuations (LF
   and CRLF, also with blanks between the backslash and the newline), a
   lone CR as a line end, `//` inside a string or a raw string literal, a
   quote without its closing quote, which runs to the line end (a
   backslash before that line end escapes nothing), a number with digit
-  separators (`1'000`; a `'` before a `.` ends it) or an exponent sign
-  (`1e-x`), a leading byte order mark, form feed and vertical tab are
-  read. Each file is read under the literal rules
+  separators (`1'000`; a `'` before a `.`, a `$`, a universal character
+  name or a character outside ASCII ends it), an exponent sign (`1e-x`),
+  `$`, universal character names and characters outside ASCII, a leading
+  byte order mark, form feed and vertical tab are read. Each file is read under the literal rules
   of ISO C11 and C17, gnu11 and gnu17 (raw strings), C23 (digit
   separators), and gnu23 and C++14 or later (both); an include found under
   any of them counts. A line continuation inside a raw string literal is
@@ -89,8 +93,9 @@ history is in git.
   generated header: the `% c-sdk {` blocks after the first `.program`,
   found as pioasm lexes the file (a `;` inside a `/* */` comment ends
   nothing, an empty block name is c-sdk, a lone CR is a character of its
-  line, a block ends only at `%}` in column 0). The CMake include directories and link targets of a module are
-  not checked.
+  line, a block ends only at `%}` in column 0). The CMake include
+  directories and link targets of a module are not checked, and a
+  `__has_include` that a macro pastes together with `##` passes.
 - An arm drives only the outputs of the screen's role (link protocol 4.18).
   ARM on the CONTROL page takes 0, 1 (every output), 0x0002 (throttle
   channels), 0x0004 (surfaces and programming ports) or 0x0006; any other

@@ -28,23 +28,31 @@ This tool reads each module and fails when one of these does not hold:
   line end escapes nothing.  A file is read as UTF-8 bytes with an optional
   byte order mark; CRLF, LF and a lone CR end a line, and form feed and
   vertical tab count as white space in a directive.  An operand that is neither
-  `<...>` nor `"..."` (a macro include) and a call of `__has_include` or
-  `__has_include_next` outside a literal fail, because the tool does not expand
-  macros; `#ifdef __has_include` passes.  A token after the operand fails the
-  include as well.  A line of only `#` or `%:` fails, because a comment across
-  a line break can hide the include that follows.  A trigraph (`??` followed by
-  one of `= / ' ( ) ! < > -`) anywhere in the C, also in a comment or a literal
-  (in a .pio file, in the C written, as below), fails: ISO C11 and C17 replace
-  it before the file is read, so `??/` is a backslash that joins lines and
-  escapes quotes, `??'` is a `^` that removes a quote, and `??=` is a `#`.  A
-  file with a NUL byte fails, so no NUL takes part in a line continuation or a
-  directive.  A file is read under the literal rules of every language it can
-  be compiled as, and an include found under any of them counts: ISO C11 and
-  C17 (no raw strings, no digit separators), gnu11 and gnu17 (raw strings), C23
-  (digit separators), gnu23 and C++14 or later (both). A raw string literal
+  `<...>` nor `"..."` (a macro include) fails, because the tool does not expand
+  macros.  The name `__has_include` or `__has_include_next` outside a literal
+  fails for the same reason, as a call and also as the body of a macro, which
+  GCC evaluates as the call; as the operand of `defined`, `#ifdef`, `#ifndef`,
+  `#elifdef` and `#elifndef` it passes.  A token after the operand fails the
+  include as well.  An `#include_next` fails unless it names a C standard
+  header or, in a C file under rp2350/, a pico-sdk header: it searches the
+  include path after the directory of the file, so it reaches the next file of
+  that name outside the module.  A line of only `#` or `%:` fails, because a
+  comment across a line break can hide the include that follows.  A trigraph
+  (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C, also in a
+  comment or a literal (in a .pio file, in the C written, as below), fails: ISO
+  C11 and C17 replace it before the file is read, so `??/` is a backslash that
+  joins lines and escapes quotes, `??'` is a `^` that removes a quote, and
+  `??=` is a `#`.  A file with a NUL byte fails, so no NUL takes part in a line
+  continuation or a directive.  A file is read under the literal rules of every
+  language it can be compiled as, and an include found under any of them
+  counts: ISO C11 and C17 (no raw strings, no digit separators), gnu11 and
+  gnu17 (raw strings), C23 (digit separators), gnu23 and C++14 or later
+  (both).  A raw string literal
   (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
   a number is one preprocessing number, through digit separators (`1'000`, but
-  not a `'` before a `.`) and exponent signs (`1e-x`). The C of a .pio file is
+  not a `'` before a `.`, a `$`, a universal character name or a character
+  outside ASCII), exponent signs (`1e-x`), `$`, universal character names and
+  characters outside ASCII (`1$'a` in C23).  The C of a .pio file is
   the text pioasm 2.3.0 writes into the header it generates: the lines of each
   `% c-sdk {` block after the first `.program`, in order.  The blocks are found
   as pioasm's lexer finds them, on the file as written: a `;` or `//` comment
@@ -85,6 +93,10 @@ module are not checked.  A module that adds a project directory with
 `target_include_directories` or links a project library other than an
 `rcbench_` one passes, and a header found there can shadow a module header
 of the same name.  Only `REQUIRES` and `rcbench_` names are read.
+
+Current limitation: a `__has_include` that a macro pastes together with `##`
+(`#define CAT(a, b) a##b`, then `#if CAT(__has_, include)("../x.h")`) passes,
+and GCC 13 evaluates it as the call.
 
 The SPDX (Software Package Data Exchange) line of the .c and .h files under
 protocols/ is held by tools/check_docs.py.
@@ -131,7 +143,10 @@ SDK_RE = re.compile(r"^(pico\.h|pico/.+\.h|hardware/.+\.h)$")
 WS = r"[ \t\f\v]"
 DIRECTIVE = (r"^" + WS + r"*(?:#|%:)" + WS
              + r"*(?:include_next|include|import)\b")
-INCLUDE_RE = re.compile(DIRECTIVE + WS + r"*(.*)$", re.M)
+# An include directive: its word (group 1) and its operand (group 2).
+INCLUDE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS
+                        + r"*(include_next|include|import)\b" + WS
+                        + r"*(.*)$", re.M)
 # A line with nothing but `#` or `%:` (a null directive, or a directive
 # whose name a comment across a line break has cut off).
 BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
@@ -152,16 +167,25 @@ RAW_BODY_RE = re.compile(
 # line end ends the literal there.
 STRING_LITERAL = r'"(?:\\[^\n]|[^"\\\n])*"?'
 CHAR_LITERAL = r"'(?:\\[^\n]|[^'\\\n])*'?"
+# A character that continues a GCC identifier or preprocessing number
+# besides a letter, digit and `_`: `$`, a universal character name and a
+# character outside ASCII.
+IDENTIFIER_CHAR = (r"(?:[\w$]|[^\x00-\x7f]|\\u[0-9A-Fa-f]{4}"
+                   r"|\\U[0-9A-Fa-f]{8})")
 
 
 def number_re(separators: bool) -> str:
     """A preprocessing number: a digit, after an optional `.`, then digits,
-    letters, `_`, `.` and an exponent sign after e, E, p or P; with digit
-    separators (C23, C++14) also a `'` before a digit, letter or `_`.  A
-    `'` before a `.` ends the number, as GCC lexes it: `1'.x'` is `1` and
-    the character literal `'.x'`."""
+    letters, `_`, `.`, an exponent sign after e, E, p or P, `$`, universal
+    character names and characters outside ASCII, as GCC's lex_number reads
+    it; with digit separators (C23, C++14) also a `'` before a digit, letter
+    or `_`.  A `'` before a `.`, a `$`, a universal character name or a
+    character outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1`
+    and the character literal `'.x'`, and in C23 `1$'a'` is the number
+    `1$'a`, then a `'` that opens a character literal."""
     sep = "'?" if separators else ""
-    return r"(?<!\w)\.?\d(?:[eEpP][+-]|" + sep + r"\w|\.)*"
+    return (r"(?<![\w$])\.?\d(?:[eEpP][+-]|" + sep + r"[A-Za-z0-9_]|\.|"
+            + IDENTIFIER_CHAR + ")*")
 
 
 # The literal rules of the languages a module file is compiled as, as (raw
@@ -188,7 +212,17 @@ def source_token_re(raw: bool, separators: bool) -> re.Pattern:
 SOURCE_TOKEN_RES = tuple(source_token_re(raw, sep)
                          for raw, sep in LITERAL_VIEWS)
 OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
-HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\s*\(")
+# The name `__has_include` or `__has_include_next` anywhere outside a
+# literal: a call, and also a macro that stands for it (`#define P
+# __has_include`, then `#if P("x.h")`), which GCC evaluates as the call.
+HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
+# What tests the name as a macro and includes nothing: `defined`, with or
+# without a parenthesis, before it, and `#ifdef`, `#ifndef`, `#elifdef` and
+# `#elifndef` before it on its line.
+DEFINED_BEFORE_RE = re.compile(r"\bdefined\s*(?:\(\s*)?\Z")
+IFDEF_BEFORE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS
+                             + r"*(?:ifdef|ifndef|elifdef|elifndef)" + WS
+                             + r"+\Z")
 # A line continuation: a backslash, then spaces, tabs, form feeds or
 # vertical tabs, then a newline, as GCC and Clang join it.
 CONTINUATION_RE = re.compile(r"\\[ \t\f\v]*\r?\n")
@@ -407,26 +441,37 @@ def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
             continue
         hit = INCLUDE_RE.match(line)
         if hit:
-            operand = hit.group(1).strip()
+            operand = hit.group(2).strip()
             op = OPERAND_RE.match(operand)
-            if op:
+            if op and hit.group(1) == "include_next":
+                found.append(("next", operand))
+            elif op:
                 found.append(("<", op.group(1)) if op.group(1) is not None
                              else ('"', op.group(2)))
             else:
                 found.append(("?", operand))
     for use in HAS_INCLUDE_RE.finditer(bare):
-        found.append(("?", use.group(0)[:-1].strip()))
+        start = use.start()
+        line_start = bare.rfind("\n", 0, start) + 1
+        if (DEFINED_BEFORE_RE.search(bare, max(0, start - 80), start)
+                or IFDEF_BEFORE_RE.match(bare[line_start:start])):
+            continue
+        found.append(("?", use.group(0)))
     return found
 
 
 def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
     """(form, name) for every include directive of @p text outside a C
     comment: form is `<` or `"`, or `?` when the operand is neither (a
-    macro) and name is the operand as written.  A line of only `#` or `%:`
+    macro) and name is the operand as written; for `#include_next` with a
+    `<...>` or `"..."` operand, form is `next` and name is the operand with
+    its delimiters.  A line of only `#` or `%:`
     is form `#`, each trigraph of the C is form `??` with the trigraph as
     name, a NUL byte anywhere in @p text is form `NUL` with the number of
-    the line of the first one (CRLF, LF and a lone CR end a line), and a
-    call of `__has_include` outside a literal is form `?`.  The text is
+    the line of the first one (CRLF, LF and a lone CR end a line), and the
+    name `__has_include` or `__has_include_next` outside a literal, except
+    as the operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and
+    `#elifndef`, is form `?`.  The text is
     read under each set of literal rules in LITERAL_VIEWS, and an entry
     found under any of them is listed, in the order of the first view that
     finds it, as often as the view that finds it most often.  @p pio is
@@ -514,6 +559,16 @@ def include_problems(module: pathlib.Path) -> list[str]:
                     f"{rel} includes {name}: an include the check cannot "
                     "resolve (a macro or __has_include)")
                 continue
+            if form == "next":
+                inner = name[1:-1]
+                if not (inner in C_STANDARD or (
+                        in_driver and SDK_RE.match(inner) is not None)):
+                    problems.append(
+                        f"{rel} has #include_next {name}: it includes the "
+                        "next file of that name on the search path, outside "
+                        "the module")
+                    continue
+                form, name = name[0], inner
             if name in C_STANDARD:
                 continue
             parts = re.split(r"[/\\]", name)

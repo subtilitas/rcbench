@@ -225,10 +225,15 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   A module without a pin driver says "no pin driver" in its `README.md`.
   `tools/check_protocols.py` checks, per module: the parts above; that no
   include names a path with a `..` component or an absolute path, and that
-  `#include_next`, `#import` and `%:include` are read like `#include`; a
-  macro include and `__has_include` fail, because the tool does not expand
-  macros; a call of `__has_include` outside a literal fails, and
-  `#ifdef __has_include` passes; a line of only `#` or `%:`, any trigraph
+  `#import` and `%:include` are read like `#include`; an `#include_next`
+  fails unless it names a C standard header or, in a C file under
+  `rp2350/`, a pico-sdk header, because it reaches the next file of that
+  name on the include path, outside the module; a macro include fails,
+  because the tool does not expand macros, and so does a token after an
+  include operand; the name `__has_include` or `__has_include_next`
+  outside a literal fails, as a call and as the body of a macro, and passes
+  as the operand of `defined`, `#ifdef`, `#ifndef`, `#elifdef` and
+  `#elifndef`; a line of only `#` or `%:`, any trigraph
   (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C (in a
   `.pio` file, the C pioasm writes) and a NUL byte anywhere in the file
   fail, because they can hide an include (ISO C11 and C17 read `??/` as a
@@ -243,7 +248,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   gnu23 and C++14 or later (both), and an include found under any of them
   counts; a raw string literal is one token, with the line continuations
   inside it kept, and a number runs through digit separators (`1'000`,
-  but not a `'` before a `.`) and exponent signs (`1e-x`); the C of a
+  but not a `'` before a `.`, a `$`, a universal character name or a
+  character outside ASCII), exponent signs (`1e-x`), `$`, universal
+  character names and characters outside ASCII (`1$'a` in C23); the C of a
   `.pio` file is what pioasm 2.3.0
   writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
@@ -265,7 +272,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   `ASSERTED` table and every listed one exists. Assertions under `test/`
   are not checked. The CMake include directories and link targets of a
   module are not checked: only `REQUIRES` and `rcbench_` library names are
-  read. The SPDX line of the module's `.c` and `.h` files is checked by
+  read. A `__has_include` that a macro pastes together with `##`
+  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call.
+  The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
   the module: link pages, the binding of an output to a pin, arming, STOP,
