@@ -235,7 +235,9 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   as the operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef`, and as
   the operand of a `defined` term (`defined NAME`, `defined(NAME)`) on an
   `#if` or `#elif` line that holds nothing but such terms, white space,
-  `(`, `)`, `!`, `&` and `|`; with any other token on that line the name
+  `(`, `)`, `!`, `&` and `|`, the line being the directive's line as GCC
+  reads it, which a comment or raw string literal across a line break
+  continues; with any other token on that line the name
   fails (`#if X || defined(__has_include)`), because a macro can take
   `defined` into an argument and paste it to another name, and it fails
   after a `defined` joined to the identifier before it (`$defined`); a
@@ -251,19 +253,25 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   a backslash before that line end escaping nothing, as GCC reads them;
   each file is
   read under the literal rules of ISO C11 and C17 (no raw strings, no digit
-  separators), gnu11 and gnu17 (raw strings), C23 (digit separators), and
-  gnu23 and C++14 or later (both), and an include found under any of them
-  counts; a raw string literal is one token, with the line continuations
+  separators), gnu11 and gnu17 (raw strings), C23 (digit separators),
+  C++14 to C++20 (both), and gnu23, C++23 and gnu++14 or later (both, and
+  delimited and named universal character names), and an include found
+  under any of them counts; a raw string literal is one token, with the line continuations
   inside it kept, and a number runs through digit separators (`1'000`,
   but not a `'` before a `.`, a `$`, a universal character name or a
   character outside ASCII), exponent signs (`1e-x`), `$`, universal
   character names (`\u00e9`, `\U000000E9`, and in gnu23, C++23 and
   gnu++14 or later also `\u{e9}` and
-  `\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters outside ASCII
-  (`1$'a` in C23), and starts at a digit after any character but a letter,
-  a digit, `_` and `$` (in C23 `×1'a` is a number; `é1` is an identifier); the C of a
-  `.pio` file is what pioasm 2.3.0
-  writes into the generated header, the `% c-sdk {` blocks after the first
+  `\N{LATIN SMALL LETTER E WITH ACUTE}`) and the characters outside
+  ASCII that GCC 13 takes into an identifier, the ranges of ISO C11
+  Annex D.1 (`1$'a` in C23), and starts at a digit after any character but
+  a letter, a digit, `_`, `$` and a character of these ranges, and in
+  gnu23, C++23 and gnu++14 or later not after a delimited or named
+  universal character name (`é1`, `€1` and `\u{e9}1` are identifiers); a
+  character outside ASCII and outside the ranges ends a number and a name,
+  and a number or raw string literal starts after it, as in C (in C23
+  `×1'a` is a number, and `ⸯR"(...)"` is a raw string in gnu11); the C of
+  a `.pio` file is what pioasm 2.3.0 writes into the generated header, the `% c-sdk {` blocks after the first
   `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
   the line end, a `;` inside a `/* */` comment ends nothing, a block name
   is trimmed of spaces and tabs and an empty one is c-sdk, a lone CR is a
@@ -284,22 +292,7 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   are not checked. The CMake include directories and link targets of a
   module are not checked: only `REQUIRES` and `rcbench_` library names are
   read. A `__has_include` that a macro pastes together with `##`
-  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call. A
-  digit after `€` or `·` starts a number, while GCC 13 reads both as
-  identifier characters, so `€1'a' /* '` fails the include after it, which
-  GCC reads as part of a comment. A delimited or named universal character
-  name (`\u{e9}`, `\N{...}`) continues a number under every set of
-  literal rules, also in C23 and C++14 to C++20 without GNU extensions,
-  where GCC 13 ends the number before it: after a digit separator earlier
-  on the line, `0'0 1\u{e9}'x /* '` hides the include on the next line
-  from the tool, and GCC 13 with `-std=c++17` reads it. A comment or raw
-  string literal across a line break ends the line for the `defined` rule,
-  while GCC 13 continues the directive: in a function-like macro with the
-  parameters `if` and `defined`, a body line `*/ #if ) defined
-  __has_include` after `DROP( /*` passes, and GCC 13 evaluates the call
-  when the macro is expanded in an `#if`. U+2E2F (`ⸯ`) before a digit
-  counts as a letter, while GCC 13 starts a number after it in C23:
-  `ⸯ1'a' /* '` hides the include on the next line from the tool.
+  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call.
   The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
