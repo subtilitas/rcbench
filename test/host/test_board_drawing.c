@@ -320,7 +320,7 @@ TEST_CASE(a_length_is_scaled_and_rounded_from_its_own_value)
 #define CW 500
 #define CH 206
 
-static gfx_color_t px(const gfx_canvas_t *c, int x, int y)
+static gfx_color_t pixel_at(const gfx_canvas_t *c, int x, int y)
 {
     return c->pixels[(size_t)y * (size_t)c->stride + (size_t)x];
 }
@@ -345,23 +345,23 @@ TEST_CASE(the_drawing_is_drawn_inside_its_box_with_every_pad_ring)
         CHECK(link_drawing_pad_at(&d, i, &p));
         const int x = board_drawing_scale(p.x, CW, d.width);
         const int y = board_drawing_scale(p.y, CH, d.height);
-        CHECK_EQ(px(&c, x, y), hole);
-        CHECK_EQ(px(&c, x + 5, y), d.ring);
+        CHECK_EQ(pixel_at(&c, x, y), hole);
+        CHECK_EQ(pixel_at(&c, x + 5, y), d.ring);
         /* Pad 1's ring is square: its corner is ring, a round one's not. */
         const int r = board_drawing_scale(d.ring_r, CW, d.width);
-        CHECK_EQ(px(&c, x + r, y + r) == d.ring, p.pad == 1u);
+        CHECK_EQ(pixel_at(&c, x + r, y + r) == d.ring, p.pad == 1u);
     }
     /* The board colour where nothing is drawn over it: the middle of the
      * left end, between USB-C's body and the rows. */
-    CHECK_EQ(px(&c, 2, CH / 2 - 40), d.colour);
+    CHECK_EQ(pixel_at(&c, 2, CH / 2 - 40), d.colour);
     /* And the outline's rounded corner leaves the canvas behind it. */
-    CHECK_EQ(px(&c, 0, 0), 0x0000u);
+    CHECK_EQ(pixel_at(&c, 0, 0), 0x0000u);
 
     /* Drawn into a box anywhere on the canvas, it moves whole. */
     gfx_clear(&c, 0x0000u);
     board_drawing_render(&c, &d, 0, 0, 250, 103, hole);
     CHECK_EQ(guard_canvas_touched(&g), 0);
-    CHECK_EQ(px(&c, 300, 50), 0x0000u);
+    CHECK_EQ(pixel_at(&c, 300, 50), 0x0000u);
 }
 
 TEST_CASE(a_box_too_small_or_nothing_to_draw_writes_nothing_off_it)
