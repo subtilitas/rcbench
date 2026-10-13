@@ -1444,6 +1444,37 @@ TEST_CASE(every_state_renders_inside_its_canvas)
 
 /* Asked about what is not there, the queries answer nothing; a key held
  * down is drawn pressed and acts on nothing when the finger leaves it. */
+TEST_CASE(a_tall_board_is_drawn_to_scale_and_not_stretched)
+{
+    int w = 0, h = 0;
+    /* The Pico outline: 51.00 x 21.00 mm fits at full width. */
+    picker_board_fit(5100u, 2100u, &w, &h);
+    CHECK_EQ(w, 500);
+    CHECK_EQ(h, 205);
+    /* Exactly at the cap: 500 x 240. */
+    picker_board_fit(5000u, 2400u, &w, &h);
+    CHECK_EQ(w, 500);
+    CHECK_EQ(h, 240);
+    /* Taller than the cap: the width shrinks with the height. */
+    picker_board_fit(5000u, 5000u, &w, &h);
+    CHECK_EQ(w, 240);
+    CHECK_EQ(h, 240);
+    picker_board_fit(2100u, 5100u, &w, &h);
+    CHECK_EQ(h, 240);
+    CHECK_EQ(w, 98);
+    /* The aspect holds to a pixel of rounding. */
+    const long lhs = (long)w * 5100L, rhs = (long)h * 2100L;
+    CHECK(lhs <= rhs && rhs - lhs < 5100L);
+    /* A very tall outline still draws one pixel wide. */
+    picker_board_fit(1u, 60000u, &w, &h);
+    CHECK_EQ(h, 240);
+    CHECK_EQ(w, 1);
+    /* No outline: the full box. */
+    picker_board_fit(0u, 0u, &w, &h);
+    CHECK_EQ(w, 500);
+    CHECK_EQ(h, 240);
+}
+
 TEST_CASE(queries_past_the_end_answer_nothing)
 {
     fresh();
@@ -1502,6 +1533,7 @@ int main(void)
     RUN(switching_the_protocol_keeps_the_pins_and_writes_nothing);
     RUN(the_pins_table_names_each_pins_channel_and_pad);
     RUN(every_state_renders_inside_its_canvas);
+    RUN(a_tall_board_is_drawn_to_scale_and_not_stretched);
     RUN(queries_past_the_end_answer_nothing);
     return test_summary("picker_screen");
 }

@@ -257,10 +257,32 @@ static bool pad_xy(uint8_t pad, int *px, int *py);
  */
 
 /*
- * The box the board occupies: BOARD_W wide and whatever height the
- * outline's aspect gives, the drawing's outline or else the shape's.  The
- * drawing is drawn to scale into it; its outline is the shape's whenever
- * the board has one (board_drawing_agrees()).
+ * The size an outline of @p ow x @p oh draws at: BOARD_W wide and the
+ * height its aspect gives, or, for an outline taller than BOARD_MAX_H at
+ * that width, BOARD_MAX_H high and the width its aspect gives.  Either way
+ * the board is to scale and never stretched.
+ */
+void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h)
+{
+    int bw = BOARD_W;
+    int bh = BOARD_MAX_H;
+    if (ow != 0u && oh != 0u) {
+        bh = (int)(((uint32_t)BOARD_W * oh) / ow);
+        if (bh > BOARD_MAX_H) {
+            bh = BOARD_MAX_H;
+            bw = (int)(((uint32_t)BOARD_MAX_H * ow) / oh);
+            if (bw < 1) { bw = 1; }
+        }
+    }
+    *w = bw;
+    *h = bh;
+}
+
+/*
+ * The box the board occupies, from the drawing's outline or else the
+ * shape's, centred on the screen.  The drawing is drawn to scale into it;
+ * its outline is the shape's whenever the board has one
+ * (board_drawing_agrees()).
  */
 static void board_box(int *x, int *y, int *w, int *h)
 {
@@ -274,15 +296,9 @@ static void board_box(int *x, int *y, int *w, int *h)
         ow = sh->width_cmm;
         oh = sh->height_cmm;
     }
-    int bh = BOARD_MAX_H;
-    if (ow != 0u) {
-        bh = (int)(((uint32_t)BOARD_W * oh) / ow);
-        if (bh > BOARD_MAX_H) { bh = BOARD_MAX_H; }
-    }
-    *w = BOARD_W;
-    *h = bh;
-    *x = (SCREEN_W - BOARD_W) / 2;
-    *y = (SCREEN_H - bh) / 2;
+    picker_board_fit(ow, oh, w, h);
+    *x = (SCREEN_W - *w) / 2;
+    *y = (SCREEN_H - *h) / 2;
 }
 
 /* The board itself: the coprocessor's drawing, or its outline and pads. */

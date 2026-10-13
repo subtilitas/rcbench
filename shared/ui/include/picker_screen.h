@@ -227,6 +227,13 @@ bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
 typedef void (*picker_drawing_fn)(uint16_t board);
 void picker_screen_set_drawing_source(picker_drawing_fn fn);
 
+/**
+ * The size in pixels a board outline of @p ow x @p oh (any unit) draws at:
+ * 500 wide and the height its aspect gives, or, when that is taller than
+ * 240, 240 high and the width its aspect gives.  A zero side gives 500 x 240.
+ */
+void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
+
 /** Whether the board is drawn from the coprocessor's drawing. */
 bool picker_screen_has_drawing(void);
 
