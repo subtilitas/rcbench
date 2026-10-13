@@ -107,9 +107,9 @@ one:
 |---|---|
 | Panel end | **GPIO6**, on **J8** (a three-pin header carrying 3V3, GND, GPIO6) |
 | Coprocessor end | **GP3** |
-| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the coprocessor is healthy: it disarms after 150 ms of silence. What is uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
+| Through | the retriggerable monostable, once one exists. It is on no board, so the bring-up bench runs a direct wire and has no hardware backstop. The wire covers a panel that stops beating while the coprocessor is healthy: it switches to SAFE after 150 ms of silence. What is uncovered is a panel that stops beating while the coprocessor cannot act -- nothing then removes the outputs, and that is what the monostable would do without any firmware |
 
-Without this wire the coprocessor refuses every arm, and that is the interlock
+Without this wire the coprocessor refuses every switch to ARMED, and that is the interlock
 working, not a fault.
 
 **Numbers it is judged against:**
@@ -120,10 +120,10 @@ working, not a fault.
 | Gap accepted | 4 ms to 150 ms |
 | Edges before it counts as alive | 4 |
 
-So the line must be edging for roughly **80 ms** before an arm can succeed.
+So the line must be edging for roughly **80 ms** before a switch to ARMED can succeed.
 
 **On the scope, at GP3:** a square wave, edge to edge 20 ms. If the gap ever
-exceeds 150 ms the coprocessor drops it and the next arm is refused.
+exceeds 150 ms the coprocessor drops it and the next switch to ARMED is refused.
 
 **Where the edges come from:** the panel's control task, inside its poll loop.
 Anything that stalls that task stops the heartbeat — which is why nothing
@@ -156,11 +156,11 @@ On the panel console, in this order:
   through, so the panel stops for the length of each. Settings saves
   already do this.
 - **The write waits for a safe bench.** It takes one sector per 5 ms control
-  pass, and only while the bench is disarmed with the supply off. Armed or
+  pass, and only while the bench is SAFE with the supply off. ARMED or
   with the supply on, `photograph waits for a disarmed bench with the supply
-  off` appears once on the console and `kept` follows after the disarm.
+  off` appears once on the console and `kept` follows after the switch to SAFE.
 - **It must not disturb the heartbeat.** The transfer is sliced and the flash
-  write is held back while armed for exactly that reason. **If the heartbeat
+  write is held back while ARMED for exactly that reason. **If the heartbeat
   drops during this minute, stop and write it down** — that is the most
   important thing this first run can find.
 
@@ -175,17 +175,17 @@ outline instead.
 
 Nothing is wired to an output yet. This step tests the interlock, not a pin.
 
-1. **Heartbeat wire removed** → arming must be **refused**. The coprocessor
+1. **Heartbeat wire removed** → switching to ARMED must be **refused**. The coprocessor
    answers `NOT_ARMED` because `!beat.alive`. The panel shows the refusal.
-2. **Heartbeat wire fitted, panel armed** → the coprocessor accepts.
-3. **Pull the heartbeat wire while armed** → it must fail safe within
+2. **Heartbeat wire fitted, panel ARMED** → the coprocessor accepts.
+3. **Pull the heartbeat wire while ARMED** → it must fail safe within
    **150 ms**.
-4. **Press STOP** → latches. It must take an explicit arm to leave, not a
+4. **Press STOP** → latches. It must take an explicit ARM to leave, not a
    link that recovers.
-5. **Pull the CAN wire while armed** → the coprocessor gives up after
+5. **Pull the CAN wire while ARMED** → the coprocessor gives up after
    **200 ms**; the panel escalates after **1 s**.
 6. **Cover the touch panel / let touch die** → after **500 ms** of silence
-   arming is blocked.
+   switching to ARMED is blocked.
 
 Every one of these is host-tested. **None of the numbers below has been seen on an instrument:** no scope or analyser has read any pulse width, frame period or reply delay in this tree.
 
@@ -232,9 +232,9 @@ position it was given and says it again every **100 ms** (`SERVO_HOLD_MS`),
 against the coprocessor's **500 ms** (`OUT_DEFAULT_TIMEOUT_MS`), so a servo
 stays where it was put. **RELEASE** returns the surfaces to centre; it does
 not clear the slot and the pin keeps pulsing. What stops the edges is a
-disarm, a STOP, or leaving the screen, which disarms. Check on the scope that
+switch to SAFE, a STOP, or leaving the screen, which switches to SAFE. Check on the scope that
 RELEASE moves the pulse to the middle of the channel's travel and that a
-disarm is what stops it.
+switch to SAFE is what stops it.
 
 A channel nobody is refreshing does still go to rest after 500 ms, which is
 what happens to a bound pin the servo screen is not holding.
@@ -316,7 +316,7 @@ voltage, 0x02 current, 0x20 the INA228's, 0x40 the INA228's totals).
 
 ### 8.1 The parts answer
 
-Power everything, nothing armed.
+Power everything, nothing ARMED.
 
 **Good:** `flags 0x0133`, `present 0x0021`, `ids 0x228x 0x3220`, `errors`
 not rising between two lines.
@@ -353,11 +353,11 @@ when CH1 passes 1.638 A, and CH1's current is then a bound, not a value.
 
 ### 8.4 A run: peaks and totals
 
-Arm on MOTOR & ESC and hold a steady current for 60 s, then disarm.
+Press ARM on MOTOR & ESC and hold a steady current for 60 s, then switch to SAFE.
 
 **Good:** `bench flags` reads 0x63 (with 0x04 and 0x08 too when a
 bidirectional ESC answers). `mAh` counts current × time: 2.00 A for 60 s
-is 33 mAh. A new arm starts charge and energy from 0.
+is 33 mAh. A new switch to ARMED starts charge and energy from 0.
 The MOTOR & ESC screen shows the INA228's voltage and current.
 
 **Write down:** current, time and the charge reached, and the peaks the
@@ -365,13 +365,13 @@ panel shows against the scope or meter.
 
 ### 8.5 A lead pulled mid-run
 
-Armed, pull the MATEK's SDA for about 5 s, then plug it back.
+While ARMED, pull the MATEK's SDA for about 5 s, then plug it back.
 
 **Good:** within about 6 ms `flags` loses 0x0001 and keeps 0x0002; `bench
 flags` reads 0x20: the INA228 is still the source, its fields empty, not
-the ESC's numbers; `errors` rises; the bench stays armed. About 1 s after
-the lead is back, 0x0001 returns, and 0x40 stays clear until the next arm.
-Disarmed with the lead out, `bench` carries the ESC's telemetry again.
+the ESC's numbers; `errors` rises; the bench stays ARMED. About 1 s after
+the lead is back, 0x0001 returns, and 0x40 stays clear until the next switch to ARMED.
+With the bench SAFE and the lead out, `bench` carries the ESC's telemetry again.
 
 ### 8.6 A stuck bus
 
@@ -387,7 +387,7 @@ how long the parts took to come back.
 
 ### 8.7 A save while reading
 
-Disarmed, with both parts reading, tick a pin on the OUTPUTS screen: the
+While SAFE, with both parts reading, tick a pin on the OUTPUTS screen: the
 binding is saved.
 
 **Good:** the console prints `outputs saved, record n, program window N
@@ -534,7 +534,7 @@ pressed, with no Enter.
 4. Noise, no servo: with no servo connected and the supply's output on at
    6.00 V, press `t`. 10 s later the console prints a line starting `$Z`.
    Close PuTTY; this log is `noise.log`.
-5. Servo at rest: new log file. Connect the servo, arm, leave it at the
+5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
    centre, supply on at 4.80 V. Press `t` and wait for the `$Z` line.
 6. Moves, in the same log: on the SERVO screen's TEST page set LENGTH BY
    to MOVEMENTS, MOVEMENTS 20, DWELL 1000 ms, STEP 4.8 V on and every
@@ -656,7 +656,7 @@ answer whether an arrival is the horn's.
 
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
-1. SETUP → INTERFACES: `AS5600` ON, with the bank disarmed. On the SERVO
+1. SETUP → INTERFACES: `AS5600` ON, with the bank SAFE. On the SERVO
    screen's DUT page, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `BENCHnnn.CSV` from the SD card.
@@ -717,15 +717,15 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
 
 | Symptom | Look here first |
 |---|---|
-| Arm refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150 ms. Scope GP3. |
-| Arm refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
+| Switch to ARMED refused, wire fitted | Heartbeat not edging 4 times yet, or gap over 150 ms. Scope GP3. |
+| Switch to ARMED refused, no obvious reason | Touch dead for 500 ms blocks it. Touch the panel. |
 | Link up, screen offers no pins | The board's catalogue did not arrive. Console says which page failed. |
 | Heartbeat drops in the first minute | **The artwork transfer or the flash keeper.** See §4. |
 | Display freezes briefly | A flash write. Expected while the photograph is kept, once per 4 kB sector erased or written. |
 | Coprocessor does not boot after flashing | Image past 4 MB. Check the size line from §1. |
 | Panel boots but no `boardart` partition | Flashed app-only over an old table. Merge-bin at offset 0. |
-| Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is armed |
-| Pulses stop altogether | Not the timeout. Something released the pin, disarmed, or stopped the bench |
+| Output goes to mid-travel after ½ s | Working as intended — nothing wrote to that channel, so it went to its rest: mid-travel for a servo, zero for a motor. The pulses continue while the bench is ARMED |
+| Pulses stop altogether | Not the timeout. Something released the pin, switched the bench to SAFE, or stopped the bench |
 | `sense flags` without 0x0100, a part enabled | The I2C block did not open on those pins. They must be one block's SDA and SCL: SDA's GPIO number mod 4 is 0 or 2, SCL the next |
 | `sense flags` 0x0200 that stays | SDA or SCL held low: an unpowered module clamping the bus, a missing pull-up, or a short |
 | `sense present 0x0000` with the bus open | Nothing answers: pull-ups missing, modules unpowered, or SDA and SCL swapped |
@@ -741,7 +741,7 @@ newest and least proven things are all mine and all only compiler-checked:
 The first two are inert on a coprocessor that reports no photograph, which is
 the quickest way to rule them out. The third is inert with no card in the
 slot. With a card it appends a line to `RCBENCH.LOG` whenever a fault is
-raised, armed or not; the run file is what waits for an arm, and for the
+raised, ARMED or not; the run file is what waits for a switch to ARMED, and for the
 first row after it.
 
 ---
