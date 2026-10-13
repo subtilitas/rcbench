@@ -266,8 +266,9 @@ Zeile den Rest.
 
 ![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
 
-TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an. Dabei ist der Prüfstand gesichert
-(DISARMED) und der Ausgang des Netzteils aus.
+TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
+gespeichert wird bei gesichertem Prüfstand und ausgeschaltetem Ausgang des
+Netzteils.
 
 ![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
 
