@@ -11,6 +11,8 @@ import { SETUPS, cellOf, openCase } from './setups.ts';
 for (const setup of SETUPS) {
   const { name } = setup;
   test(`${name}: the Tab key walks every control`, async ({ page }, info) => {
+    // The largest setup holds the most stops, and walks them forth and back: 25 s to 33 s on a CI runner.
+    test.slow(name === 'largest');
     await openCase(page, setup);
     const walk = await keyboardWalk(page, { back: name === 'largest' });
     expect(walkProblems(walk)).toEqual([]);
@@ -45,6 +47,8 @@ for (const setup of SETUPS) {
   });
 
   test(`${name}: no control is hidden under the bottom bar while it has the focus`, async ({ page }) => {
+    // 2 walks over the stops of the largest setup: up to 33 s on a CI runner.
+    test.slow(name === 'largest');
     await openCase(page, setup);
     expect(hiddenStops(await keyboardWalk(page))).toEqual([]);
     await page.locator(SEL.ownSummary).click();

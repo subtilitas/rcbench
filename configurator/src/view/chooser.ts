@@ -4,7 +4,7 @@
 
 import type {
   Catalogue, FunctionId, Lang, OptionKey, Options, Part, PartId, PowerSource, ResolvedFunction, ResolvedPart, Selection,
-  Setup, Text,
+  Setup, SimSettings, Text,
 } from '../../contract.ts';
 import { alwaysOn, groups, removalEffect, removalIsPlain } from '../core.ts';
 import type { Deselect, Group } from '../core.ts';
@@ -24,6 +24,8 @@ export type View = {
   options: Options;
   /** The visitor's own selection: the ticks the hash stores. */
   selection: Selection;
+  /** The values of the motor simulator. The default when absent. */
+  sim?: SimSettings;
   /** A removal that waits for "remove" or "keep". */
   pending?: Pending | null;
   /** The effect of the last function the visitor took out of the selection. */

@@ -178,5 +178,11 @@
   "bad-id-h-owned": [1,2,3,4,11,12,13,15,38,39,40,41,42,43,44,45,47],
   "bad-id-h-brought": [1,2,3,4,7,8,9,10],
   "bad-id-h-malformed": [1,2,3,4],
-  "bad-version-h-alone": [1,2,3,4]
+  "bad-version-h-alone": [1,2,3,4],
+  "page-m-sim": [1,2,3,4],
+  "page-m-tap-de": [1,2,3,4,11,12,13,14,15,48,49,50,51,52,53],
+  "page-m-without-sim": [1,2,3,4,7,8,9,10],
+  "hand-m-defaults": [1,2,3,4],
+  "bad-id-m-unknown": [1,2,3,4],
+  "bad-id-m-twice": [1,2,3,4]
 }

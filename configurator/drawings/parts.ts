@@ -328,8 +328,8 @@ function batt(d: Dwg): void {
 // ---------------------------------------------------------------- motor simulator
 function sim(d: Dwg): void {
   const A = [150, 62], B = [62, 196], C = [238, 196];
-  const bands: Array<[number, string]> = [[0.2, '#e2c21f'], [0.34, '#7d3fb0'], [0.48, '#6b4423'], [0.8, '#c9a54a']];
-  const o = { len: 78, wd: 20, colour: '#4f93c8', bands };
+  // No colour bands: the visitor chooses the resistance on the page, and the drawing names no value.
+  const o = { len: 78, wd: 20, colour: '#4f93c8' };
   d.add(d.axial(A[0], A[1], B[0], B[1], o), d.axial(B[0], B[1], C[0], C[1], o), d.axial(C[0], C[1], A[0], A[1], o));
   const stub = (p: number[], q: number[]): string => d.bare(p[0]!, p[1]!, q[0]!, q[1]!);
   const eA = [150, 28], eB = [30, 214], eC = [270, 214];
@@ -663,7 +663,10 @@ export type Entry = {
   native?: Record<string, string>;
   /** Pads carry the print of the breakout board. */
   breakout?: boolean;
-  /** Title of a drawing whose part is not in the catalogue. */
+  /**
+   * Title of a drawing whose part is not in the catalogue, or of a drawing
+   * that shows no value of its part where the name of the part states values.
+   */
   name?: Text;
   desc: Text;
 };
@@ -701,7 +704,9 @@ export const LIST: Entry[] = [
     desc: T('Illustration of a plug-in DC supply with a plus and a minus lead. No product is chosen.', 'Illustration einer steckbaren DC-Versorgung mit Plus- und Minusleitung. Kein Produkt ist gewählt.') },
   { file: 'batt', part: 'batt', pfx: 'bat', w: 290, h: 200, draw: batt,
     desc: T('Illustration of a battery pack with a plus and a minus lead.', 'Illustration eines Akkupacks mit Plus- und Minusleitung.') },
+  // The name of the part states the resistance and the rating a visitor chooses; the drawing shows neither.
   { file: 'sim', part: 'sim', pfx: 'sim', w: 300, h: 264, draw: sim,
+    name: T('Motor simulator, self-built: 3 resistors in delta', 'Motorsimulator, selbst gebaut: 3 Widerstände im Dreieck'),
     desc: T('Illustration of the motor simulator: 3 resistors soldered into a triangle with corners A, B and C.', 'Illustration des Motorsimulators: 3 Widerstände zu einem Dreieck gelötet, Ecken A, B und C.') },
   { file: 'usbtap', part: 'usbtap', pfx: 'tpl', w: 260, h: 324, draw: usbtap,
     desc: T('Illustration of the T-plug: USB-C sockets IN and OUT, third socket with a plug board that has the pads G, D+, D− and V.', 'Illustration des T-Steckers: USB-C-Buchsen IN und OUT, dritte Buchse mit Steckerplatine mit den Pads G, D+, D− und V.') },

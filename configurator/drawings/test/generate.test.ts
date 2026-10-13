@@ -127,11 +127,15 @@ test('every SVG is well formed and carries a title and a description in its lang
       assert.ok(desc[2]!.length >= 20, path);
       if (rec.part !== null) {
         const name = part(rec.part).name[lang].replace(/&/g, '&amp;');
-        assert.ok(title[2]!.startsWith(name), `${path}: title "${title[2]}" starts with "${name}"`);
+        // A drawing that shows no value of its part, as the motor simulator, carries the name up to the values.
+        const head = title[2]!.startsWith(name) || name.startsWith(`${title[2]!}, `);
+        assert.ok(head, `${path}: title "${title[2]}" starts with "${name}" or is its head`);
       }
       texts[lang] = { title: title[2]!, desc: desc[2]! };
     }
     assert.notEqual(texts.en!.desc, texts.de!.desc, `${file}: description is translated`);
+    // The motor simulator drawing names no resistance and no rating: a visitor chooses both.
+    if (rec.part === 'sim') for (const lang of LANGS) assert.doesNotMatch(texts[lang]!.title, /Ω|\d W\b/, `${file}: title without a value`);
   }
 });
 

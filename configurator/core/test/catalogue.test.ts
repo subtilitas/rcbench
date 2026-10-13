@@ -1229,6 +1229,7 @@ test('coverage: the figure names each measured file and fails without its record
     { file: 'resolve.ts', found: 184, hit: 183 },
     { file: 'cond.ts', found: 51, hit: 51 },
     { file: 'groups.ts', found: 200, hit: 199 },
+    { file: 'sim.ts', found: 120, hit: 120 },
     { file: 'catalogue.ts', found: 9, hit: 9 },
   ]);
   assert.ok(block.startsWith(BEGIN) && block.endsWith(END));
@@ -1237,7 +1238,7 @@ test('coverage: the figure names each measured file and fails without its record
   assert.match(block, /\| `groups\.ts` \| 199 \| 200 \| 99\.5 % \|/);
   assert.doesNotMatch(block, /catalogue/);
   assert.throws(() => figure([{ file: 'cond.ts', found: 51, hit: 51 }]), /no record for resolve\.ts/);
-  assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts', 'groups.ts']);
+  assert.deepEqual(MEASURED, ['resolve.ts', 'cond.ts', 'groups.ts', 'sim.ts']);
 });
 
 test('coverage: the block between the markers is replaced, and only there', () => {

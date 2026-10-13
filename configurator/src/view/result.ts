@@ -5,7 +5,7 @@
 import type {
   Catalogue, Check, Lang, OptionKey, Options, Part, Picture, ResolvedPart,
 } from '../../contract.ts';
-import { PICTURES_MAX } from '../core.ts';
+import { PICTURES_MAX, SIM_PART } from '../core.ts';
 import { benchParts, powerGroups, powerNumbers, testObjectsOf } from '../names.ts';
 import { LEGEND, esc, safeBold, t, tx } from '../i18n.ts';
 import type { Key } from '../i18n.ts';
@@ -17,6 +17,7 @@ import {
 import type { View } from './chooser.ts';
 import { orderStages } from './order.ts';
 import { buyNote, lineName, partsList, qtyText } from './buy.ts';
+import { simBlock } from './sim.ts';
 import type { BuyLine } from './buy.ts';
 import { wiresTable } from './table.ts';
 import { picture as wiringPicture } from '../diagram/picture.ts';
@@ -89,7 +90,7 @@ function card(view: View, r: ResolvedPart, why: string): string {
   return `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>`
     + (p.modelled ? ` <span class="tag">${esc(t(lang, 'modelled'))}</span>` : '')
     + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
-    + `<span class="why">${esc(why)}</span>${removeControl(view, p)}</div>`
+    + `<span class="why">${esc(why)}</span>${removeControl(view, p)}${p.id === SIM_PART ? simBlock(view) : ''}</div>`
     + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')
     + '</li>';
 }
