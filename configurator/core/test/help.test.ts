@@ -52,28 +52,35 @@ const volts = (mv: number, lang: 'en' | 'de'): string => {
   return `${lang === 'de' ? v.replace('.', ',') : v} V`;
 };
 
-test('the wording of the texts: no pad, the German labels of the panel, scharf and gesichert', () => {
+test('the wording of the texts: no pad, the German labels of the panel, SAFE and ARMED', () => {
   // The Osoyoo variant names terminals, not pads: the function text names the pin alone.
   assert.doesNotMatch(help('servoprog').en, /\bpad\b/i);
   assert.doesNotMatch(help('servoprog').de, /\bPad\b/);
   assert.match(help('servoprog').en, /programming port, GP13\./);
-  assert.match(help('logs').de, /solange der Prüfstand scharf ist, und bei gesichertem Prüfstand, solange der Ausgang der Versorgung an ist/);
-  assert.doesNotMatch(help('logs').de, /nach ARM|nach DISARM/);
-  // The German texts name the disarmed bench "gesichert", never "unscharf".
-  for (const text of Object.values(FUNCTION_HELP)) assert.doesNotMatch(text!.de, /unscharf/i);
+  // The two states of the bench carry the names of the status band of the panel, SAFE and ARMED, in both
+  // languages; no text names them in prose.
+  assert.match(help('logs').en, /while the bench is ARMED, and while it is SAFE with the supply output on\./);
+  assert.match(help('logs').de, /solange der Prüfstand ARMED ist, und solange er SAFE ist und der Ausgang der Versorgung an ist\./);
+  const parts = CATALOGUE.parts.filter((p) => p.selectable && p.role).map((p) => p.role!);
+  for (const text of [...Object.values(FUNCTION_HELP).map((x) => x!), ...parts]) {
+    assert.doesNotMatch(text.en, /\b(?:armed|disarm\w*|DISARM)\b/, text.en);
+    assert.doesNotMatch(text.de, /scharf|gesichert|entschärf|\bDISARM\b|\bnach ARM\b/i, text.de);
+  }
   assert.doesNotMatch(help('esc').de, /Leistung/);
   // The emergency stop breaks no power line, and the coprocessor switches the PD mini off.
   const estopPart = CATALOGUE.parts.find((p) => p.id === 'estop')!;
   for (const text of [help('estop').en, estopPart.role!.en]) {
     assert.doesNotMatch(text, /switches off no supply/);
     assert.match(text, /breaks no power line/);
-    assert.match(text, /output of the PD mini off/);
+    assert.match(text, /output of the PD mini (?:off|go off)/);
   }
   for (const text of [help('estop').de, estopPart.role!.de]) {
     assert.doesNotMatch(text, /schaltet keine Versorgung ab/);
     assert.match(text, /trennt keine Versorgungsleitung/);
-    assert.match(text, /Ausgang des PD mini aus/);
+    assert.match(text, /Ausgang des PD mini (?:aus|gehen aus)/);
   }
+  assert.match(help('estop').en, /the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off\./);
+  assert.match(help('estop').de, /schaltet der Koprozessor den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus\./);
   assert.match(help('estop').en, /an ESC battery or a servo supply of your own stays connected/);
 });
 

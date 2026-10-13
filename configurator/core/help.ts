@@ -58,11 +58,11 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung höchstens 0,5 V unter dem Eingang des Moduls. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
   ),
   logs: t(
-    'Writes a log of each run to the microSD card: while the bench is armed, and while the supply output is on with the bench disarmed. The log viewer of the panel reads these files.',
-    'Schreibt ein Protokoll jedes Laufs auf die microSD-Karte: solange der Prüfstand scharf ist, und bei gesichertem Prüfstand, solange der Ausgang der Versorgung an ist. Der Log-Viewer des Panels liest diese Dateien.',
+    'Writes a log of each run to the microSD card: while the bench is ARMED, and while it is SAFE with the supply output on. The log viewer of the panel reads these files.',
+    'Schreibt ein Protokoll jedes Laufs auf die microSD-Karte: solange der Prüfstand ARMED ist, und solange er SAFE ist und der Ausgang der Versorgung an ist. Der Log-Viewer des Panels liest diese Dateien.',
   ),
   estop: t(
-    'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the coprocessor switches its outputs off (DISARM) and the output of the PD mini off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',
-    'Ein rastender Taster im Heartbeat-Draht. Gedrückt öffnet sein Öffner (NC) den Draht; nach 150 ms ohne Heartbeat-Flanke schaltet der Koprozessor seine Ausgänge ab (DISARM) und den Ausgang des PD mini aus. Der Taster trennt keine Versorgungsleitung: ein ESC-Akku oder eine eigene Servoversorgung bleibt angeschlossen.',
+    'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',
+    'Ein rastender Taster im Heartbeat-Draht. Gedrückt öffnet sein Öffner (NC) den Draht; nach 150 ms ohne Heartbeat-Flanke schaltet der Koprozessor den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus. Der Taster trennt keine Versorgungsleitung: ein ESC-Akku oder eine eigene Servoversorgung bleibt angeschlossen.',
   ),
 });
