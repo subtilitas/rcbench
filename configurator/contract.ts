@@ -259,6 +259,20 @@ export type Selection = {
   options: Options;
 };
 
+/**
+ * The values the visitor chooses on the motor simulator: the LiPo cell count
+ * of the ESC pack (4.2 V per cell), the resistance in Ω and the power rating
+ * in W of each of the 3 resistors, and how they are joined. They name the
+ * part and its row of the parts list and give the heat per resistor. They
+ * change no wire and no function.
+ */
+export type SimSettings = {
+  cells: number;
+  ohms: number;
+  watts: number;
+  wiring: 'delta' | 'star';
+};
+
 export type Reason =
   | { kind: 'always' }
   | { kind: 'function'; id: FunctionId }

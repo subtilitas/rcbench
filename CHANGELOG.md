@@ -28,7 +28,21 @@ history is in git.
   refuses a drawing the panel would refuse; CI runs it with `--check`.
   `npm run drawings` writes `panel.json` and `npm run drawings:check`
   compares it. The configurator's SVG drawings are unchanged.
-
+- Configurator: the card of the motor simulator calculates the heat per
+  resistor. Inputs: the LiPo pack (1S to 6S at 4.2 V per cell, default 4S,
+  16.8 V), the resistance (the 21 E12 values from 100 Ω to 4.7 kΩ, default
+  470 Ω), the rating (0.25, 0.5, 1, 2, 3 or 5 W, default 2 W) and the wiring
+  (delta, the default, or star). The load case is 1 commutation step held at
+  the full pack voltage V: in delta 1 resistor takes V²/R and 2 take V²/(4R),
+  in star 2 take V²/(4R) and 1 none. The card shows current in mA, power in
+  W and the share of the rating, a warning above the rating and a hint from
+  50 % of it. The current limit of the ESC is not modelled. The link key `m`
+  stores the values that differ from the default; a link without it opens
+  the default values. The name of the part, its row in the parts list, the
+  text and CSV copies and the PDF follow the values; a change of the
+  resistance or the rating takes the "have it" tick off that row. The
+  drawing of the motor simulator shows no colour bands and names no
+  resistance.
 - PICK A PIN has the protocol list of the Outputs screen, top left. It names
   the selected protocol; a pick selects it on both screens and writes
   nothing. Under it stand `N OF 8 SLOTS IN USE`, counted over every

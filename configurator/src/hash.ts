@@ -1,8 +1,12 @@
-// URL hash codec. Format: #v=1&f=<ids>&p=<ids>&o=<ids>&h=<rows>&l=<lang>
+// URL hash codec. Format: #v=1&f=<ids>&p=<ids>&o=<ids>&h=<rows>&m=<tokens>&l=<lang>
 //
 // `h` holds the "have it" ticks of the parts list: one token per row, the
 // part id alone or the part id, a dot and the row id (`wire.dmm`). Which
 // tokens name a row to buy depends on the setup, so the page decides that.
+//
+// `m` holds the values of the motor simulator that differ from the default,
+// 1 token each: cell count (`6s`), resistance (`1k2`), rating (`0w5`),
+// wiring (`star`). They are a closed set, so the parser decides them.
 //
 // Parsing never throws. Function and part ids are passed on as written, the
 // resolver decides which exist. Option tokens are a closed set, so the parser
@@ -12,8 +16,8 @@
 // the tick of the function that drives it without a further part: `p=servo`
 // as `f=servo`, `p=esc` as `f=esc`. Parts, wires and functions stay the same.
 
-import type { Catalogue, Lang, Options, Selection } from '../contract.ts';
-import { alwaysOn, plainDrive, rowToken } from './core.ts';
+import type { Catalogue, Lang, Options, Selection, SimSettings } from '../contract.ts';
+import { DEFAULT_SIM, SIM_CELLS, SIM_OHMS, SIM_WATTS, SIM_WIRINGS, alwaysOn, plainDrive, rowToken } from './core.ts';
 
 export const HASH_VERSION = 1;
 /** A longer hash is treated as a link from another version. */
@@ -35,8 +39,31 @@ const TOKENS: ReadonlyArray<readonly [string, keyof Options, string]> = [
   ['servo5v', 'servoPower', 'bench'],
 ];
 
+/** Resistance as a token: "470r", "1k", "4k7". */
+export function ohmsToken(ohms: number): string {
+  if (ohms < 1000) return `${ohms}r`;
+  const rest = (ohms % 1000) / 100;
+  return `${Math.floor(ohms / 1000)}k${rest === 0 ? '' : rest}`;
+}
+
+/** Rating as a token: "0w25", "0w5", "2w". */
+export function wattsToken(watts: number): string {
+  const [whole, part] = String(watts).split('.');
+  return `${whole}w${part ?? ''}`;
+}
+
+/** Hash token of each value of the motor simulator. */
+export const SIM_TOKENS: ReadonlyArray<readonly [string, keyof SimSettings, number | string]> = [
+  ...SIM_CELLS.map((n) => [`${n}s`, 'cells', n] as const),
+  ...SIM_OHMS.map((r) => [ohmsToken(r), 'ohms', r] as const),
+  ...SIM_WATTS.map((w) => [wattsToken(w), 'watts', w] as const),
+  ...SIM_WIRINGS.map((x) => [x, 'wiring', x] as const),
+];
+
 export type Parsed = {
   selection: Selection;
+  /** The values of the motor simulator. A value the hash does not name, or names wrong, is the default. */
+  sim: SimSettings;
   /** Language named by the hash, or null. */
   lang: Lang | null;
   /** The hash comes from another format version. The selection is the base setup. */
@@ -59,7 +86,7 @@ function list(value: string | null, unknown: string[], form: RegExp = ID): strin
 
 export function parseHash(hash: string, defaults: Options): Parsed {
   const base = (): Selection => ({ functions: [], owned: [], options: { ...defaults } });
-  const out: Parsed = { selection: base(), lang: null, badVersion: false, unknown: [], have: [] };
+  const out: Parsed = { selection: base(), sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [], have: [] };
   if (typeof hash !== 'string') return out;
   const body = hash.startsWith('#') ? hash.slice(1) : hash;
   if (body === '') return out;
@@ -79,7 +106,7 @@ export function parseHash(hash: string, defaults: Options): Parsed {
 
   const v = q.get('v');
   if (v !== String(HASH_VERSION)) {
-    out.badVersion = v !== null || q.has('f') || q.has('p') || q.has('o') || q.has('h');
+    out.badVersion = v !== null || q.has('f') || q.has('p') || q.has('o') || q.has('h') || q.has('m');
     return out;
   }
   out.selection.functions = list(q.get('f'), out.unknown);
@@ -93,6 +120,18 @@ export function parseHash(hash: string, defaults: Options): Parsed {
   }
   out.selection.options = options as Options;
   out.have = list(q.get('h'), out.unknown, ROW);
+  // The first token of a value counts. A further token of the same value is named with the unknown ones.
+  const sim: Record<string, number | string> = { ...DEFAULT_SIM };
+  const set: string[] = [];
+  for (const raw of (q.get('m') ?? '').split(',')) {
+    if (raw === '') continue;
+    const token = SIM_TOKENS.find((x) => x[0] === raw);
+    if (token && !set.includes(token[1])) {
+      sim[token[1]] = token[2];
+      set.push(token[1]);
+    } else if (!out.unknown.includes(raw)) out.unknown.push(raw);
+  }
+  out.sim = sim as SimSettings;
   return out;
 }
 
@@ -135,10 +174,13 @@ export function testObjectTicks(selection: Selection, catalogue: Catalogue): Sel
  * catalogue does not know are left out, and so is a function every setup
  * runs: it has no tick. `have` holds the row tokens of the "have it" ticks;
  * they stand in catalogue order, and a token that names no row of the
- * catalogue is left out. `lang` is written when it is not the language the
+ * catalogue is left out. `sim` writes the values of the motor simulator that
+ * differ from the default. `lang` is written when it is not the language the
  * page starts in without a hash.
  */
-export function formatHash(selection: Selection, lang: Lang, startLang: Lang, catalogue: Catalogue, have: readonly string[] = []): string {
+export function formatHash(
+  selection: Selection, lang: Lang, startLang: Lang, catalogue: Catalogue, have: readonly string[] = [], sim: SimSettings = DEFAULT_SIM,
+): string {
   const keys = [`v=${HASH_VERSION}`];
   const f = catalogue.functions.filter((x) => !alwaysOn(catalogue, x)).map((x) => x.id).filter((id) => selection.functions.includes(id));
   const p = catalogue.parts.filter((x) => x.selectable).map((x) => x.id).filter((id) => selection.owned.includes(id));
@@ -148,6 +190,8 @@ export function formatHash(selection: Selection, lang: Lang, startLang: Lang, ca
   if (o.length > 0) keys.push(`o=${o.join(',')}`);
   const h = catalogue.parts.flatMap((x) => x.buy.map((row) => rowToken(x, row))).filter((token) => have.includes(token));
   if (h.length > 0) keys.push(`h=${h.join(',')}`);
+  const m = SIM_TOKENS.filter((x) => sim[x[1]] === x[2] && DEFAULT_SIM[x[1]] !== x[2]).map((x) => x[0]);
+  if (m.length > 0) keys.push(`m=${m.join(',')}`);
   if (lang !== startLang) keys.push(`l=${lang}`);
   return keys.join('&');
 }
@@ -194,9 +238,9 @@ function writtenHave(hash: string, parsed: Parsed): string[] {
  * that is malformed or names no row to buy of the setup. Such a hash is written again from
  * its selection: the function ids are left out, the test object becomes the
  * tick of its function, the former tick is dropped, the "have it" ticks are
- * `have`; the language key stays. `have` holds the ticks the page shows; when
- * it is absent, the ticks of the hash stay. Every other hash is returned as it
- * is.
+ * `have`; the language key and the values of the motor simulator stay. `have`
+ * holds the ticks the page shows; when it is absent, the ticks of the hash
+ * stay. Every other hash is returned as it is.
  */
 export function shareHash(hash: string, defaults: Options, catalogue: Catalogue, have?: readonly string[]): string {
   const parsed = parseHash(hash, defaults);
@@ -206,7 +250,7 @@ export function shareHash(hash: string, defaults: Options, catalogue: Catalogue,
   if (!named) return hash;
   const lang = parsed.lang;
   // The start language is set so that a language key in the hash is written and none is added.
-  return `#${formatHash(testObjectTicks(parsed.selection, catalogue), lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue, have ?? parsed.have)}`;
+  return `#${formatHash(testObjectTicks(parsed.selection, catalogue), lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue, have ?? parsed.have, parsed.sim)}`;
 }
 
 /**

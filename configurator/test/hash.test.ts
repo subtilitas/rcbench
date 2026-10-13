@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import type { Lang, Selection } from '../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareAddress, shareHash, testObjectTicks, withoutFormerTicks } from '../src/hash.ts';
+import type { Lang, Selection, SimSettings } from '../contract.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, SIM_CELLS, SIM_OHMS, SIM_WATTS, SIM_WIRINGS, resolve, alwaysOn } from '../src/core.ts';
+import {
+  HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, SIM_TOKENS, formatHash, ohmsToken, parseHash, reportIds, shareAddress, shareHash,
+  testObjectTicks, wattsToken, withoutFormerTicks,
+} from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -13,7 +16,7 @@ const sorted = (s: Selection): Selection => ({
 
 test('an empty hash is the base setup without a notice', () => {
   for (const hash of ['', '#']) {
-    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), lang: null, badVersion: false, unknown: [], have: [] });
+    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [], have: [] });
   }
 });
 
@@ -443,4 +446,121 @@ test('the hash of a document holds the "have it" ticks the page shows', () => {
   assert.equal(share('#v=1&p=servo&h=panel', ['panel']), '#v=1&f=servo&h=panel');
   const page = 'https://subtilitas.github.io/rcbench/configurator/';
   assert.equal(shareAddress(`${page}#v=1&h=pdmini,panel`, DEFAULT_OPTIONS, CATALOGUE, ['panel']), `${page}#v=1&h=panel`);
+});
+
+// The values of the motor simulator: key `m`.
+
+/** Every combination of the offered values of the motor simulator. */
+function simGrid(): SimSettings[] {
+  const out: SimSettings[] = [];
+  for (const cells of SIM_CELLS) for (const ohms of SIM_OHMS) for (const watts of SIM_WATTS) for (const wiring of SIM_WIRINGS) {
+    out.push({ cells, ohms, watts, wiring });
+  }
+  return out;
+}
+
+test('the tokens of the motor simulator: cells, resistance in RKM code, rating, wiring', () => {
+  assert.deepEqual(SIM_TOKENS.map((x) => x[0]), [
+    '1s', '2s', '3s', '4s', '5s', '6s',
+    '100r', '120r', '150r', '180r', '220r', '270r', '330r', '390r', '470r', '560r', '680r', '820r',
+    '1k', '1k2', '1k5', '1k8', '2k2', '2k7', '3k3', '3k9', '4k7',
+    '0w25', '0w5', '1w', '2w', '3w', '5w',
+    'delta', 'star',
+  ]);
+  assert.equal(ohmsToken(4700), '4k7');
+  assert.equal(wattsToken(0.25), '0w25');
+});
+
+test('every value of the motor simulator survives format and parse, and only a value off the default is written', () => {
+  const selection: Selection = { functions: ['tap'], owned: ['sd'], options: { ...DEFAULT_OPTIONS } };
+  for (const sim of simGrid()) {
+    for (const lang of ['en', 'de'] as Lang[]) {
+      const hash = formatHash(selection, lang, 'en', CATALOGUE, [], sim);
+      assert.match(hash, /^v=1&f=tap&p=sd(&m=[a-z0-9,]+)?(&l=de)?$/, hash);
+      const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+      assert.deepEqual(parsed.sim, sim, hash);
+      assert.deepEqual(parsed.unknown, [], hash);
+      assert.deepEqual(sorted(parsed.selection), sorted(selection), hash);
+      const m = new URLSearchParams(hash).get('m');
+      const off = (['cells', 'ohms', 'watts', 'wiring'] as const).filter((key) => sim[key] !== DEFAULT_SIM[key]).length;
+      assert.equal(m === null ? 0 : m.split(',').length, off, hash);
+    }
+  }
+});
+
+test('the default values write no key m; a link without it has the default values', () => {
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, [], DEFAULT_SIM), 'v=1');
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE), 'v=1');
+  for (const hash of ['#v=1', '#v=1&p=sim', '#v=1&f=tap&o=pd', '#v=1&l=de', '']) {
+    const parsed = parseHash(hash, DEFAULT_OPTIONS);
+    assert.deepEqual(parsed.sim, DEFAULT_SIM, hash);
+    assert.deepEqual(parsed.unknown, [], hash);
+  }
+  // The links of the fixture, made before the key existed, keep the default values and their hash.
+  const fixture = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Array<{ links: string[] }>;
+  const links = fixture.flatMap((x) => x.links);
+  assert.equal(links.length, 1192);
+  for (const hash of links) {
+    const parsed = parseHash(hash, DEFAULT_OPTIONS);
+    assert.deepEqual(parsed.sim, DEFAULT_SIM, hash);
+    assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have, parsed.sim), formatHash(parsed.selection, 'en', 'en', CATALOGUE), hash);
+  }
+});
+
+test('a token of the motor simulator that names no offered value is named in the notice; its value stays the default', () => {
+  const cases: Array<[string, Partial<SimSettings>, string[]]> = [
+    ['#v=1&m=7s', {}, ['7s']],
+    ['#v=1&m=0s', {}, ['0s']],
+    ['#v=1&m=471r', {}, ['471r']],
+    ['#v=1&m=10k', {}, ['10k']],
+    ['#v=1&m=0w75', {}, ['0w75']],
+    ['#v=1&m=2W', {}, ['2W']],
+    ['#v=1&m=triangle', {}, ['triangle']],
+    ['#v=1&m=6s,471r,star', { cells: 6, wiring: 'star' }, ['471r']],
+    // The first token of a value counts.
+    ['#v=1&m=6s,3s', { cells: 6 }, ['3s']],
+    ['#v=1&m=star,delta', { wiring: 'star' }, ['delta']],
+    ['#v=1&m=4s,6s', {}, ['6s']],
+    // A token of another key is no value here, and a value of the motor simulator is none under `o`.
+    ['#v=1&m=pd', {}, ['pd']],
+    ['#v=1&o=star', {}, ['star']],
+  ];
+  for (const [hash, sim, unknown] of cases) {
+    const parsed = parseHash(hash, DEFAULT_OPTIONS);
+    assert.deepEqual(parsed.sim, { ...DEFAULT_SIM, ...sim }, hash);
+    assert.deepEqual(parsed.unknown, unknown, hash);
+    assert.equal(parsed.badVersion, false, hash);
+  }
+  // Empty tokens are skipped, as under the other keys.
+  assert.deepEqual(parseHash('#v=1&m=,,star,', DEFAULT_OPTIONS).sim, { ...DEFAULT_SIM, wiring: 'star' });
+});
+
+test('a key m without the version is a link of another version', () => {
+  const parsed = parseHash('#m=6s', DEFAULT_OPTIONS);
+  assert.equal(parsed.badVersion, true);
+  assert.deepEqual(parsed.sim, DEFAULT_SIM);
+  assert.equal(parseHash('#v=2&m=6s', DEFAULT_OPTIONS).badVersion, true);
+});
+
+test('a link written again for a document keeps the values of the motor simulator', () => {
+  assert.equal(shareHash('#v=1&p=servo&m=6s,star', DEFAULT_OPTIONS, CATALOGUE), '#v=1&f=servo&m=6s,star');
+  assert.equal(shareHash('#v=1&f=link,tap&m=1k&l=de', DEFAULT_OPTIONS, CATALOGUE), '#v=1&f=tap&m=1k&l=de');
+  // A link that needs no rewrite stays as it is, with its spelling.
+  assert.equal(shareHash('#v=1&m=star,6s', DEFAULT_OPTIONS, CATALOGUE), '#v=1&m=star,6s');
+});
+
+test('the keys h and m in one link: h before m, both survive format, parse and a document', () => {
+  const sel: Selection = { ...base(), functions: ['tap'] };
+  const sim: SimSettings = { cells: 6, ohms: 1000, watts: 5, wiring: 'star' };
+  const hash = formatHash(sel, 'de', 'en', CATALOGUE, ['sim', 'wire.dmm'], sim);
+  assert.equal(hash, 'v=1&f=tap&h=wire.dmm,sim&m=6s,1k,5w,star&l=de');
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['wire.dmm', 'sim']);
+  assert.deepEqual(parsed.sim, sim);
+  assert.deepEqual(parsed.unknown, []);
+  // A stale tick leaves the document link; the values of the motor simulator stay.
+  assert.equal(shareHash(`#${hash}`, DEFAULT_OPTIONS, CATALOGUE, ['sim']), '#v=1&f=tap&h=sim&m=6s,1k,5w,star&l=de');
+  // A key m before h in a link is read the same.
+  assert.deepEqual(parseHash('#v=1&f=tap&m=star&h=sim', DEFAULT_OPTIONS).have, ['sim']);
+  assert.deepEqual(parseHash('#v=1&f=tap&m=star&h=sim', DEFAULT_OPTIONS).sim, { ...DEFAULT_SIM, wiring: 'star' });
 });

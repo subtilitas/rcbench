@@ -303,6 +303,33 @@ const S = {
   legPower: ['servo or ESC power', 'Servo- oder ESC-Versorgung'],
   legPhase: ['motor phase, tap', 'Motorphase, Abgriff'],
   legNc: ['no wire: open or strap on the board', 'kein Draht: offen oder Brücke auf der Platine'],
+  simHead: ['Heat per resistor', 'Wärme je Widerstand'],
+  simCells: ['LiPo pack', 'LiPo-Akku'],
+  simOhms: ['Resistance', 'Widerstand'],
+  simWatts: ['Rating', 'Belastbarkeit'],
+  simWiring: ['Wiring', 'Schaltung'],
+  simDelta: ['Delta', 'Dreieck'],
+  simStar: ['Star', 'Stern'],
+  simHot1: ['Hottest resistor: {a} mA, {w} W, {p} % of the rating.', 'Heißester Widerstand: {a} mA, {w} W, {p} % der Belastbarkeit.'],
+  simHot2: ['Hottest 2 resistors: {a} mA, {w} W each, {p} % of the rating.', 'Heißeste 2 Widerstände: je {a} mA, {w} W, {p} % der Belastbarkeit.'],
+  simRest2: ['Other 2 resistors: {a} mA, {w} W each.', 'Andere 2 Widerstände: je {a} mA, {w} W.'],
+  simRest1: ['Third resistor: no current.', 'Dritter Widerstand: kein Strom.'],
+  simOver: [
+    'Above the rating of {r}. Choose a higher rating or a higher resistance.',
+    'Über der Belastbarkeit von {r}. Eine höhere Belastbarkeit oder einen höheren Widerstand wählen.',
+  ],
+  simHint: [
+    'At {p} % of the rating. The rating holds only up to the ambient temperature that the datasheet of the resistor states, and a resistor near its rating runs hot. Check the derating curve of the datasheet.',
+    'Bei {p} % der Belastbarkeit. Die Belastbarkeit gilt nur bis zu der Umgebungstemperatur, die das Datenblatt des Widerstands nennt, und ein Widerstand nahe seiner Belastbarkeit wird heiß. Die Derating-Kurve im Datenblatt prüfen.',
+  ],
+  simBasis: [
+    'Worst case: one commutation step held at {v} ({n}S at 4.2 V per cell). A sensorless ESC cannot commutate on resistors and can hold a step. The ESC also limits the current; this is not modelled.',
+    'Schlimmster Fall: ein Kommutierungsschritt, gehalten bei {v} ({n}S zu 4,2 V je Zelle). Ein sensorloser ESC kann an Widerständen nicht kommutieren und kann einen Schritt halten. Auch der ESC begrenzt den Strom; das ist nicht modelliert.',
+  ],
+  simStarHow: [
+    'Star: one end of each resistor goes to A, B or C; the other 3 ends are joined. The drawing shows delta.',
+    'Stern: ein Ende jedes Widerstands an A, B oder C; die anderen 3 Enden sind verbunden. Die Zeichnung zeigt das Dreieck.',
+  ],
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type Key = keyof typeof S;

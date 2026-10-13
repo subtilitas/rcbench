@@ -88,10 +88,8 @@ function partOf(catalogue: Catalogue, entry: Entry): Part | null {
 
 /** Title of a drawing: the name of the part, with the name of the board for a part with 2 boards. */
 function titleOf(part: Part | null, entry: Entry, lang: Lang): string {
-  if (!part) {
-    if (!entry.name) throw new Error(`${entry.file}: a drawing without a part needs a name`);
-    return entry.name[lang];
-  }
+  if (entry.name) return entry.name[lang];
+  if (!part) throw new Error(`${entry.file}: a drawing without a part needs a name`);
   const board = entry.variant === undefined ? undefined : part.variantName?.names[entry.variant];
   return board ? `${part.name[lang]}, ${board[lang]}` : part.name[lang];
 }

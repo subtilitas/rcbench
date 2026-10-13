@@ -238,3 +238,8 @@ Colour is not the only carrier: a wire keeps its wire number of the data file.
 - The shapes follow photos of the boards where one exists. Servo, ESC, PD
   charger, battery, servo supply, DC supply of the Osoyoo breakout board,
   motor simulator, phase tap and pull-up resistors are generic pictures.
+- The motor simulator drawing shows 3 resistors in delta without colour
+  bands. Its title, "Motor simulator, self-built: 3 resistors in delta", is
+  the name of the part without the values: it names no resistance and no
+  rating, as the card lets a visitor choose both. A star has no drawing of its own; its pins keep the names
+  corner A, B and C.

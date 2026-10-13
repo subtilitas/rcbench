@@ -58,7 +58,7 @@ stays on the part.
 | `src/diagram/picture.ts` | Wiring picture: SVG markup of the page and its legend. |
 | `src/diagram/export.ts` | Wiring picture: SVG markup inside the element subset of the PDF painter. |
 | `src/diagram/view.ts`, `control.ts` | Wiring picture: pan and zoom arithmetic; the listeners of the page. |
-| `src/view/` | Chooser, result document, table, parts list (`buy.ts`: rows, search link, text and CSV). |
+| `src/view/` | Chooser, result document, table, parts list (`buy.ts`: rows, search link, text and CSV), heat calculation of the motor simulator (`sim.ts`). |
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `drawings/` | Generator and check of the part drawings, anchor table, wire palette, and the panel drawing of the coprocessor board (`panel.json`). See `drawings/README.md`. |
@@ -73,6 +73,7 @@ stays on the part.
 | `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark and between the focus of a tick and the pointer on another mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/buy.spec.ts` | Playwright test of the parts list: rows, owned parts, variants, copy buttons, links and no request to Google before a click. |
+| `e2e/sim.spec.ts` | Playwright test of the motor simulator by keyboard alone, in English and German at 360 px and 1280 px: the 4 inputs, the figures, the warning and the hint, the link, the part name, the row to buy, both copies, a link with a value the page does not offer, "Start over". |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
 | `tools/size.ts` | Size check of the build. |
@@ -140,7 +141,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 
 ## URL hash
 
-`#v=1&f=<ids>&p=<ids>&o=<tokens>&h=<rows>&l=<lang>`
+`#v=1&f=<ids>&p=<ids>&o=<tokens>&h=<rows>&m=<tokens>&l=<lang>`
 
 | Key | Meaning |
 |---|---|
@@ -149,6 +150,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 | `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. Copy link, the print header and the PDF name the link without the id; the address of the page keeps it until a change. An id of that spelling under `f` or `o` keeps its notice. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
 | `h` | Row tokens of the "have it" ticks of "Parts to buy", comma separated, in catalogue order. A token is the part id for the row of a part without a row id (`panel`), else the part id, a dot and the row id (`wire.dmm`). A token that names no row to buy of the setup is dropped and named in the notice: an unknown row, a part outside the setup, a part ticked under "Parts you own", a part the visitor brings, a row of the other variant. A link without `h` has no "have it" tick. |
+| `m` | Values of the motor simulator that differ from the default, in the order cells, resistance, rating, wiring. See "Motor simulator". A token the page does not offer is dropped and named in the notice; its value stays the default. A second token of the same value, as in `m=6s,3s`, is dropped and named: the first counts. A link without `m` has the default values. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
 
 Copy link, the field it shows when the clipboard refuses, the print header
@@ -188,10 +190,10 @@ The page keeps 1 entry in `localStorage`, under the key
 |---|---|
 | `v` | Format version, `1`. An entry with another value is not read. |
 | `lang` | `en` or `de`: the language the visitor picked with the language buttons. `null` before the first pick. |
-| `setup` | The selection in the format of the URL hash, without the key `l`: ids, option tokens and row tokens, no text of a language. `null` before the first change. |
+| `setup` | The selection in the format of the URL hash, without the key `l`: ids, option tokens, row tokens and the tokens of the motor simulator, no text of a language. `null` before the first change. |
 
 The page writes `setup` on every change of the selection: a tick, a variant,
-a "have it" tick, the removal of a part, "Start over". It writes `lang` on a click on a
+a "have it" tick, a value of the motor simulator, the removal of a part, "Start over". It writes `lang` on a click on a
 language button. It writes nothing when it opens, so a link that is opened
 and not changed leaves the stored setup as it is.
 
@@ -348,12 +350,77 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 
 | Heading | Content |
 |---|---|
-| Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
+| Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. The motor simulator carries its heat calculation. See "Motor simulator". |
 | What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
 | Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page, web search and a "have it" tick, and the copy buttons. Under "You have", the rows with that tick. Under "You bring", the test objects and their supplies. See "Parts to buy". |
 | Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
 The footer holds the state of the project and the trademark notice.
+
+## Motor simulator
+
+The motor simulator is 3 resistors on the 3 phase wires of the ESC. Its card
+under "Parts" holds 4 inputs and the current and the power per resistor. The
+values name the part and its row to buy on the page, in the PDF and in both
+copies of the parts list: "Motor simulator, self-built: 3 resistors in delta,
+470 Ω, 2 W" and "3 × Resistor 470 Ω, 2 W". They change no wire and no
+function.
+
+| Input | Values | Default | Tokens in `m` |
+|---|---|---|---|
+| LiPo pack | 1S to 6S at 4.2 V per cell: 4.2 V to 25.2 V | 4S, 16.8 V | `1s` to `6s` |
+| Resistance | The 21 E12 values from 100 Ω to 4.7 kΩ | 470 Ω | RKM code: `100r` to `820r`, `1k`, `1k2` to `4k7` |
+| Rating | 0.25 W, 0.5 W, 1 W, 2 W, 3 W, 5 W | 2 W | `0w25`, `0w5`, `1w`, `2w`, `3w`, `5w` |
+| Wiring | Delta, star | Delta | `delta`, `star` |
+
+The default pack is 4S: the 1 ESC reading of `docs/DShot.md` ran on a 4S
+pack, and ESC power B, the PD mini, gives at most 20 V, which 4S (16.8 V)
+stays under and 5S (21.0 V) exceeds.
+
+Load case: one commutation step held at the full pack voltage V. A sensorless
+ESC cannot commutate on resistors, so it can hold a step. R is the resistance
+of 1 resistor.
+
+| Wiring | Hottest | Others |
+|---|---|---|
+| Delta | 1 resistor across the driven pair: V/R and V²/R | 2 in series across V: V/(2R) and V²/(4R) each |
+| Star | 2 in series across V: V/(2R) and V²/(4R) each | 1: no current |
+
+Check figures: 470 Ω at 6S (25.2 V) in delta give 53.6 mA and 1.35 W.
+450 Ω at 16.8 V in star give 18.7 mA and 0.157 W; 450 Ω is no E12 value and
+the page does not offer it.
+
+The card shows:
+
+- the hottest resistor: current in mA, power in W and the share of the rating
+  in whole percent, rounded down, and rounded up above the rating;
+- the other resistors;
+- above the rating, a warning (`#sim-over`): "Above the rating of 2 W. Choose
+  a higher rating or a higher resistance.";
+- from 50 % of the rating up to the rating, a hint (`#sim-hint`). It states
+  its basis: the rating holds only up to the ambient temperature that the
+  datasheet of the resistor states, and a resistor near its rating runs hot.
+  It names no derating figure. The 50 % threshold is a choice of the page,
+  not a figure of a maker;
+- the load case, and 1 sentence: the ESC also limits the current, and that
+  is not modelled;
+- with star, how the resistors join, and that the drawing shows delta.
+
+Numbers carry 3 significant figures, a voltage 1 decimal. German uses the
+decimal comma.
+
+A change of an input writes the link and the stored setup, keeps the focus
+on the input and announces the hottest resistor and the warning or the hint
+in the live region. "Start over" sets the default values. The "have it"
+token `sim` names no resistance and no rating: a change of either takes the
+"have it" tick off the row of the resistors, a change of pack or wiring
+keeps it. The PDF lists the
+pack, the figures, the warning or the hint and the load case under the part.
+Its file name follows the values. Print leaves out the 4 inputs: the name of
+the part and the load case name the values.
+
+`core/sim.ts` holds the values and the formulas. `src/view/sim.ts` holds the
+text and the markup.
 
 ## Parts to buy
 
@@ -369,6 +436,9 @@ The section "Parts to buy", in German "Teile zum Kaufen", lists the rows of
 | You bring | The test objects and the parts with `yours: true`: servo, servo supply, ESC and motor, ESC battery. Each with its check line, without a link and without a tick. |
 | Copy as text | Heading with the release, the setup link of Copy link, the disclaimer, the rows to buy with their links, the rows under "You have" by quantity and name, the rows to bring. Lines end in LF. |
 | Copy as CSV | A header row in the page language, then 1 record per row to buy. Columns: quantity, maker, ordering name, check, maker page, search link. Every field in double quotes, a double quote doubled, records end in CR LF (RFC 4180). The rows under "You have" and the rows to bring are not in it. |
+
+The row of the motor simulator names the resistance and the rating of its
+card. See "Motor simulator".
 
 A part ticked under "Parts you own" (`p` in the hash) is left out. A part
 that a function brings in stays in the list; its tick under "Parts you own"
@@ -532,7 +602,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 48 files, 460.6 kB.
+Drawing folder: 48 files, 459.1 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 
@@ -587,6 +657,10 @@ file names no stage, so the checks follow the stages as one list.
 ## Limits
 
 - The page draws 1 servo and 1 ESC.
+- Motor simulator: the drawing shows delta and no resistance; its resistors carry no colour bands. In star the
+  pin labels still read "corner A" to "corner C".
+- Motor simulator: the current limit of the ESC, the tolerance of the resistance and the temperature of a
+  resistor are not modelled.
 - Servo power from the bench: the current limit of pad 40 is not stated. The output currents of the
   Osoyoo breakout board are vendor values (2 A at 5 V, 500 mA at 3.3 V), not measured.
   The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and

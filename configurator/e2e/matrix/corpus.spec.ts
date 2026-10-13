@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test';
 
 import { hashOf as textOf, namesLater, namesRetired, readCorpus, readWires } from '../../test/corpus/corpus.ts';
 import type { Options } from '../../contract.ts';
-import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
+import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, plainDrive } from '../../src/core.ts';
 import { formatHash } from '../../src/hash.ts';
 import { SEL, expectedOf, openHash, readSetup } from '../lib/setup.ts';
 import { expectNoHorizontalScroll, expectQuiet, watchPage } from '../lib/watch.ts';
@@ -61,6 +61,11 @@ for (const entry of corpus.entries) {
     expect(have).toEqual((want.have ?? []).map((token) => [token, true]));
     if (kept) expect(shown.wires).toEqual([...(wires[entry.name] ?? [])].sort((a, b) => a - b));
     expect(shown.drawn).toBe(shown.wires.length);
+    // The motor simulator shows the values of the link, or the default ones.
+    const sim = want.sim ?? DEFAULT_SIM;
+    if (shown.parts.includes('sim')) {
+      for (const key of ['cells', 'ohms', 'watts', 'wiring'] as const) await expect(page.locator(`#sim-${key}`)).toHaveValue(String(sim[key]));
+    }
     await expectNoHorizontalScroll(page);
 
     // The first change writes the hash: here the language, there and back.
@@ -69,7 +74,7 @@ for (const entry of corpus.entries) {
     await expect(page.locator('html')).toHaveAttribute('lang', there);
     await page.locator(SEL.lang(want.lang)).click();
     await expect(page.locator('html')).toHaveAttribute('lang', want.lang);
-    expect((await readSetup(page)).hash).toBe(named.length === 0 && retired.length === 0 ? want.canonical : `#${formatHash({ functions, owned, options }, want.lang, 'en', CATALOGUE)}`);
+    expect((await readSetup(page)).hash).toBe(named.length === 0 && retired.length === 0 ? want.canonical : `#${formatHash({ functions, owned, options }, want.lang, 'en', CATALOGUE, want.have ?? [], sim)}`);
     expectQuiet(seen);
   });
 }
