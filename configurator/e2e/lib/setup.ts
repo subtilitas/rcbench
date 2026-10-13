@@ -20,8 +20,8 @@ export const SEL = {
   dia: '#dia',
   row: 'table.wires tbody tr',
   rowNumber: 'table.wires tbody tr td.n b',
-  // The cards of the bench parts and of the test objects. The cards of the power sources are no parts.
-  part: '.parts:not(.power) > li',
+  // The cards of the bench parts and of the test objects. The cards of the power sources and the rows of the parts list are no parts.
+  part: '.parts:not(.power):not(.buy) > li',
   notice: '.msg:not(#note)',
   note: '#note',
   summary: '#result .sum p',

@@ -16,7 +16,7 @@ Network) at 1 Mbit/s.
 | Task | Page |
 | --- | --- |
 | Feature list | [What this is for](Manifest.md) |
-| Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, wiring drawing and pin-to-pin table for the selected setup) |
+| Choose the parts of a bench and wire them | [Bench configurator](https://subtilitas.github.io/rcbench/) (web page: parts list, list to buy with maker pages and web search links, wiring drawing and pin-to-pin table for the selected setup) |
 | Build and flash both boards | [Building](Building.md) |
 | Wire the two boards and verify the bus | [Bringing up the link](Bringup.md) |
 | Operate the screens | [Screens](Screens.md) |

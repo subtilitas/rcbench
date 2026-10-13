@@ -13,6 +13,10 @@ const P = {
     'Jeder Eintrag wird einmal gebraucht. Eine Zahl im Namen ist die Stückzahl.',
   ],
   noParts: ['No parts.', 'Keine Teile.'],
+  buyHint: [
+    'A part with a tick of your own under "Parts you own" is left out; a part that a function adds stays. A maker page and a web search are links.',
+    'Ein Teil mit eigenem Haken unter „Teile, die vorhanden sind“ fehlt hier; ein Teil, das eine Funktion hinzufügt, bleibt. Herstellerseite und Websuche sind Links.',
+  ],
   notEnabled: ['Not enabled', 'Nicht aktiviert'],
   allEnabled: ['Every function of the catalogue is enabled.', 'Jede Funktion des Katalogs ist aktiviert.'],
   noneEnabled: ['No function is enabled.', 'Keine Funktion ist aktiviert.'],

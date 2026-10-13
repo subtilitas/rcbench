@@ -12,11 +12,12 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type {
-  Catalogue, Cond, OptionKey, Pad, PinDefault, Src, Wire,
+  Catalogue, Cond, OptionKey, Options, Pad, PinDefault, Src, Wire,
 } from '../../contract.ts';
 import { TAG } from '../../release.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
+import { brought, buyRows } from '../buy.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
 import { DEFAULT_OPTIONS, OPTION_KEYS, OPTION_VALUES, resolve } from '../resolve.ts';
 import { PICTURE_DIR, checkPictures, pictureFolder } from './pictures.ts';
@@ -880,6 +881,71 @@ export function checkTree(c: Catalogue, tree: Tree): Finding[] {
 }
 
 // ---------------------------------------------------------------------------
+// The parts list: rows to buy and rows the visitor brings
+// ---------------------------------------------------------------------------
+
+/** Every set of options: the product of the values of each option. */
+export function allOptions(): Options[] {
+  let out: Array<Record<string, string>> = [{}];
+  for (const key of OPTION_KEYS) {
+    out = out.flatMap((o) => (OPTION_VALUES[key] as ReadonlyArray<string>).map((value) => ({ ...o, [key]: value })));
+  }
+  return out as Options[];
+}
+
+/** A maker page: https, an address that parses, no tracking parameter, no fragment. */
+export function pageProblem(page: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(page);
+  } catch {
+    return 'does not parse as a URL';
+  }
+  if (url.protocol !== 'https:') return 'is not https';
+  if (url.hash !== '') return 'has a fragment';
+  if ([...url.searchParams.keys()].some((key) => /^(utm_|fbclid$|gclid$|ref$|tag$|aff)/i.test(key))) return 'has a tracking parameter';
+  return null;
+}
+
+export function checkBuy(c: Catalogue): Finding[] {
+  const out: Finding[] = [];
+  const sets = allOptions();
+  for (const part of c.parts) {
+    const id = `part.${part.id}`;
+    if (part.yours === true && (part.locked || part.selectable)) out.push(err(id, 'a part the visitor brings is neither locked nor selectable'));
+    if (sets.some((o) => buyRows(part, o).length === 0)) out.push(err(id, 'a set of options gives no row of the parts list'));
+    if (part.variantName) {
+      const { option, names } = part.variantName;
+      for (const value of Object.keys(names)) {
+        const shown = sets.filter((o) => o[option] === value);
+        if (shown.some((o) => !buyRows(part, o).some((row) => row.only?.[option] === value))) {
+          out.push(err(id, `the variant ${option}=${value} has no row of its own in the parts list`));
+        }
+      }
+    }
+    part.buy.forEach((row, index) => {
+      const at = `${id}.buy.${index}`;
+      for (const [key, value] of Object.entries(row.only ?? {})) {
+        if (!isOptionValue(key, value)) out.push(err(at, `${key}=${String(value)} is not a value of an option`));
+      }
+      if (row.maker !== null) {
+        out.push(...checkString(`${at}.maker`, row.maker, false));
+        if (brought(part)) out.push(err(at, 'a part the visitor brings names no maker'));
+      }
+      if (row.page !== undefined) {
+        const problem = pageProblem(row.page);
+        if (problem !== null) out.push(err(at, `the page ${row.page} ${problem}`));
+        if (row.maker === null) out.push(err(at, 'a page without a maker'));
+      }
+      if (row.qty !== undefined && !(Number.isInteger(row.qty) && row.qty >= 1 && row.qty <= 99)) {
+        out.push(err(at, `quantity ${String(row.qty)} is not a whole number from 1 to 99`));
+      }
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // All checks, the wire table, the command line
 // ---------------------------------------------------------------------------
 
@@ -907,6 +973,7 @@ export function checkAll(
     ...guarded('functions', () => checkFunctions(c)),
     ...guarded('pins', () => checkPins(c)),
     ...guarded('routes', () => checkRoutes(c)),
+    ...guarded('buy', () => checkBuy(c)),
   ];
   if (pictures !== null) findings.push(...guarded('pictures', () => checkPictures(c, pictures)));
   let repoAnchors = 0;

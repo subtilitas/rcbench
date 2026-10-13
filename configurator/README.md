@@ -21,15 +21,16 @@ stays on the part.
   visitor's device. See "Stored state".
 - No run-time dependency. The page loads 3 files from its own origin and sends
   no request to another origin. A picture loads from the same origin when its
-  part card comes near the viewport.
+  part card comes near the viewport. A link to a maker page or a web search
+  leaves the page on a click only; see "Parts to buy".
 - English and German. The start language follows the browser.
 - Light and dark theme follow the system setting. Print gives an A4 document.
 - The footer of the page states that product and company names belong to their
   owners and links to the repository's
   [NOTICE](https://github.com/subtilitas/rcbench/blob/main/NOTICE) as
-  "Trademark notice", in German "Markenhinweis". It is the 1 link of the page
-  to another origin. The page loads nothing from it. The Tab key reaches it
-  as the last control of the result.
+  "Trademark notice", in German "Markenhinweis". Besides the links of the
+  parts list it is the 1 link of the page to another origin. The page loads
+  nothing from it. The Tab key reaches it as the last control of the result.
 - Below 1024 px width a bar is fixed to the bottom of the viewport. Its
   height is 57 px with labels of 1 line; the labels wrap at a large text
   size and the bar grows. The page keeps the rendered height of the bar plus
@@ -57,7 +58,7 @@ stays on the part.
 | `src/diagram/picture.ts` | Wiring picture: SVG markup of the page and its legend. |
 | `src/diagram/export.ts` | Wiring picture: SVG markup inside the element subset of the PDF painter. |
 | `src/diagram/view.ts`, `control.ts` | Wiring picture: pan and zoom arithmetic; the listeners of the page. |
-| `src/view/` | Chooser, result document, table. |
+| `src/view/` | Chooser, result document, table, parts list (`buy.ts`: rows, search link, text and CSV). |
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
 | `drawings/` | Generator and check of the part drawings, anchor table, wire palette. See `drawings/README.md`. |
@@ -70,6 +71,7 @@ stays on the part.
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
+| `e2e/buy.spec.ts` | Playwright test of the parts list: rows, owned parts, variants, copy buttons, links and no request to Google before a click. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
 | `tools/size.ts` | Size check of the build. |
@@ -295,9 +297,48 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 |---|---|
 | Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
 | What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
+| Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page and web search, and the copy buttons. Under "You bring", the test objects and their supplies. See "Parts to buy". |
 | Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
 The footer holds the state of the project and the trademark notice.
+
+## Parts to buy
+
+The section "Parts to buy", in German "Teile zum Kaufen", lists the rows of
+`buy` in the data file for the parts of the setup, in catalogue order. See
+"Parts list" in `core/README.md`.
+
+| Element | Content |
+|---|---|
+| Disclaimer | "Parts list as of release v<release>. Makers change products without notice. Check every part against its check line before ordering. No warranty." The release is the `release` field of the data file. |
+| Row | Quantity ("2 ×"), maker and ordering name, "Any maker" for a generic row, "Modelled part: no product chosen" for a modelled part, the check line, then the links "Maker page" and "Web search". |
+| You bring | The test objects and the parts with `yours: true`: servo, servo supply, ESC and motor, ESC battery. Each with its check line, without a link. |
+| Copy as text | Heading with the release, the setup link of Copy link, the disclaimer, the rows to buy with their links, the rows to bring. Lines end in LF. |
+| Copy as CSV | A header row in the page language, then 1 record per row to buy. Columns: quantity, maker, ordering name, check, maker page, search link. Every field in double quotes, a double quote doubled, records end in CR LF (RFC 4180). The rows to bring are not in it. |
+
+A part ticked under "Parts you own" (`p` in the hash) is left out. A part
+that a function brings in stays in the list; its tick under "Parts you own"
+shows the reason, not ownership. A variant (`o=osoyoo`, `o=xt90`) lists the
+row of that variant: the Osoyoo breakout board adds a row, the XT90 module
+replaces the Matek board.
+
+The search link is built when the list is rendered:
+`https://www.google.com/search?q=` and the percent-encoded query. The query is
+`"<maker>" "<ordering name>"`; without a maker it is the spec, split at ", ",
+each term in double quotes. A double quote inside a term is dropped. The
+characters `! ' ( ) *` are percent-encoded as well. Example: the pull-up
+resistor gives
+`https://www.google.com/search?q=%22Resistor%202.2%20k%CE%A9%22%20%220.25%20W%22`.
+
+Every link of the list opens in a new tab with `rel="noopener noreferrer"`.
+The page embeds, preloads and prefetches nothing of Google or a maker; the
+first request to either follows a click. When the clipboard refuses, the
+copy buttons show the text in a read-only field, as Copy link does. The field
+holds the CSV with LF line ends: a text field stores no CR.
+
+The list names makers in plain text, without logos or pictures of the maker.
+Every maker of the list is named in `NOTICE` and in the trademark list of the
+repository README; `core/test/buy.test.ts` fails when one is missing.
 
 ## Drawing
 
@@ -440,13 +481,14 @@ export chunk on the first use.
 |---|---|
 | File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection as the URL hash writes it, without the language. |
 | Page | A4, 15 mm margins. Footer on every page: the sentence on product and company names of the page footer, without the link to `NOTICE`, and "Page x of y". |
-| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
+| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Parts to buy, with the disclaimer, and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |
-| Metadata | Title, document language, creator. Links: the share link, written without the ids of the functions every setup runs and with a test object as the tick of its function. |
+| Metadata | Title, document language, creator. |
+| Links | The share link, written without the ids of the functions every setup runs and with a test object as the tick of its function. In the parts list, each maker page and each web search, as a link annotation over its line. |
 | Output | The same bytes for the same setup, language, share link and date. |
-| Size | 45 kB for the smallest setup (4 pages), 68 kB for the largest (9 pages). |
+| Size | 49 kB for the smallest setup (5 pages), 83 kB for the largest (12 pages). |
 
 Parts of `src/export/`:
 
@@ -461,7 +503,7 @@ Parts of `src/export/`:
 | `font.ts`, `pdf.ts` | TrueType reader and PDF writer. |
 | `font/` | `Inter-Regular-subset.ttf` (22488 bytes), `Inter-Bold-subset.ttf` (22620 bytes), `OFL.txt`. |
 
-The export chunk is 112.44 kB (51.83 kB gzip). The first load carries the button,
+The export chunk is 113.98 kB (52.34 kB gzip). The first load carries the button,
 its strings and the chunk loader: 3.2 kB (1.1 kB gzip).
 
 The font is Inter 4.001 by The Inter Project Authors under the SIL Open Font
@@ -511,12 +553,22 @@ file names no stage, so the checks follow the stages as one list.
 - The page does not show the pin defaults of the data file (`pinDefaults`).
 - Tested in headless Chromium only. Firefox and Safari: not tested.
 - Print output: not checked on paper.
-- PDF export: the first use needs the network for the export chunk of 112.44 kB. Later uses work offline
+- PDF export: the first use needs the network for the export chunk of 113.98 kB. Later uses work offline
   until the page reloads.
 - PDF export: the file has no structure tags (not PDF/UA). A screen reader reads the text in page order
   and does not announce headings or table cells.
-- PDF export: every part is listed once. The data file holds no quantity field; a count is part of the
-  part name.
+- PDF export and page: the section "Parts" lists every part once; a count is part of the part name. The
+  quantity field `qty` belongs to the rows of "Parts to buy".
+- Parts to buy: a part that a function adds counts as owned only with a tick of its own, given before the
+  function adds it, or with its id under `p` in the link. The tick of a part a function already holds stays
+  set and leaves the row in the list.
+- Parts to buy: the maker pages answered with HTTP 200 on 2026-10-13; the page does not check them at run
+  time. The PD mini page is the maker's GitHub repository. The DAOKAI INA3221 board and the XT90 INA228
+  module have no maker page. The maker of the XT90 module is not known.
+- Parts to buy: the Matek page names the I2C-INA-BM with an INA228 or an INA238; the bench refuses the
+  INA238. The check line names the chip to look for.
+- Parts to buy: what a web search returns is not checked. A search for a spec quotes each term and finds
+  only pages that hold every term.
 - PDF export: the drawing is scaled by 0.526 to the text width. Its text is 5.8 pt to 6.8 pt. The wire table
   after it repeats every wire at 8 pt.
 - PDF export: the page before a drawing that needs a full page ends where the drawing no longer fits.

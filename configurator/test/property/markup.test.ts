@@ -8,7 +8,9 @@
 //  2. Every id occurs once, and every reference to an id resolves.
 //  3. Every form control has a label, every image a text and a size, every
 //     table header a scope.
-//  4. No link and no image leaves the page folder.
+//  4. No image leaves the page folder. A link leaves it only to the trademark
+//     notice, to a maker page of the data or to a web search of the parts
+//     list, and a link of the parts list opens a new tab without opener.
 //  5. The text holds no placeholder, no "undefined", no banned word and no
 //     exclamation mark, and data text reaches the page escaped.
 //  6. The summary states the count of bench parts, wires and functions of the
@@ -27,6 +29,7 @@ import { optionsOf } from '../../src/names.ts';
 import { chooser } from '../../src/view/chooser.ts';
 import type { View } from '../../src/view/chooser.ts';
 import { NOTICE_URL, result, summary } from '../../src/view/result.ts';
+import { SEARCH } from '../../src/view/buy.ts';
 
 const SPACE = spaceOf(CATALOGUE);
 const LANGS: Lang[] = ['en', 'de'];
@@ -35,6 +38,9 @@ const SHELL = readFileSync(new URL('../../index.html', import.meta.url), 'utf8')
 
 /** The ids of the static shell: the sections the rendered markup refers to. */
 const SHELL_IDS = [...SHELL.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1] as string);
+
+/** The maker pages of the data. */
+const PAGES = new Set(CATALOGUE.parts.flatMap((p) => p.buy).map((r) => r.page).filter((x) => x !== undefined));
 
 const VOID = new Set(['input', 'img', 'br', 'meta', 'link', 'hr']);
 
@@ -178,6 +184,11 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
       if (value === undefined || value.startsWith('#')) continue;
       // The link to the trademark notice leaves the page when the visitor follows it. The page loads nothing from it.
       if (key === 'href' && tag.name === 'a' && value === NOTICE_URL && tag.attrs.get('rel') === 'noopener noreferrer') continue;
+      // A maker page or a web search of the parts list: a new tab, no opener, 1 query parameter and no fragment.
+      if (key === 'href' && tag.name === 'a' && (PAGES.has(unescape(value)) || (unescape(value).startsWith(SEARCH) && /^[^&#]+$/.test(unescape(value).slice(SEARCH.length))))) {
+        if (tag.attrs.get('target') !== '_blank' || tag.attrs.get('rel') !== 'noopener noreferrer') out.push(`<a href="${value}"> opens without target="_blank" rel="noopener noreferrer"`);
+        continue;
+      }
       // A picture of a part, or a part drawing of the wiring picture in the language of the page.
       if (!/^pictures\/[a-z0-9-]+\.(webp|svg)$/.test(value) && !/^drawings\/(de\/)?[a-z0-9-]+\.svg$/.test(value)) out.push(`<${tag.name} ${key}="${value}"> leaves the page folder`);
     }

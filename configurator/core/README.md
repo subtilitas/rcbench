@@ -19,6 +19,7 @@ data and is not asserted.
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
+| `buy.ts` | `buyRows(part, options)` returns the rows of the parts list that apply to a set of options; `brought(part)` tells whether the visitor brings the part. |
 | `index.ts` | The entry point: `CATALOGUE`, `DEFAULT_OPTIONS`, `resolve`, the exports of `groups.ts` and the default export `core`. |
 | `tools/check.ts` | The static checks on the data. |
 | `tools/release-sources.ts` | The check of `../package.json` against `RCBENCH_VERSION_*` in `shared/link/include/rcbench_version.h` and against the release numbers in the Markdown files of the configurator. `tools/check.ts` runs it. |
@@ -37,6 +38,8 @@ part is bench hardware.
 | --- | --- |
 | `Part.testObject` | The part is a test object. It is neither locked nor selectable, and no rule adds it. |
 | `Part.modelled` | The part is modelled: the data states what it has to do, not which product does it. Its name gives the required range, its role the values a source states and "not stated" for the rest. It has no picture. The page and the PDF tag it "Modelled part: no product chosen". 1 part: `dcsup`, the DC supply of the Osoyoo breakout board. |
+| `Part.yours` | The visitor brings the part: its spec follows the test object. 4 parts: the test objects `servo` and `esc`, the servo supply `ssup` and the ESC battery `batt`. A test object is brought with or without the field. The modelled DC supply `dcsup` is not brought: the parts list gives its spec as a row to buy. |
+| `Part.buy` | The rows of the parts list. See "Parts list". |
 | `Fn.needs` | The bench hardware the function needs. It holds no test object. |
 | `Fn.drives` | The test object the function acts on. The resolver adds it with the function, so its pins and wires are in the setup. |
 
@@ -199,6 +202,29 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
   --typeRoots "$TMP_TOOLS/node_modules/@types" --types node
 ```
 
+## Parts list
+
+Every part has rows in `buy`; the page and the PDF list them under "Parts to
+buy". A row:
+
+| Field | Meaning |
+| --- | --- |
+| `maker` | The maker's name as `../../NOTICE` and the trademark list of `../../README.md` write it. `null` for a generic part and for a modelled part. |
+| `order` | The ordering name as the maker writes it, in both languages. Without a maker it is the spec, for example "Resistor 2.2 kΩ, 0.25 W". |
+| `check` | One short line in English and German: what to check before ordering, the variant traps. |
+| `page` | The maker's product page, https, no fragment, no tracking parameter. Absent when no maker page is known. |
+| `qty` | Pieces, 1 to 99. 1 when absent. |
+| `only` | The options the row applies to. A part with a `variantName` has a row of its own for each variant. |
+
+A test object and a part with `yours: true` are brought: their rows name no
+maker and no page. A modelled part names no maker and no page either: its
+row gives the required spec.
+
+5 rows have a maker page: Waveshare ESP32-S3-Touch-LCD-7, Waveshare RP2350-CAN,
+Osoyoo Breakout Board for Pico series, WeAct Studio PD Power Mini V1 Buck (the
+maker's GitHub repository) and Matek I2C-INA-BM. Each answered with HTTP 200 on
+2026-10-13. The DAOKAI INA3221 board has no known maker page.
+
 ## Checks
 
 `tools/check.ts` reports each finding with the id of the record.
@@ -213,6 +239,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 18, right 0 to 22, outer 0 to 7, channel 0 to 6). |
+| Parts list | A set of options gives a part no row, a variant of a part has no row of its own, `only` names an option value outside the type, a brought part names a maker or a page, a page is not https, does not parse, has a fragment or a tracking parameter, a page has no maker, a quantity is not a whole number from 1 to 99, or `yours` is set on a locked or selectable part. |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
 
 Each repository anchor in `catalogue.ts` is `repo(path, line, text)`. The text
