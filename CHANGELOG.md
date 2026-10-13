@@ -118,20 +118,28 @@ history is in git.
   the slot -- before the next set-point write, one at a time with another
   transaction between two. A slider dragged with SLIDER AND STEPS off, a
   new set point about every 50 ms, then gets a display read 500 ms after
-  the last one and a state read 900 ms after the last one, so the count
+  the last one with a module answering at once and a state read 900 ms after the last one, so the count
   keeps moving, and an output the module switches on while an OFF is
-  asked, or off by its protection, is seen during the drag. The state read
-  may also follow another reading straight away. The input read before a
-  set-point write or an ON goes out only when one is waiting, and not
-  between the reads for an ON, so set points and an ON reach a module that
-  answers up to 390 ms late: one set point within 2.4 s, an ON within
-  3.6 s, a state the module changes itself seen within 2.0 s during a drag
-  (host model, 40 start phases; the real module's reply time is not
-  measured). Current limitation: with replies 279 ms or more late, a drag
+  asked, or off by its protection, is seen during the drag. The state read,
+  and the input read before a write, may also follow another reading
+  straight away. The input read before a set-point write or an ON goes out
+  only when one is waiting, and not between the reads for an ON, so set
+  points and an ON reach a module that answers up to 390 ms late: one set
+  point within 2.5 s, an ON within 3.6 s at set points already written and
+  up to 7.5 s right after a set point change, a state the module changes
+  itself seen within 2.1 s during a drag (host model, 40 start phases; the
+  real module's reply time is not measured). Current limitation: a module
+  answering late stretches the 500 ms state and input reads at rest -- the
+  input 850 ms apart at 100 ms late, 2.5 s at 390 ms, the state up to
+  1.5 s -- so a sagging input is cut 1.7 s after the sag at 100 ms late
+  and up to 4.7 s up to 390 ms (about 1.0 s with a module answering at
+  once), and an output the module switches on while OFF is asked stays on
+  up to 1.8 s at rest. Current limitation: with replies 279 ms or more late, a drag
   holds the display read 3.7 s to 5.0 s, past `SUPPLY_LINK_BLIND_MS`, and
-  the panel switches an output that is on off; at rest the display read
-  stands up to 2.5 s at 390 ms, and the cards show dashes from 280 ms. The
-  INA228 temperature and diagnostic flags go with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  the panel switches an output that is on off, possible from 263 ms with
+  the panel's page read every 100 ms; at rest the display read stands up
+  to 2.5 s at 390 ms, and the cards can show dashes from about 260 ms.
+  The INA228 temperature and diagnostic flags go with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
   sample. A mark kind passed as a trace trigger is ignored, and the trace
   drops a sample while a shunt or configuration record is owed and counts
   it after that record.

@@ -1814,7 +1814,20 @@ TEST_CASE(a_slow_module_at_rest_keeps_the_display_coming)
  * reading just taken, and a new set point asked: the job chosen now, with
  * the display read @p display_ms and the state read @p state_ms ago.
  */
+static uint8_t job_with_readings_aged_after(uint32_t display_ms,
+                                            uint32_t state_ms,
+                                            bool after_a_reading);
+
 static uint8_t job_with_readings_aged(uint32_t display_ms, uint32_t state_ms)
+{
+    return job_with_readings_aged_after(display_ms, state_ms, false);
+}
+
+/* The same, with a reading that went ahead of the set point the job
+ * before (@p after_a_reading) or not. */
+static uint8_t job_with_readings_aged_after(uint32_t display_ms,
+                                            uint32_t state_ms,
+                                            bool after_a_reading)
 {
     fresh();
     run(100u, false);
@@ -1832,6 +1845,7 @@ static uint8_t job_with_readings_aged(uint32_t display_ms, uint32_t state_ms)
     d.last_input   = now;
     d.last_slot    = now;
     pdmini_want(&d, false, 6000u, 1000u);
+    d.polled_late = after_a_reading;
     pdmini_step(&d, now);
     CHECK(d.phase == PD_ATTACH);
     return d.cmd;
@@ -1855,6 +1869,23 @@ TEST_CASE(a_reading_goes_before_a_set_point_from_400_ms_past_its_due)
     CHECK_EQ(job_with_readings_aged(disp, state + 1u), PDMINI_READ_STATE);
 }
 
+/* Straight after a reading that went ahead of a set point, the state still
+ * goes first from PDMINI_STATE_MS + PDMINI_POLL_LATE_MS, 900 ms, since its
+ * last read, not 1 ms sooner; the display waits its turn. */
+TEST_CASE(a_state_read_follows_another_reading_from_900_ms)
+{
+    const uint32_t state = PDMINI_STATE_MS + PDMINI_POLL_LATE_MS;
+    CHECK_EQ(state, 900u);
+    CHECK_EQ(job_with_readings_aged_after(0u, state - 1u, true),
+             PDMINI_OUTPUT_DATA);
+    CHECK_EQ(job_with_readings_aged_after(0u, state, true), PDMINI_READ_STATE);
+    CHECK_EQ(job_with_readings_aged_after(0u, state + 1u, true),
+             PDMINI_READ_STATE);
+    CHECK_EQ(job_with_readings_aged_after(PDMINI_DISPLAY_MS + 900u, state - 1u,
+                                          true),
+             PDMINI_OUTPUT_DATA);
+}
+
 /* Two readings equally far past their due: the display, first in the
  * table, goes first. */
 TEST_CASE(a_tie_between_late_readings_goes_to_the_display)
@@ -1869,12 +1900,11 @@ TEST_CASE(a_tie_between_late_readings_goes_to_the_display)
  * now with the display, state, input and slot read @p disp, @p state,
  * @p input and @p slot ms ago, or 0 for none.
  */
-static uint8_t job_at_rest(uint32_t disp, uint32_t state, uint32_t input,
-                           uint32_t slot)
+static void rest_with_output(bool on)
 {
     fresh();
     run(100u, false);
-    pdmini_want(&d, false, 5000u, 1000u);
+    pdmini_want(&d, on, 5000u, 1000u);
     run(1500u, false);
     for (unsigned k = 0u; k < 2000u; ++k) {
         run(1u, false);
@@ -1884,12 +1914,27 @@ static uint8_t job_at_rest(uint32_t disp, uint32_t state, uint32_t input,
     }
     CHECK(d.phase == PD_IDLE);
     CHECK(d.input_known);
+    CHECK_EQ(d.st.output, on);
+}
+
+/* The readings aged @p disp, @p state, @p input and @p slot ms, and the job
+ * chosen now, or 0 for none. */
+static uint8_t job_aged(uint32_t disp, uint32_t state, uint32_t input,
+                        uint32_t slot)
+{
     d.last_display = now - disp;
     d.last_state   = now - state;
     d.last_input   = now - input;
     d.last_slot    = now - slot;
     pdmini_step(&d, now);
     return (d.phase == PD_ATTACH) ? d.cmd : 0u;
+}
+
+static uint8_t job_at_rest(uint32_t disp, uint32_t state, uint32_t input,
+                           uint32_t slot)
+{
+    rest_with_output(false);
+    return job_aged(disp, state, input, slot);
 }
 
 /* At rest, each reading starts at the millisecond it is due, not 1 ms
@@ -1907,6 +1952,131 @@ TEST_CASE(a_reading_at_rest_starts_when_it_is_due)
     CHECK_EQ(job_at_rest(0u, 0u, sp, 0u), PDMINI_READ_INPUT);
     CHECK_EQ(job_at_rest(0u, 0u, 0u, lp - 1u), 0u);
     CHECK_EQ(job_at_rest(0u, 0u, 0u, lp), PDMINI_READ_ID);
+}
+
+/*
+ * At rest the input is a reading like the others: with nothing to write --
+ * the output off or on as asked, or an ON already written and waiting for
+ * its confirming read -- a display read 300 ms past its due goes before an
+ * input read just due.  A set point to write, the current alone too, reads
+ * the input first; the slot, a read-back under way or no read-back yet go
+ * before that input read.
+ */
+TEST_CASE(the_input_goes_first_only_with_something_to_write)
+{
+    const uint32_t late_display = PDMINI_DISPLAY_MS + 300u;
+    for (int on = 0; on < 2; ++on) {
+        rest_with_output(on != 0);
+        CHECK_EQ(job_aged(late_display, 0u, PDMINI_STATE_MS, 0u),
+                 PDMINI_READ_DISPLAY);
+    }
+
+    rest_with_output(false);
+    pdmini_want(&d, true, 5000u, 1000u);   /* the ON written, unconfirmed */
+    d.en_pending = true;
+    d.en_for     = true;
+    d.en_at      = now;
+    CHECK_EQ(job_aged(late_display, 0u, PDMINI_STATE_MS, 0u),
+             PDMINI_READ_DISPLAY);
+
+    for (int on = 0; on < 2; ++on) {
+        rest_with_output(on != 0);
+        pdmini_want(&d, on != 0, 5000u, 1500u);   /* the current alone */
+        CHECK_EQ(job_aged(0u, 0u, PDMINI_STATE_MS, 0u), PDMINI_READ_INPUT);
+    }
+
+    rest_with_output(false);
+    pdmini_want(&d, false, 6000u, 1000u);
+    d.data_pending = true;
+    CHECK_EQ(job_aged(0u, 0u, PDMINI_STATE_MS, 0u), PDMINI_READ_DATA);
+
+    rest_with_output(false);
+    pdmini_want(&d, false, 6000u, 1000u);
+    d.data_known = false;
+    CHECK_EQ(job_aged(0u, 0u, PDMINI_STATE_MS, 0u), PDMINI_READ_DATA);
+
+    rest_with_output(false);
+    pdmini_want(&d, false, 6000u, 1000u);
+    d.slot = -1;
+    CHECK_EQ(job_aged(0u, 0u, PDMINI_STATE_MS, 0u), PDMINI_READ_ID);
+}
+
+/*
+ * Firmware without READ_INPUT_STATE: once the read has gone unanswered
+ * PDMINI_INPUT_MISSES times, a set point waits for it only every
+ * PDMINI_INPUT_RETRY_MS, 5000 ms, not 1 ms sooner.
+ */
+TEST_CASE(an_input_never_answered_goes_before_a_set_point_every_5_s)
+{
+    for (uint32_t since = PDMINI_INPUT_RETRY_MS - 1u;
+         since <= PDMINI_INPUT_RETRY_MS; ++since) {
+        fresh();
+        m.no_input = true;
+        run(100u, false);
+        pdmini_want(&d, false, 5000u, 1000u);
+        run(9000u, false);
+        CHECK(!d.input_seen);
+        CHECK(d.input_misses >= PDMINI_INPUT_MISSES);
+        CHECK_EQ(m.mv[0], 5000u);
+        for (unsigned k = 0u; k < 2000u && d.phase != PD_IDLE; ++k) {
+            run(1u, false);
+        }
+        CHECK(d.phase == PD_IDLE);
+        pdmini_want(&d, false, 6000u, 1000u);
+        CHECK_EQ(job_aged(0u, 0u, since, 0u),
+                 since < PDMINI_INPUT_RETRY_MS ? PDMINI_OUTPUT_DATA
+                                               : PDMINI_READ_INPUT);
+    }
+}
+
+/*
+ * An ON being confirmed is read only by its confirming read: straight after
+ * a reading that went ahead, a state read 900 ms old waits for
+ * PDMINI_CONFIRM_MS.  Job by job, and on a module answering late with the
+ * ON asked at the end of a drag: no state read reaches the module less
+ * than PDMINI_CONFIRM_MS after an OUTPUT_EN.
+ */
+TEST_CASE(an_on_being_confirmed_gets_no_early_state_read)
+{
+    rest_with_output(false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    d.en_pending  = true;
+    d.en_for      = true;
+    d.en_at       = now;
+    d.polled_late = true;
+    CHECK_EQ(job_aged(0u, PDMINI_STATE_MS + PDMINI_POLL_LATE_MS, 0u, 0u), 0u);
+
+    static const uint32_t lates[] = { 100u, 200u, 300u, 390u };
+    unsigned ons = 0u;
+    for (size_t i = 0u; i < sizeof(lates) / sizeof(lates[0]); ++i) {
+        for (unsigned ph = 0u; ph < 40u; ++ph) {
+            settle_late(false, lates[i]);
+            run(ph * 13u, false);
+            for (unsigned k = 0u; k < 40u; ++k) {   /* a drag, 2 s */
+                pdmini_want(&d, false,
+                            (uint16_t)(6000u + 10u * (k % 20u)), 1000u);
+                run(50u, false);
+            }
+            pdmini_want(&d, true, 6190u, 1000u);
+            unsigned writes = m.en_writes;
+            unsigned states = m.reads[PDMINI_READ_STATE];
+            for (unsigned t = 0u; t < 8000u; ++t) {
+                run(1u, false);
+                if (m.en_writes != writes) {
+                    writes = m.en_writes;
+                    ++ons;
+                }
+                if (m.reads[PDMINI_READ_STATE] != states) {
+                    states = m.reads[PDMINI_READ_STATE];
+                    CHECK(m.en_writes == 0u
+                          || (uint32_t)(now - m.last_en_ms)
+                                 >= PDMINI_CONFIRM_MS);
+                }
+            }
+            CHECK(m.output);
+        }
+    }
+    CHECK(ons >= 160u);
 }
 
 /* The next command the module is sent. */
@@ -2729,8 +2899,12 @@ int main(void)
     RUN(a_drag_on_a_slow_module_shows_a_trip_first);
     RUN(a_slow_module_at_rest_keeps_the_display_coming);
     RUN(a_reading_goes_before_a_set_point_from_400_ms_past_its_due);
+    RUN(a_state_read_follows_another_reading_from_900_ms);
     RUN(a_tie_between_late_readings_goes_to_the_display);
     RUN(a_reading_at_rest_starts_when_it_is_due);
+    RUN(the_input_goes_first_only_with_something_to_write);
+    RUN(an_input_never_answered_goes_before_a_set_point_every_5_s);
+    RUN(an_on_being_confirmed_gets_no_early_state_read);
     RUN(no_overdue_reading_splits_the_reads_before_an_on);
     RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(a_restart_goes_with_the_output_off_and_is_followed);

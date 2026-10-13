@@ -898,23 +898,37 @@ output that is on is switched off and the band says
 the module takes it -- the slider dragged with SLIDER AND STEPS off, about
 one new set point every 50 ms -- does not hold the readings back: a reading
 400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
-write, one at a time with another transaction between two; the state read
-may also follow another reading straight away. The display is then read
-about 500 ms after the last display read and the output state about 900 ms
-after the last state read, each with up to two transactions more. An
-output the module switches on while it is off on the panel, or switches
-off itself, is seen during the drag. The input is read before a set-point
-write or an ON only when one is waiting, and not between the reads for an
-ON. Set points and an ON reach a module that answers up to 390 ms late (the
-driver waits 400 ms): one set point within 2.4 s, an ON within 3.6 s, a
-module switching its output itself seen within 2.0 s during a drag (host
-model, 40 start phases). The real module's reply time is not measured.
+write, one at a time with another transaction between two; the state read,
+and the input read before a write, may also follow another reading straight
+away. With a module that answers at once, the display is then read about
+500 ms after the last display read and the output state about 900 ms after
+the last state read, each with up to two transactions more. An output the
+module switches on while it is off on the panel, or switches off itself, is
+seen during the drag. The input is read before a set-point write or an ON
+only when one is waiting, and not between the reads for an ON. Set points
+and an ON reach a module that answers up to 390 ms late (the driver waits
+400 ms; host model, 40 start phases): one set point within 2.5 s; an ON
+within 3.6 s when the set points are already written, up to 7.5 s when it
+is asked right after a set point change or a drag; a module switching its
+output itself seen within 2.1 s during a drag. An output the module
+switches on while OFF is asked is switched off about 500 ms later with a
+module that answers at once, up to 1.8 s later at rest and up to 2.1 s
+during a drag with one that answers up to 390 ms late. The real module's
+reply time is not measured.
+Current limitation: a module that answers late stretches the 500 ms of the
+state and input reads, as each transaction takes its reply time. At rest
+the input is read 850 ms apart at 100 ms late, 1.3 s apart at 200 ms and
+2.5 s apart at 390 ms; the state up to 1.5 s apart.
 Current limitation: with a module answering 279 ms or more late and the
 slider dragged, the display is read only 3.7 s to 5.0 s after the last
 display read (5.0 s at 390 ms), past `SUPPLY_LINK_BLIND_MS`; an output that
 is on is switched off and the band says
-`supply sends no readings -- output off`. At rest the display read stands
-up to 2.5 s at 390 ms, so the cards show dashes from 280 ms. The
+`supply sends no readings -- output off`. The panel reads the page every
+100 ms, which adds up to 100 ms to the gap it sees: from 263 ms late the
+driver's gap is over 2.9 s, so the cut is possible from 263 ms. At rest the
+display read stands up to 2.5 s at 390 ms. It stands over 1.4 s from
+259 ms late and 1.5 s from 279 ms, so the cards can show dashes from about
+260 ms. The
 output is also switched off, with a line in the band, when the coprocessor
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on
@@ -925,10 +939,15 @@ take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
 **A sagging input switches the PD mini off.** While the output is on, the
-coprocessor reads the module's input every 500 ms. When the input reads
-under the set point plus 0.5 V on 2 input reads in a row, it switches the
-output off at once, and the band names the input and the set point, for
-example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
+coprocessor reads the module's input every 500 ms with a module that
+answers at once, and further apart with one that answers late (see above).
+When the input reads under the set point plus 0.5 V on 2 input reads in a
+row, it switches the output off at once, and the band names the input and
+the set point, for example
+`PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. From the
+sag to the cut takes about 1.0 s with a module that answers at once.
+Current limitation: with one that answers late it takes 1.7 s at 100 ms
+late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model). The
 output stays off until a new hold. An input reading under 1.5 V leaves no
 room for the lowest set point, 1.0 V: the ON is not written, and the band
 shows the same message. One low reading switches nothing, and a
@@ -1021,7 +1040,7 @@ the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
 reserved, bound to an output or the other pin. Once the module has
 answered, a change waits for a state read of the module sent after it, at
 most about 1.2 s, and is taken only if that read shows the output off: the
-module can switch itself on between two of the 500 ms reads, by its button
+module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
 `PD mini wiring refused -- its output may be on`. A refused change is not

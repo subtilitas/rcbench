@@ -873,7 +873,7 @@ static bool next_job(pdmini_t *d, uint32_t now)
     }
     /* The state is not held back by the one-at-a-time rule: an overdue
      * state read goes straight after another reading, so a tripped output,
-     * or one on while an OFF is asked, is seen within about 2 s on a module
+     * or one on while an OFF is asked, is seen within 2.1 s on a module
      * answering up to 390 ms late -- the display waiting instead. */
     if (on_step == 0u && polled_late && !d->en_pending
         && (uint32_t)(now - d->last_state)

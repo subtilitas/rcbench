@@ -987,25 +987,40 @@ SLIDER, SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
 Messwerte nicht auf: eine Lesung, die 400 ms über ihre Fälligkeit hinaus
 ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
 eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
-des Zustands darf auch direkt auf eine andere Lesung folgen. Die Anzeige
-wird dann etwa 500 ms nach dem letzten Lesen der Anzeige gelesen und der
-Zustand des Ausgangs etwa 900 ms nach dem letzten Lesen des Zustands, jeweils
-mit bis zu zwei Transaktionen mehr. Ein Ausgang, den das Modul einschaltet,
-während er am Panel aus ist, oder selbst abschaltet, wird auch während des
-Ziehens erkannt. Der Eingang wird vor dem Schreiben eines Sollwerts oder
-einem ON nur gelesen, wenn eines davon wartet, und nicht zwischen den
-Lesungen für ein ON. Sollwerte und ein ON erreichen ein Modul, das bis zu
-390 ms spät antwortet (der Treiber wartet 400 ms): ein Sollwert innerhalb
-von 2,4 s, ein ON innerhalb von 3,6 s; ein Modul, das seinen Ausgang selbst
-schaltet, wird während des Ziehens innerhalb von 2,0 s erkannt (Host-Modell,
-40 Startphasen). Die echte Antwortzeit des Moduls ist nicht gemessen.
+des Zustands und das Lesen des Eingangs vor einem Schreiben dürfen auch
+direkt auf eine andere Lesung folgen. Bei einem Modul, das sofort antwortet,
+wird die Anzeige dann etwa 500 ms nach dem letzten Lesen der Anzeige gelesen
+und der Zustand des Ausgangs etwa 900 ms nach dem letzten Lesen des
+Zustands, jeweils mit bis zu zwei Transaktionen mehr. Ein Ausgang, den das
+Modul einschaltet, während er am Panel aus ist, oder selbst abschaltet, wird
+auch während des Ziehens erkannt. Der Eingang wird vor dem Schreiben eines
+Sollwerts oder einem ON nur gelesen, wenn eines davon wartet, und nicht
+zwischen den Lesungen für ein ON. Sollwerte und ein ON erreichen ein Modul,
+das bis zu 390 ms spät antwortet (der Treiber wartet 400 ms; Host-Modell,
+40 Startphasen): ein Sollwert innerhalb von 2,5 s; ein ON innerhalb von
+3,6 s, wenn die Sollwerte schon geschrieben sind, bis zu 7,5 s, wenn es
+direkt nach einer Änderung des Sollwerts oder einem Ziehen kommt; ein Modul,
+das seinen Ausgang selbst schaltet, wird während des Ziehens innerhalb von
+2,1 s erkannt. Ein Ausgang, den das Modul einschaltet, während OFF verlangt
+ist, wird bei einem Modul, das sofort antwortet, etwa 500 ms später
+abgeschaltet, bei einem, das bis zu 390 ms spät antwortet, in Ruhe bis zu
+1,8 s und während des Ziehens bis zu 2,1 s später. Die echte Antwortzeit des
+Moduls ist nicht gemessen.
+Aktuelle Einschränkung: ein Modul, das spät antwortet, dehnt die 500 ms der
+Lesungen von Zustand und Eingang, denn jede Transaktion dauert seine
+Antwortzeit. In Ruhe wird der Eingang bei 100 ms Verspätung 850 ms
+auseinander gelesen, bei 200 ms 1,3 s und bei 390 ms 2,5 s; der Zustand bis
+zu 1,5 s auseinander.
 Aktuelle Einschränkung: antwortet das Modul 279 ms oder später und wird der
 Slider gezogen, wird die Anzeige erst 3,7 s bis 5,0 s nach dem letzten
 Lesen der Anzeige gelesen (5,0 s bei 390 ms), über `SUPPLY_LINK_BLIND_MS`
 hinaus; ein Ausgang, der an ist, wird abgeschaltet, und das Band sagt
-`Netzteil liefert keine Messwerte -- Ausgang aus`. In Ruhe steht das Lesen
-der Anzeige bis zu 2,5 s bei 390 ms, die Karten zeigen also ab 280 ms
-Striche. Ebenfalls abgeschaltet, mit
+`Netzteil liefert keine Messwerte -- Ausgang aus`. Das Panel liest die Page
+alle 100 ms, was die Lücke, die es sieht, um bis zu 100 ms verlängert: ab
+263 ms Verspätung ist die Lücke des Treibers über 2,9 s, die Abschaltung ist
+also ab 263 ms möglich. In Ruhe steht das Lesen der Anzeige bis zu 2,5 s bei
+390 ms. Es steht über 1,4 s ab 259 ms Verspätung und 1,5 s ab 279 ms, die
+Karten können also ab etwa 260 ms Striche zeigen. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
 ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein
@@ -1016,11 +1031,17 @@ werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
 des PD mini schalten den Ausgang ab.
 
 **Ein einbrechender Eingang schaltet den PD mini ab.** Solange der Ausgang an
-ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
-Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
-er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
-Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
-Der Ausgang bleibt aus bis zu einem neuen Halten. Ein Eingang unter 1,5 V
+ist, liest der Koprozessor den Eingang des Moduls alle 500 ms bei einem
+Modul, das sofort antwortet, und weiter auseinander bei einem, das spät
+antwortet (siehe oben). Liegt der Eingang bei 2 Lesungen hintereinander
+unter dem Sollwert plus 0,5 V, schaltet er den Ausgang sofort ab, und das
+Band nennt Eingang und Sollwert, zum Beispiel
+`Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
+Vom Einbruch bis zur Abschaltung vergeht bei einem Modul, das sofort
+antwortet, etwa 1,0 s. Aktuelle Einschränkung: bei einem, das spät
+antwortet, sind es 1,7 s bei 100 ms Verspätung, 1,9 s bei 200 ms und bis zu
+4,7 s bis 390 ms (Host-Modell). Der Ausgang bleibt aus bis zu einem neuen
+Halten. Ein Eingang unter 1,5 V
 lässt keinen Platz für den kleinsten Sollwert, 1,0 V: das ON wird nicht
 geschrieben, und das Band zeigt dieselbe Meldung. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
@@ -1125,7 +1146,7 @@ Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
 oder der andere Pin ist. Hat das Modul einmal geantwortet, wartet eine
 Änderung auf eine danach gesendete Zustandslesung des Moduls, höchstens etwa
 1,2 s, und wird nur übernommen, wenn diese den Ausgang aus zeigt: das Modul
-kann sich zwischen zwei der 500-ms-Lesungen selbst einschalten, über seinen
+kann sich zwischen zwei Zustandslesungen selbst einschalten, über seinen
 Knopf oder seine Einstellung AUTO OUT, und neue Pins ließen ihm keinen Weg
 zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
