@@ -7,7 +7,10 @@
  * movements, and a finished sweep is not started again by a repeat; it
  * drives the surfaces and nothing else.  A hold keeps a running sweep's
  * phase, RESUME carries it on from there, and RESUME is refused with no
- * phase kept or a curve changed since.
+ * phase kept or a curve changed since.  The frame rate is the target's:
+ * the slots' with the standard servo ports, one port's pin otherwise,
+ * judged per target, held at 50 Hz on a slice two ports share, and back at
+ * 0 after a change of target.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,6 +21,7 @@
 #include "link_msg.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "outputs_pages.h"
 #include "servo_page.h"
 #include "tick_wrap.h"
 
@@ -117,26 +121,144 @@ TEST_CASE(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate)
 }
 
 /*
- * A programming port whose pulse is on renders at the page's rate as well,
- * so its channel is judged with the slots: channel 9 at 1000 to 2000 us
- * refuses 560 Hz though no slot is bound; at 410 to 1110 us, a 760 us tail
- * servo's, 560 Hz is taken.  A rate of 0 does not judge it: the port is
- * back at 50 Hz.
+ * Protocol 4.19: with the standard servo ports as target the rate is the
+ * slots' alone.  A programming port whose pulse is on stays at 50 Hz, so
+ * channel 9 at 1000 to 2000 us does not refuse 560 Hz, and the slots take
+ * the rate (servo_page_slots_hz()).
  */
-TEST_CASE(a_frame_rate_is_judged_against_a_pulsing_ports_endpoints)
+TEST_CASE(the_standard_target_does_not_judge_the_ports)
 {
     fresh(false);
     CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
-    CHECK_EQ(frame_hz(560u), 0u);   /* no port named */
+    servo_page_ports(&pg, (uint16_t)(1u << 9), 0u);
+    CHECK_EQ(frame_hz(560u), 0u);
+    CHECK_EQ(servo_page_hz(&pg), 560u);
+    CHECK_EQ(servo_page_slots_hz(&pg), 560u);
     CHECK_EQ(frame_hz(0u), 0u);
-    servo_page_ports(&pg, (uint16_t)(1u << 9));
+    CHECK_EQ(servo_page_slots_hz(&pg), 0u);
+    servo_page_ports(NULL, 0u, 0u);   /* no page, nothing to do */
+    CHECK_EQ(servo_page_slots_hz(NULL), 0u);
+}
+
+/*
+ * With a programming port as target the rate is that port's alone: the
+ * slots stay at their own rates and are not judged at it.  A surface at
+ * 1000 to 2000 us, which refuses 560 Hz as the standard target, does not
+ * refuse it for the port; nor does a surface beside a throttle at 400 Hz on
+ * one slice, which refuses 300 Hz as the standard target.
+ */
+TEST_CASE(a_port_targets_rate_is_independent_of_the_slots)
+{
+    fresh(false);
+    CHECK(outputs_set_endpoints(&o, 0u, 1000u, 2000u));
+    pwm_slot(0u, 0u, 0u, 50u);    /* surface, slice 0 */
+    pwm_slot(1u, 1u, 1u, 400u);   /* throttle, slice 0 */
     CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(300u), LINK_NACK_BAD_VALUE);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(frame_hz(560u), 0u);
+    CHECK_EQ(servo_page_hz(&pg), 560u);
+    CHECK_EQ(servo_page_slots_hz(&pg), 0u);
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&o, servo_page_slots_hz(&pg), rate);
+    CHECK_EQ(rate[0], 50u);
+    CHECK_EQ(rate[1], 400u);
+    CHECK_EQ(frame_hz(300u), 0u);
+    /* The PWM driver's range holds for a port too: 40 to 560 Hz. */
+    CHECK_EQ(frame_hz(39u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(561u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(servo_page_hz(&pg), 300u);
+    CHECK_EQ(frame_hz(40u), 0u);
+    CHECK_EQ(frame_hz(0u), 0u);
+}
+
+/*
+ * A port target whose pulse is on is judged against its own endpoints:
+ * channel 9 at 1000 to 2000 us refuses 560 Hz (1784 us) and 500 Hz
+ * (1999 us) and takes 499 Hz; at 410 to 1110 us, a 760 us tail servo's,
+ * 560 Hz is taken, and at 1000 to 1784 us as well, 1785 us refused.  A
+ * port whose pulse is off, and a pulsing port that is not the target, are
+ * not judged.  0 is always taken: the port is back at
+ * 50 Hz.
+ */
+TEST_CASE(a_port_targets_rate_is_judged_against_its_endpoints)
+{
+    fresh(false);
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 2000u));
+    CHECK(outputs_set_endpoints(&o, 10u, 1000u, 2500u));
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    servo_page_ports(&pg, (uint16_t)(1u << 10), 0u);
+    CHECK_EQ(frame_hz(560u), 0u);   /* the target does not pulse */
+    CHECK_EQ(frame_hz(0u), 0u);
+    servo_page_ports(&pg, (uint16_t)((1u << 9) | (1u << 10)), 0u);
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(500u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
     CHECK_EQ(frame_hz(499u), 0u);
     CHECK_EQ(frame_hz(0u), 0u);
     CHECK(outputs_set_endpoints(&o, 9u, 410u, 1110u));
     CHECK_EQ(frame_hz(560u), 0u);
-    servo_page_ports(NULL, 0u);   /* no page, nothing to do */
+    CHECK_EQ(frame_hz(0u), 0u);
+    /* The edge: an endpoint of the frame's last count, 1784 us at 560 Hz,
+     * fits; one microsecond more does not. */
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1784u));
+    CHECK_EQ(frame_hz(560u), 0u);
+    CHECK_EQ(frame_hz(0u), 0u);
+    CHECK(outputs_set_endpoints(&o, 9u, 1000u, 1785u));
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+}
+
+/*
+ * A slice counts against one wrap register.  A port whose pin shares its
+ * slice with another port's pin runs at 50 Hz with it: as target it takes
+ * 0 and 50 and refuses every other rate, 40 and 560 Hz included.  The
+ * standard target is not held by it.
+ */
+TEST_CASE(a_port_sharing_a_slice_takes_only_50_hz)
+{
+    fresh(false);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    servo_page_ports(&pg, 0u, (uint16_t)((1u << 9) | (1u << 10)));
+    CHECK_EQ(frame_hz(300u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(40u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(frame_hz(560u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
+    CHECK_EQ(frame_hz(50u), 0u);
+    CHECK_EQ(frame_hz(0u), 0u);
+    /* A port alone on its slice is not held. */
+    CHECK(servo_page_target(&pg, &o, 11u, 1u));
+    CHECK_EQ(frame_hz(300u), 0u);
+    CHECK(servo_page_target(&pg, &o, 0u, 0u));
+    CHECK_EQ(frame_hz(300u), 0u);
+}
+
+/*
+ * A change of target returns the rate to 0, so the new target starts at
+ * its own rate and never at a faster one meant for the old: the standard
+ * ports at 400 Hz, then port 9, reads 0; port 9 at 300 Hz, named again,
+ * keeps it; the standard ports again read 0.  Armed, with a sweep running,
+ * the change also stops the sweep.
+ */
+TEST_CASE(a_target_change_returns_the_rate_to_0)
+{
+    fresh(true);
+    CHECK_EQ(frame_hz(400u), 0u);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
+    CHECK_EQ(frame_hz(300u), 0u);
+    CHECK(servo_page_target(&pg, &o, 9u, 1u));
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 300u);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 10u));
+    CHECK(servo_page_target(&pg, &o, 0u, 0u));
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 0u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    CHECK(!servo_page_step(&pg, &o, T0 + 20u));
+    CHECK(outputs_armed(&o));
+    /* A range off the bank changes nothing, the rate included. */
+    CHECK_EQ(frame_hz(200u), 0u);
+    CHECK(!servo_page_target(&pg, &o, OUT_MAX_CHANNELS, 1u));
+    CHECK_EQ(reg(LINK_SV_FRAME_HZ), 200u);
 }
 
 TEST_CASE(a_sweep_needs_the_bench_armed)
@@ -999,7 +1121,11 @@ int main(void)
     RUN(a_sweep_needs_the_bench_armed);
     RUN(a_frame_rate_too_fast_for_the_surface_endpoints_is_refused);
     RUN(a_frame_rate_of_0_is_judged_at_the_surfaces_own_rate);
-    RUN(a_frame_rate_is_judged_against_a_pulsing_ports_endpoints);
+    RUN(the_standard_target_does_not_judge_the_ports);
+    RUN(a_port_targets_rate_is_independent_of_the_slots);
+    RUN(a_port_targets_rate_is_judged_against_its_endpoints);
+    RUN(a_port_sharing_a_slice_takes_only_50_hz);
+    RUN(a_target_change_returns_the_rate_to_0);
     RUN(a_sweep_out_of_range_is_refused_whole);
     RUN(a_sweep_drives_the_surfaces_and_nothing_else);
     RUN(a_repeated_sweep_keeps_its_curve_and_a_changed_one_starts_over);

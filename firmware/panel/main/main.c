@@ -5408,9 +5408,12 @@ static bool write_servo(const servo_cmd_t sv)
 }
 
 /*
- * The SERVO page: the frame rate every PWM output rendering a surface runs
- * at.  A coprocessor before protocol 4.1 has no such page and runs each slot
- * at its binding's rate, 50 Hz for a servo.
+ * The SERVO page: the frame rate of the PWM target -- every PWM output
+ * rendering a surface for the standard target, the one programming port
+ * for a port target (protocol 4.19).  A coprocessor before protocol 4.1 has
+ * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
+ * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
+ * so and servo_rate_reset_note() records it here.
  *
  * The rate is written with every held position, not once: a coprocessor that
  * restarts between two polls goes back to each slot's own rate without the
@@ -5458,7 +5461,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     if (reply.op == LINK_OP_ACK) {
         s_servo_hz_sent    = hz;
         s_servo_hz_refused = 0u;
-        servo_rate_show(SERVO_RATE_IN_FORCE, hz);
+        servo_rate_show(servo_rate_in_force(s_far_minor), hz);
         return RATE_LANDED;
     }
     if (reply.op == LINK_OP_NACK) {
@@ -5469,7 +5472,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     return RATE_NO_ANSWER;
 }
 
-/* The rate the surfaces run at as far as this end knows, or
+/* The rate the PWM target runs at as far as this end knows, or
  * SERVO_HZ_UNKNOWN. */
 static uint16_t servo_rate_now(void)
 {
@@ -6799,6 +6802,20 @@ static __attribute__((noinline)) void prog_link_service(void)
                             &reply)
               && reply.op == LINK_OP_ACK;
         prog_link_written(&s_prog_link, &w, ack);
+    }
+    /* From 4.19 a TARGET change returns the SERVO rate to 0: the next
+     * position that wants a faster one leads with it again, and one whose
+     * TARGET write went unanswered counts as fast until a reset lands. */
+    switch (prog_link_rate(&s_prog_link)) {
+    case PROG_LINK_RATE_RESET:
+        servo_rate_reset_note(s_servo_rate_page, true);
+        break;
+    case PROG_LINK_RATE_UNKNOWN:
+        servo_rate_reset_note(s_servo_rate_page, false);
+        break;
+    case PROG_LINK_RATE_KEPT:
+    default:
+        break;
     }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
     prog_drive_publish();
@@ -8456,10 +8473,35 @@ void app_main(void)
         servo_screen_set_armed(servo_armed_now);
         servo_screen_set_bench_armed(armed_now);
         {
-            /* Whether the screen's frame rate reached the pins. */
-            const unsigned r = atomic_load(&s_servo_rate_shown);
-            servo_screen_rate((servo_rate_state_t)(r >> 16),
-                              (uint16_t)(r & 0xFFFFu));
+            /*
+             * Whether the screen's frame rate reached the pins, and the
+             * drive it reached: one pair, for the note that names both.
+             * The control task (core 1) stores the rate reset of a TARGET
+             * change before the new drive (prog_link_service(), the
+             * link-up), and a rate that lands on the new target after it.
+             * This core reads the drive, the rate, then the drive again,
+             * every access sequentially consistent: the same drive on
+             * both sides of the rate means the two held together at the
+             * rate's load, so the note never pairs a rate with a target it
+             * was not stored for.  A drive that moves on every try keeps
+             * the screen's last pair for this frame.
+             */
+            unsigned drive = atomic_load(&s_drive);
+            unsigned r = 0u;
+            bool paired = false;
+            for (int k = 0; k < 3 && !paired; ++k) {
+                r = atomic_load(&s_servo_rate_shown);
+                const unsigned again = atomic_load(&s_drive);
+                paired = again == drive;
+                drive = again;
+            }
+            if (paired) {
+                servo_screen_rate((servo_rate_state_t)(r >> 16),
+                                  (uint16_t)(r & 0xFFFFu));
+                servo_screen_set_drive((uint8_t)(drive >> 8),
+                                       (uint8_t)(drive & 0xFFu),
+                                       (drive & DRIVE_PWM_BIT) != 0u);
+            }
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
             /* What the tester drives and whether the port renders its
@@ -8473,10 +8515,6 @@ void app_main(void)
                                            atomic_load(&s_throttle_pins_known));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
-            const unsigned drive = atomic_load(&s_drive);
-            servo_screen_set_drive((uint8_t)(drive >> 8),
-                                   (uint8_t)(drive & 0xFFu),
-                                   (drive & DRIVE_PWM_BIT) != 0u);
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),

@@ -77,8 +77,10 @@ typedef struct {
     uint16_t         slew_per_s;
     /**
      * The frame rate the profile in force runs at, in Hz.  The panel writes
-     * it to the coprocessor's SERVO page, which runs every PWM output whose
-     * first channel is a surface at it; see servo_screen_rate().
+     * it to the coprocessor's SERVO page, which runs the PWM target at it:
+     * every PWM output whose first channel is a surface, or from protocol
+     * 4.19 the one programming port the target names; see
+     * servo_screen_rate().
      */
     uint16_t         frame_hz;
     /** SERVO_CMD_SWEEP's curve, as the SERVO page takes it (servo_sweep.h):
@@ -352,12 +354,44 @@ float servo_screen_power_sample(int series, int back);
 /** What became of a frame rate the panel wrote to the SERVO page. */
 typedef enum {
     SERVO_RATE_UNSENT = 0,  /**< not written yet: it goes with a position   */
-    SERVO_RATE_IN_FORCE,    /**< every PWM surface runs at it               */
-    SERVO_RATE_REFUSED,     /**< a surface shares a PWM slice with an output
-                                 at another rate; the pins kept theirs      */
+    SERVO_RATE_IN_FORCE,    /**< the target the coprocessor holds runs at
+                                 it (servo_in_force_note())                 */
+    SERVO_RATE_REFUSED,     /**< a pulse longer than the frame, or a pin
+                                 sharing a PWM slice with an output at
+                                 another rate; the pins kept theirs         */
     SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
                                  4.0 runs each slot at its binding's rate   */
+    SERVO_RATE_IN_FORCE_SURFACES, /**< every PWM surface runs at it,
+                                       whatever the target: protocol 4.1 to
+                                       4.18                                 */
 } servo_rate_state_t;
+
+/** The state an acknowledged rate is shown in, by the coprocessor's protocol
+ *  minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
+ *  (4.19), where the rate reaches the PWM TARGET alone, and
+ *  SERVO_RATE_IN_FORCE_SURFACES below it. */
+servo_rate_state_t servo_rate_in_force(uint16_t minor);
+
+/**
+ * The OUTPUT page's note while a rate is SERVO_RATE_IN_FORCE: two lines into
+ * @p l1 and @p l2 of @p size bytes each, for the rate @p hz, the drive
+ * @p target / @p gpio / @p pwm (as servo_screen_set_drive()) and the PWM
+ * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
+ * target the panel asks for).  The first line names the target the
+ * coprocessor holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
+ * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
+ * or the target not known (the page not known).  With no link it names no
+ * rate: "No link: the rate in force is not known.".  The second line
+ * says "The PWM TARGET setting is not in force." while the setting and the
+ * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
+ * that a PPM output keeps its own frame.  Returns whether the note takes
+ * the warning colour: the setting and the drive differ, no link, the
+ * target not known, a port without a known pin, or a port with its pulse
+ * off.  Neither line is written with a NULL buffer or a @p size of 0, and
+ * false is returned.
+ */
+bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
+                         uint8_t target, uint8_t gpio, bool pwm, int setting);
 
 /**
  * What the panel last heard about the frame rate @p hz.  Called every frame;

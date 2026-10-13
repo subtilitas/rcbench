@@ -72,7 +72,7 @@ static iomcu_state_t s_state;
 /* What the output drivers make true, whatever is connected; see main(). */
 #define IOMCU_CAPABILITIES \
     ((uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE | LINK_CAP_ESC_TELEM))
-/* The SERVO page: the surfaces' frame rate and their sweep.  Not kept. */
+/* The SERVO page: the PWM target's frame rate and the sweep.  Not kept. */
 static servo_page_t s_servo;
 /* The SUPPLY page and the PD mini it drives on a PIO UART.  Not kept. */
 static supply_page_t s_supply;
@@ -317,31 +317,13 @@ static uint8_t ports_pulsing(void)
 }
 
 /*
- * The programming ports' pins made to agree with the PROG page, at the
- * SERVO page's frame rate or PROG_PORT_RATE_HZ.  Never the pin the wire
- * driver holds: it is the driver's until the KST port gives it back, and
- * the page keeps the port's pulse switch and target meanwhile.  Then the
- * tester's sweep is pointed where the page's TARGET says.
+ * The tester's sweep pointed where the PROG page's TARGET says.  A change
+ * returns the SERVO page's rate to 0 (servo_page_target()); true when that
+ * moved the rate the slots run at, which then wants the slots bound again.
  */
-static void ports_apply(void)
+static bool target_sync(void)
 {
-    uint8_t pin[LINK_PG_PORTS_MAX];
-    const uint8_t wire = kst_port_pin_mask(&s_kst);
-    for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
-                                            : prog_port_pin(&s_prog, i);
-    }
-    uint16_t hz = servo_page_hz(&s_servo);
-    if (hz == 0u) {
-        hz = PROG_PORT_RATE_HZ;
-    }
-    outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
-    prog_port_bound(&s_prog, (uint8_t)(outputs_hw_ports_bound() | wire));
-    /* Each page told what the other holds, so neither takes a write that
-     * leaves a pulsing port's endpoint longer than its frame: the PROG
-     * page the rate, the SERVO page the ports that pulse. */
-    prog_port_rate(&s_prog, hz);
-    servo_page_ports(&s_servo, prog_port_pwm_channels(&s_prog));
+    const uint16_t slots_hz = servo_page_slots_hz(&s_servo);
     const uint8_t target = prog_port_target(&s_prog);
     if (target != 0u) {
         (void)servo_page_target(&s_servo, &s_outputs,
@@ -350,19 +332,78 @@ static void ports_apply(void)
     } else {
         (void)servo_page_target(&s_servo, &s_outputs, 0u, 0u);
     }
+    prog_port_rate(&s_prog, servo_page_hz(&s_servo));
+    return servo_page_slots_hz(&s_servo) != slots_hz;
+}
+
+/* The slots bound now, at the rates they run at now. */
+static void slots_rerate(void)
+{
+    uint16_t rate[OUT_MAX_SLOTS];
+    outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
+    outputs_hw_apply_only(&s_outputs, rate, bound_slots());
+    sense_page_bound(&s_sense, bound_slots());
+}
+
+/*
+ * The programming ports' pins bound as the PROG page holds them: the TARGET
+ * port at the SERVO rate while it names one, every other port at
+ * PROG_PORT_RATE_HZ (prog_port_port_hz()).  Never the pin the wire driver
+ * holds: it is the driver's until the KST port gives it back, and the page
+ * keeps the port's pulse switch and target meanwhile.  The pins the wire
+ * driver holds, as a mask of ports.
+ */
+static uint8_t ports_bind(void)
+{
+    uint8_t pin[LINK_PG_PORTS_MAX];
+    uint16_t hz[LINK_PG_PORTS_MAX];
+    const uint8_t wire = kst_port_pin_mask(&s_kst);
+    for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
+                                            : prog_port_pin(&s_prog, i);
+        hz[i] = prog_port_port_hz(&s_prog, i);
+    }
+    outputs_hw_ports(pin, hz, (uint8_t)PROG_PORT_CHANNEL0);
+    return wire;
+}
+
+/*
+ * The programming ports' pins made to agree with the PROG page
+ * (ports_bind()).  The tester's sweep is pointed where the page's TARGET
+ * says before and after the binding, which can take the TARGET port's pin
+ * away.
+ */
+static void ports_apply(void)
+{
+    if (target_sync()) {
+        slots_rerate();
+    }
+    const uint8_t wire = ports_bind();
+    prog_port_bound(&s_prog, (uint8_t)(outputs_hw_ports_bound() | wire));
+    if (target_sync()) {
+        slots_rerate();
+    }
+    /* Each page told what the other holds, so neither takes a write that
+     * leaves a pulsing port's endpoint longer than its frame or two rates
+     * on one slice: the PROG page the rate, the SERVO page the ports that
+     * pulse and the ports that share a slice. */
+    servo_page_ports(&s_servo, prog_port_pwm_channels(&s_prog),
+                     prog_port_sliced_channels(&s_prog));
     sense_page_ports(&s_sense, ports_pulsing());
 }
 
 /*
  * The silicon made to agree with the bank, every slot at the rate it runs
- * at: its own, or the SERVO page's for a PWM surface.  Only the slots in
- * @p may_bind are bound; hw_apply() binds every one.  The programming
- * ports follow, on what the slots leave.
+ * at: its own, or the SERVO page's for a PWM surface while the tester's
+ * target is the standard servo ports.  Only the slots in @p may_bind are
+ * bound; hw_apply() binds every one.  The programming ports follow, on what
+ * the slots leave.
  */
 static void hw_apply_only(uint8_t may_bind)
 {
+    (void)target_sync();
     uint16_t rate[OUT_MAX_SLOTS];
-    outputs_slot_rates(&s_outputs, servo_page_hz(&s_servo), rate);
+    outputs_slot_rates(&s_outputs, servo_page_slots_hz(&s_servo), rate);
     outputs_hw_apply_only(&s_outputs, rate, may_bind);
     /* And the SERVO_SENSE page told which slots render frames, so a
      * capture never arms on one the silicon left unbound. */
@@ -491,13 +532,13 @@ static uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
      * page's rate: refused whole, rather than taken with an output left
      * unbound. */
     if (outputs_chan_cfg_rate_check(&s_outputs, next,
-                                    servo_page_hz(&s_servo)) != 0u) {
+                                    servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor an endpoint longer than the frame of the PWM output that renders
      * it, judged with the slots a commit puts in force beside it. */
     if (outputs_chan_cfg_pulse_check(&s_outputs, next, slots,
-                                     servo_page_hz(&s_servo)) != 0u) {
+                                     servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
@@ -562,6 +603,10 @@ static void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * reserved against all of them and bound.  A pin the generator cannot bind
  * is refused with the pins as they were.  No pin moves while the bank is
  * armed or asked to arm, or while the KST port is out of PWM.
+ *
+ * The pins are bound, at the rates the write leaves the ports at, before
+ * the SERVO page follows a TARGET change: a refused write leaves the SERVO
+ * rate, the sweep and the slots' rates as they were.
  */
 static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
@@ -581,7 +626,7 @@ static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         return nack;
     }
     reserve_held();
-    ports_apply();
+    (void)ports_bind();
     /* Every port that holds a pin has it on the generator, or the write is
      * undone: the pins, the reservation and the silicon as before. */
     for (uint8_t i = 0; i < prog_port_count(&s_prog); ++i) {
@@ -594,6 +639,7 @@ static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
             return LINK_NACK_BAD_VALUE;
         }
     }
+    ports_apply();
     prog_port_kept(&s_prog, kept_now);
     if (memcmp(kept_was, kept_now, sizeof(kept_was)) != 0) {
         save_outputs(&s_state);
@@ -1121,13 +1167,13 @@ static uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
-                                 servo_page_hz(&s_servo)) != 0u) {
+                                 servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     /* Nor a PWM slot at a rate whose frame is shorter than its channel's
      * endpoint. */
     if (outputs_slots_pulse_check(&s_outputs, next,
-                                  servo_page_hz(&s_servo)) != 0u) {
+                                  servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
     uint16_t prev[LINK_OS_COUNT];

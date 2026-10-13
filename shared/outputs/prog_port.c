@@ -11,6 +11,7 @@
 
 #include "link_msg.h"
 #include "out_pwm_map.h"
+#include "outputs_pages.h"
 
 #define REG(port, r) LINK_PG_REG(port, r)
 
@@ -90,7 +91,6 @@ void prog_port_init(prog_port_t *p, uint8_t count)
     memset(p, 0, sizeof(*p));
     p->count = (count > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX
                                            : count;
-    p->hz    = PROG_PORT_RATE_HZ;
     for (unsigned port = 0; port < LINK_PG_PORTS_MAX; ++port) {
         p->regs[REG(port, LINK_PG_PIN)]    = LINK_PG_PIN_NONE;
         p->regs[REG(port, LINK_PG_CMD)]    = (uint16_t)(OUT_SPAN / 2u);
@@ -174,6 +174,13 @@ void prog_port_kept(const prog_port_t *p, uint16_t *kept)
         k[2] = p->regs[REG(port, LINK_PG_MIN_US)];
         k[3] = p->regs[REG(port, LINK_PG_MAX_US)];
     }
+}
+
+/* The rate port @p port runs at with @p target as TARGET and the SERVO
+ * rate @p hz: @p hz for the target port, PROG_PORT_RATE_HZ otherwise. */
+static uint16_t port_hz(uint16_t target, uint16_t hz, unsigned port)
+{
+    return (hz != 0u && target == port + 1u) ? hz : (uint16_t)PROG_PORT_RATE_HZ;
 }
 
 /* Whether the window @p off, @p n carries register @p r. */
@@ -268,15 +275,45 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
     if ((next[LINK_PG_PWM] & (uint16_t)~usable) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    /*
+     * The SERVO rate is the target's, and a change of target returns it to
+     * 0 (servo_page_target()): each port is judged at the rate the write
+     * leaves it at.
+     */
+    const uint16_t target = p->regs[LINK_PG_TARGET];
+    const bool retarget = next[LINK_PG_TARGET] != target;
+    const uint16_t hz = retarget ? 0u : p->hz;
+    /* A slice counts against one wrap register: no pin moves onto the
+     * slice of a port that runs at a rate of its own. */
+    if (hz != 0u && hz != PROG_PORT_RATE_HZ && target != 0u
+        && target <= p->count) {
+        const uint16_t tpin = next[REG(target - 1u, LINK_PG_PIN)];
+        for (unsigned port = 0; port < p->count; ++port) {
+            const uint16_t pin = next[REG(port, LINK_PG_PIN)];
+            if ((moved & (1u << port)) != 0u && port + 1u != target
+                && pin != LINK_PG_PIN_NONE && tpin != LINK_PG_PIN_NONE
+                && out_pwm_same_slice((uint8_t)pin, (uint8_t)tpin)) {
+                return LINK_NACK_BAD_VALUE;
+            }
+        }
+    }
     /* No pulse longer than the frame that carries it: the pin would sit
      * high for the whole frame. */
-    const uint16_t longest = out_pwm_pulse_max(p->hz);
     for (unsigned port = 0; port < p->count; ++port) {
+        const uint16_t longest =
+            out_pwm_pulse_max(port_hz(next[LINK_PG_TARGET], hz, port));
         if ((next[LINK_PG_PWM] & (1u << port)) != 0u
             && (next[REG(port, LINK_PG_MIN_US)] > longest
                 || next[REG(port, LINK_PG_MAX_US)] > longest)) {
             return LINK_NACK_BAD_VALUE;
         }
+    }
+    /* A target taken from the standard servo ports while they run at the
+     * SERVO rate sends every slot back to its own rate: none may be left
+     * with a pulse longer than that frame. */
+    if (retarget && target == 0u && p->hz != 0u
+        && outputs_pulse_check(o, 0u, 0u, 0u) != 0u) {
+        return LINK_NACK_BAD_VALUE;
     }
     if (next[LINK_PG_TARGET] != 0u
         && (next[LINK_PG_TARGET] > LINK_PG_PORTS_MAX
@@ -285,6 +322,10 @@ uint8_t prog_port_write(prog_port_t *p, uint8_t off, uint8_t n,
     }
 
     memcpy(p->regs, next, sizeof(next));
+    /* As servo_page_target() returns the SERVO page's rate to 0: the ports
+     * are bound at the rates the write leaves before the SERVO page follows
+     * the TARGET, and a revert (prog_port_revert()) brings the rate back. */
+    p->hz = hz;
     p->blocked &= (uint8_t)~moved;
     p->bound   &= (uint8_t)~moved;   /* until the caller has bound it */
     for (unsigned port = 0; port < p->count; ++port) {
@@ -411,6 +452,34 @@ void prog_port_rate(prog_port_t *p, uint16_t hz)
     if (p != NULL) {
         p->hz = hz;
     }
+}
+
+uint16_t prog_port_port_hz(const prog_port_t *p, uint8_t port)
+{
+    if (p == NULL) {
+        return PROG_PORT_RATE_HZ;
+    }
+    return port_hz(p->regs[LINK_PG_TARGET], p->hz, port);
+}
+
+uint16_t prog_port_sliced_channels(const prog_port_t *p)
+{
+    uint16_t ch = 0u;
+
+    if (p == NULL) {
+        return 0u;
+    }
+    for (unsigned a = 0; a < p->count; ++a) {
+        for (unsigned b = 0; b < p->count; ++b) {
+            if (a != b && holds(p, a) && holds(p, b)
+                && out_pwm_same_slice(
+                    (uint8_t)p->regs[REG(a, LINK_PG_PIN)],
+                    (uint8_t)p->regs[REG(b, LINK_PG_PIN)])) {
+                ch |= (uint16_t)(1u << prog_port_channel((uint8_t)a));
+            }
+        }
+    }
+    return ch;
 }
 
 uint8_t prog_port_target(const prog_port_t *p)

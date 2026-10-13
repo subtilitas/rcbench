@@ -1346,7 +1346,7 @@ TEST_CASE(a_busy_pin_is_a_refusal_code_of_its_own)
  */
 TEST_CASE(an_arm_names_its_roles_from_4_18)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 18u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_ARM_ROLE);
     CHECK_EQ(LINK_MINOR_ARM_ROLE, 18u);
     CHECK(LINK_MINOR_ARM_ROLE > LINK_MINOR_TONE_BUSY);
     CHECK_EQ(LINK_CT_ARM, 0u);
@@ -1505,6 +1505,20 @@ TEST_CASE(a_change_between_overlapping_sets_is_refused)
     }
 }
 
+/*
+ * 4.19 moves no register: the SERVO rate follows PROG's TARGET, and
+ * the registers that carry both are where 4.16 had them.
+ */
+TEST_CASE(the_servo_rate_follows_the_target_without_a_new_register)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 19u);
+    CHECK_EQ(LINK_MINOR_SERVO_TARGET_RATE, 19u);
+    CHECK(LINK_MINOR_SERVO_TARGET_RATE > LINK_MINOR_ARM_ROLE);
+    CHECK_EQ(LINK_SV_FRAME_HZ, 0);
+    CHECK_EQ(LINK_PG_TARGET, 3);
+    CHECK_EQ(LINK_PAGE_SERVO, 0x29);
+}
+
 int main(void)
 {
     RUN(a_read_returns_the_registers);
@@ -1555,5 +1569,6 @@ int main(void)
     RUN(an_old_style_arm_of_one_arms_every_role);
     RUN(the_arm_values_are_the_documented_literals);
     RUN(a_change_between_overlapping_sets_is_refused);
+    RUN(the_servo_rate_follows_the_target_without_a_new_register);
     return test_summary("link_pages");
 }

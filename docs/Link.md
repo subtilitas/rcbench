@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.18. The
+coprocessor transmits only in answer to a request. Protocol version 4.19. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -100,7 +100,10 @@ range ahead of the write that switches the port's pulse on
 pin with BUSY rather than BAD_VALUE, and the panel offers a frame refused
 with BUSY again ([A busy pin on the phase tap](#a-busy-pin-on-the-phase-tap)).
 From 4.18 the panel's ARM names the roles it arms
-([An arm for one role](#an-arm-for-one-role)). The
+([An arm for one role](#an-arm-for-one-role)). From
+4.19 SERVO's frame rate drives the PWM target alone, and a TARGET change
+returns it to 0; the panel then shows the rate as not sent until it writes
+it again. The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -593,7 +596,7 @@ build has 1. `shared/outputs/prog_port.c` holds the rules.
 | 0 | `COUNT` | read | the ports of this build, 0 to 4 |
 | 1 | `FLAGS` | read | bit n: the PWM generator has port n's pin. Bit 8 + n: port n's stored pin was taken at start and the port does not hold it |
 | 2 | `PWM` | read, write | bit n: port n renders its pulse while the bank is armed for the surfaces. Not kept |
-| 3 | `TARGET` | read, write | what SERVO's sweep and hold command: 0 the standard servo ports, n + 1 port n. Not kept |
+| 3 | `TARGET` | read, write | what SERVO's frame rate, sweep and hold drive: 0 the standard servo ports, n + 1 port n. A change sets SERVO's frame rate to 0 (since 4.19). Not kept |
 | 4 + 5 n | `PIN` | read, write | port n's coprocessor GPIO (general-purpose input/output), or 0xFFFF for none. Kept |
 | 5 + 5 n | `CMD` | read, write | the command, 0 to 1000; a higher value is taken as 1000. Not kept |
 | 6 + 5 n | `SLEW` | read, write | as CHAN_CFG's slew: 0 to 3000, a higher value refused with BAD_VALUE, nothing stored (since 4.16). Kept; a kept slew above 3000 starts as 3000 |
@@ -607,15 +610,22 @@ command timeout are the bank's and act on a port as on a standard servo
 port. A port is a surface: it renders a pulse while the bank is armed for
 the surfaces (ARM 1, 0x0004 or 0x0006), its `PWM` bit is set,
 the generator has its pin and the servo programming page holds the port in
-PWM. Every port runs at
-SERVO's frame rate (register 0 of SERVO), or at 50 Hz while that reads 0.
+PWM. The port that `TARGET` names runs at SERVO's frame rate (register 0 of
+SERVO), or at 50 Hz while that reads 0. Every other port runs at 50 Hz, and
+the PWM slots run at their own OUTPUTS rates while a port is the target
+(since 4.19).
 
 The servo tester reaches a port three ways:
 
 - `CMD` is the manual command. It is written at least every 500 ms, as a
   channel of CHANNELS is.
-- `TARGET` points SERVO's sweep, hold and RESUME at one port. A change of
-  `TARGET` ends a running or held sweep as a SWEEP of 0 does.
+- `TARGET` points SERVO's frame rate, sweep, hold and RESUME at one port. A
+  change of `TARGET` ends a running or held sweep as a SWEEP of 0 does and
+  sets SERVO's frame rate to 0 (since 4.19), so the new target starts at
+  50 Hz or, for the standard servo ports, at each slot's own rate. A change
+  away from the standard servo ports while SERVO reads a rate other than 0
+  is refused with BAD_VALUE when a PWM slot back at its own rate would carry
+  an endpoint longer than that frame.
 - A capture of SERVO_SENSE names a port with bit 11 of its arm register
   (since 4.13): bits 8 to 10 are then the port, not an output channel.
   Refused with BAD_VALUE for a port that renders no pulse. A port whose
@@ -630,13 +640,19 @@ way, and so is a SUPPLY, SENSE or TONE write that takes it. Channels. A
 slot's channel range never reaches the ports' bank channels 9 to 12: a write
 of OUTPUTS or BIND with such a slot is refused with BAD_VALUE, and a stored
 slot with one starts unbound. Two ports may
-share a slice: both run at the one port rate. A `PIN` is not changed while
+share a slice. The RP2350 runs both channels of one PWM slice from one
+divider and one wrap register, so both pins run at one rate. A port whose
+pin shares its slice with another held port's pin takes a SERVO rate of 0
+or 50 Hz only, any other is refused with BAD_VALUE; and while the `TARGET`
+port runs at a rate other than 50 Hz, a `PIN` write that moves another port
+onto its slice is refused with BAD_VALUE (both since 4.19). A `PIN` is not changed while
 the bank is armed, while the port's `PWM` bit is set, while it is the
 `TARGET` or while the servo programming page has the port out of PWM. `PWM`
 and `TARGET` name only ports
 whose pin the generator has. A write that reaches a register of a port the
 build does not have is refused with BAD_VALUE, a write of register 0 or 1
-with READ_ONLY. A refused write changes nothing.
+with READ_ONLY. A refused write changes nothing, SERVO's frame rate and sweep
+included.
 
 A coprocessor that has stored no port has port 0 on GP13, pad 17 of the
 bring-up module, and the other ports without a pin. GP13's slice partner
@@ -655,8 +671,11 @@ is set until another `PIN` is written.
 `test_prog_port` runs the page: every pin refusal in both directions, the
 endpoints at 399, 400, 2500 and 2501 µs, the slew at 3000 and 3001 and a kept
 slew of 3001 and 65535, a pin move under an armed bank, a
-set `PWM` bit and a `TARGET`, 0 and 5 ports asked of a 4-port model, and a
-stored pin taken at start. No pulse of a port has been measured on
+set `PWM` bit and a `TARGET`, 0 and 5 ports asked of a 4-port model, a
+stored pin taken at start, the SERVO rate reaching the target port alone, a
+target change judged at 50 Hz, a pin refused onto the slice of a target at
+its own rate, and a target change that would leave a slot with a pulse
+longer than its frame. No pulse of a port has been measured on
 hardware.
 
 ### The programming port for KST and Chaservo servos
@@ -1165,7 +1184,7 @@ Clearing a latched failsafe is such a side effect.
 | 0x26 | ARTWORK | read | what a picture of the board is: blocks of payload (0 when the coprocessor carries none), width and height in pixels, format (0 none, 1 RGB565 with the low byte first), payload length in two registers, and a CRC (cyclic redundancy check) over the whole payload seeded zero |
 | 0x27 | ART_DATA | read, write | the picture itself: write register 0 to say which block, then read the page. Register 0 reads back the block being served and registers 1 to 31 carry 62 bytes of it. A block does not advance on being read, so a reply that goes missing is asked for again rather than skipped |
 | 0x28 | PADS | read | the pads that are not pins, one register each: the pad number in 6 bits, what it is in 2 (0 no pad and the list ends, 1 ground, 2 a rail, 3 neither), and the rail in 8 bits of tenths of a volt. Zero volts on a rail means it is not a fixed voltage, which is not the same as a ground's 0 V. 32 slots, in pad order |
-| 0x29 | SERVO | read, write | register 0: the frame rate in Hz of every PWM output whose first channel is a surface, 40 to 560, or 0 for each slot's own rate from OUTPUTS; refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates, and while it is not 0 so is a CHAN_CFG or OUTPUTS write that would (since 4.1); refused the same way when it would leave a PWM output or a pulsing programming port with an endpoint longer than its frame (since 4.16, [A pulse no longer than its frame](#a-pulse-no-longer-than-its-frame)). Registers 1 to 4, one frame: a sweep of the surfaces -- curve (0 stopped, 1 square, 2 sine, 3 triangle), speed in thousandths of a cycle a second (50 to 5000), amplitude in command units either side of the centre (0 to 500), hold at each end in ms (0 to 5000); a sweep starts or changes only from all four written together, refused with BAD_VALUE otherwise, and with NOT_ARMED on a disarmed bench or one armed for the throttle alone (since 4.18); 0 in register 1 alone stops it, and 4 alone holds every surface where its output is, under the same disarm and 500 ms rules. A sweep running when the hold begins keeps its phase (since 4.6): how far into the curve it was, and so its point, its dwell and the ends reached; one that has made its movements is held at the centre it ended on. A write is judged against the page as the coprocessor's next pass would leave it at that moment: a sweep past its last movement, unwritten for 500 ms or disarmed has ended, even when the write is served before the pass that ends it. 5 alone (RESUME, since 4.6) carries that sweep on from the kept phase; the surfaces are commanded along the curve again at once and slew there from where they were held, at their own rate. RESUME is refused with BAD_VALUE when no phase is kept -- no sweep was running when the hold began, or the hold ended by a write of 0, a curve written over it, a disarm, 500 ms unwritten or a restart -- and when registers 2 to 5 no longer read what the paused sweep runs, and with NOT_ARMED on a disarmed bench or one armed for the throttle alone. A 4.5 coprocessor refuses 5 with BAD_VALUE. Register 5: the ends a sweep started after it reaches before it stops, 0 for no end. Register 6, read only: the ends the sweep has reached. A sweep stops on a write of 0, on a disarm and when it has not been written for 500 ms, leaving each surface where its output has got to; repeating it keeps its curve going, and a sweep that has made its movements is not started again by a repeat (since 4.2). Nothing is kept: a coprocessor restart reads 0 throughout |
+| 0x29 | SERVO | read, write | register 0: the frame rate in Hz of the PWM target PROG's `TARGET` names, 40 to 560, or 0 for its own rate. With the standard servo ports as target: every PWM output whose first channel is a surface, 0 for each slot's own rate from OUTPUTS; refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates, and while it is not 0 so is a CHAN_CFG or OUTPUTS write that would (since 4.1). With a programming port as target: that port's pin alone, 0 for 50 Hz (since 4.19, [The target's frame rate](#the-targets-frame-rate)). Refused the same way when it would leave a PWM output or a pulsing programming port with an endpoint longer than its frame (since 4.16, [A pulse no longer than its frame](#a-pulse-no-longer-than-its-frame)). A change of `TARGET` sets register 0 to 0 (since 4.19). Registers 1 to 4, one frame: a sweep of the surfaces -- curve (0 stopped, 1 square, 2 sine, 3 triangle), speed in thousandths of a cycle a second (50 to 5000), amplitude in command units either side of the centre (0 to 500), hold at each end in ms (0 to 5000); a sweep starts or changes only from all four written together, refused with BAD_VALUE otherwise, and with NOT_ARMED on a disarmed bench or one armed for the throttle alone (since 4.18); 0 in register 1 alone stops it, and 4 alone holds every surface where its output is, under the same disarm and 500 ms rules. A sweep running when the hold begins keeps its phase (since 4.6): how far into the curve it was, and so its point, its dwell and the ends reached; one that has made its movements is held at the centre it ended on. A write is judged against the page as the coprocessor's next pass would leave it at that moment: a sweep past its last movement, unwritten for 500 ms or disarmed has ended, even when the write is served before the pass that ends it. 5 alone (RESUME, since 4.6) carries that sweep on from the kept phase; the surfaces are commanded along the curve again at once and slew there from where they were held, at their own rate. RESUME is refused with BAD_VALUE when no phase is kept -- no sweep was running when the hold began, or the hold ended by a write of 0, a curve written over it, a disarm, 500 ms unwritten or a restart -- and when registers 2 to 5 no longer read what the paused sweep runs, and with NOT_ARMED on a disarmed bench or one armed for the throttle alone. A 4.5 coprocessor refuses 5 with BAD_VALUE. Register 5: the ends a sweep started after it reaches before it stops, 0 for no end. Register 6, read only: the ends the sweep has reached. A sweep stops on a write of 0, on a disarm and when it has not been written for 500 ms, leaving each surface where its output has got to; repeating it keeps its curve going, and a sweep that has made its movements is not started again by a repeat (since 4.2). Nothing is kept: a coprocessor restart reads 0 throughout |
 | 0x2A | SUPPLY | read, write | a WeAct PD Power Mini V1 Buck on a PIO (programmable input/output) UART on two of the coprocessor's pins (since 4.3). Registers 0 to 3, one frame: enable, the GPIO that transmits (to the module's DM) and the one that receives (its DP), and the module's UART Baudrate setting, 0 to 6 for 9600, 19200, 38400, 57600, 115200, 230400 and 460800 baud, or 7 (since 4.4) to find it: the UART tries the next rate after every WHO_AM_I without a valid answer, starting at 19200, until a module has answered once; refused with BAD_VALUE on a pin that is reserved, bound to an output or the other pin, and for any change while the output is asked on or may be on (bit 6 of the flags). Since 4.5, a change while a module has answered is acknowledged and held: registers 0 to 3 read the wiring in force and flag bit 8 is set until a state read of the module sent after the change answers, at most about 1.2 s; a read showing the output off takes the change, one showing it on or failing refuses it, and bit 9 is set until the next write of registers 0 to 3. Such a change comes alone, without registers 4 to 6, and an ON is refused with BAD_VALUE while one is held. A host older than 4.5 that writes the wiring again while it is held is acknowledged and the hold goes on. The pins are no output's while held. Registers 4 to 6, one frame: output (1 on) and the set points in mV and mA, up to 20000 mV and 3000 mA; an ON is refused with NOT_ARMED without a live heartbeat, and while wiring just written is not yet in flash (a save is taken 400 ms after the last write), and the output goes off when the heartbeat stops. Registers 7 to 16, read only: flags (bit 0 online, bit 1 output on, bits 3..2 mode 0 normal, 1 constant current, 2 overcurrent, bit 4 an output that would not switch, bit 5 set points that would not take, bit 6 an output on or possibly on -- read on, an ON not yet confirmed, or an OFF owed to a module that stopped answering, bit 7 an output the module switched off by itself while ON was asked, held off until OUTPUT is written 0, since 4.5 bit 8 a wiring change held for a state read and bit 9 one that read refused, bit 10 an output switched off because the module's input read under the set point plus 500 mV on 2 input reads in a row, held off until OUTPUT is written 0, since 4.13 bit 11 a programming port holds registers 4 to 6: a write that is not an OFF is refused with BAD_VALUE (since 4.15 every change of a set point; before it an ON and a raise of the voltage), see [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos)), the output's mV and mA, the set points read back, the input's state and mV, readings taken and transactions failed modulo 65536, and (since 4.4) the rate in use, 0 to 6, or 7 while AUTO has found none. Register 17 (since 4.4), written alone as 1 with the output asked off and the supply enabled, restarts the module (SYSTEM_RESET) once it has answered and its output reads off; it reads 0. The wiring is kept in the coprocessor's flash and driven at boot with the output off, so a module left on is switched off after a restart; the command is not kept |
 | 0x2B | SENSE | read, write | two I2C (Inter-Integrated Circuit) current monitors on one bus on two of the coprocessor's pins, a TI INA228 in the ESC's power path and a TI INA3221 on the servo rail (since 4.7). Registers 0 to 3, one frame: enable (bit 0 INA228, bit 1 INA3221, bit 2 the AS5600 output encoder since 4.9), the SDA GPIO, the SCL GPIO, and the clock, 400 kHz and no other value: at 100 kHz one read takes 480 to 750 µs and the coprocessor's 1 ms schedule does not fit. The schedule reads INA3221 CH1 at 1000 Hz, CH2 and CH3 at 50 Hz or at 1000 Hz for a synchronised pair, the INA228's current and voltage at 500 Hz each, its die temperature, the INA3221's Mask/Enable and each part's set-up register read back (since 4.11) at 25 Hz each, and everything else at 50 Hz. Both modules carry pull-ups on SDA and SCL, and they add in parallel: the DAOKAI INA3221 has 10 kΩ to its VS (3.3 V); the MATEK INA228's pull-up value and rail are unknown. The combined value must stay above about 1 kΩ: an I2C output sinks 3 mA at 0.4 V, and (3.3 V − 0.4 V) / 3 mA is 967 Ω. Below 10 kΩ it shortens the rise time: the 300 ns rise limit at 400 kHz allows 35 pF of bus with 10 kΩ alone, and more with less. SDA's GPIO number mod 4 is 0 or 2 and SCL is the GPIO after it, one I2C block's pair (GP16 and GP17 by default). Registers 4 to 7, one frame: the INA228's address, 0x40 to 0x4F (default 0x45, the MATEK I2C-INA-BM's as shipped; its solder bridges give 0x44 or 0x41); its shunt in µΩ, 50 to 20000 (default 200); the current its range is set for in 0.1 A, 10 to 3000 (1.0 to 300.0 A, the bench's design maximum; default 2048). The maximum chooses ADCRANGE only: 1 while the shunt's voltage at it is at most 40.96 mV, 0 up to 163.84 mV, and above that the write is refused. CURRENT_LSB is the shunt ADC's step divided by the shunt (78.125 nV or 312.5 nV over R), so CURRENT and the shunt voltage clip together, and SHUNT_CAL is 4096 at either range. A shunt whose full scale at the chosen range passes 2000 A is refused as well, so below 81.92 µΩ only ADCRANGE 1 is taken; the rule is the driver's, `ina228_calibrate()`; register 7 reserved. Registers 8 to 11, one frame: the INA3221's address, 0x40 to 0x43 (default 0x40); its shunt in 0.1 mΩ, 50 to 10000 (5 mΩ to 1 Ω, default 1000, the 0.1 Ω that reads to 1.638 A); the channels read, bits 0..2 for CH1 to CH3, at least one while enabled (default CH1); register 11 reserved. The reserved registers read 0 and take only 0. Refused with BAD_VALUE: a value out of range, SDA and SCL not one block's pair whatever ENABLE holds, while a part is enabled a pin that is reserved, bound to an output or held by SUPPLY, both parts on one address while both are enabled, and any change while the bank is armed; a write of the set-up in force is taken. One frame that is not a pair is taken: ENABLE 0 with SDA or SCL 0, which is what a panel writes for pins that are not set. The pins are no output's while any part is enabled, and an OUTPUTS write binding one is refused. Registers 12 to 25, read only: flags (bit 0 INA228 online, bit 1 its last identity read was an INA228's, bit 2 something else answers at its address, bit 3 a current read at the end of its range in the last 50 ms window or since the run's arm, so BENCH's current and power, or their peaks, are bounds and not values; bits 4 to 6 the same three for the INA3221; bit 8 the bus is open on its pins, bit 9 SDA is held low and being clocked free), the addresses that answered the last scan (bit n for 0x40 + n), the INA228's DEVICE_ID and the INA3221's die ID as read, transactions failed modulo 65536, the INA228's die temperature in 0.1 °C (signed) and DIAG_ALRT, its charge in 0.01 mAh (signed, 32 bit, registers 19 and 20, low first) and energy in 0.01 Wh (32 bit, registers 21 and 22, low first) since the run's arm, the ESC's own telemetry voltage (10 mV) and current (10 mA), and their valid bits (bit 0 voltage, bit 1 current). Registers 26 to 30, read only, since 4.9: the output encoder's flags, RAW ANGLE, MAGNITUDE, sample count and still time in ms (see below). Register 31, read only, since 4.11: `RESETS`, the current monitors found reset, the INA228 in the low byte and the INA3221 in the high byte, each modulo 256 ([The window ring](#the-window-ring)); a 4.10 or older coprocessor reads 0. Registers 0 to 11 are kept in the coprocessor's flash |
 | 0x2C | SERVO_SENSE | read, write | the INA3221's channels and a move timed on the coprocessor's clock (since 4.7). Registers 0 to 11, read only, four a channel from CH1: mean current (mA, signed), highest current (mA, signed), mean bus voltage (mV) and lowest bus voltage (mV) over the last 50 ms window, the voltage at the load side of the shunt. Register 12, read only: the window number modulo 65536; a read does not end a window. Register 13, read only: bits 0..2 a channel's window holds readings, bits 4..6 one of them read the top of the range (163.8 mV across the shunt), which makes that channel's mean and highest current lower bounds, bit 7 the same of the capture. Registers 14 to 17, one frame: a capture -- bit 7 set, the INA3221 channel in bits 0..1, CH1 only (2 and 3 are refused; the field stays for a channel read fast enough later), and the output channel (0 to 7) in bits 8..10 whose next changed command starts the timing, or with bit 11 set (since 4.13) the programming port in those bits ([The programming ports](#the-programming-ports)); the holding level the move ends at in mA, signed, -32768 to 32767 (since 4.11; 0 to 32767 before it, a larger value refused); the movement threshold and the arrival band, each 1 to 32767 mA. An arm is the whole frame and restarts a capture already running. 0 in register 14 disarms and is never refused; written at the head of the frame, the other three are not stored. Refused with BAD_VALUE: any other write that is not the whole frame, other bits set in register 14, a value out of range, a channel other than CH1 or one SENSE does not read, and an output channel that is not a surface on a PWM slot the coprocessor has bound (a pin whose compare register another pin holds is not); with NOT_ARMED on a disarmed bank or one armed for the throttle alone (since 4.18). A bank that stops driving the surfaces ends a capture that has not finished. Registers 18 to 24, read only: the state (0 idle, 1 armed, 2 waiting for movement, 3 moving, 4 arrived, 5 settled on an end stop, 6 late: movement and no arrival within 3000 ms plus the meter's lag, 7 unseen: no movement in that time, 8 lost: the INA3221 stopped answering, or no PWM edge came within 3000 ms of the arm), captures finished modulo 65536, the time from the PWM frame carrying the new pulse to movement and to arrival in 0.1 ms, resolved to CH1's 1 ms sample interval, the highest and mean filtered current of the move (mA, signed), and the samples in it. Nothing is kept: a coprocessor restart reads 0 throughout |
@@ -1349,9 +1368,11 @@ for 1 µs. The rule is `out_pwm_pulse_max()` in
 | 399 Hz and below | 2506 µs and more | 2500 µs, CHAN_CFG's ceiling |
 
 The rate judged is the one the output runs at: SERVO's register 0 for a
-slot whose first channel is a surface while that register is not 0, the
-slot's own OUTPUTS rate otherwise, and for a programming port SERVO's
-register 0, or 50 Hz while that reads 0. A channel is judged by the longer of
+slot whose first channel is a surface while that register is not 0 and the
+standard servo ports are the target, the slot's own OUTPUTS rate otherwise;
+for the programming port `TARGET` names SERVO's register 0, or 50 Hz while
+that reads 0, and 50 Hz for every other port
+([The target's frame rate](#the-targets-frame-rate)). A channel is judged by the longer of
 its two endpoints, so a reversed pair counts the same. PPM (pulse-position
 modulation) and DShot slots are not judged: their drivers build their own
 frames.
@@ -1364,8 +1385,9 @@ changes nothing:
 | CHAN_CFG (0x23) | an endpoint of a channel a PWM slot renders is longer than that slot's frame |
 | OUTPUTS (0x22) | a PWM slot's rate is too fast for its channel's endpoints |
 | BIND (0x30) `COMMIT` | the prepared CHAN_CFG page, judged with the prepared OUTPUTS page, breaks the rule; either page alone may break it |
-| SERVO (0x29) register 0 | the rate would leave a surface, or a programming port whose `PWM` bit is set, with an endpoint longer than its frame. 0 is judged as well: it sends each surface back to its slot's own rate |
-| PROG (0x33) `PWM`, `MIN_US`, `MAX_US` | a port whose `PWM` bit is set after the write has an endpoint longer than the frame of the port rate |
+| SERVO (0x29) register 0 | the rate would leave the target -- a surface, or the target programming port with its `PWM` bit set -- with an endpoint longer than its frame. 0 is judged as well with the standard servo ports as target: it sends each surface back to its slot's own rate |
+| PROG (0x33) `TARGET` | the change leaves the standard servo ports while SERVO's register 0 is not 0, and a PWM slot back at its own OUTPUTS rate would have an endpoint longer than that frame |
+| PROG (0x33) `PWM`, `MIN_US`, `MAX_US` | a port whose `PWM` bit is set after the write has an endpoint longer than the frame of that port's rate |
 
 The checks are `outputs_pulse_check()`, `outputs_chan_cfg_pulse_check()`
 and `outputs_slots_pulse_check()` in `shared/outputs/outputs_pages.c`, and
@@ -1373,9 +1395,10 @@ and `outputs_slots_pulse_check()` in `shared/outputs/outputs_pages.c`, and
 `test_servo_page` and `test_prog_port`.
 
 A standard servo at 1000 to 2000 µs takes 499 Hz and is refused at 500 Hz
-and 560 Hz. SERVO's rate applies to every surface whatever PROG's `TARGET`
-names, so 560 Hz is refused while any bound PWM surface or pulsing port has
-an endpoint over 1784 µs, also when the sweep's target is a programming port.
+and 560 Hz. SERVO's rate applies to its target alone, so with a programming
+port as target 560 Hz is refused only while that port's pulse is on with an
+endpoint over 1784 µs; a bound PWM surface keeps its own rate and is not
+judged.
 
 At start the coprocessor restores CHAN_CFG and OUTPUTS from its flash. A
 stored PWM slot whose channel has an endpoint longer than the frame of the
@@ -1391,6 +1414,52 @@ frame's last count to that count. No page write reaches it.
 | 4.16 | 4.16 | as above. The panel's SERVO screen keeps a pause of at least 1000 µs between pulses (500 µs for a heli servo) and raises the rate only after the narrower range landed, so with OUTPUTS as its target it asks for no refused combination. With a programming port as its target it writes only the port's range, and its rate is refused while a bound PWM surface has an endpoint longer than the frame; the screen then shows REFUSED. Before a write that switches a port's pulse on, the panel writes the port the range the screen names |
 | 4.16 | 4.15 or older | the coprocessor takes a longer endpoint. Its PWM driver cuts the pulse to the frame's last count, 1784 µs at 560 Hz, while the page, the panel and the log show the endpoint written. The range the panel writes ahead of a pulse is taken as any range write |
 | 4.15 or older | 4.16 | the SERVO screen behaves as above. A port's `PWM` write is refused while the port keeps a range from an earlier profile that does not fit the port rate; that panel reads PROG again and writes it again on its next pass, and the port renders no pulse until a command has written it a range that fits |
+
+### The target's frame rate
+
+From 4.19 SERVO's register 0 drives the PWM target alone, the output that
+PROG's `TARGET` names for the servo tester:
+
+| `TARGET` | Runs at SERVO's rate | Runs at its own rate |
+| --- | --- | --- |
+| 0, the standard servo ports | every PWM slot whose first channel is a surface | every other slot at its OUTPUTS rate; every programming port at 50 Hz |
+| n + 1, programming port n | port n's pin; 0 means 50 Hz | every slot at its OUTPUTS rate; every other port at 50 Hz |
+
+A SERVO rate change therefore moves no throttle, no other slot and no other
+port. A change of `TARGET` sets register 0 to 0: the new target starts at
+its own rate, and the old one goes back to its own. The panel writes the
+rate again with the next position.
+
+The RP2350 runs both channels of a PWM slice from one clock divider and one
+wrap register, so the two pins of one slice cannot run at two rates. The
+rules that keep a slice at one rate:
+
+- A slot pin shares no slice with a port pin ([The programming ports](#the-programming-ports)).
+- With the standard servo ports as target, a rate that would put a surface
+  and a slot at another rate on one slice is refused with BAD_VALUE, as
+  since 4.1.
+- A port whose pin shares its slice with another held port's pin takes a
+  SERVO rate of 0 or 50 Hz only; any other is refused with BAD_VALUE.
+- While the target port runs at a rate other than 50 Hz, a `PIN` write
+  that moves another port onto the target's slice is refused with
+  BAD_VALUE.
+
+The rules are `servo_page_write()` in `shared/outputs/servo_page.c` and
+`prog_port_write()` in `shared/outputs/prog_port.c`; the coprocessor binds
+the rates in `ports_apply()` and `target_sync()` in
+`firmware/iomcu/src/main.c`.
+
+| Panel | Coprocessor | Behaviour |
+| --- | --- | --- |
+| 4.19 | 4.19 | as above. The panel tracks `TARGET` on PROG: a change it reads or writes acknowledged counts as rate 0, and a `TARGET` write without an answer counts as an unknown rate until a rate write lands. The SERVO screen shows the rate as not sent until the next position carries it |
+| 4.19 | 4.16 to 4.18 | the coprocessor runs every PWM surface and every programming port at SERVO's rate, whatever `TARGET` names, and keeps it across a `TARGET` change. The panel tracks no `TARGET` change below minor 19, and its SERVO screen says every PWM surface runs at the rate. With a programming port as target, the rate is refused while a bound PWM surface has an endpoint longer than the frame |
+| 4.18 or older | 4.19 | the coprocessor sets the rate to 0 on a `TARGET` change, while the panel counts the rate it wrote last. The panel then counts a rate at least as fast as the one in force, the side on which no pulse is sent too wide for its frame, and writes the rate again with its next position |
+
+`test_servo_page`, `test_prog_port`, `test_prog_link` and `test_link_pages`
+hold the rate independent of the slots, a port target at 39, 40, 499, 500,
+560 and 561 Hz against the PWM range and its endpoints, a shared slice that
+takes 0 and 50 Hz and refuses 40, 300 and 560 Hz, a target change while
+armed, and the panel's tracking of a `TARGET` change.
 
 ### Bit timing
 

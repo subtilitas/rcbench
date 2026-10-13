@@ -121,8 +121,12 @@ also mit derselben Frame Rate. Eine zweite Bindung, die auf einem belegten Slice
 eine andere Rate verlangt, wird verweigert statt umgestellt: Umstellen würde
 einen Output verschieben, den niemand angefasst hat.
 
-Die SERVO-Page setzt eine Frame Rate für jeden PWM-Ausgang, dessen erster Kanal
-die Rolle surface hat, über die Rate, die die Bindung dem Slot gibt. Sie wird
+Die SERVO-Page setzt eine Frame Rate für ihr Ziel. Mit den Standard-Servoports
+als `TARGET` von PROG ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle
+surface hat, über die Rate, die die Bindung dem Slot gibt; mit einem
+Programmierport als Ziel ist es nur der Pin dieses Ports, und jeder Slot behält
+die Rate, die seine Bindung ihm gibt (Protokoll 4.19,
+[der Link](Link-de.md#die-frame-rate-des-ziels)). Sie wird
 mit BAD_VALUE verweigert, wenn sie eine Surface von der Rate des Ausgangs neben
 ihr auf demselben Slice wegbewegen würde, und solange sie eine Rate hält, wird
 auch ein Schreiben auf CHAN_CFG oder OUTPUTS verweigert, das dasselbe täte --

@@ -56,8 +56,8 @@ uint16_t outputs_arm_value_of(uint8_t roles);
  */
 uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles);
 
-/* --- SERVO: the frame rate of every PWM output rendering a surface; the
- *     page itself is servo_page.h */
+/* --- SERVO: with the standard target, the frame rate of every PWM output
+ *     rendering a surface; the page itself is servo_page.h */
 
 /**
  * Whether the SERVO page may take the frame rate @p hz against the bank @p o
