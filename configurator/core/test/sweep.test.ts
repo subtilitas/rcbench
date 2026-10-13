@@ -242,7 +242,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
 }
 
 test('the count of subsets is inside the limit of the sweep', () => {
-  assert.equal(SELECTABLE.length, 9);
+  assert.equal(SELECTABLE.length, 8);
   assert.equal(FUNCTIONS.length, 12);
   assert.equal(BASE.length, 10);
   assert.deepEqual(TEST_OBJECTS, ['servo', 'esc']);
@@ -265,7 +265,7 @@ test('sweep: every subset of the parts you own, under every option combination',
       count += 1;
     }
   }
-  assert.equal(count, 8192);
+  assert.equal(count, 4096);
   // Every part of the catalogue is in at least one setup, but the test
   // objects: no part you own connects one.
   const seen = new Set([...partSets].flatMap((ids) => ids.split(',')));

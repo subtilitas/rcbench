@@ -122,6 +122,19 @@ export function idsOf(): Corpus['ids'] {
 }
 
 /**
+ * The owned parts an entry names that the corpus started with as ticks and the
+ * catalogue offers no tick for now, test objects aside (a link reads those as
+ * the tick of their function). The page leaves such a part out of the owned
+ * parts and reports it; a rule may still bring it into the setup.
+ */
+export function namesRetired(entry: Pick<Entry, 'hash'>, corpus: Corpus): string[] {
+  const now = idsOf();
+  const objects = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id);
+  const gone = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !objects.includes(id));
+  return parseHash(hashOf(entry), DEFAULT_OPTIONS).selection.owned.filter((id) => gone.includes(id));
+}
+
+/**
  * Whether the hash of an entry names a function or a part the catalogue has
  * added since the corpus started. Such an entry means another setup than the
  * stored one from the day the id is added.

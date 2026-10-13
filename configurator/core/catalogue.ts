@@ -604,7 +604,7 @@ const parts: Part[] = [
     ),
     between: ['charger', 'pdmini'],
     locked: false,
-    selectable: true,
+    selectable: false,
     release: 'released',
     slot: { column: 'L', order: 7, sub: t('UART of the PD mini', 'UART des PD mini') },
     pins: [
@@ -1431,7 +1431,7 @@ const rules: Rule[] = [
     id: 'pd-tplug',
     when: { has: 'pdmini' },
     adds: 'usbtap',
-    because: t('UART of the PD mini', 'UART des PD mini'),
+    because: same('PD mini'),
     src: OWNER,
   },
   {
@@ -1598,8 +1598,8 @@ const checks: Check[] = [
   {
     id: 'usbtap-v', kind: 'note',
     text: t(
-      'T-plug: the V pad carries no wire. Without the PD mini the T-plug has no wire.',
-      'T-Stecker: Das Pad V bekommt keinen Draht. Ohne den PD mini hat der T-Stecker keinen Draht.',
+      'T-plug: the V pad carries no wire.',
+      'T-Stecker: Das Pad V bekommt keinen Draht.',
     ),
     when: { has: 'usbtap' }, src: OWNER,
   },

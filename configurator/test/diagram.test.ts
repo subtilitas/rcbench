@@ -317,7 +317,7 @@ const UNWIRED: string[] = ['sd', 'usb', 'wire'];
  * Parts that stand without a connection in some setups: the setup holds the part and none of its wires, because
  * the `when` of every wire of the part is false there.
  */
-const IDLE: string[] = ['sim', 'usbtap'];
+const IDLE: string[] = ['sim'];
 
 test('every part of a picture has a drawn connection, apart from the parts the data file connects with no wire', () => {
   const alone = new Set<string>();

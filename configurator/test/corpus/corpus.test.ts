@@ -14,7 +14,7 @@ import type { OptionKey } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
 import { MAX_HASH, parseHash } from '../../src/hash.ts';
 import {
-  CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, outcome, readCorpus, readWires,
+  CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, namesRetired, outcome, readCorpus, readWires,
 } from './corpus.ts';
 import type { Outcome } from './corpus.ts';
 import { added, corpusText, wiresOf, wiresText } from './tool.ts';
@@ -35,6 +35,14 @@ const later = new Set([
 
 /** The test objects: parts a visitor connects and tests. A link names one as an owned part or by a function. */
 const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id);
+
+/**
+ * Parts the corpus starts with as ticks and the page no longer offers a tick for.
+ * A part of them is in a setup when a rule adds it. A link that names one
+ * leaves it out of the owned parts and reports it, so its stored outcome
+ * no longer holds; the check in each entry holds it to a note and no tick.
+ */
+const RETIRED = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !OBJECTS.includes(id));
 
 /** An outcome reduced to the ids the corpus starts with, and to the option keys `stored` holds. */
 function inCorpusIds(o: Outcome, stored: Outcome): Outcome {
@@ -71,6 +79,7 @@ test('the corpus keeps the ids it starts with', () => {
   for (const id of corpus.ids.owned) {
     // A test object is no part to tick: a link that names it ticks the function that drives it alone.
     if (OBJECTS.includes(id)) assert.ok(plainDrive(CATALOGUE, id) !== null, `the test object ${id} of a stored link has no function that drives it alone`);
+    else if (RETIRED.includes(id)) assert.ok(now.parts.includes(id), `the part ${id} of a stored link is gone from the catalogue`);
     else assert.ok(now.owned.includes(id), `the part ${id} of a stored link can no longer be ticked`);
   }
   assert.deepEqual(OBJECTS, ['servo', 'esc']);
@@ -130,6 +139,13 @@ for (const entry of corpus.entries) {
     assert.ok(!rest.owned.some((id) => OBJECTS.includes(id)), 'a test object is a ticked part');
 
     if (namesLater(entry, corpus)) return;
+    // A retired part under the owned parts is reported and left out: the setup it gave before is not stored any more.
+    const names = namesRetired(entry, corpus);
+    if (names.length > 0) {
+      assert.ok(rest.notices.includes('note'), `${entry.name} names ${names.join(', ')} and gives no note`);
+      for (const id of names) assert.ok(!rest.owned.includes(id) && rest.reported.split(', ').includes(id), `${id} is not left out`);
+      return;
+    }
     // Both sides are compared in the ids the corpus starts with: a later entry stores every id.
     const reduced = withObjects(entry.expect);
     const expected = {

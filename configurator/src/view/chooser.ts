@@ -64,10 +64,14 @@ function functionName(view: View, id: FunctionId): string {
 
 const partList = (view: View, ids: PartId[]): string => ids.map((id) => shortName(view, id)).join(', ');
 
-/** Why a part is in the setup, as one line: "Needed by: Servo. You own it." */
+/**
+ * Why a part is in the setup, as one line: "Needed by: Servo. You own it."
+ * A part a rule adds reads "Included with these parts: PD mini."
+ */
 export function reasonText(part: ResolvedPart, view: View): string {
   const { lang, catalogue } = view;
   const by: string[] = [];
+  const included: string[] = [];
   let always = false;
   let own = false;
   for (const r of part.addedBy) {
@@ -76,12 +80,13 @@ export function reasonText(part: ResolvedPart, view: View): string {
     else if (r.kind === 'function') {
       const fn = catalogue.functions.find((f) => f.id === r.id);
       by.push(fn ? tx(lang, fn.name) : r.id);
-    } else if (r.kind === 'rule') by.push(tx(lang, r.because));
+    } else if (r.kind === 'rule') included.push(tx(lang, r.because));
     else by.push(variantShort(lang, r.key, r.value));
   }
   const out: string[] = [];
   if (always) out.push(t(lang, 'always'));
   if (by.length > 0) out.push(t(lang, 'neededBy') + [...new Set(by)].join(', '));
+  if (included.length > 0) out.push(`${t(lang, 'stInc').slice(0, -1)}: ${[...new Set(included)].join(', ')}`);
   if (own) out.push(t(lang, 'youOwn'));
   return out.length > 0 ? `${out.join('. ')}.` : '';
 }

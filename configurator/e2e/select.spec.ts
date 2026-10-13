@@ -462,11 +462,11 @@ for (const size of SIZES) {
       const seen = watch(page);
       for (const lang of LANGS) {
         const tail = lang === 'en' ? '' : '&l=de';
-        const hash = `#v=1&p=sd,usbtap${tail}`;
+        const hash = `#v=1&p=sd,sim${tail}`;
         await open(page, hash);
-        await tabTo(page, 'rm-usbtap');
+        await tabTo(page, 'rm-sim');
         await page.keyboard.press('Enter');
-        const warning = page.getByRole('alertdialog', { name: t(lang, 'rmAsk', { p: short('usbtap', lang) }) });
+        const warning = page.getByRole('alertdialog', { name: t(lang, 'rmAsk', { p: short('sim', lang) }) });
         await expect(warning).toBeVisible();
         await expect(warning).toBeInViewport();
         await expect(page.locator('#rmwarn-d')).toHaveText(STRINGS.rmPlain[col(lang)]);
@@ -475,18 +475,18 @@ for (const size of SIZES) {
         await expect(page.locator('#rm-no')).toBeFocused();
         // Nothing left the setup by the request alone.
         expect(new URL(page.url()).hash).toBe(hash);
-        await expect(page.locator('#rm-usbtap')).toHaveCount(1);
+        await expect(page.locator('#rm-sim')).toHaveCount(1);
         await fits(page);
         // Escape and "Keep" keep the part and return the focus to the control.
         await page.keyboard.press('Escape');
         await expect(page.locator('#rmwarn')).toHaveCount(0);
-        await expect(page.locator('#rm-usbtap')).toBeFocused();
+        await expect(page.locator('#rm-sim')).toBeFocused();
         expect(new URL(page.url()).hash).toBe(hash);
         await page.keyboard.press('Enter');
         await expect(page.locator('#rm-no')).toBeFocused();
         await page.keyboard.press('Enter');
         await expect(page.locator('#rmwarn')).toHaveCount(0);
-        await expect(page.locator('#rm-usbtap')).toBeFocused();
+        await expect(page.locator('#rm-sim')).toBeFocused();
         expect(new URL(page.url()).hash).toBe(hash);
         // The confirming answer removes the part.
         await page.keyboard.press('Space');
@@ -496,10 +496,10 @@ for (const size of SIZES) {
         expect(new URL(page.url()).hash).toBe(hash);
         await page.keyboard.press('Enter');
         await expect(page.locator('#rmwarn')).toHaveCount(0);
-        await expect(page.locator('#rm-usbtap')).toHaveCount(0);
+        await expect(page.locator('#rm-sim')).toHaveCount(0);
         expect(new URL(page.url()).hash).toBe(`#v=1&p=sd${tail}`);
         await expect(page.locator('#h-parts')).toBeFocused();
-        await expect(page.locator('#live')).toContainText(t(lang, 'rmDone', { p: short('usbtap', lang) }));
+        await expect(page.locator('#live')).toContainText(t(lang, 'rmDone', { p: short('sim', lang) }));
       }
 
       // The battery of the ESC leaves by the other variant of the ESC power.
@@ -522,10 +522,10 @@ for (const size of SIZES) {
 
     test('"Parts you own" removes a part by its tick, with the same question', async ({ page }) => {
       const seen = watch(page);
-      await open(page, '#v=1&f=servotest&p=usbtap,sd,tap');
+      await open(page, '#v=1&f=servotest&p=sim,sd,tap');
       await openOwned(page);
       // Every selectable part of the setup is ticked, also one a function brings; none is locked.
-      for (const id of ['pdmini', 'usbtap', 'sd', 'tap']) await expect(page.locator(`#p-${id}`)).toBeChecked();
+      for (const id of ['pdmini', 'sim', 'sd', 'tap']) await expect(page.locator(`#p-${id}`)).toBeChecked();
       // A servo or an ESC is no part to own: the list holds no row for it.
       for (const id of OBJECTS) await expect(page.locator(`#p-${id}`)).toHaveCount(0);
       expect(await page.locator('#own input[data-p]').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.p))).toEqual(OWNED);
@@ -538,7 +538,7 @@ for (const size of SIZES) {
       await expect(page.locator('#rmwarn-d')).toHaveText(STRINGS.rmPlain[0]);
       await expect(page.locator('#rm-no')).toBeFocused();
       await expect(page.locator('#p-tap')).toBeChecked();
-      await expect(page).toHaveURL(/#v=1&f=servotest&p=usbtap,sd,tap$/);
+      await expect(page).toHaveURL(/#v=1&f=servotest&p=sim,sd,tap$/);
       await page.keyboard.press('Escape');
       await expect(page.locator('#p-tap')).toBeFocused();
       await expect(page.locator('#p-tap')).toBeChecked();
@@ -546,7 +546,7 @@ for (const size of SIZES) {
       await page.keyboard.press('Shift+Tab');
       await expect(page.locator('#rm-yes')).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/#v=1&f=servotest&p=sd,usbtap$/);
+      await expect(page).toHaveURL(/#v=1&f=servotest&p=sd,sim$/);
       await expect(page.locator('#rmwarn')).toHaveCount(0);
       await expect(page.locator('#p-tap')).toBeFocused();
       await expect(page.locator('#p-tap')).not.toBeChecked();
@@ -568,13 +568,13 @@ for (const size of SIZES) {
       await expect(page.locator('#rmwarn')).toHaveCount(0);
       await expect(page.locator('#p-sd')).toBeFocused();
       await expect(page.locator('#p-sd')).toBeChecked();
-      await expect(page).toHaveURL(/#v=1&f=servotest&p=sd,usbtap$/);
+      await expect(page).toHaveURL(/#v=1&f=servotest&p=sd,sim$/);
 
       await page.keyboard.press('Space');
       await page.keyboard.press('Shift+Tab');
       await expect(page.locator('#rm-yes')).toBeFocused();
       await page.keyboard.press('Enter');
-      await expect(page).toHaveURL(/#v=1&f=servotest&p=usbtap$/);
+      await expect(page).toHaveURL(/#v=1&f=servotest&p=sim$/);
       await expect(page.locator('#p-sd')).toBeFocused();
       await expect(page.locator('#p-sd')).not.toBeChecked();
       await expect(page.locator('#own')).toHaveAttribute('open', '');
@@ -593,7 +593,7 @@ for (const size of SIZES) {
       await expect(page.locator('#rmwarn')).toHaveCount(1);
       await page.locator('#f-estop').check();
       await expect(page.locator('#rmwarn')).toHaveCount(0);
-      await expect(page).toHaveURL(/#v=1&f=servotest,estop&p=usbtap$/);
+      await expect(page).toHaveURL(/#v=1&f=servotest,estop&p=sim$/);
       expect(seen).toEqual({ foreign: [], errors: [] });
     });
 
@@ -733,6 +733,23 @@ for (const size of SIZES) {
             await expect(page.locator(`label:has(#f-${f.fn.id})`), `${hash}: ${f.fn.id}`).toHaveAttribute('data-state', f.chosen ? 'own' : f.enabled ? 'inc' : 'off');
           }
         }
+        await fits(page);
+      }
+      expect(seen).toEqual({ foreign: [], errors: [] });
+    });
+
+    test('a link from before the T-plug lost its tick loads: the part is reported and the PD mini still brings it', async ({ page }) => {
+      const seen = watch(page);
+      for (const lang of LANGS) {
+        const tail = lang === 'en' ? '' : '&l=de';
+        await open(page, `#v=1&f=supply&p=usbtap${tail}`);
+        // No tick for the T-plug, in the chooser or among the parts you own.
+        await expect(page.locator('#p-usbtap')).toHaveCount(0);
+        expect(await page.locator('input[data-p]:checked').evaluateAll((list) => list.map((el) => (el as HTMLElement).dataset.p))).toEqual(['pdmini']);
+        await expect(page.locator('.msg')).toContainText(t(lang, 'badId', { x: 'usbtap' }));
+        // The T-plug is in the parts list with its reason.
+        const reason = lang === 'en' ? 'Included with these parts: PD mini.' : 'Enthalten bei diesen Teilen: PD mini.';
+        await expect(page.locator('#result ul.parts:not([id]) > li', { hasText: short('usbtap', lang) })).toContainText(reason);
         await fits(page);
       }
       expect(seen).toEqual({ foreign: [], errors: [] });

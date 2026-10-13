@@ -2,13 +2,14 @@
 // entry stores and the wires of wires.json, writes the stored hash on the
 // first change, and neither throws nor logs. An entry that names an id the
 // catalogue has added since the corpus started is exempt from the stored
-// setup, alone. A test object under the owned parts of an entry is the tick
+// setup, alone. An entry that names a part the catalogue no longer offers a tick
+// for is held to the note that names it. A test object under the owned parts of an entry is the tick
 // of the function that drives it alone: the page shows that tick and writes
 // the function in place of the part.
 
 import { expect, test } from '@playwright/test';
 
-import { hashOf as textOf, namesLater, readCorpus, readWires } from '../../test/corpus/corpus.ts';
+import { hashOf as textOf, namesLater, namesRetired, readCorpus, readWires } from '../../test/corpus/corpus.ts';
 import type { Options } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
 import { formatHash } from '../../src/hash.ts';
@@ -27,6 +28,16 @@ for (const entry of corpus.entries) {
     // An entry that names an id of a later catalogue shows another setup than the stored one.
     if (namesLater(entry, corpus)) {
       expect((await readSetup(page)).lang).toBe(want.lang);
+      expectQuiet(seen);
+      return;
+    }
+    // An entry that names a part without a tick today gets a note that names it, and no tick for it.
+    const retired = namesRetired(entry, corpus);
+    if (retired.length > 0) {
+      const gone = await readSetup(page);
+      expect(gone.lang).toBe(want.lang);
+      expect(gone.notices.map((n) => n.kind)).toContain('note');
+      for (const id of retired) expect(gone.notices.map((n) => n.text).join(' ')).toContain(id);
       expectQuiet(seen);
       return;
     }

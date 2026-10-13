@@ -282,6 +282,7 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
   const entries = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Entry[];
   let links = 0;
   let objects = 0;
+  let retired = 0;
   for (const entry of entries) {
     for (const link of entry.links) {
       links += 1;
@@ -289,6 +290,16 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
       assert.deepEqual([parsed.badVersion, parsed.unknown], [false, []], link);
       if (parsed.selection.owned.some((id) => id === 'servo' || id === 'esc')) objects += 1;
       const setup = resolve(CATALOGUE, testObjectTicks(parsed.selection, CATALOGUE));
+      // The T-plug has no tick any more. A stored link that names it gets the T-plug from the PD mini when the
+      // setup holds the PD mini, as stored, and none otherwise: there it is reported as ignored.
+      if (parsed.selection.owned.includes('usbtap')) {
+        assert.deepEqual(setup.ignored, ['usbtap'], link);
+        if (!setup.parts.some((r) => r.part.id === 'pdmini')) {
+          retired += 1;
+          assert.ok(!setup.parts.some((r) => r.part.id === 'usbtap'), link);
+          continue;
+        }
+      }
       const got = [
         setup.parts.map((r) => r.part.id).join(','),
         setup.wires.map((w) => w.n).filter((n) => n !== 63).join(','),
@@ -305,5 +316,26 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
     }
   }
   assert.equal(links, 1192);
+  assert.ok(retired > 0, 'no link names the T-plug without the PD mini');
   assert.ok(objects > 300, `${objects} links with a test object as an owned part`);
+});
+
+test('an old link that holds the T-plug loads: the part is left out of the owned parts and reported, the PD mini still brings it', () => {
+  // Before the T-plug lost its tick, p=usbtap was a valid owned part.
+  const alone = parseHash('#v=1&f=supply&p=usbtap', DEFAULT_OPTIONS);
+  assert.deepEqual([alone.badVersion, alone.unknown], [false, []]);
+  assert.deepEqual(alone.selection.owned, ['usbtap']);
+  const setup = resolve(CATALOGUE, alone.selection);
+  assert.deepEqual(setup.ignored, ['usbtap']);
+  // The function supply needs the PD mini, which brings the T-plug.
+  assert.ok(setup.parts.some((r) => r.part.id === 'usbtap' && r.addedBy.every((a) => a.kind === 'rule' && a.id === 'pd-tplug')));
+  // The page draws the selection reduced to the parts it offers a tick for: the T-plug is no part of the written hash.
+  const ticks = alone.selection.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
+  assert.deepEqual(ticks, []);
+  assert.equal(formatHash({ ...alone.selection, owned: ticks }, 'en', 'en', CATALOGUE), 'v=1&f=supply');
+  assert.equal(formatHash(alone.selection, 'en', 'en', CATALOGUE), 'v=1&f=supply');
+  // Without the PD mini the link gives the base setup and no T-plug.
+  const bare = resolve(CATALOGUE, parseHash('#v=1&p=usbtap', DEFAULT_OPTIONS).selection);
+  assert.deepEqual(bare.ignored, ['usbtap']);
+  assert.ok(!bare.parts.some((r) => r.part.id === 'usbtap'));
 });
