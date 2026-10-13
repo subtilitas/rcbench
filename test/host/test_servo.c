@@ -5788,7 +5788,7 @@ static const tgt_state_t k_tgt[] = {
     { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false, false },
     { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false, false },
     { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false, false },
-    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
+    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8), true,
       0xFFu, false, false },
     { 0, 0, PINS_40_47,                          true,  0xFFu, false, false },
     { 0, 0, 0,                                   true,  0xFFu, false, true  },
@@ -5814,11 +5814,13 @@ static const tgt_state_t k_tgt[] = {
  * written out here and not taken from servo_target_line(). */
 static const char *const k_tgt_txt[2][TGT_N] = {
     { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 GP6 GP7", "GP40 GP41 GP42 GP43 +4", "NO SERVO PWM PIN",
+      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+      "NO SERVO PWM PIN",
       "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
       "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "NOT KNOWN", "NO LINK" },
     { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 GP6 GP7", "GP40 GP41 GP42 GP43 +4", "KEIN SERVO-PWM-PIN",
+      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+      "KEIN SERVO-PWM-PIN",
       "PINS NICHT GELESEN", "PROG-PORT", "PROG-PORT GP13",
       "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
       "KEIN LINK" },
@@ -5858,7 +5860,7 @@ static int warn_pixels(const gfx_color_t *bx)
  * with its pin, and the warning colour for the port, for no pin, for a
  * binding not read, for a target not known and for no link.  Every state
  * reads differently, and no value runs into the label: the longest are
- * two-digit pins filling the 23 cells, with or without a count, and the
+ * six pins filling the 23 cells, two-digit pins with a count in 22, and the
  * port on a two-digit pin with its pulse off, 22 of the 23 cells. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
@@ -6072,6 +6074,10 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8) | PIN(9),
                true, "GP2 GP4 GP5 GP6 GP7 +2", false);
+    /* Five two-digit pins are 24 cells: 4 pins and " +1". */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
+               "GP10 GP11 GP12 GP13 +1", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
                "GP40 GP41 GP42 GP43 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
