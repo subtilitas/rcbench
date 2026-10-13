@@ -69,7 +69,7 @@ stays on the part.
 | `e2e/matrix/` | Playwright tests of 15 setups in 8 cells of viewport, language and theme, with the PDF export and the removal of a part, and on every stored link. |
 | `e2e/lib/` | Helpers for Playwright tests. See `e2e/lib/README.md`. |
 | `e2e/select.spec.ts` | Playwright test of the groups, the state words and the removal of a part. |
-| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
+| `e2e/help.spec.ts` | Playwright test of the help bubbles: keyboard focus, pointer, Escape, a tap at 360 px, German text, one bubble at a time after a click on a mark, every bubble whole inside the chooser at 1280 × 800 px, the top of every bubble and its end after a scroll at 1100 × 450 px and 1024 × 500 px, every bubble above the bar at 360 px. |
 | `e2e/store.spec.ts` | Playwright test of the stored state: reload, visit without a hash, change of language, link against stored state, a store that is blocked, full or of another shape. |
 | `e2e/export.spec.ts` | Playwright test of the PDF export against `vite preview`. |
 | `e2e/diagram.spec.ts` | Playwright test of the wiring picture. Writes screenshots of 3 setups to `test-results/diagram-shots/`. |
@@ -281,7 +281,11 @@ focus and when the pointer rests on the round "i" mark at the right end of
 the row, 44 px wide. The pointer can move from the mark into the bubble. A
 click or tap on the mark opens or closes the bubble and never changes the
 tick; a tap on the label still toggles it. A press anywhere else
-(`pointerdown`), Escape and the loss of the focus close it. The mark has
+(`pointerdown`), Escape and the loss of the focus close it. One bubble shows
+at a time: the focus of a tick and the pointer entering a mark close a
+bubble that a click opened on another row. A click that closes a bubble
+keeps it closed while the pointer rests on the mark; the pointer leaving and
+entering the mark again opens it. The mark has
 `cursor: pointer`: iOS Safari delivers a tap on an element without it and
 without a handler of its own to no click listener of the document. The mark
 and the bubble take no focus, so the Tab order is that of the ticks. Each

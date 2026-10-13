@@ -189,6 +189,52 @@ test.describe('1280 px, keyboard and pointer', () => {
     expect(new URL(page.url()).hash).toBe(hash);
   });
 
+  test('a bubble opened by a click gives way to the focus and the pointer: one bubble at a time', async ({ page }) => {
+    await open(page, '#v=1');
+    const shown = page.locator('#choose .bubble:visible');
+    // A click opens the bubble of f-esc; with the pointer elsewhere, Tab moves the focus to the next tick and
+    // shows its bubble alone.
+    await mark(page, 'f-esc').click();
+    await expect(page.locator('#hb-f-esc')).toBeVisible();
+    await page.locator('#h-choose').hover();
+    await expect(page.locator('#hb-f-esc')).toBeVisible();
+    await page.keyboard.press('Tab');
+    const next = await focused(page);
+    expect(next).toMatch(/^f-/);
+    expect(next).not.toBe('f-esc');
+    await expect(page.locator(`#hb-${next}`)).toBeVisible();
+    await expect(shown).toHaveCount(1);
+
+    // A click opens the bubble of f-esc; the pointer entering the mark of f-servo shows that bubble alone.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await mark(page, 'f-esc').click();
+    await expect(page.locator('#hb-f-esc')).toBeVisible();
+    await mark(page, 'f-servo').hover();
+    await expect(page.locator('#hb-f-servo')).toBeVisible();
+    await expect(shown).toHaveCount(1);
+  });
+
+  test('a second click on the mark closes the bubble while the pointer rests on the mark', async ({ page }) => {
+    await open(page, '#v=1');
+    const bubble = page.locator('#hb-f-esc');
+    await mark(page, 'f-esc').click();
+    await expect(bubble).toBeVisible();
+    await mark(page, 'f-esc').click();
+    await expect(bubble).toBeHidden();
+    await expect(page.locator('#choose .bubble:visible')).toHaveCount(0);
+    // The pointer leaving the mark and entering it again opens the bubble; the tick stays as it is.
+    await page.locator('#h-choose').hover();
+    await mark(page, 'f-esc').hover();
+    await expect(bubble).toBeVisible();
+    await expect(page.locator('#f-esc')).not.toBeChecked();
+    // The focus of the tick still opens a bubble a click closed.
+    await mark(page, 'f-esc').click();
+    await mark(page, 'f-esc').click();
+    await page.locator('#h-choose').hover();
+    await tabTo(page, 'f-esc');
+    await expect(bubble).toBeVisible();
+  });
+
   test('the question before a removal hides the bubble, and one Escape answers it', async ({ page }) => {
     await open(page, '#v=1&p=sd');
     await page.locator('#own-summary').click();
@@ -261,9 +307,12 @@ for (const viewport of [{ width: 1100, height: 450 }, { width: 1024, height: 500
         await tabSweep(page, async (id, bubble) => {
           await expect.poll(async () => (await cut(bubble)).top, { message: `the top of the bubble of #${id} is cut off` }).toBe(0);
           if ((await cut(bubble)).bottom > 0) under++;
-          // Scrolled into view, the whole bubble shows, to the rounding of the scroll position (under 1 px).
-          await bubble.evaluate((box) => box.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
-          await expect.poll(() => cutOff(bubble), { message: `the bubble of #${id} is cut off after a scroll` }).toBeLessThan(1);
+          // Scrolled into view, the whole bubble shows, to the rounding of the scroll position (under 1 px). The
+          // scroll repeats on each poll: a smooth scroll that the focus started can still run and move the row.
+          await expect.poll(async () => {
+            await bubble.evaluate((box) => box.scrollIntoView({ block: 'nearest', behavior: 'instant' }));
+            return cutOff(bubble);
+          }, { message: `the bubble of #${id} is cut off after a scroll` }).toBeLessThan(1);
         });
         // The case this window is for: at least one bubble reached past the lower edge before the scroll.
         if (lang === 'de') expect(under).toBeGreaterThan(0);

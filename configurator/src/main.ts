@@ -330,21 +330,30 @@ function placeShownHelp(): void {
 document.addEventListener('scroll', placeShownHelp, { capture: true, passive: true });
 window.addEventListener('resize', placeShownHelp, { passive: true });
 
-// A tap or a click on the mark of a tick opens its bubble and closes the others; a second one closes it. The
-// mark stands outside the label: the tick stays as it is.
+/** Closes every bubble a tap or a click opened, but that of `keep`. */
+function closeOpenHelp(keep: Element | null): void {
+  for (const open of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
+    if (open !== keep) open.removeAttribute('data-open');
+  }
+}
+
+// A tap or a click on the mark of a tick opens its bubble and closes the others; a second one closes it, and the
+// pointer resting on the mark does not hold it open (data-nohover) until it enters the mark again. The mark
+// stands outside the label: the tick stays as it is.
 document.addEventListener('click', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const mark = target?.closest<HTMLElement>('#choose .row > .info');
   const row = mark?.parentElement ?? null;
-  for (const other of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
-    if (other !== row) other.removeAttribute('data-open');
-  }
+  closeOpenHelp(row);
   if (!row) return;
-  if (row.hasAttribute('data-open')) row.removeAttribute('data-open');
-  else {
+  if (row.hasAttribute('data-open')) {
+    row.removeAttribute('data-open');
+    row.setAttribute('data-nohover', '');
+  } else {
     placeHelp(row);
     row.setAttribute('data-open', '');
     row.removeAttribute('data-shut');
+    row.removeAttribute('data-nohover');
   }
 });
 
@@ -353,21 +362,20 @@ document.addEventListener('click', (event) => {
 // empty area, and a pointerdown for every tap.
 document.addEventListener('pointerdown', (event) => {
   const target = event.target instanceof Element ? event.target : null;
-  const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement ?? null;
-  for (const open of document.querySelectorAll<HTMLElement>('#choose .row[data-open]')) {
-    if (open !== row) open.removeAttribute('data-open');
-  }
+  closeOpenHelp(target?.closest<HTMLElement>('#choose .row > .info')?.parentElement ?? null);
 });
 
 // A bubble closed with Escape opens again when the focus comes back to its tick from elsewhere, or the pointer
-// enters its mark again. The bubble of the focused tick or of the mark under the pointer is placed before it
-// shows.
+// enters its mark again. The focus and the pointer show one bubble at a time: the focus of a tick and the pointer
+// entering a mark close the bubbles a tap or a click opened on other rows. The bubble of the focused tick or of
+// the mark under the pointer is placed before it shows.
 document.addEventListener('focusin', (event) => {
   const target = event.target instanceof Node ? event.target : null;
   for (const row of document.querySelectorAll<HTMLElement>('#choose .row[data-shut]')) {
     if (!target || !row.contains(target)) row.removeAttribute('data-shut');
   }
   const row = target instanceof Element ? target.closest<HTMLElement>('#choose .row') : null;
+  closeOpenHelp(row);
   if (row) {
     placeHelp(row);
     placeShownHelp();
@@ -377,7 +385,9 @@ document.addEventListener('pointerover', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement;
   if (!row) return;
+  closeOpenHelp(row);
   row.removeAttribute('data-shut');
+  row.removeAttribute('data-nohover');
   placeHelp(row);
 });
 
