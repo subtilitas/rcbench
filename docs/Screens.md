@@ -436,19 +436,35 @@ bench. One command waits for each frame: of a position and a RELEASE made in
 the same frame the later is sent, and the value shown is that one's. A knob
 turn in a frame in which RELEASE waits is dropped.
 
-The right card shows what is commanded and measured, the type and frame rate
-in force -- in the danger colour while they are ones that can destroy a servo
-not made for them -- and the servo rail as its meter reads it: voltage,
-current and power on the line over the plot, plotted over the last 13 s, and
-the current again in the CURRENT row.
+The right card shows what is commanded and measured, the type, frame rate and
+pulse range in force -- in the danger colour while they are ones that can
+destroy a servo not made for them -- and the servo rail as its meter reads
+it: voltage, current and power on the line over the plot, plotted over the
+last 13 s, and the current again in the CURRENT row. The type row reads
+`STANDARD PWM  50 Hz  1000-2000`: the type, the frame rate and PULSE MIN to
+PULSE MAX in microseconds, two spaces apart. The longest, a 13-character type
+at 560 Hz with two 4-digit ends, takes 32 of the row's 33 characters, so the
+range carries no unit. A pulse width typed in the settings reaches the row
+at once.
 
 | The servo rail's meter | Name on the line | CURRENT, the line and the plot show |
 | --- | --- | --- |
 | INA3221 CH1 | `INA3221 CH1` | CH1's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
-| the PD mini | `SUPPLY` | the supply's last sample. One point per sample |
-| the model, while no coprocessor answers | `SUPPLY` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
+| the PD mini | `PD MINI` | the supply's last sample. One point per sample |
+| the model, while no coprocessor answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
 
 ![The INA3221 as the meter](img/servo-ina.png)
+
+The name stays `PD MINI` in both languages. While the PD mini is disabled on
+SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
+then a MODELLED pill (SIMULIERT in German), 20 px high and 24 px plus the word
+wide but at least 88 px (88 px for MODELLED, 96 px for SIMULIERT), sits
+on the plot's top-left corner under the name, because the line beside the
+name holds the three readings. The pill comes and goes with the model,
+without a tap. With INA3221 CH1 as the meter the line names the INA3221 and
+carries no pill, the supply's model or not.
+
+![The panel's model as the supply](img/servo-model.png)
 
 Which meter it is is decided once per poll
 ([the current monitors](#interfaces-the-current-monitors)): the INA3221
@@ -743,31 +759,36 @@ name opens a keyboard.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
-The active PWM TARGET is shown at the foot of the left card, beside the dial,
-while neither the settings nor the programmer covers that card. With OUTPUTS
-the line names the GPIOs bound as SERVO PWM in the binding the tester drives:
-`TARGET: GP4`, `TARGET: GP2 GP4`; as many pins as fit the 34 cells of the line,
-then `+N`: 6 pins from GP40 on read `TARGET: GP40 GP41 GP42 GP43 +2`. It is the warning colour with no such pin
-(`TARGET: NO SERVO PWM PIN`) and before a binding has been read
-(`TARGET: PINS NOT READ`). With PROG PORT the line reads
-`TARGET: PROG PORT GP13` in the warning colour; the pin is the GPIO the
-coprocessor reports for the programming port. The tester's commands then do
-not reach the SERVO PWM outputs; while the bank is armed they hold their
-rest pulse, the centre between their endpoints. A port target without a
-usable pin (none, refused at start, or a port the coprocessor does not have)
-reads `TARGET: PROG PORT`, also in the warning colour: the commands go to the port
-all the same. With PORT PWM off the port renders no pulse, and the line adds
-`PWM OFF`: `TARGET: PROG PORT GP13 PWM OFF`. Two states name no target, both
-in the warning colour, and the tester sends no command in either:
-`TARGET: NO LINK` while no coprocessor answers, and `TARGET: NOT KNOWN`
-while the coprocessor's programming-port page has not been read since the
-link came up, a write to it was not acknowledged, or a read of it went unanswered. While the servo programmer holds the port, the line does not change: it keeps naming the target the coprocessor holds, a port or the outputs; the programmer drives the port and the tester sends nothing. The page is read every
-500 ms. A coprocessor without that page (protocol older than 4.13) has the
-standard outputs as target. The line follows the target the coprocessor
+The active PWM TARGET is the TARGET row of the right card, between SPEED and
+CENTRE. The right card stays in sight under the settings, their keypads and
+the servo programmer, so the row names the pin while any of them covers the
+left card. With OUTPUTS the row names the GPIOs bound as SERVO PWM in the
+binding the tester drives: `GP4`, `GP2 GP4`; as many pins as fit the 23
+characters of the value, then `+N`: 6 pins from GP40 on read
+`GP40 GP41 GP42 GP43 +2`. The value is right-aligned beside the label. The row is in the warning colour, label and value, with no
+such pin (`NO SERVO PWM PIN`) and before a binding has been read
+(`PINS NOT READ`). With PROG PORT the row reads `PROG PORT GP13` in the
+warning colour; the pin is the GPIO the coprocessor reports for the
+programming port. The tester's commands then do not reach the SERVO PWM
+outputs; while the bank is armed they hold their rest pulse, the centre
+between their endpoints. A port target without a usable pin (none, refused
+at start, or a port the coprocessor does not have) reads `PROG PORT`, also in
+the warning colour: the commands go to the port all the same. With PORT PWM
+off the port renders no pulse, and the row adds `PWM OFF`:
+`PROG PORT GP13 PWM OFF`, 22 characters with a two-digit pin. Two states name
+no target, both in the warning colour, and the tester sends no command in
+either: `NO LINK` while no coprocessor answers, and `NOT KNOWN` while the
+coprocessor's programming-port page has not been read since the link came
+up, a write to it was not acknowledged, or a read of it went unanswered.
+While the servo programmer holds the port, the row does not change: it keeps
+naming the target the coprocessor holds, a port or the outputs; the
+programmer drives the port and the tester sends nothing. The page is read
+every 500 ms. A coprocessor without that page (protocol older than 4.13) has
+the standard outputs as target. The row follows the target the coprocessor
 holds, not the setting: a PWM TARGET change waits for a quiet bench and
-reaches the line once the coprocessor has taken it.
+reaches the row once the coprocessor has taken it.
 
-![The target line with PROG PORT](img/servo-target.png)
+![The TARGET row with PROG PORT](img/servo-target.png)
 
 | Type | Centre | Travel | Frame rates |
 | --- | --- | --- | --- |

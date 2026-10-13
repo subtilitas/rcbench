@@ -93,22 +93,33 @@ history is in git.
   are read and name the port. A record discarded leaves no pin behind: the
   next record names the pin of its own port. A panel of an earlier release
   does not read a version 2 record.
-- The SERVO screen shows the active PWM TARGET at the foot of the left card
-  with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
-  SERVO PWM (as many pins as fit, then `+N`), `TARGET: PROG PORT GP13`
-  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`),
-  `TARGET: PROG PORT` for a port target without a usable pin, with
-  `PWM OFF` after either while PORT PWM is off
-  (`ZIEL: PROG-PORT GP13 PWM AUS`). `TARGET: NO LINK` (`ZIEL: KEIN LINK`)
-  shows while no coprocessor answers and `TARGET: NOT KNOWN`
-  (`ZIEL: UNBEKANNT`) while the PROG page is not read or a write to it was
-  not acknowledged; the tester sends no command in either. While the servo
-  programmer holds the port, the line does not change: it keeps naming the
-  target the coprocessor holds. The warning colour marks five states: the
-  programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding
-  not read, no link and a target not known. The pins come from the binding the tester
-  drives. The line follows the target the coprocessor holds
-  (`prog_link_drive()`), not the PWM TARGET setting.
+- The SERVO screen's right card has a TARGET row (German ZIEL) between SPEED
+  and CENTRE that names the active PWM TARGET with its pins: `GP4` or
+  `GP2 GP4` for the pins bound as SERVO PWM (as many pins as fit the 23
+  cells of the value, then `+N`), `PROG PORT GP13` for the programming port (German
+  `PROG-PORT GP13`), `PROG PORT` for a port target without a usable pin,
+  with `PWM OFF` after either while PORT PWM is off
+  (`PROG-PORT GP13 PWM AUS`). `NO LINK` (`KEIN LINK`) shows while no
+  coprocessor answers and `NOT KNOWN` (`UNBEKANNT`) while the PROG page is
+  not read or a write to it was not acknowledged; the tester sends no command
+  in either. While the servo programmer holds the port, the row does not
+  change: it keeps naming the target the coprocessor holds. The warning
+  colour marks five states: the programming port, no SERVO PWM pin
+  (`NO SERVO PWM PIN`), a binding not read, no link and a target not known.
+  The pins come from the binding the tester drives. The row follows the
+  target the coprocessor holds (`prog_link_drive()`), not the PWM TARGET
+  setting. The right card stays in sight under the settings, their keypads
+  and the servo programmer, so the row names the pin while they cover the
+  left card.
+- The SERVO screen's type row carries the pulse range after the type and the
+  frame rate, `STANDARD PWM  50 Hz  1000-2000`, in place of the RANGE row
+  (`BEREICH`) under SPEED, which the TARGET row takes.
+- The SERVO screen names the supply on the line over the power plot
+  `PD MINI` in both languages, in place of `SUPPLY` (`NETZTEIL`). While the
+  panel's model stands in for the PD mini, a MODELLED pill (`SIMULIERT`),
+  20 px high and 24 px plus the word wide, at least 88 px (88 px for
+  MODELLED, 96 px for SIMULIERT), sits on the plot's top-left corner. With INA3221 CH1 as
+  the meter the line shows no pill.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.
