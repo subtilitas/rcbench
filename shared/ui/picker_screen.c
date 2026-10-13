@@ -156,11 +156,21 @@ const outbind_t *picker_screen_binding(void) { return &s.bind; }
 void picker_screen_set_binding(const outbind_t *b)
 {
     if (b != NULL) {
+        const uint16_t was = s.bind.board;
         s.bind = *b;
         /* Read off the wire or restored, so it is trimmed before it is drawn
          * rather than trusted to mean something on this board. */
         outbind_trim(&s.bind);
         touched();
+        /*
+         * Another board: its drawing is asked for now.  A drawing published
+         * for it before this binding arrived was refused then, because the
+         * picker still named the board before, and nothing else asks again
+         * until the screen is entered.
+         */
+        if (s.bind.board != was && s.source != NULL) {
+            s.source(s.bind.board);
+        }
     }
 }
 

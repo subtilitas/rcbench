@@ -55,7 +55,9 @@ void picker_screen_invalidate(void);
 /** The current choice, for anything that has to write it. */
 const outbind_t *picker_screen_binding(void);
 
-/** Set the choice: this screen and the outputs screen are two views of one. */
+/** Set the choice: this screen and the outputs screen are two views of one.
+ *  A binding that names another board asks the drawing source
+ *  (picker_screen_set_drawing_source()) for that board's drawing. */
 void picker_screen_set_binding(const outbind_t *b);
 
 /**

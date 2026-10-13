@@ -510,6 +510,37 @@ TEST_CASE(the_drawing_is_asked_for_on_the_way_in)
     picker_screen_set_drawing_source(NULL);
 }
 
+TEST_CASE(a_binding_for_another_board_asks_for_its_drawing)
+{
+    /*
+     * A link-up can publish the drawing before the binding that names its
+     * board is read; the picker refuses it then, as it names the board
+     * before.  The binding naming the new board asks again, so an open
+     * picker does not stay on the outline until it is re-entered.
+     */
+    fresh();
+    s_asked = 0;
+    picker_screen_set_drawing_source(drawing_source);
+    outbind_t b = *picker_screen_binding();
+    picker_screen_set_binding(&b);
+    CHECK_EQ(s_asked, 0);              /* the same board: nothing to ask */
+
+    outbind_t other = b;
+    other.board = (uint16_t)(BOARD + 1u);
+    picker_screen_set_binding(&other);
+    CHECK_EQ(s_asked, 1);
+    CHECK_EQ(s_asked_board, (uint16_t)(BOARD + 1u));
+
+    picker_screen_set_binding(&b);
+    CHECK_EQ(s_asked, 2);
+    CHECK_EQ(s_asked_board, BOARD);
+
+    picker_screen_set_drawing_source(NULL);
+    picker_screen_set_binding(&other);  /* no source: nothing is called */
+    CHECK_EQ(s_asked, 2);
+    picker_screen_set_binding(&b);
+}
+
 TEST_CASE(a_ground_is_marked_and_is_not_a_button)
 {
     /*
@@ -1519,6 +1550,7 @@ int main(void)
     RUN(a_drawing_is_shown_for_its_own_board_only);
     RUN(the_tables_beside_the_board_say_what_the_pins_became);
     RUN(the_drawing_is_asked_for_on_the_way_in);
+    RUN(a_binding_for_another_board_asks_for_its_drawing);
     RUN(a_ground_is_marked_and_is_not_a_button);
     RUN(a_board_that_does_not_say_which_pads_are_ground_still_draws);
     RUN(the_marks_do_not_get_in_the_way_of_the_buttons);
