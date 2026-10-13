@@ -64,6 +64,10 @@ extern "C" {
  *  exchange's 1000 ms timeout, so one lost frame is not a supply gone, and
  *  about the 3 failed transactions the coprocessor's driver takes. */
 #define SUPPLY_LINK_STALE_MS 1500u
+/** A reading count that has stood this long is a supply no trip can
+ *  watch: 2 x SUPPLY_LINK_STALE_MS, so the readings have been marked not
+ *  valid (ok 0) for a further 1500 ms (supply_link_blind()). */
+#define SUPPLY_LINK_BLIND_MS (2u * SUPPLY_LINK_STALE_MS)
 /** How often the page is read while the supply is in use. */
 #define SUPPLY_LINK_READ_MS  100u
 
@@ -204,6 +208,17 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
  */
 void supply_link_state(const supply_link_t *s, uint32_t now_ms,
                        supply_state_t *st);
+
+/**
+ * Whether the module's readings have stopped at @p now_ms: a page has been
+ * read and its reading count (SAMPLES) has not moved for
+ * SUPPLY_LINK_BLIND_MS or more, counted on the 32-bit millisecond clock
+ * across its wrap.  The page may still answer and the module read ONLINE:
+ * a display read that fails while the other reads answer.  No operator
+ * trip acts on such readings, so the caller switches an output that is on
+ * off and says why.  False before the first page read.
+ */
+bool supply_link_blind(const supply_link_t *s, uint32_t now_ms);
 
 /**
  * The command a programming port left on the page, once: true with

@@ -869,6 +869,7 @@ UI_TEXT(ALERT_PDMINI_OLD,          94, "coprocessor too old to reset the PD mini
 UI_TEXT(ALERT_PDMINI_WIRING,       94, "PD mini wiring changed in SETUP -- output off")
 UI_TEXT(ALERT_SUPPLY_CHANGED,      94, "supply changed in SETUP -- output off")
 UI_TEXT(ALERT_SUPPLY_SILENT,       94, "supply not answering -- output off")
+UI_TEXT(ALERT_SUPPLY_NO_READING,   94, "supply sends no readings -- output off")
 UI_TEXT(ALERT_SUPPLY_TRIP,         94, "supply tripped over %u.%02u %s -- output off")
 UI_TEXT(ALERT_TOUCH_ARM_AGAIN,     94, "touch lost while arming -- arm again")
 UI_TEXT(ALERT_TOUCH_STOPPED,       94, "touch stopped answering -- disarmed")

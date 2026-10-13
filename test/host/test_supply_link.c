@@ -9,7 +9,9 @@
  * and a module the page does not drive taken as not answering; a wiring
  * change the far end holds for a state read waited for, and its refusal
  * said; an output the far end switched off for a sagging input; an edit
- * followed between two writes keeping an ON off the old pins.
+ * followed between two writes keeping an ON off the old pins; a reading
+ * count that stands for SUPPLY_LINK_BLIND_MS behind a page that answers
+ * taken as readings stopped, across the tick wrap.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -865,6 +867,65 @@ TEST_CASE(a_read_goes_stale_at_its_time_across_the_tick_wrap)
                                   SUPPLY_LINK_STALE_MS / 2u);
 }
 
+/* The page answers and the module reads ONLINE, but its reading count
+ * stands: not stopped 1 ms before SUPPLY_LINK_BLIND_MS, stopped at it and
+ * after it, wherever the clock is; a count that moves again starts the
+ * time over. */
+static void readings_stop_at_the_blind_time(uint32_t t0)
+{
+    fresh();
+    CHECK(!supply_link_blind(&sl, t0 + 10u * SUPPLY_LINK_BLIND_MS));
+    CHECK(!supply_link_blind(NULL, t0));
+    supply_link_wire(&sl, &k_wired);
+    supply_link_command(&sl, true, 9000u, 800u);
+    pump(true);
+    drv.st.online = true;
+    drv.st.output = true;
+    now = t0;
+    drv.st.samples = drv.st.samples + 1u;       /* a new reading */
+    far_step_and_read(true);
+    CHECK(!supply_link_blind(&sl, t0));
+    CHECK(!supply_link_blind(&sl, t0 + 1u));
+    /* The page read every 100 ms, the count standing.  The last reading
+     * is a reading 1 ms before SUPPLY_LINK_STALE_MS and none at it, with
+     * the page read 100 ms before both. */
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    while ((uint32_t)(now - t0) < SUPPLY_LINK_BLIND_MS - 100u) {
+        now += 100u;
+        far_step_and_read(true);
+        if ((uint32_t)(now - t0) == SUPPLY_LINK_STALE_MS - 100u) {
+            supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS - 1u, &st);
+            CHECK(st.online);
+            CHECK_EQ(st.ok, SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+            supply_link_state(&sl, t0 + SUPPLY_LINK_STALE_MS, &st);
+            CHECK(st.online);
+            CHECK_EQ(st.ok, 0u);
+        }
+    }
+    supply_link_state(&sl, t0 + SUPPLY_LINK_BLIND_MS - 1u, &st);
+    CHECK(st.online);                           /* the page answers */
+    CHECK_EQ(st.ok, 0u);                        /* no reading to trip on */
+    CHECK(!supply_link_blind(&sl, t0 + SUPPLY_LINK_BLIND_MS - 1u));
+    CHECK(supply_link_blind(&sl, t0 + SUPPLY_LINK_BLIND_MS));
+    CHECK(supply_link_blind(&sl, t0 + SUPPLY_LINK_BLIND_MS + 1u));
+    supply_link_state(&sl, t0 + SUPPLY_LINK_BLIND_MS, &st);
+    CHECK(st.online);
+    /* The count moves again: the time starts over from that read. */
+    now = t0 + SUPPLY_LINK_BLIND_MS;
+    drv.st.samples = drv.st.samples + 1u;
+    far_step_and_read(true);
+    CHECK(!supply_link_blind(&sl, now));
+    CHECK(!supply_link_blind(&sl, now + SUPPLY_LINK_BLIND_MS - 1u));
+    CHECK(supply_link_blind(&sl, now + SUPPLY_LINK_BLIND_MS));
+}
+
+TEST_CASE(readings_stop_at_their_time_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(readings_stop_at_the_blind_time,
+                                  SUPPLY_LINK_BLIND_MS / 2u);
+}
+
 int main(void)
 {
     RUN(an_off_then_the_wiring_then_the_command);
@@ -889,5 +950,6 @@ int main(void)
     RUN(a_wiring_moves_on_its_count_or_its_word);
     RUN(a_read_is_due_at_its_interval_across_the_tick_wrap);
     RUN(a_read_goes_stale_at_its_time_across_the_tick_wrap);
+    RUN(readings_stop_at_their_time_across_the_tick_wrap);
     return test_summary("supply_link");
 }
