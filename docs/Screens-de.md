@@ -121,6 +121,25 @@ die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren. Bei eingeschaltetem Drehknopf bewegt dessen Drehung das Gas
 ([der Knopf](#anwendung-der-drehknopf)).
+
+### Das Gas-Panel nennt seine Pins
+
+Das Gas-Panel nennt links neben der Prozentzahl die Pins, die das Gas
+treibt: `ZIEL: GP0 GP1`. Es sind die Pins, die als MOTOR PWM oder als
+DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
+SETUP > AUSGÄNGE, die auch die Gas-Rolle des Koprozessors liest. Die Liste
+steht in Pin-Reihenfolge und enthält so viele Pins, wie in das Feld von 49
+Zeichen passen; der Rest wird gezählt. Sind GP0 bis GP15 gebunden, steht dort
+`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6`. Zwei Zustände erscheinen
+in der Warnfarbe:
+
+| Zeile | Bedingung |
+|---|---|
+| `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
+| `ZIEL: BINDUNG NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
+
+Das Gas bewegt sich in beiden Zuständen weiter. ARM schaltet die ganze Bank
+scharf, nicht nur die hier genannten Pins.
 ### Der Plot zeigt einen Lauf
 
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
@@ -563,9 +582,18 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
   zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
-  öffnet sich, und nichts geht an. Beim Verlassen von SERVO bleibt
-  der Ausgang, wie er ist; ein Druck auf AUSGANG AUS beim Verlassen wird als
-  das OFF gesendet, das er war.
+  öffnet sich, und nichts geht an. Das Verlassen von SERVO schaltet einen
+  Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG EIN, mit einem Test
+  oder mit VERBINDEN des Servo-Programmierers. Solange der
+  Servo-Programmierer einen Port hält, bleibt der Ausgang an, weil ein OFF
+  die Sitzung beenden und ein laufendes Schreiben abschneiden würde; er geht
+  aus, wenn der Port loslässt, außer SERVO wird vorher wieder gezeigt. Ein
+  ON, das SERVO verlangt hat und das auf dem Weg ist, wenn der Port das
+  Netzteil übernimmt, zählt als eingeschaltet. Ein
+  Ausgang, den SERVO nicht eingeschaltet hat, bleibt, wie er ist. Der
+  Servo-Programmierer, die Tastenfelder und die Fragen gehören zu SERVO und
+  sind kein Verlassen. Ein Druck auf AUSGANG AUS beim Verlassen wird als das
+  OFF gesendet, das er war.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
 nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
@@ -797,8 +825,9 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
 weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
 AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
-als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; ab 5 Pins die
-ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
+als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; so viele Pins,
+wie in die 34 Zeichen der Zeile passen, dann `+N`: 6 Pins ab GP40 lauten
+`ZIEL: GP40 GP41 GP42 GP43 GP44 +1`. Sie ist in der Warnfarbe ohne
 einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
 wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
 `ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
@@ -911,8 +940,10 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 Koprozessor steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
-in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
-abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
+in SETUP unter ANSCHLÜSSE eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des Koprozessors, an denen
+es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
+PD mini RX. Ist einer der beiden Pins nicht gesetzt, steht `PD MINI OHNE PINS`
+in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
 SIMULIERT.
 
@@ -971,22 +1002,77 @@ ab.
 
 **AUSGANG EIN ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
-Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
-Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
-gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
-bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine Abschaltung.
-Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
-Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
-dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
-verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang an
-ist.
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein Touch,
+der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren gingen, bevor
+ein ganzer Frame den Ausgang eingeschaltet sah, und ein Koprozessor, der nicht
+scharf bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine
+Abschaltung. Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das
+Verlassen des Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet
+hat: einen, der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC
+STICK tun dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein
+Ausgang nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet
+hat. Die Ausnahme: ein Ausgang, den SERVO eingeschaltet hat, bleibt nach dem
+Verlassen von SERVO an, solange der Servo-Programmierer seinen Port hält, bis
+der Port loslässt (siehe SERVO). Ein Servo wird von SERVO versorgt, ein ESC von
+ESC STICK. MOTOR & ESC schaltet keine Versorgung; ein ESC, der dort läuft, wird
+aus seiner eigenen Quelle versorgt. Ein Ausgang, den ein anderer Bildschirm
+eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Das Tastenfeld,
+die HV-Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
+Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
+solange der Ausgang an ist.
 
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
 wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
 ANTWORTET NICHT, solange kein Koprozessor antwortet, der Protokoll 4.3
 spricht, oder solange die Messwerte der Page älter als 1500 ms sind; ein
-Ausgang, der an ist, wird dann abgeschaltet. Ebenfalls abgeschaltet, mit
+Ausgang, der an ist, wird dann abgeschaltet. Antwortet die Page, während der
+Messwertzähler des Moduls (SAMPLES) steht -- ein Lesen der Anzeige, das
+fehlschlägt, während die anderen Lesungen antworten --, bleibt ONLINE: nach
+1500 ms ohne neuen Messwert zeigen die Karten für Spannung, Strom und
+Leistung Striche, und keine Abschaltschwelle, kein Spitzenwert und keine
+Summe übernimmt einen Messwert; nach
+3000 ms (`SUPPLY_LINK_BLIND_MS`) wird ein Ausgang, der an ist, abgeschaltet,
+und das Band sagt `Netzteil liefert keine Messwerte -- Ausgang aus`. Ein Sollwert, der sich
+schneller ändert, als das Modul ihn übernimmt -- der Slider gezogen mit
+SLIDER, SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
+Messwerte nicht auf: eine Lesung, die 400 ms über ihre Fälligkeit hinaus
+ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
+eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
+des Zustands und das Lesen des Eingangs vor einem Schreiben dürfen auch
+direkt auf eine andere Lesung folgen. Bei einem Modul, das sofort antwortet,
+wird die Anzeige dann etwa 500 ms nach dem letzten Lesen der Anzeige gelesen
+und der Zustand des Ausgangs etwa 900 ms nach dem letzten Lesen des
+Zustands, jeweils mit bis zu zwei Transaktionen mehr. Ein Ausgang, den das
+Modul einschaltet, während er am Panel aus ist, oder selbst abschaltet, wird
+auch während des Ziehens erkannt. Der Eingang wird vor dem Schreiben eines
+Sollwerts oder einem ON nur gelesen, wenn eines davon wartet, und nicht
+zwischen den Lesungen für ein ON. Sollwerte und ein ON erreichen ein Modul,
+das bis zu 390 ms spät antwortet (der Treiber wartet 400 ms; Host-Modell,
+40 Startphasen): ein Sollwert innerhalb von 2,5 s; ein ON innerhalb von
+3,6 s, wenn die Sollwerte schon geschrieben sind, bis zu 7,5 s, wenn es
+direkt nach einer Änderung des Sollwerts oder einem Ziehen kommt; ein Modul,
+das seinen Ausgang selbst schaltet, wird während des Ziehens innerhalb von
+2,1 s erkannt. Ein Ausgang, den das Modul einschaltet, während OFF verlangt
+ist, wird bei einem Modul, das sofort antwortet, etwa 500 ms später
+abgeschaltet, bei einem, das bis zu 390 ms spät antwortet, in Ruhe bis zu
+1,8 s und während des Ziehens bis zu 2,1 s später. Die echte Antwortzeit des
+Moduls ist nicht gemessen.
+Aktuelle Einschränkung: ein Modul, das spät antwortet, dehnt die 500 ms der
+Lesungen von Zustand und Eingang, denn jede Transaktion dauert seine
+Antwortzeit. In Ruhe wird der Eingang bei 100 ms Verspätung 850 ms
+auseinander gelesen, bei 200 ms 1,3 s und bei 390 ms 2,5 s; der Zustand bis
+zu 1,5 s auseinander.
+Aktuelle Einschränkung: antwortet das Modul 279 ms oder später und wird der
+Slider gezogen, wird die Anzeige erst 3,7 s bis 5,0 s nach dem letzten
+Lesen der Anzeige gelesen (5,0 s bei 390 ms), über `SUPPLY_LINK_BLIND_MS`
+hinaus; ein Ausgang, der an ist, wird abgeschaltet, und das Band sagt
+`Netzteil liefert keine Messwerte -- Ausgang aus`. Das Panel liest die Page
+alle 100 ms, was die Lücke, die es sieht, um bis zu 100 ms verlängert: ab
+263 ms Verspätung ist die Lücke des Treibers über 2,9 s, die Abschaltung ist
+also ab 263 ms möglich. In Ruhe steht das Lesen der Anzeige bis zu 2,5 s bei
+390 ms. Es steht über 1,4 s ab 259 ms Verspätung und 1,5 s ab 279 ms, die
+Karten können also ab etwa 260 ms Striche zeigen. Ebenfalls abgeschaltet, mit
 einer Zeile im Band, wird der Ausgang, wenn der Koprozessor ein ON abweist
 (kein Heartbeat) oder eines fallen lässt (sein Heartbeat blieb aus, oder er
 ist neu gestartet). Schaltet das Modul den Ausgang selbst ab -- sein Überstromschutz oder sein
@@ -997,11 +1083,17 @@ werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
 des PD mini schalten den Ausgang ab.
 
 **Ein einbrechender Eingang schaltet den PD mini ab.** Solange der Ausgang an
-ist, liest der Koprozessor den Eingang des Moduls alle 500 ms. Liegt der
-Eingang bei 2 Lesungen hintereinander unter dem Sollwert plus 0,5 V, schaltet
-er den Ausgang sofort ab, und das Band nennt Eingang und Sollwert, zum
-Beispiel `Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
-Der Ausgang bleibt aus bis zu einem neuen Halten. Ein Eingang unter 1,5 V
+ist, liest der Koprozessor den Eingang des Moduls alle 500 ms bei einem
+Modul, das sofort antwortet, und weiter auseinander bei einem, das spät
+antwortet (siehe oben). Liegt der Eingang bei 2 Lesungen hintereinander
+unter dem Sollwert plus 0,5 V, schaltet er den Ausgang sofort ab, und das
+Band nennt Eingang und Sollwert, zum Beispiel
+`Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
+Vom Einbruch bis zur Abschaltung vergeht bei einem Modul, das sofort
+antwortet, etwa 1,0 s. Aktuelle Einschränkung: bei einem, das spät
+antwortet, sind es 1,7 s bei 100 ms Verspätung, 1,9 s bei 200 ms und bis zu
+4,7 s bis 390 ms (Host-Modell). Der Ausgang bleibt aus bis zu einem neuen
+Halten. Ein Eingang unter 1,5 V
 lässt keinen Platz für den kleinsten Sollwert, 1,0 V: das ON wird nicht
 geschrieben, und das Band zeigt dieselbe Meldung. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
@@ -1106,7 +1198,7 @@ Koprozessor weist einen Pin ab, der reserviert, an einen Ausgang gebunden
 oder der andere Pin ist. Hat das Modul einmal geantwortet, wartet eine
 Änderung auf eine danach gesendete Zustandslesung des Moduls, höchstens etwa
 1,2 s, und wird nur übernommen, wenn diese den Ausgang aus zeigt: das Modul
-kann sich zwischen zwei der 500-ms-Lesungen selbst einschalten, über seinen
+kann sich zwischen zwei Zustandslesungen selbst einschalten, über seinen
 Knopf oder seine Einstellung AUTO OUT, und neue Pins ließen ihm keinen Weg
 zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
@@ -1253,6 +1345,11 @@ beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
 
+START öffnet nichts, und die Zeile daneben nennt den Grund, solange kein Pin
+als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
+und solange das Netzteil das Modell des Panels ist; ein solcher Grund
+schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
+
 Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
 und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
 HAND und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
@@ -1292,9 +1389,9 @@ Pieptöne weiter aus dem Netzteilstrom.
 | --- | --- |
 | `LÄUFT` | die Aufnahme läuft |
 | `ÜBERLAUF` | sie läuft, und der Aufnahmering oder die FIFO ist seit dem Einschalten des Abgriffs übergelaufen |
-| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet |
+| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet, oder ihre Flags sagen, dass der Abgriff läuft, und ihre Fensternummer hat sich 1,5 s nicht bewegt, oder der Abgriff wurde ausgeschaltet, und die Page hält ihn noch an |
 | `KEINE TONE-PAGE` | der Koprozessor spricht ein Protokoll älter als 4.8 |
-| `PIN BELEGT` | der Koprozessor hält den Abgriff aus: sein Pin ist anderweitig gebunden |
+| `PIN BELEGT` | der Koprozessor hält den Abgriff aus: sein Pin ist anderweitig gebunden, oder der Koprozessor führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet), und seine gespeicherte Einstellung hat den Abgriff an; das Zweite endet nur mit einem Neustart des Koprozessors |
 | `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
 
 TONHÖHE und VERLOREN sind Werte der Page aus dem letzten Status-Read. Sie
@@ -1765,7 +1862,13 @@ er steigt. Einem Koprozessor älter als 4.8 wird nichts gesendet.
 Solange die Page den Abgriff eingeschaltet hält, liest das Panel ihre 16
 Leseregister alle 50 ms: die Flags, die Tonhöhe des letzten 8-ms-Fensters,
 die Nummer des neuesten Pieptons und die Zähler der verlorenen Pieptöne und
-der ignorierten Tiefs. Die Pieptöne holt es einzeln nach Nummer. Der
+der ignorierten Tiefs. Ein Lesen, dessen Flags sagen, dass der Abgriff
+läuft, spricht für ihn, solange sich seine Fensternummer bewegt: der
+Koprozessor schließt alle 8 ms ein Fenster, eine Nummer, die 1,5 s
+(`TONE_LINK_WINDOW_STALE_MS`) stehen bleibt, ist also eine Aufnahme, die
+anhielt, während die Page noch antwortet, und der Bildschirm zeigt `WARTET`
+wie bei einem Lesen, das älter als 500 ms ist. Die Pieptöne holt es einzeln
+nach Nummer. Der
 Koprozessor hält die letzten 64 Pieptöne, nummeriert von 1 bis 65535 und
 dann wieder ab 1, und ein Lesen entfernt keinen, eine auf dem Link verlorene
 Antwort kostet also keinen Piepton. Ein Piepton, der den Ring verlassen hat,
@@ -1780,9 +1883,9 @@ wie bei den Strommonitoren:
 | Meldung | Wann |
 | --- | --- |
 | `Koprozessor ohne TONE-Page -- Phasenabgriff nicht gelesen` | der Abgriff ist eingeschaltet und der Koprozessor spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt oder der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons). Alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet |
+| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut geschrieben. Von einem Koprozessor mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5 s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
 | `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Phasenabgriff: Pin GP22 nicht frei -- Abgriff läuft nicht` | der Koprozessor meldet den Pin als abgelehnt: eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung |
+| `Phasenabgriff: Pin GP22 nicht frei -- Abgriff läuft nicht` | der Koprozessor meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der Koprozessor führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des Koprozessors lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` nur für eine andere Einstellung als die, die der Koprozessor behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
 | `Phasenabgriff: Aufnahme übergelaufen -- Pieptöne abgeschnitten` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des Koprozessors ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 ### Werte behalten

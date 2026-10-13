@@ -4262,6 +4262,13 @@ static void supply_step(float step_s)
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
         control_alert(TR(ALERT_SUPPLY_SILENT));
+    } else if (s_supply_is_real && s_supply_on
+               && supply_link_blind(&s_supply_link, now_ms())) {
+        /* The page answers and the module reads ONLINE, but its reading
+         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
+         * valid, which no trip acts on.  Off, as for a supply gone. */
+        supply_switch(false);
+        control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
         if (s_supply_fresh) {
@@ -6819,6 +6826,15 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->armed       = outputs_armed(&s_out);
     f->card        = storage_mounted();
     f->target      = prog_link_target(&s_prog_link);
+    /* The pin of each programming port, for the journal of a write. */
+    f->port_pin_known = 0u;
+    for (uint8_t port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        const uint8_t pin = prog_link_pin(&s_prog_link, port);
+        f->port_pin[port] = pin;
+        if (pin != PROG_LINK_NO_PIN) {
+            f->port_pin_known |= (uint8_t)(1u << port);
+        }
+    }
     /* The PD mini's output while it is the supply, answers and is on. */
     f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
     f->out_mv      = 0u;
@@ -7035,10 +7051,22 @@ static void learn_board_pins(void)
     }
 }
 
+/* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
+ * for the MOTOR & ESC screen's target line, and whether a binding was read.
+ * The same pages the coprocessor's throttle role reads. */
+static atomic_ullong s_throttle_pins;
+static atomic_bool   s_throttle_pins_known;
+
 /* A reading, into the snapshot the outputs and picker screens take. */
 static void post_reading(const bind_reading_t *r)
 {
     s_bind_read = r->state;
+    /* A binding that did not read names no pin: the screen says so. */
+    const bool known = (r->state == BIND_READ_OK);
+    atomic_store(&s_throttle_pins,
+                 known ? outputs_role_pins(r->slots, r->cfg, OUT_ROLE_THROTTLE)
+                       : 0u);
+    atomic_store(&s_throttle_pins_known, known);
     if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
         s_outputs_read = *r;
         s_outputs_read_fresh = true;
@@ -8441,6 +8469,8 @@ void app_main(void)
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
+            motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
+                                           atomic_load(&s_throttle_pins_known));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
             const unsigned drive = atomic_load(&s_drive);
@@ -8513,6 +8543,10 @@ void app_main(void)
             supply_screen_set_model(!supply_real);
             overview_screen_set_supply_real(supply_real);
         }
+        {
+            const supply_wiring_t wiring = pdmini_wiring();
+            supply_screen_set_pins(wiring.tx, wiring.rx);
+        }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);
         servo_test_enc_t enc;
@@ -8572,6 +8606,8 @@ void app_main(void)
          * to.  Testing it outside would let this task cache it and miss a
          * binding the control task had just read off the wire. */
         static bind_reading_t got;      /* app_main only */
+        static bool got_read;           /* app_main only */
+        static uint8_t got_throttle;    /* app_main only */
         bool have = false;
         if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
             have = s_outputs_read_fresh;
@@ -8596,7 +8632,14 @@ void app_main(void)
              */
             outputs_screen_set_reading(&got);
             picker_screen_set_binding(outputs_screen_binding());
+            /* RUN on ESC STICK moves the throttle pins: none bound, or
+             * no binding read, is a run refused with the reason. */
+            got_read = got.state == BIND_READ_OK;
+            got_throttle = got_read
+                ? outputs_role_channels(got.slots, got.cfg, OUT_ROLE_THROTTLE)
+                : 0u;
         }
+        programmer_screen_set_throttle(got_read, got_throttle);
         /* A pick on the outputs screen writes nothing and so reads nothing
          * back: the picker follows the selection, and whether the binding
          * is one a read confirmed, every frame. */

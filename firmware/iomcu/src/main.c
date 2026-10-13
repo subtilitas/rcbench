@@ -891,11 +891,14 @@ static uint8_t servo_sense_write(void *ctx, uint8_t off, uint8_t n,
 
 /* ------------------------------------------------------------ the phase tap */
 
-/* The pins the tap may not take: the supply's, and the sensor bus's with the
- * ones core 1 has not let go of yet. */
+/* The pins the tap may not take for now: the supply's, the programming
+ * ports', and the sensor bus's with the ones core 1 has not let go of yet.
+ * A write naming one is refused with BUSY; the board's own reserved pins
+ * are refused with BAD_VALUE. */
 static uint64_t tone_taken(void)
 {
-    return supply_page_pins(&s_supply) | sense_page_held(&s_sense);
+    return supply_page_pins(&s_supply) | sense_page_held(&s_sense)
+           | prog_port_pins(&s_prog);
 }
 
 /* Core 1's order from the page, running when the capture does. */
@@ -918,7 +921,6 @@ static void tone_order(void)
  */
 static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
 static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
-static bool s_tone_no_core1;     /* core 1 did not start: no capture runs */
 
 static bool tone_rewire_as(bool keep_ring)
 {
@@ -945,7 +947,7 @@ static bool tone_rewire_as(bool keep_ring)
         }
         return true;
     }
-    if (s_tone_no_core1 || !tone_cap_start(tone_page_pin(&s_tone))) {
+    if (s_tone.no_capture || !tone_cap_start(tone_page_pin(&s_tone))) {
         return false;
     }
     if (keep_ring) {
@@ -976,7 +978,12 @@ static void tone_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * pages' pins, then the capture started or moved, the pin reserved, the
  * set-up saved and core 1 told.  A change of ENABLE or of the pin, and a
  * write that tries a refused tap again, rewire the capture; the wiring
- * failing there puts the old set-up back and refuses the write.  A change
+ * failing there puts the old set-up back and refuses the write with BUSY:
+ * core 1 in a pass, or no PIO state machine or DMA channel left by the
+ * outputs and the supply, each of which a later write can find free.  Core
+ * 1 that did not start at boot frees nothing before a restart: the page
+ * refuses that with BAD_VALUE before the wiring is tried
+ * (tone_page_no_capture()).  A change
  * of a range only reaches core 1.  Taken
  * armed or not: the tap is an input.
  */
@@ -1020,7 +1027,7 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
         tone_page_revert(&s_tone, was, was_refused);
         reserve_held();
         tone_order();
-        return LINK_NACK_BAD_VALUE;
+        return LINK_NACK_BUSY;
     }
     if (!wired) {
         /* No state machine or channel for that pin, or none left for a
@@ -1036,12 +1043,12 @@ static uint8_t tone_write(void *ctx, uint8_t off, uint8_t n,
                 tone_page_revert(&s_tone, trial, false);
                 reserve_held();
                 tone_order();
-                return LINK_NACK_BAD_VALUE;
+                return LINK_NACK_BUSY;
             }
             tone_page_refuse(&s_tone);
             reserve_held();
         }
-        return LINK_NACK_BAD_VALUE;
+        return LINK_NACK_BUSY;
     }
     if (!rewire) {
         reserve_held();
@@ -2167,10 +2174,12 @@ int main(void)
         } else {
             out_store_off();
             /* No core 1 known to run, so nothing reads the tap: its capture
-             * is let go and the page says refused (FLAGS PIN_REFUSED). */
-            s_tone_no_core1 = true;   /* and every later start refused */
-            if (tone_page_wanted(&s_tone)) {
-                tone_page_refuse(&s_tone);
+             * is let go and the page says refused (FLAGS PIN_REFUSED).
+             * Every later write that enables the tap is refused with
+             * BAD_VALUE, not BUSY: nothing frees before a restart. */
+            const bool was_wanted = tone_page_wanted(&s_tone);
+            tone_page_no_capture(&s_tone);
+            if (was_wanted) {
                 (void)tone_rewire();
                 reserve_held();
             }

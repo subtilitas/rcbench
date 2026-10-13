@@ -44,14 +44,19 @@
  * ADCRANGE 1 reads a quarter of the current; the INA3221 on all three
  * channels with 1.1 ms conversions, a CH1 result every 6.6 ms.  The
  * rotation reads ADC_CONFIG and Configuration back (ina228_verify(),
- * ina3221_verify()).  A part found on another value than the one written
- * goes offline and is probed and set up again SENSE_RETRY_MS on; its
- * resets are counted modulo 256 (i228_resets, i3221_resets); the windows
+ * ina3221_verify()).  A part found on another value than the one written,
+ * twice in a row or once as FFFFh (the bus that no part drives), goes
+ * offline and is probed and set up again SENSE_RETRY_MS on; each time
+ * is counted modulo 256 (i228_resets, i3221_resets); the windows
  * being filled from it are emptied; the INA228's totals are no longer the
  * run's; and a capture under way ends lost.  A reset is found within one
  * rotation, 40 ms: the samples read in that time are in the window before
  * the one emptied when a window boundary lies between -- the INA228's at
  * the reset range, the INA3221's right in value and up to 6.6 ms old.
+ * The readings are not checked for all ones: until the read-back finds a
+ * bus that no part drives, within the same 40 ms, an all-ones reading is
+ * code -1, -390 µA on a 200 µΩ INA228 shunt, -400 µA on a 0.1 Ω INA3221
+ * shunt, and -8 mV of INA3221 bus voltage.
  *
  * A channel the INA3221's set-up does not enable, and a part that is
  * disabled, not online or on a stuck bus, is not read: its windows stay

@@ -17,13 +17,39 @@
  * a set point with READ_OUTPUT_DATA.
  *
  * An OFF goes first, before anything else waiting: an ON or a set point
- * not yet sent is dropped -- an ON also when its set points change -- a read under way other than the state's is
- * left, and an OFF that does not take is written again without pause.  An OFF asked for while
- * an ON is being confirmed is written at once when a read-back has shown
- * which argument means off; before that, the state is read back to back
- * for 1000 ms from the ON and the output switched off the moment it reads
- * on.  An ON that comes later than that is an output on while OFF is
- * asked, switched off at the next state read, at most 500 ms on.
+ * not yet sent is dropped -- an ON also when its set points change -- a
+ * read under way other than the state's is left, and an OFF that does not
+ * take is written again without pause.  An OFF asked for while an ON is
+ * being confirmed is written at once when a read-back has shown which
+ * argument means off; before that, the state is read back to back for
+ * 1000 ms from the ON and the output switched off the moment it reads on.
+ * An ON that comes later than that is an output on while OFF is asked,
+ * switched off at the next state read: about 500 ms on with a module
+ * answering at once, up to 1.8 s with one answering up to 390 ms late, and
+ * up to 2.1 s while set points change faster than they are written, see
+ * below.
+ *
+ * The readings come round on their periods: the display every 100 ms, the
+ * state and the input every 500 ms, the slot every 1000 ms, with a module
+ * answering within 12 ms.  A module answering later stretches them, each
+ * transaction taking its reply time: at rest the input is read 850 ms
+ * apart at 100 ms late, 1.3 s at 200 ms and 2.5 s at 390 ms, the state up
+ * to 1.5 s apart (host model).  A reading PDMINI_POLL_LATE_MS past its due
+ * goes before the next set point, one at a time with a set-point job or a
+ * read for an ON between two, so set points changed faster than a write
+ * and its read-back take -- a slider dragged -- hold no reading back for
+ * long.  The state read, and the input read before a write, may follow
+ * another reading straight away.  The input is read before a set point
+ * write or an ON once it is PDMINI_STATE_MS old, and not between the reads
+ * for an ON.  Set points and an ON reach a module answering up to 390 ms
+ * late (host model, 40 start phases): one set point within 2.5 s; an ON
+ * within 3.6 s at set points already written, up to 7.5 s right after a
+ * set point change.  With replies 279 ms or more late and a set point
+ * changed every 50 ms, the display read stands 3.7 s to 5.0 s, past the
+ * 3 s the panel allows (see the README); from 263 ms it stands over 2.9 s,
+ * which the panel's page read every 100 ms can take past 3 s.  At rest it
+ * stands up to 2.5 s at 390 ms.  The real module's reply time is not
+ * measured.
  *
  * An ON waits for the set points: it is written only once the active slot
  * reads back what is asked, read again straight before the ON together
@@ -47,13 +73,15 @@
  * sagging input is not measured -- so it may cut a run that would have
  * survived.  An input read that fails neither counts nor clears the run of
  * low readings.  While the output is on, the set point is not lowered to
- * follow a falling input; the rule switches it off instead.
+ * follow a falling input; the rule switches it off instead.  From a sag to
+ * the cut takes about 1.0 s with a module answering at once, 1.7 s at
+ * 100 ms late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms, the input
+ * reads stretching as above (host model).
  *
  * A state read can be asked for (pdmini_check_off()): one sent after the
  * asking, whose answer says whether the output is off now.  The SUPPLY
  * page takes a wiring change from a module that has answered only on such
- * a read: the module can switch itself on between two of the 500 ms
- * reads.
+ * a read: the module can switch itself on between two state reads.
  *
  * A module that stops answering while its output is on may still be
  * listening: while an OFF is asked for, it is sent blind straight after
@@ -164,6 +192,12 @@ enum { PDMINI_MODE_NORMAL = 0, PDMINI_MODE_CC = 1, PDMINI_MODE_OC = 2 };
                                         is known, watched this long         */
 #define PDMINI_GAP_MS       10u    /**< pins at rest between transactions  */
 #define PDMINI_DISPLAY_MS  100u    /**< how often the output is read       */
+#define PDMINI_POLL_LATE_MS 400u  /**< a reading this far past its due
+                                        goes before the next set-point
+                                        write: set points changed faster
+                                        than a write and its read-back take
+                                        would otherwise hold the readings
+                                        back                               */
 #define PDMINI_STATE_MS    500u    /**< the output state and the input     */
 #define PDMINI_IDENTIFY_MS 1000u   /**< WHO_AM_I again while nothing answers */
 #define PDMINI_SLOT_MS     1000u   /**< the active slot read again          */
@@ -266,6 +300,9 @@ typedef struct {
     bool     input_seen;     /* and this firmware has answered it at all */
     uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
+    bool     polled_late;    /* the last job a reading that went before
+                                the set points: an overdue one, or the
+                                input read before a set point or an ON  */
     uint8_t  sag_reads;      /* input reads in a row under a live output's
                                 set point and the headroom              */
     uint8_t  check;          /* pdmini_check_t, PDMINI_CHECK_SENT between */

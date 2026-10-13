@@ -189,6 +189,7 @@ typedef struct {
     unsigned mark_ch, mark_us;  /* the last $C line's                 */
     unsigned long dest_t;       /* the last $D line's                 */
     unsigned dest_ch, dest_us;
+    unsigned long dest_cmd;
     unsigned n_mark;
     unsigned long st_on, st_rst;
     unsigned st_at;             /* sample lines before the first $S   */
@@ -205,6 +206,7 @@ static void parse_line(const char *l)
     int mv = 0;
     int end = 0;
     unsigned long a = 0u;
+    unsigned long cmd_t = 0u;
     unsigned b = 0u;
     unsigned c = 0u;
     if (sscanf(l, "$T v=%u n=%u trig=%7s t=%lu ms=%lu len=%u%n", &p->ver,
@@ -228,12 +230,13 @@ static void parse_line(const char *l)
         p->mark_ch = b;
         p->mark_us = c;
         p->mark_t[p->n_mark++ % 32u] = a;
-    } else if (sscanf(l, "$D t=%lu ch=%u us=%u%n", &a, &b, &c, &end) == 3
-               && l[end] == '\0') {
+    } else if (sscanf(l, "$D t=%lu ch=%u us=%u cmd=%lu%n", &a, &b, &c,
+                      &cmd_t, &end) == 4 && l[end] == '\0') {
         ++p->n_d;
-        p->dest_t  = a;
-        p->dest_ch = b;
-        p->dest_us = c;
+        p->dest_t   = a;
+        p->dest_ch  = b;
+        p->dest_us  = c;
+        p->dest_cmd = cmd_t;
     } else if (sscanf(l, "$E t=%lu%n", &a, &end) == 1 && l[end] == '\0') {
         ++p->n_e;
         p->mark_t[p->n_mark++ % 32u] = a;
@@ -786,7 +789,7 @@ TEST_CASE(the_console_command_gives_ten_seconds)
     /* The lines as written. */
     char want[160];
     snprintf(want, sizeof(want),
-             "$T v=2 n=1 trig=key t=%lu ms=%lu len=10000\r\n"
+             "$T v=3 n=1 trig=key t=%lu ms=%lu len=10000\r\n"
              "$H dt_us=1000 shunt_uohm=100000 cfg=0x%04X on=1 rst=0\r\n",
              (unsigned long)t0, (unsigned long)(t0 / 10u),
              (unsigned)svc.sched.i3221.config);
@@ -1027,7 +1030,7 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     unsigned commands = 0u;
     for (unsigned k = 1u; k <= 800u; ++k) {
         if (sense_trace_pulse(&tr, 0u, 5u, (uint16_t)(1100u + k), g_us)) {
-            sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u,
+            sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u,
                                 (uint16_t)(1100u + k));
             ++commands;
         }
@@ -1054,6 +1057,8 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     CHECK_EQ(seen.dest_ch, 5u);
     CHECK_EQ(seen.dest_us, 1900u);
     CHECK_EQ(seen.dest_t, t0 + 7990u);
+    CHECK_EQ(seen.dest_cmd, seen.mark_t[0]);
+    CHECK_EQ(seen.dest_cmd, t0);
     CHECK_EQ(seen.z_m, 2u);
     CHECK(strstr(g_log, "$D t=") > strstr(g_log, "$C t="));
     /* A slew that is let go before it held still ends where it was, and
@@ -1091,6 +1096,129 @@ TEST_CASE(a_slewed_command_is_one_line_and_holds_the_trace_open)
     CHECK(sense_trace_pulse(&tr, 1u, 5u, 1501u, g_us));
     CHECK(!sense_trace_pulse(&tr, 1u, 5u, 1502u, g_us + 1000u));
     CHECK(!sense_trace_active(&tr));
+}
+
+/* A $D line names its command's $C time: a slew let go and a new command
+ * 11 ms after its last change each end with their own command, across
+ * the 0.1 ms count's wrap. */
+TEST_CASE(a_d_line_names_the_command_it_ends)
+{
+    rig();
+    g_us = ((uint64_t)UINT32_MAX - 4100u) * 100u;
+    run(300u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1500u, g_us));
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1510u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 6u, 1510u);
+    const uint32_t c1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1520u, g_us));
+    const uint32_t d1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 0u, g_us));      /* let go */
+    run(10u);
+    CHECK(sense_trace_pulse(&tr, 2u, 6u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 6u, 1600u);
+    const uint32_t c2 = (uint32_t)(g_us / 100u);
+    CHECK((int32_t)(c2 - d1) == 110);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 2u, 6u, 1610u, g_us));
+    const uint32_t d2 = (uint32_t)(g_us / 100u);
+    CHECK(d2 < c1);                                  /* past the wrap */
+    run(1u);
+    for (unsigned k = 0u; k < 60u; ++k) {
+        (void)sense_trace_pulse(&tr, 2u, 6u, 1610u, g_us);
+        run(1u);
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.n_d, 2u);
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=6 us=1520 cmd=%lu\r\n",
+             (unsigned long)d1, (unsigned long)c1);
+    CHECK(strstr(g_log, want) != NULL);
+    snprintf(want, sizeof(want), "$D t=%lu ch=6 us=1610 cmd=%lu\r\n",
+             (unsigned long)d2, (unsigned long)c2);
+    CHECK(strstr(g_log, want) != NULL);
+}
+
+/* Two watched slots: a command on channel 2 while channel 1 still slews
+ * leaves channel 1's $D naming channel 1's own command. */
+TEST_CASE(a_command_on_another_channel_leaves_a_slews_command_time)
+{
+    rig();
+    run(300u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1500u, g_us));
+    CHECK(!sense_trace_pulse(&tr, 2u, 2u, 1500u, g_us));
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 1u, 1u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 1u, 1600u);
+    const uint32_t c1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1610u, g_us));
+    const uint32_t d1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(sense_trace_pulse(&tr, 2u, 2u, 1700u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 2u, 1700u);
+    const uint32_t c2 = (uint32_t)(g_us / 100u);
+    CHECK(c2 != c1);
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!sense_trace_pulse(&tr, 1u, 1u, 1610u, g_us));
+        CHECK(!sense_trace_pulse(&tr, 2u, 2u, 1700u, g_us));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 2u);
+    CHECK_EQ(seen.n_d, 1u);                 /* channel 2 stepped */
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=1 us=1610 cmd=%lu\r\n",
+             (unsigned long)d1, (unsigned long)c1);
+    CHECK(strstr(g_log, want) != NULL);
+}
+
+/* An edge and a console trigger, both on channel 0 by their call, during
+ * channel 0's slew are no commands: its $D names the command. */
+TEST_CASE(an_edge_or_a_key_during_a_slew_is_no_command_of_channel_0)
+{
+    rig();
+    run(300u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1500u, g_us));
+    run(100u);
+    CHECK(sense_trace_pulse(&tr, 0u, 0u, 1600u, g_us));
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 0u, 1600u);
+    const uint32_t c1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1610u, g_us));
+    const uint32_t d1 = (uint32_t)(g_us / 100u);
+    run(1u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    run(1u);
+    sense_trace_key(&tr, 't', g_us);
+    for (unsigned k = 0u; k < 60u; ++k) {
+        run(1u);
+        CHECK(!sense_trace_pulse(&tr, 0u, 0u, 1610u, g_us));
+    }
+    sense_trace_key(&tr, 'x', g_us);
+    run(10u);
+    CHECK(!sense_trace_active(&tr));
+    parse();
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK_EQ(seen.n_c, 1u);
+    CHECK_EQ(seen.n_e, 1u);
+    CHECK_EQ(seen.n_k, 1u);
+    CHECK_EQ(seen.n_d, 1u);
+    char want[64];
+    snprintf(want, sizeof(want), "$D t=%lu ch=0 us=1610 cmd=%lu\r\n",
+             (unsigned long)d1, (unsigned long)c1);
+    CHECK(strstr(g_log, want) != NULL);
 }
 
 /* A trace of 4 s from an edge at @p edge_us, the clock 300 ms before it. */
@@ -1176,7 +1304,7 @@ TEST_CASE(the_pump_gives_whole_lines_into_the_room_it_has)
         CHECK_EQ(seen.n_bad, 0u);
         /* The header's lines are the longest: under their length nothing
          * is written, and nothing is lost by waiting. */
-        if (room < strlen("$T v=2 n=1 trig=cmd t=201000 ms=20100 "
+        if (room < strlen("$T v=3 n=1 trig=cmd t=201000 ms=20100 "
                           "len=4000\r\n")) {
             CHECK_EQ(g_len, 0u);
         } else if (room >= 60u) {
@@ -1535,7 +1663,7 @@ TEST_CASE(a_trigger_past_the_end_of_a_trace_still_being_written_is_the_next)
     /* The next trace: the command's, with every sample since the first
      * one's end before its own. */
     char want[96];
-    snprintf(want, sizeof(want), "$T v=2 n=2 trig=cmd t=%lu ms=%lu len=4000",
+    snprintf(want, sizeof(want), "$T v=3 n=2 trig=cmd t=%lu ms=%lu len=4000",
              (unsigned long)t0 + 46000ul, ((unsigned long)t0 + 46000ul) / 10ul);
     CHECK(strncmp(rest, want, strlen(want)) == 0);
     CHECK(strstr(rest, "$C t=") != NULL);
@@ -1573,7 +1701,7 @@ TEST_CASE(a_start_after_a_stop_is_a_trace_of_its_own)
     CHECK_EQ(seen.n_k, 1u);
     CHECK_EQ(seen.z_m, 1u);
     char want[64];
-    snprintf(want, sizeof(want), "$T v=2 n=2 trig=key t=%lu ",
+    snprintf(want, sizeof(want), "$T v=3 n=2 trig=key t=%lu ",
              (unsigned long)t1);
     CHECK(strncmp(rest, want, strlen(want)) == 0);
     CHECK(strstr(rest, " m=8 ml=1 e=k\r\n") != NULL);
@@ -1633,7 +1761,7 @@ static void run_out(void)
 static void parse_from(unsigned id)
 {
     char want[32];
-    snprintf(want, sizeof(want), "$T v=2 n=%u ", id);
+    snprintf(want, sizeof(want), "$T v=3 n=%u ", id);
     const char *at = strstr(g_log, want);
     CHECK(at != NULL);
     if (at != NULL) {
@@ -1676,6 +1804,7 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
     CHECK_EQ(tr.out.wait[1].t, t_last);
     CHECK_EQ(tr.out.wait[1].us, 1230u);
+    CHECK_EQ(tr.out.wait[1].cmd_t, t_cmd);
     run_to_trace(2u);
     CHECK_EQ(tr.out.wait_n, 0u);
     CHECK_EQ(tr.out.end_t, t_last + 40000u);
@@ -1691,10 +1820,53 @@ TEST_CASE(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace)
     CHECK_EQ(seen.dest_t, t_last);
     CHECK_EQ(seen.dest_ch, 5u);
     CHECK_EQ(seen.dest_us, 1230u);
+    CHECK_EQ(seen.dest_cmd, t_cmd);
     CHECK_EQ(seen.z_m, 2u);
     CHECK_EQ(seen.z_e, 't');
     CHECK_EQ(seen.z_s, seen.n_s);
     CHECK_EQ(seen.t[(seen.n_s - 1u) % MAX_S], t_last + 40000u - 10u);
+}
+
+/* A command that waits behind a trace that itself waits, and lies past
+ * that trace's end: it waits again, its slew's end with it, and the $D
+ * line in the trace after names it. */
+TEST_CASE(a_command_that_waits_twice_keeps_its_time_on_its_end)
+{
+    owe_a_stopped_trace();
+    CHECK(!drive(1100u));
+    stall(1u);
+    sense_trace_trigger(&tr, SENSE_TRACE_TRIG_EDGE, g_us, 0u, 0u);
+    const uint32_t t_edge = now_t();
+    stall(SENSE_TRACE_EDGE_MS + 100u);
+    const uint32_t t_cmd = now_t();
+    CHECK(drive(1200u));
+    stall(1u);
+    const uint32_t t_last = now_t();
+    CHECK(!drive(1210u));
+    for (unsigned k = 0u; k < 60u; ++k) {
+        stall(1u);
+        CHECK(!drive(1210u));
+    }
+    CHECK_EQ(tr.out.wait_n, 3u);
+    CHECK_EQ(tr.out.wait[2].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[2].cmd_t, t_cmd);
+    /* The edge's trace is next; the command lies past its end. */
+    run_to_trace(2u);
+    CHECK_EQ(tr.out.t0, t_edge);
+    CHECK_EQ(tr.out.wait_n, 2u);
+    CHECK_EQ(tr.out.wait[0].kind, SENSE_TRACE_TRIG_CMD);
+    CHECK_EQ(tr.out.wait[1].kind, SENSE_TRACE_MARK_DEST);
+    CHECK_EQ(tr.out.wait[1].cmd_t, t_cmd);
+    run_to_trace(3u);
+    run_out();
+    parse_from(3u);
+    CHECK_EQ(seen.n_bad, 0u);
+    CHECK(strcmp(seen.trig, "cmd") == 0);
+    CHECK_EQ(seen.t0, t_cmd);
+    CHECK_EQ(seen.n_d, 1u);
+    CHECK_EQ(seen.dest_t, t_last);
+    CHECK_EQ(seen.dest_us, 1210u);
+    CHECK_EQ(seen.dest_cmd, t_cmd);
 }
 
 TEST_CASE(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open)
@@ -2088,7 +2260,7 @@ TEST_CASE(a_set_up_record_has_the_time_of_the_tick_it_was_seen_in)
     parse();
     CHECK_EQ(seen.z_e, 's');
     CHECK_EQ(seen.n_c, 0u);
-    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strncmp(rest, "$T v=3 n=2 trig=cmd ", 20u) == 0);
     CHECK(strstr(rest, "shunt_uohm=50000 ") != NULL);
 
     /* A closed bus has no sample at all: the record of its set-up has
@@ -2287,7 +2459,7 @@ TEST_CASE(a_command_after_a_changed_set_up_is_the_next_traces)
     CHECK_EQ(seen.z_s, seen.n_s);
     /* The command's own trace, under the new set-up. */
     char want[64];
-    snprintf(want, sizeof(want), "$T v=2 n=2 trig=cmd t=%lu ",
+    snprintf(want, sizeof(want), "$T v=3 n=2 trig=cmd t=%lu ",
              (unsigned long)t1);
     CHECK(strncmp(rest, want, strlen(want)) == 0);
     CHECK(strstr(rest, "shunt_uohm=50000 ") != NULL);
@@ -2335,7 +2507,7 @@ TEST_CASE(a_trigger_lost_after_a_changed_set_up_is_counted_in_the_next_trace)
     CHECK_EQ(seen.n_c, 0u);
     CHECK_EQ(seen.z_m, 1u);
     CHECK_EQ(seen.z_ml, 0u);
-    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    CHECK(strncmp(rest, "$T v=3 n=2 trig=cmd ", 20u) == 0);
     CHECK(strstr(rest, " m=8 ml=2 e=k\r\n") != NULL);
 
     /* One of before the change and one of after it, the queue full of
@@ -2408,6 +2580,7 @@ TEST_CASE(a_slewed_commands_end_goes_with_its_command_into_the_next_trace)
     CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1500u, g_us - 200000u));
     CHECK(sense_trace_pulse(&tr, 0u, 5u, 1600u, g_us));
     sense_trace_trigger(&tr, SENSE_TRACE_TRIG_CMD, g_us, 5u, 1600u);
+    const uint32_t c_t = (uint32_t)(g_us / 100u);
     stall(10u);
     CHECK(!sense_trace_pulse(&tr, 0u, 5u, 1610u, g_us));
     const uint32_t d_t = (uint32_t)(g_us / 100u);
@@ -2420,9 +2593,9 @@ TEST_CASE(a_slewed_commands_end_goes_with_its_command_into_the_next_trace)
     CHECK_EQ(seen.z_e, 's');
     CHECK_EQ(seen.n_c + seen.n_d, 0u);
     char want[64];
-    snprintf(want, sizeof(want), "$D t=%lu ch=5 us=1610\r\n",
-             (unsigned long)d_t);
-    CHECK(strncmp(rest, "$T v=2 n=2 trig=cmd ", 20u) == 0);
+    snprintf(want, sizeof(want), "$D t=%lu ch=5 us=1610 cmd=%lu\r\n",
+             (unsigned long)d_t, (unsigned long)c_t);
+    CHECK(strncmp(rest, "$T v=3 n=2 trig=cmd ", 20u) == 0);
     CHECK(strstr(rest, " ch=5 us=1600\r\n") != NULL);
     CHECK(strstr(rest, want) != NULL);
 }
@@ -2690,6 +2863,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     tr.out.watch[0].ch = 65535u;
     tr.out.watch[0].pulse = 65535u;
     tr.out.watch[0].changed_t = t;
+    tr.out.watch[0].cmd_t = UINT32_MAX;
     (void)sense_trace_pulse(&tr, 0u, 65535u, 65535u,
                             g_us + SENSE_TRACE_HOLD_MS * 1000u);
     run(20u);
@@ -2698,7 +2872,7 @@ TEST_CASE(every_line_at_its_longest_fits)
     sense_trace_key(&tr, 'x', g_us);
     run(3u);
     char want[80];
-    snprintf(want, sizeof(want), "$T v=2 n=65535 trig=edge t=%lu ms=%lu "
+    snprintf(want, sizeof(want), "$T v=3 n=65535 trig=edge t=%lu ms=%lu "
              "len=99999\r\n", (unsigned long)t,
              (unsigned long)((uint64_t)4294964295u + 105u));
     CHECK_EQ(strlen(want), SENSE_TRACE_LINE_MAX - 1u);
@@ -2706,7 +2880,8 @@ TEST_CASE(every_line_at_its_longest_fits)
     snprintf(want, sizeof(want), "$C t=%lu ch=65535 us=65535\r\n",
              (unsigned long)t);
     CHECK(strstr(g_log, want) != NULL);
-    snprintf(want, sizeof(want), "$D t=%lu ch=65535 us=65535\r\n",
+    snprintf(want, sizeof(want),
+             "$D t=%lu ch=65535 us=65535 cmd=4294967295\r\n",
              (unsigned long)t);
     CHECK(strstr(g_log, want) != NULL);
     CHECK(strstr(g_log, "$E t=") != NULL);
@@ -3534,6 +3709,9 @@ int main(void)
     RUN(a_slot_still_for_longer_than_the_count_tells_is_a_command_again);
     RUN(a_trace_the_console_never_takes_is_dropped_before_its_times_wrap);
     RUN(a_slewed_command_is_one_line_and_holds_the_trace_open);
+    RUN(a_d_line_names_the_command_it_ends);
+    RUN(a_command_on_another_channel_leaves_a_slews_command_time);
+    RUN(an_edge_or_a_key_during_a_slew_is_no_command_of_channel_0);
     RUN(a_trace_runs_across_the_millisecond_ticks_wrap);
     RUN(a_trace_runs_across_the_tenth_millisecond_counts_wrap);
     RUN(the_pump_gives_whole_lines_into_the_room_it_has);
@@ -3558,6 +3736,7 @@ int main(void)
     RUN(a_slewed_commands_end_goes_with_its_command_into_the_next_trace);
     RUN(a_trigger_past_the_next_traces_end_overwrites_none_that_waited);
     RUN(a_command_that_waits_takes_its_slew_and_its_end_to_the_next_trace);
+    RUN(a_command_that_waits_twice_keeps_its_time_on_its_end);
     RUN(a_slew_longer_than_a_trace_that_waits_holds_the_next_trace_open);
     RUN(a_slew_that_stops_as_its_trace_starts_ends_in_that_trace);
     RUN(a_command_with_no_line_has_no_end_line_either);

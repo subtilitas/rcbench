@@ -64,28 +64,37 @@ static bool adc_pin(uint16_t pin)
     return (pin >= 26u && pin <= 29u) || (pin >= 40u && pin <= 47u);
 }
 
-/* Whether @p pin may carry the tap: in the bank, no ADC pin, not another
- * page's, not reserved unless the tap already holds it, and no output's. */
-static bool pin_free(const tone_page_t *p, const outputs_t *o, uint16_t pin,
-                     uint64_t taken)
+/* Why @p pin may not carry the tap, as the NACK says it, or 0 when it may.
+ * BAD_VALUE for a pin no binding frees: past the bank, an ADC pin, or one
+ * the board reserves.  BUSY for a pin something the panel sets up holds:
+ * another page's (@p taken), or an output's.  The tap's own pin is not
+ * reserved against it. */
+static uint8_t pin_refusal(const tone_page_t *p, const outputs_t *o,
+                           uint16_t pin, uint64_t taken)
 {
     if (pin > OUT_MAX_PIN || adc_pin(pin)) {
-        return false;
+        return LINK_NACK_BAD_VALUE;
     }
     const uint64_t bit = (uint64_t)1u << pin;
     if ((taken & bit) != 0u) {
-        return false;
-    }
-    const bool ours = (tone_page_pins(p) & bit) != 0u;
-    if (!ours && !outputs_pin_available(o, (uint8_t)pin)) {
-        return false;
+        return LINK_NACK_BUSY;
     }
     for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
         if (o->slot[i].driver != OUT_DRIVER_NONE && o->slot[i].pin == pin) {
-            return false;
+            return LINK_NACK_BUSY;
         }
     }
-    return true;
+    const bool ours = (tone_page_pins(p) & bit) != 0u;
+    if (!ours && !outputs_pin_available(o, (uint8_t)pin)) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    return 0u;
+}
+
+static bool pin_free(const tone_page_t *p, const outputs_t *o, uint16_t pin,
+                     uint64_t taken)
+{
+    return pin_refusal(p, o, pin, taken) == 0u;
 }
 
 bool tone_page_pin_free(const tone_page_t *p, const outputs_t *o,
@@ -175,9 +184,16 @@ uint8_t tone_page_write(tone_page_t *p, uint8_t off, uint8_t n,
     if (!values_ok(p, next)) {
         return LINK_NACK_BAD_VALUE;
     }
-    if ((next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u
-        && !pin_free(p, o, next[LINK_TN_PIN], taken)) {
+    if ((next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u && p->no_capture) {
+        /* Nothing runs a capture before a restart: not BUSY, which the
+         * panel offers again, as no freed pin makes this write good. */
         return LINK_NACK_BAD_VALUE;
+    }
+    if ((next[LINK_TN_ENABLE] & LINK_TN_EN_TAP) != 0u) {
+        const uint8_t why = pin_refusal(p, o, next[LINK_TN_PIN], taken);
+        if (why != 0u) {
+            return why;
+        }
     }
     memcpy(p->cfg, next, sizeof(p->cfg));
     p->refused = false;
@@ -225,6 +241,14 @@ void tone_page_refuse(tone_page_t *p)
         p->refused = true;
         ++p->gen;
         forget_status(p);
+    }
+}
+
+void tone_page_no_capture(tone_page_t *p)
+{
+    if (p != NULL) {
+        p->no_capture = true;
+        tone_page_refuse(p);
     }
 }
 

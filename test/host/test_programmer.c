@@ -70,6 +70,7 @@ static void fresh(void)
     supply_screen_settings_loaded();
     scr = programmer_screen();
     scr->reset();
+    programmer_screen_set_throttle(true, 0x01u);    /* channel 0 a throttle */
 }
 
 static void tap(int x, int y)
@@ -791,6 +792,118 @@ TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * RUN moves the throttle pins and powers the ESC from the supply: with the
+ * supply the panel's model, no binding read, or no pin bound as a
+ * throttle, none starts and the note names which.  Each reason put right,
+ * the same RUN starts.
+ */
+TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
+{
+    enum { R_MODEL, R_NOT_READ, R_NO_THROTTLE, R_COUNT };
+    /* Inside RUN, left of its label: the button's body. */
+    const int run_px = (BTN_CY * W) + WRITE_X - 76;
+    static gfx_color_t before[W * H];
+    motor_cmd_t mc;
+
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        for (int k = 0; k < R_COUNT; ++k) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            const char *want = NULL;
+            if (k == R_MODEL) {
+                supply_screen_set_model(true);
+                want = TR(SP_SUPPLY_MODEL);
+            } else if (k == R_NOT_READ) {
+                /* A mask with no read behind it is no throttle known. */
+                programmer_screen_set_throttle(false, 0x01u);
+                want = TR(SP_BIND_NOT_READ);
+            } else {
+                programmer_screen_set_throttle(true, 0x00u);
+                want = TR(SP_NO_THROTTLE);
+            }
+            descend_to_hobbywing();
+            pick_cutoff();
+            /* RUN is drawn as taking no press, and a tap on it opens no
+             * warning, before any tick could close one: the frame after
+             * the tap is the frame before it, with the note set. */
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK_EQ(fb[run_px], GFX_RGB(38, 46, 58));
+            memcpy(before, fb, sizeof(before));
+            tap(WRITE_X, BTN_CY);
+            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK(memcmp(before, fb, sizeof(before)) == 0);
+            hold_for(2.25f);
+            CHECK_EQ(programmer_screen_stick_runs(), 0u);
+            CHECK(!esc_stick_running(programmer_screen_stick()));
+            CHECK(!programmer_screen_poll_cmd(&mc));
+            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK(lit() > 20000);
+            /* Put right: the same RUN starts. */
+            supply_screen_set_model(false);
+            programmer_screen_set_throttle(true, 0x80u);   /* channel 7 */
+            scr->tick(0.02f);
+            CHECK_STR_EQ(programmer_screen_stick_note(), "");
+            /* RUN takes a press again, drawn in the colour of danger. */
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK_EQ(fb[run_px], ui_theme_color(UI_C_DANGER));
+            tap(WRITE_X, BTN_CY);
+            hold_for(2.25f);
+            CHECK_EQ(programmer_screen_stick_runs(), 1u);
+            scr->leave();
+            supply_screen_set_model(false);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * The warning open, and the bench stops being able to carry a run: the
+ * warning closes and the note says why.  Put right again, the next hold
+ * at HOLD TO RUN is no run: RUN has to be pressed anew.
+ */
+TEST_CASE(a_bench_that_loses_its_throttle_closes_the_warning)
+{
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        descend_to_hobbywing();
+        pick_cutoff();
+        tap(WRITE_X, BTN_CY);                /* RUN: the warning */
+        press(TOUCH_EVENT_DOWN, HOLD_X, HOLD_Y);
+        scr->tick(0.25f);                    /* a hold under way */
+        if (k == 0) {
+            supply_screen_set_model(true);
+        } else if (k == 1) {
+            programmer_screen_set_throttle(false, 0x00u);
+        } else {
+            programmer_screen_set_throttle(true, 0x00u);
+        }
+        scr->tick(0.02f);
+        press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
+        CHECK_STR_EQ(programmer_screen_stick_note(),
+                     k == 0 ? TR(SP_SUPPLY_MODEL)
+                     : k == 1 ? TR(SP_BIND_NOT_READ) : TR(SP_NO_THROTTLE));
+        supply_screen_set_model(false);
+        programmer_screen_set_throttle(true, 0x01u);
+        scr->tick(0.02f);
+        hold_for(2.25f);
+        if (programmer_screen_stick_runs() != 0u) {
+            T_FAIL("reason %d left the warning open", k);
+        }
+        /* RUN again opens it, and the hold starts the run. */
+        tap(WRITE_X, BTN_CY);
+        hold_for(2.25f);
+        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        scr->leave();
+    }
+}
+
 TEST_CASE(a_run_needs_a_change_and_the_warning_held_two_seconds)
 {
     fresh();
@@ -899,6 +1012,8 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
             rig_step(&r);                    /* powered, in the menu */
         }
         CHECK(r.on && r.armed);
+        /* The supply the run switched on is ESC STICK's. */
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_PROGRAMMER);
         CHECK(programmer_screen_stick_profile() != NULL);
         esc_stick_reason_t want = ESC_STICK_R_LEFT;
         if (k == 0) {
@@ -927,11 +1042,29 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
         CHECK(!green);
         CHECK(!r.armed);
         CHECK(!r.on);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
         CHECK_EQ(r.sim.stores, 0u);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 0);
         CHECK(lit() > 20000);
     }
+}
+
+/* The backstop in the leave: a supply ESC STICK switched on that no run
+ * owns any more -- the run is over, the output is not -- goes off with
+ * the screen. */
+TEST_CASE(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run)
+{
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_PROGRAMMER);
+    supply_cmd_t sc;
+    CHECK(supply_screen_poll_cmd(&sc) && sc.on);
+    supply_screen_set_output(true);
+    CHECK(!esc_stick_running(programmer_screen_stick()));
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&sc));
+    CHECK(sc.off && !sc.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
 }
 
 /* Refused, not adjusted: a voltage over the SUPPLY cap, or a live output,
@@ -954,7 +1087,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     fresh();
     descend_to_hobbywing();
     pick_cutoff();
-    supply_screen_ask_on();                 /* the output on its way */
+    supply_screen_ask_on(SUPPLY_BY_SERVO);  /* the output on its way */
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
@@ -1246,7 +1379,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     descend_to_hobbywing();
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
-    supply_screen_ask_on();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
 }
@@ -3917,10 +4050,13 @@ int main(void)
     RUN(every_protocol_draws_its_parameters);
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
     RUN(no_run_starts_while_the_servo_programmer_holds_a_port);
+    RUN(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply);
+    RUN(a_bench_that_loses_its_throttle_closes_the_warning);
     RUN(a_run_needs_a_change_and_the_warning_held_two_seconds);
     RUN(a_hold_that_is_interrupted_starts_nothing);
     RUN(a_whole_run_on_the_modelled_bench_stores_and_lets_go);
     RUN(leaving_abort_and_stop_end_a_run_and_let_go);
+    RUN(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run);
     RUN(a_run_the_supply_cannot_give_is_refused);
     RUN(timing_steps_the_settings_and_closing_asks_for_a_save);
     RUN(an_item_steps_from_keep_and_stops_at_its_ends);
