@@ -2807,7 +2807,7 @@ static void test_apply(const servo_test_do_t *d)
         supply_screen_put(d->set_v, d->set_i);
     }
     if (d->on) {
-        supply_screen_ask_on();
+        supply_screen_ask_on(SUPPLY_BY_SERVO);
     }
     /* A step is a position like any other: only while the value is live.
      * The run itself ends on the edge out of it (value_edge()). */
@@ -3244,7 +3244,7 @@ static void ask_apply(void)
     if (s.ask.purpose == ASK_TEST) {
         test_begin();
     } else if (s.ask.purpose == ASK_ON) {
-        supply_screen_ask_on();
+        supply_screen_ask_on(SUPPLY_BY_SERVO);
     } else if (s.ask.target == KT_SUP_V) {
         supply_screen_put(s.ask.v, supply_screen_set_i());
     } else {
@@ -5475,6 +5475,11 @@ static void tick_body(float dt_s)
         s.kst_held = kst_panel_holds_port();
         ++s.arm_rev;
     }
+    /* A PD mini the programmer's CONNECT switched on, through the
+     * coprocessor rather than through SUPPLY, is this screen's. */
+    if (supply_screen_port_held()) {
+        supply_screen_claim(SUPPLY_BY_SERVO);
+    }
     if (supply_screen_port_held() != s.sup_held) {
         s.sup_held = supply_screen_port_held();
         /* A hold on OUTPUT ON that was under way ends with nothing asked. */
@@ -5617,7 +5622,7 @@ static void tick_body(float dt_s)
                     ask_hv_on();
                 }
             } else {
-                supply_screen_ask_on();
+                supply_screen_ask_on(SUPPLY_BY_SERVO);
             }
         }
     }
@@ -5859,7 +5864,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
  * Leaving releases the output: a screen that is not visible must not hold
  * the servo somewhere, the same rule as the motor bench's disarm on leave.
  * The overlay closes with it, and a warning not held is a profile not
- * applied.
+ * applied.  A supply this screen switched on -- OUTPUT ON, a test, the
+ * programmer's CONNECT -- goes off with it; the programmer's overlay, the
+ * keypads and the questions are this screen's own and are no leave.
  */
 static void leave(void)
 {
@@ -5881,8 +5888,7 @@ static void leave(void)
     s.at_rest = false;
     ui_hold_reset(&s.arm);
     s.arm_down = false;
-    /* The supply's output stays as it is, as leaving SUPPLY keeps it; a
-     * press on OUTPUT OFF as the screen goes is the OFF being made. */
+    /* A press on OUTPUT OFF as the screen goes is the OFF being made. */
     if (s.out_down && s.out_press_on) {
         supply_screen_ask_off();
     }
@@ -5905,14 +5911,21 @@ static void leave(void)
     /* The programmer's presses and pages go; the port stays as it is, and
      * the screen shows it again while it holds the port. */
     kst_panel_leave();
+    /* And a supply this screen switched on goes off.  While the port holds
+     * it, the OFF waits for the port to let go: an OFF now would end the
+     * session and cut a write on the wire. */
+    supply_screen_left(SUPPLY_BY_SERVO);
     ++s.arm_rev;
     ++s.ctrl_rev;
 }
 
-/* ENABLE WRITE TO SERVO goes off whenever the screen is entered. */
+/* ENABLE WRITE TO SERVO goes off whenever the screen is entered, and an
+ * OFF owed for leaving with the port held is dropped: the supply is this
+ * screen's again. */
 static void enter(void)
 {
     kst_panel_screen_entry();
+    supply_screen_entered(SUPPLY_BY_SERVO);
 }
 
 /*
