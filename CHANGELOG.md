@@ -548,6 +548,14 @@ history is in git.
 
 ### Fixed
 
+- The panel does not build on ESP-IDF v5.5.0 or v5.5.1. Their TWAI
+  (two-wire automotive interface) driver sends a CAN frame queued with
+  DLC (data length code) 0 as DLC 8 with 8 zero bytes. Every link read
+  and the self-test status request are DLC 0, so the coprocessor refused
+  them all and a panel built there never linked; the self-test echoes,
+  which are DLC 8, passed. can_twai.c stops the build on those two
+  releases. The CI matrix builds v5.4 and v5.5.3, and the docs check
+  compares ESP-IDF point releases in full.
 - PICK A PIN shows the pin of the coprocessor's programming port (GP13 by
   default) grey, lists it first under `PROG PORT` in IN USE, and a tap on it
   changes nothing. It was drawn as free, and a tap took it from the port.

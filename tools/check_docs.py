@@ -1336,7 +1336,8 @@ def check_sdk_tags(problems: list[str]) -> None:
     for page, joiner in (("Building.md", "and"), ("Building-de.md", "und")):
         text = read(REPO / "docs" / page)
         stated = list(re.finditer(
-            r"(v\d+\.\d+) %s (v\d+\.\d+)" % joiner, text))
+            r"(v\d+\.\d+(?:\.\d+)?) %s (v\d+\.\d+(?:\.\d+)?)" % joiner,
+            text))
         if not stated:
             problems.append(f"SDK tags: no 'vX.Y {joiner} vX.Z' ESP-IDF "
                             f"statement in {page}")

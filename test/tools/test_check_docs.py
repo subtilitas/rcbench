@@ -383,6 +383,20 @@ def test_a_page_without_the_esp_idf_statement_is_named(tree, rel, old, new):
     assert len(out) == 1 and f"ESP-IDF statement in {page}" in out[0]
 
 
+def test_a_point_release_is_compared_whole(tree):
+    """v5.5 on a page is not v5.5.3 in the matrix, and v5.5.3 on both is."""
+    ci = {".github/workflows/ci.yml": [("idf: [v5.4, v5.5]",
+                                        "idf: [v5.4, v5.5.3]")]}
+    out = sdk_tree(tree, **ci)
+    assert len(out) == 2
+    assert "Building.md says ESP-IDF v5.4 and v5.5; " in out[0]
+    assert "Building-de.md says ESP-IDF v5.4 und v5.5; " in out[1]
+    both = dict(ci)
+    both["docs/Building.md"] = [("v5.4 and v5.5", "v5.4 and v5.5.3")]
+    both["docs/Building-de.md"] = [("v5.4 und v5.5", "v5.4 und v5.5.3")]
+    assert sdk_tree(tree, **both) == []
+
+
 def test_the_tree_holds_the_sdk_tags():
     problems = []
     cd.check_sdk_tags(problems)
