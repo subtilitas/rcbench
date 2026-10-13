@@ -7,11 +7,25 @@
 #include <string.h>
 
 #include "driver/twai.h"
+#include "esp_idf_version.h"
 #include "esp_log.h"
 
 #include "board.h"
 #include "board_pins.h"
 #include "can_timing.h"
+
+/*
+ * ESP-IDF v5.5.0 and v5.5.1 send a frame queued with data_length_code 0 as
+ * DLC 8 with eight zero bytes: the legacy twai_transmit() hands the HAL
+ * (hardware abstraction layer) a buffer length of 8, and the HAL takes the
+ * length from the buffer when the DLC is 0.  Every link read is DLC 0, the
+ * coprocessor refuses a read that carries data, and the panel never links.
+ * v5.5.2 passes the DLC through.
+ */
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0) \
+    && ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 5, 2)
+#error "ESP-IDF v5.5.0 and v5.5.1 send every DLC 0 CAN frame as DLC 8; build with v5.4.x or v5.5.2 or later"
+#endif
 
 static const char *TAG = "can";
 static bool s_running;

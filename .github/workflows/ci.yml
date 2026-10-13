@@ -375,8 +375,10 @@ jobs:
         # on_frame_buf_complete event exists from v5.4.  The floor is built as
         # well as the newest release, because a component that includes
         # esp_timer.h without requiring it compiles on a later v5.4.x point
-        # release and not on v5.4.0.
-        idf: [v5.4, v5.5]
+        # release and not on v5.4.0.  v5.5.0 and v5.5.1 send a DLC 0 frame
+        # as DLC 8 and are refused by can_twai.c, so the newer entry names
+        # its point release.
+        idf: [v5.4, v5.5.3]
     steps:
       - uses: actions/checkout@v6
 
