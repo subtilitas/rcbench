@@ -80,12 +80,15 @@ typedef enum {
  * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
  * than its frame (out_pwm_pulse_max()); the panel states a port's range
  * before it switches the port's pulse on, which an older coprocessor takes
- * as well.  A
+ * as well.  From 4.17 the
+ * TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
+ * a set-up no freed pin makes good; the panel offers the first frame again
+ * after a BUSY only.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 16u
+#define LINK_PROTOCOL_MINOR 17u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -115,6 +118,12 @@ typedef enum {
  *  clamps the pulse to the frame's last count, while the page reads back
  *  the endpoint written. */
 #define LINK_MINOR_PULSE_FRAME 16u
+/** The first minor whose TONE page refuses a tap on a busy pin with
+ *  LINK_NACK_BUSY: a pin SUPPLY, SENSE, PROG or an output holds, or a
+ *  capture the wiring cannot start for now.  BAD_VALUE is left for a set-up
+ *  no freed pin makes good.  Minor 16 and older refuse both with
+ *  LINK_NACK_BAD_VALUE. */
+#define LINK_MINOR_TONE_BUSY 17u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -766,10 +775,16 @@ enum {
  *
  *     Refused with BAD_VALUE: a value out of its range, a combination the
  *     detector refuses (tone_init()), and, while the tap is enabled, a pin
- *     past the bank, reserved, bound to an output, held by the SENSE or
- *     SUPPLY page, or an ADC (analog to digital converter) pin: GP26 to
- *     GP29 on the RP2350A and GP40 to GP47 on the RP2354B, rated IOVDD +
- *     0.5 V and not fault tolerant.  The pin is no output's while the tap
+ *     past the bank, one the board reserves, or an ADC (analog to digital
+ *     converter) pin: GP26 to GP29 on the RP2350A and GP40 to GP47 on the
+ *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant, and any pin on
+ *     a coprocessor whose core 1 did not start at boot: no capture runs
+ *     before a restart.  Refused with
+ *     BUSY (since 4.17, BAD_VALUE before): while the tap is enabled, a pin
+ *     bound to an output or held by the SENSE, SUPPLY or PROG page, and a
+ *     capture the wiring cannot start for now -- core 1 in a pass, or no
+ *     PIO state machine or DMA channel left.  Freed, the same write is
+ *     taken.  The pin is no output's while the tap
  *     is enabled, and an OUTPUTS write that binds it is refused, as are a
  *     SENSE or SUPPLY write that takes it.  A change is taken armed or
  *     not: the tap is an input and drives nothing.

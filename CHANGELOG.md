@@ -108,22 +108,33 @@ history is in git.
   are read and name the port. A record discarded leaves no pin behind: the
   next record names the pin of its own port. A panel of an earlier release
   does not read a version 2 record.
-- The SERVO screen shows the active PWM TARGET at the foot of the left card
-  with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
-  SERVO PWM (as many pins as fit, then `+N`), `TARGET: PROG PORT GP13`
-  for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`),
-  `TARGET: PROG PORT` for a port target without a usable pin, with
-  `PWM OFF` after either while PORT PWM is off
-  (`ZIEL: PROG-PORT GP13 PWM AUS`). `TARGET: NO LINK` (`ZIEL: KEIN LINK`)
-  shows while no coprocessor answers and `TARGET: NOT KNOWN`
-  (`ZIEL: UNBEKANNT`) while the PROG page is not read or a write to it was
-  not acknowledged; the tester sends no command in either. While the servo
-  programmer holds the port, the line does not change: it keeps naming the
-  target the coprocessor holds. The warning colour marks five states: the
-  programming port, no SERVO PWM pin (`TARGET: NO SERVO PWM PIN`), a binding
-  not read, no link and a target not known. The pins come from the binding the tester
-  drives. The line follows the target the coprocessor holds
-  (`prog_link_drive()`), not the PWM TARGET setting.
+- The SERVO screen's right card has a TARGET row (German ZIEL) between SPEED
+  and CENTRE that names the active PWM TARGET with its pins: `GP4` or
+  `GP2 GP4` for the pins bound as SERVO PWM (as many pins as fit the 23
+  cells of the value, then `+N`), `PROG PORT GP13` for the programming port (German
+  `PROG-PORT GP13`), `PROG PORT` for a port target without a usable pin,
+  with `PWM OFF` after either while PORT PWM is off
+  (`PROG-PORT GP13 PWM AUS`). `NO LINK` (`KEIN LINK`) shows while no
+  coprocessor answers and `NOT KNOWN` (`UNBEKANNT`) while the PROG page is
+  not read or a write to it was not acknowledged; the tester sends no command
+  in either. While the servo programmer holds the port, the row does not
+  change: it keeps naming the target the coprocessor holds. The warning
+  colour marks five states: the programming port, no SERVO PWM pin
+  (`NO SERVO PWM PIN`), a binding not read, no link and a target not known.
+  The pins come from the binding the tester drives. The row follows the
+  target the coprocessor holds (`prog_link_drive()`), not the PWM TARGET
+  setting. The right card stays in sight under the settings, their keypads
+  and the servo programmer, so the row names the pin while they cover the
+  left card.
+- The SERVO screen's type row carries the pulse range after the type and the
+  frame rate, `STANDARD PWM  50 Hz  1000-2000`, in place of the RANGE row
+  (`BEREICH`) under SPEED, which the TARGET row takes.
+- The SERVO screen names the supply on the line over the power plot
+  `PD MINI` in both languages, in place of `SUPPLY` (`NETZTEIL`). While the
+  panel's model stands in for the PD mini, a MODELLED pill (`SIMULIERT`),
+  20 px high and 24 px plus the word wide, at least 88 px (88 px for
+  MODELLED, 96 px for SIMULIERT), sits on the plot's top-left corner. With INA3221 CH1 as
+  the meter the line shows no pill.
 - `sbus_to_us()` rounds to the nearest on both sides of 1000 us. Below raw
   172 it rounded the other way: raw 0 gave 896 us, now 895 us; raw 171 gave
   1000 us, now 999 us.
@@ -175,8 +186,36 @@ history is in git.
   of both analysers.
 - The supply state reports no valid voltage or current (`ok` 0) when the
   supply's reading count has not moved for 1.5 s (`SUPPLY_LINK_STALE_MS`),
-  with the last values kept. The INA228 temperature and diagnostic flags go
-  with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
+  with the last values kept. A count that stands for 3 s
+  (`SUPPLY_LINK_BLIND_MS`) behind a page that answers switches an output
+  that is on off, and the band says `supply sends no readings -- output
+  off`. The PD mini driver takes a reading 400 ms past its due
+  (`PDMINI_POLL_LATE_MS`) -- the display, the output state, the input or
+  the slot -- before the next set-point write, one at a time with another
+  transaction between two. A slider dragged with SLIDER AND STEPS off, a
+  new set point about every 50 ms, then gets a display read 500 ms after
+  the last one with a module answering at once and a state read 900 ms after the last one, so the count
+  keeps moving, and an output the module switches on while an OFF is
+  asked, or off by its protection, is seen during the drag. The state read,
+  and the input read before a write, may also follow another reading
+  straight away. The input read before a set-point write or an ON goes out
+  only when one is waiting, and not between the reads for an ON, so set
+  points and an ON reach a module that answers up to 390 ms late: one set
+  point within 2.5 s, an ON within 3.6 s at set points already written and
+  up to 7.5 s right after a set point change, a state the module changes
+  itself seen within 2.1 s during a drag (host model, 40 start phases; the
+  real module's reply time is not measured). Current limitation: a module
+  answering late stretches the 500 ms state and input reads at rest -- the
+  input 850 ms apart at 100 ms late, 2.5 s at 390 ms, the state up to
+  1.5 s -- so a sagging input is cut 1.7 s after the sag at 100 ms late
+  and up to 4.7 s up to 390 ms (about 1.0 s with a module answering at
+  once), and an output the module switches on while OFF is asked stays on
+  up to 1.8 s at rest. Current limitation: with replies 279 ms or more late, a drag
+  holds the display read 3.7 s to 5.0 s, past `SUPPLY_LINK_BLIND_MS`, and
+  the panel switches an output that is on off, possible from 263 ms with
+  the panel's page read every 100 ms; at rest the display read stands up
+  to 2.5 s at 390 ms, and the cards can show dashes from about 260 ms.
+  The INA228 temperature and diagnostic flags go with the part on the tick it goes offline. An AS5600 STATUS byte with both the magnet-too-weak and magnet-too-strong bits set is a failed
   sample. A mark kind passed as a trace trigger is ignored, and the trace
   drops a sample while a shunt or configuration record is owed and counts
   it after that record.
@@ -192,6 +231,32 @@ history is in git.
   signed difference. The `$D` line is documented as written about 50 ms after
   its `t=`, and `servo_move.h`, `bench_frame.c` and `servo_sync.h` describe
   what the code does.
+- Link protocol 4.17: the TONE page refuses a pin held by an output, SENSE,
+  SUPPLY or a programming port, and a capture the coprocessor cannot start
+  for now, with the new NACK reason BUSY (6), and keeps BAD_VALUE for values
+  no freed pin makes good and for an enabled tap on a coprocessor whose core
+  1 did not start at boot. The panel shows that last case as `PIN NOT
+  FREE` as well when the coprocessor's saved set-up has the tap enabled,
+  and otherwise the refused message and `NOT RUNNING`; it clears only with
+  a restart of the coprocessor. The
+  panel offers a first frame refused with BUSY
+  again every 5 s and writes one refused with BAD_VALUE again only after the
+  next change of the set-up or link-up. From a 4.16 or older coprocessor,
+  which says BAD_VALUE for both, it offers the frame again every 5 s when
+  its tone range and gap are valid.
+- The phase tap readout shows `WAITING` when the TONE page's flags say the
+  tap runs and its window number has not moved for 1.5 s
+  (`TONE_LINK_WINDOW_STALE_MS`).
+- A read-back of FFFFh of the INA228's ADC_CONFIG or the INA3221's
+  Configuration takes the part offline on that one read and counts in
+  `RESETS`; another value that differs is still read a second time. The
+  readings themselves are not checked for all ones.
+- The CSV file of `tools/sense_trace.py` has a fourth column, `clipped`: 1
+  at or past the top of the range, -1 at or past the bottom, 0 for a value.
+- Trace format version 3: a `$D` line ends `cmd=` with its command's `$C`
+  time, and `tools/sense_trace.py` ends that command with it, also when the
+  output was let go and the next command came within 30 ms. The tool reads
+  version 2 files with the 30 ms rule as before.
 - The journal file's check in `kst_prog.c` calls `link_crc()`; a known-answer
   test holds the value CRC-16/CCITT-FALSE gives for a journal file.
 - The programmer's pass gate uses C11 `<stdatomic.h>` in place of the

@@ -178,7 +178,7 @@ typedef struct {
 } prog_link_drive_t;
 
 /**
- * Where the tester's commands go now, for the SERVO screen's target line.
+ * Where the tester's commands go now, for the SERVO screen's TARGET row.
  *
  * PROG_LINK_TARGET_NO_LINK with no coprocessor answering (before the first
  * prog_link_came_up() and after prog_link_lost()), PROG_LINK_TARGET_UNKNOWN

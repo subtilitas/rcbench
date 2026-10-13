@@ -3823,7 +3823,7 @@ static prog_link_t        s_prog_link;
 static atomic_uint        s_prog_want_target;
 static atomic_bool        s_prog_want_pwm;
 static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
-/* Where the tester's commands go, for the SERVO screen's target line:
+/* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target
  * with another's pin or pulse.  No link until a coprocessor answers. */
@@ -4236,6 +4236,13 @@ static void supply_step(float step_s)
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
         control_alert(TR(ALERT_SUPPLY_SILENT));
+    } else if (s_supply_is_real && s_supply_on
+               && supply_link_blind(&s_supply_link, now_ms())) {
+        /* The page answers and the module reads ONLINE, but its reading
+         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
+         * valid, which no trip acts on.  Off, as for a supply gone. */
+        supply_switch(false);
+        control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
         if (s_supply_fresh) {
@@ -4686,7 +4693,7 @@ static bool write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
-/* The GPIOs of those channels' slots, for the SERVO screen's target line;
+/* The GPIOs of those channels' slots, for the SERVO screen's TARGET row;
  * whether a binding was read. */
 static atomic_ullong s_servo_pins;
 static atomic_bool   s_servo_pins_known;
@@ -7396,7 +7403,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
             /* And no port is the target or names a pin, and the SERVO
-             * screen's target line says no link. */
+             * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
             prog_drive_publish();

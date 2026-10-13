@@ -10,8 +10,11 @@ terminal capture of that console and, for each trace in it:
      the trace's end line: sample lines, voltage lines, trigger lines and
      the records the coprocessor says it dropped;
   2. writes one CSV file, `<log>-trace-<n>.csv`: time in ms from the
-     trigger, current in A, and the bus voltage in V on the samples that
-     have one;
+     trigger, current in A, the bus voltage in V on the samples that have
+     one, and `clipped`: 1 for a sample at or past the top of the range,
+     -1 at or past the bottom, 0 for a value.  A clipped row's current is
+     a bound.  A file with three columns has no clip mark: its clipped
+     rows read as values;
   3. prints the noise of the samples before the first command, as they
      are and through a moving mean of 4 and of 8 samples;
   4. replays every move through shared/servo/servo_move.c with the filter
@@ -23,7 +26,10 @@ one within 30 ms of it; an edge line with no command line that near is a
 move too.  An edge line is one command's and a command line one edge's:
 as many of them are paired as can be, and of the ways to pair that many
 the one with the least distance in sum.  A slewed command's destination is
-its $D line's pulse.
+its $D line's pulse.  A version 3 $D line is the end of the command whose
+$C time its `cmd=` gives; a version 2 $D line, which has no `cmd=`, is
+taken as the end of the latest command of its channel no more than 30 ms
+after its time.
 Commands within 30 ms of each other change the current together: none of
 them is replayed.  A move that follows another output's move before that
 one arrived carries its current too; the tool does not tell these apart,
@@ -43,14 +49,17 @@ channels commanded within 30 ms of each other are still not replayed.
 Without the option every channel is loaded.  The tool cannot check the
 statement: an output named as not loaded that draws current puts it into
 the moves of the others.
-A line of a trace is a whole line of version 2: every field of its type,
-in its order, nothing before, between or after them, each number in the
-range the coprocessor holds it in and written as the coprocessor writes it.
+A line of a trace is a whole line of its trace's version, 3 or 2: every
+field of its type, in its order, nothing before, between or after them,
+each number in the range the coprocessor holds it in and written as the
+coprocessor writes it.  Version 3's $D line ends `cmd=` with its command's
+$C time; version 2's has no `cmd=`, and a $D line of the other version's
+form is damage.
 A line ends LF or CR LF.  Between a trace's $T and $Z line stand its lines
 and the coprocessor's other console lines, which start `rcbench-iomcu:`;
 anything else there is damage.  So are a second $H line, a line other than
-$L before the $H line, a trace length or sample period version 2 does not
-write, a sample timed before the one before it, a second voltage for one
+$L before the $H line, a trace length or sample period its version does
+not write, a sample timed before the one before it, a second voltage for one
 sample, a $S line that repeats the state before it, and a line of a trace
 outside a trace.
 A trace with a problem -- damage, lines that do not match its end line, no
@@ -161,7 +170,9 @@ import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-FORMAT = 2
+FORMAT = 3
+# The versions read: 2 is 3 with no `cmd=` on a $D line.
+FORMATS = (2, 3)
 FILTERS = (1, 4, 8)
 BANDS_A = (0.02, 0.05, 0.10)
 # The capture's: SERVO_MOVE_TIMEOUT_MS + SENSE_CAP_LAG_MS, SENSE_CAP_SETTLE_N.
@@ -196,8 +207,8 @@ FLOOR_MAX_A = 1000.0
 PAIR_MAX_MS = 60000.0
 OFFSET_MAX_S = 1e9
 
-# What version 2 writes, shared/sense/sense_trace.c: a trace's length by
-# its trigger, and the sample period.
+# What versions 2 and 3 write, shared/sense/sense_trace.c: a trace's
+# length by its trigger, and the sample period.
 TRACE_MS = {"cmd": 4000, "edge": 4000, "key": 10000}
 PERIOD_US = 1000
 # The coprocessor's other console lines start with this; one can stand
@@ -218,7 +229,11 @@ I32 = (-(1 << 31), (1 << 31) - 1)
 GRAMMAR = (
     ("s", re.compile(rf"{INT},{INT}"), (I32, (-4096, 4095))),
     ("v", re.compile(rf"v{INT}"), (I32,)),
-    ("C", re.compile(rf"\$([CD]) t={N} ch={N} us={N}"),
+    ("C", re.compile(rf"\$(C) t={N} ch={N} us={N}"),
+     (None, U32, U16, U16)),
+    ("D", re.compile(rf"\$(D) t={N} ch={N} us={N} cmd={N}"),
+     (None, U32, U16, U16, U32)),
+    ("D2", re.compile(rf"\$(D) t={N} ch={N} us={N}"),
      (None, U32, U16, U16)),
     ("E", re.compile(rf"\$([EK]) t={N}"), (None, U32)),
     ("S", re.compile(rf"\$S on=([01]) rst={N}"), ((0, 1), (0, 255))),
@@ -291,7 +306,10 @@ class Trace:
         self.code: list[int] = []
         self.mv: dict[int, int] = {}        # sample index -> bus mV
         self.n_volts = 0
-        self.marks: list[tuple[str, int, int | None, int | None]] = []
+        # (kind, time, channel, pulse, the command a $D line names): the
+        # times in 0.1 ms from the trigger; None where a line has none.
+        self.marks: list[tuple[str, int, int | None, int | None,
+                               int | None]] = []
         self.lost = 0
         self.gaps: list[int] = []           # samples read before each $L
         self.states: list[tuple[int, int, int]] = []
@@ -391,9 +409,10 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur = Trace(number, trig, t0, t0_abs, ms, length)
             cur.boot = boot
             cur.version = version
-            if cur.version != FORMAT:
+            if cur.version not in FORMATS:
                 cur.problems.append(f"format version {cur.version}; this "
-                                    f"tool reads version {FORMAT}")
+                                    "tool reads versions "
+                                    + " and ".join(map(str, FORMATS)))
             traces.append(cur)
             continue
         if cur is None:
@@ -404,6 +423,10 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             else:
                 other += 1
             continue
+        if got is not None and kind in ("D", "D2") \
+                and (kind == "D") != (cur.version >= 3):
+            # A $D line of the other version's form.
+            got = None
         if got is None:
             if line.startswith(CONSOLE):
                 other += 1
@@ -439,10 +462,13 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
                 if len(cur.t) - 1 in cur.mv:
                     cur.two_volts += 1
                 cur.mv[len(cur.t) - 1] = f[0]
-        elif kind == "C":
-            cur.marks.append((f[0], s32(f[1] - cur.t0), f[2], f[3]))
+        elif kind in ("C", "D2"):
+            cur.marks.append((f[0], s32(f[1] - cur.t0), f[2], f[3], None))
+        elif kind == "D":
+            cur.marks.append((f[0], s32(f[1] - cur.t0), f[2], f[3],
+                              s32(f[4] - cur.t0)))
         elif kind == "E":
-            cur.marks.append((f[0], s32(f[1] - cur.t0), None, None))
+            cur.marks.append((f[0], s32(f[1] - cur.t0), None, None, None))
         elif kind == "L":
             cur.lost += f[0]
             cur.gaps.append(len(cur.t))
@@ -487,15 +513,15 @@ def check(tr: Trace) -> None:
                            "the $H line")
     if tr.setups > 1:
         tr.problems.append(f"{tr.setups} $H lines")
-    if tr.version == FORMAT:
+    if tr.version in FORMATS:
         if tr.length != TRACE_MS[tr.trig]:
             tr.problems.append(
-                f"a {tr.trig} trace of {tr.length} ms; version {FORMAT} "
-                f"writes {TRACE_MS[tr.trig]} ms")
+                f"a {tr.trig} trace of {tr.length} ms; version "
+                f"{tr.version} writes {TRACE_MS[tr.trig]} ms")
         if tr.have_setup and tr.period_us != PERIOD_US:
             tr.problems.append(
-                f"a sample period of {tr.period_us} us; version {FORMAT} "
-                f"writes {PERIOD_US} us")
+                f"a sample period of {tr.period_us} us; version "
+                f"{tr.version} writes {PERIOD_US} us")
     if tr.back:
         tr.problems.append(f"{tr.back} sample line(s) timed before the "
                            "sample before them")
@@ -533,11 +559,15 @@ def check(tr: Trace) -> None:
 
 
 def write_csv(tr: Trace, path: pathlib.Path) -> None:
-    """Time in ms from the trigger, current in A, bus voltage in V."""
-    rows = ["time (ms);current (A);bus voltage (V)"]
+    """Time in ms from the trigger, current in A, bus voltage in V, and
+    the clip: 1 at or past the top of the range, -1 at or past the
+    bottom, 0 for a value.  A clipped row's current is its end code's,
+    a bound and not a value."""
+    rows = ["time (ms);current (A);bus voltage (V);clipped"]
     for k, (t, code) in enumerate(zip(tr.t, tr.code, strict=True)):
         volts = f"{tr.mv[k] / 1000.0:.3f}" if k in tr.mv else ""
-        rows.append(f"{t / T_PER_MS:.1f};{tr.amps(code):.4f};{volts}")
+        clip = tr.judged(k)[1]
+        rows.append(f"{t / T_PER_MS:.1f};{tr.amps(code):.4f};{volts};{clip}")
     path.write_text("\n".join(rows) + "\n", encoding="ascii")
 
 
@@ -694,17 +724,25 @@ def find_moves(tr: Trace, floor_a: float,
     # line's time is the last pulse change, which can lie before the frame
     # time its $C line carries.  The $D line is written 50 ms after that
     # time, past the samples up to there, so its place among the lines
-    # says nothing and its t= is read: it is of the latest command of its
-    # channel that lies no more than a frame's lateness after it,
-    # whichever of the two lines comes first.
+    # says nothing.  Version 3's $D line names its command: the $C line of
+    # its channel at its cmd= time.  One whose command line is not in the
+    # trace ends no move here.  Version 2's has no cmd=, and its t= is
+    # read: it is of the latest command of its channel that lies no more
+    # than a frame's lateness after it, whichever of the two lines comes
+    # first.  Such a $D line goes to a command that follows a let-go
+    # within that lateness, and not to the one it ended.
     cmds = [list(m) for m in marks if m[0] == "C"]
     ended: set[int] = set()
     for mark in marks:
         if mark[0] != "D":
             continue
-        mine = [k for k, c in enumerate(cmds)
-                if c[2] == mark[2]
-                and c[1] <= mark[1] + EDGE_PAIR_MS * T_PER_MS]
+        if mark[4] is not None:
+            mine = [k for k, c in enumerate(cmds)
+                    if c[2] == mark[2] and c[1] == mark[4]]
+        else:
+            mine = [k for k, c in enumerate(cmds)
+                    if c[2] == mark[2]
+                    and c[1] <= mark[1] + EDGE_PAIR_MS * T_PER_MS]
         if mine:
             k = max(mine, key=lambda k: cmds[k][1])
             if k not in ended:
@@ -1226,7 +1264,7 @@ def report_loaded(traces: list[Trace], loaded: frozenset[int]) -> str:
     out_of: set[int] = set()
     have: set[int] = set()
     for tr in traces:
-        for kind, _, ch, _ in tr.marks:
+        for kind, _, ch, _, _ in tr.marks:
             if kind == "C" and ch in loaded:
                 have.add(ch)
             elif kind in lines and ch not in loaded:
