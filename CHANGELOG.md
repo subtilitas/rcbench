@@ -36,7 +36,12 @@ history is in git.
   host test; `STATUS.md` lists the screens that do not meet it.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
-  table lists 10 modules; it listed 4.
+  table holds the modules the name rule finds plus the forced ones in the
+  tool, `shared/settings` (values and texts from NVS, non-volatile storage)
+  and `shared/touch` (GT911 point list): 19 modules; it listed 4. The check also finds functions named
+  `*_write`, `*_read`, `*_done` and `*_utf8_next`; `NOT_UNTRUSTED` is empty.
+  A forced entry that names a missing module or one the name rule finds
+  fails the check.
 - `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
   each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
@@ -293,6 +298,11 @@ history is in git.
 
 ### Fixed
 
+- `gfx_utf8_next` rejects a four-byte sequence above U+10FFFF (lead `F4`,
+  second byte `90` to `BF`) as malformed, one `?` cell per byte.
+- `as5600_cdeg` computes in 64 bits. It overflowed `int32_t` above
+  |counts| 59,652; the result now saturates at +-2,147,483,647 above
+  |counts| 244,335,917.
 - The wiki mirror points each link that leaves `docs/` at the repository on
   GitHub: `blob/main/<path>` for a file, `tree/main/<path>/` for a directory
   and `raw/main/<path>` for an image, with the anchor, the title, angle
