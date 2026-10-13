@@ -227,14 +227,14 @@ test('4: 5000 random inputs under the key m give 1 offered value each, the defau
     }
     assert.deepEqual(parsed.sim, want, where);
     // The hash the page writes for the values parses back to them, without a notice.
-    const again = parseHash(`#${formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.sim)}`, DEFAULT_OPTIONS);
+    const again = parseHash(`#${formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have, parsed.sim)}`, DEFAULT_OPTIONS);
     assert.deepEqual(again.sim, parsed.sim, where);
     assert.deepEqual(again.unknown, [], where);
   }
 });
 
 test('4: values that are no hash parse to the base setup', () => {
-  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [] };
+  const base = { selection: { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } }, sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [], have: [] };
   for (const value of [undefined, null, 0, 1, true, {}, [], () => '', Symbol('x')]) {
     assert.deepEqual(parseHash(value as unknown as string, DEFAULT_OPTIONS), base);
   }

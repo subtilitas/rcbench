@@ -217,6 +217,13 @@ buy". A row:
 | `page` | The maker's product page, https, no fragment, no tracking parameter. Absent when no maker page is known. |
 | `qty` | Pieces, 1 to 99. 1 when absent. |
 | `only` | The options the row applies to. A part with a `variantName` has a row of its own for each variant. |
+| `id` | The name of the row within its part: 1 to 12 lowercase letters and digits, unique within the part. At most 1 row of a part has none. The "have it" tick of the page names the row in the URL hash as `<part>.<id>`, or as `<part>` for the row without an id (`rowToken` in `buy.ts`). |
+
+Row ids: `copro` has the row without an id and `osoyoo`; `usb` has `cable`
+and `charger`; `wire` has `pair`, `jumper` and `dmm`; `ina228` has `matek`
+and `xt90`; `tap` has `resistor` and `zener`; `usbtap` has `board` and
+`cable`. Every other part has 1 row without an id. A row added later takes a
+new id, so the tokens of the other rows stay.
 
 A test object and a part with `yours: true` are brought: their rows name no
 maker and no page. A modelled part names no maker and no page either: its
@@ -274,7 +281,7 @@ text rules.
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 18, right 0 to 22, outer 0 to 7, channel 0 to 6). |
-| Parts list | A set of options gives a part no row, a variant of a part has no row of its own, `only` names an option value outside the type, a brought part names a maker or a page, a page is not https, does not parse, has a fragment or a tracking parameter, a page has no maker, a quantity is not a whole number from 1 to 99, or `yours` is set on a locked or selectable part. |
+| Parts list | A set of options gives a part no row, a variant of a part has no row of its own, `only` names an option value outside the type, a brought part names a maker or a page, a page is not https, does not parse, has a fragment or a tracking parameter, a page has no maker, a quantity is not a whole number from 1 to 99, `yours` is set on a locked or selectable part, more than 1 row of a part has no `id`, an `id` occurs twice in a part, or an `id` is not 1 to 12 lowercase letters and digits. |
 | Tree | The pads, the reserved pins, the heartbeat pin or a pin default differ from the firmware sources at the tag. |
 
 Each repository anchor in `catalogue.ts` is `repo(path, line, text)`. The text

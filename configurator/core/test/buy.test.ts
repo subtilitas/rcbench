@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 import type { Catalogue, Options } from '../../contract.ts';
-import { brought, buyRows } from '../buy.ts';
+import { ROW_ID, brought, buyRows, rowToken } from '../buy.ts';
 import { CATALOGUE } from '../catalogue.ts';
 import { DEFAULT_OPTIONS, resolve } from '../resolve.ts';
 import { allOptions, checkBuy, checkString, pageProblem } from '../tools/check.ts';
@@ -193,4 +193,32 @@ test('the parts list check reports each broken copy', () => {
   c = copy();
   at(c, 'panel').buy[0]!.maker = 'Waveshare!';
   has(c, /part\.panel\.buy\.0\.maker: string holds an exclamation mark/);
+  c = copy();
+  delete at(c, 'wire').buy[1]!.id;
+  delete at(c, 'wire').buy[2]!.id;
+  has(c, /part\.wire: more than 1 row of the parts list has no id/);
+
+  c = copy();
+  at(c, 'wire').buy[1]!.id = 'pair';
+  has(c, /part\.wire: the row id pair occurs twice/);
+
+  c = copy();
+  at(c, 'wire').buy[2]!.id = 'Multi-meter';
+  has(c, /part\.wire\.buy\.2: the row id Multi-meter is not 1 to 12/);
 });
+
+test('each row has a token of its own: the part id, or the part id and the row id', () => {
+  const tokens = CATALOGUE.parts.flatMap((p) => p.buy.map((row) => rowToken(p, row)));
+  assert.equal(new Set(tokens).size, tokens.length);
+  for (const part of CATALOGUE.parts) {
+    assert.ok(part.buy.filter((row) => row.id === undefined).length <= 1, part.id);
+    for (const row of part.buy) if (row.id !== undefined) assert.match(row.id, ROW_ID, part.id);
+  }
+  const of = (id: string): string[] => CATALOGUE.parts.find((p) => p.id === id)!.buy.map((row) => rowToken(CATALOGUE.parts.find((p) => p.id === id)!, row));
+  assert.deepEqual(of('panel'), ['panel']);
+  assert.deepEqual(of('copro'), ['copro', 'copro.osoyoo']);
+  assert.deepEqual(of('wire'), ['wire.pair', 'wire.jumper', 'wire.dmm']);
+  assert.deepEqual(of('usbtap'), ['usbtap.board', 'usbtap.cable']);
+  assert.deepEqual(of('ina228'), ['ina228.matek', 'ina228.xt90']);
+});
+

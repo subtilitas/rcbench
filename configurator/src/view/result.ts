@@ -117,13 +117,25 @@ function tested(view: View): string {
 const away = (href: string, text: string, name: string, cls: string): string =>
   `<a class="${cls}" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(`${text}: ${name}`)}">${esc(text)}</a>`;
 
-/** One row of the parts list: quantity and name, tag, check line, the links. */
+/** The id of the "have it" tick of a row: `have-` and the token, its dot a hyphen. */
+export const haveId = (token: string): string => `have-${token.replace('.', '-')}`;
+
+/** The "have it" tick of a row: a checkbox with its label, named with the row for a screen reader. */
+function haveTick(lang: Lang, l: BuyLine, on: boolean): string {
+  return `<label class="tick"><input type="checkbox" id="${esc(haveId(l.token))}" data-h="${esc(l.token)}"`
+    + ` aria-label="${esc(t(lang, 'haveName', { x: lineName(l) }))}"${on ? ' checked' : ''}>`
+    + `<span>${esc(t(lang, 'haveIt'))}</span></label>`;
+}
+
+/** One row of the parts list: quantity and name, tag, check line, the links, the "have it" tick of a row to buy. */
 function buyItem(lang: Lang, l: BuyLine, bring: boolean): string {
   const tag = l.part.modelled ? t(lang, 'modelled') : l.maker === null && !bring ? t(lang, 'buyAny') : '';
   const name = bring ? l.order : lineName(l);
+  // The tick follows the links on their line.
   const links = [
     l.page === null ? '' : away(l.page, t(lang, 'buyPage'), name, 'maker'),
     l.search === null ? '' : away(l.search, t(lang, 'buySearch'), name, 'websearch'),
+    bring ? '' : haveTick(lang, l, false),
   ].filter((x) => x !== '');
   return `<li data-part="${esc(l.part.id)}"><div><b><span class="qty">${esc(qtyText(l))}</span> ${esc(name)}</b>`
     + (tag ? ` <span class="tag">${esc(tag)}</span>` : '')
@@ -132,7 +144,13 @@ function buyItem(lang: Lang, l: BuyLine, bring: boolean): string {
     + '</div></li>';
 }
 
-/** What to order for the setup, the copy buttons, and what the visitor brings. */
+/** One row under "You have": quantity, name and the tick that returns it to the rows to buy. */
+function haveItem(lang: Lang, l: BuyLine): string {
+  return `<li data-part="${esc(l.part.id)}"><div><b><span class="qty">${esc(qtyText(l))}</span> ${esc(lineName(l))}</b>`
+    + `${haveTick(lang, l, true)}</div></li>`;
+}
+
+/** What to order for the setup, what the visitor has, the copy buttons, and what the visitor brings. */
 function buy(view: View): string {
   const { lang } = view;
   const list = partsList(view);
@@ -142,6 +160,8 @@ function buy(view: View): string {
     + (list.buy.length === 0
       ? `<p id="buy-none">${esc(t(lang, 'buyNone'))}</p>`
       : `<ul class="parts buy" id="buy">${list.buy.map((l) => buyItem(lang, l, false)).join('')}</ul>`)
+    + (list.have.length === 0 ? ''
+      : `<h4 id="h-have">${esc(t(lang, 'have'))}</h4><ul class="parts buy" id="have">${list.have.map((l) => haveItem(lang, l)).join('')}</ul>`)
     + `<div class="sum">${button(lang, 'b-copy-text', 'copyText')}${button(lang, 'b-copy-csv', 'copyCsv')}</div>`
     + `<p class="linkbox" id="buybox" hidden><label for="buyfield">${esc(t(lang, 'buyField'))}</label> <textarea id="buyfield" rows="8" readonly></textarea></p>`
     + (list.bring.length === 0 ? ''

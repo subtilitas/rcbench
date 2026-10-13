@@ -4,7 +4,7 @@
 // heat per resistor of the motor simulator.
 
 import type { Core } from '../contract.ts';
-import { brought, buyRows } from './buy.ts';
+import { ROW_ID, brought, buyRows, rowToken } from './buy.ts';
 import { CATALOGUE } from './catalogue.ts';
 import {
   alwaysOn, baseParts, deselectEffect, groups, plainDrive, removalEffect, removalIsPlain, testObjects,
@@ -17,8 +17,8 @@ import {
 } from './sim.ts';
 
 export {
-  CATALOGUE, DEFAULT_OPTIONS, FUNCTION_HELP, PICTURES_MAX, resolve, alwaysOn, baseParts, brought, buyRows, deselectEffect, groups,
-  plainDrive, removalEffect, removalIsPlain, testObjects,
+  CATALOGUE, DEFAULT_OPTIONS, FUNCTION_HELP, PICTURES_MAX, ROW_ID, resolve, alwaysOn, baseParts, brought, buyRows, deselectEffect,
+  groups, plainDrive, removalEffect, removalIsPlain, rowToken, testObjects,
   CELL_VOLTS, DEFAULT_SIM, HINT_SHARE, SIM_CELLS, SIM_OHMS, SIM_PART, SIM_WATTS, SIM_WIRINGS, ohmsText, sameSim, sig, simHeat,
   simName, simPart, validSim, voltsText, wattsText, withSim,
 };

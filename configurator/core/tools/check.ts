@@ -17,7 +17,7 @@ import type {
 import { TAG } from '../../release.ts';
 import { ANCHOR_TEXTS, CATALOGUE } from '../catalogue.ts';
 import type { AnchorText } from '../catalogue.ts';
-import { brought, buyRows } from '../buy.ts';
+import { ROW_ID, brought, buyRows } from '../buy.ts';
 import { optionsIn, partsIn, requiresOption } from '../cond.ts';
 import { alwaysOn } from '../groups.ts';
 import { FUNCTION_HELP } from '../help.ts';
@@ -947,8 +947,12 @@ export function checkBuy(c: Catalogue): Finding[] {
         }
       }
     }
+    if (part.buy.filter((row) => row.id === undefined).length > 1) out.push(err(id, 'more than 1 row of the parts list has no id'));
+    const rowIds = part.buy.flatMap((row) => (row.id === undefined ? [] : [row.id]));
+    for (const rowId of new Set(rowIds.filter((x, i) => rowIds.indexOf(x) !== i))) out.push(err(id, `the row id ${rowId} occurs twice`));
     part.buy.forEach((row, index) => {
       const at = `${id}.buy.${index}`;
+      if (row.id !== undefined && !ROW_ID.test(row.id)) out.push(err(at, `the row id ${row.id} is not 1 to 12 lowercase letters and digits`));
       for (const [key, value] of Object.entries(row.only ?? {})) {
         if (!isOptionValue(key, value)) out.push(err(at, `${key}=${String(value)} is not a value of an option`));
       }

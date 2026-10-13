@@ -16,7 +16,7 @@ const sorted = (s: Selection): Selection => ({
 
 test('an empty hash is the base setup without a notice', () => {
   for (const hash of ['', '#']) {
-    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [] });
+    assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS), { selection: base(), sim: { ...DEFAULT_SIM }, lang: null, badVersion: false, unknown: [], have: [] });
   }
 });
 
@@ -384,6 +384,70 @@ test('the address to copy, print and put in a document is the page address with 
   }
 });
 
+test('"have it" ticks: the key h survives format and parse, in catalogue order, each once', () => {
+  const sel: Selection = { ...base(), functions: ['escpow'] };
+  const hash = formatHash(sel, 'en', 'en', CATALOGUE, ['ina228.matek', 'wire.dmm', 'panel', 'wire.dmm']);
+  assert.equal(hash, 'v=1&f=escpow&h=panel,wire.dmm,ina228.matek');
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['panel', 'wire.dmm', 'ina228.matek']);
+  assert.deepEqual(parsed.unknown, []);
+  assert.deepEqual(parsed.selection, sel);
+  assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have), hash);
+  // The key stands after the option tokens and before the language.
+  assert.equal(formatHash({ ...sel, options: { ...DEFAULT_OPTIONS, ina228Board: 'xt90' } }, 'de', 'en', CATALOGUE, ['ina228.xt90']), 'v=1&f=escpow&o=xt90&h=ina228.xt90&l=de');
+  // A token that names no row of the catalogue is not written.
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, ['wire.nope', 'warp', 'panel']), 'v=1&h=panel');
+});
+
+test('a link without the key h opens the same setup with no "have it" tick', () => {
+  for (const hash of ['#v=1', '#v=1&f=servo,escpow&p=sd&o=xt90', '#v=1&f=supply&l=de']) {
+    const parsed = parseHash(hash, DEFAULT_OPTIONS);
+    assert.deepEqual(parsed.have, [], hash);
+    assert.equal(parsed.badVersion, false, hash);
+    assert.equal(`#${formatHash(parsed.selection, parsed.lang ?? 'en', 'en', CATALOGUE, parsed.have)}`, hash);
+  }
+  assert.equal(HASH_VERSION, 1);
+});
+
+test('a malformed row token is reported; a well-formed unknown one passes to the page', () => {
+  const parsed = parseHash('#v=1&h=wire.dmm,Wire.DMM,wire.,wire..dmm,wire.dmm.x,.dmm,wire.abcdefghijklm,wire.nope', DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['wire.dmm', 'wire.nope']);
+  assert.deepEqual(parsed.unknown, ['Wire.DMM', 'wire.', 'wire..dmm', 'wire.dmm.x', '.dmm', 'wire.abcdefghijklm']);
+  // A row id of 12 characters is well-formed.
+  assert.deepEqual(parseHash('#v=1&h=wire.abcdefghijkl', DEFAULT_OPTIONS).have, ['wire.abcdefghijkl']);
+  // At most MAX_IDS tokens are kept.
+  const many = Array.from({ length: MAX_IDS + 5 }, (_, i) => `p${i}`).join(',');
+  assert.equal(parseHash(`#v=1&h=${many}`, DEFAULT_OPTIONS).have.length, MAX_IDS);
+});
+
+test('the key h without a version gives the base setup and the version notice', () => {
+  const parsed = parseHash('#h=wire.dmm', DEFAULT_OPTIONS);
+  assert.equal(parsed.badVersion, true);
+  assert.deepEqual(parsed.have, []);
+  assert.equal(parseHash('#v=2&h=wire.dmm', DEFAULT_OPTIONS).badVersion, true);
+});
+
+test('the hash of a document holds the "have it" ticks the page shows', () => {
+  const share = (hash: string, have?: string[]): string => shareHash(hash, DEFAULT_OPTIONS, CATALOGUE, have);
+  // The ticks of the page are the ticks of the hash: the hash stays as it is.
+  assert.equal(share('#v=1&h=panel,wire.dmm', ['panel', 'wire.dmm']), '#v=1&h=panel,wire.dmm');
+  assert.equal(share('#v=1&h=panel,wire.dmm'), '#v=1&h=panel,wire.dmm');
+  // A stale tick of the link leaves; the rest and the language stay.
+  assert.equal(share('#v=1&f=escpow&o=xt90&h=wire.dmm,ina228.matek&l=de', ['wire.dmm']), '#v=1&f=escpow&o=xt90&h=wire.dmm&l=de');
+  assert.equal(share('#v=1&h=wire.nope', []), '#v=1');
+  // A malformed token beside a kept one leaves as well: the parser rejects it, the page drops it.
+  assert.equal(share('#v=1&h=Wire.DMM,panel', ['panel']), '#v=1&h=panel');
+  assert.equal(share('#v=1&f=servo&h=panel,wire.dmm.x&l=de', ['panel']), '#v=1&f=servo&h=panel&l=de');
+  // A repeated token is no dropped token: the hash stays as it is.
+  assert.equal(share('#v=1&h=panel,panel', ['panel']), '#v=1&h=panel,panel');
+  // A hash of another version stays as it is.
+  assert.equal(share('#v=2&h=Wire.DMM', []), '#v=2&h=Wire.DMM');
+  // A test object leaves as before and the ticks stay.
+  assert.equal(share('#v=1&p=servo&h=panel', ['panel']), '#v=1&f=servo&h=panel');
+  const page = 'https://subtilitas.github.io/rcbench/configurator/';
+  assert.equal(shareAddress(`${page}#v=1&h=pdmini,panel`, DEFAULT_OPTIONS, CATALOGUE, ['panel']), `${page}#v=1&h=panel`);
+});
+
 // The values of the motor simulator: key `m`.
 
 /** Every combination of the offered values of the motor simulator. */
@@ -411,7 +475,7 @@ test('every value of the motor simulator survives format and parse, and only a v
   const selection: Selection = { functions: ['tap'], owned: ['sd'], options: { ...DEFAULT_OPTIONS } };
   for (const sim of simGrid()) {
     for (const lang of ['en', 'de'] as Lang[]) {
-      const hash = formatHash(selection, lang, 'en', CATALOGUE, sim);
+      const hash = formatHash(selection, lang, 'en', CATALOGUE, [], sim);
       assert.match(hash, /^v=1&f=tap&p=sd(&m=[a-z0-9,]+)?(&l=de)?$/, hash);
       const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
       assert.deepEqual(parsed.sim, sim, hash);
@@ -425,7 +489,7 @@ test('every value of the motor simulator survives format and parse, and only a v
 });
 
 test('the default values write no key m; a link without it has the default values', () => {
-  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, DEFAULT_SIM), 'v=1');
+  assert.equal(formatHash(base(), 'en', 'en', CATALOGUE, [], DEFAULT_SIM), 'v=1');
   assert.equal(formatHash(base(), 'en', 'en', CATALOGUE), 'v=1');
   for (const hash of ['#v=1', '#v=1&p=sim', '#v=1&f=tap&o=pd', '#v=1&l=de', '']) {
     const parsed = parseHash(hash, DEFAULT_OPTIONS);
@@ -439,7 +503,7 @@ test('the default values write no key m; a link without it has the default value
   for (const hash of links) {
     const parsed = parseHash(hash, DEFAULT_OPTIONS);
     assert.deepEqual(parsed.sim, DEFAULT_SIM, hash);
-    assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.sim), formatHash(parsed.selection, 'en', 'en', CATALOGUE), hash);
+    assert.equal(formatHash(parsed.selection, 'en', 'en', CATALOGUE, parsed.have, parsed.sim), formatHash(parsed.selection, 'en', 'en', CATALOGUE), hash);
   }
 });
 
@@ -483,4 +547,20 @@ test('a link written again for a document keeps the values of the motor simulato
   assert.equal(shareHash('#v=1&f=link,tap&m=1k&l=de', DEFAULT_OPTIONS, CATALOGUE), '#v=1&f=tap&m=1k&l=de');
   // A link that needs no rewrite stays as it is, with its spelling.
   assert.equal(shareHash('#v=1&m=star,6s', DEFAULT_OPTIONS, CATALOGUE), '#v=1&m=star,6s');
+});
+
+test('the keys h and m in one link: h before m, both survive format, parse and a document', () => {
+  const sel: Selection = { ...base(), functions: ['tap'] };
+  const sim: SimSettings = { cells: 6, ohms: 1000, watts: 5, wiring: 'star' };
+  const hash = formatHash(sel, 'de', 'en', CATALOGUE, ['sim', 'wire.dmm'], sim);
+  assert.equal(hash, 'v=1&f=tap&h=wire.dmm,sim&m=6s,1k,5w,star&l=de');
+  const parsed = parseHash(`#${hash}`, DEFAULT_OPTIONS);
+  assert.deepEqual(parsed.have, ['wire.dmm', 'sim']);
+  assert.deepEqual(parsed.sim, sim);
+  assert.deepEqual(parsed.unknown, []);
+  // A stale tick leaves the document link; the values of the motor simulator stay.
+  assert.equal(shareHash(`#${hash}`, DEFAULT_OPTIONS, CATALOGUE, ['sim']), '#v=1&f=tap&h=sim&m=6s,1k,5w,star&l=de');
+  // A key m before h in a link is read the same.
+  assert.deepEqual(parseHash('#v=1&f=tap&m=star&h=sim', DEFAULT_OPTIONS).have, ['sim']);
+  assert.deepEqual(parseHash('#v=1&f=tap&m=star&h=sim', DEFAULT_OPTIONS).sim, { ...DEFAULT_SIM, wiring: 'star' });
 });

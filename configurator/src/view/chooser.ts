@@ -30,6 +30,8 @@ export type View = {
   pending?: Pending | null;
   /** The effect of the last function the visitor took out of the selection. */
   note?: Deselect | null;
+  /** The row tokens of the "have it" ticks of the parts list. None when absent. */
+  have?: readonly string[];
 };
 
 type Variant = { key: OptionKey; label: Key; values: ReadonlyArray<readonly [string, Key]> };

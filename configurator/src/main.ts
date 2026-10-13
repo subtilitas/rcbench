@@ -21,7 +21,7 @@ import { benchParts, optionsOf } from './names.ts';
 import { browserStore, readStore, writeStore } from './store.ts';
 import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
-import { listCsv, listText } from './view/buy.ts';
+import { haveTicks, listCsv, listText } from './view/buy.ts';
 import { result, resultError, summary } from './view/result.ts';
 import { simSaid } from './view/sim.ts';
 import type { Mode, Notice } from './view/result.ts';
@@ -46,6 +46,8 @@ let panLeft: number | null = null;
 let pending: Pending | null = null;
 /** The effect of the last function taken out of the selection. Not part of the link. */
 let note: Deselect | null = null;
+/** The row tokens of the "have it" ticks of the parts list, each a row to buy of the setup. Part of the link. */
+let have: string[] = [];
 
 /** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
@@ -61,7 +63,7 @@ function catalogue(): Catalogue {
 
 /** The state of a render: the language, the catalogue for the values of the motor simulator, the selection. */
 function viewOf(setup: Setup): View {
-  return { lang, catalogue: catalogue(), setup, options: optionsOf(setup), selection, sim, pending, note };
+  return { lang, catalogue: catalogue(), setup, options: optionsOf(setup), selection, sim, pending, note, have };
 }
 
 function tryResolve(sel: Selection): Setup | null {
@@ -80,6 +82,12 @@ function known(sel: Selection): Selection {
   const functions = sel.functions.filter((id) => CATALOGUE.functions.some((f) => f.id === id && !alwaysOn(CATALOGUE, f)));
   const owned = sel.owned.filter((id) => CATALOGUE.parts.some((p) => p.id === id && p.selectable));
   return { functions, owned, options: { ...sel.options } };
+}
+
+/** The ticks of `tokens` that name a row to buy of the setup of `sel`. None when no setup resolves. */
+function haveOf(sel: Selection, tokens: readonly string[]): string[] {
+  const setup = tryResolve(sel);
+  return setup ? haveTicks(setup, optionsOf(setup), tokens) : [];
 }
 
 /**
@@ -106,6 +114,7 @@ function readHash(): void {
   if (kept) {
     selection = kept.selection;
     sim = kept.sim;
+    have = haveOf(kept.selection, parseHash(stored.setup ?? '', DEFAULT_OPTIONS).have);
   } else {
     sim = parsed.sim;
     if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
@@ -113,14 +122,17 @@ function readHash(): void {
     const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
     const setup = tryResolve(given);
     selection = known(given);
+    have = haveOf(selection, parsed.have);
     const dropped = [...given.functions, ...given.owned]
       .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
-    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
+    // A "have it" tick that names no row to buy of the setup is left out like an unknown id.
+    const stale = parsed.have.filter((token) => !have.includes(token));
+    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped, ...stale];
     if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
   }
   // What the browser kept stands in the address like a change on the page: the link to copy and the PDF read it there.
   // A link stays as it is until a change.
-  const hash = formatHash(selection, lang, startLang, CATALOGUE, sim);
+  const hash = formatHash(selection, lang, startLang, CATALOGUE, have, sim);
   const restored = kept !== null || (parsed.lang === null && stored.lang !== null);
   if (!linked && restored && hash !== `v=${HASH_VERSION}`) history.replaceState(null, '', `#${hash}`);
 }
@@ -130,16 +142,16 @@ function readHash(): void {
  * without the id of a function that has no tick or of a former tick, a test object as the tick of its function.
  */
 function shareUrl(): string {
-  return shareAddress(location.href, DEFAULT_OPTIONS, CATALOGUE);
+  return shareAddress(location.href, DEFAULT_OPTIONS, CATALOGUE, have);
 }
 
 function writeHash(): void {
-  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE, sim)}`);
+  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE, have, sim)}`);
 }
 
 /** Stores the selection of the page. The stored language stays. */
 function storeSetup(): void {
-  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE, sim) });
+  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE, have, sim) });
 }
 
 /** Stores the language of the page. The stored selection stays. */
@@ -232,6 +244,7 @@ function keepPart(): void {
 function applyRemoval(effect: Removal, focusId: string): void {
   const part = CATALOGUE.parts.find((p) => p.id === effect.part);
   selection = effect.selection;
+  have = haveOf(selection, have);
   pending = null;
   note = null;
   notices = [];
@@ -495,6 +508,7 @@ document.addEventListener('click', (event) => {
     if (setup) void exportPdf(viewOf(setup), shareUrl());
   } else if (el.id === 'b-reset') {
     selection = base();
+    have = [];
     sim = { ...DEFAULT_SIM };
     notices = [];
     pending = null;
@@ -538,7 +552,7 @@ document.addEventListener('change', (event) => {
     render(input.id);
     return;
   }
-  const { f, p, o } = input.dataset;
+  const { f, p, o, h } = input.dataset;
   if (p && !input.checked) {
     // The tick comes off a part of the setup: the removal decides what follows.
     requestRemoval(p, 'own');
@@ -552,14 +566,17 @@ document.addEventListener('change', (event) => {
     if (effect.changed) left = effect;
   } else if (p) selection = { ...selection, owned: toggle(selection.owned, p, true) };
   else if (o) selection = { ...selection, options: { ...selection.options, [o as OptionKey]: input.value } as Options };
+  else if (h) have = toggle(have, h, input.checked);
   else return;
+  // A tick that no longer names a row to buy leaves: its part left the setup, has a tick of its own or another row.
+  have = haveOf(selection, have);
   notices = [];
   pending = null;
   note = left;
   writeHash();
   storeSetup();
   render(input.id);
-  announceSummary((view) => (left ? deselectText(view, left) : ''));
+  announceSummary((view) => (left ? deselectText(view, left) : h ? t(view.lang, input.checked ? 'haveOn' : 'haveOff') : ''));
 });
 
 // Escape closes a bubble that shows first, then the question before a removal.

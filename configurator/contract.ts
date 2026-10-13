@@ -71,8 +71,13 @@ export type Picture = {
  *   exists. No shop, no tracking parameter.
  * - `qty`: pieces, 1 when absent.
  * - `only`: the options the row applies to.
+ * - `id`: the name of the row within its part, 1 to 12 lowercase letters and
+ *   digits. The "have it" tick of the row stands in the link as
+ *   `<part>.<id>`, or as `<part>` for the row without an id. A part has at
+ *   most 1 row without an id; an id is unique within its part.
  */
 export type Buy = {
+  id?: string;
   maker: string | null;
   order: Text;
   check: Text;
