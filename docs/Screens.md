@@ -106,6 +106,24 @@ Two columns. The plot and the throttle take the left, the four readouts and
 the controls take a rail on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen. With the rotary knob
 on, turning it moves the throttle ([the knob](#application-the-rotary-knob)).
+
+### The throttle panel names its pins
+
+The throttle panel names the pins the throttle drives, left of the percentage:
+`TARGET: GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot
+protocol, read from the same SETUP > OUTPUTS pages the coprocessor's throttle
+role reads. The list is in pin order and holds as many pins as fit the field
+of 49 characters; the rest are counted. With GP0 to GP15 bound it reads
+`TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7`.
+Two states show in the warning colour:
+
+| Line | Condition |
+|---|---|
+| `TARGET: NO PIN BOUND AS MOTOR` | the binding is read and no pin is bound as a motor |
+| `TARGET: BINDING NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
+
+The throttle still moves in either state. ARM arms the whole bank, not only
+the pins named here.
 ### The plot covers one run
 
 ![Motor and ESC, telemetry held](img/motor-held.png)
@@ -495,8 +513,15 @@ the change on both.
   hold and a tap on APPLY switch nothing on. A set point that rises above
   6.0 V during the ordinary hold -- on SUPPLY, or put back after a run --
   is seen as the hold completes: HV SERVOS ONLY opens and nothing comes on.
-  Leaving SERVO leaves the output as it is; a press on
-  OUTPUT OFF as the screen is left is sent as the OFF it was.
+  Leaving SERVO switches off an output SERVO switched on: by OUTPUT ON,
+  by a test, or by the servo programmer's CONNECT. While the servo
+  programmer holds a port the output stays on, as an OFF would end the
+  session and cut a write under way; it goes off when the port lets go,
+  unless SERVO is shown again first. An ON SERVO asked for that is on its
+  way when the port takes the supply counts as switched on. An output SERVO did not switch on
+  stays as it is. The servo programmer, the keypads and the questions
+  belong to SERVO and are no leave. A press on OUTPUT OFF as the screen is
+  left is sent as the OFF it was.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
 timing does not depend on the link: the TEST page's CURVE (square, sine or
@@ -710,8 +735,8 @@ name opens a keyboard.
 The active PWM TARGET is shown at the foot of the left card, beside the dial,
 while neither the settings nor the programmer covers that card. With OUTPUTS
 the line names the GPIOs bound as SERVO PWM in the binding the tester drives:
-`TARGET: GP4`, `TARGET: GP2 GP4`; from 5 pins on, the first 3 and a count,
-`TARGET: GP2 GP4 GP5 +2`. It is the warning colour with no such pin
+`TARGET: GP4`, `TARGET: GP2 GP4`; as many pins as fit the 34 cells of the line,
+then `+N`: 6 pins from GP40 on read `TARGET: GP40 GP41 GP42 GP43 +2`. It is the warning colour with no such pin
 (`TARGET: NO SERVO PWM PIN`) and before a binding has been read
 (`TARGET: PINS NOT READ`). With PROG PORT the line reads
 `TARGET: PROG PORT GP13` in the warning colour; the pin is the GPIO the
@@ -817,8 +842,10 @@ Power Delivery) trigger controlled over a UART (universal asynchronous
 receiver-transmitter). The coprocessor drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
-the PD mini enabled on SETUP under INTERFACES, the header says PD MINI. With
-it disabled, the panel runs a model of a supply in its place: the header
+the PD mini enabled on SETUP under INTERFACES, the header names the module
+and the coprocessor's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
+from the PD mini TX and PD mini RX settings. With either pin not set the
+header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SUPPLY MODEL and the menu tile is marked MODELLED.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
@@ -877,12 +904,19 @@ separately.
 **OUTPUT ON is a two-second hold**, the gesture and the fade ARM uses. OUTPUT
 OFF is a tap. STOP switches the output off on every screen. So does every
 other stop the bench counts -- touch that stops answering, an ON whose touch
-events went missing before the screen showed it, and the coprocessor refusing
-to stay armed -- and a supply that stops answering, and a trip. The output
-stays off until it is switched on again. Leaving the screen keeps the output
-on, so a servo or an ESC fed by the supply stays powered on the screen that
-tests it, and the link-lost screen, which has no STOP, does not open while
-the output is on.
+events went missing before a whole frame saw the output on, and the
+coprocessor refusing to stay armed -- and a supply that stops answering, and a
+trip. The output stays off until it is switched on again. Leaving the screen
+switches off an output SUPPLY switched on: one reported on, or an ON on its
+way. SERVO and ESC STICK do the same for the output each switched on, so an
+output is on only while the screen that switched it on is shown. The
+exception: an output SERVO switched on stays on after SERVO is left while the
+servo programmer holds its port, until the port lets go (see SERVO). A servo
+is powered from SERVO and an ESC from ESC STICK. MOTOR & ESC switches no
+supply; an ESC run there is powered from its own source. An output another
+screen switched on stays as it is when SUPPLY is left. The keypad, the HV
+question and the other overlays of SUPPLY are no leave. The link-lost screen,
+which has no STOP, does not open while the output is on.
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
 the panel owes it, and the coprocessor switches the output off itself when
@@ -1129,6 +1163,11 @@ resistor load takes its place. The run starts after HOLD TO RUN is held
 for 2 s:
 
 ![The warning](img/programmer-stick-warning.png)
+
+RUN opens nothing, and the line beside it names the reason, while no pin
+is bound as a throttle, while the output binding is not read, and while
+the supply is the panel's model; such a reason closes a warning that is
+open ([Before a run](StickProgramming.md#before-a-run)).
 
 A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
 button pressed -- carries a red MANUAL tag in the list and MANUAL

@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -5077,6 +5078,44 @@ TEST_CASE(a_run_ending_under_output_ons_hold_switches_nothing_on_past_6_v)
     CHECK(fabsf(supply_screen_set_v() - 4.8f) < 1e-4f);
 }
 
+/*
+ * The ON a run asks for, and the ON the HV warning's hold sends, belong to
+ * SERVO as the switch's own hold does: leaving SERVO switches each off.
+ */
+TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
+{
+    supply_cmd_t c;
+
+    /* A run's ON. */
+    bench_fresh();
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+    CHECK(supply_cmd(&c) && c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_set_output(true);
+    scr->leave();
+    bool off = false;
+    while (supply_cmd(&c)) {
+        off = off || c.off;
+    }
+    CHECK(off);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+
+    /* The HV warning's ON. */
+    fresh();
+    supply_screen_put(7.4f, 1.0f);
+    scr->tick(0.025f);
+    tap(SUP_OUT_X, SUP_ROW_Y);
+    scr->tick(0.025f);
+    hold_apply(2.3f);
+    CHECK(supply_cmd(&c) && c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_set_output(true);
+    scr->leave();
+    CHECK(supply_cmd(&c));
+    CHECK(c.off && !c.on);
+}
+
 /* A set point raised past 6.0 V during OUTPUT ON's ordinary hold -- on
  * SUPPLY, or a run's end putting it back -- switches nothing on when the
  * hold completes: HV SERVOS ONLY opens instead. */
@@ -5737,8 +5776,8 @@ static const tgt_state_t k_tgt[] = {
     { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false, false },
     { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false, false },
     { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false, false },
-    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true, 0xFFu, false,
-      false },
+    { 0, 0, PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12), true,
+      0xFFu, false, false },
     { 0, 0, PINS_40_47,                          true,  0xFFu, false, false },
     { 0, 0, 0,                                   true,  0xFFu, false, true  },
     { 0, 0, 0,                                   false, 0xFFu, false, true  },
@@ -5763,8 +5802,8 @@ static const tgt_state_t k_tgt[] = {
  * from servo_target_line(). */
 static const char *const k_tgt_en[] = {
     "TARGET: GP2", "TARGET: GP4", "TARGET: GP2 GP4", "TARGET: GP2 GP4 GP5",
-    "TARGET: GP12 GP13 GP14 GP15", "TARGET: GP2 GP4 GP5 +2",
-    "TARGET: GP40 GP41 GP42 +5", "TARGET: NO SERVO PWM PIN",
+    "TARGET: GP12 GP13 GP14 GP15", "TARGET: GP1 GP2 GP3 GP10 GP11 GP12",
+    "TARGET: GP40 GP41 GP42 GP43 +4", "TARGET: NO SERVO PWM PIN",
     "TARGET: PINS NOT READ", "TARGET: PROG PORT", "TARGET: PROG PORT GP13",
     "TARGET: PROG PORT GP63 PWM OFF", "TARGET: PROG PORT PWM OFF",
     "TARGET: NOT KNOWN", "TARGET: NO LINK",
@@ -5789,9 +5828,8 @@ static void target_reference(gfx_color_t *out, const char *text, bool warn)
  * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and the
  * warning colour for the port, for no pin, for a binding not read, for a
  * target not known and for no link.  Every state reads differently, and no
- * line reaches the edges of its box: the longest are 4 two-digit pins, 3
- * two-digit pins with a count, and the port on a two-digit pin with its
- * pulse off. */
+ * line leaves the box: the longest are 34 cells (272 of 278 px) of pins and
+ * a count, and the port on a two-digit pin with its pulse off. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -5937,10 +5975,20 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
     CHECK_STR_EQ(line, want);
 }
 
-/* The target line's text: up to 4 pins named, from 5 the first 3 and the
- * count of the rest, the port with its pin or without and with its pulse on
+TEST_CASE(the_target_prefix_is_shorter_than_its_34_cell_box)
+{
+    /* The box is 34 cells (servo_screen.c, TARGET_CELLS). */
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(snprintf(NULL, 0, TR(SV_TARGET_OUT), "") < 34);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The target line's text: as many pins as the 34 cells hold after the prefix
+ * (26 in English, 28 in German), then the count of the rest, the port with its pin or without and with its pulse on
  * or off, the target not known and no link, in both languages. */
-TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
+TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "TARGET: GP2",
@@ -5950,13 +5998,23 @@ TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(12) | PIN(13) | PIN(14) | PIN(15), true,
                "TARGET: GP12 GP13 GP14 GP15", false);
+    /* 5 pins fit: 19 of the 26 cells. */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
-               "TARGET: GP2 GP4 GP5 +2", false);
+               "TARGET: GP2 GP4 GP5 GP6 GP7", false);
+    /* The list ends exactly at the budget: 26 cells, no count. */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12), true,
+               "TARGET: GP1 GP2 GP3 GP10 GP11 GP12", false);
+    /* One pin more overflows it: 5 pins and " +2" (24 cells). */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12)
+                   | PIN(13), true,
+               "TARGET: GP1 GP2 GP3 GP10 GP11 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "TARGET: GP40 GP41 GP42 +5", false);
+               "TARGET: GP40 GP41 GP42 GP43 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
-               "TARGET: GP0 GP1 GP2 +61", false);
+               "TARGET: GP0 GP1 GP2 GP3 GP4 +59", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "TARGET: GP63",
                false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
@@ -5993,7 +6051,16 @@ TEST_CASE(the_target_line_names_up_to_4_pins_and_counts_the_rest)
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
                "ZIEL: GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "ZIEL: GP40 GP41 GP42 +5", false);
+               "ZIEL: GP40 GP41 GP42 GP43 GP44 +3", false);
+    /* German: 28 cells after the 6-cell prefix.  GP1 GP10 to GP14 is 28
+     * cells and ends at the budget; GP15 more overflows it. */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(1) | PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
+               "ZIEL: GP1 GP10 GP11 GP12 GP13 GP14", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(1) | PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14)
+                   | PIN(15), true,
+               "ZIEL: GP1 GP10 GP11 GP12 GP13 +2", false);
     check_line(1u, 13u, true, PIN(2), true, "ZIEL: PROG-PORT GP13", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "ZIEL: PROG-PORT",
                true);
@@ -8098,7 +8165,8 @@ int main(void)
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
-    RUN(the_target_line_names_up_to_4_pins_and_counts_the_rest);
+    RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
+    RUN(the_target_prefix_is_shorter_than_its_34_cell_box);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
@@ -8216,6 +8284,7 @@ int main(void)
     RUN(a_voltage_raised_past_6_v_takes_the_hv_hold);
     RUN(the_hv_hold_stands_for_the_live_question);
     RUN(output_on_past_6_v_takes_the_hv_hold);
+    RUN(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked);
     RUN(an_on_reported_during_a_second_servo_hold_is_not_an_off);
     RUN(a_servo_question_for_a_dropped_on_goes);
     RUN(an_apply_held_as_the_output_goes_off_applies_nothing);

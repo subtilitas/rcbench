@@ -112,6 +112,25 @@ die Bedienelemente eine Leiste auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren. Bei eingeschaltetem Drehknopf bewegt dessen Drehung das Gas
 ([der Knopf](#anwendung-der-drehknopf)).
+
+### Das Gas-Panel nennt seine Pins
+
+Das Gas-Panel nennt links neben der Prozentzahl die Pins, die das Gas
+treibt: `ZIEL: GP0 GP1`. Es sind die Pins, die als MOTOR PWM oder als
+DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
+SETUP > AUSGÄNGE, die auch die Gas-Rolle des Koprozessors liest. Die Liste
+steht in Pin-Reihenfolge und enthält so viele Pins, wie in das Feld von 49
+Zeichen passen; der Rest wird gezählt. Sind GP0 bis GP15 gebunden, steht dort
+`ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6`. Zwei Zustände erscheinen
+in der Warnfarbe:
+
+| Zeile | Bedingung |
+|---|---|
+| `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
+| `ZIEL: BINDUNG NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
+
+Das Gas bewegt sich in beiden Zuständen weiter. ARM schaltet die ganze Bank
+scharf, nicht nur die hier genannten Pins.
 ### Der Plot zeigt einen Lauf
 
 ![Motor und ESC, Telemetrie angehalten](img/de/motor-held.png)
@@ -551,9 +570,18 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   auf ÜBERNEHMEN schalten nichts ein. Ein Sollwert, der während des gewöhnlichen
   Haltens über 6,0 V steigt -- auf SUPPLY, oder nach einem Lauf
   zurückgesetzt --, wird beim Abschluss des Haltens gesehen: NUR HV-SERVOS
-  öffnet sich, und nichts geht an. Beim Verlassen von SERVO bleibt
-  der Ausgang, wie er ist; ein Druck auf AUSGANG AUS beim Verlassen wird als
-  das OFF gesendet, das er war.
+  öffnet sich, und nichts geht an. Das Verlassen von SERVO schaltet einen
+  Ausgang aus, den SERVO eingeschaltet hat: mit AUSGANG EIN, mit einem Test
+  oder mit VERBINDEN des Servo-Programmierers. Solange der
+  Servo-Programmierer einen Port hält, bleibt der Ausgang an, weil ein OFF
+  die Sitzung beenden und ein laufendes Schreiben abschneiden würde; er geht
+  aus, wenn der Port loslässt, außer SERVO wird vorher wieder gezeigt. Ein
+  ON, das SERVO verlangt hat und das auf dem Weg ist, wenn der Port das
+  Netzteil übernimmt, zählt als eingeschaltet. Ein
+  Ausgang, den SERVO nicht eingeschaltet hat, bleibt, wie er ist. Der
+  Servo-Programmierer, die Tastenfelder und die Fragen gehören zu SERVO und
+  sind kein Verlassen. Ein Druck auf AUSGANG AUS beim Verlassen wird als das
+  OFF gesendet, das er war.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
 nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
@@ -785,8 +813,9 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
 weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
 AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
-als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; ab 5 Pins die
-ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
+als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; so viele Pins,
+wie in die 34 Zeichen der Zeile passen, dann `+N`: 6 Pins ab GP40 lauten
+`ZIEL: GP40 GP41 GP42 GP43 GP44 +1`. Sie ist in der Warnfarbe ohne
 einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
 wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
 `ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
@@ -899,8 +928,10 @@ PD mini, einen USB-PD-Trigger (USB Power Delivery), der über einen UART
 Koprozessor steuert ihn über einen PIO-UART (PIO: Programmable
 Input/Output) auf zwei seiner Pins, über die SUPPLY-Link-Page (Protokoll
 4.3). Das Panel schreibt die Page und liest sie alle 100 ms. Ist der PD mini
-in SETUP unter ANSCHLÜSSE eingeschaltet, sagt die Kopfzeile PD MINI. Ist er
-abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
+in SETUP unter ANSCHLÜSSE eingeschaltet, nennt die Kopfzeile das Modul und die UART-Pins des Koprozessors, an denen
+es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
+PD mini RX. Ist einer der beiden Pins nicht gesetzt, steht `PD MINI OHNE PINS`
+in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
 Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
 SIMULIERT.
 
@@ -959,15 +990,24 @@ ab.
 
 **AUSGANG EIN ist ein Zwei-Sekunden-Halten**, dieselbe Geste und dieselbe Blende
 wie ARM. AUSGANG AUS ist ein Tippen. STOP schaltet den Ausgang auf jedem
-Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein
-Touch, der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren
-gingen, bevor der Bildschirm es zeigte, und ein Koprozessor, der nicht scharf
-bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine Abschaltung.
-Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das Verlassen des
-Bildschirms lässt den Ausgang an, damit ein Servo oder ein ESC am Netzteil auf
-dem Bildschirm versorgt bleibt, der es testet; der Bildschirm für den
-verlorenen Link, der kein STOP hat, öffnet sich nicht, solange der Ausgang an
-ist.
+Bildschirm ab. Ebenso jeder andere Stopp, den der Prüfstand zählt -- ein Touch,
+der nicht mehr antwortet, ein ON, dessen Touch-Ereignisse verloren gingen, bevor
+ein ganzer Frame den Ausgang eingeschaltet sah, und ein Koprozessor, der nicht
+scharf bleiben will -- sowie ein Netzteil, das nicht mehr antwortet, und eine
+Abschaltung. Der Ausgang bleibt aus, bis er wieder eingeschaltet wird. Das
+Verlassen des Bildschirms schaltet einen Ausgang aus, den SUPPLY eingeschaltet
+hat: einen, der als an gemeldet ist, oder ein ON auf dem Weg. SERVO und ESC
+STICK tun dasselbe für den Ausgang, den jeder eingeschaltet hat, so dass ein
+Ausgang nur an ist, solange der Bildschirm gezeigt wird, der ihn eingeschaltet
+hat. Die Ausnahme: ein Ausgang, den SERVO eingeschaltet hat, bleibt nach dem
+Verlassen von SERVO an, solange der Servo-Programmierer seinen Port hält, bis
+der Port loslässt (siehe SERVO). Ein Servo wird von SERVO versorgt, ein ESC von
+ESC STICK. MOTOR & ESC schaltet keine Versorgung; ein ESC, der dort läuft, wird
+aus seiner eigenen Quelle versorgt. Ein Ausgang, den ein anderer Bildschirm
+eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Das Tastenfeld,
+die HV-Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
+Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
+solange der Ausgang an ist.
 
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der Koprozessor schaltet den Ausgang selbst ab,
@@ -1240,6 +1280,11 @@ Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
 beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
 ![Die Warnung](img/de/programmer-stick-warning.png)
+
+START öffnet nichts, und die Zeile daneben nennt den Grund, solange kein Pin
+als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
+und solange das Netzteil das Modell des Panels ist; ein solcher Grund
+schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
 
 Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
 und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild

@@ -1276,6 +1276,10 @@ int main(int argc, char **argv)
             motor_screen_push(&bench);
         }
         motor_screen_set_throttle(64.0f);
+        /* Two pins bound as motors, as the panel reads them from the
+         * binding. */
+        motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
+                                       true);
         /* The run ends for the held view, so the trace stops where the last
          * sample left it and the panel says it is holding one. */
         if (strcmp(view, "motor-held") == 0) {
@@ -1347,6 +1351,9 @@ int main(int argc, char **argv)
         supply_screen_settings_loaded();
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
+        /* A binding read, with a throttle on channel 0, as a bench with
+         * an ESC on it has. */
+        programmer_screen_set_throttle(true, 0x01u);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         stick_supply_off();                     /* a panel's readings, off */
         if (strcmp(view, "programmer-stick-hand-steps") == 0) {

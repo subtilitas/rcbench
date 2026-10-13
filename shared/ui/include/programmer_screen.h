@@ -59,6 +59,16 @@ int  programmer_screen_dirty(void);
 void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
                              uint32_t pressed, bool link_up);
 
+/**
+ * The output binding, every frame: whether one is read
+ * (BIND_READ_OK), and the channels it binds as a throttle
+ * (outputs_role_channels(), one bit each).  RUN on ESC STICK is refused
+ * while none is read or it binds no throttle, and while the supply is the
+ * panel's model (supply_screen_model()); the note names which.  Zero at
+ * start: nothing is known until the application says.
+ */
+void programmer_screen_set_throttle(bool read, uint8_t channels);
+
 /** One supply sample, every one, in the order they were taken. */
 void programmer_screen_supply(const supply_state_t *st);
 

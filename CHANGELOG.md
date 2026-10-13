@@ -14,6 +14,15 @@ history is in git.
   the column is read as before; the column is text and is never plotted. The
   servo test's CSV is unchanged: its `meter` column names `MODEL`.
 
+- The MOTOR & ESC throttle panel names the pins the throttle drives
+  (`TARGET: GP0 GP1`), from the output pages the coprocessor's throttle role
+  reads. No pin bound as a motor and a binding not read show in the warning
+  colour. The SUPPLY header names the PD mini's UART pins
+  (`PD MINI TX GP12 RX GP13`; `PD MINI NO PINS` when either is not set).
+- `ui_pinlist()` formats a GPIO mask as a pin list within a cell budget:
+  the pins that fit, then the count of the rest (`GP2 GP4 GP5 +2`).
+  `outputs_role_pins()` returns the GPIOs of the slots whose channels carry a
+  role.
 - The DShot module exports the extended telemetry units: `DSHOT_EDT_MV_PER_COUNT`
   (250), `DSHOT_EDT_A_PER_COUNT` (1), `DSHOT_EDT_DEGC_PER_COUNT` (1) and
   `dshot_edt_millivolts()`, `dshot_edt_amps()`, `dshot_edt_celsius()`. The
@@ -64,9 +73,37 @@ history is in git.
   document, its address and the place in it; the data check rejects one
   without them. The drawing of the board shows the jumper cap on the 5V
   pair, labelled "cap on 5V".
+
+- RUN on ESC STICK is refused while no pin is bound as a throttle, while the
+  output binding is not read, and while the supply is the panel's model; the
+  line beside RUN names the reason, in English and German, and such a reason
+  closes an open warning.
+- Leaving SUPPLY, SERVO or ESC STICK switches off a PD mini output that
+  screen switched on: reported on, or an ON on its way. An output another
+  screen switched on stays. Overlays, keypads, questions and the servo
+  programmer on SERVO are no leave. A PD mini output switched on by the
+  servo programmer's CONNECT is SERVO's. An output SERVO switched on stays
+  on after SERVO is left while the servo programmer holds its port, until
+  the port lets go, then goes off unless SERVO is shown again first; an ON
+  SERVO asked for that is on its way when the port takes the supply counts
+  as switched on. A touch loss during a hold on OUTPUT ON drops the ON. The
+  screen drops one not yet sent. The control task drops one already sent, or
+  switches the output off (`touch lost while switching on -- output off`)
+  until a frame with an unbroken touch stream has seen it on. That frame can
+  come up to 50 ms (one supply sample) before SUPPLY shows the output on. An
+  ON a loss meets after that frame stays on, stays the screen's and goes off
+  with the leave. MOTOR & ESC switches no supply; an ESC run there is
+  powered from its own source.
+- The servo programmer's record of an interrupted write (`KST/KST.TXT`) is
+  version 2: `RCBENCH KST 2` with a `pin=` line, the GPIO the port drove.
+  The record's lines name that pin (`Connect it on GP13 and READ ALL.`). A
+  version 1 record, one with no pin (`FF`) and one with a pin above GP47
+  are read and name the port. A record discarded leaves no pin behind: the
+  next record names the pin of its own port. A panel of an earlier release
+  does not read a version 2 record.
 - The SERVO screen shows the active PWM TARGET at the foot of the left card
   with its pins: `TARGET: GP4` or `TARGET: GP2 GP4` for the pins bound as
-  SERVO PWM (from 5 pins the first 3 and a count), `TARGET: PROG PORT GP13`
+  SERVO PWM (as many pins as fit, then `+N`), `TARGET: PROG PORT GP13`
   for the programming port (German `ZIEL: GP4`, `ZIEL: PROG-PORT GP13`),
   `TARGET: PROG PORT` for a port target without a usable pin, with
   `PWM OFF` after either while PORT PWM is off
