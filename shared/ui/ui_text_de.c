@@ -813,6 +813,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_IN_FORCE_PORT_PIN]   = "Aktiv: PROG-PORT GP%u läuft mit %u Hz.",
     [TX_SV_IN_FORCE_PORT]       = "Aktiv: %u Hz auf PROG-PORT, der keinen Pin hat.",
     [TX_SV_IN_FORCE_UNKNOWN]    = "Aktiv: %u Hz. Das Ziel ist unbekannt.",
+    [TX_SV_IN_FORCE_NO_LINK]    = "Kein Link: die aktive Rate ist unbekannt.",
     [TX_SV_IN_FORCE_NOT_SET]    = "Die Einstellung PWM-ZIEL ist nicht aktiv.",
     [TX_SV_IN_FORCE_PWM_OFF]    = "PORT-PWM ist AUS: der Port gibt keinen Puls aus.",
     [TX_SV_IN_FORCE_SURFACES_1] = "Aktiv: jedes PWM-Ruder läuft mit %u Hz.",

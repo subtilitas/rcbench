@@ -8404,10 +8404,35 @@ void app_main(void)
         }
         servo_screen_set_armed(armed_now);
         {
-            /* Whether the screen's frame rate reached the pins. */
-            const unsigned r = atomic_load(&s_servo_rate_shown);
-            servo_screen_rate((servo_rate_state_t)(r >> 16),
-                              (uint16_t)(r & 0xFFFFu));
+            /*
+             * Whether the screen's frame rate reached the pins, and the
+             * drive it reached: one pair, for the note that names both.
+             * The control task (core 1) stores the rate reset of a TARGET
+             * change before the new drive (prog_link_service(), the
+             * link-up), and a rate that lands on the new target after it.
+             * This core reads the drive, the rate, then the drive again,
+             * every access sequentially consistent: the same drive on
+             * both sides of the rate means the two held together at the
+             * rate's load, so the note never pairs a rate with a target it
+             * was not stored for.  A drive that moves on every try keeps
+             * the screen's last pair for this frame.
+             */
+            unsigned drive = atomic_load(&s_drive);
+            unsigned r = 0u;
+            bool paired = false;
+            for (int k = 0; k < 3 && !paired; ++k) {
+                r = atomic_load(&s_servo_rate_shown);
+                const unsigned again = atomic_load(&s_drive);
+                paired = again == drive;
+                drive = again;
+            }
+            if (paired) {
+                servo_screen_rate((servo_rate_state_t)(r >> 16),
+                                  (uint16_t)(r & 0xFFFFu));
+                servo_screen_set_drive((uint8_t)(drive >> 8),
+                                       (uint8_t)(drive & 0xFFu),
+                                       (drive & DRIVE_PWM_BIT) != 0u);
+            }
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
             /* What the tester drives and whether the port renders its
@@ -8419,10 +8444,6 @@ void app_main(void)
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
-            const unsigned drive = atomic_load(&s_drive);
-            servo_screen_set_drive((uint8_t)(drive >> 8),
-                                   (uint8_t)(drive & 0xFFu),
-                                   (drive & DRIVE_PWM_BIT) != 0u);
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),

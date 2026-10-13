@@ -5029,9 +5029,17 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     if (l1 == NULL || l2 == NULL || size == 0u) {
         return false;
     }
-    /* No link, or the page not known: where the rate runs is not known. */
-    if (target == SERVO_SCREEN_TARGET_NO_LINK
-        || target == SERVO_SCREEN_TARGET_UNKNOWN) {
+    /* No link: the coprocessor may have restarted since the rate landed,
+     * and a restart puts every pin back at its own rate, so no rate is
+     * named.  The link-up resets the rate before a target is known. */
+    if (target == SERVO_SCREEN_TARGET_NO_LINK) {
+        snprintf(l1, size, "%s", TR(SV_IN_FORCE_NO_LINK));
+        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
+        return true;
+    }
+    /* The page not known: the rate was acknowledged, where it runs is not
+     * known. */
+    if (target == SERVO_SCREEN_TARGET_UNKNOWN) {
         snprintf(l1, size, TR(SV_IN_FORCE_UNKNOWN), (unsigned)hz);
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
         return true;
@@ -5077,6 +5085,14 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
                                    settings_get_int(SET_SERVO_TARGET));
         break;
     case SERVO_RATE_IN_FORCE_SURFACES:
+        /* With no link the same "not known" line as from 4.19. */
+        if (s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
+            warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
+                                       s.drive_target, s.drive_pin,
+                                       s.drive_pwm,
+                                       settings_get_int(SET_SERVO_TARGET));
+            break;
+        }
         snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),
                  (unsigned)s.frame_hz);
         snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));

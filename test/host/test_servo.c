@@ -1524,10 +1524,16 @@ static const note_state_t k_note[] = {
       "In force: 50 Hz on PROG PORT, which has no pin.", PPM_LINE, true },
     { 1, 1u, 63u, false, "In force: PROG PORT GP63 runs at 50 Hz.",
       "PORT PWM is OFF: the port renders no pulse.", true },
+    /* The port with no pin and its pulse off: the first line still says
+     * there is no pin, the second that no pulse goes out. */
+    { 1, 1u, SERVO_SCREEN_NO_PIN, false,
+      "In force: 50 Hz on PROG PORT, which has no pin.",
+      "PORT PWM is OFF: the port renders no pulse.", true },
     { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, true,
       "In force: 50 Hz. The target is not known.", PPM_LINE, true },
+    /* No link: the coprocessor may have restarted, so no rate is named. */
     { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, true,
-      "In force: 50 Hz. The target is not known.", PPM_LINE, true },
+      "No link: the rate in force is not known.", PPM_LINE, true },
 };
 #define NOTE_N ((int)(sizeof(k_note) / sizeof(k_note[0])))
 
@@ -1586,9 +1592,11 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
           "Ein PPM-Ausgang behält seinen eigenen Frame." },
         { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
           "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
+        { "Aktiv: 50 Hz auf PROG-PORT, der keinen Pin hat.",
+          "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
         { "Aktiv: 50 Hz. Das Ziel ist unbekannt.",
           "Ein PPM-Ausgang behält seinen eigenen Frame." },
-        { "Aktiv: 50 Hz. Das Ziel ist unbekannt.",
+        { "Kein Link: die aktive Rate ist unbekannt.",
           "Ein PPM-Ausgang behält seinen eigenen Frame." },
     };
     ui_text_set_language(UI_LANG_DE);
@@ -1619,6 +1627,51 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
     /* A setting out of range is not the drive's target. */
     CHECK(servo_in_force_note(a, b, sizeof(a), 50u, 0u, 0xFFu, false, -1));
     CHECK_STR_EQ(b, NOT_SET);
+}
+
+/* The note carries the rate the screen runs, not 50 Hz: HELI TAIL 760's
+ * 560 Hz on the port's pin as drawn, and in the lines for a target not
+ * known and for a port with no pin.  No link names no rate at all, also
+ * for a coprocessor before 4.19 whose note says "every PWM surface". */
+TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
+{
+    fresh();
+    two_buffers();
+    choose_type(4);                            /* HELI TAIL 760, 560 Hz */
+    CHECK_EQ(servo_screen_frame_hz(), 560);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    servo_screen_set_drive(1u, 13u, true);
+    open_settings();
+    servo_screen_rate(SERVO_RATE_IN_FORCE, 560u);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: PROG PORT GP13 runs at 560 Hz.", PPM_LINE,
+                       false));
+
+    char a[96], b[96];
+    CHECK(servo_in_force_note(a, b, sizeof(a), 560u,
+                              SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, 1));
+    CHECK_STR_EQ(a, "In force: 560 Hz. The target is not known.");
+    CHECK(servo_in_force_note(a, b, sizeof(a), 560u, 1u, SERVO_SCREEN_NO_PIN,
+                              true, 1));
+    CHECK_STR_EQ(a, "In force: 560 Hz on PROG PORT, which has no pin.");
+
+    /* The link goes: the drawn note names no rate, in the warning colour. */
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN,
+                           false);
+    CHECK(both_whole());
+    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+                       true));
+    /* A 4.1 to 4.18 coprocessor's "every PWM surface" line too. */
+    servo_screen_rate(servo_rate_in_force(18u), 560u);
+    CHECK(both_whole());
+    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+                       true));
+    /* And back with the link: the surfaces at the rate again. */
+    servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN,
+                           false);
+    CHECK(both_whole());
+    CHECK(note_matches("In force: every PWM surface runs at 560 Hz.",
+                       PPM_LINE, false));
 }
 
 /* The note and the drive come from the same record: PROG PORT set with no
@@ -8471,6 +8524,7 @@ int main(void)
     RUN(the_output_page_says_whether_the_rate_reached_the_pins);
     RUN(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate);
     RUN(the_in_force_note_names_the_target_the_coprocessor_holds);
+    RUN(the_in_force_note_carries_the_rate_and_names_none_without_a_link);
     RUN(the_in_force_note_follows_the_prog_page_not_the_setting);
     RUN(the_horn_travels_and_breathes_as_a_full_redraw_would);
     RUN(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps);

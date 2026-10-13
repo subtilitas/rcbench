@@ -368,14 +368,15 @@ servo_rate_state_t servo_rate_in_force(uint16_t minor);
  * target the panel asks for).  The first line names the target the
  * coprocessor holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
  * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
- * or the target not known (no link, the page not known).  The second line
+ * or the target not known (the page not known).  With no link it names no
+ * rate: "No link: the rate in force is not known.".  The second line
  * says "The PWM TARGET setting is not in force." while the setting and the
  * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
  * that a PPM output keeps its own frame.  Returns whether the note takes
- * the warning colour: the setting and the drive differ, the target not
- * known, a port without a known pin, or a port with its pulse off.  Neither
- * line is written with a NULL buffer or a @p size of 0, and false is
- * returned.
+ * the warning colour: the setting and the drive differ, no link, the
+ * target not known, a port without a known pin, or a port with its pulse
+ * off.  Neither line is written with a NULL buffer or a @p size of 0, and
+ * false is returned.
  */
 bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
                          uint8_t target, uint8_t gpio, bool pwm, int setting);

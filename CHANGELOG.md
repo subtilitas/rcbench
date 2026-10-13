@@ -60,7 +60,8 @@ history is in git.
   while the port has no pin, while PORT PWM is OFF and while the target is
   not known. The refusal note reads "a pin shares a PWM slice"; against a
   4.1 to 4.18 coprocessor the note in force reads "every PWM surface runs
-  at". A PROG write refused because the silicon
+  at". With no link the note in force names no rate: "No link: the rate in
+  force is not known.". A PROG write refused because the silicon
   cannot bind a pin leaves SERVO's rate, its sweep and the slots' rates as
   they were.
 
