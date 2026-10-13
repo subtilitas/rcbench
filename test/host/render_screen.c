@@ -1351,6 +1351,9 @@ int main(int argc, char **argv)
         supply_screen_settings_loaded();
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
+        /* A binding read, with a throttle on channel 0, as a bench with
+         * an ESC on it has. */
+        programmer_screen_set_throttle(true, 0x01u);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         stick_supply_off();                     /* a panel's readings, off */
         if (strcmp(view, "programmer-stick-hand-steps") == 0) {

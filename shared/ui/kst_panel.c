@@ -742,6 +742,34 @@ static void stay_line(char *out, unsigned n)
     }
 }
 
+/* A line of the interrupted write's record, kst_prog_journal_arg() in
+ * @p arg: it names the GPIO the write went through, and the port when the
+ * record holds no pin. */
+static void journal_line(char *out, int text, unsigned arg)
+{
+    const unsigned port = arg & 0xFFu;
+    const unsigned pin1 = arg >> 8;
+
+    if (text == TX_KP_M_JOURNAL_ASK) {
+        if (pin1 != 0u) {
+            snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_ASK_PIN), pin1 - 1u);
+        } else {
+            snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_ASK), port);
+        }
+    } else if (text == TX_KP_M_JOURNAL_OTHER_2) {
+        if (pin1 != 0u) {
+            snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2_PIN),
+                     pin1 - 1u);
+        } else {
+            snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2), port);
+        }
+    } else if (pin1 != 0u) {
+        snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_2_PIN), pin1 - 1u);
+    } else {
+        snprintf(out, KST_PANEL_LINE, TR(KP_M_JOURNAL_2), port);
+    }
+}
+
 /* What an edited file is, with the fields it gives a value for where the
  * card's side counted them. */
 static void kind_line(char *out, int text)
@@ -849,7 +877,7 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
      * tools/check_formats.py holds each to its argument. */
     switch (first) {
     case TX_KP_M_JOURNAL_ASK:
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_ASK), arg);
+        journal_line(out[n++], first, arg);
         break;
     case TX_KP_M_WRITTEN:
         if (arg == 1u) {
@@ -910,10 +938,8 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
     } else if (id == KST_PROG_MSG_LOAD_SAME && arg != 0u) {
         file_stay_line(out[n++], arg);
     }
-    if (second == TX_KP_M_JOURNAL_2) {
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_2), arg);
-    } else if (second == TX_KP_M_JOURNAL_OTHER_2) {
-        snprintf(out[n++], KST_PANEL_LINE, TR(KP_M_JOURNAL_OTHER_2), arg);
+    if (second == TX_KP_M_JOURNAL_2 || second == TX_KP_M_JOURNAL_OTHER_2) {
+        journal_line(out[n++], second, arg);
     } else if (second == TX_KP_FILE_EDITED || second == TX_KP_FILE_UNTYPED) {
         kind_line(out[n++], second);
     } else if (second >= 0) {
@@ -2401,9 +2427,8 @@ static int standing(const char *out[2], bool *warn)
     }
     if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
         static char first[KST_PANEL_LINE];
-        const unsigned ch = (unsigned)kst_prog_journal_port(p) + 1u;
 
-        snprintf(first, sizeof(first), TR(KP_M_JOURNAL_ASK), ch);
+        journal_line(first, TX_KP_M_JOURNAL_ASK, kst_prog_journal_arg(p));
         out[0] = first;
         out[1] = kst_prog_journal_asks(p) == KST_PROG_MSG_JOURNAL_SAME
                      ? TR(KP_M_JOURNAL_SAME) : TR(KP_M_JOURNAL_DONE);
@@ -2412,14 +2437,14 @@ static int standing(const char *out[2], bool *warn)
     if (kst_prog_journal(p)) {
         /* Static: the caller draws the line after this returns. */
         static char second[KST_PANEL_LINE];
-        const unsigned ch = (unsigned)kst_prog_journal_port(p) + 1u;
+        const unsigned arg = kst_prog_journal_arg(p);
 
         if (kst_prog_journal_other(p)) {
             out[0] = TR(KP_M_JOURNAL_OTHER);
-            snprintf(second, sizeof(second), TR(KP_M_JOURNAL_OTHER_2), ch);
+            journal_line(second, TX_KP_M_JOURNAL_OTHER_2, arg);
         } else {
             out[0] = TR(KP_M_JOURNAL);
-            snprintf(second, sizeof(second), TR(KP_M_JOURNAL_2), ch);
+            journal_line(second, TX_KP_M_JOURNAL_2, arg);
         }
         out[1] = second;
         return 2;

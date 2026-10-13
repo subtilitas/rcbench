@@ -33,8 +33,16 @@ What it does not know:
    windings read in the current is not measured.
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
-   the MOTOR screen does.
-4. Connect the ESC's power leads to the supply output.
+   the MOTOR screen does. RUN is refused while the binding binds no pin as
+   a throttle (`no throttle pin bound: bind one on OUTPUTS`) and while the
+   panel has not read the binding from the coprocessor (`the output
+   binding is not read: no throttle pin known`).
+4. Connect the ESC's power leads to the supply output. The supply is the PD
+   mini: with the PD mini disabled on SETUP the panel's supply model takes
+   its place and switches nothing, and RUN is refused with `the supply is
+   modelled: RUN needs a PD mini`. A reason that arises while the warning
+   NO PROPELLER, MOTOR SECURED? is open closes it, and the line beside RUN
+   names the reason.
 5. Switch the supply's output off. A run that finds it on or on its way is
    refused, and so is one whose supply reads live: its own state on, or
    more than 20 mA (`ESC_STICK_OFF_MA`) through the output, in its newest

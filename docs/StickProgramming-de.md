@@ -36,8 +36,18 @@ Was sie nicht weiß:
    lesen sind, ist nicht gemessen.
 3. Die Signalleitung des ESCs an einen Pin legen, der auf dem Bildschirm
    OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
-   Throttle gebundenen Kanal, wie der Bildschirm MOTOR.
+   Throttle gebundenen Kanal, wie der Bildschirm MOTOR. START wird
+   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`kein
+   Throttle-Pin gebunden: einen auf OUTPUTS binden`) und solange das Panel
+   die Bindung nicht vom Koprozessor gelesen hat (`Ausgangsbindung nicht
+   gelesen: kein Throttle-Pin bekannt`).
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
+   Das Netzteil ist der PD mini: ist der PD mini auf SETUP abgeschaltet,
+   tritt das Netzteilmodell des Panels an seine Stelle und schaltet nichts,
+   und START wird abgelehnt mit `Netzteil simuliert: START braucht einen PD
+   mini`. Ein Grund, der entsteht, während die Warnung KEIN PROPELLER,
+   MOTOR GESICHERT? offen ist, schließt sie, und die Zeile neben START
+   nennt den Grund.
 5. Den Ausgang des Netzteils ausschalten. Ein Lauf, der ihn an oder auf dem
    Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
    meldet: sein eigener Zustand an, oder mehr als 20 mA (`ESC_STICK_OFF_MA`)

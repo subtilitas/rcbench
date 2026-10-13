@@ -183,6 +183,12 @@ static struct {
      * and nothing else, so this screen offers nothing else; see
      * supply_screen_set_port_held(). */
     bool            port_held;
+    /* The screen whose ON the output is, while it is on or an ON is on
+     * its way; and an OFF owed for leaving it while a programming port
+     * held the supply, sent when the port lets go.  See
+     * supply_screen_left(). */
+    supply_by_t     owner;
+    bool            off_owed;
     bool            confirm_open;
     uint32_t        off_count;      /* reported ON-to-OFF edges */
     /* Stops seen (supply_screen_cancel_on()), and the count the question
@@ -435,7 +441,19 @@ static void reset(void)
 
 /* ---------------------------------------------------------------- commands */
 
-static void post_on(void)
+/*
+ * The output's owner goes with the output: once it is off and no ON is on
+ * its way, nobody owns it and no OFF is owed.
+ */
+static void owner_settle(void)
+{
+    if (!s.on && !s.on_asked && !s.pending.on) {
+        s.owner    = SUPPLY_BY_NONE;
+        s.off_owed = false;
+    }
+}
+
+static void post_on(supply_by_t by)
 {
     /* An OFF already asked for stands: two touches in one frame must not
      * let an ON land on top of it.  And none while a programming port
@@ -443,6 +461,8 @@ static void post_on(void)
     if (!s.pending.off && !s.port_held) {
         s.pending.on = true;
         s.on_asked   = true;
+        s.owner      = by;
+        s.off_owed   = false;
     }
 }
 
@@ -451,6 +471,10 @@ static void post_off(void)
     s.pending.off = true;
     s.pending.on  = false;
     s.on_asked    = false;
+    s.off_owed    = false;
+    /* The OFF is asked: an output still reported on is nobody's to switch
+     * off again on a leave. */
+    s.owner       = SUPPLY_BY_NONE;
 }
 
 bool supply_screen_poll_cmd(supply_cmd_t *out)
@@ -535,6 +559,7 @@ void supply_screen_set_output(bool on)
         ++s.out_rev;
         ++s.ctrl_rev;
     }
+    owner_settle();
 }
 
 void supply_screen_set_caps(const supply_caps_t *caps)
@@ -694,7 +719,9 @@ void supply_screen_set_port_held(bool held)
     if (held) {
         /* What was under way and would change the supply ends here: a
          * hold on OUTPUT ON, an ON not collected, a drag, a set point
-         * being typed, a question about one. */
+         * being typed, a question about one.  An ON already collected is
+         * on the wire: it stays asked, and its owner with it, until it
+         * lands or the application drops it (supply_screen_set_on_coming()). */
         if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER
             || (s.pressed == P_OUTPUT && !s.press_on)
             || s.pressed == P_APPLY || s.pressed == P_CARD_V
@@ -705,8 +732,10 @@ void supply_screen_set_port_held(bool held)
         ui_slider_release(&s.v_slider);
         ui_slider_release(&s.i_slider);
         ui_hold_reset(&s.hold);
-        s.pending.on = false;
-        s.on_asked   = false;
+        if (s.pending.on) {
+            s.pending.on = false;
+            s.on_asked   = false;
+        }
         if (s.kp.open && (s.kp_target == KP_SET_V
                           || s.kp_target == KP_SET_I)) {
             if (s.pressed == P_KEYPAD) {
@@ -718,6 +747,11 @@ void supply_screen_set_port_held(bool held)
         s.confirm_open = false;
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
+        owner_settle();
+    } else if (s.off_owed) {
+        /* The screen that switched the output on was left while the port
+         * held it: the OFF it owed goes now. */
+        post_off();
     }
     /* Let go, the set points come under the caps again. */
     apply_caps();
@@ -758,7 +792,43 @@ bool supply_screen_output_live(void) { return s.on || s.on_asked; }
 
 uint32_t supply_screen_off_count(void) { return s.off_count; }
 
-void supply_screen_ask_on(void) { post_on(); }
+void supply_screen_ask_on(supply_by_t by) { post_on(by); }
+
+supply_by_t supply_screen_owner(void) { return s.owner; }
+
+bool supply_screen_off_owed(void) { return s.off_owed; }
+
+void supply_screen_claim(supply_by_t by)
+{
+    if (s.owner == SUPPLY_BY_NONE && s.on && !s.pending.off) {
+        s.owner = by;
+    }
+}
+
+void supply_screen_entered(supply_by_t by)
+{
+    if (s.owner == by) {
+        s.off_owed = false;
+    }
+}
+
+void supply_screen_left(supply_by_t by)
+{
+    if (by == SUPPLY_BY_NONE || s.owner != by) {
+        return;
+    }
+    if (s.port_held) {
+        /* An OFF now would end the port's session and cut a write on the
+         * wire: owed until the port lets go, for an output on and for an
+         * ON collected before the port held the supply, which may land
+         * after this leave. */
+        s.off_owed = s.on || s.on_asked || s.pending.on;
+        return;
+    }
+    if (s.on || s.on_asked || s.pending.on) {
+        post_off();
+    }
+}
 
 void supply_screen_ask_off(void) { post_off(); }
 
@@ -779,6 +849,7 @@ void supply_screen_set_on_coming(bool coming)
     if (!coming && !s.pending.on) {
         s.on_asked = false;
     }
+    owner_settle();
 }
 
 void supply_screen_cancel_on(void)
@@ -810,6 +881,7 @@ void supply_screen_cancel_on(void)
         ++s.out_rev;
         ++s.ctrl_rev;
     }
+    owner_settle();
 }
 
 /* ------------------------------------------------------------------ keypad */
@@ -1131,7 +1203,9 @@ static void released(int was, int row, int x, int y)
  * is a press, so a release that never came is an OFF the operator made, and
  * it is sent.  An ON this screen has posted and the application has not
  * collected is dropped: the hold that posted it may have completed on a
- * contact that had gone.  A key held on the keypad is let go of; what was
+ * contact that had gone.  An ON already collected stays asked, with its
+ * owner, until the application reports what became of it; a leave switches
+ * off an ON reported on.  A key held on the keypad is let go of; what was
  * typed stays.
  */
 static void drop_press(void)
@@ -1139,8 +1213,11 @@ static void drop_press(void)
     if (s.on && s.pressed == P_OUTPUT && s.press_on) {
         post_off();
     }
-    s.pending.on = false;
-    s.on_asked   = false;
+    if (s.pending.on) {
+        s.pending.on = false;
+        s.on_asked   = false;
+    }
+    owner_settle();
     ui_slider_release(&s.v_slider);
     ui_slider_release(&s.i_slider);
     /* A drag whose release went missing changes nothing: the slider goes
@@ -1282,7 +1359,7 @@ static void tick(float dt_s)
     if (s.pressed == P_OUTPUT && !s.press_on && !s.on && !s.port_held) {
         ++s.out_rev;
         if (ui_hold_tick(&s.hold, dt_s)) {
-            post_on();
+            post_on(SUPPLY_BY_SUPPLY);
         }
     }
     if (s.hold.flash_left > 0) {
@@ -1871,14 +1948,17 @@ static void render(gfx_canvas_t *c, int buffer_index)
 }
 
 /*
- * Leaving keeps the output as it is.  A supply feeding a servo rail is what
- * the SERVO screen tests against, so walking there must not cut it; STOP
- * does, and so does a supply that stops answering.  The press this screen
- * was routing goes, for the reason MOTOR & ESC's leave() gives, and so do
- * the keypad and the settings: the screen comes back showing the plot.
+ * Leaving switches off an output this screen switched on: a screen that is
+ * not visible must not hold a supply live that no other screen names.  An
+ * output another screen switched on stays as it is.  The keypads, the
+ * settings and the question are this screen's own and are no leave.  The
+ * press this screen was routing goes, for the reason MOTOR & ESC's leave()
+ * gives, and so do the keypad and the settings: the screen comes back
+ * showing the plot.
  */
 static void leave(void)
 {
+    supply_screen_left(SUPPLY_BY_SUPPLY);
     /* A press on OUTPUT OFF when the screen is left -- a second finger on
      * HOME, which the band handles without asking this screen -- is the OFF
      * the operator was making, and it is sent, as cancel() sends one. */
@@ -1904,10 +1984,16 @@ static void leave(void)
     supply_invalidate();
 }
 
+/* Back on the screen whose output it is: no OFF is owed for the leave. */
+static void enter(void)
+{
+    supply_screen_entered(SUPPLY_BY_SUPPLY);
+}
+
 /*
  * Touch events were lost.  The press is dropped as drop_press() drops it:
  * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent,
- * and an ON not yet collected is dropped.
+ * and an ON not yet collected is dropped; one collected stays asked.
  */
 static void cancel(void)
 {
@@ -1917,7 +2003,7 @@ static void cancel(void)
 static const ui_screen_t k_screen = {
     .title  = "SUPPLY",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = enter,
     .leave  = leave,
     .tick   = tick,
     .event  = event,

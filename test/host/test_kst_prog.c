@@ -45,6 +45,8 @@ static bool g_set_read;      /* the panel reads an output that is on */
 static uint16_t g_set_mv;    /* and what it is set to                */
 static uint16_t g_sup_mv, g_sup_ma;
 static uint8_t g_target;       /* LINK_PG_TARGET as the control task reads */
+static int  g_pin_value = -1;  /* the pin the binding gives CH, or -1: PIN */
+static bool g_pin_unknown;     /* the panel has no pin for any port */
 
 /* The control task's side of the programmer. */
 static uint32_t g_outcomes;
@@ -80,7 +82,8 @@ static unsigned g_starts_at_save;   /* g_starts when a save was asked */
 static uint8_t hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
-    return (port == CH && !g_no_pin) ? PIN : 0xFFu;
+    return (port == CH && !g_no_pin)
+               ? (uint8_t)(g_pin_value >= 0 ? g_pin_value : (int)PIN) : 0xFFu;
 }
 
 static bool hw_take(void *ctx, uint8_t port, uint8_t pin)
@@ -175,6 +178,7 @@ static void fresh_at(uint32_t t0)
     g_sup_mv = 0;
     g_sup_ma = 0;
     g_target = 1u + CH;
+    g_pin_unknown = false;
     port_fresh();
     g_ms = t0;
     link_dev_init(&g_dev, k_pages, 1u, NULL, g_ms);
@@ -258,6 +262,13 @@ static void publish(void)
     f.armed = g_armed;
     f.card = g_card;
     f.target = g_target;
+    /* The pins as the binding gives them to the panel. */
+    for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
+        f.port_pin[i] = hw_pin(NULL, i);
+        if (!g_pin_unknown && f.port_pin[i] != 0xFFu) {
+            f.port_pin_known |= (uint8_t)(1u << i);
+        }
+    }
     f.supply_read = g_set_read;
     f.set_mv = g_set_mv;
     kst_prog_feed(&g_p, &f);
@@ -1507,10 +1518,10 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
                  "0000000000000A00100000\n") != NULL);
     CHECK(strstr(g_file,
                  "target=00C8C81448770465") != NULL);
-    CHECK(strstr(g_file, "\nport=0\ncheck=") != NULL);
+    CHECK(strstr(g_file, "\nport=0\npin=0D\ncheck=") != NULL);
     /* The check is CRC-16/CCITT-FALSE of the lines before it; the value is
      * from an independent bitwise computation. */
-    CHECK(strstr(g_file, "\nport=0\ncheck=C56D\n") != NULL);
+    CHECK(strstr(g_file, "\nport=0\npin=0D\ncheck=AA87\n") != NULL);
     CHECK(strstr(g_file, "\n00=") == NULL);
     memcpy(at_write, g_file, sizeof(at_write));
     settle();
@@ -1519,7 +1530,7 @@ TEST_CASE(the_journal_reaches_the_card_before_the_write_is_sent)
     frames(2);
     CHECK_EQ(g_file_writes, 2);
     CHECK(strstr(g_file, "journal") == NULL);
-    CHECK_STR_EQ(g_file, "RCBENCH KST 1\ncheck=72DB\n");
+    CHECK_STR_EQ(g_file, "RCBENCH KST 2\ncheck=2788\n");
 
     /* A panel that starts on the file of the write: the servo is in
      * doubt until it is read. */
@@ -1869,7 +1880,7 @@ TEST_CASE(a_journal_whose_servo_is_unchanged_or_complete_asks)
     CHECK_EQ(kst_prog_journal_asks(&g_p), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     frames(2);
-    CHECK_STR_EQ(g_file, "RCBENCH KST 1\ncheck=72DB\n");
+    CHECK_STR_EQ(g_file, "RCBENCH KST 2\ncheck=2788\n");
 
     /* Complete: every register of the target is on the servo. */
     target = sv;
@@ -1919,7 +1930,7 @@ TEST_CASE(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write)
     CHECK_EQ(kst_prog_read(&g_p), KST_PROG_MSG_NONE);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_JOURNAL_OTHER);
-    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, (CH + 1u) | ((PIN + 1u) << 8));
     CHECK_EQ(kst_prog_message(&g_p)->level, KST_PROG_DANGER);
     CHECK(kst_prog_journal_other(&g_p));
     CHECK(kst_prog_journal(&g_p));
@@ -1936,7 +1947,7 @@ TEST_CASE(a_servo_that_is_not_the_journals_takes_no_restore_and_no_write)
     CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
     CHECK_EQ(kst_prog_write_check(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
     CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
-    CHECK_EQ(kst_prog_message(&g_p)->arg, CH + 1u);
+    CHECK_EQ(kst_prog_message(&g_p)->arg, (CH + 1u) | ((PIN + 1u) << 8));
     CHECK_EQ(kst_prog_release(&g_p), KST_PROG_MSG_JOURNAL_OTHER);
     frames(50);
     {
@@ -4612,6 +4623,7 @@ static size_t text_of(char *out, bool journal)
     kst_prog_init(&p);
     p.journal = journal;
     p.journal_port = LINK_PG_PORTS_MAX - 1u;
+    p.journal_pin = KST_PROG_PIN_LAST;
     p.journal_img = sim_bench_image();
     p.journal_img.r[0x05] = 0xABu;
     p.journal_target = sim_bench_image();
@@ -4639,6 +4651,9 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
                  journal ? KST_PROG_MSG_JOURNAL : KST_PROG_MSG_NONE);
         if (journal) {
             CHECK_EQ(p.journal_port, LINK_PG_PORTS_MAX - 1u);
+            CHECK_EQ(kst_prog_journal_pin(&p), KST_PROG_PIN_LAST);
+            CHECK_EQ(kst_prog_message(&p)->arg,
+                     LINK_PG_PORTS_MAX | ((KST_PROG_PIN_LAST + 1u) << 8));
             CHECK_EQ(p.journal_img.r[0x05], 0xAB);
             CHECK_EQ(p.journal_target.r[0x1F], 0xCD);
         }
@@ -4649,6 +4664,154 @@ TEST_CASE(the_file_text_is_read_back_as_it_was_written)
     CHECK_EQ(kst_prog_file_text(&p, again, KST_PROG_FILE_MAX - 1u), 0);
     /* The longest text fits. */
     CHECK(text_of(text, true) + 1u <= KST_PROG_FILE_MAX);
+}
+
+/* The images of the texts below; each check value is from an independent
+ * bitwise CRC-16/CCITT-FALSE. */
+#define REC_IMAGES \
+    "journal=00F5F5144877046541A40D805307140096960001010000000000000A00100000\n" \
+    "target=00C8C8144877046541A40D805307140096960001010000000000000A00100000\n"
+
+/* A record a panel of the file's version 1 wrote: no pin line.  It stands,
+ * and its messages name the port. */
+TEST_CASE(a_record_of_version_1_stands_and_names_its_port)
+{
+    static const char v1[] =
+        "RCBENCH KST 1\n" REC_IMAGES "port=2\ncheck=A30F\n";
+    char again[KST_PROG_FILE_MAX];
+    kst_prog_t p;
+
+    kst_prog_init(&p);
+    CHECK(kst_prog_file_whole(v1, strlen(v1)));
+    CHECK(kst_prog_file_load(&p, v1, strlen(v1)));
+    CHECK(kst_prog_journal(&p));
+    CHECK_EQ(kst_prog_message(&p)->id, KST_PROG_MSG_JOURNAL);
+    CHECK_EQ(kst_prog_journal_port(&p), 2u);
+    CHECK_EQ(kst_prog_journal_pin(&p), KST_PROG_NO_PIN);
+    CHECK_EQ(kst_prog_message(&p)->arg, 3u);
+    CHECK_EQ(kst_prog_journal_arg(&p), 3u);
+    /* Written again, it is a text of version 2 with no pin known. */
+    CHECK(kst_prog_file_text(&p, again, sizeof(again)) != 0u);
+    CHECK_STR_EQ(again, "RCBENCH KST 2\n" REC_IMAGES
+                        "port=2\npin=FF\ncheck=602A\n");
+    kst_prog_init(&p);
+    CHECK(kst_prog_file_load(&p, again, strlen(again)));
+    CHECK_EQ(kst_prog_journal_pin(&p), KST_PROG_NO_PIN);
+}
+
+/* The pin line: GP0 to GP47 named, FF and any pin above GP47 not known --
+ * the record stands by its port.  A line out of its place, a digit that is
+ * none and a version not known make the text not whole. */
+TEST_CASE(the_record_names_a_pin_of_the_coprocessor_only)
+{
+    static const struct {
+        const char *text;
+        bool whole;
+        uint8_t pin;
+    } k[] = {
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=00\ncheck=A87D\n",
+          true, 0u },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=2F\ncheck=64E2\n",
+          true, KST_PROG_PIN_LAST },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=30\ncheck=F12D\n",
+          true, KST_PROG_NO_PIN },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=FF\ncheck=602A\n",
+          true, KST_PROG_NO_PIN },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\ncheck=57D3\n",
+          false, 0 },
+        { "RCBENCH KST 1\n" REC_IMAGES "port=2\npin=0D\ncheck=2DE9\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=0G\ncheck=39B3\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=ZZ\ncheck=1036\n",
+          false, 0 },
+        { "RCBENCH KST 3\n" REC_IMAGES "port=2\npin=0D\ncheck=53E7\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npon=0D\ncheck=E101\n",
+          false, 0 },
+        { "RCBENCH KST 2\n" REC_IMAGES "port=2\npin=0D;check=4A92\n",
+          false, 0 },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        kst_prog_t p;
+
+        kst_prog_init(&p);
+        CHECK_EQ(kst_prog_file_whole(k[i].text, strlen(k[i].text)),
+                 k[i].whole);
+        CHECK_EQ(kst_prog_file_load(&p, k[i].text, strlen(k[i].text)),
+                 k[i].whole);
+        CHECK_EQ(kst_prog_journal(&p), k[i].whole);
+        if (!k[i].whole) {
+            CHECK_EQ(kst_prog_message(&p)->id, KST_PROG_MSG_FILE_BAD);
+            continue;
+        }
+        CHECK_EQ(kst_prog_journal_port(&p), 2u);
+        CHECK_EQ(kst_prog_journal_pin(&p), k[i].pin);
+        CHECK_EQ(kst_prog_message(&p)->arg,
+                 k[i].pin == KST_PROG_NO_PIN
+                     ? 3u : 3u | ((k[i].pin + 1u) << 8));
+    }
+}
+
+/* The pin is the one of the port the write went through, as the feed has
+ * it at the write; a port the binding gives no pin records none. */
+TEST_CASE(the_journal_records_the_pin_of_its_port_at_the_write)
+{
+    up_enabled();
+    g_card = true;
+    frame();
+    edit(KST_F_DUTY, 200);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(2);
+    CHECK(kst_prog_journal(&g_p));
+    CHECK_EQ(kst_prog_journal_port(&g_p), CH);
+    CHECK_EQ(kst_prog_journal_pin(&g_p), PIN);
+    CHECK_EQ(kst_prog_journal_arg(&g_p), (CH + 1u) | ((PIN + 1u) << 8));
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+
+    CHECK(!kst_prog_journal(&g_p));
+
+    /* The panel with no pin known for the port: the next write records
+     * none, though the one before recorded GP13. */
+    g_pin_unknown = true;
+    frame();
+    edit(KST_F_DUTY, 210);
+    CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+    frames(2);
+    CHECK(kst_prog_journal(&g_p));
+    CHECK_EQ(kst_prog_journal_pin(&g_p), KST_PROG_NO_PIN);
+    CHECK_EQ(kst_prog_journal_arg(&g_p), CH + 1u);
+    CHECK(strstr(g_file, "\nport=0\npin=FF\ncheck=") != NULL);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+}
+
+/* The bounds of the pin the feed gives: GP47 is recorded, GP48 and above
+ * are not a pin of the coprocessor and the record stands by its port. */
+TEST_CASE(the_journal_records_a_pin_up_to_gp47_only)
+{
+    static const struct { int pin; uint8_t want; const char *line; } k[] = {
+        { 0,  0,                 "\nport=0\npin=00\ncheck=" },
+        { 47, 47,                "\nport=0\npin=2F\ncheck=" },
+        { 48, KST_PROG_NO_PIN,   "\nport=0\npin=FF\ncheck=" },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        up_enabled();
+        g_pin_value = k[i].pin;
+        g_card = true;
+        frame();
+        edit(KST_F_DUTY, 200);
+        CHECK_EQ(kst_prog_write(&g_p), KST_PROG_MSG_NONE);
+        frames(2);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK_EQ(kst_prog_journal_pin(&g_p), k[i].want);
+        CHECK(strstr(g_file, k[i].line) != NULL);
+        settle();
+    }
+    g_pin_value = -1;
 }
 
 TEST_CASE(a_file_that_is_not_whole_changes_nothing)
@@ -4681,7 +4844,7 @@ TEST_CASE(a_file_that_is_not_whole_changes_nothing)
             "RCBENCH KST 1\n00=00\n",                 /* a backup cut short */
             "RCBENCH KST 1\njunk\n",
             "RCBENCH KST 1\n00=0g\n01=00\n",
-            "RCBENCH KST 2\n",
+            "RCBENCH KST 3\n",
         };
 
         for (unsigned i = 0; i < sizeof(bodies) / sizeof(bodies[0]); ++i) {
@@ -6493,6 +6656,83 @@ TEST_CASE(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make)
 
 /* ----------------------------------- soft rules against the session's image */
 
+/*
+ * The session's restore on a locked session with no servo read records the
+ * pin its port has at the restore: GP13 as the feed gives it.  A record
+ * discarded before leaves no pin behind, and a binding that moved the port
+ * since is the one recorded; a port with no pin records none.
+ */
+TEST_CASE(a_locked_restore_with_no_servo_read_records_the_pin_of_its_port)
+{
+    static const struct {
+        bool discarded;     /* a record of GP13 discarded first */
+        bool known;         /* the feed has a pin for the port  */
+        uint8_t pin;        /* and which                        */
+        uint8_t want;
+        const char *line;
+    } k[] = {
+        { false, true,  13u, 13u,             "\nport=0\npin=0D\ncheck=" },
+        { true,  true,  9u,  9u,              "\nport=0\npin=09\ncheck=" },
+        { true,  false, 13u, KST_PROG_NO_PIN, "\nport=0\npin=FF\ncheck=" },
+    };
+
+    for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        kst_prog_restore_t plan;
+        char out[KST_PROG_FILE_MAX];
+        size_t n;
+
+        by_hand();
+        g_p.have_servo = false;
+        g_f.have_image = false;
+        g_f.card = true;
+        g_f.port_pin[CH] = 13u;
+        g_f.port_pin_known = (uint8_t)(1u << CH);
+        g_f.rd.flags = LINK_KS_F_IN_MODE | LINK_KS_F_BACKUP | LINK_KS_F_LOCKED;
+        pass(1);
+        while (kst_prog_take(&g_p, &(kst_prog_cmd_t){ 0 })) {
+        }
+        if (k[i].discarded) {
+            kst_prog_t rec;
+            char text[KST_PROG_FILE_MAX];
+            size_t len;
+
+            kst_prog_init(&rec);
+            rec.journal = true;
+            rec.journal_open = true;
+            rec.journal_port = CH;
+            rec.journal_pin = 13u;
+            rec.journal_img = sim_bench_image();
+            rec.journal_target = rec.journal_img;
+            len = kst_prog_file_text(&rec, text, sizeof(text));
+            CHECK(len != 0u);
+            CHECK(kst_prog_file_load(&g_p, text, len));
+            CHECK_EQ(kst_prog_journal_pin(&g_p), 13u);
+            kst_prog_forget(&g_p);
+            CHECK_EQ(msg(), KST_PROG_MSG_FORGOTTEN);
+            CHECK(!kst_prog_journal(&g_p));
+            CHECK_EQ(kst_prog_journal_pin(&g_p), KST_PROG_NO_PIN);
+            /* The card takes the text with no record. */
+            CHECK(kst_prog_file_take(&g_p, out, sizeof(out)) != 0u);
+            kst_prog_file_done(&g_p, true);
+            g_f.port_pin[CH] = k[i].pin;
+            g_f.port_pin_known = k[i].known ? (uint8_t)(1u << CH) : 0u;
+            pass(1);
+        }
+        CHECK(!kst_prog_journal(&g_p));
+        CHECK(kst_prog_restore_offered(&g_p, KST_PROG_FROM_SESSION));
+        CHECK_EQ(kst_prog_restore_plan(&g_p, KST_PROG_FROM_SESSION, &plan),
+                 KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_enable(&g_p, true), KST_PROG_MSG_NONE);
+        CHECK_EQ(kst_prog_restore(&g_p, &plan), KST_PROG_MSG_NONE);
+        CHECK(kst_prog_journal(&g_p));
+        CHECK_EQ(kst_prog_journal_pin(&g_p), k[i].want);
+        n = kst_prog_file_take(&g_p, out, sizeof(out));
+        CHECK(n > 0u);
+        out[n < sizeof(out) ? n : sizeof(out) - 1u] = 0;
+        CHECK(strstr(out, k[i].line) != NULL);
+    }
+}
+
 TEST_CASE(a_confirmed_soft_limit_is_asked_again_further_out)
 {
     const kst_image_t sv = sim_bench_image();
@@ -6958,6 +7198,10 @@ int main(void)
     RUN(the_state_follows_the_port);
     RUN(the_file_text_is_read_back_as_it_was_written);
     RUN(a_file_that_is_not_whole_changes_nothing);
+    RUN(a_record_of_version_1_stands_and_names_its_port);
+    RUN(the_record_names_a_pin_of_the_coprocessor_only);
+    RUN(the_journal_records_the_pin_of_its_port_at_the_write);
+    RUN(the_journal_records_a_pin_up_to_gp47_only);
     RUN(the_file_is_written_once_per_change_and_only_to_a_card);
     RUN(every_outcome_of_a_write_says_what_it_wrote);
     RUN(a_nack_after_the_command_leaves_the_image_unusable);
@@ -6977,6 +7221,7 @@ int main(void)
     RUN(without_a_gate_an_unanswered_start_leaves_the_servo_in_doubt);
     RUN(a_record_is_held_against_the_servo_whenever_the_card_comes);
     RUN(a_restore_with_no_servo_read_leaves_the_record_it_did_not_make);
+    RUN(a_locked_restore_with_no_servo_read_records_the_pin_of_its_port);
     RUN(a_confirmed_soft_limit_is_asked_again_further_out);
     RUN(a_value_on_the_other_side_of_the_servos_is_asked_again);
     RUN(the_soft_limits_compare_with_the_servo_as_the_session_found_it);
