@@ -177,3 +177,13 @@ export function shareHash(hash: string, defaults: Options, catalogue: Catalogue)
   // The start language is set so that a language key in the hash is written and none is added.
   return `#${formatHash(testObjectTicks(parsed.selection, catalogue), lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
 }
+
+/**
+ * An address as it goes into the clipboard, the print header and a document:
+ * the part before '#' as it is, the hash through shareHash. An address
+ * without '#' is returned as it is.
+ */
+export function shareAddress(href: string, defaults: Options, catalogue: Catalogue): string {
+  const at = href.indexOf('#');
+  return at < 0 ? href : href.slice(0, at) + shareHash(href.slice(at), defaults, catalogue);
+}

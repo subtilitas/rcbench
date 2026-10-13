@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve, alwaysOn } from '../src/core.ts';
-import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareHash, testObjectTicks, withoutFormerTicks } from '../src/hash.ts';
+import { HASH_VERSION, MAX_HASH, MAX_IDS, MAX_REPORTED, formatHash, parseHash, reportIds, shareAddress, shareHash, testObjectTicks, withoutFormerTicks } from '../src/hash.ts';
 import { describe, sweep } from './geometry.ts';
 
 const base = (): Selection => ({ functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
@@ -364,4 +364,19 @@ test('the hash of a document holds no former tick', () => {
   assert.equal(share('#v=1&p=sd,usbtap&o=osoyoo,pd&l=de'), '#v=1&p=sd&o=osoyoo,pd&l=de');
   // An id of that spelling under f= or o= is no former tick: the hash stays as it is.
   assert.equal(share('#v=1&f=usbtap'), '#v=1&f=usbtap');
+});
+
+test('the address to copy, print and put in a document is the page address with the hash of a document', () => {
+  const address = (href: string): string => shareAddress(href, DEFAULT_OPTIONS, CATALOGUE);
+  const page = 'https://subtilitas.github.io/rcbench/configurator/';
+  // The former tick, a function without a tick and a test object leave the hash; the part before '#' stays.
+  assert.equal(address(`${page}#v=1&f=supply&p=usbtap`), `${page}#v=1&f=supply`);
+  assert.equal(address(`${page}#v=1&f=supply&p=usbtap&l=de`), `${page}#v=1&f=supply&l=de`);
+  assert.equal(address(`${page}#v=1&p=sd,usbtap&o=osoyoo,pd&l=en`), `${page}#v=1&p=sd&o=osoyoo,pd&l=en`);
+  assert.equal(address(`${page}#v=1&p=servo`), `${page}#v=1&f=servo`);
+  assert.equal(address(`http://localhost:4611/?p=usbtap#v=1&p=usbtap`), 'http://localhost:4611/?p=usbtap#v=1');
+  // An address the page writes, one without a hash and one with an empty hash stay as they are.
+  for (const href of [`${page}#v=1&f=servo,esc&p=pdmini`, `${page}#v=1&f=usbtap`, page, `${page}#`, `${page}#v=2&p=usbtap`]) {
+    assert.equal(address(href), href, href);
+  }
 });
