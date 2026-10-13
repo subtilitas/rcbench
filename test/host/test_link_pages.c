@@ -1320,10 +1320,22 @@ TEST_CASE(outputs_under_an_armed_bank_takes_no_change)
  */
 TEST_CASE(a_pulse_longer_than_its_frame_needs_no_new_register)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 16u);
     CHECK_EQ(LINK_MINOR_PULSE_FRAME, 16u);
     CHECK(LINK_MINOR_PULSE_FRAME > LINK_MINOR_KST_LEAVE);
     CHECK_EQ(LINK_CC_CEILING_US, 2500u);
+}
+
+/*
+ * 4.17 adds one refusal code after the ones there were: BUSY, which the TONE
+ * page says for a pin something else holds.  No register moves.
+ */
+TEST_CASE(a_busy_pin_is_a_refusal_code_of_its_own)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 17u);
+    CHECK_EQ(LINK_MINOR_TONE_BUSY, 17u);
+    CHECK(LINK_MINOR_TONE_BUSY > LINK_MINOR_PULSE_FRAME);
+    CHECK_EQ(LINK_NACK_NOT_ARMED, 5);
+    CHECK_EQ(LINK_NACK_BUSY, 6);
 }
 
 int main(void)
@@ -1368,5 +1380,6 @@ int main(void)
     RUN(chan_cfg_under_an_armed_bank_takes_a_surfaces_range_and_no_more);
     RUN(outputs_under_an_armed_bank_takes_no_change);
     RUN(a_pulse_longer_than_its_frame_needs_no_new_register);
+    RUN(a_busy_pin_is_a_refusal_code_of_its_own);
     return test_summary("link_pages");
 }

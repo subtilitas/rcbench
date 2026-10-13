@@ -183,9 +183,12 @@ sense_err_t ina3221_read_flags(ina3221_t *d, uint16_t *mask_enable);
  *  channels, 1.1 ms conversions, a result every 6.6 ms.  Another value
  *  than the one written is read a second time at once, so one corrupted
  *  read is no reset; when both differ the part is taken offline
- *  (sense_part_lost()), @p lost is set and SENSE_OK returned.  @p lost is
- *  false otherwise.  One transaction, two on a first mismatch: 120 µs of
- *  bus time each at 400 kHz. */
+ *  (sense_part_lost()), @p lost is set and SENSE_OK returned.  A read of
+ *  FFFFh, the bus that no part drives, takes it offline on that read
+ *  without a second.  @p lost is false otherwise.  The readings are not
+ *  checked for all ones: a shunt or bus register FFFFh is code -1 and
+ *  taken.  One transaction, two on a first mismatch other than FFFFh:
+ *  120 µs of bus time each at 400 kHz. */
 sense_err_t ina3221_verify(ina3221_t *d, bool *lost);
 
 #ifdef __cplusplus

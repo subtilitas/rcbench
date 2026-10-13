@@ -259,9 +259,11 @@ sense_err_t ina228_clear_totals(ina228_t *d);
  *  the truth for a set-up at ADCRANGE 1.  Another value than the one
  *  written is read a second time at once, so one corrupted read is no
  *  reset; when both differ the part is taken offline (sense_part_lost()),
- *  @p lost is set and SENSE_OK returned.  @p lost is false otherwise.  One
- *  transaction, two on a first mismatch: 120 µs of bus time each at
- *  400 kHz. */
+ *  @p lost is set and SENSE_OK returned.  A read of FFFFh, the bus that no
+ *  part drives, takes it offline on that read without a second.  @p lost
+ *  is false otherwise.  The readings are not checked for all ones: CURRENT
+ *  FFFFFFh is code -1 and taken.  One transaction, two on a first
+ *  mismatch other than FFFFh: 120 µs of bus time each at 400 kHz. */
 sense_err_t ina228_verify(ina228_t *d, bool *lost);
 
 #ifdef __cplusplus

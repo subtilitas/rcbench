@@ -648,6 +648,54 @@ static bool write_en(pdmini_t *d, uint32_t now)
     return true;
 }
 
+/*
+ * The reading furthest past its due by @p margin ms or more, started;
+ * false for none.  Furthest past its due, so a slow module answering every
+ * display read near its period does not starve the others.  Unsigned, so a
+ * reading untaken for 2^31 ms or more -- a module first seen 25 days after
+ * start -- is late rather than early.
+ */
+static bool poll(pdmini_t *d, uint32_t now, uint32_t margin)
+{
+    struct { uint32_t *last; uint32_t period; uint8_t cmd; } polls[4] = {
+        { &d->last_display, PDMINI_DISPLAY_MS, PDMINI_READ_DISPLAY },
+        { &d->last_state,   PDMINI_STATE_MS,   PDMINI_READ_STATE },
+        /* An input that has stopped answering is asked once a second, as
+         * the read before a set point asks it, sharing its time. */
+        { &d->last_input,   d->input_known ? PDMINI_STATE_MS : PDMINI_SLOT_MS,
+          PDMINI_READ_INPUT },
+        { &d->last_slot,    PDMINI_SLOT_MS,    PDMINI_READ_ID },
+    };
+    int best = -1;
+    uint32_t late_most = 0u;
+    for (int k = 0; k < 4; ++k) {
+        if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
+            continue;   /* the confirming read is the next state read */
+        }
+        /* Taken to have no input reading: still asked now and then, so a
+         * module that only lost a few packets is capped once it answers. */
+        const uint32_t period =
+            (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
+             && d->input_misses >= PDMINI_INPUT_MISSES)
+                ? PDMINI_INPUT_RETRY_MS : polls[k].period;
+        const uint32_t since = now - *polls[k].last;
+        if (since < period || since - period < margin) {
+            continue;
+        }
+        const uint32_t late = since - period;
+        if (best < 0 || late > late_most) {
+            late_most = late;
+            best = k;
+        }
+    }
+    if (best < 0) {
+        return false;
+    }
+    *polls[best].last = now;
+    read1(d, now, polls[best].cmd);
+    return true;
+}
+
 /* The next transaction, or false for none now. */
 static bool next_job(pdmini_t *d, uint32_t now)
 {
@@ -655,6 +703,10 @@ static bool next_job(pdmini_t *d, uint32_t now)
      * chosen here starts them again. */
     const uint8_t on_step = d->on_step;
     d->on_step = 0u;
+    /* An overdue reading goes before the set points one at a time: another
+     * job goes between two. */
+    const bool polled_late = d->polled_late;
+    d->polled_late = false;
 
     /*
      * Who is there, before anything else is said to it.  An OFF owed to a
@@ -756,18 +808,32 @@ static bool next_job(pdmini_t *d, uint32_t now)
         read1(d, now, PDMINI_READ_INPUT);
         return true;
     }
-    /* Due, it is read before a set point or an ON as well: set points
+    /*
+     * Due, it is read before a set point write or an ON as well: set points
      * changing faster than the readings come round -- a slider dragged --
-     * or an ON after a pause, are judged on a fresh reading. */
+     * or an ON after a pause, are judged on a fresh reading.  Only with a
+     * set point to write or an ON to make: at rest it is a reading like the
+     * others, and a module slow to answer leaves the display its share.
+     * Before the reads for an ON, not between them: a module answering
+     * 145 ms or more late takes longer than PDMINI_STATE_MS for them, and
+     * the ON would never be written.  It counts as the reading that goes
+     * ahead of a set point (polled_late), so a set point follows it.
+     */
     const bool fallback_due = !d->input_seen
                               && d->input_misses >= PDMINI_INPUT_MISSES
                               && (uint32_t)(now - d->last_input)
                                      >= PDMINI_INPUT_RETRY_MS;
-    if (d->want_set
+    const bool to_write =
+        d->want_set
+        && ((d->slot >= 0 && d->data_known && !d->data_pending
+             && (d->st.set_mv != target_mv(d) || d->st.set_ma != d->want_ma))
+            || (d->want_output && !d->st.output && !d->en_pending));
+    if (to_write && on_step == 0u
         && ((d->input_known
              && (uint32_t)(now - d->last_input) >= PDMINI_STATE_MS)
             || fallback_due)) {
         d->last_input = now;
+        d->polled_late = true;
         read1(d, now, PDMINI_READ_INPUT);
         return true;
     }
@@ -785,6 +851,37 @@ static bool next_job(pdmini_t *d, uint32_t now)
         if (!data_paused) {
             d->data_tries = 0u;
         }
+    }
+    /*
+     * A reading PDMINI_POLL_LATE_MS past its due goes before the set
+     * points: a slider dragged with no confirm slide hands a new set point
+     * every 50 ms or so, its write and read-back take about as long, and
+     * the readings would otherwise stand until the drag stops.  The display
+     * -- long enough for the panel to take the readings as stopped and cut
+     * the output -- and the state, which shows an output the module
+     * switched on while an OFF is asked, or off by its protection.  One at
+     * a time, with a set-point job or the reads for an ON between two, so
+     * those still go out with a module that answers late; with one that
+     * answers at once, each reading goes ahead at most once per its period
+     * and PDMINI_POLL_LATE_MS.  Not between the reads before an ON, which
+     * go one after the other.
+     */
+    if (on_step == 0u && !polled_late
+        && poll(d, now, PDMINI_POLL_LATE_MS)) {
+        d->polled_late = true;
+        return true;
+    }
+    /* The state is not held back by the one-at-a-time rule: an overdue
+     * state read goes straight after another reading, so a tripped output,
+     * or one on while an OFF is asked, is seen within 2.1 s on a module
+     * answering up to 390 ms late -- the display waiting instead. */
+    if (on_step == 0u && polled_late && !d->en_pending
+        && (uint32_t)(now - d->last_state)
+               >= PDMINI_STATE_MS + PDMINI_POLL_LATE_MS) {
+        d->last_state  = now;
+        d->polled_late = true;
+        read1(d, now, PDMINI_READ_STATE);
+        return true;
     }
     if (d->want_set && !data_paused && input_ok) {
         if (d->slot < 0) {
@@ -843,50 +940,8 @@ static bool next_job(pdmini_t *d, uint32_t now)
         start(d, now, req, 2u, false);
         return true;
     }
-    /*
-     * And what it is doing: whichever reading is furthest past its due,
-     * so a slow module answering every display read near its period does
-     * not starve the others.  Unsigned, so a reading untaken for 2^31 ms
-     * or more -- a module first seen 25 days after start -- is late rather
-     * than early.
-     */
-    struct { uint32_t *last; uint32_t period; uint8_t cmd; } polls[4] = {
-        { &d->last_display, PDMINI_DISPLAY_MS, PDMINI_READ_DISPLAY },
-        { &d->last_state,   PDMINI_STATE_MS,   PDMINI_READ_STATE },
-        /* An input that has stopped answering is asked once a second, as
-         * the read before a set point asks it, sharing its time. */
-        { &d->last_input,   d->input_known ? PDMINI_STATE_MS : PDMINI_SLOT_MS,
-          PDMINI_READ_INPUT },
-        { &d->last_slot,    PDMINI_SLOT_MS,    PDMINI_READ_ID },
-    };
-    int best = -1;
-    uint32_t late_most = 0u;
-    for (int k = 0; k < 4; ++k) {
-        if (polls[k].cmd == PDMINI_READ_STATE && d->en_pending) {
-            continue;   /* the confirming read is the next state read */
-        }
-        /* Taken to have no input reading: still asked now and then, so a
-         * module that only lost a few packets is capped once it answers. */
-        const uint32_t period =
-            (polls[k].cmd == PDMINI_READ_INPUT && !d->input_seen
-             && d->input_misses >= PDMINI_INPUT_MISSES)
-                ? PDMINI_INPUT_RETRY_MS : polls[k].period;
-        const uint32_t since = now - *polls[k].last;
-        if (since < period) {
-            continue;
-        }
-        const uint32_t late = since - period;
-        if (best < 0 || late > late_most) {
-            late_most = late;
-            best = k;
-        }
-    }
-    if (best >= 0) {
-        *polls[best].last = now;
-        read1(d, now, polls[best].cmd);
-        return true;
-    }
-    return false;
+    /* And what it is doing. */
+    return poll(d, now, 0u);
 }
 
 /*
