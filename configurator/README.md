@@ -411,7 +411,10 @@ decimal comma.
 
 A change of an input writes the link and the stored setup, keeps the focus
 on the input and announces the hottest resistor and the warning or the hint
-in the live region. "Start over" sets the default values. The PDF lists the
+in the live region. "Start over" sets the default values. The "have it"
+token `sim` names no resistance and no rating: a change of either takes the
+"have it" tick off the row of the resistors, a change of pack or wiring
+keeps it. The PDF lists the
 pack, the figures, the warning or the hint and the load case under the part.
 Its file name follows the values. Print leaves out the 4 inputs: the name of
 the part and the load case name the values.

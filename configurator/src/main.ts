@@ -23,7 +23,7 @@ import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
 import { haveTicks, listCsv, listText } from './view/buy.ts';
 import { result, resultError, summary } from './view/result.ts';
-import { simSaid } from './view/sim.ts';
+import { haveAfterSim, simSaid } from './view/sim.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
 
@@ -530,6 +530,7 @@ function changeSim(select: HTMLSelectElement): void {
   const value = key === 'wiring' ? select.value : Number(select.value);
   const next = { ...sim, [key]: value } as SimSettings;
   if (!(key in sim) || !validSim(next)) return;
+  have = haveAfterSim(have, sim, next);
   sim = next;
   notices = [];
   pending = null;

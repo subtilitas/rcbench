@@ -5,7 +5,7 @@
 
 import type { Lang, SimSettings } from '../../contract.ts';
 import {
-  CELL_VOLTS, DEFAULT_SIM, SIM_CELLS, SIM_OHMS, SIM_WATTS, SIM_WIRINGS, ohmsText, sig, simHeat, voltsText, wattsText,
+  CELL_VOLTS, DEFAULT_SIM, SIM_CELLS, SIM_OHMS, SIM_PART, SIM_WATTS, SIM_WIRINGS, ohmsText, sig, simHeat, voltsText, wattsText,
 } from '../core.ts';
 import type { SimHeat } from '../core.ts';
 import { esc, t } from '../i18n.ts';
@@ -83,6 +83,18 @@ export function simBlock(view: View): string {
     + `<p class="hint" id="sim-basis">${esc(text.basis)}</p>`
     + (text.star ? `<p class="hint" id="sim-star">${esc(text.star)}</p>` : '')
     + '</div>';
+}
+
+/**
+ * The "have it" ticks after a change of the values. The row of the motor
+ * simulator names the resistance and the rating, its token does not: a
+ * change of either leaves the tick of that row, as the resistors the
+ * visitor has are not the ones the row now names. Pack and wiring leave the
+ * row as it is.
+ */
+export function haveAfterSim(have: readonly string[], before: SimSettings, after: SimSettings): string[] {
+  if (before.ohms === after.ohms && before.watts === after.watts) return [...have];
+  return have.filter((token) => token !== SIM_PART && !token.startsWith(`${SIM_PART}.`));
 }
 
 /** What the live region says after a change of a value: the hottest resistor and the warning or the hint. */

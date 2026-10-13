@@ -19,8 +19,10 @@ history is in git.
   50 % of it. The current limit of the ESC is not modelled. The link key `m`
   stores the values that differ from the default; a link without it opens
   the default values. The name of the part, its row in the parts list, the
-  text and CSV copies and the PDF follow the values. The drawing of the
-  motor simulator shows no colour bands and names no resistance.
+  text and CSV copies and the PDF follow the values; a change of the
+  resistance or the rating takes the "have it" tick off that row. The
+  drawing of the motor simulator shows no colour bands and names no
+  resistance.
 - PICK A PIN has the protocol list of the Outputs screen, top left. It names
   the selected protocol; a pick selects it on both screens and writes
   nothing. Under it stand `N OF 8 SLOTS IN USE`, counted over every

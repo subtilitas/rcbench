@@ -15,7 +15,7 @@ import { optionsOf } from '../src/names.ts';
 import { listCsv, listText, partsList, searchUrl } from '../src/view/buy.ts';
 import type { View } from '../src/view/chooser.ts';
 import { result } from '../src/view/result.ts';
-import { packText, percent, simBlock, simPdfLines, simSaid, simText } from '../src/view/sim.ts';
+import { haveAfterSim, packText, percent, simBlock, simPdfLines, simSaid, simText } from '../src/view/sim.ts';
 import { NOW, fonts } from './export/helpers.ts';
 
 const URL = 'https://example.invalid/#v=1&p=sim';
@@ -195,4 +195,20 @@ test('every text of the block has its glyphs in both fonts of the PDF', () => {
   const text = [...seen].join('\n');
   assert.deepEqual(missing(regular, text), []);
   assert.deepEqual(missing(bold, text), []);
+});
+
+test('a change of the resistance or the rating leaves the "have it" tick of the resistor row; pack and wiring keep it', () => {
+  const have = ['panel', 'sim', 'wire.dmm'];
+  const d = DEFAULT_SIM;
+  assert.deepEqual(haveAfterSim(have, d, { ...d, ohms: 100 }), ['panel', 'wire.dmm']);
+  assert.deepEqual(haveAfterSim(have, d, { ...d, watts: 5 }), ['panel', 'wire.dmm']);
+  assert.deepEqual(haveAfterSim(have, d, { ...d, cells: 6 }), have);
+  assert.deepEqual(haveAfterSim(have, d, { ...d, wiring: 'star' }), have);
+  assert.deepEqual(haveAfterSim(have, d, d), have);
+  // A row of the part with a row id leaves as well; a part whose id only starts with "sim" stays.
+  assert.deepEqual(haveAfterSim(['sim.x', 'simx', 'panel'], d, { ...d, ohms: 1000 }), ['simx', 'panel']);
+  // The result is a new list: the list given stays as it is.
+  const given = ['sim'];
+  assert.notEqual(haveAfterSim(given, d, d), given);
+  assert.deepEqual(given, ['sim']);
 });

@@ -1,6 +1,7 @@
 // The heat calculation on the card of the motor simulator, by keyboard alone:
 // the 4 inputs change the figures, the warning and the hint, the link, the
-// name of the part, its row of the parts list and both copies.
+// name of the part, its row of the parts list, its "have it" tick and both
+// copies.
 
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -127,6 +128,33 @@ for (const lang of ['en', 'de'] as const) {
         await expect(page.locator('#sim-hot')).toHaveText(simText(lang, DEFAULT_SIM).hot);
         await expect(page.locator('.msg[role="alert"]')).toHaveCount(0);
         await expectFigures(page, lang, DEFAULT_SIM);
+        expect(seen).toEqual({ foreign: [], errors: [] });
+      });
+
+      test('a "have it" tick of the resistors stays with a new pack or wiring and leaves with a new resistance', async ({ page }) => {
+        const seen = watch(page);
+        await page.goto('about:blank');
+        await page.goto('./#v=1&f=tap');
+        await page.locator('#sim').waitFor();
+        await page.locator('body').focus();
+        await tabTo(page, 'have-sim');
+        await page.keyboard.press('Space');
+        await expect(page.locator('#have [data-h="sim"]')).toBeChecked();
+        await expect(page.locator('#buy [data-h="sim"]')).toHaveCount(0);
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&h=sim');
+        // Wiring: the row stays "Resistor 470 Ω, 2 W", the tick stays.
+        await tabTo(page, 'sim-wiring', true);
+        await page.keyboard.press('ArrowDown');
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&h=sim&m=star');
+        await expect(page.locator('#have [data-h="sim"]')).toBeChecked();
+        // Resistance: the row names other resistors, the tick leaves and the row is back under "Parts to buy".
+        await tabTo(page, 'sim-ohms', true);
+        await page.keyboard.press('ArrowDown');
+        await expect.poll(() => page.evaluate(() => location.hash)).toBe('#v=1&f=tap&m=560r,star');
+        await expect(page.locator('#have [data-h="sim"]')).toHaveCount(0);
+        await expect(page.locator('#buy [data-h="sim"]')).not.toBeChecked();
+        await expect(page.locator('#buy > li[data-part="sim"]')).toContainText(`3 × ${ORDER[lang]} 560 Ω, 2 W`);
+        await expect(page.locator('#sim-ohms')).toBeFocused();
         expect(seen).toEqual({ foreign: [], errors: [] });
       });
 
