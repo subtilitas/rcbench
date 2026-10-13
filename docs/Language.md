@@ -57,7 +57,7 @@ configurator, a manual or a datasheet, and the safety controls, which read
 the same in every language. A translated ARM would not match the word in the
 manual beside the bench.
 
-- The safety and drive controls: ARM, DISARM, ARMED, DISARMED, STOP, SWEEP,
+- The safety and drive controls: ARM, DISARM, ARMED, SAFE, STOP, SWEEP,
   PAUSE, TRIM, REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
   the SERVO button that moves the servo there reads ZENTRIEREN. HOLD stays
   English as the servo test's phase name. PAUSED, the sweep button of a
@@ -72,8 +72,8 @@ manual beside the bench.
   Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV
   (constant voltage), CC (constant current), STANDARD PWM, HELI CYCLIC,
   ESC STICK, BUS OFF, and the status band's BENCH and SIM.
-- Two state words short enough for their place: SAFE on the status band and
-  SILENT on the ANALYSER's verdict.
+- A state word short enough for its place: SILENT on the ANALYSER's verdict.
+  The bench states SAFE and ARMED read the same in every language.
 - The field's own terms: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
   Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
   Bad tail, tx err, rx err, bus err, Frame.

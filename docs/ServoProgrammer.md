@@ -45,16 +45,16 @@ before a write is relied on.
 - The port is in PWM (pulse-width modulation) or in programming, never both.
   While the port is in programming, the tester sends no pulse to it, and
   its **COMMANDED** row reads `---`.
-- Programming and an armed bench are exclusive. **CONNECT** on a bench that
-  is armed for any role, asked to arm or has a finger on **ARM** is refused with
+- Programming and the ARMED state are exclusive. **CONNECT** on a bench that
+  is ARMED for any role, asked to arm or has a finger on **ARM** is refused with
   `DISARM first: the port is not taken on an armed bench.` While the port
-  is held, from **CONNECT** until it reports PWM, no screen arms the bench:
+  is held, from **CONNECT** until it reports PWM, no screen switches the bench to ARMED:
   **ARM** on SERVO and on MOTOR & ESC is drawn disabled and takes no press,
   and a run of the ESC stick programmer does not start and says
   `Servo programmer holds a port: LEAVE on SERVO first.` An arm that
   reaches the bench another way is refused with the alert
   `no arm: the servo programmer holds a port`. **DISARM** and **STOP**
-  work in every state. On an armed bench the read, the verify, the write,
+  work in every state. While the bench is ARMED the read, the verify, the write,
   the restore and the pairing release are refused with the same line as
   **CONNECT**; **LEAVE** is taken.
 - With a PD mini answering, the port sets the servo's supply at **CONNECT**
@@ -82,11 +82,11 @@ active target in the TARGET row of the right card, with the pins:
 `PROG PORT GP13` in the warning colour, or `GP4` for the pins bound as SERVO
 PWM.
 **PWM TARGET** changes only
-with the bench disarmed, no sweep and no test running, and the port not in
+with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
 coprocessor for the other target. **PORT PWM** goes on under the same
 rule. It goes off with the port not in programming, no sweep and no test
-running, on an armed bench as on a disarmed one: **STOP** and **DISARM**
+running, while the bench is ARMED as on a SAFE one: **STOP** and **DISARM**
 end a sweep or a test. With **OUTPUTS** as target **PORT PWM** is locked.
 
 While the programmer has the port neither row changes: from **CONNECT** to
@@ -147,7 +147,7 @@ overlay is open again at the next entry.
 | `The programming port holds no pin. Nothing was sent.` | a slot of OUTPUTS holds the port's pin |
 | `The coprocessor has no such programming port.` | the coprocessor has fewer ports than the one asked for |
 | `Programming voltage or current is over the SUPPLY limits.` and `Lower it under MORE, or raise the limit. Nothing was set.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
-| `DISARM first: the port is not taken on an armed bench.` | the bench is armed or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
+| `DISARM first: the port is not taken on an armed bench.` | the bench is ARMED or asked to arm; the coprocessor refuses the same on its own with `The port is busy. Try again.` |
 | `The supply cannot give this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage the session runs at less than 0.7 V under the PD mini's input; the supply is not changed |
 | `Supply under 4.8 V. Programming needs 4.8 V or more.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the coprocessor |
 | `The supply did not switch within 3000 ms. Check it.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
@@ -950,7 +950,7 @@ shown. The wait a servo needs is not measured.
 | During the wait | Effect |
 | --- | --- |
 | **ABORT** | the port stays in programming mode with the session as it was; `Leaving was interrupted before the wait ended.`; **LEAVE** is taken again at once |
-| **STOP** or a disarm of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
+| **STOP** or a switch to SAFE of the bench, no PD mini answering | the same line; the port stays in programming mode and asks for **READ ALL** |
 | The supply's output reads off or is switched off: **STOP** with a PD mini answering, the PD mini's own protection | the same line; the supply stays off for 2000 ms, then the port is in PWM |
 | The link goes | as [a loss of the link](#stops-and-losses) |
 
@@ -1152,7 +1152,7 @@ of the files on a card held in memory. `test_kst_prog` runs the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
-10 001 ms as the leave's wait, an abort, a disarm and a supply that goes
+10 001 ms as the leave's wait, an abort, a switch to SAFE and a supply that goes
 off in the wait, a leave on link versions 4.13 and 4.14 with and without a
 PD mini, **STOP** during a leave, every limit at its edge, the 2 s holds on both sides of the
 threshold, every refusal and result with its line in both languages, the
