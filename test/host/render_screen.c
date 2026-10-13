@@ -1276,6 +1276,10 @@ int main(int argc, char **argv)
             motor_screen_push(&bench);
         }
         motor_screen_set_throttle(64.0f);
+        /* Two pins bound as motors, as the panel reads them from the
+         * binding. */
+        motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
+                                       true);
         /* The run ends for the held view, so the trace stops where the last
          * sample left it and the panel says it is holding one. */
         if (strcmp(view, "motor-held") == 0) {
@@ -1347,6 +1351,9 @@ int main(int argc, char **argv)
         supply_screen_settings_loaded();
         ui_router_goto(SCREEN_PROGRAMMER);
         programmer_screen_bench(0u, false, 0u, 0u, false);
+        /* A binding read, with a throttle on channel 0, as a bench with
+         * an ESC on it has. */
+        programmer_screen_set_throttle(true, 0x01u);
         tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
         stick_supply_off();                     /* a panel's readings, off */
         if (strcmp(view, "programmer-stick-hand-steps") == 0) {
@@ -2040,6 +2047,11 @@ int main(int argc, char **argv)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-model") == 0) {
+            /* No PD mini: the panel's model is the supply, and the line
+             * over the plot carries the MODELLED pill. */
+            supply_screen_set_model(true);
+        }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
@@ -2063,6 +2075,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo") != 0
                    && strcmp(view, "servo-ina") != 0
                    && strcmp(view, "servo-target") != 0
+                   && strcmp(view, "servo-model") != 0
                    && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
@@ -2101,6 +2114,9 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-result-ina") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0;
+    /* An arm covers the role of the screen that asked for it. */
+    st.armed_roles = !st.armed ? 0u
+                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

@@ -561,6 +561,8 @@ static struct {
     uint32_t      supply_gen;  /**< which ON, for the render side's ack */
     bool          link_up;
     bool          armed;
+    /** The roles the bank is armed for, OUT_ROLE_BIT()s; 0 disarmed. */
+    uint8_t       armed_roles;
     bool          arm_wanted;  /**< armed, or an arm waiting: arming_link_needed() */
     uint32_t      arm_gen;     /**< which arm, for the render side's ack */
     float         mcu_temp_c;
@@ -3292,9 +3294,29 @@ static uint16_t pct_to_hundredths(float pct)
  * True when the coprocessor acknowledged; a NACK (negative acknowledge) or
  * no answer is false.
  */
+/*
+ * What the far end was last armed with, the ARM value of the frame that
+ * armed it.  The control task's alone.
+ */
+static uint16_t s_arm_value;
+
+/*
+ * The ARM value for the roles the policy asked for: the screen's own role
+ * (MOTOR and the PROGRAMMER stick run the throttle, SERVO the surfaces).  A
+ * coprocessor older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
+ * arms its whole bank on it.
+ */
+static uint16_t arm_value_wanted(void)
+{
+    return outputs_arm_value_for(s_far_minor, arming_roles(&s_arm));
+}
+
 static bool control_write(bool armed, link_msg_t *reply)
 {
-    const uint16_t regs[2] = { armed ? 1u : 0u, s_throttle_hundredths };
+    /* The value the far end was armed with, written again: a different
+     * non-zero ARM is refused while it is armed (LINK_MINOR_ARM_ROLE). */
+    const uint16_t regs[2] = { armed ? s_arm_value : 0u,
+                               s_throttle_hundredths };
     return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
            && reply->op == LINK_OP_ACK;
 }
@@ -3319,8 +3341,9 @@ static bool control_write(bool armed, link_msg_t *reply)
 static bool control_arm(link_msg_t *reply)
 {
     const bool owed = atomic_exchange(&s_poles_owed, false);
+    const uint16_t arm = arm_value_wanted();
     const uint16_t regs[LINK_CT_ARM_FRAME] = {
-        [LINK_CT_ARM]         = 1u,
+        [LINK_CT_ARM]         = arm,
         [LINK_CT_THROTTLE]    = s_throttle_hundredths,
         [LINK_CT_MOTOR_POLES] = (uint16_t)atomic_load(&s_poles_value),
     };
@@ -3329,6 +3352,9 @@ static bool control_arm(link_msg_t *reply)
                     && reply->op == LINK_OP_ACK;
     if (!ok && owed) {
         atomic_store(&s_poles_owed, true);
+    }
+    if (ok) {
+        s_arm_value = arm;
     }
     return ok;
 }
@@ -3823,7 +3849,7 @@ static prog_link_t        s_prog_link;
 static atomic_uint        s_prog_want_target;
 static atomic_bool        s_prog_want_pwm;
 static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
-/* Where the tester's commands go, for the SERVO screen's target line:
+/* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target
  * with another's pin or pulse.  No link until a coprocessor answers. */
@@ -4198,7 +4224,7 @@ static void escsim_load(void)
         s_escsim_runs_seen = runs;
         s_escsim_live = true;
     }
-    const float pct = outputs_armed(&s_out)
+    const float pct = outputs_role_armed(&s_out, OUT_ROLE_THROTTLE)
                           ? (float)s_throttle_hundredths / 100.0f : -1.0f;
     const int32_t ma = esc_sim_step(&s_escsim, now_ms(), s_supply_on, pct);
     if (s_supply.output) {
@@ -4236,6 +4262,13 @@ static void supply_step(float step_s)
     if (!s_supply.online && s_supply_on) {
         supply_switch(false);
         control_alert(TR(ALERT_SUPPLY_SILENT));
+    } else if (s_supply_is_real && s_supply_on
+               && supply_link_blind(&s_supply_link, now_ms())) {
+        /* The page answers and the module reads ONLINE, but its reading
+         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
+         * valid, which no trip acts on.  Off, as for a supply gone. */
+        supply_switch(false);
+        control_alert(TR(ALERT_SUPPLY_NO_READING));
     }
     if (s_supply.output) {
         if (s_supply_fresh) {
@@ -4612,11 +4645,16 @@ static void service_arming(bool link_up)
             if (!control_arm(&ack)) {
                 arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
             } else {
-                outputs_arm(&s_out, true, now_ms());
+                /* The roles the far end armed, which an older one makes
+                 * every role. */
+                outputs_arm_roles(&s_out, outputs_arm_roles_of(s_arm_value),
+                                  now_ms());
                 arm_applied();
             }
         } else {
-            outputs_arm(&s_out, true, now_ms());
+            outputs_arm_roles(&s_out,
+                              (uint8_t)(arming_roles(&s_arm) & OUT_ROLES_ALL),
+                              now_ms());
             arm_applied();
         }
         break;
@@ -4686,7 +4724,7 @@ static bool write_output_binding(const outbind_t *bind)
  * lowest pin is the motor.
  */
 static uint8_t s_servo_channels;
-/* The GPIOs of those channels' slots, for the SERVO screen's target line;
+/* The GPIOs of those channels' slots, for the SERVO screen's TARGET row;
  * whether a binding was read. */
 static atomic_ullong s_servo_pins;
 static atomic_bool   s_servo_pins_known;
@@ -5370,9 +5408,12 @@ static bool write_servo(const servo_cmd_t sv)
 }
 
 /*
- * The SERVO page: the frame rate every PWM output rendering a surface runs
- * at.  A coprocessor before protocol 4.1 has no such page and runs each slot
- * at its binding's rate, 50 Hz for a servo.
+ * The SERVO page: the frame rate of the PWM target -- every PWM output
+ * rendering a surface for the standard target, the one programming port
+ * for a port target (protocol 4.19).  A coprocessor before protocol 4.1 has
+ * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
+ * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
+ * so and servo_rate_reset_note() records it here.
  *
  * The rate is written with every held position, not once: a coprocessor that
  * restarts between two polls goes back to each slot's own rate without the
@@ -5420,7 +5461,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     if (reply.op == LINK_OP_ACK) {
         s_servo_hz_sent    = hz;
         s_servo_hz_refused = 0u;
-        servo_rate_show(SERVO_RATE_IN_FORCE, hz);
+        servo_rate_show(servo_rate_in_force(s_far_minor), hz);
         return RATE_LANDED;
     }
     if (reply.op == LINK_OP_NACK) {
@@ -5431,7 +5472,7 @@ static rate_result_t write_servo_rate(uint16_t hz)
     return RATE_NO_ANSWER;
 }
 
-/* The rate the surfaces run at as far as this end knows, or
+/* The rate the PWM target runs at as far as this end knows, or
  * SERVO_HZ_UNKNOWN. */
 static uint16_t servo_rate_now(void)
 {
@@ -5560,7 +5601,11 @@ static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
          * clears it, gives the heartbeat time to be believed and only then
          * asks for the write; see shared/safety/arming.c.
          */
-        arming_request_arm(&s_arm, now_ms());
+        /* The throttle's outputs, and no other: a servo bound beside the
+         * motor stays without a pulse.  Armed for the surfaces, the bench
+         * disarms first (arming_request_arm_roles()). */
+        arming_request_arm_roles(&s_arm, now_ms(),
+                                 OUT_ROLE_BIT(OUT_ROLE_THROTTLE));
         break;
     case MOTOR_CMD_DISARM:
         (void)disarm_here(link_up);
@@ -5617,7 +5662,9 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
         if (stops != arming_stop_count(&s_arm)) {
             return;
         }
-        arming_request_arm(&s_arm, now_ms());
+        /* The surfaces and the programming ports, and no motor. */
+        arming_request_arm_roles(&s_arm, now_ms(),
+                                 OUT_ROLE_BIT(OUT_ROLE_SURFACE));
         return;
     }
     if (sv.kind == SERVO_CMD_DISARM) {
@@ -6756,6 +6803,20 @@ static __attribute__((noinline)) void prog_link_service(void)
               && reply.op == LINK_OP_ACK;
         prog_link_written(&s_prog_link, &w, ack);
     }
+    /* From 4.19 a TARGET change returns the SERVO rate to 0: the next
+     * position that wants a faster one leads with it again, and one whose
+     * TARGET write went unanswered counts as fast until a reset lands. */
+    switch (prog_link_rate(&s_prog_link)) {
+    case PROG_LINK_RATE_RESET:
+        servo_rate_reset_note(s_servo_rate_page, true);
+        break;
+    case PROG_LINK_RATE_UNKNOWN:
+        servo_rate_reset_note(s_servo_rate_page, false);
+        break;
+    case PROG_LINK_RATE_KEPT:
+    default:
+        break;
+    }
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
     prog_drive_publish();
     servo_surfaces_publish();
@@ -6782,6 +6843,15 @@ static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
     f->armed       = outputs_armed(&s_out);
     f->card        = storage_mounted();
     f->target      = prog_link_target(&s_prog_link);
+    /* The pin of each programming port, for the journal of a write. */
+    f->port_pin_known = 0u;
+    for (uint8_t port = 0; port < LINK_PG_PORTS_MAX; ++port) {
+        const uint8_t pin = prog_link_pin(&s_prog_link, port);
+        f->port_pin[port] = pin;
+        if (pin != PROG_LINK_NO_PIN) {
+            f->port_pin_known |= (uint8_t)(1u << port);
+        }
+    }
     /* The PD mini's output while it is the supply, answers and is on. */
     f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
     f->out_mv      = 0u;
@@ -6998,10 +7068,22 @@ static void learn_board_pins(void)
     }
 }
 
+/* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
+ * for the MOTOR & ESC screen's target line, and whether a binding was read.
+ * The same pages the coprocessor's throttle role reads. */
+static atomic_ullong s_throttle_pins;
+static atomic_bool   s_throttle_pins_known;
+
 /* A reading, into the snapshot the outputs and picker screens take. */
 static void post_reading(const bind_reading_t *r)
 {
     s_bind_read = r->state;
+    /* A binding that did not read names no pin: the screen says so. */
+    const bool known = (r->state == BIND_READ_OK);
+    atomic_store(&s_throttle_pins,
+                 known ? outputs_role_pins(r->slots, r->cfg, OUT_ROLE_THROTTLE)
+                       : 0u);
+    atomic_store(&s_throttle_pins_known, known);
     if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
         s_outputs_read = *r;
         s_outputs_read_fresh = true;
@@ -7375,7 +7457,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
             /* And no port is the target or names a pin, and the SERVO
-             * screen's target line says no link. */
+             * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
             prog_drive_publish();
@@ -7550,6 +7632,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
     s_snap.armed       = outputs_armed(&s_out);
+    s_snap.armed_roles = outputs_armed_roles(&s_out);
     s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);
     s_snap.arm_gen     = s_arm_gen;
     s_snap.stopped     = arming_stopped(&s_arm);
@@ -8286,6 +8369,7 @@ void app_main(void)
             s_snap.servo_source_dropped;
         const uint32_t servo_dropped_at_now = s_snap.servo_source_dropped_at;
         armed_now      = s_snap.armed;
+        const uint8_t armed_roles_now = armed_now ? s_snap.armed_roles : 0u;
         arm_wanted_now = s_snap.arm_wanted;
         supply_now     = s_snap.supply.output;
         supply_gen_now = s_snap.supply_gen;
@@ -8318,8 +8402,18 @@ void app_main(void)
         /* And a stick run on PROGRAMMER, which ends on a stop, a disarm or
          * a link that went, and steps on the frame's time.  The pressed
          * count tells an operator's STOP from the bench's own. */
-        programmer_screen_bench(now_ms(), armed_now, stops_now, pressed_now,
-                                link_now);
+        /*
+         * Each screen is told whether the bench is armed for its own role:
+         * an arm covers the role of the screen that asked for it (MOTOR and
+         * the PROGRAMMER stick run the throttle, SERVO the surfaces), and a
+         * bench armed for the other role is a disarmed one to it.
+         */
+        const bool motor_armed_now =
+            (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u;
+        const bool servo_armed_now =
+            (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_SURFACE)) != 0u;
+        programmer_screen_bench(now_ms(), motor_armed_now, stops_now,
+                                pressed_now, link_now);
         /* The phase tap's readout for the run's page, copied under the
          * lock from the snapshot. */
         snap_lock();
@@ -8330,12 +8424,12 @@ void app_main(void)
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */
-        if (was_armed && !armed_now) {
+        if (was_armed && !motor_armed_now) {
             motor_screen_set_throttle(0.0f);
             motor_cmd_t follow;
             (void)motor_screen_poll_cmd(&follow);   /* not a command */
         }
-        was_armed = armed_now;
+        was_armed = motor_armed_now;
         /* The arm state the plot was last told, so the arm edge is seen here
          * rather than inferred from was_armed, which several other things
          * above already consume. */
@@ -8352,7 +8446,7 @@ void app_main(void)
          * two frames is never seen armed here, so it leaves no trace at all.
          * That is a run shorter than one frame, about 26 ms at 39 Hz.
          */
-        if (armed_now && !motor_armed) {
+        if (motor_armed_now && !motor_armed) {
             /*
              * A run starts at the arm, so what the queue is holding from
              * before it is not part of it.  Dropped rather than pushed: the
@@ -8363,25 +8457,51 @@ void app_main(void)
             bench_state_t stale;
             while (xQueueReceive(s_sample_q, &stale, 0) == pdTRUE) { }
         }
-        if (armed_now) {
+        if (motor_armed_now) {
             motor_screen_set_armed(true);
         }
-        motor_armed = armed_now;
+        motor_armed = motor_armed_now;
         /* One sample, one plot column, however many frames it took to get
          * here: the queue holds what this loop was too busy to draw. */
         bench_state_t queued;
         while (xQueueReceive(s_sample_q, &queued, 0) == pdTRUE) {
             motor_screen_push(&queued);
         }
-        if (!armed_now) {
+        if (!motor_armed_now) {
             motor_screen_set_armed(false);
         }
-        servo_screen_set_armed(armed_now);
+        servo_screen_set_armed(servo_armed_now);
+        servo_screen_set_bench_armed(armed_now);
         {
-            /* Whether the screen's frame rate reached the pins. */
-            const unsigned r = atomic_load(&s_servo_rate_shown);
-            servo_screen_rate((servo_rate_state_t)(r >> 16),
-                              (uint16_t)(r & 0xFFFFu));
+            /*
+             * Whether the screen's frame rate reached the pins, and the
+             * drive it reached: one pair, for the note that names both.
+             * The control task (core 1) stores the rate reset of a TARGET
+             * change before the new drive (prog_link_service(), the
+             * link-up), and a rate that lands on the new target after it.
+             * This core reads the drive, the rate, then the drive again,
+             * every access sequentially consistent: the same drive on
+             * both sides of the rate means the two held together at the
+             * rate's load, so the note never pairs a rate with a target it
+             * was not stored for.  A drive that moves on every try keeps
+             * the screen's last pair for this frame.
+             */
+            unsigned drive = atomic_load(&s_drive);
+            unsigned r = 0u;
+            bool paired = false;
+            for (int k = 0; k < 3 && !paired; ++k) {
+                r = atomic_load(&s_servo_rate_shown);
+                const unsigned again = atomic_load(&s_drive);
+                paired = again == drive;
+                drive = again;
+            }
+            if (paired) {
+                servo_screen_rate((servo_rate_state_t)(r >> 16),
+                                  (uint16_t)(r & 0xFFFFu));
+                servo_screen_set_drive((uint8_t)(drive >> 8),
+                                       (uint8_t)(drive & 0xFFu),
+                                       (drive & DRIVE_PWM_BIT) != 0u);
+            }
             servo_screen_set_sweep(atomic_load(&s_servo_sweep_able));
             servo_screen_set_surfaces(atomic_load(&s_servo_surfaces));
             /* What the tester drives and whether the port renders its
@@ -8391,12 +8511,10 @@ void app_main(void)
             atomic_store(&s_prog_want_pwm,
                          settings_get_bool(SET_SERVO_PORT_PWM));
             outputs_screen_set_prog_pin((uint8_t)atomic_load(&s_prog_pin));
+            motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
+                                           atomic_load(&s_throttle_pins_known));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
-            const unsigned drive = atomic_load(&s_drive);
-            servo_screen_set_drive((uint8_t)(drive >> 8),
-                                   (uint8_t)(drive & 0xFFu),
-                                   (drive & DRIVE_PWM_BIT) != 0u);
             servo_screen_set_enc_held(atomic_load(&s_enc_held));
             settings_screen_set_unheld(
                 (uint16_t)atomic_load(&s_sense_unheld),
@@ -8463,6 +8581,10 @@ void app_main(void)
             supply_screen_set_model(!supply_real);
             overview_screen_set_supply_real(supply_real);
         }
+        {
+            const supply_wiring_t wiring = pdmini_wiring();
+            supply_screen_set_pins(wiring.tx, wiring.rx);
+        }
         supply_screen_set_baud(supply_real ? atomic_load(&s_supply_baud)
                                            : 0u);
         servo_test_enc_t enc;
@@ -8522,6 +8644,8 @@ void app_main(void)
          * to.  Testing it outside would let this task cache it and miss a
          * binding the control task had just read off the wire. */
         static bind_reading_t got;      /* app_main only */
+        static bool got_read;           /* app_main only */
+        static uint8_t got_throttle;    /* app_main only */
         bool have = false;
         if (xSemaphoreTake(s_snap_lock, 0) == pdTRUE) {
             have = s_outputs_read_fresh;
@@ -8546,7 +8670,14 @@ void app_main(void)
              */
             outputs_screen_set_reading(&got);
             picker_screen_set_binding(outputs_screen_binding());
+            /* RUN on ESC STICK moves the throttle pins: none bound, or
+             * no binding read, is a run refused with the reason. */
+            got_read = got.state == BIND_READ_OK;
+            got_throttle = got_read
+                ? outputs_role_channels(got.slots, got.cfg, OUT_ROLE_THROTTLE)
+                : 0u;
         }
+        programmer_screen_set_throttle(got_read, got_throttle);
         /* A pick on the outputs screen writes nothing and so reads nothing
          * back: the picker follows the selection, and whether the binding
          * is one a read confirmed, every frame. */
@@ -8611,6 +8742,9 @@ void app_main(void)
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
+            .armed_roles = (uint8_t)((motor_armed_now ? UI_ARMED_MOTOR : 0u)
+                                     | (servo_armed_now ? UI_ARMED_SERVO
+                                                        : 0u)),
             .faults      = faults,
             .run_seconds = run_seconds,
             .mode        = ui_band_mode(link_up),

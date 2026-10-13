@@ -50,8 +50,8 @@ bevor man sich auf ein Schreiben verlässt.
   Puls darauf, und seine Zeile **PULSBREITE** zeigt `---`.
 - Programmieren und ein Prüfstand unter ARM schließen sich aus.
   **VERBINDEN** wird abgelehnt mit
-  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM gilt,
-  angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
+  `Erst DISARM: bei ARM wird der Port nicht übernommen.`, wenn ARM für
+  irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
   den Prüfstand unter ARM: **ARM** auf SERVO und auf MOTOR & ESC ist
   gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des
@@ -87,8 +87,8 @@ Programmierport. **OPTIONEN**, Reiter PRÜFLING, hält die zwei Zeilen:
 | PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
 Beide Zeilen werden mit den SERVO-Einstellungen gehalten. Der
-SERVO-Bildschirm nennt das aktive Ziel mit den Pins auf der linken Karte:
-`ZIEL: PROG-PORT GP13` in der Warnfarbe oder `ZIEL: GP4` für die als
+SERVO-Bildschirm nennt das aktive Ziel mit den Pins in der Zeile ZIEL der
+rechten Karte: `PROG-PORT GP13` in der Warnfarbe oder `GP4` für die als
 SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei nicht scharf geschaltetem Prüfstand, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
@@ -573,9 +573,14 @@ Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgang erfolgt.`
 | Vor einem Schreiben | dem Panel, in `KST/KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
 `KST.TXT` ist der Vermerk eines laufenden Schreibens: Text von höchstens
-400 Bytes im Ordner `KST` der Karte mit der Zeile `RCBENCH KST 1`, den
-Zeilen `journal=`, `target=` und `port=` und `check=` mit der CRC-16
-(zyklische Redundanzprüfung) der Bytes davor. Eine Datei, deren Prüfsumme
+400 Bytes im Ordner `KST` der Karte mit der Zeile `RCBENCH KST 2`, den
+Zeilen `journal=`, `target=`, `port=` und `pin=` und `check=` mit der
+CRC-16 (zyklische Redundanzprüfung) der Bytes davor. `pin=` hält den GPIO
+(General-Purpose Input/Output), den der Port beim Schreiben trieb, in zwei
+Hexadezimalziffern: `0D` für GP13, `FF`, wenn das Panel für den Port keinen
+Pin kannte. Ein Vermerk der Version 1 (`RCBENCH KST 1`, keine Zeile
+`pin=`) wird gelesen und nennt nur den Port. Ein Pin über GP47 wird ebenso
+gelesen: der Vermerk bleibt, und seine Zeilen nennen den Port. Eine Datei, deren Prüfsumme
 nicht stimmt, wird nicht benutzt:
 `KST.TXT auf der Karte ist nicht lesbar, bleibt ungenutzt.` Der Name `KST`
 gehört dem Vermerk: keine Servodatei bekommt ihn, und die Liste der Dateien
@@ -910,15 +915,16 @@ Einschalten des Prüfstands.
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
 
 `Schreiben unterbrochen. Servo ist evtl. halb beschrieben.` bleibt stehen,
-bis das Servo gelesen ist, darunter der Port des Schreibens: `Nicht
-benutzen. An Port 1 verbinden und ALLES LESEN.` Jedes Bedienelement außer
+bis das Servo gelesen ist, darunter der Pin des Schreibens: `Nicht
+benutzen. An GP13 verbinden und ALLES LESEN.` Ein Vermerk ohne Pin nennt
+stattdessen den Port: `An Port 1 verbinden und ALLES LESEN.` Jedes Bedienelement außer
 **VERBINDEN**, **ALLES LESEN**, **ZURÜCKSPIELEN**, **VERLASSEN** und, wo
 das Zurückspielen der Sitzung ihn braucht, dem Schreibschalter ist aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
 | Das Servo hält | Meldung | Danach |
 | --- | --- | --- |
-| das Abbild vor dem Schreiben | `Ist dies das Servo des unterbrochenen Schreibens, Port 1?` `Es hält alte Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
-| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo des unterbrochenen Schreibens, Port 1?` `Es hält neue Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild vor dem Schreiben | `Ist dies das Servo des unterbrochenen Schreibens, GP13?` `Es hält alte Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo des unterbrochenen Schreibens, GP13?` `Es hält neue Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
 | etwas anderes | `Das Servo hält eine Mischung alter und neuer Werte.` `Servo nicht benutzen. Backup zurück: ZURÜCKSPIELEN.` | **ZURÜCKSPIELEN** bietet das Backup der Sitzung an, solange die Sitzung lebt, und `Werte vor dem unterbrochenen Schreiben` |
 
 ![Das Servo hält eine Mischung](img/de/servo-kst-journal.png)
@@ -940,8 +946,9 @@ Der Vermerk gehört zu einem Servo. Ein Servo, das an einem anderen Port
 gelesen wird, ist nicht dieses Servo, und ebenso wenig eines mit einem
 Register, das weder den Wert des Abbilds vor dem Schreiben noch den Wert
 hält, den das Schreiben hinterlassen sollte: `Das ist nicht das Servo des
-unterbrochenen Schreibens.` `Es war an Port 2. ZURÜCKSPIELEN: Vermerk
-verwerfen.` Solange das steht, wird nichts zurückgespielt, geändert oder
+unterbrochenen Schreibens.` `Es war an GP13. ZURÜCKSPIELEN: Vermerk
+verwerfen.` Bei einem Vermerk ohne Pin nennt die Zeile den Port: `Es war an
+Port 1.` Solange das steht, wird nichts zurückgespielt, geändert oder
 geschrieben, und **ZURÜCKSPIELEN** enthält nur den Eintrag zum Verwerfen.
 **VERLASSEN** und ein **VERBINDEN** des Servos des Schreibens bringen den
 Vergleich von oben. Ein Register ist ausgenommen: das niedrige Register
@@ -976,6 +983,19 @@ bleibt versorgt, der Ausgang eines PD mini bleibt mit seiner Spannung und
 Stromgrenze an, und das Signal des Testers folgt auf demselben Port. Ob ein
 Servo, das einen Frame erhalten hat, PWM folgt, bevor seine Versorgung
 aus war, ist nicht gemessen.
+
+Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port
+bleiben. Ein Ausgang des PD mini, den SERVO eingeschaltet hat -- mit
+AUSGANG EIN, mit einem Test oder mit **VERBINDEN** --, gehört dem
+Bildschirm SERVO, und solange der Port ihn hält, bleibt der Ausgang nach
+dem Verlassen von SERVO an: ein OFF würde die Sitzung beenden und ein
+Schreiben auf der Leitung abschneiden. Ein ON, das SERVO verlangt hat und
+das auf dem Weg ist, wenn der Port das Netzteil übernimmt, zählt als
+eingeschaltet, auch wenn es erst nach dem Verlassen als an gemeldet wird.
+Der Ausgang geht aus, wenn der Port loslässt -- ein **VERBINDEN**, das nach
+dem Verlassen von SERVO ohne Sitzung endet, ein STOP, der das Netzteil
+ausschaltet --, außer SERVO wird vorher wieder gezeigt. Nach
+**VERLASSEN** auf SERVO bleibt der Ausgang an, bis SERVO verlassen wird.
 
 PROGRAMMIEREN VERLASSEN öffnet mit
 `Der Port geht zurück auf Servo-PWM. Versorgung bleibt.` und

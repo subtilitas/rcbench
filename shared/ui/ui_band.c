@@ -37,6 +37,15 @@ const char *ui_band_mode(bool link_up)
     return link_up ? "BENCH" : "SIM";
 }
 
+const char *ui_band_armed_label(uint8_t roles)
+{
+    switch (roles & (UI_ARMED_MOTOR | UI_ARMED_SERVO)) {
+    case UI_ARMED_MOTOR: return "ARMED MOTOR";
+    case UI_ARMED_SERVO: return "ARMED SERVO";
+    default:             return "ARMED";
+    }
+}
+
 /* Chips are laid out right to left from STOP, each placed at the right edge
  * the previous one returns, so no chip needs another's width in advance and a
  * long mode string cannot push the clock under the ARMED badge. */
@@ -82,8 +91,11 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
     }
 
     /* ARMED is a filled badge rather than a coloured dot, so the armed state
-     * is readable by shape at arm's length, not by colour alone. */
-    right = chip(c, right, st->armed ? "ARMED" : TR(BAND_SAFE), 0,
+     * is readable by shape at arm's length, not by colour alone.  It names
+     * the role an arm covers when it covers one: an arm on MOTOR leaves the
+     * servos without a pulse, and one on SERVO the motor. */
+    right = chip(c, right, st->armed ? ui_band_armed_label(st->armed_roles)
+                                     : TR(BAND_SAFE), 0,
                  st->armed ? ui_theme_color(UI_C_DANGER)
                            : ui_theme_color(UI_C_PANEL_SUNK));
 

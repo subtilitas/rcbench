@@ -404,6 +404,10 @@ typedef struct {
     /* The bench, as the application last said. */
     uint32_t now_ms, stops, pressed;
     bool     armed, link_up;
+    /* The output binding, as the application last said: whether one is
+     * read, and the channels it binds as a throttle (one bit each). */
+    bool     bind_read;
+    uint8_t  throttle_mask;
 
     /* The search: the pattern the list shows, what it was when the
      * keyboard opened (CANCEL goes back to it), and the keyboard. */
@@ -1863,6 +1867,27 @@ static void sp_supply(uint32_t *mv, uint32_t *ma)
 static bool sp_supply_reads_off(void);
 static bool sp_warn_steps_fit(const esc_profile_t *p);
 
+/*
+ * Why the bench cannot carry a run, or NULL: the supply is the panel's
+ * model and switches nothing, the output binding is not read, or it binds
+ * no pin as a throttle.  The stick has no pin to move then, or the ESC no
+ * supply to be powered from.
+ */
+static const char *sp_bench_why(void)
+{
+    const stick_t *t = &s.st;
+    if (supply_screen_model()) {
+        return TR(SP_SUPPLY_MODEL);
+    }
+    if (!t->bind_read) {
+        return TR(SP_BIND_NOT_READ);
+    }
+    if (t->throttle_mask == 0u) {
+        return TR(SP_NO_THROTTLE);
+    }
+    return NULL;
+}
+
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                     esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma)
 {
@@ -1920,6 +1945,11 @@ static bool sp_plan(esc_stick_change_t *ch, size_t *n,
     if (*ma > imax) {
         snprintf(st->note, sizeof(st->note), TR(SP_I_ABOVE_CAP),
                  imax / 1000u, imax % 1000u / 10u);
+        return false;
+    }
+    const char *bench = sp_bench_why();
+    if (bench != NULL) {
+        snprintf(st->note, sizeof(st->note), "%s", bench);
         return false;
     }
     /* Asked on, or read live: the output on, or current through it. */
@@ -2073,7 +2103,7 @@ static void sp_follow(void)
         if (o->supply_on) {
             supply_screen_put((float)o->supply_mv / 1000.0f,
                               (float)o->supply_ma / 1000.0f);
-            supply_screen_ask_on();
+            supply_screen_ask_on(SUPPLY_BY_PROGRAMMER);
         } else {
             supply_screen_ask_off();
         }
@@ -2170,6 +2200,13 @@ static void sp_tick(float dt_s)
             ++s.rev;
         }
     }
+    if (t->warn && sp_bench_why() != NULL) {
+        /* A bench that can no longer carry a run closes the warning: its
+         * HOLD TO RUN would end in a refusal, and the note says why. */
+        t->warn = false;
+        sp_end_hold();
+        ++s.rev;
+    }
     if (t->warn) {
         /* The steps at an unpowered ESC show, and HOLD TO RUN counts, only
          * while the supply reads off; a hold under way ends when it stops
@@ -2241,6 +2278,9 @@ static void sp_leave(void)
         esc_stick_abort(&t->run, ESC_STICK_R_LEFT);
         sp_follow();
     }
+    /* The run's abort asks the supply off; and whatever a run switched on
+     * goes off with the screen in any case. */
+    supply_screen_left(SUPPLY_BY_PROGRAMMER);
     /* A warning not held is a run not started.  The search keeps what was
      * typed. */
     t->warn = false;
@@ -4177,6 +4217,12 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
     t->stops = stops;
     t->pressed = pressed;
     t->link_up = link_up;
+}
+
+void programmer_screen_set_throttle(bool read, uint8_t channels)
+{
+    s.st.bind_read = read;
+    s.st.throttle_mask = read ? channels : 0u;
 }
 
 void programmer_screen_tone(const tone_readout_t *r)

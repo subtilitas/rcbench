@@ -63,6 +63,7 @@ SOURCES = [
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
+    "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
     # what the views drive it with: the link module, the coprocessor's
@@ -120,6 +121,7 @@ SOURCES = [
     "shared/outputs/out_bind.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
+    "shared/link/link_control.c",
 ]
 
 # Every screen gets a committed screenshot; CI (continuous integration)
@@ -142,9 +144,11 @@ SCREENS = {
     # with the last window clipped, its current in the warning colour.
     "servo-ina":      ("servo-ina.png",      "servo", "dark"),
     "servo-clipped":  ("servo-clipped.png",  "servo", "dark"),
-    # PWM TARGET on the programming port: the target line in the warning
+    # PWM TARGET on the programming port: the TARGET row in the warning
     # colour.
     "servo-target":   ("servo-target.png",   "servo", "dark"),
+    # The panel's model as the supply: the MODELLED pill on the plot.
+    "servo-model":    ("servo-model.png",    "servo", "dark"),
     "servo-settings": ("servo-settings.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),

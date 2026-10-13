@@ -63,6 +63,11 @@ typedef enum {
     OUT_ROLE_SURFACE  = 1,
 } out_role_t;
 
+/** A set of roles, one bit a role: what an arm covers. */
+#define OUT_ROLE_BIT(r)  ((uint8_t)(1u << (unsigned)(r)))
+#define OUT_ROLES_ALL    ((uint8_t)(OUT_ROLE_BIT(OUT_ROLE_THROTTLE) \
+                                    | OUT_ROLE_BIT(OUT_ROLE_SURFACE)))
+
 typedef enum {
     OUT_DRIVER_NONE = 0,
     OUT_DRIVER_PWM,      /**< one channel, one pin, a pulse per frame      */
@@ -119,6 +124,7 @@ typedef struct {
     out_channel_t channel[OUT_MAX_CHANNELS];
     out_slot_t    slot[OUT_MAX_SLOTS];
     bool          armed;
+    uint8_t       roles;        /**< what an arm covers, OUT_ROLE_BIT()s   */
     uint32_t      timeout_ms;   /**< silence after which a channel rests   */
     uint32_t      last_step_ms;
     uint64_t      reserved;     /**< pins this build will not drive        */
@@ -218,6 +224,40 @@ unsigned outputs_set_role_channels(outputs_t *o, out_role_t role,
 void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms);
 
 /**
+ * Arm the channels of @p roles, OUT_ROLE_BIT()s, and only those.  0 disarms.
+ * outputs_arm() is this with OUT_ROLES_ALL.
+ *
+ * A channel of a role outside the set is not driven: outputs_step() holds it
+ * at its rest and outputs_channel_driving() says no.  A bank armed for the
+ * throttle leaves a surface bound beside it without a pulse, and the other
+ * way round.
+ *
+ * Changing the set while armed is applied at once: a channel whose role
+ * leaves goes to rest with no ramp, as at a disarm, and a channel whose role
+ * joins is stamped fresh, as at an arm.  Re-asserting the set in force is not
+ * an event.  Bits outside OUT_ROLES_ALL are ignored.
+ */
+void outputs_arm_roles(outputs_t *o, uint8_t roles, uint32_t now_ms);
+
+/** The roles the bank is armed for: 0 while disarmed. */
+uint8_t outputs_armed_roles(const outputs_t *o);
+
+/** Whether the bank is armed for @p role. */
+bool outputs_role_armed(const outputs_t *o, out_role_t role);
+
+/** Whether @p ch is driven: the bank is armed for its role. */
+bool outputs_channel_driving(const outputs_t *o, uint8_t ch);
+
+/**
+ * Whether @p slot is driven: it is configured and the bank is armed for the
+ * role of at least one of its channels.  A PPM (pulse-position modulation)
+ * frame carries all of its channels or none, so a slot that mixes roles
+ * drives every channel when one of them is armed; the others are held at
+ * their rest by outputs_step().
+ */
+bool outputs_slot_driving(const outputs_t *o, uint8_t slot);
+
+/**
  * Has this channel stopped being commanded?
  *
  * Per channel rather than per bank, because the pages that write them are
@@ -261,9 +301,10 @@ uint16_t outputs_command(const outputs_t *o, uint8_t ch);
 uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
 
 /**
- * Whether a driver may put edges on a pin: the bank is armed, and nothing
- * beyond that.  The same answer as outputs_armed(), asked by a driver rather
- * than by a screen.
+ * Whether the bank is armed for any role.  The same answer as
+ * outputs_armed(), asked by a driver rather than by a screen.  Which pins
+ * carry edges is outputs_slot_driving() and outputs_channel_driving(): an
+ * arm covers the roles it names and no others.
  *
  * Two gates a driver also stands behind are not in this answer:
  *
@@ -281,8 +322,8 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *   outputs_step() puts an overdue channel at its rest and leaves the others
  *   where they are.
  *
- * Limitation: an armed bank drives every bound pin whether or not anything is
- * commanding it.  A channel that has had no command for timeout_ms is
+ * Limitation: an armed bank drives every bound pin of the roles it is armed
+ * for, whether or not anything is commanding it.  A channel that has had no command for timeout_ms is
  * rendered at its role's rest.  A surface's rest is OUT_SPAN/2, which
  * outputs_pulse_us() renders as the midpoint of that channel's own endpoints:
  * 1500 us across the default 1000 to 2000 us, and 760 us across the 660 to

@@ -12,9 +12,10 @@ Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
 **Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
 sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
-existiert. Die Ausgangstreiber sind gebaut, und eine scharfgeschaltete Bank
-treibt jeden gebundenen Pin auf der Ruhelage seiner Rolle, ob etwas ihn
-kommandiert oder nicht. Nicht gemessen ist das
+existiert. Die Ausgangstreiber sind gebaut. Ein ARM nennt die Rollen, die es
+treibt: die Throttle-Ausgänge von MOTOR & ESC aus, die Surfaces von SERVO
+aus. Eine scharfe Rolle treibt jeden an sie gebundenen Pin auf ihrer
+Ruhelage, ob etwas ihn kommandiert oder nicht. Nicht gemessen ist das
 Timing an einem Messgerät -- keine Bitbreite, keine Rahmenperiode und keine
 Antwortverzögerung in diesem Baum ist auf einem Oszilloskop oder einem
 Logikanalysator gesehen worden. Die übrigen Messungen warten auf Bauteile, die
@@ -102,7 +103,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 34 610 von 35 365 Zeilen in 120 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 35 098 von 35 853 Zeilen in 121 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).

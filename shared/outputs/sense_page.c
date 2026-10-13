@@ -348,7 +348,9 @@ static uint8_t arm_check(const sense_page_t *p, const uint16_t *f,
         || !arm_output(p, o, arm)) {
         return LINK_NACK_BAD_VALUE;
     }
-    if (!outputs_driving(o)) {
+    /* The output timed is a surface: a servo's PWM or a programming port.
+     * An arm for the throttle alone leaves it without a pulse to time. */
+    if (!outputs_role_armed(o, OUT_ROLE_SURFACE)) {
         return LINK_NACK_NOT_ARMED;
     }
     return 0u;

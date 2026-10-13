@@ -63,6 +63,7 @@ SOURCES = [
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
+    "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
@@ -112,6 +113,7 @@ SOURCES = [
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
     "shared/link/link_crc.c",
+    "shared/link/link_control.c",
 ]
 INCLUDES = [
     "shared/gfx/include",

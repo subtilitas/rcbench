@@ -7,6 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,6 +18,7 @@
 #include "settings.h"
 #include "telemetry_sim.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
 
 #define W 800
@@ -1741,6 +1743,200 @@ TEST_CASE(every_arm_starts_from_zero)
     }
 }
 
+/* ------------------------------------------------------ the target line */
+
+/* How many pixels of one colour the target line's box holds: the box is the
+ * readout's left part, one text row at ROW_Y + 9. */
+static int target_pixels(gfx_color_t colour)
+{
+    int n = 0;
+    for (int y = ROW_Y + 9; y < ROW_Y + 25; ++y) {
+        for (int x = 12; x < 420; ++x) {
+            n += (fb[y * W + x] == colour) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+static void draw_once(void)
+{
+    scr->render(&cv, 0);
+}
+
+TEST_CASE(the_throttle_panel_names_the_pins_it_drives)
+{
+    char line[96];
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(!motor_throttle_target(line, sizeof(line), (1u << 0) | (1u << 1),
+                                 true, 47u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!motor_throttle_target(line, sizeof(line), (1u << 0) | (1u << 1),
+                                 true, 47u));
+    CHECK_STR_EQ(line, "ZIEL: GP0 GP1");
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(many_throttle_pins_end_in_a_count_within_the_budget)
+{
+    char line[96];
+    ui_text_set_language(UI_LANG_EN);
+    const uint64_t eight = 0xFFu;
+    CHECK(!motor_throttle_target(line, sizeof(line), eight, true, 20u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1 +6");
+    CHECK(strlen(line) <= 20u);
+    /* Exactly fitting: 8 + "GP0 GP1 GP2" = 19. */
+    CHECK(!motor_throttle_target(line, sizeof(line), 7u, true, 19u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1 GP2");
+    /* One cell fewer: the third pin gives way to the count. */
+    CHECK(!motor_throttle_target(line, sizeof(line), 7u, true, 18u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1 +1");
+    /* GP47 is the highest pin the boards have. */
+    CHECK(!motor_throttle_target(line, sizeof(line), (uint64_t)1u << 47, true,
+                                 47u));
+    CHECK_STR_EQ(line, "TARGET: GP47");
+}
+
+TEST_CASE(the_panel_field_of_49_cells_shows_the_documented_examples)
+{
+    char line[96];
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
+    CHECK_STR_EQ(line, "TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(!motor_throttle_target(line, sizeof(line), 0xFFFFu, true, 49u));
+    CHECK_STR_EQ(line, "ZIEL: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 GP9 +6");
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(the_throttle_prefix_is_shorter_than_its_49_cell_field)
+{
+    /* The panel's field is 49 cells, the width the documented examples
+     * use. */
+    CHECK_EQ(motor_target_cells(), 49u);
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(snprintf(NULL, 0, TR(MO_TARGET), "") < 49);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(no_throttle_pin_and_an_unread_binding_are_warnings)
+{
+    char line[96];
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
+    CHECK_STR_EQ(line, "TARGET: NO PIN BOUND AS MOTOR");
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
+    CHECK_STR_EQ(line, "TARGET: BINDING NOT READ");
+    /* A mask with a binding not read is no pin. */
+    CHECK(motor_throttle_target(line, sizeof(line), 3u, false, 47u));
+    CHECK_STR_EQ(line, "TARGET: BINDING NOT READ");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
+    CHECK_STR_EQ(line, "ZIEL: KEIN PIN ALS MOTOR GEBUNDEN");
+    CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
+    CHECK_STR_EQ(line, "ZIEL: BINDUNG NICHT GELESEN");
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(the_target_line_is_drawn_in_the_colour_of_its_state)
+{
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    const gfx_color_t text = ui_theme_color(UI_C_TEXT);
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        /* Not read until the application hands a binding over. */
+        fresh();
+        draw_once();
+        CHECK(target_pixels(warn) > 0);
+        CHECK_EQ(target_pixels(text), 0);
+        /* Bound: the text colour, no warning. */
+        fresh();
+        motor_screen_set_throttle_pins((1u << 2) | (1u << 5), true);
+        draw_once();
+        CHECK(target_pixels(text) > 0);
+        CHECK_EQ(target_pixels(warn), 0);
+        /* Read, and no pin bound as a motor. */
+        motor_screen_set_throttle_pins(0u, true);
+        draw_once();
+        CHECK(target_pixels(warn) > 0);
+        CHECK_EQ(target_pixels(text), 0);
+        /* Rebound: the old warning is cleared away. */
+        motor_screen_set_throttle_pins(1u << 4, true);
+        draw_once();
+        CHECK_EQ(target_pixels(warn), 0);
+        CHECK(target_pixels(text) > 0);
+        /* The binding goes unread again. */
+        motor_screen_set_throttle_pins(1u << 4, false);
+        draw_once();
+        CHECK(target_pixels(warn) > 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it)
+{
+    fresh();
+    motor_screen_set_throttle_pins(1u << 2, true);
+    draw_once();
+    const int one = target_pixels(ui_theme_color(UI_C_TEXT));
+    motor_screen_set_throttle_pins((1u << 2) | (1u << 3) | (1u << 4), true);
+    draw_once();
+    CHECK(target_pixels(ui_theme_color(UI_C_TEXT)) > one);
+    /* The readout clears itself on a throttle move: the line is redrawn. */
+    const int three = target_pixels(ui_theme_color(UI_C_TEXT));
+    motor_screen_set_throttle(10.0f);
+    draw_once();
+    CHECK_EQ(target_pixels(ui_theme_color(UI_C_TEXT)), three);
+}
+
+/* A sum over the target line's box: two different texts differ in it. */
+static unsigned long target_hash(void)
+{
+    unsigned long h = 1469598103UL;
+    for (int y = ROW_Y + 9; y < ROW_Y + 25; ++y) {
+        for (int x = 12; x < 420; ++x) {
+            h = (h * 31UL + (unsigned long)fb[y * W + x]) & 0xffffffffUL;
+        }
+    }
+    return h;
+}
+
+TEST_CASE(a_binding_that_reads_with_no_motor_pin_leaves_not_read)
+{
+    fresh();
+    draw_once();
+    const unsigned long unread = target_hash();
+    /* Same mask, 0, but the binding is now read: the text changes. */
+    motor_screen_set_throttle_pins(0u, true);
+    draw_once();
+    CHECK(target_hash() != unread);
+    CHECK(target_pixels(ui_theme_color(UI_C_WARN)) > 0);
+    /* It is the text a screen set to (0, true) from the start draws. */
+    const unsigned long read = target_hash();
+    fresh();
+    motor_screen_set_throttle_pins(0u, true);
+    draw_once();
+    CHECK_EQ(target_hash(), read);
+}
+
+TEST_CASE(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not)
+{
+    fresh();
+    draw_once();
+    const gfx_color_t mark = (gfx_color_t)~fb[ARM_Y * W + ARM_X];
+    fb[ARM_Y * W + ARM_X] = mark;
+    /* Same pins again: nothing moved, nothing is painted. */
+    motor_screen_set_throttle_pins(0u, false);
+    draw_once();
+    CHECK_EQ(fb[ARM_Y * W + ARM_X], mark);
+    /* A new pin set bumps the control revision: the buttons repaint. */
+    motor_screen_set_throttle_pins(1u << 3, true);
+    draw_once();
+    CHECK(fb[ARM_Y * W + ARM_X] != mark);
+}
+
 int main(void)
 {
     RUN(a_finger_that_leaves_arm_arms_nothing);
@@ -1809,5 +2005,14 @@ int main(void)
     RUN(a_press_on_the_disarmed_track_is_no_drag_after_the_arm);
     RUN(a_drag_under_way_ends_at_the_disarm);
     RUN(every_arm_starts_from_zero);
+    RUN(the_throttle_panel_names_the_pins_it_drives);
+    RUN(many_throttle_pins_end_in_a_count_within_the_budget);
+    RUN(the_panel_field_of_49_cells_shows_the_documented_examples);
+    RUN(the_throttle_prefix_is_shorter_than_its_49_cell_field);
+    RUN(no_throttle_pin_and_an_unread_binding_are_warnings);
+    RUN(the_target_line_is_drawn_in_the_colour_of_its_state);
+    RUN(a_longer_pin_list_changes_the_line_and_a_throttle_move_keeps_it);
+    RUN(a_binding_that_reads_with_no_motor_pin_leaves_not_read);
+    RUN(a_changed_pin_set_redraws_the_controls_and_an_unchanged_one_does_not);
     return test_summary("motor");
 }

@@ -110,8 +110,11 @@ at the same frame rate. A second binding that asks for a different rate on a
 slice already in use is refused rather than retimed, because retiming would
 move an output that nobody touched.
 
-The SERVO page sets one frame rate for every PWM output whose first channel is
-a surface, over the rate the binding gives the slot. It is refused with
+The SERVO page sets one frame rate for its target. With the standard servo
+ports as PROG's `TARGET` that is every PWM output whose first channel is a
+surface, over the rate the binding gives the slot; with a programming port as
+target it is that port's pin alone, and every slot keeps the rate its binding
+gives it (protocol 4.19, [the link](Link.md#the-targets-frame-rate)). It is refused with
 BAD_VALUE when it would move a surface away from the rate of the output beside
 it on its slice, and while it holds a rate a CHAN_CFG or OUTPUTS write that
 would do the same -- a surface turned throttle, a throttle bound beside a

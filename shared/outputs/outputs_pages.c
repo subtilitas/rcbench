@@ -10,6 +10,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "link_control.h"
 #include "link_msg.h"
 #include "link_pages.h"
 #include "out_pwm_map.h"
@@ -577,4 +578,38 @@ uint8_t outputs_role_channels(const uint16_t *slots, const uint16_t *chan_cfg,
         }
     }
     return mask;
+}
+
+uint8_t outputs_arm_roles_of(uint16_t arm)
+{
+    const uint16_t link = link_arm_roles(arm);
+    uint8_t roles = 0u;
+    if ((link & LINK_ARM_THROTTLE) != 0u) {
+        roles |= OUT_ROLE_BIT(OUT_ROLE_THROTTLE);
+    }
+    if ((link & LINK_ARM_SURFACE) != 0u) {
+        roles |= OUT_ROLE_BIT(OUT_ROLE_SURFACE);
+    }
+    return roles;
+}
+
+uint16_t outputs_arm_value_of(uint8_t roles)
+{
+    uint16_t arm = 0u;
+    if ((roles & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u) {
+        arm |= LINK_ARM_THROTTLE;
+    }
+    if ((roles & OUT_ROLE_BIT(OUT_ROLE_SURFACE)) != 0u) {
+        arm |= LINK_ARM_SURFACE;
+    }
+    return arm;
+}
+
+uint16_t outputs_arm_value_for(uint16_t far_minor, uint8_t roles)
+{
+    if (far_minor < LINK_MINOR_ARM_ROLE) {
+        return LINK_ARM_ALL;
+    }
+    const uint16_t v = outputs_arm_value_of((uint8_t)(roles & OUT_ROLES_ALL));
+    return (v != 0u) ? v : (uint16_t)LINK_ARM_ALL;
 }

@@ -19,11 +19,26 @@ extern "C" {
 #endif
 
 /**
+ * Whether @p arm is a value CONTROL's ARM takes: 0, LINK_ARM_ALL, or a
+ * non-empty set of LINK_ARM_ROLES.
+ */
+bool link_arm_value_ok(uint16_t arm);
+
+/**
+ * The roles @p arm arms, as LINK_ARM_ROLES bits: LINK_ARM_ROLES for
+ * LINK_ARM_ALL, the value itself for a set of roles, and 0 for 0 and for a
+ * value link_arm_value_ok() refuses.
+ */
+uint16_t link_arm_roles(uint16_t arm);
+
+/**
  * Validate a register window of the CONTROL page and store it.
  *
  * @p regs is the page, LINK_CT_COUNT registers.  @p may_arm is false while
  * the link is in failsafe or the heartbeat is not trusted; a non-zero ARM is
- * then refused with LINK_NACK_NOT_ARMED.  THROTTLE above LINK_THROTTLE_MAX,
+ * then refused with LINK_NACK_NOT_ARMED.  An ARM that link_arm_value_ok()
+ * refuses, and a non-zero ARM that differs from the non-zero ARM in force,
+ * are refused with LINK_NACK_BAD_VALUE ahead of that check.  THROTTLE above LINK_THROTTLE_MAX,
  * MOTOR_POLES that is odd or outside LINK_POLES_MIN..LINK_POLES_MAX and not
  * zero, and CLEAR without LINK_CLEAR_MAGIC are refused with
  * LINK_NACK_BAD_VALUE.

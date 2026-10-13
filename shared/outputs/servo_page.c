@@ -10,7 +10,9 @@
 #include <string.h>
 
 #include "link_msg.h"
+#include "out_pwm_map.h"
 #include "outputs_pages.h"
+#include "prog_port.h"
 
 void servo_page_init(servo_page_t *p)
 {
@@ -95,6 +97,44 @@ static bool resumable(const servo_page_t *p, const uint16_t *next)
            && next[LINK_SV_SWEEP_MOVES] == k->moves;
 }
 
+/*
+ * Whether the frame rate @p hz may be the target's.  The standard servo
+ * ports: every PWM slot whose first channel is a surface, judged against the
+ * slices it shares (outputs_servo_rate_check()) and against every PWM slot's
+ * endpoints at the rate it runs at, 0 sending the surfaces back to their
+ * own.  A programming port: its own pin alone, which shares no slice with a
+ * slot; a pin that shares its slice with another port's stays at
+ * PROG_PORT_RATE_HZ, and a port whose pulse is on takes no rate its
+ * endpoints do not fit.  0 always fits: the port goes back to 50 Hz, whose
+ * 19999 us frame holds every endpoint the pages take.
+ */
+static uint8_t rate_check(const servo_page_t *p, const outputs_t *o,
+                          uint16_t hz)
+{
+    if (p->target_n == 0u) {
+        const uint8_t nack = outputs_servo_rate_check(o, hz);
+        return (nack != 0u) ? nack : outputs_pulse_check(o, hz, 0u, 0u);
+    }
+    if (hz == 0u) {
+        return 0u;
+    }
+    const out_driver_def_t *pwm = out_driver(OUT_DRIVER_PWM);
+    if (hz < pwm->rate_min_hz || hz > pwm->rate_max_hz) {
+        return LINK_NACK_BAD_VALUE;
+    }
+    for (uint8_t ch = target_first(p); ch < target_end(p); ++ch) {
+        const uint32_t bit = (ch < 16u) ? (1u << ch) : 0u;
+        if (hz != PROG_PORT_RATE_HZ && (p->sliced & bit) != 0u) {
+            return LINK_NACK_BAD_VALUE;
+        }
+        if ((p->ports & bit) != 0u
+            && o->channel[ch].max_us > out_pwm_pulse_max(hz)) {
+            return LINK_NACK_BAD_VALUE;
+        }
+    }
+    return 0u;
+}
+
 uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
                          const uint16_t *in, outputs_t *o, uint32_t now_ms)
 {
@@ -139,15 +179,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const bool sweep = off <= (uint8_t)LINK_SV_SWEEP_DWELL_MS
                        && (unsigned)off + (unsigned)n > (unsigned)LINK_SV_SWEEP;
     if (rate) {
-        const uint16_t hz = next[LINK_SV_FRAME_HZ];
-        uint8_t nack = outputs_servo_rate_check(o, hz);
-        if (nack == 0u) {
-            /* No output left with a pulse its frame cannot carry: the
-             * surfaces' endpoints, every other PWM slot's at its own rate
-             * (0 sends the surfaces back to theirs), and the ports'. */
-            nack = outputs_pulse_check(o, hz, (hz != 0u) ? p->ports : 0u,
-                                       hz);
-        }
+        const uint8_t nack = rate_check(p, o, next[LINK_SV_FRAME_HZ]);
         if (nack != 0u) {
             return nack;
         }
@@ -155,7 +187,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const sweep_cfg_t cfg = cfg_of(next);
     const bool hold = sweep && next[LINK_SV_SWEEP] == LINK_SV_HOLD;
     const bool resume = sweep && next[LINK_SV_SWEEP] == LINK_SV_RESUME;
-    if ((hold || resume) && !outputs_armed(o)) {
+    if ((hold || resume) && !outputs_role_armed(o, OUT_ROLE_SURFACE)) {
         return LINK_NACK_NOT_ARMED;
     }
     if (resume && !resumable(p, next)) {
@@ -179,7 +211,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         }
         /* A curve on a bench that drives nothing would start the moment it
          * arms, from wherever its clock had got to. */
-        if (!outputs_armed(o)) {
+        if (!outputs_role_armed(o, OUT_ROLE_SURFACE)) {
             return LINK_NACK_NOT_ARMED;
         }
     }
@@ -280,7 +312,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * 500 ms after this end stopped holding.
      */
     if (p != NULL && o != NULL && p->holding) {
-        if (!outputs_armed(o)
+        if (!outputs_role_armed(o, OUT_ROLE_SURFACE)
             || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
             /* And the phase it kept: nothing is left to resume. */
             p->holding = false;
@@ -304,7 +336,8 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * to rest part way.  Once the repeats stop, the channels rest as any
      * command does.
      */
-    if (p != NULL && o != NULL && p->finished && outputs_armed(o)
+    if (p != NULL && o != NULL && p->finished
+        && outputs_role_armed(o, OUT_ROLE_SURFACE)
         && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS) {
         command_surfaces(p, o, (uint16_t)SWEEP_CENTRE, now_ms);
     }
@@ -319,7 +352,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * bench disarmed, or a panel that has gone quiet for as long as a
      * channel command is trusted.
      */
-    if (!outputs_armed(o)
+    if (!outputs_role_armed(o, OUT_ROLE_SURFACE)
         || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
         sweep_stop(&p->sweep);
         freeze_surfaces(p, o);
@@ -360,21 +393,29 @@ bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
     p->holding  = false;
     p->finished = false;
     p->regs[LINK_SV_SWEEP] = 0u;
+    /* The rate was the old target's: the new one starts at its own. */
+    p->regs[LINK_SV_FRAME_HZ] = 0u;
     p->target_first = first;
     p->target_n     = count;
     return true;
 }
 
-void servo_page_ports(servo_page_t *p, uint16_t channels)
+void servo_page_ports(servo_page_t *p, uint16_t channels, uint16_t sliced)
 {
     if (p != NULL) {
-        p->ports = channels;
+        p->ports  = channels;
+        p->sliced = sliced;
     }
 }
 
 uint16_t servo_page_hz(const servo_page_t *p)
 {
     return (p != NULL) ? p->regs[LINK_SV_FRAME_HZ] : 0u;
+}
+
+uint16_t servo_page_slots_hz(const servo_page_t *p)
+{
+    return (p != NULL && p->target_n == 0u) ? p->regs[LINK_SV_FRAME_HZ] : 0u;
 }
 
 servo_resume_t servo_page_resume_plan(bool asked, bool held, bool timed,

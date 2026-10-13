@@ -429,7 +429,9 @@ adds its line and moves the end to 4 s (10 s for `t`) after itself when
 that is later: moves less than 4 s apart are one trace. A command that is
 slewed changes the pulse in every pass: its `$C` line has the first pulse,
 and a `$D` line the pulse it ended at, once the output has held still for
-50 ms. A command that waits for the next trace takes its later changes
+50 ms. The `$D` line's `cmd=` is its command's `$C` time, and the tool
+ends that command there, also when the output was let go and the next
+command came within 30 ms. A command that waits for the next trace takes its later changes
 with it: that trace ends 4 s after the last of them and has the `$D`
 line. An output that is let go ends a slewed command there; the next
 pulse on it is a command, however soon it comes. The automatic test's
@@ -455,7 +457,7 @@ measured.
 **The lines** (`shared/sense/sense_trace.h` has every field):
 
 ```text
-$T v=2 n=2 trig=cmd t=220200 ms=22020 len=4000
+$T v=3 n=2 trig=cmd t=220200 ms=22020 len=4000
 $H dt_us=1000 shunt_uohm=100000 cfg=0x4007 on=1 rst=0
 -810,289
 10,277
@@ -561,15 +563,25 @@ its arrival, each setting's median arrival and its distance from the
 capture's setting (filter 4, band 0.05 A), and how far apart the settings
 put one move's arrival. It ends `not compared with the horn`: without an
 encoder an arrival is the current back at its holding level, which can
-lead or lag the horn. One `<log>-trace-<n>.csv` per trace holds time in
-ms, current in A and the bus voltage in V.
+lead or lag the horn. One `<log>-trace-<n>.csv` per trace holds four
+columns, separated by `;`: time in ms, current in A, the bus voltage in V
+on the rows that have one, and `clipped`. `clipped` is 1 for a sample at
+or past the top of the range, -1 at or past the bottom, and 0 for a value.
+A clipped row's current is the end of the range, a bound and not a value:
+1.6380 A or -1.6384 A on a 0.1 Ω shunt. A file with three columns has no
+clip mark, and its clipped rows read as values.
 
 **What the tool refuses.** Between a trace's `$T` and `$Z` line every
 line is a whole line of the format or a console line of the coprocessor's
 own, which starts `rcbench-iomcu:`. A line is whole with every field of
 its type in its order, nothing before, between or after the fields, and
 each number in the range the coprocessor holds it in: a `$C` or `$D` line
-has `ch=` and `us=`, a `$E` or `$K` line has neither. A line ends LF or
+has `ch=` and `us=`, a `$D` line `cmd=` after them, a `$E` or `$K` line
+has neither. The tool reads format versions 3 and 2 (`$T v=`). A version 2
+`$D` line has no `cmd=`, and the tool ends with it the latest command of
+its channel no more than 30 ms after its `t=`: a command that follows a
+let-go output within 30 ms takes that `$D` line as its own. A `$D` line of
+the other version's form is damage. A line ends LF or
 CR LF. Anything else is damage. So are a second `$H` line, a line other
 than `$L` before the `$H` line, a trace length other than 4000 ms
 (10000 ms for `t`), a sample period other than 1000 µs, a sample timed
@@ -691,7 +703,8 @@ capture's filter length (`SENSE_CAP_FILTER_N`, 4) and arrival band
   whose line counts do not match its end line is reported and exits 1.
 - The line format has no check value. A line cut inside its last number
   is a whole line with another number, and the tool reads it as that: a
-  sample's code, a voltage, the pulse width of a `$C` or `$D` line, the
+  sample's code, a voltage, the pulse width of a `$C` line, the command
+  time of a `$D` line, the
   time of a `$E` or `$K` line, the reset count of a `$H` or `$S` line. A
   cut anywhere else in a line is reported, and so is a lost sample,
   voltage or trigger line. A lost `$S` line is reported when the next one

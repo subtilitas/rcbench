@@ -42,10 +42,16 @@ int16_t as5600_delta(uint16_t a, uint16_t b)
 
 int32_t as5600_cdeg(int32_t counts)
 {
-    const int32_t n = counts * AS5600_CDEG_TURN;
-    const int32_t h = (int32_t)(AS5600_COUNTS / 2u);
-    return (n >= 0) ? (n + h) / (int32_t)AS5600_COUNTS
-                    : -((-n + h) / (int32_t)AS5600_COUNTS);
+    /* 64 bits: counts * 36000 leaves 32 bits above |counts| 59,652. */
+    const int64_t n = (int64_t)counts * AS5600_CDEG_TURN;
+    const int64_t h = (int64_t)(AS5600_COUNTS / 2u);
+    const int64_t r = (n >= 0) ? (n + h) / (int64_t)AS5600_COUNTS
+                               : -((-n + h) / (int64_t)AS5600_COUNTS);
+    /* The result passes 32 bits above |counts| 244,335,917: saturate. */
+    if (r > INT32_MAX) {
+        return INT32_MAX;
+    }
+    return (r < -INT32_MAX) ? -INT32_MAX : (int32_t)r;
 }
 
 /* -------------------------------------------------------------- driver */

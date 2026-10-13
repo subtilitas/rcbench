@@ -12,6 +12,7 @@ void prog_link_init(prog_link_t *p)
 {
     if (p != NULL) {
         memset(p, 0, sizeof(*p));
+        p->seen = PROG_LINK_SEEN_NONE;
     }
 }
 
@@ -20,10 +21,13 @@ void prog_link_came_up(prog_link_t *p, uint16_t minor)
     if (p == NULL) {
         return;
     }
-    p->up        = true;
-    p->page      = minor >= LINK_MINOR_PROG;
-    p->known     = false;
-    p->read_once = false;
+    p->up          = true;
+    p->page        = minor >= LINK_MINOR_PROG;
+    p->target_rate = minor >= LINK_MINOR_SERVO_TARGET_RATE;
+    p->known       = false;
+    p->read_once   = false;
+    p->seen        = PROG_LINK_SEEN_NONE;
+    p->rate        = (uint8_t)PROG_LINK_RATE_KEPT;
 }
 
 void prog_link_lost(prog_link_t *p)
@@ -31,10 +35,37 @@ void prog_link_lost(prog_link_t *p)
     if (p == NULL) {
         return;
     }
-    p->up        = false;
-    p->page      = false;
-    p->known     = false;
-    p->read_once = false;
+    p->up          = false;
+    p->page        = false;
+    p->target_rate = false;
+    p->known       = false;
+    p->read_once   = false;
+    p->seen        = PROG_LINK_SEEN_NONE;
+    p->rate        = (uint8_t)PROG_LINK_RATE_KEPT;
+}
+
+/* The TARGET now known to be @p t: a change from the one known before
+ * returned the SERVO rate to 0. */
+static void target_seen(prog_link_t *p, uint16_t t)
+{
+    if (!p->target_rate) {
+        return;
+    }
+    if (p->seen != PROG_LINK_SEEN_NONE && t != p->seen
+        && p->rate < (uint8_t)PROG_LINK_RATE_RESET) {
+        p->rate = (uint8_t)PROG_LINK_RATE_RESET;
+    }
+    p->seen = (t < PROG_LINK_SEEN_NONE) ? (uint8_t)t : PROG_LINK_SEEN_NONE;
+}
+
+prog_link_rate_t prog_link_rate(prog_link_t *p)
+{
+    if (p == NULL) {
+        return PROG_LINK_RATE_KEPT;
+    }
+    const prog_link_rate_t r = (prog_link_rate_t)p->rate;
+    p->rate = (uint8_t)PROG_LINK_RATE_KEPT;
+    return r;
 }
 
 void prog_link_want(prog_link_t *p, uint8_t target, bool pwm)
@@ -91,6 +122,7 @@ void prog_link_read(prog_link_t *p, const uint16_t *regs, uint32_t now_ms)
     }
     memcpy(p->regs, regs, sizeof(p->regs));
     p->known = true;
+    target_seen(p, regs[LINK_PG_TARGET]);
 }
 
 void prog_link_stale(prog_link_t *p)
@@ -212,6 +244,15 @@ void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack)
 {
     if (p == NULL || w == NULL || !p->page) {
         return;
+    }
+    if (w->off == (uint8_t)LINK_PG_TARGET && p->target_rate) {
+        if (ack) {
+            target_seen(p, w->value);
+        } else {
+            /* Changed or not, the rate it leaves is not known. */
+            p->rate = (uint8_t)PROG_LINK_RATE_UNKNOWN;
+            p->seen = PROG_LINK_SEEN_NONE;
+        }
     }
     if (!ack || !p->known || w->off >= LINK_PG_REGS) {
         p->known = false;
