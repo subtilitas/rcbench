@@ -183,6 +183,7 @@ history is in git.
 
 ### Changed
 
+- The splash's credit line reads "Designed by JuWi" in English and German.
 - PICK A PIN places every pad, key and marker at the nearest pixel of its
   0.01 mm position instead of truncating it, so a drawn pad and its key
   meet. Positions move by up to 1 px.

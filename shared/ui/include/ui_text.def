@@ -52,7 +52,7 @@ UI_TEXT(SPLASH_SETTINGS,            0, "SETTINGS")
 UI_TEXT(SPLASH_LINK,                0, "LINK")
 UI_TEXT(SPLASH_IOMCU,               0, "COPROCESSOR")
 UI_TEXT(SPLASH_TAGLINE,             0, "motor, ESC and servo test bench")
-UI_TEXT(SPLASH_CREDIT,              0, "built with Claude Code")
+UI_TEXT(SPLASH_CREDIT,              0, "Designed by JuWi")
 
 /* ----------------------------------------------------------- bus fault */
 UI_TEXT(BF_BUS_OFF_TEXT,           29, "this panel is off the bus")
