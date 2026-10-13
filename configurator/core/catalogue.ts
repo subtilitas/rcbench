@@ -448,8 +448,8 @@ const parts: Part[] = [
     pins: [pin('USB', same('USB-C'), guide('wires'))],
     buy: [
       buy(null, t('USB-C PD charger, 20 V', 'USB-C-PD-Ladegerät, 20 V'), t(
-        'With a 20 V profile. The PD mini output stays at least 0.5 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
-        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,5 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
+        'With a 20 V profile. The PD mini output stays at least 0.7 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
+        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,7 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
       )),
     ],
     src: guide('also-needed'),
