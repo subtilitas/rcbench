@@ -1444,8 +1444,8 @@ const wires: Wire[] = [
     n: 63, kind: 'wire', a: 'usbtap.OUT', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
     signal: t('PD in', 'PD-Eingang'),
     note: t(
-      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at most input less 0.5 V.',
-      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini höchstens Eingang minus 0,5 V.',
+      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.5 V below the input voltage.',
+      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini mindestens 0,5 V unter der Eingangsspannung.',
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
@@ -2081,8 +2081,8 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      "<b>ESC power from two sources only:</b> A, the ESC's own battery, or B, the PD mini output within its limits: 1 to 20 V, up to 3 A, and at most its input voltage less 0.5 V. A set point over the input puts the module into ERR until it is power cycled.",
-      '<b>Versorgung des ESC nur aus zwei Quellen:</b> A, dem eigenen Akku des ESC, oder B, dem Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20 V, bis 3 A und höchstens Eingangsspannung minus 0,5 V. Ein Sollwert über der Eingangsspannung versetzt das Modul in den Zustand ERR, bis es aus- und wieder eingeschaltet wird.',
+      "<b>ESC power from two sources only:</b> A, the ESC's own battery, or B, the PD mini output within its limits: 1 to 20 V, up to 3 A, and at least 0.5 V below its input voltage. A set point over the input voltage puts the module into ERR until it is power cycled.",
+      '<b>Versorgung des ESC nur aus zwei Quellen:</b> A, dem eigenen Akku des ESC, oder B, dem Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20 V, bis 3 A und mindestens 0,5 V unter der Eingangsspannung. Ein Sollwert über der Eingangsspannung versetzt das Modul in den Zustand ERR, bis es aus- und wieder eingeschaltet wird.',
     ),
     src: guide('safety'),
   },
@@ -2300,8 +2300,8 @@ const powerSources: PowerSource[] = [
     id: 'pd-servo', feeds: 'servo',
     label: t('PD mini from a USB-C PD charger', 'PD mini an einem USB-C-PD-Ladegerät'),
     text: t(
-      'The bench sets the output of the PD mini over a UART. The output is at most the input voltage less 0.5 V. PD: USB Power Delivery.',
-      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang liegt höchstens bei Eingangsspannung minus 0,5 V. PD: USB Power Delivery.',
+      'The bench sets the output of the PD mini over a UART. The output stays at least 0.5 V below the input voltage. PD: USB Power Delivery.',
+      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang bleibt mindestens 0,5 V unter der Eingangsspannung. PD: USB Power Delivery.',
     ),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [
@@ -2368,8 +2368,8 @@ const powerSources: PowerSource[] = [
     id: 'pd-esc', feeds: 'esc',
     label: t('B: PD mini from a USB-C PD charger', 'B: PD mini an einem USB-C-PD-Ladegerät'),
     text: t(
-      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output is at most the input voltage less 0.5 V.`,
-      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang liegt höchstens bei Eingangsspannung minus 0,5 V.`,
+      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output stays at least 0.5 V below the input voltage.`,
+      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang bleibt mindestens 0,5 V unter der Eingangsspannung.`,
     ),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [

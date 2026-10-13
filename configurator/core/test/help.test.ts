@@ -133,10 +133,10 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
   const iMin = define(pd, 'PDMINI_I_MIN_MA')!;
   const iMax = define(pd, 'PDMINI_I_MAX_MA')!;
   assert.match(help('supply').en, new RegExp(`${vMin / 1000} to ${vMax / 1000} V, ${iMin / 1000} to ${iMax / 1000} A`));
-  // Every text that states the cap, the bubble of the supply among them, states it in one form: at most the
-  // input less the cap, and the same number.
-  assert.match(help('supply').en, /the voltage at most the input of the module less \d/);
-  assert.match(help('supply').de, /die Spannung höchstens Eingang des Moduls minus \d/);
+  // Every text that states the cap, the bubble of the supply among them, states it in one form: at least
+  // the cap below the input, and the same number.
+  assert.match(help('supply').en, /the voltage at least \d+(?:\.\d+)? V below the input voltage of the module/);
+  assert.match(help('supply').de, /die Spannung mindestens \d+(?:,\d+)? V unter der Eingangsspannung des Moduls/);
   const texts = [
     help('supply'),
     ...CATALOGUE.safety.map((s) => s.text),
@@ -144,14 +144,17 @@ test('the numbers of the texts match the sources at the release tag', (t) => {
     ...CATALOGUE.powerSources.map((p) => p.text),
   ];
   const stated = texts.flatMap((x) => [
-    ...[...x.en.matchAll(/input(?: voltage| of the module)? less (\d+(?:\.\d+)?) V/g)].map((m) => `${m[1]} V`),
-    ...[...x.de.matchAll(/Eingang(?:sspannung| des Moduls)? minus (\d+(?:,\d+)?) V/g)].map((m) => `${m[1]} V`),
+    ...[...x.en.matchAll(/at least (\d+(?:\.\d+)?) V below/g)].map((m) => `${m[1]} V`),
+    ...[...x.de.matchAll(/mindestens (\d+(?:,\d+)?) V unter/g)].map((m) => `${m[1]} V`),
   ]);
   assert.ok(stated.length >= 10, `${stated.length} statements of the cap`);
-  // The cap is never stated as a gap under the input: that reads as "within 0.5 V of the input".
+  // The cap is never stated as "at most N V under the input", which reads as "within N V of the input", and
+  // no text keeps the form "input less N V" next to the stated one.
   for (const x of texts) {
-    assert.doesNotMatch(x.en, /at most \d+(?:\.\d+)? V under/, x.en);
+    assert.doesNotMatch(x.en, /at most \d+(?:\.\d+)? V (?:under|below)/, x.en);
     assert.doesNotMatch(x.de, /höchstens \d+(?:,\d+)? V unter/, x.de);
+    assert.doesNotMatch(x.en, /\bless \d+(?:\.\d+)? V/, x.en);
+    assert.doesNotMatch(x.de, /\bminus \d+(?:,\d+)? V/, x.de);
   }
   assert.deepEqual([...new Set(stated)].sort(), [volts(cap, 'de'), volts(cap, 'en')].sort());
 

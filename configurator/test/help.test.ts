@@ -153,7 +153,7 @@ test('the needs of a part are the parts it brings and the wires of its supply in
   // The power input of the PD mini is a supply wire too: the USB-C cable from the T-plug.
   assert.deepEqual(needs('pdmini'), [
     'Needs: PD charger, T-plug.',
-    'PD in: T-plug OUT, USB-C socket. USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at most input less 0.5 V.',
+    'PD in: T-plug OUT, USB-C socket. USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.5 V below the input voltage.',
   ]);
   assert.match(needs('pdmini', DEFAULT_OPTIONS, 'de')[1]!, /^PD-Eingang: T-Stecker OUT, USB-C-Buchse\. USB-C-Kabel, /);
   assert.deepEqual(needs('sd'), ['Needs no further part of the bench.']);
