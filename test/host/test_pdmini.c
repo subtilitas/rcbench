@@ -2079,6 +2079,70 @@ TEST_CASE(an_on_being_confirmed_gets_no_early_state_read)
     CHECK(ons >= 160u);
 }
 
+/*
+ * While an OFF waits to be confirmed, a state read asked for by
+ * pdmini_check_off() and a restart owed both wait for the confirming read
+ * at PDMINI_CONFIRM_MS: neither goes to the module in between.
+ */
+TEST_CASE(a_check_or_restart_waits_while_an_off_is_unconfirmed)
+{
+    rest_with_output(false);
+    d.check      = (uint8_t)PDMINI_CHECK_ASKED;
+    d.en_pending = true;
+    d.en_for     = false;
+    d.en_at      = now;
+    CHECK_EQ(job_aged(0u, 0u, 0u, 0u), 0u);
+
+    rest_with_output(false);
+    pdmini_want_off(&d);
+    d.reset_owed = true;
+    d.en_pending = true;
+    d.en_for     = false;
+    d.en_at      = now;
+    CHECK(job_aged(0u, 0u, 0u, 0u) != PDMINI_SYSTEM_RESET);
+}
+
+/* An ON is not started while the input is unknown and its read is not yet
+ * due: the ON reads wait for the input read, a second after the last. */
+TEST_CASE(an_on_waits_for_the_input_when_it_is_unknown)
+{
+    rest_with_output(false);
+    pdmini_want(&d, true, 5000u, 1000u);
+    d.input_known  = false;
+    d.input_seen   = true;
+    d.input_misses = 0u;
+    CHECK_EQ(job_aged(0u, 0u, 500u, 0u), 0u);
+}
+
+/* Firmware that never answers the input read gets its ON: the unknown
+ * input and a reading of 0 mV do not hold it as a sagging source. */
+TEST_CASE(an_on_goes_ahead_when_the_firmware_has_no_input_read)
+{
+    rest_with_output(false);
+    d.input_known  = false;
+    d.input_seen   = false;
+    d.input_misses = PDMINI_INPUT_MISSES;
+    d.st.vin_mv    = 0u;
+    pdmini_want(&d, true, 5000u, 1000u);
+    CHECK_EQ(job_aged(0u, 0u, 0u, 0u), PDMINI_READ_DATA);
+    CHECK(d.want_output);
+}
+
+/* An unidentified module is asked WHO_AM_I when PDMINI_IDENTIFY_MS have
+ * passed since the last ask, not 1 ms before. */
+TEST_CASE(who_am_i_is_asked_when_the_identify_interval_is_up)
+{
+    rest_with_output(false);
+    d.identified    = false;
+    d.last_identify = now - (PDMINI_IDENTIFY_MS - 1u);
+    CHECK_EQ(job_aged(0u, 0u, 0u, 0u), 0u);
+
+    rest_with_output(false);
+    d.identified    = false;
+    d.last_identify = now - PDMINI_IDENTIFY_MS;
+    CHECK_EQ(job_aged(0u, 0u, 0u, 0u), PDMINI_WHO_AM_I);
+}
+
 /* The next command the module is sent. */
 static uint8_t next_command(void)
 {
@@ -2905,6 +2969,10 @@ int main(void)
     RUN(the_input_goes_first_only_with_something_to_write);
     RUN(an_input_never_answered_goes_before_a_set_point_every_5_s);
     RUN(an_on_being_confirmed_gets_no_early_state_read);
+    RUN(a_check_or_restart_waits_while_an_off_is_unconfirmed);
+    RUN(an_on_waits_for_the_input_when_it_is_unknown);
+    RUN(an_on_goes_ahead_when_the_firmware_has_no_input_read);
+    RUN(who_am_i_is_asked_when_the_identify_interval_is_up);
     RUN(no_overdue_reading_splits_the_reads_before_an_on);
     RUN(an_on_after_a_pause_reads_the_input_first);
     RUN(a_restart_goes_with_the_output_off_and_is_followed);
