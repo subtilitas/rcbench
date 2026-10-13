@@ -777,7 +777,7 @@ const wires: Wire[] = [
     signal: HB,
     note: t(
       'The interlock. The coprocessor refuses to arm without it.',
-      'Die Verriegelung. Ohne ihn schaltet der Koprozessor nicht scharf.',
+      'Die Verriegelung. Ohne ihn schaltet der Koprozessor nicht auf ARMED.',
     ),
     when: { not: { has: 'estop' } }, stage: 1, route: { kind: 'L', lane: 3 }, pin: 'fixed',
     src: guide('wires'),
@@ -1881,22 +1881,22 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      '<b>STOP</b> disarms, switches the PD mini output off, and latches until the next ARM. Arming is a 2 s hold on ARM; disarming is a press; leaving a bench screen disarms.',
-      '<b>STOP</b> entschärft, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Scharf schalten: ARM 2 s halten. Entschärfen: kurz tippen. Auch das Verlassen einer Prüfstandsseite entschärft.',
+      '<b>STOP</b> switches the bench to SAFE, switches the PD mini output off, and latches until the next ARM. Switching to ARMED takes a 2 s hold on ARM; switching to SAFE takes a press; leaving a bench screen switches to SAFE.',
+      '<b>STOP</b> schaltet den Prüfstand auf SAFE, schaltet den Ausgang des PD mini ab und rastet bis zum nächsten ARM ein. Auf ARMED schalten: ARM 2 s halten. Auf SAFE schalten: kurz tippen. Auch das Verlassen einer Prüfstandsseite schaltet auf SAFE.',
     ),
     src: guide('safety'),
   },
   {
     text: t(
-      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. A coprocessor that hangs while armed is not stopped by anything.',
-      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der Koprozessor im scharfen Zustand, stoppt ihn nichts.',
+      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. A coprocessor that hangs while ARMED is not stopped by anything.',
+      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der Koprozessor in ARMED, stoppt ihn nichts.',
     ),
     src: guide('safety'),
   },
   {
     text: t(
-      'An armed bench drives every bound pin. A pin bound as SERVO PWM rests at 1500 µs, which an ESC can read as about half throttle. Bind an ESC as MOTOR PWM or DShot only.',
-      'Ein scharfer Prüfstand treibt jeden gebundenen Pin. Ein als SERVO PWM gebundener Pin ruht bei 1500 µs, für einen ESC etwa Halbgas. Einen ESC deshalb nur als MOTOR PWM oder DShot binden.',
+      'An ARMED bench drives every bound pin. A pin bound as SERVO PWM rests at 1500 µs, which an ESC can read as about half throttle. Bind an ESC as MOTOR PWM or DShot only.',
+      'Ein Prüfstand in ARMED treibt jeden gebundenen Pin. Ein als SERVO PWM gebundener Pin ruht bei 1500 µs, für einen ESC etwa Halbgas. Einen ESC deshalb nur als MOTOR PWM oder DShot binden.',
     ),
     src: guide('safety'),
   },

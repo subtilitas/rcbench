@@ -127,7 +127,7 @@ trim not applied. With the defaults (RANGE 80 %, TRAVEL +/-90 deg, PULSE MIN
 only.
 
 A run that completes also switches the output off and releases the servo to
-its centre. On the bench it leaves armed, the commanded value shown is then
+its centre. On a bench it leaves in ARMED, the commanded value shown is then
 the rest, as after RELEASE: 1500 us for STANDARD PWM whatever the trim, and
 the next drag or knob turn starts from it. A step's first two moves, centre to the low end and on to the
 high end, are not counted: they measure each end's holding level. The counted moves then go
@@ -380,9 +380,9 @@ SETUP, INTERFACES, AS5600 (default OFF) and read by the coprocessor
 The current's results are unchanged and the angle decides nothing: it is not
 part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
 its report are as without the part. The coprocessor takes the SENSE set-up
-only while the bank is disarmed. A run uses the angle only when the
-coprocessor holds AS5600 on: AS5600 switched on while armed gives a run
-without angle columns until the set-up has been taken in a disarmed state.
+only while the bank is SAFE. A run uses the angle only when the
+coprocessor holds AS5600 on: AS5600 switched on while ARMED gives a run
+without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
 or ENC CENTRE on the DUT page, which takes the live count with the servo at
@@ -435,7 +435,7 @@ page (every 40 ms). It starts at the command as the test issues it and so
 includes the command's way to the pin: the render loop, the control task,
 the link and the next PWM frame, up to one poll interval and one frame, not
 measured. It ends when the angle comes within 1.05 degrees of its final
-value, which is earlier than the arm's last movement by the time that takes:
+value, which is earlier than the servo arm's last movement by the time that takes:
 on a 0.09 degrees a microsecond servo at 1.2 us a millisecond, about 10 ms.
 Only counted moves are reported. The moves that place the horn at each end
 first are not. A move is left out of the angle's counts, neither unmoved nor
@@ -444,7 +444,7 @@ settled (a reading marked invalid, or one that follows readings lost on the
 way to the screen after a stall of 320 ms or more, either of which drops the
 angle history), when the
 move has no start angle, and when the run ends for any reason other than
-completion (STOP, disarm, link loss, supply fault, stall) before the move
+completion (STOP, switch to SAFE, link loss, supply fault, stall) before the move
 settled: its window was cut short, and the current's results do not count
 such a move either. A move that had settled before the gap or the abort
 keeps its result.
@@ -482,12 +482,12 @@ link back. The same holds while the sensor reports no magnet.
 ### What ends a run
 
 Every ending switches the output off, releases the servo to its centre, and
-still writes the report, marked ABORTED with the reason. The bench stays armed
-unless the ending was a disarm, STOP or leaving the screen, which disarm.
-A step the run has posted and the panel has not sent when the bench disarms
-or stops is not sent. After a run ended by a disarm, STOP or leaving the
+still writes the report, marked ABORTED with the reason. The bench stays ARMED
+unless the ending was a switch to SAFE, STOP or leaving the screen, which switch the bench to SAFE.
+A step the run has posted and the panel has not sent when the bench switches to SAFE
+or stops is not sent. After a run ended by a switch to SAFE, STOP or leaving the
 screen, the horn and COMMANDED stay at the position the run last drove;
-after an ending that leaves the bench armed they show the rest the release
+after an ending that leaves the bench ARMED they show the rest the release
 puts the pins at, 1500 us for STANDARD PWM whatever the trim, and the next
 drag or knob turn starts from it.
 Once a run is over, whichever screen is up, SUPPLY's set points go back to
@@ -500,7 +500,7 @@ left as they are.
 | Reason in the report | Cause |
 | --- | --- |
 | `STOP` | STOP on the band |
-| `bench disarmed` | DISARM, or anything else that disarmed the bench |
+| `bench SAFE` | DISARM, or anything else that switched the bench to SAFE |
 | `link lost` | the link to the coprocessor went down during the run |
 | `SERVO screen left` | another screen opened |
 | `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, PROGRAM |
@@ -562,10 +562,10 @@ compared by its magnitude and in whole mA: see
 
 ### Files
 
-A run takes the next run number on the card, as an armed bench does, and the
+A run takes the next run number on the card, as a bench in ARMED does, and the
 SD card's own task writes its files: `BENCHnnn.CSV`, one row per reading of
 the run's meter, and with the DUT page's REPORT on, `BENCHnnn.TXT`. A run is
-one CSV: the armed bench's own run log writes no row while a run is under
+one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a
 `BENCHnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
@@ -743,18 +743,18 @@ Not measured on a bench: a window's lag behind the horn, whether the 50 ms
 mean shows the moves of a servo that the PD mini does not, what CH1 reads
 with a servo on a stop, and the constant-current rule against a PD mini.
 
-## The commanded position follows the armed bench
+## The commanded position follows ARMED
 
-The SERVO screen's commanded position changes only while the bench is armed,
+The SERVO screen's commanded position changes only while the bench is ARMED,
 which is while a pin follows it.
 
 | Bench | Commanded position |
 | --- | --- |
-| disarmed | the position last driven; the dial, the rotary knob, CENTRE and SWEEP are refused and nothing is sent |
-| at the arm | the surface's rest: the midpoint of the channel's endpoints, without TRIM |
-| armed | what the dial, the knob, CENTRE, a sweep or a run commands |
+| SAFE | the position last driven; the dial, the rotary knob, CENTRE and SWEEP are refused and nothing is sent |
+| at the switch to ARMED | the surface's rest: the midpoint of the channel's endpoints, without TRIM |
+| ARMED | what the dial, the knob, CENTRE, a sweep or a run commands |
 
-| TYPE | Endpoints | Value at the arm |
+| TYPE | Endpoints | Value at the switch to ARMED |
 | --- | --- | ---: |
 | STANDARD PWM | 1000 to 2000 us | 1500 us |
 | NARROW 760 | 660 to 860 us | 760 us |
@@ -762,18 +762,18 @@ which is while a pin follows it.
 | HELI CYCLIC | 820 to 2220 us | 1520 us |
 
 The rest is `outputs_role_rest()` in `shared/outputs/outputs.c`, the value
-the coprocessor renders on an armed channel nobody commands, put through the
+the coprocessor renders on a channel in ARMED that nobody commands, put through the
 range the screen's commands carry. That range is centred on PULSE CENTRE, so
 a PULSE CENTRE set off the middle of PULSE MIN and MAX is the value at the
-arm. TRIM moves commanded positions and not the rest: with TRIM +20 the arm
+switch to ARMED. TRIM moves commanded positions and not the rest: with TRIM +20 the switch to ARMED
 shows 1500 us and a position at 0 deg is 1520 us.
 
-A sweep ends at a disarm and its last drawn position stays on screen; no
-position of it is sent after the disarm. The controls, one by one:
+A sweep ends at a switch to SAFE and its last drawn position stays on screen; no
+position of it is sent after the switch to SAFE. The controls, one by one:
 [Screens](Screens.md#servo).
 
-The panel centres the surfaces before it arms and the screen shows
-the rest when the bench reports armed; the time between the two on a bench
+The panel centres the surfaces before it switches to ARMED and the screen shows
+the rest when the bench reports ARMED; the time between the two on a bench
 is not measured.
 
 ## Sweep and SPEED
