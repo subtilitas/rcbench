@@ -1276,6 +1276,10 @@ int main(int argc, char **argv)
             motor_screen_push(&bench);
         }
         motor_screen_set_throttle(64.0f);
+        /* Two pins bound as motors, as the panel reads them from the
+         * binding. */
+        motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
+                                       true);
         /* The run ends for the held view, so the trace stops where the last
          * sample left it and the panel says it is holding one. */
         if (strcmp(view, "motor-held") == 0) {

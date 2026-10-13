@@ -28,35 +28,35 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            8,861     1108 KiB     29.1      19.5
-frame-idle        1,288      161 KiB      4.2      39.0
-held             4,778      597 KiB     15.7      39.0
-sim              9,828     1228 KiB     32.3      19.5
-throttle        10,586     1323 KiB     34.7      19.5
-chrome          33,107     4138 KiB    108.7       7.8
-overview           959      120 KiB      3.1      39.0
-servo           15,592     1949 KiB     51.2      19.5
-servo-grip        3,071      384 KiB     10.1      39.0
-servo-current        4,068      508 KiB     13.4      39.0
-supply           8,589     1074 KiB     28.2      19.5
-supply-chrome       31,561     3945 KiB    103.6       7.8
-analyser           891      111 KiB      2.9      39.0
-logs               919      115 KiB      3.0      39.0
-settings           886      111 KiB      2.9      39.0
-battery            891      111 KiB      2.9      39.0
-balance            885      111 KiB      2.9      39.0
-programmer          904      113 KiB      3.0      39.0
-balance-sim        2,395      299 KiB      7.9      39.0
-settings-sim        2,410      301 KiB      7.9      39.0
-battery-sim        2,397      300 KiB      7.9      39.0
-analyser-chrome       39,237     4905 KiB    128.8       6.5
-logs-chrome       16,054     2007 KiB     52.7      13.0
-settings-chrome       24,061     3008 KiB     79.0       9.8
-battery-chrome       36,991     4624 KiB    121.4       7.8
-balance-chrome       40,810     5101 KiB    133.9       6.5
-programmer-chrome       29,254     3657 KiB     96.0       9.8
-picker             887      111 KiB      2.9      39.0
-picker-chrome       15,868     1984 KiB     52.1      13.0
+frame            8,828     1104 KiB     29.0      19.5
+frame-idle        1,278      160 KiB      4.2      39.0
+held             4,752      594 KiB     15.6      39.0
+sim              9,794     1224 KiB     32.1      19.5
+throttle        10,728     1341 KiB     35.2      19.5
+chrome          33,141     4143 KiB    108.8       7.8
+overview           956      120 KiB      3.1      39.0
+servo           15,559     1945 KiB     51.1      19.5
+servo-grip        3,061      383 KiB     10.0      39.0
+servo-current        4,055      507 KiB     13.3      39.0
+supply           8,555     1069 KiB     28.1      19.5
+supply-chrome       31,494     3937 KiB    103.4       7.8
+analyser           892      112 KiB      2.9      39.0
+logs               909      114 KiB      3.0      39.0
+settings           872      109 KiB      2.9      39.0
+battery            885      111 KiB      2.9      39.0
+balance            870      109 KiB      2.9      39.0
+programmer          903      113 KiB      3.0      39.0
+balance-sim        2,380      298 KiB      7.8      39.0
+settings-sim        2,396      300 KiB      7.9      39.0
+battery-sim        2,387      298 KiB      7.8      39.0
+analyser-chrome       39,201     4900 KiB    128.7       6.5
+logs-chrome       16,025     2003 KiB     52.6      13.0
+settings-chrome       23,979     2997 KiB     78.7       9.8
+battery-chrome       36,962     4620 KiB    121.3       7.8
+balance-chrome       40,776     5097 KiB    133.8       6.5
+programmer-chrome       29,203     3650 KiB     95.8       9.8
+picker             880      110 KiB      2.9      39.0
+picker-chrome       15,854     1982 KiB     52.0      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -195,7 +195,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 080 | 3 088 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 368 | 2 800 |
 | `control` | `control_task` | 6 144 | 4 432 | 688 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |

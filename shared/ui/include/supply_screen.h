@@ -21,6 +21,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #include "supply.h"
 #include "ui_screen.h"
@@ -85,6 +86,19 @@ bool supply_screen_model(void);
  * Not shown for the model, nor while the module does not answer.
  */
 void supply_screen_set_baud(uint32_t baud);
+
+/**
+ * The PD mini's UART pins, coprocessor GPIO numbers, named in the header
+ * ("PD MINI TX GP12 RX GP13").  A negative pin is not set; with either pin
+ * not set the header says "PD MINI NO PINS".  Not shown for the model.
+ */
+void supply_screen_set_pins(int tx, int rx);
+
+/**
+ * The left text of the header strip: the supply and its pins, the answer
+ * and the rate ("PD MINI TX GP12 RX GP13   ONLINE 38400").
+ */
+void supply_screen_header_text(char *out, size_t size);
 
 /** The set points as the screen holds them, snapped to the caps. */
 float supply_screen_set_v(void);

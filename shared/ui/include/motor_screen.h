@@ -11,6 +11,8 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "bench_state.h"
 #include "ui_screen.h"
@@ -96,6 +98,28 @@ void motor_screen_cancel_arm(void);
  * over the SET_MOTOR_KV setting when it is non-zero.
  */
 void motor_screen_set_esc_kv(int kv);
+
+/**
+ * The GPIOs the throttle drives now: every pin bound as MOTOR PWM or DShot,
+ * bit n for GPIO n, from the binding the application last read.  @p known is
+ * false while no binding was read; the mask is then taken as empty.  The
+ * throttle panel names them, or says there are none or that the binding is
+ * not read.
+ */
+void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known);
+
+/**
+ * The throttle panel's target line, "TARGET: GP0 GP1 +2", in at most
+ * @p cells characters.  Returns true when the line is a warning (the binding
+ * is not read, or no pin is bound as a motor), which the panel draws in the
+ * warning colour.
+ */
+bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
+                           unsigned cells);
+
+/** The throttle panel's target field in 8-pixel cells: from the panel's
+ *  inner edge to 8 px before the widest throttle reading, 100.0. */
+unsigned motor_target_cells(void);
 
 float motor_screen_throttle(void);
 /** The application's hook: sets the slider on an armed or a disarmed bench
