@@ -85,6 +85,7 @@ function card(view: View, r: ResolvedPart, why: string): string {
   if (variant) name += `, ${tx(lang, variant)}`;
   const shown = picturesOf(p, options);
   return `<li${shown.length > 0 ? ' class="pic"' : ''}><div><b>${esc(name)}</b>`
+    + (p.modelled ? ` <span class="tag">${esc(t(lang, 'modelled'))}</span>` : '')
     + `<small>${esc(p.role ? tx(lang, p.role) : '')}</small>`
     + `<span class="why">${esc(why)}</span>${removeControl(view, p)}</div>`
     + (shown.length > 0 ? `<div class="pics">${shown.map((x) => picture(x, lang)).join('')}</div>` : '')

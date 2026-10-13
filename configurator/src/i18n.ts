@@ -102,6 +102,7 @@ const S = {
   vPd: ['B: PD mini output, 1 to 20 V, up to 3 A', 'B: Ausgang des PD mini, 1 bis 20 V, bis 3 A'],
   optLocked: ['Not available: {f} needs the other variant.', 'Nicht wählbar: {f} braucht die andere Variante.'],
   nir: ['Not in a release', 'Nicht in einem Release'],
+  modelled: ['Modelled part: no product chosen', 'Modelliertes Teil: kein Produkt gewählt'],
   result: ['Your bench', 'Dein Prüfstand'],
   sum: ['{p} parts, {w} wires, {f} functions.', '{p} Teile, {w} Drähte, {f} Funktionen.'],
   sum1: ['{p} parts, {w} wires, 1 function.', '{p} Teile, {w} Drähte, 1 Funktion.'],

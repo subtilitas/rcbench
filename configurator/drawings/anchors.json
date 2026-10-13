@@ -1099,6 +1099,39 @@
     }
    }
   },
+  "dcsup.svg": {
+   "part": "dcsup",
+   "variant": null,
+   "viewBox": [
+    0,
+    0,
+    290,
+    200
+   ],
+   "names": "catalogue",
+   "pins": {
+    "POS": {
+     "x": 260,
+     "y": 72,
+     "side": "E",
+     "labelId": "dcs-lbl-POS",
+     "label": {
+      "en": "+",
+      "de": "+"
+     }
+    },
+    "NEG": {
+     "x": 260,
+     "y": 132,
+     "side": "E",
+     "labelId": "dcs-lbl-NEG",
+     "label": {
+      "en": "−",
+      "de": "−"
+     }
+    }
+   }
+  },
   "esc.svg": {
    "part": "esc",
    "variant": null,

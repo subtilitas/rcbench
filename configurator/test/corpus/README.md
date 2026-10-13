@@ -24,7 +24,7 @@ Entries by name:
 
 | Prefix | Count | Input |
 |---|---:|---|
-| `page-` | 54 | Hashes the page writes. 5 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`. |
+| `page-` | 55 | Hashes the page writes. 6 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`. |
 | `hand-` | 10 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. |
 | `bad-empty`, `bad-number-sign`, `bad-two-number-signs` | 3 | No hash, the number sign alone, two number signs. |
 | `bad-cut-` | 14 | A link cut short. |

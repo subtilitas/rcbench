@@ -554,7 +554,7 @@ test('the label of a pin has the form the generator writes: an attribute that hi
       n += Object.keys(r.pins).length;
     }
   }
-  assert.equal(n, 2 * 177);
+  assert.equal(n, 2 * 179);
 });
 
 test('a pin of a drawing is the target of 1 pin of the data file: a shared or repeated target is a finding', () => {

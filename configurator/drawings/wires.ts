@@ -52,10 +52,10 @@ export const MINUS = 'black';
 
 /**
  * Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the
- * coprocessor, and the V pin of a strip of the Osoyoo breakout board.
+ * coprocessor, the V pin of a strip of the Osoyoo breakout board and the plus of its DC input.
  */
 export const PLUS_NETS: ReadonlySet<string> = new Set([
-  'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus', 'strip_v',
+  'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus', 'strip_v', 'osoyoo_vin',
 ]);
 /**
  * Nets that run in a USB-C cable between 2 sockets. A wire on one of them stands for the whole cable:
@@ -65,7 +65,7 @@ export const CABLE_NETS: ReadonlySet<string> = new Set(['pd_in']);
 /** Palette colour of the sheath of a cable. */
 export const SHEATH = 'grey';
 /** Nets of ground and supply minus. */
-export const MINUS_NETS: ReadonlySet<string> = new Set(['gnd', 'batt_neg', 'esc_neg']);
+export const MINUS_NETS: ReadonlySet<string> = new Set(['gnd', 'batt_neg', 'esc_neg', 'osoyoo_vin_neg']);
 
 /** Colour of a signal by net. A net listed here overrides the colour of its class. */
 export const BY_NET: Readonly<Record<string, string>> = {
