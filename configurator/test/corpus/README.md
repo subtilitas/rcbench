@@ -17,19 +17,21 @@ corpus keeps its meaning.
 
 `expect` holds: ticked functions, ticked parts, options, language, kinds of the
 notices, the ids a notice names, the hash the page writes on the first change,
-the parts of the setup and the functions the setup enables. The language is
+the parts of the setup and the functions the setup enables. An entry whose
+hash names a row token under `h` also holds `have`: the "have it" ticks of the
+parts list that the page keeps. The language is
 the one for a browser that asks for English.
 
 Entries by name:
 
 | Prefix | Count | Input |
 |---|---:|---|
-| `page-` | 55 | Hashes the page writes. 6 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`. |
+| `page-` | 58 | Hashes the page writes. 9 of them are added after the start: 2 for the option token `servo5v`, 3 for the function `servoprog`, 1 for the part `dcsup`, 3 for the key `h`. |
 | `hand-` | 10 | Well-formed hashes in another spelling: other key order, repeated ids, default tokens. |
 | `bad-empty`, `bad-number-sign`, `bad-two-number-signs` | 3 | No hash, the number sign alone, two number signs. |
 | `bad-cut-` | 14 | A link cut short. |
-| `bad-version-` | 18 | Another version, no version, the version twice. |
-| `bad-id-` | 23 | Unknown ids, ids of the wrong kind, ids in upper case. |
+| `bad-version-` | 19 | Another version, no version, the version twice. 1 of them, the key `h` without a version, is added after the start. |
+| `bad-id-` | 29 | Unknown ids, ids of the wrong kind, ids in upper case. 6 of them are added after the start for the key `h`: an unknown row, a row of another variant, of a part outside the setup, of an owned part, of a part the visitor brings, and malformed tokens. |
 | `bad-limit-` | 7 | 64 and 65 ids, 2000 and 2001 characters, 3 hashes of 64 kB. |
 | `bad-percent-` | 20 | Percent-encoding: encoded separators, broken escapes, a byte that is no UTF-8, a plus sign. |
 | `bad-shape-` | 20 | Input that is no key-value list: script text, repeated separators, other separators. |

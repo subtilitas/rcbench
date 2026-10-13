@@ -2,6 +2,6 @@
 // core code.
 export {
   CATALOGUE, resolve, DEFAULT_OPTIONS, FUNCTION_HELP, PICTURES_MAX, alwaysOn, baseParts, brought, buyRows, deselectEffect, groups,
-  plainDrive, removalEffect, removalIsPlain, testObjects,
+  plainDrive, removalEffect, removalIsPlain, rowToken, testObjects,
 } from '../core/index.ts';
 export type { Deselect, Group, Removal } from '../core/index.ts';

@@ -103,6 +103,19 @@ history is in git.
   for a set of options, a variant without a row of its own, a page that is
   not https or carries a tracking parameter, and a brought part that names a
   maker.
+- Each row of "Parts to buy" in the bench configurator has a tick "Have it"
+  ("Habe ich"). A ticked row leaves the rows to buy and stands under "You
+  have" ("Hast du"); removing the tick returns it. The rows under "You bring"
+  have no tick. The URL hash keeps the ticks under the new key `h`, one row
+  token each: the part id, or the part id, a dot and the row id
+  (`#v=1&f=escpow&h=panel,wire.dmm`). A token that names no row to buy of the
+  setup is dropped and named in the notice. Links without `h` open the same
+  setup as before; the hash version stays 1. "Copy as text" lists the ticked
+  rows under "You have", "Copy as CSV" leaves them out, and the PDF lists
+  them under "You have". The tick works on a part that a function adds as
+  well. Data: `Buy.id` names a row within its part; `npm run check`
+  reports more than 1 row of a part without an id, an id that occurs twice
+  in a part, and a malformed id.
 
 - Every test of `test/host` stops after 120 s unless it sets its own limit,
   and every CI job has a `timeout-minutes` limit.

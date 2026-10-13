@@ -93,9 +93,9 @@ export function shortHash(text: string): string {
   return h.toString(16).padStart(8, '0');
 }
 
-/** `rcbench-setup-<hash>-<lang>.pdf`. The hash names the selection, not the language. */
+/** `rcbench-setup-<hash>-<lang>.pdf`. The hash names the selection and the "have it" ticks, not the language. */
 export function fileName(view: View): string {
-  return `rcbench-setup-${shortHash(formatHash(view.selection, view.lang, view.lang, view.catalogue))}-${view.lang}.pdf`;
+  return `rcbench-setup-${shortHash(formatHash(view.selection, view.lang, view.lang, view.catalogue, view.have ?? []))}-${view.lang}.pdf`;
 }
 
 /** Local calendar date as YYYY-MM-DD. */
@@ -182,13 +182,17 @@ function buyItem(lang: Lang, l: BuyLine, bring: boolean): Item {
   return { runs: [{ text: `${qtyText(l)} `, bold: true }, { text: bring ? l.order : lineName(l), bold: true }], tags, lines };
 }
 
-/** The parts to buy, with the release they hold for, then what the visitor brings. */
+/** The parts to buy, with the release they hold for, then what the visitor has and what the visitor brings. */
 function buySection(view: View): Section {
   const { lang } = view;
   const list = partsList(view);
   const blocks: Block[] = [heading(t(lang, 'buy')), para(buyNote(view)), para(p(lang, 'buyHint'), true)];
   if (list.buy.length === 0) blocks.push(para(t(lang, 'buyNone')));
   else blocks.push({ kind: 'list', items: list.buy.map((l) => buyItem(lang, l, false)), bullet: false });
+  if (list.have.length > 0) {
+    const items: Item[] = list.have.map((l) => ({ runs: [{ text: `${qtyText(l)} `, bold: true }, { text: lineName(l), bold: true }], tags: [], lines: [] }));
+    blocks.push(heading(t(lang, 'have'), 3), { kind: 'list', items, bullet: false });
+  }
   if (list.bring.length > 0) {
     blocks.push(heading(t(lang, 'bring'), 3), para(t(lang, 'bringHint'), true), { kind: 'list', items: list.bring.map((l) => buyItem(lang, l, true)), bullet: false });
   }
