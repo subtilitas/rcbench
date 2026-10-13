@@ -203,3 +203,59 @@ def test_a_forced_module_cannot_also_be_excluded(tmp_path, monkeypatch):
 def test_settings_and_touch_are_forced():
     assert set(sp.FORCED) == {"shared/settings", "shared/touch"}
     assert all(reason.strip() for reason in sp.FORCED.values())
+
+
+def test_a_row_joined_with_and_names_both_modules(tmp_path, monkeypatch):
+    empty_exclusions(monkeypatch)
+    monkeypatch.setattr(sp, "FORCED", {"shared/b": "r"})
+    root = tree(tmp_path,
+                {"shared/a/include/a.h": "void a_frame_parse(int x);\n",
+                 "shared/b/include/b.h": "void b_tick(int x);\n"},
+                [])
+    (root / "SECURITY.md").write_text(
+        TABLE.format(rows="| `shared/a` and `shared/b` | x |"))
+    assert sp.problems(root) == []
+
+
+def test_unpack_counts_with_and_without_a_suffix(tmp_path, monkeypatch):
+    empty_exclusions(monkeypatch)
+    root = tree(tmp_path,
+                {"shared/u/include/u.h": "void u_unpack(int x);\n",
+                 "shared/v/include/v.h": "void v_unpack_frame(int x);\n"},
+                [])
+    assert [p.split(" ")[0] for p in sp.problems(root)] == [
+        "shared/u", "shared/v"]
+
+
+def test_a_forced_module_the_name_rule_finds_is_reported_once(
+        tmp_path, monkeypatch):
+    empty_exclusions(monkeypatch)
+    monkeypatch.setattr(sp, "FORCED", {"shared/s": "r"})
+    root = tree(tmp_path,
+                {"shared/s/include/s.h": "void s_frame_parse(int x);\n"},
+                [])
+    assert sp.problems(root) == [
+        "shared/s declares a parse function and is neither in the "
+        "SECURITY.md table nor in NOT_UNTRUSTED",
+        "FORCED names shared/s, which the name rule finds"]
+
+
+def test_a_missing_input_parsing_section_lists_nothing(tmp_path,
+                                                       monkeypatch):
+    empty_exclusions(monkeypatch)
+    root = tree(tmp_path,
+                {"shared/w/include/w.h": "void w_frame_parse(int x);\n"},
+                [])
+    (root / "SECURITY.md").write_text("# Security\n\n## Reporting\n")
+    assert sp.problems(root) == [
+        "shared/w declares a parse function and is neither in the "
+        "SECURITY.md table nor in NOT_UNTRUSTED"]
+
+
+def test_module_names_may_hold_digits(tmp_path, monkeypatch):
+    empty_exclusions(monkeypatch)
+    root = tree(tmp_path,
+                {"shared/gt911/include/gt911.h":
+                 "void gt911_frame_parse(int x);\n"},
+                ["shared/gt911"])
+    assert sp.problems(root) == []

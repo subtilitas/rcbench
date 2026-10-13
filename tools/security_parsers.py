@@ -47,8 +47,8 @@ NAME = re.compile(
     re.M)
 
 # Modules with a matching function whose input is not somebody else's file
-# or frame.  Each reason is checked only for the module being listed.  Empty:
-# every candidate module has a row in the SECURITY.md table.
+# or frame, each with the reason.  Empty: every candidate module has a row
+# in the SECURITY.md table.
 NOT_UNTRUSTED: dict[str, str] = {}
 
 # Modules with outside input whose public functions the name rule does not
