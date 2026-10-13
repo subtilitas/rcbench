@@ -55,6 +55,21 @@ test('a drawn part with pins and no wire is named in the build order', () => {
   }
 });
 
+test('the card of the DC supply of the Osoyoo breakout board carries the mark of a modelled part, no other card does', () => {
+  for (const lang of LANGS) {
+    const tag = `<span class="tag">${t(lang, 'modelled')}</span>`;
+    assert.equal(t(lang, 'modelled'), lang === 'en' ? 'Modelled part: no product chosen' : 'Modelliertes Teil: kein Produkt gewählt');
+    const strip = result(view({ functions: ['servo'], options: { ...DEFAULT_OPTIONS, servoPower: 'bench', connection: 'osoyoo' } }, lang), URL, []);
+    assert.equal(count(strip, tag), 1);
+    const card = strip.slice(strip.indexOf(tag) - 200, strip.indexOf(tag));
+    assert.ok(card.includes(`<b>${esc(CATALOGUE.parts.find((p) => p.id === 'dcsup')!.name[lang])}</b>`), card);
+    for (const options of [{ servoPower: 'bench', connection: 'pads' }, { servoPower: 'external', connection: 'osoyoo' }] as const) {
+      const other = result(view({ functions: ['servo'], options: { ...DEFAULT_OPTIONS, ...options } }, lang), URL, []);
+      assert.equal(count(other, tag), 0, JSON.stringify(options));
+    }
+  }
+});
+
 test('a part that a wire ends on is not listed as loose, a part without pins is', () => {
   const v = view({ owned: ['pdmini', 'sd'] });
   const said = order(v);
@@ -128,10 +143,11 @@ test('a group names a part that is one of several boards and the parts the rules
   assert.ok(escpow.includes(`Also needs: ${short('pull', 'en')}.`), escpow);
   const pd = ['pdmini', 'charger', 'usbtap'].map((id) => short(id, 'en')).join(' + ');
   assert.ok(escpow.includes(`Also needs, by variant: ${short('batt', 'en')}, or ${pd}.`), escpow);
-  // A servo takes its power from the servo supply or from a pin of the bench: the second way adds no part.
+  // A servo takes its power from the servo supply or from a pin of the bench: the 5 V pin adds no part,
+  // the V pin of the Osoyoo breakout board adds its DC supply.
   const servocur = text(fieldset(en, 'g-ina3221'));
   assert.ok(servocur.startsWith(`Needs: ${short('ina3221', 'en')}`), servocur);
-  assert.ok(servocur.includes(`Also needs, by variant: ${short('ssup', 'en')}, or no further part.`), servocur);
+  assert.ok(servocur.includes(`Also needs, by variant: ${short('ssup', 'en')}, or no further part, or ${short('dcsup', 'en')}.`), servocur);
   assert.ok(text(fieldset(en, 'g-pdmini')).startsWith(`Needs: ${short('pdmini', 'en')} Also needs: ${short('charger', 'en')}, ${short('usbtap', 'en')}.`));
   const de = text(fieldset(chooser(view({}, 'de'), false), 'g-ina228'));
   assert.ok(de.startsWith('Braucht: '), de);

@@ -129,13 +129,13 @@ test('the catalogue passes against the repository at the release tag', (t) => {
 });
 
 test('counts: parts, pads, wires, functions, stages, safety notes', () => {
-  assert.equal(CATALOGUE.parts.length, 19);
+  assert.equal(CATALOGUE.parts.length, 20);
   assert.equal(CATALOGUE.parts.filter((p) => p.selectable).length, 8);
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id), ['panel', 'copro', 'usb', 'wire']);
   assert.deepEqual(CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => p.id), ['servo', 'esc']);
   assert.equal(CATALOGUE.pads.length, 40);
   assert.equal(CATALOGUE.pads.filter((p) => p.gpio !== null).length, 26);
-  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 64 }, (_, i) => i + 1));
+  assert.deepEqual(CATALOGUE.wires.map((w) => w.n), Array.from({ length: 66 }, (_, i) => i + 1));
   assert.equal(CATALOGUE.functions.length, 22);
   // 13 functions need no part beyond the base setup: 10 run on every setup, 3 drive a test object.
   assert.equal(CATALOGUE.functions.filter((f) => f.needs.length === 0).length, 13);
@@ -148,7 +148,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
       ['stick', 'esc', ['pdmini']], ['tap', 'esc', ['sim', 'tap']],
     ],
   );
-  assert.equal(CATALOGUE.rules.length, 6);
+  assert.equal(CATALOGUE.rules.length, 7);
   assert.equal(CATALOGUE.checks.length, 43);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
@@ -456,11 +456,11 @@ test('references: unknown parts and option values are reported', () => {
   reports(checkRefs(clash), 'function.stick', /another function forces/);
 
   const only = copy();
-  only.parts[13]!.pins[0]!.only = { ina228Board: 'bifrc' as 'xt90' };
+  only.parts.find((p) => p.id === 'ina228')!.pins[0]!.only = { ina228Board: 'bifrc' as 'xt90' };
   reports(checkRefs(only), 'part.ina228.V5', /ina228Board=bifrc/);
 
   const variant = copy();
-  variant.parts[13]!.variantName!.names['bifrc'] = { en: 'Board', de: 'Platine' };
+  variant.parts.find((p) => p.id === 'ina228')!.variantName!.names['bifrc'] = { en: 'Board', de: 'Platine' };
   reports(checkRefs(variant), 'part.ina228', /ina228Board=bifrc/);
 
   const release = copy();
@@ -584,10 +584,21 @@ const partsOn = (w: Catalogue['wires'][number]): string[] =>
 /** The nets of a wire. Ground joins every part of the bench, so it shows no cause. */
 const netsOn = (w: Catalogue['wires'][number]): string[] => [w.net, ...(w.netB ? [w.netB] : [])].filter((n) => n !== 'gnd');
 
-/** Whether a wire joins part `p` to part `q`, or to a net other than ground that a wire of `q` is on. */
-function joined(c: Catalogue, p: string, q: string): boolean {
+/**
+ * Nets that a part outside the data file joins to another net. The XL1509
+ * converter U9 of the Osoyoo breakout board feeds the V pins (net `strip_v`)
+ * from its DC input (net `osoyoo_vin`) while the jumper V Selector sits on 5V.
+ */
+const THROUGH: Readonly<Record<string, string>> = { osoyoo_vin: 'strip_v' };
+
+/**
+ * Whether a wire joins part `p` to part `q`, or to a net other than ground that
+ * a wire of `q` is on, directly or through a net of `through`.
+ */
+function joined(c: Catalogue, p: string, q: string, through: Readonly<Record<string, string>> = THROUGH): boolean {
   const nets = new Set(c.wires.filter((w) => partsOn(w).includes(q)).flatMap(netsOn));
-  return c.wires.some((w) => partsOn(w).includes(p) && (partsOn(w).includes(q) || netsOn(w).some((n) => nets.has(n))));
+  const reaches = (n: string): boolean => nets.has(n) || (through[n] !== undefined && nets.has(through[n]!));
+  return c.wires.some((w) => partsOn(w).includes(p) && (partsOn(w).includes(q) || netsOn(w).some(reaches)));
 }
 
 /** Whether a wire has one end on part `p` and the other on part `q`. */
@@ -595,11 +606,11 @@ const direct = (c: Catalogue, p: string, q: string): boolean =>
   c.wires.some((w) => partsOn(w).includes(p) && partsOn(w).includes(q));
 
 /** The parts a rule adds for another part without a wire to that part or its net. */
-function looseAdds(c: Catalogue): string[] {
+function looseAdds(c: Catalogue, through: Readonly<Record<string, string>> = THROUGH): string[] {
   const out: string[] = [];
   for (const rule of c.rules) {
     const from = causes(rule.when).filter((id) => id !== rule.adds);
-    if (from.length > 0 && !from.some((id) => joined(c, rule.adds, id))) out.push(`${rule.id}: ${rule.adds} has no wire to ${from.join(', ')}`);
+    if (from.length > 0 && !from.some((id) => joined(c, rule.adds, id, through))) out.push(`${rule.id}: ${rule.adds} has no wire to ${from.join(', ')}`);
   }
   return out;
 }
@@ -633,6 +644,16 @@ test('a part that a rule adds for another part has a wire to that part or to its
   const alone = copy();
   alone.wires = alone.wires.filter((w) => w.n !== 19);
   assert.deepEqual(looseAdds(alone), ['pd-charger: charger has no wire to pdmini']);
+
+  // The DC supply of the Osoyoo breakout board reaches the servo through the converter of the board:
+  // its plus lead on the DC input, the servo plus on the V pin. Without that bridge, or without the
+  // plus lead, the rule holds a part with no wire to its cause.
+  assert.ok(!direct(CATALOGUE, 'dcsup', 'servo'));
+  assert.ok(joined(CATALOGUE, 'dcsup', 'servo'));
+  assert.deepEqual(looseAdds(CATALOGUE, {}), ['osoyoo-dc: dcsup has no wire to servo']);
+  const lead = copy();
+  lead.wires = lead.wires.filter((w) => w.n !== 65);
+  assert.deepEqual(looseAdds(lead), ['osoyoo-dc: dcsup has no wire to servo']);
 });
 
 test('a part that sits between 2 parts has a wire to each of them', () => {
@@ -1234,7 +1255,8 @@ test('the Osoyoo strip: no current is shown for both voltages, the DC input name
   const cons = strip.cons.map((c) => c.en).join(' ');
   assert.match(cons, /7 to 12 V/);
   assert.match(cons, /16 V/);
-  assert.match(cons, /not in the parts list/);
+  assert.match(cons, /The supply is in the parts list as a modelled part\./);
+  assert.doesNotMatch(cons, /not in the parts list/);
   assert.doesNotMatch(strip.pros.map((c) => c.en).join(' '), /no further part/);
   const check = (id: string) => CATALOGUE.checks.find((c) => c.id === id)!;
   assert.equal(check('strip-converter').src.kind, 'doc');
@@ -1440,7 +1462,7 @@ test('the Osoyoo strip: whole clauses of the readings, switch states, values and
     ['desc', /position 5V feeds it from the XL1509 converter of the DC input, position 3V3 from the 3\.3 V regulator\. The servo lead/, /Stellung 5V speist es aus dem XL1509-Wandler des DC-Eingangs, Stellung 3V3 aus dem 3,3-V-Regler\. Das Servokabel/],
     ['desc', /All V pins are 1 net\./, /Alle V-Pins sind 1 Netz\./],
     ['cons', /Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three/, /Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse/],
-    ['cons', /\) and the switch on ON; USB does not feed it\. Without it the V pins carry 0 V\. The supply is not in the parts list\./, /\) und den Schalter auf ON; USB speist sie nicht\. Ohne sie führen die V-Pins 0 V\. Die Versorgung steht nicht in der Teileliste\./],
+    ['cons', /\) and the switch on ON; USB does not feed it\. Without it the V pins carry 0 V\. The supply is in the parts list as a modelled part\./, /\) und den Schalter auf ON; USB speist sie nicht\. Ohne sie führen die V-Pins 0 V\. Die Versorgung steht als modelliertes Teil in der Teileliste\./],
     ['unknowns', /^Current of the board in a measurement: not measured; 2 A and 500 mA are vendor values\./, /^Strom der Platine in einer Messung: nicht gemessen; 2 A und 500 mA sind Herstellerwerte\./],
     ['unknowns', /the schematic and the product page disagree, not measured\./, /Schaltplan und Produktseite widersprechen sich, nicht gemessen\./],
   ];
@@ -1569,6 +1591,124 @@ test('the Osoyoo strip: the chip, the position and the source each check names, 
   }
 });
 
+test('the DC supply of the Osoyoo breakout board: a modelled part with its range, its source and its 2 leads', () => {
+  const dc = CATALOGUE.parts.find((p) => p.id === 'dcsup')!;
+  // The only modelled part, added by a rule, never a part to own or a test object.
+  assert.deepEqual(CATALOGUE.parts.filter((p) => p.modelled === true).map((p) => p.id), ['dcsup']);
+  assert.equal(dc.selectable, false);
+  assert.equal(dc.locked, false);
+  assert.equal(dc.testObject, undefined);
+  assert.equal(dc.release, 'released');
+  assert.equal(dc.pictures, undefined);
+  assert.deepEqual(dc.name, {
+    en: 'DC supply for the Osoyoo breakout board, 7 to 12 V DC (yours)',
+    de: 'DC-Versorgung für die Osoyoo-Breakout-Platine, 7 bis 12 V DC (eigene)',
+  });
+  assert.deepEqual(dc.short, { en: 'Osoyoo DC supply', de: 'Osoyoo-DC-Versorgung' });
+  assert.deepEqual(dc.slot, { column: 'L', order: 12, sub: { en: '7 to 12 V DC', de: '7 bis 12 V DC' } });
+  assert.deepEqual(dc.role, {
+    en: 'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). Above 12 V the gate-source voltage of the SI2302 (Q3) exceeds its rating of ±12 V (datasheet linked on the product page) at every input: the gate sits at PWRIN through R7, with no clamp. The print of 16 V and the vendor limit of 18 V are above that. The supply connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm, centre positive. The product page names the socket DC005-2.1: the 2.1 mm pin follows from that name; the 5.5 mm outer diameter is the usual size of that socket family and is not stated by the vendor. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
+    de: 'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Über 12 V überschreitet die Gate-Source-Spannung des SI2302 (Q3) an jedem Eingang ihren Grenzwert von ±12 V (Datenblatt, verlinkt auf der Produktseite): Das Gate liegt über R7 ohne Begrenzung an PWRIN. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber. Die Versorgung wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus. Die Produktseite nennt die Buchse DC005-2.1: Der Stift von 2,1 mm folgt aus diesem Namen; der Außendurchmesser von 5,5 mm ist das übliche Maß dieser Buchsenfamilie und vom Hersteller nicht angegeben. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
+  });
+  // No source states the input current, so the part names none.
+  assert.doesNotMatch(dc.role!.en, /\d+(\.\d+)? ?m?A\b/);
+  // The range is the one the strip states: the same 7 to 12 V and the same bounds.
+  const strip = CATALOGUE.powerSources.find((x) => x.id === 'strip-v')!;
+  assert.match(strip.cons[1]!.en, /7 to 12 V .*print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V/);
+  // Sources: the product page for the part, the schematic for its pins and leads.
+  assert.equal(dc.src.kind, 'doc');
+  assert.match((dc.src as { url: string }).url, /osoyoo-breakout-board-for-pico-series/);
+  assert.deepEqual(dc.pins.map((p) => [p.id, p.label.en, p.src.kind, p.confirmed]), [['POS', '+', 'doc', true], ['NEG', '−', 'doc', true]]);
+
+  // The rule: exactly the condition of the warning that says to set the jumper to 5V.
+  const rule = CATALOGUE.rules.find((r) => r.adds === 'dcsup')!;
+  assert.equal(rule.id, 'osoyoo-dc');
+  assert.deepEqual(rule.when, CATALOGUE.checks.find((c) => c.id === 'strip-jumper')!.when);
+  assert.deepEqual(rule.when, {
+    all: [
+      { all: [{ has: 'servo' }, { not: { has: 'pdmini' } }, { opt: 'servoPower', is: 'bench' }] },
+      { opt: 'connection', is: 'osoyoo' },
+    ],
+  });
+  assert.deepEqual(rule.because, { en: 'servo on the V pin, jumper on 5V', de: 'Servo am V-Pin, Jumper auf 5V' });
+  assert.deepEqual(rule.src, dc.pins[0]!.src);
+
+  // The 2 leads: stubs to the DC input, which is no pad of the coprocessor.
+  const leads = CATALOGUE.wires.filter((w) => w.a.startsWith('dcsup.'));
+  assert.deepEqual(leads.map((w) => [w.n, w.kind, w.a, w.b, w.net, w.cls, w.stage, w.route.kind]), [
+    [65, 'stub', 'dcsup.POS', null, 'osoyoo_vin', 'power', 1, 'S'],
+    [66, 'stub', 'dcsup.NEG', null, 'osoyoo_vin_neg', 'power', 1, 'S'],
+  ]);
+  for (const w of leads) assert.deepEqual(w.when, rule.when, `wire ${w.n}`);
+  assert.deepEqual(leads.map((w) => w.to), [
+    {
+      en: 'plus of the DC input of the Osoyoo breakout board: the centre pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
+      de: 'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: Mittelstift der DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
+    },
+    {
+      en: 'minus of the same DC input of the Osoyoo breakout board: VIN- at the minus pole of the 2-pole VIN terminal or at H4 pin 1, GND at the outer contact of the DC jack',
+      de: 'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse',
+    },
+  ]);
+  for (const w of leads) {
+    assert.deepEqual(w.signal, { en: 'DC input of the Osoyoo breakout board, 7 to 12 V', de: 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V' });
+    assert.deepEqual(w.note, {
+      en: 'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: type DC005-2.1 (product page), plug 5.5 x 2.1 mm (2.1 mm from the socket name, 5.5 mm the usual size of that socket family, not stated by the vendor), centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
+      de: 'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Typ DC005-2.1 (Produktseite), Stecker 5,5 x 2,1 mm (2,1 mm aus dem Namen der Buchse, 5,5 mm das übliche Maß dieser Buchsenfamilie, vom Hersteller nicht angegeben), Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
+    });
+  }
+});
+
+test('the DC jack of the Osoyoo breakout board: centre positive, minus on GND, the SI2302 on the terminal and H4 only', () => {
+  // Schematic REV 1.0: DC1 pin 1 is PWRIN, pins 2 and 3 are GND. Q3 joins VIN-
+  // to GND, and only the VIN terminal CN7 and the header H4 carry VIN-.
+  const dc = CATALOGUE.parts.find((p) => p.id === 'dcsup')!;
+  const w66 = CATALOGUE.wires.find((w) => w.n === 66)!;
+  const w65 = CATALOGUE.wires.find((w) => w.n === 65)!;
+  const parts = CATALOGUE.checks.find((c) => c.id === 'strip-parts')!;
+  for (const [what, text] of [['role', dc.role!], ['note of wire 66', w66.note!]] as const) {
+    assert.match(text.en, /plug 5\.5 x 2\.1 mm.*centre positive/, `${what} en`);
+    assert.match(text.de, /Stecker 5,5 x 2,1 mm.*Mittelstift Plus/, `${what} de`);
+    assert.match(text.en, /no reverse-polarity protection/, `${what} en`);
+    assert.match(text.de, /ohne Verpolschutz/, `${what} de`);
+    assert.match(text.en, /the SI2302 (\(Q3\) in the lead VIN- )?protects the VIN terminal and H4 only/, `${what} en`);
+    assert.match(text.de, /SI2302 (\(Q3\) in der Leitung VIN- )?schützt nur die VIN-Klemme und H4/, `${what} de`);
+  }
+  // The plus is the centre pin of the jack; the minus of the jack is GND, VIN- only at the terminal and H4.
+  assert.match(w65.to!.en, /the centre pin of the DC jack/);
+  assert.match(w65.to!.de, /Mittelstift der DC-Buchse/);
+  assert.match(w66.to!.en, /VIN- at the minus pole of the 2-pole VIN terminal or at H4 pin 1, GND at the outer contact of the DC jack/);
+  assert.match(w66.to!.de, /VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse/);
+  assert.doesNotMatch(w66.to!.en, /: the DC jack/);
+  // The board notes: the MOSFET protects the terminal and H4 only, the jack has none.
+  assert.match(parts.text.en, /protects the terminal and H4 only against reverse polarity\. The minus of the DC jack is GND directly: the jack has no reverse-polarity protection\./);
+  assert.match(parts.text.de, /schützt nur die Klemme und H4 gegen Verpolung\. Das Minus der DC-Buchse liegt direkt an GND: Die Buchse hat keinen Verpolschutz\./);
+  assert.doesNotMatch(parts.text.en, /minus lead of the DC input/);
+  assert.doesNotMatch(parts.text.de, /Minusleitung des DC-Eingangs/);
+});
+
+test('the DC jack of the Osoyoo breakout board: the plug size names its basis, the SI2302 gate limits the input to 12 V', () => {
+  // The product page names the socket DC005-2.1 only. The 2.1 mm pin follows
+  // from that name; the 5.5 mm outer diameter is the usual size of the socket
+  // family. Every text that gives the plug size says so.
+  const dc = CATALOGUE.parts.find((p) => p.id === 'dcsup')!;
+  const w66 = CATALOGUE.wires.find((w) => w.n === 66)!;
+  for (const [what, text] of [['role', dc.role!], ['note of wire 66', w66.note!]] as const) {
+    assert.match(text.en, /DC005-2\.1/, `${what} en`);
+    assert.match(text.de, /DC005-2\.1/, `${what} de`);
+    assert.match(text.en, /usual size of that socket family.*not stated by the vendor/, `${what} en`);
+    assert.match(text.de, /übliche Maß dieser Buchsenfamilie.*vom Hersteller nicht angegeben/, `${what} de`);
+  }
+  assert.match(dc.role!.en, /The product page names the socket DC005-2\.1: the 2\.1 mm pin follows from that name/);
+  assert.match(dc.role!.de, /Die Produktseite nennt die Buchse DC005-2\.1: Der Stift von 2,1 mm folgt aus diesem Namen/);
+  // Schematic REV 1.0: the gate of Q3 sits at PWRIN through R7 with no clamp,
+  // its source at GND; the HXY datasheet rates the gate-source voltage at ±12 V.
+  assert.match(dc.role!.en, /Above 12 V the gate-source voltage of the SI2302 \(Q3\) exceeds its rating of ±12 V \(datasheet linked on the product page\) at every input: the gate sits at PWRIN through R7, with no clamp\. The print of 16 V and the vendor limit of 18 V are above that\./);
+  assert.match(dc.role!.de, /Über 12 V überschreitet die Gate-Source-Spannung des SI2302 \(Q3\) an jedem Eingang ihren Grenzwert von ±12 V \(Datenblatt, verlinkt auf der Produktseite\): Das Gate liegt über R7 ohne Begrenzung an PWRIN\. Der Aufdruck von 16 V und die Herstellergrenze von 18 V liegen darüber\./);
+  // The range stays 7 to 12 V.
+  assert.deepEqual(dc.slot!.sub, { en: '7 to 12 V DC', de: '7 bis 12 V DC' });
+});
+
 test('the Osoyoo strip: the whole advantage, drawbacks and the USB drawback that name the strip supply', () => {
   const strip = CATALOGUE.powerSources.find((s) => s.id === 'strip-v')!;
   const usb = CATALOGUE.powerSources.find((s) => s.id === 'usb')!;
@@ -1577,8 +1717,8 @@ test('the Osoyoo strip: the whole advantage, drawbacks and the USB drawback that
     de: 'In Stellung 5V zieht das Servo aus dem DC-Eingang über einen Wandler mit 2 A. Mit angeschlossenem USB ist das nicht die Versorgung der Logik; ohne USB-Spannung speist der Wandler auch VSYS der Pico-Platine, und Servo und Logik teilen sich die 2 A.',
   });
   assert.deepEqual(strip.cons[1], {
-    en: 'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is not in the parts list.',
-    de: 'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht nicht in der Teileliste.',
+    en: 'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is in the parts list as a modelled part.',
+    de: 'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht als modelliertes Teil in der Teileliste.',
   });
   assert.deepEqual(strip.cons[2], {
     en: 'The rating is 2 A at 5 V and 500 mA at 3.3 V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.',

@@ -123,9 +123,10 @@ test('empty selection: the locked parts and the wires 1 to 4', () => {
 test('everything selected: every function and every part you own', () => {
   const setup = resolve(CATALOGUE, select(FUNCTIONS, SELECTABLE));
   // STICK programming forces ESC power B: no battery, and no servo supply beside the PD mini.
+  // The PD mini feeds the servo, so the V pin of the Osoyoo breakout board needs no DC supply.
   assert.deepEqual(
     partIds(setup),
-    CATALOGUE.parts.map((p) => p.id).filter((id) => !['ssup', 'batt', 'pull'].includes(id)),
+    CATALOGUE.parts.map((p) => p.id).filter((id) => !['ssup', 'dcsup', 'batt', 'pull'].includes(id)),
   );
   assert.deepEqual(option(setup, 'escPower'), { key: 'escPower', value: 'pd', visible: true, forcedBy: 'stick' });
   // The servo programmer puts the servo signal on the programming port: wire 64 in place of wire 7.
@@ -449,9 +450,17 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.deepEqual(pin.unknown.map((u) => u.id), ['servo-5v-pin']);
   assert.deepEqual(used(pin), ['copro-5v']);
 
+  assert.ok(!partIds(pin).includes('dcsup') && !partIds(external).includes('dcsup'));
+
+  // The V pin of the strip with the jumper on 5V: the DC supply of the board comes in, with its 2 leads.
   const strip = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo' }));
-  assert.deepEqual(partIds(strip), [...LOCKED, 'servo']);
-  assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 7, 8, 61]);
+  assert.deepEqual(partIds(strip), [...LOCKED, 'servo', 'dcsup']);
+  assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 7, 8, 61, 65, 66]);
+  assert.deepEqual(part(strip, 'dcsup').addedBy, [
+    { kind: 'rule', id: 'osoyoo-dc', because: { en: 'servo on the V pin, jumper on 5V', de: 'Servo am V-Pin, Jumper auf 5V' } },
+  ]);
+  assert.deepEqual(strip.wires.filter((w) => w.n >= 65).map((w) => [w.n, w.kind, w.a, w.b, w.net]),
+    [[65, 'stub', 'dcsup.POS', null, 'osoyoo_vin'], [66, 'stub', 'dcsup.NEG', null, 'osoyoo_vin_neg']]);
   assert.deepEqual(plus(strip), [[61, 'servo.POS', null]]);
   for (const id of [WARNING, 'strip-jumper', 'strip-dc', 'strip-measure', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
   assert.ok(!ids(strip).includes('servo-5v-pin'));
@@ -464,6 +473,11 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.ok(ids(bare).includes('servo-5v-pin'));
   const extStrip = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo' }));
   for (const id of STRIP_CHECKS) assert.ok(!ids(extStrip).includes(id), id);
+  // The V pin is free under the external supply and on the pads: no DC supply of the board.
+  for (const setup of [bare, extStrip]) {
+    assert.ok(!partIds(setup).includes('dcsup'));
+    assert.ok(!wireNumbers(setup).some((n) => n === 65 || n === 66));
+  }
   // No wire of the strip variant ends on pad 40.
   assert.ok(!strip.wires.some((w) => w.a === 'pad.40' || w.b === 'pad.40'));
 
@@ -472,6 +486,8 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.deepEqual(plus(shuntPin), [[30, 'servo.POS', 'ina3221.C1B'], [60, 'pad.40', 'ina3221.C1A']]);
   const shuntStrip = resolve(CATALOGUE, select(['servocur'], [], { servoPower: 'bench', connection: 'osoyoo' }));
   assert.deepEqual(plus(shuntStrip), [[30, 'servo.POS', 'ina3221.C1B'], [62, 'ina3221.C1A', null]]);
+  // The supply on the V pin through the shunt needs the jumper on 5V as well.
+  assert.ok(partIds(shuntStrip).includes('dcsup') && !partIds(shuntPin).includes('dcsup'));
   assert.ok(ids(shuntPin).includes(WARNING) && ids(shuntStrip).includes(WARNING));
   assert.ok(!ids(shuntStrip).includes('strip-plug'));
 
@@ -481,6 +497,9 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
     assert.deepEqual(plus(pd), [[20, 'pdmini.OP', 'servo.POS']], servoPower);
     assert.ok(!ids(pd).includes(WARNING) && !ids(pd).includes('servo-external'), servoPower);
     assert.deepEqual(used(pd), ['pd-servo'], servoPower);
+    // With the PD mini the V pin of the Osoyoo breakout board stays free: no DC supply of the board.
+    const pdStrip = resolve(CATALOGUE, select(['servo', 'supply'], [], { servoPower, connection: 'osoyoo' }));
+    assert.ok(!partIds(pdStrip).includes('dcsup') && !wireNumbers(pdStrip).includes(65), servoPower);
     assert.deepEqual(option(pd, 'servoPower'), { key: 'servoPower', value: servoPower, visible: false, forcedBy: null });
   }
   // Without a servo the value adds nothing.
@@ -688,7 +707,7 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
   // not the plug of a servo on GP13.
   assert.deepEqual(wireNumbers(resolve(CATALOGUE, select(['servoprog'], [], { servoPower: 'bench' }))), [1, 2, 3, 4, 8, 59, 64]);
   const strip = resolve(CATALOGUE, select(['servoprog'], [], { servoPower: 'bench', connection: 'osoyoo' }));
-  assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 8, 61, 64]);
+  assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 8, 61, 64, 65, 66]);
   assert.ok(!strip.checks.some((c) => c.id === 'strip-plug'));
   assert.ok(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo' })).checks.some((c) => c.id === 'strip-plug'));
 

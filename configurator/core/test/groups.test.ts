@@ -168,8 +168,9 @@ test('groups of the data file: every function is in exactly one group, keyed by 
   const escpow = g.find((x) => x.functions.includes('escpow'));
   assert.deepEqual(escpow?.variants, [{ part: 'ina228', option: 'ina228Board', values: ['matek', 'xt90'] }]);
   assert.deepEqual(escpow?.oneOf, [['batt'], ['pdmini', 'charger', 'usbtap']]);
-  // A servo takes its power from the servo supply or, under the other variant, from the bench.
-  assert.deepEqual(g.find((x) => x.key === 'ina3221')?.oneOf, [['ssup'], []]);
+  // A servo takes its power from the servo supply or, under the other variant, from the bench:
+  // the 5 V pin with no further part, or the V pin of the Osoyoo breakout board with its DC supply.
+  assert.deepEqual(g.find((x) => x.key === 'ina3221')?.oneOf, [['ssup'], [], ['dcsup']]);
   // No group names a test object: not as a part it needs, not as a part the rules add.
   const objects = testObjects(CATALOGUE);
   assert.deepEqual(objects, ['servo', 'esc']);
@@ -310,6 +311,26 @@ test('test objects: a removal adds the tick of the plain drive only when no func
       const before = resolve(CATALOGUE, pick(functions)).parts.some((r) => r.part.id === id);
       assert.equal(setup.parts.some((r) => r.part.id === id), before, `${id} after ${functions.join()}`);
     }
+  }
+});
+
+test('removal: the Osoyoo DC supply leaves by servo power A, and the servo supply comes in', () => {
+  // The rule osoyoo-dc reads servoPower: bench. The smallest change that
+  // releases dcsup is servo power A, which adds the own servo supply.
+  for (const functions of [['servo'], ['servocur'], ['servoprog']]) {
+    const selection = select(functions, [], { connection: 'osoyoo', servoPower: 'bench' });
+    const what = functions.join();
+    assert.ok(resolve(CATALOGUE, selection).parts.some((r) => r.part.id === 'dcsup'), `dcsup in ${what}`);
+    const effect = removalEffect(CATALOGUE, selection, 'dcsup');
+    assert.equal(effect.refused, null, what);
+    assert.deepEqual(effect.options, [{ key: 'servoPower', from: 'bench', to: 'external' }], what);
+    assert.deepEqual(effect.partsIn, ['ssup'], what);
+    assert.deepEqual([effect.functionsOff, effect.functionsOn, effect.partsOut, effect.objectsOut], [[], [], [], []], what);
+    assert.deepEqual(effect.selection.functions, functions, what);
+    assert.equal(effect.selection.options.connection, 'osoyoo', what);
+    assert.equal(effect.selection.options.servoPower, 'external', what);
+    const after = resolve(CATALOGUE, effect.selection).parts.map((r) => r.part.id);
+    assert.ok(!after.includes('dcsup') && after.includes('ssup'), `${what}: ${after.join()}`);
   }
 });
 
