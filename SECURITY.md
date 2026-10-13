@@ -2,7 +2,7 @@
 
 ## Scope
 
-rcbench is a test bench: two microcontrollers, a touch panel and an SD card. It
+rcbench is a test bench: two microcontrollers, a touch panel and an SD (Secure Digital) card. It
 has no network stack, no accounts, no user data and no remote interface. Two
 classes of report apply.
 
@@ -21,7 +21,7 @@ Everything that parses input somebody else produced:
 | --- | --- |
 | `shared/logfile` | CSV (comma-separated values) from an SD card |
 | `shared/esc` | ESC (electronic speed controller) profile JSON (JavaScript Object Notation) from an SD card; files over 65536 bytes, nesting deeper than 16 levels, objects of more than 64 members and duplicate keys are refused |
-| `protocols/kst` | servo configuration text files (line length, field values, the CRC-32 checksum line, type and limits against the connected servo) and servo replies (edge timestamps checked against timing windows; the wire has no parity, checksum or length field) |
+| `protocols/kst` | servo configuration text files (line length, field values, the CRC-32 (32-bit cyclic redundancy check) checksum line, type and limits against the connected servo) and servo replies (edge timestamps checked against timing windows; the wire has no parity, checksum or length field) |
 | `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
 | `protocols/openyge` | ESC telemetry and parameter frames |
 | `protocols/dshot` | the ESC telemetry reply: 21 line bits, GCR (group-coded recording) decode, 4-bit checksum, extended telemetry frame types |
@@ -36,8 +36,8 @@ Everything that parses input somebody else produced:
 | `shared/ui` | SD card directory listings, CSV column names and cells, and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes |
 | `shared/artwork` | board picture chunks fetched over the link and picture records read back from flash (payload checked against a 16-bit CRC before use) |
 | `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
-| `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |
-| `shared/touch` | the GT911 touch controller's point list as the panel driver reads it: count, track IDs, x and y. The panel driver drops a frame whose count is above 5 (`TOUCH_MAX_POINTS`), and `shared/touch` clamps the count to 5 as well; x and y are clamped to the resolution the controller reports at start-up (the LCD size when an axis reads 0 or the read fails), before rotation and mirroring; a track ID repeated in one frame is kept once; a contact that moves more than 120 px (`TOUCH_JUMP_PX`, x plus y distance) in one frame becomes a release and a new press. Not checked here: a reported resolution larger than the screen, which passes coordinates beyond the screen to `shared/ui`; a reported resolution of 32,768 or more on an axis, which the driver casts to a negative `int16_t`, so `touch_map_apply` takes a size of 1 and maps every coordinate on that axis to 1 value; and the range of a track ID |
+| `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |
+| `shared/touch` | the GT911 touch controller's point list as the panel driver reads it: count, track IDs (identifiers), x and y. The panel driver drops a frame whose count is above 5 (`TOUCH_MAX_POINTS`), and `shared/touch` clamps the count to 5 as well; x and y are clamped to the resolution the controller reports at start-up (the LCD (liquid crystal display) size when an axis reads 0 or the read fails), before rotation and mirroring; a track ID repeated in one frame is kept once; a contact that moves more than 120 px (`TOUCH_JUMP_PX`, x plus y distance) in one frame becomes a release and a new press. Not checked here: a reported resolution larger than the screen, which passes coordinates beyond the screen to `shared/ui`; a reported resolution of 32,768 or more on an axis, which the driver casts to a negative `int16_t`, so `touch_map_apply` takes a size of 1 and maps every coordinate on that axis to 1 value; and the range of a track ID |
 
 The table holds two kinds of module. The first kind is derived from the
 function names in the public headers under `shared/` and `protocols/`. The
