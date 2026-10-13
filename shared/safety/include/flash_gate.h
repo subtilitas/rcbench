@@ -12,7 +12,7 @@
  * So a flash write starts only on a bench that is disarmed with the supply
  * off.  Every writer of the panel's flash asks this one rule: the settings
  * save before it commits a page of NVS (non-volatile storage), and the board
- * photograph's keeper before each sector.  A write that is not allowed waits;
+ * drawing's keeper before each sector.  A write that is not allowed waits;
  * arming and the supply are never refused for one.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).

@@ -20,7 +20,7 @@ rcbench/
     settings/             typed schema and values
     logfile/              number and CSV parsing
     link/                 page protocol · CAN framing · watchdogs · diagnosis
-    artwork/              the panel's cache of board photographs
+    artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · the ARMED state, slew and staleness
     safety/               heartbeat generator (panel) and monitor (coprocessor)
@@ -184,7 +184,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the coprocessor image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the coprocessor table |
 | `tools/sense_trace.py` | reads a captured console of a coprocessor built with `-DSENSE_TRACE=ON`: reads each line against the line format and each trace of INA3221 CH1's 1 ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; `--servo-csv` adds the arrival less the AS5600's travel time, `--loaded-channel` names the output channels with a servo connected and leaves the commands of the others out ([First run](FirstRun.md#89-ch1s-1-ms-samples-on-the-console)) |
 | `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/ioboard-pinmap-draft.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
-| `tools/gen_board_art.py`, `tools/gen_esc_profiles.py` | generate the checked-in board artwork and ESC profile tables from their PNG and JSON sources; `--check` fails if the committed tables differ |
+| `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | generate the checked-in board drawings and ESC profile tables from their JSON sources (the board drawing from the configurator's `configurator/drawings/panel.json`); `--check` fails if the committed tables differ |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
 | `test/tools/` | pytest cases for the tools above: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |

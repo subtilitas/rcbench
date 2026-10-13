@@ -1,17 +1,21 @@
 /*
- * Keeping a board's photograph in the panel's flash.
+ * Keeping a board's drawing in the panel's flash.
  *
- * The failure under test is a picture that survives a write it should not
- * have survived. A transfer costs ten seconds of link, so what is kept is
- * kept for as long as the board is known; a slot that became findable while
- * it was half written would hand out a wrong picture until somebody wired a
- * lead by it.
+ * The failure under test is a drawing that survives a write it should not
+ * have survived, or one shown for a coprocessor that serves another.  What
+ * is kept is kept for as long as the board is known; a slot that became
+ * findable while it was half written would hand out a wrong drawing until
+ * somebody wired a lead by it.
+ *
+ * The store keeps bytes and does not read them, so the payloads here are
+ * patterns of any length a slot holds, not drawings.
  *
  * The flash is memory here, with a budget on it, so a write can be stopped
  * part way on purpose and the store asked what it thinks it has.
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -19,6 +23,7 @@
 
 #include "art_store.h"
 #include "link_crc.h"
+#include "link_pages.h"
 
 #define SECTOR  4096u
 #define SLOTS   4u
@@ -109,7 +114,7 @@ static unsigned calls(void)
     return g_erases + g_writes + g_reads;
 }
 
-/* A picture, and the entry describing it. */
+/* A payload, and the entry describing it. */
 static uint8_t *make(uint32_t bytes, uint16_t board, art_entry_t *e)
 {
     static uint8_t *buf;
@@ -124,14 +129,16 @@ static uint8_t *make(uint32_t bytes, uint16_t board, art_entry_t *e)
         buf[i] = (uint8_t)(i * 31u + board);
     }
     e->board  = board;
-    e->width  = 100;
-    e->height = (uint16_t)(bytes / 200u);
+    e->format = (uint16_t)LINK_ART_DRAWING;
+    e->width  = 5100;
+    e->height = 2100;
     e->bytes  = bytes;
     e->crc    = link_crc(0u, buf, bytes);
+    e->hash   = link_fnv1a32(LINK_FNV_INIT, buf, bytes);
     return buf;
 }
 
-TEST_CASE(a_picture_comes_back_the_way_it_went_in)
+TEST_CASE(a_payload_comes_back_the_way_it_went_in)
 {
     fresh();
     const art_flash_t f = flash();
@@ -148,10 +155,13 @@ TEST_CASE(a_picture_comes_back_the_way_it_went_in)
     art_entry_t got;
     CHECK(art_store_find(&f, 7u, &got));
     CHECK_EQ(got.board, 7);
-    CHECK_EQ(got.width, 100);
-    CHECK_EQ(got.height, 1030);
+    CHECK_EQ(got.format, LINK_ART_DRAWING);
+    CHECK_EQ(got.width, 5100);
+    CHECK_EQ(got.height, 2100);
     CHECK_EQ(got.bytes, 206000);
     CHECK_EQ(got.crc, e.crc);
+    CHECK_EQ(got.hash, e.hash);
+    CHECK(art_entry_same(&got, &e));
 
     uint8_t *back = malloc(206000u);
     CHECK(art_store_read(&f, 7u, back, 206000u));
@@ -198,7 +208,7 @@ TEST_CASE(a_write_that_stops_part_way_leaves_nothing_findable)
     CHECK(!art_store_find(&f, 3u, &e));
 }
 
-TEST_CASE(replacing_a_picture_takes_the_old_one_with_it)
+TEST_CASE(replacing_a_payload_takes_the_old_one_with_it)
 {
     fresh();
     const art_flash_t f = flash();
@@ -206,7 +216,7 @@ TEST_CASE(replacing_a_picture_takes_the_old_one_with_it)
     const uint8_t *src = make(20000u, 5u, &e);
     CHECK(art_store_put(&f, 5u, &e, src));
 
-    /* A different picture for the same board goes in the same slot. */
+    /* A different payload for the same board goes in the same slot. */
     art_entry_t e2;
     const uint8_t *src2 = make(30000u, 5u, &e2);
     CHECK(art_store_put(&f, 5u, &e2, src2));
@@ -233,7 +243,7 @@ TEST_CASE(replacing_a_picture_takes_the_old_one_with_it)
     CHECK(art_store_find(&f, 5u, &got));
 }
 
-TEST_CASE(a_picture_that_decayed_in_flash_is_a_miss_not_a_wrong_picture)
+TEST_CASE(a_payload_that_decayed_in_flash_is_a_miss_not_a_wrong_drawing)
 {
     fresh();
     const art_flash_t f = flash();
@@ -247,7 +257,7 @@ TEST_CASE(a_picture_that_decayed_in_flash_is_a_miss_not_a_wrong_picture)
     art_entry_t got;
     CHECK(art_store_find(&f, 9u, &got));     /* the header is still good */
     uint8_t *back = malloc(20000u);
-    CHECK(!art_store_read(&f, 9u, back, 20000u));   /* and the picture is not */
+    CHECK(!art_store_read(&f, 9u, back, 20000u));   /* and the payload is not */
     free(back);
 }
 
@@ -272,21 +282,30 @@ TEST_CASE(a_payload_that_is_not_what_it_claims_is_refused_before_it_is_written)
     const art_flash_t f = flash();
     art_entry_t e;
     const uint8_t *src = make(20000u, 6u, &e);
-    e.crc ^= 0xFFFFu;                        /* not this picture's checksum */
+    e.crc ^= 0xFFFFu;                        /* not this payload's checksum */
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);                   /* and nothing was written */
     CHECK(!art_store_find(&f, 6u, &e));
 
-    /*
-     * Nor one whose pixels are not its length.  A header saying 500 x 206
-     * over a payload that is not 206000 bytes would be believed by whatever
-     * sized a buffer from it later.
-     */
+    /* Nor one whose CRC agrees and whose hash does not, either half. */
     src = make(20000u, 6u, &e);
-    e.height = (uint16_t)(e.height + 1u);
+    e.hash ^= 0x00000001u;
+    CHECK(!art_store_put(&f, 6u, &e, src));
+    src = make(20000u, 6u, &e);
+    e.hash ^= 0x80000000u;
+    CHECK(!art_store_put(&f, 6u, &e, src));
+    CHECK_EQ(g_writes, 0);
+
+    /* Nor one of no format, or of no outline: nothing a reader could use
+     * it as. */
+    src = make(20000u, 6u, &e);
+    e.format = (uint16_t)LINK_ART_NONE;
     CHECK(!art_store_put(&f, 6u, &e, src));
     src = make(20000u, 6u, &e);
     e.width = 0u;
+    CHECK(!art_store_put(&f, 6u, &e, src));
+    src = make(20000u, 6u, &e);
+    e.height = 0u;
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);
 
@@ -466,10 +485,10 @@ TEST_CASE(a_keep_paused_after_any_step_is_found_as_nothing_and_resumes_whole)
 {
     /*
      * The pause is where the bench armed or the supply came on.  While it
-     * lasts the slot is never findable -- not the old picture, which the
+     * lasts the slot is never findable -- not the old drawing, which the
      * first step's erase took, and not a part of the new one -- and the
-     * picker reading it then draws the board from its outline.  Resumed,
-     * the picture that lands is the one handed over, byte for byte.
+     * picker reading it then draws the board from its shape.  Resumed,
+     * the drawing that lands is the one handed over, byte for byte.
      */
     static uint8_t back[20000];
     art_entry_t old;
@@ -478,7 +497,7 @@ TEST_CASE(a_keep_paused_after_any_step_is_found_as_nothing_and_resumes_whole)
     for (unsigned pause = 1; pause < total; ++pause) {
         fresh();
         const art_flash_t f = flash();
-        /* An older picture for the same board, which the keep replaces. */
+        /* An older drawing for the same board, which the keep replaces. */
         const uint8_t *was = make(10000u, 4u, &old);
         CHECK(art_store_put(&f, 4u, &old, was));
 
@@ -506,7 +525,7 @@ TEST_CASE(a_keep_paused_after_any_step_is_found_as_nothing_and_resumes_whole)
 TEST_CASE(a_keep_never_resumed_leaves_nothing_findable_and_the_slot_reusable)
 {
     /* A power cut during the pause: the keeper is gone with the RAM it was
-     * in, and the next boot fetches the picture again. */
+     * in, and the next boot fetches the drawing again. */
     const unsigned total = keep_steps(20000u);
     for (unsigned cut = 1; cut < total; ++cut) {
         fresh();
@@ -607,7 +626,7 @@ TEST_CASE(a_keep_refuses_at_its_start_what_put_refuses_before_writing)
     CHECK(!art_keep_busy(&k));
     CHECK(!art_keep_begin(&k, &f, 3u, NULL, src));
     CHECK(!art_keep_begin(&k, &f, 3u, &e, NULL));
-    e.height = (uint16_t)(e.height + 1u);
+    e.format = (uint16_t)LINK_ART_NONE;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
     src = make(20000u, 3u, &e);
     e.width = 0u;
@@ -624,31 +643,48 @@ TEST_CASE(a_keep_refuses_at_its_start_what_put_refuses_before_writing)
     CHECK(!art_keep_busy(NULL));
     CHECK_EQ(calls(), 0);
 
-    /* The largest picture a slot holds is taken, and two bytes more are not:
-     * 126 x 1024 pixels of two bytes is a slot less its header's sector. */
+    /* The largest payload a slot holds is taken, a byte more is not: a
+     * slot less its header's sector. */
     const uint32_t cap = art_store_capacity(&f);
     CHECK_EQ(cap, 258048);
-    e.bytes  = cap;
-    e.width  = 126u;
-    e.height = 1024u;
+    src = make(cap, 3u, &e);
     CHECK(art_keep_begin(&k, &f, 3u, &e, src));
     CHECK(art_keep_busy(&k));
-    e.bytes  = cap + 2u;                     /* 25 x 5161 pixels */
-    e.width  = 25u;
-    e.height = 5161u;
+    e.bytes = cap + 1u;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
     CHECK(!art_keep_busy(&k));
     CHECK_EQ(calls(), 0);
 
-    /* One pixel is the narrowest side there is, either way round. */
-    e.bytes  = 2000u;
-    e.width  = 1u;
-    e.height = 1000u;
-    CHECK(art_keep_begin(&k, &f, 3u, &e, src));
-    e.width  = 1000u;
-    e.height = 1u;
+    /* A single byte is the shortest there is. */
+    src = make(1u, 3u, &e);
     CHECK(art_keep_begin(&k, &f, 3u, &e, src));
     CHECK_EQ(calls(), 0);
+}
+
+TEST_CASE(a_keep_of_a_payload_its_hash_does_not_describe_seals_nothing)
+{
+    /*
+     * A keep does not read the payload at its start -- that would be the
+     * whole payload in one step -- so a wrong hash is found by the
+     * read-back, which hashes what landed, and the header is never written.
+     */
+    fresh();
+    const art_flash_t f = flash();
+    art_entry_t e;
+    const uint8_t *src = make(20000u, 3u, &e);
+    e.hash ^= 1u;
+    art_keep_t k;
+    CHECK(art_keep_begin(&k, &f, 3u, &e, src));
+    CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
+    art_entry_t got;
+    CHECK(!art_store_find(&f, 3u, &got));
+
+    /* The CRC right and the hash wrong, or the other way round: both. */
+    src = make(20000u, 3u, &e);
+    e.crc ^= 1u;
+    CHECK(art_keep_begin(&k, &f, 3u, &e, src));
+    CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
+    CHECK(!art_store_find(&f, 3u, &got));
 }
 
 TEST_CASE(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot)
@@ -656,8 +692,8 @@ TEST_CASE(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot)
     /*
      * The sector after the payload's last is never read, so it is not
      * erased: one erase is one stall of both cores, and a 206000 byte
-     * picture takes 52 of them rather than the slot's 64.  A smaller
-     * picture replacing a larger one leaves the larger's tail there,
+     * payload takes 52 of them rather than the slot's 64.  A smaller
+     * payload replacing a larger one leaves the larger's tail there,
      * unreached.
      */
     fresh();
@@ -673,12 +709,114 @@ TEST_CASE(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot)
     CHECK_EQ(g_erases, tail / SECTOR);
 }
 
+/* ------------------------------------------- the content key of the cache */
+
+TEST_CASE(a_kept_drawing_is_read_only_for_the_page_that_describes_it)
+{
+    /*
+     * The board ID alone is not the key: a coprocessor flashed with another
+     * drawing under the same ID would be shown the old one.  read_same()
+     * hands the kept bytes out only when every field of the ARTWORK page
+     * equals what was kept.
+     */
+    fresh();
+    const art_flash_t f = flash();
+    static uint8_t back[3000];
+    art_entry_t e;
+    const uint8_t *src = make(3000u, 1u, &e);
+    CHECK(art_store_put(&f, 1u, &e, src));
+
+    art_entry_t key = e;
+    CHECK(art_store_read_same(&f, &key, back, sizeof(back)));
+    CHECK_EQ(memcmp(back, src, sizeof(back)), 0);
+
+    /* Each field on its own makes a miss, and nothing is copied. */
+    for (int field = 0; field < 8; ++field) {
+        key = e;
+        switch (field) {
+        case 0: key.hash ^= 1u; break;
+        case 1: key.hash ^= 0x80000000u; break;
+        case 2: key.crc ^= 1u; break;
+        case 3: key.bytes -= 1u; break;
+        case 4: key.width = (uint16_t)(key.width + 1u); break;
+        case 5: key.height = (uint16_t)(key.height + 1u); break;
+        case 6: key.format = (uint16_t)LINK_ART_RGB565; break;
+        default: key.board = 2u; break;
+        }
+        memset(back, 0xEE, sizeof(back));
+        CHECK(!art_store_read_same(&f, &key, back, sizeof(back)));
+        CHECK_EQ(back[0], 0xEE);
+        CHECK(!art_entry_same(&key, &e));
+    }
+
+    /* The same key over a payload that decayed is a miss too. */
+    key = e;
+    g_flash[SECTOR + 100u] ^= 0x01u;
+    CHECK(!art_store_read_same(&f, &key, back, sizeof(back)));
+    g_flash[SECTOR + 100u] ^= 0x01u;
+    CHECK(art_store_read_same(&f, &key, back, sizeof(back)));
+    /* And so is a buffer too small for it. */
+    CHECK(!art_store_read_same(&f, &key, back, sizeof(back) - 1u));
+    CHECK(!art_store_read_same(&f, NULL, back, sizeof(back)));
+    CHECK(!art_store_read_same(NULL, &key, back, sizeof(back)));
+    CHECK(!art_store_read_same(&f, &key, NULL, sizeof(back)));
+    CHECK(!art_entry_same(NULL, &key));
+    CHECK(!art_entry_same(&key, NULL));
+}
+
+/* The header a slot of version 1 carries: the photograph store's. */
+typedef struct {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t board;
+    uint16_t width;
+    uint16_t height;
+    uint16_t crc;
+    uint16_t pad;
+    uint32_t bytes;
+    uint16_t head;
+} v1_head_t;
+
+TEST_CASE(a_slot_written_by_the_photograph_store_is_found_as_empty)
+{
+    /*
+     * A panel that kept a photograph under protocol 4.19 or older has a
+     * version 1 header in its slot.  It checks out as a header of its own
+     * kind and is still not found, and the slot is reused for the drawing.
+     */
+    fresh();
+    const art_flash_t f = flash();
+    v1_head_t v1;
+    memset(&v1, 0, sizeof(v1));
+    v1.magic   = 0x61626372u;              /* "rcba" */
+    v1.version = 1u;
+    v1.board   = 1u;
+    v1.width   = 500u;
+    v1.height  = 206u;
+    v1.crc     = 0x5A5Au;                  /* the photograph's own CRC */
+    v1.pad     = 0u;
+    v1.bytes   = 206000u;
+    v1.head    = link_crc(0u, &v1, offsetof(v1_head_t, head));
+    memcpy(g_flash, &v1, sizeof(v1));
+
+    art_entry_t got;
+    CHECK(!art_store_find(&f, 1u, &got));
+    art_entry_t e;
+    const uint8_t *src = make(2000u, 1u, &e);
+    CHECK(art_store_put(&f, 1u, &e, src));
+    CHECK(art_store_find(&f, 1u, &got));
+    CHECK(art_entry_same(&got, &e));
+    /* Into the slot the photograph had, the first, as version 2. */
+    CHECK_EQ(g_flash[4], 2);
+}
+
 int main(void)
 {
-    RUN(a_picture_comes_back_the_way_it_went_in);
+
+    RUN(a_payload_comes_back_the_way_it_went_in);
     RUN(a_write_that_stops_part_way_leaves_nothing_findable);
-    RUN(replacing_a_picture_takes_the_old_one_with_it);
-    RUN(a_picture_that_decayed_in_flash_is_a_miss_not_a_wrong_picture);
+    RUN(replacing_a_payload_takes_the_old_one_with_it);
+    RUN(a_payload_that_decayed_in_flash_is_a_miss_not_a_wrong_drawing);
     RUN(a_header_that_did_not_finish_being_written_is_not_a_header);
     RUN(a_payload_that_is_not_what_it_claims_is_refused_before_it_is_written);
     RUN(forgetting_a_board_leaves_the_others_alone);
@@ -691,6 +829,9 @@ int main(void)
     RUN(flash_changed_during_a_pause_fails_the_keep_without_a_header);
     RUN(a_keep_fails_on_the_first_flash_call_that_does);
     RUN(a_keep_refuses_at_its_start_what_put_refuses_before_writing);
+    RUN(a_keep_of_a_payload_its_hash_does_not_describe_seals_nothing);
     RUN(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot);
+    RUN(a_kept_drawing_is_read_only_for_the_page_that_describes_it);
+    RUN(a_slot_written_by_the_photograph_store_is_found_as_empty);
     return test_summary("art_store");
 }

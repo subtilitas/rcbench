@@ -175,10 +175,9 @@ three change before the first IO board build:
 | `firmware/iomcu/src/out_store.c` | the output binding in the last two sectors of the first 4 MB; asserts `STORE_SIZE_BYTES <= PICO_FLASH_SIZE_BYTES` | fails to compile once the board file states 2 MB, which is the safe direction. With the default board file it compiles and places the two sectors at 4 MB less 8 kB, past the end of the 2 MB part |
 | `-DLIMIT=4186112` in `firmware/iomcu/CMakeLists.txt`, the post-link check `image_fits.cmake` | 4 MB less 8 kB | passes an image that reaches into the store's two sectors, and a later save erases firmware. The limit becomes 2,088,960 bytes, 2 MB less 8 kB |
 
-The coprocessor image carries the board picture as a constant array of
-206,000 bytes: 500 × 206 pixels in RGB565, 16-bit red-green-blue
-(`firmware/iomcu/src/art_rp2350_can.c`). The image-size check counts it with
-the code. Its source PNG (Portable Network Graphics) file is 143,762 bytes.
+The coprocessor image carries the board drawing as a constant array of
+1,560 bytes (`firmware/iomcu/src/board_drawing_rp2350_can.c`). The
+image-size check counts it with the code.
 
 The in-package flash sets how long the core stops for a save. The 19 ms
 erase-and-program window in [STATUS.md](../../STATUS.md#open-items) is a

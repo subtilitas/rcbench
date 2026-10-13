@@ -1,6 +1,6 @@
 // Command line of the part drawings.
 //
-//   node drawings/cli.ts            writes public/drawings/** and drawings/anchors.json
+//   node drawings/cli.ts            writes public/drawings/**, drawings/anchors.json and drawings/panel.json
 //   node drawings/cli.ts --check    writes nothing; exit code 1 on a finding or on drift
 //   node drawings/cli.ts --palette  prints the contrast table of the wire palette
 
@@ -9,13 +9,24 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATALOGUE } from '../core/catalogue.ts';
 import { checkAll, filesOf } from './check.ts';
-import type { Files } from './check.ts';
+import type { Files, Finding } from './check.ts';
+import { panelDrawing, panelText } from './panel.ts';
 import { BACKGROUNDS, PALETTE, ratio } from './wires.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** Folder of the SVG files. Vite copies `public/` into the page. */
 export const SVG_DIR = join(here, '..', 'public', 'drawings');
 export const ANCHORS_FILE = join(here, 'anchors.json');
+/** The panel drawing of the coprocessor board; tools/gen_board_drawing.py reads it. */
+export const PANEL_FILE = join(here, 'panel.json');
+
+/** The committed panel drawing against the output of the generator. */
+export function checkPanel(expected: string, file: string = PANEL_FILE): Finding[] {
+  const actual = existsSync(file) ? readFileSync(file, 'utf8') : null;
+  if (actual === null) return [{ id: 'drift', msg: 'panel.json is missing: run "npm run drawings"' }];
+  if (actual !== expected) return [{ id: 'drift', msg: 'panel.json differs from the output of the generator: run "npm run drawings"' }];
+  return [];
+}
 
 /** Every SVG file below a folder at any depth, by its path with forward slashes. The extension counts in any case: `.svg`, `.SVG`. */
 export function readSvgs(dir: string): Record<string, string> {
@@ -71,11 +82,13 @@ function main(argv: string[]): number {
     return 0;
   }
   const expected = filesOf(CATALOGUE);
+  const panel = panelText(panelDrawing(CATALOGUE.pads));
   if (!argv.includes('--check')) {
     const n = writeFiles(expected);
-    console.log(`drawings: ${n} files written`);
+    writeFileSync(PANEL_FILE, panel);
+    console.log(`drawings: ${n + 1} files written`);
   }
-  const findings = checkAll(CATALOGUE, readFiles(), expected);
+  const findings = [...checkAll(CATALOGUE, readFiles(), expected), ...checkPanel(panel)];
   for (const f of findings) console.error(`FAIL ${f.id}: ${f.msg}`);
   const anchors = JSON.parse(expected.anchors) as { files: Record<string, { pins: object }> };
   const pins = Object.values(anchors.files).reduce((n, r) => n + Object.keys(r.pins).length, 0);

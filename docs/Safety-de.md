@@ -220,17 +220,17 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
   Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
   `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
-  Speichern der Einstellungen und das Ablegen des Platinenfotos zurück.
+  Speichern der Einstellungen und das Ablegen der Zeichnung der Platine zurück.
   Das Schalten auf ARMED und das Netzteil werden für einen Schreibvorgang nie
-  verweigert: der Schreibvorgang wartet. Das Ablegen (etwa 52 Löschvorgänge
-  und 52 Schreibvorgänge zu 4 kB für ein Bild von 206 kB) läuft einen Sektor
-  pro 5-ms-Durchlauf des Control-Tasks und hält zwischen zwei Sektoren an,
-  wenn der Prüfstand ARMED ist oder das Netzteil einschaltet. Es macht beim
-  ersten sicheren Durchlauf mit demselben Sektor weiter. Sein Header wird
-  zuerst gelöscht und zuletzt geschrieben; ein angehaltenes oder durch
-  Stromausfall abgebrochenes Ablegen hinterlässt also kein auffindbares Foto
-  für die Platine, und die Platine wird aus ihrem Umriss gezeichnet, bis das
-  Ablegen fertig ist. Die Dauer eines Löschvorgangs auf dem Flash des Panels
+  verweigert: der Schreibvorgang wartet. Das Ablegen (2 Löschvorgänge zu 4 kB
+  und 2 Schreibvorgänge für die 1 560 Bytes große Zeichnung des RP2350-CAN)
+  läuft einen Sektor pro 5-ms-Durchlauf des Control-Tasks und hält zwischen
+  zwei Sektoren an, wenn der Prüfstand ARMED ist oder das Netzteil
+  einschaltet. Es macht beim ersten sicheren Durchlauf mit demselben Sektor
+  weiter. Sein Header wird zuerst gelöscht und zuletzt geschrieben; ein
+  angehaltenes oder durch Stromausfall abgebrochenes Ablegen hinterlässt also
+  keine auffindbare Zeichnung für die Platine, und der nächste Link-Aufbau
+  holt sie neu. Die Dauer eines Löschvorgangs auf dem Flash des Panels
   ist nicht gemessen.
 - Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy auf ARMED, nachdem
   seine Warnung (KEIN PROPELLER, MOTOR GESICHERT?) 2 s gehalten ist. Danach

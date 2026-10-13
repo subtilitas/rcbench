@@ -55,8 +55,8 @@ settings-chrome       23,979     2997 KiB     78.7       9.8
 battery-chrome       36,962     4620 KiB    121.3       7.8
 balance-chrome       40,776     5097 KiB    133.8       6.5
 programmer-chrome       29,203     3650 KiB     95.8       9.8
-picker             880      110 KiB      2.9      39.0
-picker-chrome       15,854     1982 KiB     52.0      13.0
+picker             892      112 KiB      2.9      39.0
+picker-chrome       22,075     2759 KiB     72.5      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -210,8 +210,8 @@ Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
-  den Callbacks des Link-Ports und den Flash-Callbacks des Fotospeichers, denen
-  es nach Namen folgt (`PORT_CALLS`, `FLASH_CALLS`): 189
+  den Callbacks des Link-Ports und den Flash-Callbacks des Zeichnungsspeichers, denen
+  es nach Namen folgt (`PORT_CALLS`, `FLASH_CALLS`): 190
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

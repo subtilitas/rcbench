@@ -59,7 +59,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
 
-    -- rcbench: image 272040 bytes, 6% of the 4186112 bytes a four-megabyte
+    -- rcbench: image 184360 bytes, 4% of the 4186112 bytes a four-megabyte
        module leaves below the store
 
 **Achtung:** das Modul für das Bring-up ist ein Waveshare RP2350-CAN mit
@@ -137,46 +137,49 @@ deshalb darf dort nichts Langes laufen.
 
 ---
 
-## 4. Erster Link-Aufbau — mit rund einer Minute ungewöhnlichem Verkehr rechnen
+## 4. Erster Link-Aufbau: die Zeichnung der Platine
 
-**Das ist neu und passiert beim allerersten Link-Aufbau.** Der Koprozessor
-trägt jetzt ein 201 kB großes Foto von sich selbst, und das Panel holt es
-einmal und behält es im Flash.
+Der Koprozessor trägt eine 1 560 Bytes große Zeichnung seiner eigenen
+Platine. Das Panel holt sie beim ersten Link-Aufbau und behält sie im Flash.
 
 Auf der Panel-Konsole, in dieser Reihenfolge:
 
     I (…) rcbench: coprocessor answered
     I (…) rcbench: hardware 1 says where its pads are
     I (…) rcbench: hardware 1 says which pads are grounds and rails
-    I (…) rcbench: fetching hardware 1's photograph: 500 x 206, 206000 bytes
-    …
-    I (…) rcbench: hardware 1's photograph kept
+    I (…) rcbench: fetching hardware 1's drawing: 1560 bytes, hash 8f99cd48
+    I (…) rcbench: hardware 1's drawing kept
 
 **Was währenddessen zu erwarten ist:**
 
-- Zusätzlicher CAN-Verkehr über Dutzende Sekunden. Es nimmt 15 ms von jedem
-  50-ms-Poll, ist also in Wanduhrzeit langsamer, als der Bus allein bräuchte.
-- **Sichtbare Stillstände des Displays**, wenn es fertig ist und in den
-  Flash schreibt: einer pro Löschen oder Schreiben eines Sektors von 4 kB,
-  etwa 104 für ein Bild von 206 kB. Eine Flash-Operation schließt den Cache,
-  durch den das Nachladen des Bounce-Buffers PSRAM liest, also steht das
-  Panel für die Dauer jeder einzelnen. Settings-Speichern kostet das schon
-  heute.
-- **Das Schreiben wartet auf SAFE.** Es nimmt einen
-  Sektor pro 5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand
-  SAFE ist und das Netzteil aus. In ARMED oder mit eingeschaltetem
-  Netzteil erscheint einmal `photograph waits for a disarmed bench with the
+- 26 Blöcke zu 62 Bytes über CAN, in einem Abschnitt von 15 ms je Poll von
+  50 ms.
+- **Ein Stillstand des Displays**, wenn sie in den Flash geschrieben wird:
+  einer pro Flash-Operation, 4 für diese Zeichnung (2 Sektoren von 4 kB
+  löschen, die Nutzdaten, der Kopf). Eine Flash-Operation schließt den
+  Cache, durch den das Nachladen des Bounce-Buffers PSRAM liest, also steht
+  das Panel für die Dauer jeder einzelnen. Settings-Speichern tut dasselbe.
+- **Das Schreiben wartet auf SAFE.** Es nimmt einen Schritt pro
+  5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand SAFE ist und
+  das Netzteil aus. In ARMED oder mit eingeschaltetem Netzteil erscheint
+  einmal `keeping hardware 1's drawing waits for a bench in SAFE with the
   supply off` auf der Konsole, und `kept` folgt nach dem Schalten auf SAFE.
 - **Der Heartbeat darf davon nicht gestört werden.** Die Übertragung ist in
-  Scheiben geteilt und das Flash-Schreiben wird in ARMED genau
-  deswegen zurückgehalten. **Fällt der Heartbeat in dieser Minute aus,
-  anhalten und aufschreiben** — das ist das Wichtigste, was dieser erste Lauf
-  finden kann.
+  Scheiben geteilt und das Flash-Schreiben wird in ARMED deswegen
+  zurückgehalten. Fällt der Heartbeat während des Abrufs aus, anhalten und
+  aufschreiben.
 
-Beim **zweiten** Link-Aufbau ist das Foto schon behalten und nichts davon
-passiert. Wer es ganz überspringen will: ein Koprozessor ohne einkompiliertes
-Artwork meldet null Blöcke, und das Panel zeichnet die Platine aus ihrem
-Umriss.
+Beim nächsten Link-Aufbau liest das Panel Länge, CRC (zyklische
+Redundanzprüfung) und Hash der Zeichnung vom Koprozessor und zeigt die
+behaltene Kopie, wenn alle drei übereinstimmen:
+
+    I (…) rcbench: hardware 1's drawing is kept: 1560 bytes, hash 8f99cd48
+
+Ein Koprozessor, der mit einer anderen Zeichnung geflasht wurde, meldet einen
+anderen Hash, und das Panel holt die Zeichnung neu. Ein Koprozessor mit
+Protokoll 4.19 oder älter liefert keine Zeichnung; das Panel schreibt
+`hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its
+shape` ins Log und zeichnet die Platine aus ihrem Umriss.
 
 ---
 
@@ -225,9 +228,9 @@ OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
-**Setup → PICK A PIN**, in dessen Liste `SERVO PWM` wählen und eine Taste am
-Platinenbild antippen — Massen sind mit `G` markiert, Versorgungen tragen
-ihre Spannung.
+**Setup → PICK A PIN**, in dessen Liste `SERVO PWM` wählen und eine Taste auf
+der Platinenzeichnung antippen — Massen sind mit `G` markiert,
+Versorgungen tragen ihre Spannung.
 
 **Den Pin vor dem Anschließen des Servos messen.**
 
@@ -784,8 +787,8 @@ gewählt, nicht gemessen.
 | Schalten auf ARMED verweigert, Draht gesteckt | Heartbeat hat noch keine 4 Flanken, oder Lücke über 150 ms. GP3 messen. |
 | Arm verweigert, kein offensichtlicher Grund | Touch 500 ms tot sperrt es. Das Panel berühren. |
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
-| Heartbeat fällt in der ersten Minute aus | **Die Artwork-Übertragung oder der Flash-Keeper.** Siehe §4. |
-| Display friert kurz ein | Ein Flash-Schreiben. Erwartet, solange das Foto abgelegt wird, einmal pro gelöschtem oder geschriebenem Sektor von 4 kB. |
+| Heartbeat fällt beim ersten Link-Aufbau aus | **Die Übertragung der Zeichnung oder der Flash-Keeper.** Siehe §4. |
+| Display friert kurz ein | Ein Flash-Schreiben. Erwartet, solange die Zeichnung der Platine abgelegt wird, einmal pro Flash-Operation, 4 für die Zeichnung des RP2350-CAN. |
 | Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
 | Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
@@ -797,12 +800,12 @@ gewählt, nicht gemessen.
 **Verhält sich der Prüfstand so, dass es aufs Panel zeigt**, sind die drei
 neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 
-- das **Ablegen des Fotos** in der Control-Task, ein Flash-Sektor pro Durchlauf,
-- die **Artwork-Scheibe** in der Poll-Schleife der Control-Task und
+- das **Ablegen der Zeichnung** in der Control-Task, ein Flash-Schritt pro Durchlauf,
+- die **Scheibe der Zeichnung** in der Poll-Schleife der Control-Task und
 - die **Run-Log-Task** (`runlog`), der jeder Schreibzugriff auf die SD-Karte
   (Secure Digital) gehört.
 
-Die ersten beiden sind bei einem Koprozessor, der kein Foto meldet, wirkungslos —
+Die ersten beiden sind bei einem Koprozessor, der keine Zeichnung meldet, wirkungslos —
 das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
 Schacht wirkungslos. Mit Karte hängt sie bei jedem Fehler eine Zeile an
 `RCBENCH.LOG`, ob ARMED oder nicht; die Lauf-Datei wartet auf das Schalten auf

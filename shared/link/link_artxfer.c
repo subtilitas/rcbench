@@ -1,5 +1,5 @@
 /*
- * Assembling a board photograph. See link_artxfer.h.
+ * Assembling a board drawing. See link_artxfer.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -28,34 +28,33 @@ bool link_artxfer_meta_ok(const uint16_t *meta, link_art_meta_t *out)
     m.height = meta[LINK_AW_HEIGHT];
     m.format = meta[LINK_AW_FORMAT];
     m.crc    = meta[LINK_AW_CRC];
+    m.hash   = (uint32_t)meta[LINK_AW_HASH_LO]
+               | ((uint32_t)meta[LINK_AW_HASH_HI] << 16);
     m.bytes  = (uint32_t)meta[LINK_AW_BYTES_LO]
                | ((uint32_t)meta[LINK_AW_BYTES_HI] << 16);
 
     if (m.blocks == 0u || m.bytes == 0u) {
-        return false;              /* this board carries no picture */
+        return false;              /* this board carries no drawing */
     }
-    if (m.format != (uint16_t)LINK_ART_RGB565) {
-        return false;              /* a format this build cannot read */
+    if (m.format != (uint16_t)LINK_ART_DRAWING) {
+        return false;              /* a format this build does not read */
+    }
+    if (m.width == 0u || m.height == 0u) {
+        return false;              /* a drawing of no outline */
+    }
+    /*
+     * A header at least, and no more than the largest drawing the format
+     * allows: the length sizes an allocation before a byte of it is seen.
+     */
+    if (m.bytes < LINK_DRAW_HEAD_BYTES || m.bytes > LINK_DRAW_MAX_BYTES) {
+        return false;
     }
     /*
      * The block count has to be the one the length implies.  A coprocessor
      * that disagrees with itself is one whose blocks would run out early or
-     * late, and either way the picture is not what it says it is.
+     * late, and either way the drawing is not what it says it is.
      */
     if ((uint32_t)m.blocks != blocks_for(m.bytes)) {
-        return false;
-    }
-    /*
-     * And the length has to be the pixels it claims: two bytes each.
-     *
-     * In sixty-four bits, because the two are sixteen bits each and their
-     * product is not: 65535 x 32769 x 2 overflows a uint32_t and wraps to
-     * 65534, which is a length that agrees with a plausible block count.
-     * Such a page would pass, assemble 65534 bytes with a good CRC, and
-     * hand back something calling itself a 65535 x 32769 image -- and
-     * whatever drew it would read four gigabytes past the buffer.
-     */
-    if ((uint64_t)m.width * (uint64_t)m.height * 2u != (uint64_t)m.bytes) {
         return false;
     }
     *out = m;
@@ -112,7 +111,7 @@ bool link_artxfer_take(link_artxfer_t *x, const uint16_t *data)
     }
     for (uint32_t i = 0; i < left; ++i) {
         const uint16_t w = data[LINK_AD_DATA + (i / 2u)];
-        /* Low byte first: the order an RGB565 framebuffer is already in. */
+        /* Low byte first, as LINK_PAGE_ART_DATA lays it out. */
         x->buf[x->at + i] = (uint8_t)((i & 1u) ? (w >> 8) : (w & 0xFFu));
     }
     x->at += left;
@@ -130,5 +129,48 @@ bool link_artxfer_verify(const link_artxfer_t *x)
     if (!link_artxfer_complete(x)) {
         return false;
     }
-    return link_crc(0u, x->buf, (size_t)x->meta.bytes) == x->meta.crc;
+    return link_crc(0u, x->buf, (size_t)x->meta.bytes) == x->meta.crc
+           && link_fnv1a32(LINK_FNV_INIT, x->buf, (size_t)x->meta.bytes)
+                  == x->meta.hash;
+}
+
+void link_artserve_meta(uint16_t *regs, uint16_t format, uint16_t width,
+                        uint16_t height, uint32_t bytes, uint16_t crc,
+                        uint32_t hash)
+{
+    if (regs == NULL) {
+        return;
+    }
+    memset(regs, 0, sizeof(uint16_t) * (size_t)LINK_AW_COUNT);
+    if (bytes == 0u) {
+        return;
+    }
+    regs[LINK_AW_BLOCKS]   = (uint16_t)blocks_for(bytes);
+    regs[LINK_AW_WIDTH]    = width;
+    regs[LINK_AW_HEIGHT]   = height;
+    regs[LINK_AW_FORMAT]   = format;
+    regs[LINK_AW_BYTES_LO] = (uint16_t)(bytes & 0xFFFFu);
+    regs[LINK_AW_BYTES_HI] = (uint16_t)(bytes >> 16);
+    regs[LINK_AW_CRC]      = crc;
+    regs[LINK_AW_HASH_LO]  = (uint16_t)(hash & 0xFFFFu);
+    regs[LINK_AW_HASH_HI]  = (uint16_t)(hash >> 16);
+}
+
+void link_artserve_block(uint16_t *regs, const uint8_t *payload,
+                         uint32_t bytes, uint16_t block)
+{
+    if (regs == NULL) {
+        return;
+    }
+    memset(regs, 0, sizeof(uint16_t) * (size_t)LINK_AD_COUNT);
+    regs[LINK_AD_BLOCK] = block;
+    if (payload == NULL) {
+        return;
+    }
+    const uint32_t at = (uint32_t)block * LINK_AD_BYTES;
+    for (uint32_t i = 0; i < LINK_AD_BYTES && at < bytes && i < bytes - at;
+         ++i) {
+        const uint16_t b = payload[at + i];
+        regs[LINK_AD_DATA + i / 2u] |= (uint16_t)((i & 1u) ? (b << 8) : b);
+    }
 }

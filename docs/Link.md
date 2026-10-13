@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.19. The
+coprocessor transmits only in answer to a request. Protocol version 4.20. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -103,7 +103,9 @@ From 4.18 the panel's ARM names the roles it switches to ARMED
 ([An arm for one role](#an-arm-for-one-role)). From
 4.19 SERVO's frame rate drives the PWM target alone, and a TARGET change
 returns it to 0; the panel then shows the rate as not sent until it writes
-it again. The
+it again. From 4.20 ARTWORK serves the board's drawing with a hash of it in
+registers 7 and 8, and the panel reads ARTWORK from 4.20 only
+([The board drawing](#the-board-drawing)). The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1181,8 +1183,8 @@ Clearing a latched failsafe is such a side effect.
 | 0x23 | CHAN_CFG | read, write | per channel: role (0 throttle, 1 surface), slew (thousandths of the span per second, 0 to 3000, 0 = immediate; a higher value is refused with BAD_VALUE and nothing is stored (since 4.16); a slew above 3000 kept in the coprocessor's flash by an older build starts as 3000), minimum and maximum pulse in µs, 400 to 2500 and, on a channel a PWM slot renders, at most its frame minus 1 µs (since 4.16); eight channels of four registers |
 | 0x24 | CATALOGUE | read | the board's own pins, one register each: GPIO (general-purpose input/output) number in 6 bits, the pad number printed beside it in 6, what holds it in 4 (0 free, 1 heartbeat, 2 CAN, 3 flash, 4 debug, 5 sensor, 15 other); 32 slots, and a pad number of 0 means there is no pin in that slot |
 | 0x25 | SHAPE | read | where those pads are: outline width and height in 0.01 mm, the corner pad 1 sits at and the pads in one row packed as (corner << 8) \| per side, the pitch in 0.01 mm, and the distance from the edge to the centre of a pad row. Two rows on one pitch, numbered away from pad 1 along its edge and back along the opposite one. All zero when the coprocessor has no shape for its board, which means it is listed and not drawn |
-| 0x26 | ARTWORK | read | what a picture of the board is: blocks of payload (0 when the coprocessor carries none), width and height in pixels, format (0 none, 1 RGB565 with the low byte first), payload length in two registers, and a CRC (cyclic redundancy check) over the whole payload seeded zero |
-| 0x27 | ART_DATA | read, write | the picture itself: write register 0 to say which block, then read the page. Register 0 reads back the block being served and registers 1 to 31 carry 62 bytes of it. A block does not advance on being read, so a reply that goes missing is asked for again rather than skipped |
+| 0x26 | ARTWORK | read | what the board's drawing is, 9 registers (since 4.20; 7 before it): blocks of payload (0 when the coprocessor carries none), outline width and height in 0.01 mm, format (0 none, 2 the board drawing; 1, an RGB565 photograph, is served by 4.19 and older only), payload length in two registers, a CRC (cyclic redundancy check) over the whole payload seeded zero, and an FNV-1a (Fowler-Noll-Vo) hash over it in two registers, low half first. [The board drawing](#the-board-drawing) has the layout |
+| 0x27 | ART_DATA | read, write | the drawing itself: write register 0 to say which block, then read the page. Register 0 reads back the block being served and registers 1 to 31 carry 62 bytes of it. A block does not advance on being read, so a reply that goes missing is asked for again rather than skipped |
 | 0x28 | PADS | read | the pads that are not pins, one register each: the pad number in 6 bits, what it is in 2 (0 no pad and the list ends, 1 ground, 2 a rail, 3 neither), and the rail in 8 bits of tenths of a volt. Zero volts on a rail means it is not a fixed voltage, which is not the same as a ground's 0 V. 32 slots, in pad order |
 | 0x29 | SERVO | read, write | register 0: the frame rate in Hz of the PWM target PROG's `TARGET` names, 40 to 560, or 0 for its own rate. With the standard servo ports as target: every PWM output whose first channel is a surface, 0 for each slot's own rate from OUTPUTS; refused with BAD_VALUE, and nothing changes, when it would leave a PWM slice asked for two rates, and while it is not 0 so is a CHAN_CFG or OUTPUTS write that would (since 4.1). With a programming port as target: that port's pin alone, 0 for 50 Hz (since 4.19, [The target's frame rate](#the-targets-frame-rate)). Refused the same way when it would leave a PWM output or a pulsing programming port with an endpoint longer than its frame (since 4.16, [A pulse no longer than its frame](#a-pulse-no-longer-than-its-frame)). A change of `TARGET` sets register 0 to 0 (since 4.19). Registers 1 to 4, one frame: a sweep of the surfaces -- curve (0 stopped, 1 square, 2 sine, 3 triangle), speed in thousandths of a cycle a second (50 to 5000), amplitude in command units either side of the centre (0 to 500), hold at each end in ms (0 to 5000); a sweep starts or changes only from all four written together, refused with BAD_VALUE otherwise, and with NOT_ARMED while the bench is SAFE or one ARMED for the throttle alone (since 4.18); 0 in register 1 alone stops it, and 4 alone holds every surface where its output is, under the same switch to SAFE and 500 ms rules. A sweep running when the hold begins keeps its phase (since 4.6): how far into the curve it was, and so its point, its dwell and the ends reached; one that has made its movements is held at the centre it ended on. A write is judged against the page as the coprocessor's next pass would leave it at that moment: a sweep past its last movement, unwritten for 500 ms or SAFE has ended, even when the write is served before the pass that ends it. 5 alone (RESUME, since 4.6) carries that sweep on from the kept phase; the surfaces are commanded along the curve again at once and slew there from where they were held, at their own rate. RESUME is refused with BAD_VALUE when no phase is kept -- no sweep was running when the hold began, or the hold ended by a write of 0, a curve written over it, a switch to SAFE, 500 ms unwritten or a restart -- and when registers 2 to 5 no longer read what the paused sweep runs, and with NOT_ARMED while the bench is SAFE or one ARMED for the throttle alone. A 4.5 coprocessor refuses 5 with BAD_VALUE. Register 5: the ends a sweep started after it reaches before it stops, 0 for no end. Register 6, read only: the ends the sweep has reached. A sweep stops on a write of 0, on a switch to SAFE and when it has not been written for 500 ms, leaving each surface where its output has got to; repeating it keeps its curve going, and a sweep that has made its movements is not started again by a repeat (since 4.2). Nothing is kept: a coprocessor restart reads 0 throughout |
 | 0x2A | SUPPLY | read, write | a WeAct PD Power Mini V1 Buck on a PIO (programmable input/output) UART on two of the coprocessor's pins (since 4.3). Registers 0 to 3, one frame: enable, the GPIO that transmits (to the module's DM) and the one that receives (its DP), and the module's UART Baudrate setting, 0 to 6 for 9600, 19200, 38400, 57600, 115200, 230400 and 460800 baud, or 7 (since 4.4) to find it: the UART tries the next rate after every WHO_AM_I without a valid answer, starting at 19200, until a module has answered once; refused with BAD_VALUE on a pin that is reserved, bound to an output or the other pin, and for any change while the output is asked on or may be on (bit 6 of the flags). Since 4.5, a change while a module has answered is acknowledged and held: registers 0 to 3 read the wiring in force and flag bit 8 is set until a state read of the module sent after the change answers, at most about 1.2 s; a read showing the output off takes the change, one showing it on or failing refuses it, and bit 9 is set until the next write of registers 0 to 3. Such a change comes alone, without registers 4 to 6, and an ON is refused with BAD_VALUE while one is held. A host older than 4.5 that writes the wiring again while it is held is acknowledged and the hold goes on. The pins are no output's while held. Registers 4 to 6, one frame: output (1 on) and the set points in mV and mA, up to 20000 mV and 3000 mA; an ON is refused with NOT_ARMED without a live heartbeat, and while wiring just written is not yet in flash (a save is taken 400 ms after the last write), and the output goes off when the heartbeat stops. Registers 7 to 16, read only: flags (bit 0 online, bit 1 output on, bits 3..2 mode 0 normal, 1 constant current, 2 overcurrent, bit 4 an output that would not switch, bit 5 set points that would not take, bit 6 an output on or possibly on -- read on, an ON not yet confirmed, or an OFF owed to a module that stopped answering, bit 7 an output the module switched off by itself while ON was asked, held off until OUTPUT is written 0, since 4.5 bit 8 a wiring change held for a state read and bit 9 one that read refused, bit 10 an output switched off because the module's input read under the set point plus 500 mV on 2 input reads in a row, held off until OUTPUT is written 0, since 4.13 bit 11 a programming port holds registers 4 to 6: a write that is not an OFF is refused with BAD_VALUE (since 4.15 every change of a set point; before it an ON and a raise of the voltage), see [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos)), the output's mV and mA, the set points read back, the input's state and mV, readings taken and transactions failed modulo 65536, and (since 4.4) the rate in use, 0 to 6, or 7 while AUTO has found none. Register 17 (since 4.4), written alone as 1 with the output asked off and the supply enabled, restarts the module (SYSTEM_RESET) once it has answered and its output reads off; it reads 0. The wiring is kept in the coprocessor's flash and driven at boot with the output off, so a module left on is switched off after a restart; the command is not kept |
@@ -1460,6 +1462,64 @@ hold the rate independent of the slots, a port target at 39, 40, 499, 500,
 560 and 561 Hz against the PWM range and its endpoints, a shared slice that
 takes 0 and 50 Hz and refuses 40, 300 and 560 Hz, a target change while
 ARMED, and the panel's tracking of a `TARGET` change.
+
+### The board drawing
+
+From 4.20 the coprocessor serves a drawing of its own board on ARTWORK
+(0x26) and ART_DATA (0x27): the outline, the parts as flat shapes and every
+pad with what it is. PICK A PIN draws the board from it to scale. A new board
+brings its drawing in its own coprocessor image; the panel needs no change
+for it. The RP2350-CAN's drawing is 1,560 bytes in 26 blocks: 40 pads and
+102 shapes on an outline of 51.00 × 21.00 mm.
+
+The payload is little-endian, in 0.01 mm, with its origin at the top-left
+corner of the outline seen from the component side, x along the pad rows.
+
+| Part | Bytes | Fields |
+| --- | --- | --- |
+| header | 16 | version (1), pads (1 to 64), shapes (0 to 400, 16 bit), outline width and height, board colour and pad ring colour in RGB565, the outline's corner radius, the ring radius, the hole radius (below the ring radius), 0 |
+| a pad | 8 | pad number (1 to 63, ascending), kind (1 ground, 2 a rail, 3 neither, 4 a GPIO), value (the GPIO number of a GPIO pad, a rail's voltage in 0.1 V, else 0), flags (bit 0 a square ring), x and y of the centre |
+| a shape | 12 | kind (1 rectangle, 2 rounded rectangle, 3 disc, 4 line), the corner radius of a rounded rectangle or the width of a line (else 0), colour in RGB565, then four coordinates: left, top, width and height of a rectangle; centre and radius of a disc; both ends of a line |
+
+The longest payload is 5,328 bytes, 86 blocks. Every ring and every shape
+lies inside the outline, and the length is exactly the header, the pads and
+the shapes; the panel refuses anything else whole and draws the board from
+SHAPE (0x25) instead. The layout is `LINK_DRAW_*` in
+`shared/link/include/link_pages.h`; `link_drawing_parse()` in
+`shared/link/link_drawing.c` is the panel's check.
+
+The panel also refuses a drawing that disagrees with the board's other pages:
+an outline other than SHAPE's, a pad that is not on SHAPE's grid, or a pad
+whose kind or value differs from CATALOGUE (0x24) and PADS (0x28). The pin
+lists stay on CATALOGUE and PADS, and the drawing only places them.
+
+The panel keeps a fetched drawing in its `boardart` flash partition under the
+board ID, with every ARTWORK register from register 1 on. At link-up it reads
+ARTWORK and shows the kept drawing only when all of them match: format,
+outline, length, CRC and hash. Any other drawing for the same board ID is
+fetched again, so a coprocessor flashed with a changed drawing is never shown
+with the old one. A fetch checks the payload against the CRC and the hash
+before it is shown or kept.
+
+`tools/gen_board_drawing.py` writes the coprocessor's drawing,
+`firmware/iomcu/src/board_drawing_rp2350_can.c`, from the configurator's
+`configurator/drawings/panel.json`, and refuses a drawing the panel would
+refuse. CI (continuous integration) runs it with `--check`.
+
+| Panel | Coprocessor | Behaviour |
+| --- | --- | --- |
+| 4.20 | 4.20 | as above |
+| 4.20 | 4.19 or older | the panel does not read ARTWORK and draws the board from SHAPE. The log says `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
+| 4.19 or older | 4.20 | the panel reads seven ARTWORK registers, finds format 2 and fetches nothing: `no photograph from hardware 1: it describes a photograph that cannot be one`. A photograph it kept before still shows |
+
+`test_link_drawing`, `test_board_drawing`, `test_link_artxfer`,
+`test_art_fetch`, `test_art_store` and `test_picker_screen` hold the layout
+at its limits (64 pads, 400 shapes, a ring touching the edge, one past each),
+a truncated, malformed or wrongly checksummed payload, a hash that differs in
+either half, a link lost at every transaction of a fetch, a kept drawing
+under the same board ID with another hash, and a board the panel's build
+does not know. `test/tools/test_gen_board_drawing.py` holds the generator to
+the same rules.
 
 ### Bit timing
 

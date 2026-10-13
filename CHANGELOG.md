@@ -8,6 +8,26 @@ history is in git.
 
 ### Added
 
+- PICK A PIN draws the coprocessor's board from a drawing the coprocessor
+  serves: the outline, the parts as flat shapes and every pad, to scale in
+  0.01 mm on the board's real pad grid. Protocol 4.20: ARTWORK (0x26) has 9
+  registers; format 2 (`LINK_ART_DRAWING`) is the drawing laid out under
+  `LINK_DRAW_*` in `link_pages.h`, and registers 7 and 8 carry an FNV-1a
+  hash of the payload next to its CRC. A new board brings its drawing,
+  coordinates and pad kinds in its own coprocessor image. The panel checks
+  the drawing (`link_drawing_parse()`) and its agreement with the board's
+  shape, catalogue and pads (`board_drawing_agrees()`) before it shows it,
+  and draws the board from its shape otherwise. The kept copy in the
+  `boardart` partition is keyed on the board ID, format, outline, length,
+  CRC and hash, so a coprocessor flashed with another drawing for the same
+  board is fetched again. A 4.19 or older coprocessor is drawn from its
+  shape.
+- `tools/gen_board_drawing.py` writes
+  `firmware/iomcu/src/board_drawing_rp2350_can.c` (1,560 bytes, 40 pads,
+  102 shapes) from the configurator's `configurator/drawings/panel.json` and
+  refuses a drawing the panel would refuse; CI runs it with `--check`.
+  `npm run drawings` writes `panel.json` and `npm run drawings:check`
+  compares it. The configurator's SVG drawings are unchanged.
 - Configurator: the card of the motor simulator calculates the heat per
   resistor. Inputs: the LiPo pack (1S to 6S at 4.2 V per cell, default 4S,
   16.8 V), the resistance (the 21 E12 values from 100 Ω to 4.7 kΩ, default
@@ -163,6 +183,13 @@ history is in git.
 
 ### Changed
 
+- PICK A PIN places every pad, key and marker at the nearest pixel of its
+  0.01 mm position instead of truncating it, so a drawn pad and its key
+  meet. Positions move by up to 1 px.
+- The panel's artwork store (`shared/artwork`) keeps any format with its
+  hash: header version 2. Logs and comments name the board drawing; the
+  `boardart` partition (2 MB, 8 slots) is unchanged. The panel image is
+  4,256 bytes larger (1,127,872 to 1,132,128 bytes).
 - Docs, configurator and the panel band name the input voltage of the PD mini
   and of the boards as "input voltage" (DE "Eingangsspannung") where a
   voltage is meant. The band text `ALERT_PDMINI_SAG` reads "PD mini input
@@ -534,6 +561,11 @@ history is in git.
 
 ### Removed
 
+- The board photograph: `firmware/iomcu/artwork/rp2350-can.png`, its
+  206,000-byte table `art_rp2350_can.c` and `tools/gen_board_art.py`. The
+  coprocessor image is 203,808 bytes smaller (388,168 to 184,360 bytes). A
+  photograph kept by an older panel is found as empty and replaced by the
+  drawing.
 - The placeholder screen for a screen id without a screen, its 16 English and
   16 German strings, the SOON tile mark and the per-file coverage exemption
   that existed for it. A screen id that names no screen draws the overview.

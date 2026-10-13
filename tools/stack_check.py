@@ -155,7 +155,7 @@ PORT_CALLS = {
 }
 
 # The art_flash_t callbacks shared/artwork calls: the panel's one flash, in
-# components/art_flash.  The photograph's keep takes a sector a pass on the
+# components/art_flash.  The drawing's keep takes a sector a pass on the
 # control task, so its erase and write chain is followed by name.  The same
 # checks as PORT_CALLS.
 FLASH_CALLS = {

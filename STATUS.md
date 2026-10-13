@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.19. [Reference](docs/Link.md).
+4.20. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -206,18 +206,18 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 100 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 102 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
 `test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
-`test_link_can`, `test_link_artxfer`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
+`test_link_can`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
-`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
+`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card` and `test_prog_link`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -316,7 +316,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
 | `shared/ui/outputs_screen.c` | 371 | 365 | 98.4% |
-| `shared/ui/picker_screen.c` | 584 | 578 | 99.0% |
+| `shared/ui/picker_screen.c` | 617 | 610 | 98.9% |
+| `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
 | `shared/settings/settings.c` | 234 | 228 | 97.4% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -366,14 +367,15 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
 | `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
 | `shared/link/link_can.c` | 94 | 92 | 97.9% |
-| `shared/link/link_crc.c` | 7 | 7 | 100.0% |
+| `shared/link/link_crc.c` | 13 | 13 | 100.0% |
 | `shared/link/link_dev.c` | 86 | 83 | 96.5% |
 | `shared/link/link_host.c` | 136 | 132 | 97.1% |
-| `shared/link/link_artxfer.c` | 61 | 60 | 98.4% |
+| `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
+| `shared/link/link_drawing.c` | 141 | 141 | 100.0% |
 | `shared/link/link_control.c` | 35 | 35 | 100.0% |
 | `shared/link/link_port.c` | 38 | 38 | 100.0% |
-| `shared/artwork/art_store.c` | 175 | 169 | 96.6% |
-| `shared/artwork/art_fetch.c` | 63 | 62 | 98.4% |
+| `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
+| `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 311 | 302 | 97.1% |
@@ -407,7 +409,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **36117** | **35363** | **97.9%** |
+| **total** | **36454** | **35697** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

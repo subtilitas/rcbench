@@ -34,6 +34,20 @@ extern "C" {
  */
 uint16_t link_crc(uint16_t crc, const void *data, size_t len);
 
+/* The FNV-1a (Fowler-Noll-Vo) 32-bit offset basis, a fresh accumulator. */
+#define LINK_FNV_INIT 0x811C9DC5uL
+
+/* The published check value: link_fnv1a32(LINK_FNV_INIT, "123456789", 9). */
+#define LINK_FNV_CHECK 0xBB86B11CuL
+
+/*
+ * FNV-1a, 32 bits: per byte, XOR then multiply by 16777619.  The content
+ * key of the board drawing (LINK_AW_HASH_LO/HI) next to its CRC.  Not a
+ * cryptographic hash; it tells two drawings apart, it does not authenticate
+ * one.  Incremental like link_crc().
+ */
+uint32_t link_fnv1a32(uint32_t hash, const void *data, size_t len);
+
 #ifdef __cplusplus
 }
 #endif
