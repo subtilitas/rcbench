@@ -34,8 +34,10 @@ This tool reads each module and fails when one of these does not hold:
   GCC evaluates as the call.  It passes as the operand of `#ifdef`, `#ifndef`,
   `#elifdef` and `#elifndef`, and as the operand of a `defined` term
   (`defined NAME`, `defined(NAME)`) on an `#if` or `#elif` line that holds
-  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`.  Any
-  other token on that line fails it (`#if X || defined(__has_include)`),
+  nothing but such terms, white space, `(`, `)`, `!`, `&` and `|`.  The
+  line is the directive's line as GCC reads it: a comment or raw string
+  literal across a line break continues it.  Any other token on that line
+  fails it (`#if X || defined(__has_include)`),
   because a macro can take `defined` into an argument and paste it to
   another name, and so does a `defined` joined to the identifier before it
   (`$defined`).  A token after the operand fails the include as well.  An
@@ -51,27 +53,35 @@ This tool reads each module and fails when one of these does not hold:
   `??=` is a `#`.  A file with a NUL byte fails, so no NUL takes part in a line
   continuation or a directive.  A file is read under the literal rules of every
   language it can be compiled as, and an include found under any of them
-  counts: ISO C11 and C17 (no raw strings, no digit separators), gnu11 and
-  gnu17 (raw strings), C23 (digit separators), gnu23 and C++14 or later
-  (both).  A raw string literal
+  counts: ISO C11 and C17 (no raw strings, no digit separators, no delimited or
+  named universal character names), C++11 (raw strings), gnu11, gnu17 and
+  gnu++11 (raw strings and delimited and named universal character names), C23
+  (digit separators), C++14 to C++20 (raw strings and digit separators), and
+  gnu23, C++23 and gnu++14 or later (all three).  A raw string literal
   (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
   a number is one preprocessing number, through digit separators (`1'000`, but
   not a `'` before a `.`, a `$`, a universal character name or a character
   outside ASCII), exponent signs (`1e-x`), `$`, universal character names
-  (`\\u00e9`, `\\U000000E9`, and in gnu23, C++23 and gnu++14 or later also
-  `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters
-  outside ASCII (`1$'a` in C23).  A number starts at a digit after any
-  character but a letter, a digit, `_` and `$`; a letter or digit outside
-  ASCII continues an identifier (`é1`), and after any other character
-  outside ASCII a number starts (`×1'a`).  The C of a .pio file is
-  the text pioasm 2.3.0 writes into the header it generates: the lines of each
-  `% c-sdk {` block after the first `.program`, in order.  The blocks are found
-  as pioasm's lexer finds them, on the file as written: a `;` or `//` comment
-  runs to the line end, a `;` inside a `/* */` comment ends nothing, the rest
-  of a `.lang_opt` line is one string, a block name is trimmed of spaces and
-  tabs and an empty one is c-sdk, a lone CR is a character of its line, and a
-  block ends only at a line of `%}` in column 0 with nothing but spaces, tabs
-  and CRs after it.  CRLF and a lone CR end a line of the C written;
+  (`\\u00e9`, `\\U000000E9`, and in gnu11, gnu17, gnu23, gnu++11 or later and
+  C++23 also `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and the
+  characters outside ASCII that GCC 13 takes into an identifier (`1$'a` in
+  C23): the ranges of ISO C11 Annex D.1, EXTENDED_RANGES below.  A number
+  starts at an ASCII digit (0 to 9) after any character but a letter, a digit,
+  `_`, `$` and a character of these ranges, and in gnu11, gnu17, gnu23, gnu++11
+  or later and C++23 not after a delimited or named universal character name,
+  which starts an identifier (`é1`, `€1`, `\\u{e9}1`).  A decimal digit outside
+  ASCII starts an identifier (`٠1`, U+0660).  A character outside ASCII and
+  outside the ranges ends a number and a name, and a number or raw string
+  literal starts after it, as in C (`×1'a`, `ⸯR"(...)"`, `ⸯ__has_include`).
+  The C of a .pio file is the text pioasm 2.3.0 writes into the header it
+  generates: the lines of each `% c-sdk {` block after the first `.program`, in
+  order.  The blocks are found as pioasm's lexer finds them, on the file as
+  written: a `;` or `//` comment runs to the line end, a `;` inside a `/* */`
+  comment ends nothing, the rest of a `.lang_opt` line is one string, a block
+  name is trimmed of spaces and tabs and an empty one is c-sdk, a lone CR is a
+  character of its line, and a block ends only at a line of `%}` in column 0
+  with nothing but spaces, tabs and CRs after it.  CRLF and a lone CR end a
+  line of the C written;
 - the module's README.md has a heading with "Interface" in it; a heading
   with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
@@ -105,34 +115,16 @@ module are not checked.  A module that adds a project directory with
 `rcbench_` one passes, and a header found there can shadow a module header
 of the same name.  Only `REQUIRES` and `rcbench_` names are read.
 
-Current limitation: a digit after a character outside ASCII that is neither
-a letter nor a digit starts a number, as GCC 13 reads it after `×` and a
-no-break space.  GCC 13 reads `€` and `·` as identifier characters,
-so `€1'a' /* '` fails the include after it, which GCC reads as part of
-a comment.
-
 Current limitation: a `__has_include` that a macro pastes together with `##`
 (`#define CAT(a, b) a##b`, then `#if CAT(__has_, include)("../x.h")`) passes,
 and GCC 13 evaluates it as the call.
 
-Current limitation: a delimited or named universal character name
-(`\\u{e9}`, `\\N{...}`) continues a number under every set of literal
-rules, also where GCC 13 ends the number before it (C23 and C++14 to C++20
-without GNU extensions).  After a digit separator earlier on the line,
-`0'0 1\\u{e9}'x /* '` hides the include on the next line from the tool,
-and GCC 13 with `-std=c++17` reads it.
-
-Current limitation: a comment or raw string literal across a line break
-ends the line for the `defined` rule, while GCC 13 continues the
-directive.  In a function-like macro with the parameters `if` and
-`defined`, a body line `*/ #if ) defined __has_include` after
-`DROP( /*` passes, and GCC 13 evaluates `__has_include` as the call when
-the macro is expanded in an `#if`.
-
-Current limitation: U+2E2F (`ⸯ`) before a digit counts as a letter, so no
-number starts after it, while GCC 13 starts one there in C23:
-`ⸯ1'a' /* '` hides the include on the next line from the tool, and GCC 13
-with `-std=c2x` reads it.
+Current limitation: in C++ an identifier right after a closing quote is a
+literal suffix, so `""R"(` and `''R"(` open no raw string there, while the
+GNU dialects of C read one.  The tool reads them as C does.  An include that
+such a sequence hides in C and that C++11 or later reads is not found:
+`R"(a" /* ")"`, then `""R"(" '/*)" /*'`, hides the include on the next line
+from the tool, and GCC 13 with `-std=c++17` reads it.
 
 The SPDX (Software Package Data Exchange) line of the .c and .h files under
 protocols/ is held by tools/check_docs.py.
@@ -191,10 +183,36 @@ BARE_DIRECTIVE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*$")
 # lines before a newline and escapes a quote in a literal, `??'` is a `^`,
 # which removes a quote, and `??=` is a `#`.
 TRIGRAPH_RE = re.compile(r"\?\?[=/'()!<>-]")
+# The characters outside ASCII that GCC 13 takes into an identifier or a
+# preprocessing number: the ranges of ISO C11 Annex D.1, the same list as
+# C++11 Annex E.1.  Derived with GCC 13.3: `#ifdef a<ch>` for every code
+# point from U+0080 to U+10FFFF but the surrogates, with -Wno-normalized
+# and -Wno-bidi-chars, in c11, gnu11, c17, gnu17, c2x, gnu2x, c++14,
+# c++17, c++20, c++23, gnu++14, gnu++17 and gnu++23.  Every mode accepts the
+# same 971,622 characters and gives a diagnostic for every other.  In C, a
+# character outside these ranges is a token of its own, so it ends a number
+# and a number or raw string can start after it; C++ reads it into the
+# identifier and stops with an error.  Python's `\w` matches 133,485,
+# 137,873 and 142,877 characters outside ASCII under Unicode 14.0, 15.0 and
+# 16.0 (Python 3.11, 3.12 and 3.14); under each, all but U+2E2F (`ⸯ`) are
+# in these ranges.
+EXTENDED_RANGES = (
+    (0xA8, 0xA8), (0xAA, 0xAA), (0xAD, 0xAD), (0xAF, 0xAF), (0xB2, 0xB5),
+    (0xB7, 0xBA), (0xBC, 0xBE), (0xC0, 0xD6), (0xD8, 0xF6), (0xF8, 0x167F),
+    (0x1681, 0x180D), (0x180F, 0x1FFF), (0x200B, 0x200D), (0x202A, 0x202E),
+    (0x203F, 0x2040), (0x2054, 0x2054), (0x2060, 0x218F), (0x2460, 0x24FF),
+    (0x2776, 0x2793), (0x2C00, 0x2DFF), (0x2E80, 0x2FFF), (0x3004, 0x3007),
+    (0x3021, 0x302F), (0x3031, 0xD7FF), (0xF900, 0xFDCF), (0xFDF0, 0xFE44),
+    (0xFE47, 0xFFFD),
+    *((plane, plane + 0xFFFD) for plane in range(0x10000, 0xF0000, 0x10000)))
+# One character of a GCC identifier as it stands in the text: a letter,
+# digit, `_`, `$` or a character of EXTENDED_RANGES.
+ID_CHAR = ("[A-Za-z0-9_$" + "".join("\\U%08x-\\U%08x" % r
+                                    for r in EXTENDED_RANGES) + "]")
 # The opening of a raw string literal, `R"x(...)x"`: C++11 and the GNU
 # dialects of C.  Inside it, from its first `"` on, line continuations are
 # not joined, so its body is matched on the text as written.
-RAW_OPEN_RE = r'(?<!\w)(?:u8|[uUL])?R(?=")'
+RAW_OPEN_RE = r'(?<!' + ID_CHAR + r')(?:u8|[uUL])?R(?=")'
 RAW_BODY_RE = re.compile(
     r'"(?P<delim>[^()\\ \t\f\v\n]{0,16})\(.*?\)(?P=delim)"', re.S)
 # A string or character literal.  One without its closing quote runs to the
@@ -203,40 +221,58 @@ RAW_BODY_RE = re.compile(
 # line end ends the literal there.
 STRING_LITERAL = r'"(?:\\[^\n]|[^"\\\n])*"?'
 CHAR_LITERAL = r"'(?:\\[^\n]|[^'\\\n])*'?"
-# A character that continues a GCC identifier or preprocessing number
-# besides a letter, digit and `_`: `$`, a universal character name
-# (`\u00e9`, `\U000000e9`, and the delimited `\u{e9}` and named
-# `\N{LATIN SMALL LETTER E WITH ACUTE}` of gnu23, C++23 and gnu++14 or
-# later) and a character outside ASCII.
-IDENTIFIER_CHAR = (r"(?:[\w$]|[^\x00-\x7f]|\\u[0-9A-Fa-f]{4}"
-                   r"|\\U[0-9A-Fa-f]{8}|\\u\{[0-9A-Fa-f]+\}"
-                   r"|\\N\{[A-Za-z0-9 _-]+\})")
+# A character that continues a GCC identifier or preprocessing number: a
+# letter, digit, `_`, `$`, a character of EXTENDED_RANGES and a universal
+# character name (`\u00e9`, `\U000000e9`).
+IDENTIFIER_CHAR = (r"(?:" + ID_CHAR + r"|\\u[0-9A-Fa-f]{4}"
+                   r"|\\U[0-9A-Fa-f]{8})")
+# The delimited (`\u{e9}`) and named (`\N{LATIN SMALL LETTER E WITH
+# ACUTE}`) universal character names, which continue a number only in
+# gnu11, gnu17, gnu23, gnu++11 or later and C++23.  C11, C17, C23 and
+# C++14 to C++20 end the number before the `\`.
+DELIMITED_UCN = r"|\\u\{[0-9A-Fa-f]+\}|\\N\{[A-Za-z0-9 _-]+\}"
+# An identifier from a delimited or named universal character name on, in
+# gnu11, gnu17, gnu23, gnu++11 or later and C++23: kept as text, so no
+# number starts at a digit after the `}` (`\u{e9}1'a'` is an identifier
+# and a character literal).
+DELIMITED_WORD = (r"(?:\\u\{[0-9A-Fa-f]+\}|\\N\{[A-Za-z0-9 _-]+\})(?:"
+                  + IDENTIFIER_CHAR + DELIMITED_UCN + ")*")
 
 
-def number_re(separators: bool) -> str:
-    """A preprocessing number: a digit, after an optional `.`, then digits,
-    letters, `_`, `.`, an exponent sign after e, E, p or P, `$`, universal
-    character names and characters outside ASCII, as GCC's lex_number reads
-    it; with digit separators (C23, C++14) also a `'` before a digit, letter
-    or `_`.  It starts at a digit after no letter, digit, `_` or `$`.  A
-    `'` before a `.`, a `$`, a universal character name or a character
-    outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1` and the
-    character literal `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then
-    a `'` that opens a character literal."""
+def number_re(separators: bool, delimited: bool = False) -> str:
+    """A preprocessing number: an ASCII digit, after an optional `.`, then
+    digits, letters, `_`, `.`, an exponent sign after e, E, p or P, `$`,
+    universal character names and characters of EXTENDED_RANGES, as GCC's
+    lex_number reads it; with digit separators (C23, C++14) also a `'`
+    before a digit, letter or `_`; with @p delimited also delimited and
+    named universal character names.  It starts at an ASCII digit after no
+    letter, digit, `_`, `$` or character of EXTENDED_RANGES; a decimal digit
+    outside ASCII starts an identifier, as in GCC.  A `'` before a `.`, a
+    `$`, a universal character name or a character outside ASCII ends the
+    number, as GCC lexes it: `1'.x'` is `1` and the character literal
+    `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then a `'` that opens
+    a character literal."""
     sep = "'?" if separators else ""
-    return (r"(?<![\w$])\.?\d(?:[eEpP][+-]|" + sep + r"[A-Za-z0-9_]|\.|"
-            + IDENTIFIER_CHAR + ")*")
+    return (r"(?<!" + ID_CHAR + r")\.?[0-9](?:[eEpP][+-]|" + sep
+            + r"[A-Za-z0-9_]|\.|"
+            + IDENTIFIER_CHAR + (DELIMITED_UCN if delimited else "") + ")*")
 
 
 # The literal rules of the languages a module file is compiled as, as (raw
-# strings, digit separators): ISO C11 and C17 have neither, gnu11 and
-# gnu17 have raw strings, C23 has digit separators, gnu23 and C++14 on have
-# both.  A file is read under each and the includes found are joined, so an
-# include that one of them leaves outside a comment is found.
-LITERAL_VIEWS = ((False, False), (True, False), (False, True), (True, True))
+# strings, digit separators, delimited and named universal character names
+# in a number and an identifier): ISO C11 and C17 have none, C++11 has
+# raw strings, gnu11, gnu17 and gnu++11 have raw strings and delimited
+# names, C23 has digit separators, C++14 to C++20 have raw strings and
+# digit separators, and gnu23, C++23 and gnu++14 on have all three.  A file
+# is read under each and the includes found are joined, so an include that
+# one of them leaves outside a comment is found.
+LITERAL_VIEWS = ((False, False, False), (True, False, False),
+                 (True, False, True), (False, True, False),
+                 (True, True, False), (True, True, True))
 
 
-def source_token_re(raw: bool, separators: bool) -> re.Pattern:
+def source_token_re(raw: bool, separators: bool,
+                    delimited: bool = False) -> re.Pattern:
     """One token that the comment remover keeps or drops: the operand of an
     include directive, and string, character and raw string literals and
     numbers, are kept whole, so a `//` or `/*` inside them starts no comment
@@ -244,26 +280,31 @@ def source_token_re(raw: bool, separators: bool) -> re.Pattern:
     return re.compile(
         "(?P<directive>" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
         + ("|(?P<raw>" + RAW_OPEN_RE + ")" if raw else "")
-        + "|(?P<literal>" + number_re(separators) + "|" + STRING_LITERAL
-        + "|" + CHAR_LITERAL + ")"
+        + ("|(?P<word>" + DELIMITED_WORD + ")" if delimited else "")
+        + "|(?P<literal>" + number_re(separators, delimited) + "|"
+        + STRING_LITERAL + "|" + CHAR_LITERAL + ")"
         r"|(?P<comment>/\*.*?\*/|//[^\n]*)", re.M | re.S)
 
 
-SOURCE_TOKEN_RES = tuple(source_token_re(raw, sep)
-                         for raw, sep in LITERAL_VIEWS)
+SOURCE_TOKEN_RES = tuple(source_token_re(*view) for view in LITERAL_VIEWS)
 OPERAND_RE = re.compile(r'^(?:<([^>\n]*)>|"([^"\n]*)")\s*$')
 # The name `__has_include` or `__has_include_next` anywhere outside a
 # literal: a call, and also a macro that stands for it (`#define P
 # __has_include`, then `#if P("x.h")`), which GCC evaluates as the call.
-HAS_INCLUDE_RE = re.compile(r"\b__has_include(?:_next)?\b")
+HAS_INCLUDE_RE = re.compile(r"(?<!" + ID_CHAR + r")__has_include(?:_next)?(?!"
+                            + ID_CHAR + ")")
 # What tests the name as a macro and includes nothing: `#ifdef`, `#ifndef`,
 # `#elifdef` and `#elifndef` before it on its line, and a `defined NAME` or
 # `defined(NAME)` term of an `#if` or `#elif` line whose other text is only
 # such terms, white space, `(`, `)`, `!`, `&` and `|`.  The line holds no
 # other identifier, so no macro on it takes `defined` into an argument or
 # pastes it to another name, and no `$` or other identifier character joins
-# it to the name before it.  A macro body continued across a comment or raw
-# string is read as separate lines (a current limitation, above).
+# it to the name before it.  The line is the line GCC reads: a comment or
+# raw string literal across a line break continues it, so the body of a
+# `#define` stays one line also where a comment cuts it
+# (`DROP( /*` newline `*/ #if ) defined __has_include`), and an `#if`
+# after a comment that starts its line and ends on the next is a directive
+# (`/*` newline `*/ #if defined(__has_include)`).
 IF_LINE_RE = re.compile(r"^" + WS + r"*(?:#|%:)" + WS + r"*(?:el)?if\b(.*)$")
 DEFINED_TERM_RE = re.compile(
     r"\bdefined" + WS + r"*(?:\(" + WS + r"*[A-Za-z_]\w*" + WS + r"*\)"
@@ -384,11 +425,15 @@ def join_lines(text: str) -> tuple[str, list[int], list[int], list[int]]:
 
 def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
     """@p text with line continuations joined and comments blanked, read
-    with the literal rules of @p token_re: once with literals left whole, so
-    an include operand stays, and once with each literal and include operand
-    replaced by `""`, newlines kept, for the search of `__has_include`.  A
-    raw string literal is matched on @p text as written, from its `"` on,
-    because a line continuation inside it is not joined."""
+    with the literal rules of @p token_re: once with literals left whole and
+    the newlines of comments and raw string literals kept, so an include
+    operand stays on its line, and once with each literal and include
+    operand replaced by `""` and each comment by spaces, without the
+    newlines inside them, for the search of `__has_include`.  The second
+    text is split into lines as GCC reads a directive: a comment or raw
+    string literal across a line break continues the line.  A raw string
+    literal is matched on @p text as written, from its `"` on, because a
+    line continuation inside it is not joined."""
     joined, starts, at, removed = join_lines(text)
 
     def to_text(j: int) -> int:
@@ -420,13 +465,16 @@ def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
         if m.lastgroup == "comment":
             blank = re.sub(r"[^\n]", " ", token)
             kept.append(blank)
-            bare.append(blank)
+            bare.append(blank.replace("\n", " "))
+        elif m.lastgroup == "word":
+            kept.append(token)
+            bare.append(token)
         elif m.lastgroup == "directive":
             kept.append(token)
             bare.append(re.sub(r"[^\n]", " ", token))
         else:
             kept.append(token)
-            bare.append('""' + re.sub(r"[^\n]", "", token))
+            bare.append('""')
         pos = end
     kept.append(joined[pos:])
     bare.append(joined[pos:])

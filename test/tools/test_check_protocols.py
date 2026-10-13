@@ -4,6 +4,7 @@ SPDX-License-Identifier: MIT
 """
 
 import os
+import re
 import shutil
 import subprocess
 import threading
@@ -1150,17 +1151,31 @@ def test_a_nul_byte_in_a_pio_file_fails_it(tmp_path):
 
 
 # Each set of literal rules is the only one that finds the include in one
-# text: a raw string, a digit separator, or neither, opens a comment that
-# hides it under the other three.
+# text: a raw string, a digit separator, a delimited universal character
+# name, or none of them, opens a comment that hides it under the other
+# five.  The second is C++11: `\u{e9}` is no identifier character, so
+# `R"(" /* )"` is a raw string.  The third is gnu11, gnu17 and gnu++11:
+# `\u{e9}R` is an identifier, so no raw string opens.
 VIEW_ONLY = {
-    (False, False): 'R"(")" /*"\n1\'a /* \'\n#include "b.h"\n*/\n',
-    (True, False): 'R"(a" /* ")"\n1\'a /* \'\n#include "b.h"\n*/\n',
-    (False, True): 'R"(")" /*"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
-    (True, True): 'R"(a" /* ")"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
+    (False, False, False):
+        'R"(")" /*"\n1\'a /* \'\n#include "b.h"\n*/\n',
+    (True, False, False):
+        'R"(a" /* ")"\n1\'a /* \'\n\\u{e9}R"(" /* )"\n#include "b.h"\n*/\n',
+    (True, False, True):
+        'R"(a" /* ")"\n1\'a /* \'\n\\u{e9}R"(" \'/*)" /*\'\n#include "b.h"\n'
+        '*/\n',
+    (False, True, False):
+        'R"(")" /*"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
+    (True, True, False):
+        'R"(a" /* ")"\n1\'a\'/*\'\n1\\u{e9}\'x /* \'\n#include "b.h"\n'
+        '*/\n',
+    (True, True, True):
+        'R"(a" /* ")"\n1\'a\'/*\'\n1\\u{e9}\'x\' /* \'\n#include "b.h"\n'
+        '*/\n',
 }
 
 
-def test_the_check_reads_four_sets_of_literal_rules():
+def test_the_check_reads_six_sets_of_literal_rules():
     assert sorted(cp.LITERAL_VIEWS) == sorted(VIEW_ONLY)
 
 
@@ -1191,8 +1206,8 @@ def test_a_repeated_include_is_listed_each_time():
 # Differential: the check against the compilers and pioasm.  Each case puts
 # `#include "../outside.h"` somewhere; the check finds it exactly when one
 # of the compilers includes the file, under any of the C standards and, for
-# a header, C++17.  The C of a .pio file is read from the header pioasm
-# writes.  A missing tool skips the case.
+# a header, C++11 and C++17.  The C of a .pio file is read from the header
+# pioasm writes.  A missing tool skips the case.
 
 GCC = shutil.which("gcc") or shutil.which("cc")
 GXX = shutil.which("g++") or shutil.which("c++")
@@ -1203,9 +1218,9 @@ OUT = '#include "../outside.h"\n'
 
 # A digit, then a character that continues a GCC preprocessing number
 # besides a letter, digit and `_`: `$`, universal character names with
-# lowercase and uppercase hex digits, delimited and named ones (gnu23, C++23
-# and gnu++14 on), and characters outside ASCII (U+00E9, U+0301, U+203F,
-# U+00B7, U+200D).
+# lowercase and uppercase hex digits, delimited and named ones (gnu11,
+# gnu17, gnu23, gnu++11 on and C++23), and characters outside ASCII
+# (U+00E9, U+0301, U+203F, U+00B7, U+200D).
 NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
                            "1\\u00E9", "1\\u00AA", "1\\U000000E9",
                            "1\\u{e9}", "1\\u{E9}", ".1\\u{e9}",
@@ -1218,6 +1233,55 @@ NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
 # character literal `' /* '`.  A punctuator ends a number: `1<'a'` is `1`,
 # `<` and the character literal `'a'`.
 NUMBER_STARTS = {"\u00d71": True, "\u00a01": True, "1<": False}
+# A delimited or named universal character name after a digit: gnu11,
+# gnu17, gnu23, gnu++11 on and C++23 read it as part of the number; C23 and
+# C++14 to C++20 end the number before the `\`, so after a digit separator
+# earlier on the line `'x /* '` is a character literal there.
+DELIMITED_ENDS = tuple("#define Z 0'0 1" + u + "'x /* '\n" + OUT + "/* */\n"
+                       for u in ("\\u{e9}",
+                                 "\\N{LATIN SMALL LETTER E WITH ACUTE}"))
+# Characters outside the identifier ranges of GCC 13 (cp.EXTENDED_RANGES):
+# `\u2e2f`, which Python's `\\w` matches, and `\u00d7`.  In C each is a token
+# of its own, so a number or raw string starts after it, and it ends a
+# number.  In gnu11, gnu17, gnu23, gnu++11 on and C++23, an identifier
+# that starts at a
+# delimited universal character name runs through the digit after it, so
+# `'a /* '` is a character literal; C++14 to C++20 end a number before the
+# `\`, so `R"(` opens a raw string.  `\u00b7` and `\u20ac` are in the
+# ranges: `\u00b71` is an identifier, `'a'` a character literal, and the
+# comment hides the include.
+# gnu11 and gnu17 read a delimited or named universal character name into
+# an identifier or number and have no digit separators: `\u{e9}R` is an
+# identifier, `"("` a string and `'/*)" /*'` a character literal.  The first
+# line hides the include from the rules without raw strings, the second from
+# those with digit separators.
+GNU_DELIMITED = tuple('R"(a" /* ")"\n1\'a /* \'\n' + w + 'R"(" \'/*)" /*\'\n'
+                      + OUT + "/* */\n"
+                      for w in ("\\u{e9}",
+                                "\\N{LATIN SMALL LETTER E WITH ACUTE}",
+                                "1\\u{e9}", "x\\u{e9}"))
+# A decimal digit outside ASCII starts an identifier, not a number: GCC 13
+# starts a number at 0 to 9 only.  After a digit separator earlier on the
+# line, `\u06601'a /* '` is an identifier and a character literal in C23
+# and C++, and `\u06601'a' /* '` opens a comment.
+UNICODE_DIGITS = {
+    "#define Z 0'0 \u06601'a /* '\n": True,
+    "#define Z 0'0 \uff11'a /* '\n": True,
+    "#define Z 0'0 \u0967'a /* '\n": True,
+    "#define Z 0'0 .\u0660'a /* '\n": True,
+    "#define Z \u06601'a' /* '\n": False,
+}
+UNLISTED_CHARS = {
+    "#define Z \u2e2f1'a' /* '\n": True,
+    '#define Z \u2e2fR"(" /* )"\n': True,
+    "#define Z 0'0 1\u2e2f'a /* '\n": True,
+    "#define Z 0'0 1\u00d7'a /* '\n": True,
+    "#define Z 0'0 \\u{e9}1'a /* '\n": True,
+    "#define Z 0'0 \\N{LATIN SMALL LETTER E WITH ACUTE}1'a /* '\n": True,
+    '#define Z 1\\u{e9}R"(" /* )"\n': True,
+    "#define Z \u00b71'a' /* '\n": False,
+    "#define Z \u20ac1'a' /* '\n": False,
+}
 
 DIFF_C = [
     ("c", "#define RCB_IGNORE(...)\nRCB_IGNORE(0x1'2' \" ' /*\")\n" + OUT
@@ -1298,6 +1362,10 @@ DIFF_C = [
     ("h", "#define Z 1'$a' /* '\n" + OUT + "/* */\n"),
     *[("c", "#define Z " + n + "'a' /* '\n" + OUT + "/* */\n")
       for n in NUMBER_STARTS],
+    *[("h", text) for text in DELIMITED_ENDS],
+    *[("h", line + OUT + "/* */\n") for line in UNLISTED_CHARS],
+    *[("c", text) for text in GNU_DELIMITED],
+    *[("h", line + OUT + "/* */\n") for line in UNICODE_DIGITS],
 ]
 # The C pioasm writes for these .pio texts, read by gcc: True where the
 # include is live.  Run without pioasm too, as fixed expectations.
@@ -1364,7 +1432,7 @@ DIFF_PIO = [
 def compiler_runs(header):
     runs = [(GCC, "c", std) for std in C_STDS]
     if header:
-        runs.append((GXX, "c++", "-std=c++17"))
+        runs += [(GXX, "c++", std) for std in ("-std=c++11", "-std=c++17")]
     return runs
 
 
@@ -1386,6 +1454,58 @@ def compilers_include(path, header, tmp_path):
 
 needs_gcc = pytest.mark.skipif(not (GCC and GXX),
                                reason="no gcc and g++ on PATH")
+
+
+@needs_gcc
+@pytest.mark.parametrize("std, found", [
+    ("-std=c++11", True), ("-std=c++0x", True), ("-std=gnu++11", False),
+    ("-std=c++14", False)])
+def test_cxx11_alone_reads_the_raw_string_after_a_delimited_name(
+        tmp_path, std, found):
+    """The C++11 text of VIEW_ONLY: g++ 13 includes the file in C++11 only,
+    and the check finds it."""
+    text = VIEW_ONLY[(True, False, False)].replace(
+        '#include "b.h"', '#include "../outside.h"')
+    src = tmp_path / "d" / "case.h"
+    src.parent.mkdir()
+    src.write_text(text)
+    (tmp_path / "outside.h").write_text("int %s;\n" % MARK)
+    run = subprocess.run([GXX, "-x", "c++", std, "-E", str(src)],
+                         capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    assert (MARK in run.stdout) == found
+    assert cp.includes(text) == [('"', "../outside.h")]
+
+
+# A current limitation: in C++ an identifier right after a closing quote is
+# a literal suffix, so `""R"(` and `''R"(` open no raw string there; the
+# check reads them as C does, a literal and a raw string.  C hides the
+# include after these texts, C++11 and later read it, and the check does
+# not find it.  These tests pin that behaviour; a fix makes them fail.
+LITERAL_SUFFIX_R = tuple('R"(a" /* ")"\n' + q + 'R"(" \'/*)" /*\'\n' + OUT
+                         + "/* */\n" for q in ('""', "''"))
+
+
+@pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
+def test_a_literal_suffix_r_is_read_as_a_raw_string(text):
+    assert cp.includes(text) == []
+
+
+@needs_gcc
+@pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
+def test_gcc_reads_the_include_after_a_literal_suffix_r_in_cxx(tmp_path,
+                                                                text):
+    src = tmp_path / "d" / "case.h"
+    src.parent.mkdir()
+    src.write_text(text)
+    (tmp_path / "outside.h").write_text("int %s;\n" % MARK)
+    for compiler, lang, std, found in [
+            (GXX, "c++", "-std=c++11", True), (GXX, "c++", "-std=c++17", True),
+            (GCC, "c", "-std=gnu11", False), (GCC, "c", "-std=gnu2x", False)]:
+        run = subprocess.run([compiler, "-x", lang, std, "-E", str(src)],
+                             capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        assert (MARK in run.stdout) == found, std
 
 
 @needs_gcc
@@ -1454,7 +1574,13 @@ def test_a_pio_file_gives_the_c_pioasm_writes(text):
     *[("#define Z " + n + "'a' /* '\n" + OUT + "/* */\n", found)
       for n, found in NUMBER_STARTS.items()],
     ("#define Z 1'\u00e9a' /* '\n" + OUT + "/* */\n", False),
-    ("#define Z $1'a' /* '\n" + OUT + "/* */\n", False)])
+    ("#define Z $1'a' /* '\n" + OUT + "/* */\n", False),
+    *[(text, True) for text in DELIMITED_ENDS],
+    *[(line + OUT + "/* */\n", found)
+      for line, found in UNLISTED_CHARS.items()],
+    *[(text, True) for text in GNU_DELIMITED],
+    *[(line + OUT + "/* */\n", found)
+      for line, found in UNICODE_DIGITS.items()]])
 def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
                                                                   found):
     """The expectations of the DIFF_C cases on raw string prefixes and
@@ -1544,6 +1670,20 @@ def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
     assert len(cp.readme_problems(m)) == 1, sentence
 
 
+# A macro body that a comment or raw string literal carries across line
+# breaks, with a line that starts like an `#if` or `#elif` line of
+# `defined` terms.  `#if` in the body stringifies the parameter `if` (and
+# `#elif` the parameter `elif`), DROP swallows the string, and `defined` is
+# a parameter that expands to nothing: `F(a, )` in an `#if` is
+# `__has_include ("../outside.h")`.
+CONTINUED_BODIES = tuple(
+    "#define DROP(...)\n#define F(" + word + ", defined) DROP(" + opener
+    + "\n" + closer + " " + hash + word + " ) defined __has_include /*\n"
+    '*/ ("../outside.h")\n'
+    for opener, closer in ((" /*", "*/"), ('R"(', ')"'))
+    for hash in ("#", "#  ", "%:") for word in ("if", "elif"))
+
+
 @pytest.mark.parametrize("text, name", [
     ('#define PROBE __has_include\n#if PROBE("../../x.h")\n#endif\n',
      "__has_include"),
@@ -1553,6 +1693,9 @@ def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
     ("#ifdef A __has_include\n#endif\n", "__has_include"),
     ("#if !defined(A) && __has_include(<a.h>)\n#endif\n", "__has_include"),
     ("int undefined __has_include;\n", "__has_include"),
+    # A character outside the identifier ranges is no part of the name.
+    ("int \u2e2f__has_include;\n", "__has_include"),
+    ("int \u00d7__has_include_next;\n", "__has_include_next"),
     # `defined` that is no `#if` operator: part of the identifier `$defined`
     # or `x\u00b7defined`, a macro parameter, or pasted to `un` in a macro
     # argument.  GCC 13 evaluates each call.
@@ -1566,7 +1709,10 @@ def test_no_pin_driver_is_matched_as_whole_words(tmp_path, sentence):
      '#if P(un)("../../x.h")\n#endif\n', "__has_include"),
     # Any other token on the line fails the `defined` term too.
     ("#if X || defined(__has_include)\n#endif\n", "__has_include"),
-    ("#if defined(__has_include) && 1\n#endif\n", "__has_include")])
+    ("#if defined(__has_include) && 1\n#endif\n", "__has_include"),
+    # A comment or raw string literal across a line break continues the
+    # line: the `#if` is in the body of F, and GCC 13 evaluates the call.
+    *[(text, "__has_include") for text in CONTINUED_BODIES]])
 def test_the_name_has_include_outside_a_literal_fails(text, name):
     """GCC evaluates a macro that stands for `__has_include` as the call, so
     the name fails wherever it stands outside a literal, except as the
@@ -1590,12 +1736,90 @@ def test_the_name_has_include_outside_a_literal_fails(text, name):
       for gap in (" " * 60, " " * 100, "/*" + "x" * 96 + "*/")],
     "#if defined(" + " " * 100 + "__has_include)\n#endif\n",
     "#if foo__has_include || __has_include_x || __has_include__\n#endif\n",
-    'puts("__has_include"); /* __has_include */\n'])
+    "int $__has_include, \u00e9__has_include, \u00b7__has_include;\n",
+    "int __has_include\u00e9, __has_include$, \\u00e9__has_include;\n",
+    'puts("__has_include"); /* __has_include */\n',
+    # A comment across a line break is one space of the directive's line,
+    # also before the `#` and between `defined` and the name.
+    "/*\n*/ #if defined(__has_include)\n#endif\n",
+    "/* a\n b */ %:if !defined __has_include\n#endif\n",
+    "#if defined /*\n*/ __has_include\n#endif\n",
+    "#if defined(__has_include) /*\n*/ || defined(X)\n#endif\n",
+    "#ifdef /*\n*/ __has_include\n#endif\n"])
 def test_has_include_as_the_operand_of_defined_or_ifdef_passes(text):
     """`defined`, `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef` test the
     name as a macro and include nothing; a longer identifier is another
     name."""
     assert cp.includes(text) == []
+
+
+@needs_gcc
+@pytest.mark.parametrize("text", CONTINUED_BODIES)
+def test_gcc_evaluates_has_include_in_a_body_a_comment_continues(tmp_path,
+                                                                  text):
+    """GCC 13 reads each body of CONTINUED_BODIES as one line and evaluates
+    `__has_include` when F is expanded in an `#if`."""
+    src = tmp_path / "d" / "case.h"
+    src.parent.mkdir()
+    src.write_text(text + "#if F(a, )\n#error rcb_evaluated\n#endif\n")
+    (tmp_path / "outside.h").write_text("\n")
+    runs = [(GCC, "c", std) for std in C_STDS] + [(GXX, "c++", "-std=c++17")]
+    assert any("rcb_evaluated" in subprocess.run(
+        [compiler, "-x", lang, std, "-E", str(src)], capture_output=True,
+        text=True).stderr for compiler, lang, std in runs)
+
+
+def test_python_word_characters_outside_the_identifier_ranges():
+    """Of the characters outside ASCII that Python's `\\w` matches, U+2E2F
+    is the only one outside cp.EXTENDED_RANGES: a check on `\\w` in place of
+    the ranges would join it to a name.  The size of the set follows the
+    Unicode version of the interpreter (133,485 under Unicode 14.0, 137,873
+    under 15.0, 142,877 under 16.0), so only its relation to the ranges is
+    checked; it holds under all three."""
+    ranges = cp.EXTENDED_RANGES
+    word = [c for c in range(0x80, 0x110000)
+            if re.match(r"\w", chr(c))]
+    assert [c for c in word
+            if not any(lo <= c <= hi for lo, hi in ranges)] == [0x2E2F]
+
+
+def range_edges():
+    """The first and last character of each range of cp.EXTENDED_RANGES and
+    the characters next to them outside it, without surrogates and ASCII:
+    148 characters, 77 of them inside, as {character: in a range}."""
+    edges = set()
+    for lo, hi in cp.EXTENDED_RANGES:
+        edges |= {lo - 1, lo, hi, hi + 1}
+    return {c: any(lo <= c <= hi for lo, hi in cp.EXTENDED_RANGES)
+            for c in sorted(edges)
+            if 0x80 <= c <= 0x10FFFF and not 0xD800 <= c <= 0xDFFF}
+
+
+def test_the_range_edges_hold_both_sides():
+    edges = range_edges()
+    assert len(edges) == 148
+    assert sum(edges.values()) == 77
+
+
+@needs_gcc
+@pytest.mark.parametrize("compiler, lang, std", [
+    ("gcc", "c", "-std=c11"), ("gcc", "c", "-std=gnu2x"),
+    ("g++", "c++", "-std=c++17"), ("g++", "c++", "-std=gnu++23")])
+def test_gcc_takes_the_range_edges_into_an_identifier(tmp_path, compiler,
+                                                      lang, std):
+    """GCC accepts `a<ch>` as an identifier without a diagnostic exactly for
+    the characters of cp.EXTENDED_RANGES, at each range edge."""
+    edges = range_edges()
+    src = tmp_path / "edges.h"
+    src.write_text("".join("#ifdef a%s\n#endif\n" % chr(c) for c in edges),
+                   encoding="utf-8")
+    run = subprocess.run(
+        [GCC if lang == "c" else GXX, "-x", lang, std, "-E",
+         "-Wno-normalized", "-Wno-bidi-chars", str(src)],
+        capture_output=True, text=True, errors="replace")
+    flagged = {int(n) for n in re.findall(r"edges\.h:(\d+):", run.stderr)}
+    accepted = {c: 2 * i + 1 not in flagged for i, c in enumerate(edges)}
+    assert accepted == edges
 
 
 def test_a_has_include_alias_fails_the_module(tmp_path):
