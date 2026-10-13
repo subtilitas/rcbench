@@ -23,3 +23,14 @@ uint16_t link_crc(uint16_t crc, const void *data, size_t len)
     }
     return crc;
 }
+
+uint32_t link_fnv1a32(uint32_t hash, const void *data, size_t len)
+{
+    const uint8_t *p = (const uint8_t *)data;
+
+    for (size_t i = 0; i < len; ++i) {
+        hash ^= p[i];
+        hash *= 16777619uL;
+    }
+    return hash;
+}

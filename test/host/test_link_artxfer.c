@@ -1,10 +1,10 @@
 /*
- * Assembling a board photograph out of the blocks the link carries it in.
+ * Assembling a board drawing out of the blocks the link carries it in.
  *
  * The failure under test is not a slow transfer, it is a quiet one: a block
  * lost and skipped, or a reply for a block other than the one asked for,
- * assembled into a picture that is wrong in a way nobody sees until it has
- * been cached in flash and an operator wires a lead by it.
+ * assembled into a drawing that is wrong in a way nobody sees until it has
+ * been kept in flash and an operator wires a lead by it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,11 +16,13 @@
 #include "link_crc.h"
 #include "link_pages.h"
 
-/* A picture small enough to hold here and big enough to need several blocks:
- * 30 x 4 pixels is 240 bytes, which is three full blocks and a part one. */
-#define W 30u
-#define H 4u
-#define BYTES (W * H * 2u)
+/* A payload small enough to hold here and big enough to need several
+ * blocks: 240 bytes is three full blocks of 62 and a part one.  The
+ * transfer does not read what the bytes say, so they need not be a
+ * drawing. */
+#define W 1000u
+#define H 500u
+#define BYTES 240u
 
 static uint8_t  g_src[BYTES];
 static uint16_t g_meta[LINK_AW_COUNT];
@@ -30,30 +32,18 @@ static void make_source(void)
     for (unsigned i = 0; i < BYTES; ++i) {
         g_src[i] = (uint8_t)(i * 7u + 1u);      /* anything not uniform */
     }
-    const uint32_t blocks = (BYTES + LINK_AD_BYTES - 1u) / LINK_AD_BYTES;
-    g_meta[LINK_AW_BLOCKS]   = (uint16_t)blocks;
-    g_meta[LINK_AW_WIDTH]    = (uint16_t)W;
-    g_meta[LINK_AW_HEIGHT]   = (uint16_t)H;
-    g_meta[LINK_AW_FORMAT]   = (uint16_t)LINK_ART_RGB565;
-    g_meta[LINK_AW_BYTES_LO] = (uint16_t)(BYTES & 0xFFFFu);
-    g_meta[LINK_AW_BYTES_HI] = (uint16_t)(BYTES >> 16);
-    g_meta[LINK_AW_CRC]      = link_crc(0u, g_src, BYTES);
+    link_artserve_meta(g_meta, (uint16_t)LINK_ART_DRAWING, (uint16_t)W,
+                       (uint16_t)H, BYTES, link_crc(0u, g_src, BYTES),
+                       link_fnv1a32(LINK_FNV_INIT, g_src, BYTES));
 }
 
-/* The window the coprocessor would answer with for one block. */
+/* The window the coprocessor answers with for one block. */
 static void serve(uint16_t block, uint16_t *out)
 {
-    for (unsigned i = 0; i < LINK_AD_COUNT; ++i) { out[i] = 0u; }
-    out[LINK_AD_BLOCK] = block;
-    const uint32_t at = (uint32_t)block * LINK_AD_BYTES;
-    for (unsigned i = 0; i < LINK_AD_BYTES && at + i < BYTES; ++i) {
-        const uint8_t b = g_src[at + i];
-        if (i & 1u) { out[LINK_AD_DATA + i / 2u] |= (uint16_t)((uint16_t)b << 8); }
-        else        { out[LINK_AD_DATA + i / 2u] |= (uint16_t)b; }
-    }
+    link_artserve_block(out, g_src, BYTES, block);
 }
 
-TEST_CASE(a_picture_arrives_byte_for_byte)
+TEST_CASE(a_drawing_arrives_byte_for_byte)
 {
     make_source();
     uint8_t got[BYTES];
@@ -99,7 +89,7 @@ TEST_CASE(a_block_that_was_not_asked_for_is_refused_rather_than_placed)
     CHECK_EQ(link_artxfer_next(&x), 1);
 }
 
-TEST_CASE(a_picture_that_does_not_match_its_own_checksum_is_not_accepted)
+TEST_CASE(a_drawing_that_does_not_match_its_own_checksum_is_not_accepted)
 {
     make_source();
     uint8_t got[BYTES];
@@ -117,76 +107,164 @@ TEST_CASE(a_picture_that_does_not_match_its_own_checksum_is_not_accepted)
         CHECK(link_artxfer_take(&x, win));
     }
     CHECK(link_artxfer_complete(&x));
-    CHECK(!link_artxfer_verify(&x));       /* complete, and not the picture */
+    CHECK(!link_artxfer_verify(&x));       /* complete, and not the drawing */
 }
 
-TEST_CASE(metadata_that_cannot_describe_a_picture_is_refused_before_the_wait)
+TEST_CASE(metadata_that_cannot_describe_a_drawing_is_refused_before_the_wait)
 {
     make_source();
     uint8_t got[BYTES];
     link_artxfer_t x;
     uint16_t m[LINK_AW_COUNT];
 
-    /* No picture at all, which is the ordinary answer from a coprocessor
+    /* No drawing at all, which is the ordinary answer from a coprocessor
      * that carries none. */
     memcpy(m, g_meta, sizeof(m));
     m[LINK_AW_BLOCKS] = 0u;
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
 
-    /* A format this build cannot read. */
+    /* A format this build cannot read: an unknown one, and the photograph
+     * a coprocessor of minor 19 or older serves. */
     memcpy(m, g_meta, sizeof(m));
     m[LINK_AW_FORMAT] = 99u;
+    CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
+    m[LINK_AW_FORMAT] = (uint16_t)LINK_ART_RGB565;
+    CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
+    m[LINK_AW_FORMAT] = (uint16_t)LINK_ART_NONE;
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
 
     /*
      * A block count that disagrees with the length.  Blocks would run out
-     * early or late, and the picture is not what it says either way.
+     * early or late, and the drawing is not what it says either way.
      */
     memcpy(m, g_meta, sizeof(m));
     m[LINK_AW_BLOCKS] = (uint16_t)(m[LINK_AW_BLOCKS] + 1u);
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
-
-    /* A length that is not the pixels it claims. */
-    memcpy(m, g_meta, sizeof(m));
-    m[LINK_AW_WIDTH] = (uint16_t)(W + 1u);
+    m[LINK_AW_BLOCKS] = (uint16_t)(m[LINK_AW_BLOCKS] - 2u);
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
 
-    /* And one there is nowhere to put.  Ten seconds of link for a transfer
-     * that cannot end well is ten seconds wasted. */
+    /* An outline of no width or no height. */
+    memcpy(m, g_meta, sizeof(m));
+    m[LINK_AW_WIDTH] = 0u;
+    CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
+    memcpy(m, g_meta, sizeof(m));
+    m[LINK_AW_HEIGHT] = 0u;
+    CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
+
+    /* And one there is nowhere to put: a transfer that cannot end well
+     * does not take the link first. */
     CHECK(!link_artxfer_begin(&x, g_meta, got, BYTES - 1u));
 }
 
-/* 65535 * 32769 * 2 is 4,295,032,830, which wraps to 65534 in a uint32_t. */
-#define WRAP_W     65535u
-#define WRAP_H     32769u
-#define WRAP_BYTES 65534u
+/* One payload per block count, at both ends of what a drawing may be. */
+static bool meta_for(uint32_t bytes, link_art_meta_t *out)
+{
+    uint16_t m[LINK_AW_COUNT];
+    link_artserve_meta(m, (uint16_t)LINK_ART_DRAWING, (uint16_t)W,
+                       (uint16_t)H, bytes, 0u, 0u);
+    return link_artxfer_meta_ok(m, out);
+}
 
-TEST_CASE(pixels_that_overflow_the_length_they_are_checked_against_are_refused)
+TEST_CASE(a_length_from_a_header_to_the_largest_drawing_is_taken)
 {
     /*
-     * Width and height are sixteen bits each; their product times two is
-     * not.  A page claiming 65535 x 32769 pixels and 65534 bytes agrees
-     * with itself in thirty-two-bit arithmetic, and the block count agrees
-     * too.  It would transfer, assemble, and pass its CRC -- and hand back
-     * 65534 bytes calling themselves a 65535 x 32769 image, which anything
-     * that drew it would read four gigabytes past.
+     * The length sizes an allocation before a byte is seen, so it is held
+     * to what a drawing can be: a header at least, LINK_DRAW_MAX_BYTES at
+     * most.  The 32-bit length could otherwise ask for four gigabytes.
      */
-    static uint8_t big[WRAP_BYTES];
+    link_art_meta_t meta;
+    CHECK(!meta_for(LINK_DRAW_HEAD_BYTES - 1u, &meta));
+    CHECK(meta_for(LINK_DRAW_HEAD_BYTES, &meta));
+    CHECK_EQ(meta.blocks, 1);
+    CHECK(meta_for(LINK_AD_BYTES, &meta));
+    CHECK_EQ(meta.blocks, 1);
+    CHECK(meta_for(LINK_AD_BYTES + 1u, &meta));
+    CHECK_EQ(meta.blocks, 2);
+    CHECK(meta_for(LINK_DRAW_MAX_BYTES, &meta));
+    CHECK_EQ(meta.blocks,
+             (LINK_DRAW_MAX_BYTES + LINK_AD_BYTES - 1u) / LINK_AD_BYTES);
+    CHECK(!meta_for(LINK_DRAW_MAX_BYTES + 1u, &meta));
+    CHECK(!meta_for(0xFFFFFFFFu, &meta));
+
+    /* A length past 64 kB arrives in both halves, and is refused whole
+     * rather than read as its low half. */
     uint16_t m[LINK_AW_COUNT];
-    m[LINK_AW_BLOCKS]   = (uint16_t)((WRAP_BYTES + LINK_AD_BYTES - 1u)
-                                     / LINK_AD_BYTES);
-    m[LINK_AW_WIDTH]    = (uint16_t)WRAP_W;
-    m[LINK_AW_HEIGHT]   = (uint16_t)WRAP_H;
-    m[LINK_AW_FORMAT]   = (uint16_t)LINK_ART_RGB565;
-    m[LINK_AW_BYTES_LO] = (uint16_t)(WRAP_BYTES & 0xFFFFu);
-    m[LINK_AW_BYTES_HI] = (uint16_t)(WRAP_BYTES >> 16);
-    m[LINK_AW_CRC]      = 0u;
+    link_artserve_meta(m, (uint16_t)LINK_ART_DRAWING, (uint16_t)W,
+                       (uint16_t)H, 0x10000u + 240u, 0u, 0u);
+    CHECK_EQ(m[LINK_AW_BYTES_LO], 240);
+    CHECK_EQ(m[LINK_AW_BYTES_HI], 1);
+    CHECK(!link_artxfer_meta_ok(m, &meta));
+}
 
-    /* The block count really does agree, so that is not what refuses it. */
-    CHECK_EQ((uint32_t)m[LINK_AW_BLOCKS] * LINK_AD_BYTES >= WRAP_BYTES, 1);
+TEST_CASE(the_hash_is_read_from_both_halves_and_checked)
+{
+    make_source();
+    link_art_meta_t meta;
+    CHECK(link_artxfer_meta_ok(g_meta, &meta));
+    CHECK_EQ(meta.hash, link_fnv1a32(LINK_FNV_INIT, g_src, BYTES));
+    CHECK_EQ(meta.crc, link_crc(0u, g_src, BYTES));
+    CHECK_EQ(meta.bytes, BYTES);
+    CHECK_EQ(meta.format, LINK_ART_DRAWING);
 
-    link_artxfer_t x;
-    CHECK(!link_artxfer_begin(&x, m, big, sizeof(big)));
+    /*
+     * Every block arrives intact and the CRC agrees, but the hash the page
+     * declares is another drawing's: refused.  The CRC alone is sixteen
+     * bits, and the hash is what keeps two drawings that share one apart.
+     */
+    uint16_t m[LINK_AW_COUNT];
+    for (unsigned half = 0; half < 2u; ++half) {
+        memcpy(m, g_meta, sizeof(m));
+        m[half ? LINK_AW_HASH_HI : LINK_AW_HASH_LO] ^= 0x0001u;
+        uint8_t got[BYTES];
+        link_artxfer_t x;
+        CHECK(link_artxfer_begin(&x, m, got, sizeof(got)));
+        while (!link_artxfer_complete(&x)) {
+            uint16_t win[LINK_AD_COUNT];
+            serve(link_artxfer_next(&x), win);
+            CHECK(link_artxfer_take(&x, win));
+        }
+        CHECK(!link_artxfer_verify(&x));
+    }
+}
+
+TEST_CASE(the_coprocessor_serves_what_the_panel_assembles)
+{
+    make_source();
+    /* No payload: every register zero, which is "no drawing". */
+    uint16_t m[LINK_AW_COUNT];
+    memset(m, 0xA5, sizeof(m));
+    link_artserve_meta(m, (uint16_t)LINK_ART_DRAWING, (uint16_t)W,
+                       (uint16_t)H, 0u, 0x1234u, 0x12345678u);
+    for (unsigned i = 0; i < LINK_AW_COUNT; ++i) { CHECK_EQ(m[i], 0); }
+
+    /* A block's bytes, the low byte of a register first; the last block
+     * pads with zeros, and a block past the end carries only its number. */
+    uint16_t win[LINK_AD_COUNT];
+    serve(0u, win);
+    CHECK_EQ(win[LINK_AD_BLOCK], 0);
+    CHECK_EQ(win[LINK_AD_DATA], (uint16_t)(g_src[0] | (g_src[1] << 8)));
+    const uint16_t last = (uint16_t)(g_meta[LINK_AW_BLOCKS] - 1u);
+    serve(last, win);
+    CHECK_EQ(win[LINK_AD_BLOCK], last);
+    const unsigned tail = BYTES - (unsigned)last * LINK_AD_BYTES;
+    CHECK(tail < LINK_AD_BYTES);
+    for (unsigned i = (tail + 1u) / 2u; i < LINK_AD_WORDS; ++i) {
+        CHECK_EQ(win[LINK_AD_DATA + i], 0);
+    }
+    serve((uint16_t)(last + 1u), win);
+    CHECK_EQ(win[LINK_AD_BLOCK], last + 1u);
+    for (unsigned i = 0; i < LINK_AD_WORDS; ++i) {
+        CHECK_EQ(win[LINK_AD_DATA + i], 0);
+    }
+    serve(0xFFFFu, win);
+    CHECK_EQ(win[LINK_AD_BLOCK], 0xFFFF);
+    CHECK_EQ(win[LINK_AD_DATA], 0);
+
+    /* NULL registers are left alone; NULL payload serves zeros. */
+    link_artserve_meta(NULL, 2u, 1u, 1u, 16u, 0u, 0u);
+    link_artserve_block(NULL, g_src, BYTES, 0u);
+    link_artserve_block(win, NULL, BYTES, 0u);
+    CHECK_EQ(win[LINK_AD_DATA], 0);
 }
 
 TEST_CASE(a_transfer_that_has_ended_takes_nothing_more)
@@ -233,11 +311,13 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 
 int main(void)
 {
-    RUN(a_picture_arrives_byte_for_byte);
+    RUN(a_drawing_arrives_byte_for_byte);
     RUN(a_block_that_was_not_asked_for_is_refused_rather_than_placed);
-    RUN(a_picture_that_does_not_match_its_own_checksum_is_not_accepted);
-    RUN(metadata_that_cannot_describe_a_picture_is_refused_before_the_wait);
-    RUN(pixels_that_overflow_the_length_they_are_checked_against_are_refused);
+    RUN(a_drawing_that_does_not_match_its_own_checksum_is_not_accepted);
+    RUN(metadata_that_cannot_describe_a_drawing_is_refused_before_the_wait);
+    RUN(a_length_from_a_header_to_the_largest_drawing_is_taken);
+    RUN(the_hash_is_read_from_both_halves_and_checked);
+    RUN(the_coprocessor_serves_what_the_panel_assembles);
     RUN(a_transfer_that_has_ended_takes_nothing_more);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("link_artxfer");

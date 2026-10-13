@@ -84,6 +84,9 @@ SOURCES = [
     "shared/ui/settings_screen.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
+    "shared/ui/board_drawing.c",
+    # The board drawing the coprocessor serves, which the picker draws.
+    "firmware/iomcu/src/board_drawing_rp2350_can.c",
     "shared/ui/busfault_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
@@ -113,6 +116,7 @@ SOURCES = [
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
     "shared/link/link_crc.c",
+    "shared/link/link_drawing.c",
     "shared/link/link_control.c",
 ]
 INCLUDES = [

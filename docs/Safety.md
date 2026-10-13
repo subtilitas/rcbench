@@ -200,14 +200,14 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   cores, the control task with its heartbeat, STOP, OUTPUT OFF and the
   supply trips included. The rule is `flash_gate_open()` in
   `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
-  settings save and the board photograph's keep. Switching to ARMED and the supply are
-  never refused for a write: the write waits. The keep (about 52 erases and
-  52 writes of 4 kB for a 206 kB picture) runs one sector per 5 ms control
-  pass and stops between two sectors when the bench is ARMED or the supply
-  comes on. It resumes from the same sector on the first safe pass. Its
-  header is erased first and written last, so a keep that is paused or cut
-  by a power loss leaves no photograph findable for the board, and the
-  board is drawn from its outline until the keep completes. The duration of
+  settings save and the board drawing's keep. Switching to ARMED and the supply are
+  never refused for a write: the write waits. The keep (2 erases of 4 kB and
+  2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5 ms
+  control pass and stops between two sectors when the bench is ARMED or the
+  supply comes on. It resumes from the same sector on the first safe pass.
+  Its header is erased first and written last, so a keep that is paused or
+  cut by a power loss leaves no drawing findable for the board, and the next
+  link-up fetches it again. The duration of
   one erase on the panel's flash is not measured.
 - A stick run on PROGRAMMER switches to ARMED through the same policy, after its warning
   (NO PROPELLER, MOTOR SECURED?) is held for 2 s. It then sets the throttle

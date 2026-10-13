@@ -55,8 +55,8 @@ settings-chrome       23,979     2997 KiB     78.7       9.8
 battery-chrome       36,962     4620 KiB    121.3       7.8
 balance-chrome       40,776     5097 KiB    133.8       6.5
 programmer-chrome       29,203     3650 KiB     95.8       9.8
-picker             880      110 KiB      2.9      39.0
-picker-chrome       15,854     1982 KiB     52.0      13.0
+picker             892      112 KiB      2.9      39.0
+picker-chrome       22,075     2759 KiB     72.5      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -210,7 +210,7 @@ Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
-  den Callbacks des Link-Ports und den Flash-Callbacks des Fotospeichers, denen
+  den Callbacks des Link-Ports und den Flash-Callbacks des Zeichnungsspeichers, denen
   es nach Namen folgt (`PORT_CALLS`, `FLASH_CALLS`): 189
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
@@ -238,7 +238,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 708 | 528 | 1 604 |
+| Kern 0 | `main` | 4 096 | 1 716 | 528 | 1 596 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.

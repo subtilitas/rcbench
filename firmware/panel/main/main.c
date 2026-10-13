@@ -466,15 +466,12 @@ static uint16_t       s_far_minor;
 static uint16_t  s_board;
 
 /*
- * Fetching the board's photograph, a slice of a poll at a time.
+ * Fetching the board's drawing, a slice of a poll at a time.
  *
- * Two hundred kilobytes over a link that carries sixty-two bytes a
- * transaction is thousands of round trips.  Doing them in a loop would stop
- * the control task for the length of the transfer, which is the bug the
- * identity read had at a tenth of the scale; so a bounded slice of each poll
- * goes to it and the bench keeps its cadence.  The transfer takes longer in
- * wall clock than the link alone would need, and that is the trade: it
- * happens once per board and never again.
+ * Up to LINK_DRAW_MAX_BYTES (5328 bytes) over a link that carries sixty-two
+ * bytes a transaction is up to 86 round trips.  Doing them in a loop would
+ * stop the control task for the length of the transfer, so a bounded slice
+ * of each poll goes to it and the bench keeps its cadence.
  */
 #define ART_SLICE_MS 15u
 
@@ -487,7 +484,8 @@ static bool               s_artbusy;
 /*
  * Writing it down: one sector a control pass, and only on a safe bench.
  *
- * A 206 kB picture is about 52 sector erases and as many writes.  Auto-suspend
+ * A drawing of up to 5328 bytes is up to 3 sector erases (the header's and
+ * two of payload) and 2 writes and the header.  Auto-suspend
  * is off, so each one stalls both cores, this task with them, for its length
  * -- tens of milliseconds an erase.  No other task can take that stall off
  * this one.  So the keep runs here, a step a pass (art_keep_service()), and
@@ -509,6 +507,28 @@ static art_entry_t  s_keepentry;
 static art_keep_t   s_keep;         /* control task only */
 static atomic_bool  s_keeping;      /* set and cleared by the control task */
 static bool         s_keep_waited;  /* the wait is logged once a keep */
+
+/*
+ * The drawing the picker may show, published by the control task and copied
+ * out by the UI task.
+ *
+ * Emptied on every link-up edge before anything else is asked, so a drawing
+ * outlives neither the coprocessor it came from nor a reflash of it.  Filled
+ * only with bytes that match the ARTWORK page read on that link-up: fetched
+ * and checked against its CRC and hash, or read from flash under an entry
+ * whose every field equals the page (art_store_read_same()).  The board ID
+ * alone never selects a kept drawing.
+ *
+ * s_draw_gen counts publications; the UI task re-asks when it moves, so an
+ * open picker follows a link-up instead of waiting for its next visit.
+ */
+static SemaphoreHandle_t s_draw_lock;
+static uint8_t          *s_drawpub;        /* LINK_DRAW_MAX_BYTES, PSRAM */
+static uint32_t          s_drawpub_bytes;  /* 0: nothing to show; lock */
+static uint16_t          s_drawpub_board;  /* lock */
+static atomic_uint       s_draw_gen;
+static uint8_t          *s_drawshow;       /* the UI task's copy, PSRAM */
+static unsigned          s_draw_seen;      /* UI task only */
 
 static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
 static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
@@ -1883,7 +1903,7 @@ static bool bring_up(void)
      * splash step that is declared and never set keeps all_answered() false,
      * and the splash never hands over.
      */
-    /* The partition the photographs live in, looked up once. */
+    /* The partition the drawings live in, looked up once. */
     s_artflash = art_flash_esp();
 
     link_host_init(&s_host, now_ms());
@@ -2996,9 +3016,65 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
     return write_regs(host, page, 0, count, regs, reply);
 }
 
-/* --------------------------------------------------- the board photograph */
+/* ------------------------------------------------------ the board drawing */
 
 static bool supply_live_or_coming(void);
+
+/* Publish @p bytes of @p src for @p board, or nothing for a NULL @p src. */
+static void draw_publish(uint16_t board, const uint8_t *src, uint32_t bytes)
+{
+    if (s_draw_lock == NULL || s_drawpub == NULL) {
+        return;
+    }
+    xSemaphoreTake(s_draw_lock, portMAX_DELAY);
+    if (src != NULL && bytes != 0u && bytes <= LINK_DRAW_MAX_BYTES) {
+        memcpy(s_drawpub, src, bytes);
+        s_drawpub_bytes = bytes;
+        s_drawpub_board = board;
+    } else {
+        s_drawpub_bytes = 0u;
+    }
+    xSemaphoreGive(s_draw_lock);
+    atomic_fetch_add(&s_draw_gen, 1u);
+}
+
+/*
+ * The picker asking for a board's drawing: on the way into the screen, and
+ * from the UI loop whenever a link-up edge published or withdrew one.  UI
+ * task only.  The copy is the picker's until the next call, and the picker
+ * checks it against the board's catalogue before showing it.
+ */
+static void drawing_for_picker(uint16_t board)
+{
+    uint32_t bytes = 0u;
+    if (s_draw_lock != NULL && s_drawpub != NULL && s_drawshow != NULL) {
+        xSemaphoreTake(s_draw_lock, portMAX_DELAY);
+        if (s_drawpub_bytes != 0u && s_drawpub_board == board) {
+            memcpy(s_drawshow, s_drawpub, s_drawpub_bytes);
+            bytes = s_drawpub_bytes;
+        }
+        xSemaphoreGive(s_draw_lock);
+    }
+    if (bytes == 0u) {
+        (void)picker_screen_set_drawing(NULL, 0u, NULL);
+        return;
+    }
+    const char *why = "";
+    if (!picker_screen_set_drawing(s_drawshow, bytes, &why)) {
+        ESP_LOGW(TAG, "hardware %u's drawing is not shown: %s",
+                 (unsigned)board, why);
+    }
+}
+
+/* A publication since the picker last asked: ask again. UI task only. */
+static void drawing_follow(void)
+{
+    const unsigned gen = atomic_load(&s_draw_gen);
+    if (gen != s_draw_seen) {
+        s_draw_seen = gen;
+        drawing_for_picker(picker_screen_binding()->board);
+    }
+}
 
 static void art_keep_end(void)
 {
@@ -3025,18 +3101,18 @@ static void art_keep_service(void)
     case ART_KEEP_WAITING:
         if (!s_keep_waited) {
             s_keep_waited = true;
-            ESP_LOGI(TAG, "keeping hardware %u's photograph waits for a "
+            ESP_LOGI(TAG, "keeping hardware %u's drawing waits for a "
                           "disarmed bench with the supply off",
                      (unsigned)s_keepentry.board);
         }
         break;
     case ART_KEEP_DONE:
-        ESP_LOGI(TAG, "hardware %u's photograph kept",
+        ESP_LOGI(TAG, "hardware %u's drawing kept",
                  (unsigned)s_keepentry.board);
         art_keep_end();
         break;
     case ART_KEEP_FAILED:
-        ESP_LOGW(TAG, "hardware %u's photograph could not be kept; it will be "
+        ESP_LOGW(TAG, "hardware %u's drawing could not be kept; it will be "
                       "fetched again", (unsigned)s_keepentry.board);
         art_keep_end();
         break;
@@ -3048,50 +3124,6 @@ static void art_keep_service(void)
     }
 }
 
-/*
- * The picker asking for a board's photograph, on the way into the screen.
- *
- * Read rather than mapped: art_store_read() checks the payload against the
- * checksum the header carries, so flash that decayed since it was written is
- * a board drawn from its outline rather than a picture that is quietly
- * wrong.
- *
- * One buffer, freed when the next photograph is asked for rather than when
- * the screen closes -- so it outlives a visit and is reused by the following
- * one. Two hundred kilobytes of PSRAM held between visits is worth less than
- * a release path that has to be got right; what must not happen is two of
- * them, and asking always frees before it allocates.
- */
-static uint8_t *s_artshow;
-
-static void art_for_picker(uint16_t board)
-{
-    picker_screen_set_artwork(NULL, 0, 0);
-    if (s_artshow != NULL) {
-        heap_caps_free(s_artshow);
-        s_artshow = NULL;
-    }
-    art_entry_t e;
-    if (s_artflash == NULL || !art_store_find(s_artflash, board, &e)) {
-        return;
-    }
-    s_artshow = heap_caps_malloc(e.bytes, MALLOC_CAP_SPIRAM);
-    if (s_artshow == NULL) {
-        ESP_LOGW(TAG, "no room to show hardware %u's photograph",
-                 (unsigned)board);
-        return;
-    }
-    if (!art_store_read(s_artflash, board, s_artshow, e.bytes)) {
-        ESP_LOGW(TAG, "hardware %u's kept photograph did not check out",
-                 (unsigned)board);
-        heap_caps_free(s_artshow);
-        s_artshow = NULL;
-        return;
-    }
-    picker_screen_set_artwork((const gfx_color_t *)s_artshow, e.width,
-                              e.height);
-}
-
 static void art_stop(const char *why)
 {
     if (s_artbuf != NULL) {
@@ -3099,7 +3131,7 @@ static void art_stop(const char *why)
         s_artbuf = NULL;
     }
     if (s_artbusy && why != NULL) {
-        ESP_LOGW(TAG, "gave up on hardware %u's photograph: %s",
+        ESP_LOGW(TAG, "gave up on hardware %u's drawing: %s",
                  (unsigned)s_artboard, why);
     }
     s_artbusy = false;
@@ -3138,51 +3170,52 @@ static const art_transport_t s_art_link = {
 };
 
 /*
- * Ask for the picture, unless it is already kept or there is none.
+ * On the link-up edge: withdraw the last drawing, ask what this one is, and
+ * show the kept copy only when it is this drawing -- else fetch it.
  *
- * Runs on the link-up edge and does one transaction; everything after this
- * happens a slice at a time.  A coprocessor built before the page answers
- * NACK, which is not a fault -- the board is then drawn from its shape.
+ * Two transactions and at most one flash read here; a fetch happens a slice
+ * of a poll at a time below.  A coprocessor older than 4.20 serves a
+ * photograph or nothing, and is drawn from its shape.
  */
 static void art_begin(uint16_t board)
 {
     art_stop(NULL);
+    draw_publish(board, NULL, 0u);
     s_artboard = board;
 
-    if (atomic_load(&s_keeping)) {
-        return;         /* the last one is still being written down */
-    }
-
-    art_entry_t kept;
-    if (s_artflash != NULL && art_store_find(s_artflash, board, &kept)) {
-        ESP_LOGI(TAG, "hardware %u's photograph is already kept (%u x %u)",
-                 (unsigned)board, (unsigned)kept.width, (unsigned)kept.height);
+    if (s_far_minor < LINK_MINOR_DRAWING) {
+        ESP_LOGI(TAG, "hardware %u serves no board drawing (protocol 4.%u); "
+                      "PICK A PIN draws its shape", (unsigned)board,
+                 (unsigned)s_far_minor);
         return;
     }
-
     uint16_t meta[LINK_AW_COUNT];
     uint32_t bytes = 0u;
     const char *why = "";
     if (!art_fetch_meta(&s_art_link, meta, &bytes, &why)) {
-        /* Three different things end here -- no picture, no page, and a page
+        /* Three different things end here -- no drawing, no page, and a page
          * that disagrees with itself -- and only the last is a fault. The
          * line says which rather than reporting all three as the first. */
-        ESP_LOGI(TAG, "no photograph from hardware %u: %s", (unsigned)board,
+        ESP_LOGI(TAG, "no drawing from hardware %u: %s", (unsigned)board,
                  why);
         return;
     }
-    if (s_artflash != NULL && bytes > art_store_capacity(s_artflash)) {
-        ESP_LOGW(TAG, "hardware %u's photograph is %u bytes and a slot holds "
-                      "%u; not fetching it", (unsigned)board, (unsigned)bytes,
-                 (unsigned)art_store_capacity(s_artflash));
-        return;         /* ten seconds of link for nowhere to put it */
+    art_entry_t key;
+    if (!art_fetch_key(meta, board, &key)) {
+        return;         /* not reached: art_fetch_meta() checked the page */
     }
 
-    /* PSRAM: two hundred kilobytes is not internal memory's to spare, and
-     * the buffer lives only for the transfer. */
     s_artbuf = heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM);
     if (s_artbuf == NULL) {
-        ESP_LOGW(TAG, "no room for a %u byte photograph", (unsigned)bytes);
+        ESP_LOGW(TAG, "no room for a %u byte drawing", (unsigned)bytes);
+        return;
+    }
+    if (s_artflash != NULL && !atomic_load(&s_keeping)
+        && art_store_read_same(s_artflash, &key, s_artbuf, bytes)) {
+        draw_publish(board, s_artbuf, bytes);
+        ESP_LOGI(TAG, "hardware %u's drawing is kept: %u bytes, hash %08lx",
+                 (unsigned)board, (unsigned)bytes, (unsigned long)key.hash);
+        art_stop(NULL);
         return;
     }
     if (!art_fetch_begin(&s_artfetch, meta, s_artbuf, bytes)) {
@@ -3192,37 +3225,40 @@ static void art_begin(uint16_t board)
         return;
     }
     s_artbusy = true;
-    ESP_LOGI(TAG, "fetching hardware %u's photograph: %u x %u, %u bytes",
-             (unsigned)board, (unsigned)art_fetch_width(&s_artfetch),
-             (unsigned)art_fetch_height(&s_artfetch), (unsigned)bytes);
+    ESP_LOGI(TAG, "fetching hardware %u's drawing: %u bytes, hash %08lx",
+             (unsigned)board, (unsigned)bytes, (unsigned long)key.hash);
 }
 
-/* It arrived and it is the picture it claimed.  Hand it to the keeper. */
+/* It arrived and it is the drawing it claimed.  Show it, then keep it. */
 static void art_finish(void)
 {
     s_artbusy = false;
-    if (s_artflash == NULL) {
-        ESP_LOGW(TAG, "hardware %u's photograph arrived; nowhere to keep it, "
-                      "so it will be fetched again", (unsigned)s_artboard);
+    const uint32_t bytes = art_fetch_bytes(&s_artfetch);
+    draw_publish(s_artboard, s_artbuf, bytes);
+    if (s_artflash == NULL || atomic_load(&s_keeping)) {
+        ESP_LOGW(TAG, "hardware %u's drawing arrived; it is not kept, so it "
+                      "will be fetched again", (unsigned)s_artboard);
         art_stop(NULL);
         return;
     }
     s_keepentry.board  = s_artboard;
+    s_keepentry.format = art_fetch_format(&s_artfetch);
     s_keepentry.width  = art_fetch_width(&s_artfetch);
     s_keepentry.height = art_fetch_height(&s_artfetch);
     s_keepentry.crc    = art_fetch_crc(&s_artfetch);
-    s_keepentry.bytes  = art_fetch_bytes(&s_artfetch);
+    s_keepentry.hash   = art_fetch_hash(&s_artfetch);
+    s_keepentry.bytes  = bytes;
     /*
      * Hand the buffer over and stop owning it.  Nothing is written here:
      * art_keep_service() takes it a sector a pass, on a safe bench.  The
-     * fetch checked the payload's checksum; the keep's read-back checks the
-     * flash against it before the header goes in.
+     * fetch checked the payload's CRC and hash; the keep's read-back checks
+     * the flash against them before the header goes in.
      */
     s_keepbuf = s_artbuf;
     s_artbuf  = NULL;
     if (!art_keep_begin(&s_keep, s_artflash, s_keepentry.board, &s_keepentry,
                         s_keepbuf)) {
-        ESP_LOGW(TAG, "hardware %u's photograph does not fit a slot; it will "
+        ESP_LOGW(TAG, "hardware %u's drawing does not fit a slot; it will "
                       "be fetched again", (unsigned)s_artboard);
         heap_caps_free(s_keepbuf);
         s_keepbuf = NULL;
@@ -3237,7 +3273,7 @@ static void art_finish(void)
  *
  * A block at a time until the slice is spent: this task also beats the
  * safety line, and its ceiling is 150 ms.  The sequence does exactly the
- * blocks it is given, so how much of a poll goes to a photograph is decided
+ * blocks it is given, so how much of a poll goes to a drawing is decided
  * here and nowhere else.
  */
 static void art_slice(void)
@@ -7025,9 +7061,9 @@ static void learn_board_pins(void)
                  (unsigned)s_board,
                  (unsigned)outbind_pin_count(s_board));
         /*
-         * And where they are, if it says.  Only a picture of the board needs
-         * this, so a board that does not answer is used from its catalogue and
-         * simply is not drawn.
+         * And where they are, if it says.  Only a drawing of the board needs
+         * this, so a board that answers neither this nor ARTWORK is used from
+         * its catalogue and is not drawn.
          */
         link_msg_t shp;
         if (poll_page(&s_host, LINK_PAGE_SHAPE, LINK_SH_COUNT, &shp)
@@ -7281,8 +7317,8 @@ static void link_came_up(const link_msg_t *reply)
     }
 
     /*
-     * And a photograph of it, if there is one and it is not already kept.  One
-     * transaction here; the rest happens a slice of a poll at a time below.
+     * And its drawing: the kept one when it is this drawing, else fetched a
+     * slice of a poll at a time below.
      */
     art_begin(s_board);
 
@@ -7360,7 +7396,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
      * exchange() sets when any request ends unanswered with the link up --
      * the bench read or the control write of this poll, a page service, a
      * servo refresh, a command's write, the status read, a slice of the
-     * photograph, an exchange of an arm.  A poll's own return value is
+     * drawing, an exchange of an arm.  A poll's own return value is
      * whether a bench sample or an identity arrived and takes no part.
      *
      * Set since the last poll, it is this poll's answer at once: ahead of
@@ -7408,8 +7444,8 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         }
         if (!answered && s_artbusy) {
             /* The board that was sending it is gone, so the rest of its
-             * picture is not coming.  Nothing was kept: the store only becomes
-             * findable once the whole thing has checked out. */
+             * drawing is not coming.  Nothing was kept or shown: both wait
+             * for the whole thing to check out. */
             art_stop("the link went quiet");
         }
         /*
@@ -7508,7 +7544,7 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
         }
 
         /*
-         * And a slice of the photograph, last: the bench's own pages are what
+         * And a slice of the drawing, last: the bench's own pages are what
          * the operator is watching, and this is a transfer that happens once
          * and can afford to wait for them.
          */
@@ -7760,7 +7796,7 @@ static void control_task(void *arg)
         arm_watch_service(link_up);
 
         /* --- last, after every arm and ON this pass applied: a sector of
-         * the photograph's keep, on a safe bench only -------------------- */
+         * the drawing's keep, on a safe bench only ---------------------- */
         art_keep_service();
 
         vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
@@ -8253,12 +8289,12 @@ void app_main(void)
     outputs_screen_set_apply(outputs_apply);
     /*
      * The picker is the same choice seen as the board, so it applies through
-     * the same seam, selects its protocol on the outputs screen, and reads
-     * its photograph out of the store.
+     * the same seam, selects its protocol on the outputs screen, and takes
+     * the board's drawing the control task published.
      */
     picker_screen_set_apply(outputs_apply);
     picker_screen_set_select(outputs_screen_select);
-    picker_screen_set_artwork_source(art_for_picker);
+    picker_screen_set_drawing_source(drawing_for_picker);
     /* The supply screen shows the panel's model, and the range a PPS
      * (Programmable Power Supply) source offers; see supply.h. */
     const supply_caps_t supply_caps = SUPPLY_CAPS_PPS_DEFAULT;
@@ -8288,6 +8324,9 @@ void app_main(void)
     s_note_q    = xQueueCreate(LOG_NOTE_Q_LEN, LOG_NOTE_MAX);
     s_test_q    = xQueueCreate(TEST_Q_LEN, sizeof(test_line_t));
     s_snap_lock = xSemaphoreCreateMutex();
+    s_draw_lock = xSemaphoreCreateMutex();
+    s_drawpub   = heap_caps_malloc(LINK_DRAW_MAX_BYTES, MALLOC_CAP_SPIRAM);
+    s_drawshow  = heap_caps_malloc(LINK_DRAW_MAX_BYTES, MALLOC_CAP_SPIRAM);
     /* Zero is a temperature; the snapshot starts unread, so the strip shows
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
@@ -8688,6 +8727,9 @@ void app_main(void)
          * the binding is one a read confirmed, every frame. */
         picker_screen_follow(outputs_screen_binding()->proto,
                              outputs_screen_editable());
+        /* A drawing a link-up edge published or withdrew, shown now and not
+         * on the picker's next visit. */
+        drawing_follow();
         outputs_screen_set_result(
             (outputs_result_t)atomic_load(&s_outputs_result));
 
@@ -8858,14 +8900,14 @@ void app_main(void)
          * Writing settings commits an NVS page, and a flash operation on this
          * part disables the cache: neither core runs code that is not in
          * IRAM for its duration.  Taken here it costs a frame.  When it may
-         * happen is flash_gate_open()'s rule, the one the photograph's keep
+         * happen is flash_gate_open()'s rule, the one the drawing's keep
          * asks too: not while the bench is armed or an arm waits -- the
          * control task beats the safety line and its ceiling is
          * HEARTBEAT_MAX_GAP_MS (150 ms) -- and not while the supply's output
          * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
          * control task's, and a flash write would stall them for its length.
-         * Nor while the board's photograph is being fetched or kept, which is
-         * a quarter of a megabyte already spoken for.
+         * Nor while the board's drawing is being fetched or kept: one flash
+         * writer at a time.
          *
          * Waiting costs nothing.  The request stands until a quiet frame
          * comes, and disarmed -- which is where the settings screen is used

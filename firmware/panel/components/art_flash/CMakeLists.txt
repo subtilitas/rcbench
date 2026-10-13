@@ -1,4 +1,4 @@
-# The board-photograph partition. The format and the order of a write belong
+# The board-drawing partition. The format and the order of a write belong
 # to shared/artwork, which the host suite exercises against memory; this is
 # the three operations that need real flash.
 idf_component_register(

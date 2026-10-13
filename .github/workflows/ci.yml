@@ -108,11 +108,11 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
-      # The board photographs the coprocessor serves are generated from the
-      # PNGs beside them and checked in, so the firmware build needs no
-      # Python and no image library.
-      - name: The checked-in board artwork matches its source
-        run: python3 tools/gen_board_art.py --check
+      # The board drawings the coprocessor serves are generated from the
+      # configurator's panel drawing and checked in, so the firmware build
+      # needs no Python and no Node.js.
+      - name: The checked-in board drawings match the configurator's
+        run: python3 tools/gen_board_drawing.py --check
 
       # The ESC programming profiles are JSON; the panel carries them as C
       # tables generated from that JSON and checked in.

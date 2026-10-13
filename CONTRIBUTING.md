@@ -59,7 +59,7 @@ python3 tools/check_docs.py           # links, translations, SPDX, the suite lis
 python3 tools/render_ui.py --check    # the committed screenshots match
 python3 tools/frame_cost.py --check-doc
 python3 tools/gen_font.py --check
-python3 tools/gen_board_art.py --check
+python3 tools/gen_board_drawing.py --check
 python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone

@@ -8,6 +8,8 @@ Generator and check of the part drawings of the bench configurator.
   in `public/drawings/<file>.svg`, German in `public/drawings/de/<file>.svg`.
 - `anchors.json` holds the wire point of each of the 179 pins in px of the
   viewBox of its drawing.
+- `panel.json` holds the coprocessor board as flat shapes on its real pad
+  grid, for the PICK A PIN screen of the panel ([Panel drawing](#panel-drawing)).
 - The generator reads the data file and nothing else: no file, no clock, no
   random number. The same data file gives the same bytes.
 - A file is self-contained: no script, no raster image, no style sheet, no
@@ -18,7 +20,7 @@ Generator and check of the part drawings of the bench configurator.
 Node.js 24 is required. Run in `configurator/`.
 
 ```bash
-npm run drawings          # writes public/drawings/** and drawings/anchors.json
+npm run drawings          # writes public/drawings/**, drawings/anchors.json and drawings/panel.json
 npm run drawings:check    # writes nothing; exit code 1 on a finding or on drift
 node drawings/cli.ts --palette   # prints the contrast table of the wire palette
 npm test                  # runs drawings/test/*.test.ts with the tests of the page
@@ -29,7 +31,7 @@ it as a step of the job `build`.
 
 ## Committed output, guarded by the check
 
-The SVG files and `anchors.json` are committed. They are not written during
+The SVG files, `anchors.json` and `panel.json` are committed. They are not written during
 `npm run build`, `npm run dev` or `npm test`.
 
 - A change of a label or of a shape shows as a diff of the drawing in the pull
@@ -48,9 +50,44 @@ The SVG files and `anchors.json` are committed. They are not written during
 | `generate.ts` | `generate(catalogue)`: every SVG text and the anchor table. |
 | `wires.ts` | Wire palette, colour rules, contrast formula, anchor points of a wire end. |
 | `check.ts` | The checks as pure functions that return findings. |
+| `panel.ts` | `panelDrawing(pads)`: the panel drawing of the coprocessor board. |
 | `cli.ts` | Command line: write, `--check`, `--palette`. |
 | `anchors.json` | The anchor table. Written by the generator. |
+| `panel.json` | The panel drawing. Written by the generator. |
 | `test/` | Tests, run by `node --test`. |
+
+## Panel drawing
+
+`panel.json` is the coprocessor board (RP2350-CAN) of `copro.svg` as the
+panel draws it on PICK A PIN. `tools/gen_board_drawing.py` turns it into
+`firmware/iomcu/src/board_drawing_rp2350_can.c`, the drawing the coprocessor
+serves over the link ([The board drawing](../../docs/Link.md#the-board-drawing)).
+CI (continuous integration) runs `python3 tools/gen_board_drawing.py --check`,
+so the C file cannot drift from `panel.json`.
+
+- Units: 0.01 mm. Origin: the top-left corner of the outline seen from the
+  component side, x along the pad rows.
+- Outline 51.00 × 21.00 mm, pitch 2.54 mm, pad rows 1.61 mm in from the long
+  edges: `k_pico_shape` in `shared/outputs/out_bind.c`. Every pad sits where
+  the panel places it.
+- 40 pads, each with its kind (`gpio`, `ground`, `rail`, `other`) and value
+  (the GPIO number, or a rail in 0.1 V). The kinds and values come from the
+  catalogue's pad list and `k_pico_pads`; the panel refuses a drawing that
+  differs from its own catalogue.
+- 102 shapes of 4 kinds: `rect`, `rrect`, `disc`, `line`. Colours are flat:
+  the middle stop of each gradient of the SVG.
+- Text is not drawn; the panel prints its own labels.
+
+`copro.svg` is not to scale: its board is longer than the pad rows need.
+The panel drawing keeps every part centre between the same pads as in
+`copro.svg` and every part's size at one scale, the scale across the pad
+rows. The parts beyond the pad rows do not fit that way and are placed
+between the rows: the USB-C socket and the BOOT and RESET buttons at the end
+of pad 1, the CAN screw terminal at the end of pad 20.
+
+`drawings:check` compares `panel.json` byte by byte with the generator's
+output. `test/panel.test.ts` holds it to the pad grid, the outline and the
+pad kinds.
 
 ## Anchor table
 

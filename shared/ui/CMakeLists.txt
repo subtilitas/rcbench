@@ -33,6 +33,7 @@ set(SRCS
     settings_screen.c
     outputs_screen.c
     picker_screen.c
+    board_drawing.c
     busfault_screen.c
 )
 

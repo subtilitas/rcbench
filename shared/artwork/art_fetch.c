@@ -1,5 +1,5 @@
 /*
- * Fetching a board's photograph. See art_fetch.h.
+ * Fetching a board's drawing. See art_fetch.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,13 +33,13 @@ bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
          * page refuses it by design, every time the link comes up. */
         reason = "it does not answer the artwork page";
     } else if (meta_regs[LINK_AW_BLOCKS] == 0u) {
-        reason = "it carries no photograph of itself";
+        reason = "it carries no drawing of itself";
     } else {
         link_art_meta_t m;
         if (!link_artxfer_meta_ok(meta_regs, &m)) {
             /* Worth saying out loud: this one is a coprocessor disagreeing
-             * with itself, not a board that simply has no picture. */
-            reason = "it describes a photograph that cannot be one";
+             * with itself, not a board that has no drawing. */
+            reason = "it describes a drawing that cannot be one";
         } else {
             *bytes = m.bytes;
             ok = true;
@@ -55,6 +55,27 @@ bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
     return ok;
 }
 
+bool art_fetch_key(const uint16_t *meta_regs, uint16_t board,
+                   art_entry_t *out)
+{
+    if (out == NULL) {
+        return false;
+    }
+    memset(out, 0, sizeof(*out));
+    link_art_meta_t m;
+    if (meta_regs == NULL || !link_artxfer_meta_ok(meta_regs, &m)) {
+        return false;
+    }
+    out->board  = board;
+    out->format = m.format;
+    out->width  = m.width;
+    out->height = m.height;
+    out->crc    = m.crc;
+    out->hash   = m.hash;
+    out->bytes  = m.bytes;
+    return true;
+}
+
 bool art_fetch_begin(art_fetch_t *f, const uint16_t *meta_regs, uint8_t *buf,
                      uint32_t cap)
 {
@@ -64,7 +85,7 @@ bool art_fetch_begin(art_fetch_t *f, const uint16_t *meta_regs, uint8_t *buf,
     memset(f, 0, sizeof(*f));
     f->why = "";
     if (!link_artxfer_begin(&f->x, meta_regs, buf, cap)) {
-        (void)fail(f, "it describes a picture that cannot be one");
+        (void)fail(f, "it describes a drawing that cannot be one");
         return false;
     }
     f->state = ART_FETCH_RUNNING;
@@ -106,14 +127,19 @@ art_fetch_state_t art_fetch_step(art_fetch_t *f, const art_transport_t *t,
         }
         if (link_artxfer_complete(&f->x)) {
             if (!link_artxfer_verify(&f->x)) {
-                /* Every block arrived and the whole is not the picture.
+                /* Every block arrived and the whole is not the drawing.
                  * Keeping it would cache the corruption. */
-                return fail(f, "it did not match its own checksum");
+                return fail(f, "it did not match its own checksums");
             }
             f->state = ART_FETCH_DONE;
         }
     }
     return f->state;
+}
+
+uint16_t art_fetch_format(const art_fetch_t *f)
+{
+    return (f != NULL) ? f->x.meta.format : 0u;
 }
 
 uint16_t art_fetch_width(const art_fetch_t *f)
@@ -129,6 +155,11 @@ uint16_t art_fetch_height(const art_fetch_t *f)
 uint16_t art_fetch_crc(const art_fetch_t *f)
 {
     return (f != NULL) ? f->x.meta.crc : 0u;
+}
+
+uint32_t art_fetch_hash(const art_fetch_t *f)
+{
+    return (f != NULL) ? f->x.meta.hash : 0u;
 }
 
 uint32_t art_fetch_bytes(const art_fetch_t *f)

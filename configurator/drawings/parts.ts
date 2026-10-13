@@ -7,57 +7,119 @@ import type { Text } from '../contract.ts';
 import { CARD, Dwg, INK, SILK } from './lib.ts';
 
 // ---------------------------------------------------------------- coprocessor
-// The RP2350-CAN board in local coordinates 0..280 by 0..720, USB-C at the top.
+// The RP2350-CAN board in local coordinates 0..280 by 0..720, USB-C at the top:
+// x runs across the board, y along it. The placements are data so that the
+// panel drawing (panel.ts) maps the same parts onto the pad grid of the board.
+
+/** One part of the RP2350-CAN board in local coordinates, in drawing order. */
+export type RpPart =
+  | { kind: 'usbc'; x: number; y: number; w: number; h: number }
+  | { kind: 'button'; x: number; y: number; s: number }
+  | { kind: 'text'; x: number; y: number; s: string; o: { sz: number; a: 'middle'; ls?: string } }
+  | { kind: 'smd'; x: number; y: number; type: 'r' | 'c' | 'led'; rot: 0 | 90; k: number }
+  | { kind: 'chip'; x: number; y: number; w: number; h: number; o: { n: number; sides?: 2 | 4; leg?: number; text?: string[]; tsz?: number } }
+  | { kind: 'tin'; x: number; y: number; w: number; h: number; rx?: number; shadow?: boolean }
+  | { kind: 'crystal'; x: number; y: number; s: number }
+  | { kind: 'switch'; x: number; y: number; w: number; h: number };
+
+const RP_CX = 134;
+
+/** The outline, the pad rows and the CAN screw terminal of the RP2350-CAN board in local coordinates. */
+export const RP = {
+  w: 280, h: 720, corner: 6, cx: RP_CX,
+  /** Pad 1 at (left, y0), pad n on the left at y0 + pitch * (n - 1), pad 40 - i on the right beside pad i + 1. */
+  pads: { y0: 70, pitch: 30, left: 16, right: 264, r: 9, perSide: 20 },
+  /** Traces as polylines of horizontal and vertical runs, stroke width 3. */
+  traceWidth: 3,
+  traces: [
+    [[RP_CX, 40], [RP_CX, 110]], [[RP_CX, 140], [RP_CX, 200]], [[RP_CX, 262], [RP_CX, 300]], [[RP_CX, 345], [RP_CX, 362]],
+    [[RP_CX, 410], [RP_CX, 432]], [[RP_CX, 470], [RP_CX, 500]], [[RP_CX, 530], [RP_CX, 650]],
+  ] as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+  branches: [
+    [[112, 230], [96, 230], [96, 180]], [[158, 230], [176, 230], [176, 300]],
+    [[112, 386], [98, 386], [98, 450]], [[156, 386], [172, 386], [172, 330]],
+  ] as ReadonlyArray<ReadonlyArray<readonly [number, number]>>,
+  /** The 3-pole CAN screw terminal: centre pole at x, top edge at y, poles `pitch` apart, `h` deep. */
+  terminal: { x: RP_CX, y: 664, pitch: 46, h: 66 },
+} as const;
+
+const C = RP_CX;
+/** The parts of the RP2350-CAN board in drawing order. */
+export const RP_PARTS: ReadonlyArray<RpPart> = [
+  { kind: 'usbc', x: C - 30, y: -12, w: 60, h: 48 },
+  { kind: 'button', x: C - 22, y: 62, s: 17 }, { kind: 'button', x: C + 22, y: 62, s: 17 },
+  { kind: 'text', x: C - 22, y: 84, s: 'BOOT', o: { sz: 8, a: 'middle' } }, { kind: 'text', x: C + 22, y: 84, s: 'RESET', o: { sz: 8, a: 'middle' } },
+  { kind: 'smd', x: C - 22, y: 100, type: 'led', rot: 0, k: 0.8 }, { kind: 'smd', x: C + 22, y: 100, type: 'r', rot: 0, k: 0.8 },
+  { kind: 'chip', x: C, y: 128, w: 28, h: 22, o: { n: 4 } },
+  { kind: 'tin', x: C, y: 168, w: 30, h: 12, rx: 3, shadow: true },
+  { kind: 'smd', x: C - 24, y: 190, type: 'c', rot: 90, k: 0.8 }, { kind: 'smd', x: C + 24, y: 190, type: 'c', rot: 90, k: 0.8 },
+  { kind: 'chip', x: C, y: 232, w: 46, h: 46, o: { n: 7, sides: 4, leg: 3, text: ['RP2350'], tsz: 8 } },
+  { kind: 'smd', x: C - 26, y: 276, type: 'c', rot: 0, k: 0.8 }, { kind: 'smd', x: C + 26, y: 276, type: 'r', rot: 0, k: 0.8 },
+  { kind: 'chip', x: C - 14, y: 304, w: 16, h: 12, o: { n: 3, leg: 3 } },
+  { kind: 'crystal', x: C + 4, y: 294, s: 22 },
+  { kind: 'tin', x: C, y: 336, w: 26, h: 11, rx: 3, shadow: true },
+  { kind: 'chip', x: C, y: 386, w: 34, h: 34, o: { n: 5, sides: 4, leg: 3, text: ['XL2515'], tsz: 6.5 } },
+  { kind: 'smd', x: C - 24, y: 422, type: 'c', rot: 0, k: 0.8 }, { kind: 'smd', x: C + 24, y: 422, type: 'r', rot: 0, k: 0.8 },
+  { kind: 'chip', x: C, y: 452, w: 30, h: 24, o: { n: 4, text: ['SIT65', 'HVD230'], tsz: 5.5 } },
+  // slide switch of the 120 ohm termination
+  { kind: 'switch', x: C - 17, y: 497, w: 34, h: 18 },
+  { kind: 'tin', x: C - 14, y: 540, w: 9, h: 12 }, { kind: 'tin', x: C, y: 540, w: 9, h: 12 }, { kind: 'tin', x: C + 14, y: 540, w: 9, h: 12 },
+  { kind: 'text', x: C, y: 584, s: 'RP2350-CAN', o: { sz: 11, a: 'middle', ls: '.3' } },
+];
+
+/** An SVG path of polylines made of horizontal and vertical runs. */
+function runs(lines: ReadonlyArray<ReadonlyArray<readonly [number, number]>>): string {
+  return lines.map((pts) => pts.map(([x, y], i) => {
+    if (i === 0) return `M${x} ${y}`;
+    const [px] = pts[i - 1]!;
+    return x === px ? `V${y}` : `H${x}`;
+  }).join('')).join('');
+}
+
+function rpPart(d: Dwg, p: RpPart): string {
+  switch (p.kind) {
+    case 'usbc': return d.usbc(p.x, p.y, p.w, p.h, 'N');
+    case 'button': return d.button(p.x, p.y, p.s);
+    case 'text': return d.text(p.x, p.y, p.s, p.o);
+    case 'smd': return d.smd(p.x, p.y, p.type, p.rot, p.k);
+    case 'chip': return d.chip(p.x, p.y, p.w, p.h, p.o);
+    case 'tin': return p.shadow ? d.shadow(d.tin(p.x, p.y, p.w, p.h, p.rx), 's2') : d.tin(p.x, p.y, p.w, p.h, p.rx);
+    case 'crystal': return `<rect x="${p.x}" y="${p.y}" width="${p.s}" height="${p.s}" rx="3" fill="#33363c" filter="${d.u('s2')}"/><circle cx="${p.x + p.s / 2}" cy="${p.y + p.s / 2}" r="6" fill="#4a4e56"/>`;
+    case 'switch': return `<g filter="${d.u('s2')}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="2" fill="${d.u('tin')}"/><rect x="${p.x + 5}" y="${p.y + 4}" width="${p.w - 10}" height="${p.h - 8}" fill="#17181c"/><rect x="${p.x + 16}" y="${p.y + 4}" width="${p.w / 2 - 6}" height="${p.h - 8}" fill="#e9e6de"/></g>`;
+  }
+}
+
 // pads: 'rings' (labelled solder pads) or 'header' (plugged into a carrier).
 function rpBoard(d: Dwg, ox: number, oy: number, k: number, mode: 'rings' | 'header'): void {
   const g: string[] = [];
-  g.push(d.board(0, 0, 280, 720, 'blue', 6));
-  const cx = 134;
-  // traces
-  g.push(`<g fill="none" stroke="#2a5aa6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M${cx} 40V110M${cx} 140V200M${cx} 262V300M${cx} 345V362M${cx} 410V432M${cx} 470V500M${cx} 530V650"/><path d="M112 230H96V180M158 230H176V300M112 386H98V450M156 386H172V330"/></g>`);
-  g.push(d.usbc(cx - 30, -12, 60, 48, 'N'));
-  g.push(d.button(cx - 22, 62, 17), d.button(cx + 22, 62, 17));
-  g.push(d.text(cx - 22, 84, 'BOOT', { sz: 8, a: 'middle' }), d.text(cx + 22, 84, 'RESET', { sz: 8, a: 'middle' }));
-  g.push(d.smd(cx - 22, 100, 'led', 0, 0.8), d.smd(cx + 22, 100, 'r', 0, 0.8));
-  g.push(d.chip(cx, 128, 28, 22, { n: 4 }));
-  g.push(d.shadow(d.tin(cx, 168, 30, 12, 3), 's2'));
-  g.push(d.smd(cx - 24, 190, 'c', 90, 0.8), d.smd(cx + 24, 190, 'c', 90, 0.8));
-  g.push(d.chip(cx, 232, 46, 46, { n: 7, sides: 4, leg: 3, text: ['RP2350'], tsz: 8 }));
-  g.push(d.smd(cx - 26, 276, 'c', 0, 0.8), d.smd(cx + 26, 276, 'r', 0, 0.8));
-  g.push(d.chip(cx - 14, 304, 16, 12, { n: 3, leg: 3 }));
-  g.push(`<rect x="${cx + 4}" y="294" width="22" height="22" rx="3" fill="#33363c" filter="${d.u('s2')}"/><circle cx="${cx + 15}" cy="305" r="6" fill="#4a4e56"/>`);
-  g.push(d.shadow(d.tin(cx, 336, 26, 11, 3), 's2'));
-  g.push(d.chip(cx, 386, 34, 34, { n: 5, sides: 4, leg: 3, text: ['XL2515'], tsz: 6.5 }));
-  g.push(d.smd(cx - 24, 422, 'c', 0, 0.8), d.smd(cx + 24, 422, 'r', 0, 0.8));
-  g.push(d.chip(cx, 452, 30, 24, { n: 4, text: ['SIT65', 'HVD230'], tsz: 5.5 }));
-  // slide switch of the 120 ohm termination
-  g.push(`<g filter="${d.u('s2')}"><rect x="${cx - 17}" y="497" width="34" height="18" rx="2" fill="${d.u('tin')}"/><rect x="${cx - 12}" y="501" width="24" height="10" fill="#17181c"/><rect x="${cx - 1}" y="501" width="11" height="10" fill="#e9e6de"/></g>`);
-  g.push(d.tin(cx - 14, 540, 9, 12), d.tin(cx, 540, 9, 12), d.tin(cx + 14, 540, 9, 12));
-  g.push(d.text(cx, 584, 'RP2350-CAN', { sz: 11, a: 'middle', ls: '.3' }));
+  g.push(d.board(0, 0, RP.w, RP.h, 'blue', RP.corner));
+  g.push(`<g fill="none" stroke="#2a5aa6" stroke-width="${RP.traceWidth}" stroke-linecap="round" stroke-linejoin="round"><path d="${runs(RP.traces)}"/><path d="${runs(RP.branches)}"/></g>`);
+  for (const p of RP_PARTS) g.push(rpPart(d, p));
+  const { y0, pitch, left, right, r, perSide } = RP.pads;
   const an: number[] = [];
-  for (let i = 0; i < 20; i++) {
-    const y = 70 + 30 * i;
-    const nl = i + 1, nr = 40 - i;
+  for (let i = 0; i < perSide; i++) {
+    const y = y0 + pitch * i;
+    const nl = i + 1, nr = 2 * perSide - i;
     if (mode === 'rings') {
-      g.push(d.th(16, y, 9, { sq: i === 0 }), d.th(264, y, 9));
+      g.push(d.th(left, y, r, { sq: i === 0 }), d.th(right, y, r));
       g.push(d.text(30, y + 3.5, String(nl), { sz: 9.5, f: '#bcd0f2', w: 500 }));
       g.push(d.text(250, y + 3.5, String(nr), { sz: 9.5, f: '#bcd0f2', w: 500, a: 'end' }));
-      g.push(d.pin(`pad.${nl}`, ox + 16 * k, oy + y * k, 'W', 46, y + 4.5, { sz: 13 }));
-      g.push(d.pin(`pad.${nr}`, ox + 264 * k, oy + y * k, 'E', 235, y + 4.5, { sz: 13, a: 'end' }));
+      g.push(d.pin(`pad.${nl}`, ox + left * k, oy + y * k, 'W', 46, y + 4.5, { sz: 13 }));
+      g.push(d.pin(`pad.${nr}`, ox + right * k, oy + y * k, 'E', 235, y + 4.5, { sz: 13, a: 'end' }));
     } else {
       an.push(y);
     }
   }
   if (mode === 'header') {
     g.push(`<rect x="5" y="52" width="22" height="606" rx="2" fill="#17181c"/><rect x="253" y="52" width="22" height="606" rx="2" fill="#17181c"/>`);
-    for (const y of an) g.push(`<circle cx="16" cy="${y}" r="5" fill="${d.u('gold')}"/><circle cx="264" cy="${y}" r="5" fill="${d.u('gold')}"/>`);
+    for (const y of an) g.push(`<circle cx="${left}" cy="${y}" r="5" fill="${d.u('gold')}"/><circle cx="${right}" cy="${y}" r="5" fill="${d.u('gold')}"/>`);
   }
   d.add(`<g transform="translate(${ox},${oy}) scale(${k})">${g.join('')}</g>`);
 }
 
 // The 3-pole CAN screw terminal, wires enter from below. Poles: H next to pad 20, GND, L next to pad 21.
 function canTerminal(d: Dwg, cx: number, top: number): void {
-  const pitch = 46, h = 66;
+  const { pitch, h } = RP.terminal;
   const xs = [cx - pitch, cx, cx + pitch];
   const s: string[] = [];
   s.push(`<g filter="${d.u('s3')}"><rect x="${xs[0] - pitch / 2 - 2}" y="${top}" width="${3 * pitch + 4}" height="${h}" rx="2" fill="#1f7a41"/></g>`);
@@ -72,7 +134,7 @@ function canTerminal(d: Dwg, cx: number, top: number): void {
 
 function copro(d: Dwg): void {
   rpBoard(d, 30, 40, 1, 'rings');
-  canTerminal(d, 30 + 134, 40 + 664);
+  canTerminal(d, 30 + RP.terminal.x, 40 + RP.terminal.y);
 }
 
 /** The 3 rows of the servo strips of the breakout board, from the screw terminal inward. */

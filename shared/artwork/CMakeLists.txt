@@ -1,4 +1,4 @@
-# The panel's cache of board photographs.  Compiled by the panel, which owns
+# The panel's cache of board drawings.  Compiled by the panel, which owns
 # the flash it lives in, and by the host suite, which runs the same store
 # against memory -- the flash is passed in so the order of a write can be
 # interrupted on purpose and the result inspected.

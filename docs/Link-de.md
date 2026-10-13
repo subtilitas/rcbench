@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.19. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.20. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -112,7 +112,10 @@ Ab 4.18 nennt ARM des Panels die Rollen, die es auf ARMED schaltet
 ([Ein Arm für eine Rolle](#ein-arm-für-eine-rolle)). Ab
 4.19 treibt die Frame Rate von SERVO nur das PWM-Ziel, und eine Änderung
 von TARGET setzt sie auf 0; das Panel zeigt die Rate dann als nicht
-gesendet, bis es sie wieder schreibt. Der Koprozessor liest
+gesendet, bis es sie wieder schreibt. Ab 4.20 liefert ARTWORK die Zeichnung
+der Platine mit einem Hash über sie in Register 7 und 8, und das Panel liest
+ARTWORK erst ab 4.20 ([Die Zeichnung der Platine](#die-zeichnung-der-platine)).
+Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
@@ -1292,8 +1295,8 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Tausendstel der Spanne je Sekunde, 0 bis 3000, 0 = sofort; ein höherer Wert wird mit BAD_VALUE abgelehnt und nichts wird gespeichert (seit 4.16); ein Slew über 3000, den ein älterer Build im Flash des Koprozessors hinterlassen hat, startet als 3000), minimaler und maximaler Puls in µs, 400 bis 2500 und auf einem Kanal, den ein PWM-Slot ausgibt, höchstens dessen Frame minus 1 µs (seit 4.16); acht Kanäle zu vier Registern |
 | 0x24 | CATALOGUE | lesen | die eigenen Pins der Platine, je ein Register: GPIO-Nummer (General-Purpose Input/Output) in 6 Bit, die daneben aufgedruckte Pad-Nummer in 6, was ihn hält in 4 (0 frei, 1 Heartbeat, 2 CAN, 3 Flash, 4 Debug, 5 Sensor, 15 sonstiges); 32 Slots, und eine Pad-Nummer von 0 heißt, in diesem Slot ist kein Pin |
 | 0x25 | SHAPE | lesen | wo diese Pads liegen: Umriss-Breite und -Höhe in 0,01 mm, die Ecke, an der Pad 1 sitzt, und die Pads in einer Reihe gepackt als (Ecke << 8) \| je Reihe, das Raster in 0,01 mm und der Abstand von der Kante zur Mitte einer Pad-Reihe. Zwei Reihen auf einem Raster, nummeriert von Pad 1 weg entlang seiner Kante und zurück entlang der gegenüberliegenden. Alles null, wenn der Koprozessor keine Form für seine Platine hat — dann wird sie gelistet und nicht gezeichnet |
-| 0x26 | ARTWORK | lesen | was ein Bild der Platine ist: Blöcke Nutzdaten (0, wenn der Koprozessor keines trägt), Breite und Höhe in Pixeln, Format (0 keines, 1 RGB565 mit dem niederwertigen Byte zuerst), Nutzdatenlänge in zwei Registern und eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null |
-| 0x27 | ART_DATA | lesen, schreiben | das Bild selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
+| 0x26 | ARTWORK | lesen | was die Zeichnung der Platine ist, 9 Register (seit 4.20; davor 7): Blöcke Nutzdaten (0, wenn der Koprozessor keine trägt), Breite und Höhe des Umrisses in 0,01 mm, Format (0 keines, 2 die Zeichnung der Platine; 1, ein RGB565-Foto, liefern nur 4.19 und älter), Nutzdatenlänge in zwei Registern, eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null und ein FNV-1a-Hash (Fowler-Noll-Vo) über sie in zwei Registern, die niederwertige Hälfte zuerst. [Die Zeichnung der Platine](#die-zeichnung-der-platine) hat das Layout |
+| 0x27 | ART_DATA | lesen, schreiben | die Zeichnung selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
 | 0x28 | PADS | lesen | die Pads, die keine Pins sind, je ein Register: die Pad-Nummer in 6 Bit, was es ist in 2 (0 kein Pad und die Liste endet, 1 Masse, 2 eine Versorgung, 3 keines von beiden) und die Spannung in 8 Bit zu Zehntelvolt. Null Volt bei einer Versorgung heißt, sie ist keine feste Spannung — das ist nicht dasselbe wie die 0 V einer Masse. 32 Slots, in Pad-Reihenfolge |
 | 0x29 | SERVO | lesen, schreiben | Register 0: die Frame Rate in Hz des PWM-Ziels, das `TARGET` von PROG nennt, 40 bis 560, oder 0 für seine eigene Rate. Mit den Standard-Servoports als Ziel: jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat, 0 für die eigene Rate jedes Slots aus OUTPUTS; mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte, und solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte (seit 4.1). Mit einem Programmierport als Ziel: nur der Pin dieses Ports, 0 für 50 Hz (seit 4.19, [Die Frame Rate des Ziels](#die-frame-rate-des-ziels)). Ebenso abgewiesen, wenn ein PWM-Ausgang oder ein pulsender Programmierport damit einen Endpunkt hätte, der länger als sein Frame ist (seit 4.16, [Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Eine Änderung von `TARGET` setzt Register 0 auf 0 (seit 4.19). Register 1 bis 4, ein Frame: ein Sweep der Surfaces -- Kurve (0 gestoppt, 1 Rechteck, 2 Sinus, 3 Dreieck), Geschwindigkeit in Tausendstel Zyklen je Sekunde (50 bis 5000), Amplitude in Befehlseinheiten zu jeder Seite der Mitte (0 bis 500), Haltezeit an jedem Ende in ms (0 bis 5000); ein Sweep startet oder ändert sich nur, wenn alle vier zusammen geschrieben werden, sonst mit BAD_VALUE abgewiesen, und bei einem Prüfstand in SAFE oder nur für Throttle in ARMED mit NOT_ARMED (seit 4.18); 0 in Register 1 allein hält ihn an, und 4 allein hält jede Surface dort, wo ihr Ausgang gerade ist, unter denselben Regeln für das Schalten auf SAFE und 500 ms. Ein Sweep, der beim Beginn des Haltens läuft, behält seine Phase (seit 4.6): wie weit er in der Kurve war, und damit seinen Punkt, sein Verweilen und die erreichten Enden; einer, der seine Bewegungen gemacht hat, wird in der Mitte gehalten, auf der er endete. Ein Schreiben wird an der Page gemessen, wie der nächste Durchlauf des Koprozessors sie in diesem Moment hinterließe: ein Sweep nach seiner letzten Bewegung, 500 ms ohne Schreiben oder Schalten auf SAFE ist beendet, auch wenn das Schreiben vor dem Durchlauf bedient wird, der ihn beendet. 5 allein (RESUME, seit 4.6) setzt diesen Sweep ab der behaltenen Phase fort; die Surfaces werden sofort wieder entlang der Kurve angesteuert und fahren mit ihrer eigenen Rate von dort hin, wo sie gehalten wurden. RESUME wird mit BAD_VALUE abgewiesen, wenn keine Phase behalten ist -- beim Beginn des Haltens lief kein Sweep, oder das Halten endete durch ein Schreiben von 0, eine darübergeschriebene Kurve, ein Schalten auf SAFE, 500 ms ohne Schreiben oder einen Neustart --, und wenn Register 2 bis 5 nicht mehr lesen, was der angehaltene Sweep fährt; mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED. Ein Koprozessor mit 4.5 weist 5 mit BAD_VALUE ab. Register 5: wie viele Enden ein danach gestarteter Sweep erreicht, bevor er anhält, 0 für kein Ende. Register 6, nur lesen: die Enden, die der Sweep erreicht hat. Ein Sweep hält bei einem Schreiben von 0, beim Schalten auf SAFE und wenn er 500 ms nicht geschrieben wurde an und lässt jede Surface dort, wo ihr Ausgang gerade ist; Wiederholen hält seine Kurve am Laufen, und ein Sweep, der seine Bewegungen gemacht hat, startet durch Wiederholen nicht neu (seit 4.2). Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
 | 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des Koprozessors (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2 s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000 mV und 3000 mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400 ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann -- an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das nicht mehr antwortet, Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500 mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das kein OFF ist, wird mit BAD_VALUE abgewiesen (seit 4.15 jede Änderung eines Sollwerts; davor ein ON und ein Heben der Spannung), siehe [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des Koprozessors gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
@@ -1593,6 +1596,70 @@ halten die Rate unabhängig von den Slots, ein Port-Ziel bei 39, 40, 499,
 geteilten Slice, der 0 und 50 Hz nimmt und 40, 300 und 560 Hz abweist, eine
 Änderung des Ziels bei einer Bank in ARMED und das Verfolgen einer Änderung von
 `TARGET` durch das Panel.
+
+### Die Zeichnung der Platine
+
+Ab 4.20 liefert der Koprozessor auf ARTWORK (0x26) und ART_DATA (0x27) eine
+Zeichnung seiner eigenen Platine: den Umriss, die Bauteile als flache Formen
+und jedes Pad mit dem, was es ist. PICK A PIN zeichnet die Platine daraus
+maßstäblich. Eine neue Platine bringt ihre Zeichnung im eigenen
+Koprozessor-Image mit; das Panel braucht dafür keine Änderung. Die Zeichnung
+des RP2350-CAN hat 1 560 Bytes in 26 Blöcken: 40 Pads und 102 Formen auf
+einem Umriss von 51,00 × 21,00 mm.
+
+Die Nutzdaten sind Little-Endian, in 0,01 mm, mit dem Ursprung in der linken
+oberen Ecke des Umrisses von der Bauteilseite gesehen, x entlang der
+Pad-Reihen.
+
+| Teil | Bytes | Felder |
+| --- | --- | --- |
+| Kopf | 16 | Version (1), Pads (1 bis 64), Formen (0 bis 400, 16 Bit), Breite und Höhe des Umrisses, Farbe der Platine und der Pad-Ringe in RGB565, Eckenradius des Umrisses, Ringradius, Lochradius (kleiner als der Ringradius), 0 |
+| ein Pad | 8 | Pad-Nummer (1 bis 63, aufsteigend), Art (1 Masse, 2 eine Versorgung, 3 keines von beiden, 4 ein GPIO), Wert (die GPIO-Nummer eines GPIO-Pads, die Spannung einer Versorgung in 0,1 V, sonst 0), Flags (Bit 0 ein quadratischer Ring), x und y der Mitte |
+| eine Form | 12 | Art (1 Rechteck, 2 abgerundetes Rechteck, 3 Kreisscheibe, 4 Linie), Eckenradius eines abgerundeten Rechtecks oder Breite einer Linie (sonst 0), Farbe in RGB565, dann vier Koordinaten: links, oben, Breite und Höhe eines Rechtecks; Mitte und Radius einer Kreisscheibe; beide Enden einer Linie |
+
+Die längsten Nutzdaten haben 5 328 Bytes, 86 Blöcke. Jeder Ring und jede
+Form liegt im Umriss, und die Länge ist genau Kopf, Pads und Formen; alles
+andere weist das Panel als Ganzes ab und zeichnet die Platine stattdessen
+aus SHAPE (0x25). Das Layout ist `LINK_DRAW_*` in
+`shared/link/include/link_pages.h`; `link_drawing_parse()` in
+`shared/link/link_drawing.c` ist die Prüfung des Panels.
+
+Das Panel weist auch eine Zeichnung ab, die den anderen Pages der Platine
+widerspricht: ein anderer Umriss als der von SHAPE, ein Pad nicht auf dem
+Raster von SHAPE oder ein Pad, dessen Art oder Wert von CATALOGUE (0x24) und
+PADS (0x28) abweicht. Die Pin-Listen bleiben auf CATALOGUE und PADS; die
+Zeichnung platziert sie nur.
+
+Das Panel behält eine geholte Zeichnung in seiner Flash-Partition
+`boardart` unter der Board-ID, zusammen mit jedem ARTWORK-Register ab
+Register 1. Beim Link-Aufbau liest es ARTWORK und zeigt die behaltene
+Zeichnung nur, wenn alle übereinstimmen: Format, Umriss, Länge, CRC und Hash.
+Jede andere Zeichnung unter derselben Board-ID wird neu geholt; ein
+Koprozessor, der mit einer geänderten Zeichnung geflasht wurde, wird also nie
+mit der alten gezeigt. Ein Abruf prüft die Nutzdaten gegen CRC und Hash,
+bevor sie gezeigt oder behalten werden.
+
+`tools/gen_board_drawing.py` schreibt die Zeichnung des Koprozessors,
+`firmware/iomcu/src/board_drawing_rp2350_can.c`, aus
+`configurator/drawings/panel.json` des Konfigurators und weist eine
+Zeichnung ab, die das Panel abweisen würde. Die CI (Continuous Integration)
+führt es mit `--check` aus.
+
+| Panel | Koprozessor | Verhalten |
+| --- | --- | --- |
+| 4.20 | 4.20 | wie oben |
+| 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
+| 4.19 oder älter | 4.20 | das Panel liest sieben ARTWORK-Register, findet Format 2 und holt nichts: `no photograph from hardware 1: it describes a photograph that cannot be one`. Ein früher behaltenes Foto erscheint weiter |
+
+`test_link_drawing`, `test_board_drawing`, `test_link_artxfer`,
+`test_art_fetch`, `test_art_store` und `test_picker_screen` halten das Layout
+an seinen Grenzen (64 Pads, 400 Formen, ein Ring, der die Kante berührt, je
+einer darüber), abgeschnittene, fehlerhafte oder falsch geprüfte Nutzdaten,
+einen Hash, der in einer der beiden Hälften abweicht, einen Linkverlust bei
+jeder Transaktion eines Abrufs, eine behaltene Zeichnung unter derselben
+Board-ID mit anderem Hash und eine Platine, die der Build des Panels nicht
+kennt. `test/tools/test_gen_board_drawing.py` hält den Generator an dieselben
+Regeln.
 
 ### Bit Timing
 

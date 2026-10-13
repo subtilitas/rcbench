@@ -78,6 +78,7 @@ SOURCES = [
     "shared/outputs/kst_port.c",
     "shared/link/link_dev.c",
     "shared/link/link_crc.c",
+    "shared/link/link_drawing.c",
     "protocols/kst/kst_reg.c",
     "protocols/kst/kst_limits.c",
     "protocols/kst/kst_plan.c",
@@ -97,8 +98,10 @@ SOURCES = [
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
     "shared/esc/esc_sim.c",
-    # Generated artwork: pure data, so the screenshot is the real photograph.
-    "firmware/iomcu/src/art_rp2350_can.c",
+    # The board drawing the coprocessor serves: generated data, so the
+    # screenshot is the drawing a bench shows.
+    "firmware/iomcu/src/board_drawing_rp2350_can.c",
+    "shared/ui/board_drawing.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",

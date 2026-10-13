@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "board_drawing.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "ui_text.h"
@@ -114,9 +115,12 @@ static struct {
     outbind_t         bind;
     picker_apply_fn   apply;
     picker_select_fn  select;
-    picker_artwork_fn source;
-    const gfx_color_t *art;
-    uint16_t          art_w, art_h;
+    picker_drawing_fn source;
+    /* The coprocessor's drawing, for the board drawing_board names; it
+     * agreed with that board's catalogue when it was set. */
+    link_drawing_t    drawing;
+    uint16_t          drawing_board;
+    bool              has_drawing;
 
     int      hit_kind;
     int      hit;            /**< row or catalogue index under the finger    */
@@ -137,11 +141,8 @@ static uint8_t g_prog_gpio = PICKER_NO_PIN;
  * leaves the second holding the old picture, and clearing the others on
  * every paint instead makes the screen repaint for ever.
  *
- * That costs more here than anywhere else.  This screen's chrome is a
- * photograph -- 201 kB blitted per repaint, sixteen thousand cache-line
- * fills against nine hundred for a screen that idles -- so a picker that
- * never settles would hold the whole panel at thirteen frames a second for
- * as long as it is open.
+ * A repaint draws the board, every button and both tables; a picker that
+ * never settled would spend that on every frame for as long as it is open.
  */
 static void touched(void) { picker_screen_invalidate(); }
 
@@ -188,14 +189,26 @@ void picker_screen_set_apply(picker_apply_fn fn) { s.apply = fn; }
 
 void picker_screen_set_select(picker_select_fn fn) { s.select = fn; }
 
-void picker_screen_set_artwork_source(picker_artwork_fn fn) { s.source = fn; }
+void picker_screen_set_drawing_source(picker_drawing_fn fn) { s.source = fn; }
 
-void picker_screen_set_artwork(const gfx_color_t *px, uint16_t w, uint16_t h)
+bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
+                               const char **why)
 {
-    s.art   = (w != 0u && h != 0u) ? px : NULL;
-    s.art_w = w;
-    s.art_h = h;
+    const char *reason = "no drawing";
+    link_drawing_t d;
+    bool ok = false;
+    if (data != NULL && bytes != 0u
+        && link_drawing_parse(&d, data, bytes, &reason)) {
+        ok = board_drawing_agrees(&d, outbind_board(s.bind.board), &reason);
+    }
+    s.has_drawing   = ok;
+    s.drawing       = ok ? d : (link_drawing_t){ 0 };
+    s.drawing_board = s.bind.board;
+    if (why != NULL) {
+        *why = ok ? "" : reason;
+    }
     touched();
+    return ok;
 }
 
 void picker_screen_set_prog_pin(uint8_t gpio)
@@ -212,9 +225,19 @@ static const outbind_shape_t *shape(void)
     return (bd != NULL) ? bd->shape : NULL;
 }
 
+/* The drawing, while it is the one for the board the binding names. */
+static const link_drawing_t *drawing(void)
+{
+    return (s.has_drawing && s.drawing_board == s.bind.board) ? &s.drawing
+                                                              : NULL;
+}
+
+bool picker_screen_has_drawing(void) { return drawing() != NULL; }
+
 bool picker_screen_can_draw(void)
 {
-    return shape() != NULL && outbind_pin_count(s.bind.board) > 0u;
+    return (drawing() != NULL || shape() != NULL)
+           && outbind_pin_count(s.bind.board) > 0u;
 }
 
 static uint8_t proto_shown(void)
@@ -224,52 +247,60 @@ static uint8_t proto_shown(void)
 
 /* ------------------------------------------------------------ board art */
 
+static bool pad_xy(uint8_t pad, int *px, int *py);
+
 /*
  * Everything that depends on what the board looks like, as against where
  * its pads are, is in this section: the box the board occupies and
  * draw_board().  The buttons, the marks and the tables take pad positions
- * from pad_xy() and nothing from the picture.
+ * from pad_xy() and nothing from the drawing.
  */
 
 /*
- * The box the board occupies.  With a photograph it is the photograph's own
- * size, because the picture is cropped to the outline and scaling it would
- * cost a resample for nothing; without one it is BOARD_W and whatever height
- * the outline's aspect gives.
+ * The box the board occupies: BOARD_W wide and whatever height the
+ * outline's aspect gives, the drawing's outline or else the shape's.  The
+ * drawing is drawn to scale into it; its outline is the shape's whenever
+ * the board has one (board_drawing_agrees()).
  */
 static void board_box(int *x, int *y, int *w, int *h)
 {
+    const link_drawing_t *d = drawing();
     const outbind_shape_t *sh = shape();
-    int bw = BOARD_W;
+    uint16_t ow = 0u, oh = 0u;
+    if (d != NULL) {
+        ow = d->width;
+        oh = d->height;
+    } else if (sh != NULL) {
+        ow = sh->width_cmm;
+        oh = sh->height_cmm;
+    }
     int bh = BOARD_MAX_H;
-    if (s.art != NULL) {
-        bw = s.art_w;
-        bh = s.art_h;
-    } else if (sh != NULL && sh->width_cmm != 0u) {
-        bh = (int)(((uint32_t)BOARD_W * sh->height_cmm) / sh->width_cmm);
+    if (ow != 0u) {
+        bh = (int)(((uint32_t)BOARD_W * oh) / ow);
         if (bh > BOARD_MAX_H) { bh = BOARD_MAX_H; }
     }
-    *w = bw;
+    *w = BOARD_W;
     *h = bh;
-    *x = (SCREEN_W - bw) / 2;
+    *x = (SCREEN_W - BOARD_W) / 2;
     *y = (SCREEN_H - bh) / 2;
 }
 
-/* The board itself: its photograph, or its outline and pads drawn. */
+/* The board itself: the coprocessor's drawing, or its outline and pads. */
 static void draw_board(gfx_canvas_t *c)
 {
     int bx, by, bw, bh;
     board_box(&bx, &by, &bw, &bh);
 
-    if (s.art != NULL) {
-        gfx_blit(c, bx, by, s.art, bw, bh, s.art_w);
+    const link_drawing_t *d = drawing();
+    if (d != NULL) {
+        board_drawing_render(c, d, bx, by, bw, bh, UI_BG);
         return;
     }
 
     /*
-     * No photograph, so the board is drawn: an outline and every pad the
-     * shape places.  The pads are what an operator counts along, so all of
-     * them are drawn and not only the ones that are GPIOs.
+     * No drawing, so the board is drawn from its shape: an outline and
+     * every pad the shape places.  The pads are what an operator counts
+     * along, so all of them are drawn and not only the ones that are GPIOs.
      */
     gfx_fill_round_rect(c, bx, by, bw, bh, 6, GFX_RGB(18, 42, 30));
     gfx_draw_round_rect(c, bx, by, bw, bh, 6, GFX_RGB(60, 110, 84));
@@ -279,12 +310,8 @@ static void draw_board(gfx_canvas_t *c)
     }
     const unsigned pads = (unsigned)sh->per_side * 2u;
     for (unsigned p = 1; p <= pads; ++p) {
-        uint16_t xc, yc;
-        if (outbind_pad_xy(sh, (uint8_t)p, &xc, &yc)) {
-            const int px = bx + (int)(((uint32_t)xc * (uint32_t)bw)
-                                      / sh->width_cmm);
-            const int py = by + (int)(((uint32_t)yc * (uint32_t)bh)
-                                      / sh->height_cmm);
+        int px, py;
+        if (pad_xy((uint8_t)p, &px, &py)) {
             gfx_fill_circle(c, px, py, 4, GFX_RGB(196, 160, 84));
             gfx_fill_circle(c, px, py, 2, GFX_RGB(24, 24, 28));
         }
@@ -293,18 +320,36 @@ static void draw_board(gfx_canvas_t *c)
 
 /* ------------------------------------------------------------- geometry */
 
-/* Where a pad sits on screen, from where the board says it sits on itself. */
+/*
+ * Where a pad sits on screen, from where the board says it sits on itself:
+ * the drawing's pad record, else the shape's grid.  Scaled the way
+ * board_drawing_render() scales a ring, so a trace ends on its ring.
+ */
 static bool pad_xy(uint8_t pad, int *px, int *py)
 {
-    const outbind_shape_t *sh = shape();
-    uint16_t xc, yc;
-    if (sh == NULL || !outbind_pad_xy(sh, pad, &xc, &yc)) {
-        return false;
+    const link_drawing_t *d = drawing();
+    uint16_t xc, yc, ow, oh;
+    if (d != NULL) {
+        link_draw_pad_t p;
+        if (!link_drawing_find_pad(d, pad, &p)) {
+            return false;
+        }
+        xc = p.x;
+        yc = p.y;
+        ow = d->width;
+        oh = d->height;
+    } else {
+        const outbind_shape_t *sh = shape();
+        if (sh == NULL || !outbind_pad_xy(sh, pad, &xc, &yc)) {
+            return false;
+        }
+        ow = sh->width_cmm;
+        oh = sh->height_cmm;
     }
     int bx, by, bw, bh;
     board_box(&bx, &by, &bw, &bh);
-    *px = bx + (int)(((uint32_t)xc * (uint32_t)bw) / sh->width_cmm);
-    *py = by + (int)(((uint32_t)yc * (uint32_t)bh) / sh->height_cmm);
+    *px = bx + board_drawing_scale(xc, bw, ow);
+    *py = by + board_drawing_scale(yc, bh, oh);
     return true;
 }
 
@@ -1081,7 +1126,7 @@ static void enter(void)
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.open = false;
-    /* Asked on the way in, so a photograph that arrived since the last visit
+    /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */
     if (s.source != NULL) {
         s.source(s.bind.board);

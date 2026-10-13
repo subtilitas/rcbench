@@ -4,7 +4,7 @@
  * The screen owns no rules -- out_bind does -- so what is under test is the
  * touching and the geometry. The geometry is the part that can be wrong in a
  * way nobody sees: a button wired to the pad next to its own would let an
- * operator press GP4 and bind GP5, and the picture would look right.
+ * operator press GP4 and bind GP5, and the board would look right.
  *
  * So the tests here do not hard-code where a button is. They ask the board
  * where a pad is, the way the screen does, and press there.
@@ -16,6 +16,7 @@
 #include "greatest.h"
 #include "guard_canvas.h"
 
+#include "drawing_fixture.h"
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
@@ -30,6 +31,18 @@
 static int         s_applied;
 static outbind_t   s_last;
 static gfx_color_t s_px[800 * 432];
+
+/* firmware/iomcu/src/board_drawing_rp2350_can.c: the drawing the
+ * coprocessor serves for this board. */
+extern const uint8_t  board_drawing_rp2350_can[];
+extern const uint32_t board_drawing_rp2350_can_bytes;
+
+/* Show the served drawing; whether the picker took it. */
+static bool serve_drawing(void)
+{
+    return picker_screen_set_drawing(board_drawing_rp2350_can,
+                                     board_drawing_rp2350_can_bytes, NULL);
+}
 
 static void on_apply(const outbind_t *b) { ++s_applied; s_last = *b; }
 
@@ -48,7 +61,7 @@ static void fresh(void)
     outbind_set_board(&b, BOARD);
     outbind_set_proto(&b, 1u);              /* SERVO PWM */
     picker_screen_set_binding(&b);
-    picker_screen_set_artwork(NULL, 0, 0);  /* the drawn board */
+    picker_screen_set_drawing(NULL, 0u, NULL);  /* the board from its shape */
     scr()->enter();
 }
 
@@ -76,8 +89,11 @@ static bool pad_point_on(uint16_t board, uint8_t gpio, int *x, int *y)
                          / bd->shape->width_cmm);
     const int bx = (SCREEN_W - bw) / 2;
     const int by = (SCREEN_H - bh) / 2;
-    *x = bx + (int)(((uint32_t)xc * (uint32_t)bw) / bd->shape->width_cmm);
-    *y = by + (int)(((uint32_t)yc * (uint32_t)bh) / bd->shape->height_cmm);
+    /* Rounded to the nearest pixel, each from its own position. */
+    *x = bx + (int)(((uint32_t)xc * (uint32_t)bw + bd->shape->width_cmm / 2u)
+                    / bd->shape->width_cmm);
+    *y = by + (int)(((uint32_t)yc * (uint32_t)bh + bd->shape->height_cmm / 2u)
+                    / bd->shape->height_cmm);
     return true;
 }
 
@@ -260,9 +276,9 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_binds_nothing)
 TEST_CASE(a_board_that_does_not_say_where_its_pads_are_is_not_drawn)
 {
     /*
-     * A picture drawn from a guessed shape points at the wrong pad as
+     * A board drawn from a guessed shape points at the wrong pad as
      * confidently as the right one, so a board with no shape gets no
-     * picture. The outputs screen still offers its pins.
+     * drawing. The outputs screen still offers its pins.
      */
     fresh();
     outbind_t b;
@@ -283,32 +299,150 @@ TEST_CASE(a_board_that_does_not_say_where_its_pads_are_is_not_drawn)
     CHECK(picker_screen_can_draw());
 }
 
-TEST_CASE(a_photograph_is_used_when_there_is_one_and_not_when_there_is_not)
+TEST_CASE(the_coprocessors_drawing_is_used_when_it_agrees_with_the_board)
 {
     fresh();
-    /* Artwork of no size is no artwork, whatever pointer came with it. */
-    static const gfx_color_t px[4] = { 0, 0, 0, 0 };
-    picker_screen_set_artwork(px, 0, 0);
+    /* No bytes is no drawing, whatever pointer came with them. */
+    const char *why = NULL;
+    CHECK(!picker_screen_set_drawing(board_drawing_rp2350_can, 0u, &why));
+    CHECK(why != NULL && why[0] != '\0');
+    CHECK(!picker_screen_has_drawing());
     render();
     int bx, by;
     CHECK(button_point(4u, &bx, &by));       /* still usable */
 
-    /* And with one, the buttons are still wired to the same pins: the
-     * picture is cropped to the outline, so it changes what is under the
-     * pads and not where they are. */
+    /* The served drawing agrees with the catalogue and is drawn. */
     fresh();
-    static gfx_color_t art[500 * 206];
-    for (unsigned i = 0; i < 500u * 206u; ++i) { art[i] = 0x1234u; }
-    picker_screen_set_artwork(art, 500, 206);
+    CHECK(picker_screen_set_drawing(board_drawing_rp2350_can,
+                                    board_drawing_rp2350_can_bytes, &why));
+    CHECK_STR_EQ(why, "");
+    CHECK(picker_screen_has_drawing());
+    CHECK(picker_screen_can_draw());
     render();
+    /* The buttons are wired to the same pins: the drawing's pads are the
+     * shape's grid, to the hundredth of a millimetre. */
     CHECK(button_point(4u, &bx, &by));
     CHECK_EQ(outbind_group_of(&s_last, idx(4u)), 1);
+}
+
+TEST_CASE(the_buttons_are_where_they_are_with_and_without_the_drawing)
+{
+    const outbind_board_t *bd = outbind_board(BOARD);
+    gfx_rect_t plain[OUTBIND_PINS];
+    bool has[OUTBIND_PINS];
+    fresh();
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        has[i] = picker_screen_button_rect(i, &plain[i]);
+    }
+    fresh();
+    CHECK(serve_drawing());
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        gfx_rect_t r;
+        CHECK_EQ(picker_screen_button_rect(i, &r), has[i]);
+        if (has[i]) {
+            CHECK_EQ(r.x, plain[i].x);
+            CHECK_EQ(r.y, plain[i].y);
+            CHECK_EQ(r.w, plain[i].w);
+            CHECK_EQ(r.h, plain[i].h);
+        }
+    }
+}
+
+/* A copy of the served drawing to spoil. */
+static uint8_t s_spoilt[LINK_DRAW_MAX_BYTES];
+
+static uint8_t *spoil_pad(uint8_t pad)
+{
+    memcpy(s_spoilt, board_drawing_rp2350_can, board_drawing_rp2350_can_bytes);
+    for (unsigned i = 0; i < s_spoilt[1]; ++i) {
+        uint8_t *p = fx_pad_at(s_spoilt, i);
+        if (p[0] == pad) { return p; }
+    }
+    return NULL;
+}
+
+TEST_CASE(a_drawing_that_disagrees_or_does_not_parse_is_not_shown)
+{
+    /*
+     * Each refused whole, the board then drawn from its shape -- never a
+     * drawing whose pads say one pin while the buttons bind another.
+     */
+    const char *why = NULL;
+
+    /* GP2's pad drawn as GP3. */
+    fresh();
+    uint8_t *p = spoil_pad(4u);
+    CHECK(p != NULL);
+    p[2] = 3u;
+    CHECK(!picker_screen_set_drawing(s_spoilt, board_drawing_rp2350_can_bytes,
+                                     &why));
+    CHECK_STR_EQ(why, "a pin's pad is not that GPIO in the drawing");
+    CHECK(!picker_screen_has_drawing());
+    CHECK(picker_screen_can_draw());          /* from its shape */
+    render();
+    int bx, by;
+    CHECK(button_point(4u, &bx, &by));
+
+    /* Truncated by one byte. */
+    fresh();
+    CHECK(!picker_screen_set_drawing(board_drawing_rp2350_can,
+                                     board_drawing_rp2350_can_bytes - 1u,
+                                     &why));
+    CHECK(why[0] != '\0');
+    CHECK(!picker_screen_has_drawing());
+
+    /* A shape past the outline. */
+    fresh();
+    (void)spoil_pad(1u);
+    uint8_t *sh = fx_shape_at(s_spoilt, s_spoilt[1], 0);
+    fx_put16(sh + 4, 0xFFF0u);
+    CHECK(!picker_screen_set_drawing(s_spoilt, board_drawing_rp2350_can_bytes,
+                                     &why));
+    CHECK(why[0] != '\0');
+    CHECK(!picker_screen_has_drawing());
+
+    /* A good drawing after a refused one is shown, and a refused one after
+     * a good one takes it away. */
+    CHECK(serve_drawing());
+    CHECK(picker_screen_has_drawing());
+    CHECK(!picker_screen_set_drawing(s_spoilt, board_drawing_rp2350_can_bytes,
+                                     NULL));
+    CHECK(!picker_screen_has_drawing());
+}
+
+TEST_CASE(a_drawing_is_shown_for_its_own_board_only)
+{
+    /* A board this build does not know gets no drawing, whatever is
+     * served. */
+    fresh();
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, 4321u);
+    picker_screen_set_binding(&b);
+    const char *why = NULL;
+    CHECK(!serve_drawing());
+    CHECK(!picker_screen_set_drawing(board_drawing_rp2350_can,
+                                     board_drawing_rp2350_can_bytes, &why));
+    CHECK_STR_EQ(why, "a board this build does not know");
+    CHECK(!picker_screen_has_drawing());
+    CHECK(!picker_screen_can_draw());
+
+    /* Taken for the board it describes, and dropped when the binding moves
+     * to another board: a drawing is never shown for a board it was not
+     * checked against. */
+    fresh();
+    CHECK(serve_drawing());
+    outbind_init(&b);
+    outbind_set_board(&b, 4321u);
+    picker_screen_set_binding(&b);
+    CHECK(!picker_screen_has_drawing());
+    render();
 }
 
 TEST_CASE(the_tables_beside_the_board_say_what_the_pins_became)
 {
     /*
-     * The columns are what the picture on its own cannot give: which lead is
+     * The columns are what the board on its own cannot give: which lead is
      * channel 0. Rendered with pins bound on two protocols, so both the "this
      * one" and the "somebody else" paths draw.
      */
@@ -345,23 +479,23 @@ TEST_CASE(the_tables_beside_the_board_say_what_the_pins_became)
 static int  s_asked;
 static uint16_t s_asked_board;
 
-static void artwork_source(uint16_t board)
+static void drawing_source(uint16_t board)
 {
     ++s_asked;
     s_asked_board = board;
-    picker_screen_set_artwork(NULL, 0, 0);
+    (void)picker_screen_set_drawing(NULL, 0u, NULL);
 }
 
-TEST_CASE(the_photograph_is_asked_for_on_the_way_in)
+TEST_CASE(the_drawing_is_asked_for_on_the_way_in)
 {
     /*
-     * Asked on entry rather than held, because it is two hundred kilobytes
-     * and because one that arrived since the last visit should be the one
-     * shown -- as should none, for a board that has been swapped.
+     * Asked on entry rather than held, because one that arrived since the
+     * last visit should be the one shown -- as should none, for a board
+     * that has been swapped.
      */
     fresh();
     s_asked = 0;
-    picker_screen_set_artwork_source(artwork_source);
+    picker_screen_set_drawing_source(drawing_source);
     outbind_t b = *picker_screen_binding();
     picker_screen_set_binding(&b);
 
@@ -373,7 +507,7 @@ TEST_CASE(the_photograph_is_asked_for_on_the_way_in)
     scr()->leave();
     scr()->enter();
     CHECK_EQ(s_asked, 2);        /* asked again, not remembered */
-    picker_screen_set_artwork_source(NULL);
+    picker_screen_set_drawing_source(NULL);
 }
 
 TEST_CASE(a_ground_is_marked_and_is_not_a_button)
@@ -735,18 +869,18 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
 }
 
 /*
- * Every button against everything else on the screen, with the photograph
- * (206 px tall) and with the board drawn from its shape (205 px): inside the
+ * Every button against everything else on the screen, with the
+ * coprocessor's drawing and with the board drawn from its shape (both 205 px
+ * tall): inside the
  * screen, centred on its own pad unless the screen edge stops it, clear of
  * every other button, of every marker inside the board and of the text
  * areas, and a tap on its centre binds its own pin and no other.
  */
 TEST_CASE(every_button_is_clear_of_everything_else)
 {
-    static gfx_color_t art[500 * 206];
     for (int pass = 0; pass < 2; ++pass) {
         fresh();
-        if (pass == 1) { picker_screen_set_artwork(art, 500, 206); }
+        if (pass == 1) { CHECK(serve_drawing()); }
         render();
         const outbind_board_t *bd = outbind_board(BOARD);
         gfx_rect_t btn[OUTBIND_PINS];
@@ -1103,11 +1237,11 @@ TEST_CASE(off_picked_here_ends_when_the_screen_is_left)
  * over the 6 protocols that take one channel a pin.  Every pin is listed
  * once under its own protocol, and every line is inside the table and the
  * canvas, clear of every other line, key, marker and text area, and drawn
- * on -- with the photograph and with the drawn board, in both languages.
+ * on -- with the coprocessor's drawing and with the board drawn from its
+ * shape, in both languages.
  */
 TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
 {
-    static gfx_color_t art[500 * 206];
     static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
     static const struct { const char *proto; uint8_t gp[2]; unsigned n; }
     spread[6] = {
@@ -1122,7 +1256,7 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
         ui_text_set_language((ui_lang_t)lang);
         for (int pass = 0; pass < 2; ++pass) {
             fresh();
-            if (pass == 1) { picker_screen_set_artwork(art, 500, 206); }
+            if (pass == 1) { CHECK(serve_drawing()); }
             picker_screen_set_prog_pin(13u);
             for (unsigned g = 0; g < 6u; ++g) {
                 bind_more(spread[g].proto, spread[g].gp, spread[g].n, "OFF");
@@ -1348,9 +1482,12 @@ int main(void)
     RUN(a_pin_another_protocol_holds_is_not_this_ones_to_take);
     RUN(a_release_somewhere_else_acts_not_at_all);
     RUN(a_board_that_does_not_say_where_its_pads_are_is_not_drawn);
-    RUN(a_photograph_is_used_when_there_is_one_and_not_when_there_is_not);
+    RUN(the_coprocessors_drawing_is_used_when_it_agrees_with_the_board);
+    RUN(the_buttons_are_where_they_are_with_and_without_the_drawing);
+    RUN(a_drawing_that_disagrees_or_does_not_parse_is_not_shown);
+    RUN(a_drawing_is_shown_for_its_own_board_only);
     RUN(the_tables_beside_the_board_say_what_the_pins_became);
-    RUN(the_photograph_is_asked_for_on_the_way_in);
+    RUN(the_drawing_is_asked_for_on_the_way_in);
     RUN(a_ground_is_marked_and_is_not_a_button);
     RUN(a_board_that_does_not_say_which_pads_are_ground_still_draws);
     RUN(the_marks_do_not_get_in_the_way_of_the_buttons);
