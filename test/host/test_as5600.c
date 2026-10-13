@@ -106,6 +106,25 @@ TEST_CASE(counts_are_hundredths_of_a_degree)
     CHECK_EQ(as5600_cdeg(12), 105);                /* the tolerance: 1.05 */
 }
 
+TEST_CASE(cdeg_at_the_limits_of_the_range)
+{
+    CHECK_EQ(as5600_cdeg(4095), 35991);            /* one count short of 360 */
+    CHECK_EQ(as5600_cdeg(4096), 36000);            /* one turn */
+    CHECK_EQ(as5600_cdeg(-4096), -36000);
+    CHECK_EQ(as5600_cdeg(-4095), -35991);
+    /* counts * 36000 reaches 2^31 at 59,653; the product needs 64 bits. */
+    CHECK_EQ(as5600_cdeg(59652), 524285);         /* last count before 2^31 */
+    CHECK_EQ(as5600_cdeg(59653), 524294);          /* product 2,147,508,000 */
+    CHECK_EQ(as5600_cdeg(-59653), -524294);
+    CHECK_EQ(as5600_cdeg(1000000), 8789063);       /* 8,789,062.5 */
+    CHECK_EQ(as5600_cdeg(-1000000), -8789063);
+    CHECK_EQ(as5600_cdeg(244335917), 2147483646);  /* the last exact result */
+    CHECK_EQ(as5600_cdeg(244335918), INT32_MAX);   /* saturates */
+    CHECK_EQ(as5600_cdeg(-244335918), -INT32_MAX);
+    CHECK_EQ(as5600_cdeg(INT32_MAX), INT32_MAX);
+    CHECK_EQ(as5600_cdeg(INT32_MIN), -INT32_MAX);
+}
+
 /* -------------------------------------------------------------- driver */
 
 TEST_CASE(a_probe_finds_the_part_and_reads_nothing_more)
@@ -761,6 +780,7 @@ int main(void)
     RUN(status_is_read_by_its_three_magnet_bits);
     RUN(differences_are_taken_on_the_circle);
     RUN(counts_are_hundredths_of_a_degree);
+    RUN(cdeg_at_the_limits_of_the_range);
     RUN(a_probe_finds_the_part_and_reads_nothing_more);
     RUN(a_missing_part_is_absent_and_probed_again_a_second_later);
     RUN(a_status_no_as5600_gives_is_not_used);

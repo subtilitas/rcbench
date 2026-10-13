@@ -3,17 +3,25 @@
 
 A module under shared/ or protocols/ parses input somebody else produced when
 its public header (include/*.h) declares a function whose name ends in
-`parse`, `decode`, `unpack`, `_rx` or `_feed` (also with a suffix after
-`parse`, `decode` or `unpack`).  The table in SECURITY.md, "Input parsing",
-names one module per row, or several joined with "and", in the first column.
+`parse`, `decode`, `unpack`, `_rx`, `_feed`, `_write`, `_read`, `_done` or
+`_utf8_next` (also with a suffix after `parse`, `decode` or `unpack`).  The
+`_write`, `_read` and `_done` names find the page handlers that take link
+frames, flash records and card results; `_utf8_next` finds the UTF-8 decoder.
+FORCED below adds the modules that take outside input through functions
+the name rule cannot see, each with the reason.  The table in SECURITY.md,
+"Input parsing", holds the name-rule candidates plus the forced ones: one
+module per row, or several joined with "and", in the first column.
 
 The tool fails when
 
-- a module the headers show as a parser is neither in the table nor in
-  NOT_UNTRUSTED below, which gives the reason;
-- the table names a module that is not a parser by the headers;
+- a candidate is neither in the table nor in NOT_UNTRUSTED below, which
+  gives the reason;
+- a forced module is not in the table;
+- the table names a module that is neither a candidate nor forced;
 - NOT_UNTRUSTED names a module that is no longer a candidate or is also in
-  the table.
+  the table;
+- FORCED names a module that does not exist or that the name rule finds
+  already.
 
     python3 tools/security_parsers.py           # print the derived modules
     python3 tools/security_parsers.py --check   # fail on drift
@@ -34,20 +42,22 @@ SECURITY = REPO / "SECURITY.md"
 # A declaration at the start of a line, then the name and its opening
 # parenthesis.  Comment lines start with `*` or `/` and do not match.
 NAME = re.compile(
-    r"^[A-Za-z_][\w \t\*]*?\b(\w*_(?:parse\w*|decode\w*|unpack\w*|rx|feed))\(",
+    r"^[A-Za-z_][\w \t\*]*?\b(\w*_(?:parse\w*|decode\w*|unpack\w*"
+    r"|rx|feed|write|read|done|utf8_next))\(",
     re.M)
 
 # Modules with a matching function whose input is not somebody else's file
-# or frame.  Each reason is checked only for the module being listed.
-NOT_UNTRUSTED = {
-    "shared/bench": "knob words from the bench's own sensor and the KST "
-                    "programmer's session; card text goes through "
-                    "protocols/kst",
-    "shared/gfx": "unpacks a colour value the firmware built itself",
-    "shared/outputs": "reads the page the board's own link code stored",
-    "shared/sense": "samples from the bench's own scheduler",
-    "shared/ui": "calls into shared/bench and protocols/kst with text "
-                 "those modules check",
+# or frame, each with the reason.  Empty: every candidate module has a row
+# in the SECURITY.md table.
+NOT_UNTRUSTED: dict[str, str] = {}
+
+# Modules with outside input whose public functions the name rule does not
+# match.  Each reason names the input.
+FORCED: dict[str, str] = {
+    "shared/settings": "settings values and texts loaded from NVS "
+                       "(settings_store_t.load and load_text)",
+    "shared/touch": "the GT911 point list turned into touch events "
+                    "(touch_tracker_update)",
 }
 
 
@@ -75,25 +85,35 @@ def table(text: str) -> set[str]:
 
 
 def problems(root: pathlib.Path = REPO) -> list[str]:
-    found = candidates(root)
+    named = candidates(root)
+    forced = set(FORCED)
+    found = named | forced
     listed = table((root / "SECURITY.md").read_text())
     out = []
-    for mod in sorted(found - listed - set(NOT_UNTRUSTED)):
+    for mod in sorted(named - listed - set(NOT_UNTRUSTED)):
         out.append(f"{mod} declares a parse function and is neither in the "
                    f"SECURITY.md table nor in NOT_UNTRUSTED")
+    for mod in sorted(forced - named - listed):
+        out.append(f"{mod} is in FORCED and not in the SECURITY.md table")
     for mod in sorted(listed - found):
         out.append(f"SECURITY.md names {mod}, which declares no parse "
-                   f"function")
-    for mod in sorted(set(NOT_UNTRUSTED) - found):
+                   f"function and is not in FORCED")
+    for mod in sorted(set(NOT_UNTRUSTED) - named):
         out.append(f"NOT_UNTRUSTED names {mod}, which is no candidate")
     for mod in sorted(set(NOT_UNTRUSTED) & listed):
         out.append(f"{mod} is in the SECURITY.md table and in NOT_UNTRUSTED")
+    for mod in sorted(forced):
+        if not (root / mod).is_dir():
+            out.append(f"FORCED names {mod}, which does not exist")
+        elif mod in named:
+            out.append(f"FORCED names {mod}, which the name rule finds")
     return out
 
 
 def main(argv: list[str]) -> int:
     if "--check" not in argv:
-        for mod in sorted(candidates() - set(NOT_UNTRUSTED)):
+        modules = (candidates() | set(FORCED)) - set(NOT_UNTRUSTED)
+        for mod in sorted(modules):
             print(mod)
         return 0
     found = problems()
