@@ -140,7 +140,7 @@ PULS MIN 1000 us, MAX 2000 us) sind das 1100 und 1900 us. KURVE und TEMPO
 gelten nur für SWEEP.
 
 Auch ein Lauf, der zu Ende geht, schaltet den Ausgang aus und gibt das Servo
-zur Mitte frei. Auf dem Prüfstand, den er scharf zurücklässt, ist der
+zur Mitte frei. Auf dem Prüfstand, den er in ARMED zurücklässt, ist der
 gezeigte befohlene Wert dann die Ruhelage, wie nach FREIGEBEN: 1500 us bei
 STANDARD PWM, gleich welcher TRIM, und der nächste Drag oder die nächste
 Knopfdrehung beginnt dort. Die ersten beiden Bewegungen einer Stufe, von der Mitte zum
@@ -413,10 +413,9 @@ gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
 Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei entschärfter
-Bank. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
-eingeschaltet hält: wird AS5600 bei scharfer Bank eingeschaltet, hat der Lauf
-keine Winkelspalten, bis das Setup in entschärftem Zustand übernommen ist.
+Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
+eingeschaltet hält: wird AS5600 bei Bank in ARMED eingeschaltet, hat der Lauf
+keine Winkelspalten, bis das Setup in SAFE übernommen ist.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
 oder ENC-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
@@ -480,7 +479,7 @@ hatte (ein als ungültig markierter Messwert oder einer, der auf Messwerte
 folgt, die nach einem Stillstand der Anzeige von 320 ms oder mehr auf dem Weg
 zum Bildschirm verloren gingen, löscht den Winkelverlauf), wenn
 sie keinen Startwinkel hat und wenn der Lauf aus einem anderen Grund als dem
-Abschluss endet (STOP, Disarm, Linkverlust, Versorgungsfehler, Blockade),
+Abschluss endet (STOP, Wechsel auf SAFE, Linkverlust, Versorgungsfehler, Blockade),
 bevor sie sich beruhigt hat: ihr Fenster wurde abgeschnitten, und die
 Ergebnisse aus dem Strom zählen so eine Bewegung auch nicht. Eine Bewegung,
 die sich vor der Lücke oder dem Abbruch beruhigt hatte, behält ihr Ergebnis.
@@ -523,13 +522,13 @@ Sensor keinen Magneten meldet.
 
 Jedes Ende schaltet den Ausgang aus, gibt das Servo zur Mitte frei und
 schreibt trotzdem den Bericht, als ABGEBROCHEN mit dem Grund markiert. Der
-Prüfstand bleibt scharf, außer das Ende war ein Disarm, STOP oder das
-Verlassen der Seite, die entschärfen. Ein Schritt, den der Lauf gepostet und
-das Panel noch nicht gesendet hat, wenn der Prüfstand unscharf wird oder
-stoppt, wird nicht gesendet. Nach einem Lauf, den ein Disarm, STOP oder das
+Prüfstand bleibt ARMED, außer das Ende war DISARM, STOP oder das
+Verlassen der Seite, die auf SAFE schalten. Ein Schritt, den der Lauf gepostet und
+das Panel noch nicht gesendet hat, wenn der Prüfstand auf SAFE schaltet oder
+stoppt, wird nicht gesendet. Nach einem Lauf, den DISARM, STOP oder das
 Verlassen der Seite beendet hat, bleiben Horn und PULSBREITE auf der
 Stellung, die der Lauf zuletzt gefahren hat; nach einem Ende, das den
-Prüfstand scharf lässt, zeigen sie die Ruhelage, in die die Freigabe die Pins
+Prüfstand in ARMED lässt, zeigen sie die Ruhelage, in die die Freigabe die Pins
 stellt, 1500 us bei STANDARD PWM, gleich welcher TRIM, und der nächste Drag
 oder die nächste Knopfdrehung beginnt dort. Ist ein Lauf vorbei, gehen die Sollwerte von SUPPLY auf ihre Werte vor dem
 Lauf zurück, gleich welche Seite oben ist. Das wartet, bis das OFF des
@@ -542,7 +541,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | Grund im Bericht | Ursache |
 | --- | --- |
 | `STOP` | STOP in der Leiste |
-| `Prüfstand DISARMED` | DISARM oder alles andere, was den Prüfstand entschärft hat |
+| `Prüfstand SAFE` | DISARM oder alles andere, was den Prüfstand auf SAFE geschaltet hat |
 | `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, PROGRAMM. |
@@ -606,11 +605,11 @@ Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 
 ### Dateien
 
-Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein scharfer
-Prüfstand, und die eigene Task der SD-Karte schreibt seine Dateien:
+Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein Prüfstand
+in ARMED, und die eigene Task der SD-Karte schreibt seine Dateien:
 `BENCHnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
 BERICHT an (PRÜFLING-Seite) `BENCHnnn.TXT`. Ein Lauf ist eine CSV: das eigene
-Lauflog des scharfen Prüfstands schreibt keine Zeile, solange ein Lauf
+Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
 `BENCHnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
@@ -723,16 +722,16 @@ liegt, ob das 50-ms-Mittel die Bewegungen eines Servos zeigt, die der PD mini
 nicht zeigt, was CH1 mit einem Servo am Anschlag liest, und die
 Konstantstrom-Regel an einem PD mini.
 
-## Die befohlene Stellung folgt dem scharfen Prüfstand
+## Die befohlene Stellung folgt dem Zustand ARMED
 
 Die befohlene Stellung des SERVO-Bildschirms ändert sich nur, solange der
-Prüfstand scharf ist, also solange ein Pin ihr folgt.
+Prüfstand ARMED ist, also solange ein Pin ihr folgt.
 
 | Prüfstand | Befohlene Stellung |
 | --- | --- |
-| unscharf | die zuletzt gefahrene Stellung; Zifferblatt, Drehknopf, ZENTRIEREN und SWEEP werden abgelehnt, und nichts wird gesendet |
+| SAFE | die zuletzt gefahrene Stellung; Zifferblatt, Drehknopf, ZENTRIEREN und SWEEP werden abgelehnt, und nichts wird gesendet |
 | beim ARM | die Ruhelage der Ruderfläche: die Mitte zwischen den Endpunkten des Kanals, ohne TRIM |
-| scharf | was Zifferblatt, Knopf, ZENTRIEREN, ein Sweep oder ein Lauf befehlen |
+| ARMED | was Zifferblatt, Knopf, ZENTRIEREN, ein Sweep oder ein Lauf befehlen |
 
 | TYP | Endpunkte | Wert beim ARM |
 | --- | --- | ---: |
@@ -742,21 +741,21 @@ Prüfstand scharf ist, also solange ein Pin ihr folgt.
 | HELI CYCLIC | 820 bis 2220 us | 1520 us |
 
 Die Ruhelage ist `outputs_role_rest()` in `shared/outputs/outputs.c`, der
-Wert, den der Koprozessor auf einem scharfen Kanal ausgibt, den niemand
+Wert, den der Koprozessor auf einem Kanal in ARMED ausgibt, den niemand
 kommandiert, umgerechnet über den Bereich, den die Kommandos des Bildschirms
 tragen. Dieser Bereich ist auf PULS CENTRE zentriert; ein PULS CENTRE abseits
 der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIM
 verschiebt befohlene Stellungen und nicht die Ruhelage: Mit TRIM +20 zeigt
 das ARM 1500 us, und eine Stellung bei 0 deg ist 1520 us.
 
-Ein Sweep endet bei einem Disarm, und seine zuletzt gezeichnete Stellung
-bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Disarm
+Ein Sweep endet beim Wechsel auf SAFE, und seine zuletzt gezeichnete Stellung
+bleibt auf dem Bildschirm; keine seiner Stellungen wird nach dem Wechsel auf SAFE
 gesendet. Die Bedienelemente im Einzelnen:
 [Bildschirme](Screens-de.md#servo).
 
 Das Panel zentriert die Ruderflächen, bevor es
-scharf schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
-scharf meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
+auf ARMED schaltet, und der Bildschirm zeigt die Ruhelage, wenn der Prüfstand
+ARMED meldet; die Zeit zwischen beidem ist auf einem Prüfstand nicht
 gemessen.
 
 ## Sweep und TEMPO

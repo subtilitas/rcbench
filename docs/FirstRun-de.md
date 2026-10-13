@@ -112,7 +112,7 @@ und der Multiplexer wählt eines aus:
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
 | Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er entschärft nach 150 ms Stille. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er schaltet nach 150 ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
 Ohne diesen Draht verweigert der Koprozessor jedes Arm, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
@@ -162,13 +162,13 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
   durch den das Nachladen des Bounce-Buffers PSRAM liest, also steht das
   Panel für die Dauer jeder einzelnen. Settings-Speichern kostet das schon
   heute.
-- **Das Schreiben wartet auf einen sicheren Prüfstand.** Es nimmt einen
+- **Das Schreiben wartet auf SAFE.** Es nimmt einen
   Sektor pro 5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand
-  entschärft und das Netzteil aus ist. Scharf oder mit eingeschaltetem
+  SAFE ist und das Netzteil aus. In ARMED oder mit eingeschaltetem
   Netzteil erscheint einmal `photograph waits for a disarmed bench with the
-  supply off` auf der Konsole, und `kept` folgt nach dem Entschärfen.
+  supply off` auf der Konsole, und `kept` folgt nach dem Schalten auf SAFE.
 - **Der Heartbeat darf davon nicht gestört werden.** Die Übertragung ist in
-  Scheiben geteilt und das Flash-Schreiben wird im scharfen Zustand genau
+  Scheiben geteilt und das Flash-Schreiben wird in ARMED genau
   deswegen zurückgehalten. **Fällt der Heartbeat in dieser Minute aus,
   anhalten und aufschreiben** — das ist das Wichtigste, was dieser erste Lauf
   finden kann.
@@ -185,15 +185,15 @@ Umriss.
 Noch ist nichts an einem Output verdrahtet. Dieser Schritt prüft die
 Verriegelung, nicht einen Pin.
 
-1. **Heartbeat-Draht abgezogen** → Armen muss **verweigert** werden. Der
+1. **Heartbeat-Draht abgezogen** → Das Schalten auf ARMED muss **verweigert** werden. Der
    Koprozessor antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt die
    Verweigerung.
-2. **Heartbeat-Draht gesteckt, Panel armed** → der Koprozessor nimmt es an.
-3. **Heartbeat-Draht im armierten Zustand ziehen** → muss binnen **150 ms**
-   in den sicheren Zustand fallen.
+2. **Heartbeat-Draht gesteckt, Panel ARMED** → der Koprozessor nimmt es an.
+3. **Heartbeat-Draht in ARMED ziehen** → muss binnen **150 ms**
+   auf SAFE fallen.
 4. **STOP drücken** → rastet ein. Es zu verlassen braucht ein ausdrückliches
    Arm, keinen Link, der sich erholt.
-5. **CAN-Draht im armierten Zustand ziehen** → der Koprozessor gibt nach
+5. **CAN-Draht in ARMED ziehen** → der Koprozessor gibt nach
    **200 ms** auf; das Panel eskaliert nach **1 s**.
 6. **Touch abdecken / sterben lassen** → nach **500 ms** Stille ist Armen
    gesperrt.
@@ -247,9 +247,9 @@ Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
 wurde. **FREIGEBEN** führt die Ruderflächen auf die Mitte zurück; es löscht den
 Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
-Unscharfschalten, STOP oder das Verlassen des Bildschirms, was entschärft. Am
+das Schalten auf SAFE, STOP oder das Verlassen des Bildschirms, was auf SAFE schaltet. Am
 Oszilloskop prüfen, dass FREIGEBEN den Impuls in die Mitte des Kanalwegs führt
-und dass ein Unscharfschalten ihn beendet.
+und dass das Schalten auf SAFE ihn beendet.
 
 Ein Kanal, den niemand auffrischt, geht nach 500 ms weiterhin in seine
 Ruhelage; das betrifft einen gebundenen Pin, den der Servo-Bildschirm nicht
@@ -338,7 +338,7 @@ Zähler des INA228).
 
 ### 8.1 Die Bauteile antworten
 
-Alles versorgen, nichts scharf.
+Alles versorgen, nichts auf ARMED.
 
 **Gut:** `flags 0x0133`, `present 0x0021`, `ids 0x228x 0x3220`, `errors`
 steigt zwischen zwei Zeilen nicht.
@@ -377,12 +377,12 @@ der Strom von CH1 ist dann eine Grenze, kein Wert.
 
 ### 8.4 Ein Lauf: Spitzen und Zähler
 
-Auf MOTOR & ESC scharf schalten, 60 s einen gleichmäßigen Strom halten, dann
-unscharf schalten.
+Auf MOTOR & ESC auf ARMED schalten, 60 s einen gleichmäßigen Strom halten, dann
+auf SAFE schalten.
 
 **Gut:** `bench flags` liest 0x63 (dazu 0x04 und 0x08, wenn ein
 bidirektionaler ESC antwortet). `mAh` zählt Strom × Zeit: 2,00 A über 60 s
-sind 33 mAh. Ein neues Scharfschalten beginnt Ladung und Energie bei 0. Der
+sind 33 mAh. Ein neues Schalten auf ARMED beginnt Ladung und Energie bei 0. Der
 Bildschirm MOTOR & ESC zeigt Spannung und Strom des INA228.
 
 **Aufschreiben:** Strom, Zeit und erreichte Ladung, und die Spitzen, die das
@@ -390,13 +390,13 @@ Panel zeigt, gegen Oszilloskop oder Multimeter.
 
 ### 8.5 Eine Leitung im Lauf gezogen
 
-Scharf, SDA am MATEK für etwa 5 s abziehen, dann wieder stecken.
+In ARMED die SDA am MATEK für etwa 5 s abziehen, dann wieder stecken.
 
 **Gut:** innerhalb von etwa 6 ms verliert `flags` 0x0001 und behält 0x0002;
 `bench flags` liest 0x20: der INA228 bleibt die Quelle, seine Felder leer,
-nicht die Werte des ESC; `errors` steigt; der Prüfstand bleibt scharf. Etwa
+nicht die Werte des ESC; `errors` steigt; der Prüfstand bleibt ARMED. Etwa
 1 s nachdem die Leitung wieder steckt, kommt 0x0001 zurück, und 0x40 bleibt
-bis zum nächsten Scharfschalten gelöscht. Unscharf und mit gezogener
+bis zum nächsten Schalten auf ARMED gelöscht. In SAFE und mit gezogener
 Leitung trägt `bench` wieder die Telemetrie des ESC.
 
 ### 8.6 Ein hängender Bus
@@ -414,7 +414,7 @@ lange die Bauteile zum Zurückkommen brauchten.
 
 ### 8.7 Speichern während des Lesens
 
-Unscharf, beide Bauteile lesen, auf dem Bildschirm OUTPUTS einen Pin
+In SAFE beide Bauteile lesen, auf dem Bildschirm OUTPUTS einen Pin
 ankreuzen: die Belegung wird gespeichert.
 
 **Gut:** die Konsole druckt `outputs saved, record n, program window N us`
@@ -576,7 +576,7 @@ wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
    an bei 6,00 V, `t` drücken. 10 s später druckt die Konsole eine Zeile,
    die mit `$Z` beginnt. PuTTY schließen; dieser Mitschnitt ist
    `noise.log`.
-5. Servo in Ruhe: neue Mitschnittdatei. Das Servo anschließen, scharf
+5. Servo in Ruhe: neue Mitschnittdatei. Das Servo anschließen, auf ARMED
    schalten, in der Mitte lassen, Netzteil an bei 4,80 V. `t` drücken und
    auf die Zeile `$Z` warten.
 6. Bewegungen, in denselben Mitschnitt: auf der Seite TEST des Bildschirms
@@ -711,7 +711,7 @@ des Arms ist, beantwortet er nicht.
 **Teil B: mit dem AS5600.** Dieselben Bewegungen mit dem Encoder auf der
 Welle.
 
-1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei unscharfer Bank. Auf der Seite
+1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei Prüfstand in SAFE. Auf der Seite
    PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, ENC-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.
@@ -787,8 +787,8 @@ gewählt, nicht gemessen.
 | Display friert kurz ein | Ein Flash-Schreiben. Erwartet, solange das Foto abgelegt wird, einmal pro gelöschtem oder geschriebenem Sektor von 4 kB. |
 | Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
-| Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand scharf ist |
-| Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, unscharf geschaltet oder den Prüfstand gestoppt |
+| Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
+| Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, auf SAFE geschaltet oder den Prüfstand gestoppt |
 | `sense flags` ohne 0x0100, ein Bauteil freigegeben | Der I2C-Block hat auf diesen Pins nicht geöffnet. Sie müssen SDA und SCL eines Blocks sein: die GPIO-Nummer von SDA mod 4 ist 0 oder 2, SCL die nächste |
 | `sense flags` 0x0200, das bleibt | SDA oder SCL low gehalten: ein unversorgtes Modul klemmt den Bus, ein Pull-up fehlt, oder ein Kurzschluss |
 | `sense present 0x0000` bei offenem Bus | Nichts antwortet: Pull-ups fehlen, Module unversorgt, oder SDA und SCL vertauscht |
@@ -803,7 +803,7 @@ neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 
 Die ersten beiden sind bei einem Koprozessor, der kein Foto meldet, wirkungslos —
 das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
-Schacht wirkungslos und tut nichts, bevor der Prüfstand scharf ist.
+Schacht wirkungslos und tut nichts, bevor der Prüfstand ARMED ist.
 
 ---
 

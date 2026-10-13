@@ -14,7 +14,7 @@ Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 sind nicht auf Hardware verifiziert. Das Panel bootet, und jeder Bildschirm
 existiert. Die Ausgangstreiber sind gebaut. Ein ARM nennt die Rollen, die es
 treibt: die Throttle-Ausgänge von MOTOR & ESC aus, die Surfaces von SERVO
-aus. Eine scharfe Rolle treibt jeden an sie gebundenen Pin auf ihrer
+aus. Eine Rolle in ARMED treibt jeden an sie gebundenen Pin auf ihrer
 Ruhelage, ob etwas ihn kommandiert oder nicht. Nicht gemessen ist das
 Timing an einem Messgerät -- keine Bitbreite, keine Rahmenperiode und keine
 Antwortverzögerung in diesem Baum ist auf einem Oszilloskop oder einem
@@ -27,12 +27,12 @@ was nicht geplant ist.
 
 ## Sicherheit
 
-Dieser Prüfstand treibt Motoren und Servos. Bei scharfem Prüfstand außerhalb
-der Propellerebene bleiben.
+Dieser Prüfstand treibt Motoren und Servos. Solange der Prüfstand ARMED ist,
+außerhalb der Propellerebene bleiben.
 
-Das Scharfschalten ist bewusst: ein zwei Sekunden langes Halten auf ARM, wobei
+Das Schalten auf ARMED ist bewusst: ein zwei Sekunden langes Halten auf ARM, wobei
 das Kommando abgeht, wenn das Halten durchgelaufen ist, und nicht wenn der
-Finger abhebt. Entschärfen und STOP sind ein einzelner Druck.
+Finger abhebt. Das Schalten auf SAFE und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
 Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando
@@ -57,7 +57,7 @@ warranty of any kind" der MIT-Lizenz gilt.
 | Programmierer | Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
 | Akku | Zellenspreizung und Bewertung | Bildschirm gebaut; Zellenmonitor nicht bestückt |
-| Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden im scharfen Zustand oder bei eingeschaltetem Netzteil-Ausgang aufgezeichnet | gebaut |
+| Logs | CSV (Comma-Separated Values) von der Karte durchsehen, importieren und plotten; Läufe werden in ARMED oder bei eingeschaltetem Netzteil-Ausgang aufgezeichnet | gebaut |
 | Setup | Einstellungen in beiden Themes, gespeichert im NVS | gebaut |
 
 ## Bauen
