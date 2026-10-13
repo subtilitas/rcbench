@@ -78,8 +78,9 @@ programming port. **SETTINGS**, tab DUT, holds the two rows:
 | PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
 Both rows are kept with the SERVO settings. The SERVO screen names the
-active target on the left card, with the pins: `TARGET: PROG PORT GP13` in
-the warning colour, or `TARGET: GP4` for the pins bound as SERVO PWM.
+active target in the TARGET row of the right card, with the pins:
+`PROG PORT GP13` in the warning colour, or `GP4` for the pins bound as SERVO
+PWM.
 **PWM TARGET** changes only
 with the bench disarmed, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the

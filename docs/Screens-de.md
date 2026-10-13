@@ -454,19 +454,36 @@ wartet ein Kommando: Von einer Stellung und einem FREIGEBEN im selben Frame
 wird das spätere gesendet, und der gezeigte Wert ist dessen Wert. Eine
 Knopfdrehung in einem Frame, in dem FREIGEBEN wartet, wird verworfen.
 
-Die rechte Karte zeigt, was befohlen und gemessen ist, Typ und Bildwiederholrate,
-die gelten -- in der Gefahrenfarbe, solange sie ein Servo zerstören können, das
-nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr Messgerät sie misst:
-Spannung, Strom und Leistung in der Zeile über dem Plot, über die letzten 13 s
-geplottet, und den Strom noch einmal in der Zeile STROM.
+Die rechte Karte zeigt, was befohlen und gemessen ist, Typ, Bildwiederholrate
+und Pulsbereich, die gelten -- in der Gefahrenfarbe, solange sie ein Servo
+zerstören können, das nicht dafür gebaut ist -- und die Servo-Schiene, wie ihr
+Messgerät sie misst: Spannung, Strom und Leistung in der Zeile über dem Plot,
+über die letzten 13 s geplottet, und den Strom noch einmal in der Zeile STROM.
+Die Typzeile lautet `STANDARD PWM  50 Hz  1000-2000`: der Typ, die
+Bildwiederholrate und PULS MIN bis PULS MAX in Mikrosekunden, mit je zwei
+Leerzeichen dazwischen. Die längste, ein Typ mit 13 Zeichen bei 560 Hz mit
+zwei vierstelligen Enden, belegt 32 der 33 Zeichen der Zeile; der Bereich
+trägt deshalb keine Einheit. Eine in den Einstellungen eingetippte Pulsbreite
+erscheint sofort in der Zeile.
 
 | Messgerät der Servo-Schiene | Name in der Zeile | STROM, die Zeile und der Plot zeigen |
 | --- | --- | --- |
 | INA3221 CH1 | `INA3221 CH1` | das letzte 50-ms-Fenster von CH1: den mittleren Strom, die mittlere Busspannung auf der Lastseite des Shunts und ihr Produkt. Ein Punkt im Plot je Fenster, 20 in der Sekunde |
-| der PD mini | `NETZTEIL` | das letzte Sample des Netzteils. Ein Punkt je Sample |
-| das Modell, solange kein Koprozessor antwortet | `NETZTEIL` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP ANSCHLÜSSE den PD mini einschaltet, der ohne Link nicht antwortet |
+| der PD mini | `PD MINI` | das letzte Sample des Netzteils. Ein Punkt je Sample |
+| das Modell, solange kein Koprozessor antwortet | `PD MINI` | das letzte Sample des Netzteils: das des Netzteilmodells unter dem SIMULATION-Watermark, und keinen Messwert, wo SETUP ANSCHLÜSSE den PD mini einschaltet, der ohne Link nicht antwortet |
 
 ![Der INA3221 als Messgerät](img/de/servo-ina.png)
+
+Der Name bleibt in beiden Sprachen `PD MINI`. Solange der PD mini in SETUP
+unter ANSCHLÜSSE abgeschaltet ist, ist das Netzteil das Modell des Panels,
+wie auf SUPPLY: dann sitzt eine Pille SIMULIERT (englisch MODELLED), 88 px
+breit und 20 px hoch, auf der oberen linken Ecke des Plots unter dem Namen,
+weil die Zeile neben dem Namen die drei Messwerte trägt. Die Pille kommt und
+geht mit dem Modell, ohne Tippen. Mit INA3221 CH1 als Messgerät nennt die
+Zeile den INA3221 und trägt keine Pille, ob das Netzteil simuliert ist oder
+nicht.
+
+![Das Modell des Panels als Netzteil](img/de/servo-model.png)
 
 Welches Messgerät es ist, wird einmal je Poll entschieden
 ([die Strommonitore](#anschlüsse-die-strommonitore)): der INA3221 1000 ms,
@@ -782,32 +799,39 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
-Das aktive PWM-ZIEL steht am Fuß der linken Karte neben der Anzeige, solange
-weder die Einstellungen noch der Programmierer diese Karte bedecken. Mit
-AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen Bindung
-als SERVO PWM gebunden sind: `ZIEL: GP4`, `ZIEL: GP2 GP4`; ab 5 Pins die
-ersten 3 und eine Zahl, `ZIEL: GP2 GP4 GP5 +2`. Sie ist in der Warnfarbe ohne
-einen solchen Pin (`ZIEL: KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen
-wurde (`ZIEL: PINS NICHT GELESEN`). Mit PROG-PORT lautet sie
-`ZIEL: PROG-PORT GP13` in der Warnfarbe; der Pin ist der GPIO, den der
-Koprozessor für den Programmierport meldet. Die Befehle des Testers
-erreichen dann die SERVO-PWM-Ausgänge nicht; bei scharf geschalteter Bank
-halten diese ihren Ruhepuls, die Mitte zwischen ihren Endpunkten. Ein Port
-als Ziel ohne nutzbaren Pin (keiner, beim Start abgelehnt, oder ein Port,
-den der Koprozessor nicht hat) lautet `ZIEL: PROG-PORT`, ebenfalls in der Warnfarbe: die Befehle gehen
-trotzdem an den Port. Mit PORT-PWM aus gibt der Port keinen Puls aus, und
-die Zeile hängt `PWM AUS` an: `ZIEL: PROG-PORT GP13 PWM AUS`. Zwei Zustände
-nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der Tester
-einen Befehl: `ZIEL: KEIN LINK`, solange kein Koprozessor antwortet, und
-`ZIEL: UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit
-dem Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht
-bestätigt wurde oder ein Lesen nicht beantwortet wurde. Solange der Servo-Programmer den Port hält, ändert sich die Zeile nicht: sie nennt weiter das Ziel, das der Koprozessor hält, einen Port oder die Ausgänge; der Programmer treibt den Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein Koprozessor ohne
-diese Seite (Protokoll älter als 4.13) hat die Standardausgänge als Ziel.
-Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung:
-eine Änderung von PWM-ZIEL wartet auf einen ruhigen Prüfstand und erscheint
-in der Zeile, sobald der Koprozessor sie übernommen hat.
+Das aktive PWM-ZIEL steht in der Zeile ZIEL der rechten Karte, zwischen
+TEMPO und ZENTRIEREN. Die rechte Karte bleibt unter den Einstellungen, ihren
+Tastenfeldern und dem Servo-Programmer sichtbar, die Zeile nennt den Pin also
+auch, während einer davon die linke Karte bedeckt. Mit AUSGÄNGE nennt die
+Zeile die GPIOs, die in der vom Tester getriebenen Bindung als SERVO PWM
+gebunden sind: `GP4`, `GP2 GP4`; ab 5 Pins die ersten 3 und eine Zahl,
+`GP2 GP4 GP5 +2`. Der Wert steht rechtsbündig in 23 Zeichen neben dem
+Namen. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+(`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
+(`PINS NICHT GELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
+Warnfarbe; der Pin ist der GPIO, den der Koprozessor für den Programmierport
+meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
+bei scharf geschalteter Bank halten diese ihren Ruhepuls, die Mitte zwischen
+ihren Endpunkten. Ein Port als Ziel ohne nutzbaren Pin (keiner, beim Start
+abgelehnt, oder ein Port, den der Koprozessor nicht hat) lautet `PROG-PORT`,
+ebenfalls in der Warnfarbe: die Befehle gehen trotzdem an den Port. Mit
+PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile hängt `PWM AUS`
+an: `PROG-PORT GP13 PWM AUS`, 22 Zeichen mit einem zweistelligen Pin. Zwei
+Zustände nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der
+Tester einen Befehl: `KEIN LINK`, solange kein Koprozessor antwortet, und
+`UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit dem
+Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht bestätigt wurde
+oder ein Lesen nicht beantwortet wurde. Solange der Servo-Programmer den Port
+hält, ändert sich die Zeile nicht: sie nennt weiter das Ziel, das der
+Koprozessor hält, einen Port oder die Ausgänge; der Programmer treibt den
+Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein
+Koprozessor ohne diese Seite (Protokoll älter als 4.13) hat die
+Standardausgänge als Ziel. Die Zeile folgt dem Ziel, das der Koprozessor
+hält, nicht der Einstellung: eine Änderung von PWM-ZIEL wartet auf einen
+ruhigen Prüfstand und erscheint in der Zeile, sobald der Koprozessor sie
+übernommen hat.
 
-![Die Zielzeile mit PROG-PORT](img/de/servo-target.png)
+![Die Zeile ZIEL mit PROG-PORT](img/de/servo-target.png)
 
 | Typ | Mitte | Weg | Bildwiederholraten |
 | --- | --- | --- | --- |
