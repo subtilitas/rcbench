@@ -154,6 +154,9 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PK_NOT_READ]            = "NICHT GELESEN",
 
     /* ------------------------------------------------------ pin picker */
+    [TX_PK_PINS]                = "PINS",
+    [TX_PK_PAD]                 = "PAD",
+    [TX_PK_SLOTS_OF]            = "%u VON %u SLOTS BELEGT",
     [TX_PK_NONE_YET]            = "NOCH KEINE",
     [TX_PK_IN_USE]              = "BELEGT",
     [TX_PK_BY_OTHERS]           = "VON ANDEREN",

@@ -24,12 +24,16 @@
  * drawn from the shape. The picture is cropped to the outline, so a pad's
  * position in millimetres is its position in the picture.
  *
+ * The protocol a tap binds to is chosen here or on the outputs screen, with
+ * the same list; the two screens show one selection.
+ *
  * SPDX-License-Identifier: MIT
  */
 
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
@@ -58,10 +62,102 @@ void picker_screen_set_binding(const outbind_t *b);
  * every frame; it repaints only on a change.
  *
  * While @p editable is false every button is drawn as not offered, NOT READ
- * stands under the protocol's name, and a tap changes nothing and calls
+ * stands under the protocol list, and a tap changes nothing and calls
  * nothing.
  */
 void picker_screen_follow(uint8_t proto, bool editable);
+
+/**
+ * Called with the protocol picked in this screen's list, so the outputs
+ * screen selects the same one (outputs_screen_select()).  A pick writes
+ * nothing; the apply function is not called for it.
+ */
+typedef void (*picker_select_fn)(uint8_t proto);
+void picker_screen_set_select(picker_select_fn fn);
+
+/** No pin, for picker_screen_set_prog_pin(). */
+#define PICKER_NO_PIN 0xFFu
+
+/**
+ * The GPIO the coprocessor's programming port is bound to, as its page reads
+ * it, or PICKER_NO_PIN (the start value).  While no protocol holds that pin
+ * its button is drawn held, a tap on it does nothing, and IN USE lists it
+ * first under PROG PORT.  A pin a slot holds is that slot's: the coprocessor
+ * gives the port no pin then.  It stays across a reset of the screen.
+ */
+void picker_screen_set_prog_pin(uint8_t gpio);
+
+/** The GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN. */
+uint8_t picker_screen_prog_listed(void);
+
+/** What a pin's button shows and does. */
+typedef enum {
+    PICKER_PIN_NONE = 0,  /**< no such pin, or a board this screen cannot draw */
+    PICKER_PIN_FREE,      /**< ivory or ebony: a tap binds it                 */
+    PICKER_PIN_TICKED,    /**< accented: bound in the protocol selected; a tap
+                               frees it                                       */
+    PICKER_PIN_HELD,      /**< grey: another protocol or the programming port
+                               has it                                         */
+    PICKER_PIN_REFUSED,   /**< grey: free, and the protocol selected can take
+                               no more pins; the reason line says why         */
+    PICKER_PIN_LOCKED,    /**< grey: the binding is not confirmed, or the
+                               board's pins are soldered                      */
+    PICKER_PIN_RESERVED,  /**< no button: the coprocessor's own, crossed red
+                               on the pad                                     */
+} picker_pin_t;
+
+/**
+ * The state of catalogue entry @p index, as the screen draws it.  @p holder,
+ * when not NULL, gets what holds the pin: the protocol's name or PROG PORT
+ * for PICKER_PIN_HELD, the reserving function for PICKER_PIN_RESERVED, and
+ * an empty string otherwise.
+ */
+picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap);
+
+/** The rectangle of the button of catalogue entry @p index; false for a pin
+ *  with none. */
+bool picker_screen_button_rect(uint8_t index, gfx_rect_t *out);
+
+/**
+ * The round marker of entry @p entry of the board's pad list
+ * (outbind_pads()), with its dark ring: a G for a ground, the voltage for a
+ * rail.  False for a pad with no marker.
+ */
+bool picker_screen_marker_rect(uint8_t entry, gfx_rect_t *out);
+
+/** One line of the PINS table: a pin of the protocol selected. */
+typedef struct {
+    uint8_t index;    /**< catalogue entry                                  */
+    uint8_t gpio;
+    int8_t  channel;  /**< the channel the OUTPUTS page gives it, -1 none   */
+    uint8_t pad;      /**< the pad number printed on the board              */
+} picker_row_t;
+
+/** Line @p k of the PINS table, in catalogue order; false past the last. */
+bool picker_screen_row(uint8_t k, picker_row_t *out);
+
+/** The count under the protocol list: slots in use of 8, every protocol. */
+void picker_screen_count(char *buf, size_t cap);
+
+/**
+ * The amber line under the count: NOT READ while the binding is not
+ * confirmed, else the reason the protocol selected can take no more pins
+ * (outputs_reason_of()).  False and an empty string when there is none.
+ */
+bool picker_screen_reason(char *buf, size_t cap);
+
+/** The areas the screen draws text in, for tests and the renderer. */
+typedef enum {
+    PICKER_AREA_HEAD = 0, /**< the protocol list's face, the count, the reason */
+    PICKER_AREA_PINS,     /**< the PINS table, left of the board               */
+    PICKER_AREA_IN_USE,   /**< the IN USE table, right of the board            */
+} picker_area_t;
+gfx_rect_t picker_screen_area(picker_area_t area);
+
+/** The protocol list: its face, and the row of @p proto when it is open. */
+gfx_rect_t picker_screen_list_face(void);
+gfx_rect_t picker_screen_list_row(uint8_t proto);
+bool picker_screen_list_open(void);
 
 /** Whether a tap on a button can change the binding. */
 bool picker_screen_editable(void);

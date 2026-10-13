@@ -1936,11 +1936,31 @@ int main(int argc, char **argv)
             (void)outbind_toggle(&b,
                 outbind_index_of(OUTBIND_BOARD_PICO_HEADER, gp[i]));
         }
-        outbind_set_proto(&b, 4u);                 /* DSHOT600 */
+        outbind_set_proto(&b, proto_named("DSHOT300"));
         (void)outbind_toggle(&b,
             outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 6));
-        outbind_set_proto(&b, 1u);
+        if (strcmp(view, "picker-full") == 0) {
+            /*
+             * Eight of eight: two more servo leads and two more ESCs, so
+             * every free key is grey and the reason line says why.
+             */
+            (void)outbind_toggle(&b,
+                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
+            (void)outbind_toggle(&b,
+                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 14));
+            outbind_set_proto(&b, proto_named("SERVO PWM"));
+            (void)outbind_toggle(&b,
+                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 4));
+            (void)outbind_toggle(&b,
+                outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 5));
+        }
+        outbind_set_proto(&b, proto_named("SERVO PWM"));
         picker_screen_set_binding(&b);
+        if (strcmp(view, "picker-prog") == 0) {
+            /* The coprocessor's programming port on GP13: drawn held, and
+             * named first under IN USE. */
+            picker_screen_set_prog_pin(13u);
+        }
         /*
          * With the photograph unless the view asks for the drawn board: a
          * board nobody has shipped artwork for is the case the shape page
@@ -1950,6 +1970,16 @@ int main(int argc, char **argv)
             (strcmp(view, "picker-drawn") == 0) ? NULL : art_rp2350_can,
             (uint16_t)art_rp2350_can_width, (uint16_t)art_rp2350_can_height);
         ui_router_goto(SCREEN_PICKER);
+        if (strcmp(view, "picker-protocol") == 0) {
+            /* The protocol list tapped open over the board. */
+            const gfx_rect_t f = picker_screen_list_face();
+            const int16_t fx = (int16_t)(f.x + f.w / 2);
+            const int16_t fy = (int16_t)(f.y + f.h / 2 + UI_BAND_H);
+            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, fx, fy, 40 }, 0u };
+            touch_event_t u = { TOUCH_EVENT_UP,   { 0, fx, fy, 40 }, 0u };
+            ui_router_event(&d);
+            ui_router_event(&u);
+        }
     }
 
     if (id == SCREEN_SERVO) {

@@ -315,6 +315,12 @@ SCREENS = {
     "outputs-prog": ("outputs-prog.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
+    # GP13 is the programming port's: held, and named under IN USE.
+    "picker-prog": ("picker-prog.png", "picker", "dark"),
+    # Eight of eight slots: every free key grey, and the reason why.
+    "picker-full": ("picker-full.png", "picker", "dark"),
+    # The protocol list open over the board.
+    "picker-protocol": ("picker-protocol.png", "picker", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),
@@ -387,7 +393,7 @@ MIN_SHAPE = 8
 
 # Views that open a drop-down over the screen: the list covers the labels
 # beside it by design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol"}
+OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"}
 
 # English overflows the layout has today: (view, string, finding), word for
 # word as --fit prints them.  Each is a defect of the screen, listed here so

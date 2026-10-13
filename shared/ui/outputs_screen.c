@@ -31,7 +31,6 @@
 
 #define DD_Y     44
 #define DD_H     54
-#define DD_TEXT_X 10
 
 /* Shown only while the pages read describe no binding: held for UI_HOLD_S,
  * it writes a binding with no pin. */
@@ -236,6 +235,18 @@ void outputs_screen_set_result(outputs_result_t r)
     }
 }
 
+/* A pick says which set is shown and which the next tick joins.  It changes
+ * no page, so nothing is written. */
+void outputs_screen_select(uint8_t proto)
+{
+    if (proto >= OUTBIND_PROTOS) {
+        return;
+    }
+    outbind_set_proto(&s.bind, proto);
+    s.off_picked = (proto == 0u);
+    touched();
+}
+
 /* Every change of the binding goes out at once.  There is no APPLY key: a
  * screen with an unapplied choice on it is a screen that disagrees with the
  * bench, and the operator has no way to see which of the two is driving.
@@ -422,12 +433,8 @@ static void event(const touch_event_t *evt)
         s.open = true; touched();
     } else if (tap && kind == HIT_POP
                && inside(pop_row_rect(index), x, y)) {
-        /* A pick says which set is shown and which the next tick joins.  It
-         * changes no page, so nothing is written. */
         s.open = false;
-        outbind_set_proto(&s.bind, (uint8_t)index);
-        s.off_picked = (index == 0);
-        touched();
+        outputs_screen_select((uint8_t)index);
     } else if (tap && kind == HIT_CELL
                && inside(cell_rect(index), x, y)) {
         /* A refused tick is not silent: the cell flashes nothing, but the
@@ -506,16 +513,29 @@ bool outputs_screen_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_NOT_MAPPED));
         return true;
     }
-    const outbind_proto_t *p = chosen_proto();
+    return outputs_reason_of(&s.bind, buf, cap);
+}
+
+bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    if (b == NULL) {
+        return false;
+    }
+    const outbind_proto_t *p =
+        &outbind_protos()[(b->proto < OUTBIND_PROTOS) ? b->proto : 0u];
     if (p->max_pins == 0u) {
         snprintf(buf, cap, "%s", TR(OUT_OFF_VIEW));
         return true;
     }
-    const uint8_t n = outbind_chosen(&s.bind);
+    const uint8_t n = outbind_chosen(b);
     const uint8_t lim = (p->max_pins < OUT_MAX_SLOTS)
                             ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
-    const uint8_t used_ch = outbind_channels_used(&s.bind);
-    const uint8_t used_sl = outbind_chosen_total(&s.bind);
+    const uint8_t used_ch = outbind_channels_used(b);
+    const uint8_t used_sl = outbind_chosen_total(b);
     if (n >= lim) {
         snprintf(buf, cap,
                  (lim == 1u) ? TR(OUT_TAKES_PIN) : TR(OUT_TAKES_PINS),
@@ -583,21 +603,7 @@ static void draw_left(gfx_canvas_t *c)
     gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), UI_FONT_LABEL, UI_TEXT_FAINT,
              1);
 
-    gfx_rect_t r = dd_rect();
-    const bool down = (s.hit_kind == HIT_DD);
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
-                             down ? UI_PANEL_HI : UI_PANEL);
-    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
-                             s.open ? UI_ACCENT : UI_EDGE);
-    gfx_text(c, r.x + DD_TEXT_X, r.y + 13, p->name, UI_FONT_HEAD, UI_TEXT,
-             1);
-    /* The chevron says this opens rather than steps, which is the whole
-     * difference between this and a settings row. */
-    const int cx = r.x + r.w - 22, cy = r.y + r.h / 2;
-    for (int i = 0; i < 7; ++i) {
-        gfx_fill_rect(c, cx - 6 + i, cy - 3 + (i < 4 ? i : 6 - i), 1, 2,
-                      UI_TEXT_DIM);
-    }
+    ui_choice_face(c, dd_rect(), p->name, s.hit_kind == HIT_DD, s.open);
 
     char buf[64];
     const uint8_t n = outbind_chosen(&s.bind);
@@ -707,25 +713,11 @@ static void draw_cell(gfx_canvas_t *c, int i)
 
 static void draw_popup(gfx_canvas_t *c)
 {
-    const gfx_rect_t r = pop_rect();
-    /* A shadow rather than a border, so the list reads as being over the
-     * pins rather than beside them. */
-    gfx_fill_chamfer_rect_ex(c, r.x + 4, r.y + 4, r.w, r.h, 10, 0, 10, 0,
-                             UI_PANEL_SUNK);
-    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_PANEL);
-    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_ACCENT);
-
+    ui_choice_list(c, pop_rect());
     const outbind_proto_t *p = outbind_protos();
     for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
-        const gfx_rect_t rr = pop_row_rect(i);
-        const bool sel = (&p[i] == chosen_proto());
-        const bool down = (s.hit_kind == HIT_POP && s.hit_index == i);
-        if (sel || down) {
-            gfx_fill_chamfer_rect_ex(c, rr.x, rr.y, rr.w, rr.h, 6, 0, 6, 0,
-                                     sel ? UI_ACCENT : UI_PANEL_HI);
-        }
-        gfx_text(c, rr.x + 12, rr.y + 9, p[i].name, UI_FONT_HEAD,
-                 sel ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
+        ui_choice_row(c, pop_row_rect(i), p[i].name, &p[i] == chosen_proto(),
+                      s.hit_kind == HIT_POP && s.hit_index == i);
     }
 }
 

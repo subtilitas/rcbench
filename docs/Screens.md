@@ -1961,7 +1961,8 @@ pins would make binding a second protocol mean unbinding the first. On entry
 the list shows the lowest-numbered protocol that holds a pin, in the list's
 order, or OFF when no pin is bound. A protocol picked without ticking a pin
 stays selected across read-backs and across leaving the screen, and is the
-one a tap on PICK A PIN joins.
+one a tap on PICK A PIN joins. The list on PICK A PIN selects the same
+protocol.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
 
@@ -2048,26 +2049,67 @@ Outputs screen holds. The list answers "which GPIO is bound"; this answers
 
 ![The pin picker](img/picker.png)
 
-The buttons are not the pads. At any size that fits a 480-pixel panel a pad is
+The keys are not the pads. At any size that fits a 480-pixel panel a pad is
 under 40 pixels across, which is smaller than a fingertip, so the pads are
-drawn where they are and the touching happens on staggered rows of buttons
-beside the board, each on a straight trace to its own pad.
+drawn where they are and the touching happens on two staggered rows of keys
+above the board and two below, 43 px wide, each on a straight trace to its
+own pad.
 
-A button is coloured the way its cell is on the Outputs screen: this
-protocol's pins are accented, a pin another protocol holds is grey, and a pin
-the coprocessor reserves has no button at all — it is crossed on the pad,
-because a button under a pin that cannot be chosen says it could be.
+A key's colour says what a tap on it does:
 
-Down the left are this protocol's pins in channel order; down the right are
-the pins other protocols hold, named. The two together read as one run of
-channels, because that is what the OUTPUTS page carries.
+| Key | Pin | A tap |
+| --- | --- | --- |
+| ivory (row nearer the board) or ebony (row beyond it) | free | binds it to the selected protocol |
+| accent | bound in the selected protocol | gives it back |
+| grey | another protocol holds it, the programming port has it, the selected protocol can take no more pins, or the binding is not confirmed | changes nothing |
+| none, red cross on the pad | reserved by the coprocessor: GP3 heartbeat, GP8 to GP12 CAN | — |
 
-The protocol is the one selected on the Outputs screen; this screen has no
-control for it. A tap on a button writes the binding through the same
-sequence as a tick on the Outputs screen, with the same results. While the
-binding is not confirmed — a read failed, or the pages describe no binding —
-every button is drawn grey, `NOT READ` stands under the protocol's name on
-the left, and a tap changes nothing and writes nothing.
+Neighbouring keys differ in height and in colour, like the keys of a
+keyboard. A reserved pin has no key because a key under a pin that cannot be
+chosen says it could be.
+
+Top left is the protocol list, the same control as on the Outputs screen. It
+names the selected protocol. A tap opens it over the board; a pick selects
+the protocol a tap on a key joins, on this screen and on the Outputs screen,
+and writes nothing. A tap outside the open list closes it and picks nothing.
+
+![The protocol list on the picker](img/picker-protocol.png)
+
+Under the list is `N OF 8 SLOTS IN USE`, counted over every protocol: the
+protocols share the 8 slots of the OUTPUTS page. Under that, in amber, is
+the reason no key can be added, in the words of the Outputs screen:
+
+| Line | When |
+| --- | --- |
+| `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
+| `NEEDS 8 CHANNELS, 4 FREE` | PPM, which carries 8 channels on one pin, with 4 servo pins bound |
+| `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
+| `OFF SHOWS ALL, EDITS NOTHING` | OFF is selected |
+| `NOT READ` | the binding is not confirmed |
+
+Without the line a board drawn all grey reads as a fault.
+
+![Eight of eight slots in use](img/picker-full.png)
+
+Down the left, under PINS, are the selected protocol's pins in channel
+order, each with the pad number printed on the board in the PAD column. Down
+the right, under IN USE, are the pins other protocols hold, each group named
+and listed where its first pin falls. The two tables together read as one
+run of channels, because that is what the OUTPUTS page carries.
+
+The pin of the coprocessor's programming port, GP13 (pad 17) by default, is
+drawn grey while no protocol holds it, a tap on it changes nothing, and IN
+USE lists it first under `PROG PORT`, without a channel. A protocol whose
+stored binding holds that pin keeps it, the coprocessor gives the port no pin
+then, and the key is that protocol's like any other.
+
+![GP13 held by the programming port](img/picker-prog.png)
+
+A tap on a key writes the binding through the same sequence as a tick on the
+Outputs screen, with the same results. While the binding is not confirmed — a
+read failed, or the pages describe no binding — every key is grey, `NOT
+READ` stands under the count, and a tap on a key changes nothing and writes
+nothing. The protocol list still selects.
 
 Where the pads are comes from the board, not from the panel: the [shape
 page](Link.md#page-map) carries the outline, the pitch and the corner pad 1
@@ -2078,7 +2120,7 @@ pins are still on the Outputs screen.
 
 The photograph is separate again. With one, the board on screen is the board
 in your hands; without one, the outline and every pad are drawn from the
-shape and the buttons are in the same places:
+shape and the keys are in the same places:
 
 ![The picker without a photograph](img/picker-drawn.png)
 
@@ -2090,17 +2132,21 @@ the supply comes on ([Safety](Safety.md#deliberate-behaviours)). A board with
 no photograph, or one whose transfer or write has not finished, is drawn
 rather than left blank.
 
-A servo lead has three wires and the buttons describe one. The other two are
-marked on the board itself: a ground carries a white **G**, and a rail carries
-its voltage — **5V0**, **3V3**. A rail that is an input rather than a fixed
-voltage carries **PWR** instead, because a number that is only sometimes true
-is worse here than no number. Pads that are neither, like RUN, are dotted and
-left unlabelled.
+A servo lead has three wires and the keys describe one. The other two are
+marked on the board itself, on a short trace in from the pad:
 
-They are marked inside the outline on a short trace, at two depths so a run of
-rails at one end of a row does not draw one label over the next. Inside is the
-only room left: the space beside the board belongs to the buttons, and a mark
-on the pad itself would be as small as the pad.
+| Mark | Pad |
+| --- | --- |
+| white round marker, 36 px, with a large **G**, 40 px in from the pad | ground |
+| amber round marker, 32 px, with the voltage: **5V0**, **3V3** | a rail at a fixed voltage |
+| amber round marker with **PWR** | a rail that is an input, VSYS: a number that is only sometimes true is worse here than none |
+| dim cross on the pad | neither, like RUN and 3V3_EN |
+
+The marks go inside the outline because that is the only room left: the
+space beside the board belongs to the keys, and a mark on the pad itself
+would be as small as the pad. Rails sit on neighbouring pads, 25 px apart,
+so a rail's marker is 30 px or 78 px in from its pad, alternating along the
+row; the deeper one clears the marker of a ground on the pad beside it.
 
 These come from the [pads page](Link.md#page-map), which is separate from the
 catalogue because they do not fit in it — a page is 32 registers and a
