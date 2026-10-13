@@ -222,7 +222,86 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   pico-sdk build, the INTERFACE library `rcbench_<name>_rp2350`. It names no
   other module. A limit a module shares with this project is the module's
   own constant, and the caller holds the two equal with a `_Static_assert`.
-  A module without a pin driver says so in its `README.md`.
+  A module without a pin driver says "no pin driver" in its `README.md`.
+  `tools/check_protocols.py` checks, per module: the parts above; that no
+  include names a path with a `..` component or an absolute path, and that
+  `#import` and `%:include` are read like `#include`; an `#include_next`
+  fails unless it names a C standard header or, in a C file under
+  `rp2350/`, a pico-sdk header, because it reaches the next file of that
+  name on the include path, outside the module; a macro include fails,
+  because the tool does not expand macros, and so does a token after an
+  include operand; the name `__has_include` or `__has_include_next`
+  outside a literal fails, as a call and as the body of a macro, and passes
+  as the operand of `#ifdef`, `#ifndef`, `#elifdef` and `#elifndef`, and as
+  the operand of a `defined` term (`defined NAME`, `defined(NAME)`) on an
+  `#if` or `#elif` line that holds nothing but such terms, white space,
+  `(`, `)`, `!`, `&` and `|`; with any other token on that line the name
+  fails (`#if X || defined(__has_include)`), because a macro can take
+  `defined` into an argument and paste it to another name, and it fails
+  after a `defined` joined to the identifier before it (`$defined`); a
+  line of only `#` or
+  `%:`, any trigraph
+  (`??` followed by one of `= / ' ( ) ! < > -`) anywhere in the C (in a
+  `.pio` file, the C pioasm writes) and a NUL byte anywhere in the file
+  fail, because they can hide an include (ISO C11 and C17 read `??/` as a
+  backslash and `??'` as `^`, and GCC reads a NUL as a blank); a leading
+  UTF-8 byte order mark, form feed and vertical tab are read, CRLF and a
+  lone CR end a line, a backslash followed by blanks and a newline joins
+  the lines, and a quote without its closing quote runs to the line end,
+  a backslash before that line end escaping nothing, as GCC reads them;
+  each file is
+  read under the literal rules of ISO C11 and C17 (no raw strings, no digit
+  separators), gnu11 and gnu17 (raw strings), C23 (digit separators), and
+  gnu23 and C++14 or later (both), and an include found under any of them
+  counts; a raw string literal is one token, with the line continuations
+  inside it kept, and a number runs through digit separators (`1'000`,
+  but not a `'` before a `.`, a `$`, a universal character name or a
+  character outside ASCII), exponent signs (`1e-x`), `$`, universal
+  character names (`\u00e9`, `\U000000E9`, and in gnu23, C++23 and
+  gnu++14 or later also `\u{e9}` and
+  `\N{LATIN SMALL LETTER E WITH ACUTE}`) and characters outside ASCII
+  (`1$'a` in C23), and starts at a digit after any character but a letter,
+  a digit, `_` and `$` (in C23 `×1'a` is a number; `é1` is an identifier); the C of a
+  `.pio` file is what pioasm 2.3.0
+  writes into the generated header, the `% c-sdk {` blocks after the first
+  `.program`, found as pioasm lexes the file: a `;` or `//` comment runs to
+  the line end, a `;` inside a `/* */` comment ends nothing, a block name
+  is trimmed of spaces and tabs and an empty one is c-sdk, a lone CR is a
+  character of its line, and a block ends only at `%}` in column 0 with
+  spaces, tabs or CRs after it; that
+  the `README.md` has a heading with "Interface", a heading with
+  "Trademark" in it where it names a brand from the tool's `BRANDS` list,
+  and the words "no pin driver" where the module has no `rp2350/` folder;
+  the Interface heading and "no pin driver" count outside fenced code
+  blocks and HTML comments only, while a brand is matched anywhere in the
+  file, in any case, in paths, addresses, code blocks and comments
+  included, also inside an identifier, file name or number such as
+  `kst_session_t`, `www.futaba.com` or `2kst`, but not next to a letter:
+  not inside a longer word such as `KSTART` and not in a CamelCase
+  identifier such as `KstSession`; and that every `_Static_assert` in the C files under
+  `shared/` and `firmware/` on a module constant is listed in the tool's
+  `ASSERTED` table and every listed one exists. Assertions under `test/`
+  are not checked. The CMake include directories and link targets of a
+  module are not checked: only `REQUIRES` and `rcbench_` library names are
+  read. A `__has_include` that a macro pastes together with `##`
+  (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call. A
+  digit after `€` or `·` starts a number, while GCC 13 reads both as
+  identifier characters, so `€1'a' /* '` fails the include after it, which
+  GCC reads as part of a comment. A delimited or named universal character
+  name (`\u{e9}`, `\N{...}`) continues a number under every set of
+  literal rules, also in C23 and C++14 to C++20 without GNU extensions,
+  where GCC 13 ends the number before it: after a digit separator earlier
+  on the line, `0'0 1\u{e9}'x /* '` hides the include on the next line
+  from the tool, and GCC 13 with `-std=c++17` reads it. A comment or raw
+  string literal across a line break ends the line for the `defined` rule,
+  while GCC 13 continues the directive: in a function-like macro with the
+  parameters `if` and `defined`, a body line `*/ #if ) defined
+  __has_include` after `DROP( /*` passes, and GCC 13 evaluates the call
+  when the macro is expanded in an `#if`. U+2E2F (`ⸯ`) before a digit
+  counts as a letter, while GCC 13 starts a number after it in C23:
+  `ⸯ1'a' /* '` hides the include on the next line from the tool.
+  The SPDX line of the module's `.c` and `.h` files is checked by
+  `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls
   the module: link pages, the binding of an output to a pin, arming, STOP,
   the stores and the screens.
