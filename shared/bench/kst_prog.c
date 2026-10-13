@@ -25,9 +25,33 @@ enum {
     FILE_JOURNAL,  /* a write to the servo waits                 */
 };
 
-static const char k_head[] = "RCBENCH KST 1\n";
+/* The text written, and the version before it, which has no pin line. */
+static const char k_head[] = "RCBENCH KST 2\n";
+static const char k_head_1[] = "RCBENCH KST 1\n";
 
 /* ----------------------------------------------------------------- helpers */
+
+/* The GPIO programming port @p port drives as the feed says, or
+ * KST_PROG_NO_PIN. */
+static uint8_t pin_of(const kst_prog_t *p, uint8_t port)
+{
+    if (port >= LINK_PG_PORTS_MAX
+        || (p->f.port_pin_known & (1u << port)) == 0u
+        || p->f.port_pin[port] > KST_PROG_PIN_LAST) {
+        return KST_PROG_NO_PIN;
+    }
+    return p->f.port_pin[port];
+}
+
+unsigned kst_prog_journal_arg(const kst_prog_t *p)
+{
+    unsigned arg = p->journal_port + 1u;
+
+    if (p->journal_pin <= KST_PROG_PIN_LAST) {
+        arg |= (p->journal_pin + 1u) << 8;
+    }
+    return arg;
+}
 
 static bool same(const kst_image_t *a, const kst_image_t *b)
 {
@@ -136,6 +160,9 @@ static void journal_clear(kst_prog_t *p)
         p->journal = false;
         p->journal_open = false;
         p->journal_other = false;
+        /* No record, no pin: the next record names the pin of its own
+         * port at its own write. */
+        p->journal_pin = KST_PROG_NO_PIN;
         file_want(p, FILE_KEEP);
     }
 }
@@ -411,6 +438,7 @@ static void write_go(kst_prog_t *p)
         p->journal = true;
         p->journal_open = true;
         p->journal_port = p->port;
+        p->journal_pin = pin_of(p, p->port);
         p->journal_target = p->held_target;
         p->held_journal = true;
     }
@@ -424,6 +452,7 @@ static void write_go(kst_prog_t *p)
         p->journal = true;
         p->journal_open = true;
         p->journal_port = p->port;
+        p->journal_pin = pin_of(p, p->port);
         p->held_over = false;
         p->held_journal = true;
     }
@@ -648,7 +677,7 @@ static void read_done(kst_prog_t *p)
     }
     adopt(p);
     if (journal_classify(p)) {
-        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
     } else if (kst_prog_backup_other(p)) {
         /* Another servo than the session began with: its backup is that
          * servo's and is not restored to this one. */
@@ -658,7 +687,7 @@ static void read_done(kst_prog_t *p)
          * kept: the question stands until it is discarded. */
         p->journal_open = false;
         p->write_enabled = false;
-        (void)say(p, journal_asks(p), p->journal_port + 1u);
+        (void)say(p, journal_asks(p), kst_prog_journal_arg(p));
     } else if (p->journal && p->journal_open) {
         p->journal_open = false;
         (void)say(p, KST_PROG_MSG_JOURNAL_DIFF, 0);
@@ -880,7 +909,7 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
                 || o->kind == KST_LINK_OUT_RESTARTED)) {
-            (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_port + 1u);
+            (void)say(p, KST_PROG_MSG_JOURNAL, kst_prog_journal_arg(p));
             said = true;
         }
     }
@@ -1070,6 +1099,7 @@ void kst_prog_init(kst_prog_t *p)
     p->supply_mv = KST_PROG_SUPPLY_MV;
     p->supply_ma = KST_PROG_SUPPLY_MA;
     p->pwm_wait_ms = KST_PROG_WAIT_MS;
+    p->journal_pin = KST_PROG_NO_PIN;
 }
 
 void kst_prog_gate_set(kst_prog_t *p, kst_prog_gate_t *g)
@@ -1400,6 +1430,11 @@ bool kst_prog_journal_other(const kst_prog_t *p)
 uint8_t kst_prog_journal_port(const kst_prog_t *p)
 {
     return p->journal_port;
+}
+
+uint8_t kst_prog_journal_pin(const kst_prog_t *p)
+{
+    return p->journal_pin;
 }
 
 bool kst_prog_in_doubt(const kst_prog_t *p)
@@ -1828,7 +1863,7 @@ kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
     m = kst_prog_enable_check(p);
     if (m != KST_PROG_MSG_NONE) {
         return say(p, m, m == kst_prog_journal_asks(p)
-                             ? p->journal_port + 1u : 0u);
+                             ? kst_prog_journal_arg(p) : 0u);
     }
     p->write_enabled = true;
     hush(p);
@@ -1846,7 +1881,7 @@ static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
     }
     if (kst_prog_journal_other(p)) {
         /* A read changes nothing about it. */
-        *arg = p->journal_port + 1u;
+        *arg = kst_prog_journal_arg(p);
         return KST_PROG_MSG_JOURNAL_OTHER;
     }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
@@ -1854,7 +1889,7 @@ static kst_prog_msg_id_t write_ready(const kst_prog_t *p, unsigned *arg)
     }
     if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE) {
         /* Nor about this. */
-        *arg = p->journal_port + 1u;
+        *arg = kst_prog_journal_arg(p);
         return kst_prog_journal_asks(p);
     }
     if (!p->fp_ok) {
@@ -1876,7 +1911,7 @@ static kst_prog_msg_id_t session_restore_ready(const kst_prog_t *p,
     }
     if (kst_prog_journal_asks(p) != KST_PROG_MSG_NONE
         && !flag(p, LINK_KS_F_LOCKED)) {
-        *arg = p->journal_port + 1u;
+        *arg = kst_prog_journal_arg(p);
         return kst_prog_journal_asks(p);
     }
     return KST_PROG_MSG_NONE;
@@ -2092,7 +2127,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     memset(out, 0, sizeof(*out));
     out->from = (uint8_t)from;
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = from_none(p, from);
@@ -2163,7 +2198,7 @@ static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
     kst_prog_msg_id_t m = idle_safe(p);
 
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
@@ -2214,7 +2249,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     }
     m = idle_safe(p);
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = from_none(p, KST_PROG_FROM_SESSION);
@@ -2337,7 +2372,7 @@ static kst_prog_msg_id_t load_ready(const kst_prog_t *p, unsigned *arg)
                    : KST_PROG_MSG_NEED_PORT;
     }
     if (kst_prog_journal_other(p)) {
-        *arg = p->journal_port + 1u;
+        *arg = kst_prog_journal_arg(p);
         return KST_PROG_MSG_JOURNAL_OTHER;
     }
     if (!p->have_servo || kst_prog_in_doubt(p)) {
@@ -2758,6 +2793,9 @@ size_t kst_prog_file_text(const kst_prog_t *p, char *out, size_t n)
         at = put(at, "port=");
         at = put_hex(at, p->journal_port, 1);
         *at++ = '\n';
+        at = put(at, "pin=");
+        at = put_hex(at, p->journal_pin, 2);
+        *at++ = '\n';
     }
     {
         const uint16_t crc = crc16(out, (size_t)(at - out));
@@ -2867,6 +2905,7 @@ static bool take_image(const char *s, size_t left, const char *key,
 typedef struct {
     bool journal;
     uint8_t journal_port;
+    uint8_t journal_pin;
     kst_image_t journal_img;
     kst_image_t journal_target;
 } loaded_t;
@@ -2875,10 +2914,14 @@ static bool parse(loaded_t *into, const char *text, size_t len)
 {
     const size_t head = sizeof(k_head) - 1u;
     size_t at = head;
+    bool v1;
     long v;
 
-    if (len < head + 11u || len >= KST_PROG_FILE_MAX
-        || memcmp(text, k_head, head) != 0) {
+    if (len < head + 11u || len >= KST_PROG_FILE_MAX) {
+        return false;
+    }
+    v1 = memcmp(text, k_head_1, head) == 0;
+    if (!v1 && memcmp(text, k_head, head) != 0) {
         return false;
     }
     /* The last line is the check of all before it. */
@@ -2902,7 +2945,8 @@ static bool parse(loaded_t *into, const char *text, size_t len)
             return false;
         }
         at += 7u + 65u;
-        if (len - at != 7u || memcmp(text + at, "port=", 5) != 0
+        if (len - at != (v1 ? 7u : 14u)
+            || memcmp(text + at, "port=", 5) != 0
             || text[at + 6u] != '\n') {
             return false;
         }
@@ -2912,6 +2956,21 @@ static bool parse(loaded_t *into, const char *text, size_t len)
             return false;
         }
         into->journal_port = (uint8_t)v;
+        into->journal_pin = KST_PROG_NO_PIN;
+        at += 7u;
+        if (!v1) {
+            if (memcmp(text + at, "pin=", 4) != 0 || text[at + 6u] != '\n') {
+                return false;
+            }
+            v = take_hex(text + at + 4u, 2);
+            if (v < 0) {
+                return false;
+            }
+            /* A pin of no coprocessor: the record stands, by its port. */
+            if (v <= (long)KST_PROG_PIN_LAST) {
+                into->journal_pin = (uint8_t)v;
+            }
+        }
         into->journal = true;
     }
     return true;
@@ -2938,14 +2997,15 @@ bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
     p->journal = got.journal;
     p->journal_open = got.journal;
     p->journal_port = got.journal_port;
+    p->journal_pin = got.journal ? got.journal_pin : KST_PROG_NO_PIN;
     p->journal_img = got.journal_img;
     p->journal_target = got.journal_target;
     /* With a servo read, a card mounted under a session: the record is
      * held against that servo here, and not first at the next read. */
     if (journal_classify(p)) {
-        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, p->journal_port + 1u);
+        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
     } else if (p->journal) {
-        (void)say(p, KST_PROG_MSG_JOURNAL, p->journal_port + 1u);
+        (void)say(p, KST_PROG_MSG_JOURNAL, kst_prog_journal_arg(p));
     }
     return true;
 }

@@ -29,6 +29,18 @@
 extern "C" {
 #endif
 
+/**
+ * The screen whose ON the output is.  Leaving that screen switches the
+ * output off (supply_screen_left()); no other screen names a live output,
+ * so none is left on behind one that is not shown.
+ */
+typedef enum {
+    SUPPLY_BY_NONE = 0,     /* off, or on and asked by nobody here */
+    SUPPLY_BY_SUPPLY,       /* OUTPUT ON on SUPPLY                  */
+    SUPPLY_BY_SERVO,        /* SERVO: OUTPUT ON, a test, the programmer */
+    SUPPLY_BY_PROGRAMMER,   /* a stick run on ESC STICK             */
+} supply_by_t;
+
 typedef enum {
     SUPPLY_PANE_PLOT = 0,
     SUPPLY_PANE_TABLE,
@@ -142,8 +154,36 @@ bool supply_screen_output_live(void);
 uint32_t supply_screen_off_count(void);
 
 /** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
- *  unless an OFF already is. */
-void supply_screen_ask_on(void);
+ *  unless an OFF already is, and the output is @p by's from then on. */
+void supply_screen_ask_on(supply_by_t by);
+
+/** The screen whose ON the output is, or SUPPLY_BY_NONE: off, no ON on
+ *  its way, or an OFF asked since. */
+supply_by_t supply_screen_owner(void);
+
+/**
+ * An output reported on that nobody here asked for becomes @p by's: the
+ * servo programmer's CONNECT, which switches a PD mini on through the
+ * coprocessor and not through this screen.  An owned output keeps its
+ * owner.
+ */
+void supply_screen_claim(supply_by_t by);
+
+/**
+ * Screen @p by is left.  An output it owns -- on, or an ON on its way --
+ * is switched off.  While a servo programming port holds the supply
+ * (supply_screen_set_port_held()) an OFF would end the port's session and
+ * cut a write on the wire: the OFF is owed instead, and sent when the port
+ * lets go, unless supply_screen_entered() came first.  An output another
+ * screen owns, or none, stays as it is.
+ */
+void supply_screen_left(supply_by_t by);
+
+/** Screen @p by is shown again: an OFF owed for leaving it is dropped. */
+void supply_screen_entered(supply_by_t by);
+
+/** Whether an OFF is owed for a screen left while a port held the supply. */
+bool supply_screen_off_owed(void);
 
 /** OUTPUT OFF tapped elsewhere: an OFF is posted, and any ON dropped. */
 void supply_screen_ask_off(void);
