@@ -943,7 +943,47 @@ which has no STOP, does not open while the output is on.
 the panel owes it, and the coprocessor switches the output off itself when
 the panel's heartbeat stops. An enabled PD mini reads NOT ANSWERING while no
 coprocessor that speaks protocol 4.3 answers, or while the page's readings
-are older than 1500 ms; an output that is on is switched off then. The
+are older than 1500 ms; an output that is on is switched off then. A page
+that answers while the module's reading count (SAMPLES) stands -- a display
+read that fails while the other reads answer -- keeps ONLINE: after
+1500 ms without a new reading the voltage, current and power cards show
+dashes and no trip, peak or total takes a reading, and after 3000 ms (`SUPPLY_LINK_BLIND_MS`) an
+output that is on is switched off and the band says
+`supply sends no readings -- output off`. A set point changed faster than
+the module takes it -- the slider dragged with SLIDER AND STEPS off, about
+one new set point every 50 ms -- does not hold the readings back: a reading
+400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
+write, one at a time with another transaction between two; the state read,
+and the input read before a write, may also follow another reading straight
+away. With a module that answers at once, the display is then read about
+500 ms after the last display read and the output state about 900 ms after
+the last state read, each with up to two transactions more. An output the
+module switches on while it is off on the panel, or switches off itself, is
+seen during the drag. The input is read before a set-point write or an ON
+only when one is waiting, and not between the reads for an ON. Set points
+and an ON reach a module that answers up to 390 ms late (the driver waits
+400 ms; host model, 40 start phases): one set point within 2.5 s; an ON
+within 3.6 s when the set points are already written, up to 7.5 s when it
+is asked right after a set point change or a drag; a module switching its
+output itself seen within 2.1 s during a drag. An output the module
+switches on while OFF is asked is switched off about 500 ms later with a
+module that answers at once, up to 1.8 s later at rest and up to 2.1 s
+during a drag with one that answers up to 390 ms late. The real module's
+reply time is not measured.
+Current limitation: a module that answers late stretches the 500 ms of the
+state and input reads, as each transaction takes its reply time. At rest
+the input is read 850 ms apart at 100 ms late, 1.3 s apart at 200 ms and
+2.5 s apart at 390 ms; the state up to 1.5 s apart.
+Current limitation: with a module answering 279 ms or more late and the
+slider dragged, the display is read only 3.7 s to 5.0 s after the last
+display read (5.0 s at 390 ms), past `SUPPLY_LINK_BLIND_MS`; an output that
+is on is switched off and the band says
+`supply sends no readings -- output off`. The panel reads the page every
+100 ms, which adds up to 100 ms to the gap it sees: from 263 ms late the
+driver's gap is over 2.9 s, so the cut is possible from 263 ms. At rest the
+display read stands up to 2.5 s at 390 ms. It stands over 1.4 s from
+259 ms late and 1.5 s from 279 ms, so the cards can show dashes from about
+260 ms. The
 output is also switched off, with a line in the band, when the coprocessor
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on
@@ -954,10 +994,15 @@ take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
 **A sagging input switches the PD mini off.** While the output is on, the
-coprocessor reads the module's input every 500 ms. When the input reads
-under the set point plus 0.5 V on 2 input reads in a row, it switches the
-output off at once, and the band names the input and the set point, for
-example `PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. The
+coprocessor reads the module's input every 500 ms with a module that
+answers at once, and further apart with one that answers late (see above).
+When the input reads under the set point plus 0.5 V on 2 input reads in a
+row, it switches the output off at once, and the band names the input and
+the set point, for example
+`PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. From the
+sag to the cut takes about 1.0 s with a module that answers at once.
+Current limitation: with one that answers late it takes 1.7 s at 100 ms
+late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model). The
 output stays off until a new hold. An input reading under 1.5 V leaves no
 room for the lowest set point, 1.0 V: the ON is not written, and the band
 shows the same message. One low reading switches nothing, and a
@@ -1050,7 +1095,7 @@ the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
 reserved, bound to an output or the other pin. Once the module has
 answered, a change waits for a state read of the module sent after it, at
 most about 1.2 s, and is taken only if that read shows the output off: the
-module can switch itself on between two of the 500 ms reads, by its button
+module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
 `PD mini wiring refused -- its output may be on`. A refused change is not
@@ -1228,9 +1273,9 @@ counts its beeps from the supply current.
 | --- | --- |
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
-| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or the tap was switched off and the page still holds it on |
+| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
 | `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
-| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere |
+| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere, or the coprocessor runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the coprocessor |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
 
 PITCH and LOST are the page's values from the last status read. They read
@@ -1667,7 +1712,12 @@ alone. A coprocessor older than 4.8 is sent nothing.
 
 While the page holds the tap on, the panel reads its 16 read-only registers
 every 50 ms: the flags, the last 8 ms window's pitch, the number of the
-newest beep and the counts of beeps lost and lows ignored. It takes the
+newest beep and the counts of beeps lost and lows ignored. A read whose
+flags say the tap runs speaks for it while its window number moves: the
+coprocessor closes a window every 8 ms, so a number that has stood for
+1.5 s (`TONE_LINK_WINDOW_STALE_MS`) is a capture that stopped while the
+page still answers, and the screen shows `WAITING` as for a read older
+than 500 ms. It takes the
 beeps one by one by number. The coprocessor keeps the last 64 beeps,
 numbered 1 to 65535 and then 1 again, and a read does not remove one, so a
 reply lost on the link loses no beep. A beep that left the ring before it
@@ -1681,9 +1731,9 @@ current monitors:
 | Message | When |
 | --- | --- |
 | `coprocessor has no tone page -- phase tap not read` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed or the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period). Offered again every 5 s without another message, so freeing the pin lets the tap start |
+| `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older coprocessor, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
 | `phase tap split, gap or periods refused -- see SETUP INTERFACES` | the coprocessor refused the second frame; not written again until a value changes |
-| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused: a set-up it kept in flash met a binding at its boot. The first frame is offered again every 5 s without another message, so freeing the pin lets the tap start |
+| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run. The band says `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` only for a set-up other than the one the coprocessor kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
 | `phase tap capture overrun -- beeps cut` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values

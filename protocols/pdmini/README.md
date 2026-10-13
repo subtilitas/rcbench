@@ -22,13 +22,49 @@ The module has two parts.
   rest 10 ms between transactions.
 - Between transactions both pins are inputs with a pull-down. A transmit
   line idling high back-feeds an unpowered module.
-- The output is read every 100 ms, its state and the input every 500 ms.
+- The output is read every 100 ms, its state and the input every 500 ms,
+  the active slot every 1000 ms, with a module that answers within 12 ms.
+- Current limitation: a module that answers later stretches these periods,
+  as each transaction takes its reply time. At rest the input is read
+  850 ms apart at 100 ms late, 1.3 s apart at 200 ms and 2.5 s apart at
+  390 ms; the state up to 1.5 s apart (host model).
+- A reading 400 ms past its due goes before the next set-point write, one at
+  a time with another transaction between two. The state read, and the
+  input read before a write, may also follow another reading straight away.
+  With a module that answers at once, set points changed every 50 ms delay
+  a display read to about 500 ms and a state read to about 900 ms after the
+  last one, each with up to two transactions more.
+- The input is read before a set-point write or an ON only when one is
+  waiting and the last input read is 500 ms old, and not between the reads
+  for an ON.
+- Set points and an ON reach a module that answers up to 390 ms late (host
+  model, 40 start phases):
+  - one set point within 2.5 s;
+  - an ON within 3.6 s when the set points are already written, up to
+    7.5 s when it is asked right after a set point change;
+  - an output state the module changes itself seen within 2.1 s while set
+    points change every 50 ms.
+
+  The real module's reply time is not measured.
+- An output the module switches on while OFF is asked is switched off at
+  the next state read: about 500 ms later with a module that answers at
+  once, up to 1.8 s with one that answers up to 390 ms late, up to 2.1 s
+  while set points change every 50 ms.
+- Current limitation: with replies 279 ms or more late and a set point
+  changed every 50 ms, the display is read 3.7 s to 5.0 s after the last
+  display read (5.0 s at 390 ms). From 263 ms late the gap is over 2.9 s.
+  A user that switches the output off after 3 s without a reading, as the
+  rcbench panel does, switches it off then; the panel reads the page every
+  100 ms, which adds up to 100 ms to the gap it sees. At rest the display
+  read stands up to 2.5 s at 390 ms (1.8 s at 280 ms).
 - 3 failed state reads in a row take the module for gone.
 - A voltage set point is capped 700 mV under the input the module reports,
   rounded down to 10 mV, and is never under 1000 mV.
 - A live output whose input reads under the set point plus 500 mV on 2 reads
   in a row is switched off and held off. The rule is chosen without a bench
-  measurement.
+  measurement. From the sag to the cut takes about 1.0 s with a module that
+  answers at once; with input reads stretched by a late module, 1.7 s at
+  100 ms late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model).
 - The 200 mV between the cap and the cut line lets the input drop under load
   without a cut: 3000 mA through 1 m of 20 AWG copper out and back
   (2 x 33 mOhm) drops 200 mV. The drop on a real source and cable is not

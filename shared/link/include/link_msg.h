@@ -35,6 +35,11 @@ typedef enum {
     LINK_NACK_READ_ONLY  = 3,
     LINK_NACK_BAD_VALUE  = 4,
     LINK_NACK_NOT_ARMED  = 5,
+    /** The value is good and something else holds what it names: a pin
+     *  another page or an output has, or a resource the wiring needs.
+     *  Freed, the same write is taken.  TONE only, since 4.17
+     *  (LINK_MINOR_TONE_BUSY); an older coprocessor says BAD_VALUE. */
+    LINK_NACK_BUSY       = 6,
 } link_nack_t;
 
 typedef struct {
