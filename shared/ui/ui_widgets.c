@@ -237,6 +237,43 @@ void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
     gfx_hline(c, x, y, w, color);
 }
 
+void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
+                    bool pressed, bool open)
+{
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
+                             pressed ? UI_PANEL_HI : UI_PANEL);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0,
+                             open ? UI_ACCENT : UI_EDGE);
+    gfx_text(c, r.x + 10, r.y + (r.h - 28) / 2, text ? text : "",
+             UI_FONT_HEAD, UI_TEXT, 1);
+    const int cx = r.x + r.w - 22, cy = r.y + r.h / 2;
+    for (int i = 0; i < 7; ++i) {
+        gfx_fill_rect(c, cx - 6 + i, cy - 3 + (i < 4 ? i : 6 - i), 1, 2,
+                      UI_TEXT_DIM);
+    }
+}
+
+void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r)
+{
+    /* A shadow rather than a border, so the list reads as being over what
+     * it covers rather than beside it. */
+    gfx_fill_chamfer_rect_ex(c, r.x + 4, r.y + 4, r.w, r.h, 10, 0, 10, 0,
+                             UI_PANEL_SUNK);
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_PANEL);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_ACCENT);
+}
+
+void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
+                   bool chosen, bool pressed)
+{
+    if (chosen || pressed) {
+        gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 6, 0, 6, 0,
+                                 chosen ? UI_ACCENT : UI_PANEL_HI);
+    }
+    gfx_text(c, r.x + 12, r.y + (r.h - 28) / 2, text ? text : "",
+             UI_FONT_HEAD, chosen ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
+}
+
 gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s)
 {
     if (held_s <= 0.0f) {

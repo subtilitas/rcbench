@@ -117,6 +117,34 @@ void outputs_screen_set_prog_pin(uint8_t gpio);
  */
 bool outputs_screen_reason(char *buf, size_t cap);
 
+/**
+ * The part of that line the protocol's rules give, for binding @p b: OFF
+ * edits nothing, the protocol has all its pins, all 8 slots are in use, or
+ * the protocol needs more channels than are free.  The pin picker draws the
+ * same line from its own binding.  An empty string and false when a pin can
+ * still be added.
+ */
+bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
+
+/**
+ * Select protocol @p proto, as a pick in the list does: the set shown and
+ * the group the next tick joins.  Writes nothing and calls nothing.  OFF
+ * (0) stays selected until another protocol is selected or this screen or
+ * the pin picker is left.  An index past the table is ignored.  The pin
+ * picker's list selects through this, so the two screens show one
+ * selection.
+ */
+void outputs_screen_select(uint8_t proto);
+
+/**
+ * End a picked OFF as leaving this screen does: the selection moves to the
+ * lowest-numbered protocol that holds a pin, or stays OFF when none does.
+ * Nothing changes when OFF was not picked.  Writes nothing and calls
+ * nothing.  The pin picker calls it when it is left, so OFF picked there
+ * ends with that visit too.
+ */
+void outputs_screen_end_off(void);
+
 #ifdef __cplusplus
 }
 #endif

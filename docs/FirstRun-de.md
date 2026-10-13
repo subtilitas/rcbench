@@ -225,8 +225,9 @@ OUTPUTS-Seite führt kein Bit mit, das „gebunden“ sagt, der Bildschirm sieht
 also weiter konfiguriert aus, während die Leitung keinen Impuls liefert.
 
 Am Panel: **Setup → OUTPUTS**, `SERVO PWM` wählen, einen Pin anhaken. Oder
-**Setup → PICK A PIN** für das Platinenbild — Massen sind mit `G` markiert,
-Versorgungen tragen ihre Spannung.
+**Setup → PICK A PIN**, in dessen Liste `SERVO PWM` wählen und eine Taste am
+Platinenbild antippen — Massen sind mit `G` markiert, Versorgungen tragen
+ihre Spannung.
 
 **Den Pin vor dem Anschließen des Servos messen.**
 

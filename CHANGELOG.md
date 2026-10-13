@@ -21,6 +21,23 @@ history is in git.
   the default values. The name of the part, its row in the parts list, the
   text and CSV copies and the PDF follow the values. The drawing of the
   motor simulator shows no colour bands and names no resistance.
+- PICK A PIN has the protocol list of the Outputs screen, top left. It names
+  the selected protocol; a pick selects it on both screens and writes
+  nothing. Under it stand `N OF 8 SLOTS IN USE`, counted over every
+  protocol, and in amber the reason no pin can be added, in the Outputs
+  screen's words (`ALL 8 SLOTS IN USE`, `NEEDS 8 CHANNELS, 4 FREE`,
+  `SERVO PWM TAKES 8 PINS`). The PINS table has a PAD column with the pad
+  number printed on the board. Free keys are ivory in the row nearer the
+  board and ebony in the row beyond it; a ground is a 36 px white round
+  marker with a large G, 40 px in from its pad; a rail is a 32 px amber round
+  marker with its voltage (5V0, 3V3, PWR), 30 px or 78 px in, alternating;
+  RUN and 3V3_EN carry a dim cross. `ui_choice_face()`, `ui_choice_list()`
+  and `ui_choice_row()` draw the protocol list on both screens. OFF picked
+  on PICK A PIN ends when the screen is left, as on the Outputs screen
+  (`outputs_screen_end_off()`). IN USE lists every pin: when 28 px pin rows
+  run past the table's foot, as with OFF selected, the programming port
+  listed and 8 pins over 6 protocols, the pin rows are 20 px;
+  `picker_screen_in_use()` returns each line and its box.
 - Configurator: every function with a tick and every part under "Parts you
   own" has a help bubble in English and German. It says what the item does
   and what it needs: the bench parts, the test object and the variant the
@@ -529,6 +546,9 @@ history is in git.
 
 ### Fixed
 
+- PICK A PIN shows the pin of the coprocessor's programming port (GP13 by
+  default) grey, lists it first under `PROG PORT` in IN USE, and a tap on it
+  changes nothing. It was drawn as free, and a tap took it from the port.
 - Configurator: the part "Emergency stop" states that the coprocessor
   switches the bench to SAFE and the PD mini output off when the heartbeat
   stops; the button breaks no power line.

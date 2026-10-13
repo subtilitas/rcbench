@@ -81,6 +81,28 @@ void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color
 /** A 1 px horizontal rule. */
 void ui_rule(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
 
+/* ----------------------------------------------------------- choice list */
+
+/*
+ * A list that opens over the screen: a face that names the choice, and the
+ * rows it opens into.  The chevron on the face says it opens rather than
+ * steps, which is the difference between this and a settings row.  The
+ * outputs screen's protocol list and the pin picker's are this one.
+ *
+ * Text is in the head face, 28 px tall, centred in the face's and each row's
+ * height; the face takes 10 px before its text and 28 px after it for the
+ * chevron, a row 12 px before its text.
+ */
+void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
+                    bool pressed, bool open);
+
+/** The open list's ground: a shadow 4 px down and right, then the panel. */
+void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r);
+
+/** One row of the open list: @p chosen is the choice in force, accented. */
+void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
+                   bool chosen, bool pressed);
+
 /* ------------------------------------------------------- hold-to-confirm */
 
 /*

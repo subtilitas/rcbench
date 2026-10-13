@@ -196,7 +196,7 @@ bound for that reason:
 - calls through a function pointer, except the router's calls into a screen,
   which the tool reads out of every screen's table, and the link port's and
   the photograph store's flash callbacks, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`): 188 such calls are
+  (`PORT_CALLS`, `FLASH_CALLS`): 189 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

@@ -1152,6 +1152,27 @@ TEST_CASE(the_longest_protocol_name_fits_the_list_and_a_cell)
     CHECK(DD_X + DD_W < GRID_X);
 }
 
+/* The two entry points the pin picker uses: a selection from outside goes
+ * through the same checks as a pick, and the reason by itself takes no
+ * missing binding or buffer. */
+TEST_CASE(a_selection_from_the_picker_is_a_pick)
+{
+    fresh();
+    outputs_screen_select((uint8_t)proto_row("DSHOT300"));
+    CHECK_EQ(outputs_screen_binding()->proto, proto_row("DSHOT300"));
+    CHECK_EQ(s_applied, 0);
+    outputs_screen_select((uint8_t)OUTBIND_PROTOS);
+    CHECK_EQ(outputs_screen_binding()->proto, proto_row("DSHOT300"));
+    outputs_screen_select(0u);
+    CHECK_STR_EQ(reason(), TR(OUT_OFF_VIEW));
+    CHECK_EQ(s_applied, 0);
+
+    char buf[8] = "x";
+    CHECK(!outputs_reason_of(NULL, buf, sizeof(buf)));
+    CHECK_STR_EQ(buf, "");
+    CHECK(!outputs_reason_of(outputs_screen_binding(), NULL, 0));
+}
+
 int main(void)
 {
     RUN(a_pick_calls_the_apply_seam_for_no_entry);
@@ -1163,6 +1184,7 @@ int main(void)
     RUN(a_binding_that_did_not_read_is_kept_marked_and_not_edited);
     RUN(a_failed_read_for_another_board_keeps_no_binding);
     RUN(the_longest_protocol_name_fits_the_list_and_a_cell);
+    RUN(a_selection_from_the_picker_is_a_pick);
     RUN(an_empty_read_back_does_not_clear_the_chosen_protocol);
     RUN(a_protocol_named_from_outside_lands_over_the_one_on_screen);
     RUN(a_second_protocol_survives_the_read_back);

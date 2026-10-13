@@ -150,6 +150,9 @@ UI_TEXT(OUT_NOT_MAPPED,            33, "PAGES HOLD NO VALID BINDING")
 UI_TEXT(OUT_HOLD_UNBIND,           31, "HOLD: UNBIND ALL PINS")
 
 /* ---------------------------------------------------------- pin picker */
+UI_TEXT(PK_PINS,                    0, "PINS")
+UI_TEXT(PK_PAD,                     0, "PAD")
+UI_TEXT(PK_SLOTS_OF,                0, "%u OF %u SLOTS IN USE")
 UI_TEXT(PK_NONE_YET,               15, "NONE YET")
 UI_TEXT(PK_IN_USE,                  0, "IN USE")
 UI_TEXT(PK_BY_OTHERS,               0, "BY OTHERS")

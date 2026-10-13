@@ -2147,7 +2147,8 @@ zu binden das erste löst. Beim Betreten zeigt die Liste das Protokoll mit der
 niedrigsten Nummer in der Reihenfolge der Liste, das einen Pin hält, oder OFF,
 wenn kein Pin gebunden ist. Ein Protokoll, das gewählt wurde, ohne einen Pin
 anzuhaken, bleibt über das Zurücklesen und über das Verlassen des Bildschirms
-gewählt, und ihm fällt ein Tippen auf PICK A PIN zu.
+gewählt, und ihm fällt ein Tippen auf PICK A PIN zu. Die Liste auf PICK A PIN
+wählt dasselbe Protokoll.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
@@ -2242,26 +2243,81 @@ gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 Die Tasten sind nicht die Pads. In jeder Größe, die auf ein 480-Pixel-Panel
 passt, ist ein Pad unter 40 Pixel breit und damit kleiner als eine
 Fingerkuppe. Also werden die Pads gezeichnet, wo sie sind, und berührt wird
-auf versetzten Tastenreihen neben der Platine, jede an einer geraden Leitung
-zu ihrem eigenen Pad.
+auf zwei versetzten Tastenreihen über der Platine und zwei darunter, 43 px
+breit, jede an einer geraden Leitung zu ihrem eigenen Pad.
 
-Eine Taste ist gefärbt wie ihre Zelle auf dem Outputs-Bildschirm: die Pins
-dieses Protokolls in der Akzentfarbe, ein Pin, den ein anderes Protokoll
-hält, grau, und ein vom Koprozessor reservierter Pin hat gar keine Taste — er
-ist auf dem Pad durchgestrichen, denn eine Taste unter einem Pin, der nicht
-gewählt werden kann, sagt, er ließe sich wählen.
+Die Farbe einer Taste sagt, was ein Tippen auf sie tut:
 
-Links stehen die Pins dieses Protokolls in Kanalreihenfolge, rechts die Pins,
-die andere Protokolle halten, mit Namen. Beide zusammen lesen sich als ein
-Lauf von Kanälen, denn das ist, was die OUTPUTS-Page trägt.
+| Taste | Pin | Ein Tippen |
+| --- | --- | --- |
+| Elfenbein (Reihe näher an der Platine) oder Ebenholz (Reihe dahinter) | frei | bindet ihn an das gewählte Protokoll |
+| Akzentfarbe | im gewählten Protokoll gebunden | gibt ihn zurück |
+| grau | ein anderes Protokoll hält ihn, der Programmierport hat ihn, das gewählte Protokoll kann keinen Pin mehr nehmen, oder die Bindung ist nicht bestätigt | ändert nichts |
+| keine, rotes Kreuz auf dem Pad | vom Koprozessor reserviert: GP3 Heartbeat, GP8 bis GP12 CAN | — |
 
-Das Protokoll ist das auf dem Outputs-Bildschirm gewählte; dieser Bildschirm
-hat kein Bedienelement dafür. Ein Tippen auf eine Taste schreibt die Bindung
-über dieselbe Folge wie ein Haken auf dem Outputs-Bildschirm, mit denselben
-Ergebnissen. Solange die Bindung nicht bestätigt ist — ein Lesen schlug fehl,
-oder die Pages beschreiben keine Bindung — ist jede Taste grau gezeichnet,
-links steht `NICHT GELESEN` unter dem Namen des Protokolls, und ein Tippen
-ändert nichts und schreibt nichts.
+Benachbarte Tasten unterscheiden sich in Höhe und Farbe, wie die Tasten einer
+Klaviatur. Ein reservierter Pin hat keine Taste, denn eine Taste unter einem
+Pin, der nicht gewählt werden kann, sagt, er ließe sich wählen.
+
+Oben links steht die Protokollliste, dasselbe Bedienelement wie auf dem
+Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
+über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
+Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
+schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
+nichts. Hier gewähltes OFF endet, wenn der Bildschirm verlassen wird, wie
+auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
+öffnet mit dem Protokoll der niedrigsten Nummer, das einen Pin hält.
+
+![Die Protokollliste im Picker](img/de/picker-protocol.png)
+
+Unter der Liste steht `N VON 8 SLOTS BELEGT`, gezählt über alle Protokolle:
+die Protokolle teilen sich die 8 Slots der OUTPUTS-Page. Darunter steht in
+Bernstein der Grund, warum keine Taste hinzukommen kann, in den Worten des
+Outputs-Bildschirms:
+
+| Zeile | Wann |
+| --- | --- |
+| `ALLE 8 SLOTS BELEGT` | über alle Protokolle sind 8 Pins gebunden |
+| `BRAUCHT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
+| `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
+| `OFF ZEIGT ALLES, ÄNDERT NICHTS` | OFF ist gewählt |
+| `NICHT GELESEN` | die Bindung ist nicht bestätigt |
+
+Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.
+
+![Acht von acht Slots belegt](img/de/picker-full.png)
+
+Links unter PINS stehen die Pins des gewählten Protokolls in
+Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
+der Spalte PAD. Rechts unter BELEGT stehen die Pins, die andere Protokolle
+halten, jede Gruppe mit Namen und dort eingereiht, wo ihr erster Pin liegt.
+Beide Tabellen zusammen lesen sich als ein Lauf von Kanälen, denn das ist,
+was die OUTPUTS-Page trägt.
+
+Der Pin des Programmierports des Koprozessors, ab Werk GP13 (Pad 17), ist grau
+gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
+nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal. Ein
+Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
+Koprozessor gibt dem Port dann keinen Pin, und die Taste gehört diesem
+Protokoll wie jede andere.
+
+![GP13 beim Programmierport](img/de/picker-prog.png)
+
+BELEGT führt jeden Pin, den es hält. Der Name eines Protokolls nimmt eine
+Zeile von 20 px, ein Pin eine von 28 px. Reichen diese über den Fuß der
+Tabelle hinaus, ist jede Pin-Zeile 20 px hoch, mit dem GPIO in der kleineren
+Schrift. Die höchste Tabelle ergibt sich mit OFF gewählt, dem Programmierport
+aufgeführt und den 8 Slots auf den 6 Protokollen, die einen Kanal je Pin
+nehmen: 16 Zeilen, 320 px der 360 px unter der Überschrift.
+
+![Die höchste BELEGT-Tabelle](img/de/picker-off.png)
+
+Ein Tippen auf eine Taste schreibt die Bindung über dieselbe Folge wie ein
+Haken auf dem Outputs-Bildschirm, mit denselben Ergebnissen. Solange die
+Bindung nicht bestätigt ist — ein Lesen schlug fehl, oder die Pages
+beschreiben keine Bindung — ist jede Taste grau, `NICHT GELESEN` steht unter
+der Zählung, und ein Tippen auf eine Taste ändert nichts und schreibt nichts.
+Die Protokollliste wählt weiterhin.
 
 Wo die Pads liegen, kommt von der Platine und nicht vom Panel: die
 [Shape-Page](Link-de.md#page-map) trägt den Umriss, das Raster und die Ecke,
@@ -2287,18 +2343,22 @@ Eine Platine ohne Foto, oder eine, deren Übertragung oder Schreiben nicht
 fertig wurde, wird gezeichnet statt leer gelassen.
 
 Ein Servokabel hat drei Adern, und die Tasten beschreiben eine davon. Die
-anderen beiden sind auf der Platine selbst markiert: eine Masse trägt ein
-weißes **G**, eine Versorgung ihre Spannung — **5V0**, **3V3**. Eine
-Versorgung, die ein Eingang und keine feste Spannung ist, trägt stattdessen
-**PWR**, denn eine Zahl, die nur manchmal stimmt, ist hier schlechter als
-keine. Pads, die keines von beidem sind, etwa RUN, bekommen einen Punkt und
-keine Beschriftung.
+anderen beiden sind auf der Platine selbst markiert, an einer kurzen Leitung
+vom Pad nach innen:
 
-Sie werden innerhalb des Umrisses an einer kurzen Leitung markiert, in zwei
-Tiefen, damit eine Reihe von Versorgungen an einem Ende nicht eine
-Beschriftung über die nächste zeichnet. Innen ist der einzige verbleibende
-Platz: der Raum neben der Platine gehört den Tasten, und eine Markierung auf
-dem Pad selbst wäre so klein wie das Pad.
+| Markierung | Pad |
+| --- | --- |
+| weiße runde Marke, 36 px, mit großem **G**, 40 px vom Pad nach innen | Masse |
+| bernsteinfarbene runde Marke, 32 px, mit der Spannung: **5V0**, **3V3** | Versorgung mit fester Spannung |
+| bernsteinfarbene runde Marke mit **PWR** | Versorgung, die ein Eingang ist, VSYS: eine Zahl, die nur manchmal stimmt, ist hier schlechter als keine |
+| blasses Kreuz auf dem Pad | keines von beidem, etwa RUN und 3V3_EN |
+
+Die Markierungen liegen innerhalb des Umrisses, weil dort der einzige
+verbleibende Platz ist: der Raum neben der Platine gehört den Tasten, und eine
+Markierung auf dem Pad selbst wäre so klein wie das Pad. Versorgungen sitzen
+auf benachbarten Pads, 25 px auseinander, also liegt die Marke einer
+Versorgung 30 px oder 78 px vom Pad nach innen, abwechselnd entlang der Reihe;
+die tiefere liegt frei von der Marke einer Masse auf dem Nachbarpad.
 
 Sie kommen von der [Pads-Page](Link-de.md#page-map), die vom Katalog getrennt
 ist, weil sie dort nicht hineinpassen — eine Page hat 32 Register, und eine
