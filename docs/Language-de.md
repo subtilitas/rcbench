@@ -61,8 +61,8 @@ Sicherheitsbedienelemente, die in jeder Sprache gleich lauten. Ein
 passen.
 
 - Die Sicherheits- und Antriebsbedienung: ARM, DISARM, STOP, SWEEP, PAUSE,
-  TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die Taste auf SERVO, die das Servo dorthin fährt, heißt
-  ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
+  TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die
+  Taste auf SERVO, die das Servo dorthin fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
