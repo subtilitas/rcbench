@@ -87,6 +87,12 @@ test('the breakout board carries a servo strip pin S, V and G beside every pad, 
   for (const lang of LANGS) {
     const file = out.svgs[pathOf('copro--osoyoo.svg', lang)]!;
     for (const print of ['>3V3 / 5V<', '>DC-DC<', '>S<', '>V<', '>G<']) assert.ok(file.includes(print), `${lang} ${print}`);
+    // The jumper cap sits on the 5V pair (x=233), and the label names that position in the language.
+    const label = lang === 'de' ? '>Kappe auf 5V<' : '>cap on 5V<';
+    assert.ok(file.includes(label), `${lang} ${label}`);
+    assert.ok(!/for the servo|für den Servo/.test(file), `${lang} servo wording`);
+    assert.ok(file.includes('<rect x="233" y="60" width="23" height="16" rx="2" fill="#2a2c31"/>'), `${lang} cap at x=233`);
+    assert.ok(!file.includes('<rect x="222" y="60"'), `${lang} cap at x=222`);
   }
 });
 

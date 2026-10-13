@@ -96,6 +96,36 @@ history is in git.
   line, a block ends only at `%}` in column 0). The CMake include
   directories and link targets of a module are not checked, and a
   `__has_include` that a macro pastes together with `##` passes.
+
+- The bench configurator states the supply of the V pins of the Osoyoo
+  breakout board from its schematic REV 1.0, the XL1509 datasheet and the
+  product page. The jumper V Selector (header H3, print 5V and 3V3) sets the
+  V pins of all 40 strips: 5V from the XL1509 converter, fed by the DC jack,
+  the VIN terminal or the 2-pin header H4 (chip input 7 to 40 V, print 7 to
+  16 V, 2 A rated), 3V3 from the regulator fed by VSYS of the Pico board
+  (500 mA rated, vendor values). Without a DC supply the 5V position gives 0 V. The data carries
+  a warning to check the jumper before a servo is plugged in, since a servo
+  gets 3.3 V in position 3V3, where the regulator is powered; whether USB
+  alone powers it is not resolved. The data states that exactly 1 of the DC
+  jack, the VIN terminal and the header H4 is connected. The vendor's
+  workaround for USB alone, a Dupont cable from the S pin of the 3.3 V row to
+  a V pin, is marked as not for the servo: that S pin is the 3V3 pin of the
+  coprocessor board (pad 36), and with the jumper cap on 5V the cable puts
+  5 V on it. With the servo on the external supply or the PD mini, the check
+  entry `strip-servo-plus` states that the plus wire of the servo lead goes
+  to that supply, through VIN1- and VIN1+ of the INA3221 board where it is in
+  the setup, and the V pin of the strip stays free. The pro "plugs
+  straight in" names the setup without the servo programmer and without the
+  INA3221 current sensor. The data states that the Pico accepts 3.3 V I/O
+  only, that the jumper cap sits on 3V3 as delivered, the voltage expected
+  at the V pin per jumper position, and that without USB voltage the
+  converter also feeds VSYS of the Pico board. Each check of the strip holds
+  the facts of one source: schematic, product page, product photos, XL1509
+  datasheet or SN74HC04 datasheet. A source of the kind `doc` names a
+  document, its address and the place in it; the data check rejects one
+  without them. The drawing of the board shows the jumper cap on the 5V
+  pair, labelled "cap on 5V".
+
 - An arm drives only the outputs of the screen's role (link protocol 4.18).
   ARM on the CONTROL page takes 0, 1 (every output), 0x0002 (throttle
   channels), 0x0004 (surfaces and programming ports) or 0x0006; any other

@@ -184,6 +184,8 @@ for (const size of SIZES) {
     });
 
     test('the list of the base setup holds no control, and the keyboard passes it', async ({ page }) => {
+      // 6 page loads and a Tab walk per language: 13 s alone, up to 30 s on a CI runner beside 3 other workers.
+      test.slow();
       const seen = watch(page);
       expect(ON_BASE.length).toBeGreaterThan(0);
       // The ids of every function, with and without a tick, in the link: the widest case.
