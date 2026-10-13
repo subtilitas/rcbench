@@ -902,6 +902,11 @@ test('Osoyoo breakout board: a servo supply other than the strip keeps the servo
       assert.ok(!ids(pads).includes(NOTE), `pads ${servoPower} ${servoPort}`);
     }
   }
+  // With the INA3221 the servo plus goes to VIN1- (wire 30), never straight to the supply (wire 9).
+  const shunt = resolve(CATALOGUE, select(['servo', 'servocur'], [], { servoPower: 'external', connection: 'osoyoo' }));
+  assert.ok(ids(shunt).includes(NOTE));
+  assert.ok(wireNumbers(shunt).includes(30));
+  assert.ok(!wireNumbers(shunt).includes(9));
   // Without a servo the note does not appear, whatever the option says.
   assert.ok(!ids(resolve(CATALOGUE, select(['esc'], [], { servoPower: 'external', connection: 'osoyoo' }))).includes(NOTE));
 });

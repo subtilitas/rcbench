@@ -68,7 +68,8 @@ history is in git.
   coprocessor board (pad 36), and with the jumper cap on 5V the cable puts
   5 V on it. With the servo on the external supply or the PD mini, the check
   entry `strip-servo-plus` states that the plus wire of the servo lead goes
-  to that supply and the V pin of the strip stays free. The pro "plugs
+  to that supply, through VIN1- and VIN1+ of the INA3221 board where it is in
+  the setup, and the V pin of the strip stays free. The pro "plugs
   straight in" names the setup without the servo programmer and without the
   INA3221 current sensor. The data states that the Pico accepts 3.3 V I/O
   only, that the jumper cap sits on 3V3 as delivered, the voltage expected
