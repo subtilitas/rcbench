@@ -553,7 +553,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `seit 1.5 s kein Messwert` | `SERVO_TEST_STALE_MS` |
 | `Netzteilausgang ging nicht an` | 3000 ms nach dem ON nicht an |
 | `Sollwert 3 s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
-| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder der Eingang des PD mini abzüglich 0,7 V |
+| `Stufe über Spannungsobergrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder die Eingangsspannung des PD mini abzüglich 0,7 V |
 | `1 s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
 | `1 s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
 | `0.5 s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 499 ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 500 ms beendet ihn |

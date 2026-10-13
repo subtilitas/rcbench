@@ -1516,7 +1516,7 @@ const functions: Fn[] = [
     id: 'sweep', group: 'bench',
     name: t(
       'Servo signal: sweep (square, sine, triangle) and frame rates other than 50 Hz',
-      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und andere Frame-Raten als 50 Hz',
+      'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Frame Rate als 50 Hz',
     ),
     needs: [],
     src: repo('STATUS.md', 105, 'a sweep (square, sine or triangle, run by the coprocessor)'),
@@ -1958,8 +1958,8 @@ const checks: Check[] = [
   {
     id: 'strip-input', kind: 'note',
     text: t(
-      'Osoyoo breakout board, DC input: the input range is set by the board, not by the converter chip. The vendor recommends 7 to 12 V and limits the input to 7 to 18 V. The vendor rates the output of the board at 5 V and 2 A, or 3.3 V and 500 mA.',
-      'Osoyoo-Breakout-Platine, DC-Eingang: Der Eingangsbereich wird von der Platine bestimmt, nicht vom Wandler-Chip. Der Hersteller empfiehlt 7 bis 12 V und begrenzt den Eingang auf 7 bis 18 V. Der Hersteller gibt den Ausgang der Platine mit 5 V und 2 A oder 3,3 V und 500 mA an.',
+      'Osoyoo breakout board, DC input: the input range is set by the board, not by the converter chip. The vendor recommends 7 to 12 V and limits the input voltage to 7 to 18 V. The vendor rates the output of the board at 5 V and 2 A, or 3.3 V and 500 mA.',
+      'Osoyoo-Breakout-Platine, DC-Eingang: Der Eingangsbereich wird von der Platine bestimmt, nicht vom Wandler-Chip. Der Hersteller empfiehlt 7 bis 12 V und begrenzt die Eingangsspannung auf 7 bis 18 V. Der Hersteller gibt den Ausgang der Platine mit 5 V und 2 A oder 3,3 V und 500 mA an.',
     ),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
@@ -2031,7 +2031,7 @@ const checks: Check[] = [
     id: 'esc-programming-power', kind: 'unknown',
     text: t(
       `ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release ${VERSION} powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.`,
-      `ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release ${VERSION} versorgt den ESC aus dem PD mini und zählt die Töne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.`,
+      `ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release ${VERSION} versorgt den ESC aus dem PD mini und zählt die Pieptöne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.`,
     ),
     when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
     src: repo('docs/StickProgramming.md', 6, 'PD mini'),
@@ -2064,7 +2064,7 @@ const stages: Stage[] = [
     n: 4,
     title: t(
       "Stage 4: AS5600, the angle of the servo's horn",
-      'Stufe 4: AS5600, der Winkel des Servohorns',
+      'Stufe 4: AS5600, der Winkel des Ruderhorns',
     ),
     src: guide('stage-4'),
   },
@@ -2375,7 +2375,7 @@ const powerSources: PowerSource[] = [
     pros: [
       t('The bench sets the voltage and the current limit.', 'Der Prüfstand stellt Spannung und Stromgrenze.'),
       t('STOP switches its output off.', 'STOP schaltet seinen Ausgang ab.'),
-      t('ESC STICK programming counts the beeps from its current.', 'Die ESC-STICK-Programmierung zählt die Töne an seinem Strom.'),
+      t('ESC STICK programming counts the beeps from its current.', 'Die ESC-STICK-Programmierung zählt die Pieptöne an seinem Strom.'),
     ],
     cons: [
       t('The current ends at 3 A.', 'Der Strom endet bei 3 A.'),

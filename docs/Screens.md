@@ -907,14 +907,14 @@ screen holds.
 The model's ranges are a USB-PD PPS (Programmable Power Supply) source's
 widest profile, 3.3 to 21 V at up to 5 A. The PD mini's are from the
 vendor's page, not measured. The PD mini is a buck converter and gives no
-more than it is fed: its voltage is also capped 0.7 V under the input it
-reports, so a 5 V input allows at most 4.3 V. An input under 1.7 V
-leaves the 1 V minimum, which the screen shows as the cap, and one under
-1.5 V holds the output off; until an input is read the cap is 20 V. A set
-point over the input
+more than it is fed: its voltage is also capped 0.7 V under the input voltage
+it reports, so a 5 V input voltage allows at most 4.3 V. An input voltage
+under 1.7 V leaves the 1 V minimum, which the screen shows as the cap, and
+one under 1.5 V holds the output off; until the input voltage is read the
+cap is 20 V. A set point over the input voltage
 puts the module into ERR until it is power cycled; the margin it needs is
 not measured. The cap lies 0.2 V above the line the output is cut at (see
-below), so the input can drop 0.2 V under load before a set point at the
+below), so the input voltage can drop 0.2 V under load before a set point at the
 cap is cut. Both are narrowed by the caps in SETTINGS, and
 the sliders follow the supply in use. A tap on a track sets the value under
 the finger.
@@ -971,12 +971,12 @@ the module takes it -- the slider dragged with SLIDER AND STEPS off, about
 one new set point every 50 ms -- does not hold the readings back: a reading
 400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
 write, one at a time with another transaction between two; the state read,
-and the input read before a write, may also follow another reading straight
+and the input voltage read before a write, may also follow another reading straight
 away. With a module that answers at once, the display is then read about
 500 ms after the last display read and the output state about 900 ms after
 the last state read, each with up to two transactions more. An output the
 module switches on while it is off on the panel, or switches off itself, is
-seen during the drag. The input is read before a set-point write or an ON
+seen during the drag. The input voltage is read before a set-point write or an ON
 only when one is waiting, and not between the reads for an ON. Set points
 and an ON reach a module that answers up to 390 ms late (the driver waits
 400 ms; host model, 40 start phases): one set point within 2.5 s; an ON
@@ -988,8 +988,8 @@ module that answers at once, up to 1.8 s later at rest and up to 2.1 s
 during a drag with one that answers up to 390 ms late. The real module's
 reply time is not measured.
 Current limitation: a module that answers late stretches the 500 ms of the
-state and input reads, as each transaction takes its reply time. At rest
-the input is read 850 ms apart at 100 ms late, 1.3 s apart at 200 ms and
+state and input voltage reads, as each transaction takes its reply time. At rest
+the input voltage is read 850 ms apart at 100 ms late, 1.3 s apart at 200 ms and
 2.5 s apart at 390 ms; the state up to 1.5 s apart.
 Current limitation: with a module answering 279 ms or more late and the
 slider dragged, the display is read only 3.7 s to 5.0 s after the last
@@ -1010,23 +1010,23 @@ refused, when the output would not switch, and when the set points would not
 take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
-**A sagging input switches the PD mini off.** While the output is on, the
-coprocessor reads the module's input every 500 ms with a module that
+**A sagging input voltage switches the PD mini off.** While the output is on, the
+coprocessor reads the input voltage of the module every 500 ms with a module that
 answers at once, and further apart with one that answers late (see above).
-When the input reads under the set point plus 0.5 V on 2 input reads in a
-row, it switches the output off at once, and the band names the input and
-the set point, for example
-`PD mini input 6.18 V under set 6.00 V + 0.5 V -- output off`. From the
+When the input voltage reads under the set point plus 0.5 V on 2 reads in a
+row, it switches the output off at once, and the band names the input voltage
+and the set point, for example
+`PD mini input voltage 6.18 V under set 6.00 V + 0.5 V -- output off`. From the
 sag to the cut takes about 1.0 s with a module that answers at once.
 Current limitation: with one that answers late it takes 1.7 s at 100 ms
 late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model). The
-output stays off until a new hold. An input reading under 1.5 V leaves no
+output stays off until a new hold. An input voltage reading under 1.5 V leaves no
 room for the lowest set point, 1.0 V: the ON is not written, and the band
 shows the same message. One low reading switches nothing, and a
 read that fails neither counts nor clears. While the output is on, its set
-point is not lowered to follow a falling input. The rule is chosen without
-a bench measurement: whether a live module goes to ERR when its input sags
-is not measured, so the rule may cut a run that would have survived.
+point is not lowered to follow a falling input voltage. The rule is chosen without
+a bench measurement: whether a live module goes to ERR when its input voltage
+sags is not measured, so the rule may cut a run that would have survived.
 
 OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
 the question and SETTINGS. One finger at a time: while one holds a control, a
@@ -1074,7 +1074,7 @@ The output stays off at a restart, whatever the start values.
 
 With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It
 switches the output off and restarts the module (its SYSTEM_RESET command),
-for a module that shows ERR -- a set point over its input puts it there --
+for a module that shows ERR -- a set point over its input voltage puts it there --
 without unplugging it. The module is asked who it is again about 1 s later.
 Whether a restart clears every ERR is not measured. A coprocessor older than
 protocol 4.4 has no reset: the output goes off and the band says so.

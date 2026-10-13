@@ -512,7 +512,7 @@ left as they are.
 | `no new supply reading for 1.5 s` | `SERVO_TEST_STALE_MS` |
 | `supply output did not come on` | not on 3000 ms after the ON |
 | `set point not read back in 3 s` | the supply did not take a step's voltage |
-| `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the PD mini's input less 0.7 V |
+| `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the input voltage of the PD mini less 0.7 V |
 | `above STALL AT for 1 s` | `SERVO_TEST_STALL_ABORT_MS` |
 | `constant current for 1 s` | the supply reported constant current for `SERVO_TEST_CC_ABORT_MS` |
 | `no INA3221 window for 0.5 s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 499 ms after the last window leaves the run running, one at 500 ms ends it |

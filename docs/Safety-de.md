@@ -202,14 +202,14 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Zustandslesung, die den Ausgang aus zeigt. Ein Modul, das sich in den
   500 ms zwischen zwei Lesungen selbst eingeschaltet hat, behält seine Pins
   und damit seinen Weg zum OFF; der Koprozessor schaltet es ab.
-- Einen eingeschalteten Ausgang des PD mini, dessen Eingang bei 2 Lesungen
+- Einen eingeschalteten Ausgang des PD mini, dessen Eingangsspannung bei 2 Lesungen
   hintereinander unter dem Sollwert plus 0,5 V liegt, schaltet der
   Koprozessor ab und meldet es dem Panel danach. Eine vorsichtige Regel,
   ohne Messung gewählt: sie kann einen Lauf abbrechen, der durchgehalten
-  hätte. Sollwerte sind auf 0,7 V unter dem Eingang begrenzt, 0,2 V über
-  dieser Linie: ein Eingang, der unter Last um weniger als 0,2 V sinkt,
-  schaltet nichts ab. Ein ON, verlangt während der Eingang unter 1,5 V
-  liest, wird nicht geschrieben.
+  hätte. Sollwerte sind auf 0,7 V unter der Eingangsspannung begrenzt, 0,2 V
+  über dieser Linie: sinkt die Eingangsspannung unter Last um weniger als
+  0,2 V, schaltet nichts ab. Ein ON, verlangt während die Eingangsspannung
+  unter 1,5 V liegt, wird nicht geschrieben.
 - Das Schalten auf ARMED ist ein zwei Sekunden langes Halten auf ARM, und das
   Kommando geht ab, wenn das Halten durchgelaufen ist, nicht wenn der Finger
   abhebt. Das Schalten auf SAFE ist ein Druck.

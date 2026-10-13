@@ -1003,11 +1003,11 @@ Die Bereiche des Modells sind das weiteste Profil einer USB-PD-PPS-Quelle
 stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini
 ist ein Abwärtswandler und gibt nicht mehr ab, als er bekommt: seine
 Spannung ist zusätzlich auf 0,7 V unter der Eingangsspannung begrenzt, die
-er meldet, an 5 V Eingang also höchstens 4,3 V. Unter 1,7 V Eingang bleibt der Mindestwert von 1 V, den der Bildschirm als Grenze zeigt, und unter 1,5 V bleibt der Ausgang aus; solange kein Eingang gelesen ist, gilt 20 V. Ein Sollwert über dem
-Eingang bringt das Modul in ERR, bis es stromlos war; welchen Abstand es
+er meldet, bei 5 V Eingangsspannung also höchstens 4,3 V. Unter 1,7 V Eingangsspannung bleibt der Mindestwert von 1 V, den der Bildschirm als Grenze zeigt, und unter 1,5 V bleibt der Ausgang aus; solange keine Eingangsspannung gelesen ist, gilt 20 V. Ein Sollwert über der
+Eingangsspannung bringt das Modul in ERR, bis es stromlos war; welchen Abstand es
 braucht, ist nicht gemessen. Die Grenze liegt 0,2 V über der Linie, an der
-der Ausgang abgeschaltet wird (siehe unten): der Eingang darf unter Last um
-0,2 V sinken, bevor ein Sollwert an der Grenze abgeschaltet wird. Beide engen
+der Ausgang abgeschaltet wird (siehe unten): die Eingangsspannung darf unter
+Last um 0,2 V sinken, bevor ein Sollwert an der Grenze abgeschaltet wird. Beide engen
 die Grenzen unter OPTIONEN ein, und die Schieber folgen dem Netzteil, das
 in Gebrauch ist. Ein Tippen auf eine Spur setzt den Wert unter dem Finger.
 
@@ -1071,13 +1071,13 @@ SLIDER, SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
 Messwerte nicht auf: eine Lesung, die 400 ms über ihre Fälligkeit hinaus
 ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
 eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
-des Zustands und das Lesen des Eingangs vor einem Schreiben dürfen auch
+des Zustands und das Lesen der Eingangsspannung vor einem Schreiben dürfen auch
 direkt auf eine andere Lesung folgen. Bei einem Modul, das sofort antwortet,
 wird die Anzeige dann etwa 500 ms nach dem letzten Lesen der Anzeige gelesen
 und der Zustand des Ausgangs etwa 900 ms nach dem letzten Lesen des
 Zustands, jeweils mit bis zu zwei Transaktionen mehr. Ein Ausgang, den das
 Modul einschaltet, während er am Panel aus ist, oder selbst abschaltet, wird
-auch während des Ziehens erkannt. Der Eingang wird vor dem Schreiben eines
+auch während des Ziehens erkannt. Die Eingangsspannung wird vor dem Schreiben eines
 Sollwerts oder einem ON nur gelesen, wenn eines davon wartet, und nicht
 zwischen den Lesungen für ein ON. Sollwerte und ein ON erreichen ein Modul,
 das bis zu 390 ms spät antwortet (der Treiber wartet 400 ms; Host-Modell,
@@ -1091,8 +1091,8 @@ abgeschaltet, bei einem, das bis zu 390 ms spät antwortet, in Ruhe bis zu
 1,8 s und während des Ziehens bis zu 2,1 s später. Die echte Antwortzeit des
 Moduls ist nicht gemessen.
 Aktuelle Einschränkung: ein Modul, das spät antwortet, dehnt die 500 ms der
-Lesungen von Zustand und Eingang, denn jede Transaktion dauert seine
-Antwortzeit. In Ruhe wird der Eingang bei 100 ms Verspätung 850 ms
+Lesungen von Zustand und Eingangsspannung, denn jede Transaktion dauert seine
+Antwortzeit. In Ruhe wird die Eingangsspannung bei 100 ms Verspätung 850 ms
 auseinander gelesen, bei 200 ms 1,3 s und bei 390 ms 2,5 s; der Zustand bis
 zu 1,5 s auseinander.
 Aktuelle Einschränkung: antwortet das Modul 279 ms oder später und wird der
@@ -1114,24 +1114,24 @@ wenn der Ausgang nicht schalten will und wenn die Sollwerte nicht übernommen
 werden. Eine Änderung der Pins oder der Baudrate und das Ein- oder Ausschalten
 des PD mini schalten den Ausgang ab.
 
-**Ein einbrechender Eingang schaltet den PD mini ab.** Solange der Ausgang an
-ist, liest der Koprozessor den Eingang des Moduls alle 500 ms bei einem
+**Eine einbrechende Eingangsspannung schaltet den PD mini ab.** Solange der Ausgang an
+ist, liest der Koprozessor die Eingangsspannung des Moduls alle 500 ms bei einem
 Modul, das sofort antwortet, und weiter auseinander bei einem, das spät
-antwortet (siehe oben). Liegt der Eingang bei 2 Lesungen hintereinander
+antwortet (siehe oben). Liegt die Eingangsspannung bei 2 Lesungen hintereinander
 unter dem Sollwert plus 0,5 V, schaltet er den Ausgang sofort ab, und das
-Band nennt Eingang und Sollwert, zum Beispiel
-`Eingang des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
+Band nennt Eingangsspannung und Sollwert, zum Beispiel
+`Eingangsspannung des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
 Vom Einbruch bis zur Abschaltung vergeht bei einem Modul, das sofort
 antwortet, etwa 1,0 s. Aktuelle Einschränkung: bei einem, das spät
 antwortet, sind es 1,7 s bei 100 ms Verspätung, 1,9 s bei 200 ms und bis zu
 4,7 s bis 390 ms (Host-Modell). Der Ausgang bleibt aus bis zu einem neuen
-Halten. Ein Eingang unter 1,5 V
+Halten. Eine Eingangsspannung unter 1,5 V
 lässt keinen Platz für den kleinsten Sollwert, 1,0 V: das ON wird nicht
 geschrieben, und das Band zeigt dieselbe Meldung. Eine einzelne niedrige
 Lesung schaltet nichts, und eine fehlgeschlagene Lesung zählt weder mit noch
-setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einem
-fallenden Eingang nicht nachgeführt. Die Regel ist ohne Messung am Prüfstand
-gewählt: ob ein eingeschaltetes Modul bei einbrechendem Eingang in ERR geht,
+setzt sie zurück. Solange der Ausgang an ist, wird sein Sollwert einer
+fallenden Eingangsspannung nicht nachgeführt. Die Regel ist ohne Messung am Prüfstand
+gewählt: ob ein eingeschaltetes Modul bei einbrechender Eingangsspannung in ERR geht,
 ist nicht gemessen, also kann die Regel einen Lauf abbrechen, der
 durchgehalten hätte.
 
@@ -1186,8 +1186,8 @@ Nach einem Neustart ist der Ausgang aus, welche Startwerte auch gelten.
 
 Ist der PD mini das Netzteil, bietet OPTIONEN außerdem PD MINI ZURÜCKSETZEN. Das
 schaltet den Ausgang ab und startet das Modul neu (sein Befehl
-SYSTEM_RESET), für ein Modul, das ERR zeigt -- ein Sollwert über seinem
-Eingang bringt es dorthin --, ohne es abzustecken. Etwa 1 s später wird es
+SYSTEM_RESET), für ein Modul, das ERR zeigt -- ein Sollwert über seiner
+Eingangsspannung bringt es dorthin --, ohne es abzustecken. Etwa 1 s später wird es
 wieder gefragt, wer es ist. Ob ein Neustart jedes ERR löst, ist nicht
 gemessen. Ein Koprozessor älter als Protokoll 4.4 kann nicht neu starten:
 der Ausgang geht aus, und das Band sagt es.
