@@ -314,6 +314,26 @@ test('test objects: a removal adds the tick of the plain drive only when no func
   }
 });
 
+test('removal: the Osoyoo DC supply leaves by servo power A, and the servo supply comes in', () => {
+  // The rule osoyoo-dc reads servoPower: bench. The smallest change that
+  // releases dcsup is servo power A, which adds the own servo supply.
+  for (const functions of [['servo'], ['servocur'], ['servoprog']]) {
+    const selection = select(functions, [], { connection: 'osoyoo', servoPower: 'bench' });
+    const what = functions.join();
+    assert.ok(resolve(CATALOGUE, selection).parts.some((r) => r.part.id === 'dcsup'), `dcsup in ${what}`);
+    const effect = removalEffect(CATALOGUE, selection, 'dcsup');
+    assert.equal(effect.refused, null, what);
+    assert.deepEqual(effect.options, [{ key: 'servoPower', from: 'bench', to: 'external' }], what);
+    assert.deepEqual(effect.partsIn, ['ssup'], what);
+    assert.deepEqual([effect.functionsOff, effect.functionsOn, effect.partsOut, effect.objectsOut], [[], [], [], []], what);
+    assert.deepEqual(effect.selection.functions, functions, what);
+    assert.equal(effect.selection.options.connection, 'osoyoo', what);
+    assert.equal(effect.selection.options.servoPower, 'external', what);
+    const after = resolve(CATALOGUE, effect.selection).parts.map((r) => r.part.id);
+    assert.ok(!after.includes('dcsup') && after.includes('ssup'), `${what}: ${after.join()}`);
+  }
+});
+
 test('test objects: deselecting the last function that drives one disconnects it', () => {
   const last = deselectEffect(RIG, select(['current']), 'current');
   assert.deepEqual(last.selection, select());

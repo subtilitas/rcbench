@@ -61,7 +61,10 @@ history is in git.
   jumper V Selector sits on 5V, which takes its power from the DC input
   alone. The supply has 2 leads, wires 65 and 66, drawn as stubs to the DC
   jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-), exactly
-  1 of them. The current it must deliver is not stated. It is the first
+  1 of them. The DC jack takes a 5.5 x 2.1 mm plug, centre positive; its
+  minus is GND of the board, with no reverse-polarity protection. The
+  SI2302 in the lead VIN- protects the VIN terminal and H4 only, and the
+  board notes state so. The current it must deliver is not stated. It is the first
   modelled part (`Part.modelled`): the data states the range it needs, not
   a product, and the page and the PDF tag it "Modelled part: no product
   chosen". The drawing `dcsup` is a generic plug-in supply.

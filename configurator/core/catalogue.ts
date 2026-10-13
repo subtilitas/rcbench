@@ -260,8 +260,8 @@ const parts: Part[] = [
     ),
     short: t('Osoyoo DC supply', 'Osoyoo-DC-Versorgung'),
     role: t(
-      'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). It connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). The switch OFF/ON is on ON. Current it must deliver: not stated.',
-      'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Sie wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
+      'Feeds the XL1509 converter of the Osoyoo breakout board, which feeds the V pins while the jumper V Selector sits on 5V. 7 to 12 V DC (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V). It connects at exactly 1 of these: the DC jack, the VIN terminal or the header H4 (pin 2 PWRIN, pin 1 VIN-). At the DC jack: plug 5.5 x 2.1 mm (socket DC005-2.1), centre positive. The minus of the jack is GND of the board, with no reverse-polarity protection: the SI2302 (Q3) in the lead VIN- protects the VIN terminal and H4 only. The switch OFF/ON is on ON. Current it must deliver: not stated.',
+      'Speist den XL1509-Wandler der Osoyoo-Breakout-Platine, der die V-Pins speist, solange der Jumper V Selector auf 5V sitzt. 7 bis 12 V DC (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V). Sie wird an genau einem dieser Anschlüsse angeschlossen: an der DC-Buchse, an der VIN-Klemme oder am Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-). An der DC-Buchse: Stecker 5,5 x 2,1 mm (Buchse DC005-2.1), Mittelstift Plus. Das Minus der Buchse ist GND der Platine, ohne Verpolschutz: Der SI2302 (Q3) in der Leitung VIN- schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON steht auf ON. Strom, den sie liefern muss: nicht angegeben.',
     ),
     locked: false,
     selectable: false,
@@ -771,17 +771,17 @@ const STRIP_V = t(
   'V-Pin der S-V-G-Leiste an GP2 der Osoyoo-Breakout-Platine',
 );
 const DC_IN_POS = t(
-  'plus of the DC input of the Osoyoo breakout board: the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
-  'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
+  'plus of the DC input of the Osoyoo breakout board: the centre pin of the DC jack, the VIN terminal or H4 pin 2 PWRIN, exactly 1 of them',
+  'Plus des DC-Eingangs der Osoyoo-Breakout-Platine: Mittelstift der DC-Buchse, VIN-Klemme oder H4 Pin 2 PWRIN, genau einer davon',
 );
 const DC_IN_NEG = t(
-  'minus of the same DC input of the Osoyoo breakout board: the DC jack, the minus pole of the 2-pole VIN terminal or H4 pin 1 VIN-',
-  'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: DC-Buchse, Minuspol der 2-poligen VIN-Klemme oder H4 Pin 1 VIN-',
+  'minus of the same DC input of the Osoyoo breakout board: VIN- at the minus pole of the 2-pole VIN terminal or at H4 pin 1, GND at the outer contact of the DC jack',
+  'Minus desselben DC-Eingangs der Osoyoo-Breakout-Platine: VIN- am Minuspol der 2-poligen VIN-Klemme oder an H4 Pin 1, GND am Außenkontakt der DC-Buchse',
 );
 const DC_IN_SIGNAL = t('DC input of the Osoyoo breakout board, 7 to 12 V', 'DC-Eingang der Osoyoo-Breakout-Platine, 7 bis 12 V');
 const DC_IN_NOTE = t(
-  'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. The switch OFF/ON on ON. USB does not feed the V pins.',
-  'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
+  'Exactly 1 input: the DC jack, the VIN terminal or the header H4, never 2 of them. DC jack: plug 5.5 x 2.1 mm, centre positive, no reverse-polarity protection; the SI2302 protects the VIN terminal and H4 only. The switch OFF/ON on ON. USB does not feed the V pins.',
+  'Genau 1 Eingang: DC-Buchse, VIN-Klemme oder Pfostenverbinder H4, nie 2 davon. DC-Buchse: Stecker 5,5 x 2,1 mm, Mittelstift Plus, ohne Verpolschutz; der SI2302 schützt nur die VIN-Klemme und H4. Der Schalter OFF/ON auf ON. USB speist die V-Pins nicht.',
 );
 
 const wires: Wire[] = [
@@ -1822,8 +1822,8 @@ const checks: Check[] = [
   {
     id: 'strip-parts', kind: 'note',
     text: t(
-      'Osoyoo breakout board, other chips: the 5 SN74HC04 hex inverters take the Pico pins as inputs and drive only the LEDs of the IO pins, with their supply at VSYS. They sit neither on the V net nor in the path from S to the terminal: S joins the Pico pin directly and nothing is level-shifted or inverted. The SI2302 is an N-channel MOSFET in the minus lead of the DC input and protects against reverse polarity. A second MOSFET Q1 joins VOUT_5V to VSYS, its gate at VBUS: it passes the converter to VSYS only while no USB voltage is present.',
-      'Osoyoo-Breakout-Platine, weitere Chips: Die 5 Sechsfach-Inverter SN74HC04 nehmen die Pico-Pins als Eingänge und treiben nur die LEDs der IO-Pins, ihre Versorgung liegt an VSYS. Sie liegen weder am V-Netz noch im Weg von S zur Klemme: S liegt direkt am Pico-Pin, nichts wird im Pegel gewandelt oder invertiert. Der SI2302 ist ein N-Kanal-MOSFET in der Minusleitung des DC-Eingangs und schützt gegen Verpolung. Ein zweiter MOSFET Q1 verbindet VOUT_5V mit VSYS, sein Gate liegt an VBUS: Er gibt den Wandler nur auf VSYS, solange keine USB-Spannung anliegt.',
+      'Osoyoo breakout board, other chips: the 5 SN74HC04 hex inverters take the Pico pins as inputs and drive only the LEDs of the IO pins, with their supply at VSYS. They sit neither on the V net nor in the path from S to the terminal: S joins the Pico pin directly and nothing is level-shifted or inverted. The SI2302 (Q3) is an N-channel MOSFET in the lead VIN- of the VIN terminal and of H4 and protects the terminal and H4 only against reverse polarity. The minus of the DC jack is GND directly: the jack has no reverse-polarity protection. A second MOSFET Q1 joins VOUT_5V to VSYS, its gate at VBUS: it passes the converter to VSYS only while no USB voltage is present.',
+      'Osoyoo-Breakout-Platine, weitere Chips: Die 5 Sechsfach-Inverter SN74HC04 nehmen die Pico-Pins als Eingänge und treiben nur die LEDs der IO-Pins, ihre Versorgung liegt an VSYS. Sie liegen weder am V-Netz noch im Weg von S zur Klemme: S liegt direkt am Pico-Pin, nichts wird im Pegel gewandelt oder invertiert. Der SI2302 (Q3) ist ein N-Kanal-MOSFET in der Leitung VIN- der VIN-Klemme und von H4 und schützt nur die Klemme und H4 gegen Verpolung. Das Minus der DC-Buchse liegt direkt an GND: Die Buchse hat keinen Verpolschutz. Ein zweiter MOSFET Q1 verbindet VOUT_5V mit VSYS, sein Gate liegt an VBUS: Er gibt den Wandler nur auf VSYS, solange keine USB-Spannung anliegt.',
     ),
     when: { opt: 'connection', is: 'osoyoo' }, src: OSOYOO_SCHEMATIC,
   },

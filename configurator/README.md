@@ -474,6 +474,9 @@ file names no stage, so the checks follow the stages as one list.
   Osoyoo breakout board are vendor values (2 A at 5 V, 500 mA at 3.3 V), not measured.
   The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and
   the product page disagree.
+- DC supply of the Osoyoo breakout board: the DC jack (plug 5.5 x 2.1 mm, centre positive) has no reverse-polarity
+  protection. A centre-negative plug reverses the input of the XL1509 converter. The SI2302 protects the VIN terminal
+  and H4 only.
 - What powers an ESC during programming other than ESC STICK is not stated.
 - 8 of 20 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap,
   DC supply of the Osoyoo breakout board and cables: no picture.
