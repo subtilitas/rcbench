@@ -1,18 +1,25 @@
-// The parts list of a setup: the rows to buy and the rows the visitor brings,
-// as data, as text and as CSV (comma-separated values). The page and the PDF
-// each set it in their own markup.
+// The parts list of a setup: the rows to buy, the rows the visitor has, and
+// the rows the visitor brings, as data, as text and as CSV (comma-separated
+// values). The page and the PDF each set it in their own markup.
+//
+// A "have it" tick names a row by its token (`rowToken`). A tick counts only
+// while its row is a row to buy of the setup: a part that leaves the setup, a
+// part ticked under "Parts you own" and a variant that gives the part another
+// row each take the tick out of `haveTicks`.
 //
 // The search link is built from the data when the list is made; the data
 // stores no search address. Nothing of the search engine is loaded: the page
 // renders a plain link.
 
-import type { Buy, Lang, Part } from '../../contract.ts';
-import { brought, buyRows } from '../core.ts';
+import type { Buy, Lang, Options, Part, Setup } from '../../contract.ts';
+import { brought, buyRows, rowToken } from '../core.ts';
 import { t, tx } from '../i18n.ts';
 import type { View } from './chooser.ts';
 
 export type BuyLine = {
   part: Part;
+  /** The token of the row in the link: `<part>` or `<part>.<row id>`. */
+  token: string;
   qty: number;
   /** Null: a generic part or a modelled part; `order` is its spec. */
   maker: string | null;
@@ -24,7 +31,8 @@ export type BuyLine = {
   search: string | null;
 };
 
-export type PartsList = { buy: BuyLine[]; bring: BuyLine[] };
+/** `buy`: the rows to order. `have`: the rows with a "have it" tick. `bring`: the rows the visitor brings. */
+export type PartsList = { buy: BuyLine[]; have: BuyLine[]; bring: BuyLine[] };
 
 /** The address of the web search. The query follows it, percent-encoded. */
 export const SEARCH = 'https://www.google.com/search?q=';
@@ -55,6 +63,7 @@ function line(lang: Lang, part: Part, row: Buy, bring: boolean): BuyLine {
   const order = tx(lang, row.order);
   return {
     part,
+    token: rowToken(part, row),
     qty: row.qty ?? 1,
     maker: row.maker,
     order,
@@ -65,15 +74,36 @@ function line(lang: Lang, part: Part, row: Buy, bring: boolean): BuyLine {
 }
 
 /**
+ * The tokens of the rows to buy of a setup, in catalogue order: the rows a
+ * "have it" tick can name. A part ticked under "Parts you own" and a part the
+ * visitor brings have none.
+ */
+export function buyTokens(setup: Setup, options: Options): string[] {
+  return setup.parts
+    .filter((r) => !r.ownedTick && !brought(r.part))
+    .flatMap((r) => buyRows(r.part, options).map((row) => rowToken(r.part, row)));
+}
+
+/** The ticks of `have` that name a row to buy of the setup, in catalogue order, each once. */
+export function haveTicks(setup: Setup, options: Options, have: readonly string[]): string[] {
+  return buyTokens(setup, options).filter((token) => have.includes(token));
+}
+
+/**
  * The parts list of a setup, in catalogue order. A part ticked under "Parts
- * you own" is left out. A part the visitor brings stands in `bring`.
+ * you own" is left out. A row with a "have it" tick stands in `have`, a part
+ * the visitor brings in `bring`.
  */
 export function partsList(view: View): PartsList {
-  const out: PartsList = { buy: [], bring: [] };
+  const out: PartsList = { buy: [], have: [], bring: [] };
+  const have = view.have ?? [];
   for (const r of view.setup.parts) {
     if (r.ownedTick) continue;
     const bring = brought(r.part);
-    for (const row of buyRows(r.part, view.options)) (bring ? out.bring : out.buy).push(line(view.lang, r.part, row, bring));
+    for (const row of buyRows(r.part, view.options)) {
+      const l = line(view.lang, r.part, row, bring);
+      (bring ? out.bring : have.includes(l.token) ? out.have : out.buy).push(l);
+    }
   }
   return out;
 }
@@ -91,7 +121,10 @@ export function buyNote(view: View): string {
   return t(view.lang, 'buyNote', { r: view.catalogue.release });
 }
 
-/** The list as plain text: heading, setup link, disclaimer, then each row. Lines end in LF. */
+/**
+ * The list as plain text: heading, setup link, disclaimer, the rows to buy,
+ * the rows under "You have" by name, the rows to bring. Lines end in LF.
+ */
 export function listText(view: View, url: string): string {
   const { lang } = view;
   const list = partsList(view);
@@ -101,6 +134,10 @@ export function listText(view: View, url: string): string {
     out.push(`${qtyText(l)} ${lineName(l)}`, `  ${t(lang, 'buyCheck')}${l.check}`);
     if (l.page !== null) out.push(`  ${t(lang, 'buyPage')}: ${l.page}`);
     if (l.search !== null) out.push(`  ${t(lang, 'buySearch')}: ${l.search}`);
+  }
+  if (list.have.length > 0) {
+    out.push('', t(lang, 'have'));
+    for (const l of list.have) out.push(`${qtyText(l)} ${lineName(l)}`);
   }
   if (list.bring.length > 0) {
     out.push('', t(lang, 'bring'));
@@ -117,8 +154,8 @@ export function csvField(value: string): string {
 /**
  * The rows to buy as CSV: a header row, then 1 record per row. Columns:
  * quantity, maker, ordering name, check, maker page, search link. Every field
- * is quoted; records end in CR LF (RFC 4180). The rows the visitor brings are
- * not in it.
+ * is quoted; records end in CR LF (RFC 4180). The rows with a "have it" tick
+ * and the rows the visitor brings are not in it.
  */
 export function listCsv(view: View): string {
   const { lang } = view;

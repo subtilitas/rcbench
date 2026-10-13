@@ -1,5 +1,6 @@
-// The parts list of the result: its rows, owned parts, variants, the copy
-// buttons and the links that leave the page only on a click.
+// The parts list of the result: its rows, owned parts, variants, the "have
+// it" ticks, the copy buttons and the links that leave the page only on a
+// click.
 
 import { expect, test } from '@playwright/test';
 import type { BrowserContext, Page } from '@playwright/test';
@@ -13,11 +14,13 @@ import { watchErrors as watch } from './lib/watch.ts';
 
 const SIZES = [{ width: 360, height: 800 }, { width: 1280, height: 800 }];
 
-function view(selection: Partial<Selection>, lang: Lang = 'en'): View {
+function view(selection: Partial<Selection>, lang: Lang = 'en', have: string[] = []): View {
   const full: Selection = { functions: [], owned: [], options: { ...DEFAULT_OPTIONS }, ...selection };
   const setup = resolve(CATALOGUE, full);
-  return { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection: full };
+  return { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection: full, have };
 }
+
+const hashOf = (page: Page): Promise<string> => page.evaluate(() => location.hash);
 
 async function open(page: Page, hash: string): Promise<void> {
   await page.goto('about:blank');
@@ -151,6 +154,106 @@ for (const size of SIZES) {
       await page.locator('#b-copy-text').click();
       expect(await page.locator('#buyfield').inputValue()).toBe(listText(v, page.url()));
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+
+    test('a "have it" tick moves a row to "You have", the link keeps it, a reload keeps it, the untick returns it', async ({ page, context }) => {
+      const google = await countGoogle(context);
+      const seen = watch(page);
+      await open(page, '#v=1&f=escpow');
+      const buyRow = page.locator('#buy > li[data-part="wire"]');
+      await expect(buyRow).toHaveCount(3);
+      const tick = page.locator('#buy [data-h="wire.dmm"]');
+      await expect(tick).toHaveAttribute('type', 'checkbox');
+      await expect(tick).toHaveAccessibleName('Have it: Digital multimeter');
+      await expect(page.locator('#have')).toHaveCount(0);
+      // The control moves to the other list: a click, not check(), which reads the moved control under the old locator.
+      await tick.click();
+      await expect(buyRow).toHaveCount(2);
+      await expect(page.locator('#h-have')).toHaveText('You have');
+      await expect(page.locator('#have > li')).toHaveCount(1);
+      await expect(page.locator('#have > li')).toContainText('1 × Digital multimeter');
+      await expect(page.locator('#have [data-h="wire.dmm"]')).toBeChecked();
+      await expect(page.locator('#have a')).toHaveCount(0);
+      await expect(page.locator('#live')).toContainText('Moved to "You have".');
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=wire.dmm');
+      // A second tick: the link names both in catalogue order.
+      await page.locator('#buy [data-h="panel"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel,wire.dmm');
+      await expect(page.locator('#have > li')).toHaveCount(2);
+      await page.reload();
+      await page.locator('#h-buy').waitFor();
+      await expect(page.locator('#have > li')).toHaveCount(2);
+      await expect(page.locator('#buy [data-h="wire.dmm"]')).toHaveCount(0);
+      await expect(page.locator('.msg')).toHaveCount(0);
+      // The untick returns the row to the rows to buy, in its place.
+      await page.locator('#have [data-h="wire.dmm"]').click();
+      await expect(buyRow).toHaveCount(3);
+      await expect(buyRow.nth(2)).toContainText('Digital multimeter');
+      await expect(page.locator('#buy [data-h="wire.dmm"]')).not.toBeChecked();
+      await expect(page.locator('#live')).toContainText('Back under "Parts to buy".');
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&h=panel');
+      await page.locator('#have [data-h="panel"]').click();
+      await expect(page.locator('#have')).toHaveCount(0);
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow');
+      await page.waitForLoadState('networkidle');
+      expect(google).toEqual([]);
+      expect(seen).toEqual({ foreign: [], errors: [] });
+      await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    });
+
+    test('the "have it" tick works with the keyboard alone', async ({ page }) => {
+      await open(page, '#v=1');
+      // The tick follows the links of its row in the tab order.
+      await page.locator('#buy > li[data-part="panel"] a.websearch').focus();
+      await page.keyboard.press('Tab');
+      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await page.keyboard.press('Space');
+      // The focus moves with the tick to "You have".
+      await expect(page.locator('#have [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&h=panel');
+      await page.keyboard.press('Space');
+      await expect(page.locator('#buy [data-h="panel"]')).toBeFocused();
+      await expect(page.locator('#have')).toHaveCount(0);
+      await expect.poll(() => hashOf(page)).toBe('#v=1');
+    });
+
+    test('a variant that gives the part another row takes its "have it" tick out of the link', async ({ page }) => {
+      await open(page, '#v=1&f=escpow&h=ina228.matek');
+      await expect(page.locator('#have [data-h="ina228.matek"]')).toBeChecked();
+      await page.locator('#o-ina228Board-xt90').check();
+      await expect(page.locator('#have')).toHaveCount(0);
+      await expect(page.locator('#buy [data-h="ina228.xt90"]')).not.toBeChecked();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=escpow&o=xt90');
+      // A link with the stale tick opens with the note that names it, and Copy link leaves it out.
+      await open(page, '#v=1&f=escpow&o=xt90&h=ina228.matek,panel');
+      await expect(page.locator('.msg.note')).toContainText('ina228.matek');
+      await expect(page.locator('#have > li')).toHaveCount(1);
+      await expect(page.locator('#have [data-h="panel"]')).toBeChecked();
+    });
+
+    test('Copy as text, Copy as CSV and Copy link follow the "have it" ticks', async ({ page, context }) => {
+      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      await open(page, '#v=1&f=servo');
+      await page.locator('#buy [data-h="wire.dmm"]').click();
+      await page.locator('#buy [data-h="usb.cable"]').click();
+      await expect.poll(() => hashOf(page)).toBe('#v=1&f=servo&h=usb.cable,wire.dmm');
+      const v = view({ functions: ['servo'] }, 'en', ['usb.cable', 'wire.dmm']);
+      await page.locator('#b-copy-text').click();
+      await expect(page.locator('#live')).toHaveText(t('en', 'copiedText'));
+      const text = await page.evaluate(() => navigator.clipboard.readText());
+      expect(text).toBe(listText(v, page.url()));
+      expect(text.split('\n')[1]).toMatch(/#v=1&f=servo&h=usb\.cable,wire\.dmm$/);
+      expect(text).toContain('\nYou have\n2 × USB-C data cable\n1 × Digital multimeter\n');
+      await page.locator('#b-copy-csv').click();
+      await expect(page.locator('#live')).toHaveText(t('en', 'copiedCsv'));
+      const csv = await page.evaluate(() => navigator.clipboard.readText());
+      expect(csv).toBe(listCsv(v));
+      expect(csv).not.toContain('Digital multimeter');
+      expect(csv).not.toContain('USB-C data cable');
+      expect(csv.split('\r\n').length).toBe(partsList(v).buy.length + 2);
+      await page.locator('#b-copy').click();
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/#v=1&f=servo&h=usb\.cable,wire\.dmm$/);
     });
   });
 }

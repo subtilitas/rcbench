@@ -369,3 +369,22 @@ test('the strings of the export hold the writing rules', () => {
     assert.deepEqual(holes(pair[1]), holes(pair[0]), key);
   }
 });
+
+for (const lang of LANGS) {
+  test(`${lang}: the PDF lists the rows with a "have it" tick under "You have", not among the rows to buy`, () => {
+    const base = viewOf(SMALLEST.selection, SMALLEST.setup, lang);
+    const view = { ...base, have: ['wire.dmm'] };
+    const doc = documentModel(view, urlOf(view), NOW);
+    const before = documentModel(base, urlOf(base), NOW);
+    const text = (b: Extract<Block, { kind: 'list' }>): string[] => b.items.map((i) => i.runs.map((r) => r.text).join(''));
+    const [buy, have] = lists(doc, 'buy');
+    assert.ok(buy && have);
+    assert.deepEqual(text(have), [lang === 'de' ? '1 × Digitalmultimeter' : '1 × Digital multimeter']);
+    assert.ok(!text(buy).some((x) => /multimeter/i.test(x)));
+    assert.equal(buy.items.length, (lists(before, 'buy')[0]?.items.length ?? 0) - 1);
+    assert.ok(blocks(doc, 'buy').some((b) => b.kind === 'heading' && JSON.stringify(b).includes(t(lang, 'have'))));
+    assert.ok(!blocks(before, 'buy').some((b) => b.kind === 'heading' && JSON.stringify(b).includes(t(lang, 'have'))));
+    // The file name names the ticks.
+    assert.notEqual(fileName(view), fileName(base));
+  });
+}

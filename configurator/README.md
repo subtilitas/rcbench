@@ -139,7 +139,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 
 ## URL hash
 
-`#v=1&f=<ids>&p=<ids>&o=<tokens>&l=<lang>`
+`#v=1&f=<ids>&p=<ids>&o=<tokens>&h=<rows>&l=<lang>`
 
 | Key | Meaning |
 |---|---|
@@ -147,19 +147,25 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 | `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
 | `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. Copy link, the print header and the PDF name the link without the id; the address of the page keeps it until a change. An id of that spelling under `f` or `o` keeps its notice. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
 | `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
+| `h` | Row tokens of the "have it" ticks of "Parts to buy", comma separated, in catalogue order. A token is the part id for the row of a part without a row id (`panel`), else the part id, a dot and the row id (`wire.dmm`). A token that names no row to buy of the setup is dropped and named in the notice: an unknown row, a part outside the setup, a part ticked under "Parts you own", a part the visitor brings, a row of the other variant. A link without `h` has no "have it" tick. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
 
 Copy link, the field it shows when the clipboard refuses, the print header
 and the PDF name the same link. A link that names a function without a tick,
-a test object under `p` or `p=usbtap` is written again from its selection:
-those ids leave, a test object stands as the tick of its function, and the
-key `l` stays as the link has it. Every other link is named as it stands in
+a test object under `p`, `p=usbtap` or a row token under `h` that the page
+dropped is written again from its selection: those ids leave, a test object
+stands as the tick of its function, and the key `l` stays as the link has it. Every other link is named as it stands in
 the address. The address that the browser prints in its own page margin is
 the address of the page.
 
 Limits: 2000 characters per hash, 64 ids per key, 32 characters per id of
-lowercase letters and digits. A longer hash gives the base setup and the
-version notice. An unknown id is dropped and named in a notice.
+lowercase letters and digits; a row token under `h` adds a dot and a row id
+of 1 to 12 lowercase letters and digits. A longer hash gives the base setup
+and the version notice. An unknown id is dropped and named in a notice.
+
+The row token stays when the catalogue adds a row to a part: each row of a
+part with more than 1 row carries an id of its own (`Buy.id`), and at most 1
+row of a part has none. A token never counts rows by position.
 
 A link without `servo5v` keeps the external servo supply. `test/fixtures/links-v1.json`
 holds 1192 links without that token and the parts, wires, active functions
@@ -181,10 +187,10 @@ The page keeps 1 entry in `localStorage`, under the key
 |---|---|
 | `v` | Format version, `1`. An entry with another value is not read. |
 | `lang` | `en` or `de`: the language the visitor picked with the language buttons. `null` before the first pick. |
-| `setup` | The selection in the format of the URL hash, without the key `l`: ids and option tokens, no text of a language. `null` before the first change. |
+| `setup` | The selection in the format of the URL hash, without the key `l`: ids, option tokens and row tokens, no text of a language. `null` before the first change. |
 
 The page writes `setup` on every change of the selection: a tick, a variant,
-the removal of a part, "Start over". It writes `lang` on a click on a
+a "have it" tick, the removal of a part, "Start over". It writes `lang` on a click on a
 language button. It writes nothing when it opens, so a link that is opened
 and not changed leaves the stored setup as it is.
 
@@ -297,7 +303,7 @@ you own". Its test object stays connected by the tick of "Drive a servo" or
 |---|---|
 | Parts | The bench hardware of the setup, each with the reason it is there. The summary counts these parts. |
 | What you connect and test | The connected test objects, each with the functions that use it. Without one, a sentence says so. |
-| Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page and web search, and the copy buttons. Under "You bring", the test objects and their supplies. See "Parts to buy". |
+| Parts to buy | What to order for the setup, with quantity, maker, ordering name, check line, maker page, web search and a "have it" tick, and the copy buttons. Under "You have", the rows with that tick. Under "You bring", the test objects and their supplies. See "Parts to buy". |
 | Power sources | The sources of the logic and of each connected test object, from `powerSources` of the data file: voltage and current where stated, advantages, drawbacks, unknowns. "In this setup" marks a source the wires of the setup use; "In this setup: one of these" marks the 2 external servo supplies, of which the setup uses one. |
 
 The footer holds the state of the project and the trademark notice.
@@ -311,16 +317,28 @@ The section "Parts to buy", in German "Teile zum Kaufen", lists the rows of
 | Element | Content |
 |---|---|
 | Disclaimer | "Parts list as of release v<release>. Makers change products without notice. Check every part against its check line before ordering. No warranty." The release is the `release` field of the data file. |
-| Row | Quantity ("2 ×"), maker and ordering name, "Any maker" for a generic row, "Modelled part: no product chosen" for a modelled part, the check line, then the links "Maker page" and "Web search". |
-| You bring | The test objects and the parts with `yours: true`: servo, servo supply, ESC and motor, ESC battery. Each with its check line, without a link. |
-| Copy as text | Heading with the release, the setup link of Copy link, the disclaimer, the rows to buy with their links, the rows to bring. Lines end in LF. |
-| Copy as CSV | A header row in the page language, then 1 record per row to buy. Columns: quantity, maker, ordering name, check, maker page, search link. Every field in double quotes, a double quote doubled, records end in CR LF (RFC 4180). The rows to bring are not in it. |
+| Row | Quantity ("2 ×"), maker and ordering name, "Any maker" for a generic row, "Modelled part: no product chosen" for a modelled part, the check line, the links "Maker page" and "Web search", then the tick "Have it" ("Habe ich"). |
+| You have | Heading "You have" ("Hast du"), shown while a row has the tick "Have it". Each row with quantity, maker and ordering name and the ticked checkbox; removing the tick returns the row to the rows to buy. |
+| You bring | The test objects and the parts with `yours: true`: servo, servo supply, ESC and motor, ESC battery. Each with its check line, without a link and without a tick. |
+| Copy as text | Heading with the release, the setup link of Copy link, the disclaimer, the rows to buy with their links, the rows under "You have" by quantity and name, the rows to bring. Lines end in LF. |
+| Copy as CSV | A header row in the page language, then 1 record per row to buy. Columns: quantity, maker, ordering name, check, maker page, search link. Every field in double quotes, a double quote doubled, records end in CR LF (RFC 4180). The rows under "You have" and the rows to bring are not in it. |
 
 A part ticked under "Parts you own" (`p` in the hash) is left out. A part
 that a function brings in stays in the list; its tick under "Parts you own"
 shows the reason, not ownership. A variant (`o=osoyoo`, `o=xt90`) lists the
 row of that variant: the Osoyoo breakout board adds a row, the XT90 module
 replaces the Matek board.
+
+Each row to buy has a tick "Have it": an `<input type="checkbox">` inside a
+`<label>`, 22 × 22 px, in the tab order after the links of its row. Its
+accessible name is "Have it: <maker and ordering name>". A tick moves the row
+under "You have" and writes its row token under `h` in the hash; the focus
+moves with the checkbox. The live region says "Moved to "You have"." or
+"Back under "Parts to buy"." with the counts of the setup. A part with 3 rows
+(`wire`) has 3 ticks: the multimeter can be ticked while the wires stay to
+buy. A tick leaves the hash when its row stops being a row to buy: the part
+leaves the setup, gets a tick under "Parts you own", or the variant gives the
+part another row. Print hides the ticks.
 
 The search link is built when the list is rendered:
 `https://www.google.com/search?q=` and the percent-encoded query. The query is
@@ -479,9 +497,9 @@ export chunk on the first use.
 
 | Property | Value |
 |---|---|
-| File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection as the URL hash writes it, without the language. |
+| File name | `rcbench-setup-<8 hex digits>-<en or de>.pdf`. The digits are a 32 bit FNV-1a hash of the selection and the "have it" ticks as the URL hash writes them, without the language. |
 | Page | A4, 15 mm margins. Footer on every page: the sentence on product and company names of the page footer, without the link to `NOTICE`, and "Page x of y". |
-| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Parts to buy, with the disclaimer, and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
+| Sections | Title with firmware release, date, share link and the state of the project. Safety notes. Parts. What you connect and test. Parts to buy, with the disclaimer, what you have and what you bring. Power sources. Functions, enabled and not enabled. Wiring drawing and wire table. Build order. Parts outside a release, when the setup has one. |
 | Text | Inter Regular and Bold, embedded as the subset of the glyphs the document uses. Text is selectable and searchable. |
 | Drawing | The SVG of the page as vector paths and text, in the print colours, scaled to the text width and at most 1 page. |
 | Wire table | The header row repeats on every page. No row is split. |
@@ -559,9 +577,9 @@ file names no stage, so the checks follow the stages as one list.
   and does not announce headings or table cells.
 - PDF export and page: the section "Parts" lists every part once; a count is part of the part name. The
   quantity field `qty` belongs to the rows of "Parts to buy".
-- Parts to buy: a part that a function adds counts as owned only with a tick of its own, given before the
-  function adds it, or with its id under `p` in the link. The tick of a part a function already holds stays
-  set and leaves the row in the list.
+- Parts to buy: a "have it" tick that leaves the hash because its row stopped being a row to buy does not
+  come back when the row returns. Example: `h=ina228.matek`, then the variant XT90 module, then the variant
+  Matek board again: the Matek row stands among the rows to buy without a tick.
 - Parts to buy: the maker pages answered with HTTP 200 on 2026-10-13; the page does not check them at run
   time. The PD mini page is the maker's GitHub repository. The DAOKAI INA3221 board and the XT90 INA228
   module have no maker page. The maker of the XT90 module is not known.

@@ -14,8 +14,8 @@ const P = {
   ],
   noParts: ['No parts.', 'Keine Teile.'],
   buyHint: [
-    'A part with a tick of your own under "Parts you own" is left out; a part that a function adds stays. A maker page and a web search are links.',
-    'Ein Teil mit eigenem Haken unter „Teile, die vorhanden sind“ fehlt hier; ein Teil, das eine Funktion hinzufügt, bleibt. Herstellerseite und Websuche sind Links.',
+    'A part with a tick of your own under "Parts you own" is left out. A row with a tick at "Have it" stands under "You have". A maker page and a web search are links.',
+    'Ein Teil mit eigenem Haken unter „Teile, die vorhanden sind“ fehlt hier. Eine Zeile mit Haken bei „Habe ich“ steht unter „Hast du“. Herstellerseite und Websuche sind Links.',
   ],
   notEnabled: ['Not enabled', 'Nicht aktiviert'],
   allEnabled: ['Every function of the catalogue is enabled.', 'Jede Funktion des Katalogs ist aktiviert.'],

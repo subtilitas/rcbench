@@ -100,7 +100,7 @@ const OWNER = owner('2026-10-11');
  * A row of the parts list. `maker` null: a generic or modelled part, and
  * `order` is its spec. `page` is the product page of the maker.
  */
-function buy(maker: string | null, order: Text, check: Text, more: Pick<Buy, 'page' | 'qty' | 'only'> = {}): Buy {
+function buy(maker: string | null, order: Text, check: Text, more: Pick<Buy, 'id' | 'page' | 'qty' | 'only'> = {}): Buy {
   return { maker, order, check, ...more };
 }
 
@@ -202,7 +202,7 @@ const parts: Part[] = [
       buy('Osoyoo', same('Breakout Board for Pico series'), t(
         'The board with the jumper V Selector and a DC jack. It holds no microcontroller: the RP2350-CAN plugs in where a Pico goes. Not the boards for Nano or UNO.',
         'Die Platine mit dem Jumper V Selector und einer DC-Buchse. Sie trägt keinen Mikrocontroller: Die RP2350-CAN steckt dort, wo ein Pico sitzt. Nicht die Platinen für Nano oder UNO.',
-      ), { page: 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/', only: { connection: 'osoyoo' } }),
+      ), { id: 'osoyoo', page: 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/', only: { connection: 'osoyoo' } }),
     ],
     src: guide('parts'),
   },
@@ -226,11 +226,11 @@ const parts: Part[] = [
       buy(null, t('USB-C data cable', 'USB-C-Datenkabel'), t(
         'Not a charge-only cable: the firmware of each board is flashed over USB.',
         'Kein reines Ladekabel: Die Firmware jeder Platine wird über USB geflasht.',
-      ), { qty: 2 }),
+      ), { id: 'cable', qty: 2 }),
       buy(null, t('USB-C charger, 5 V, 2 A', 'USB-C-Ladegerät, 5 V, 2 A'), t(
         'At least 2 A at 5 V. It feeds the panel through a short cable.',
         'Mindestens 2 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
-      )),
+      ), { id: 'charger' }),
     ],
     src: guide('also-needed'),
   },
@@ -251,15 +251,15 @@ const parts: Part[] = [
       buy(null, t('Hook-up wire', 'Schaltdraht'), t(
         'Twisted as a pair for CAN H and CAN L.',
         'Als verdrilltes Paar für CAN H und CAN L.',
-      )),
+      ), { id: 'pair' }),
       buy(null, t('Jumper wires', 'Jumperkabel'), t(
         'For the heartbeat and the UART.',
         'Für Heartbeat und UART.',
-      )),
+      ), { id: 'jumper' }),
       buy(null, t('Digital multimeter', 'Digitalmultimeter'), t(
         'With a resistance range: the checks read about 60 Ω from CAN H to CAN L and near 0 Ω on ground paths.',
         'Mit Widerstandsbereich: Die Prüfungen messen etwa 60 Ω von CAN H nach CAN L und nahe 0 Ω auf Massepfaden.',
-      )),
+      ), { id: 'dmm' }),
     ],
     src: guide('also-needed'),
   },
@@ -627,11 +627,11 @@ const parts: Part[] = [
       buy('Matek', same('I2C-INA-BM'), t(
         'The board carries an INA228 or an INA238. The bench reads the INA228 only and refuses an INA238 (ID 0x238x).',
         'Die Platine trägt einen INA228 oder einen INA238. Der Prüfstand liest nur den INA228 und weist einen INA238 ab (ID 0x238x).',
-      ), { page: 'https://www.mateksys.com/?portfolio=i2c-ina-bm', only: { ina228Board: 'matek' } }),
+      ), { id: 'matek', page: 'https://www.mateksys.com/?portfolio=i2c-ina-bm', only: { ina228Board: 'matek' } }),
       buy(null, t('INA228 module, XT90', 'INA228-Modul, XT90'), t(
         'With 2 XT90 plugs, board print BIFRC V1.1, header print L A V G 5. Its supply is 3.3 V on V, not 5 V. The maker is not known.',
         'Mit 2 XT90-Steckern, Aufdruck der Platine BIFRC V1.1, Aufdruck der Leiste L A V G 5. Die Versorgung ist 3,3 V an V, nicht 5 V. Der Hersteller ist nicht bekannt.',
-      ), { only: { ina228Board: 'xt90' } }),
+      ), { id: 'xt90', only: { ina228Board: 'xt90' } }),
     ],
     src: guide('parts'),
   },
@@ -757,11 +757,11 @@ const parts: Part[] = [
       buy(null, t('Resistor 4.7 kΩ, 0.25 W', 'Widerstand 4,7 kΩ, 0,25 W'), t(
         'In series from phase A to the tap pin. 4.7 kΩ, not 47 kΩ.',
         'In Reihe von Phase A zum Abgriff-Pin. 4,7 kΩ, nicht 47 kΩ.',
-      )),
+      ), { id: 'resistor' }),
       buy(null, t('Zener diode 3.0 V', 'Z-Diode 3,0 V'), t(
         'Zener voltage 3.0 V; the type code on the body often reads 3V0.',
         'Z-Spannung 3,0 V; der Typcode auf dem Gehäuse lautet oft 3V0.',
-      )),
+      ), { id: 'zener' }),
     ],
     src: guide('parts'),
   },
@@ -805,11 +805,11 @@ const parts: Part[] = [
       buy(null, t('USB-C breakout board, female to female', 'USB-C-Breakout-Platine, Buchse auf Buchse'), t(
         '2 USB-C sockets, IN and OUT, and the pads G, D+, D−, V. A board without D+ and D− pads does not fit.',
         '2 USB-C-Buchsen, IN und OUT, und die Pads G, D+, D−, V. Eine Platine ohne Pads für D+ und D− passt nicht.',
-      )),
+      ), { id: 'board' }),
       buy(null, t('USB-C cable, USB-C at both ends', 'USB-C-Kabel, USB-C an beiden Enden'), t(
         'From the socket OUT to the PD mini. Rated 3 A or more.',
         'Von der Buchse OUT zum PD mini. Für 3 A oder mehr ausgelegt.',
-      )),
+      ), { id: 'cable' }),
     ],
     src: OWNER,
   },

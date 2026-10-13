@@ -19,7 +19,7 @@ import { benchParts, optionsOf } from './names.ts';
 import { browserStore, readStore, writeStore } from './store.ts';
 import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
-import { listCsv, listText } from './view/buy.ts';
+import { haveTicks, listCsv, listText } from './view/buy.ts';
 import { result, resultError, summary } from './view/result.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
@@ -41,6 +41,8 @@ let panLeft: number | null = null;
 let pending: Pending | null = null;
 /** The effect of the last function taken out of the selection. Not part of the link. */
 let note: Deselect | null = null;
+/** The row tokens of the "have it" ticks of the parts list, each a row to buy of the setup. Part of the link. */
+let have: string[] = [];
 
 /** x in drawing px that the pan box centres on first: midway between the panel's pins and pad 1. */
 const PAN_START = 351;
@@ -65,6 +67,12 @@ function known(sel: Selection): Selection {
   return { functions, owned, options: { ...sel.options } };
 }
 
+/** The ticks of `tokens` that name a row to buy of the setup of `sel`. None when no setup resolves. */
+function haveOf(sel: Selection, tokens: readonly string[]): string[] {
+  const setup = tryResolve(sel);
+  return setup ? haveTicks(setup, optionsOf(setup), tokens) : [];
+}
+
 /** The stored selection, or null: none is stored, or the catalogue resolves no setup from it. */
 function storedSelection(setup: string | null): Selection | null {
   if (setup === null) return null;
@@ -84,20 +92,24 @@ function readHash(): void {
   note = null;
   if (kept) {
     selection = kept;
+    have = haveOf(kept, parseHash(stored.setup ?? '', DEFAULT_OPTIONS).have);
   } else {
     if (parsed.badVersion) notices.push((l) => ({ kind: 'err', text: t(l, 'badV') }));
     // A test object under the owned parts of a link is the tick of its function.
     const given = withoutFormerTicks(testObjectTicks(parsed.selection, CATALOGUE));
     const setup = tryResolve(given);
     selection = known(given);
+    have = haveOf(selection, parsed.have);
     const dropped = [...given.functions, ...given.owned]
       .filter((id) => !selection.functions.includes(id) && !selection.owned.includes(id) && !BASE_IDS.has(id));
-    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped];
+    // A "have it" tick that names no row to buy of the setup is left out like an unknown id.
+    const stale = parsed.have.filter((token) => !have.includes(token));
+    const unknown = [...parsed.unknown, ...(setup ? setup.ignored : []), ...dropped, ...stale];
     if (unknown.length > 0) notices.push((l) => ({ kind: 'note', text: t(l, 'badId', { x: reportIds(unknown) }) }));
   }
   // What the browser kept stands in the address like a change on the page: the link to copy and the PDF read it there.
   // A link stays as it is until a change.
-  const hash = formatHash(selection, lang, startLang, CATALOGUE);
+  const hash = formatHash(selection, lang, startLang, CATALOGUE, have);
   const restored = kept !== null || (parsed.lang === null && stored.lang !== null);
   if (!linked && restored && hash !== `v=${HASH_VERSION}`) history.replaceState(null, '', `#${hash}`);
 }
@@ -107,16 +119,16 @@ function readHash(): void {
  * without the id of a function that has no tick or of a former tick, a test object as the tick of its function.
  */
 function shareUrl(): string {
-  return shareAddress(location.href, DEFAULT_OPTIONS, CATALOGUE);
+  return shareAddress(location.href, DEFAULT_OPTIONS, CATALOGUE, have);
 }
 
 function writeHash(): void {
-  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE)}`);
+  history.replaceState(null, '', `#${formatHash(selection, lang, startLang, CATALOGUE, have)}`);
 }
 
 /** Stores the selection of the page. The stored language stays. */
 function storeSetup(): void {
-  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE) });
+  writeStore(storage, { ...readStore(storage, DEFAULT_OPTIONS), setup: formatHash(selection, lang, lang, CATALOGUE, have) });
 }
 
 /** Stores the language of the page. The stored selection stays. */
@@ -159,7 +171,7 @@ function render(focusId?: string): void {
   if (setup) {
     const asked = pending;
     if (asked && !setup.parts.some((r) => r.part.id === asked.part)) pending = null;
-    const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note };
+    const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, pending, note, have };
     choose.innerHTML = chooser(view, ownOpen);
     res.innerHTML = result(view, shareUrl(), notices.map((n) => n(lang)), mode);
     sub = `<small>${t(lang, 'bSub', { p: benchParts(setup).length, w: setup.wires.length })}</small>`;
@@ -190,7 +202,7 @@ function announce(text: string): void {
 function announceSummary(said: (view: View) => string = () => ''): void {
   const setup = tryResolve(selection);
   if (!setup) return;
-  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, have };
   announce(`${said(view)} ${summary(view)}`.trim());
 }
 
@@ -209,6 +221,7 @@ function keepPart(): void {
 function applyRemoval(effect: Removal, focusId: string): void {
   const part = CATALOGUE.parts.find((p) => p.id === effect.part);
   selection = effect.selection;
+  have = haveOf(selection, have);
   pending = null;
   note = null;
   notices = [];
@@ -279,7 +292,7 @@ function showListField(text: string): void {
 function copyList(button: HTMLElement, form: 'text' | 'csv'): void {
   const setup = tryResolve(selection);
   if (!setup) return;
-  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, have };
   const text = form === 'text' ? listText(view, shareUrl()) : listCsv(view);
   const said = t(lang, form === 'text' ? 'copiedText' : 'copiedCsv');
   const done = (): void => {
@@ -329,9 +342,10 @@ document.addEventListener('click', (event) => {
     keepPart();
   } else if (el.id === 'b-pdf') {
     const setup = tryResolve(selection);
-    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection }, shareUrl());
+    if (setup) void exportPdf({ lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection, have }, shareUrl());
   } else if (el.id === 'b-reset') {
     selection = base();
+    have = [];
     notices = [];
     pending = null;
     note = null;
@@ -353,7 +367,7 @@ document.addEventListener('change', (event) => {
     render(input.id);
     return;
   }
-  const { f, p, o } = input.dataset;
+  const { f, p, o, h } = input.dataset;
   if (p && !input.checked) {
     // The tick comes off a part of the setup: the removal decides what follows.
     requestRemoval(p, 'own');
@@ -367,14 +381,17 @@ document.addEventListener('change', (event) => {
     if (effect.changed) left = effect;
   } else if (p) selection = { ...selection, owned: toggle(selection.owned, p, true) };
   else if (o) selection = { ...selection, options: { ...selection.options, [o as OptionKey]: input.value } as Options };
+  else if (h) have = toggle(have, h, input.checked);
   else return;
+  // A tick that no longer names a row to buy leaves: its part left the setup, has a tick of its own or another row.
+  have = haveOf(selection, have);
   notices = [];
   pending = null;
   note = left;
   writeHash();
   storeSetup();
   render(input.id);
-  announceSummary((view) => (left ? deselectText(view, left) : ''));
+  announceSummary((view) => (left ? deselectText(view, left) : h ? t(view.lang, input.checked ? 'haveOn' : 'haveOff') : ''));
 });
 
 document.addEventListener('keydown', (event) => {

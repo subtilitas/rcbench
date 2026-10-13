@@ -7,9 +7,9 @@ import type { Lang, Selection } from '../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, resolve } from '../src/core.ts';
 import { t } from '../src/i18n.ts';
 import { optionsOf } from '../src/names.ts';
-import { SEARCH, buyNote, csvField, listCsv, listText, partsList, searchQuery, searchUrl } from '../src/view/buy.ts';
+import { SEARCH, buyNote, buyTokens, csvField, haveTicks, listCsv, listText, partsList, searchQuery, searchUrl } from '../src/view/buy.ts';
 import type { View } from '../src/view/chooser.ts';
-import { result } from '../src/view/result.ts';
+import { haveId, result } from '../src/view/result.ts';
 
 function view(part: Partial<Selection>, lang: Lang = 'en'): View {
   const selection: Selection = { functions: [], owned: [], options: { ...DEFAULT_OPTIONS }, ...part };
@@ -142,8 +142,104 @@ test('a list without rows to buy says so', () => {
   // The locked parts are never owned, so only a setup made up for the test has no row to buy.
   const v = view({});
   const none: View = { ...v, setup: { ...v.setup, parts: v.setup.parts.map((r) => ({ ...r, ownedTick: true })) } };
-  assert.deepEqual(partsList(none), { buy: [], bring: [] });
+  assert.deepEqual(partsList(none), { buy: [], have: [], bring: [] });
   assert.ok(listText(none, URL).includes(t('en', 'buyNone')));
   assert.equal(listCsv(none).split('\r\n').length, 2);
   assert.ok(result(none, URL, []).includes('id="buy-none"'));
+});
+
+/** The view of a selection with "have it" ticks. */
+function withHave(part: Partial<Selection>, have: string[], lang: Lang = 'en'): View {
+  return { ...view(part, lang), have };
+}
+
+const tokens = (lines: { token: string }[]): string[] => lines.map((l) => l.token);
+
+test('every row to buy has a token; a part with 2 or 3 rows has a token per row', () => {
+  const v = view({ functions: ['servotest'], options: { ...DEFAULT_OPTIONS, connection: 'osoyoo' } });
+  const list = partsList(v);
+  assert.deepEqual(tokens(list.buy), buyTokens(v.setup, v.options));
+  for (const token of ['copro', 'copro.osoyoo', 'wire.pair', 'wire.jumper', 'wire.dmm', 'usbtap.board', 'usbtap.cable']) {
+    assert.ok(tokens(list.buy).includes(token), token);
+  }
+  // The rows the visitor brings have no tick.
+  const servo = view({ functions: ['servo'] });
+  for (const l of partsList(servo).bring) assert.ok(!buyTokens(servo.setup, servo.options).includes(l.token), l.token);
+});
+
+test('a "have it" tick moves its row from the rows to buy to the rows the visitor has', () => {
+  const all = partsList(view({}));
+  const v = withHave({}, ['wire.dmm', 'panel']);
+  const list = partsList(v);
+  assert.deepEqual(tokens(list.have), ['panel', 'wire.dmm']);
+  assert.deepEqual(tokens(list.buy), tokens(all.buy).filter((x) => x !== 'wire.dmm' && x !== 'panel'));
+  // The other rows of the wire stay to buy.
+  assert.ok(tokens(list.buy).includes('wire.pair') && tokens(list.buy).includes('wire.jumper'));
+});
+
+test('a tick counts only while its row is a row to buy of the setup', () => {
+  const sel = { functions: ['escpow'] };
+  const v = view(sel);
+  // Catalogue order, whatever the order of the ticks.
+  assert.deepEqual(haveTicks(v.setup, v.options, ['ina228.matek', 'wire.dmm']), ['wire.dmm', 'ina228.matek']);
+  // The variant switch from matek to xt90 gives the INA228 another row: the tick of the Matek row no longer counts.
+  const xt = view({ ...sel, options: { ...DEFAULT_OPTIONS, ina228Board: 'xt90' } });
+  assert.deepEqual(haveTicks(xt.setup, xt.options, ['ina228.matek', 'wire.dmm']), ['wire.dmm']);
+  assert.deepEqual(tokens(partsList({ ...xt, have: ['ina228.matek'] }).have), []);
+  assert.ok(tokens(partsList({ ...xt, have: ['ina228.matek'] }).buy).includes('ina228.xt90'));
+  // A part outside the setup, a part with a tick under "Parts you own", a part the visitor brings, an unknown row.
+  const owned = view({ ...sel, owned: ['ina228'] });
+  assert.deepEqual(haveTicks(owned.setup, owned.options, ['ina228.matek']), []);
+  const bare = view({});
+  assert.deepEqual(haveTicks(bare.setup, bare.options, ['pdmini', 'ina228.matek', 'wire.nope', 'wire']), []);
+  const servo = view({ functions: ['servo'] });
+  assert.deepEqual(haveTicks(servo.setup, servo.options, ['servo', 'ssup']), []);
+  // Each tick counts once.
+  assert.deepEqual(haveTicks(bare.setup, bare.options, ['panel', 'panel']), ['panel']);
+});
+
+for (const lang of ['en', 'de'] as const) {
+  test(`${lang}: the text form lists the ticked rows under "You have", the CSV leaves them out`, () => {
+    const v = withHave({ functions: ['servo'] }, ['panel', 'wire.dmm'], lang);
+    const list = partsList(v);
+    const text = listText(v, URL);
+    const head = `\n${t(lang, 'have')}\n`;
+    assert.ok(text.includes(head));
+    const block = text.slice(text.indexOf(head) + head.length, text.indexOf(`\n\n${t(lang, 'bring')}\n`)).split('\n');
+    assert.deepEqual(block, list.have.map((l) => `${l.qty} × ${l.maker === null ? l.order : `${l.maker} ${l.order}`}`));
+    // The rows to buy above the heading hold no ticked row.
+    const bought = text.slice(0, text.indexOf(head));
+    for (const l of list.have) assert.ok(!bought.includes(l.check), l.token);
+    const csv = listCsv(v);
+    assert.equal(csv.slice(0, -2).split('\r\n').length, 1 + list.buy.length);
+    for (const l of list.have) assert.ok(!csv.includes(csvField(l.check)), l.token);
+    // Without a tick the text has no "You have".
+    assert.ok(!listText(view({ functions: ['servo'] }, lang), URL).includes(head));
+  });
+
+  test(`${lang}: each row to buy and each row the visitor has carries a labelled tick; a row to bring has none`, () => {
+    const v = withHave({ functions: ['servo'] }, ['wire.dmm'], lang);
+    const html = result(v, URL, []);
+    const section = html.slice(html.indexOf('id="h-buy"'), html.indexOf('id="h-power"'));
+    const list = partsList(v);
+    const ticks = [...section.matchAll(/<label class="tick"><input type="checkbox" id="([^"]+)" data-h="([^"]+)" aria-label="([^"]+)"( checked)?>/g)];
+    assert.equal(ticks.length, list.buy.length + list.have.length);
+    for (const l of list.buy) assert.ok(ticks.some((m) => m[1] === haveId(l.token) && m[2] === l.token && m[4] === undefined), l.token);
+    assert.ok(ticks.some((m) => m[1] === 'have-wire-dmm' && m[2] === 'wire.dmm' && m[4] === ' checked'));
+    assert.ok(section.includes(`<h4 id="h-have">${t(lang, 'have')}</h4>`));
+    const bring = section.slice(section.indexOf('id="bring"'));
+    assert.ok(!bring.includes('class="tick"'));
+    // Without a tick the page shows no list "You have".
+    assert.ok(!result(view({ functions: ['servo'] }, lang), URL, []).includes('id="have"'));
+  });
+}
+
+test('every row ticked: nothing to buy, the rows stand under "You have"', () => {
+  const v = view({});
+  const all = buyTokens(v.setup, v.options);
+  const full = { ...v, have: all };
+  assert.deepEqual(partsList(full).buy, []);
+  assert.deepEqual(tokens(partsList(full).have), all);
+  assert.ok(result(full, URL, []).includes('id="buy-none"'));
+  assert.equal(listCsv(full).split('\r\n').length, 2);
 });
