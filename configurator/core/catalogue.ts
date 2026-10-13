@@ -1628,6 +1628,15 @@ const checks: Check[] = [
     when: { all: [{ has: 'esc' }, { opt: 'connection', is: 'osoyoo' }] }, src: OWNER,
   },
   {
+    id: 'strip-servo-plus', kind: 'note',
+    text: t(
+      'Osoyoo breakout board, servo supply other than the strip: the servo lead connects only its signal and GND to the board, at the S pin of the strip at GP2 (GP13 with the servo programmer) and a G pin. Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows. The V pin of the strip stays free. All 40 V pins are 1 net fed through the jumper V Selector: a supply on 1 V pin reaches every strip and the output of the converter or the regulator.',
+      'Osoyoo-Breakout-Platine, Servoversorgung nicht über die Leiste: Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GP2 (GP13 mit dem Servo-Programmierer) und an einem G-Pin. Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt. Der V-Pin der Leiste bleibt frei. Alle 40 V-Pins sind 1 Netz, gespeist über den Jumper V Selector: Eine Versorgung an 1 V-Pin erreicht jede Leiste und den Ausgang des Wandlers oder des Reglers.',
+    ),
+    when: { all: [{ has: 'servo' }, { opt: 'connection', is: 'osoyoo' }, { any: [{ has: 'pdmini' }, { opt: 'servoPower', is: 'external' }] }] },
+    src: OWNER,
+  },
+  {
     id: 'servo-external', kind: 'note',
     text: t(
       'Servo supply: a 2S LiPo battery or another external supply that matches the servo. A small servo can run from the bench itself: variant "Servo power", B.',
@@ -1696,8 +1705,8 @@ const checks: Check[] = [
   {
     id: 'strip-dc', kind: 'note',
     text: t(
-      'Osoyoo breakout board, DC supply: connect exactly 1 supply, either at the DC jack or at the VIN terminal, never both. The vendor states not to use the DC jack and the screw terminal together. The vendor recommends 7 to 12 V.',
-      'Osoyoo-Breakout-Platine, DC-Versorgung: Genau 1 Versorgung anschließen, entweder an der DC-Buchse oder an der VIN-Klemme, nie an beiden. Der Hersteller gibt an, die DC-Buchse und die Schraubklemme nicht zusammen zu verwenden. Der Hersteller empfiehlt 7 bis 12 V.',
+      'Osoyoo breakout board, DC supply: connect exactly 1 supply: at the DC jack, at the VIN terminal or at the 2-pin header H4 (PWRIN and VIN-), never at 2 of them. The vendor states not to use the DC jack and the screw terminal together. The vendor recommends 7 to 12 V.',
+      'Osoyoo-Breakout-Platine, DC-Versorgung: Genau 1 Versorgung anschließen: an der DC-Buchse, an der VIN-Klemme oder am 2-poligen Pfostenverbinder H4 (PWRIN und VIN-), nie an 2 davon. Der Hersteller gibt an, die DC-Buchse und die Schraubklemme nicht zusammen zu verwenden. Der Hersteller empfiehlt 7 bis 12 V.',
     ),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
@@ -1712,8 +1721,8 @@ const checks: Check[] = [
   {
     id: 'strip-feed', kind: 'note',
     text: t(
-      'Osoyoo breakout board, feed of the V pins: the jumper V Selector is the 3-pin header H3. Pin 1 is the net 3.3V from the regulator U1, pin 2 is the net VCC, pin 3 is the net VOUT_5V from the converter U9. VCC is the V pin of all 40 strips. The regulator takes its input from VSYS of the Pico board. The converter takes its input from the DC jack or the VIN terminal through the OFF/ON switch. No part joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS to them when it is on 5V: with the jumper on 5V and no DC supply the V pins carry 0 V.',
-      'Osoyoo-Breakout-Platine, Speisung der V-Pins: Der Jumper V Selector ist der 3-polige Pfostenverbinder H3. Pin 1 ist das Netz 3.3V vom Regler U1, Pin 2 ist das Netz VCC, Pin 3 ist das Netz VOUT_5V vom Wandler U9. VCC ist der V-Pin aller 40 Leisten. Der Regler bezieht seinen Eingang aus VSYS der Pico-Platine. Der Wandler bezieht seinen Eingang aus der DC-Buchse oder der VIN-Klemme über den Schalter OFF/ON. Kein Bauteil verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS mit ihnen, wenn er auf 5V steht: Mit dem Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0 V.',
+      'Osoyoo breakout board, feed of the V pins: the jumper V Selector is the 3-pin header H3. Pin 1 is the net 3.3V from the regulator U1, pin 2 is the net VCC, pin 3 is the net VOUT_5V from the converter U9. VCC is the V pin of all 40 strips. The regulator takes its input from VSYS of the Pico board. The converter takes its input from the DC jack, the VIN terminal or the 2-pin header H4 (pin 2 PWRIN, pin 1 VIN-) through the OFF/ON switch. No part joins VOUT_5V to the V pins when the jumper is on 3V3, and none joins VBUS to them when it is on 5V: with the jumper on 5V and no DC supply the V pins carry 0 V.',
+      'Osoyoo-Breakout-Platine, Speisung der V-Pins: Der Jumper V Selector ist der 3-polige Pfostenverbinder H3. Pin 1 ist das Netz 3.3V vom Regler U1, Pin 2 ist das Netz VCC, Pin 3 ist das Netz VOUT_5V vom Wandler U9. VCC ist der V-Pin aller 40 Leisten. Der Regler bezieht seinen Eingang aus VSYS der Pico-Platine. Der Wandler bezieht seinen Eingang aus der DC-Buchse, der VIN-Klemme oder dem 2-poligen Pfostenverbinder H4 (Pin 2 PWRIN, Pin 1 VIN-) über den Schalter OFF/ON. Kein Bauteil verbindet VOUT_5V mit den V-Pins, wenn der Jumper auf 3V3 steht, und keines verbindet VBUS mit ihnen, wenn er auf 5V steht: Mit dem Jumper auf 5V und ohne DC-Versorgung führen die V-Pins 0 V.',
     ),
     when: SERVO_STRIP, src: OSOYOO_SCHEMATIC,
   },
@@ -1744,8 +1753,8 @@ const checks: Check[] = [
   {
     id: 'strip-regulator', kind: 'note',
     text: t(
-      'Osoyoo breakout board, 3.3 V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3 V and 500 mA. A servo on the V pin in this position draws from VSYS of the coprocessor board, the supply that also powers the logic, so a servo that draws more than 0.5 A is outside the rating of the regulator. With USB alone and no voltage on the V pins, the vendor names a workaround: remove the jumper cap and wire the S pin of the 3.3 V row to a V pin with a Dupont cable.',
-      'Osoyoo-Breakout-Platine, Stellung 3,3 V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3 V und 500 mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5 A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe: Jumper abziehen und den S-Pin der 3,3-V-Reihe per Dupont-Kabel mit einem V-Pin verbinden.',
+      'Osoyoo breakout board, 3.3 V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3 V and 500 mA. A servo on the V pin in this position draws from VSYS of the coprocessor board, the supply that also powers the logic, so a servo that draws more than 0.5 A is outside the rating of the regulator. For USB alone with no voltage on the V pins, the vendor names a workaround: a Dupont cable from the S pin of the 3.3 V row to a V pin. Do not use it for the servo. The S pin of the 3.3 V row is the 3V3 pin of the coprocessor board (pad 36), the 3.3 V supply of its logic; its current limit is not stated. With the cable in place and the jumper cap on 5V, the 5 V of the converter reaches that supply. A cable already in place comes off before the jumper cap goes back on any position.',
+      'Osoyoo-Breakout-Platine, Stellung 3,3 V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3 V und 500 mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5 A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin. Für das Servo nicht verwenden. Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der Koprozessor-Platine (Pad 36), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben. Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5 V des Wandlers diese Versorgung. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird.',
     ),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
@@ -2046,8 +2055,8 @@ const powerSources: PowerSource[] = [
         'Warnung: Der Jumper muss vor dem Einstecken eines Servos geprüft werden. In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist; ob USB allein ihn versorgt, ist nicht geklärt.',
       ),
       t(
-        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack or the VIN terminal, exactly 1 of the two and never both (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is not in the parts list.',
-        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse oder der VIN-Klemme, genau eine von beiden und nie beide (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht nicht in der Teileliste.',
+        'As delivered the jumper cap sits on the 3V3 side (osoyoo.com page), so position 5V is a change. Position 5V needs a DC supply of 7 to 12 V at the DC jack, the VIN terminal or the header H4, exactly 1 of the three (vendor recommendation; print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V) and the switch on ON; USB does not feed it. Without it the V pins carry 0 V. The supply is not in the parts list.',
+        'Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3 (Seite osoyoo.com), Stellung 5V ist also eine Änderung. Stellung 5V braucht eine DC-Versorgung von 7 bis 12 V an der DC-Buchse, der VIN-Klemme oder dem Pfostenverbinder H4, an genau einem der drei Anschlüsse (Herstellerempfehlung; Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V) und den Schalter auf ON; USB speist sie nicht. Ohne sie führen die V-Pins 0 V. Die Versorgung steht nicht in der Teileliste.',
       ),
       t(
         'The rating is 2 A at 5 V and 500 mA at 3.3 V (vendor values). A stalled servo draws more than that where its stall current is higher; the stall current of the servo is not stated here.',

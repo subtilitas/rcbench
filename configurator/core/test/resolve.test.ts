@@ -885,3 +885,36 @@ test('Osoyoo strip with the INA3221 shunt (servocur): the 9 strip checks stay an
   assert.ok(numbers.includes(62));
   assert.ok(!numbers.includes(61));
 });
+
+test('Osoyoo breakout board: a servo supply other than the strip keeps the servo plus off the strip V pin', () => {
+  const ids = (setup: Setup): string[] => setup.checks.map((c) => c.id);
+  const NOTE = 'strip-servo-plus';
+  for (const servoPort of OPTION_VALUES.servoPort) {
+    const external = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo', servoPort }));
+    assert.ok(ids(external).includes(NOTE), `external ${servoPort}`);
+    assert.ok(!wireNumbers(external).some((n) => n === 61 || n === 62), `external ${servoPort}: no wire to the strip V pin`);
+    const pd = resolve(CATALOGUE, select(['servo', 'supply'], [], { servoPower: 'bench', connection: 'osoyoo', servoPort }));
+    assert.ok(ids(pd).includes(NOTE), `PD mini ${servoPort}`);
+    const bench = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo', servoPort }));
+    assert.ok(!ids(bench).includes(NOTE), `bench ${servoPort}`);
+    for (const servoPower of OPTION_VALUES.servoPower) {
+      const pads = resolve(CATALOGUE, select(['servo'], [], { servoPower, connection: 'pads', servoPort }));
+      assert.ok(!ids(pads).includes(NOTE), `pads ${servoPower} ${servoPort}`);
+    }
+  }
+  // Without a servo the note does not appear, whatever the option says.
+  assert.ok(!ids(resolve(CATALOGUE, select(['esc'], [], { servoPower: 'external', connection: 'osoyoo' }))).includes(NOTE));
+});
+
+test('the power source list holds the strip V pin only with the Osoyoo breakout board', () => {
+  const listed = (setup: Setup): Array<[string, boolean]> => setup.power
+    .filter((p) => p.source.feeds === 'servo').map((p) => [p.source.id, p.used]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'pads' }))),
+    [['copro-5v', true], ['pd-servo', false], ['lipo-2s', false], ['own-supply', false]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'pads' }))),
+    [['copro-5v', false], ['pd-servo', false], ['lipo-2s', true], ['own-supply', true]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo' }))),
+    [['strip-v', false], ['pd-servo', false], ['lipo-2s', true], ['own-supply', true]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo' }))),
+    [['strip-v', true], ['pd-servo', false], ['lipo-2s', false], ['own-supply', false]]);
+});
