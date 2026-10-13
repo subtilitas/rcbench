@@ -27,8 +27,12 @@ history is in git.
   host test; `STATUS.md` lists the screens that do not meet it.
 - `tools/security_parsers.py --check`, run in CI, fails when the parser table
   in `SECURITY.md` and the parse functions in the public headers differ. The
-  table lists 17 modules; it listed 4. The check also finds functions named
+  table holds the modules the name rule finds plus the forced ones in the
+  tool, `shared/settings` (values and texts from NVS, non-volatile storage)
+  and `shared/touch` (GT911 point list): 19 modules; it listed 4. The check also finds functions named
   `*_write`, `*_read`, `*_done` and `*_utf8_next`; `NOT_UNTRUSTED` is empty.
+  A forced entry that names a missing module or one the name rule finds
+  fails the check.
 - `mutation.yml` runs every mutant of `shared/safety` and `shared/outputs`
   each Sunday at 03:17 UTC and on demand. A survivor does not fail it.
 - The bench configurator offers "Program a KST or Chaservo servo"
