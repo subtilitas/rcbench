@@ -40,6 +40,9 @@ export const GUIDE_SECTIONS: ReadonlyArray<string> = [
   'stage-1', 'stage-2', 'stage-3', 'stage-4', 'stage-5', 'tap',
 ];
 
+/** The rule for the address of a `doc` source: https, a host, a path without white space. */
+export const DOC_URL = /^https:\/\/[^\s/]+\/\S*$/;
+
 /** Dates of the owner statements a source may name. */
 export const OWNER_STATEMENTS: ReadonlyArray<string> = ['2026-10-11'];
 
@@ -516,6 +519,11 @@ export function checkSrc(
         if (!OWNER_STATEMENTS.includes(src.date)) {
           findings.push(err(id, `src names the owner statement "${String(src.date)}", which is not in the list`));
         }
+        break;
+      case 'doc':
+        if (typeof src.title !== 'string' || src.title === '') findings.push(err(id, 'src "doc" has no title'));
+        if (typeof src.url !== 'string' || !DOC_URL.test(src.url)) findings.push(err(id, 'src "doc" has no https address'));
+        if (typeof src.ref !== 'string' || src.ref === '') findings.push(err(id, 'src "doc" names no page, net or table'));
         break;
       default:
         findings.push(err(id, `src has the unknown kind "${String((src as { kind?: unknown }).kind)}"`));

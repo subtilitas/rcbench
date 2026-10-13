@@ -15,7 +15,7 @@ data and is not asserted.
 | --- | --- |
 | `../contract.ts` | The types shared by the core and the page. |
 | `../release.ts` | `VERSION` and `TAG`, read from the `version` field of `../package.json`. The data, the page and the checks import them. |
-| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 32 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
+| `catalogue.ts` | The data: 19 parts of which 2 are test objects, 40 pads, 64 wires, 22 functions of which 10 run on every setup, 6 rules, 43 check entries, 8 power sources, 5 stages, 7 safety notes, 9 pin defaults, 12 pictures on 8 parts. All text is in English and German. |
 | `resolve.ts` | `resolve(catalogue, selection)` returns the setup: parts with the reason for each, functions, options, wires, check entries, power sources. |
 | `cond.ts` | Evaluates the condition of a wire, a rule or a check entry. |
 | `groups.ts` | `groups(catalogue)` groups the functions by the bench hardware they need. `removalEffect` and `deselectEffect` return what leaves a setup with a part or a function. |
@@ -63,9 +63,11 @@ use in one setup.
 The option `servoPower` is `external` (default) or `bench`. With `bench` the
 plus of the servo is on pad 40 (VBUS, 5 V) of the coprocessor, or on the V
 pin of the strip of the Osoyoo breakout board. The check entry
-`servo-bench-supply` is in every such setup: the servo draws from the supply
-of the logic. The current limit of pad 40 and the supply of the strip are not
-stated; the check entries `servo-5v-pin` and `strip-supply` say so. The ESC
+`servo-bench-supply` is in every such setup: the source at the V pin depends
+on the jumper V Selector (5V from the converter of the DC input, 3V3 from the
+regulator on VSYS). The current limit of pad 40 is not stated; the check entry
+`servo-5v-pin` says so. The currents of the strip and whether USB alone powers
+the 3V3 position are not measured; the check entry `strip-supply` says so. The ESC
 takes signal and GND from the bench in every setup, never a supply.
 
 The option `servoPort` is `outputs` (default) or `prog`. It is never shown
@@ -190,7 +192,7 @@ npm install --no-save --no-package-lock --prefix "$TMP_TOOLS" typescript@7.0.2 @
 | Wire ends | A wire end is not a pad or a declared pin of a part, or a power wire ends on a signal pad. |
 | References | A function, rule, condition, power source or stage names an id that does not exist. A function needs a test object, or drives a part that is none. A rule adds a test object. A test object is locked or selectable, has no function that drives it on the base setup, or has no power source. A power source feeds neither the logic nor a test object, has no advantage or no drawback, or holds a range that is not ordered. No power source feeds the logic. |
 | Text | A string is empty in one language, starts or ends with white space, or holds an exclamation mark, a listed marketing word, a character outside the allowed set or a tag other than `<b>` in a safety note. |
-| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known. |
+| Sources | A record has no source, a file or line does not exist at the tag, the line is empty, the line does not hold the text the anchor names, or a build guide section, a photo or the date of an owner statement is not known, or a document source (`doc`) has no title, no https address or no place in the document. |
 | Pins | The pin table breaks one of the 7 rules below, or a wire and the pin table disagree. |
 | Pictures | A picture record names a file that `../public/pictures/` does not hold, a photo is not a WebP file or carries Exif or XMP metadata, a thumb is not 480 px wide, the pixel size of the thumb or the drawing differs from the record, an alt text is empty in one language, more than 2 pictures of a part apply to one set of options, a drawing holds a script, an event attribute, a raster image, a data URL or a reference outside the file, or the folder holds a file that no part names. |
 | Routes | A slot order is used twice in a column of the drawing, or a lane number is outside its range (left 0 to 18, right 0 to 22, outer 0 to 7, channel 0 to 6). |
@@ -327,6 +329,6 @@ Line coverage of the resolver and the groups, measured by `node --test --experim
 - INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
-- Osoyoo breakout board: the source that feeds the converter of the strip, its input range, its output current and the scope of the 3.3 V or 5 V jumper are not stated.
+- Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2 A at 5 V and 500 mA at 3.3 V are vendor values, not measured. The DC input range differs between the print (7 to 16 V), the vendor (7 to 12 V recommended, 7 to 18 V limit) and the chip (7 to 40 V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.
 - ESC STICK programming: `docs/StickProgramming.md` at `v0.17.0` runs it on ESC power B (PD mini). An owner statement of 2026-10-11 says that programming an ESC needs no power. The data keeps the PD mini as needed bench hardware; what powers the ESC during programming is stated as unknown in the check entry `esc-programming-power`.
-- 8 check entries of kind `unknown` state each open point in the text of a setup.
+- 9 check entries of kind `unknown` state each open point in the text of a setup.

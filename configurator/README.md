@@ -412,7 +412,7 @@ the wire point of every pin in px of the drawing. The files are committed.
 generator or from the data file. The wiring picture shows them. They
 count against the 1 MB of the size budget.
 
-Drawing folder: 46 files, 451.7 kB.
+Drawing folder: 46 files, 451.9 kB.
 
 `drawings/test/cli.test.ts` fails when this line differs from the folder.
 
@@ -466,8 +466,10 @@ file names no stage, so the checks follow the stages as one list.
 ## Limits
 
 - The page draws 1 servo and 1 ESC.
-- Servo power from the bench: the current limit of pad 40 is not stated. What feeds the converter of the
-  Osoyoo breakout board, its output current and the scope of its jumper are not stated.
+- Servo power from the bench: the current limit of pad 40 is not stated. The output currents of the
+  Osoyoo breakout board are vendor values (2 A at 5 V, 500 mA at 3.3 V), not measured.
+  The V pins of all 40 strips follow the jumper V Selector; with USB alone and the jumper on 3V3 the schematic and
+  the product page disagree.
 - What powers an ESC during programming other than ESC STICK is not stated.
 - 8 of 19 parts have a picture. MATEK board, servo, ESC, PD charger, microSD card, motor simulator, phase tap
   and cables: no picture.

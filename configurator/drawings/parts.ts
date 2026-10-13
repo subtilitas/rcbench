@@ -98,7 +98,7 @@ function coproOsoyoo(d: Dwg): void {
   const { pitch, y0 } = STRIP;
   d.add(`<g filter="${d.u('s3')}"><rect x="20" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/><rect x="422" y="${y0 - pitch / 2 - 2}" width="38" height="${20 * pitch + 4}" rx="2" fill="#1f7a41"/></g>`);
   // Servo strips: 1 plug point with the pins S, V and G beside every screw terminal.
-  // V comes from the DC-DC converter of the carrier; a jumper selects 3.3 V or 5 V.
+  // V is 1 net; the jumper V Selector feeds it from the 5 V converter or the 3.3 V regulator.
   for (const xs of [STRIP.left, STRIP.right]) {
     xs.forEach((x, i) => {
       d.add(`<rect x="${x - 4}" y="${y0 - 14}" width="8" height="${19 * pitch + 28}" fill="${STRIP.colours[i]}"/>`);
@@ -124,10 +124,11 @@ function coproOsoyoo(d: Dwg): void {
   // The 2-pole VIN terminal and the 3 x 3 pin header of the carrier are not drawn.
   d.add(`<g filter="${d.u('s3')}"><rect x="170" y="20" width="44" height="68" rx="3" fill="#1b1c20"/><rect x="178" y="20" width="28" height="12" fill="#0b0b0d"/></g>`);
   d.add(`<g filter="${d.u('s2')}"><rect x="232" y="30" width="40" height="18" rx="2" fill="${d.u('tin')}"/><rect x="238" y="34" width="28" height="10" fill="#17181c"/><rect x="240" y="34" width="12" height="10" fill="#e9e6de"/></g>`, d.smd(296, 39, 'led'), d.smd(296, 52, 'r'));
-  // Jumper: 3 pins, the cap on 2 of them. The print of its 2 positions is not legible in photo 05.
-  d.add(`<g filter="${d.u('s2')}"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="222" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>`);
+  // Jumper: 3 pins, the cap on 2 of them. The print reads 3V3 and 5V from the left (product photo of the vendor); the cap is drawn on the 5V pair, the position a servo on the V pins needs, and the label states the cap position only. The board is delivered with the cap on 3V3.
+  d.add(`<g filter="${d.u('s2')}"><rect x="222" y="62" width="34" height="12" rx="1.5" fill="#17181c"/><rect x="233" y="60" width="23" height="16" rx="2" fill="#2a2c31"/></g>`);
   for (const x of [228, 239, 250]) d.add(`<circle cx="${x}" cy="68" r="2.2" fill="${d.u('gold')}"/>`);
   d.add(d.text(239, 90, '3V3 / 5V', { sz: 9, a: 'middle' }));
+  d.add(d.text(256, 101, d.lang === 'de' ? 'Kappe auf 5V' : 'cap on 5V', { sz: 9, a: 'end' }));
   const cap = (x: number, y: number): string => `<circle cx="${x}" cy="${y}" r="11" fill="${d.u('tin')}"/><path d="M${x - 9} ${y - 7}A11 11 0 0 1 ${x + 9} ${y - 7}Z" fill="#1b1c20"/>`;
   d.add(`<g filter="${d.u('s3')}">${cap(279, 76)}${cap(305, 76)}</g>`);
   d.add(d.chip(262, 113, 18, 16, { n: 4, leg: 3 }));

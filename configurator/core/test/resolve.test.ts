@@ -433,9 +433,17 @@ test('servo power: the external supply, the 5 V pin, the strip of the Osoyoo bre
   assert.deepEqual(partIds(strip), [...LOCKED, 'servo']);
   assert.deepEqual(wireNumbers(strip), [1, 2, 3, 4, 7, 8, 61]);
   assert.deepEqual(plus(strip), [[61, 'servo.POS', null]]);
-  for (const id of [WARNING, 'strip-jumper', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
+  for (const id of [WARNING, 'strip-jumper', 'strip-dc', 'strip-measure', 'strip-plug', 'strip-supply']) assert.ok(ids(strip).includes(id), id);
   assert.ok(!ids(strip).includes('servo-5v-pin'));
   assert.deepEqual(used(strip), ['strip-v']);
+  // Without the Osoyoo breakout board none of the strip checks appears.
+  const STRIP_CHECKS = ['strip-jumper', 'strip-dc', 'strip-measure', 'strip-feed', 'strip-converter', 'strip-input', 'strip-print', 'strip-regulator', 'strip-supply'];
+  const bare = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'pads' }));
+  assert.deepEqual(ids(bare).filter((id) => id.startsWith('strip-')), []);
+  for (const id of STRIP_CHECKS) assert.ok(!ids(bare).includes(id), id);
+  assert.ok(ids(bare).includes('servo-5v-pin'));
+  const extStrip = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo' }));
+  for (const id of STRIP_CHECKS) assert.ok(!ids(extStrip).includes(id), id);
   // No wire of the strip variant ends on pad 40.
   assert.ok(!strip.wires.some((w) => w.a === 'pad.40' || w.b === 'pad.40'));
 
@@ -489,7 +497,7 @@ test('an option keeps its value while it is not visible', () => {
   const setup = resolve(CATALOGUE, select([], [], { ina228Board: 'xt90', escPower: 'pd', connection: 'osoyoo' }));
   assert.deepEqual(setup.options.map((o) => o.value), ['osoyoo', 'xt90', 'pd', 'external', 'outputs']);
   assert.deepEqual(setup.checks.map((c) => c.id), [
-    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals',
+    'can-60', 'panel-terminals', 'same-release', 'osoyoo-labels', 'osoyoo-terminals', 'strip-parts', 'strip-load', 'strip-level',
   ]);
 });
 
@@ -863,4 +871,55 @@ test('the functions that need no part are enabled in every setup and add no part
   assert.deepEqual(partIds(named), partIds(empty));
   assert.deepEqual(named.wires.map((w) => w.n), empty.wires.map((w) => w.n));
   assert.deepEqual(named.ignored, []);
+});
+
+test('Osoyoo strip with the INA3221 shunt (servocur): the 9 strip checks stay and the supply ends on wire 62', () => {
+  const both = resolve(CATALOGUE, select(['servo', 'servocur'], [], { servoPower: 'bench', connection: 'osoyoo' }));
+  const ids = both.checks.map((c) => c.id);
+  for (const id of ['strip-jumper', 'strip-dc', 'strip-measure', 'strip-feed', 'strip-converter', 'strip-input', 'strip-print', 'strip-regulator', 'strip-supply']) {
+    assert.ok(ids.includes(id), id);
+  }
+  assert.ok(!ids.includes('strip-plug'));
+  assert.ok(both.parts.some((p) => p.part.id === 'ina3221'));
+  const numbers = both.wires.map((w) => w.n);
+  assert.ok(numbers.includes(62));
+  assert.ok(!numbers.includes(61));
+});
+
+test('Osoyoo breakout board: a servo supply other than the strip keeps the servo plus off the strip V pin', () => {
+  const ids = (setup: Setup): string[] => setup.checks.map((c) => c.id);
+  const NOTE = 'strip-servo-plus';
+  for (const servoPort of OPTION_VALUES.servoPort) {
+    const external = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo', servoPort }));
+    assert.ok(ids(external).includes(NOTE), `external ${servoPort}`);
+    assert.ok(!wireNumbers(external).some((n) => n === 61 || n === 62), `external ${servoPort}: no wire to the strip V pin`);
+    const pd = resolve(CATALOGUE, select(['servo', 'supply'], [], { servoPower: 'bench', connection: 'osoyoo', servoPort }));
+    assert.ok(ids(pd).includes(NOTE), `PD mini ${servoPort}`);
+    const bench = resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo', servoPort }));
+    assert.ok(!ids(bench).includes(NOTE), `bench ${servoPort}`);
+    for (const servoPower of OPTION_VALUES.servoPower) {
+      const pads = resolve(CATALOGUE, select(['servo'], [], { servoPower, connection: 'pads', servoPort }));
+      assert.ok(!ids(pads).includes(NOTE), `pads ${servoPower} ${servoPort}`);
+    }
+  }
+  // With the INA3221 the servo plus goes to VIN1- (wire 30), never straight to the supply (wire 9).
+  const shunt = resolve(CATALOGUE, select(['servo', 'servocur'], [], { servoPower: 'external', connection: 'osoyoo' }));
+  assert.ok(ids(shunt).includes(NOTE));
+  assert.ok(wireNumbers(shunt).includes(30));
+  assert.ok(!wireNumbers(shunt).includes(9));
+  // Without a servo the note does not appear, whatever the option says.
+  assert.ok(!ids(resolve(CATALOGUE, select(['esc'], [], { servoPower: 'external', connection: 'osoyoo' }))).includes(NOTE));
+});
+
+test('the power source list holds the strip V pin only with the Osoyoo breakout board', () => {
+  const listed = (setup: Setup): Array<[string, boolean]> => setup.power
+    .filter((p) => p.source.feeds === 'servo').map((p) => [p.source.id, p.used]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'pads' }))),
+    [['copro-5v', true], ['pd-servo', false], ['lipo-2s', false], ['own-supply', false]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'pads' }))),
+    [['copro-5v', false], ['pd-servo', false], ['lipo-2s', true], ['own-supply', true]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'external', connection: 'osoyoo' }))),
+    [['strip-v', false], ['pd-servo', false], ['lipo-2s', true], ['own-supply', true]]);
+  assert.deepEqual(listed(resolve(CATALOGUE, select(['servo'], [], { servoPower: 'bench', connection: 'osoyoo' }))),
+    [['strip-v', true], ['pd-servo', false], ['lipo-2s', false], ['own-supply', false]]);
 });
