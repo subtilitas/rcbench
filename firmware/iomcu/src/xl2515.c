@@ -4,6 +4,7 @@
 
 #include "xl2515.h"
 
+#include <stdio.h>
 #include <string.h>
 
 #include "hardware/gpio.h"
@@ -165,9 +166,67 @@ static bool fetch_rx(void *ctx, uint8_t buf[13])
     return true;
 }
 
+/* DIAGNOSTIC BUILD: raw receive buffers, first ones and refused ones. */
+#define DIAG_FIRST 12u
+#define DIAG_REFUSED 6u
+static uint8_t  s_diag_first[DIAG_FIRST][13];
+static uint32_t s_diag_fetched;
+static uint8_t  s_diag_refused[DIAG_REFUSED][13];
+static uint32_t s_diag_refused_n;
+
 bool xl2515_recv(link_can_frame_t *f)
 {
-    return mcp2515_recv_next(fetch_rx, NULL, f);
+    if (f == NULL) {
+        return false;
+    }
+    for (unsigned i = 0; i < MCP2515_RX_BUFFERS; ++i) {
+        uint8_t buf[13];
+        if (!fetch_rx(NULL, buf)) {
+            return false;
+        }
+        if (s_diag_fetched < DIAG_FIRST) {
+            memcpy(s_diag_first[s_diag_fetched], buf, 13);
+        }
+        ++s_diag_fetched;
+        if (mcp2515_decode_rx(buf, f)) {
+            return true;
+        }
+        memcpy(s_diag_refused[s_diag_refused_n % DIAG_REFUSED], buf, 13);
+        ++s_diag_refused_n;
+    }
+    return false;
+}
+
+static void diag_dump(const char *what, unsigned n, const uint8_t b[13])
+{
+    printf("rcbench-iomcu: DIAG %s %2u:", what, n);
+    for (unsigned i = 0; i < 13; ++i) {
+        printf(" %02X", b[i]);
+    }
+    printf("\n");
+}
+
+void xl2515_diag_print(void)
+{
+    uint8_t cnf[3], rxc0, rxc1;
+    read_regs(MCP2515_CNF3, cnf, 3);
+    rxc0 = read_reg(MCP2515_RXB0CTRL);
+    rxc1 = read_reg(MCP2515_RXB1CTRL);
+    printf("rcbench-iomcu: DIAG xl2515 fetched %lu refused %lu  "
+           "CNF3 %02X CNF2 %02X CNF1 %02X RXB0CTRL %02X RXB1CTRL %02X\n",
+           (unsigned long)s_diag_fetched, (unsigned long)s_diag_refused_n,
+           cnf[0], cnf[1], cnf[2], rxc0, rxc1);
+    printf("rcbench-iomcu: DIAG raw = SIDH SIDL EID8 EID0 DLC D0..D7\n");
+    const unsigned nf = s_diag_fetched < DIAG_FIRST ? (unsigned)s_diag_fetched
+                                                    : DIAG_FIRST;
+    for (unsigned i = 0; i < nf; ++i) {
+        diag_dump("first  ", i, s_diag_first[i]);
+    }
+    const unsigned nr = s_diag_refused_n < DIAG_REFUSED
+                        ? (unsigned)s_diag_refused_n : DIAG_REFUSED;
+    for (unsigned i = 0; i < nr; ++i) {
+        diag_dump("refused", i, s_diag_refused[i]);
+    }
 }
 
 bool xl2515_take_overflow(void)

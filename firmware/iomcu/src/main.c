@@ -1612,6 +1612,14 @@ static uint32_t s_can_overflows;
  */
 static uint32_t s_last_rx_ms;
 
+/* DIAGNOSTIC BUILD: where each received frame went. */
+static uint32_t s_dg_rx, s_dg_status_ok, s_dg_status_txfail;
+static uint32_t s_dg_decode_refused, s_dg_dispatch_none, s_dg_reply_txfail;
+static uint32_t s_dg_first_id[12];
+static uint8_t  s_dg_first_dlc[12];
+static uint32_t s_dg_refused_id[4];
+static uint8_t  s_dg_refused_dlc[4];
+
 static void can_start(void)
 {
     s_can_up = xl2515_init(IOMCU_CAN_BITRATE);
@@ -1637,6 +1645,11 @@ static void can_service(uint32_t now)
     link_can_frame_t in, out;
     while (xl2515_recv(&in)) {
         s_last_rx_ms = now;
+        if (s_dg_rx < 12u) {
+            s_dg_first_id[s_dg_rx] = in.id;
+            s_dg_first_dlc[s_dg_rx] = in.dlc;
+        }
+        ++s_dg_rx;
         if (can_selftest_echo(&in, &out)) {
             if (xl2515_send(&out)) {
                 ++s_can_echoes;
@@ -1654,7 +1667,11 @@ static void can_service(uint32_t now)
         st.echoes    = (uint16_t)s_can_echoes;
         st.overflows = (uint16_t)s_can_overflows;
         if (can_selftest_status_reply(&in, &st, &out)) {
-            (void)xl2515_send(&out);
+            if (xl2515_send(&out)) {
+                ++s_dg_status_ok;
+            } else {
+                ++s_dg_status_txfail;
+            }
             continue;
         }
 
@@ -1664,10 +1681,14 @@ static void can_service(uint32_t now)
          */
         link_msg_t req, reply;
         if (!link_can_decode(&in, &req)) {
+            s_dg_refused_id[s_dg_decode_refused % 4u] = in.id;
+            s_dg_refused_dlc[s_dg_decode_refused % 4u] = in.dlc;
+            ++s_dg_decode_refused;
             continue;
         }
         ++s_frames;
         if (!link_dev_dispatch(&s_dev, &req, &reply, now)) {
+            ++s_dg_dispatch_none;
             continue;
         }
         link_can_frame_t frames[LINK_CAN_MAX_FRAMES];
@@ -1679,8 +1700,12 @@ static void can_service(uint32_t now)
              * spins, because a bus that has stopped accepting must not stall
              * the failsafe.
              */
-            for (int spin = 0; spin < 1000 && !xl2515_send(&frames[i]); ++spin) {
+            int spin = 0;
+            for (; spin < 1000 && !xl2515_send(&frames[i]); ++spin) {
                 tight_loop_contents();
+            }
+            if (spin == 1000) {
+                ++s_dg_reply_txfail;
             }
         }
     }
@@ -1758,6 +1783,23 @@ static void can_report(uint32_t now)
            "%lu self-test echoes, tx_err %u rx_err %u eflg 0x%02X\n",
            (unsigned)IOMCU_CAN_BITRATE, (unsigned long)s_frames,
            (unsigned long)s_can_echoes, tec, rec, eflg);
+    printf("rcbench-iomcu: DIAG frames in %lu, status answered %lu "
+           "(send failed %lu), link decode refused %lu, dispatch no reply "
+           "%lu, reply send gave up %lu\n",
+           (unsigned long)s_dg_rx, (unsigned long)s_dg_status_ok,
+           (unsigned long)s_dg_status_txfail,
+           (unsigned long)s_dg_decode_refused,
+           (unsigned long)s_dg_dispatch_none,
+           (unsigned long)s_dg_reply_txfail);
+    for (unsigned i = 0; i < 12u && i < s_dg_rx; ++i) {
+        printf("rcbench-iomcu: DIAG first   %2u: id %08lX dlc %u\n", i,
+               (unsigned long)s_dg_first_id[i], s_dg_first_dlc[i]);
+    }
+    for (unsigned i = 0; i < 4u && i < s_dg_decode_refused; ++i) {
+        printf("rcbench-iomcu: DIAG decode refused %u: id %08lX dlc %u\n",
+               i, (unsigned long)s_dg_refused_id[i], s_dg_refused_dlc[i]);
+    }
+    xl2515_diag_print();
     /*
      * Said in words: an overflow is the one thing that explains a frame
      * going missing while the bus reports no error.  The part has two

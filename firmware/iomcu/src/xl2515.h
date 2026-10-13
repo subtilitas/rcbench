@@ -50,4 +50,7 @@ void xl2515_errors(uint8_t *tx_errors, uint8_t *rx_errors, uint8_t *flags);
  */
 bool xl2515_take_overflow(void);
 
+/** DIAGNOSTIC BUILD: print raw receive buffers and controller set-up. */
+void xl2515_diag_print(void);
+
 #endif /* RCBENCH_XL2515_H */
