@@ -139,6 +139,20 @@ export function formatHash(selection: Selection, lang: Lang, startLang: Lang, ca
   return keys.join('&');
 }
 
+/**
+ * Parts that were a tick under "Parts you own" in links of version 1 and are
+ * brought by a rule now. A link that names one stays valid.
+ */
+export const FORMER_TICKS: readonly string[] = ['usbtap'];
+
+/**
+ * The selection of a link without its former ticks. Only the owned parts hold
+ * them: a function or an option key of that spelling stays and is reported.
+ */
+export function withoutFormerTicks(selection: Selection): Selection {
+  return { ...selection, owned: selection.owned.filter((id) => !FORMER_TICKS.includes(id)) };
+}
+
 /** The ids of a notice as text: at most MAX_REPORTED, each cut to 32 characters. */
 export function reportIds(ids: string[]): string {
   const unique = [...new Set(ids)];
@@ -149,17 +163,27 @@ export function reportIds(ids: string[]): string {
 /**
  * A hash as it goes into a document, with '#'. The page keeps the link that
  * opened it until a change, so its address can name a function every setup
- * runs, or a test object as an owned part. Such a hash is written again from
+ * runs, a test object or a former tick as an owned part. Such a hash is written again from
  * its selection: the function ids are left out, the test object becomes the
- * tick of its function; the language key stays. Every other hash is returned
+ * tick of its function, the former tick is dropped; the language key stays. Every other hash is returned
  * as it is.
  */
 export function shareHash(hash: string, defaults: Options, catalogue: Catalogue): string {
   const parsed = parseHash(hash, defaults);
   const named = parsed.selection.functions.some((id) => catalogue.functions.some((f) => f.id === id && alwaysOn(catalogue, f)))
-    || parsed.selection.owned.some((id) => catalogue.parts.some((p) => p.id === id && p.testObject === true));
+    || parsed.selection.owned.some((id) => FORMER_TICKS.includes(id) || catalogue.parts.some((p) => p.id === id && p.testObject === true));
   if (!named) return hash;
   const lang = parsed.lang;
   // The start language is set so that a language key in the hash is written and none is added.
   return `#${formatHash(testObjectTicks(parsed.selection, catalogue), lang ?? 'en', lang === 'en' ? 'de' : 'en', catalogue)}`;
+}
+
+/**
+ * An address as it goes into the clipboard, the print header and a document:
+ * the part before '#' as it is, the hash through shareHash. An address
+ * without '#' is returned as it is.
+ */
+export function shareAddress(href: string, defaults: Options, catalogue: Catalogue): string {
+  const at = href.indexOf('#');
+  return at < 0 ? href : href.slice(0, at) + shareHash(href.slice(at), defaults, catalogue);
 }
