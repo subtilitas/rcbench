@@ -1082,6 +1082,40 @@ TEST_CASE(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap)
                                   1050u);
 }
 
+/*
+ * The sweep and the hold move surfaces, and an arm for the throttle alone
+ * drives none: refused with NOT_ARMED as on a bench not armed.  A sweep
+ * running when the arm becomes the throttle's stops on the next pass.
+ */
+TEST_CASE(a_sweep_needs_the_surfaces_armed)
+{
+    fresh(false);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), T0);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), LINK_NACK_NOT_ARMED);
+    CHECK_EQ(say(LINK_SV_HOLD, T0), LINK_NACK_NOT_ARMED);
+    CHECK_EQ(say(LINK_SV_RESUME, T0), LINK_NACK_NOT_ARMED);
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+
+    outputs_arm(&o, false, T0);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), T0);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    CHECK(servo_page_step(&pg, &o, T0 + 10u));
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), T0 + 20u);
+    CHECK(!servo_page_step(&pg, &o, T0 + 30u));
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+
+    /* A hold ends the same way. */
+    fresh(false);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), T0);
+    CHECK_EQ(sweep(SWEEP_SINE, 1000u, 400u, 0u, T0), 0u);
+    held(T0 + 100u, T0 + 200u);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), T0 + 210u);
+    (void)servo_page_step(&pg, &o, T0 + 220u);
+    CHECK_EQ(reg(LINK_SV_SWEEP), 0u);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), T0 + 230u);
+    CHECK_EQ(say(LINK_SV_RESUME, T0 + 240u), LINK_NACK_BAD_VALUE);
+}
+
 int main(void)
 {
     RUN(a_sweep_needs_the_bench_armed);
@@ -1119,5 +1153,6 @@ int main(void)
     RUN(a_sweep_ends_on_500_ms_of_silence_across_the_tick_wrap);
     RUN(a_hold_ends_on_500_ms_of_silence_across_the_tick_wrap);
     RUN(a_finished_sweep_keeps_its_centre_for_500_ms_across_the_tick_wrap);
+    RUN(a_sweep_needs_the_surfaces_armed);
     return test_summary("servo_page");
 }

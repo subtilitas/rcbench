@@ -41,6 +41,10 @@ typedef struct {
     bool off;
     /** Whether the bank is armed for this pass. */
     bool arm;
+    /** The roles armed for this pass, LINK_ARM_ROLES bits: link_arm_roles()
+     *  of ARM while arm is true, else 0.  An output of a role outside it
+     *  carries no pulse. */
+    uint16_t roles;
 } safety_gate_t;
 
 /**

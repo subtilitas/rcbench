@@ -80,11 +80,17 @@ typedef enum {
  * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
  * than its frame (out_pwm_pulse_max()); the panel states a port's range
  * before it switches the port's pulse on, which an older coprocessor takes
- * as well.  From 4.19 the SERVO rate reaches the tester's target only (the
- * standard servo ports' surfaces, or the one programming port PROG's
- * TARGET names) and a TARGET change returns it to 0; the panel then counts
- * the rate as 0 after a TARGET change it saw, and as not known after a
- * TARGET write that went unacknowledged.  A
+ * as well.  From 4.17 the
+ * TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
+ * a set-up no freed pin makes good; the panel offers the first frame again
+ * after a BUSY only.  From 4.18 CONTROL's ARM names the roles it arms
+ * (LINK_ARM_THROTTLE, LINK_ARM_SURFACE); the panel writes LINK_ARM_ALL to an
+ * older coprocessor, which arms its whole bank on any non-zero ARM.  From
+ * 4.19 the SERVO rate reaches the tester's target only (the standard servo
+ * ports' surfaces, or the one programming port PROG's TARGET names) and a
+ * TARGET change returns it to 0; the panel then counts the rate as 0 after
+ * a TARGET change it saw, and as not known after a TARGET write that went
+ * unacknowledged.  A
  * coprocessor never asks the panel's minor; a
  * page an older panel does not know is a page it never writes.
  */
@@ -119,6 +125,17 @@ typedef enum {
  *  clamps the pulse to the frame's last count, while the page reads back
  *  the endpoint written. */
 #define LINK_MINOR_PULSE_FRAME 16u
+/** The first minor whose TONE page refuses a tap on a busy pin with
+ *  LINK_NACK_BUSY: a pin SUPPLY, SENSE, PROG or an output holds, or a
+ *  capture the wiring cannot start for now.  BAD_VALUE is left for a set-up
+ *  no freed pin makes good.  Minor 16 and older refuse both with
+ *  LINK_NACK_BAD_VALUE. */
+#define LINK_MINOR_TONE_BUSY 17u
+/** The first minor whose CONTROL ARM arms only the roles it names:
+ *  LINK_ARM_THROTTLE, LINK_ARM_SURFACE or both.  It refuses any other
+ *  non-zero value but LINK_ARM_ALL with LINK_NACK_BAD_VALUE.  An older minor arms
+ *  every output on any non-zero ARM. */
+#define LINK_MINOR_ARM_ROLE 18u
 /** The first minor whose SERVO rate is the tester's target's alone: the
  *  surfaces of the standard servo ports with them as PROG's TARGET, else
  *  the TARGET port's pin, the slots at their own rates and the other ports
@@ -785,10 +802,16 @@ enum {
  *
  *     Refused with BAD_VALUE: a value out of its range, a combination the
  *     detector refuses (tone_init()), and, while the tap is enabled, a pin
- *     past the bank, reserved, bound to an output, held by the SENSE or
- *     SUPPLY page, or an ADC (analog to digital converter) pin: GP26 to
- *     GP29 on the RP2350A and GP40 to GP47 on the RP2354B, rated IOVDD +
- *     0.5 V and not fault tolerant.  The pin is no output's while the tap
+ *     past the bank, one the board reserves, or an ADC (analog to digital
+ *     converter) pin: GP26 to GP29 on the RP2350A and GP40 to GP47 on the
+ *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant, and any pin on
+ *     a coprocessor whose core 1 did not start at boot: no capture runs
+ *     before a restart.  Refused with
+ *     BUSY (since 4.17, BAD_VALUE before): while the tap is enabled, a pin
+ *     bound to an output or held by the SENSE, SUPPLY or PROG page, and a
+ *     capture the wiring cannot start for now -- core 1 in a pass, or no
+ *     PIO state machine or DMA channel left.  Freed, the same write is
+ *     taken.  The pin is no output's while the tap
  *     is enabled, and an OUTPUTS write that binds it is refused, as are a
  *     SENSE or SUPPLY write that takes it.  A change is taken armed or
  *     not: the tap is an input and drives nothing.
@@ -1616,7 +1639,7 @@ enum {
  * frame, so the clear is its own transaction ahead of the arm.
  */
 enum {
-    LINK_CT_ARM        = 0, /**< non-zero asks for ARMED                    */
+    LINK_CT_ARM        = 0, /**< 0 disarms; LINK_ARM_* asks for ARMED       */
     LINK_CT_THROTTLE   = 1, /**< 0..10000, hundredths of a percent          */
     /*
      * The magnet count of the motor under test, so an electrical speed can
@@ -1644,6 +1667,24 @@ enum {
  * on its own.
  */
 #define LINK_CLEAR_MAGIC 0x5AFEu
+
+/*
+ * What a non-zero ARM arms, from LINK_MINOR_ARM_ROLE.
+ *
+ * An arm is limited to the roles it names.  A channel of another role stays
+ * at no pulse, and a programming port is a surface.  LINK_ARM_ALL is every
+ * role, which is what a panel older than LINK_MINOR_ARM_ROLE writes as 1.
+ * Any other value is refused with LINK_NACK_BAD_VALUE, ahead of the failsafe
+ * check, so a refused value never latches anything.
+ *
+ * The roles of an arm change only through a disarm: a non-zero ARM that
+ * differs from the non-zero ARM in force is refused with LINK_NACK_BAD_VALUE.
+ * Writing the value in force again is not a change.
+ */
+#define LINK_ARM_ALL       0x0001u /**< every role                          */
+#define LINK_ARM_THROTTLE  0x0002u /**< outputs bound as a motor            */
+#define LINK_ARM_SURFACE   0x0004u /**< outputs bound as a servo, and ports */
+#define LINK_ARM_ROLES     (LINK_ARM_THROTTLE | LINK_ARM_SURFACE)
 
 /** Throttle is hundredths of a percent: 0..10000 inclusive. */
 #define LINK_THROTTLE_MAX 10000u

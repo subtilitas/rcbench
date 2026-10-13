@@ -143,8 +143,9 @@ void sense_page_read(const sense_page_t *p, uint8_t off, uint8_t n,
  * (sense_page_bound()), with LINK_SS_ARM_PORT a programming port that
  * renders no pulse (sense_page_ports()), a movement or band of 0 or past
  * 32767 mA
- * (BAD_VALUE); an arm while @p o is not driving (NOT_ARMED).  The holding
- * level is signed mA and every value of it is taken, -32768 to 32767.
+ * (BAD_VALUE); an arm while @p o is not armed for the surfaces
+ * (NOT_ARMED).  The holding level is signed mA and every value of it is
+ * taken, -32768 to 32767.
  * An arm restarts the capture: CAP_STATE armed, the results 0.
  */
 uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,

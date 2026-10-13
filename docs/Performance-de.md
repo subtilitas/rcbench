@@ -195,7 +195,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 368 | 2 800 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 096 | 3 072 |
 | `control` | `control_task` | 6 144 | 4 432 | 688 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -247,25 +247,24 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 716 Bytes ergibt.
+für Kern 0 1 636 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (472 Bytes), `can_service` (344),
-`link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
-`slots_rerate`, `outputs_hw_apply_only`,
+im pico-sdk scheitert: `main` (464 Bytes), `can_service` (344),
+`link_dev_dispatch`, `slots_write`, `slots_take`, `outputs_hw_apply_only`,
 `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
 aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
-Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 312 Bytes: `main`
-(472), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
+Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 304 Bytes: `main`
+(464), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
 `kst_port_write` (88), `kst_session_edit` (40) und der Start eines
 Planer-Jobs, 312 Bytes ab `kst_plan_edit_begin`: `kst_plan_edit_begin`
 (40), die Grenzwertprüfung `kst_limits_edit` (248), `load` (16) und
-`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 1 032 Bytes: `main`,
-`kst_port_step` (48), `step_programming` (40), `kst_session_step` (264) und ein Slice des Planers,
+`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 1 016 Bytes: `main`,
+`kst_port_step` (48), `step_programming` (40), `kst_session_step` (256) und ein Slice des Planers,
 208 Bytes ab `kst_plan_step`. Der Planer ruft sich nicht selbst auf. Der
 Job des Planers, der Plan und das bereitgestellte Image liegen im Zustand
 der Session und des Ports, nicht auf dem Stack.

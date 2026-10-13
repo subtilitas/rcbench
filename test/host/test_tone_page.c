@@ -4,8 +4,11 @@
  * Under test: the set-up as a page starts; every value held to its range
  * at both ends, whether the tap is enabled or not; the combinations the
  * detector refuses (a gap shorter than the lowest tone's period); the pin
- * refused past the bank, on a reserved pin, an output's, SENSE's or
- * SUPPLY's, and on an ADC pin, while enabled; the pin reserved from the
+ * refused past the bank, on a reserved pin and on an ADC pin with
+ * BAD_VALUE, and on an output's, SENSE's or SUPPLY's with BUSY, while
+ * enabled, and a busy pin taken once freed; a page that runs no capture
+ * this boot (core 1 not started) refusing every enabled set-up with
+ * BAD_VALUE, never BUSY, and taking the tap off; the pin reserved from the
  * outputs while the tap runs; a refused write storing nothing; read-only
  * registers and the page end; the 64-beep ring read without consuming,
  * numbered from 1 to 65535 and round again, and a beep that has left it;
@@ -211,21 +214,23 @@ TEST_CASE(the_pin_is_refused_where_something_else_holds_it)
     fresh();
     /* Past the bank is refused disabled or not. */
     CHECK_EQ(on(64u), LINK_NACK_BAD_VALUE);
-    /* The heartbeat's reservation, an output's pin. */
+    /* The heartbeat's reservation: a board pin no binding frees. */
     CHECK_EQ(on(3u), LINK_NACK_BAD_VALUE);
-    CHECK_EQ(on(4u), LINK_NACK_BAD_VALUE);
-    /* SENSE's and SUPPLY's, as the caller names them. */
+    /* An output's pin: busy (since 4.17). */
+    CHECK_EQ(on(4u), LINK_NACK_BUSY);
+    /* SENSE's and SUPPLY's, as the caller names them: busy. */
     CHECK_EQ(setup(1u, 16u, 400u, 6500u, 8u, 3u, 3u, BIT(16) | BIT(17)),
-             LINK_NACK_BAD_VALUE);
+             LINK_NACK_BUSY);
     CHECK_EQ(setup(1u, 17u, 400u, 6500u, 8u, 3u, 3u, BIT(16) | BIT(17)),
-             LINK_NACK_BAD_VALUE);
+             LINK_NACK_BUSY);
     CHECK_EQ(setup(1u, 18u, 400u, 6500u, 8u, 3u, 3u, BIT(16) | BIT(17)), 0u);
     /* The ADC pins of the RP2350A and of the RP2354B. */
     for (unsigned pin = 0; pin <= 63u; ++pin) {
         fresh();
         const bool adc = (pin >= 26u && pin <= 29u) || (pin >= 40u && pin <= 47u);
-        const uint8_t want = (pin == 3u || pin == 4u || adc)
-                                 ? LINK_NACK_BAD_VALUE : 0u;
+        const uint8_t want = (pin == 3u || adc) ? LINK_NACK_BAD_VALUE
+                             : (pin == 4u)      ? LINK_NACK_BUSY
+                                                : 0u;
         const uint8_t got = on((uint16_t)pin);
         if (got != want) {
             T_FAIL("pin %u: got %u, want %u", pin, got, want);
@@ -238,8 +243,74 @@ TEST_CASE(the_pin_is_refused_where_something_else_holds_it)
     /* ... and enabling that set-up is the refusal. */
     const uint16_t en = 1u;
     CHECK_EQ(tone_page_write(&pg, LINK_TN_ENABLE, 1u, &en, &o, 0u),
-             LINK_NACK_BAD_VALUE);
+             LINK_NACK_BUSY);
     CHECK_EQ(reg(LINK_TN_ENABLE), 0u);
+}
+
+/* BUSY says the same write is taken once the pin is free; BAD_VALUE says no
+ * freed pin makes it good, so values out of range on a busy pin are
+ * BAD_VALUE. */
+TEST_CASE(a_busy_pin_is_taken_once_freed_and_bad_values_stay_bad_value)
+{
+    fresh();
+    CHECK_EQ(setup(1u, 16u, 400u, 6500u, 8u, 3u, 3u, BIT(16)), LINK_NACK_BUSY);
+    CHECK_EQ(reg(LINK_TN_ENABLE), 0u);
+    CHECK_EQ(setup(1u, 16u, 400u, 6500u, 8u, 3u, 3u, 0u), 0u);
+    CHECK_EQ(reg(LINK_TN_ENABLE), 1u);
+    CHECK_EQ(reg(LINK_TN_PIN), 16u);
+
+    /* A high tone below the low one, on a busy pin and on a free one. */
+    fresh();
+    CHECK_EQ(setup(1u, 16u, 1000u, 900u, 8u, 3u, 3u, BIT(16)),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(setup(1u, 4u, 1000u, 900u, 8u, 3u, 3u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(setup(1u, 18u, 1000u, 900u, 8u, 3u, 3u, 0u), LINK_NACK_BAD_VALUE);
+    /* An output's pin freed: the slot unbound, the same write taken. */
+    fresh();
+    CHECK_EQ(on(4u), LINK_NACK_BUSY);
+    const out_slot_t none = { .driver = OUT_DRIVER_NONE };
+    CHECK(outputs_configure(&o, 0, &none));
+    CHECK_EQ(on(4u), 0u);
+}
+
+/* Core 1 did not start: nothing runs a capture before a restart, so an
+ * enabled set-up is refused with BAD_VALUE, which the panel does not offer
+ * again every 5 s, and never with BUSY, which it does -- on a free pin and
+ * on a busy one alike.  The tap may still be switched off. */
+TEST_CASE(a_page_without_a_capture_refuses_the_tap_with_bad_value)
+{
+    fresh();
+    CHECK_EQ(on(22u), 0u);
+    CHECK(tone_page_wanted(&pg));
+    tone_page_no_capture(&pg);
+    CHECK(tone_page_enabled(&pg));
+    CHECK(!tone_page_wanted(&pg));
+    CHECK_EQ(tone_page_pins(&pg), 0u);
+    CHECK((reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED) != 0u);
+    /* The set-up in force, tried again, and another free pin. */
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(on(21u), LINK_NACK_BAD_VALUE);
+    /* A pin something else holds: still not BUSY. */
+    CHECK_EQ(setup(1u, 16u, 400u, 6500u, 8u, 3u, 3u, BIT(16)),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(on(4u), LINK_NACK_BAD_VALUE);
+    CHECK(!tone_page_wanted(&pg));
+    /* Switched off: taken, and the refusal goes with it. */
+    const uint16_t off = 0u;
+    CHECK_EQ(tone_page_write(&pg, LINK_TN_ENABLE, 1u, &off, &o, 0u), 0u);
+    CHECK(!tone_page_enabled(&pg));
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED, 0u);
+    /* A range alone with the tap off is taken; enabling it again is not. */
+    CHECK_EQ(setup(0u, 22u, 500u, 6500u, 8u, 3u, 3u, 0u), 0u);
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    CHECK(!tone_page_enabled(&pg));
+    /* On a page with the tap off, nothing is refused by it. */
+    fresh();
+    tone_page_no_capture(&pg);
+    CHECK(!tone_page_enabled(&pg));
+    CHECK_EQ(reg(LINK_TN_FLAGS) & LINK_TN_PIN_REFUSED, 0u);
+    CHECK_EQ(on(22u), LINK_NACK_BAD_VALUE);
+    tone_page_no_capture(NULL);
 }
 
 TEST_CASE(a_refused_write_stores_none_of_its_registers)
@@ -719,6 +790,8 @@ int main(void)
     RUN(every_value_is_held_to_its_range_at_both_ends);
     RUN(a_gap_shorter_than_the_lowest_tones_period_is_refused);
     RUN(the_pin_is_refused_where_something_else_holds_it);
+    RUN(a_busy_pin_is_taken_once_freed_and_bad_values_stay_bad_value);
+    RUN(a_page_without_a_capture_refuses_the_tap_with_bad_value);
     RUN(a_refused_write_stores_none_of_its_registers);
     RUN(the_pin_is_the_taps_while_it_runs_and_no_slot_binds_it);
     RUN(a_write_of_the_set_up_in_force_changes_nothing);

@@ -100,8 +100,8 @@
 #define TAG_Y     118
 #define TAG_H     24
 #define PWR_TXT_Y 150
-/* The line over the plot: the meter's name, 8 cells of 8 px for SUPPLY and
- * NETZTEIL and 11 for INA3221 CH1, then the three readings (k_line_w). */
+/* The line over the plot: the meter's name, 8 cells of 8 px for PD MINI
+ * and 11 for INA3221 CH1, then the three readings (k_line_w). */
 #define PWR_LAB_W     64
 #define PWR_LAB_W_INA 88
 #define PWR_Y     170
@@ -113,6 +113,9 @@
 #define SUP_VAL_X (RC_X + 32)
 #define SUP_VAL_W 66
 #define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + 4))
+/* The row naming what the tester drives, between SPEED's slider and
+ * CENTRE. */
+#define TARGET_Y  322
 /* The top of a standard servo's rating.  A set point raised past it is
  * applied only after the HV warning is held for two seconds. */
 #define STD_SERVO_V_MAX 6.0f
@@ -254,7 +257,7 @@ static const ui_plot_series_t k_power[PS_COUNT] = {
 
 /*
  * The widths of the three readings on the line over the plot, in px of 8 px
- * cells.  Beside SUPPLY 68 each.  Beside INA3221 CH1 60, 64 and 56, which
+ * cells.  Beside PD MINI 68 each.  Beside INA3221 CH1 60, 64 and 56, which
  * hold the widest reading of the part's registers: `65.54 V`, `-32.77 A`,
  * and a power of 7 cells, `-99.9 W` or `-2147 W`.
  */
@@ -367,6 +370,10 @@ static struct {
      * been written -- and a DISARM or STOP not yet answered.  gate.armed is
      * what the ARM button reads. */
     ui_value_gate_t gate;
+    /* The bench is armed for any role, the motor's included: what keeps the
+     * programmer off the port while the motor is armed and this screen's
+     * surfaces are not (servo_screen_set_bench_armed()). */
+    bool       bench_armed;
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
@@ -391,6 +398,8 @@ static struct {
     bool           have_sup;
     uint32_t       power_rev;
     uint32_t       drawn_power[2];
+    /* The supply was the panel's model when the line was drawn: the pill. */
+    bool           model_shown;
     /* The meter, as the panel last said it (servo_screen_source()), and the
      * INA3221's last CH1 window (servo_screen_window()). */
     servo_source_id_t source;
@@ -3290,10 +3299,16 @@ static void open_keypad(int target, const char *title, const char *unit,
     s.kp_target = target;
 }
 
-/* Armed, asked to arm, or a finger on ARM: the programmer takes no port. */
+/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port. */
 static bool bench_arming(void)
 {
-    return s.gate.armed || s.gate.arm_asked || s.arm_down;
+    return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
+}
+
+void servo_screen_set_bench_armed(bool armed)
+{
+    s.bench_armed = armed;
 }
 
 /* ARM takes no press while the programmer holds the port: programming and
@@ -4492,8 +4507,8 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/* Characters the target line holds: the box is 278 px of the 8x16 face. */
-#define TARGET_CELLS 34u
+/* Characters the TARGET row's value holds: 188 px of the 8x16 face. */
+#define TARGET_CELLS 23u
 
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known)
@@ -4534,36 +4549,11 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
         snprintf(out, size, "%s", TR(SV_TARGET_NONE));
         return true;
     }
-    /* As many pins as the box holds after the prefix, then "+N". */
-    const int prefix = snprintf(NULL, 0, TR(SV_TARGET_OUT), "");
+    /* As many pins as the value holds, then "+N" (ui_pinlist()). */
     char list[UI_PINLIST_PINS * 5u];
-    ui_pinlist(list, sizeof(list), pins,
-               TARGET_CELLS > (unsigned)prefix
-                   ? TARGET_CELLS - (unsigned)prefix : 0u);
-    snprintf(out, size, TR(SV_TARGET_OUT), list);
+    ui_pinlist(list, sizeof(list), pins, TARGET_CELLS);
+    snprintf(out, size, "%s", list);
     return false;
-}
-
-/*
- * What the tester drives, along the bottom of the left card.  The programming
- * port is the rare case and is filled in the warning colour: the tester's
- * commands then do not reach the SERVO PWM outputs, which an armed bank
- * holds at their rest.  No link and a target not known take it too: the
- * tester sends nothing then.
- */
-static void draw_target(gfx_canvas_t *c)
-{
-    const gfx_rect_t r = { PAD + 200, H - PAD - 36, LCARD_W - 200 - 10, 26 };
-    char line[40];
-    const bool warn = servo_target_line(line, sizeof(line), s.drive_target,
-                                        s.drive_pin, s.drive_pwm, s.pins,
-                                        s.pins_known);
-    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4,
-                        warn ? ui_theme_color(UI_C_WARN)
-                             : ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text_in(c, r, line, UI_FONT_LABEL,
-                warn ? ui_theme_color(UI_C_BG) : ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_CENTER);
 }
 
 static void draw_left(gfx_canvas_t *c)
@@ -4572,9 +4562,6 @@ static void draw_left(gfx_canvas_t *c)
      * cleared -- the case and the dial below it are chrome. */
     gfx_fill_rect(c, PAD + 1, PAD + 1, LCARD_W - 2, H - 2 * PAD - 2,
                   ui_theme_color(UI_C_PANEL));
-    /* Before the dial: the dial's rows leave the frame cache, and the box
-     * painted after them would be repainted on every dial redraw. */
-    draw_target(c);
     draw_dial(c);
     /* The case first: the horn bolts to the top of it and must be drawn over
      * it, not under. */
@@ -4680,7 +4667,10 @@ static void draw_power(gfx_canvas_t *c)
     const gfx_rect_t r = power_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
     const bool ina = (s.source == SERVO_SOURCE_INA3221);
-    gfx_text(c, RC_X, PWR_TXT_Y, ina ? TR(SV_SOURCE_INA) : TR(SV_SUPPLY),
+    /* The supply is the PD mini, named so in both languages, also while
+     * the panel's model stands in for it; the model carries the pill
+     * below. */
+    gfx_text(c, RC_X, PWR_TXT_Y, ina ? TR(SV_SOURCE_INA) : "PD MINI",
              UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
     const rail_t m = rail_now();
     char v[20], a[20], w[20];
@@ -4716,6 +4706,18 @@ static void draw_power(gfx_canvas_t *c)
         x += fw[k];
     }
     ui_plot_render(&s.power, c, (gfx_rect_t){ RC_X, PWR_Y, RC_W, PWR_H });
+    /*
+     * The readings of the panel's model are no measurement: the overview's
+     * pill, 88 px or as wide as a longer word and 20 px high, on the plot's
+     * top-left corner under the name, as the line beside the name is full.
+     */
+    if (!ina && supply_screen_model()) {
+        int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(SV_MODELLED), 1);
+        mw = (mw < 88) ? 88 : mw;
+        ui_pill(c, (gfx_rect_t){ RC_X + 2, PWR_Y + 2, (int16_t)mw, 20 },
+                TR(SV_MODELLED), ui_theme_color(UI_C_WARN),
+                ui_theme_color(UI_C_PANEL_SUNK));
+    }
 }
 
 /* The value of the CURRENT row, where row() draws a row's value. */
@@ -4804,8 +4806,10 @@ static gfx_rect_t tag_rect(void)
     return (gfx_rect_t){ RC_X, TAG_Y, RC_W, TAG_H };
 }
 
-/* The profile in force, in the danger colour when it is one that can
- * destroy a servo not made for it. */
+/* The profile in force, its frame rate and its pulse range in
+ * microseconds, in the danger colour when it is one that can destroy a
+ * servo not made for it.  The longest, a 13-character type, 560 Hz and two
+ * 4-digit ends, is 32 of the row's 33 cells. */
 static void draw_tag(gfx_canvas_t *c)
 {
     const gfx_rect_t r = tag_rect();
@@ -4814,11 +4818,34 @@ static void draw_tag(gfx_canvas_t *c)
                                     : ui_theme_color(UI_C_PANEL_SUNK);
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 4, fill);
     char line[40];
-    snprintf(line, sizeof(line), "%s  %u Hz", type()->name,
-             (unsigned)s.frame_hz);
+    snprintf(line, sizeof(line), "%s  %u Hz  %u-%u", type()->name,
+             (unsigned)s.frame_hz, (unsigned)s.min_us, (unsigned)s.max_us);
     gfx_text_in(c, r, line, UI_FONT_LABEL,
                 danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
                 GFX_ALIGN_CENTER);
+}
+
+/*
+ * What the tester drives, on the right card, which the settings, their
+ * keypads and the servo programmer leave in sight.  The programming port is
+ * the rare case and takes the warning colour: the tester's commands then do
+ * not reach the SERVO PWM outputs, which an armed bank holds at their rest.
+ * No pin, a binding not read, a target not known and no link take it too.
+ */
+static void draw_target_row(gfx_canvas_t *c)
+{
+    char line[32];
+    const bool warn = servo_target_line(line, sizeof(line), s.drive_target,
+                                        s.drive_pin, s.drive_pwm, s.pins,
+                                        s.pins_known);
+    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
+                                 : ui_theme_color(UI_C_TEXT_DIM);
+    gfx_text(c, RC_X, TARGET_Y + 5, TR(SV_TARGET), UI_FONT_LABEL, col, 1);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(TARGET_Y + 5),
+                                 (int16_t)(RC_W - 80), 16 },
+                line, UI_FONT_LABEL,
+                warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
+                1, GFX_ALIGN_RIGHT);
 }
 
 /*
@@ -4890,9 +4917,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
-    snprintf(buf, sizeof(buf), "%u - %u us", (unsigned)s.min_us,
-             (unsigned)s.max_us);
-    row(c, 322, TR(SV_RANGE), buf);
+    draw_target_row(c);
 
     /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
      * is disarmed. */
@@ -5545,6 +5570,11 @@ static void tick_body(float dt_s)
             s.out_down = false;
         }
         ++s.sup_rev;
+    }
+    /* The supply's model switched on or off: the pill on the plot. */
+    if (supply_screen_model() != s.model_shown) {
+        s.model_shown = supply_screen_model();
+        ++s.power_rev;
     }
     if (kst_panel_is_open() != s.kst_shown) {
         s.kst_shown = kst_panel_is_open();

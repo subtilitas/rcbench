@@ -513,7 +513,7 @@ TEST_CASE(the_hold_repaints_the_button_and_leaves_the_card_alone)
      * panel's bandwidth on one button. */
     fresh();
     scr->render(&cv, 0);
-    /* A pixel of the card above the button, on the RANGE row. */
+    /* A pixel of the card above the button, on the TARGET row. */
     const size_t probe = (size_t)(ARM_Y - 60) * W + (ARM_X + 12);
     fb[probe] = 0x1234;
 
@@ -6071,11 +6071,23 @@ TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
-/* The target line at the foot of the left card, as the pixels of its box. */
-#define TGT_X 206
-#define TGT_Y ((H - UI_BAND_H) - 6 - 36 + 1)
-#define TGT_W 278
-#define TGT_H 24
+/*
+ * The TARGET row of the right card, as the pixels of its box: the row at
+ * y 322 between the SPEED slider, whose knob reaches down to y 324, and
+ * CENTRE (from y 350), the label at x 514 and the value right-aligned in
+ * the 188 px from x 594.
+ */
+#define TGT_X 514
+#define TGT_Y 325
+#define TGT_W 268
+#define TGT_H 25
+#define TGT_ROW_Y 322
+#define TGT_VAL_DX 80
+
+/* The target line's box at the foot of the left card before the TARGET
+ * row: left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26 px. */
+#define OLD_TGT_X 206
+#define OLD_TGT_Y ((H - UI_BAND_H) - 6 - 36)
 
 static void target_box(gfx_color_t *out)
 {
@@ -6085,7 +6097,7 @@ static void target_box(gfx_color_t *out)
     }
 }
 
-/* One state of the target line. */
+/* One state of the target row. */
 typedef struct {
     int      target;        /* SET_SERVO_TARGET */
     uint8_t  drive;         /* the drive's target: 0, 1 + n for port n,
@@ -6108,14 +6120,14 @@ static const tgt_state_t k_tgt[] = {
     { 0, 0, PIN(2) | PIN(4),                     true,  0xFFu, false, false },
     { 0, 0, PIN(2) | PIN(4) | PIN(5),            true,  0xFFu, false, false },
     { 0, 0, PIN(12) | PIN(13) | PIN(14) | PIN(15), true, 0xFFu, false, false },
-    { 0, 0, PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12), true,
+    { 0, 0, PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8), true,
       0xFFu, false, false },
     { 0, 0, PINS_40_47,                          true,  0xFFu, false, false },
     { 0, 0, 0,                                   true,  0xFFu, false, true  },
     { 0, 0, 0,                                   false, 0xFFu, false, true  },
     { 1, 1, PIN(2),                              true,  0xFFu, true,  true  },
     { 1, 1, PIN(2),                              true,  13u,   true,  true  },
-    /* The port's pulse off: the longest lines, with a two-digit pin. */
+    /* The port's pulse off: the longest values, with a two-digit pin. */
     { 1, 1, PIN(2),                              true,  63u,   false, true  },
     { 1, 1, PIN(2),                              true,  0xFFu, false, true  },
     /* Not known and no link, with GP2 bound: the tester sends nothing. */
@@ -6130,38 +6142,58 @@ static const tgt_state_t k_tgt[] = {
 #define TGT_UNKNOWN 13      /* k_tgt: the target not known */
 #define TGT_NO_LINK 14      /* k_tgt: no link */
 
-/* The exact English text of each k_tgt state, written out here and not taken
- * from servo_target_line(). */
-static const char *const k_tgt_en[] = {
-    "TARGET: GP2", "TARGET: GP4", "TARGET: GP2 GP4", "TARGET: GP2 GP4 GP5",
-    "TARGET: GP12 GP13 GP14 GP15", "TARGET: GP1 GP2 GP3 GP10 GP11 GP12",
-    "TARGET: GP40 GP41 GP42 GP43 +4", "TARGET: NO SERVO PWM PIN",
-    "TARGET: PINS NOT READ", "TARGET: PROG PORT", "TARGET: PROG PORT GP13",
-    "TARGET: PROG PORT GP63 PWM OFF", "TARGET: PROG PORT PWM OFF",
-    "TARGET: NOT KNOWN", "TARGET: NO LINK",
+/* The exact text of each k_tgt state's value, in English and in German,
+ * written out here and not taken from servo_target_line(). */
+static const char *const k_tgt_txt[2][TGT_N] = {
+    { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
+      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+      "NO SERVO PWM PIN",
+      "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
+      "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "NOT KNOWN", "NO LINK" },
+    { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
+      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+      "KEIN SERVO-PWM-PIN",
+      "PINS NICHT GELESEN", "PROG-PORT", "PROG-PORT GP13",
+      "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
+      "KEIN LINK" },
 };
 
-/* The box a text gives, drawn over the screen's with the screen's font,
- * colours and rectangle (left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26 px). */
-static void target_reference(gfx_color_t *out, const char *text, bool warn)
+/* The box a label and a value give, drawn over the screen's with the
+ * screen's font, colours and rectangles: the label at x 514, the value
+ * right-aligned in 188 px from x 594, both in the warning colour for
+ * @p warn. */
+static void target_reference(gfx_color_t *out, const char *label,
+                             const char *text, bool warn)
 {
-    const gfx_rect_t r = { 6 + 200, (H - UI_BAND_H) - 6 - 36, 488 - 200 - 10, 26 };
-    gfx_fill_rect(&cv, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    gfx_fill_round_rect(&cv, r.x, r.y, r.w, r.h, 4,
-                        warn ? ui_theme_color(UI_C_WARN)
-                             : ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text_in(&cv, r, text, UI_FONT_LABEL,
-                warn ? ui_theme_color(UI_C_BG) : ui_theme_color(UI_C_TEXT), 1,
-                GFX_ALIGN_CENTER);
+    gfx_fill_rect(&cv, TGT_X, TGT_Y, TGT_W, TGT_H,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&cv, TGT_X, TGT_ROW_Y + 5, label, UI_FONT_LABEL,
+             warn ? ui_theme_color(UI_C_WARN)
+                  : ui_theme_color(UI_C_TEXT_DIM), 1);
+    gfx_text_in(&cv, (gfx_rect_t){ TGT_X + TGT_VAL_DX, TGT_ROW_Y + 5,
+                                   TGT_W - TGT_VAL_DX, 16 },
+                text, UI_FONT_LABEL,
+                warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
+                1, GFX_ALIGN_RIGHT);
     target_box(out);
 }
 
-/* The active PWM target is on the SERVO screen in both languages: the pins
- * bound as SERVO PWM for OUTPUTS, the programming port with its pin, and the
- * warning colour for the port, for no pin, for a binding not read, for a
- * target not known and for no link.  Every state reads differently, and no
- * line leaves the box: the longest are 34 cells (272 of 278 px) of pins and
- * a count, and the port on a two-digit pin with its pulse off. */
+static int warn_pixels(const gfx_color_t *bx)
+{
+    int n = 0;
+    for (int i = 0; i < TGT_W * TGT_H; ++i) {
+        n += (bx[i] == ui_theme_color(UI_C_WARN)) ? 1 : 0;
+    }
+    return n;
+}
+
+/* The active PWM target is on the SERVO screen's right card in both
+ * languages: the pins bound as SERVO PWM for OUTPUTS, the programming port
+ * with its pin, and the warning colour for the port, for no pin, for a
+ * binding not read, for a target not known and for no link.  Every state
+ * reads differently, and no value runs into the label: the longest are
+ * six pins filling the 23 cells, two-digit pins with a count in 22, and the
+ * port on a two-digit pin with its pulse off, 22 of the 23 cells. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -6180,33 +6212,36 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
             scr->render(&cv, 0);
             gfx_color_t *bx = box[lang * TGT_N + i];
             target_box(bx);
-            const gfx_color_t fill = bx[2 * TGT_W + 4];
-            CHECK_EQ(fill == ui_theme_color(UI_C_WARN), st->warn);
-            if (lang == 0) {
-                /* The pixels of the text the state must give. */
-                static gfx_color_t want_box[TGT_W * TGT_H];
-                target_reference(want_box, k_tgt_en[i], st->warn);
-                CHECK_EQ(memcmp(want_box, bx, sizeof(want_box)), 0);
-            }
-            /* Text stays clear of the box's left and right edges. */
-            for (int y = 6; y < TGT_H - 6; ++y) {
-                for (int x = 0; x < 3; ++x) {
-                    CHECK_EQ(bx[y * TGT_W + x], bx[6 * TGT_W + 0]);
-                    CHECK_EQ(bx[y * TGT_W + TGT_W - 1 - x],
-                             bx[6 * TGT_W + TGT_W - 1]);
+            CHECK_EQ(warn_pixels(bx) > 0, st->warn);
+            /* The pixels of the label and the value the state must give. */
+            static gfx_color_t want_box[TGT_W * TGT_H];
+            target_reference(want_box, lang == 0 ? "TARGET" : "ZIEL",
+                             k_tgt_txt[lang][i], st->warn);
+            CHECK_EQ(memcmp(want_box, bx, sizeof(want_box)), 0);
+            /* The value fits its 188 px and leaves 3 px before it. */
+            CHECK(gfx_text_width(UI_FONT_LABEL, k_tgt_txt[lang][i], 1)
+                  <= TGT_W - TGT_VAL_DX - 3);
+            for (int y = 0; y < TGT_H; ++y) {
+                for (int x = TGT_VAL_DX; x < TGT_VAL_DX + 3; ++x) {
+                    CHECK_EQ(bx[y * TGT_W + x], ui_theme_color(UI_C_PANEL));
                 }
             }
+            /* The foot of the left card carries no second target line. */
+            CHECK_EQ(fb[(OLD_TGT_Y + 2) * W + OLD_TGT_X + 4],
+                     ui_theme_color(UI_C_PANEL));
         }
     }
     ui_text_set_language(UI_LANG_EN);
     for (int i = 0; i < 2 * TGT_N; ++i) {
         for (int j = i + 1; j < 2 * TGT_N; ++j) {
+            /* The pin lists read the same in both languages; only the
+             * label tells them apart. */
             CHECK(memcmp(box[i], box[j], TGT_W * TGT_H
                                          * sizeof(gfx_color_t)) != 0);
         }
     }
 
-    /* Rebinding GP2 to GP4 changes the line, without a tap; and back. */
+    /* Rebinding GP2 to GP4 changes the row, without a tap; and back. */
     fresh();
     servo_screen_set_pins(PIN(2), true);
     scr->render(&cv, 0);
@@ -6221,7 +6256,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     target_box(box[0]);
     CHECK_EQ(memcmp(a, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)), 0);
 
-    /* The line follows the drive, not the setting.  PROG PORT chosen while
+    /* The row follows the drive, not the setting.  PROG PORT chosen while
      * the drive still uses the outputs shows the pins the outputs carry, as
      * GP2 does; with no such pin it is the warning, as no pin does. */
     static gfx_color_t d[TGT_W * TGT_H];
@@ -6246,7 +6281,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     target_box(d);
     CHECK_EQ(memcmp(d, box[TGT_PORT_PIN], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
-    /* Only the port's pulse turned off: the line follows, without a tap. */
+    /* Only the port's pulse turned off: the row follows, without a tap. */
     servo_screen_set_drive(1u, 63u, true);
     scr->render(&cv, 0);
     servo_screen_set_drive(1u, 63u, false);
@@ -6262,7 +6297,7 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     CHECK_EQ(memcmp(d, box[TGT_PORT], TGT_W * TGT_H * sizeof(gfx_color_t)),
              0);
     CHECK(memcmp(d, box[0], TGT_W * TGT_H * sizeof(gfx_color_t)) != 0);
-    /* Only the pin changed, port and pulse kept: the line follows. */
+    /* Only the pin changed, port and pulse kept: the row follows. */
     servo_screen_set_drive(1u, 13u, true);
     scr->render(&cv, 0);
     target_box(d);
@@ -6295,7 +6330,48 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
     }
 }
 
-/* One line of text and its colour for a drive and a set of pins. */
+/*
+ * The row is on the right card, which the settings, the keypads they open
+ * and the servo programmer leave uncovered: while they cover the left card
+ * the row still names the pin, and a change of the drive under them still
+ * reaches it.
+ */
+TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
+{
+    static gfx_color_t want[TGT_W * TGT_H], got[TGT_W * TGT_H];
+    fresh();
+    servo_screen_set_pins(PIN(4), true);
+    scr->render(&cv, 0);
+    target_box(want);
+    target_reference(got, "TARGET", "GP4", false);
+    CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
+
+    open_settings();
+    scr->render(&cv, 0);
+    target_box(got);
+    CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
+    /* The drive moves to the port while the settings are open. */
+    servo_screen_set_drive(1u, 13u, true);
+    scr->render(&cv, 0);
+    target_box(got);
+    static gfx_color_t port[TGT_W * TGT_H];
+    target_reference(port, "TARGET", "PROG PORT GP13", true);
+    scr->render(&cv, 0);
+    target_box(got);
+    CHECK_EQ(memcmp(port, got, sizeof(port)), 0);
+    servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+
+    /* PULSE MIN's keypad over the left card. */
+    tap(ROW_L_X, ROW_Y(2));
+    scr->render(&cv, 0);
+    target_box(got);
+    CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
+    key(UI_KEY_CANCEL);
+    close_settings();
+}
+
+/* One value of the target row and its colour for a drive and a set of
+ * pins. */
 static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
                        bool known, const char *want, bool warn)
 {
@@ -6307,112 +6383,95 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
     CHECK_STR_EQ(line, want);
 }
 
-TEST_CASE(the_target_prefix_is_shorter_than_its_34_cell_box)
-{
-    /* The box is 34 cells (servo_screen.c, TARGET_CELLS). */
-    for (int l = 0; l < 2; ++l) {
-        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
-        CHECK(snprintf(NULL, 0, TR(SV_TARGET_OUT), "") < 34);
-    }
-    ui_text_set_language(UI_LANG_EN);
-}
-
-/* The target line's text: as many pins as the 34 cells hold after the prefix
- * (26 in English, 28 in German), then the count of the rest, the port with its pin or without and with its pulse on
+/* The target row's value: as many pins as the 23 cells hold, then the
+ * count of the rest, the port with its pin or without and with its pulse on
  * or off, the target not known and no link, in both languages. */
 TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "TARGET: GP2",
-               false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "GP2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "TARGET: GP2 GP4 GP5", false);
+               "GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(12) | PIN(13) | PIN(14) | PIN(15), true,
-               "TARGET: GP12 GP13 GP14 GP15", false);
-    /* 5 pins fit: 19 of the 26 cells. */
+               "GP12 GP13 GP14 GP15", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
-               "TARGET: GP2 GP4 GP5 GP6 GP7", false);
-    /* The list ends exactly at the budget: 26 cells, no count. */
+               "GP2 GP4 GP5 GP6 GP7", false);
+    /* The list ends exactly at the 23 cells: no count. */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12), true,
-               "TARGET: GP1 GP2 GP3 GP10 GP11 GP12", false);
-    /* One pin more overflows it: 5 pins and " +2" (24 cells). */
+               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8), true,
+               "GP2 GP4 GP5 GP6 GP7 GP8", false);
+    /* One pin more overflows it: 5 pins and " +2". */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(1) | PIN(2) | PIN(3) | PIN(10) | PIN(11) | PIN(12)
-                   | PIN(13), true,
-               "TARGET: GP1 GP2 GP3 GP10 GP11 +2", false);
+               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8) | PIN(9),
+               true, "GP2 GP4 GP5 GP6 GP7 +2", false);
+    /* Five two-digit pins are 24 cells: 4 pins and " +1". */
+    check_line(0u, SERVO_SCREEN_NO_PIN, false,
+               PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
+               "GP10 GP11 GP12 GP13 +1", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "TARGET: GP40 GP41 GP42 GP43 +4", false);
+               "GP40 GP41 GP42 GP43 +4", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
-               "TARGET: GP0 GP1 GP2 GP3 GP4 +59", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "TARGET: GP63",
-               false);
+               "GP0 GP1 GP2 GP3 GP4 +59", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "GP63", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
-               "TARGET: NO SERVO PWM PIN", true);
+               "NO SERVO PWM PIN", true);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), false,
-               "TARGET: PINS NOT READ", true);
+               "PINS NOT READ", true);
     /* With the outputs as target a port pin names nothing. */
-    check_line(0u, 13u, false, PIN(2), true, "TARGET: GP2", false);
+    check_line(0u, 13u, false, PIN(2), true, "GP2", false);
     /* A port target is the port, its pin known or not, pins bound or not. */
-    check_line(1u, 13u, true, PIN(2), true, "TARGET: PROG PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true,
-               "TARGET: PROG PORT", true);
-    check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "TARGET: PROG PORT",
+    check_line(1u, 13u, true, PIN(2), true, "PROG PORT GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG PORT",
                true);
+    check_line(2u, SERVO_SCREEN_NO_PIN, true, 0u, false, "PROG PORT", true);
     /* The pulse off: the port is still the target, and renders nothing.
-     * GP63 is the longest, 30 of the 34 cells the box holds. */
-    check_line(1u, 13u, false, PIN(2), true,
-               "TARGET: PROG PORT GP13 PWM OFF", true);
-    check_line(1u, 63u, false, PIN(2), true,
-               "TARGET: PROG PORT GP63 PWM OFF", true);
+     * GP63 is the longest, 22 of the 23 cells the value holds. */
+    check_line(1u, 13u, false, PIN(2), true, "PROG PORT GP13 PWM OFF", true);
+    check_line(1u, 63u, false, PIN(2), true, "PROG PORT GP63 PWM OFF", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
-               "TARGET: PROG PORT PWM OFF", true);
+               "PROG PORT PWM OFF", true);
     /* Not known and no link name no pin and no port, pins bound or not;
      * a pin and a pulse passed with them are ignored. */
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, PIN(2), true,
-               "TARGET: NOT KNOWN", true);
+               "NOT KNOWN", true);
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false, 0u,
-               false, "TARGET: NOT KNOWN", true);
+               false, "NOT KNOWN", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, 13u, true, PIN(2), true,
-               "TARGET: NO LINK", true);
+               "NO LINK", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false, 0u,
-               false, "TARGET: NO LINK", true);
+               false, "NO LINK", true);
     ui_text_set_language(UI_LANG_DE);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "ZIEL: GP2 GP4 GP5", false);
+               "GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "ZIEL: GP40 GP41 GP42 GP43 GP44 +3", false);
-    /* German: 28 cells after the 6-cell prefix.  GP1 GP10 to GP14 is 28
-     * cells and ends at the budget; GP15 more overflows it. */
-    check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(1) | PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
-               "ZIEL: GP1 GP10 GP11 GP12 GP13 GP14", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(1) | PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14)
-                   | PIN(15), true,
-               "ZIEL: GP1 GP10 GP11 GP12 GP13 +2", false);
-    check_line(1u, 13u, true, PIN(2), true, "ZIEL: PROG-PORT GP13", true);
-    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "ZIEL: PROG-PORT",
+               "GP40 GP41 GP42 GP43 +4", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
+               "KEIN SERVO-PWM-PIN", true);
+    check_line(1u, 13u, true, PIN(2), true, "PROG-PORT GP13", true);
+    check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG-PORT",
                true);
-    check_line(1u, 63u, false, PIN(2), true, "ZIEL: PROG-PORT GP63 PWM AUS",
-               true);
+    check_line(1u, 63u, false, PIN(2), true, "PROG-PORT GP63 PWM AUS", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, false, PIN(2), true,
-               "ZIEL: PROG-PORT PWM AUS", true);
+               "PROG-PORT PWM AUS", true);
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false,
-               PIN(2), true, "ZIEL: UNBEKANNT", true);
+               PIN(2), true, "UNBEKANNT", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false,
-               PIN(2), true, "ZIEL: KEIN LINK", true);
+               PIN(2), true, "KEIN LINK", true);
     ui_text_set_language(UI_LANG_EN);
     /* A short buffer is cut, not overrun; none is no line. */
     char small[8];
     memset(small, 'x', sizeof(small));
     CHECK(servo_target_line(small, sizeof(small), 1u, 13u, true, 0u, true));
-    CHECK_STR_EQ(small, "TARGET:");
+    CHECK_STR_EQ(small, "PROG PO");
+    memset(small, 'x', sizeof(small));
+    CHECK(!servo_target_line(small, sizeof(small), 0u, SERVO_SCREEN_NO_PIN,
+                             false, PINS_40_47, true));
+    CHECK_STR_EQ(small, "GP40 GP");
     CHECK(!servo_target_line(NULL, 8u, 1u, 13u, true, 0u, true));
     CHECK(!servo_target_line(small, 0u, 1u, 13u, true, 0u, true));
-    CHECK_STR_EQ(small, "TARGET:");
+    CHECK_STR_EQ(small, "GP40 GP");
 }
 
 /* A test or a sweep under way keeps the port's pulse: switched off, the run
@@ -6973,7 +7032,7 @@ TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
 
 /*
  * Mirrored from servo_screen.c: the right card's column, the CURRENT row,
- * the line over the power plot with its 64 px name (SUPPLY) or 88 px name
+ * the line over the power plot with its 64 px name (PD MINI) or 88 px name
  * (INA3221 CH1), and the line and plot together (power_rect()).
  */
 #define RAIL_X     514
@@ -7040,7 +7099,7 @@ static bool line_reads(const char *label, int lab_w, const char *v,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     const char *txt[3] = { v, a, w };
     const ui_color_id_t col[3] = { UI_C_VOLT, a_col, UI_C_POWER };
-    /* 68 px each beside SUPPLY; 60, 64 and 56 px beside INA3221 CH1. */
+    /* 68 px each beside PD MINI; 60, 64 and 56 px beside INA3221 CH1. */
     static const int k_fw[2][3] = { { 68, 68, 68 }, { 60, 64, 56 } };
     const int *fw = k_fw[lab_w == LAB_INA ? 1 : 0];
     int x = RAIL_X + lab_w;
@@ -7061,13 +7120,14 @@ static bool line_reads(const char *label, int lab_w, const char *v,
 
 static bool line_supply(const char *v, const char *a, const char *w)
 {
-    return line_reads("SUPPLY", LAB_SUPPLY, v, a, UI_C_CURR, w);
+    return line_reads("PD MINI", LAB_SUPPLY, v, a, UI_C_CURR, w);
 }
 
 static bool line_ina(const char *v, const char *a, const char *w)
 {
     return line_reads("INA3221 CH1", LAB_INA, v, a, UI_C_CURR, w);
 }
+
 
 /* A supply sample that answers with both readings. */
 static void rail_supply(float v, float i)
@@ -7115,6 +7175,148 @@ static void rail_window(int ma, unsigned mv)
 {
     const sense_link_win_t w = rail_win(ma, mv);
     window(&w);
+}
+
+/*
+ * The TAG row carries the pulse range after the type and the frame rate:
+ * "STANDARD PWM  50 Hz  1000-2000", two spaces between the three parts, the
+ * range in microseconds without its unit.  The longest a profile and its
+ * keypads allow, a 13-character type, a 3-digit rate and two 4-digit ends,
+ * is 32 of the 33 cells the 268 px row holds.  A typed end reaches the row
+ * at once.
+ */
+#define TAG_BOX_Y 118
+#define TAG_BOX_H 24
+
+static bool tag_reads(const char *text, bool danger)
+{
+    scr->render(&cv, 0);
+    want_fresh();
+    const gfx_rect_t r = { TGT_X, TAG_BOX_Y, TGT_W, TAG_BOX_H };
+    gfx_fill_rect(&want_cv, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
+    gfx_fill_round_rect(&want_cv, r.x, r.y, r.w, r.h, 4,
+                        danger ? ui_theme_color(UI_C_DANGER)
+                               : ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text_in(&want_cv, r, text, UI_FONT_LABEL,
+                danger ? GFX_WHITE : ui_theme_color(UI_C_TEXT), 1,
+                GFX_ALIGN_CENTER);
+    for (int y = r.y; y < r.y + r.h; ++y) {
+        if (memcmp(fb + (size_t)y * W + r.x, want_fb + (size_t)y * W + r.x,
+                   (size_t)r.w * sizeof(gfx_color_t)) != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+TEST_CASE(the_tag_row_carries_the_pulse_range)
+{
+    fresh();
+    CHECK(tag_reads("STANDARD PWM  50 Hz  1000-2000", false));
+    choose_type(1);
+    CHECK(tag_reads("NARROW 760  50 Hz  660-860", false));
+    choose_type(4);
+    CHECK(tag_reads("HELI TAIL 760  560 Hz  410-1110", true));
+    /* PULSE MAX typed: the row follows without another tap. */
+    choose_type(0);
+    open_settings();
+    tap(ROW_L_X, ROW_Y(3));                    /* PULSE MAX */
+    keys("2100");
+    close_settings();
+    CHECK(tag_reads("STANDARD PWM  50 Hz  1000-2100", false));
+    /* The widest the row can be asked to hold fits with 1 cell spare. */
+    CHECK(gfx_text_width(UI_FONT_LABEL, "HELI TAIL 760  560 Hz  2500-2500", 1)
+          <= TGT_W - 8);
+    /* The separate RANGE row is gone: its label is not on the card. */
+    want_fresh();
+    gfx_fill_rect(&want_cv, TGT_X, TGT_ROW_Y, 80, 24,
+                  ui_theme_color(UI_C_PANEL));
+    gfx_text(&want_cv, TGT_X, TGT_ROW_Y + 5, "RANGE", UI_FONT_LABEL,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+    scr->render(&cv, 0);
+    CHECK(!same_in(fb, want_fb, TGT_X, TGT_ROW_Y, 80, 24));
+}
+
+/*
+ * The supply the rail's line names is the PD mini, or the panel's model of
+ * it: then the MODELLED (SIMULIERT) pill sits on the plot's top-left corner,
+ * under the name, 88 px or as wide as a longer word and 20 px high, as the
+ * overview's is.  A change of the model reaches it without a tap; with
+ * INA3221 CH1 as the meter it is not shown.
+ */
+#define PILL_X (RAIL_X + 2)
+#define PILL_Y (170 + 2)
+
+static int pill_w(const char *word)
+{
+    const int w = 24 + gfx_text_width(UI_FONT_LABEL, word, 1);
+    return w < 88 ? 88 : w;
+}
+
+/* Whether buffer 0, drawn, carries the pill reading @p word: the area around
+ * it, one pixel wider on every side, compared with the plot as drawn
+ * without the model and the overview's pill drawn on it.  The fill is the
+ * plot's own colour, so the pill's width and height show where it covers a
+ * grid line or the plot's edge. */
+static bool pill_reads(const char *word)
+{
+    scr->render(&cv, 0);
+    const bool model = supply_screen_model();
+    static gfx_color_t seen[(size_t)W * H];
+    memcpy(seen, fb, sizeof(seen));
+    supply_screen_set_model(false);
+    scr->tick(1.0f / 39.0f);
+    scr->render(&cv, 0);
+    want_fresh();
+    memcpy(want_fb, fb, (size_t)W * H * sizeof(gfx_color_t));
+    memcpy(fb, seen, sizeof(seen));
+    supply_screen_set_model(model);
+    scr->tick(1.0f / 39.0f);
+    const int w = pill_w(word);
+    ui_pill(&want_cv, (gfx_rect_t){ PILL_X, PILL_Y, (int16_t)w, 20 }, word,
+            ui_theme_color(UI_C_WARN), ui_theme_color(UI_C_PANEL_SUNK));
+    return same_in(fb, want_fb, PILL_X - 1, PILL_Y - 1, w + 2, 22);
+}
+
+TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
+{
+    fresh();
+    meter(SERVO_SOURCE_PDMINI);
+    rail_supply(6.0f, 0.4f);
+    CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
+    CHECK(!pill_reads("MODELLED"));
+    /* The model switched on: the pill, the name kept, no tap needed. */
+    supply_screen_set_model(true);
+    scr->tick(1.0f / 39.0f);
+    CHECK(pill_reads("MODELLED"));
+    CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
+    /* A new sample repaints the plot, and the pill with it. */
+    rail_supply(6.0f, 0.5f);
+    CHECK(pill_reads("MODELLED"));
+    /* No coprocessor: the supply's sample, still under PD MINI. */
+    meter(SERVO_SOURCE_MODEL);
+    scr->tick(1.0f / 39.0f);
+    CHECK(pill_reads("MODELLED"));
+    CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
+    /* In German the word is SIMULIERT; the name stays PD MINI. */
+    ui_text_set_language(UI_LANG_DE);
+    servo_invalidate();
+    CHECK(pill_reads("SIMULIERT"));
+    CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
+    ui_text_set_language(UI_LANG_EN);
+    servo_invalidate();
+    /* INA3221 CH1 as the meter: its own name and no pill. */
+    meter(SERVO_SOURCE_INA3221);
+    scr->tick(1.0f / 39.0f);
+    CHECK(!pill_reads("MODELLED"));
+    meter(SERVO_SOURCE_PDMINI);
+    scr->tick(1.0f / 39.0f);
+    CHECK(pill_reads("MODELLED"));
+    /* The model switched off: the pill goes, without a tap. */
+    supply_screen_set_model(false);
+    scr->tick(1.0f / 39.0f);
+    CHECK(!pill_reads("MODELLED"));
+    CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
 }
 
 /* A pixel no part of the screen draws: one that is still there after a
@@ -8498,7 +8700,9 @@ int main(void)
     RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
-    RUN(the_target_prefix_is_shorter_than_its_34_cell_box);
+    RUN(the_target_row_stays_in_sight_under_the_settings_and_a_keypad);
+    RUN(the_tag_row_carries_the_pulse_range);
+    RUN(the_rail_line_names_the_pd_mini_and_a_modelled_supply);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
     RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);

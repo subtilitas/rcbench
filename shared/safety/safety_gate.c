@@ -24,7 +24,7 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
                                link_dev_t *dev, uint16_t *control,
                                uint32_t now_ms)
 {
-    safety_gate_t g = { false, false };
+    safety_gate_t g = { false, false, 0u };
     if (beat == NULL || dev == NULL || control == NULL) {
         return g;
     }
@@ -34,7 +34,7 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
      * on every pass whether or not an edge arrived.  The edge out of trust
      * latches: the monitor trusts the line again after HEARTBEAT_GOOD_RUN
      * good intervals, 80 ms at the panel's rate, and the panel's next
-     * write of ARM = 1 can be later than that.
+     * write of a non-zero ARM can be later than that.
      */
     const bool was_alive = beat->alive;
     if (line_edge) {
@@ -54,6 +54,7 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
         control[LINK_CT_THROTTLE] = 0u;
     }
     g.arm = control[LINK_CT_ARM] != 0u && safety_gate_may_arm(beat, dev);
+    g.roles = g.arm ? link_arm_roles(control[LINK_CT_ARM]) : 0u;
     return g;
 }
 

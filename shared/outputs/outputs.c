@@ -71,6 +71,7 @@ void outputs_init(outputs_t *o, uint32_t now_ms)
         c->max_us = 2000u;
         c->last_command_ms = now_ms;
     }
+    o->roles        = OUT_ROLES_ALL;
     o->timeout_ms   = OUT_DEFAULT_TIMEOUT_MS;
     o->last_step_ms = now_ms;
 }
@@ -254,19 +255,80 @@ bool outputs_armed(const outputs_t *o)
 
 void outputs_arm(outputs_t *o, bool armed, uint32_t now_ms)
 {
-    if (o == NULL || o->armed == armed) {
+    outputs_arm_roles(o, armed ? OUT_ROLES_ALL : 0u, now_ms);
+}
+
+void outputs_arm_roles(outputs_t *o, uint8_t roles, uint32_t now_ms)
+{
+    if (o == NULL) {
+        return;
+    }
+    roles &= OUT_ROLES_ALL;
+    const bool armed = roles != 0u;
+    if (o->armed == armed && (!armed || o->roles == roles)) {
         return;   /* re-asserting a state is not an event; see the header */
     }
     if (!armed) {
         outputs_all_off(o);
+        o->armed = false;
+        /* The set an arm covered is kept for the record; a disarmed bank
+         * drives nothing whatever it says. */
+        return;
     }
-    o->armed = armed;
-    /* Arming is activity, so nothing is stale the instant it happens.  A
-     * bank armed after a quiet minute must not go to rest on its first step,
-     * before anybody has commanded it. */
+    const uint8_t was = o->armed ? o->roles : 0u;
+    o->armed = true;
+    o->roles = roles;
     for (unsigned i = 0; i < OUT_MAX_CHANNELS; ++i) {
-        o->channel[i].last_command_ms = now_ms;
+        out_channel_t *c = &o->channel[i];
+        const uint8_t bit = OUT_ROLE_BIT(c->role);
+        if ((roles & bit) == 0u) {
+            /* Not armed for this role: at rest with no ramp, as a disarm
+             * leaves it. */
+            c->actual   = c->rest;
+            c->slew_rem = 0u;
+        } else if ((was & bit) == 0u) {
+            /* Arming is activity, so nothing is stale the instant it
+             * happens.  A bank armed after a quiet minute must not go to
+             * rest on its first step, before anybody has commanded it. */
+            c->last_command_ms = now_ms;
+        }
     }
+}
+
+uint8_t outputs_armed_roles(const outputs_t *o)
+{
+    return (o != NULL && o->armed) ? o->roles : 0u;
+}
+
+bool outputs_role_armed(const outputs_t *o, out_role_t role)
+{
+    return (outputs_armed_roles(o) & OUT_ROLE_BIT(role)) != 0u;
+}
+
+bool outputs_channel_driving(const outputs_t *o, uint8_t ch)
+{
+    if (o == NULL || ch >= OUT_MAX_CHANNELS) {
+        return false;
+    }
+    return (outputs_armed_roles(o) & OUT_ROLE_BIT(o->channel[ch].role)) != 0u;
+}
+
+bool outputs_slot_driving(const outputs_t *o, uint8_t slot)
+{
+    if (o == NULL || slot >= OUT_MAX_SLOTS) {
+        return false;
+    }
+    const out_slot_t *s = &o->slot[slot];
+    if (s->driver == OUT_DRIVER_NONE) {
+        return false;
+    }
+    for (unsigned k = 0; k < s->channels; ++k) {
+        const unsigned ch = (unsigned)s->first_channel + k;
+        if (ch < OUT_MAX_CHANNELS && outputs_channel_driving(o, (uint8_t)ch)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool outputs_overdue(const outputs_t *o, uint8_t ch, uint32_t now_ms)
@@ -310,8 +372,10 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
     for (unsigned i = 0; i < OUT_MAX_CHANNELS; ++i) {
         out_channel_t *c = &o->channel[i];
         /* A channel nobody is commanding goes to rest on its own account,
-         * and takes none of the others with it. */
-        if (outputs_overdue(o, (uint8_t)i, now_ms)) {
+         * and takes none of the others with it.  So does one of a role the
+         * arm does not cover. */
+        if ((o->roles & OUT_ROLE_BIT(c->role)) == 0u
+            || outputs_overdue(o, (uint8_t)i, now_ms)) {
             c->actual = c->rest;
             /* And the part-unit with it: a channel that timed out and is
              * commanded again starts from a whole unit, the same as one that

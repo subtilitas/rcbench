@@ -105,7 +105,7 @@
  * microsecond clock divided by 100, modulo 2^32: 0.1 ms, as the capture
  * counts.
  *
- *   $T v=2 n=N trig=cmd|edge|key t=T ms=M len=L
+ *   $T v=3 n=N trig=cmd|edge|key t=T ms=M len=L
  *       The trace numbered N (modulo 65536) starts.  T is the trigger's
  *       time, M the millisecond tick at it (modulo 2^32), L the length
  *       in ms the trigger asks for.
@@ -120,8 +120,10 @@
  *   trigger.
  *   $C t=T ch=C us=P     a cmd trigger: output channel C renders P µs in
  *                        the frame that starts at T
- *   $D t=T ch=C us=P     channel C's slewed command ended at P µs; T is
- *                        its last change.  Counted with the trigger lines.
+ *   $D t=T ch=C us=P cmd=S
+ *                        channel C's slewed command ended at P µs; T is
+ *                        its last change, S its $C line's T: the command
+ *                        the line ends.  Counted with the trigger lines.
  *                        Written once the pulse has stood still for
  *                        SENSE_TRACE_HOLD_MS (50 ms), so it follows the
  *                        sample lines up to about 50 ms past T; T, not
@@ -179,7 +181,7 @@
 extern "C" {
 #endif
 
-#define SENSE_TRACE_FORMAT       2u
+#define SENSE_TRACE_FORMAT       3u
 /** The longest line, its CR LF included: the USB console's transmit
  *  buffer holds 64 bytes. */
 #define SENSE_TRACE_LINE_MAX    64u
@@ -282,6 +284,7 @@ typedef struct {
     uint32_t t;
     uint64_t at_us;       /**< a trigger's time as it was given            */
     uint16_t ch, us;      /**< a cmd trigger's channel and pulse           */
+    uint32_t cmd_t;       /**< a $D line's: its command's $C time          */
 } sense_trace_mark_t;
 
 /** One PWM slot's pulse as last seen. */
@@ -297,6 +300,7 @@ typedef struct {
                                its end is not said                         */
     uint16_t pulse;
     uint32_t changed_t;   /**< its last change, 0.1 ms                     */
+    uint32_t cmd_t;       /**< its last command's trigger time, 0.1 ms     */
 } sense_trace_watch_t;
 
 /** Where the header stands. */
@@ -382,7 +386,10 @@ uint16_t sense_trace_rendered(uint16_t pulse_us, uint32_t top);
 /** Core 0, every pass, for each PWM slot: the output channel @p ch it
  *  renders and the pulse, 0 for none.  A slot seen with another channel
  *  than before is watched afresh.  True when this is a command: the caller then gives the time of
- *  the frame that carries it to sense_trace_trigger(). */
+ *  the frame that carries it to sense_trace_trigger(), as a
+ *  SENSE_TRACE_TRIG_CMD for every true return.  That trigger sets the
+ *  command time the slot's later $D line carries; without it the line
+ *  carries an earlier command's time, or 0 on a slot that has none. */
 bool sense_trace_pulse(sense_trace_t *tr, unsigned slot, uint16_t ch,
                        uint16_t pulse_us, uint64_t now_us);
 

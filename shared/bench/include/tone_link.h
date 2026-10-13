@@ -20,9 +20,14 @@
  *      and nothing is written that it already holds;
  *   2. the frames that differ, in the order above;
  *   3. a frame the page refuses is not written again until the set-up
- *      changes -- except the first, refused for a pin something else
- *      holds, which is offered again every TONE_LINK_RETRY_MS and said
- *      once.
+ *      changes or the link comes up again -- except the first, refused
+ *      for a pin something else holds, which is offered again every
+ *      TONE_LINK_RETRY_MS and said once.  A page from 4.17
+ *      (LINK_MINOR_TONE_BUSY) says that refusal with LINK_NACK_BUSY, and
+ *      only that one is offered again.  An older page says BAD_VALUE for
+ *      a busy pin and for bad values alike: its refusal is offered again
+ *      unless the frame's tones fail on their face -- the high tone not
+ *      above the low one, or the gap held too short for the low tone.
  *
  * Switching the tap off writes the first frame with the values the page
  * holds and ENABLE clear, whatever range is asked; the range follows in a
@@ -78,12 +83,19 @@ extern "C" {
  *  is enabled: under the 50 ms poll, so every BENCH poll reads them. */
 #define TONE_LINK_READ_MS 40u
 
-/** A first frame refused on a pin is offered again this often: freeing
- *  the pin on OUTPUTS, SENSE or SUPPLY lets it through. */
+/** A first frame refused on a busy pin is offered again this often:
+ *  freeing the pin on OUTPUTS, SENSE, SUPPLY or PROG lets it through. */
 #define TONE_LINK_RETRY_MS 5000u
 
 /** A read older than this no longer says the tap runs. */
 #define TONE_LINK_STALE_MS 500u
+
+/** A WINDOW that has not moved for this long, while FLAGS says the tap
+ *  runs, no longer says it runs: the detector closes a window every 8 ms,
+ *  edges or none, so a count that stands is a capture that stopped while
+ *  the page still answers.  SUPPLY's and SENSE's counts are judged the
+ *  same way, at 1500 ms for SUPPLY. */
+#define TONE_LINK_WINDOW_STALE_MS 1500u
 
 /** How long an event handed out by tone_link_event() has the alert band
  *  before the next one is handed out. */
@@ -178,7 +190,9 @@ typedef struct {
     /** The state and the seven values below come from a status read
      *  younger than TONE_LINK_STALE_MS; false, and the seven 0, while none
      *  speaks for the page: no link, no page, no read yet, a read that
-     *  old, or a page that holds the tap off. */
+     *  old, a read whose FLAGS say the tap runs while its WINDOW has not
+     *  moved for TONE_LINK_WINDOW_STALE_MS, or a page that holds the tap
+     *  off.  The state is then WAITING. */
     bool     read;
     bool     overrun;         /**< the capture overran since ENABLE     */
     bool     tone;            /**< the last window held a tone          */
@@ -205,6 +219,8 @@ typedef struct {
     bool     known;
     uint16_t held[LINK_TN_CONFIG_COUNT];
     bool     refused0, refused1;
+    bool     retry0;          /**< refused0 lifts after TONE_LINK_RETRY_MS */
+    bool     busy_nack;       /**< the page says BUSY for a busy pin (4.17) */
     uint8_t  told;            /**< bit 0, 1: a frame's refusal said for this edit */
     uint32_t refused0_ms;
     uint32_t retry_ms;        /**< the first frame last offered for a busy pin */
@@ -220,6 +236,10 @@ typedef struct {
     uint16_t status[TONE_LINK_STATUS_COUNT];
     uint32_t status_ms;
     uint16_t was_flags;       /**< FLAGS as last read under this set-up */
+    bool     win_seen;        /**< win_last holds a read's WINDOW       */
+    uint16_t win_last;        /**< WINDOW as last read                  */
+    uint32_t win_moved_ms;    /**< the read that first showed it, or one
+                                   of a page not running               */
 
     /* The beeps. */
     bool     synced;          /**< last is meaningful                  */

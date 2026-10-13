@@ -131,7 +131,8 @@ bool as5600_mh(uint8_t status);
 int16_t as5600_delta(uint16_t a, uint16_t b);
 
 /** @p counts in hundredths of a degree, rounded to the nearest, halves away
- *  from zero. */
+ *  from zero.  Any int32_t is accepted.  Above |counts| 244,335,917 the
+ *  result saturates at +-2,147,483,647. */
 int32_t as5600_cdeg(int32_t counts);
 
 /* -------------------------------------------------------------- driver */

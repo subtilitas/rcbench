@@ -8,10 +8,13 @@
  * anything is written and only what differs written; the two frames of the
  * set-up in the order that leaves the page a valid set-up; a refused frame
  * not written again until the set-up changes, a pin refused for a binding
- * offered again until it is free; the status read at 20 Hz; beeps taken by
+ * offered again until it is free, BUSY and BAD_VALUE told apart from 4.17
+ * and an older page's BAD_VALUE offered again at the 5 s pace unless the
+ * tones fail on their face; the status read at 20 Hz; beeps taken by
  * number across the wrap from 65535 to 1, with replies lost, with the
  * panel more than the ring behind, and with the numbering restarted; the
- * FLAGS states the screen shows; and the events a read raises, each once.
+ * FLAGS states the screen shows, and a running page whose WINDOW stands
+ * shown stale after 1.5 s; and the events a read raises, each once.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -38,7 +41,10 @@ typedef struct {
     uint16_t head;
     uint16_t flags, window, win_freq, win_periods, lost, glitches;
     fake_beep_t ring[LINK_TN_RING];
-    int      bad_pin;           /**< a pin an enabled tap is refused on */
+    int      bad_pin;           /**< a busy pin an enabled tap is refused on */
+    int      board_pin;         /**< a board pin, refused with BAD_VALUE */
+    int      nack;              /**< not 0: every frame is refused with it */
+    bool     window_stands;     /**< WINDOW stops moving while running   */
     unsigned frames_taken;      /**< writes of regs 0 to 7 that landed   */
     unsigned captures;          /**< times the capture began again       */
     uint16_t order[8];          /**< the first register of each         */
@@ -62,6 +68,7 @@ static void fake_init(void)
     fk.cfg[LINK_TN_GAP_MS]      = LINK_TN_DEFAULT_GAP_MS;
     fk.cfg[LINK_TN_MIN_PERIODS] = LINK_TN_DEFAULT_PERIODS;
     fk.bad_pin = -1;
+    fk.board_pin = -1;
 }
 
 /* The set-up the page would hold after a write: whether it takes it. */
@@ -70,7 +77,7 @@ static bool fake_valid(const uint16_t *c)
     if (c[LINK_TN_ENABLE] > 1u) {
         return false;
     }
-    if (c[LINK_TN_ENABLE] != 0u && (int)c[LINK_TN_PIN] == fk.bad_pin) {
+    if (c[LINK_TN_ENABLE] != 0u && (int)c[LINK_TN_PIN] == fk.board_pin) {
         return false;
     }
     return c[LINK_TN_F_MIN_HZ] >= LINK_TN_F_MIN_LO
@@ -95,6 +102,9 @@ static int fake_write(uint8_t off, uint8_t n, const uint16_t *regs)
     if ((off != 0u && off != 4u) || n != 4u) {
         return LINK_NACK_BAD_RANGE;
     }
+    if (fk.nack != 0) {
+        return fk.nack;
+    }
     uint16_t next[LINK_TN_CONFIG_COUNT];
     memcpy(next, fk.cfg, sizeof(next));
     for (unsigned i = 0u; i < n; ++i) {
@@ -106,6 +116,11 @@ static int fake_write(uint8_t off, uint8_t n, const uint16_t *regs)
     }
     if (!fake_valid(next)) {
         return LINK_NACK_BAD_VALUE;
+    }
+    /* A busy pin: BUSY from 4.17, BAD_VALUE before. */
+    if (next[LINK_TN_ENABLE] != 0u && (int)next[LINK_TN_PIN] == fk.bad_pin) {
+        return (minor >= LINK_MINOR_TONE_BUSY) ? LINK_NACK_BUSY
+                                               : LINK_NACK_BAD_VALUE;
     }
     /* The capture starts again, its ring empty and the numbering going on,
      * when the tap is enabled, moved to another pin or tried again for a
@@ -136,6 +151,10 @@ static void fake_read(uint8_t off, uint8_t n, uint16_t *regs)
     memset(all, 0, sizeof(all));
     memcpy(all, fk.cfg, sizeof(fk.cfg));
     all[LINK_TN_FLAGS]        = fk.flags;
+    /* A running detector closes a window every 8 ms, edges or none. */
+    if ((fk.flags & LINK_TN_RUNNING) != 0u && !fk.window_stands) {
+        fk.window = (uint16_t)(now / 8u);
+    }
     all[LINK_TN_WINDOW]       = fk.window;
     all[LINK_TN_WIN_FREQ_DHZ] = fk.win_freq;
     all[LINK_TN_WIN_PERIODS]  = fk.win_periods;
@@ -551,9 +570,12 @@ TEST_CASE(frames_go_in_the_order_that_leaves_a_valid_set_up)
     CHECK_EQ(tone_link_event(&tl, now), 0u);
 }
 
-TEST_CASE(a_refused_frame_is_said_once_and_not_written_again)
+/* A first frame whose tones fail on their face is refused with BAD_VALUE by
+ * every page, and no freed pin makes it good: written once, said once, and
+ * not again until the next edit, from a 4.8 page and from a 4.17 one. */
+static void a_refused_frame_is_said_once(uint16_t m)
 {
-    fresh(8u);
+    fresh(m);
     polls(2);
     /* A high tone below the low one. */
     tone_setup_t w = setup_default();
@@ -565,9 +587,9 @@ TEST_CASE(a_refused_frame_is_said_once_and_not_written_again)
     CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
     CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], 400u);
     CHECK(tone_link_settled(&tl));
-    /* Not again, however long. */
-    polls(100);
-    CHECK_EQ(writes, 2u);                   /* the one retry of the first frame */
+    /* Not again, however long: 3 retry periods. */
+    polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(writes, 1u);
     CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
 
     /* The next edit asks again, and a good value goes through. */
@@ -576,6 +598,89 @@ TEST_CASE(a_refused_frame_is_said_once_and_not_written_again)
     want(&w);
     polls(20);
     CHECK_EQ(fk.cfg[LINK_TN_F_MIN_HZ], 600u);
+}
+
+TEST_CASE(a_refused_frame_is_said_once_and_not_written_again)
+{
+    a_refused_frame_is_said_once(TONE_LINK_MINOR);
+    a_refused_frame_is_said_once(LINK_MINOR_TONE_BUSY);
+}
+
+/* A 4.17 page refuses a board pin with BAD_VALUE: the panel's values look
+ * good, and still the frame is not offered again until the next edit. */
+TEST_CASE(a_bad_value_from_a_4_17_page_is_not_offered_again)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    fk.board_pin = 22;
+    polls(2);
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(writes, 1u);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
+    polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(writes, 1u);
+    CHECK(tone_link_settled(&tl));
+    /* The link back up asks once more. */
+    tone_link_lost(&tl);
+    tone_link_came_up(&tl, minor, now);
+    polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(writes, 2u);
+    /* Another pin goes through. */
+    w.pin = 20u;
+    want(&w);
+    polls(20);
+    CHECK_EQ(writes, 3u);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], LINK_TN_EN_TAP);
+    CHECK_EQ(fk.cfg[LINK_TN_PIN], 20u);
+}
+
+/* A page older than 4.17 says BAD_VALUE for a busy pin as well, and the
+ * panel cannot tell a board pin from a busy one: a frame whose tones are
+ * good is offered again every TONE_LINK_RETRY_MS, never faster, so a pin
+ * freed later is taken. */
+TEST_CASE(an_older_pages_bad_value_is_offered_again_at_the_retry_pace)
+{
+    fresh(16u);
+    fk.board_pin = 22;
+    polls(2);
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(writes, 1u);
+    polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(writes, 4u);
+    CHECK_EQ(tone_link_event(&tl, now + 100000u), TONE_LINK_EV_PIN_REFUSED);
+    CHECK_EQ(tone_link_event(&tl, now + 200000u), 0u);
+    /* Freed: the next offer lands. */
+    fk.board_pin = -1;
+    polls((int)(TONE_LINK_RETRY_MS / 50u));
+    CHECK_EQ(writes, 5u);
+    CHECK_EQ(fk.cfg[LINK_TN_ENABLE], LINK_TN_EN_TAP);
+}
+
+/* A page older than 4.17 offers again only a BAD_VALUE: a first frame it
+ * refuses with any other code (READ_ONLY 3, NOT_ARMED 5) is written once
+ * and said once, and not again in 3 retry periods (15 s). */
+TEST_CASE(an_older_pages_other_refusal_is_not_offered_again)
+{
+    static const int codes[] = { LINK_NACK_READ_ONLY, LINK_NACK_NOT_ARMED };
+    for (unsigned k = 0u; k < sizeof(codes) / sizeof(codes[0]); ++k) {
+        fresh(16u);
+        polls(2);
+        fk.nack = codes[k];
+        tone_setup_t w = setup_default();
+        w.enable = true;
+        want(&w);
+        polls(20);
+        CHECK_EQ(writes, 1u);
+        CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_REFUSED);
+        polls((int)(3u * TONE_LINK_RETRY_MS / 50u));
+        CHECK_EQ(writes, 1u);
+        CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
+    }
 }
 
 /* The frames the page does not hold, for SETUP's marks: from the edit to
@@ -649,9 +754,11 @@ TEST_CASE(a_refused_second_frame_is_its_own_event)
     CHECK(tone_link_settled(&tl));
 }
 
-TEST_CASE(a_pin_held_by_something_else_goes_through_once_it_is_free)
+/* A pin something else holds: BAD_VALUE from a 4.8 page, BUSY from a 4.17
+ * one; either way offered again every 5 s until it is free. */
+static void a_held_pin_goes_through_once_free(uint16_t m)
 {
-    fresh(8u);
+    fresh(m);
     fk.bad_pin = 22;
     polls(2);
     tone_setup_t w = setup_default();
@@ -675,6 +782,12 @@ TEST_CASE(a_pin_held_by_something_else_goes_through_once_it_is_free)
     tone_link_readout(&tl, now, &r);
     CHECK_EQ(r.state, TONE_STATE_RUNNING);
     CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
+}
+
+TEST_CASE(a_pin_held_by_something_else_goes_through_once_it_is_free)
+{
+    a_held_pin_goes_through_once_free(TONE_LINK_MINOR);
+    a_held_pin_goes_through_once_free(LINK_MINOR_TONE_BUSY);
 }
 
 TEST_CASE(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free)
@@ -714,6 +827,28 @@ TEST_CASE(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free)
     /* No more offers once it runs. */
     polls(240);
     CHECK_EQ(writes, 3u);
+}
+
+/* A saved tap a 4.17 page refused at boot: the first offer is answered
+ * BAD_VALUE, a board pin, and no more offers follow. */
+TEST_CASE(a_saved_tap_on_a_board_pin_is_offered_once_by_a_4_17_page)
+{
+    fresh(LINK_MINOR_TONE_BUSY);
+    fk.board_pin = LINK_TN_DEFAULT_PIN;
+    fk.cfg[LINK_TN_ENABLE] = LINK_TN_EN_TAP;
+    fk.flags = LINK_TN_PIN_REFUSED;
+    tone_setup_t w = setup_default();
+    w.enable = true;
+    want(&w);
+    polls(20);
+    CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_PIN_BUSY);
+    polls(120);
+    CHECK_EQ(writes, 1u);
+    polls(360);
+    CHECK_EQ(writes, 1u);
+    tone_readout_t r;
+    tone_link_readout(&tl, now, &r);
+    CHECK_EQ(r.state, TONE_STATE_REFUSED);
 }
 
 TEST_CASE(an_unanswered_write_is_written_again)
@@ -1624,6 +1759,90 @@ TEST_CASE(a_status_goes_stale_at_its_time_across_the_tick_wrap)
                                   750u + TONE_LINK_STALE_MS / 2u);
 }
 
+/* A page that still answers and says it runs, while its WINDOW stands:
+ * running for TONE_LINK_WINDOW_STALE_MS from the read that showed it move
+ * and not 1 ms longer, then the stale state; running again once it moves. */
+static void a_window_that_stands_goes_stale(uint32_t t0)
+{
+    fresh_at(8u, t0);
+    tap_on();
+    fake_busy();
+    polls(2);
+    const uint32_t moved = now - 50u;       /* the last read, moving */
+    fk.window_stands = true;
+    polls((int)(TONE_LINK_WINDOW_STALE_MS / 50u) - 1);
+    CHECK_EQ(now - 50u, moved + TONE_LINK_WINDOW_STALE_MS - 50u);
+    tone_readout_t r;
+    tone_link_readout(&tl, moved + TONE_LINK_WINDOW_STALE_MS - 1u, &r);
+    check_busy(&r);
+    tone_link_readout(&tl, moved + TONE_LINK_WINDOW_STALE_MS, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+    /* Reads keep coming and it stays stale. */
+    polls(40);
+    tone_link_readout(&tl, now - 49u, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    check_unread(&r);
+    /* It moves again. */
+    fk.window_stands = false;
+    polls(1);
+    tone_link_readout(&tl, now - 49u, &r);
+    check_busy(&r);
+}
+
+TEST_CASE(a_window_that_stands_goes_stale_across_the_tick_wrap)
+{
+    at_tick_0_and_before_the_wrap(a_window_that_stands_goes_stale,
+                                  200u + TONE_LINK_WINDOW_STALE_MS / 2u);
+}
+
+/* A page that holds the tap enabled and does not run reads WINDOW 0, which
+ * stands, and is shown as it is: STOPPED, or REFUSED, read. */
+TEST_CASE(a_page_not_running_is_not_judged_by_its_window)
+{
+    fresh(8u);
+    tap_on();
+    fk.flags = 0u;
+    fk.window = 0u;
+    polls((int)(3u * TONE_LINK_WINDOW_STALE_MS / 50u));
+    tone_readout_t r;
+    tone_link_readout(&tl, now - 49u, &r);
+    CHECK_EQ(r.state, TONE_STATE_STOPPED);
+    CHECK(r.read);
+    fk.flags = LINK_TN_PIN_REFUSED;
+    polls((int)(3u * TONE_LINK_WINDOW_STALE_MS / 50u));
+    tone_link_readout(&tl, now - 49u, &r);
+    CHECK_EQ(r.state, TONE_STATE_REFUSED);
+    CHECK(r.read);
+    /* It starts, and has the whole time from the last read that found it
+     * not running to show its first window move. */
+    const uint32_t stopped = now - 50u;
+    fk.flags = LINK_TN_RUNNING;
+    fk.window_stands = true;
+    polls((int)(TONE_LINK_WINDOW_STALE_MS / 50u) - 1);
+    tone_link_readout(&tl, stopped + TONE_LINK_WINDOW_STALE_MS - 1u, &r);
+    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+    tone_link_readout(&tl, stopped + TONE_LINK_WINDOW_STALE_MS, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+}
+
+/* A lost link forgets the window: the first read after it is a start. */
+TEST_CASE(a_new_link_judges_the_window_afresh)
+{
+    fresh(8u);
+    tap_on();
+    fk.window_stands = true;
+    polls((int)(2u * TONE_LINK_WINDOW_STALE_MS / 50u));
+    tone_readout_t r;
+    tone_link_readout(&tl, now - 49u, &r);
+    CHECK_EQ(r.state, TONE_STATE_WAITING);
+    tone_link_lost(&tl);
+    tone_link_came_up(&tl, minor, now);
+    polls(3);
+    tone_link_readout(&tl, now - 49u, &r);
+    CHECK_EQ(r.state, TONE_STATE_RUNNING);
+}
+
 /* The second of two events waits TONE_LINK_EVENT_GAP_MS from the first and
  * not 1 ms less, wherever on the clock the first was handed out. */
 static void the_second_event_waits_the_gap(uint32_t t0)
@@ -1727,10 +1946,14 @@ int main(void)
     RUN(switching_the_tap_off_goes_through_whatever_range_is_asked);
     RUN(frames_go_in_the_order_that_leaves_a_valid_set_up);
     RUN(a_refused_frame_is_said_once_and_not_written_again);
+    RUN(a_bad_value_from_a_4_17_page_is_not_offered_again);
+    RUN(an_older_pages_bad_value_is_offered_again_at_the_retry_pace);
+    RUN(an_older_pages_other_refusal_is_not_offered_again);
     RUN(a_frame_is_unheld_until_the_page_takes_it);
     RUN(a_refused_second_frame_is_its_own_event);
     RUN(a_pin_held_by_something_else_goes_through_once_it_is_free);
     RUN(a_saved_tap_refused_at_boot_is_offered_again_until_the_pin_is_free);
+    RUN(a_saved_tap_on_a_board_pin_is_offered_once_by_a_4_17_page);
     RUN(an_unanswered_write_is_written_again);
     RUN(a_lost_link_reads_the_page_again);
     RUN(beeps_are_read_one_by_one_by_number);
@@ -1766,6 +1989,9 @@ int main(void)
     RUN(the_set_up_rests_and_is_read_across_the_tick_wrap);
     RUN(the_status_is_due_at_its_interval_across_the_tick_wrap);
     RUN(a_status_goes_stale_at_its_time_across_the_tick_wrap);
+    RUN(a_window_that_stands_goes_stale_across_the_tick_wrap);
+    RUN(a_page_not_running_is_not_judged_by_its_window);
+    RUN(a_new_link_judges_the_window_afresh);
     RUN(an_event_waits_its_gap_across_the_tick_wrap);
     RUN(a_refused_pin_is_offered_every_5_s_across_the_tick_wrap);
     RUN(a_saved_tap_is_offered_every_5_s_across_the_tick_wrap);

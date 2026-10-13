@@ -2047,6 +2047,11 @@ int main(int argc, char **argv)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
+        if (strcmp(view, "servo-model") == 0) {
+            /* No PD mini: the panel's model is the supply, and the line
+             * over the plot carries the MODELLED pill. */
+            supply_screen_set_model(true);
+        }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
@@ -2070,6 +2075,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "servo") != 0
                    && strcmp(view, "servo-ina") != 0
                    && strcmp(view, "servo-target") != 0
+                   && strcmp(view, "servo-model") != 0
                    && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
             tap(734, UI_BAND_H + 24);
@@ -2108,6 +2114,9 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-result-ina") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0;
+    /* An arm covers the role of the screen that asked for it. */
+    st.armed_roles = !st.armed ? 0u
+                     : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     ui_router_goto(id);
 

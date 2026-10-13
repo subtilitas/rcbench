@@ -615,6 +615,16 @@ TEST_CASE(a_capture_is_refused_what_it_cannot_time)
              LINK_NACK_NOT_ARMED);
     CHECK_EQ(sreg(LINK_SS_CAP_STATE), (uint16_t)LINK_CAP_IDLE);
     CHECK_EQ(sreg(LINK_SS_CAP_ARM), 0u);
+    /* An arm for the throttle alone leaves the surface without a pulse;
+     * an arm for the surfaces is enough. */
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_THROTTLE), 0u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u),
+             LINK_NACK_NOT_ARMED);
+    CHECK_EQ(sreg(LINK_SS_CAP_ARM), 0u);
+    outputs_arm(&o, false, 0u);
+    outputs_arm_roles(&o, OUT_ROLE_BIT(OUT_ROLE_SURFACE), 0u);
+    CHECK_EQ(arm(LINK_SS_ARM_OF(1u, 0u), 900u, 100u, 50u), 0u);
+    CHECK_EQ(arm(0u, 900u, 100u, 50u), 0u);
 
     /* The INA3221 off: no channel is read. */
     outputs_arm(&o, false, 0u);

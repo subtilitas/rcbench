@@ -187,7 +187,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
     const sweep_cfg_t cfg = cfg_of(next);
     const bool hold = sweep && next[LINK_SV_SWEEP] == LINK_SV_HOLD;
     const bool resume = sweep && next[LINK_SV_SWEEP] == LINK_SV_RESUME;
-    if ((hold || resume) && !outputs_armed(o)) {
+    if ((hold || resume) && !outputs_role_armed(o, OUT_ROLE_SURFACE)) {
         return LINK_NACK_NOT_ARMED;
     }
     if (resume && !resumable(p, next)) {
@@ -211,7 +211,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         }
         /* A curve on a bench that drives nothing would start the moment it
          * arms, from wherever its clock had got to. */
-        if (!outputs_armed(o)) {
+        if (!outputs_role_armed(o, OUT_ROLE_SURFACE)) {
             return LINK_NACK_NOT_ARMED;
         }
     }
@@ -312,7 +312,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * 500 ms after this end stopped holding.
      */
     if (p != NULL && o != NULL && p->holding) {
-        if (!outputs_armed(o)
+        if (!outputs_role_armed(o, OUT_ROLE_SURFACE)
             || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
             /* And the phase it kept: nothing is left to resume. */
             p->holding = false;
@@ -336,7 +336,8 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * to rest part way.  Once the repeats stop, the channels rest as any
      * command does.
      */
-    if (p != NULL && o != NULL && p->finished && outputs_armed(o)
+    if (p != NULL && o != NULL && p->finished
+        && outputs_role_armed(o, OUT_ROLE_SURFACE)
         && (uint32_t)(now_ms - p->heard_ms) <= OUT_DEFAULT_TIMEOUT_MS) {
         command_surfaces(p, o, (uint16_t)SWEEP_CENTRE, now_ms);
     }
@@ -351,7 +352,7 @@ bool servo_page_step(servo_page_t *p, outputs_t *o, uint32_t now_ms)
      * bench disarmed, or a panel that has gone quiet for as long as a
      * channel command is trusted.
      */
-    if (!outputs_armed(o)
+    if (!outputs_role_armed(o, OUT_ROLE_SURFACE)
         || (uint32_t)(now_ms - p->heard_ms) > OUT_DEFAULT_TIMEOUT_MS) {
         sweep_stop(&p->sweep);
         freeze_surfaces(p, o);

@@ -628,6 +628,31 @@ TEST_CASE(two_timeouts_in_a_row_stick_the_bus_and_one_does_not)
     CHECK(!sense_bus_recovery_due(&bus, 300));
 }
 
+/* A read-back of FFFFh, the bus that no part drives, takes the part
+ * offline on that read; FFFEh is read a second time. */
+TEST_CASE(an_all_ones_read_back_is_lost_without_a_second_read)
+{
+    matek();
+    bool lost = true;
+    CHECK(ina228_step(&d, 0));
+    part->glitch_reg   = INA228_ADC_CONFIG;
+    part->glitch_value = 0xFFFEu;
+    part->glitch_n     = 1u;
+    unsigned sent = fb.transactions;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(!lost);
+    CHECK_EQ(fb.transactions, sent + 2u);
+    CHECK_EQ(ina228_state(&d), SENSE_PART_ONLINE);
+    part->glitch_value = 0xFFFFu;
+    part->glitch_n     = 2u;
+    sent = fb.transactions;
+    CHECK_EQ(ina228_verify(&d, &lost), SENSE_OK);
+    CHECK(lost);
+    CHECK_EQ(fb.transactions, sent + 1u);
+    CHECK_EQ(part->glitch_n, 1u);
+    CHECK_EQ(ina228_state(&d), SENSE_PART_OFFLINE);
+}
+
 /* ADC_CONFIG read back: as written, the part stays; the reset value twice
  * in a row takes it offline until the next probe sets it up.  CONFIG does
  * not tell at ADCRANGE 0, where the reset value is the value written. */
@@ -755,6 +780,7 @@ int main(void)
     RUN(a_line_held_low_sticks_the_bus_until_a_recovery_frees_it);
     RUN(two_timeouts_in_a_row_stick_the_bus_and_one_does_not);
     RUN(a_setup_lost_to_a_reset_takes_the_part_offline);
+    RUN(an_all_ones_read_back_is_lost_without_a_second_read);
     RUN(failed_transactions_are_counted_modulo_65536);
     RUN(a_bus_that_sticks_again_after_a_good_transaction_is_recovered_at_once);
     return test_summary("ina228");
