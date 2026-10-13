@@ -24,8 +24,9 @@
  *     of the port and every result of the session becomes one message
  *     (kst_prog_msg_id_t) the screen has a text for.
  *
- * The journal: before a write the image the servo holds and the port are
- * recorded, in memory and in the file text (kst_prog_file_text()).  A write that
+ * The journal: before a write the image the servo holds, the port and the
+ * GPIO that port drives are recorded, in memory and in the file text
+ * (kst_prog_file_text()).  A write that
  * ends with the servo verified clears it.  A journal that stands after a
  * link loss, a restart or an abort says the servo may hold part of a
  * write; the next read compares the servo with the recorded image.
@@ -49,12 +50,18 @@
  *
  * The journal's file text, at most KST_PROG_FILE_MAX bytes:
  *
- *   RCBENCH KST 1
+ *   RCBENCH KST 2
  *   journal=<64 hexadecimal digits>     the image before a write, when
  *                                       one is recorded
  *   target=<64 hexadecimal digits>      what that write was to leave
  *   port=<1 hexadecimal digit>
+ *   pin=<2 hexadecimal digits>          the GPIO the port drove, FF not
+ *                                       known
  *   check=<4 hexadecimal digits>        CRC-16/CCITT of the bytes before
+ *
+ * A text of version 1 ("RCBENCH KST 1", no pin line) is read as one whose
+ * pin is not known.  A pin above KST_PROG_PIN_LAST reads as not known: the
+ * record stands and names its port.  The text written is version 2.
  *
  * Pure C.  The caller hands in kst_prog_feed_t every frame and carries out
  * the commands kst_prog_take() gives.  One task only.
@@ -86,6 +93,10 @@ extern "C" {
 #define KST_PROG_WAIT_MAX_MS 10000u
 /** The file text's size, with its terminator. */
 #define KST_PROG_FILE_MAX 400u
+/** The highest GPIO of the coprocessor (GP0 to GP47), and the pin that is
+ *  not known. */
+#define KST_PROG_PIN_LAST 47u
+#define KST_PROG_NO_PIN   0xFFu
 /** A command without an answer from the control task for this long is
  *  given up. */
 #define KST_PROG_START_MS 2000u
@@ -150,12 +161,12 @@ enum {
                                        written to the servo                 */
     KST_PROG_MSG_FILE_BAD,        /**< the journal's file is not readable   */
     KST_PROG_MSG_JOURNAL,         /**< a write was interrupted; read.  arg:
-                                       the journal's port, from 1           */
+                                       kst_prog_journal_arg()               */
     KST_PROG_MSG_JOURNAL_SAME,    /**< the servo holds what the record says
                                        it held before the write; the record
                                        stands and asks whether this is the
-                                       servo.  arg: the record's port, from
-                                       1                                    */
+                                       servo.  arg: as for
+                                       KST_PROG_MSG_JOURNAL                 */
     KST_PROG_MSG_JOURNAL_DONE,    /**< the same for the write's target      */
     KST_PROG_MSG_JOURNAL_DIFF,    /**< the servo holds something else       */
     KST_PROG_MSG_FORGOTTEN,       /**< the journal was discarded            */
@@ -170,7 +181,7 @@ enum {
     KST_PROG_MSG_STOPPED,         /**< STOP: the operation was aborted      */
     KST_PROG_MSG_TIMEOUT,         /**< no outcome within KST_PROG_RUN_MS    */
     KST_PROG_MSG_JOURNAL_OTHER,   /**< the servo read is not the journal's;
-                                       arg: the journal's port, from 1      */
+                                       arg: as for KST_PROG_MSG_JOURNAL     */
     KST_PROG_MSG_CARD_FULL,      /**< no space on the card, or no preset
                                          name is left                         */
     KST_PROG_MSG_CARD_WRITE,      /**< the file was not written whole       */
@@ -438,6 +449,10 @@ typedef struct {
                                     as the coprocessor reads it: 0 the
                                     standard servo ports, 1 + n
                                     programming port n */
+    uint8_t port_pin[LINK_PG_PORTS_MAX]; /**< the GPIO programming port n
+                                              drives, when bit n of
+                                              port_pin_known is set */
+    uint8_t port_pin_known;
 } kst_prog_feed_t;
 
 typedef struct {
@@ -455,6 +470,8 @@ typedef struct {
     bool journal_other;       /**< the servo read is not the journal's */
     bool need_read;           /**< the servo's image is in doubt   */
     uint8_t journal_port;
+    uint8_t journal_pin;      /**< the GPIO of journal_port at the write,
+                                   KST_PROG_NO_PIN not known       */
     kst_image_t journal_img;     /**< the servo before the write   */
     kst_image_t journal_target;  /**< and what the write was to leave */
 
@@ -645,6 +662,12 @@ kst_prog_msg_id_t kst_prog_journal_asks(const kst_prog_t *p);
 bool kst_prog_backup_other(const kst_prog_t *p);
 /** The port of the interrupted write, from 0. */
 uint8_t kst_prog_journal_port(const kst_prog_t *p);
+/** The GPIO that port drove at the write, or KST_PROG_NO_PIN: not known,
+ *  or a record of version 1. */
+uint8_t kst_prog_journal_pin(const kst_prog_t *p);
+/** The argument of the journal's messages: the port + 1 in bits 0-7, the
+ *  pin + 1 in bits 8-15, 0 there when the pin is not known. */
+unsigned kst_prog_journal_arg(const kst_prog_t *p);
 /** The servo may hold part of a write: a journal stands, the port asks for
  *  a read, an operation timed out, or the session is locked. */
 bool kst_prog_in_doubt(const kst_prog_t *p);

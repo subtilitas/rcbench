@@ -358,12 +358,22 @@ TEST_CASE(leaving_under_a_press_on_output_off_sends_the_off)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-TEST_CASE(leaving_keeps_the_output_and_drops_the_hold)
+/* An output this screen did not switch on -- on at the start, or another
+ * screen's -- stays on when it is left; a hold toward ON is dropped. */
+TEST_CASE(leaving_keeps_an_output_it_did_not_switch_on_and_drops_the_hold)
 {
     fresh();
     supply_screen_set_output(true);
     scr->leave();
     CHECK(!supply_screen_poll_cmd(NULL));
+
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_output(true);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
 
     fresh();
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
@@ -388,6 +398,344 @@ TEST_CASE(leaving_keeps_the_output_and_drops_the_hold)
     const int same = memcmp(fb, was, (size_t)W * H * sizeof(gfx_color_t));
     free(was);
     CHECK_EQ(same, 0);
+}
+
+/*
+ * Leaving switches off an output this screen switched on: reported on, an
+ * ON taken and not yet reported, and an ON not yet taken.  An output it
+ * switched on and that has since gone off is nobody's: the leave asks
+ * nothing.
+ */
+TEST_CASE(leaving_switches_off_the_output_this_screen_switched_on)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        hold_on();
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+        if (k >= 1) {
+            CHECK(supply_screen_poll_cmd(&c));      /* the ON taken */
+            CHECK(c.on);
+        }
+        if (k == 2) {
+            supply_screen_set_output(true);         /* and reported */
+        }
+        scr->leave();
+        CHECK(supply_screen_poll_cmd(&c));
+        CHECK(c.off);
+        CHECK(!c.on);
+        /* Live only while the supply still reports it on. */
+        CHECK_EQ(supply_screen_output_live(), k == 2);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+        /* Back on the screen and left again: nothing more is asked. */
+        scr->enter();
+        scr->leave();
+        CHECK(!supply_screen_poll_cmd(NULL));
+    }
+
+    /* On and off again before the leave: nothing to switch off. */
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_output(true);
+    tick_for(1);
+    supply_screen_set_output(false);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(NULL));
+
+    /* An ON a STOP dropped before it went out: nobody's, nothing asked. */
+    fresh();
+    hold_on();
+    supply_screen_cancel_on();
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(NULL));
+
+    /* An ON taken that the application then dropped: nobody's. */
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_on_coming(false);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* The settings, the keypads and the question are this screen's own: an
+ * output switched on here stays on under each of them. */
+TEST_CASE(the_overlays_of_supply_are_no_leave)
+{
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_output(true);
+    tap(SETB_X, SETB_Y);                 /* SETTINGS open */
+    tick_for(4);
+    tap(SETB_X, SETB_Y);                 /* and closed */
+    tap(V_UP_X, V_ROW_Y);                /* a question on a live output */
+    tick_for(4);
+    tap(DISCARD_X, ASK_Y);               /* answered CANCEL */
+    tap(CARD_X, CARD_V_Y);               /* a set point's keypad */
+    tick_for(4);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK(supply_screen_output_on());
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+}
+
+/*
+ * Each screen's leave switches off only its own output: SERVO's ON is not
+ * SUPPLY's to switch off, and the reverse.  supply_screen_left() is what
+ * each screen's leave() calls.
+ */
+TEST_CASE(a_leave_switches_off_only_the_screens_own_output)
+{
+    static const supply_by_t by[] = { SUPPLY_BY_SUPPLY, SUPPLY_BY_SERVO,
+                                      SUPPLY_BY_PROGRAMMER };
+    supply_cmd_t c;
+
+    for (size_t a = 0; a < sizeof(by) / sizeof(by[0]); ++a) {
+        for (size_t b = 0; b < sizeof(by) / sizeof(by[0]); ++b) {
+            fresh();
+            supply_screen_ask_on(by[a]);
+            drain();
+            supply_screen_set_output(true);
+            supply_screen_left(by[b]);
+            if (a == b) {
+                CHECK(supply_screen_poll_cmd(&c));
+                CHECK(c.off);
+            } else {
+                CHECK(!supply_screen_poll_cmd(NULL));
+                CHECK_EQ(supply_screen_owner(), by[a]);
+            }
+        }
+    }
+    /* Nobody's output is left to nobody. */
+    fresh();
+    supply_screen_set_output(true);
+    supply_screen_left(SUPPLY_BY_NONE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/*
+ * An output on that nobody here asked for -- the servo programmer's
+ * CONNECT switches a PD mini on through the coprocessor -- is claimed by
+ * the screen that shows it; an owned one keeps its owner, and an output
+ * that is off is nobody's to claim.
+ */
+TEST_CASE(an_output_nobody_asked_for_is_claimed_once)
+{
+    fresh();
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);    /* off */
+    supply_screen_set_output(true);
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_claim(SUPPLY_BY_SUPPLY);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_set_output(false);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+}
+
+/*
+ * Left while a programming port holds the supply, the OFF would end the
+ * port's session and cut a write: it is owed, and sent as the port lets
+ * go.  The screen shown again before that drops it; an output that went
+ * off meanwhile owes nothing.
+ */
+TEST_CASE(an_off_owed_under_a_held_port_goes_when_the_port_lets_go)
+{
+    supply_cmd_t c;
+
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        supply_screen_ask_on(SUPPLY_BY_SERVO);
+        drain();
+        supply_screen_set_output(true);
+        supply_screen_set_port_held(true);
+        supply_screen_left(SUPPLY_BY_SERVO);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        CHECK(supply_screen_off_owed());
+        CHECK(supply_screen_output_on());
+        if (k == 1) {
+            supply_screen_entered(SUPPLY_BY_SERVO);  /* shown again */
+            CHECK(!supply_screen_off_owed());
+        } else if (k == 2) {
+            supply_screen_set_output(false);         /* the port's STOP */
+            CHECK(!supply_screen_off_owed());
+        }
+        supply_screen_set_port_held(false);
+        if (k == 0) {
+            CHECK(supply_screen_poll_cmd(&c));
+            CHECK(c.off);
+            CHECK(!c.on);
+        } else {
+            CHECK(!supply_screen_poll_cmd(NULL));
+        }
+        CHECK(!supply_screen_off_owed());
+    }
+    /* Another screen entered owes nothing back. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_output(true);
+    supply_screen_set_port_held(true);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    supply_screen_entered(SUPPLY_BY_SUPPLY);
+    CHECK(supply_screen_off_owed());
+    supply_screen_set_port_held(false);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+}
+
+/*
+ * An ON on its way is an output to switch off: the supply may still report
+ * the old off state after the ON was taken, and that stale report neither
+ * drops the owner nor excuses the leave.
+ */
+TEST_CASE(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way)
+{
+    supply_cmd_t c;
+
+    static const supply_by_t by[] = { SUPPLY_BY_SERVO, SUPPLY_BY_SUPPLY };
+    for (size_t k = 0; k < 2; ++k) {
+        fresh();
+        supply_screen_ask_on(by[k]);
+        drain();                                /* taken, not yet reported */
+        supply_screen_set_output(false);        /* the old state, still off */
+        CHECK_EQ(supply_screen_owner(), by[k]);
+        supply_screen_left(by[k]);
+        CHECK(supply_screen_poll_cmd(&c));
+        CHECK(c.off);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    }
+}
+
+/*
+ * A hold on OUTPUT ON that loses its touch before the ON was taken leaves
+ * the output off and nobody's: the servo programmer's CONNECT that switches
+ * the PD mini on afterwards is claimed, and left, as SERVO's.
+ */
+TEST_CASE(a_dropped_hold_releases_the_owner_so_a_later_claim_works)
+{
+    supply_cmd_t c;
+
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);                       /* the ON is asked */
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    scr->cancel();                              /* the touch is lost */
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    CHECK(!supply_screen_output_live());
+    CHECK(!supply_screen_poll_cmd(&c));         /* the ON is dropped */
+    supply_screen_set_output(true);             /* CONNECT's PD mini */
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+}
+
+/*
+ * A hold on OUTPUT ON that loses its touch after the ON was taken keeps
+ * that ON's owner until the application reports what became of it.  The
+ * panel's control task drops such an ON, or switches the output off with
+ * the touch-loss alert until a whole frame has seen it on.  A loss after
+ * that frame but before the screen's first sample leaves it on, and the
+ * screen's part is that the leave switches it off; an ON the application
+ * drops lets the owner go.
+ */
+TEST_CASE(a_dropped_hold_keeps_the_owner_of_an_on_already_taken)
+{
+    supply_cmd_t c;
+
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+    drain();                                    /* the ON is taken */
+    scr->cancel();                              /* the touch is lost */
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    CHECK(supply_screen_output_live());
+    CHECK(!supply_screen_poll_cmd(&c));         /* nothing new is asked */
+    supply_screen_set_output(true);             /* the ON lands */
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    scr->leave();
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+
+    /* Taken, then dropped by the application: nobody's, nothing owed. */
+    fresh();
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    tick_for(HOLD_TICKS);
+    drain();
+    scr->cancel();
+    supply_screen_set_on_coming(false);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    CHECK(!supply_screen_output_live());
+    scr->leave();
+    CHECK(!supply_screen_poll_cmd(&c));
+}
+
+/*
+ * An ON SERVO asked, taken before a programming port took the supply,
+ * stays SERVO's: left while the port holds, the output that comes on
+ * afterwards is switched off when the port lets go.  Not taken, the ON is
+ * dropped with the hold and nothing is owed.
+ */
+TEST_CASE(an_on_taken_before_the_port_held_is_owed_its_off)
+{
+    supply_cmd_t c;
+
+    /* Taken, the port holds, SERVO is left, the ON lands. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_port_held(true);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(supply_screen_off_owed());
+    CHECK(!supply_screen_poll_cmd(&c));         /* nothing under the port */
+    supply_screen_set_output(true);
+    CHECK(supply_screen_off_owed());
+    supply_screen_set_port_held(false);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off && !c.on);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+
+    /* Taken, SERVO left, the application drops the ON: nothing owed. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    drain();
+    supply_screen_set_port_held(true);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    supply_screen_set_on_coming(false);
+    CHECK(!supply_screen_off_owed());
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    supply_screen_set_port_held(false);
+    CHECK(!supply_screen_poll_cmd(&c));
+
+    /* Not taken: the hold drops it, SERVO's leave owes nothing. */
+    fresh();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
+    supply_screen_set_port_held(true);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
+    supply_screen_left(SUPPLY_BY_SERVO);
+    CHECK(!supply_screen_off_owed());
+    supply_screen_set_port_held(false);
+    CHECK(!supply_screen_poll_cmd(&c));
+}
+
+/* An output being switched off is nobody's to claim. */
+TEST_CASE(an_output_being_switched_off_is_not_claimed)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(OUT_X, OUT_Y);                          /* OUTPUT OFF, not yet sent */
+    CHECK(supply_screen_off_pending());
+    supply_screen_claim(SUPPLY_BY_SERVO);
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
 }
 
 TEST_CASE(reset_peaks_posts_its_own_command)
@@ -657,12 +1005,23 @@ TEST_CASE(an_on_asked_for_counts_as_live_before_it_is_seen)
     supply_screen_cancel_on();
     tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.3f, 1e-4f);
-    /* Nor one a touch loss dropped. */
+    /* One collected before a touch loss is on the wire and still counts,
+     * until the application drops it. */
     hold_on();
     (void)supply_screen_poll_cmd(&c);
     scr->cancel();
     tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.3f, 1e-4f);
+    tap(DISCARD_X, ASK_Y);
+    supply_screen_set_on_coming(false);
+    tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.4f, 1e-4f);
+    /* Nor one a touch loss dropped before it was collected. */
+    hold_on();
+    scr->cancel();
+    CHECK(!supply_screen_poll_cmd(&c));
+    tap(V_UP_X, V_ROW_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.5f, 1e-4f);
     /* Nor one an OFF overtook. */
     hold_on();
     supply_screen_set_output(true);
@@ -1000,7 +1359,7 @@ TEST_CASE(a_supply_held_by_a_port_takes_off_and_no_other_press)
     /* No ON: not by the hold, not asked by another screen. */
     hold_on();
     CHECK(!supply_screen_poll_cmd(&c));
-    supply_screen_ask_on();
+    supply_screen_ask_on(SUPPLY_BY_SERVO);
     CHECK(!supply_screen_poll_cmd(&c));
     CHECK(!supply_screen_output_live());
     CHECK(!supply_screen_output_held());
@@ -1789,7 +2148,17 @@ int main(void)
     RUN(a_stop_while_the_output_reports_off_strands_no_press);
     RUN(a_touch_loss_drops_an_on_and_keeps_an_off);
     RUN(leaving_under_a_press_on_output_off_sends_the_off);
-    RUN(leaving_keeps_the_output_and_drops_the_hold);
+    RUN(leaving_keeps_an_output_it_did_not_switch_on_and_drops_the_hold);
+    RUN(leaving_switches_off_the_output_this_screen_switched_on);
+    RUN(the_overlays_of_supply_are_no_leave);
+    RUN(a_leave_switches_off_only_the_screens_own_output);
+    RUN(an_output_nobody_asked_for_is_claimed_once);
+    RUN(an_off_owed_under_a_held_port_goes_when_the_port_lets_go);
+    RUN(a_stale_off_report_does_not_drop_the_owner_of_an_on_on_its_way);
+    RUN(a_dropped_hold_releases_the_owner_so_a_later_claim_works);
+    RUN(a_dropped_hold_keeps_the_owner_of_an_on_already_taken);
+    RUN(an_on_taken_before_the_port_held_is_owed_its_off);
+    RUN(an_output_being_switched_off_is_not_claimed);
     RUN(reset_peaks_posts_its_own_command);
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
     RUN(a_tap_on_a_track_sets_a_value_the_supply_takes);
