@@ -59,13 +59,19 @@ test('the card of the DC supply of the Osoyoo breakout board carries the mark of
   for (const lang of LANGS) {
     const tag = `<span class="tag">${t(lang, 'modelled')}</span>`;
     assert.equal(t(lang, 'modelled'), lang === 'en' ? 'Modelled part: no product chosen' : 'Modelliertes Teil: kein Produkt gewählt');
-    const strip = result(view({ functions: ['servo'], options: { ...DEFAULT_OPTIONS, servoPower: 'bench', connection: 'osoyoo' } }, lang), URL, []);
+    const page = result(view({ functions: ['servo'], options: { ...DEFAULT_OPTIONS, servoPower: 'bench', connection: 'osoyoo' } }, lang), URL, []);
+    // The card under "Parts" and the row of the parts list carry the mark, once each.
+    const strip = page.slice(page.indexOf('id="h-parts"'), page.indexOf('id="h-buy"'));
+    const list = page.slice(page.indexOf('id="h-buy"'), page.indexOf('id="h-power"'));
     assert.equal(count(strip, tag), 1);
+    assert.equal(count(list, tag), 1);
+    assert.ok(list.includes(`<li data-part="dcsup">`), list);
     const card = strip.slice(strip.indexOf(tag) - 200, strip.indexOf(tag));
     assert.ok(card.includes(`<b>${esc(CATALOGUE.parts.find((p) => p.id === 'dcsup')!.name[lang])}</b>`), card);
     for (const options of [{ servoPower: 'bench', connection: 'pads' }, { servoPower: 'external', connection: 'osoyoo' }] as const) {
       const other = result(view({ functions: ['servo'], options: { ...DEFAULT_OPTIONS, ...options } }, lang), URL, []);
       assert.equal(count(other, tag), 0, JSON.stringify(options));
+      assert.ok(!other.includes('data-part="dcsup"'), JSON.stringify(options));
     }
   }
 });
@@ -590,7 +596,10 @@ test('the footer links to the trademark notice of the repository in both languag
     const link = `<a id="noticelink" href="${NOTICE_URL}" rel="noopener noreferrer">${name[lang]}</a></p></footer>`;
     for (const html of [result(view({ functions: ['servo'] }, lang), URL, []), resultError(lang, CATALOGUE, URL)]) {
       assert.equal(count(html, '<footer>'), 1);
-      assert.equal(count(html, 'href="http'), 1, 'one link leaves the page');
+      // Besides the notice, only the maker pages and web searches of the parts list leave the page, each in a new tab.
+      const away = count(html, 'href="http') - 1;
+      assert.equal(away, count(html, 'target="_blank" rel="noopener noreferrer"'), 'a link of the parts list opens in a new tab');
+      assert.equal(count(html.slice(html.indexOf('<footer>')), 'href="http'), 1, 'one link in the footer');
       assert.ok(html.endsWith(link), html.slice(-200));
       // The sentence on the names stands before the link, and the link has no tabindex that takes it out of the Tab order.
       assert.ok(html.includes(`${STRINGS.foot[col(lang)]} <a id="noticelink"`));

@@ -15,7 +15,7 @@
 
 import { TAG, VERSION } from '../release.ts';
 import type {
-  Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, PowerSource, Rule, Src, Stage, Text, Wire,
+  Buy, Catalogue, Check, Cond, Fn, Pad, Part, Pin, PinDefault, PowerSource, Rule, Src, Stage, Text, Wire,
 } from '../contract.ts';
 
 
@@ -96,6 +96,14 @@ function owner(date: string): Src {
 
 const OWNER = owner('2026-10-11');
 
+/**
+ * A row of the parts list. `maker` null: a generic or modelled part, and
+ * `order` is its spec. `page` is the product page of the maker.
+ */
+function buy(maker: string | null, order: Text, check: Text, more: Pick<Buy, 'page' | 'qty' | 'only'> = {}): Buy {
+  return { maker, order, check, ...more };
+}
+
 function pin(id: string, label: Text, src: Src, confirmed = true): Pin {
   return { id, label, confirmed, src };
 }
@@ -142,6 +150,12 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy('Waveshare', same('ESP32-S3-Touch-LCD-7'), t(
+        'The touch version with 800 × 480 pixels. Not the ESP32-S3-LCD-7 without touch, not the ESP32-S3-Touch-LCD-7B with 1024 × 600.',
+        'Die Touch-Version mit 800 × 480 Pixeln. Nicht das ESP32-S3-LCD-7 ohne Touch, nicht das ESP32-S3-Touch-LCD-7B mit 1024 × 600.',
+      ), { page: 'https://www.waveshare.com/esp32-s3-touch-lcd-7.htm' }),
+    ],
     src: guide('parts'),
   },
   {
@@ -180,6 +194,16 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy('Waveshare', same('RP2350-CAN'), t(
+        'The RP2350 board with the CAN controller XL2515 and a 3-pole CAN screw terminal. Not a Pico with a CAN add-on board.',
+        'Die RP2350-Platine mit dem CAN-Controller XL2515 und einer 3-poligen CAN-Schraubklemme. Kein Pico mit CAN-Zusatzplatine.',
+      ), { page: 'https://www.waveshare.com/rp2350-can.htm' }),
+      buy('Osoyoo', same('Breakout Board for Pico series'), t(
+        'The board with the jumper V Selector and a DC jack. It holds no microcontroller: the RP2350-CAN plugs in where a Pico goes. Not the boards for Nano or UNO.',
+        'Die Platine mit dem Jumper V Selector und einer DC-Buchse. Sie trägt keinen Mikrocontroller: Die RP2350-CAN steckt dort, wo ein Pico sitzt. Nicht die Platinen für Nano oder UNO.',
+      ), { page: 'https://osoyoo.com/2024/12/02/osoyoo-breakout-board-for-pico-series/', only: { connection: 'osoyoo' } }),
+    ],
     src: guide('parts'),
   },
   {
@@ -198,6 +222,16 @@ const parts: Part[] = [
     release: 'released',
     slot: { column: 'none', order: 1 },
     pins: [],
+    buy: [
+      buy(null, t('USB-C data cable', 'USB-C-Datenkabel'), t(
+        'Not a charge-only cable: the firmware of each board is flashed over USB.',
+        'Kein reines Ladekabel: Die Firmware jeder Platine wird über USB geflasht.',
+      ), { qty: 2 }),
+      buy(null, t('USB-C charger, 5 V, 2 A', 'USB-C-Ladegerät, 5 V, 2 A'), t(
+        'At least 2 A at 5 V. It feeds the panel through a short cable.',
+        'Mindestens 2 A bei 5 V. Es speist das Panel über ein kurzes Kabel.',
+      )),
+    ],
     src: guide('also-needed'),
   },
   {
@@ -213,6 +247,20 @@ const parts: Part[] = [
     release: 'released',
     slot: { column: 'none', order: 2 },
     pins: [],
+    buy: [
+      buy(null, t('Hook-up wire', 'Schaltdraht'), t(
+        'Twisted as a pair for CAN H and CAN L.',
+        'Als verdrilltes Paar für CAN H und CAN L.',
+      )),
+      buy(null, t('Jumper wires', 'Jumperkabel'), t(
+        'For the heartbeat and the UART.',
+        'Für Heartbeat und UART.',
+      )),
+      buy(null, t('Digital multimeter', 'Digitalmultimeter'), t(
+        'With a resistance range: the checks read about 60 Ω from CAN H to CAN L and near 0 Ω on ground paths.',
+        'Mit Widerstandsbereich: Die Prüfungen messen etwa 60 Ω von CAN H nach CAN L und nahe 0 Ω auf Massepfaden.',
+      )),
+    ],
     src: guide('also-needed'),
   },
   {
@@ -229,6 +277,13 @@ const parts: Part[] = [
       pin('SIG', t('signal', 'Signal'), guide('wires')),
       pin('POS', same('+'), guide('wires')),
       pin('NEG', same('−'), guide('wires')),
+    ],
+    yours: true,
+    buy: [
+      buy(null, t('Servo under test', 'Servo als Prüfling'), t(
+        'Its voltage rating matches the servo power of the setup, see Power sources.',
+        'Seine Nennspannung passt zur Servoversorgung des Aufbaus, siehe Stromquellen.',
+      )),
     ],
     src: guide('also-needed'),
   },
@@ -247,6 +302,13 @@ const parts: Part[] = [
     pins: [
       pin('POS', same('+'), guide('stage-1')),
       pin('NEG', same('−'), guide('stage-1')),
+    ],
+    yours: true,
+    buy: [
+      buy(null, t('2S LiPo battery or another supply that matches the servo', '2S-LiPo-Akku oder eine andere Versorgung, die zum Servo passt'), t(
+        'Voltage within the rating of the servo. A 2S LiPo battery gives up to 8.4 V.',
+        'Spannung innerhalb der Nennwerte des Servos. Ein 2S-LiPo-Akku liefert bis 8,4 V.',
+      )),
     ],
     src: guide('stage-1'),
   },
@@ -271,6 +333,12 @@ const parts: Part[] = [
     pins: [
       pin('POS', same('+'), OSOYOO_SCHEMATIC),
       pin('NEG', same('−'), OSOYOO_SCHEMATIC),
+    ],
+    buy: [
+      buy(null, t('DC power supply 7 to 12 V, plug 5.5 × 2.1 mm, centre positive', 'DC-Netzteil 7 bis 12 V, Stecker 5,5 × 2,1 mm, Mittelstift Plus'), t(
+        'Not above 12 V. Centre positive: the DC jack has no reverse-polarity protection. Current it must deliver: not stated.',
+        'Nicht über 12 V. Mittelstift Plus: Die DC-Buchse hat keinen Verpolschutz. Strom, den es liefern muss: nicht angegeben.',
+      )),
     ],
     src: OSOYOO_PAGE,
   },
@@ -298,6 +366,13 @@ const parts: Part[] = [
       pin('B', t('phase B', 'Phase B'), guide('wires')),
       pin('C', t('phase C', 'Phase C'), guide('wires')),
     ],
+    yours: true,
+    buy: [
+      buy(null, t('ESC and motor', 'ESC und Motor'), t(
+        'Signal and ground go to the bench; the centre wire (BEC +) is connected nowhere.',
+        'Signal und Masse gehen an den Prüfstand; die Mittelader (BEC +) wird nirgends angeschlossen.',
+      )),
+    ],
     src: guide('also-needed'),
   },
   {
@@ -312,6 +387,13 @@ const parts: Part[] = [
     pins: [
       pin('POS', same('+'), guide('wires')),
       pin('NEG', same('−'), guide('wires')),
+    ],
+    yours: true,
+    buy: [
+      buy(null, t('Battery for the ESC', 'Akku für den ESC'), t(
+        'Within the rating of the ESC. STOP does not switch it off.',
+        'Innerhalb der Nennwerte des ESC. STOP schaltet ihn nicht ab.',
+      )),
     ],
     src: guide('wires'),
   },
@@ -346,6 +428,12 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy('WeAct Studio', same('PD Power Mini V1 Buck'), t(
+        'The Buck version: output 1 to 20 V, 0.05 to 3 A. The output stays at least 0.5 V below the PD voltage the module requests (PD Vset, 8 to 24 V, firmware V1.0.1.0 or later).',
+        'Die Buck-Version: Ausgang 1 bis 20 V, 0,05 bis 3 A. Der Ausgang bleibt mindestens 0,5 V unter der PD-Spannung, die das Modul anfordert (PD Vset, 8 bis 24 V, ab Firmware V1.0.1.0).',
+      ), { page: 'https://github.com/WeActStudio/WeActStudio.PDPowerMiniV1-Buck' }),
+    ],
     src: guide('parts'),
   },
   {
@@ -358,6 +446,12 @@ const parts: Part[] = [
     release: 'released',
     slot: { column: 'L', order: 8 },
     pins: [pin('USB', same('USB-C'), guide('wires'))],
+    buy: [
+      buy(null, t('USB-C PD charger, 20 V', 'USB-C-PD-Ladegerät, 20 V'), t(
+        'With a 20 V profile. The PD mini output stays at least 0.5 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
+        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,5 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
+      )),
+    ],
     src: guide('also-needed'),
   },
   {
@@ -408,6 +502,12 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy('DAOKAI', same('INA3221'), t(
+        'The board with 3 channels, shunts R100 (0.1 Ω) and a header of 8 holes from VS to TC. A unit whose die ID reads 0x1408 instead of 0x3220 is refused.',
+        'Die Platine mit 3 Kanälen, Shunts R100 (0,1 Ω) und einer Leiste mit 8 Löchern von VS bis TC. Ein Exemplar, dessen Die-ID 0x1408 statt 0x3220 liest, wird abgewiesen.',
+      )),
+    ],
     src: guide('parts'),
   },
   {
@@ -442,6 +542,12 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy(null, t('AS5600 magnetic encoder', 'AS5600-Magnetencoder'), t(
+        'A board with a diametrically magnetised magnet; an axial magnet gives no angle. The board has the pads VCC, OUT, GND, GPO, SDA, SCL, DIR.',
+        'Eine Platine mit diametral magnetisiertem Magnet; ein axialer Magnet gibt keinen Winkel. Die Platine hat die Pads VCC, OUT, GND, GPO, SDA, SCL, DIR.',
+      )),
+    ],
     src: guide('parts'),
   },
   {
@@ -457,6 +563,12 @@ const parts: Part[] = [
       pin('SDA', t('R1, to SDA', 'R1, nach SDA'), guide('wires')),
       pin('SCL', t('R2, to SCL', 'R2, nach SCL'), guide('wires')),
       pin('V', t('R1 and R2, to 3V3', 'R1 und R2, nach 3V3'), guide('wires')),
+    ],
+    buy: [
+      buy(null, t('Resistor 2.2 kΩ, 0.25 W', 'Widerstand 2,2 kΩ, 0,25 W'), t(
+        'One from SDA and one from SCL to 3V3. 2.2 kΩ, not 22 kΩ.',
+        'Einer von SDA und einer von SCL nach 3V3. 2,2 kΩ, nicht 22 kΩ.',
+      ), { qty: 2 }),
     ],
     src: guide('wires'),
   },
@@ -511,6 +623,16 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy('Matek', same('I2C-INA-BM'), t(
+        'The board carries an INA228 or an INA238. The bench reads the INA228 only and refuses an INA238 (ID 0x238x).',
+        'Die Platine trägt einen INA228 oder einen INA238. Der Prüfstand liest nur den INA228 und weist einen INA238 ab (ID 0x238x).',
+      ), { page: 'https://www.mateksys.com/?portfolio=i2c-ina-bm', only: { ina228Board: 'matek' } }),
+      buy(null, t('INA228 module, XT90', 'INA228-Modul, XT90'), t(
+        'With 2 XT90 plugs, board print BIFRC V1.1, header print L A V G 5. Its supply is 3.3 V on V, not 5 V. The maker is not known.',
+        'Mit 2 XT90-Steckern, Aufdruck der Platine BIFRC V1.1, Aufdruck der Leiste L A V G 5. Die Versorgung ist 3,3 V an V, nicht 5 V. Der Hersteller ist nicht bekannt.',
+      ), { only: { ina228Board: 'xt90' } }),
+    ],
     src: guide('parts'),
   },
   {
@@ -530,6 +652,12 @@ const parts: Part[] = [
       sub: t('in the slot of the panel, no wires', 'im Schacht des Panels, keine Drähte'),
     },
     pins: [],
+    buy: [
+      buy(null, t('microSD card', 'microSD-Karte'), t(
+        'Formatted FAT. Tested card sizes: not stated.',
+        'Formatiert mit FAT. Getestete Kartengrößen: nicht angegeben.',
+      )),
+    ],
     src: guide('stage-5'),
   },
   {
@@ -570,6 +698,12 @@ const parts: Part[] = [
         ),
       },
     ],
+    buy: [
+      buy(null, t('Emergency stop button, latching, 1NO 1NC', 'Not-Aus-Taster, rastend, 1NO 1NC'), t(
+        '1 normally open (NO) and 1 normally closed (NC) contact. The NC contact opens the heartbeat wire. A button with an NO contact alone does not fit.',
+        '1 Schließer (NO) und 1 Öffner (NC). Der Öffner unterbricht den Heartbeat-Draht. Ein Taster nur mit Schließer (NO) passt nicht.',
+      )),
+    ],
     src: guide('parts'),
   },
   {
@@ -592,6 +726,12 @@ const parts: Part[] = [
       pin('B', t('corner B', 'Ecke B'), guide('wires')),
       pin('C', t('corner C', 'Ecke C'), guide('wires')),
     ],
+    buy: [
+      buy(null, t('Resistor 470 Ω, 2 W', 'Widerstand 470 Ω, 2 W'), t(
+        'Rated 2 W each, not 0.25 W.',
+        'Je 2 W belastbar, nicht 0,25 W.',
+      ), { qty: 3 }),
+    ],
     src: guide('parts'),
   },
   {
@@ -612,6 +752,16 @@ const parts: Part[] = [
     pins: [
       pin('IN', t('resistor, end 1', 'Widerstand, Ende 1'), guide('tap')),
       pin('OUT', t('resistor, end 2', 'Widerstand, Ende 2'), guide('tap')),
+    ],
+    buy: [
+      buy(null, t('Resistor 4.7 kΩ, 0.25 W', 'Widerstand 4,7 kΩ, 0,25 W'), t(
+        'In series from phase A to the tap pin. 4.7 kΩ, not 47 kΩ.',
+        'In Reihe von Phase A zum Abgriff-Pin. 4,7 kΩ, nicht 47 kΩ.',
+      )),
+      buy(null, t('Zener diode 3.0 V', 'Z-Diode 3,0 V'), t(
+        'Zener voltage 3.0 V; the type code on the body often reads 3V0.',
+        'Z-Spannung 3,0 V; der Typcode auf dem Gehäuse lautet oft 3V0.',
+      )),
     ],
     src: guide('parts'),
   },
@@ -650,6 +800,16 @@ const parts: Part[] = [
           'USB-C-Abgriff, Nahaufnahme: die Buchsen IN und OUT und 4 Pads mit dem Aufdruck G, D+, D-, V. Ein schwarzes Kabel an G, ein rotes an D+, ein weißes an D-, kein Kabel an V.',
         ),
       },
+    ],
+    buy: [
+      buy(null, t('USB-C breakout board, female to female', 'USB-C-Breakout-Platine, Buchse auf Buchse'), t(
+        '2 USB-C sockets, IN and OUT, and the pads G, D+, D−, V. A board without D+ and D− pads does not fit.',
+        '2 USB-C-Buchsen, IN und OUT, und die Pads G, D+, D−, V. Eine Platine ohne Pads für D+ und D− passt nicht.',
+      )),
+      buy(null, t('USB-C cable, USB-C at both ends', 'USB-C-Kabel, USB-C an beiden Enden'), t(
+        'From the socket OUT to the PD mini. Rated 3 A or more.',
+        'Von der Buchse OUT zum PD mini. Für 3 A oder mehr ausgelegt.',
+      )),
     ],
     src: OWNER,
   },

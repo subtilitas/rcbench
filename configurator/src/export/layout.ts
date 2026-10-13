@@ -206,7 +206,12 @@ export function layoutDoc(doc: Doc, css: Css, fonts: Fonts): Laid {
     const indent = bullet ? 11 : 0;
     items.forEach((item, index) => {
       const first = wrap(fonts, itemRuns(item), BODY.size, WIDTH - indent);
-      const subs = item.lines.map((sub) => ({ lines: wrap(fonts, [{ text: sub.text }], SMALL.size, WIDTH - indent), ink: sub.muted ? MUTED : INK }));
+      // A line that is a link breaks inside its address as well, and each of its lines is underlined and clickable.
+      const subs = item.lines.map((sub) => ({
+        lines: wrap(fonts, [{ text: sub.text }], SMALL.size, WIDTH - indent, sub.url === undefined ? BREAKS : BREAKS_ID),
+        ink: sub.muted ? MUTED : INK,
+        url: sub.url,
+      }));
       const h = first.length * BODY.lead + subs.reduce((sum, s) => sum + s.lines.length * SMALL.lead, 0);
       push('item', h, index === 0 ? 3 : bullet ? 2 : 6, false, (out, top) => {
         if (bullet) out.ops += lineOps({ pieces: [{ text: '•', bold: false }], width: 0 }, LEFT + 1, top, BODY, INK);
@@ -214,6 +219,14 @@ export function layoutDoc(doc: Doc, css: Css, fonts: Fonts): Laid {
         let y = top - first.length * BODY.lead;
         for (const sub of subs) {
           out.ops += linesOps(sub.lines, LEFT + indent, y, SMALL, sub.ink);
+          if (sub.url !== undefined) {
+            const url = sub.url;
+            sub.lines.forEach((line, i) => {
+              const at = y - i * SMALL.lead;
+              out.ops += rule(LEFT + indent, LEFT + indent + line.width, at - SMALL.lead + 2, 0.4, sub.ink);
+              out.links.push({ x1: LEFT + indent, y1: at - SMALL.lead, x2: LEFT + indent + line.width, y2: at, url });
+            });
+          }
           y -= sub.lines.length * SMALL.lead;
         }
       });

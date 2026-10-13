@@ -1,6 +1,6 @@
-// The result document: notices, summary, safety, parts, test objects, power
-// sources, functions, wiring, checks, build order, footer. Returns markup;
-// main.ts owns the document.
+// The result document: notices, summary, safety, parts, test objects, parts
+// to buy, power sources, functions, wiring, checks, build order, footer.
+// Returns markup; main.ts owns the document.
 
 import type {
   Catalogue, Check, Lang, OptionKey, Options, Part, Picture, ResolvedPart,
@@ -16,6 +16,8 @@ import {
 } from './chooser.ts';
 import type { View } from './chooser.ts';
 import { orderStages } from './order.ts';
+import { buyNote, lineName, partsList, qtyText } from './buy.ts';
+import type { BuyLine } from './buy.ts';
 import { wiresTable } from './table.ts';
 import { picture as wiringPicture } from '../diagram/picture.ts';
 
@@ -110,6 +112,42 @@ function tested(view: View): string {
       : `<ul class="parts" id="tested">${objects.map((r) => card(view, r, usedByText(view, r))).join('')}</ul>`);
 }
 
+/** A link that leaves the page: a new tab, no opener, no referrer. Nothing loads before a click. */
+const away = (href: string, text: string, name: string, cls: string): string =>
+  `<a class="${cls}" href="${esc(href)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(`${text}: ${name}`)}">${esc(text)}</a>`;
+
+/** One row of the parts list: quantity and name, tag, check line, the links. */
+function buyItem(lang: Lang, l: BuyLine, bring: boolean): string {
+  const tag = l.part.modelled ? t(lang, 'modelled') : l.maker === null && !bring ? t(lang, 'buyAny') : '';
+  const name = bring ? l.order : lineName(l);
+  const links = [
+    l.page === null ? '' : away(l.page, t(lang, 'buyPage'), name, 'maker'),
+    l.search === null ? '' : away(l.search, t(lang, 'buySearch'), name, 'websearch'),
+  ].filter((x) => x !== '');
+  return `<li data-part="${esc(l.part.id)}"><div><b><span class="qty">${esc(qtyText(l))}</span> ${esc(name)}</b>`
+    + (tag ? ` <span class="tag">${esc(tag)}</span>` : '')
+    + `<small>${esc(t(lang, 'buyCheck') + l.check)}</small>`
+    + (links.length > 0 ? `<span class="links">${links.join(' ')}</span>` : '')
+    + '</div></li>';
+}
+
+/** What to order for the setup, the copy buttons, and what the visitor brings. */
+function buy(view: View): string {
+  const { lang } = view;
+  const list = partsList(view);
+  return `<h3 id="h-buy">${esc(t(lang, 'buy'))}</h3>`
+    + `<p class="hint" id="buy-note">${esc(buyNote(view))}</p>`
+    + `<p class="hint">${esc(t(lang, 'buyHint'))}</p>`
+    + (list.buy.length === 0
+      ? `<p id="buy-none">${esc(t(lang, 'buyNone'))}</p>`
+      : `<ul class="parts buy" id="buy">${list.buy.map((l) => buyItem(lang, l, false)).join('')}</ul>`)
+    + `<div class="sum">${button(lang, 'b-copy-text', 'copyText')}${button(lang, 'b-copy-csv', 'copyCsv')}</div>`
+    + `<p class="linkbox" id="buybox" hidden><label for="buyfield">${esc(t(lang, 'buyField'))}</label> <textarea id="buyfield" rows="8" readonly></textarea></p>`
+    + (list.bring.length === 0 ? ''
+      : `<h4 id="h-bring">${esc(t(lang, 'bring'))}</h4><p class="hint">${esc(t(lang, 'bringHint'))}</p>`
+        + `<ul class="parts buy" id="bring">${list.bring.map((l) => buyItem(lang, l, true)).join('')}</ul>`);
+}
+
 /** The power sources of the logic and of each connected test object. */
 function power(view: View): string {
   const { lang, setup } = view;
@@ -190,6 +228,7 @@ export function result(view: View, url: string, notices: Notice[], mode: Mode = 
     + safety(lang, catalogue)
     + parts(view)
     + tested(view)
+    + buy(view)
     + power(view)
     + does(view)
     + wiring(view, mode)

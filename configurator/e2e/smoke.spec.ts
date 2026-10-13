@@ -190,14 +190,18 @@ for (const size of SIZES) {
       await page.keyboard.press('Enter');
       await expect(page.locator('#own')).toHaveAttribute('open', '');
 
-      const wanted = await page.evaluate(() => {
+      // The links of the parts list have no id: they share the key "A", so the walk counts the stops, not the keys.
+      const [wanted, stops] = await page.evaluate(() => {
         const out = new Set<string>();
+        let n = 0;
         for (const el of document.querySelectorAll<HTMLElement>('button, a[href], input, summary, [tabindex="0"]')) {
           if (el.getClientRects().length === 0) continue;
           // Tab reaches one radio per group.
-          out.add(el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id || el.dataset.lang || el.dataset.jump || el.tagName);
+          const key = el instanceof HTMLInputElement && el.type === 'radio' ? `radio:${el.name}` : el.id || el.dataset.lang || el.dataset.jump || el.tagName;
+          if (!key.startsWith('radio:') || !out.has(key)) n += 1;
+          out.add(key);
         }
-        return [...out].sort();
+        return [[...out].sort(), n] as const;
       });
       expect(wanted.length).toBeGreaterThan(20);
 
@@ -205,7 +209,7 @@ for (const size of SIZES) {
       await page.locator('body').click({ position: { x: 1, y: 1 } });
       await page.evaluate(() => window.scrollTo(0, 0));
       const reached = new Set<string>();
-      for (let i = 0; i < wanted.length + 20; i++) {
+      for (let i = 0; i < stops + 20; i++) {
         await page.keyboard.press('Tab');
         const key = await page.evaluate(() => {
           const el = document.activeElement as HTMLElement | null;
@@ -215,7 +219,7 @@ for (const size of SIZES) {
         if (key === null) break;
         reached.add(key);
       }
-      expect([...reached].sort()).toEqual(wanted);
+      expect([...reached].sort()).toEqual([...wanted]);
 
       // Space ticks a function, focus stays on it.
       await page.locator('#f-estop').focus();

@@ -102,6 +102,6 @@ export function sweepPart(part: number): void {
     }
     assert.deepEqual(findings.slice(0, 10), []);
     assert.equal(documents, 2 * Math.ceil((SAMPLES.length - part) / SHARDS));
-    assert.ok(most >= 3 && most <= 12, `the longest document has ${most} pages`);
+    assert.ok(most >= 3 && most <= 14, `the longest document has ${most} pages`);
   });
 }

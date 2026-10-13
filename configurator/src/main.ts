@@ -19,6 +19,7 @@ import { benchParts, optionsOf } from './names.ts';
 import { browserStore, readStore, writeStore } from './store.ts';
 import { chooser, deselectText } from './view/chooser.ts';
 import type { Pending, View } from './view/chooser.ts';
+import { listCsv, listText } from './view/buy.ts';
 import { result, resultError, summary } from './view/result.ts';
 import type { Mode, Notice } from './view/result.ts';
 import { install, sync } from './diagram/control.ts';
@@ -263,6 +264,37 @@ function copyLink(button: HTMLElement): void {
   pending.then(done, showLinkField);
 }
 
+/** Shows the parts list in a selectable field: the clipboard refused it. */
+function showListField(text: string): void {
+  const box = byId('buybox');
+  const field = byId('buyfield') as HTMLTextAreaElement | null;
+  if (!box || !field) return;
+  box.hidden = false;
+  field.value = text;
+  field.focus();
+  field.select();
+}
+
+/** Copies the parts list as text or as CSV. A refused clipboard shows the field, as Copy link does. */
+function copyList(button: HTMLElement, form: 'text' | 'csv'): void {
+  const setup = tryResolve(selection);
+  if (!setup) return;
+  const view: View = { lang, catalogue: CATALOGUE, setup, options: optionsOf(setup), selection };
+  const text = form === 'text' ? listText(view, shareUrl()) : listCsv(view);
+  const said = t(lang, form === 'text' ? 'copiedText' : 'copiedCsv');
+  const done = (): void => {
+    announce(said);
+    button.textContent = said;
+  };
+  let pending: Promise<void>;
+  try {
+    pending = navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard'));
+  } catch (error) {
+    pending = Promise.reject(error);
+  }
+  pending.then(done, () => showListField(text));
+}
+
 const toggle = (list: string[], id: string, on: boolean): string[] =>
   on ? [...list.filter((x) => x !== id), id] : list.filter((x) => x !== id);
 
@@ -449,6 +481,8 @@ document.addEventListener('click', (event) => {
     announceSummary();
   } else if (el.id === 'b-copy') {
     copyLink(el);
+  } else if (el.id === 'b-copy-text' || el.id === 'b-copy-csv') {
+    copyList(el, el.id === 'b-copy-text' ? 'text' : 'csv');
   }
 });
 
