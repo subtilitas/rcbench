@@ -53,33 +53,34 @@ This tool reads each module and fails when one of these does not hold:
   `??=` is a `#`.  A file with a NUL byte fails, so no NUL takes part in a line
   continuation or a directive.  A file is read under the literal rules of every
   language it can be compiled as, and an include found under any of them
-  counts: ISO C11 and C17 (no raw strings, no digit separators), gnu11 and
-  gnu17 (raw strings), C23 (digit separators), C++14 to C++20 (both), and
-  gnu23, C++23 and gnu++14 or later (both, and delimited and named
-  universal character names).  A raw string literal
-  (`R"x(...)x"`) is one token, with the line continuations inside it kept, and
-  a number is one preprocessing number, through digit separators (`1'000`, but
-  not a `'` before a `.`, a `$`, a universal character name or a character
-  outside ASCII), exponent signs (`1e-x`), `$`, universal character names
-  (`\\u00e9`, `\\U000000E9`, and in gnu23, C++23 and gnu++14 or later also
-  `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and the characters
-  outside ASCII that GCC 13 takes into an identifier (`1$'a` in C23): the
-  ranges of ISO C11 Annex D.1, EXTENDED_RANGES below.  A number starts at a
-  digit after any character but a letter, a digit, `_`, `$` and a character
-  of these ranges, and in gnu23, C++23 and gnu++14 or later not after a
+  counts: ISO C11 and C17 (no raw strings, no digit separators, no delimited or
+  named universal character names), gnu11 and gnu17 (raw strings and delimited
+  and named universal character names), C23 (digit separators), C++14 to C++20
+  (raw strings and digit separators), and gnu23, C++23 and gnu++14 or later
+  (all three).  A raw string literal (`R"x(...)x"`) is one token, with the line
+  continuations inside it kept, and a number is one preprocessing number,
+  through digit separators (`1'000`, but not a `'` before a `.`, a `$`, a
+  universal character name or a character outside ASCII), exponent signs
+  (`1e-x`), `$`, universal character names (`\\u00e9`, `\\U000000E9`, and in
+  gnu11, gnu17, gnu23, C++23 and gnu++14 or later also `\\u{e9}` and
+  `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and the characters outside ASCII that
+  GCC 13 takes into an identifier (`1$'a` in C23): the ranges of ISO C11 Annex
+  D.1, EXTENDED_RANGES below.  A number starts at an ASCII digit (0 to 9) after
+  any character but a letter, a digit, `_`, `$` and a character of these
+  ranges, and in gnu11, gnu17, gnu23, C++23 and gnu++14 or later not after a
   delimited or named universal character name, which starts an identifier
-  (`é1`, `€1`, `\\u{e9}1`).  A character outside ASCII and outside the
-  ranges ends a number and a name, and a number or raw string literal
-  starts after it, as in C (`×1'a`, `ⸯR"(...)"`, `ⸯ__has_include`).  The C
-  of a .pio file is the text pioasm 2.3.0 writes into the header it
-  generates: the lines of each `% c-sdk {` block after the first
-  `.program`, in order.  The blocks are found as pioasm's lexer finds
-  them, on the file as written: a `;` or `//` comment runs to the line end,
-  a `;` inside a `/* */` comment ends nothing, the rest of a `.lang_opt`
-  line is one string, a block name is trimmed of spaces and tabs and an
-  empty one is c-sdk, a lone CR is a character of its line, and a block
-  ends only at a line of `%}` in column 0 with nothing but spaces, tabs
-  and CRs after it.  CRLF and a lone CR end a line of the C written;
+  (`é1`, `€1`, `\\u{e9}1`).  A decimal digit outside ASCII starts an identifier
+  (`٠1`, U+0660).  A character outside ASCII and outside the ranges ends a
+  number and a name, and a number or raw string literal starts after it, as in
+  C (`×1'a`, `ⸯR"(...)"`, `ⸯ__has_include`).  The C of a .pio file is the text
+  pioasm 2.3.0 writes into the header it generates: the lines of each `% c-sdk
+  {` block after the first `.program`, in order.  The blocks are found as
+  pioasm's lexer finds them, on the file as written: a `;` or `//` comment runs
+  to the line end, a `;` inside a `/* */` comment ends nothing, the rest of a
+  `.lang_opt` line is one string, a block name is trimmed of spaces and tabs
+  and an empty one is c-sdk, a lone CR is a character of its line, and a block
+  ends only at a line of `%}` in column 0 with nothing but spaces, tabs and CRs
+  after it.  CRLF and a lone CR end a line of the C written;
 - the module's README.md has a heading with "Interface" in it; a heading
   with "Trademark" in it, in any case, when the text names a brand listed
   in BRANDS below; and, for a module without an rp2350/ folder, the
@@ -217,44 +218,45 @@ IDENTIFIER_CHAR = (r"(?:" + ID_CHAR + r"|\\u[0-9A-Fa-f]{4}"
                    r"|\\U[0-9A-Fa-f]{8})")
 # The delimited (`\u{e9}`) and named (`\N{LATIN SMALL LETTER E WITH
 # ACUTE}`) universal character names, which continue a number only in
-# gnu23, C++23 and gnu++14 or later.  C23 and C++14 to C++20 end the
-# number before the `\`.
+# gnu11, gnu17, gnu23, C++23 and gnu++14 or later.  C11, C17, C23 and
+# C++14 to C++20 end the number before the `\`.
 DELIMITED_UCN = r"|\\u\{[0-9A-Fa-f]+\}|\\N\{[A-Za-z0-9 _-]+\}"
 # An identifier from a delimited or named universal character name on, in
-# gnu23, C++23 and gnu++14 or later: kept as text, so no number starts at
-# a digit after the `}` (`\u{e9}1'a'` is an identifier and a character
-# literal).
+# gnu11, gnu17, gnu23, C++23 and gnu++14 or later: kept as text, so no
+# number starts at a digit after the `}` (`\u{e9}1'a'` is an identifier
+# and a character literal).
 DELIMITED_WORD = (r"(?:\\u\{[0-9A-Fa-f]+\}|\\N\{[A-Za-z0-9 _-]+\})(?:"
                   + IDENTIFIER_CHAR + DELIMITED_UCN + ")*")
 
 
 def number_re(separators: bool, delimited: bool = False) -> str:
-    """A preprocessing number: a digit, after an optional `.`, then digits,
-    letters, `_`, `.`, an exponent sign after e, E, p or P, `$`, universal
-    character names and characters of EXTENDED_RANGES, as GCC's lex_number
-    reads it; with digit separators (C23, C++14) also a `'` before a digit,
-    letter or `_`; with @p delimited also delimited and named universal
-    character names.  It starts at a digit after no letter, digit, `_`, `$`
-    or character of EXTENDED_RANGES.  A
-    `'` before a `.`, a `$`, a universal character name or a character
-    outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1` and the
-    character literal `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then
-    a `'` that opens a character literal."""
+    """A preprocessing number: an ASCII digit, after an optional `.`, then
+    digits, letters, `_`, `.`, an exponent sign after e, E, p or P, `$`,
+    universal character names and characters of EXTENDED_RANGES, as GCC's
+    lex_number reads it; with digit separators (C23, C++14) also a `'`
+    before a digit, letter or `_`; with @p delimited also delimited and
+    named universal character names.  It starts at an ASCII digit after no
+    letter, digit, `_`, `$` or character of EXTENDED_RANGES; a decimal digit
+    outside ASCII starts an identifier, as in GCC.  A `'` before a `.`, a
+    `$`, a universal character name or a character outside ASCII ends the
+    number, as GCC lexes it: `1'.x'` is `1` and the character literal
+    `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then a `'` that opens
+    a character literal."""
     sep = "'?" if separators else ""
-    return (r"(?<!" + ID_CHAR + r")\.?\d(?:[eEpP][+-]|" + sep
+    return (r"(?<!" + ID_CHAR + r")\.?[0-9](?:[eEpP][+-]|" + sep
             + r"[A-Za-z0-9_]|\.|"
             + IDENTIFIER_CHAR + (DELIMITED_UCN if delimited else "") + ")*")
 
 
 # The literal rules of the languages a module file is compiled as, as (raw
 # strings, digit separators, delimited and named universal character names
-# in a number): ISO C11 and C17 have none, gnu11 and gnu17 have raw
-# strings, C23 has digit separators, C++14 to C++20 have both, and gnu23,
-# C++23 and gnu++14 on have all three.  A file is read under each and the
-# includes found are joined, so an include that one of them leaves outside a
-# comment is found.  Delimited names change a number only where a `'`
-# after it can continue it, so no view without digit separators reads them.
-LITERAL_VIEWS = ((False, False, False), (True, False, False),
+# in a number and an identifier): ISO C11 and C17 have none, gnu11 and
+# gnu17 have raw strings and delimited names, C23 has digit separators,
+# C++14 to C++20 have raw strings and digit separators, and gnu23, C++23
+# and gnu++14 on have all three.  GCC 13 has no mode with raw strings
+# alone.  A file is read under each and the includes found are joined, so
+# an include that one of them leaves outside a comment is found.
+LITERAL_VIEWS = ((False, False, False), (True, False, True),
                  (False, True, False), (True, True, False),
                  (True, True, True))
 

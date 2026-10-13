@@ -1152,13 +1152,15 @@ def test_a_nul_byte_in_a_pio_file_fails_it(tmp_path):
 
 # Each set of literal rules is the only one that finds the include in one
 # text: a raw string, a digit separator, a delimited universal character
-# name in a number, or none of them, opens a comment that hides it under the
-# other four.
+# name, or none of them, opens a comment that hides it under the other
+# four.  The second is gnu11 and gnu17: `\u{e9}R` is an identifier, so no
+# raw string opens.
 VIEW_ONLY = {
     (False, False, False):
         'R"(")" /*"\n1\'a /* \'\n#include "b.h"\n*/\n',
-    (True, False, False):
-        'R"(a" /* ")"\n1\'a /* \'\n#include "b.h"\n*/\n',
+    (True, False, True):
+        'R"(a" /* ")"\n1\'a /* \'\n\\u{e9}R"(" \'/*)" /*\'\n#include "b.h"\n'
+        '*/\n',
     (False, True, False):
         'R"(")" /*"\n1\'a\'/*\'\n#include "b.h"\n*/\n',
     (True, True, False):
@@ -1213,9 +1215,9 @@ OUT = '#include "../outside.h"\n'
 
 # A digit, then a character that continues a GCC preprocessing number
 # besides a letter, digit and `_`: `$`, universal character names with
-# lowercase and uppercase hex digits, delimited and named ones (gnu23, C++23
-# and gnu++14 on), and characters outside ASCII (U+00E9, U+0301, U+203F,
-# U+00B7, U+200D).
+# lowercase and uppercase hex digits, delimited and named ones (gnu11,
+# gnu17, gnu23, C++23 and gnu++14 on), and characters outside ASCII
+# (U+00E9, U+0301, U+203F, U+00B7, U+200D).
 NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
                            "1\\u00E9", "1\\u00AA", "1\\U000000E9",
                            "1\\u{e9}", "1\\u{E9}", ".1\\u{e9}",
@@ -1228,22 +1230,44 @@ NUMBER_IDENTIFIER_CHARS = ("1$", ".1$", "1\\u00e9", "1\\U000000e9",
 # character literal `' /* '`.  A punctuator ends a number: `1<'a'` is `1`,
 # `<` and the character literal `'a'`.
 NUMBER_STARTS = {"\u00d71": True, "\u00a01": True, "1<": False}
-# A delimited or named universal character name after a digit: gnu23,
-# C++23 and gnu++14 on read it as part of the number; C23 and C++14 to
-# C++20 end the number before the `\`, so after a digit separator earlier
-# on the line `'x /* '` is a character literal there.
+# A delimited or named universal character name after a digit: gnu11,
+# gnu17, gnu23, C++23 and gnu++14 on read it as part of the number; C23 and
+# C++14 to C++20 end the number before the `\`, so after a digit separator
+# earlier on the line `'x /* '` is a character literal there.
 DELIMITED_ENDS = tuple("#define Z 0'0 1" + u + "'x /* '\n" + OUT + "/* */\n"
                        for u in ("\\u{e9}",
                                  "\\N{LATIN SMALL LETTER E WITH ACUTE}"))
 # Characters outside the identifier ranges of GCC 13 (cp.EXTENDED_RANGES):
 # `\u2e2f`, which Python's `\\w` matches, and `\u00d7`.  In C each is a token
 # of its own, so a number or raw string starts after it, and it ends a
-# number.  In gnu23, C++23 and gnu++14 on, an identifier that starts at a
+# number.  In gnu11, gnu17, gnu23, C++23 and gnu++14 on, an identifier
+# that starts at a
 # delimited universal character name runs through the digit after it, so
 # `'a /* '` is a character literal; C++14 to C++20 end a number before the
 # `\`, so `R"(` opens a raw string.  `\u00b7` and `\u20ac` are in the
 # ranges: `\u00b71` is an identifier, `'a'` a character literal, and the
 # comment hides the include.
+# gnu11 and gnu17 read a delimited or named universal character name into
+# an identifier or number and have no digit separators: `\u{e9}R` is an
+# identifier, `"("` a string and `'/*)" /*'` a character literal.  The first
+# line hides the include from the rules without raw strings, the second from
+# those with digit separators.
+GNU_DELIMITED = tuple('R"(a" /* ")"\n1\'a /* \'\n' + w + 'R"(" \'/*)" /*\'\n'
+                      + OUT + "/* */\n"
+                      for w in ("\\u{e9}",
+                                "\\N{LATIN SMALL LETTER E WITH ACUTE}",
+                                "1\\u{e9}", "x\\u{e9}"))
+# A decimal digit outside ASCII starts an identifier, not a number: GCC 13
+# starts a number at 0 to 9 only.  After a digit separator earlier on the
+# line, `\u06601'a /* '` is an identifier and a character literal in C23
+# and C++, and `\u06601'a' /* '` opens a comment.
+UNICODE_DIGITS = {
+    "#define Z 0'0 \u06601'a /* '\n": True,
+    "#define Z 0'0 \uff11'a /* '\n": True,
+    "#define Z 0'0 \u0967'a /* '\n": True,
+    "#define Z 0'0 .\u0660'a /* '\n": True,
+    "#define Z \u06601'a' /* '\n": False,
+}
 UNLISTED_CHARS = {
     "#define Z \u2e2f1'a' /* '\n": True,
     '#define Z \u2e2fR"(" /* )"\n': True,
@@ -1337,6 +1361,8 @@ DIFF_C = [
       for n in NUMBER_STARTS],
     *[("h", text) for text in DELIMITED_ENDS],
     *[("h", line + OUT + "/* */\n") for line in UNLISTED_CHARS],
+    *[("c", text) for text in GNU_DELIMITED],
+    *[("h", line + OUT + "/* */\n") for line in UNICODE_DIGITS],
 ]
 # The C pioasm writes for these .pio texts, read by gcc: True where the
 # include is live.  Run without pioasm too, as fixed expectations.
@@ -1496,7 +1522,10 @@ def test_a_pio_file_gives_the_c_pioasm_writes(text):
     ("#define Z $1'a' /* '\n" + OUT + "/* */\n", False),
     *[(text, True) for text in DELIMITED_ENDS],
     *[(line + OUT + "/* */\n", found)
-      for line, found in UNLISTED_CHARS.items()]])
+      for line, found in UNLISTED_CHARS.items()],
+    *[(text, True) for text in GNU_DELIMITED],
+    *[(line + OUT + "/* */\n", found)
+      for line, found in UNICODE_DIGITS.items()]])
 def test_literals_numbers_and_raw_strings_end_where_gcc_ends_them(text,
                                                                   found):
     """The expectations of the DIFF_C cases on raw string prefixes and
