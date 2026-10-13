@@ -296,6 +296,12 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
   module are not checked: only `REQUIRES` and `rcbench_` library names are
   read. A `__has_include` that a macro pastes together with `##`
   (`CAT(__has_, include)`) passes, and GCC 13 evaluates it as the call.
+  In C++ an identifier right after a closing quote is a literal suffix, so
+  `""R"(` and `''R"(` open no raw string there, while the GNU dialects of
+  C read one; the tool reads them as C does, so an include that such a
+  sequence hides in C and that C++11 or later reads is not found
+  (`R"(a" /* ")"`, then `""R"(" '/*)" /*'`, hides the include on the next
+  line from the tool, and GCC 13 with `-std=c++17` reads it).
   The SPDX line of the module's `.c` and `.h` files is checked by
   `tools/check_docs.py`.
 - Everything specific to this project stays outside `protocols/` and calls

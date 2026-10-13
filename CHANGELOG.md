@@ -131,7 +131,10 @@ history is in git.
   nothing, an empty block name is c-sdk, a lone CR is a character of its
   line, a block ends only at `%}` in column 0). The CMake include
   directories and link targets of a module are not checked, and a
-  `__has_include` that a macro pastes together with `##` passes.
+  `__has_include` that a macro pastes together with `##` passes. `""R"(`
+  and `''R"(` are read as C reads them, as a literal and a raw string,
+  while C++11 or later reads `R` as a literal suffix, so an include that
+  such a sequence hides in C and C++ reads is not found.
 
 - The bench configurator states the supply of the V pins of the Osoyoo
   breakout board from its schematic REV 1.0, the XL1509 datasheet and the

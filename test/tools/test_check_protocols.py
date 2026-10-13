@@ -1477,6 +1477,37 @@ def test_cxx11_alone_reads_the_raw_string_after_a_delimited_name(
     assert cp.includes(text) == [('"', "../outside.h")]
 
 
+# A current limitation: in C++ an identifier right after a closing quote is
+# a literal suffix, so `""R"(` and `''R"(` open no raw string there; the
+# check reads them as C does, a literal and a raw string.  C hides the
+# include after these texts, C++11 and later read it, and the check does
+# not find it.  These tests pin that behaviour; a fix makes them fail.
+LITERAL_SUFFIX_R = tuple('R"(a" /* ")"\n' + q + 'R"(" \'/*)" /*\'\n' + OUT
+                         + "/* */\n" for q in ('""', "''"))
+
+
+@pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
+def test_a_literal_suffix_r_is_read_as_a_raw_string(text):
+    assert cp.includes(text) == []
+
+
+@needs_gcc
+@pytest.mark.parametrize("text", LITERAL_SUFFIX_R)
+def test_gcc_reads_the_include_after_a_literal_suffix_r_in_cxx(tmp_path,
+                                                                text):
+    src = tmp_path / "d" / "case.h"
+    src.parent.mkdir()
+    src.write_text(text)
+    (tmp_path / "outside.h").write_text("int %s;\n" % MARK)
+    for compiler, lang, std, found in [
+            (GXX, "c++", "-std=c++11", True), (GXX, "c++", "-std=c++17", True),
+            (GCC, "c", "-std=gnu11", False), (GCC, "c", "-std=gnu2x", False)]:
+        run = subprocess.run([compiler, "-x", lang, std, "-E", str(src)],
+                             capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        assert (MARK in run.stdout) == found, std
+
+
 @needs_gcc
 @pytest.mark.parametrize("kind, text", DIFF_C)
 def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
