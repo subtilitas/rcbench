@@ -1536,23 +1536,27 @@ plotten:
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
-Eine Zeile endet an ihrem Zeilenvorschub (LF, 0x0A). Text nach dem letzten
-Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte
-abgeschnitten hat: Sie kann jedes Feld enthalten und eine gekürzte Zahl,
-`95` von `9554`, deshalb fehlt sie in den Zeilen, den Kennwerten und im
-Plot. ZEILEN steht dann in der Warnfarbe, und die Importansicht meldet
-`LETZTE ZEILE ABGEBROCHEN, FEHLT`. Eine Datei eines anderen Programms, die
-ohne Zeilenvorschub endet, verliert ihre letzte Zeile genauso. Leerzeichen
-nach dem letzten Zeilenvorschub sind keine Zeile, ebenso Tabs und
-Wagenrückläufe (CR).
-Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
-`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
-Schalten auf ARMED oder, solange der Prüfstand SAFE ist, ein Einschalten
-des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
-Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
-Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt. Eine Nummer, die eine der
-beiden Dateien trägt, ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen
-Bericht mit.
+Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
+mit einer Nachkommastelle, solange beide Enden unter 1000 liegen, ab 1000
+ohne (`11.9..12.6 V`, `2392..14639 rpm`). Ein Bereich breiter als die 17
+Zeichen seines Felds verliert die Nachkommastelle, dann das Leerzeichen vor
+der Einheit (`-1000..-1000 rpm`, `-14639..-14639rpm`); ein noch breiterer
+wird am Rand des Felds abgeschnitten. Eine Zeile endet an ihrem
+Zeilenvorschub (LF, 0x0A). Text nach dem letzten Zeilenvorschub ist eine
+Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat: Sie
+kann jedes Feld enthalten und eine gekürzte Zahl, `95` von `9554`, deshalb
+fehlt sie in den Zeilen, den Kennwerten und im Plot. ZEILEN steht dann in
+der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE ABGEBROCHEN,
+FEHLT`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
+verliert ihre letzte Zeile genauso. Leerzeichen nach dem letzten
+Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR). Vom
+Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis `BENCH999.CSV`
+im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein Schalten auf ARMED
+oder, solange der Prüfstand SAFE ist, ein Einschalten des SUPPLY-Ausgangs.
+Ein automatischer Servotest nimmt ebenfalls die nächste Nummer: sein Log ist
+`BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein Bericht `BENCHnnn.TXT`,
+den die Liste nicht zeigt. Eine Nummer, die eine der beiden Dateien trägt,
+ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen Bericht mit.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

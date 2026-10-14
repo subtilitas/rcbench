@@ -1399,17 +1399,22 @@ Browse the card, open a file, check what the import detected, then plot:
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
-before the file is plotted. A row ends at its line feed (LF, 0x0A). Text
-after the last line feed is a row cut off by a power loss or a full card:
-it can hold every field and a number cut short, `95` of `9554`, so it is
-left out of the rows, the figures and the plot. ROWS then shows in the
+before the file is plotted. Each numeric column shows its range, lowest to
+highest: one decimal while both ends are below 1000, none from 1000 on
+(`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
+its box drops the decimal, then the space before the unit
+(`-1000..-1000 rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
+edge. A row ends at its line feed (LF, 0x0A).
+Text after the last line feed is a row cut off by a power loss or a full
+card: it can hold every field and a number cut short, `95` of `9554`, so it
+is left out of the rows, the figures and the plot. ROWS then shows in the
 warning colour and the import view says `LAST ROW CUT OFF - LEFT OUT`. A
 file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
-feed are no row. Runs recorded by the bench are written as
-`BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
-switching to ARMED, or one switch-on of the SUPPLY output while the bench is SAFE.
-An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
+feed are no row. Runs recorded by the bench are written as `BENCH001.CSV` to
+`BENCH999.CSV` in the card's root directory. A run is one switching to
+ARMED, or one switch-on of the SUPPLY output while the bench is SAFE. An
+automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
 which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
 does not show. A number carried by either file is taken, and DELETE on a run
 removes its report too.

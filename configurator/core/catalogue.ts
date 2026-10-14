@@ -448,8 +448,8 @@ const parts: Part[] = [
     pins: [pin('USB', same('USB-C'), guide('wires'))],
     buy: [
       buy(null, t('USB-C PD charger, 20 V', 'USB-C-PD-Ladegerät, 20 V'), t(
-        'With a 20 V profile. The PD mini output stays at least 0.5 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
-        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,5 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
+        'With a 20 V profile. The PD mini output stays at least 0.7 V below the charger voltage: a charger without a 20 V profile ends the range lower.',
+        'Mit 20-V-Profil. Der Ausgang des PD mini bleibt mindestens 0,7 V unter der Spannung des Ladegeräts: Ohne 20-V-Profil endet der Bereich tiefer.',
       )),
     ],
     src: guide('also-needed'),
@@ -1155,14 +1155,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 285, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 294, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 286, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 295, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1444,8 +1444,8 @@ const wires: Wire[] = [
     n: 63, kind: 'wire', a: 'usbtap.OUT', b: 'pdmini.USB', net: 'pd_in', cls: 'power',
     signal: t('PD in', 'PD-Eingang'),
     note: t(
-      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.5 V below the input voltage.',
-      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini mindestens 0,5 V unter der Eingangsspannung.',
+      'USB-C cable, plugged into the socket OUT and into the USB-C socket of the PD mini. The current rating the cable needs is not stated. Output of the PD mini is at least 0.7 V below the input voltage.',
+      'USB-C-Kabel, in die Buchse OUT und in die USB-C-Buchse des PD mini gesteckt. Die nötige Strombelastbarkeit des Kabels ist nicht angegeben. Ausgang des PD mini mindestens 0,7 V unter der Eingangsspannung.',
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
@@ -1458,7 +1458,7 @@ const wires: Wire[] = [
       'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines Koprozessors, der keinen gespeichert hat. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen.',
     ),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
-    src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u'),
+    src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
   // The DC supply of the Osoyoo breakout board, for the jumper on 5V. The DC
   // input is no pad of the coprocessor, so both leads end as stubs with their
@@ -1488,29 +1488,29 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 110, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 112, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only; the check entry `interlock-state` carries both.
-    needs: [], src: repo('STATUS.md', 113, 'The decision to arm is `shared/safety/safety_gate.c`'),
+    needs: [], src: repo('STATUS.md', 115, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
     name: t('STOP command over the link', 'STOP-Befehl über die Verbindung'),
-    needs: [], src: repo('README.md', 36, 'and a STOP command over the link'),
+    needs: [], src: repo('README.md', 37, 'and a STOP command over the link'),
   },
   {
     id: 'bind', group: 'bench',
     name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
-    needs: [], src: repo('STATUS.md', 117, 'Ticking or unticking a pin writes the binding and reads it back'),
+    needs: [], src: repo('STATUS.md', 119, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
-    needs: [], src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
@@ -1524,7 +1524,7 @@ const functions: Fn[] = [
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
@@ -1543,12 +1543,12 @@ const functions: Fn[] = [
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel. The check entry
     // `profiles-state` carries it.
-    needs: [], src: repo('STATUS.md', 126, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 128, '72 families, 451 models, from 153 manuals'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: [], drives: 'servo', src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
@@ -1556,17 +1556,17 @@ const functions: Fn[] = [
     // docs/Servo.md names three runs of 0.13.0; docs/Screens.md line 753
     // states the opposite. The check entry `servotest-state` carries it.
     // The test reads the current of the PD mini (docs/Servo.md, line 92).
-    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 92, 'the current of the supply that feeds the servo: the PD mini'),
+    needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 97, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 119, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 121, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 121, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 123, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1581,12 +1581,12 @@ const functions: Fn[] = [
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: [], drives: 'esc', src: repo('STATUS.md', 114, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 119, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 121, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
@@ -1594,12 +1594,12 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 127, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 129, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 122, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 124, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
@@ -1609,7 +1609,7 @@ const functions: Fn[] = [
   {
     id: 'logs', group: 'bench',
     name: t('Run logs on a card', 'Laufprotokolle auf Karte'),
-    needs: ['sd'], src: repo('STATUS.md', 101, 'Logger | built: a run is written while armed'),
+    needs: ['sd'], src: repo('STATUS.md', 101, 'Logger | built: a run is written while ARMED'),
   },
   {
     id: 'estop', group: 'bench',
@@ -1702,10 +1702,10 @@ const checks: Check[] = [
   {
     id: 'same-release', kind: 'note',
     text: t(
-      'Both boards run the same release. With different protocol versions the panel shows "protocol mismatch -- will not arm".',
-      'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel "protocol mismatch -- will not arm".',
+      'Both boards run the same release. With different protocol versions the panel shows "protocol mismatch -- will not switch to ARMED".',
+      'Beide Platinen laufen mit demselben Release. Bei verschiedenen Protokollversionen zeigt das Panel "protocol mismatch -- will not switch to ARMED".',
     ),
-    when: null, src: repo('docs/Link.md', 79, 'protocol mismatch -- will not arm'),
+    when: null, src: repo('docs/Link.md', 79, 'protocol mismatch -- will not switch to ARMED'),
   },
   {
     id: 'servo-pin', kind: 'note',
@@ -1713,7 +1713,7 @@ const checks: Check[] = [
       'GP2 for the servo is a proposal of this page. The example of the build guide is GP0. GP0 and GP16 share a compare register, and GP16 carries the sensor bus. Whether the firmware refuses that pair: not stated.',
       'GP2 für das Servo ist ein Vorschlag dieser Seite. Das Beispiel der Bauanleitung ist GP0. GP0 und GP16 teilen sich ein Vergleichsregister, und GP16 trägt den Sensorbus. Ob die Firmware dieses Paar ablehnt: nicht angegeben.',
     ),
-    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 110, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
+    when: SERVO_OUTPUTS, src: repo('docs/DShot.md', 133, 'Six of those pairs are both free on the header the coprocessor offers: GP0 and'),
   },
   {
     id: 'pd-pins', kind: 'note',
@@ -1746,7 +1746,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 287, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 296, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1880,7 +1880,7 @@ const checks: Check[] = [
       'Servo-Programmierer mit dem PD mini: CONNECT schaltet einen ausgeschalteten Ausgang mit der Programmierspannung ein, 4,8 bis 6,0 V in Schritten von 0,1 V, bis 8,4 V mit HV SERVO, und mit der Stromgrenze, 50 bis 3000 mA. Voreingestellt sind 5,0 V und 1000 mA. Ein Ausgang, der schon an ist, läuft mit der kleineren der beiden Spannungen und der kleineren der beiden Stromgrenzen; CONNECT erhöht keinen der beiden Werte. Ein Ausgang, der unter 4,8 V an ist, wird erst programmiert, wenn er erhöht ist. STOP schaltet die Versorgung ab.',
     ),
     when: { all: [SERVO_PROG, { has: 'pdmini' }] },
-    src: repo(PROGRAMMER, 178, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
+    src: repo(PROGRAMMER, 182, '4.8 to 6.0 V in 0.1 V; up to 8.4 V with HV SERVO on'),
   },
   {
     id: 'prog-supply-own', kind: 'note',
@@ -1889,7 +1889,7 @@ const checks: Check[] = [
       'Servo-Programmierer ohne den PD mini: Programmierspannung und Stromgrenze werden gespeichert und nicht angewendet. Das Servo läuft an der Versorgung der Variante „Servoversorgung“. STOP schaltet keine Versorgung.',
     ),
     when: { all: [SERVO_PROG, { not: { has: 'pdmini' } }] },
-    src: repo(PROGRAMMER, 242, 'Without a PD mini the voltage and the current limit are stored and not'),
+    src: repo(PROGRAMMER, 246, 'Without a PD mini the voltage and the current limit are stored and not'),
   },
   {
     id: 'prog-level', kind: 'unknown',
@@ -1897,7 +1897,7 @@ const checks: Check[] = [
       "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the coprocessor powered and 3.63 V without. Power the coprocessor before the servo's supply.",
       'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem Koprozessor und 3,63 V ohne Versorgung. Den Koprozessor vor der Versorgung des Servos einschalten.',
     ),
-    when: SERVO_PROG, src: repo(PROGRAMMER, 158, 'The level is not measured. GP13 is rated 5.5 V while the'),
+    when: SERVO_PROG, src: repo(PROGRAMMER, 162, 'The level is not measured. GP13 is rated 5.5 V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
@@ -2081,8 +2081,8 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      "<b>ESC power from two sources only:</b> A, the ESC's own battery, or B, the PD mini output within its limits: 1 to 20 V, up to 3 A, and at least 0.5 V below its input voltage. A set point over the input voltage puts the module into ERR until it is power cycled.",
-      '<b>Versorgung des ESC nur aus zwei Quellen:</b> A, dem eigenen Akku des ESC, oder B, dem Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20 V, bis 3 A und mindestens 0,5 V unter der Eingangsspannung. Ein Sollwert über der Eingangsspannung versetzt das Modul in den Zustand ERR, bis es aus- und wieder eingeschaltet wird.',
+      "<b>ESC power from two sources only:</b> A, the ESC's own battery, or B, the PD mini output within its limits: 1 to 20 V, up to 3 A, and at least 0.7 V below its input voltage. A set point over the input voltage puts the module into ERR until it is power cycled.",
+      '<b>Versorgung des ESC nur aus zwei Quellen:</b> A, dem eigenen Akku des ESC, oder B, dem Ausgang des PD mini innerhalb seiner Grenzen: 1 bis 20 V, bis 3 A und mindestens 0,7 V unter der Eingangsspannung. Ein Sollwert über der Eingangsspannung versetzt das Modul in den Zustand ERR, bis es aus- und wieder eingeschaltet wird.',
     ),
     src: guide('safety'),
   },
@@ -2158,7 +2158,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 579, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 546, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 
@@ -2170,7 +2170,7 @@ const notInRelease: Catalogue['notInRelease'] = [
 // ---------------------------------------------------------------------------
 
 const pinDefaults: PinDefault[] = [
-  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 43, '#define IOMCU_HEARTBEAT_PIN 3') },
+  { signal: 'heartbeat', gpio: 3, pad: 5, choice: 'fixed', role: 'input', allowed: [3], src: repo(IOMCU_PINS, 42, '#define IOMCU_HEARTBEAT_PIN 3') },
   {
     signal: 'sda', gpio: 16, pad: 21, choice: 'default', role: 'bus',
     // settings_sense_sda_valid(): −1 and the SDA pins whose pair is free.
@@ -2186,7 +2186,7 @@ const pinDefaults: PinDefault[] = [
   { signal: 'tap', gpio: 22, pad: 29, choice: 'default', role: 'input', allowed: 'catalogue', src: repo(SETTINGS, 191, '"tone_pin", "Tap pin"') },
   { signal: 'esc', gpio: 5, pad: 7, choice: 'example', role: 'output', allowed: 'catalogue', src: guide('wires') },
   { signal: 'servo', gpio: 2, pad: 4, choice: 'proposal', role: 'output', allowed: 'catalogue', src: PAGE },
-  { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 54, '#define PROG_PORT_DEFAULT_PIN 13u') },
+  { signal: 'prog', gpio: 13, pad: 17, choice: 'default', role: 'output', allowed: 'catalogue', src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u') },
   { signal: 'pd_tx', gpio: 7, pad: 10, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
   { signal: 'pd_rx', gpio: 6, pad: 9, choice: 'proposal', role: 'uart', allowed: 'catalogue', src: OWNER },
 ];
@@ -2300,8 +2300,8 @@ const powerSources: PowerSource[] = [
     id: 'pd-servo', feeds: 'servo',
     label: t('PD mini from a USB-C PD charger', 'PD mini an einem USB-C-PD-Ladegerät'),
     text: t(
-      'The bench sets the output of the PD mini over a UART. The output stays at least 0.5 V below the input voltage. PD: USB Power Delivery.',
-      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang bleibt mindestens 0,5 V unter der Eingangsspannung. PD: USB Power Delivery.',
+      'The bench sets the output of the PD mini over a UART. The output stays at least 0.7 V below the input voltage. PD: USB Power Delivery.',
+      'Der Prüfstand stellt den Ausgang des PD mini über einen UART. Der Ausgang bleibt mindestens 0,7 V unter der Eingangsspannung. PD: USB Power Delivery.',
     ),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [
@@ -2368,8 +2368,8 @@ const powerSources: PowerSource[] = [
     id: 'pd-esc', feeds: 'esc',
     label: t('B: PD mini from a USB-C PD charger', 'B: PD mini an einem USB-C-PD-Ladegerät'),
     text: t(
-      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output stays at least 0.5 V below the input voltage.`,
-      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang bleibt mindestens 0,5 V unter der Eingangsspannung.`,
+      `${ESC_SIGNAL_ONLY.en} The PD mini feeds the ESC. Its output stays at least 0.7 V below the input voltage.`,
+      `${ESC_SIGNAL_ONLY.de} Der PD mini speist den ESC. Sein Ausgang bleibt mindestens 0,7 V unter der Eingangsspannung.`,
     ),
     volts: { min: 1, max: 20 }, amps: { min: 0.05, max: 3 }, basis: VENDOR,
     pros: [

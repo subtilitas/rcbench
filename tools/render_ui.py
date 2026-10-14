@@ -429,26 +429,13 @@ FIT_ONLY = {
 OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
-# English overflows the layout has today: (view, string, finding), word for
-# word as --fit prints them.  Each is a defect of the screen, listed here so
-# the check holds every other string; none is a decision that the overflow
-# is wanted.  An entry that --fit no longer finds fails, so the list cannot
-# outlive its defects.
-#
-# SETUP shows 36 cells of a help line and two English help lines are 38 and
-# 55 characters: Capacity's and Rated kV's.  The log import's column range
-# is 18 characters in a 140 px box.
-_CUT = "is cut at the edge of its area (252 to %d, area 236 to 546)"
-KNOWN_OVERFLOWS = {
-    (view, text, _CUT % right)
-    for view in ("setup", "setup-dirty", "setup-light")
-    for text, right in (
-        ("Used for the remaining-charge estimate", 556),
-        ("Used when the ESC reports none; 0 shows the field empty", 692),
-    )
-} | {
-    ("logs-import", "2392.0..14639.0rpm", "is 144 px wide in a 140 px box"),
-}
+# English overflows the layout has for a time: (view, string, finding), word
+# for word as --fit prints them; none today.  Each is a defect of the
+# screen, listed here so the check holds every other string; none is a
+# decision that the overflow is wanted.  An entry that --fit no longer
+# finds fails, so the list cannot outlive its defects.  SETUP shows 36
+# cells of a help line.
+KNOWN_OVERFLOWS = set()
 
 
 class Rect:
