@@ -140,7 +140,7 @@ pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
     I (…) rcbench: LINK works, and not every time
     W (…) rcbench:   check: marginal timing, or a poll period tighter than the round trip
     I (…) rcbench:   panel  polls 1200 replies 1187 timeouts 13 stale 0 nack 0 crc 0 resync 0
-    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0
+    I (…) rcbench:   iomcu  frames 1187 crc 0 resync 0 refused 0
     I (…) rcbench:   round trip min 620 avg 700 max 1400 us
 
 | Diagnose | Bedeutung |
@@ -154,7 +154,10 @@ pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
 Die Spalten `crc` und `resync` der Koprozessorzeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und
-`LINK_ST_RESYNCS`).
+`LINK_ST_RESYNCS`). Die letzte Zahl der Zeile ist die der CAN-Frames, die der
+Koprozessor seit dem Einschalten empfangen und nicht dekodiert hat
+(`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`, Protokoll 4.21; 0 von einem
+älteren Koprozessor). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).
 
 ## Was festzuhalten ist
 

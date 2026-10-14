@@ -93,11 +93,14 @@ typedef enum {
  * unacknowledged.  From 4.20 ARTWORK serves the board's drawing
  * (LINK_ART_DRAWING) with a hash of its payload in registers 7 and 8; the
  * panel reads ARTWORK from 4.20 only and draws an older coprocessor's board
- * from its shape page.  A coprocessor never asks the panel's minor; a page
- * an older panel does not know is a page it never writes.
+ * from its shape page.  From 4.21 STATUS has 10 registers: registers 8 and
+ * 9 count the CAN frames the coprocessor refused to decode; the panel asks
+ * an older coprocessor for the 8 it has (LINK_ST_COUNT_V420).  A
+ * coprocessor never asks the panel's minor; a page an older panel does not
+ * know is a page it never writes.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 20u
+#define LINK_PROTOCOL_MINOR 21u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -150,6 +153,11 @@ typedef enum {
  *  LINK_AW_HASH_HI.  An older minor serves a photograph (LINK_ART_RGB565)
  *  in seven registers, which this panel does not read. */
 #define LINK_MINOR_DRAWING 20u
+/** The first minor whose STATUS page counts the CAN frames it refused to
+ *  decode, in LINK_ST_REFUSED_LO and LINK_ST_REFUSED_HI.  An older minor's
+ *  page has LINK_ST_COUNT_V420 registers and refuses a longer read with
+ *  LINK_NACK_BAD_RANGE. */
+#define LINK_MINOR_REFUSED 21u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1030,8 +1038,21 @@ enum {
     LINK_ST_FRAMES_HI  = 5, /**<   sometimes wrong                        */
     LINK_ST_CRC_ERRORS = 6,
     LINK_ST_RESYNCS    = 7,
-    LINK_ST_COUNT      = 8,
+    /**
+     * Protocol 4.21: CAN frames received and refused since power-up, low
+     * half first, modulo 2^32.  A frame is refused when its receive buffer
+     * holds no frame the link carries (an 11-bit identifier, a remote frame,
+     * a DLC above 8: mcp2515_decode_rx()) or when link_can_decode() refuses
+     * it (an unknown op, a count past a page, a DLC that disagrees with the
+     * count).  Self-test frames are answered, not refused.  0 at power-up
+     * and at every restart; nothing clears it over the link.
+     */
+    LINK_ST_REFUSED_LO = 8,
+    LINK_ST_REFUSED_HI = 9,
+    LINK_ST_COUNT      = 10,
 };
+/** The registers a 4.20 or older coprocessor's STATUS page has. */
+#define LINK_ST_COUNT_V420 8u
 
 /**
  * What the coprocessor did on its own authority.  Sticky until read and

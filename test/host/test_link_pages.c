@@ -1526,7 +1526,6 @@ TEST_CASE(the_servo_rate_follows_the_target_without_a_new_register)
  */
 TEST_CASE(the_artwork_page_serves_a_drawing_with_its_hash)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 20u);
     CHECK_EQ(LINK_MINOR_DRAWING, 20u);
     CHECK(LINK_MINOR_DRAWING > LINK_MINOR_SERVO_TARGET_RATE);
     CHECK_EQ(LINK_PAGE_ARTWORK, 0x26);
@@ -1543,6 +1542,25 @@ TEST_CASE(the_artwork_page_serves_a_drawing_with_its_hash)
     CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_GROUND);
     CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_POWER);
     CHECK(LINK_DRAW_PAD_GPIO != LINK_PAD_OTHER);
+}
+
+/*
+ * 4.21 grows STATUS by the two halves of the refusal count, after the eight
+ * registers a 4.20 page has, and moves none of them.
+ */
+TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 21u);
+    CHECK_EQ(LINK_MINOR_REFUSED, 21u);
+    CHECK(LINK_MINOR_REFUSED > LINK_MINOR_DRAWING);
+    CHECK_EQ(LINK_PAGE_STATUS, 0x01);
+    CHECK_EQ(LINK_ST_FRAMES_LO, 4);
+    CHECK_EQ(LINK_ST_RESYNCS, 7);
+    CHECK_EQ(LINK_ST_COUNT_V420, 8u);
+    CHECK_EQ(LINK_ST_REFUSED_LO, 8);
+    CHECK_EQ(LINK_ST_REFUSED_HI, 9);
+    CHECK_EQ(LINK_ST_COUNT, 10);
+    CHECK(LINK_ST_COUNT <= LINK_MAX_REGS);
 }
 
 int main(void)
@@ -1597,5 +1615,6 @@ int main(void)
     RUN(a_change_between_overlapping_sets_is_refused);
     RUN(the_servo_rate_follows_the_target_without_a_new_register);
     RUN(the_artwork_page_serves_a_drawing_with_its_hash);
+    RUN(the_status_page_counts_refused_frames_after_its_old_registers);
     return test_summary("link_pages");
 }

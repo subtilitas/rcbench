@@ -28,6 +28,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_BAND_SAFE]              = "SAFE",
     [TX_BAND_FAULT]             = "FEHLER %02X",
     [TX_BAND_NO_LINK]           = "KEIN LINK",
+    [TX_LINK_REFUSED]           = "Abgelehnte Link-Frames: %lu",
 
     /* ----------------------------------------------------------- keypads */
     [TX_KEYPAD_RANGE]           = "%.*f bis %.*f %s",

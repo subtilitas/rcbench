@@ -290,6 +290,60 @@ TEST_CASE(every_op_and_count_survives_the_round_trip)
     }
 }
 
+/*
+ * The coprocessor's refusal count: a frame link_can_decode() refuses adds 1,
+ * a frame it takes adds nothing.  The DLC 8 READ is the frame an ESP-IDF
+ * v5.5.0 or v5.5.1 panel sends in place of a DLC 0 one.
+ */
+TEST_CASE(a_refused_frame_is_counted_and_a_taken_one_is_not)
+{
+    link_msg_t out;
+    link_can_frame_t f;
+    memset(&f, 0, sizeof(f));
+    uint32_t refused = 0;
+
+    f.id = link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_READ, LINK_PAGE_STATUS,
+                       0, LINK_ST_COUNT);
+    f.dlc = 0;
+    CHECK(link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 0u);
+    CHECK_EQ(out.page, LINK_PAGE_STATUS);
+    CHECK_EQ(out.count, LINK_ST_COUNT);
+
+    f.dlc = 8;
+    CHECK(!link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 1u);
+
+    f.id = link_can_id(LINK_CAN_PRIO_NORMAL, 0x0A, LINK_PAGE_BENCH, 0, 0);
+    f.dlc = 0;
+    CHECK(!link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 2u);
+
+    /* No count to keep is a decode and nothing more. */
+    CHECK(!link_can_decode_counted(&f, &out, NULL));
+    /* Not a frame: nothing is counted. */
+    CHECK(!link_can_decode_counted(NULL, &out, &refused));
+    CHECK(!link_can_decode_counted(&f, NULL, &refused));
+    CHECK_EQ(refused, 2u);
+}
+
+TEST_CASE(the_decode_refusal_count_wraps_at_two_to_the_32)
+{
+    link_msg_t out;
+    link_can_frame_t f;
+    memset(&f, 0, sizeof(f));
+    f.id = link_can_id(LINK_CAN_PRIO_NORMAL, LINK_OP_READ, LINK_PAGE_BENCH,
+                       0, 4);
+    f.dlc = 8;
+    uint32_t refused = 0xFFFFFFFEu;
+    CHECK(!link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 0xFFFFFFFFu);
+    CHECK(!link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 0u);
+    CHECK(!link_can_decode_counted(&f, &out, &refused));
+    CHECK_EQ(refused, 1u);
+}
+
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 {
     link_can_frame_t f[LINK_CAN_MAX_FRAMES];
@@ -313,6 +367,8 @@ int main(void)
     RUN(an_ack_is_one_empty_frame_and_a_nack_carries_its_reason);
     RUN(registers_are_little_endian_on_the_wire);
     RUN(every_op_and_count_survives_the_round_trip);
+    RUN(a_refused_frame_is_counted_and_a_taken_one_is_not);
+    RUN(the_decode_refusal_count_wraps_at_two_to_the_32);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("link_can");
 }
