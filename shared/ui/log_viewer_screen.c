@@ -248,11 +248,15 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
     if (!out || n == 0) {
         return;
     }
-    int decimals = (fabs(lo) >= 1000.0 || fabs(hi) >= 1000.0) ? 0 : 1;
+    /* Decided on the floats ui_fmt() prints: from 999.95 one decimal rounds
+     * up to 1000.0, which is as wide as 1000 plus 2 glyphs. */
+    const float lo_f = (float)lo;
+    const float hi_f = (float)hi;
+    int decimals = (fabsf(lo_f) >= 999.95f || fabsf(hi_f) >= 999.95f) ? 0 : 1;
     char a[16];
     char b[16];
-    ui_fmt(a, sizeof(a), (float)lo, decimals);
-    ui_fmt(b, sizeof(b), (float)hi, decimals);
+    ui_fmt(a, sizeof(a), lo_f, decimals);
+    ui_fmt(b, sizeof(b), hi_f, decimals);
     bool has_unit = unit && unit[0];
     snprintf(out, n, "%s..%s%s%s", a, b, has_unit ? " " : "",
              has_unit ? unit : "");

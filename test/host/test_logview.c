@@ -1447,6 +1447,13 @@ TEST_CASE(a_range_of_1000_or_more_drops_the_decimal)
     CHECK_STR_EQ(out, "0..1000 A");
     log_viewer_range_text(out, sizeof(out), -1000.0, 5.0, "g");
     CHECK_STR_EQ(out, "-1000..5 g");
+    /* An end that one decimal rounds up to 1000.0 counts as 1000. */
+    log_viewer_range_text(out, sizeof(out), 999.95, 999.95, "rpm");
+    CHECK_STR_EQ(out, "1000..1000 rpm");
+    log_viewer_range_text(out, sizeof(out), -999.96, 0.0, "g");
+    CHECK_STR_EQ(out, "-1000..0 g");
+    log_viewer_range_text(out, sizeof(out), 0.0, 999.94, "A");
+    CHECK_STR_EQ(out, "0.0..999.9 A");
     /* No unit, no trailing space; a value that is not a number shows "--". */
     log_viewer_range_text(out, sizeof(out), 1.0, 2.0, "");
     CHECK_STR_EQ(out, "1.0..2.0");
