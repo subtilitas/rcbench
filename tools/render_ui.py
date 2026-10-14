@@ -404,11 +404,12 @@ MIN_SHAPE = 8
 # beside it by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"}
 
-# English overflows the layout has today: (view, string, finding), word for
-# word as --fit prints them.  Each is a defect of the screen, listed here so
-# the check holds every other string; none is a decision that the overflow
-# is wanted.  An entry that --fit no longer finds fails, so the list cannot
-# outlive its defects.  SETUP shows 36 cells of a help line.
+# English overflows the layout has for a time: (view, string, finding), word
+# for word as --fit prints them; none today.  Each is a defect of the
+# screen, listed here so the check holds every other string; none is a
+# decision that the overflow is wanted.  An entry that --fit no longer
+# finds fails, so the list cannot outlive its defects.  SETUP shows 36
+# cells of a help line.
 KNOWN_OVERFLOWS = set()
 
 
