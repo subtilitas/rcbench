@@ -141,6 +141,7 @@ SCREENS = {
     # three bits this release sets, LINK, SAFE, and ARMED MOTOR.
     "band-fault": ("band-fault.png", "overview", "dark"),
     "band-link":  ("band-link.png",  "overview", "dark"),
+    "band-link-refused": ("band-link-refused.png", "overview", "dark"),
     "band-safe":  ("band-safe.png",  "overview", "dark"),
     "band-armed": ("band-armed.png", "overview", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
@@ -419,6 +420,7 @@ FIT_ONLY = {
     "band-armed-all":   (None, "overview", "dark"),
     "band-armed-sim":   (None, "overview", "sim"),
     "band-clock":       (None, "overview", "dark"),
+    "band-link-refused-max": (None, "overview", "dark"),
 }
 
 # Views that open a drop-down or a chip's help bubble over the screen: the

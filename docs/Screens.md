@@ -79,6 +79,11 @@ STOP, and none reaches the alert band.
 - A finger dragging on the screen when a second finger opens a box is
   released as at the band's edge.
 
+While the link is up and the coprocessor has refused link frames, the LINK
+box ends with the count, the same line MOTOR & ESC shows in its header
+strip: `Link frames refused: 37` ([Refused frames](Link.md#refused-frames)).
+The line follows the count while the box is open and goes with the link.
+
 The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
@@ -97,6 +102,8 @@ says to flash both boards from one release.
 ![The FAULT box with LINK_SILENT, HEARTBEAT and STORE_OFF set](img/band-fault.png)
 
 ![The LINK box](img/band-link.png)
+
+![The LINK box with 37 refused link frames](img/band-link-refused.png)
 
 ![The SAFE box](img/band-safe.png)
 

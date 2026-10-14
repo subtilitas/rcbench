@@ -87,6 +87,12 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
 - Ein Finger, der auf dem Bildschirm zieht, während ein zweiter Finger einen
   Kasten öffnet, wird wie an der Kante des Bands losgelassen.
 
+Solange der Link steht und der Koprozessor Link-Frames abgelehnt hat, endet
+der Kasten von LINK mit ihrer Zahl, derselben Zeile, die MOTOR & ESC in
+dem Streifen über beiden Spalten zeigt: `Abgelehnte Link-Frames: 37`
+([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die Zeile folgt der
+Zahl, solange der Kasten offen ist, und verschwindet mit dem Link.
+
 Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 
 | Code | Bit | Von diesem Release gesetzt |
@@ -105,6 +111,8 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 ![Der Kasten von FEHLER mit LINK_SILENT, HEARTBEAT und STORE_OFF](img/de/band-fault.png)
 
 ![Der Kasten von LINK](img/de/band-link.png)
+
+![Der Kasten von LINK mit 37 abgelehnten Link-Frames](img/de/band-link-refused.png)
 
 ![Der Kasten von SAFE](img/de/band-safe.png)
 

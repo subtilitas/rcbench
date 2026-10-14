@@ -1194,6 +1194,13 @@ static void pose_splash(void)
 static void band_view(const char *view, ui_bench_status_t *st)
 {
     ui_band_chip_t chip = UI_BAND_CHIP_LINK;
+    /* A coprocessor that has refused 37 frames, as on motor-refused, and
+     * one at the widest count. */
+    if (strcmp(view, "band-link-refused") == 0) {
+        st->link_refused = 37u;
+    } else if (strcmp(view, "band-link-refused-max") == 0) {
+        st->link_refused = UINT32_MAX;
+    }
     if (strncmp(view, "band-fault", 10) == 0) {
         st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
         chip = UI_BAND_CHIP_FAULT;

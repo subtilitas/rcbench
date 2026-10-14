@@ -2394,6 +2394,7 @@ TEST_CASE(the_bubble_never_covers_stop_and_fits_in_both_languages)
                         st.link_up     = link != 0;
                         st.mode        = ui_band_mode(st.link_up);
                         st.run_seconds = 3600u * 9u + 59u;
+                        st.link_refused = UINT32_MAX;
                         bubble_in_bounds(&st);
                     }
                 }
@@ -2544,6 +2545,82 @@ TEST_CASE(the_armed_bubble_follows_the_roles)
     CHECK(hm != hv);
     CHECK(hm != ha);
     CHECK(hv != ha);
+}
+
+/*
+ * The LINK bubble carries the coprocessor's refused frames as MOTOR & ESC's
+ * header strip has them, ui_link_refused_label()'s line, while the link is
+ * up and the count is above 0.
+ */
+TEST_CASE(the_link_bubble_carries_the_refused_frames)
+{
+    ui_bench_status_t none = k_all_chips, one = k_all_chips,
+                      most = k_all_chips, down = k_all_chips;
+    none.link_refused = 0u;
+    one.link_refused  = 1u;
+    most.link_refused = UINT32_MAX;
+    down.link_up   = false;
+    down.faults    = 0;
+    down.mode      = ui_band_mode(false);
+    ui_bench_status_t down_n = down;
+    down_n.link_refused = 37u;
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        gfx_rect_t r0, r1, rm, rd, rdn;
+        REQUIRE(ui_band_help_rect(&none, UI_BAND_CHIP_LINK, &r0));
+        REQUIRE(ui_band_help_rect(&one, UI_BAND_CHIP_LINK, &r1));
+        REQUIRE(ui_band_help_rect(&most, UI_BAND_CHIP_LINK, &rm));
+        REQUIRE(ui_band_help_rect(&down, UI_BAND_CHIP_LINK, &rd));
+        REQUIRE(ui_band_help_rect(&down_n, UI_BAND_CHIP_LINK, &rdn));
+        /* One line more at 1, and the widest count still one line. */
+        CHECK_EQ(r1.h, r0.h + 18 + 4);
+        CHECK_EQ(rm.h, r1.h);
+        /* None with the link down, whatever the count. */
+        CHECK_EQ(rdn.h, rd.h);
+
+        /* The line drawn is the label, in the language showing. */
+        char label[64];
+        REQUIRE(ui_link_refused_label(&most, label, sizeof(label)));
+        CHECK(gfx_text_cells(label)
+              <= (rm.w - 32) / gfx_text_width(UI_FONT_LABEL, "M", 1));
+    }
+    ui_text_set_language(UI_LANG_EN);
+
+    /* The link down draws the same bubble with a count as without. */
+    open_on_overview(&down, UI_BAND_CHIP_LINK);
+    ui_router_render(&cv, 0);
+    const uint32_t without = frame_hash();
+    open_on_overview(&down_n, UI_BAND_CHIP_LINK);
+    ui_router_render(&cv, 0);
+    CHECK_EQ(frame_hash(), without);
+
+    /* Each count draws its own number. */
+    open_on_overview(&one, UI_BAND_CHIP_LINK);
+    ui_router_render(&cv, 0);
+    const uint32_t at_one = frame_hash();
+    open_on_overview(&most, UI_BAND_CHIP_LINK);
+    ui_router_render(&cv, 0);
+    CHECK(frame_hash() != at_one);
+}
+
+/* The count follows while the bubble is open: the line appears, its number
+ * moves, it goes with the link. */
+TEST_CASE(the_refused_line_follows_while_open)
+{
+    ui_bench_status_t none = k_all_chips, one = k_all_chips,
+                      many = k_all_chips, down = k_all_chips;
+    one.link_refused  = 1u;
+    many.link_refused = 37u;
+    down.link_up      = false;
+    down.faults       = 0;
+    down.mode         = ui_band_mode(false);
+    down.link_refused = 37u;
+    follows(&none, &one, UI_BAND_CHIP_LINK);   /* the line appears */
+    follows(&one, &many, UI_BAND_CHIP_LINK);   /* the number moves */
+    follows(&many, &none, UI_BAND_CHIP_LINK);  /* the count reads 0 again */
+    follows(&many, &down, UI_BAND_CHIP_LINK);  /* the link goes */
+    follows(&down, &many, UI_BAND_CHIP_LINK);
 }
 
 /* The clock appears while the LINK bubble is open and moves every chip
@@ -2737,6 +2814,8 @@ int main(void)
     RUN(a_bubble_whose_chip_goes_closes);
     RUN(the_link_bubble_follows_the_link);
     RUN(the_armed_bubble_follows_the_roles);
+    RUN(the_link_bubble_carries_the_refused_frames);
+    RUN(the_refused_line_follows_while_open);
     RUN(a_bubble_follows_its_chip_when_the_band_moves);
     RUN(a_closed_bubble_leaves_no_pixels_behind);
     RUN(leaving_the_screen_closes_the_bubble);
