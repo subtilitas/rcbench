@@ -54,6 +54,61 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the overview.
 
+### Chip help
+
+A tap on a chip of the band opens a box under the band that says what the
+chip's state means for the bench and what to do: LINK or NO LINK, the mode,
+FAULT, the arm chip and the run clock. The box opens 4 px under the band at
+the tapped chip's left edge, moved left as far as it needs to stay 8 px
+inside the panel. It is 520 px wide; FAULT's box spans the panel (784 px),
+with one paragraph per set bit. No box reaches into the band, so none covers
+STOP, and none reaches the alert band.
+
+- A tap opens it: press and lift on the same chip. A press that slides off
+  the chip before it lifts opens nothing.
+- The text follows the state while the box is open. A fault that appears
+  shows at once, one that clears goes, and a box follows its chip when the
+  run clock appears and moves the chips.
+- A box whose chip goes closes: FAULT when the faults clear, the run clock
+  when it goes.
+- Any tap closes it and does nothing else. A tile, a button, another chip or
+  the alert band under the finger is not pressed.
+- STOP is the exception: a press on STOP closes the box and stops at once,
+  as with no box.
+- Leaving the screen closes it.
+- A finger dragging on the screen when a second finger opens a box is
+  released as at the band's edge.
+
+While the link is up and the coprocessor has refused link frames, the LINK
+box ends with the count, the same line MOTOR & ESC shows in its header
+strip: `Link frames refused: 37` ([Refused frames](Link.md#refused-frames)).
+The line follows the count while the box is open and goes with the link.
+
+The FAULT box names each bit, its code and what it means:
+
+| Code | Bit | Set by this release |
+| --- | --- | --- |
+| 01 | LINK_SILENT | the coprocessor heard no request for 200 ms; stays until the next arm |
+| 02 | OVERCURRENT | never |
+| 04 | OVERTEMP | never |
+| 08 | STALL | never |
+| 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop or an open heartbeat wire |
+| 20 | VERSION | never |
+| 40 | STORE_OFF | the coprocessor cannot write its flash this boot |
+
+For a bit this release never sets, or one the panel has no name for, the box
+says to flash both boards from one release.
+
+![The FAULT box with LINK_SILENT, HEARTBEAT and STORE_OFF set](img/band-fault.png)
+
+![The LINK box](img/band-link.png)
+
+![The LINK box with 37 refused link frames](img/band-link-refused.png)
+
+![The SAFE box](img/band-safe.png)
+
+![The ARMED MOTOR box](img/band-armed.png)
+
 ## The alert band
 
 A fault the screen itself does not show appears in a red band, 34 px high,

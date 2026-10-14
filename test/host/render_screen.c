@@ -1185,6 +1185,46 @@ static void pose_splash(void)
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
+/*
+ * A help bubble of the band, opened by a tap on its chip over the menu.
+ * The status is the view's: band-fault has the three bits this release
+ * sets, band-fault-all every bit and one this panel has no name for --
+ * the tallest bubble there is.
+ */
+static void band_view(const char *view, ui_bench_status_t *st)
+{
+    ui_band_chip_t chip = UI_BAND_CHIP_LINK;
+    /* A coprocessor that has refused 37 frames, as on motor-refused, and
+     * one at the widest count. */
+    if (strcmp(view, "band-link-refused") == 0) {
+        st->link_refused = 37u;
+    } else if (strcmp(view, "band-link-refused-max") == 0) {
+        st->link_refused = UINT32_MAX;
+    }
+    if (strncmp(view, "band-fault", 10) == 0) {
+        st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
+        chip = UI_BAND_CHIP_FAULT;
+    } else if (strcmp(view, "band-bench") == 0
+               || strcmp(view, "band-sim") == 0) {
+        chip = UI_BAND_CHIP_MODE;
+    } else if (strcmp(view, "band-clock") == 0) {
+        chip = UI_BAND_CHIP_CLOCK;
+    } else if (strncmp(view, "band-armed", 10) == 0
+               || strcmp(view, "band-safe") == 0) {
+        chip = UI_BAND_CHIP_ARMED;
+        st->armed = strcmp(view, "band-safe") != 0;
+        st->armed_roles =
+            (strcmp(view, "band-armed") == 0) ? UI_ARMED_MOTOR
+            : (strcmp(view, "band-armed-servo") == 0) ? UI_ARMED_SERVO
+            : (uint8_t)0u;
+    }
+    ui_router_set_status(st);
+    gfx_rect_t r;
+    if (ui_band_chip_rect(st, chip, &r)) {
+        tap(r.x + r.w / 2, r.y + r.h / 2);
+    }
+}
+
 int main(int argc, char **argv)
 {
     if (argc == 2 && strcmp(argv[1], "--ids") == 0) {
@@ -2182,6 +2222,9 @@ int main(int argc, char **argv)
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     ui_router_goto(id);
+    if (strncmp(view, "band-", 5) == 0) {
+        band_view(view, &st);
+    }
 
     if (strcmp(view, "motor-table") == 0) {
         tap(6 + 93, UI_BAND_H + 11);                    /* TABLE */
