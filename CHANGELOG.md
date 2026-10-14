@@ -19,6 +19,20 @@ history is in git.
   Link-Frames: N`) in its header strip after the error count, while the link
   is up and N is above 0; the bring-up log line `iomcu` adds `refused N`.
 
+### Changed
+
+- The bench configurator describes release 0.18.0. Every repository source
+  of its data is a file and line at the tag `v0.18.0`; 28 sources carry the
+  line of that tag. The sources of the logger, of the arm decision and of the
+  protocol mismatch alert carry the wording of that tag, which names the
+  switch to ARMED, and the alert is quoted as `protocol mismatch -- will not
+  switch to ARMED`.
+- The configurator states the cap of the PD mini set point as 0.7 V under the
+  input voltage of the module, in the texts of the supply, the ESC power
+  safety note, the wire from the T-plug, both PD power sources and the 20 V
+  charger row of the parts list. The parts list row of the PD mini Buck
+  version keeps the 0.5 V of the vendor.
+
 ### Fixed
 
 - Two SETUP hints fit their 36 cells: "For the remaining-charge estimate"

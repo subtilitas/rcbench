@@ -54,8 +54,8 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Liest Tonhöhe und Länge der ESC-Pieptöne an Phase A über den Phasenabgriff. Der Motorsimulator ersetzt den Motor.',
   ),
   supply: t(
-    'The PD mini gives an output set on the panel: 1 to 20 V, 0.05 to 3 A (vendor values, not measured), the voltage at least 0.5 V below the input voltage of the module. The bench reads the module every 102 to 106 ms.',
-    'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung mindestens 0,5 V unter der Eingangsspannung des Moduls. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
+    'The PD mini gives an output set on the panel: 1 to 20 V, 0.05 to 3 A (vendor values, not measured), the voltage at least 0.7 V below the input voltage of the module. The bench reads the module every 102 to 106 ms.',
+    'Der PD mini liefert einen am Panel eingestellten Ausgang: 1 bis 20 V, 0,05 bis 3 A (Herstellerangaben, nicht gemessen), die Spannung mindestens 0,7 V unter der Eingangsspannung des Moduls. Der Prüfstand liest das Modul alle 102 bis 106 ms.',
   ),
   logs: t(
     'Writes a log of each run to the microSD card: while the bench is ARMED, and while it is SAFE with the supply output on. The log viewer of the panel reads these files.',

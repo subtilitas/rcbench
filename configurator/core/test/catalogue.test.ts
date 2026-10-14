@@ -77,7 +77,7 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
   entry(229, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
-  iomcu[42] = '#define IOMCU_HEARTBEAT_PIN  3';
+  iomcu[41] = '#define IOMCU_HEARTBEAT_PIN  3';
 
   const files = new Map<string, string[]>([[OUT_BIND, outBind], [SETTINGS, settings], [IOMCU_PINS, iomcu]]);
   const squash = (s: string): string => s.replace(/\s+/g, ' ').trim();
@@ -842,7 +842,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 118, has: '| PGO | GND |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:118 does not hold "\| PGO \| GND \|" at v0\.17\.0/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:118 does not hold "\| PGO \| GND \|" at v0\.18\.0/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
@@ -1070,21 +1070,21 @@ test('tree: stale pin defaults are reported', () => {
   reports(checkTree(anchor, fakeTree(CATALOGUE)), 'pin.sda', /not inside SET_SENSE_SDA/);
 
   const heartbeat = fakeTree(CATALOGUE, (files) => {
-    lines(files, IOMCU_PINS)[42] = '#define IOMCU_HEARTBEAT_PIN  4';
+    lines(files, IOMCU_PINS)[41] = '#define IOMCU_HEARTBEAT_PIN  4';
   });
   reports(checkTree(CATALOGUE, heartbeat), 'pin.heartbeat', /GP3 in the data and GP4/);
 
   const undefinedPin = fakeTree(CATALOGUE, (files) => {
-    lines(files, IOMCU_PINS)[42] = '/* text */';
+    lines(files, IOMCU_PINS)[41] = '/* text */';
   });
   reports(checkTree(CATALOGUE, undefinedPin), 'pin.heartbeat', /no IOMCU_HEARTBEAT_PIN/);
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.18.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.19.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.18.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.19.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
 });
@@ -1112,8 +1112,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.18.0';
-  reports(checkCounts(release), 'release', /0\.18\.0/);
+  release.release = '0.19.0';
+  reports(checkCounts(release), 'release', /0\.19\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 
