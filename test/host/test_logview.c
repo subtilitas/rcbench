@@ -1454,6 +1454,17 @@ TEST_CASE(a_range_of_1000_or_more_drops_the_decimal)
     CHECK_STR_EQ(out, "-1000..0 g");
     log_viewer_range_text(out, sizeof(out), 0.0, 999.94, "A");
     CHECK_STR_EQ(out, "0.0..999.9 A");
+    /* Wider than the 17 cells of the box: no decimal, then no space. */
+    log_viewer_range_text(out, sizeof(out), -999.9, -999.9, "rpm");
+    CHECK_STR_EQ(out, "-1000..-1000 rpm");
+    log_viewer_range_text(out, sizeof(out), -99.9, -99.9, "rpm");
+    CHECK_STR_EQ(out, "-99.9..-99.9 rpm");
+    log_viewer_range_text(out, sizeof(out), -14639.0, -14639.0, "rpm");
+    CHECK_STR_EQ(out, "-14639..-14639rpm");
+    CHECK(strlen(out) == LOG_RANGE_CELLS);
+    /* Past that the box cuts it; the text stays whole and terminated. */
+    log_viewer_range_text(out, sizeof(out), -1234567.0, -1234567.0, "rpm");
+    CHECK_STR_EQ(out, "-1234567..-1234567rpm");
     /* No unit, no trailing space; a value that is not a number shows "--". */
     log_viewer_range_text(out, sizeof(out), 1.0, 2.0, "");
     CHECK_STR_EQ(out, "1.0..2.0");

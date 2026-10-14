@@ -252,14 +252,29 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
      * up to 1000.0, which is as wide as 1000 plus 2 glyphs. */
     const float lo_f = (float)lo;
     const float hi_f = (float)hi;
+    const bool has_unit = unit && unit[0];
+    /* One decimal below 1000, then the widths decide: a text wider than the
+     * box drops the decimal, and then the space before the unit. */
     int decimals = (fabsf(lo_f) >= 999.95f || fabsf(hi_f) >= 999.95f) ? 0 : 1;
-    char a[16];
-    char b[16];
-    ui_fmt(a, sizeof(a), lo_f, decimals);
-    ui_fmt(b, sizeof(b), hi_f, decimals);
-    bool has_unit = unit && unit[0];
-    snprintf(out, n, "%s..%s%s%s", a, b, has_unit ? " " : "",
-             has_unit ? unit : "");
+    bool space = has_unit;
+    for (;;) {
+        char a[16];
+        char b[16];
+        ui_fmt(a, sizeof(a), lo_f, decimals);
+        ui_fmt(b, sizeof(b), hi_f, decimals);
+        snprintf(out, n, "%s..%s%s%s", a, b, space ? " " : "",
+                 has_unit ? unit : "");
+        if (strlen(out) <= LOG_RANGE_CELLS) {
+            return;
+        }
+        if (decimals > 0) {
+            decimals = 0;
+        } else if (space) {
+            space = false;
+        } else {
+            return;
+        }
+    }
 }
 
 int log_viewer_cursor(void)

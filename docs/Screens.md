@@ -1346,7 +1346,10 @@ The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
 before the file is plotted. Each numeric column shows its range, lowest to
 highest: one decimal while both ends are below 1000, none from 1000 on
-(`11.9..12.6 V`, `2392..14639 rpm`). A row ends at its line feed (LF, 0x0A).
+(`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
+its box drops the decimal, then the space before the unit
+(`-1000..-1000 rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
+edge. A row ends at its line feed (LF, 0x0A).
 Text after the last line feed is a row cut off by a power loss or a full
 card: it can hold every field and a number cut short, `95` of `9554`, so it
 is left out of the rows, the figures and the plot. ROWS then shows in the

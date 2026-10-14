@@ -1480,7 +1480,10 @@ Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
 Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
 mit einer Nachkommastelle, solange beide Enden unter 1000 liegen, ab 1000
-ohne (`11.9..12.6 V`, `2392..14639 rpm`). Eine Zeile endet an ihrem
+ohne (`11.9..12.6 V`, `2392..14639 rpm`). Ein Bereich breiter als die 17
+Zeichen seines Felds verliert die Nachkommastelle, dann das Leerzeichen vor
+der Einheit (`-1000..-1000 rpm`, `-14639..-14639rpm`); ein noch breiterer
+wird am Rand des Felds abgeschnitten. Eine Zeile endet an ihrem
 Zeilenvorschub (LF, 0x0A). Text nach dem letzten Zeilenvorschub ist eine
 Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat: Sie
 kann jedes Feld enthalten und eine gekürzte Zahl, `95` von `9554`, deshalb
