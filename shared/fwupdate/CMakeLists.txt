@@ -3,7 +3,7 @@
 # Compiled by the panel, which owns the flash, and by the host suite, which
 # runs the same sequence against memory.  The ESP-IDF calls are
 # firmware/panel/components/fw_ota.
-set(SRCS fw_sha256.c fw_image.c fw_upload.c fw_install.c)
+set(SRCS fw_sha256.c fw_image.c fw_upload.c fw_install.c fw_boot.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include

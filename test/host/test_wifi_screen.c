@@ -102,6 +102,18 @@ static int render_lit(void)
     return n;
 }
 
+/* A hash of the body: text on a card lights no more pixels, it changes
+ * them. */
+static uint32_t render_hash(void)
+{
+    (void)render_lit();
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < SCREEN_W * BODY_H; ++i) {
+        h = (h ^ (uint32_t)s_px[i]) * 16777619u;
+    }
+    return h;
+}
+
 static void staged(wifi_offer_t offer, wifi_gate_t gate)
 {
     v.up = WIFI_UP_STAGED;
@@ -235,6 +247,60 @@ TEST_CASE(a_shut_gate_offers_no_radio)
     }
 }
 
+/* Wi-Fi that could not be set up at start: no control asks for anything,
+ * and the screen says why in both languages. */
+TEST_CASE(unavailable_wifi_offers_nothing_and_says_so)
+{
+    fresh();
+    v.have_net = true;
+    strcpy(v.net, "Workshop");
+    v.block = WIFI_WHY_RUN;
+    show();
+    const uint32_t blocked = render_hash();
+    wifi_screen_set_unavailable();               /* no view: none is needed */
+    CHECK_EQ(wifi_screen_view()->block, WIFI_WHY_UNAVAILABLE);
+    CHECK(!wifi_screen_view()->have_net);       /* the kept one was never read */
+    for (int i = 0; i < 5; ++i) {
+        tap(BTN_CX(i), BTN_CY(i));
+    }
+    CHECK_EQ(wifi_screen_take(), 0u);
+    CHECK(render_lit() > 2000);
+    CHECK(render_hash() != blocked);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(render_lit() > 2000);
+    CHECK(strstr(ui_tr(TX_WF_UNAVAIL_1), "WLAN") != NULL);
+    ui_text_set_language(UI_LANG_EN);
+    CHECK(strstr(ui_tr(TX_WF_UNAVAIL_1), "unavailable") != NULL);
+    /* A view handed in the same way draws the same. */
+    const uint32_t direct = render_hash();
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    v.block = WIFI_WHY_UNAVAILABLE;
+    show();
+    CHECK_EQ(render_hash(), direct);
+}
+
+/* A write of the settings that failed shows until the application says
+ * one succeeded; the controls stay as they were. */
+TEST_CASE(a_failed_save_shows_and_the_controls_stay)
+{
+    fresh();
+    v.have_net = true;
+    strcpy(v.net, "Workshop");
+    show();
+    const uint32_t kept = render_hash();
+    v.save_failed = true;
+    show();
+    CHECK(render_hash() != kept);
+    tap(BTN_CX(3), BTN_CY(3));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_FORGET);
+    tap(BTN_CX(4), BTN_CY(4));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_CODE_OFF);
+    v.save_failed = false;
+    show();
+    CHECK_EQ(render_hash(), kept);
+}
+
 TEST_CASE(the_code_switch_asks_for_the_other_state)
 {
     fresh();
@@ -250,7 +316,7 @@ TEST_CASE(the_code_switch_asks_for_the_other_state)
 /* Each reason the radio went off has its line, and a view that draws. */
 TEST_CASE(every_reason_and_join_failure_draws)
 {
-    for (int why = WIFI_WHY_NONE; why <= WIFI_WHY_JOIN; ++why) {
+    for (int why = WIFI_WHY_NONE; why <= WIFI_WHY_UNAVAILABLE; ++why) {
         for (int j = WIFI_JOIN_OK; j <= WIFI_JOIN_LOST; ++j) {
             fresh();
             v.off = (wifi_why_t)why;
@@ -618,6 +684,8 @@ int main(void)
     RUN(without_a_kept_network_only_the_access_point_is_offered);
     RUN(with_a_kept_network_both_are_offered_and_forget_is_there);
     RUN(a_shut_gate_offers_no_radio);
+    RUN(unavailable_wifi_offers_nothing_and_says_so);
+    RUN(a_failed_save_shows_and_the_controls_stay);
     RUN(the_code_switch_asks_for_the_other_state);
     RUN(every_reason_and_join_failure_draws);
     RUN(the_running_views_draw_and_wifi_off_asks_off);

@@ -18,6 +18,7 @@
 #ifndef RCBENCH_WA_MDNS_H
 #define RCBENCH_WA_MDNS_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -45,6 +46,30 @@ size_t wa_mdns_reply(const uint8_t *q, size_t n, uint16_t src_port,
  *  comes. */
 size_t wa_mdns_announce(const char *host, const uint8_t ip[4], uint8_t *out,
                         size_t cap);
+
+/*
+ * The responder's starts in one join of the home network.  A start that
+ * fails -- no task, no socket, no bind, no group membership -- is tried
+ * again WA_MDNS_RETRIES times, WA_MDNS_RETRY_MS apart; after that the name
+ * stays unanswered until the next join, and the address shown on the panel
+ * still works.
+ */
+#define WA_MDNS_RETRIES   3u
+#define WA_MDNS_RETRY_MS  5000u
+
+typedef struct {
+    uint8_t  starts;     /**< starts made in this join                 */
+    uint32_t next_ms;    /**< earliest next start                      */
+} wa_mdns_tries_t;
+
+/** A new join: no start made. */
+void wa_mdns_tries_reset(wa_mdns_tries_t *t);
+
+/** Whether the responder, not running, may be started now. */
+bool wa_mdns_tries_due(const wa_mdns_tries_t *t, uint32_t now_ms);
+
+/** A start made at @p now_ms. */
+void wa_mdns_tries_started(wa_mdns_tries_t *t, uint32_t now_ms);
 
 #ifdef __cplusplus
 }

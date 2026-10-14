@@ -1686,6 +1686,11 @@ STOP oder ein Schalten auf ARMED verwirft auch ein hochgeladenes Image, das
 am Panel wartet. Solange der Funk läuft, laufen der Link zum Koprozessor und
 der Heartbeat wie auf jedem anderen Bildschirm.
 
+Ließ sich das WLAN beim Start nicht einrichten (kein Speicher für seine
+Sperre oder seine Puffer), sind alle Tasten grau, und die Karte sagt
+`WLAN nicht verfügbar: Einrichtung beim Start gescheitert; ein Neustart
+versucht es.` Der Rest des Panels läuft wie ohne WLAN.
+
 ### ACCESS POINT
 
 ACCESS POINT startet das eigene Netz des Panels. Der Bildschirm zeigt, was
@@ -1758,7 +1763,11 @@ Verbunden zeigt der Bildschirm das Netz, die Adresse des Panels und seinen
 Namen, `http://rcbench-3F7A.local/`, mit denselben 4 Hex-Ziffern wie der
 Name des Access Points. Der Name antwortet über mDNS (Multicast Domain Name
 System) auf Rechnern, die `.local`-Namen auflösen; welche Telefone das tun,
-ist nicht gemessen. Die Adresse geht auf jedem.
+ist nicht gemessen. Die Adresse geht auf jedem. Ein Namensdienst, der nicht
+startet (kein Task, kein Socket, keine Multicast-Gruppe), wird noch 3-mal im
+Abstand von 5 s versucht (`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); danach
+bleibt der Name bis zum nächsten Verbinden stumm, und die Adresse geht
+weiter.
 
 Ein Verbinden, das scheitert, sagt warum und bietet ACCESS POINT an, das
 ohne Heimnetz geht:
@@ -1772,6 +1781,15 @@ ohne Heimnetz geht:
 
 HEIMNETZ VERGESSEN löscht Name und Passwort aus dem NVS und schaltet den
 Zugangscode wieder ein.
+
+Eine Änderung des Gespeicherten (ein Netz, VERGESSEN, der Schalter des
+Zugangscodes) gilt sofort und erreicht den NVS im nächsten Frame, der den
+Flash schreiben darf. Ein Schreiben, das fehlschlägt, wird noch 3-mal im
+Abstand von 10 s versucht (`WA_PENDING_RETRIES`, `WA_PENDING_RETRY_MS`),
+und die Karte sagt `Nicht gespeichert: Flash-Schreibfehler. Die nächste
+Änderung versucht es neu.`, bis eines gelingt. Die Änderung gilt in jedem
+Fall bis zum Neustart des Panels; nur ein gelungenes Schreiben überdauert
+ihn.
 
 Aktuelle Einschränkungen:
 
@@ -1890,7 +1908,12 @@ Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
 Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
 zum Build davor, der dann
 `Panel-Firmware 0.19.0 startete nicht -- 0.18.0 läuft wieder` im Band
-zeigt.
+zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
+ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
+Bootloader geht trotzdem zurück. Schlägt das Behalten eines guten Starts
+fehl (otadata nicht geschrieben), sagt das Band
+`Panel-Firmware 0.19.0 nicht übernommen -- der nächste Start geht zurück`;
+der Build läuft bis dahin.
 
 Aktuelle Einschränkungen:
 

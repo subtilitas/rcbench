@@ -14,6 +14,7 @@
 #include <stdatomic.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>          /* fsync(), which is what commits a row to FAT */
 
@@ -394,6 +395,8 @@ static atomic_bool s_fw_quiet_req;
 static atomic_bool s_fw_quiet_ack;
 /* What the start check found, for the band once the splash has gone. */
 static char        s_boot_alert[ALERT_MAX];
+/* False when wifi_access_init() failed: no call into wifi_access then. */
+static bool        s_wifi_ok;
 
 /*
  * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
@@ -1847,8 +1850,10 @@ static bool bring_up(void)
             ESP_LOGW(TAG, "running version \"%s\" does not parse",
                      running.version_text);
         }
-        if (wifi_access_init(fw_ota_slot_bytes(), &running) != ESP_OK) {
-            ESP_LOGE(TAG, "Wi-Fi not set up");
+        s_wifi_ok = (wifi_access_init(fw_ota_slot_bytes(), &running)
+                     == ESP_OK);
+        if (!s_wifi_ok) {
+            ESP_LOGE(TAG, "Wi-Fi not set up: unavailable until a restart");
         }
     }
 
@@ -1893,6 +1898,10 @@ static bool bring_up(void)
         case FW_BOOT_ROLLED_BACK:
             snprintf(s_boot_alert, sizeof(s_boot_alert),
                      TR(ALERT_FW_ROLLED_BACK), other, RCBENCH_VERSION_STRING);
+            break;
+        case FW_BOOT_UNCONFIRMED:
+            snprintf(s_boot_alert, sizeof(s_boot_alert),
+                     TR(ALERT_FW_UNCONFIRMED), RCBENCH_VERSION_STRING);
             break;
         case FW_BOOT_NORMAL:
         default:
@@ -8455,6 +8464,18 @@ static void fw_install_run(void)
 }
 
 /*
+ * FILES & UPDATE without Wi-Fi: the screen says so and offers nothing, and
+ * what it asks for is dropped.
+ */
+static void wifi_unavailable_service(void)
+{
+    (void)wifi_screen_take();
+    if (ui_router_current() == SCREEN_WIFI) {
+        wifi_screen_set_unavailable();
+    }
+}
+
+/*
  * FILES & UPDATE, once a frame: the radio's gate, STOP, what the screen
  * asked for, and what it shows.
  *
@@ -8465,6 +8486,10 @@ static void fw_install_run(void)
  */
 static void wifi_service(bool armed, uint32_t stops_now)
 {
+    if (!s_wifi_ok) {
+        wifi_unavailable_service();
+        return;
+    }
     static uint32_t seen_stops;
     static bool     started;
     if (!started) {
@@ -8531,10 +8556,17 @@ static void wifi_service(bool armed, uint32_t stops_now)
     /* 2 kB of copies, in PSRAM: internal RAM is what the radio is short of. */
     static wifi_access_state_t *ap;
     static wifi_view_t         *vp;
-    if (ap == NULL) {
+    if (ap == NULL || vp == NULL) {
+        /* A pair or neither: a half kept would be read as both next frame. */
+        free(ap);
+        free(vp);
         ap = heap_caps_malloc(sizeof(*ap), MALLOC_CAP_SPIRAM);
         vp = heap_caps_malloc(sizeof(*vp), MALLOC_CAP_SPIRAM);
         if (ap == NULL || vp == NULL) {
+            free(ap);
+            free(vp);
+            ap = NULL;
+            vp = NULL;
             return;
         }
     }
@@ -8546,6 +8578,7 @@ static void wifi_service(bool armed, uint32_t stops_now)
     v->have_net = a->conf.have_net;
     snprintf(v->net, sizeof(v->net), "%s", a->conf.ssid);
     v->code_on = a->conf.code_on;
+    v->save_failed = a->save_failed;
     v->radio = (wifi_radio_t)a->w.state;
     v->off = (wifi_why_t)a->w.off;
     v->join = (wifi_join_t)a->w.join_err;

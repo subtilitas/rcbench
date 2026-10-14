@@ -1232,6 +1232,17 @@ static void pose_wifi(const char *view)
     } else if (strcmp(view, "wifi-blocked") == 0) {
         v.block = WIFI_WHY_ARMED;
         v.off = WIFI_WHY_ARMED;
+    } else if (strcmp(view, "wifi-unavailable") == 0) {
+        v.block = WIFI_WHY_UNAVAILABLE;
+    } else if (strcmp(view, "wifi-save-failed") == 0) {
+        /* The tallest main view: every line the card can hold at once. */
+        v.have_net = true;
+        strcpy(v.net, "Workshop 2.4");
+        v.code_on = false;
+        v.save_failed = true;
+        v.block = WIFI_WHY_RUN;
+        v.off = WIFI_WHY_JOIN;
+        v.join = WIFI_JOIN_NO_ADDRESS;
     } else if (strcmp(view, "wifi-ap") == 0) {
         v.radio = WIFI_RADIO_AP;
         strcpy(v.pass, "k7mqx3ha");

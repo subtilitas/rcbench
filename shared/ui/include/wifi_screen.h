@@ -67,6 +67,9 @@ typedef enum {
     WIFI_WHY_INSTALL,
     WIFI_WHY_FAILED,
     WIFI_WHY_JOIN,
+    /** The panel's own, with no wa_off_t twin: Wi-Fi could not be set up
+     *  at start, and nothing on the screen can start it. */
+    WIFI_WHY_UNAVAILABLE,
 } wifi_why_t;
 
 /** How a join failed (wa_join_err_t). */
@@ -111,6 +114,7 @@ typedef struct {
     bool         have_net;
     char         net[WIFI_SSID_MAX + 1];
     bool         code_on;
+    bool         save_failed;  /**< the last write of the above failed    */
 
     /* The radio. */
     wifi_radio_t radio;
@@ -153,6 +157,13 @@ typedef struct {
 
 /** Hand the screen what to show. */
 void wifi_screen_set(const wifi_view_t *v);
+
+/**
+ * Wi-Fi could not be set up at start: show WIFI_WHY_UNAVAILABLE with every
+ * control off.  Needs no view from the caller, so it holds when the memory
+ * for one is what ran out.
+ */
+void wifi_screen_set_unavailable(void);
 
 /** What is showing, for the application and the tests. */
 const wifi_view_t *wifi_screen_view(void);

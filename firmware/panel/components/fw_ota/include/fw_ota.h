@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "fw_boot.h"
 #include "fw_image.h"
 #include "fw_install.h"
 
@@ -43,18 +44,13 @@ const fw_flash_t *fw_ota_flash(void);
  */
 void fw_ota_note_restart(const char *version);
 
-typedef enum {
-    FW_BOOT_NORMAL = 0,
-    FW_BOOT_UPDATED,      /**< this build's first start, now kept           */
-    FW_BOOT_ROLLED_BACK,  /**< the written build did not start; this one runs */
-} fw_boot_t;
-
 /**
  * Once, after the display and touch came up (@p ui_up), or did not.
  *
  * On a build's first start after an update: @p ui_up keeps it
- * (FW_BOOT_UPDATED), otherwise the panel restarts into the build before it
- * and this does not return.  After a start that went back:
+ * (FW_BOOT_UPDATED, or FW_BOOT_UNCONFIRMED when otadata could not be
+ * written), otherwise the panel restarts into the build before it and this
+ * does not return (fw_boot_decide()).  After a start that went back:
  * FW_BOOT_ROLLED_BACK with the written build's version in @p other, when
  * fw_ota_note_restart() was called before it and no power cut came between.
  */

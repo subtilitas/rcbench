@@ -180,3 +180,28 @@ size_t wa_mdns_announce(const char *host, const uint8_t ip[4], uint8_t *out,
     }
     return answer(0u, false, WA_MDNS_TTL, host, ip, out, cap);
 }
+
+/* ------------------------------------------------------- the starts */
+
+void wa_mdns_tries_reset(wa_mdns_tries_t *t)
+{
+    t->starts = 0u;
+    t->next_ms = 0u;
+}
+
+bool wa_mdns_tries_due(const wa_mdns_tries_t *t, uint32_t now_ms)
+{
+    if (t->starts == 0u) {
+        return true;
+    }
+    return t->starts <= WA_MDNS_RETRIES
+           && (int32_t)(now_ms - t->next_ms) >= 0;
+}
+
+void wa_mdns_tries_started(wa_mdns_tries_t *t, uint32_t now_ms)
+{
+    if (t->starts < 0xFFu) {
+        ++t->starts;
+    }
+    t->next_ms = now_ms + WA_MDNS_RETRY_MS;
+}

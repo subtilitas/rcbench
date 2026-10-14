@@ -39,6 +39,7 @@ extern "C" {
 typedef struct {
     wa_t            w;
     wa_conf_t       conf;
+    bool            save_failed;  /**< the settings' last write failed */
     char            name[WA_NAME_MAX];
     uint8_t         channel;
     bool            scanned;
@@ -56,6 +57,8 @@ typedef struct {
 /**
  * Read the kept home network and set up the task.  @p slot is the largest
  * image taken, @p running the build that runs.  The radio stays off.
+ * On a failure nothing is kept, and no other call of this file may be
+ * made: the panel runs without Wi-Fi until the next start.
  */
 esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running);
 

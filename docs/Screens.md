@@ -1531,6 +1531,11 @@ or a switch to ARMED also drops an uploaded image that waits on the panel.
 While the radio is up, the link to the coprocessor and the heartbeat run as
 on every other screen.
 
+When Wi-Fi could not be set up at start (no memory for its lock or its
+buffers), every button is grey and the card says `Wi-Fi is unavailable: its
+set-up failed at start. A restart tries again.` The rest of the panel runs
+as without Wi-Fi.
+
 ### ACCESS POINT
 
 ACCESS POINT starts the panel's own network. The screen shows what a phone
@@ -1599,7 +1604,10 @@ Joined, the screen shows the network, the panel's address and its name,
 `http://rcbench-3F7A.local/`, with the same 4 hex digits as the access
 point's name. The name answers through mDNS (multicast domain name system)
 on computers that resolve `.local` names; which phones do is not measured.
-The address works on every one.
+The address works on every one. A name responder that fails to start (no
+task, no socket, no multicast group) is tried again 3 times, 5 s apart
+(`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); after that the name stays silent
+until the next join, and the address still works.
 
 A join that fails says why, and offers ACCESS POINT, which works without
 the home network:
@@ -1613,6 +1621,14 @@ the home network:
 
 FORGET HOME NETWORK erases the name and the password from NVS and sets the
 access code back to on.
+
+A change of what is kept (a network, FORGET, the access code switch) takes
+effect at once and reaches NVS on the next frame that may write flash. A
+write that fails is tried again 3 times, 10 s apart (`WA_PENDING_RETRIES`,
+`WA_PENDING_RETRY_MS`), and the card says `Not saved: the flash write
+failed. Another change tries again.` until one succeeds. The change holds
+until the panel restarts either way; only a write that succeeded outlasts
+the restart.
 
 Current limitations:
 
@@ -1720,6 +1736,11 @@ A new build's first start is a trial. The build is kept once the display and
 touch are up. A start that does not get there, by a fault, a restart or a
 missing touch controller, goes back to the build before it, which says
 `panel firmware 0.19.0 did not start -- 0.18.0 runs again` on the band.
+A failed start is never kept: when marking it invalid fails, the panel
+restarts with the trial unconfirmed, and the bootloader goes back all the
+same. When keeping a good start fails (otadata not written), the band says
+`panel firmware 0.19.0 not kept -- the next start goes back`; the build
+runs until then.
 
 Current limitations:
 

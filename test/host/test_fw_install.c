@@ -7,6 +7,10 @@
  * wrong left as the slot that starts next, and the running build written
  * over itself for nothing.  The flash is memory with a budget on it.
  *
+ * And the first start after a write: a start without display or touch kept
+ * as valid -- which ends the rollback for good -- when the call that marks
+ * it invalid returns instead of restarting.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include <stdlib.h>
@@ -15,6 +19,7 @@
 #include "greatest.h"
 
 #include "fw_fixture.h"
+#include "fw_boot.h"
 #include "fw_install.h"
 
 #define SLOT 0x3E0000u
@@ -270,6 +275,109 @@ TEST_CASE(the_gate_names_the_first_reason_that_holds)
     CHECK_EQ(fw_gate(false, false, true, true), FW_GATE_RUN);
 }
 
+/* ------------------------------------------------------- the first start */
+
+/* What the start calls, in order: 'p'ending, 'i'nvalid, 'v'alid,
+ * 'r'estart, 'l'ast invalid. */
+typedef struct {
+    bool pending;
+    bool valid_ok;
+    bool last_invalid;
+    char calls[8];
+    int  n;
+} boot_fake_t;
+
+static void boot_note(boot_fake_t *f, char c)
+{
+    if (f->n < (int)sizeof(f->calls) - 1) {
+        f->calls[f->n++] = c;
+        f->calls[f->n] = '\0';
+    }
+}
+
+static bool b_pending(void *ctx)
+{
+    boot_fake_t *f = ctx;
+    boot_note(f, 'p');
+    return f->pending;
+}
+
+static void b_invalid(void *ctx) { boot_note(ctx, 'i'); }
+
+static bool b_valid(void *ctx)
+{
+    boot_fake_t *f = ctx;
+    boot_note(f, 'v');
+    return f->valid_ok;
+}
+
+static void b_restart(void *ctx) { boot_note(ctx, 'r'); }
+
+static bool b_last_invalid(void *ctx)
+{
+    boot_fake_t *f = ctx;
+    boot_note(f, 'l');
+    return f->last_invalid;
+}
+
+static fw_boot_t boot(boot_fake_t *f, bool ui_up, bool noted)
+{
+    const fw_boot_ops_t bops = {
+        b_pending, b_invalid, b_valid, b_restart, b_last_invalid, f,
+    };
+    return fw_boot_decide(&bops, ui_up, noted);
+}
+
+TEST_CASE(a_first_start_with_display_and_touch_is_kept)
+{
+    boot_fake_t f = { .pending = true, .valid_ok = true };
+    CHECK_EQ(boot(&f, true, true), FW_BOOT_UPDATED);
+    CHECK_STR_EQ(f.calls, "pv");
+}
+
+TEST_CASE(a_first_start_without_touch_goes_back_and_is_never_kept)
+{
+    /* mark_invalid returns here, as the ESP-IDF call does when it fails;
+     * the restart returns too, as only a fake does.  Neither may end in
+     * the build being marked valid. */
+    boot_fake_t f = { .pending = true, .valid_ok = true };
+    CHECK_EQ(boot(&f, false, true), FW_BOOT_UNCONFIRMED);
+    CHECK_STR_EQ(f.calls, "pir");
+    CHECK(strchr(f.calls, 'v') == NULL);
+}
+
+TEST_CASE(a_first_start_that_cannot_be_kept_says_so)
+{
+    boot_fake_t f = { .pending = true, .valid_ok = false };
+    CHECK_EQ(boot(&f, true, false), FW_BOOT_UNCONFIRMED);
+    CHECK_STR_EQ(f.calls, "pv");
+}
+
+TEST_CASE(a_start_after_a_failed_one_reports_once)
+{
+    boot_fake_t f = { .pending = false, .last_invalid = true };
+    CHECK_EQ(boot(&f, true, true), FW_BOOT_ROLLED_BACK);
+    CHECK_STR_EQ(f.calls, "pl");
+
+    /* The slot stays marked invalid; without the note nothing is said. */
+    boot_fake_t g = { .pending = false, .last_invalid = true };
+    CHECK_EQ(boot(&g, true, false), FW_BOOT_NORMAL);
+    CHECK(strchr(g.calls, 'v') == NULL);
+
+    /* A note with no slot marked invalid: the written build stayed. */
+    boot_fake_t h = { .pending = false, .last_invalid = false };
+    CHECK_EQ(boot(&h, true, true), FW_BOOT_NORMAL);
+}
+
+TEST_CASE(a_start_that_is_no_trial_marks_nothing)
+{
+    boot_fake_t f = { .pending = false };
+    CHECK_EQ(boot(&f, false, false), FW_BOOT_NORMAL);
+    CHECK(strchr(f.calls, 'i') == NULL);
+    CHECK(strchr(f.calls, 'v') == NULL);
+    CHECK(strchr(f.calls, 'r') == NULL);
+}
+
 int main(void)
 {
     g_img = malloc(SLOT + 64u);
@@ -285,6 +393,11 @@ int main(void)
     RUN(a_finish_that_fails_leaves_the_boot_slot_alone);
     RUN(a_slot_that_will_not_open_writes_nothing);
     RUN(the_gate_names_the_first_reason_that_holds);
+    RUN(a_first_start_with_display_and_touch_is_kept);
+    RUN(a_first_start_without_touch_goes_back_and_is_never_kept);
+    RUN(a_first_start_that_cannot_be_kept_says_so);
+    RUN(a_start_after_a_failed_one_reports_once);
+    RUN(a_start_that_is_no_trial_marks_nothing);
     free(g_img);
     free(g_slot);
     return test_summary("fw_install");

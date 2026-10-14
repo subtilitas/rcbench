@@ -42,7 +42,9 @@ history is in git.
   holds its outputs in failsafe, shows the bytes and the percentage on a
   full screen without band and restarts the panel. The new build's first
   start is a trial: it is kept once display and touch are up, otherwise the
-  build before starts again and says so on the band.
+  build before starts again and says so on the band. A failed start is
+  never marked valid, also when marking it invalid fails; a good start
+  whose otadata write fails says on the band that the next start goes back.
 - The same page lists every file on the card with its size in bytes and its
   modification time, sends each one, and sends the whole card as one stored
   ZIP file (ZIP64 over 4 GiB − 1 B or 65,535 entries) with its size shown
@@ -54,7 +56,12 @@ history is in git.
 - The radio runs only while FILES & UPDATE is open, with the bench SAFE,
   the supply output off and no log run open. It is off at every start and
   goes off on ARMED, STOP, the supply output, a log run, 10 min without a
-  request and before an install writes the flash.
+  request and before an install writes the flash. Wi-Fi that cannot be set
+  up at start leaves the screen grey with a line saying so.
+- A change of the kept Wi-Fi settings that NVS does not take stays owed, is
+  tried again 3 times 10 s apart and shows `Not saved: the flash write
+  failed.` until a write succeeds. A name responder (mDNS) that fails to
+  start is tried again 3 times 5 s apart in each join.
 - The panel's keyboard has a Wi-Fi mode: lower case, upper case (`ABC`) and
   the 32 ASCII marks (`#+=`), 8 to 63 characters for a password, 1 to 32
   bytes for a network name, the password shown as dots until SHOW.

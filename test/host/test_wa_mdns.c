@@ -174,6 +174,45 @@ TEST_CASE(malformed_queries_are_dropped_without_reading_past_them)
     CHECK_EQ(wa_mdns_announce("", k_ip, g_out, sizeof(g_out)), 0u);
 }
 
+/* The responder's starts: a failed start is tried again three times, 5 s
+ * apart, and a new join starts the count again. */
+TEST_CASE(a_failed_start_is_tried_three_more_times_then_waits_for_a_join)
+{
+    wa_mdns_tries_t t;
+    wa_mdns_tries_reset(&t);
+    uint32_t now = 1000u;
+    CHECK(wa_mdns_tries_due(&t, now));                /* the first: at once */
+    wa_mdns_tries_started(&t, now);
+    /* It failed: not before WA_MDNS_RETRY_MS. */
+    CHECK(!wa_mdns_tries_due(&t, now + 1u));
+    CHECK(!wa_mdns_tries_due(&t, now + WA_MDNS_RETRY_MS - 1u));
+    for (unsigned i = 0; i < WA_MDNS_RETRIES; ++i) {
+        now += WA_MDNS_RETRY_MS;
+        CHECK(wa_mdns_tries_due(&t, now));
+        wa_mdns_tries_started(&t, now);
+    }
+    CHECK_EQ(t.starts, 1u + WA_MDNS_RETRIES);
+    CHECK(!wa_mdns_tries_due(&t, now + 100u * WA_MDNS_RETRY_MS));
+    wa_mdns_tries_reset(&t);                          /* the next join */
+    CHECK(wa_mdns_tries_due(&t, now));
+}
+
+TEST_CASE(start_times_hold_across_the_millisecond_wrap)
+{
+    wa_mdns_tries_t t;
+    wa_mdns_tries_reset(&t);
+    const uint32_t now = 0xFFFFFFFFu - 10u;
+    wa_mdns_tries_started(&t, now);
+    CHECK(!wa_mdns_tries_due(&t, now + 100u));
+    CHECK(wa_mdns_tries_due(&t, now + WA_MDNS_RETRY_MS));
+    /* The count does not wrap however often it is started. */
+    for (int i = 0; i < 300; ++i) {
+        wa_mdns_tries_started(&t, now);
+    }
+    CHECK_EQ(t.starts, 0xFFu);
+    CHECK(!wa_mdns_tries_due(&t, now + WA_MDNS_RETRY_MS));
+}
+
 int main(void)
 {
     RUN(the_panels_name_is_answered_with_its_address);
@@ -181,5 +220,7 @@ int main(void)
     RUN(other_names_types_and_responses_are_not_answered);
     RUN(a_second_question_and_compressed_names_are_followed);
     RUN(malformed_queries_are_dropped_without_reading_past_them);
+    RUN(a_failed_start_is_tried_three_more_times_then_waits_for_a_join);
+    RUN(start_times_hold_across_the_millisecond_wrap);
     return test_summary("wa_mdns");
 }

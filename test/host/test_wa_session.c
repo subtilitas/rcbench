@@ -110,9 +110,16 @@ static bool s_load(void *ctx, wa_conf_t *out)
     return true;
 }
 
+static int  g_save_fails, g_erase_fails;   /* writes left to fail */
+
 static bool s_save(void *ctx, const wa_conf_t *c)
 {
     (void)ctx;
+    if (g_save_fails > 0) {
+        --g_save_fails;
+        ++g_saves;
+        return false;
+    }
     g_stored = *c;
     g_have_stored = true;
     ++g_saves;
@@ -122,6 +129,11 @@ static bool s_save(void *ctx, const wa_conf_t *c)
 static bool s_erase(void *ctx)
 {
     (void)ctx;
+    if (g_erase_fails > 0) {
+        --g_erase_fails;
+        ++g_erases;
+        return false;
+    }
     memset(&g_stored, 0, sizeof(g_stored));
     g_have_stored = false;
     ++g_erases;
@@ -243,6 +255,201 @@ TEST_CASE(a_kept_network_the_radio_would_refuse_is_dropped)
     wa_conf_load(&k_store, &back);
     CHECK(back.have_net);
     CHECK_EQ(strlen(back.ssid), 32u);
+}
+
+/* ------------------------------------------------- the writes owed */
+
+/* One frame of the panel's tick: write what is due, record the result. */
+static bool pend_frame(wa_pending_t *p, const wa_conf_t *c, bool may_write,
+                       uint32_t now)
+{
+    if (!wa_pending_due(p, may_write, now)) {
+        return false;
+    }
+    const wa_pending_t snap = *p;
+    bool e, sv;
+    wa_pending_write(&k_store, &snap, c, &e, &sv);
+    wa_pending_done(p, &snap, e, sv, now);
+    return true;
+}
+
+static void store_reset(void)
+{
+    g_save_fails = g_erase_fails = 0;
+    s_erase(NULL);
+    g_saves = g_erases = 0;
+}
+
+TEST_CASE(a_change_is_written_once_on_a_frame_that_may_write)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    CHECK(!wa_pending_due(&p, true, 0u));          /* nothing owed */
+    CHECK_EQ(wa_conf_set_net(&c, "home", 4u, "secret-pass", 11u), WA_CONF_OK);
+    wa_pending_change(&p);
+    CHECK(!pend_frame(&p, &c, false, 0u));         /* flash closed */
+    CHECK_EQ(g_saves, 0);
+    CHECK(pend_frame(&p, &c, true, 0u));
+    CHECK_EQ(g_saves, 1);
+    CHECK(!p.save && !p.failed);
+    CHECK(!pend_frame(&p, &c, true, 100u));        /* written: done */
+    CHECK_EQ(g_saves, 1);
+    CHECK_STR_EQ(g_stored.ssid, "home");
+}
+
+TEST_CASE(a_failed_save_stays_owed_shows_and_is_tried_three_more_times)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    c.code_on = false;
+    wa_pending_change(&p);
+    g_save_fails = 100;
+    uint32_t t = 1000u;
+    CHECK(pend_frame(&p, &c, true, t));
+    CHECK(p.save && p.failed);                      /* owed and shown */
+    /* Not again on the next frames, only WA_PENDING_RETRY_MS later. */
+    CHECK(!pend_frame(&p, &c, true, t + 1u));
+    CHECK(!pend_frame(&p, &c, true, t + WA_PENDING_RETRY_MS - 1u));
+    for (unsigned i = 0; i < WA_PENDING_RETRIES; ++i) {
+        t += WA_PENDING_RETRY_MS;
+        CHECK(pend_frame(&p, &c, true, t));
+    }
+    CHECK_EQ(g_saves, 1 + (int)WA_PENDING_RETRIES);
+    /* Out of tries: it waits for the next change, still shown. */
+    t += 10u * WA_PENDING_RETRY_MS;
+    CHECK(!pend_frame(&p, &c, true, t));
+    CHECK(p.save && p.failed);
+    CHECK(g_have_stored == false);
+    /* The next change tries at once, and its success clears it all. */
+    g_save_fails = 0;
+    c.code_on = true;
+    wa_pending_change(&p);
+    CHECK(!p.failed);
+    CHECK(pend_frame(&p, &c, true, t + 1u));
+    CHECK(!p.save && !p.failed);
+    CHECK(g_have_stored && g_stored.code_on);
+}
+
+TEST_CASE(a_retry_that_succeeds_clears_the_failure)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    wa_pending_change(&p);
+    g_save_fails = 1;
+    CHECK(pend_frame(&p, &c, true, 0u));
+    CHECK(p.failed);
+    CHECK(pend_frame(&p, &c, true, WA_PENDING_RETRY_MS));
+    CHECK(!p.save && !p.failed);
+    CHECK(g_have_stored);
+}
+
+TEST_CASE(a_failed_forget_stays_owed_and_nothing_is_saved_over_it)
+{
+    store_reset();
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    CHECK_EQ(wa_conf_set_net(&c, "home", 4u, "secret-pass", 11u), WA_CONF_OK);
+    CHECK(wa_conf_save(&k_store, &c));
+    wa_pending_t p;
+    wa_pending_init(&p);
+    /* FORGET, then the code switch: an erase and a save owed. */
+    wa_conf_defaults(&c);
+    wa_pending_forget(&p);
+    c.code_on = false;
+    wa_pending_change(&p);
+    CHECK(p.erase && p.save);
+    g_erase_fails = 1;
+    const int saves = g_saves;
+    CHECK(pend_frame(&p, &c, true, 0u));
+    CHECK(p.erase && p.save && p.failed);
+    CHECK_EQ(g_saves, saves);                     /* not after a failed erase */
+    CHECK(g_have_stored && g_stored.have_net);    /* the network is still there */
+    CHECK(pend_frame(&p, &c, true, WA_PENDING_RETRY_MS));
+    CHECK(!p.erase && !p.save && !p.failed);
+    wa_conf_t back;
+    wa_conf_load(&k_store, &back);
+    CHECK(!back.have_net);
+    CHECK(!back.code_on);
+}
+
+TEST_CASE(an_erase_that_worked_is_not_repeated_for_a_save_that_failed)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    wa_pending_forget(&p);
+    wa_pending_change(&p);
+    g_save_fails = 1;
+    CHECK(pend_frame(&p, &c, true, 0u));
+    CHECK(!p.erase && p.save && p.failed);
+    CHECK_EQ(g_erases, 1);
+    CHECK(pend_frame(&p, &c, true, WA_PENDING_RETRY_MS));
+    CHECK_EQ(g_erases, 1);
+    CHECK(!p.save && !p.failed);
+}
+
+TEST_CASE(a_change_during_a_write_is_not_lost)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    c.code_on = false;
+    wa_pending_change(&p);
+    /* The panel copies under its lock, writes without it ... */
+    CHECK(wa_pending_due(&p, true, 0u));
+    const wa_pending_t snap = p;
+    const wa_conf_t old = c;
+    bool e, sv;
+    wa_pending_write(&k_store, &snap, &old, &e, &sv);
+    /* ... and a change lands meanwhile. */
+    c.code_on = true;
+    wa_pending_change(&p);
+    wa_pending_done(&p, &snap, e, sv, 0u);
+    CHECK(p.save);                                /* still owed */
+    CHECK(!g_stored.code_on);
+    CHECK(pend_frame(&p, &c, true, 1u));
+    CHECK(!p.save);
+    CHECK(g_stored.code_on);
+    /* A FORGET that lands under a failed write is owed and tried at once. */
+    wa_pending_change(&p);
+    const wa_pending_t snap2 = p;
+    g_save_fails = 1;
+    wa_pending_write(&k_store, &snap2, &c, &e, &sv);
+    wa_pending_forget(&p);
+    wa_pending_done(&p, &snap2, e, sv, 5u);
+    CHECK(p.erase && !p.failed);
+    CHECK(pend_frame(&p, &c, true, 6u));
+    CHECK(!p.erase && !p.save);
+    CHECK(!g_have_stored);
+}
+
+TEST_CASE(retry_times_hold_across_the_millisecond_wrap)
+{
+    store_reset();
+    wa_pending_t p;
+    wa_pending_init(&p);
+    wa_conf_t c;
+    wa_conf_defaults(&c);
+    wa_pending_change(&p);
+    g_save_fails = 1;
+    const uint32_t t = 0xFFFFFFFFu - 100u;
+    CHECK(pend_frame(&p, &c, true, t));
+    CHECK(!pend_frame(&p, &c, true, t + 200u));    /* past the wrap, early */
+    CHECK(pend_frame(&p, &c, true, t + WA_PENDING_RETRY_MS));
+    CHECK(!p.failed);
 }
 
 /* ------------------------------------------------------- the scan list */
@@ -572,6 +779,13 @@ int main(void)
     RUN(a_fresh_store_reads_as_no_network_and_the_code_on);
     RUN(what_is_saved_reads_back_and_forget_erases_it);
     RUN(a_kept_network_the_radio_would_refuse_is_dropped);
+    RUN(a_change_is_written_once_on_a_frame_that_may_write);
+    RUN(a_failed_save_stays_owed_shows_and_is_tried_three_more_times);
+    RUN(a_retry_that_succeeds_clears_the_failure);
+    RUN(a_failed_forget_stays_owed_and_nothing_is_saved_over_it);
+    RUN(an_erase_that_worked_is_not_repeated_for_a_save_that_failed);
+    RUN(a_change_during_a_write_is_not_lost);
+    RUN(retry_times_hold_across_the_millisecond_wrap);
     RUN(the_scan_list_holds_each_usable_network_once_strongest_first);
     RUN(a_full_scan_list_keeps_the_strongest);
     RUN(the_radio_does_not_start_armed_with_the_supply_on_or_a_run_open);

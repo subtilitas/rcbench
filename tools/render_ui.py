@@ -441,7 +441,8 @@ SLACK_Y = 2
 MIN_SHAPE = 8
 
 # Views the fit check draws and no page shows: the band's other bubbles,
-# so every string of every bubble is measured where it is drawn.  The same
+# so every string of every bubble is measured where it is drawn, and the
+# Wi-Fi screen's failure lines.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
     "band-fault-all":   (None, "overview", "dark"),
@@ -453,6 +454,8 @@ FIT_ONLY = {
     "band-armed-sim":   (None, "overview", "sim"),
     "band-clock":       (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
+    "wifi-unavailable": (None, "wifi", "dark"),
+    "wifi-save-failed": (None, "wifi", "dark"),
 }
 
 # Views that open a drop-down or a chip's help bubble over the screen: the

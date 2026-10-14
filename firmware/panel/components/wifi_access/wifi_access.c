@@ -69,8 +69,7 @@ static struct {
     /* Under the lock. */
     wa_t            w;
     wa_conf_t       conf;
-    bool            conf_dirty;
-    bool            conf_erase;
+    wa_pending_t    pend;         /* the settings' writes owed to NVS   */
     wa_scan_t       scan;
     bool            scanned;
     fw_upload_t     up;
@@ -92,6 +91,7 @@ static struct {
     esp_netif_t    *netif;
     httpd_handle_t  httpd;
     atomic_bool     mdns_alive;
+    wa_mdns_tries_t mdns_tries;
     uint8_t         ip[4];
 
     atomic_bool     abort;        /* requests under way end now         */
@@ -806,6 +806,9 @@ static void mdns_task(void *arg)
         }
         (void)close(sock);
     }
+    /* Asked to end, or failed to start: either way not running, so the
+     * worker may start it again (wa_mdns_tries_due()). */
+    atomic_store(&s.mdns_run, false);
     atomic_store(&s.mdns_alive, false);
     xTaskNotifyGive(s.worker);
     vTaskDelete(NULL);
@@ -1052,17 +1055,22 @@ static void worker(void *arg)
                 }
                 unlock();
             } else {
+                wa_mdns_tries_reset(&s.mdns_tries);
                 ESP_LOGI(TAG, "radio up, mode %d", (int)w.mode);
             }
         }
         if (s.radio_up && w.state == WA_ST_JOINED
             && !atomic_load(&s.mdns_alive) && !atomic_load(&s.mdns_run)
-            && s.up_mode == WA_MODE_JOIN) {
+            && s.up_mode == WA_MODE_JOIN
+            && wa_mdns_tries_due(&s.mdns_tries, ms())) {
+            wa_mdns_tries_started(&s.mdns_tries, ms());
             atomic_store(&s.mdns_run, true);
             atomic_store(&s.mdns_alive, true);
             if (xTaskCreatePinnedToCore(mdns_task, "mdns", MDNS_STACK, NULL,
                                         WORKER_PRIO, NULL, NET_CORE)
                 != pdPASS) {
+                ESP_LOGW(TAG, "mDNS task not started");
+                atomic_store(&s.mdns_run, false);
                 atomic_store(&s.mdns_alive, false);
             }
         }
@@ -1076,12 +1084,20 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     s.lock = xSemaphoreCreateMutex();
     b = heap_caps_calloc(1, sizeof(*b), MALLOC_CAP_SPIRAM);
     if (s.lock == NULL || b == NULL) {
+        /* Neither half is kept: the caller does not call in again. */
+        if (s.lock != NULL) {
+            vSemaphoreDelete(s.lock);
+            s.lock = NULL;
+        }
+        heap_caps_free(b);
+        b = NULL;
         return ESP_ERR_NO_MEM;
     }
     s.slot = slot;
     s.running = *running;
     wa_init(&s.w);
     wa_conf_load(&k_store, &s.conf);
+    wa_pending_init(&s.pend);
     wa_scan_clear(&s.scan);
     fw_upload_init(&s.up, NULL, 0u, slot);
     uint8_t mac[6] = { 0 };
@@ -1135,30 +1151,28 @@ void wifi_access_close(wa_off_t why)
 
 bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write)
 {
+    const uint32_t now = ms();
     lock();
-    const bool closed_now = wa_tick(&s.w, ms(), gate, stop);
-    const bool erase = may_write && s.conf_erase;
-    const bool save = may_write && s.conf_dirty;
+    const bool closed_now = wa_tick(&s.w, now, gate, stop);
+    /* An NVS commit closes the cache for its length: only on a frame that
+     * may write flash, as the settings' save. */
+    const bool write = wa_pending_due(&s.pend, may_write, now);
+    const wa_pending_t snap = s.pend;
     const wa_conf_t c = s.conf;
-    if (may_write) {
-        s.conf_dirty = s.conf_erase = false;
-    }
     unlock();
     if (closed_now) {
         poke();
     }
-    /* An NVS commit closes the cache for its length: only on a frame that
-     * may write flash, as the settings' save. */
-    bool ok = true;
-    if (erase) {
-        wa_conf_t gone;
-        ok = wa_conf_forget(&k_store, &gone);
-    }
-    if (save) {
-        ok = wa_conf_save(&k_store, &c) && ok;
-    }
-    if (!ok) {
-        ESP_LOGE(TAG, "the Wi-Fi settings were not written");
+    if (write) {
+        bool erase_ok, save_ok;
+        wa_pending_write(&k_store, &snap, &c, &erase_ok, &save_ok);
+        lock();
+        wa_pending_done(&s.pend, &snap, erase_ok, save_ok, ms());
+        unlock();
+        if (!erase_ok || !save_ok) {
+            ESP_LOGE(TAG, "the Wi-Fi settings were not written (%s)",
+                     erase_ok ? "save" : "erase");
+        }
     }
     return closed_now;
 }
@@ -1168,6 +1182,7 @@ void wifi_access_get(wifi_access_state_t *out)
     lock();
     out->w = s.w;
     out->conf = s.conf;
+    out->save_failed = s.pend.failed;
     memcpy(out->name, s.name, sizeof(out->name));
     out->channel = (s.w.state == WA_ST_AP) ? WIFI_ACCESS_AP_CHANNEL : 0u;
     out->scanned = s.scanned;
@@ -1189,7 +1204,7 @@ bool wifi_access_save_net(const char *ssid, const char *pass)
     const bool ok = wa_conf_set_net(&s.conf, ssid, strlen(ssid), pass,
                                     strlen(pass)) == WA_CONF_OK;
     if (ok) {
-        s.conf_dirty = true;
+        wa_pending_change(&s.pend);
     }
     unlock();
     return ok;
@@ -1199,8 +1214,7 @@ void wifi_access_forget(void)
 {
     lock();
     wa_conf_defaults(&s.conf);
-    s.conf_erase = true;
-    s.conf_dirty = false;
+    wa_pending_forget(&s.pend);
     unlock();
 }
 
@@ -1208,7 +1222,7 @@ void wifi_access_set_code(bool on)
 {
     lock();
     s.conf.code_on = on;
-    s.conf_dirty = true;
+    wa_pending_change(&s.pend);
     unlock();
 }
 

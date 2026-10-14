@@ -14,6 +14,7 @@
 #include "esp_log.h"
 #include "esp_ota_ops.h"
 #include "esp_partition.h"
+#include "esp_system.h"
 
 static const char *TAG = "fw_ota";
 
@@ -148,6 +149,54 @@ void fw_ota_note_restart(const char *version)
     s_note.magic = NOTE_MAGIC;
 }
 
+static bool boot_pending(void *ctx)
+{
+    (void)ctx;
+    const esp_partition_t *run = esp_ota_get_running_partition();
+    esp_ota_img_states_t st = ESP_OTA_IMG_UNDEFINED;
+    return run != NULL && esp_ota_get_state_partition(run, &st) == ESP_OK
+           && st == ESP_OTA_IMG_PENDING_VERIFY;
+}
+
+static void boot_mark_invalid(void *ctx)
+{
+    (void)ctx;
+    ESP_LOGE(TAG, "display or touch did not come up: back to the build "
+                  "before this one");
+    const esp_err_t e = esp_ota_mark_app_invalid_rollback_and_reboot();
+    ESP_LOGE(TAG, "marking this build invalid: %s; restarting unconfirmed",
+             esp_err_to_name(e));
+}
+
+static bool boot_mark_valid(void *ctx)
+{
+    (void)ctx;
+    const esp_err_t e = esp_ota_mark_app_valid_cancel_rollback();
+    if (e != ESP_OK) {
+        ESP_LOGE(TAG, "keeping this build: %s; the next start goes back",
+                 esp_err_to_name(e));
+        return false;
+    }
+    return true;
+}
+
+static void boot_restart(void *ctx)
+{
+    (void)ctx;
+    esp_restart();
+}
+
+static bool boot_last_invalid(void *ctx)
+{
+    (void)ctx;
+    return esp_ota_get_last_invalid_partition() != NULL;
+}
+
+static const fw_boot_ops_t k_boot = {
+    boot_pending, boot_mark_invalid, boot_mark_valid, boot_restart,
+    boot_last_invalid, NULL,
+};
+
 fw_boot_t fw_ota_boot_check(bool ui_up, char *other, uint32_t other_cap)
 {
     if (other_cap > 0u) {
@@ -157,34 +206,14 @@ fw_boot_t fw_ota_boot_check(bool ui_up, char *other, uint32_t other_cap)
                         && s_note.check == note_check(&s_note));
     char noted_ver[FW_TEXT_MAX];
     snprintf(noted_ver, sizeof(noted_ver), "%s", noted ? s_note.version : "");
-    s_note.magic = 0u;
-
-    const esp_partition_t *run = esp_ota_get_running_partition();
-    esp_ota_img_states_t st = ESP_OTA_IMG_UNDEFINED;
-    if (run != NULL && esp_ota_get_state_partition(run, &st) == ESP_OK
-        && st == ESP_OTA_IMG_PENDING_VERIFY) {
-        if (!ui_up) {
-            ESP_LOGE(TAG, "display or touch did not come up: back to the "
-                          "build before this one");
-            (void)esp_ota_mark_app_invalid_rollback_and_reboot();
-        }
-        const esp_err_t e = esp_ota_mark_app_valid_cancel_rollback();
-        if (e != ESP_OK) {
-            ESP_LOGE(TAG, "keeping this build: %s", esp_err_to_name(e));
-        }
-        return FW_BOOT_UPDATED;
-    }
     /*
-     * A start after a written build that did not stay: the bootloader has
-     * marked that slot invalid and started this one.  The slot stays marked
-     * until the next update, so the note from before the restart is what
-     * makes this report once.
+     * The note stays through the decision: a trial that goes back restarts
+     * inside it, and the build before reads the note to say so.
      */
-    if (noted && esp_ota_get_last_invalid_partition() != NULL) {
-        if (other_cap > 0u) {
-            snprintf(other, other_cap, "%s", noted_ver);
-        }
-        return FW_BOOT_ROLLED_BACK;
+    const fw_boot_t r = fw_boot_decide(&k_boot, ui_up, noted);
+    s_note.magic = 0u;
+    if (r == FW_BOOT_ROLLED_BACK && other_cap > 0u) {
+        snprintf(other, other_cap, "%s", noted_ver);
     }
-    return FW_BOOT_NORMAL;
+    return r;
 }

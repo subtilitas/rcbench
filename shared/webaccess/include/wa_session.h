@@ -131,6 +131,51 @@ bool wa_conf_save(const wa_store_t *s, const wa_conf_t *c);
 /** FORGET: erase the store and leave @p c at the defaults. */
 bool wa_conf_forget(const wa_store_t *s, wa_conf_t *c);
 
+/*
+ * The writes owed to the store.  A change lands in memory at once and in
+ * the store on a frame that may write flash (wa_pending_due()).  A flag is
+ * cleared only by a write that succeeded and that no later change
+ * overtook.  A failed write is shown (failed) and tried again
+ * WA_PENDING_RETRIES times, WA_PENDING_RETRY_MS apart; after that it waits
+ * for the next change, which tries at once and starts the count again.
+ */
+#define WA_PENDING_RETRIES   3u
+#define WA_PENDING_RETRY_MS  10000u
+
+typedef struct {
+    bool     erase;     /**< FORGET: erase the store                    */
+    bool     save;      /**< write the settings in memory               */
+    bool     failed;    /**< the last write failed; show it             */
+    uint8_t  left;      /**< automatic tries left after a failure       */
+    uint32_t next_ms;   /**< earliest automatic try, with failed        */
+    uint32_t gen;       /**< changes made                               */
+} wa_pending_t;
+
+/** Nothing owed. */
+void wa_pending_init(wa_pending_t *p);
+
+/** A change of the settings in memory: owe a save. */
+void wa_pending_change(wa_pending_t *p);
+
+/** FORGET: owe an erase; a save owed before it is void. */
+void wa_pending_forget(wa_pending_t *p);
+
+/** Whether a write is owed and due now, on a frame that @p may_write. */
+bool wa_pending_due(const wa_pending_t *p, bool may_write, uint32_t now_ms);
+
+/**
+ * Write what @p snap owes -- the erase, then @p c -- into @p st.  Runs
+ * without the caller's lock; @p snap and @p c are copies taken with
+ * wa_pending_due() under it.  Each result in @p erase_ok and @p save_ok;
+ * true for a write not owed.
+ */
+void wa_pending_write(const wa_store_t *st, const wa_pending_t *snap,
+                      const wa_conf_t *c, bool *erase_ok, bool *save_ok);
+
+/** Record the results of a write that started from @p snap. */
+void wa_pending_done(wa_pending_t *p, const wa_pending_t *snap,
+                     bool erase_ok, bool save_ok, uint32_t now_ms);
+
 /** Which ways the screen offers: always the access point, and the home
  *  network when one is kept. */
 #define WA_CAN_AP    0x1u

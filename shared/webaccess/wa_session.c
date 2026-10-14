@@ -121,6 +121,90 @@ bool wa_conf_forget(const wa_store_t *s, wa_conf_t *c)
     return s != NULL && s->erase != NULL && s->erase(s->ctx);
 }
 
+/* ------------------------------------------------- the writes owed */
+
+void wa_pending_init(wa_pending_t *p)
+{
+    memset(p, 0, sizeof(*p));
+}
+
+static void pending_touched(wa_pending_t *p)
+{
+    ++p->gen;
+    p->failed = false;
+    p->left = WA_PENDING_RETRIES;
+    p->next_ms = 0u;
+}
+
+void wa_pending_change(wa_pending_t *p)
+{
+    p->save = true;
+    pending_touched(p);
+}
+
+void wa_pending_forget(wa_pending_t *p)
+{
+    p->erase = true;
+    p->save = false;
+    pending_touched(p);
+}
+
+bool wa_pending_due(const wa_pending_t *p, bool may_write, uint32_t now_ms)
+{
+    if (!may_write || !(p->erase || p->save)) {
+        return false;
+    }
+    if (!p->failed) {
+        return true;
+    }
+    /* After a failure: only while automatic tries are left, and not
+     * before the next one is due. */
+    return p->left > 0u && (int32_t)(now_ms - p->next_ms) >= 0;
+}
+
+void wa_pending_write(const wa_store_t *st, const wa_pending_t *snap,
+                      const wa_conf_t *c, bool *erase_ok, bool *save_ok)
+{
+    *erase_ok = true;
+    *save_ok = true;
+    if (snap->erase) {
+        wa_conf_t gone;
+        *erase_ok = wa_conf_forget(st, &gone);
+    }
+    /* After a failed erase the save is not tried: the store's state is
+     * unknown, and the erase is owed first. */
+    if (snap->save && *erase_ok) {
+        *save_ok = wa_conf_save(st, c);
+    } else if (snap->save) {
+        *save_ok = false;
+    }
+}
+
+void wa_pending_done(wa_pending_t *p, const wa_pending_t *snap,
+                     bool erase_ok, bool save_ok, uint32_t now_ms)
+{
+    if (p->gen != snap->gen) {
+        /* A change came during the write: what it owes stands, and it
+         * is tried on the next frame that may write. */
+        return;
+    }
+    if (snap->erase && erase_ok) {
+        p->erase = false;
+    }
+    if (snap->save && save_ok) {
+        p->save = false;
+    }
+    if (erase_ok && save_ok) {
+        p->failed = false;
+        return;
+    }
+    if (p->failed && p->left > 0u) {
+        --p->left;               /* an automatic try that failed      */
+    }
+    p->failed = true;
+    p->next_ms = now_ms + WA_PENDING_RETRY_MS;
+}
+
 unsigned wa_modes(const wa_conf_t *c)
 {
     return WA_CAN_AP | ((c != NULL && c->have_net) ? WA_CAN_JOIN : 0u);

@@ -143,6 +143,19 @@ void wifi_screen_set(const wifi_view_t *v)
     touched();
 }
 
+void wifi_screen_set_unavailable(void)
+{
+    if (s.v.block == WIFI_WHY_UNAVAILABLE) {
+        return;
+    }
+    memset(&s.v, 0, sizeof(s.v));
+    s.v.block = WIFI_WHY_UNAVAILABLE;
+    s.v.code_on = true;
+    s.sub = SUB_MAIN;
+    drop_hold_if_gone();
+    touched();
+}
+
 void wifi_screen_invalidate(void) { touched(); }
 
 const wifi_view_t *wifi_screen_view(void) { return &s.v; }
@@ -240,6 +253,9 @@ static int hit_at(int x, int y)
         return in(off_rect(), x, y) ? HIT_OFF : HIT_NONE;
     case VIEW_MAIN:
     default: {
+        if (s.v.block == WIFI_WHY_UNAVAILABLE) {
+            return HIT_NONE;
+        }
         const bool free_ = (s.v.block == WIFI_WHY_NONE);
         if (free_ && in(btn(0), x, y)) {
             return HIT_AP;
@@ -496,8 +512,9 @@ static void draw_main(gfx_canvas_t *c)
     const char *labels[5] = { TR(WF_AP), TR(WF_JOIN), TR(WF_CHOOSE),
                               TR(WF_FORGET),
                               s.v.code_on ? TR(WF_CODE_ON) : TR(WF_CODE_OFF) };
-    const bool on[5] = { free_, free_ && s.v.have_net, free_, s.v.have_net,
-                         true };
+    const bool here = (s.v.block != WIFI_WHY_UNAVAILABLE);
+    const bool on[5] = { free_, free_ && s.v.have_net, free_,
+                         here && s.v.have_net, here };
     const int hits[5] = { HIT_AP, HIT_JOIN, HIT_CHOOSE, HIT_FORGET, HIT_CODE };
     for (int i = 0; i < 5; ++i) {
         ui_button(c, btn(i), labels[i],
@@ -511,18 +528,34 @@ static void draw_main(gfx_canvas_t *c)
     text_in(c, RX + 16, y + 20, RW - 32, TR(WF_JOBS_2), UI_FONT_LABEL,
             UI_TEXT);
     y += 56;
-    char line[80];
-    if (s.v.have_net) {
-        snprintf(line, sizeof(line), TR(WF_HOME_IS), s.v.net);
-    } else {
-        snprintf(line, sizeof(line), "%s", TR(WF_HOME_NONE));
+    if (here) {
+        /* Without Wi-Fi set up the kept network was never read. */
+        char line[80];
+        if (s.v.have_net) {
+            snprintf(line, sizeof(line), TR(WF_HOME_IS), s.v.net);
+        } else {
+            snprintf(line, sizeof(line), "%s", TR(WF_HOME_NONE));
+        }
+        text_in(c, RX + 16, y, RW - 32, line, UI_FONT_LABEL, UI_TEXT_DIM);
+        y += 32;
     }
-    text_in(c, RX + 16, y, RW - 32, line, UI_FONT_LABEL, UI_TEXT_DIM);
-    y += 32;
-    if (!free_) {
+    if (!here) {
+        text_in(c, RX + 16, y, RW - 32, TR(WF_UNAVAIL_1), UI_FONT_LABEL,
+                UI_WARN);
+        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_UNAVAIL_2), UI_FONT_LABEL,
+                UI_WARN);
+        y += 52;
+    } else if (!free_) {
         text_in(c, RX + 16, y, RW - 32, TR(WF_NEEDS_1), UI_FONT_LABEL, UI_WARN);
         text_in(c, RX + 16, y + 20, RW - 32, TR(WF_NEEDS_2), UI_FONT_LABEL,
                 UI_WARN);
+        y += 52;
+    }
+    if (s.v.save_failed) {
+        text_in(c, RX + 16, y, RW - 32, TR(WF_SAVE_FAILED_1), UI_FONT_LABEL,
+                UI_WARN);
+        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_SAVE_FAILED_2),
+                UI_FONT_LABEL, UI_WARN);
         y += 52;
     }
     const char *why = why_text();
