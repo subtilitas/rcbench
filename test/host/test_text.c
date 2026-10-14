@@ -22,6 +22,7 @@
 #include "servo_test.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 
@@ -595,6 +596,52 @@ TEST_CASE(the_servo_device_line_names_a_series_and_no_model)
                  "Hitec-Servo, D-Serie") == 0);
 }
 
+/*
+ * The refused-frames label: hidden at 0 and with the link down, shown above
+ * 0 in the language in force, the whole 32-bit count included.
+ */
+TEST_CASE(the_refused_frames_label_shows_only_a_count_above_zero)
+{
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof(st));
+    st.link_up = true;
+    char out[48] = "x";
+    ui_text_set_language(UI_LANG_EN);
+
+    CHECK(!ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "");
+
+    st.link_refused = 1u;
+    CHECK(ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "Link frames refused: 1");
+    st.link_refused = 0xFFFFFFFFu;
+    CHECK(ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "Link frames refused: 4294967295");
+
+    ui_text_set_language(UI_LANG_DE);
+    st.link_refused = 37u;
+    CHECK(ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "Abgelehnte Link-Frames: 37");
+    st.link_refused = 0xFFFFFFFFu;
+    CHECK(ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "Abgelehnte Link-Frames: 4294967295");
+    st.link_refused = 0u;
+    CHECK(!ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "");
+    ui_text_set_language(UI_LANG_EN);
+
+    /* A count from before the link went down is not shown. */
+    st.link_refused = 5u;
+    st.link_up = false;
+    CHECK(!ui_link_refused_label(&st, out, sizeof(out)));
+    CHECK_STR_EQ(out, "");
+
+    st.link_up = true;
+    CHECK(!ui_link_refused_label(NULL, out, sizeof(out)));
+    CHECK(!ui_link_refused_label(&st, NULL, sizeof(out)));
+    CHECK(!ui_link_refused_label(&st, out, 0u));
+}
+
 int main(void)
 {
     RUN(the_format_check_sees_what_is_read);
@@ -614,5 +661,6 @@ int main(void)
     RUN(every_stick_refusal_is_translated);
     RUN(every_bus_verdict_has_a_heading);
     RUN(a_makers_row_names_the_product);
+    RUN(the_refused_frames_label_shows_only_a_count_above_zero);
     return test_summary("text");
 }

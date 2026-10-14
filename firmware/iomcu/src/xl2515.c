@@ -165,9 +165,9 @@ static bool fetch_rx(void *ctx, uint8_t buf[13])
     return true;
 }
 
-bool xl2515_recv(link_can_frame_t *f)
+bool xl2515_recv(link_can_frame_t *f, uint32_t *refused)
 {
-    return mcp2515_recv_next(fetch_rx, NULL, f);
+    return mcp2515_recv_next(fetch_rx, NULL, f, refused);
 }
 
 bool xl2515_take_overflow(void)

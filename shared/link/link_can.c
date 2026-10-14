@@ -178,3 +178,18 @@ bool link_can_decode(const link_can_frame_t *f, link_msg_t *out)
     }
     return true;
 }
+
+bool link_can_decode_counted(const link_can_frame_t *f, link_msg_t *out,
+                             uint32_t *refused)
+{
+    if (f == NULL || out == NULL) {
+        return false;
+    }
+    if (link_can_decode(f, out)) {
+        return true;
+    }
+    if (refused != NULL) {
+        ++*refused;
+    }
+    return false;
+}

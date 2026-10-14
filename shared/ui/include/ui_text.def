@@ -25,6 +25,7 @@ UI_TEXT(SPACE,                      0, "SPACE")
 UI_TEXT(BAND_SAFE,                  0, "SAFE")
 UI_TEXT(BAND_FAULT,                12, "FAULT %02X")
 UI_TEXT(BAND_NO_LINK,              12, "NO LINK")
+UI_TEXT(LINK_REFUSED,               0, "Link frames refused: %lu")
 
 /* ------------------------------------------------------- keypads */
 UI_TEXT(KEYPAD_RANGE,               0, "%.*f to %.*f %s")

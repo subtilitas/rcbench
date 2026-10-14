@@ -126,8 +126,12 @@ bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f);
  * mcp2515_decode_rx() refuses is consumed and the next buffer is tried, up to
  * MCP2515_RX_BUFFERS, so a valid frame in RXB1 does not wait behind a refused
  * one in RXB0.  False when no buffer holds a valid frame.
+ *
+ * Each refused buffer adds 1 to @p refused, modulo 2^32; NULL counts
+ * nothing.
  */
-bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f);
+bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f,
+                       uint32_t *refused);
 
 #ifdef __cplusplus
 }
