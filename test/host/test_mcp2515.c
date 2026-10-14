@@ -158,12 +158,12 @@ TEST_CASE(a_refused_frame_in_rxb0_does_not_hide_a_valid_one_in_rxb1)
     rx.count = 2;
     put_frame(rx.buf[0], 0x123u, 0x42u, 0xEEu, true);    /* RTR, length 2 */
     put_frame(rx.buf[1], 0x1ABCDu, 0x01u, 0x5Au, true);  /* valid */
-    CHECK(mcp2515_recv_next(fake_fetch, &rx, &f));
+    CHECK(mcp2515_recv_next(fake_fetch, &rx, &f, NULL));
     CHECK_EQ(f.id, 0x1ABCDu);
     CHECK_EQ(f.dlc, 1u);
     CHECK_EQ(f.data[0], 0x5Au);
     CHECK_EQ(rx.next, 2u);
-    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f));
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f, NULL));
 }
 
 TEST_CASE(every_kind_of_refused_frame_is_consumed_and_the_next_is_tried)
@@ -181,7 +181,7 @@ TEST_CASE(every_kind_of_refused_frame_is_consumed_and_the_next_is_tried)
             put_frame(rx.buf[0], 0x55u, 0x09u, 0, true);    /* DLC 9 */
         }
         put_frame(rx.buf[1], 0x77u, 0x02u, 0x11u, true);
-        CHECK(mcp2515_recv_next(fake_fetch, &rx, &f));
+        CHECK(mcp2515_recv_next(fake_fetch, &rx, &f, NULL));
         CHECK_EQ(f.id, 0x77u);
         CHECK_EQ(f.dlc, 2u);
     }
@@ -195,10 +195,57 @@ TEST_CASE(only_refused_frames_give_no_frame_and_all_are_consumed)
     rx.count = 2;
     put_frame(rx.buf[0], 0x55u, 0x40u, 0, true);
     put_frame(rx.buf[1], 0x56u, 0x40u, 0, true);
-    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f));
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f, NULL));
     CHECK_EQ(rx.next, 2u);
-    CHECK(!mcp2515_recv_next(NULL, &rx, &f));
-    CHECK(!mcp2515_recv_next(fake_fetch, &rx, NULL));
+    CHECK(!mcp2515_recv_next(NULL, &rx, &f, NULL));
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, NULL, NULL));
+}
+
+/* Each refused buffer counts once, a frame taken counts nothing, and an
+ * empty controller counts nothing. */
+TEST_CASE(each_refused_buffer_is_counted_once)
+{
+    link_can_frame_t f;
+    fake_rx_t rx;
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 2;
+    put_frame(rx.buf[0], 0x55u, 0x01u, 0, false);       /* 11-bit id */
+    put_frame(rx.buf[1], 0x77u, 0x02u, 0x11u, true);    /* valid */
+    uint32_t refused = 0;
+    CHECK(mcp2515_recv_next(fake_fetch, &rx, &f, &refused));
+    CHECK_EQ(refused, 1u);
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f, &refused));
+    CHECK_EQ(refused, 1u);
+
+    /* Two refused: an RTR (remote transmission request) and a DLC (data
+     * length code) of 15. */
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 2;
+    put_frame(rx.buf[0], 0x55u, 0x40u, 0, true);
+    put_frame(rx.buf[1], 0x56u, 0x0Fu, 0, true);
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f, &refused));
+    CHECK_EQ(refused, 3u);
+
+    /* A valid frame alone counts nothing. */
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 1;
+    put_frame(rx.buf[0], 0x77u, 0x00u, 0, true);
+    CHECK(mcp2515_recv_next(fake_fetch, &rx, &f, &refused));
+    CHECK_EQ(refused, 3u);
+}
+
+/* The count is 32 bits and wraps: 2^32 - 1 refusals and one more reads 0. */
+TEST_CASE(the_refusal_count_wraps_at_two_to_the_32)
+{
+    link_can_frame_t f;
+    fake_rx_t rx;
+    memset(&rx, 0, sizeof(rx));
+    rx.count = 2;
+    put_frame(rx.buf[0], 0x55u, 0x40u, 0, true);
+    put_frame(rx.buf[1], 0x56u, 0x40u, 0, true);
+    uint32_t refused = 0xFFFFFFFFu;
+    CHECK(!mcp2515_recv_next(fake_fetch, &rx, &f, &refused));
+    CHECK_EQ(refused, 1u);
 }
 
 int main(void)
@@ -212,5 +259,7 @@ int main(void)
     RUN(a_refused_frame_in_rxb0_does_not_hide_a_valid_one_in_rxb1);
     RUN(every_kind_of_refused_frame_is_consumed_and_the_next_is_tried);
     RUN(only_refused_frames_give_no_frame_and_all_are_consumed);
+    RUN(each_refused_buffer_is_counted_once);
+    RUN(the_refusal_count_wraps_at_two_to_the_32);
     return test_summary("mcp2515");
 }

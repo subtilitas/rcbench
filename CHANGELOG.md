@@ -6,6 +6,19 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The coprocessor counts the CAN frames it receives and refuses to decode:
+  a receive buffer with an 11-bit identifier, a remote frame or a DLC above
+  8, and a frame the link decode refuses (an unknown op, a count past a
+  page, a DLC that disagrees with the count). Protocol 4.21: STATUS (0x01)
+  has 10 registers, the count in registers 8 and 9, low half first, 32 bits,
+  0 at power-up and wrapping at 2^32. The panel reads 10 STATUS registers
+  from a 4.21 coprocessor and 8 from an older one, whose count reads 0.
+  MOTOR & ESC shows `Link frames refused: N` (German `Abgelehnte
+  Link-Frames: N`) in its header strip after the error count, while the link
+  is up and N is above 0; the bring-up log line `iomcu` adds `refused N`.
+
 ## 0.18.0 - 2026-10-14
 
 The link protocol is 4.20. A 0.17 board still links and arms with a 0.18

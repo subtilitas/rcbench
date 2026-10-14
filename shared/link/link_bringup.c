@@ -25,6 +25,37 @@ static bool well_short(uint32_t got, uint32_t of)
     return (uint64_t)got * SHORTFALL_DEN < (uint64_t)of * SHORTFALL_NUM;
 }
 
+uint8_t link_bringup_status_count(uint16_t minor)
+{
+    return (minor >= LINK_MINOR_REFUSED) ? (uint8_t)LINK_ST_COUNT
+                                         : (uint8_t)LINK_ST_COUNT_V420;
+}
+
+bool link_bringup_take_status(link_bringup_t *b, const link_msg_t *st,
+                              uint16_t *faults)
+{
+    if (st == NULL || st->op != LINK_OP_DATA || st->offset != 0u
+        || st->count < LINK_ST_COUNT_V420 || st->count > LINK_MAX_REGS) {
+        return false;
+    }
+    if (b != NULL) {
+        b->dev_frames = (uint32_t)st->regs[LINK_ST_FRAMES_LO]
+                        | ((uint32_t)st->regs[LINK_ST_FRAMES_HI] << 16);
+        b->dev_crc_errors = st->regs[LINK_ST_CRC_ERRORS];
+        b->dev_resyncs    = st->regs[LINK_ST_RESYNCS];
+        b->have_status    = true;
+        b->have_refused   = st->count > (uint8_t)LINK_ST_REFUSED_HI;
+        b->dev_refused    = b->have_refused
+            ? ((uint32_t)st->regs[LINK_ST_REFUSED_LO]
+               | ((uint32_t)st->regs[LINK_ST_REFUSED_HI] << 16))
+            : 0u;
+    }
+    if (faults != NULL) {
+        *faults = st->regs[LINK_ST_FAULTS];
+    }
+    return true;
+}
+
 void link_bringup_add_rtt(link_bringup_t *b, uint32_t us)
 {
     if (b == NULL) {

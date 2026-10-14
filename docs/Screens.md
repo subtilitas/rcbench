@@ -162,7 +162,13 @@ The strip above both columns carries the poll rate, the link's error count
 (cyclic redundancy check failures and resyncs added together) and three
 temperatures. ESC and MOT come from the bench page. MCU is the panel's own
 die, read from the ESP32-S3's sensor: it is the display board's temperature,
-not the coprocessor's.
+not the coprocessor's. While the link is up and the coprocessor has refused
+link frames since its power-up, the strip shows how many after the error
+count: `Link frames refused: 37`. A coprocessor older than protocol 4.21
+sends no count, and the strip shows none
+([Refused frames](Link.md#refused-frames)).
+
+![MOTOR & ESC with 37 refused link frames](img/motor-refused.png)
 
 The throttle moves by how far a finger travels, not to where it lands. A press
 on the track commands nothing, so a touch at the far end asks for nothing; a
