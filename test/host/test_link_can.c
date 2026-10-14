@@ -96,6 +96,19 @@ TEST_CASE(stopping_the_bench_wins_arbitration_against_reading_it)
              LINK_CAN_PRIO_NORMAL);
     CHECK_EQ(link_can_priority(LINK_PAGE_STATUS, LINK_OP_READ),
              LINK_CAN_PRIO_NORMAL);
+
+    /* A firmware update's blocks lose arbitration to everything else, the
+     * coprocessor's answers included. */
+    CHECK_EQ(link_can_priority(LINK_PAGE_UPDATE_DATA, LINK_OP_WRITE),
+             LINK_CAN_PRIO_BULK);
+    CHECK_EQ(link_can_priority(LINK_PAGE_UPDATE_CTL, LINK_OP_ACK),
+             LINK_CAN_PRIO_BULK);
+    const link_msg_t blk = msg(LINK_OP_WRITE, LINK_PAGE_UPDATE_DATA, 0, 4);
+    const link_msg_t st = msg(LINK_OP_READ, LINK_PAGE_STATUS, 0, 1);
+    link_can_frame_t bf[LINK_CAN_MAX_FRAMES], sf[LINK_CAN_MAX_FRAMES];
+    CHECK_EQ(link_can_encode(&blk, bf, LINK_CAN_MAX_FRAMES), 1);
+    CHECK_EQ(link_can_encode(&st, sf, LINK_CAN_MAX_FRAMES), 1);
+    CHECK(sf[0].id < bf[0].id);
 }
 
 /* A poll is one frame with nothing in it: the whole question is the address. */
