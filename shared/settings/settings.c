@@ -59,7 +59,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "pack_cells", "Cells", "Series count in the pack", "S",
         SET_CAT_ESC, SET_TYPE_INT, 1, 14, 1, 6, NULL, 0 },
     [SET_PACK_MAH] = {
-        "pack_mah", "Capacity", "Used for the remaining-charge estimate", "mAh",
+        "pack_mah", "Capacity", "For the remaining-charge estimate", "mAh",
         SET_CAT_ESC, SET_TYPE_INT, 0, 30000, 100, 5000, NULL, 0 },
     [SET_PACK_MOHM] = {
         "pack_mohm", "Internal R", "Whole pack, for the sag model", "mOhm",
@@ -69,7 +69,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         SET_CAT_ESC, SET_TYPE_INT, 2, 42, 2, 14, NULL, 0 },
     [SET_MOTOR_KV] = {
         "motor_kv", "Rated kV",
-        "Used when the ESC reports none; 0 shows the field empty", "rpm/V",
+        "If the ESC reports none; 0 = empty", "rpm/V",
         SET_CAT_ESC, SET_TYPE_INT, 0, 10000, 10, 0, NULL, 0 },
     [SET_OUT_MIN_US] = {
         "out_min_us", "Idle pulse", "Width at 0 % throttle", "us",

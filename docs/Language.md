@@ -35,11 +35,6 @@ Current limitations:
   translation by that English. A refusal the table does not know is shown in
   English. `test_text` checks that every refusal the compiled-in profiles
   produce has a German entry.
-- Two English help lines on SETUP are longer than the 36 cells the row
-  shows and are cut there: Capacity's, 38 characters, and Rated kV's, 55.
-  On the log import's column list the range `2392.0..14639.0rpm` is 144 px
-  wide in a 140 px box, in both languages. `render_ui.py --fit` lists the
-  three as `known`.
 
 ## Numbers
 
@@ -116,6 +111,7 @@ One German word per English concept, on every screen and in the report.
 | screen (a page of the interface) | Seite |
 | screen (the display) | Bildschirm |
 | coprocessor | Koprozessor |
+| emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread | Akku, Zelle, Streuung |
 | peak | Spitze (max on a card) |
@@ -209,7 +205,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 150 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 164 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -222,9 +218,9 @@ in German, and fails when a string in either language
   (`outputs-protocol`) is exempt, because the list covers the pins beside
   it by design.
 
-The three English overflows above are in `KNOWN_OVERFLOWS` in the tool,
-each with its view, its string and its measurement. They are printed as
-`known` and do not fail; a German finding that equals one word for word is
+An English overflow that is accepted for a time goes into `KNOWN_OVERFLOWS`
+in the tool, with its view, its string and its measurement; the list is
+empty. A listed one is printed as `known` and does not fail; a German finding that equals one word for word is
 the same string in the same place and does not fail either. An entry the
 check no longer finds fails until it is taken off the list. The check also
 fails on a string with no declared width that no view draws.

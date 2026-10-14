@@ -54,6 +54,61 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the overview.
 
+### Chip help
+
+A tap on a chip of the band opens a box under the band that says what the
+chip's state means for the bench and what to do: LINK or NO LINK, the mode,
+FAULT, the arm chip and the run clock. The box opens 4 px under the band at
+the tapped chip's left edge, moved left as far as it needs to stay 8 px
+inside the panel. It is 520 px wide; FAULT's box spans the panel (784 px),
+with one paragraph per set bit. No box reaches into the band, so none covers
+STOP, and none reaches the alert band.
+
+- A tap opens it: press and lift on the same chip. A press that slides off
+  the chip before it lifts opens nothing.
+- The text follows the state while the box is open. A fault that appears
+  shows at once, one that clears goes, and a box follows its chip when the
+  run clock appears and moves the chips.
+- A box whose chip goes closes: FAULT when the faults clear, the run clock
+  when it goes.
+- Any tap closes it and does nothing else. A tile, a button, another chip or
+  the alert band under the finger is not pressed.
+- STOP is the exception: a press on STOP closes the box and stops at once,
+  as with no box.
+- Leaving the screen closes it.
+- A finger dragging on the screen when a second finger opens a box is
+  released as at the band's edge.
+
+While the link is up and the coprocessor has refused link frames, the LINK
+box ends with the count, the same line MOTOR & ESC shows in its header
+strip: `Link frames refused: 37` ([Refused frames](Link.md#refused-frames)).
+The line follows the count while the box is open and goes with the link.
+
+The FAULT box names each bit, its code and what it means:
+
+| Code | Bit | Set by this release |
+| --- | --- | --- |
+| 01 | LINK_SILENT | the coprocessor heard no request for 200 ms; stays until the next arm |
+| 02 | OVERCURRENT | never |
+| 04 | OVERTEMP | never |
+| 08 | STALL | never |
+| 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop or an open heartbeat wire |
+| 20 | VERSION | never |
+| 40 | STORE_OFF | the coprocessor cannot write its flash this boot |
+
+For a bit this release never sets, or one the panel has no name for, the box
+says to flash both boards from one release.
+
+![The FAULT box with LINK_SILENT, HEARTBEAT and STORE_OFF set](img/band-fault.png)
+
+![The LINK box](img/band-link.png)
+
+![The LINK box with 37 refused link frames](img/band-link-refused.png)
+
+![The SAFE box](img/band-safe.png)
+
+![The ARMED MOTOR box](img/band-armed.png)
+
 ## The alert band
 
 A fault the screen itself does not show appears in a red band, 34 px high,
@@ -1344,17 +1399,22 @@ Browse the card, open a file, check what the import detected, then plot:
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
-before the file is plotted. A row ends at its line feed (LF, 0x0A). Text
-after the last line feed is a row cut off by a power loss or a full card:
-it can hold every field and a number cut short, `95` of `9554`, so it is
-left out of the rows, the figures and the plot. ROWS then shows in the
+before the file is plotted. Each numeric column shows its range, lowest to
+highest: one decimal while both ends are below 1000, none from 1000 on
+(`11.9..12.6 V`, `2392..14639 rpm`). A range wider than the 17 glyphs of
+its box drops the decimal, then the space before the unit
+(`-1000..-1000 rpm`, `-14639..-14639rpm`); a wider one is cut at the box's
+edge. A row ends at its line feed (LF, 0x0A).
+Text after the last line feed is a row cut off by a power loss or a full
+card: it can hold every field and a number cut short, `95` of `9554`, so it
+is left out of the rows, the figures and the plot. ROWS then shows in the
 warning colour and the import view says `LAST ROW CUT OFF - LEFT OUT`. A
 file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
-feed are no row. Runs recorded by the bench are written as
-`BENCH001.CSV` to `BENCH999.CSV` in the card's root directory. A run is one
-switching to ARMED, or one switch-on of the SUPPLY output while the bench is SAFE.
-An automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
+feed are no row. Runs recorded by the bench are written as `BENCH001.CSV` to
+`BENCH999.CSV` in the card's root directory. A run is one switching to
+ARMED, or one switch-on of the SUPPLY output while the bench is SAFE. An
+automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
 which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
 does not show. A number carried by either file is taken, and DELETE on a run
 removes its report too.

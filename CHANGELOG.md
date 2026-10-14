@@ -18,6 +18,16 @@ history is in git.
   MOTOR & ESC shows `Link frames refused: N` (German `Abgelehnte
   Link-Frames: N`) in its header strip after the error count, while the link
   is up and N is above 0; the bring-up log line `iomcu` adds `refused N`.
+- A tap on a chip of the status band opens a help bubble under the band
+  that says what the chip's state means for the bench and what to do: LINK
+  or NO LINK, BENCH or SIM, FAULT, SAFE or ARMED and the run clock. The
+  FAULT bubble has one paragraph per set bit of the code, names the four
+  bits this release never sets, and gives the bits the panel has no name
+  for as a code. The LINK bubble ends with `Link frames refused: N` while
+  the link is up and N is above 0. The text follows the state while the
+  bubble is open. Any tap closes it and does nothing else; a press on STOP
+  closes it and stops at once. Leaving the screen, or the chip going,
+  closes it. German text in `ui_text_de.c`.
 
 ### Changed
 
@@ -32,6 +42,19 @@ history is in git.
   safety note, the wire from the T-plug, both PD power sources and the 20 V
   charger row of the parts list. The parts list row of the PD mini Buck
   version keeps the 0.5 V of the vendor.
+
+### Fixed
+
+- Two SETUP hints fit their 36 cells: "For the remaining-charge estimate"
+  and "If the ESC reports none; 0 = empty". The LOGS import range shows no
+  decimal from 1000 in magnitude, 999.95 included, which one decimal rounds
+  up to 1000.0, and has a space before the unit. A range wider than the 17
+  glyphs of its 140 px box drops the decimal, then that space, so two
+  5-digit negative ends with a 3-letter unit fit; a wider range is cut at
+  the box's edge. `render_ui.py` lists no known overflow.
+- The configurator keeps a tick that Tab reaches during a smooth scroll in
+  view with its help bubble: the focus stops the running scroll and scrolls
+  the bubble and the row into view at once.
 
 ## 0.18.0 - 2026-10-14
 
