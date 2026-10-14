@@ -109,7 +109,8 @@ int log_viewer_cursor(void);
  * The range of a numeric column as the import view writes it into @p out
  * (@p n bytes): "lo..hi unit".  One decimal while both ends are below
  * 1000 in magnitude, none from 1000 on, so "2392..14639 rpm" fits the
- * 140 px box of the view.  A text over LOG_RANGE_CELLS glyphs drops the
+ * 140 px box of the view.  A text over LOG_RANGE_CELLS glyphs (code points,
+ * gfx_text_cells(), so "µs" is 2) drops the
  * decimal, then the space before the unit: "-999.9..-999.9 rpm" reads
  * "-1000..-1000 rpm".  A text still wider, such as two 7-digit negative
  * ends, is cut at the box's edge.  No space and no unit with an empty

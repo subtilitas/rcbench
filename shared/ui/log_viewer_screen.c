@@ -264,7 +264,7 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
         ui_fmt(b, sizeof(b), hi_f, decimals);
         snprintf(out, n, "%s..%s%s%s", a, b, space ? " " : "",
                  has_unit ? unit : "");
-        if (strlen(out) <= LOG_RANGE_CELLS) {
+        if (gfx_text_cells(out) <= (int)LOG_RANGE_CELLS) {
             return;
         }
         if (decimals > 0) {

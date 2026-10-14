@@ -1461,7 +1461,13 @@ TEST_CASE(a_range_of_1000_or_more_drops_the_decimal)
     CHECK_STR_EQ(out, "-99.9..-99.9 rpm");
     log_viewer_range_text(out, sizeof(out), -14639.0, -14639.0, "rpm");
     CHECK_STR_EQ(out, "-14639..-14639rpm");
-    CHECK(strlen(out) == LOG_RANGE_CELLS);
+    CHECK(gfx_text_cells(out) == (int)LOG_RANGE_CELLS);
+    /* Glyphs are counted, not bytes: "µs" is 2 cells in 3 bytes, and the
+     * 17 cells of "-999.9..-999.9 µs" fit with the decimal. */
+    log_viewer_range_text(out, sizeof(out), -999.9, -999.9, "\xC2\xB5s");
+    CHECK_STR_EQ(out, "-999.9..-999.9 \xC2\xB5s");
+    log_viewer_range_text(out, sizeof(out), -999.9, -999.9, "\xC2\xB5sx");
+    CHECK_STR_EQ(out, "-1000..-1000 \xC2\xB5sx");
     /* Past that the box cuts it; the text stays whole and terminated. */
     log_viewer_range_text(out, sizeof(out), -1234567.0, -1234567.0, "rpm");
     CHECK_STR_EQ(out, "-1234567..-1234567rpm");
