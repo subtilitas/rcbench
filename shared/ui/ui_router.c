@@ -6,6 +6,7 @@
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
+#include "wifi_screen.h"
 #include "ui_screen.h"
 
 #include <stdio.h>
@@ -94,6 +95,8 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_PICKER:   return picker_screen();
     case SCREEN_SUPPLY:   return supply_screen();
     case SCREEN_BUSFAULT: return busfault_screen();
+    case SCREEN_WIFI:     return wifi_screen();
+    case SCREEN_UPDATE:   return update_screen();
     default:              return overview_screen();
     }
 }
@@ -165,6 +168,8 @@ void ui_router_invalidate(void)
     picker_screen_invalidate();
     busfault_screen_invalidate();
     supply_invalidate();
+    wifi_screen_invalidate();
+    update_screen_invalidate();
 }
 
 static void clear_alert(void)
@@ -236,8 +241,10 @@ static bool has_band(ui_screen_id_t id)
 {
     /* The bus-fault screen carries none either. Its whole claim is that the
      * bench cannot be driven, and a STOP button on it would offer to stop
-     * something that is not running. */
-    return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT;
+     * something that is not running.  Nor does the firmware write, for the
+     * same reason: the bench is SAFE and the coprocessor in failsafe. */
+    return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT
+           && id != SCREEN_UPDATE;
 }
 
 /*
@@ -256,7 +263,7 @@ static bool in_alert(const touch_event_t *evt)
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
-           && id != SCREEN_BUSFAULT;
+           && id != SCREEN_BUSFAULT && id != SCREEN_UPDATE;
 }
 
 /* The slot of contact @p id in the screen's table, or -1 when the screen

@@ -21,6 +21,7 @@
 #include "driver/temperature_sensor.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
+#include "esp_system.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -184,6 +185,10 @@ static uint16_t pct_to_span(float pct)
 }
 #include "touch.h"
 #include "touch_map.h"
+#include "fw_install.h"
+#include "fw_ota.h"
+#include "wifi_access.h"
+#include "wifi_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -377,6 +382,18 @@ static void beat(bool alive)
 #define CMD_Q_LEN         16
 #define SAMPLE_Q_LEN      8
 #define ALERT_MAX         UI_ALERT_MAX
+
+/*
+ * The panel's own update.  An install about to write the flash asks the
+ * control task to stand still (s_fw_quiet_req) and waits for it to say so
+ * (s_fw_quiet_ack): no polls, no exchanges, and the heartbeat withheld on
+ * purpose, so the coprocessor goes to failsafe as it does at any restart of
+ * the panel.  A write that fails lets it go again.
+ */
+static atomic_bool s_fw_quiet_req;
+static atomic_bool s_fw_quiet_ack;
+/* What the start check found, for the band once the splash has gone. */
+static char        s_boot_alert[ALERT_MAX];
 
 /*
  * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
@@ -1819,12 +1836,30 @@ static bool bring_up(void)
     publish_sense();
     publish_tone();
     settings_apply_ui();
+    /*
+     * The panel's Wi-Fi reads its kept home network now, while the panel is
+     * not scanning yet, for the reason the settings are read here.  The
+     * radio stays off.
+     */
+    {
+        fw_image_info_t running;
+        if (!fw_ota_running(&running)) {
+            ESP_LOGW(TAG, "running version \"%s\" does not parse",
+                     running.version_text);
+        }
+        if (wifi_access_init(fw_ota_slot_bytes(), &running) != ESP_OK) {
+            ESP_LOGE(TAG, "Wi-Fi not set up");
+        }
+    }
 
     display_config_t dcfg = DISPLAY_CONFIG_DEFAULT();
     if (display_init(&dcfg) == ESP_OK) {
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_OK, "800x480 39Hz");
     } else {
         splash_screen_set(SPLASH_STEP_DISPLAY, SPLASH_FAIL, TR(SPLASH_NO_PANEL));
+        /* A build on its first start after an update goes back to the one
+         * before it, here and now; any other start goes on as before. */
+        (void)fw_ota_boot_check(false, NULL, 0u);
         return false;   /* nothing can be reported after this */
     }
     pump();
@@ -1840,6 +1875,30 @@ static bool bring_up(void)
         ok = false;
     }
     pump();
+
+    /*
+     * A build's first start after an update is a trial until here: with
+     * the display and touch up it is kept, and without touch -- no STOP --
+     * the panel restarts into the build before it.  Keeping it writes
+     * otadata, a flash write against a scanning panel: one disturbed frame,
+     * once.
+     */
+    {
+        char other[FW_TEXT_MAX];
+        switch (fw_ota_boot_check(s_touch_ok, other, sizeof(other))) {
+        case FW_BOOT_UPDATED:
+            snprintf(s_boot_alert, sizeof(s_boot_alert), TR(ALERT_FW_UPDATED),
+                     RCBENCH_VERSION_STRING);
+            break;
+        case FW_BOOT_ROLLED_BACK:
+            snprintf(s_boot_alert, sizeof(s_boot_alert),
+                     TR(ALERT_FW_ROLLED_BACK), other, RCBENCH_VERSION_STRING);
+            break;
+        case FW_BOOT_NORMAL:
+        default:
+            break;
+        }
+    }
 
     /* A card is optional: the log viewer wants one, nothing else does, so a
      * missing card is a warning the operator reads on the way past rather
@@ -7730,6 +7789,21 @@ static void control_task(void *arg)
     bool     link_up       = false;
 
     for (;;) {
+        /*
+         * An install about to write the flash: this loop stands still.  No
+         * poll and no exchange starts, and the heartbeat is withheld on
+         * purpose, so the coprocessor goes to failsafe as it does at any
+         * restart of the panel.  A flash erase stalls this core anyway; the
+         * failsafe then comes from a decision rather than from the stall.
+         */
+        if (atomic_load(&s_fw_quiet_req)) {
+            beat(false);
+            atomic_store(&s_fw_quiet_ack, true);
+            vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
+            continue;
+        }
+        atomic_store(&s_fw_quiet_ack, false);
+
         control_pump();
 
         /*
@@ -8275,6 +8349,228 @@ static void outputs_apply(const outbind_t *b)
     send_cmd(&pc);
 }
 
+/* ------------------------------------------------- Wi-Fi and the update */
+
+/* Whether a run's log, or a servo test's, is open or about to be. */
+static bool run_open_now(void)
+{
+    return atomic_load(&s_log_run_now) != 0u
+           || atomic_load(&s_log_open_run) != 0u
+           || atomic_load(&s_test_open_run) != 0u;
+}
+
+/* Whether flash may be written now, and if not why: see fw_gate(). */
+static fw_gate_t fw_gate_now(bool armed)
+{
+    return fw_gate(armed, supply_live_or_coming(), run_open_now(),
+                   s_artbusy || atomic_load(&s_keeping));
+}
+
+/* The update screen, drawn now: the install's loop runs no router tick. */
+static void update_frame(update_state_t st, const char *version,
+                         uint32_t written, uint32_t total)
+{
+    update_view_t v = { .state = st, .written = written, .total = total };
+    snprintf(v.version, sizeof(v.version), "%s", version);
+    update_screen_set(&v);
+    gfx_canvas_t *c = display_canvas();
+    if (c != NULL) {
+        ui_router_render(c, display_back_index());
+        display_flip();
+    }
+}
+
+/*
+ * INSTALL: the 2 s hold completed on the question.
+ *
+ * In order: the update screen, the radio off and waited for, the image
+ * checked once more against the slot and the running build, the gate once
+ * more, the control task stood still, then the write a piece at a time with
+ * the bytes on screen, the check of what the slot holds, otadata, and the
+ * restart.  Nothing touches the flash before the control task stands still
+ * and the radio is off.  A failure before the first erase changes nothing;
+ * one after it leaves the running build as the one that starts.
+ */
+static void fw_install_run(void)
+{
+    const uint8_t  *img = NULL;
+    uint32_t        bytes = 0u;
+    fw_image_info_t info;
+    if (!wifi_access_take(&img, &bytes, &info)) {
+        return;
+    }
+    ui_router_goto(SCREEN_UPDATE);
+    (void)wifi_screen_take();        /* the screen's leave: radio off */
+    update_frame(UPDATE_WRITING, info.version_text, 0u, bytes);
+
+    /* The radio goes first, and wholly: no request may be under way. */
+    wifi_access_close(WA_OFF_INSTALL);
+    wifi_access_state_t ws;
+    const uint32_t t0 = now_ms();
+    do {
+        vTaskDelay(pdMS_TO_TICKS(20));
+        wifi_access_get(&ws);
+    } while (!ws.down && (uint32_t)(now_ms() - t0) < 20000u);
+
+    static fw_install_t in;
+    fw_image_info_t running;
+    (void)fw_ota_running(&running);
+    bool armed;
+    snap_lock();
+    armed = s_snap.arm_wanted || s_snap.armed;
+    snap_unlock();
+    fw_err_t e = FW_ERR_BUSY;
+    if (ws.down && fw_gate_now(armed) == FW_GATE_OPEN) {
+        e = fw_install_begin(&in, fw_ota_flash(), img, bytes,
+                             fw_ota_slot_bytes(), &running);
+    }
+    fw_install_status_t st = FW_INSTALL_FAILED;
+    if (e == FW_OK) {
+        atomic_store(&s_fw_quiet_req, true);
+        const uint32_t t1 = now_ms();
+        while (!atomic_load(&s_fw_quiet_ack)
+               && (uint32_t)(now_ms() - t1) < 1000u) {
+            vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
+        }
+        const bool quiet = atomic_load(&s_fw_quiet_ack);
+        ESP_LOGI(TAG, "writing %s, %lu bytes", info.version_text,
+                 (unsigned long)bytes);
+        do {
+            st = fw_install_step(&in, quiet);
+            update_frame(UPDATE_WRITING, info.version_text, in.done, bytes);
+        } while (st == FW_INSTALL_RUNNING);
+        if (st == FW_INSTALL_DONE) {
+            update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes);
+            fw_ota_note_restart(info.version_text);
+            ESP_LOGI(TAG, "written and checked; restarting");
+            vTaskDelay(pdMS_TO_TICKS(1500));
+            esp_restart();
+        }
+    }
+    ESP_LOGE(TAG, "install of %s failed: %s", info.version_text,
+             fw_err_str((e != FW_OK) ? e : in.err));
+    atomic_store(&s_fw_quiet_req, false);
+    wifi_access_release();
+    update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
+}
+
+/*
+ * FILES & UPDATE, once a frame: the radio's gate, STOP, what the screen
+ * asked for, and what it shows.
+ *
+ * The radio's gate is wa_gate(): SAFE, the supply off and no log run open.
+ * STOP and ARM end the session and drop an image that waits; the supply
+ * coming on or a run opening ends the session and leaves the image, which
+ * the question then says cannot be installed yet.
+ */
+static void wifi_service(bool armed, uint32_t stops_now)
+{
+    static uint32_t seen_stops;
+    static bool     started;
+    if (!started) {
+        seen_stops = stops_now;
+        started = true;
+    }
+    const bool supply = supply_live_or_coming();
+    const bool run = run_open_now();
+    const wa_off_t gate = wa_gate(armed, supply, run);
+    const bool stop = (stops_now != seen_stops);
+    seen_stops = stops_now;
+    const fw_gate_t fgate = fw_gate_now(armed);
+
+    wifi_access_set_german(ui_text_language() == UI_LANG_DE);
+    (void)wifi_access_tick(gate, stop,
+                           fgate == FW_GATE_OPEN || fgate == FW_GATE_RUN);
+    if (stop || gate == WA_OFF_ARMED) {
+        wifi_access_discard();
+    }
+
+    const unsigned req = wifi_screen_take();
+    if ((req & WIFI_REQ_OFF) != 0u) {
+        wifi_access_close(WA_OFF_ASKED);
+    }
+    if ((req & WIFI_REQ_DISCARD) != 0u) {
+        wifi_access_discard();
+    }
+    if ((req & WIFI_REQ_SAVE_NET) != 0u) {
+        char ssid[WIFI_SSID_MAX + 1], pass[WIFI_PASS_MAX + 1];
+        wifi_screen_net(ssid, pass);
+        (void)wifi_access_save_net(ssid, pass);
+        memset(pass, 0, sizeof(pass));
+    }
+    if ((req & WIFI_REQ_FORGET) != 0u) {
+        wifi_access_forget();
+    }
+    if ((req & WIFI_REQ_CODE_ON) != 0u) {
+        wifi_access_set_code(true);
+    }
+    if ((req & WIFI_REQ_CODE_OFF) != 0u) {
+        wifi_access_set_code(false);
+    }
+    if ((req & WIFI_REQ_AP) != 0u) {
+        (void)wifi_access_start(WA_MODE_AP, gate);
+    }
+    if ((req & WIFI_REQ_JOIN) != 0u) {
+        (void)wifi_access_start(WA_MODE_JOIN, gate);
+    }
+    if ((req & WIFI_REQ_SCAN) != 0u) {
+        (void)wifi_access_start(WA_MODE_SCAN, gate);
+    }
+    if ((req & WIFI_REQ_INSTALL) != 0u) {
+        fw_install_run();
+    }
+    if (update_screen_take_close()) {
+        ui_router_goto(SCREEN_LOGS);
+    }
+
+    if (ui_router_current() != SCREEN_WIFI) {
+        return;
+    }
+    /* What the screen shows: the session's and the receiver's enums map
+     * one to one onto the screen's, which test_wifi_screen holds. */
+    /* 2 kB of copies, in PSRAM: internal RAM is what the radio is short of. */
+    static wifi_access_state_t *ap;
+    static wifi_view_t         *vp;
+    if (ap == NULL) {
+        ap = heap_caps_malloc(sizeof(*ap), MALLOC_CAP_SPIRAM);
+        vp = heap_caps_malloc(sizeof(*vp), MALLOC_CAP_SPIRAM);
+        if (ap == NULL || vp == NULL) {
+            return;
+        }
+    }
+    wifi_access_state_t *const a = ap;
+    wifi_view_t *const v = vp;
+    wifi_access_get(a);
+    memset(v, 0, sizeof(*v));
+    v->block = (wifi_why_t)gate;
+    v->have_net = a->conf.have_net;
+    snprintf(v->net, sizeof(v->net), "%s", a->conf.ssid);
+    v->code_on = a->conf.code_on;
+    v->radio = (wifi_radio_t)a->w.state;
+    v->off = (wifi_why_t)a->w.off;
+    v->join = (wifi_join_t)a->w.join_err;
+    snprintf(v->name, sizeof(v->name), "%s", a->name);
+    snprintf(v->pass, sizeof(v->pass), "%s", a->w.pass);
+    snprintf(v->code, sizeof(v->code), "%s", a->w.code);
+    memcpy(v->ip, &a->w.ip, sizeof(v->ip));
+    v->channel = a->channel;
+    v->idle_left_s = a->idle_left_ms / 1000u;
+    v->scanned = a->scanned;
+    v->scan_n = (int)((a->scan.n < WIFI_SCAN_ROWS) ? a->scan.n : WIFI_SCAN_ROWS);
+    for (int i = 0; i < v->scan_n; ++i) {
+        snprintf(v->scan[i], sizeof(v->scan[i]), "%s", a->scan.net[i].ssid);
+        v->rssi[i] = a->scan.net[i].rssi;
+    }
+    v->up = (wifi_up_t)a->up;
+    v->received = a->received;
+    v->total = a->total;
+    v->offer = (wifi_offer_t)a->offer;
+    v->gate = (wifi_gate_t)fgate;
+    snprintf(v->new_ver, sizeof(v->new_ver), "%s", a->info.version_text);
+    snprintf(v->run_ver, sizeof(v->run_ver), "%s", RCBENCH_VERSION_STRING);
+    wifi_screen_set(v);
+}
+
 /* ------------------------------------------------------------------ main */
 
 void app_main(void)
@@ -8817,6 +9113,10 @@ void app_main(void)
              * one of them would show the same nothing without saying why.
              */
             ui_router_goto(s_bus_ok ? SCREEN_OVERVIEW : SCREEN_BUSFAULT);
+            if (s_boot_alert[0] != '\0') {
+                ui_router_set_alert(s_boot_alert);
+                s_boot_alert[0] = '\0';
+            }
         }
 
         /*
@@ -8853,7 +9153,9 @@ void app_main(void)
             && lost_ms != 0u && !s_link_lost_shown
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH
-            && ui_router_current() != SCREEN_BUSFAULT) {
+            && ui_router_current() != SCREEN_BUSFAULT
+            && ui_router_current() != SCREEN_WIFI
+            && ui_router_current() != SCREEN_UPDATE) {
             /*
              * The screen has no STOP, so it opens on a supply that is off
              * and stays off: an ON this frame already queued, which the
@@ -8884,6 +9186,7 @@ void app_main(void)
         }
         ui_router_tick(dt_s);
         knob_apply(&knob_turn, frame_lost);
+        wifi_service(arm_wanted_now || armed_now, stops_now);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

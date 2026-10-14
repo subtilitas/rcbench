@@ -91,6 +91,7 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
+    "shared/ui/wifi_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -344,6 +345,37 @@ SCREENS = {
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
+    # FILES & UPDATE from LOGS: the radio off with nothing kept; a home
+    # network kept whose join failed, the access code off; the gate shut.
+    "wifi": ("wifi.png", "wifi", "dark"),
+    "wifi-home": ("wifi-home.png", "wifi", "dark"),
+    "wifi-blocked": ("wifi-blocked.png", "wifi", "dark"),
+    # The access point up and an upload arriving; joining; joined.
+    "wifi-ap": ("wifi-ap.png", "wifi", "dark"),
+    "wifi-joining": ("wifi-joining.png", "wifi", "dark"),
+    "wifi-joined": ("wifi-joined.png", "wifi", "dark"),
+    # CHOOSE HOME NETWORK: the scan running, and its list.
+    "wifi-scanning": ("wifi-scanning.png", "wifi", "dark"),
+    "wifi-scan": ("wifi-scan.png", "wifi", "dark"),
+    # The Wi-Fi keyboard: a hidden network's name on each layer, an empty
+    # one refused, and a password masked, shown, and refused at 7.
+    "wifi-key-lower": ("wifi-key-lower.png", "wifi", "dark"),
+    "wifi-key-upper": ("wifi-key-upper.png", "wifi", "dark"),
+    "wifi-key-marks": ("wifi-key-marks.png", "wifi", "dark"),
+    "wifi-key-ssid": ("wifi-key-ssid.png", "wifi", "dark"),
+    "wifi-key-pass": ("wifi-key-pass.png", "wifi", "dark"),
+    "wifi-key-shown": ("wifi-key-shown.png", "wifi", "dark"),
+    "wifi-key-short": ("wifi-key-short.png", "wifi", "dark"),
+    # An uploaded image's question: newer; older with a drawing being
+    # kept; the same version rebuilt; the build that runs.
+    "wifi-question": ("wifi-question.png", "wifi", "dark"),
+    "wifi-older": ("wifi-older.png", "wifi", "dark"),
+    "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
+    "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
+    # PANEL UPDATE: writing, written, failed.
+    "update": ("update.png", "update", "dark"),
+    "update-done": ("update-done.png", "update", "dark"),
+    "update-failed": ("update-failed.png", "update", "dark"),
 }
 INCLUDES = [
     "shared/gfx/include",

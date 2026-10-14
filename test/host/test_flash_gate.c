@@ -31,9 +31,10 @@
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
 /* The control task's period, CONTROL_PERIOD_MS in main.c. */
 #define PASS_MS 5u
-/* 51 sectors, so a keep runs long enough to be stopped part way.  The
- * store keeps any length up to a slot; a drawing is at most 5328 bytes. */
-#define PAYLOAD 206000u
+/* 3 sectors, a slot's capacity, so a keep runs 11 steps and can be stopped
+ * part way.  The store keeps any length up to a slot; a drawing is at most
+ * 5328 bytes. */
+#define PAYLOAD 12288u
 
 static uint8_t *g_flash;
 static unsigned g_ops;     /* erases and writes */
@@ -156,7 +157,7 @@ TEST_CASE(an_arm_asked_for_during_the_keep_stops_it_before_the_next_sector)
 {
     bench_fresh();
     CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 5; ++i) {
         CHECK_EQ(pass(), ART_KEEP_RUNNING);
     }
     /*
@@ -223,7 +224,7 @@ TEST_CASE(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it)
     bench_fresh();
     CHECK(art_keep_begin(&g_keep, &k_flash, 1u, &g_entry, g_payload));
     /* Paused in each phase in turn: mid-erase, mid-write, mid-read-back. */
-    const unsigned at[] = { 1u, 60u, 120u };
+    const unsigned at[] = { 1u, 5u, 8u };
     unsigned done = 0;
     for (size_t p = 0; p < sizeof(at) / sizeof(at[0]); ++p) {
         while (done < at[p]) {

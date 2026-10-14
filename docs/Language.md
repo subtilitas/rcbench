@@ -57,7 +57,8 @@ configurator, a manual or a datasheet, and the safety controls, which read
 the same in every language. A translated ARM would not match the word in the
 manual beside the bench.
 
-- The safety and drive controls: ARM, DISARM, STOP, SWEEP, PAUSE, TRIM,
+- The safety and drive controls, and INSTALL, the panel update's hold:
+  ARM, DISARM, STOP, SWEEP, PAUSE, TRIM,
   REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
   the SERVO button that moves the servo there reads ZENTRIEREN. HOLD stays
   English as the servo test's phase name. PAUSED, the sweep button of a
@@ -65,7 +66,7 @@ manual beside the bench.
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
-  CAN BUS FAULT, LINK LOST. A note that names a screen names it by its
+  CAN BUS FAULT, LINK LOST, FILES & UPDATE, PANEL UPDATE. A note that names a screen names it by its
   title: "der Seite SUPPLY".
 - Protocol and mode names: DShot, PWM (pulse-width modulation), PPM
   (pulse-position modulation), OneShot, S.BUS, CAN (Controller Area
@@ -77,7 +78,8 @@ manual beside the bench.
   the buttons; SAFE and ARMED are the states.
 - The field's own terms: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
   Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
-  Bad tail, tx err, rx err, bus err, Frame.
+  Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT on
+  FILES & UPDATE), Upload, Build.
 - Units, the stick positions MIN, MID and MAX, and the key legends DEL, CLR
   and OK.
 - The vendor tool's names of a KST or Chaservo servo's settings, as the
@@ -138,6 +140,11 @@ One German word per English concept, on every screen and in the report.
 | probe (of the CAN self-test) | Testframe |
 | terminator, branch (of a bus) | Abschluss, Stichleitung |
 | separator, row, column | Trenner, Zeile, Spalte |
+| Wi-Fi | WLAN |
+| home network, network name, hidden network | Heimnetz, Netzname, verstecktes Netz |
+| access code | Zugangscode |
+| upload, download | hochladen, herunterladen |
+| image (a firmware file), install | Image, installieren |
 | plot, table | Grafik, Tabelle |
 | simulated, modelled (computed by the panel) | simuliert |
 | model (an aircraft, an ESC product) | Modell |

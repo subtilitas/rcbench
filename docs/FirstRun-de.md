@@ -67,14 +67,51 @@ Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
 angibt. Der Linker misst gegen 16 MB und warnt nicht. Die Zeile oben ist das
 Einzige, was es tut — also lesen.
 
-**Die Partitionstabelle des Panels hat sich geändert.** Sie trägt jetzt eine
-2 MB große `boardart`-Partition. Wurde das Panel davor geflasht, das
-zusammengeführte Image bei Offset 0 schreiben statt nur die App:
+**Ein Flash über USB bringt das Panel auf zwei Anwendungs-Slots.** Ab diesem
+Release hat der Flash des Panels zwei Slots mit je 4 063 232 Bytes, `ota_0`
+und `ota_1`, damit es sich über WLAN selbst aktualisieren kann ([Bildschirme:
+Dateien & Update](Screens-de.md#dateien--update)). Ein Panel, das mit einem
+früheren Release geflasht ist, hat einen 3 MB großen `factory`-Slot und
+braucht diesen einen Flash über USB (Universal Serial Bus), um das neue
+Layout zu bekommen:
+
+| Offset | Frühere Releases | Dieses Release und später |
+| --- | --- | --- |
+| 0x9000 | `nvs`, 24 KiB | `nvs`, 24 KiB |
+| 0xF000 | `phy_init`, 4 KiB | `phy_init`, 4 KiB |
+| 0x10000 | `factory`, 3 MiB | `otadata`, 8 KiB |
+| 0x20000 | | `ota_0`, 3968 KiB |
+| 0x310000 | `storage`, 1 MiB, unbenutzt | |
+| 0x400000 | | `ota_1`, 3968 KiB |
+| 0x410000 | `boardart`, 2 MiB | |
+| 0x7E0000 | | `boardart`, 128 KiB |
+
+Die Einzelteile behalten die Einstellungen: Sie schreiben Bootloader,
+Partitionstabelle, `otadata` und die Anwendung und lassen `nvs` in Ruhe. Aus
+einem Quellbaum:
 
 ```bash
-idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
-esptool.py -p /dev/ttyACM0 write_flash 0x0 firmware/panel/build/rcbench-panel-merged.bin
+idf.py -C firmware/panel -p /dev/ttyACM0 flash
 ```
+
+Aus dem Release-Archiv `rcbench-panel-vX.Y.Z.zip`, im entpackten Ordner:
+
+```bash
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+```
+
+Das zusammengeführte Image bei Offset 0 schreibt die ganzen 8 MB, `nvs`
+eingeschlossen, und löscht damit die Einstellungen:
+
+```bash
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+```
+
+In beiden Fällen ist die gespeicherte Platinenzeichnung weg: `boardart` ist
+umgezogen. Das Panel lädt sie beim nächsten Link-Aufbau neu
+([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)). Nach diesem Flash
+installieren spätere Panel-Releases über WLAN aus dem Release-Asset
+`rcbench-panel-vX.Y.Z.bin`.
 
 ---
 

@@ -2,5 +2,6 @@ idf_component_register(
     SRCS "main.c" "selftest.c" "knob_task.c" "kst_files.c"
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram
+             fwupdate webaccess fw_ota wifi_access
              esp_driver_gpio esp_driver_uart esp_timer
 )

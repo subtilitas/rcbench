@@ -16,5 +16,21 @@ foreach(module dshot kst openyge pdmini phase_tap ppm sbus)
          "${CMAKE_CURRENT_LIST_DIR}/../../protocols/${module}")
 endforeach()
 
+# The application's version, as esp_app_desc_t carries it and an update
+# compares it: MAJOR.MINOR.PATCH from the one header every build reads.
+file(READ "${CMAKE_CURRENT_LIST_DIR}/../../shared/link/include/rcbench_version.h"
+     _rcbench_version_h)
+foreach(part MAJOR MINOR PATCH)
+    string(REGEX MATCH "#define RCBENCH_VERSION_${part} ([0-9]+)" _m
+           "${_rcbench_version_h}")
+    if(NOT _m)
+        message(FATAL_ERROR "rcbench_version.h: no RCBENCH_VERSION_${part}")
+    endif()
+    set(_rcbench_${part} "${CMAKE_MATCH_1}")
+endforeach()
+set(PROJECT_VER "${_rcbench_MAJOR}.${_rcbench_MINOR}.${_rcbench_PATCH}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+             "${CMAKE_CURRENT_LIST_DIR}/../../shared/link/include/rcbench_version.h")
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(rcbench-panel)

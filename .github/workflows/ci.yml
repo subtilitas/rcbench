@@ -424,6 +424,7 @@ jobs:
             firmware/panel/build/rcbench-panel.elf
             firmware/panel/build/bootloader/bootloader.bin
             firmware/panel/build/partition_table/partition-table.bin
+            firmware/panel/build/ota_data_initial.bin
             firmware/panel/build/flash_args
           if-no-files-found: error
 

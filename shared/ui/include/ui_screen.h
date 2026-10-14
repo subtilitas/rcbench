@@ -42,6 +42,12 @@ typedef enum {
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */
     SCREEN_BUSFAULT,
+    /* FILES & UPDATE, from LOGS: the panel's Wi-Fi for card downloads and
+     * firmware uploads. */
+    SCREEN_WIFI,
+    /* While the panel writes its own firmware, and not reachable from the
+     * menu: nothing on the bench runs, so it carries no band either. */
+    SCREEN_UPDATE,
     SCREEN_COUNT
 } ui_screen_id_t;
 

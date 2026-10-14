@@ -1443,6 +1443,234 @@ A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
 would list at its last committed length and read as a finished one.
 
+## Files & update
+
+![FILES & UPDATE, no home network kept](img/wifi.png)
+
+FILES & UPDATE runs the panel's Wi-Fi for two jobs in a browser: every file
+on the card to download, and a panel firmware image to upload. It opens from
+LOGS, with WI-FI in the bottom row beside RESCAN. The radio runs only while
+this screen is open. It is off at every start of the panel, and it goes off
+when the screen is left, before an install writes the flash, and after
+10 min without a request.
+
+The radio starts only with the bench SAFE, the supply output off and no log
+run open. Otherwise the buttons that start it are grey and the card says what
+is missing:
+
+![The radio may not start](img/wifi-blocked.png)
+
+It goes off by itself on a switch to ARMED, on STOP, on the supply output
+coming on, on a log run opening, after 10 min without a request and after 16
+wrong access codes. The card then says which, in one line:
+`Wi-Fi went off: ARMED.`, `Wi-Fi went off: STOP.`,
+`Wi-Fi went off: supply output on.`, `Wi-Fi went off: a log run opened.`,
+`Wi-Fi went off: 10 min without a request.`,
+`Wi-Fi went off: 16 wrong access codes.`, or `Wi-Fi did not start.` A STOP
+or a switch to ARMED also drops an uploaded image that waits on the panel.
+While the radio is up, the link to the coprocessor and the heartbeat run as
+on every other screen.
+
+### ACCESS POINT
+
+ACCESS POINT starts the panel's own network. The screen shows what a phone
+or a computer needs:
+
+![The access point is up](img/wifi-ap.png)
+
+| | |
+| --- | --- |
+| Band and channel | 2.4 GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
+| Security | WPA2 (Wi-Fi Protected Access 2) personal |
+| Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-1A2B` |
+| Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
+| Clients | 1 at a time |
+| Address | `http://192.168.4.1/` |
+| Range | not measured |
+
+1. LOGS → WI-FI → ACCESS POINT.
+2. On the phone or the computer, join the network the screen names, with
+   the password it shows.
+3. Open `http://192.168.4.1/` and enter the access code the screen shows.
+
+### Home network
+
+The panel can join a network that is already there instead: WPA2 or WPA3
+(Wi-Fi Protected Access 3) personal. Enterprise networks and open networks
+are not offered.
+
+CHOOSE HOME NETWORK scans for 10 s at most, then lists up to 16 networks,
+strongest first, with their signal in dBm. A network without a name, an open
+one and an enterprise one are left off the list.
+
+![Scanning](img/wifi-scanning.png)
+![The networks found](img/wifi-scan.png)
+
+A tap on a network opens the keyboard for its password. HIDDEN NETWORK
+opens it for the name of a network that does not announce itself, and then
+for the password. SCAN AGAIN scans again; CANCEL goes back.
+
+![The network's name](img/wifi-key-ssid.png)
+![Lower case](img/wifi-key-lower.png)
+![ABC: upper case](img/wifi-key-upper.png)
+![#+=: marks](img/wifi-key-marks.png)
+
+The keyboard has three layers of the same grid: lower case, `ABC` for upper
+case, `#+=` for the 32 printable marks of ASCII (American Standard Code for
+Information Interchange). Each of the 95 printable ASCII characters is on
+one layer once; SPACE is the wide key. A name takes 1 to 32 bytes. A
+password takes 8 to 63 characters, the WPA2 and WPA3 personal range: the
+64th is refused, and OK under 8 says so.
+
+![The password, hidden](img/wifi-key-pass.png)
+![SHOW](img/wifi-key-shown.png)
+![Fewer than 8 characters](img/wifi-key-short.png)
+
+The password shows as dots until SHOW; HIDE hides it again. OK keeps the
+network: its name and its password go to NVS (non-volatile storage), and the
+screen then offers JOIN HOME NETWORK.
+
+![A home network is kept](img/wifi-home.png)
+
+![Joining](img/wifi-joining.png)
+![Joined](img/wifi-joined.png)
+
+Joined, the screen shows the network, the panel's address and its name,
+`http://rcbench-1A2B.local/`, with the same 4 hex digits as the access
+point's name. The name answers through mDNS (multicast domain name system)
+on computers that resolve `.local` names; which phones do is not measured.
+The address works on every one.
+
+A join that fails says why, and offers ACCESS POINT, which works without
+the home network:
+
+| Line on the card | Condition |
+| --- | --- |
+| `Join failed: password refused.` | the network refused the password |
+| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`) |
+| `Join failed: no address in 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
+| `The home network went away.` | joined, then the network dropped the panel |
+
+FORGET HOME NETWORK erases the name and the password from NVS and sets the
+access code back to on.
+
+Current limitations:
+
+- NVS is not encrypted. The home network's password is kept in plain form in
+  the panel's flash, where anyone who reads the flash over USB (Universal
+  Serial Bus) reads it.
+- The page is plain HTTP (hypertext transfer protocol). On a home network
+  the access code and every file cross the network unencrypted. The screen
+  says so while joined.
+- The panel joins only while this screen is open. A panel that stays joined
+  whenever the bench is SAFE is not built.
+
+### The access code
+
+The page asks for an 8-character code before it lists a file or takes an
+upload. The screen shows it, and it is made new at every start of the radio,
+so a code from an earlier session opens nothing. The browser keeps it for the
+session. 16 wrong codes switch the radio off.
+
+ACCESS CODE switches it, for both ways in. It is on by default, after
+FORGET HOME NETWORK and on a panel with nothing kept. The switch is kept in
+NVS. Off, the page lists, sends files and takes an upload without a code,
+and the screen says `Access code off: the page is open to every device on
+the network.` An upload still installs only after the 2 s hold on the
+panel.
+
+### The page
+
+One HTML (hypertext markup language) page, with no script or style from
+elsewhere, so it works on a phone with no other connection. It follows the
+panel's language. It has two parts.
+
+**Panel firmware.** The version installed, a file picker, Upload with a
+progress bar, and the panel's answer as a line of text. The file is the
+release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than the panel's
+slot, 4,063,232 bytes, is refused before a byte is sent. The panel checks
+the whole image before it asks anything: the ESP image header for the
+ESP32-S3, the application's project name `rcbench-panel`, a version of the
+form MAJOR.MINOR.PATCH and the appended SHA-256 (secure hash algorithm, 256
+bits). A second upload while one waits is refused until CANCEL on the panel.
+The screen shows the bytes received while an upload runs.
+
+**Files on the card.** Every file, folder by folder, with its name, its size
+in bytes and its modification time as the card has it. Each name downloads
+that file. The page reads the card only: nothing on it is deleted, renamed or
+written. A name over 255 characters, a path over 384 bytes and a folder
+deeper than 16 are left out, and the page says how many. With no card, or a
+card that cannot be read, the page says so and the upload still works.
+
+**Download all as one ZIP file** sends the whole card as one ZIP file. The
+page gives the number of files, their bytes and the ZIP file's bytes before
+the click. The files are stored as they are, not compressed, with their
+folder paths from the card's root, names in UTF-8 and the card's times. A
+file over 4 GiB − 1 B, an archive over 4 GiB − 1 B and more than 65,535
+entries use ZIP64. Nothing is held in memory or written to the card to make
+it: it is sent as it is read.
+
+The transfer rate is not measured. A download of S bytes at a rate of R
+bytes per second takes S / R seconds: at 1,000,000 B/s, a 50,000,000-byte
+card takes 50 s. A card pulled during a download ends the download short;
+the browser reports it as failed, and the panel runs on.
+
+### Installing: PANEL UPDATE
+
+An image the page received waits on the panel as a question with both
+versions:
+
+![A newer image](img/wifi-question.png)
+
+An older version is allowed and the question says it is older. A board
+drawing being fetched or kept makes the install wait:
+
+![An older image, and a drawing being kept](img/wifi-older.png)
+
+The same version from another build is offered as a reinstall. The build
+that runs already is not offered:
+
+![The same version, another build](img/wifi-rebuild.png)
+![The build that runs](img/wifi-installed.png)
+
+INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
+It needs the bench SAFE, the supply output off, no log run open and no board
+drawing being fetched or kept. CANCEL drops the image.
+
+![Writing](img/update.png)
+
+The hold switches the radio off first. Then the control task stops its polls
+and withholds the heartbeat on purpose, so the coprocessor holds its outputs
+in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
+whole screen, with no band and no STOP: nothing can be switched to ARMED
+behind it. It writes the slot that is not running in pieces of 64 KiB and
+shows the bytes and the percentage. The picture can be disturbed while the
+flash is erased. Then the slot is read back and checked, it becomes the one
+that starts, and the panel restarts.
+
+![Written and checked](img/update-done.png)
+
+The splash shows the new version, and the band says
+`panel firmware 0.19.0 installed`. A write that fails changes nothing that
+starts: the running build stays, and CLOSE goes back to LOGS.
+
+![The write failed](img/update-failed.png)
+
+A new build's first start is a trial. The build is kept once the display and
+touch are up. A start that does not get there, by a fault, a restart or a
+missing touch controller, goes back to the build before it, which says
+`panel firmware 0.19.0 did not start -- 0.18.0 runs again` on the band.
+
+Current limitations:
+
+- A power cut during the trial start loses that line; the panel still goes
+  back to the build before.
+- How long the erase and the write take is not measured, and neither is
+  what the glass shows during an erase.
+
+Before the first update over Wi-Fi, the panel needs one flash over USB to
+reach the layout with two application slots: [First run, §1](FirstRun.md#1-flash-both-boards).
+
 ## Setup
 
 ![Setup](img/setup.png)

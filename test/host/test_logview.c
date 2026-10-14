@@ -275,9 +275,9 @@ static void draw(void)
 #define BACK_X      500
 #define PLOT_X      690
 #define FOOT_CY     411
-#define OPEN_X      709
-#define DELETE_X    551
-#define RESCAN_X    91
+#define OPEN_X      724
+#define DELETE_X    596
+#define RESCAN_X    76
 /* The plot view: a point inside the plot, and the > button's centre. */
 #define PV_TAP_X    400
 #define NEXT_X      324

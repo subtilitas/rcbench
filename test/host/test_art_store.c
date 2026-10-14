@@ -144,12 +144,14 @@ TEST_CASE(a_payload_comes_back_the_way_it_went_in)
     const art_flash_t f = flash();
     CHECK_EQ(art_store_slots(&f), SLOTS);
     CHECK_EQ(art_store_capacity(&f), ART_SLOT_BYTES - SECTOR);
+    /* The largest drawing the link carries fits a slot. */
+    CHECK(art_store_capacity(&f) >= LINK_DRAW_MAX_BYTES);
 
     art_entry_t e;
-    (void)make(206000u, 7u, &e);
+    (void)make(12000u, 7u, &e);
     CHECK(!art_store_find(&f, 7u, &e));      /* nothing kept yet */
 
-    const uint8_t *src = make(206000u, 7u, &e);
+    const uint8_t *src = make(12000u, 7u, &e);
     CHECK(art_store_put(&f, 7u, &e, src));
 
     art_entry_t got;
@@ -158,17 +160,17 @@ TEST_CASE(a_payload_comes_back_the_way_it_went_in)
     CHECK_EQ(got.format, LINK_ART_DRAWING);
     CHECK_EQ(got.width, 5100);
     CHECK_EQ(got.height, 2100);
-    CHECK_EQ(got.bytes, 206000);
+    CHECK_EQ(got.bytes, 12000);
     CHECK_EQ(got.crc, e.crc);
     CHECK_EQ(got.hash, e.hash);
     CHECK(art_entry_same(&got, &e));
 
-    uint8_t *back = malloc(206000u);
-    CHECK(art_store_read(&f, 7u, back, 206000u));
-    CHECK_EQ(memcmp(back, src, 206000u), 0);
+    uint8_t *back = malloc(12000u);
+    CHECK(art_store_read(&f, 7u, back, 12000u));
+    CHECK_EQ(memcmp(back, src, 12000u), 0);
 
     /* And a buffer that cannot hold it is a refusal, not an overrun. */
-    CHECK(!art_store_read(&f, 7u, back, 206000u - 1u));
+    CHECK(!art_store_read(&f, 7u, back, 12000u - 1u));
     free(back);
 }
 
@@ -182,18 +184,18 @@ TEST_CASE(a_write_that_stops_part_way_leaves_nothing_findable)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(50000u, 3u, &e);
+    const uint8_t *src = make(11000u, 3u, &e);
 
     g_budget = 0;                            /* no write survives */
     CHECK(!art_store_put(&f, 3u, &e, src));
     CHECK(!art_store_find(&f, 3u, &e));
 
     /* The payload lands and the header does not: still nothing.  The
-     * payload goes a sector a call, so it is 13 writes for 50000 bytes. */
+     * payload goes a sector a call, so it is 3 writes for 11000 bytes. */
     fresh();
-    src = make(50000u, 3u, &e);
-    const unsigned chunks = (50000u + SECTOR - 1u) / SECTOR;
-    CHECK_EQ(chunks, 13);
+    src = make(11000u, 3u, &e);
+    const unsigned chunks = (11000u + SECTOR - 1u) / SECTOR;
+    CHECK_EQ(chunks, 3);
     g_budget = (int)chunks;                  /* the payload only */
     CHECK(!art_store_put(&f, 3u, &e, src));
     CHECK(!art_store_find(&f, 3u, &e));
@@ -201,7 +203,7 @@ TEST_CASE(a_write_that_stops_part_way_leaves_nothing_findable)
 
     /* And an erase that fails part way writes nothing at all. */
     fresh();
-    src = make(50000u, 3u, &e);
+    src = make(11000u, 3u, &e);
     g_erase_budget = 3;
     CHECK(!art_store_put(&f, 3u, &e, src));
     CHECK_EQ(g_writes, 0);
@@ -213,21 +215,21 @@ TEST_CASE(replacing_a_payload_takes_the_old_one_with_it)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 5u, &e);
+    const uint8_t *src = make(10000u, 5u, &e);
     CHECK(art_store_put(&f, 5u, &e, src));
 
     /* A different payload for the same board goes in the same slot. */
     art_entry_t e2;
-    const uint8_t *src2 = make(30000u, 5u, &e2);
+    const uint8_t *src2 = make(12000u, 5u, &e2);
     CHECK(art_store_put(&f, 5u, &e2, src2));
     CHECK_EQ(art_store_slots(&f), SLOTS);
 
     art_entry_t got;
     CHECK(art_store_find(&f, 5u, &got));
-    CHECK_EQ(got.bytes, 30000);
-    uint8_t *back = malloc(30000u);
-    CHECK(art_store_read(&f, 5u, back, 30000u));
-    CHECK_EQ(memcmp(back, src2, 30000u), 0);
+    CHECK_EQ(got.bytes, 12000);
+    uint8_t *back = malloc(12000u);
+    CHECK(art_store_read(&f, 5u, back, 12000u));
+    CHECK_EQ(memcmp(back, src2, 12000u), 0);
     free(back);
 
     /* One board, one slot: three more boards still fit. */
@@ -248,7 +250,7 @@ TEST_CASE(a_payload_that_decayed_in_flash_is_a_miss_not_a_wrong_drawing)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 9u, &e);
+    const uint8_t *src = make(10000u, 9u, &e);
     CHECK(art_store_put(&f, 9u, &e, src));
 
     /* One bit, somewhere in the middle of the payload. */
@@ -256,8 +258,8 @@ TEST_CASE(a_payload_that_decayed_in_flash_is_a_miss_not_a_wrong_drawing)
 
     art_entry_t got;
     CHECK(art_store_find(&f, 9u, &got));     /* the header is still good */
-    uint8_t *back = malloc(20000u);
-    CHECK(!art_store_read(&f, 9u, back, 20000u));   /* and the payload is not */
+    uint8_t *back = malloc(10000u);
+    CHECK(!art_store_read(&f, 9u, back, 10000u));   /* and the payload is not */
     free(back);
 }
 
@@ -266,7 +268,7 @@ TEST_CASE(a_header_that_did_not_finish_being_written_is_not_a_header)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 4u, &e);
+    const uint8_t *src = make(10000u, 4u, &e);
     CHECK(art_store_put(&f, 4u, &e, src));
     CHECK(art_store_find(&f, 4u, &e));
 
@@ -281,36 +283,36 @@ TEST_CASE(a_payload_that_is_not_what_it_claims_is_refused_before_it_is_written)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 6u, &e);
+    const uint8_t *src = make(10000u, 6u, &e);
     e.crc ^= 0xFFFFu;                        /* not this payload's checksum */
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);                   /* and nothing was written */
     CHECK(!art_store_find(&f, 6u, &e));
 
     /* Nor one whose CRC agrees and whose hash does not, either half. */
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.hash ^= 0x00000001u;
     CHECK(!art_store_put(&f, 6u, &e, src));
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.hash ^= 0x80000000u;
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);
 
     /* Nor one of no format, or of no outline: nothing a reader could use
      * it as. */
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.format = (uint16_t)LINK_ART_NONE;
     CHECK(!art_store_put(&f, 6u, &e, src));
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.width = 0u;
     CHECK(!art_store_put(&f, 6u, &e, src));
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.height = 0u;
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);
 
     /* Nor one larger than a slot can hold. */
-    src = make(20000u, 6u, &e);
+    src = make(10000u, 6u, &e);
     e.bytes = art_store_capacity(&f) + 1u;
     CHECK(!art_store_put(&f, 6u, &e, src));
     CHECK_EQ(g_writes, 0);
@@ -408,7 +410,7 @@ TEST_CASE(a_keep_does_at_most_one_sector_a_step)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(206000u, 7u, &e);
+    const uint8_t *src = make(12000u, 7u, &e);
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 7u, &e, src));
     CHECK(art_keep_busy(&k));
@@ -429,20 +431,20 @@ TEST_CASE(a_keep_does_at_most_one_sector_a_step)
     } while (st == ART_KEEP_RUNNING);
     CHECK_EQ(st, ART_KEEP_DONE);
     CHECK(!art_keep_busy(&k));
-    /* 51 sectors of payload: 52 erases, 51 writes, 51 read-backs, a header. */
-    CHECK_EQ(steps, keep_steps(206000u));
-    CHECK_EQ(steps, 155);
+    /* 3 sectors of payload: 4 erases, 3 writes, 3 read-backs, a header. */
+    CHECK_EQ(steps, keep_steps(12000u));
+    CHECK_EQ(steps, 11);
     CHECK_EQ(g_erase_max, SECTOR);
     CHECK_EQ(g_write_max, SECTOR);
     /* The read-back goes through the keeper's 256-byte buffer, never more
      * at once: 16 reads for a full sector. */
     CHECK_EQ(g_read_max, 256u);
-    CHECK_EQ(g_erases, 52);
-    CHECK_EQ(g_writes, 52);
+    CHECK_EQ(g_erases, 4);
+    CHECK_EQ(g_writes, 4);
 
-    uint8_t *back = malloc(206000u);
-    CHECK(art_store_read(&f, 7u, back, 206000u));
-    CHECK_EQ(memcmp(back, src, 206000u), 0);
+    uint8_t *back = malloc(12000u);
+    CHECK(art_store_read(&f, 7u, back, 12000u));
+    CHECK_EQ(memcmp(back, src, 12000u), 0);
     free(back);
 
     /* Once done it is idle, and a further step does nothing. */
@@ -461,10 +463,10 @@ TEST_CASE(a_keep_that_may_not_write_touches_no_flash_at_any_step)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(30000u, 2u, &e);
+    const uint8_t *src = make(12000u, 2u, &e);
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 2u, &e, src));
-    const unsigned total = keep_steps(30000u);
+    const unsigned total = keep_steps(12000u);
     for (unsigned i = 0; i < total; ++i) {
         const unsigned before = calls();
         for (int w = 0; w < 3; ++w) {
@@ -490,18 +492,18 @@ TEST_CASE(a_keep_paused_after_any_step_is_found_as_nothing_and_resumes_whole)
      * picker reading it then draws the board from its shape.  Resumed,
      * the drawing that lands is the one handed over, byte for byte.
      */
-    static uint8_t back[20000];
+    static uint8_t back[10000];
     art_entry_t old;
     art_entry_t e;
-    const unsigned total = keep_steps(20000u);
+    const unsigned total = keep_steps(10000u);
     for (unsigned pause = 1; pause < total; ++pause) {
         fresh();
         const art_flash_t f = flash();
         /* An older drawing for the same board, which the keep replaces. */
-        const uint8_t *was = make(10000u, 4u, &old);
+        const uint8_t *was = make(5000u, 4u, &old);
         CHECK(art_store_put(&f, 4u, &old, was));
 
-        const uint8_t *src = make(20000u, 4u, &e);
+        const uint8_t *src = make(10000u, 4u, &e);
         art_keep_t k;
         CHECK(art_keep_begin(&k, &f, 4u, &e, src));
         for (unsigned i = 0; i < pause; ++i) {
@@ -516,7 +518,7 @@ TEST_CASE(a_keep_paused_after_any_step_is_found_as_nothing_and_resumes_whole)
 
         CHECK_EQ(keep_out(&k), ART_KEEP_DONE);
         CHECK(art_store_find(&f, 4u, &got));
-        CHECK_EQ(got.bytes, 20000);
+        CHECK_EQ(got.bytes, 10000);
         CHECK(art_store_read(&f, 4u, back, sizeof(back)));
         CHECK_EQ(memcmp(back, src, sizeof(back)), 0);
     }
@@ -526,12 +528,12 @@ TEST_CASE(a_keep_never_resumed_leaves_nothing_findable_and_the_slot_reusable)
 {
     /* A power cut during the pause: the keeper is gone with the RAM it was
      * in, and the next boot fetches the drawing again. */
-    const unsigned total = keep_steps(20000u);
+    const unsigned total = keep_steps(10000u);
     for (unsigned cut = 1; cut < total; ++cut) {
         fresh();
         const art_flash_t f = flash();
         art_entry_t e;
-        const uint8_t *src = make(20000u, 8u, &e);
+        const uint8_t *src = make(10000u, 8u, &e);
         art_keep_t k;
         CHECK(art_keep_begin(&k, &f, 8u, &e, src));
         for (unsigned i = 0; i < cut; ++i) {
@@ -553,16 +555,16 @@ TEST_CASE(flash_changed_during_a_pause_fails_the_keep_without_a_header)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 6u, &e);
+    const uint8_t *src = make(10000u, 6u, &e);
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 6u, &e, src));
-    const unsigned sectors = (20000u + SECTOR - 1u) / SECTOR;
+    const unsigned sectors = (10000u + SECTOR - 1u) / SECTOR;
     /* Erased and written, the read-back not started. */
     for (unsigned i = 0; i < (1u + sectors) + sectors; ++i) {
         CHECK_EQ(art_keep_step(&k, true), ART_KEEP_RUNNING);
     }
     CHECK_EQ(art_keep_step(&k, false), ART_KEEP_WAITING);
-    g_flash[SECTOR + 12345u] ^= 0x40u;
+    g_flash[SECTOR + 2345u] ^= 0x40u;
     CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
     CHECK(!art_keep_busy(&k));
     art_entry_t got;
@@ -577,11 +579,11 @@ TEST_CASE(a_keep_fails_on_the_first_flash_call_that_does)
     art_entry_t e;
     art_entry_t got;
     art_keep_t k;
-    const unsigned sectors = (20000u + SECTOR - 1u) / SECTOR;
+    const unsigned sectors = (10000u + SECTOR - 1u) / SECTOR;
 
     fresh();
     art_flash_t f = flash();
-    const uint8_t *src = make(20000u, 1u, &e);
+    const uint8_t *src = make(10000u, 1u, &e);
     g_budget = 2;
     CHECK(art_keep_begin(&k, &f, 1u, &e, src));
     CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
@@ -590,7 +592,7 @@ TEST_CASE(a_keep_fails_on_the_first_flash_call_that_does)
 
     /* The header: every payload write lands and the last write does not. */
     fresh();
-    src = make(20000u, 1u, &e);
+    src = make(10000u, 1u, &e);
     g_budget = (int)sectors;
     CHECK(art_keep_begin(&k, &f, 1u, &e, src));
     CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
@@ -600,7 +602,7 @@ TEST_CASE(a_keep_fails_on_the_first_flash_call_that_does)
     /* A read during the read-back.  The keep holds the flash it was given,
      * so the read is swapped under it. */
     fresh();
-    src = make(20000u, 1u, &e);
+    src = make(10000u, 1u, &e);
     CHECK(art_keep_begin(&k, &f, 1u, &e, src));
     for (unsigned i = 0; i < (1u + sectors) + sectors + 1u; ++i) {
         CHECK_EQ(art_keep_step(&k, true), ART_KEEP_RUNNING);
@@ -618,7 +620,7 @@ TEST_CASE(a_keep_refuses_at_its_start_what_put_refuses_before_writing)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 3u, &e);
+    const uint8_t *src = make(10000u, 3u, &e);
     art_keep_t k;
 
     CHECK(!art_keep_begin(NULL, &f, 3u, &e, src));
@@ -628,13 +630,13 @@ TEST_CASE(a_keep_refuses_at_its_start_what_put_refuses_before_writing)
     CHECK(!art_keep_begin(&k, &f, 3u, &e, NULL));
     e.format = (uint16_t)LINK_ART_NONE;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
-    src = make(20000u, 3u, &e);
+    src = make(10000u, 3u, &e);
     e.width = 0u;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
-    src = make(20000u, 3u, &e);
+    src = make(10000u, 3u, &e);
     e.height = 0u;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
-    src = make(20000u, 3u, &e);
+    src = make(10000u, 3u, &e);
     e.bytes = 0u;
     CHECK(!art_keep_begin(&k, &f, 3u, &e, src));
     CHECK(!art_keep_busy(&k));
@@ -646,7 +648,7 @@ TEST_CASE(a_keep_refuses_at_its_start_what_put_refuses_before_writing)
     /* The largest payload a slot holds is taken, a byte more is not: a
      * slot less its header's sector. */
     const uint32_t cap = art_store_capacity(&f);
-    CHECK_EQ(cap, 258048);
+    CHECK_EQ(cap, 12288);
     src = make(cap, 3u, &e);
     CHECK(art_keep_begin(&k, &f, 3u, &e, src));
     CHECK(art_keep_busy(&k));
@@ -671,7 +673,7 @@ TEST_CASE(a_keep_of_a_payload_its_hash_does_not_describe_seals_nothing)
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint8_t *src = make(20000u, 3u, &e);
+    const uint8_t *src = make(10000u, 3u, &e);
     e.hash ^= 1u;
     art_keep_t k;
     CHECK(art_keep_begin(&k, &f, 3u, &e, src));
@@ -680,7 +682,7 @@ TEST_CASE(a_keep_of_a_payload_its_hash_does_not_describe_seals_nothing)
     CHECK(!art_store_find(&f, 3u, &got));
 
     /* The CRC right and the hash wrong, or the other way round: both. */
-    src = make(20000u, 3u, &e);
+    src = make(10000u, 3u, &e);
     e.crc ^= 1u;
     CHECK(art_keep_begin(&k, &f, 3u, &e, src));
     CHECK_EQ(keep_out(&k), ART_KEEP_FAILED);
@@ -691,18 +693,19 @@ TEST_CASE(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot)
 {
     /*
      * The sector after the payload's last is never read, so it is not
-     * erased: one erase is one stall of both cores, and a 206000 byte
-     * payload takes 52 of them rather than the slot's 64.  A smaller
+     * erased: one erase is one stall of both cores, and a 5000 byte
+     * payload takes 3 of them rather than the slot's 4.  A smaller
      * payload replacing a larger one leaves the larger's tail there,
      * unreached.
      */
     fresh();
     const art_flash_t f = flash();
     art_entry_t e;
-    const uint32_t tail = SECTOR + ((20000u + SECTOR - 1u) / SECTOR) * SECTOR;
+    const uint32_t tail = SECTOR + ((5000u + SECTOR - 1u) / SECTOR) * SECTOR;
+    CHECK(tail < ART_SLOT_BYTES);            /* inside the first slot */
     g_flash[tail] = 0x5Au;                   /* the first byte past it */
     g_flash[tail - 1u] = 0x5Au;              /* the last byte inside it */
-    const uint8_t *src = make(20000u, 9u, &e);
+    const uint8_t *src = make(5000u, 9u, &e);
     CHECK(art_store_put(&f, 9u, &e, src));
     CHECK_EQ(g_flash[tail], 0x5A);
     CHECK_EQ(g_flash[tail - 1u], 0xFF);
@@ -795,7 +798,7 @@ TEST_CASE(a_slot_written_by_the_photograph_store_is_found_as_empty)
     v1.height  = 206u;
     v1.crc     = 0x5A5Au;                  /* the photograph's own CRC */
     v1.pad     = 0u;
-    v1.bytes   = 206000u;
+    v1.bytes   = 12000u;
     v1.head    = link_crc(0u, &v1, offsetof(v1_head_t, head));
     memcpy(g_flash, &v1, sizeof(v1));
 

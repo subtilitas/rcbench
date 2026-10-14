@@ -27,6 +27,7 @@
 
 #include "log_name.h"
 #include "settings.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -50,10 +51,12 @@
 #define BR_ROWS   7
 
 /* Footer buttons, in the order browse_event() hit-tests them. */
-#define BR_RESCAN gfx_rect_make(16, FOOT_Y + 2, 150, FOOT_H)
-#define BR_OPEN   gfx_rect_make(634, FOOT_Y + 2, 150, FOOT_H)
-#define BR_DELETE gfx_rect_make(476, FOOT_Y + 2, 150, FOOT_H)
-#define BR_MSG_X  176
+#define BR_RESCAN gfx_rect_make(16, FOOT_Y + 2, 120, FOOT_H)
+#define BR_WIFI   gfx_rect_make(144, FOOT_Y + 2, 120, FOOT_H)
+#define BR_OPEN   gfx_rect_make(664, FOOT_Y + 2, 120, FOOT_H)
+#define BR_DELETE gfx_rect_make(536, FOOT_Y + 2, 120, FOOT_H)
+/* 32 cells to DELETE: the 26 a message about a file declares, and more. */
+#define BR_MSG_X  272
 
 /* The DELETE question, drawn in place of the list. */
 #define DQ_BOX    gfx_rect_make(120, 110, 560, 220)
@@ -755,6 +758,9 @@ static void render_browse(gfx_canvas_t *c)
 
     ui_button(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI, s.press_btn == 0,
               true);
+    /* FILES & UPDATE: the card's files to a browser, over the panel's
+     * Wi-Fi.  The screen there says when Wi-Fi may not start. */
+    ui_button(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3, true);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
         ui_button(c, BR_OPEN, TR(LOG_OPEN), UI_ACCENT, s.press_btn == 1,
@@ -1351,14 +1357,14 @@ static void browse_event(const touch_event_t *e)
         return;
     }
 
-    const gfx_rect_t btns[3] = { BR_RESCAN, BR_OPEN, BR_DELETE };
+    const gfx_rect_t btns[4] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI };
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
         if (!tap_begin(e)) {
             break;
         }
-        s.press_btn = hit_button(btns, 3, e->point.x, e->point.y);
+        s.press_btn = hit_button(btns, 4, e->point.x, e->point.y);
         s.press_row = -1;
         s.dragged = false;
         s.pressing = false;
@@ -1405,6 +1411,9 @@ static void browse_event(const touch_event_t *e)
             log_viewer_refresh();
         } else if (on && btn == 1) {
             open_selected();
+        } else if (on && btn == 3) {
+            ui_router_goto(SCREEN_WIFI);
+            return;
         } else if (on) {
             ask_delete();
         } else if (btn < 0 && row) {

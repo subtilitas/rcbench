@@ -65,6 +65,8 @@ add_subdirectory("${PROTOCOLS}/phase_tap" phase_tap)
 add_subdirectory("${PROTOCOLS}/kst"      kst)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
+add_subdirectory("${SHARED}/fwupdate" fwupdate)
+add_subdirectory("${SHARED}/webaccess" webaccess)
 
 set(UNDER_TEST
     rcbench_gfx
@@ -88,6 +90,8 @@ set(UNDER_TEST
     rcbench_esc
     rcbench_sense
     rcbench_kst
+    rcbench_fwupdate
+    rcbench_webaccess
 )
 
 foreach(lib ${UNDER_TEST})
@@ -108,7 +112,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel)
+foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel wifi_screen fw_image fw_install fw_upload wa_session wa_text wa_walk wa_send wa_zip wa_page wa_mdns)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -159,6 +163,13 @@ target_compile_definitions(test_kst_pio PRIVATE
     "KST_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/kst/rp2350/kst_line.pio\""
     "KST_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kst_line_words.txt\"")
 
+# The ZIP archives test_wa_zip writes, opened by Python's zipfile and by
+# unzip(1): an archive the panel sends has to open in programs other than
+# the code that wrote it.
+target_compile_definitions(test_wa_zip PRIVATE
+    "ZIP_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_zip\"")
+set_tests_properties(wa_zip PROPERTIES FIXTURES_SETUP wa_zip_archives)
+
 # The headers of protocols/kst as C++: a driver may be written in it.  The
 # program includes all 7, calls one function of each module and links against
 # the C library, so a header that is not valid C++ fails the build and a
@@ -208,6 +219,13 @@ add_test(NAME sense_trace_tool
             --fixtures "${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
             --work "${CMAKE_CURRENT_BINARY_DIR}/sense_trace_tool")
 endif()
+
+add_test(NAME wa_zip_check
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_zip.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_zip")
+set_tests_properties(wa_zip_check PROPERTIES
+    FIXTURES_REQUIRED wa_zip_archives)
 
 # The profile generator against the card reader: fuzz_parity.py changes the
 # profiles of record, reads each result with tools/gen_esc_profiles.py and,
