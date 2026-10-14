@@ -35,8 +35,10 @@ test('headerVersion reads the three defines and rejects a header without one', (
   assert.equal(headerVersion(''), null);
 });
 
-test('package.json and the firmware header agree in this tree', () => {
-  assert.deepEqual(checkReleaseSources(), []);
+// A release pull request sets the header one release ahead before its tag exists: a warning that names the
+// order, not an error.
+test('package.json and the firmware header agree in this tree, or the header is one release ahead of its tag', () => {
+  assert.deepEqual(checkReleaseSources().filter((f) => f.level === 'error'), []);
 });
 
 const hdr = (v: string): string => {
