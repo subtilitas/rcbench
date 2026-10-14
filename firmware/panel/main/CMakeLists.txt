@@ -4,3 +4,19 @@ idf_component_register(
              settings settings_nvs art_flash esp_psram
              esp_driver_gpio esp_driver_uart esp_timer
 )
+
+# The coprocessor image of the same release, carried so the panel can move
+# the coprocessor to it over CAN (Controller Area Network):
+#   idf.py -D RCBENCH_IOMCU_BIN=<path>/rcbench-iomcu.bin build
+# A relative path is taken from firmware/panel.  A build without it carries
+# none and offers no coprocessor update.
+if(RCBENCH_IOMCU_BIN)
+    get_filename_component(rcbench_iomcu_bin "${RCBENCH_IOMCU_BIN}" ABSOLUTE
+                           BASE_DIR "${CMAKE_SOURCE_DIR}")
+    if(NOT EXISTS "${rcbench_iomcu_bin}")
+        message(FATAL_ERROR "RCBENCH_IOMCU_BIN: ${rcbench_iomcu_bin} not found")
+    endif()
+    target_add_binary_data(${COMPONENT_LIB} "${rcbench_iomcu_bin}" BINARY
+                           RENAME_TO rcbench_iomcu_bin)
+    target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_IOMCU_IMAGE=1)
+endif()
