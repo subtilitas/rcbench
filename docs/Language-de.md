@@ -36,11 +36,6 @@ Aktuelle Einschränkungen:
   die Übersetzung über dieses Englisch. Eine Ablehnung, die die Tabelle nicht
   kennt, erscheint auf Englisch. `test_text` prüft, dass jede Ablehnung der
   einkompilierten Profile einen deutschen Eintrag hat.
-- Zwei englische Hilfetexte in SETUP sind länger als die 36 Zellen der Zeile
-  und werden dort abgeschnitten: der von Capacity mit 38 Zeichen und der von
-  Rated kV mit 55. In der Spaltenliste des Log-Imports ist der Bereich
-  `2392.0..14639.0rpm` in beiden Sprachen 144 px breit in einer Box von
-  140 px. `render_ui.py --fit` führt die drei als `known`.
 
 ## Zahlen
 
@@ -117,6 +112,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | screen (eine Seite der Oberfläche) | Seite |
 | screen (das Display) | Bildschirm |
 | coprocessor | Koprozessor |
+| emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread | Akku, Zelle, Streuung |
 | peak | Spitze (max auf einer Karte) |
@@ -209,7 +205,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 153 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 167 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -223,9 +219,10 @@ Sprachen
   offener Protokollliste (`outputs-protocol`) ist ausgenommen, weil die
   Liste die Pins daneben absichtlich verdeckt.
 
-Die drei englischen Überläufe oben stehen in `KNOWN_OVERFLOWS` im Werkzeug,
-jeder mit seiner Ansicht, seinem Text und seinem Messwert. Sie werden als
-`known` ausgegeben und schlagen nicht fehl; ein deutscher Befund, der einem
+Ein englischer Überlauf, der für eine Zeit hingenommen wird, kommt in
+`KNOWN_OVERFLOWS` im Werkzeug, mit seiner Ansicht, seinem Text und seinem
+Messwert; die Liste ist leer. Ein gelisteter wird als `known` ausgegeben und
+schlägt nicht fehl; ein deutscher Befund, der einem
 davon Wort für Wort gleicht, ist derselbe Text an derselben Stelle und
 schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht mehr findet,
 schlägt fehl, bis er aus der Liste genommen ist. Die Prüfung schlägt auch bei

@@ -201,8 +201,8 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
  * cells, a category name in 22 of the label face (the heading face's 12
  * where it fits) and an option in 13;
  * ESC STICK's TIMING page a label in 47 and its help in 96; the SERVO
- * screen an option in a button of 12.  Translations only: English help
- * longer than 36 cells is cut on SETUP, and that is the layout's to fix.
+ * screen an option in a button of 12.  Translations only: tools/render_ui.py
+ * --fit holds the English strings where they are drawn.
  */
 TEST_CASE(translated_settings_fit_where_they_are_drawn)
 {

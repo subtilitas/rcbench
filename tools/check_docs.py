@@ -665,7 +665,7 @@ def check_screenshot_count(problems: list[str]) -> None:
                             f"holds {de}")
 
     # And the views the fit check draws, in the language page: render_ui's
-    # SCREENS table, one view per entry.
+    # SCREENS and FIT_ONLY tables, one view per entry.
     views = render_ui_views()
     pages = (("Language.md", r"draws all (\d+) views"),
              ("Language-de.md", r"zeichnet alle (\d+) Ansichten"))
@@ -681,16 +681,19 @@ def check_screenshot_count(problems: list[str]) -> None:
 
 
 def render_ui_views() -> int:
-    """How many views tools/render_ui.py renders: its SCREENS table."""
+    """How many views tools/render_ui.py --fit draws: its SCREENS table and
+    its FIT_ONLY table, which has no committed images."""
     import ast
     tree = ast.parse(read(REPO / "tools" / "render_ui.py"))
+    found = {}
     for node in tree.body:
         if (isinstance(node, ast.Assign) and len(node.targets) == 1
                 and isinstance(node.targets[0], ast.Name)
-                and node.targets[0].id == "SCREENS"
+                and node.targets[0].id in ("SCREENS", "FIT_ONLY")
                 and isinstance(node.value, ast.Dict)):
-            return len(node.value.keys)
-    return -1
+            found[node.targets[0].id] = len(node.value.keys)
+    return found["SCREENS"] + found.get("FIT_ONLY", 0) if "SCREENS" in found \
+        else -1
 
 
 VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"

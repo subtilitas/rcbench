@@ -195,6 +195,34 @@ typedef struct {
 
 void ui_router_set_status(const ui_bench_status_t *status);
 
+/**
+ * The band's chips, each of which opens a help bubble when tapped.  NONE is
+ * no chip.
+ */
+typedef enum {
+    UI_BAND_CHIP_NONE = 0,
+    UI_BAND_CHIP_LINK,    /**< LINK or NO LINK                             */
+    UI_BAND_CHIP_MODE,    /**< BENCH or SIM, ui_band_mode()                */
+    UI_BAND_CHIP_FAULT,   /**< FAULT and the link_fault_t bitmap           */
+    UI_BAND_CHIP_ARMED,   /**< SAFE, ARMED, ARMED MOTOR or ARMED SERVO     */
+    UI_BAND_CHIP_CLOCK,   /**< the run clock                               */
+    UI_BAND_CHIP_COUNT
+} ui_band_chip_t;
+
+/**
+ * The chip whose help bubble is open, or UI_BAND_CHIP_NONE.
+ *
+ * A tap on a chip of the band opens its bubble under the band.  The bubble
+ * follows the status as it changes and closes when its chip is no longer
+ * drawn, when the screen changes, or on the next DOWN anywhere; that DOWN
+ * reaches no screen, except that a DOWN on STOP presses STOP as well.
+ */
+ui_band_chip_t ui_router_help(void);
+
+/** Where the open bubble is drawn, in panel coordinates; false when none
+ *  is. */
+bool ui_router_help_rect(gfx_rect_t *out);
+
 /** True while a STOP button is drawn; false on the splash, which has none. */
 bool ui_router_stop_live(void);
 const ui_bench_status_t *ui_router_status(void);

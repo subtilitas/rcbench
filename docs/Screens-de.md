@@ -60,6 +60,64 @@ Band sind die oberen 48 px des Panels.
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
   noch auf dem Glas liegt, auf der Übersicht nichts.
 
+### Hilfe zu den Chips
+
+Ein Tipp auf einen Chip des Bands öffnet unter dem Band einen Kasten, der
+sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun
+ist: LINK oder KEIN LINK, der Modus, FEHLER, der Arm-Chip und die
+Laufzeituhr. Der Kasten öffnet 4 px unter dem Band an der linken Kante des
+getippten Chips, so weit nach links verschoben, dass er 8 px innerhalb des
+Panels bleibt. Er ist 520 px breit; der Kasten von FEHLER reicht über das
+Panel (784 px), mit einem Absatz pro gesetztem Bit. Kein Kasten reicht ins
+Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
+
+- Ein Tipp öffnet ihn: Drücken und Abheben auf demselben Chip. Ein Druck,
+  der vor dem Abheben vom Chip rutscht, öffnet nichts.
+- Der Text folgt dem Zustand, solange der Kasten offen ist. Ein neuer Fehler
+  erscheint sofort, ein gelöschter verschwindet, und ein Kasten folgt seinem
+  Chip, wenn die Laufzeituhr erscheint und die Chips verschiebt.
+- Ein Kasten, dessen Chip verschwindet, schließt sich: FEHLER, wenn die
+  Fehler gelöscht sind, die Laufzeituhr, wenn sie verschwindet.
+- Jeder Tipp schließt ihn und tut sonst nichts. Eine Kachel, eine
+  Schaltfläche, ein anderer Chip oder das Alert-Band unter dem Finger wird
+  nicht gedrückt.
+- STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
+  sofort, wie ohne Kasten.
+- Das Verlassen des Bildschirms schließt ihn.
+- Ein Finger, der auf dem Bildschirm zieht, während ein zweiter Finger einen
+  Kasten öffnet, wird wie an der Kante des Bands losgelassen.
+
+Solange der Link steht und der Koprozessor Link-Frames abgelehnt hat, endet
+der Kasten von LINK mit ihrer Zahl, derselben Zeile, die MOTOR & ESC in
+dem Streifen über beiden Spalten zeigt: `Abgelehnte Link-Frames: 37`
+([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die Zeile folgt der
+Zahl, solange der Kasten offen ist, und verschwindet mit dem Link.
+
+Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
+
+| Code | Bit | Von diesem Release gesetzt |
+| --- | --- | --- |
+| 01 | LINK_SILENT | der Koprozessor hat 200 ms keine Anfrage gehört; bleibt bis zum nächsten ARM |
+| 02 | OVERCURRENT | nie |
+| 04 | OVERTEMP | nie |
+| 08 | STALL | nie |
+| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht: nach jedem STOP bis zum nächsten ARM, bei gedrücktem Not-Aus oder offener Heartbeat-Leitung |
+| 20 | VERSION | nie |
+| 40 | STORE_OFF | der Koprozessor kann in diesem Start nicht in seinen Flash schreiben |
+
+Bei einem Bit, das dieses Release nie setzt, oder einem, das das Panel nicht
+kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
+
+![Der Kasten von FEHLER mit LINK_SILENT, HEARTBEAT und STORE_OFF](img/de/band-fault.png)
+
+![Der Kasten von LINK](img/de/band-link.png)
+
+![Der Kasten von LINK mit 37 abgelehnten Link-Frames](img/de/band-link-refused.png)
+
+![Der Kasten von SAFE](img/de/band-safe.png)
+
+![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
+
 ## Das Alert-Band
 
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten
@@ -1478,23 +1536,27 @@ plotten:
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
 Importansicht zeigt, was er entschieden hat, bevor die Datei geplottet wird.
-Eine Zeile endet an ihrem Zeilenvorschub (LF, 0x0A). Text nach dem letzten
-Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte
-abgeschnitten hat: Sie kann jedes Feld enthalten und eine gekürzte Zahl,
-`95` von `9554`, deshalb fehlt sie in den Zeilen, den Kennwerten und im
-Plot. ZEILEN steht dann in der Warnfarbe, und die Importansicht meldet
-`LETZTE ZEILE ABGEBROCHEN, FEHLT`. Eine Datei eines anderen Programms, die
-ohne Zeilenvorschub endet, verliert ihre letzte Zeile genauso. Leerzeichen
-nach dem letzten Zeilenvorschub sind keine Zeile, ebenso Tabs und
-Wagenrückläufe (CR).
-Vom Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis
-`BENCH999.CSV` im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein
-Schalten auf ARMED oder, solange der Prüfstand SAFE ist, ein Einschalten
-des SUPPLY-Ausgangs. Ein automatischer Servotest nimmt ebenfalls die nächste
-Nummer: sein Log ist `BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein
-Bericht `BENCHnnn.TXT`, den die Liste nicht zeigt. Eine Nummer, die eine der
-beiden Dateien trägt, ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen
-Bericht mit.
+Jede numerische Spalte zeigt ihren Bereich vom kleinsten zum größten Wert:
+mit einer Nachkommastelle, solange beide Enden unter 1000 liegen, ab 1000
+ohne (`11.9..12.6 V`, `2392..14639 rpm`). Ein Bereich breiter als die 17
+Zeichen seines Felds verliert die Nachkommastelle, dann das Leerzeichen vor
+der Einheit (`-1000..-1000 rpm`, `-14639..-14639rpm`); ein noch breiterer
+wird am Rand des Felds abgeschnitten. Eine Zeile endet an ihrem
+Zeilenvorschub (LF, 0x0A). Text nach dem letzten Zeilenvorschub ist eine
+Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat: Sie
+kann jedes Feld enthalten und eine gekürzte Zahl, `95` von `9554`, deshalb
+fehlt sie in den Zeilen, den Kennwerten und im Plot. ZEILEN steht dann in
+der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE ABGEBROCHEN,
+FEHLT`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
+verliert ihre letzte Zeile genauso. Leerzeichen nach dem letzten
+Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR). Vom
+Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis `BENCH999.CSV`
+im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein Schalten auf ARMED
+oder, solange der Prüfstand SAFE ist, ein Einschalten des SUPPLY-Ausgangs.
+Ein automatischer Servotest nimmt ebenfalls die nächste Nummer: sein Log ist
+`BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein Bericht `BENCHnnn.TXT`,
+den die Liste nicht zeigt. Eine Nummer, die eine der beiden Dateien trägt,
+ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen Bericht mit.
 
 Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
 hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt

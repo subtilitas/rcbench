@@ -63,6 +63,16 @@ static struct {
     bool    band_press;
     uint8_t band_id;
     bool    on_stop;      /**< the press started on STOP rather than home   */
+    ui_band_chip_t on_chip; /**< or on this chip of the band              */
+
+    /*
+     * The chip whose help bubble is open, and what the last frame drew of
+     * it.  Screens cache their chrome, so a bubble that closes, moves or
+     * changes size leaves pixels behind unless every screen repaints.
+     */
+    ui_band_chip_t help;
+    bool           help_drawn;
+    gfx_rect_t     help_rect;
 
     /*
      * The contacts the screen on top owns: each one whose DOWN it was
@@ -77,6 +87,8 @@ static struct {
         int16_t x, y;
     } owned[TOUCH_MAX_POINTS];
 } s;
+
+static bool has_band(ui_screen_id_t id);
 
 static const ui_screen_t *screen_for(ui_screen_id_t id)
 {
@@ -139,8 +151,10 @@ void ui_router_goto(ui_screen_id_t id)
         now->enter();
     }
     /* A press that began on the old screen must not land on the new one:
-     * the contacts it owned are nobody's until they lift. */
+     * the contacts it owned are nobody's until they lift.  The help bubble
+     * is the old screen's too. */
     s.band_press = false;
+    s.help = UI_BAND_CHIP_NONE;
     s.alert_press = false;
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
     memset(s.owned, 0, sizeof(s.owned));
@@ -219,6 +233,20 @@ void ui_router_set_status(const ui_bench_status_t *status)
     if (was != s.status.simulated || caps != s.status.capabilities) {
         ui_router_invalidate();
     }
+    /* A bubble whose chip has gone -- the faults cleared, the run clock
+     * gone -- has nothing left to explain, and closes. */
+    if (s.help != UI_BAND_CHIP_NONE
+        && !ui_band_chip_rect(&s.status, s.help, NULL)) {
+        s.help = UI_BAND_CHIP_NONE;
+    }
+}
+
+ui_band_chip_t ui_router_help(void) { return s.help; }
+
+bool ui_router_help_rect(gfx_rect_t *out)
+{
+    return s.help != UI_BAND_CHIP_NONE && has_band(s.current)
+           && ui_band_help_rect(&s.status, s.help, out);
 }
 
 const ui_bench_status_t *ui_router_status(void) { return &s.status; }
@@ -269,6 +297,47 @@ static bool has_home(ui_screen_id_t id)
            && id != SCREEN_BUSFAULT;
 }
 
+/* Hand @p evt, in panel coordinates, to the screen on top.  The one call
+ * into a screen's event(): not inlined, so tools/stack_check.py finds it by
+ * name. */
+static __attribute__((noinline)) void router_hand(touch_event_t evt)
+{
+    const ui_screen_t *scr = screen_for(s.current);
+    if (scr != NULL && scr->event != NULL) {
+        /* Screens work in their own coordinates; the band's height is
+         * removed here. */
+        if (has_band(s.current)) {
+            evt.point.y = (int16_t)(evt.point.y - UI_BAND_H);
+        }
+        ++s.dispatched;
+        scr->event(&evt);
+    }
+}
+
+/*
+ * Open the bubble of @p chip.  Every contact the screen owns is released at
+ * the last point it was handed, flagged TOUCH_FLAG_NO_TAP, as at the band's
+ * edge: while the bubble is open no event reaches the screen, and a drag
+ * left latched would take a later contact's travel for its own.
+ */
+static void help_open(ui_band_chip_t chip)
+{
+    s.help = chip;
+    for (int i = 0; i < TOUCH_MAX_POINTS; ++i) {
+        if (!s.owned[i].live) {
+            continue;
+        }
+        s.owned[i].live = false;
+        touch_event_t up = { 0 };
+        up.type    = TOUCH_EVENT_UP;
+        up.flags   = TOUCH_FLAG_NO_TAP;
+        up.point.id = s.owned[i].id;
+        up.point.x = s.owned[i].x;
+        up.point.y = s.owned[i].y;
+        router_hand(up);
+    }
+}
+
 /* The slot of contact @p id in the screen's table, or -1 when the screen
  * does not own it. */
 static int owned_find(uint8_t id)
@@ -300,6 +369,12 @@ static int owned_find(uint8_t id)
  *
  * STOP and the home tag answer to a DOWN on them and to nothing else, so a
  * contact that slides onto STOP from the body presses nothing.
+ *
+ * A chip of the band opens its help bubble on a tap: a DOWN on it and a
+ * release on the same chip.  While a bubble is open, a DOWN anywhere but on
+ * STOP closes it and does nothing else: its contact is the router's to its
+ * release.  A DOWN on STOP closes it as well and presses STOP, as with no
+ * bubble.
  */
 void ui_router_event(const touch_event_t *evt)
 {
@@ -318,10 +393,28 @@ void ui_router_event(const touch_event_t *evt)
                              && gfx_rect_contains(home, evt->point.x,
                                                   evt->point.y);
 
-        if (evt->type == TOUCH_EVENT_DOWN && (in_stop || in_home)) {
+        const ui_band_chip_t chip =
+            ui_band_chip_at(&s.status, evt->point.x, evt->point.y);
+
+        if (evt->type == TOUCH_EVENT_DOWN && !in_stop
+            && s.help != UI_BAND_CHIP_NONE) {
+            /* The tap that closes the bubble.  A contact this id named
+             * before is over, as at any DOWN, and this one reaches no
+             * screen: the screen never owned it. */
+            s.help = UI_BAND_CHIP_NONE;
+            const int was = owned_find(id);
+            if (was >= 0) {
+                s.owned[was].live = false;
+            }
+            return;
+        }
+        if (evt->type == TOUCH_EVENT_DOWN
+            && (in_stop || in_home || chip != UI_BAND_CHIP_NONE)) {
+            s.help       = UI_BAND_CHIP_NONE;
             s.band_press = true;
             s.band_id    = evt->point.id;
             s.on_stop    = in_stop;
+            s.on_chip    = (in_stop || in_home) ? UI_BAND_CHIP_NONE : chip;
             return;   /* consumed before the screen sees it */
         }
         if (s.band_press && evt->point.id == s.band_id) {
@@ -332,6 +425,12 @@ void ui_router_event(const touch_event_t *evt)
                      * that drives the heartbeat drains it, so a stop also
                      * stops the line. */
                     s.stop_latched = true;
+                } else if (s.on_chip != UI_BAND_CHIP_NONE) {
+                    /* A chip answers a release the finger made on the
+                     * chip it came down on. */
+                    if (chip == s.on_chip && touch_event_is_tap_up(evt)) {
+                        help_open(chip);
+                    }
                 } else if (!s.on_stop && in_home
                            && touch_event_is_tap_up(evt)) {
                     /* STOP above takes any release over it; the home tag
@@ -417,16 +516,7 @@ void ui_router_event(const touch_event_t *evt)
         s.owned[slot].y = evt->point.y;
     }
 
-    const ui_screen_t *scr = screen_for(s.current);
-    if (scr != NULL && scr->event != NULL) {
-        /* Screens work in their own coordinates; the band's height is
-         * removed here. */
-        if (band) {
-            local.point.y = (int16_t)(local.point.y - UI_BAND_H);
-        }
-        ++s.dispatched;
-        scr->event(&local);
-    }
+    router_hand(local);
 }
 
 void ui_router_cancel_gestures(void)
@@ -523,7 +613,26 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
 
     ui_band_render(c, ui_router_title(s.current), has_home(s.current),
                    &s.status, s.band_press && s.on_stop,
-                   s.band_press && !s.on_stop);
+                   s.band_press && !s.on_stop
+                   && s.on_chip == UI_BAND_CHIP_NONE);
+
+    /*
+     * The bubble as this frame draws it.  One that closed, moved or changed
+     * size since the last frame repaints every screen first: the screen
+     * under it drew its chrome once per framebuffer, and the bubble's
+     * pixels would stay where the chrome is not drawn again.
+     */
+    gfx_rect_t help;
+    const bool show = ui_router_help_rect(&help);
+    if (s.help_drawn
+        && (!show || help.x != s.help_rect.x || help.y != s.help_rect.y
+            || help.w != s.help_rect.w || help.h != s.help_rect.h)) {
+        ui_router_invalidate();
+    }
+    s.help_drawn = show;
+    if (show) {
+        s.help_rect = help;
+    }
 
     /*
      * A sub-canvas clipped to the body, so a screen cannot draw over the band
@@ -534,6 +643,10 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     gfx_canvas_t sub;
     if (gfx_canvas_sub(c, body, &sub)) {
         scr->render(&sub, buffer_index);
+    }
+
+    if (show) {
+        ui_band_help_render(c, &s.status, s.help);
     }
 
     if (s.has_alert || s.has_held) {
