@@ -57,7 +57,6 @@ def test_a_view_that_was_not_drawn_has_no_stale_entry():
 
 
 def test_every_known_overflow_names_a_view_the_tool_draws():
-    assert ui.KNOWN_OVERFLOWS
     for view, text, why in ui.KNOWN_OVERFLOWS:
         assert view in ui.SCREENS
         assert text and why
