@@ -242,6 +242,22 @@ gfx_color_t log_viewer_series_color(int k)
     return ui_theme_color(k_series_color[k]);
 }
 
+void log_viewer_range_text(char *out, size_t n, double lo, double hi,
+                           const char *unit)
+{
+    if (!out || n == 0) {
+        return;
+    }
+    int decimals = (fabs(lo) >= 1000.0 || fabs(hi) >= 1000.0) ? 0 : 1;
+    char a[16];
+    char b[16];
+    ui_fmt(a, sizeof(a), (float)lo, decimals);
+    ui_fmt(b, sizeof(b), (float)hi, decimals);
+    bool has_unit = unit && unit[0];
+    snprintf(out, n, "%s..%s%s%s", a, b, has_unit ? " " : "",
+             has_unit ? unit : "");
+}
+
 int log_viewer_cursor(void)
 {
     return s.have_data ? s.cursor : -1;
@@ -965,11 +981,8 @@ static void render_import(gfx_canvas_t *c)
             } else if (!col->numeric) {
                 snprintf(right, sizeof(right), "%s", TR(LOG_TEXT));
             } else {
-                char lo[12];
-                char hi[12];
-                ui_fmt(lo, sizeof(lo), (float)col->min, 1);
-                ui_fmt(hi, sizeof(hi), (float)col->max, 1);
-                snprintf(right, sizeof(right), "%s..%s%s", lo, hi, col->unit);
+                log_viewer_range_text(right, sizeof(right), col->min,
+                                      col->max, col->unit);
             }
             gfx_rect_t rb = gfx_rect_make(row.x + 288, row.y, row.w - 300,
                                           row.h);

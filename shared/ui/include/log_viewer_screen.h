@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include "log_csv.h"
@@ -103,6 +104,15 @@ gfx_color_t log_viewer_series_color(int k);
 
 /** The sample the cursor is on, or -1 with nothing plotted. */
 int log_viewer_cursor(void);
+
+/**
+ * The range of a numeric column as the import view writes it into @p out
+ * (@p n bytes): "lo..hi unit".  One decimal while both ends are below
+ * 1000 in magnitude, none from 1000 on, so "2392..14639 rpm" fits the
+ * 140 px box of the view.  No space and no unit with an empty @p unit.
+ */
+void log_viewer_range_text(char *out, size_t n, double lo, double hi,
+                           const char *unit);
 
 /**
  * Re-read the directory, e.g. after a card was inserted.  Closes an open

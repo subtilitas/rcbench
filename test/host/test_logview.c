@@ -12,6 +12,7 @@
 
 #include "greatest.h"
 
+#include <math.h>
 #include <stdlib.h>
 
 #include "log_name.h"
@@ -1432,6 +1433,31 @@ TEST_CASE(deleting_another_file_keeps_the_open_one)
     CHECK_STR_EQ(log_viewer_open_name(), "BENCH_01.CSV");
 }
 
+TEST_CASE(a_range_of_1000_or_more_drops_the_decimal)
+{
+    char out[40];
+    log_viewer_range_text(out, sizeof(out), 2392.0, 14639.0, "rpm");
+    CHECK_STR_EQ(out, "2392..14639 rpm");
+    log_viewer_range_text(out, sizeof(out), 11.94, 12.61, "V");
+    CHECK_STR_EQ(out, "11.9..12.6 V");
+    /* The limit is 1000 in magnitude at either end, below zero too. */
+    log_viewer_range_text(out, sizeof(out), 0.0, 999.9, "A");
+    CHECK_STR_EQ(out, "0.0..999.9 A");
+    log_viewer_range_text(out, sizeof(out), 0.0, 1000.0, "A");
+    CHECK_STR_EQ(out, "0..1000 A");
+    log_viewer_range_text(out, sizeof(out), -1000.0, 5.0, "g");
+    CHECK_STR_EQ(out, "-1000..5 g");
+    /* No unit, no trailing space; a value that is not a number shows "--". */
+    log_viewer_range_text(out, sizeof(out), 1.0, 2.0, "");
+    CHECK_STR_EQ(out, "1.0..2.0");
+    log_viewer_range_text(out, sizeof(out), NAN, 2.0, NULL);
+    CHECK_STR_EQ(out, "--..2.0");
+    /* A short buffer is cut and stays terminated. */
+    char small[6];
+    log_viewer_range_text(small, sizeof(small), 2392.0, 14639.0, "rpm");
+    CHECK_STR_EQ(small, "2392.");
+}
+
 TEST_CASE(a_refused_delete_keeps_the_file_listed)
 {
     fresh();
@@ -2350,6 +2376,7 @@ int main(void)
     RUN(deleting_the_open_file_drops_what_was_read_from_it);
     RUN(deleting_another_file_keeps_the_open_one);
     RUN(a_refused_delete_keeps_the_file_listed);
+    RUN(a_range_of_1000_or_more_drops_the_decimal);
     RUN(a_rescan_or_leaving_the_screen_closes_the_question);
     RUN(the_question_leaves_no_stale_pixels);
     RUN(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less);

@@ -35,11 +35,6 @@ Current limitations:
   translation by that English. A refusal the table does not know is shown in
   English. `test_text` checks that every refusal the compiled-in profiles
   produce has a German entry.
-- Two English help lines on SETUP are longer than the 36 cells the row
-  shows and are cut there: Capacity's, 38 characters, and Rated kV's, 55.
-  On the log import's column list the range `2392.0..14639.0rpm` is 144 px
-  wide in a 140 px box, in both languages. `render_ui.py --fit` lists the
-  three as `known`.
 
 ## Numbers
 

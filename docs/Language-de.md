@@ -36,11 +36,6 @@ Aktuelle Einschränkungen:
   die Übersetzung über dieses Englisch. Eine Ablehnung, die die Tabelle nicht
   kennt, erscheint auf Englisch. `test_text` prüft, dass jede Ablehnung der
   einkompilierten Profile einen deutschen Eintrag hat.
-- Zwei englische Hilfetexte in SETUP sind länger als die 36 Zellen der Zeile
-  und werden dort abgeschnitten: der von Capacity mit 38 Zeichen und der von
-  Rated kV mit 55. In der Spaltenliste des Log-Imports ist der Bereich
-  `2392.0..14639.0rpm` in beiden Sprachen 144 px breit in einer Box von
-  140 px. `render_ui.py --fit` führt die drei als `known`.
 
 ## Zahlen
 
