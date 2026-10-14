@@ -19,6 +19,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "link_msg.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +41,12 @@ typedef struct {
     uint32_t dev_frames;    /**< requests it decoded */
     uint32_t dev_crc_errors;
     uint32_t dev_resyncs;
+    /** The last status read carried LINK_ST_REFUSED_LO and _HI: protocol
+     *  4.21 and later. */
+    bool     have_refused;
+    /** CAN frames it refused to decode since its power-up, modulo 2^32;
+     *  0 while have_refused is false. */
+    uint32_t dev_refused;
 
     /* Identity, read once at link-up. */
     bool     have_identity;
@@ -83,6 +91,29 @@ const char *link_diag_text(link_diag_t d);
 
 /** One line naming what to check, in the order worth checking it. */
 const char *link_diag_hint(link_diag_t d);
+
+/* ------------------------------------------------------------ status page */
+
+/**
+ * How many STATUS registers to read from a coprocessor of protocol minor
+ * @p minor: LINK_ST_COUNT from LINK_MINOR_REFUSED, LINK_ST_COUNT_V420
+ * before it.  An older page refuses the longer read with
+ * LINK_NACK_BAD_RANGE, which would lose the counters it does have.
+ */
+uint8_t link_bringup_status_count(uint16_t minor);
+
+/**
+ * Take a STATUS reply read from register 0 into @p b and the fault bitmap
+ * into @p faults (either may be NULL).
+ *
+ * False, and nothing taken, for anything but a DATA reply from offset 0
+ * with at least LINK_ST_COUNT_V420 registers.  A reply that ends before
+ * LINK_ST_REFUSED_HI clears have_refused and dev_refused: an older
+ * coprocessor counts no refusals, and a count is not carried over from a
+ * coprocessor that answered before it.
+ */
+bool link_bringup_take_status(link_bringup_t *b, const link_msg_t *st,
+                              uint16_t *faults);
 
 /* ------------------------------------------------------- round-trip stats */
 

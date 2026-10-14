@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.20. The
+coprocessor transmits only in answer to a request. Protocol version 4.21. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -105,7 +105,9 @@ From 4.18 the panel's ARM names the roles it switches to ARMED
 returns it to 0; the panel then shows the rate as not sent until it writes
 it again. From 4.20 ARTWORK serves the board's drawing with a hash of it in
 registers 7 and 8, and the panel reads ARTWORK from 4.20 only
-([The board drawing](#the-board-drawing)). The
+([The board drawing](#the-board-drawing)). From 4.21 STATUS counts the
+frames the coprocessor refused in registers 8 and 9, and the panel reads
+them from 4.21 only ([Refused frames](#refused-frames)). The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1172,7 +1174,7 @@ Clearing a latched failsafe is such a side effect.
 | Page | Name | Access | Registers |
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | read | protocol major, protocol minor, firmware major, minor, patch, hardware revision, capabilities bitmap |
-| 0x01 | STATUS | read | state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter |
+| 0x01 | STATUS | read | 10 registers (since 4.21; 8 before it): state (0 idle, 1 armed, 2 failsafe), faults bitmap, uptime in ms (two registers), requests accepted (two registers), XL2515 receive error counter, XL2515 transmit error counter, CAN frames refused since power-up (two registers, low half first; [Refused frames](#refused-frames)) |
 | 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the programming ports, 0x0006 both; any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
@@ -1520,6 +1522,52 @@ either half, a link lost at every transaction of a fetch, a kept drawing
 under the same board ID with another hash, and a board the panel's build
 does not know. `test/tools/test_gen_board_drawing.py` holds the generator to
 the same rules.
+
+### Refused frames
+
+From 4.21 the coprocessor counts the CAN frames it receives and refuses to
+decode, and publishes the count in STATUS (0x01) registers 8 and 9
+(`LINK_ST_REFUSED_LO` and `LINK_ST_REFUSED_HI`), low half first. A frame is
+refused at one of two steps:
+
+| Step | Refused | Code |
+| --- | --- | --- |
+| receive buffer | an 11-bit identifier, a remote frame (RTR, remote transmission request), a DLC (data length code) above 8 | `mcp2515_recv_next()` in `shared/can/mcp2515.c` |
+| link decode | an unknown op, a count past the end of a page, a DLC that disagrees with the count (a READ with a payload, a DATA whose payload is not 2 bytes a register) | `link_can_decode_counted()` in `shared/link/link_can.c` |
+
+The CAN self-test frames are answered, not refused, and are not counted. A
+READ that a panel on ESP-IDF v5.5.0 or v5.5.1 sends as DLC 8 instead of
+DLC 0 is refused at the link decode and counted.
+
+The count is a 32-bit unsigned integer. It is 0 at power-up and at every
+restart of the coprocessor, nothing over the link clears it, and it wraps
+from 4,294,967,295 to 0.
+
+The panel reads STATUS every 500 ms. It asks a 4.21 coprocessor for 10
+registers and an older one for the 8 its page has: a 4.20 page refuses a
+10-register read with BAD_RANGE, which would lose every STATUS counter. The
+panel forgets the count at each link-up and takes it again from the first
+STATUS read after it.
+
+MOTOR & ESC shows the count in its header strip, after the poll rate and the
+error count, while the link is up and the count is above 0: `Link frames
+refused: 37`, in German `Abgelehnte Link-Frames: 37`. No other screen shows
+it. The bring-up log line `iomcu  frames ... refused N` carries it as well.
+`ui_link_refused_label()` in `shared/ui/ui_band.c` builds the label.
+
+| Panel | Coprocessor | Behaviour |
+| --- | --- | --- |
+| 4.21 | 4.21 | as above |
+| 4.21 | 4.20 or older | the panel reads 8 STATUS registers; the count reads 0 and MOTOR & ESC shows no label |
+| 4.20 or older | 4.21 | the panel reads 8 STATUS registers and does not see the count |
+
+`test_mcp2515` and `test_link_can` hold the count at each step, a frame taken
+that adds nothing, and the wrap at 2^32. `test_link_bringup` carries the count
+from a coprocessor's page to the panel over CAN frames, including a refused
+DLC 8 READ, 0x0001FFFF and the wrap, and reads a 4.20 page without it.
+`test_text` holds the label: hidden at 0 and with the link down, shown above
+0 in English and German. The screenshot `docs/img/motor-refused.png` shows a
+count of 37.
 
 ### Bit timing
 

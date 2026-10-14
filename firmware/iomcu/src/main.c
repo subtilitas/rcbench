@@ -159,6 +159,15 @@ static heartbeat_mon_t s_beat;
 static uint32_t s_frames;
 
 /*
+ * CAN frames received and refused since power-up, published on the STATUS
+ * page (LINK_ST_REFUSED_LO and _HI).  Counted in two places, both shared
+ * code: a receive buffer with no frame the link carries in it
+ * (mcp2515_recv_next()) and a frame link_can_decode() refuses
+ * (link_can_decode_counted()).  Wraps at 2^32.
+ */
+static uint32_t s_refused;
+
+/*
  * The pass's clock, used by everything the pass reaches -- including the page
  * callbacks, which run inside can_service() and have no `now` of their own.
  *
@@ -1609,7 +1618,7 @@ static void can_service(uint32_t now)
         ++s_can_overflows;
     }
     link_can_frame_t in, out;
-    while (xl2515_recv(&in)) {
+    while (xl2515_recv(&in, &s_refused)) {
         s_last_rx_ms = now;
         if (can_selftest_echo(&in, &out)) {
             if (xl2515_send(&out)) {
@@ -1637,7 +1646,7 @@ static void can_service(uint32_t now)
          * the dispatcher, which has no transport in it.
          */
         link_msg_t req, reply;
-        if (!link_can_decode(&in, &req)) {
+        if (!link_can_decode_counted(&in, &req, &s_refused)) {
             continue;
         }
         ++s_frames;
@@ -1900,6 +1909,8 @@ static void sample(void)
     xl2515_errors(&tec, &rec, NULL);
     s_state.status[LINK_ST_CRC_ERRORS] = rec;
     s_state.status[LINK_ST_RESYNCS]    = tec;
+    s_state.status[LINK_ST_REFUSED_LO] = (uint16_t)(s_refused & 0xFFFFu);
+    s_state.status[LINK_ST_REFUSED_HI] = (uint16_t)(s_refused >> 16);
 }
 
 /*

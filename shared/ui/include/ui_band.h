@@ -7,6 +7,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "gfx.h"
@@ -32,6 +33,15 @@ const char *ui_band_mode(bool link_up);
  * STOP and the other controls are.
  */
 const char *ui_band_armed_label(uint8_t roles);
+
+/**
+ * The label for the coprocessor's refused link frames, "Link frames refused:
+ * N" in the language in force, into @p out of @p n bytes: the one place it
+ * is built.  MOTOR & ESC shows it in its header strip.  False, with @p out
+ * empty, while the link is down or the count (st->link_refused) is 0, so a
+ * coprocessor older than 4.21, which sends no count, shows no label.
+ */
+bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n);
 
 /**
  * Draw the band.  @p title is the current screen's title, or NULL on the

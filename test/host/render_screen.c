@@ -1260,7 +1260,8 @@ int main(int argc, char **argv)
             else if (t < 30.0f)          { th = 30.0f; }
             else                         { th = 64.0f; }
             telemetry_sim_step(&tsim, th, 0.05f, &bench);
-            if (strcmp(view, "motor-table") == 0) {
+            if (strcmp(view, "motor-table") == 0
+                || strcmp(view, "motor-refused") == 0) {
                 /* A coprocessor reading an INA228: BENCH's numbers are the
                  * INA228's, and the ESC's own telemetry reads 0.18 V and
                  * 12 % of the current high beside them. */
@@ -2158,7 +2159,13 @@ int main(int argc, char **argv)
 
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR
-                           && strcmp(view, "motor-table") != 0);
+                           && strcmp(view, "motor-table") != 0
+                           && strcmp(view, "motor-refused") != 0);
+    /* A coprocessor that has refused 37 frames: the count in the header
+     * strip after the error count. */
+    if (strcmp(view, "motor-refused") == 0) {
+        st.link_refused = 37u;
+    }
     /* Modelled numbers are the panel's own, which it runs only while no
      * coprocessor answers: the band says NO LINK and SIM, as on the bench. */
     st.link_up   = !st.simulated;

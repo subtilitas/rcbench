@@ -46,6 +46,19 @@ const char *ui_band_armed_label(uint8_t roles)
     }
 }
 
+bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    if (st == NULL || !st->link_up || st->link_refused == 0u) {
+        return false;
+    }
+    snprintf(out, n, TR(LINK_REFUSED), (unsigned long)st->link_refused);
+    return true;
+}
+
 /* Chips are laid out right to left from STOP, each placed at the right edge
  * the previous one returns, so no chip needs another's width in advance and a
  * long mode string cannot push the clock under the ARMED badge. */

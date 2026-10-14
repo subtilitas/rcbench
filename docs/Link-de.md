@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.20. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.21. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -115,6 +115,9 @@ von TARGET setzt sie auf 0; das Panel zeigt die Rate dann als nicht
 gesendet, bis es sie wieder schreibt. Ab 4.20 liefert ARTWORK die Zeichnung
 der Platine mit einem Hash über sie in Register 7 und 8, und das Panel liest
 ARTWORK erst ab 4.20 ([Die Zeichnung der Platine](#die-zeichnung-der-platine)).
+Ab 4.21 zählt STATUS in Register 8 und 9 die Frames, die der Koprozessor
+abgelehnt hat, und das Panel liest sie erst ab 4.21
+([Abgelehnte Frames](#abgelehnte-frames)).
 Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1284,7 +1287,7 @@ Failsafe ist eine solche Nebenwirkung.
 | Page | Name | Zugriff | Register |
 | ---: | --- | --- | --- |
 | 0x00 | IDENTITY | lesen | Protokoll major, Protokoll minor, Firmware major, minor, patch, Hardware-Revision, Capabilities-Bitmap |
-| 0x01 | STATUS | lesen | Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515 |
+| 0x01 | STATUS | lesen | 10 Register (seit 4.21; davor 8): Zustand (0 idle, 1 armed, 2 failsafe), Fault-Bitmap, Uptime in ms (zwei Register), angenommene Anfragen (zwei Register), Empfangsfehlerzähler des XL2515, Sendefehlerzähler des XL2515, seit dem Einschalten abgelehnte CAN-Frames (zwei Register, niederwertige Hälfte zuerst; [Abgelehnte Frames](#abgelehnte-frames)) |
 | 0x10 | CONTROL | lesen, schreiben | ARM (0 schaltet auf SAFE; 1 schaltet jeden Ausgang auf ARMED; ab 4.18 schaltet 0x0002 die Throttle-Kanäle, 0x0004 die Surfaces und die Programmierports, 0x0006 beide auf ARMED; jeder andere Wert wird mit BAD_VALUE abgewiesen, [Ein Arm für eine Rolle](#ein-arm-für-eine-rolle)), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt), MOTOR_POLES, CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen). Register 0 bis 2 sind der Frame, der auf ARMED schaltet |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
 | 0x12 | FAILSAFE | | deklariert, nicht bedient |
@@ -1660,6 +1663,53 @@ jeder Transaktion eines Abrufs, eine behaltene Zeichnung unter derselben
 Board-ID mit anderem Hash und eine Platine, die der Build des Panels nicht
 kennt. `test/tools/test_gen_board_drawing.py` hält den Generator an dieselben
 Regeln.
+
+### Abgelehnte Frames
+
+Ab 4.21 zählt der Koprozessor die CAN-Frames, die er empfängt und nicht
+dekodiert, und veröffentlicht die Zahl in STATUS (0x01) Register 8 und 9
+(`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`), die niederwertige Hälfte
+zuerst. Ein Frame wird an einer von zwei Stufen abgelehnt:
+
+| Stufe | Abgelehnt | Code |
+| --- | --- | --- |
+| Empfangspuffer | ein 11-Bit-Identifier, ein Remote Frame (RTR, Remote Transmission Request), ein DLC (Data Length Code) über 8 | `mcp2515_recv_next()` in `shared/can/mcp2515.c` |
+| Link-Dekodierung | ein unbekannter Op, ein Count über das Ende einer Page, ein DLC, der nicht zum Count passt (ein READ mit Nutzdaten, ein DATA, dessen Nutzdaten nicht 2 Byte je Register sind) | `link_can_decode_counted()` in `shared/link/link_can.c` |
+
+Die Frames des CAN-Selbsttests werden beantwortet, nicht abgelehnt, und
+nicht gezählt. Ein READ, den ein Panel mit ESP-IDF v5.5.0 oder v5.5.1 als
+DLC 8 statt DLC 0 sendet, wird bei der Link-Dekodierung abgelehnt und
+gezählt.
+
+Die Zahl ist eine vorzeichenlose 32-Bit-Zahl. Sie ist 0 nach dem Einschalten
+und nach jedem Neustart des Koprozessors, nichts über den Link setzt sie
+zurück, und sie läuft von 4.294.967.295 auf 0 über.
+
+Das Panel liest STATUS alle 500 ms. Einen 4.21-Koprozessor fragt es nach 10
+Registern, einen älteren nach den 8, die seine Page hat: eine 4.20-Page
+weist einen Lesezugriff auf 10 Register mit BAD_RANGE ab, und damit fehlte
+jeder Zähler von STATUS. Das Panel vergisst die Zahl bei jedem Link-up und
+übernimmt sie wieder aus dem ersten STATUS-Lesezugriff danach.
+
+MOTOR & ESC zeigt die Zahl in seiner Kopfzeile nach der Abfragerate und der
+Fehlerzahl, solange der Link steht und die Zahl über 0 liegt:
+`Abgelehnte Link-Frames: 37`. Kein anderer Screen zeigt sie. Die Logzeile beim Link-up `iomcu  frames ...
+refused N` enthält sie ebenfalls. `ui_link_refused_label()` in
+`shared/ui/ui_band.c` baut das Label.
+
+| Panel | Koprozessor | Verhalten |
+| --- | --- | --- |
+| 4.21 | 4.21 | wie oben |
+| 4.21 | 4.20 oder älter | das Panel liest 8 STATUS-Register; die Zahl ist 0, und MOTOR & ESC zeigt kein Label |
+| 4.20 oder älter | 4.21 | das Panel liest 8 STATUS-Register und sieht die Zahl nicht |
+
+`test_mcp2515` und `test_link_can` prüfen die Zahl an jeder Stufe, einen
+angenommenen Frame, der nichts hinzufügt, und den Überlauf bei 2^32.
+`test_link_bringup` trägt die Zahl über CAN-Frames von der Page eines
+Koprozessors zum Panel, mit einem abgelehnten READ mit DLC 8, 0x0001FFFF
+und dem Überlauf, und liest eine 4.20-Page ohne sie. `test_text` prüft das
+Label: verborgen bei 0 und ohne Link, gezeigt über 0 auf Englisch und
+Deutsch. Der Screenshot `docs/img/de/motor-refused.png` zeigt die Zahl 37.
 
 ### Bit Timing
 
