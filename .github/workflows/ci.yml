@@ -366,6 +366,10 @@ jobs:
 
   panel:
     name: Panel (ESP-IDF ${{ matrix.idf }})
+    # The v5.4 build carries the coprocessor image of this commit, as the
+    # release does; the v5.5.3 build carries none, as a build without the
+    # option does.
+    needs: [iomcu]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -379,8 +383,20 @@ jobs:
         # as DLC 8 and are refused by can_twai.c, so the newer entry names
         # its point release.
         idf: [v5.4, v5.5.3]
+        include:
+          - idf: v5.4
+            image: true
     steps:
       - uses: actions/checkout@v6
+
+      # Inside firmware/panel, the directory the build runs in, so the
+      # container sees it under the same relative path.
+      - name: Fetch the coprocessor image
+        if: matrix.image
+        uses: actions/download-artifact@v7
+        with:
+          name: iomcu
+          path: firmware/panel/iomcu-image
 
       # No cache step: the build runs inside the espressif/idf container, so
       # ~/.espressif on the runner is never written or read and a cache would
@@ -394,12 +410,29 @@ jobs:
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
-          command: idf.py build && idf.py merge-bin -o rcbench-panel-merged.bin
+          command: >-
+            idf.py ${{ matrix.image && '-D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin' || '' }} build
+            && idf.py merge-bin -o rcbench-panel-merged.bin
 
       - name: Size report
         run: |
           ls -l firmware/panel/build/*.bin firmware/panel/build/bootloader/bootloader.bin
           sha256sum firmware/panel/build/*.bin
+
+      # The symbol target_add_binary_data() names the embedded image by:
+      # present in the build with the image, absent in the one without.
+      - name: The coprocessor image is carried only when asked for
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          if grep -aq _binary_rcbench_iomcu_bin_start \
+              firmware/panel/build/rcbench-panel.elf; then
+            carried=true
+          else
+            carried=false
+          fi
+          echo "carries the coprocessor image: $carried"
+          [ "$carried" = "${IMAGE:-false}" ]
 
       # Every task's deepest call chain, read out of the ELF, against its
       # stack less a 1024-byte margin.  The UI runs on the main task, and a
@@ -480,8 +513,10 @@ jobs:
         run: |
           cmake -S firmware/iomcu -B firmware/iomcu/build -G Ninja
           cmake --build firmware/iomcu/build -j"$(nproc)"
-          ls -l firmware/iomcu/build/rcbench-iomcu.uf2
-          sha256sum firmware/iomcu/build/rcbench-iomcu.uf2
+          ls -l firmware/iomcu/build/rcbench-iomcu.uf2 \
+                firmware/iomcu/build/rcbench-iomcu-install.uf2
+          sha256sum firmware/iomcu/build/rcbench-iomcu.uf2 \
+                    firmware/iomcu/build/rcbench-iomcu-install.uf2
 
       # Core 0 runs main() on 4096 bytes with no guard under them, and an
       # interrupt lands on the same stack.  Read out of the ELF: each core's
@@ -516,5 +551,8 @@ jobs:
           name: iomcu
           path: |
             firmware/iomcu/build/rcbench-iomcu.uf2
+            firmware/iomcu/build/rcbench-iomcu-install.uf2
+            firmware/iomcu/build/rcbench-iomcu-pt.uf2
+            firmware/iomcu/build/rcbench-iomcu.bin
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
