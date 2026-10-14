@@ -2037,6 +2037,71 @@ gar keine Konsole.
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.
 
+## Koprozessor-Update
+
+Ein Panel, das mit dem Image des Koprozessors gebaut ist, bringt es mit und
+bietet es an, wenn der Koprozessor einen anderen Build laufen hat. Die
+Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
+Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
+`Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`, und
+die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE und der
+Ausgang der Versorgung aus ist.
+
+![Die Frage zum Koprozessor-Update](img/de/update.png)
+
+Die Frage nennt die Version, die der Koprozessor laufen hat, und die Version,
+die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
+und das Panel fragt für diese Koprozessor-Version nicht noch einmal, bis es
+neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab. START
+braucht das 2-s-Halten, die ARM-Geste mit demselben Überblenden.
+
+Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Das Image
+dieses Panels ist älter.` in der Warnfarbe, und START braucht dasselbe
+Halten.
+
+![Ein älteres Image](img/de/update-older.png)
+
+Sobald das Halten von START vollständig ist, gehört das Panel dem Update: der
+Link zum Koprozessor geht herunter, die Ausgänge sind aus, der Koprozessor
+lehnt ARM bis zum Ende des Updates ab, und der Fortschritt füllt den
+Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
+hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+
+![Der Fortschritt](img/de/update-progress.png)
+
+| Schritt | Gezeigt, während |
+| --- | --- |
+| `Image wird vorbereitet` | das Panel das Image hasht, 8 KiB je Schritt |
+| `Image wird gesendet` | die Blöcke hinausgehen, je 64 Byte; der Balken und `Block 1497 von 2994, 50 %` zählen sie |
+| `Koprozessor prüft das Image` | der Koprozessor den geschriebenen Slot hasht |
+| `Koprozessor startet das neue Image` | er in den neuen Slot neu startet, auf Probe |
+| `Neues Image wird behalten` | das Panel die Identität des neuen Images liest und BUY schreibt |
+
+Der Bildschirm kehrt zum Menü zurück, wenn das Update endet. Das Alarmband
+sagt dann, wie es endete:
+
+| Alarm | Bedeutung |
+| --- | --- |
+| `Koprozessor auf 0.18.0 aktualisiert` | das neue Image läuft und bleibt |
+| `Koprozessor-Update abgebrochen: keine Antwort -- das alte Image läuft` | 4 s lang hat nichts geantwortet |
+| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6 -- das alte Image läuft` | der Koprozessor hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
+| `Koprozessor-Update abgebrochen: Image-Prüfung fehlgeschlagen -- das alte Image läuft` | der SHA-256 des Slots ist nicht der des Images |
+| `Koprozessor-Update abgebrochen: Flash blieb belegt -- das alte Image läuft` | die Sperre des Speichers blieb 10 s zu |
+| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet -- das alte Image läuft` | drei Anläufe ab Block 0 |
+| `Koprozessor-Update abgebrochen: neues Image startete nicht -- das alte Image läuft` | keine Identität vom neuen Image innerhalb 12 s; das Boot-ROM kehrt zum alten zurück |
+| `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` | ein Koprozessor ohne die Update-Pages oder ohne die Partitionstabelle ([Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors)) |
+| `Neues Image des Koprozessors behalten` | ein beim Link-up gefundenes Image auf Probe wurde behalten |
+
+Ausschalten während des Updates: der Koprozessor startet sein altes Image,
+und das nächste Link-up bietet das Update wieder an. Das Update schreibt den
+Slot, aus dem der Koprozessor nicht läuft.
+[Link](Link-de.md#firmware-update-über-den-link) hat die Übertragung, die
+Aufteilung des Flash und die Grenzen. Die Dauer der Übertragung ist nicht
+gemessen.
+
+Die Frage öffnet sich vom Menü aus, nicht von LOGS: das Angebot kommt mit dem
+Link, und LOGS gehört der SD-Karte.
+
 ## Outputs
 
 Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die

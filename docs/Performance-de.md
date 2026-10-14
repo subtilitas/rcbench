@@ -195,8 +195,8 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 096 | 3 072 |
-| `control` | `control_task` | 6 144 | 4 432 | 688 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 160 | 3 008 |
+| `control` | `control_task` | 6 144 | 4 288 | 832 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
