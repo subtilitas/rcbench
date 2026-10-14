@@ -210,9 +210,9 @@ in German, and fails when a string in either language
   (`outputs-protocol`) is exempt, because the list covers the pins beside
   it by design.
 
-The three English overflows above are in `KNOWN_OVERFLOWS` in the tool,
-each with its view, its string and its measurement. They are printed as
-`known` and do not fail; a German finding that equals one word for word is
+An English overflow that is accepted for a time goes into `KNOWN_OVERFLOWS`
+in the tool, with its view, its string and its measurement; the list is
+empty. A listed one is printed as `known` and does not fail; a German finding that equals one word for word is
 the same string in the same place and does not fail either. An entry the
 check no longer finds fails until it is taken off the list. The check also
 fails on a string with no declared width that no view draws.

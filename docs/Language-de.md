@@ -218,9 +218,10 @@ Sprachen
   offener Protokollliste (`outputs-protocol`) ist ausgenommen, weil die
   Liste die Pins daneben absichtlich verdeckt.
 
-Die drei englischen Überläufe oben stehen in `KNOWN_OVERFLOWS` im Werkzeug,
-jeder mit seiner Ansicht, seinem Text und seinem Messwert. Sie werden als
-`known` ausgegeben und schlagen nicht fehl; ein deutscher Befund, der einem
+Ein englischer Überlauf, der für eine Zeit hingenommen wird, kommt in
+`KNOWN_OVERFLOWS` im Werkzeug, mit seiner Ansicht, seinem Text und seinem
+Messwert; die Liste ist leer. Ein gelisteter wird als `known` ausgegeben und
+schlägt nicht fehl; ein deutscher Befund, der einem
 davon Wort für Wort gleicht, ist derselbe Text an derselben Stelle und
 schlägt ebenfalls nicht fehl. Ein Eintrag, den die Prüfung nicht mehr findet,
 schlägt fehl, bis er aus der Liste genommen ist. Die Prüfung schlägt auch bei
