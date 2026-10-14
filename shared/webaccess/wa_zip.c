@@ -289,7 +289,8 @@ uint64_t wa_zip_len_total(const wa_zip_len_t *l)
 
 /* The entry a walk event stands for: its name in the walk's path buffer,
  * a folder's with "/" added; false for the root and the walk's end. */
-static bool entry_of(wa_walk_t *w, wa_walk_ev_t ev, size_t *len, bool *dir)
+static bool entry_of(const wa_walk_t *w, wa_walk_ev_t ev, size_t *len,
+                     bool *dir)
 {
     if (ev != WA_WALK_DIR && ev != WA_WALK_FILE) {
         return false;

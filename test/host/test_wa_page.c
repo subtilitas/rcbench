@@ -37,7 +37,7 @@ static bool sink(void *ctx, const void *data, size_t n)
     ++p->pieces;
     if (p->len + n + 1u > p->cap) {
         p->cap = (p->len + n + 1u) * 2u;
-        p->buf = realloc(p->buf, p->cap);
+        REQUIRE_REALLOC(p->buf, p->cap);
     }
     memcpy(p->buf + p->len, data, n);
     p->len += n;

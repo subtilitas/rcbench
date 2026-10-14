@@ -217,6 +217,8 @@ TEST_CASE(a_card_pulled_part_way_ends_the_walk_with_an_error)
             ev = wa_walk_next(&wk);
         }
         CHECK(ev == WA_WALK_DIR || ev == WA_WALK_FILE);
+        /* cppcheck-suppress redundantAssignment
+         * the walk reads through its own pointer to fs */
         fs.pulled = true;
         ev = wa_walk_next(&wk);
         CHECK_EQ(ev, WA_WALK_ERROR);
@@ -224,6 +226,8 @@ TEST_CASE(a_card_pulled_part_way_ends_the_walk_with_an_error)
         CHECK_EQ(fs.dirs_open, 0);
     }
     /* Given up part way: the handle is closed. */
+    /* cppcheck-suppress redundantAssignment
+     * the walk reads through its own pointer to fs */
     fs.pulled = false;
     wa_walk_t wk;
     wa_walk_begin(&wk, &w);

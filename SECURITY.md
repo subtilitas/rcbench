@@ -3,8 +3,21 @@
 ## Scope
 
 rcbench is a test bench: two microcontrollers, a touch panel and an SD (Secure Digital) card. It
-has no network stack, no accounts, no user data and no remote interface. Two
-classes of report apply.
+has no accounts and no user data. Its one remote interface is the panel's
+Wi-Fi page: an HTTP (hypertext transfer protocol) server that lists and sends
+the card's files and takes a panel firmware image. The radio runs only while
+the FILES & UPDATE screen is open, with the bench SAFE, the supply output off
+and no log run open, and goes off after 10 min without a request. It runs as
+a WPA2 (Wi-Fi Protected Access 2) access point for 1 client or joins a WPA2
+or WPA3 home network. An 8-character access code, new at every start of the
+radio, guards the page unless the operator switches it off on the panel; 16
+wrong codes switch the radio off. An uploaded image installs only after a
+2 s hold on the panel. Current limitations: the page is plain HTTP, so on a
+home network the code and the files cross the network unencrypted; the home
+network's password is kept unencrypted in NVS (non-volatile storage); an
+image is checked against its own SHA-256 (secure hash algorithm, 256 bits),
+not against a signature, so any image built as `rcbench-panel` for the
+ESP32-S3 installs. Two classes of report apply.
 
 ## Unexpected output
 
@@ -38,6 +51,8 @@ Everything that parses input somebody else produced:
 | `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
 | `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |
 | `shared/touch` | the GT911 touch controller's point list as the panel driver reads it: count, track IDs (identifiers), x and y. The panel driver drops a frame whose count is above 5 (`TOUCH_MAX_POINTS`), and `shared/touch` clamps the count to 5 as well; x and y are clamped to the resolution the controller reports at start-up (the LCD (liquid crystal display) size when an axis reads 0 or the read fails), before rotation and mirroring; a track ID repeated in one frame is kept once; a contact that moves more than 120 px (`TOUCH_JUMP_PX`, x plus y distance) in one frame becomes a release and a new press. Not checked here: a reported resolution larger than the screen, which passes coordinates beyond the screen to `shared/ui`; a reported resolution of 32,768 or more on an axis, which the driver casts to a negative `int16_t`, so `touch_map_apply` takes a size of 1 and maps every coordinate on that axis to 1 value; and the range of a track ID |
+| `shared/fwupdate` | a panel firmware image uploaded over Wi-Fi: refused before it is stored when it is larger than the slot (4,063,232 bytes); then the ESP image header (magic byte, chip ID of the ESP32-S3, a segment count from 1 to 16, every segment's length within the file), the application description (magic word, project name `rcbench-panel` with its terminator, a version of the form MAJOR.MINOR.PATCH), the hash flag, the appended SHA-256 over the whole image and no bytes after it. An image that fails any check is not offered for install |
+| `shared/webaccess` | requests to the Wi-Fi page: the URI (uniform resource identifier) path of a card file (percent decoding; `..`, an absolute path, a backslash, an encoded `.` or `/` that forms a traversal, NUL, a name over 255 characters and a path over 384 bytes are refused, and the path stays under the card's mount point), the access code from the form and the cookie (8 characters, compared in full), the upload's declared length, and mDNS (multicast domain name system) queries: at most 512 bytes, every label and compression pointer checked against the packet's end, at most 16 pointer hops |
 
 The table holds two kinds of module. The first kind is derived from the
 function names in the public headers under `shared/` and `protocols/`. The

@@ -270,7 +270,7 @@ TEST_CASE(the_running_views_draw_and_wifi_off_asks_off)
         }
         fresh();
         v.radio = (wifi_radio_t)r;
-        strcpy(v.name, "rcbench-1a2b");
+        strcpy(v.name, "rcbench-1A2B");
         strcpy(v.pass, "abcd2345");
         strcpy(v.code, "mnpq6789");
         strcpy(v.net, "Workshop");

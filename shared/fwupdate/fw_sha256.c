@@ -32,7 +32,7 @@ static uint32_t ror(uint32_t x, unsigned n)
 static void compress(fw_sha256_t *s, const uint8_t *p)
 {
     uint32_t w[64];
-    for (unsigned i = 0; i < 16u; ++i) {
+    for (size_t i = 0; i < 16u; ++i) {
         w[i] = ((uint32_t)p[4u * i] << 24) | ((uint32_t)p[4u * i + 1u] << 16)
                | ((uint32_t)p[4u * i + 2u] << 8) | (uint32_t)p[4u * i + 3u];
     }
@@ -121,7 +121,7 @@ void fw_sha256_done(fw_sha256_t *s, uint8_t out[FW_SHA256_BYTES])
         s->block[56u + i] = (uint8_t)(bits >> (56u - 8u * i));
     }
     compress(s, s->block);
-    for (unsigned i = 0; i < 8u; ++i) {
+    for (size_t i = 0; i < 8u; ++i) {
         out[4u * i]      = (uint8_t)(s->h[i] >> 24);
         out[4u * i + 1u] = (uint8_t)(s->h[i] >> 16);
         out[4u * i + 2u] = (uint8_t)(s->h[i] >> 8);

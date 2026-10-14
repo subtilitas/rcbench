@@ -1542,7 +1542,7 @@ or a computer needs:
 | --- | --- |
 | Band and channel | 2.4 GHz, channel 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Security | WPA2 (Wi-Fi Protected Access 2) personal |
-| Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-1A2B` |
+| Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-3F7A` |
 | Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
 | Clients | 1 at a time |
 | Address | `http://192.168.4.1/` |
@@ -1596,7 +1596,7 @@ screen then offers JOIN HOME NETWORK.
 ![Joined](img/wifi-joined.png)
 
 Joined, the screen shows the network, the panel's address and its name,
-`http://rcbench-1A2B.local/`, with the same 4 hex digits as the access
+`http://rcbench-3F7A.local/`, with the same 4 hex digits as the access
 point's name. The name answers through mDNS (multicast domain name system)
 on computers that resolve `.local` names; which phones do is not measured.
 The address works on every one.

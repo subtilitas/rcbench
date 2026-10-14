@@ -1221,7 +1221,7 @@ static void pose_wifi(const char *view)
     wifi_view_t v;
     memset(&v, 0, sizeof(v));
     v.code_on = true;
-    strcpy(v.name, "rcbench-3f7a");
+    strcpy(v.name, "rcbench-3F7A");
     strcpy(v.run_ver, RCBENCH_VERSION_STRING);
     if (strcmp(view, "wifi-home") == 0) {
         v.have_net = true;
@@ -1236,7 +1236,7 @@ static void pose_wifi(const char *view)
         v.radio = WIFI_RADIO_AP;
         strcpy(v.pass, "k7mqx3ha");
         strcpy(v.code, "r4tcw9pe");
-        v.channel = 1;
+        v.channel = 6;   /* WIFI_ACCESS_AP_CHANNEL */
         v.idle_left_s = 574;
         v.up = WIFI_UP_RECEIVING;
         v.received = 917504u;

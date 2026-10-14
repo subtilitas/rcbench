@@ -36,7 +36,7 @@ def check_full(path, rows):
         infos = z.infolist()
         if len(infos) != len(rows):
             return f"{path.name}: {len(infos)} entries, manifest {len(rows)}"
-        for info, row in zip(infos, rows):
+        for info, row in zip(infos, rows, strict=True):
             kind, name, size, crc, mtime = row[:5]
             if info.filename != name:
                 return f"{path.name}: entry {info.filename!r}, want {name!r}"
@@ -60,7 +60,8 @@ def check_full(path, rows):
     # unzip says "zipfile is empty" with exit 1 for an archive with no
     # entries; zipfile has read that one already.
     if r.returncode != 0 and not (len(rows) == 0 and r.returncode == 1):
-        return f"{path.name}: unzip -t exit {r.returncode}: {r.stdout}{r.stderr}"
+        return (f"{path.name}: unzip -t exit {r.returncode}: "
+                f"{r.stdout}{r.stderr}")
     return None
 
 
@@ -70,7 +71,7 @@ def check_sparse(path, rows):
             infos = z.infolist()
             if len(infos) != len(rows):
                 return f"{path.name}: {len(infos)} entries"
-            for info, row in zip(infos, rows):
+            for info, row in zip(infos, rows, strict=True):
                 _, name, size, _, _, offset = row
                 if info.filename != name or info.file_size != int(size):
                     return f"{path.name}: {info.filename} {info.file_size}"
@@ -102,7 +103,8 @@ def main():
         return 1
     failed = 0
     for path in names:
-        lines = path.with_suffix(".txt").read_text(encoding="utf-8").splitlines()
+        manifest = path.with_suffix(".txt")
+        lines = manifest.read_text(encoding="utf-8").splitlines()
         rows = [ln.split("\t") for ln in lines[1:]]
         check = check_full if lines[0] == "# full" else check_sparse
         err = check(path, rows)

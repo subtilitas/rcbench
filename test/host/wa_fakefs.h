@@ -96,7 +96,12 @@ static inline int fake_add_in(fake_fs_t *fs, int p, const char *name,
 {
     if (fs->count == fs->cap) {
         fs->cap *= 2;
-        fs->n = realloc(fs->n, (size_t)fs->cap * sizeof(fake_node_t));
+        fake_node_t *grown = realloc(fs->n,
+                                     (size_t)fs->cap * sizeof(fake_node_t));
+        if (grown == NULL) {
+            abort();
+        }
+        fs->n = grown;
     }
     const int i = fs->count++;
     fake_node_t *n = &fs->n[i];
@@ -104,6 +109,9 @@ static inline int fake_add_in(fake_fs_t *fs, int p, const char *name,
     const char *pp = fs->n[p].path;
     const size_t pl = strlen(pp), nl = strlen(name);
     n->path = malloc(pl + nl + 2u);
+    if (n->path == NULL) {
+        abort();
+    }
     if (pl > 0u) {
         memcpy(n->path, pp, pl);
         n->path[pl] = '/';
@@ -155,6 +163,9 @@ static inline void *fake_opendir(void *ctx, const char *path)
         return NULL;
     }
     fake_dir_t *d = malloc(sizeof(*d));
+    if (d == NULL) {
+        return NULL;
+    }
     d->at = fs->n[i].first;
     if (++fs->dirs_open > fs->dirs_open_max) {
         fs->dirs_open_max = fs->dirs_open;
@@ -201,6 +212,9 @@ static inline void *fake_open(void *ctx, const char *path)
         return NULL;
     }
     fake_file_t *f = malloc(sizeof(*f));
+    if (f == NULL) {
+        return NULL;
+    }
     f->node = i;
     f->pos = 0u;
     ++fs->files_open;

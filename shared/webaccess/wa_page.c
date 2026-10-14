@@ -55,6 +55,9 @@ typedef enum {
 static const char *const k_en[P_COUNT] = {
     [P_FIRMWARE]     = "Panel firmware",
     [P_INSTALLED]    = "Installed: ",
+    /* One text in three literals: the initialisers are designated, so no
+     * comma is missing. */
+    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
     [P_FW_NOTE]      = "Upload a panel image, rcbench-panel-vX.Y.Z.bin. The "
                        "panel checks it and asks. It installs only after "
                        "INSTALL is held for 2 s on the panel.",
@@ -99,6 +102,7 @@ static const char *const k_en[P_COUNT] = {
 static const char *const k_de[P_COUNT] = {
     [P_FIRMWARE]     = "Panel-Firmware",
     [P_INSTALLED]    = "Installiert: ",
+    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
     [P_FW_NOTE]      = "Ein Panel-Image hochladen, rcbench-panel-vX.Y.Z.bin. "
                        "Das Panel prüft es und fragt. Es installiert erst, "
                        "wenn INSTALL am Panel 2 s gehalten wird.",

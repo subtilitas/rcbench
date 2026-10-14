@@ -108,13 +108,14 @@ HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
 def anchors(text: str) -> set[str]:
     """The fragment ids GitHub derives from a page's headings.
 
-    Lowercase, punctuation dropped, spaces to hyphens.  Close enough to
-    GitHub's rule for the links this project actually writes.
+    Lowercase, punctuation dropped, each space to a hyphen, so
+    "Files & update" is "files--update".  Close enough to GitHub's rule for
+    the links this project actually writes.
     """
     out = set()
     for heading in HEADING_RE.findall(text):
         slug = re.sub(r"[^\w\s-]", "", heading.lower()).strip()
-        out.add(re.sub(r"\s+", "-", slug))
+        out.add(re.sub(r"\s", "-", slug))
     return out
 
 
@@ -555,7 +556,8 @@ def check_shared_modules(problems: list[str]) -> None:
 # coprocessor ".../../shared/link": the last path element is the module
 # either way.
 MODULE_DIR_RE = re.compile(r'add_subdirectory\(\s*"[^"]*?/(\w+)"')
-REQUIRES_RE = re.compile(r"REQUIRES\s+([^)\n]+)")
+# A REQUIRES list runs to the closing parenthesis, over several lines.
+REQUIRES_RE = re.compile(r"REQUIRES\s+([^)]+)")
 TABLE_ROW_RE = re.compile(
     r"^\|\s*((?:`\w+`\s*(?:·\s*)?)+)\|([^|]*)\|([^|]*)\|([^|]*)\|\s*$", re.M)
 

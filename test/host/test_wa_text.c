@@ -195,7 +195,7 @@ static bool sink(void *ctx, const void *data, size_t n)
     CHECK(n <= WA_OUT_BUF);
     if (s->len + n + 1u > s->cap) {
         s->cap = (s->len + n + 1u) * 2u;
-        s->buf = realloc(s->buf, s->cap);
+        REQUIRE_REALLOC(s->buf, s->cap);
     }
     memcpy(s->buf + s->len, data, n);
     s->len += n;

@@ -49,7 +49,7 @@ static bool name_ok(const char *s, size_t n)
 static uint32_t join(wa_walk_t *w, uint32_t base, const char *name, size_t n)
 {
     const size_t len = base + ((base > 0u) ? 1u : 0u) + n;
-    if (len > WA_PATH_MAX) {
+    if (base >= WA_PATH_MAX || len > WA_PATH_MAX) {
         return 0u;
     }
     if (base > 0u) {

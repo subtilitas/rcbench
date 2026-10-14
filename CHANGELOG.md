@@ -28,9 +28,52 @@ history is in git.
   bubble is open. Any tap closes it and does nothing else; a press on STOP
   closes it and stops at once. Leaving the screen, or the chip going,
   closes it. German text in `ui_text_de.c`.
+- The panel updates its own firmware over Wi-Fi. LOGS → WI-FI opens FILES &
+  UPDATE, which starts the radio as an access point (2.4 GHz, channel 6,
+  WPA2, `rcbench-` and 4 hex digits, an 8-character password new at every
+  start, 1 client, `http://192.168.4.1/`) or joins a home network (WPA2 or
+  WPA3 personal) chosen from a scan of up to 16 networks or typed as a
+  hidden network on the panel's keyboard. A browser uploads
+  `rcbench-panel-vX.Y.Z.bin` into PSRAM; the panel checks the whole image
+  (ESP32-S3 image header, project name, version, appended SHA-256, size
+  against the slot) and asks with both versions, saying when the image is
+  older. INSTALL is a 2 s hold on the panel; the browser cannot start it. The
+  write switches the radio off, withholds the heartbeat so the coprocessor
+  holds its outputs in failsafe, shows the bytes and the percentage on a
+  full screen without band and restarts the panel. The new build's first
+  start is a trial: it is kept once display and touch are up, otherwise the
+  build before starts again and says so on the band.
+- The same page lists every file on the card with its size in bytes and its
+  modification time, sends each one, and sends the whole card as one stored
+  ZIP file (ZIP64 over 4 GiB − 1 B or 65,535 entries) with its size shown
+  before the click. The page reads the card only.
+- An 8-character access code, new at every start of the radio, guards the
+  page; 16 wrong codes switch the radio off. ACCESS CODE switches it off
+  for both ways in; the screen then says the page is open to every device
+  on the network.
+- The radio runs only while FILES & UPDATE is open, with the bench SAFE,
+  the supply output off and no log run open. It is off at every start and
+  goes off on ARMED, STOP, the supply output, a log run, 10 min without a
+  request and before an install writes the flash.
+- The panel's keyboard has a Wi-Fi mode: lower case, upper case (`ABC`) and
+  the 32 ASCII marks (`#+=`), 8 to 63 characters for a password, 1 to 32
+  bytes for a network name, the password shown as dots until SHOW.
+- Each release carries the panel application on its own,
+  `rcbench-panel-vX.Y.Z.bin`, covered by `SHA256SUMS`, for the upload.
 
 ### Changed
 
+- The panel's flash has two application slots of 4,063,232 bytes, `ota_0`
+  at 0x20000 and `ota_1` at 0x400000, and `otadata` at 0x10000. The 1 MiB
+  `storage` partition is gone, and `boardart` is 128 KiB at 0x7E0000 with
+  8 slots of 16 KiB. `nvs` and `phy_init` keep their offsets. A panel
+  flashed with an earlier release needs one flash over USB to reach this
+  layout; the parts keep the settings, the merged image at 0x0 erases them,
+  and the stored board drawing is fetched again
+  ([First run, §1](docs/FirstRun.md#1-flash-both-boards)).
+- The panel's application version (`esp_app_desc_t.version`) is the release
+  number from `shared/link/include/rcbench_version.h`.
+- The panel's bootloader is built with application rollback.
 - The bench configurator describes release 0.18.0. Every repository source
   of its data is a file and line at the tag `v0.18.0`; 28 sources carry the
   line of that tag. The sources of the logger, of the arm decision and of the

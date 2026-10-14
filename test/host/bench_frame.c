@@ -200,11 +200,11 @@ int main(int argc, char **argv)
         wifi_view_t v;
         memset(&v, 0, sizeof(v));
         v.code_on = true;
-        strcpy(v.name, "rcbench-3f7a");
+        strcpy(v.name, "rcbench-3F7A");
         strcpy(v.pass, "k7mqx3ha");
         strcpy(v.code, "r4tcw9pe");
         v.radio = WIFI_RADIO_AP;
-        v.channel = 1;
+        v.channel = 6;
         v.idle_left_s = 600;
         if (strcmp(mode, "wifi-keys") == 0) {
             /* CHOOSE HOME NETWORK, a list of one, its row: the password

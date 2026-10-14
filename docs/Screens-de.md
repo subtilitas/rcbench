@@ -1697,7 +1697,7 @@ ein Telefon oder ein Rechner braucht:
 | --- | --- |
 | Band und Kanal | 2.4 GHz, Kanal 6 (`WIFI_ACCESS_AP_CHANNEL`) |
 | Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
-| Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-1A2B` |
+| Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-3F7A` |
 | Passwort | 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o) |
 | Clients | 1 gleichzeitig |
 | Adresse | `http://192.168.4.1/` |
@@ -1755,7 +1755,7 @@ Storage), und der Bildschirm bietet dann HEIMNETZ VERBINDEN an.
 ![Verbunden](img/de/wifi-joined.png)
 
 Verbunden zeigt der Bildschirm das Netz, die Adresse des Panels und seinen
-Namen, `http://rcbench-1A2B.local/`, mit denselben 4 Hex-Ziffern wie der
+Namen, `http://rcbench-3F7A.local/`, mit denselben 4 Hex-Ziffern wie der
 Name des Access Points. Der Name antwortet über mDNS (Multicast Domain Name
 System) auf Rechnern, die `.local`-Namen auflösen; welche Telefone das tun,
 ist nicht gemessen. Die Adresse geht auf jedem.

@@ -51,7 +51,7 @@ static const char *TAG = "wifi";
 
 #define NVS_NS        "wifi"
 #define WORKER_STACK  5120u
-#define MDNS_STACK    3072u
+#define MDNS_STACK    4096u
 #define HTTPD_STACK   8192u
 /* Below the UI loop's priority would starve the page; above it a ZIP
  * download would starve the frame.  Equal shares the core by time slice. */

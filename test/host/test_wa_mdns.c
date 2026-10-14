@@ -131,7 +131,7 @@ TEST_CASE(a_second_question_and_compressed_names_are_followed)
     q[n++] = 12u;
     memcpy(q + n, "rcbench-1A2B", 12u);
     n += 12u;
-    q[n++] = (uint8_t)(0xC0u | (local_at >> 8));
+    q[n++] = 0xC0u;    /* a pointer; local_at is under 256 */
     q[n++] = (uint8_t)local_at;
     q[n++] = 0u;
     q[n++] = 1u;

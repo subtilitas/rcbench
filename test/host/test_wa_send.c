@@ -42,7 +42,7 @@ static int64_t send_all(fake_fs_t *fs, int node, uint64_t size, int *pieces)
         CHECK(n <= (int32_t)WA_SEND_CHUNK);
         for (int32_t k = 0; k < n; ++k) {
             if (g_buf[k] != fake_byte(node, (uint64_t)total + (uint64_t)k)) {
-                CHECK(!"a byte differs");
+                T_FAIL("byte %ld differs", (long)(total + k));
                 return -3;
             }
         }
@@ -134,6 +134,8 @@ TEST_CASE(a_card_pulled_between_pieces_fails_and_closes)
     CHECK_EQ(fs.files_open, 0);
     /* Gone before it opened. */
     CHECK(!wa_send_begin(&s, &w, "f", 10000u));
+    /* cppcheck-suppress redundantAssignment
+     * the send reads through its own pointer to fs */
     fs.pulled = false;
     CHECK(!wa_send_begin(&s, &w, "missing", 1u));
     CHECK(!wa_send_begin(&s, NULL, "f", 1u));

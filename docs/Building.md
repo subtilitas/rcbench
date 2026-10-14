@@ -28,6 +28,8 @@ rcbench/
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
     sense/                INA228 and INA3221 current monitor drivers
+    fwupdate/             panel firmware image check · upload staging · installer
+    webaccess/            Wi-Fi session · card listing and ZIP stream · the page · mDNS
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -76,7 +78,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `artwork` · `esc` | ✔ | | ✔ |
+| `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 

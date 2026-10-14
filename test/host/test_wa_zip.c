@@ -16,18 +16,21 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#define _FILE_OFFSET_BITS 64
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #include "greatest.h"
 
 #include "wa_fakefs.h"
 #include "wa_zip.h"
+
+/* The sparse archives seek past 4 GiB. */
+_Static_assert(sizeof(off_t) >= 8, "off_t must hold an offset past 4 GiB");
 
 #ifndef ZIP_OUT_DIR
 #define ZIP_OUT_DIR "wa_zip_out"
@@ -93,6 +96,8 @@ static uint64_t write_zip(fake_fs_t *fs, const char *name, uint32_t piece)
     CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
     uint32_t *crc = calloc((size_t)plan.entries + 1u, sizeof(uint32_t));
     wa_zip_t *z = malloc(sizeof(*z));
+    REQUIRE_ALLOC(z);
+    REQUIRE_ALLOC(crc);
     CHECK_EQ(wa_zip_begin(z, &w, &plan, crc, plan.entries), WA_ZIP_OK);
     char path[512];
     out_path(path, sizeof(path), name, "zip");
@@ -106,6 +111,9 @@ static uint64_t write_zip(fake_fs_t *fs, const char *name, uint32_t piece)
             break;
         }
         CHECK(n <= (int32_t)piece);
+        if ((size_t)n > sizeof(g_buf)) {
+            break;    /* failed above */
+        }
         fwrite(g_buf, 1u, (size_t)n, f);
         total += (uint64_t)n;
     }
@@ -130,7 +138,7 @@ static uint64_t write_zip(fake_fs_t *fs, const char *name, uint32_t piece)
 static void setup_dir(void)
 {
     if (mkdir(ZIP_OUT_DIR, 0755) != 0 && errno != EEXIST) {
-        CHECK(!"cannot make the output folder");
+        T_FAIL("cannot make %s", ZIP_OUT_DIR);
     }
 }
 
@@ -352,6 +360,7 @@ static void zip_breaks(int how)
     CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
     uint32_t crc[8];
     wa_zip_t *z = malloc(sizeof(*z));
+    REQUIRE_ALLOC(z);
     CHECK_EQ(wa_zip_begin(z, &w, &plan, crc, 8u), WA_ZIP_OK);
     if (how == 0) {
         fs.n[b].fail_at = 7000;          /* a read error in the second file */
@@ -409,6 +418,7 @@ TEST_CASE(too_few_crc_slots_are_refused_before_a_byte)
     CHECK_EQ(wa_zip_plan(&w, &plan), WA_ZIP_OK);
     uint32_t crc[2];
     wa_zip_t *z = malloc(sizeof(*z));
+    REQUIRE_ALLOC(z);
     CHECK_EQ(wa_zip_begin(z, &w, &plan, crc, 1u), WA_ZIP_MEMORY);
     CHECK_EQ(wa_zip_next(z, g_buf, 4096u), -1);
     CHECK_EQ(wa_zip_begin(z, &w, &plan, NULL, 2u), WA_ZIP_MEMORY);

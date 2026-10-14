@@ -132,6 +132,9 @@ static void drop_hold_if_gone(void)
 
 void wifi_screen_set(const wifi_view_t *v)
 {
+    /* Padding that differs reads as a change and costs one repaint; a
+     * member that differs always differs in its bytes. */
+    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
     if (v == NULL || memcmp(v, &s.v, sizeof(s.v)) == 0) {
         return;
     }
@@ -326,7 +329,8 @@ static void key_event(const touch_event_t *evt)
         s.sub = SUB_SCAN;
     } else if (r == UI_TEXTKEY_OK && s.sub == SUB_KEY_SSID) {
         /* The keyboard holds a name to 32 bytes; the copy holds it too. */
-        const size_t n = strnlen(out, WIFI_SSID_MAX);
+        const char *end = memchr(out, '\0', WIFI_SSID_MAX);
+        const size_t n = (end != NULL) ? (size_t)(end - out) : WIFI_SSID_MAX;
         memcpy(s.pick, out, n);
         s.pick[n] = '\0';
         char title[48];
@@ -782,6 +786,8 @@ static void u_reset(void)
 
 void update_screen_set(const update_view_t *v)
 {
+    /* As wifi_screen_set(): padding costs a repaint at most. */
+    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
     if (v != NULL && memcmp(v, &u.v, sizeof(u.v)) != 0) {
         u.v = *v;
         u.drawn_mask = 0u;
