@@ -461,8 +461,21 @@ document.addEventListener('focusin', (event) => {
     triggerHelp(row);
     placeHelp(row);
     placeShownHelp();
+    if (target instanceof Element && target.matches(':focus-visible')) showFocusedRow(row);
   }
 });
+
+/**
+ * Brings the row of a tick the keyboard focused into view with its bubble, at once. The page scrolls smoothly: a
+ * smooth scroll an earlier Tab started goes on after this focus, and the browser starts none for a tick that is in
+ * view at the moment of the focus, so that scroll would carry the tick out of view. Stopping it where it is comes
+ * first; the bubble is brought in before the row, so the row wins where both do not fit.
+ */
+function showFocusedRow(row: HTMLElement): void {
+  window.scrollTo({ left: window.scrollX, top: window.scrollY, behavior: 'instant' });
+  row.querySelector<HTMLElement>(':scope > .bubble')?.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+  row.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+}
 document.addEventListener('pointerover', (event) => {
   const target = event.target instanceof Element ? event.target : null;
   const row = target?.closest<HTMLElement>('#choose .row > .info')?.parentElement;

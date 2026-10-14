@@ -33,6 +33,19 @@ history is in git.
   charger row of the parts list. The parts list row of the PD mini Buck
   version keeps the 0.5 V of the vendor.
 
+### Fixed
+
+- Two SETUP hints fit their 36 cells: "For the remaining-charge estimate"
+  and "If the ESC reports none; 0 = empty". The LOGS import range shows no
+  decimal from 1000 in magnitude, 999.95 included, which one decimal rounds
+  up to 1000.0, and has a space before the unit. A range wider than the 17
+  glyphs of its 140 px box drops the decimal, then that space, so two
+  5-digit negative ends with a 3-letter unit fit; a wider range is cut at
+  the box's edge. `render_ui.py` lists no known overflow.
+- The configurator keeps a tick that Tab reaches during a smooth scroll in
+  view with its help bubble: the focus stops the running scroll and scrolls
+  the bubble and the row into view at once.
+
 ## 0.18.0 - 2026-10-14
 
 The link protocol is 4.20. A 0.17 board still links and arms with a 0.18
