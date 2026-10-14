@@ -6,6 +6,55 @@ history is in git.
 
 ## Unreleased
 
+## 0.18.0 - 2026-10-14
+
+The link protocol is 4.20. A 0.17 board still links and arms with a 0.18
+one, since only the protocol's major number has to match, and an arm then
+drives every output: a 0.18 panel writes ARM 1 to a coprocessor older than
+4.18, and a 0.17 panel writes 1 to a 0.18 coprocessor. The arm by screen
+role needs both boards at 0.18. The SERVO frame rate on the PWM
+(pulse-width modulation) target alone and the refusal of a pulse longer
+than its frame need a 0.18 coprocessor. A 0.18 panel draws the board of a
+0.17 coprocessor from its shape, and a 0.17 panel reads neither the drawing
+a 0.18 coprocessor serves nor a version 2 record of an interrupted servo
+write. Flash both boards. PICK A PIN draws the coprocessor's board from a
+drawing the coprocessor serves: the outline, the parts and every pad in
+0.01 mm, 1,560 bytes with 40 pads and 102 shapes for the RP2350-CAN, checked
+by the panel before it is shown. The board photograph is removed, and the
+coprocessor image is 203,808 bytes smaller (184,360 bytes). PICK A PIN has
+the protocol list of the Outputs screen, the count of the 8 slots in use and
+a PAD column, and shows the programming port's pin (GP13 by default) as
+taken. An arm drives only the outputs of the screen's role: MOTOR & ESC
+(electronic speed controller) and a PROGRAMMER stick run arm the throttle
+channels, SERVO the surfaces and programming ports. The band reads ARMED
+MOTOR or ARMED SERVO, and an arm for the other role switches to SAFE first
+and arms after 100 ms. The screens that drive an output name its pins:
+`TARGET: GP0 GP1` on MOTOR & ESC, the TARGET row on SERVO, `PD MINI TX GP12
+RX GP13` on SUPPLY. RUN on ESC STICK is refused while no pin is bound as a
+throttle, and leaving SUPPLY, SERVO or ESC STICK switches off a PD mini
+output that screen switched on. The coprocessor refuses a PWM endpoint
+longer than the frame (1999 µs at 500 Hz) and a slew above 3000 (300 %/s),
+and its TONE page answers BUSY (6) for a pin in use. The supply state shows
+no valid reading after 1.5 s without a new one, and an output that is on
+goes off after 3 s. A PD mini set point is capped 700 mV under the module's
+input, 200 mV above the line a live output is cut at. The panel build stops
+on ESP-IDF (Espressif IoT Development Framework) v5.5.0 and v5.5.1: their
+TWAI (two-wire automotive interface) driver sends a CAN (Controller Area
+Network) frame of DLC (data length code) 0 as DLC 8, and a panel built there
+never links. CI (continuous integration) builds v5.4 and v5.5.3. The bench
+states read SAFE and ARMED in English and German. The bench log and the
+supply log end in a column `source` (`measured` or `model`), and a last row
+without a line feed is left out. The ESC and SERVO classes of PROGRAMMER
+carry the MODELLED mark. The bench configurator adds the function "Program
+a KST or Chaservo servo", a list of the parts to buy with a "Have it" tick
+per row, a help bubble for each function and part in English and German,
+the heat per resistor of the motor simulator, and the 7 to 12 V DC (direct
+current) supply of the Osoyoo breakout board, and it keeps the selection and
+the language in the browser. The reply time of a real PD mini module, the
+voltage drop on a real source and the level of the servo's reply on GP13
+are not measured; the current the Osoyoo board's DC supply must deliver is
+not stated.
+
 ### Added
 
 - PICK A PIN draws the coprocessor's board from a drawing the coprocessor
@@ -416,8 +465,8 @@ history is in git.
   500 Hz and 560 Hz. A stored PWM slot that breaks the rule starts unbound.
   Link protocol 4.16. The panel writes a programming port the range the
   SERVO screen names before it switches the port's pulse on.
-- Text corrections, no behaviour change: SECURITY.md lists all 10 input
-  parsers; the Manifest drops its state column and points to STATUS.md;
+- Text corrections, no behaviour change: SECURITY.md lists the input
+  parsers of 19 modules; the Manifest drops its state column and points to STATUS.md;
   STATUS.md, Building and the READMEs list the `pages.yml` workflow and the
   directory layout; sizes, counts and figures in the KST, DShot, configurator,
   NOTICE and First run texts match the code; the Servo, OpenYGE and
@@ -523,8 +572,9 @@ history is in git.
   on the owner's machine, outside it; `ci.yml` no longer runs
   `session.py check`.
 - The KST README names Tool Card #2 and Chaservo in its list of what is
-  measured. The 19,178 us flash window is stated as 1 sample with the flash
-  part not yet identified.
+  measured. `docs/Screens.md` and its German page state the 19,178 us
+  window of a coprocessor flash save as 1 sample, with the flash part not
+  yet identified.
 - The release of the bench configurator is stated once, in the `version`
   field of `configurator/package.json`. The data file, the page header, the
   trademark notice, the print head, the source-link tag and the data check
@@ -648,21 +698,22 @@ history is in git.
   `/raw/main/` above it. It prints page and line. The docs workflow
   installs markdown-it-py 3.0.0 before the rewrite.
 
-- The panel writes the board photograph to its flash only on a bench that
-  is disarmed, with no arm waiting, and with the supply output off and no ON
-  queued. The write (about 52 erases and 52 writes of 4 kB for a 206 kB
-  picture) runs on the control task, one sector per 5 ms pass, and pauses
-  between two sectors when the bench is armed or the supply comes on. It
-  resumes from the same sector on the first safe pass. Arming and the supply
-  are not refused while it waits. Before, the write started after every
-  fetch on a task of its own, armed or not, and each erase stalled both
-  cores: STOP, OUTPUT OFF, the supply trips and the heartbeat waited for it,
-  and a stall over 150 ms disarmed the bench. The settings save and the
-  photograph keep ask one rule, `flash_gate_open()` in
+- The panel writes the board drawing to its flash only on a bench in SAFE,
+  with no arm waiting, and with the supply output off and no ON queued. The
+  write (2 erases of 4 kB, 1 sector written and read back and the header for
+  the 1,560-byte drawing of the RP2350-CAN; at most 3 erases for the
+  largest drawing, 5,328 bytes) runs on the control task, one step per 5 ms
+  pass, and pauses between two steps when the bench is armed or the supply
+  comes on. It resumes from the same step on the first safe pass. Arming and
+  the supply are not refused while it waits. Before, the write started after
+  every fetch on a task of its own, armed or not, and each erase stalled
+  both cores: STOP, OUTPUT OFF, the supply trips and the heartbeat waited
+  for it, and a stall over 150 ms disarmed the bench. The settings save and
+  the drawing keep ask one rule, `flash_gate_open()` in
   `shared/safety/flash_gate.c`, under the new host suite `test_flash_gate`.
   The settings save now also waits while an arm is waiting. The `artkeep`
   task and its 4,096-byte stack are gone. `tools/stack_check.py` follows the
-  photograph store's flash callbacks by name (`FLASH_CALLS`).
+  artwork store's flash callbacks by name (`FLASH_CALLS`).
 - A log file whose last row has no line feed reads without that row. A
   write cut off by a power loss or a full card leaves the bytes the card
   took: a row cut after `95` of `9554` read back as 95 rpm. The panel's
@@ -777,11 +828,9 @@ history is in git.
 - The docs workflow no longer cancels a publish in progress when a later push
   starts one (`cancel-in-progress: false`).
 - With the environment variable `CI` set, a missing C++ compiler fails the
-  CMake configure step of `test/host`, a missing `node` fails
-  `tools/research/session.py check`, and a missing `git`, `cmake`, `cc` or
+  CMake configure step of `test/host`, and a missing `git`, `cmake`, `cc` or
   `c++` fails the cases of `test/tools` that need it. Each of these skipped
-  and exited 0. The owner self-test of `session.py` reads a plan and
-  a commit of its own throwaway repository, not the working repository's.
+  and exited 0.
 - The docs job and the job of the Release workflow that waits for CI with
   `tools/ci_gate.py` time out after 100 min; the gate waits up to 5400 s
   (90 min). A shorter limit ends the job while it waits.
