@@ -14,9 +14,10 @@ shows.
 
 Every screen is rendered in English into docs/img/ and in German into
 docs/img/de/.  --fit builds the renderer with GFX_TEXT_TRACE, draws every
-view in both languages and fails when a string is wider than its box, is cut
-at the edge of the area it is drawn in, runs past the shape it is printed
-on, overlaps another string, or is painted over by a fill drawn after it.
+view and every FIT_ONLY view in both languages and fails when a string is
+wider than its box, is cut at the edge of the area it is drawn in, runs past
+the shape it is printed on, overlaps another string, or is painted over by a
+fill drawn after it.
 The English overflows in KNOWN_OVERFLOWS are listed and do not fail; one of
 them that no longer overflows fails until it is taken off the list.
 
@@ -136,6 +137,12 @@ SCREENS = {
     # The same menu in the other theme, committed so a palette change that
     # breaks one theme is caught.
     "overview-light": ("overview-light.png", "overview", "light"),
+    # The help bubbles of the band's chips over the menu: FAULT with the
+    # three bits this release sets, LINK, SAFE, and ARMED MOTOR.
+    "band-fault": ("band-fault.png", "overview", "dark"),
+    "band-link":  ("band-link.png",  "overview", "dark"),
+    "band-safe":  ("band-safe.png",  "overview", "dark"),
+    "band-armed": ("band-armed.png", "overview", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
@@ -397,9 +404,25 @@ SLACK_Y = 2
 # something a label sits inside.
 MIN_SHAPE = 8
 
-# Views that open a drop-down over the screen: the list covers the labels
-# beside it by design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"}
+# Views the fit check draws and no page shows: the band's other bubbles,
+# so every string of every bubble is measured where it is drawn.  The same
+# shape as SCREENS, with no committed file.
+FIT_ONLY = {
+    "band-fault-all":   (None, "overview", "dark"),
+    "band-nolink":      (None, "overview", "sim"),
+    "band-bench":       (None, "overview", "dark"),
+    "band-sim":         (None, "overview", "sim"),
+    "band-armed-servo": (None, "overview", "dark"),
+    "band-armed-all":   (None, "overview", "dark"),
+    "band-armed-sim":   (None, "overview", "sim"),
+    "band-clock":       (None, "overview", "dark"),
+}
+
+# Views that open a drop-down or a chip's help bubble over the screen: the
+# list or the bubble covers the labels under it by design, so a fill drawn
+# over a string is not a finding there.
+OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"} | {
+    name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has today: (view, string, finding), word for
 # word as --fit prints them.  Each is a defect of the screen, listed here so
@@ -600,7 +623,7 @@ def fit(views, langs) -> int:
         findings = []
         for lang in sorted(langs, key=lambda x: x != "en"):
             for name in views:
-                filename, screen, theme = SCREENS[name]
+                filename, screen, theme = {**SCREENS, **FIT_ONLY}[name]
                 trace = tmp / f"{name}-{lang}.trace"
                 render_one(exe, tmp, name, screen, theme, lang, trace)
                 items, used = read_trace(trace)
@@ -659,7 +682,10 @@ def main() -> int:
 
     wanted = args.screens or list(SCREENS)
     for name in wanted:
-        if name not in SCREENS:
+        # A FIT_ONLY view has no committed file: it is measured or written
+        # where -o says.
+        if name not in SCREENS and not (name in FIT_ONLY
+                                         and (args.fit or args.output)):
             sys.exit(f"unknown screen {name!r}; expected one of "
                      f"{', '.join(SCREENS)}")
     langs = list(LANGS) if args.lang == "all" else [args.lang]
@@ -667,7 +693,9 @@ def main() -> int:
         sys.exit("--output takes exactly one screen and one --lang")
 
     if args.fit:
-        return fit(wanted, langs)
+        # A subset is the views asked for; the whole run adds FIT_ONLY.
+        return fit(wanted if args.screens else wanted + list(FIT_ONLY),
+                   langs)
 
     try:
         from PIL import Image  # noqa: F401
@@ -681,7 +709,7 @@ def main() -> int:
 
         for lang in langs:
             for name in wanted:
-                filename, screen, theme = SCREENS[name]
+                filename, screen, theme = {**SCREENS, **FIT_ONLY}[name]
 
                 out = args.output or (args.dir / LANGS[lang] / filename)
                 rendered = render_one(exe, tmp, name, screen, theme, lang)

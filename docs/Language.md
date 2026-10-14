@@ -114,6 +114,7 @@ One German word per English concept, on every screen and in the report.
 | screen (a page of the interface) | Seite |
 | screen (the display) | Bildschirm |
 | coprocessor | Koprozessor |
+| emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread | Akku, Zelle, Streuung |
 | peak | Spitze (max on a card) |
@@ -202,7 +203,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 149 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 161 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

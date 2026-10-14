@@ -34,6 +34,38 @@ const char *ui_band_mode(bool link_up);
 const char *ui_band_armed_label(uint8_t roles);
 
 /**
+ * Where @p chip is drawn for @p st, in panel coordinates, into @p out (which
+ * may be NULL).  False when @p st draws no such chip: no FAULT chip while
+ * the bitmap is 0, no clock before a run, no mode chip without a mode.
+ */
+bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
+                       gfx_rect_t *out);
+
+/**
+ * The chip a touch at (@p x, @p y) lands on, or UI_BAND_CHIP_NONE.  A chip
+ * is hit across the band's whole height and 4 px either side, half the gap
+ * to the next one; STOP and the home tag are not chips.
+ */
+ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y);
+
+/**
+ * The help bubble of @p chip for @p st, in panel coordinates: under the
+ * band, at the chip's left edge, moved left as far as the panel's right
+ * edge needs, and as tall as its text.  FAULT's spans the panel, so a line
+ * per bit has room.  False when the chip is not drawn.
+ */
+bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
+                       gfx_rect_t *out);
+
+/**
+ * Draw the help bubble of @p chip for @p st: the chip's label as its title,
+ * then what the state means for the bench and what to do about it, in the
+ * language showing.  Built from @p st each time, so it follows the state.
+ */
+void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
+                         ui_band_chip_t chip);
+
+/**
  * Draw the band.  @p title is the current screen's title, or NULL on the
  * splash, which has no home tag and no bench status.
  */

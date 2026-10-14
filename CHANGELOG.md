@@ -6,6 +6,18 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- A tap on a chip of the status band opens a help bubble under the band
+  that says what the chip's state means for the bench and what to do: LINK
+  or NO LINK, BENCH or SIM, FAULT, SAFE or ARMED and the run clock. The
+  FAULT bubble has one paragraph per set bit of the code, names the four
+  bits this release never sets, and gives the bits the panel has no name
+  for as a code. The text follows the state while the bubble is open. Any
+  tap closes it and does nothing else; a press on STOP closes it and stops
+  at once. Leaving the screen, or the chip going, closes it. German text in
+  `ui_text_de.c`.
+
 ## 0.18.0 - 2026-10-14
 
 The link protocol is 4.20. A 0.17 board still links and arms with a 0.18

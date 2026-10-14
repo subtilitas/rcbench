@@ -60,6 +60,56 @@ Band sind die oberen 48 px des Panels.
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
   noch auf dem Glas liegt, auf der Übersicht nichts.
 
+### Hilfe zu den Chips
+
+Ein Tipp auf einen Chip des Bands öffnet unter dem Band einen Kasten, der
+sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun
+ist: LINK oder KEIN LINK, der Modus, FEHLER, der Arm-Chip und die
+Laufzeituhr. Der Kasten öffnet 4 px unter dem Band an der linken Kante des
+getippten Chips, so weit nach links verschoben, dass er 8 px innerhalb des
+Panels bleibt. Er ist 520 px breit; der Kasten von FEHLER reicht über das
+Panel (784 px), mit einem Absatz pro gesetztem Bit. Kein Kasten reicht ins
+Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
+
+- Ein Tipp öffnet ihn: Drücken und Abheben auf demselben Chip. Ein Druck,
+  der vor dem Abheben vom Chip rutscht, öffnet nichts.
+- Der Text folgt dem Zustand, solange der Kasten offen ist. Ein neuer Fehler
+  erscheint sofort, ein gelöschter verschwindet, und ein Kasten folgt seinem
+  Chip, wenn die Laufzeituhr erscheint und die Chips verschiebt.
+- Ein Kasten, dessen Chip verschwindet, schließt sich: FEHLER, wenn die
+  Fehler gelöscht sind, die Laufzeituhr, wenn sie verschwindet.
+- Jeder Tipp schließt ihn und tut sonst nichts. Eine Kachel, eine
+  Schaltfläche, ein anderer Chip oder das Alert-Band unter dem Finger wird
+  nicht gedrückt.
+- STOP ist die Ausnahme: Ein Druck auf STOP schließt den Kasten und stoppt
+  sofort, wie ohne Kasten.
+- Das Verlassen des Bildschirms schließt ihn.
+- Ein Finger, der auf dem Bildschirm zieht, während ein zweiter Finger einen
+  Kasten öffnet, wird wie an der Kante des Bands losgelassen.
+
+Der Kasten von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
+
+| Code | Bit | Von diesem Release gesetzt |
+| --- | --- | --- |
+| 01 | LINK_SILENT | der Koprozessor hat 200 ms keine Anfrage gehört; bleibt bis zum nächsten ARM |
+| 02 | OVERCURRENT | nie |
+| 04 | OVERTEMP | nie |
+| 08 | STALL | nie |
+| 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht: nach jedem STOP bis zum nächsten ARM, bei gedrücktem Not-Aus oder offener Heartbeat-Leitung |
+| 20 | VERSION | nie |
+| 40 | STORE_OFF | der Koprozessor kann in diesem Start nicht in seinen Flash schreiben |
+
+Bei einem Bit, das dieses Release nie setzt, oder einem, das das Panel nicht
+kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
+
+![Der Kasten von FEHLER mit LINK_SILENT, HEARTBEAT und STORE_OFF](img/de/band-fault.png)
+
+![Der Kasten von LINK](img/de/band-link.png)
+
+![Der Kasten von SAFE](img/de/band-safe.png)
+
+![Der Kasten von ARMED MOTOR](img/de/band-armed.png)
+
 ## Das Alert-Band
 
 Eine Störung, die der Bildschirm selbst nicht zeigt, erscheint in einem roten

@@ -117,6 +117,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | screen (eine Seite der Oberfläche) | Seite |
 | screen (das Display) | Bildschirm |
 | coprocessor | Koprozessor |
+| emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread | Akku, Zelle, Streuung |
 | peak | Spitze (max auf einer Karte) |
@@ -209,7 +210,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 149 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 161 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 

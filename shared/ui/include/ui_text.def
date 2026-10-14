@@ -26,6 +26,32 @@ UI_TEXT(BAND_SAFE,                  0, "SAFE")
 UI_TEXT(BAND_FAULT,                12, "FAULT %02X")
 UI_TEXT(BAND_NO_LINK,              12, "NO LINK")
 
+/* --------------------------------------------- the band's help bubbles
+ * A tap on a chip of the band opens one.  Each is wrapped to the bubble's
+ * width, so a view draws it and --fit measures it there; test_nav holds
+ * the bubble above the alert strip in its tallest state. */
+UI_TEXT(BH_LINK_UP,                 0, "The coprocessor answers on the CAN bus. The screens drive its outputs and show its readings; the panel asks every 50 ms. If it stops answering while ARMED, the bench switches to SAFE.")
+UI_TEXT(BH_NO_LINK,                 0, "No coprocessor answers; the panel asks once a second. The screens run on the panel's own model, and the coprocessor's outputs stay off. Check the coprocessor's power and the CAN cable. A coprocessor on another protocol major version shows NO LINK too: flash both boards from one release.")
+UI_TEXT(BH_MODE_BENCH,              0, "The coprocessor answers. The screens drive its outputs and show what it reports. When it stops answering, the mode switches to SIM.")
+UI_TEXT(BH_MODE_SIM,                0, "No coprocessor answers. The screens run on the panel's own model: the numbers are simulated, not measured, and an arm drives no output. When a coprocessor answers, the mode switches to BENCH and an arm made here switches to SAFE.")
+UI_TEXT(BH_SAFE,                    0, "No motor or servo output gets a pulse. To drive them, hold ARM for 2 s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY switches apart from this; STOP switches it off too.")
+UI_TEXT(BH_ARMED_MOTOR,             0, "The motor outputs get pulses; the servo outputs get none.")
+UI_TEXT(BH_ARMED_SERVO,             0, "The servo outputs get pulses; the motor outputs get none.")
+UI_TEXT(BH_ARMED_ALL,               0, "Every bound motor and servo output gets pulses.")
+UI_TEXT(BH_ARMED_REST,              0, "A channel with no command for 500 ms sits at rest: a throttle at 0, a servo at the middle of its travel. STOP, DISARM or leaving the screen switches to SAFE.")
+UI_TEXT(BH_ARMED_SIM,               0, "No coprocessor answers: the arm runs the panel's model and drives no output.")
+UI_TEXT(BH_CLOCK,                   0, "The length of the current run, from the switch to ARMED. At SAFE it stops and shows the last run until the next arm. Minutes and seconds; hours from 60 min.")
+UI_TEXT(BH_F_LINK_SILENT,           0, "The coprocessor heard nothing for 200 ms and switched to SAFE on its own; the PD mini output is off. A panel restart or a loose CAN cable can cause this. The bit stays until the next arm. If it comes back, check the CAN cable.")
+UI_TEXT(BH_F_OVERCURRENT,           0, "A stop on overcurrent.")
+UI_TEXT(BH_F_OVERTEMP,              0, "A stop on overtemperature.")
+UI_TEXT(BH_F_STALL,                 0, "A stop on a stalled motor.")
+UI_TEXT(BH_F_HEARTBEAT,             0, "The safety line from the panel to the coprocessor has stopped. After any stop the panel holds it until the next arm; otherwise the emergency stop is pressed or the heartbeat wire is open. The coprocessor is SAFE and refuses ARMED; the PD mini output is off. Release the emergency stop or check the wire, then hold ARM.")
+UI_TEXT(BH_F_VERSION,               0, "The two ends disagree on the version.")
+UI_TEXT(BH_F_STORE_OFF,             0, "The coprocessor cannot write its flash this boot. Set-ups sent to it work, but from RAM, and are lost when it restarts. Restart it to try again; whether that clears the bit is not measured.")
+UI_TEXT(BH_F_NEVER,                 0, "This release never sets it.")
+UI_TEXT(BH_F_OTHER,                 0, "Other bits (%04X): not known to this panel.")
+UI_TEXT(BH_F_FLASH,                 0, "For a bit this release never sets, flash both boards from one release.")
+
 /* ------------------------------------------------------- keypads */
 UI_TEXT(KEYPAD_RANGE,               0, "%.*f to %.*f %s")
 UI_TEXT(TEXTKEY_COUNT,              0, "%d of %d")
