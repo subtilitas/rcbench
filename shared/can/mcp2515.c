@@ -77,7 +77,8 @@ bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f)
     return true;
 }
 
-bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f)
+bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f,
+                       uint32_t *refused)
 {
     if (fetch == NULL || f == NULL) {
         return false;
@@ -89,6 +90,9 @@ bool mcp2515_recv_next(mcp2515_fetch_fn fetch, void *ctx, link_can_frame_t *f)
         }
         if (mcp2515_decode_rx(buf, f)) {
             return true;
+        }
+        if (refused != NULL) {
+            ++*refused;
         }
     }
     return false;

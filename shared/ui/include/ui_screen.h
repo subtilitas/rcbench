@@ -175,6 +175,14 @@ typedef struct {
     uint32_t link_errors;
 
     /**
+     * CAN frames the coprocessor refused to decode since its power-up,
+     * modulo 2^32: STATUS registers 8 and 9, protocol 4.21.  0 for a
+     * coprocessor older than 4.21, which does not count them, and until the
+     * first status read after a link-up.
+     */
+    uint32_t link_refused;
+
+    /**
      * The panel's own die temperature in degrees Celsius, or NAN when it is
      * not read.  The panel's, not the coprocessor's: the two boards run at
      * different temperatures and this one is the display's.

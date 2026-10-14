@@ -32,7 +32,7 @@ capture stay on the coprocessor, and only results travel.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the coprocessor transmits only when asked. Worst-case
 payload 52 kB/s against 12 to 30 kB/s of expected traffic. Protocol version
-4.20. [Reference](docs/Link.md).
+4.21. [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO6 (J8) from the core that does
 not draw. The task runs every 5 ms; the line edges every 20 ms
@@ -301,7 +301,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_router.c` | 296 | 292 | 98.7% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 83 | 80 | 96.4% |
-| `shared/ui/motor_screen.c` | 628 | 614 | 97.8% |
+| `shared/ui/motor_screen.c` | 631 | 615 | 97.5% |
 | `shared/ui/supply_screen.c` | 1089 | 1072 | 98.4% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
@@ -364,9 +364,9 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/prog_link.c` | 171 | 171 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 145 | 135 | 93.1% |
-| `shared/can/mcp2515.c` | 42 | 41 | 97.6% |
-| `shared/link/link_bringup.c` | 61 | 61 | 100.0% |
-| `shared/link/link_can.c` | 94 | 92 | 97.9% |
+| `shared/can/mcp2515.c` | 44 | 43 | 97.7% |
+| `shared/link/link_bringup.c` | 81 | 81 | 100.0% |
+| `shared/link/link_can.c` | 102 | 100 | 98.0% |
 | `shared/link/link_crc.c` | 13 | 13 | 100.0% |
 | `shared/link/link_dev.c` | 86 | 83 | 96.5% |
 | `shared/link/link_host.c` | 136 | 132 | 97.1% |

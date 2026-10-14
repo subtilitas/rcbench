@@ -591,6 +591,7 @@ static struct {
     uint32_t      pressed;     /**< of the stops, those pressed */
     uint16_t      faults;
     uint32_t      link_errors;
+    uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
     uint32_t      run_seconds;
     char          alert[ALERT_MAX];
     bool          alert_pending;
@@ -3741,10 +3742,11 @@ static void link_report(void)
              (unsigned long)s_bring.rx_crc_errors,
              (unsigned long)s_bring.rx_resyncs);
     if (s_bring.have_status) {
-        ESP_LOGI(TAG, "  iomcu  frames %lu crc %lu resync %lu",
+        ESP_LOGI(TAG, "  iomcu  frames %lu crc %lu resync %lu refused %lu",
                  (unsigned long)s_bring.dev_frames,
                  (unsigned long)s_bring.dev_crc_errors,
-                 (unsigned long)s_bring.dev_resyncs);
+                 (unsigned long)s_bring.dev_resyncs,
+                 (unsigned long)s_bring.dev_refused);
     } else {
         ESP_LOGI(TAG, "  iomcu  never answered a status read");
     }
@@ -7243,6 +7245,10 @@ static void link_came_up(const link_msg_t *reply)
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
+    /* A refusal count is the coprocessor's that sent it: the band shows
+     * none until this one's status page is read. */
+    s_bring.have_refused = false;
+    s_bring.dev_refused  = 0u;
     (void)servo_rate_reset();
     s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
     /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME). */
@@ -7357,21 +7363,19 @@ static void link_came_up(const link_msg_t *reply)
 }
 
 /*
- * The status page's counters, into the bring-up record.
+ * The status page's counters, into the bring-up record.  A 4.21 or later
+ * coprocessor is asked for its refusal count as well; an older one refuses
+ * a read past its 8 registers, so it is asked for those
+ * (link_bringup_status_count()) and its count stays 0.
  */
 static void read_status_counters(void)
 {
     link_msg_t st;
-    if (poll_page(&s_host, LINK_PAGE_STATUS, LINK_ST_COUNT, &st)
-        && st.op == LINK_OP_DATA) {
-        s_bring.dev_frames = (uint32_t)st.regs[LINK_ST_FRAMES_LO]
-                             | ((uint32_t)st.regs[LINK_ST_FRAMES_HI] << 16);
-        s_bring.dev_crc_errors = st.regs[LINK_ST_CRC_ERRORS];
-        s_bring.dev_resyncs    = st.regs[LINK_ST_RESYNCS];
-        s_dev_faults           = st.regs[LINK_ST_FAULTS];
-        /* Two of link_bringup's diagnoses are gated on this; it was lost in
-         * the move and left every one of them dead. */
-        s_bring.have_status    = true;
+    if (poll_page(&s_host, LINK_PAGE_STATUS,
+                  link_bringup_status_count(s_far_minor), &st)
+        /* have_status, which two of link_bringup's diagnoses are gated
+         * on, is set here. */
+        && link_bringup_take_status(&s_bring, &st, &s_dev_faults)) {
         /* The band shows the bitmap as a code; a store that keeps nothing
          * this boot is said in words, once per link-up. */
         sense_link_faults(&s_sense_link, s_dev_faults);
@@ -7677,6 +7681,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
     s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
                          + (uint32_t)s_bring.dev_resyncs;
+    s_snap.link_refused = s_bring.dev_refused;
     s_snap.run_seconds = arming_run_seconds(&s_arm);
     s_snap.mcu_temp_c  = s_mcu_c;
     tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
@@ -8759,6 +8764,7 @@ void app_main(void)
         bool     link_up;
         uint16_t faults;
         uint32_t link_errors;
+        uint32_t link_refused;
         float    mcu_temp_c;
         uint32_t run_seconds;
         char     alert[ALERT_MAX];
@@ -8768,6 +8774,7 @@ void app_main(void)
         link_up     = s_snap.link_up;
         faults      = s_snap.faults;
         link_errors = s_snap.link_errors;
+        link_refused = s_snap.link_refused;
         mcu_temp_c  = s_snap.mcu_temp_c;
         run_seconds = s_snap.run_seconds;
         have_alert  = s_snap.alert_pending;
@@ -8798,6 +8805,7 @@ void app_main(void)
             .simulated   = bench_state_simulated(&bench),
             .capabilities = (uint16_t)atomic_load(&s_capabilities),
             .link_errors = link_errors,
+            .link_refused = link_refused,
             .mcu_temp_c  = mcu_temp_c,
         };
         ui_router_set_status(&status);

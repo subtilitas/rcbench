@@ -47,6 +47,19 @@ const char *ui_band_armed_label(uint8_t roles)
     }
 }
 
+bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    if (st == NULL || !st->link_up || st->link_refused == 0u) {
+        return false;
+    }
+    snprintf(out, n, TR(LINK_REFUSED), (unsigned long)st->link_refused);
+    return true;
+}
+
 /* ---------------------------------------------------------------- chips */
 
 /* The chip's label for @p st, in @p buf where it is formatted. */

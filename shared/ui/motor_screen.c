@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "ui_band.h"
 #include "ui_hero.h"
 #include "ui_pinlist.h"
 #include "ui_plot.h"
@@ -861,12 +862,22 @@ static void draw_header(gfx_canvas_t *c)
                   ui_theme_color(UI_C_BG));
 
     /* The band already carries the output mode, so this strip does not
-     * repeat it: what it adds is the poll rate and the link's error count. */
+     * repeat it: what it adds is the poll rate and the link's error count,
+     * and while the coprocessor has refused a frame, how many. */
     char line[64];
     snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
              (unsigned long)st->link_errors);
     gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* At its widest, a 10-digit count after a 3-digit error count in German,
+     * the label ends at x = 572: left of the temperatures while the panel's
+     * own MCU reads under 100 C. */
+    char refused[48];
+    if (ui_link_refused_label(st, refused, sizeof(refused))) {
+        gfx_text(c, x0 + gfx_text_width(&gfx_font_8x16, line, 1) + 16,
+                 HDR_Y + 1, refused, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
 
     /*
      * The protocol carries a flag per channel for exactly this: a bench whose

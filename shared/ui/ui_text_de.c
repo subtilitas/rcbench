@@ -28,6 +28,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_BAND_SAFE]              = "SAFE",
     [TX_BAND_FAULT]             = "FEHLER %02X",
     [TX_BAND_NO_LINK]           = "KEIN LINK",
+    [TX_LINK_REFUSED]           = "Abgelehnte Link-Frames: %lu",
 
     /* -------------------------------------------- the band's help bubbles */
     [TX_BH_LINK_UP]             = "Der Koprozessor antwortet auf dem CAN-Bus. Die Seiten steuern seine Ausgänge und zeigen seine Messwerte; das Panel fragt alle 50 ms. Antwortet er bei ARMED nicht mehr, schaltet der Prüfstand auf SAFE.",

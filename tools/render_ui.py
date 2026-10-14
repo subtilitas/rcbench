@@ -148,6 +148,9 @@ SCREENS = {
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
+    # A coprocessor that has refused link frames: the count after the
+    # error count in the header strip, with the link up.
+    "motor-refused": ("motor-refused.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
     # The INA3221 as the servo rail's meter: its name over the plot and
     # CH1's windows in the CURRENT row, the line and the plot; and the same

@@ -223,7 +223,13 @@ Der Streifen über beiden Spalten trägt die Abfragerate, die Fehlerzahl des
 Links (CRC-Fehler und Resyncs zusammengezählt; CRC: Cyclic Redundancy Check)
 und drei Temperaturen. ESC und MOT kommen von der Bench-Page. MCU ist der
 eigene Die des Panels, gelesen vom Sensor des ESP32-S3: die Temperatur der
-Displayplatine, nicht die des Koprozessors.
+Displayplatine, nicht die des Koprozessors. Solange der Link steht und der
+Koprozessor seit dem Einschalten Link-Frames abgelehnt hat, zeigt der
+Streifen nach der Fehlerzahl, wie viele: `Abgelehnte Link-Frames: 37`. Ein
+Koprozessor älter als Protokoll 4.21 sendet keine Zahl, und der Streifen
+zeigt keine ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)).
+
+![MOTOR & ESC mit 37 abgelehnten Link-Frames](img/de/motor-refused.png)
 
 Das Gas bewegt sich um die Strecke, die ein Finger zurücklegt, nicht auf die
 Stelle, an der er landet. Ein Druck auf den Track kommandiert nichts, eine
