@@ -1835,9 +1835,21 @@ enum {
  * with LINK_NACK_NOT_ARMED.  BEGIN, COMMIT and ACTIVATE need the store's
  * gate open -- the bank not driving, the supply's output off, no servo
  * programming session -- and refuse with LINK_NACK_BUSY while it is shut.
- * Link silence of 5 s (LINK_UPD_SILENCE_MS) ends a session with
- * LINK_UPD_ERR_LINK.
- * A restart ends it as well; the panel then starts again from block 0.
+ * Five seconds (LINK_UPD_SILENCE_MS) without a request to UPDATE_CTL or
+ * UPDATE_DATA ends a session with LINK_UPD_ERR_LINK; the panel's ordinary
+ * polling does not keep one alive.  A restart ends it as well; the panel
+ * then starts again from block 0.  A panel that finds a session it did not
+ * start -- its own, from before it restarted -- ends it with ABORT.
+ *
+ * After a BUY the slot the image came from must hold no image the boot ROM
+ * could start, or a later normal boot may choose between two.  The
+ * coprocessor erases that slot's first sector: at the BUY when the gate is
+ * open, and otherwise, or after an erase that failed, once a second while
+ * the gate is open until the erase holds.  It owes the same erase after any
+ * start that finds the other slot's first sector written outside a session
+ * or a trial.  LINK_UPD_SLOT_OTHER says the erase is owed.  The BUY is
+ * acknowledged when the boot ROM took it, owed erase or not: the bought
+ * image is the one a normal boot prefers either way.
  *
  * A command is one frame: a write of 1 to 4 registers starting at
  * LINK_UPD_CMD, the arguments after it.  Any other write to UPDATE_CTL is
@@ -1883,6 +1895,8 @@ enum {
 #define LINK_UPD_SLOT_MASK   0x000Fu
 /** The running image is on trial and waits for BUY. */
 #define LINK_UPD_SLOT_TRIAL  0x0100u
+/** The other slot's first sector still waits for its erase. */
+#define LINK_UPD_SLOT_OTHER  0x0200u
 
 typedef enum {
     LINK_UPD_IDLE      = 0, /**< no session                                 */

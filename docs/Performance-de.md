@@ -195,7 +195,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 160 | 3 008 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 144 | 3 024 |
 | `control` | `control_task` | 6 144 | 4 288 | 832 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -238,7 +238,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 708 | 528 | 1 604 |
+| Kern 0 | `main` | 4 096 | 1 716 | 528 | 1 596 |
 | Kern 1 | `core1_main` | 4 096 | 640 | 528 | 2 672 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
@@ -247,12 +247,12 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 636 Bytes ergibt.
+für Kern 0 1 708 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (464 Bytes), `can_service` (344),
-`link_dev_dispatch`, `slots_write`, `slots_take`, `outputs_hw_apply_only`,
-`out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
+im pico-sdk scheitert: `main` (472 Bytes), `can_service` (336),
+`link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
+`slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
 aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in

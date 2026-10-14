@@ -180,7 +180,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,160 | 3,008 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,144 | 3,024 |
 | `control` | `control_task` | 6,144 | 4,288 | 832 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
@@ -221,7 +221,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,708 | 528 | 1,604 |
+| core 0 | `main` | 4,096 | 1,716 | 528 | 1,596 |
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -229,11 +229,12 @@ Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
 differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. The frames named below are those of a build with
-ARM GNU 14.2, which gives 1,636 bytes for core 0.
+ARM GNU 14.2, which gives 1,708 bytes for core 0.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (464 bytes), `can_service` (344), `link_dev_dispatch`,
-`slots_write`, `slots_take`, `outputs_hw_apply_only`, `out_dshot_bind`, the
+pico-sdk: `main` (472 bytes), `can_service` (336), `link_dev_dispatch`,
+`slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
+`outputs_hw_apply_only`, `out_dshot_bind`, the
 pico-sdk's claim of a PIO (programmable input/output) state machine, and
 `panic()` with what it calls to print, 228 bytes. The deepest handler is
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain

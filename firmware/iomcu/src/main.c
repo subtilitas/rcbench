@@ -2288,7 +2288,7 @@ int main(void)
         tone_core1_sync(&s_tone);
         /* The firmware update's slice of a hash, its restart, and the end
          * of a session the panel stopped talking to. */
-        update_hw_poll(now, s_dev.last_request_ms);
+        update_hw_poll(now);
 
         /*
          * Two independent watchdogs, and both before the bank is armed.  The

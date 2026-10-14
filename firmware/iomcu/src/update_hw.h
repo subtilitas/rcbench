@@ -34,9 +34,10 @@ void    update_hw_data_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out);
 uint8_t update_hw_data_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in);
 
-/** Once per pass: a slice of a hash, the restart after ACTIVATE, the end of
- *  a session whose link has gone silent since @p heard_ms. */
-void update_hw_poll(uint32_t now_ms, uint32_t heard_ms);
+/** Once per pass: a slice of a hash, the restart after ACTIVATE, an owed
+ *  erase of the other slot's first sector, the end of a session that has
+ *  had no update request for 5 s. */
+void update_hw_poll(uint32_t now_ms);
 
 /** True while ARM is refused: an update session or an image on trial. */
 bool update_hw_holds_arm(void);

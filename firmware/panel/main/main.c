@@ -7776,9 +7776,12 @@ static uint32_t   s_cu_starts_taken;
 /* CANCEL holds for the version it was given for, until the panel restarts. */
 static bool         s_cu_declined;
 static cu_version_t s_cu_declined_for;
-/* Render side -> control task: STARTs and CANCELs given on the question. */
+/* Render side -> control task: STARTs given on the question, and the offer
+ * the question was declined for (its offer_gen; 0 none). */
 static atomic_uint s_cu_starts;
-static atomic_bool s_cu_decline;
+static atomic_uint s_cu_declined_gen;
+/* Control task: the offer_gen of the offer published last. */
+static uint32_t    s_cu_offer_gen;
 
 static cu_version_t cu_carried(void)
 {
@@ -7818,6 +7821,7 @@ static void cu_publish_offer(bool offered)
     if (offered) {
         ++s_snap.cu.offer_gen;
     }
+    s_cu_offer_gen = s_snap.cu.offer_gen;
     snap_unlock();
 }
 
@@ -7863,7 +7867,6 @@ static void cu_link_up(const link_msg_t *reply)
                                    reply->regs[LINK_ID_FIRMWARE_MINOR],
                                    reply->regs[LINK_ID_FIRMWARE_PATCH] };
     cu_publish_offer(false);
-    atomic_store(&s_cu_decline, false);
     link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
     s_cu_state = CU_CHECKING;
 }
@@ -8012,7 +8015,9 @@ static bool cu_service(bool *link_up, bench_state_t *bench,
         }
         return false;
     case CU_OFFERED:
-        if (atomic_exchange(&s_cu_decline, false)) {
+        /* A decline counts for the offer it was given on only: one that
+         * crossed a newer link-up's check is for an offer gone. */
+        if (atomic_load(&s_cu_declined_gen) == s_cu_offer_gen) {
             ESP_LOGI(TAG, "coprocessor update declined");
             s_cu_state = CU_DECLINED;
             s_cu_declined = true;
@@ -8643,56 +8648,33 @@ static void outputs_apply(const outbind_t *b)
 /* ------------------------------------------------------------------ main */
 
 /*
- * The coprocessor update's screen, once a frame on the render side.
+ * The coprocessor update's screen, once a frame on the render side:
+ * coproc_update_drive() moves the router and drains the screen's latches,
+ * and its STARTs and decline go to the control task.
  * @p unsafe: armed, an arm waiting, or the supply's output on or coming.
  */
 static void cu_render_service(bool unsafe, const cu_snap_t *cs)
 {
-    static uint32_t shown_gen;     /* the offer the question opened for */
-    static uint32_t starts_sent;
+    static cu_driver_t driver;
 
-    if (ui_router_current() == SCREEN_COPROC_UPDATE) {
-        if (coproc_update_screen_take_start()) {
-            ++starts_sent;
-            atomic_fetch_add(&s_cu_starts, 1u);
-        }
-        if (coproc_update_screen_take_cancel()) {
-            atomic_store(&s_cu_decline, true);
-            if (coproc_update_screen_view() == CU_VIEW_QUESTION) {
-                ui_router_goto(SCREEN_OVERVIEW);
-            }
-        }
+    const cu_feed_t feed = {
+        .offered      = cs->offered,
+        .offer_gen    = cs->offer_gen,
+        .active       = cs->active,
+        .step         = (cu_step_t)cs->step,
+        .block        = cs->block,
+        .blocks       = cs->blocks,
+        .starts_taken = cs->starts_taken,
+        .running      = cs->running,
+        .carried      = cu_carried(),
+    };
+    cu_hand_t hand;
+    coproc_update_drive(&driver, &feed, unsafe, &hand);
+    if (hand.starts > 0u) {
+        atomic_fetch_add(&s_cu_starts, hand.starts);
     }
-
-    if (cs->active) {
-        coproc_update_screen_progress((cu_step_t)cs->step, cs->block,
-                                      cs->blocks);
-        if (ui_router_current() != SCREEN_COPROC_UPDATE) {
-            ui_router_goto(SCREEN_COPROC_UPDATE);
-        }
-        return;
-    }
-
-    if (ui_router_current() == SCREEN_COPROC_UPDATE) {
-        if (coproc_update_screen_view() == CU_VIEW_PROGRESS) {
-            /* Ended, or the START was spent on an offer that had gone. */
-            if (cs->starts_taken == starts_sent) {
-                ui_router_goto(SCREEN_OVERVIEW);
-            }
-        } else if (!cs->offered) {
-            /* The offer went -- another link-up checks again -- and with
-             * it the question.  Leaving it declines nothing. */
-            ui_router_goto(SCREEN_OVERVIEW);
-            (void)coproc_update_screen_take_cancel();
-        }
-        return;
-    }
-
-    if (cs->offered && cs->offer_gen != shown_gen && !unsafe
-        && ui_router_current() == SCREEN_OVERVIEW) {
-        shown_gen = cs->offer_gen;
-        coproc_update_screen_offer(cs->running, cu_carried());
-        ui_router_goto(SCREEN_COPROC_UPDATE);
+    if (hand.decline) {
+        atomic_store(&s_cu_declined_gen, feed.offer_gen);
     }
 }
 

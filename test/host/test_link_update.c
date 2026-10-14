@@ -194,7 +194,7 @@ static void cp_pass(void)
         return;
     }
     if (g_us >= cp.no_poll_until_us) {
-        link_update_dev_poll(&cp.upd, now_ms(), cp.dev.last_request_ms);
+        link_update_dev_poll(&cp.upd, now_ms());
     }
     if (!cp.up) {
         return;   /* the poll restarted it */
@@ -271,14 +271,13 @@ static bool io_buy(void *ctx)
     if (cp.buy_fails) {
         return false;
     }
-    /* The boot ROM clears the flag in flash -- a program, NOR clears it --
-     * and the other image is erased so a normal boot finds this one. */
+    /* The boot ROM clears the flag in flash -- a program, NOR clears it.
+     * The other slot's first sector is the firmware's to erase. */
     uint8_t *slot = g_flash[cp.running];
     const int32_t at = link_update_tbyb_byte(slot, cp.slot_bytes);
     if (at >= 0) {
         slot[at] &= (uint8_t)~LINK_IMAGE_TBYB_BIT;
     }
-    memset(g_flash[1u - cp.running], 0xFF, SECTOR);
     cp.bought = cp.running;
     cp.trial = false;
     return true;
@@ -936,7 +935,7 @@ TEST_CASE(a_shut_gate_refuses_every_flash_write_with_busy)
     CHECK_EQ(cmd(LINK_UPD_CMD_ACTIVATE, 0u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_STATE);   /* still hashing */
     for (int i = 0; i < 10; ++i) {
-        link_update_dev_poll(&cp.upd, now_ms(), now_ms());
+        link_update_dev_poll(&cp.upd, now_ms());
     }
     CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_VERIFIED);
     cp.gate_shut = true;
@@ -972,8 +971,8 @@ TEST_CASE(arm_is_refused_for_the_whole_session_and_disarm_never)
     CHECK_EQ(wr_control(NULL, LINK_CT_ARM, 3u, arm), 0u);
     /* A failed session holds nothing either. */
     CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), 0u);
-    link_update_dev_poll(&cp.upd, now_ms() + LINK_UPD_SILENCE_MS,
-                         now_ms());
+    link_update_dev_poll(&cp.upd, now_ms());
+    link_update_dev_poll(&cp.upd, now_ms() + LINK_UPD_SILENCE_MS);
     CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_FAILED);
     CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_LINK);
     CHECK(!link_update_dev_holds_arm(&cp.upd));
@@ -982,21 +981,40 @@ TEST_CASE(arm_is_refused_for_the_whole_session_and_disarm_never)
 TEST_CASE(link_silence_ends_a_session_and_nothing_shorter_does)
 {
     bench(SLOT_SMALL, 30000u, 0u);
+    /* The state read straight: a read of UPDATE_CTL is update traffic and
+     * would restart the clock. */
     CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), 0u);
     const uint32_t t = now_ms();
-    link_update_dev_poll(&cp.upd, t + LINK_UPD_SILENCE_MS - 1u, t);
-    CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_RECEIVING);
-    link_update_dev_poll(&cp.upd, t + LINK_UPD_SILENCE_MS, t);
-    CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_FAILED);
+    link_update_dev_poll(&cp.upd, t);
+    link_update_dev_poll(&cp.upd, t + LINK_UPD_SILENCE_MS - 1u);
+    CHECK_EQ(cp.upd.state, LINK_UPD_RECEIVING);
+    link_update_dev_poll(&cp.upd, t + LINK_UPD_SILENCE_MS);
+    CHECK_EQ(cp.upd.state, LINK_UPD_FAILED);
     /* Across the wrap of the millisecond clock. */
     CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), 0u);
-    link_update_dev_poll(&cp.upd, 100u, 0xFFFFFF00u);
-    CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_RECEIVING);
-    link_update_dev_poll(&cp.upd, LINK_UPD_SILENCE_MS, 0xFFFFFF00u);
-    CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_FAILED);
+    link_update_dev_poll(&cp.upd, 0xFFFFFF00u);
+    link_update_dev_poll(&cp.upd, 0xFFFFFF00u + LINK_UPD_SILENCE_MS - 1u);
+    CHECK_EQ(cp.upd.state, LINK_UPD_RECEIVING);
+    link_update_dev_poll(&cp.upd, 0xFFFFFF00u + LINK_UPD_SILENCE_MS);
+    CHECK_EQ(cp.upd.state, LINK_UPD_FAILED);
+    /* A request to either page restarts the clock. */
+    CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), 0u);
+    link_update_dev_poll(&cp.upd, 1000u);
+    link_update_dev_poll(&cp.upd, 1000u + LINK_UPD_SILENCE_MS - 1u);
+    uint16_t v;
+    link_update_dev_read_data(&cp.upd, 0u, 1u, &v);
+    link_update_dev_poll(&cp.upd, 1000u + LINK_UPD_SILENCE_MS);
+    link_update_dev_poll(&cp.upd, 1000u + 2u * LINK_UPD_SILENCE_MS - 2u);
+    CHECK_EQ(cp.upd.state, LINK_UPD_RECEIVING);
+    (void)ctl(LINK_UPD_STATE);
+    link_update_dev_poll(&cp.upd, 1000u + 2u * LINK_UPD_SILENCE_MS - 1u);
+    link_update_dev_poll(&cp.upd, 1000u + 3u * LINK_UPD_SILENCE_MS - 2u);
+    CHECK_EQ(cp.upd.state, LINK_UPD_RECEIVING);
+    link_update_dev_poll(&cp.upd, 1000u + 3u * LINK_UPD_SILENCE_MS - 1u);
+    CHECK_EQ(cp.upd.state, LINK_UPD_FAILED);
     /* Idle silence is nothing. */
     CHECK_EQ(cmd(LINK_UPD_CMD_ABORT, 0u, 0u), 0u);
-    link_update_dev_poll(&cp.upd, 1000000u, 0u);
+    link_update_dev_poll(&cp.upd, 1000000u);
     CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_IDLE);
 }
 
@@ -1026,6 +1044,48 @@ TEST_CASE(no_partition_table_means_no_slots)
     CHECK_EQ(ctl(LINK_UPD_SLOT), LINK_UPD_SLOT_NONE | LINK_UPD_SLOT_TRIAL);
     CHECK_EQ(cmd(LINK_UPD_CMD_BUY, 0u, 0u), LINK_NACK_BAD_VALUE);
     CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_BUY);
+}
+
+/* HASH_RUNNING takes one byte to a whole slot, BEGIN waits for the BUY of
+ * an image on trial, and no entry takes NULL. */
+TEST_CASE(the_device_refuses_a_bad_size_a_begin_on_trial_and_null)
+{
+    bench(SLOT_SMALL, 30000u, 0u);
+    CHECK_EQ(cmd(LINK_UPD_CMD_HASH_RUNNING, 0u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_SIZE);
+    const uint32_t over = SLOT_SMALL + 1u;
+    CHECK_EQ(cmd(LINK_UPD_CMD_HASH_RUNNING, (uint16_t)over,
+                 (uint16_t)(over >> 16)), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_SIZE);
+    CHECK_EQ(cmd(LINK_UPD_CMD_HASH_RUNNING, (uint16_t)SLOT_SMALL,
+                 (uint16_t)(SLOT_SMALL >> 16)), 0u);
+    CHECK_EQ(ctl(LINK_UPD_STATE), LINK_UPD_HASHING);
+
+    link_update_dev_init(&cp.upd, &cp.io, g_flash[0], g_flash[1], SLOT_SMALL,
+                         (uint16_t)(LINK_UPD_SLOT_A | LINK_UPD_SLOT_TRIAL));
+    CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), LINK_NACK_BAD_VALUE);
+    CHECK_EQ(ctl(LINK_UPD_ERROR), LINK_UPD_ERR_TRIAL);
+    CHECK_EQ(cp.erases, 0u);
+
+    uint16_t v = 0xBEEFu;
+    const uint16_t c[1] = { LINK_UPD_CMD_ABORT };
+    link_update_dev_init(NULL, &cp.io, g_flash[0], g_flash[1], SLOT_SMALL,
+                         LINK_UPD_SLOT_A);
+    link_update_dev_read_ctl(NULL, 0u, 1u, &v);
+    link_update_dev_read_ctl(&cp.upd, 0u, 1u, NULL);
+    CHECK_EQ(link_update_dev_write_ctl(NULL, LINK_UPD_CMD, 1u, c),
+             LINK_NACK_BAD_VALUE);
+    CHECK_EQ(link_update_dev_write_ctl(&cp.upd, LINK_UPD_CMD, 1u, NULL),
+             LINK_NACK_BAD_VALUE);
+    link_update_dev_read_data(NULL, 0u, 1u, &v);
+    link_update_dev_read_data(&cp.upd, 0u, 1u, NULL);
+    CHECK_EQ(link_update_dev_write_data(NULL, 0u, 1u, c),
+             LINK_NACK_BAD_RANGE);
+    CHECK_EQ(link_update_dev_write_data(&cp.upd, 0u, 1u, NULL),
+             LINK_NACK_BAD_RANGE);
+    link_update_dev_poll(NULL, now_ms());
+    CHECK(!link_update_dev_holds_arm(NULL));
+    CHECK_EQ(v, 0xBEEFu);
 }
 
 /* ------------------------------------------------------------ the engine */
@@ -1427,6 +1487,351 @@ TEST_CASE(a_new_image_that_never_answers_is_rolled_back)
     dead_watchdog();
     advance_us(1000000u);
     check_runs_old();
+}
+
+/* ---- a session left behind, and the erase owed after a BUY */
+
+/* The panel's ordinary poll: one read of CONTROL, as the link's own poll
+ * makes between two of the engine's steps. */
+static void ordinary_poll(void)
+{
+    link_msg_t r;
+    (void)link_read_window(&bus.host, &k_port, LINK_PAGE_CONTROL, 0u, 1u, &r);
+}
+
+/* An ARM written over the link, as the panel arms. */
+static bool arm_taken(void)
+{
+    const uint16_t arm[1] = { LINK_ARM_ALL };
+    link_msg_t r;
+    const bool ok = link_write_acked(&bus.host, &k_port, LINK_PAGE_CONTROL,
+                                     LINK_CT_ARM, 1u, arm, &r)
+                    && r.op == LINK_OP_ACK;
+    const uint16_t disarm[1] = { 0u };
+    (void)link_write_acked(&bus.host, &k_port, LINK_PAGE_CONTROL,
+                           LINK_CT_ARM, 1u, disarm, &r);
+    return ok;
+}
+
+/* An update stepped until the coprocessor's session is in @p state, then
+ * left: the panel that ran it restarted. */
+static bool leave_session_in(uint8_t state, uint32_t len)
+{
+    link_uph_t u;
+    link_uph_update(&u, g_new, len, now_ms());
+    g_u = &u;
+    for (unsigned i = 0; i < 100000u; ++i) {
+        if (cp.upd.state == state) {
+            g_u = NULL;
+            return true;
+        }
+        if (link_uph_step(&u, &bus.host, &k_port) == LINK_UPH_DONE) {
+            break;
+        }
+        advance_us(200u);
+    }
+    g_u = NULL;
+    return false;
+}
+
+/*
+ * A panel that restarts within LINK_UPD_SILENCE_MS of a transfer finds the
+ * coprocessor's session from before, with its own ordinary poll running.
+ * The check ends that session with ABORT, completes, and ARM is taken
+ * again; without the ABORT, HASH_RUNNING is refused and the session holds
+ * ARM.
+ */
+TEST_CASE(a_restarted_panel_ends_the_session_it_left_and_checks)
+{
+    static const uint8_t k_states[] = {
+        LINK_UPD_RECEIVING, LINK_UPD_RECEIVED, LINK_UPD_VERIFYING,
+        LINK_UPD_VERIFIED,
+    };
+    for (size_t i = 0; i < sizeof(k_states); ++i) {
+        bench(SLOT_SMALL, 30000u, 0u);
+        const uint32_t len = 40000u;
+        make_image(g_new, len, 2u, 19u, 0u, 0u);
+        if (!leave_session_in(k_states[i], len)) {
+            T_FAIL("state %u never reached", (unsigned)k_states[i]);
+            continue;
+        }
+        if (k_states[i] == LINK_UPD_VERIFYING) {
+            /* Its hash still running when the check reads the state. */
+            cp.no_poll_until_us = g_us + 300000u;
+        }
+        CHECK(link_update_dev_holds_arm(&cp.upd));
+        CHECK(!arm_taken());
+
+        link_uph_t c;
+        link_uph_check(&c, g_new, len, now_ms());
+        g_u = &c;
+        unsigned steps = 0u;
+        while (link_uph_step(&c, &bus.host, &k_port) != LINK_UPH_DONE
+               && ++steps < 100000u) {
+            ordinary_poll();
+            advance_us(200u);
+        }
+        g_u = NULL;
+        if (c.result != LINK_UPH_DIFFERENT) {
+            T_FAIL("state %u: the check ended %u, error %u",
+                   (unsigned)k_states[i], (unsigned)c.result,
+                   (unsigned)c.error);
+        }
+        CHECK(c.aborted);
+        CHECK(!link_update_dev_holds_arm(&cp.upd));
+        CHECK(arm_taken());
+        check_runs_old();
+        /* The slot it was writing holds no image the boot ROM starts. */
+        CHECK(!image_valid(g_flash[1]));
+        /* And the update after it runs. */
+        CHECK_EQ(update(len, NULL), LINK_UPH_UPDATED);
+        check_runs_new(len);
+    }
+}
+
+/* A session nobody sends to ends LINK_UPD_SILENCE_MS after the last
+ * request to an update page, whatever else the link carries. */
+TEST_CASE(ordinary_polling_does_not_keep_a_session_alive)
+{
+    bench(SLOT_SMALL, 30000u, 0u);
+    const uint32_t len = 40000u;
+    make_image(g_new, len, 2u, 19u, 0u, 0u);
+    if (!leave_session_in(LINK_UPD_RECEIVING, len)) {
+        T_FAIL("no session to leave");
+        return;
+    }
+    const uint32_t t0 = now_ms();
+    bool held_at_4s = false;
+    while ((uint32_t)(now_ms() - t0) < LINK_UPD_SILENCE_MS + 200u) {
+        ordinary_poll();
+        advance_us(100000u);
+        if ((uint32_t)(now_ms() - t0) >= LINK_UPD_SILENCE_MS - 1000u
+            && (uint32_t)(now_ms() - t0) < LINK_UPD_SILENCE_MS - 800u) {
+            held_at_4s = link_update_dev_holds_arm(&cp.upd);
+        }
+    }
+    CHECK(held_at_4s);
+    CHECK_EQ(cp.upd.state, LINK_UPD_FAILED);
+    CHECK_EQ(cp.upd.error, LINK_UPD_ERR_LINK);
+    CHECK(!link_update_dev_holds_arm(&cp.upd));
+    CHECK(arm_taken());
+}
+
+/* A panel that restarts while the coprocessor's restart is due waits for
+ * it and finds the image on trial; a restart that never comes is refused
+ * after LINK_UPH_HASH_MS. */
+TEST_CASE(a_check_that_finds_a_restart_due_waits_for_it)
+{
+    for (int never = 0; never <= 1; ++never) {
+        bench(SLOT_SMALL, 30000u, 0u);
+        const uint32_t len = 40000u;
+        make_image(g_new, len, 2u, 19u, 0u, 0u);
+        if (!leave_session_in(LINK_UPD_ACTIVATED, len)) {
+            T_FAIL("ACTIVATED never reached");
+            continue;
+        }
+        if (never) {
+            /* The main loop that restarts it stalls. */
+            cp.no_poll_until_us =
+                g_us + (uint64_t)(LINK_UPH_HASH_MS + 2000u) * 1000u;
+        }
+        link_uph_t c;
+        link_uph_check(&c, g_new, len, now_ms());
+        const uint32_t t0 = now_ms();
+        const uint8_t got = run(&c, NULL);
+        if (never) {
+            CHECK_EQ(got, LINK_UPH_REFUSED);
+            CHECK_EQ(c.error, LINK_UPD_ERR_STATE);
+            CHECK((uint32_t)(now_ms() - t0) >= LINK_UPH_HASH_MS);
+            CHECK(!c.aborted);
+        } else {
+            CHECK_EQ(got, LINK_UPH_TRIAL);
+            CHECK_EQ(cp.running, 1u);
+            CHECK(cp.trial);
+        }
+    }
+}
+
+/* The ABORT of a session found at the check, lost, refused, or not taking:
+ * sent again, reported, or refused once it was sent. */
+TEST_CASE(an_abort_at_the_check_gone_wrong)
+{
+    static const struct {
+        int      action;
+        uint16_t cmd;
+        unsigned skip;
+        uint8_t  want;
+    } k_cases[] = {
+        { F_LOSE, LINK_UPD_CMD_ABORT, 0u, LINK_UPH_DIFFERENT },
+        { F_NACK, LINK_UPD_CMD_ABORT, 0u, LINK_UPH_REFUSED },
+        { F_EDIT, 0u, 1u, LINK_UPH_REFUSED },
+    };
+    for (size_t i = 0; i < sizeof(k_cases) / sizeof(k_cases[0]); ++i) {
+        bench(SLOT_SMALL, 30000u, 0u);
+        const uint32_t len = 40000u;
+        make_image(g_new, len, 2u, 19u, 0u, 0u);
+        if (!leave_session_in(LINK_UPD_RECEIVING, len)) {
+            T_FAIL("no session to leave");
+            continue;
+        }
+        memset(&g_fault, 0, sizeof(g_fault));
+        g_fault.action = k_cases[i].action;
+        g_fault.phase = LINK_UPH_CHECK_ASK;
+        g_fault.page = LINK_PAGE_UPDATE_CTL;
+        g_fault.times = 1u;
+        g_fault.skip = k_cases[i].skip;
+        if (k_cases[i].action == F_EDIT) {
+            /* The read after the ABORT still finds a session. */
+            g_fault.op = LINK_OP_READ;
+            g_fault.cmd = -1;
+            g_fault.reg = LINK_UPD_STATE;
+            g_fault.val = LINK_UPD_RECEIVING;
+        } else {
+            g_fault.op = LINK_OP_WRITE;
+            g_fault.cmd = (int)k_cases[i].cmd;
+            g_fault.nack = LINK_NACK_BAD_VALUE;
+        }
+        link_uph_t c;
+        link_uph_check(&c, g_new, len, now_ms());
+        const uint8_t got = run(&c, NULL);
+        if (got != k_cases[i].want) {
+            T_FAIL("case %u: the check ended %u, error %u", (unsigned)i,
+                   (unsigned)got, (unsigned)c.error);
+        }
+        CHECK_EQ(g_fault.times, 0u);
+        if (k_cases[i].action == F_EDIT) {
+            CHECK_EQ(c.error, LINK_UPD_ERR_STATE);
+            CHECK(c.aborted);
+        }
+    }
+}
+
+/* The first sector of the slot the image came from, still written. */
+static bool old_slot_written(void)
+{
+    for (uint32_t i = 0; i < SECTOR; ++i) {
+        if (g_flash[0][i] != 0xFFu) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void erase_fails_after_activate(const link_uph_t *u)
+{
+    if (u->phase == LINK_UPH_RESTARTING) {
+        cp.erase_fails_at = 0;
+    }
+}
+
+static void gate_shuts_after_activate(const link_uph_t *u)
+{
+    if (u->phase == LINK_UPH_RESTARTING) {
+        cp.gate_shut = true;
+    }
+}
+
+/*
+ * The erase of the old slot's first sector after a BUY fails: the BUY
+ * stands, the erase is owed (LINK_UPD_SLOT_OTHER), tried again once a
+ * second, and holds once the flash takes it -- across a restart too.
+ */
+TEST_CASE(a_failed_erase_after_buy_is_owed_until_it_holds)
+{
+    bench(SLOT_SMALL, 30000u, 0u);
+    const uint32_t len = 40000u;
+    make_image(g_new, len, 2u, 18u, 0u, 0u);   /* the same version */
+    link_uph_t u;
+    link_uph_update(&u, g_new, len, now_ms());
+    CHECK_EQ(run(&u, erase_fails_after_activate), LINK_UPH_UPDATED);
+    CHECK_EQ(cp.running, 1u);
+    CHECK_EQ(cp.bought, 1u);
+    CHECK(!cp.trial);
+    CHECK(old_slot_written());
+    CHECK(image_valid(g_flash[0]));
+    CHECK((ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER) != 0u);
+    CHECK_EQ(ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_MASK, 1u);
+    CHECK(!link_update_dev_holds_arm(&cp.upd));
+
+    /* Still failing: tried once a second, no more. */
+    const unsigned e0 = cp.erases;
+    advance_us(3500000u);
+    CHECK(cp.erases - e0 >= 3u && cp.erases - e0 <= 4u);
+    CHECK(old_slot_written());
+
+    /* A restart in between: the image bought runs, the erase is owed. */
+    cp.up = false;
+    cp.boot_kind = BOOT_NORMAL;
+    cp.boot_at_us = g_us;
+    advance_us(1000u);
+    if (!cp.up) {
+        T_FAIL("the coprocessor did not start again");
+        return;
+    }
+    CHECK_EQ(cp.running, 1u);
+    CHECK((ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER) != 0u);
+
+    cp.erase_fails_at = -1;
+    advance_us(1100000u);
+    CHECK(!old_slot_written());
+    CHECK_EQ(ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER, 0u);
+    check_runs_new(len);
+    /* Nothing owed is tried again. */
+    const unsigned e1 = cp.erases;
+    advance_us(3000000u);
+    CHECK_EQ(cp.erases, e1);
+}
+
+/* The gate shut at the BUY: bought at once, the erase waits for the gate. */
+TEST_CASE(the_erase_after_buy_waits_for_the_gate)
+{
+    bench(SLOT_SMALL, 30000u, 0u);
+    const uint32_t len = 40000u;
+    make_image(g_new, len, 2u, 19u, 0u, 0u);
+    link_uph_t u;
+    link_uph_update(&u, g_new, len, now_ms());
+    CHECK_EQ(run(&u, gate_shuts_after_activate), LINK_UPH_UPDATED);
+    CHECK(!cp.trial);
+    CHECK(old_slot_written());
+    CHECK((ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER) != 0u);
+    advance_us(5000000u);
+    CHECK(old_slot_written());
+    cp.gate_shut = false;
+    advance_us(2000u);
+    CHECK(!old_slot_written());
+    check_runs_new(len);
+}
+
+/* An image found on trial owes nothing until its BUY, and a slot left
+ * blank owes nothing at all. */
+TEST_CASE(nothing_is_owed_on_trial_or_with_a_blank_slot)
+{
+    bench(SLOT_SMALL, 30000u, 0u);
+    CHECK_EQ(ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER, 0u);
+    memcpy(g_flash[1], g_old, 30000u);
+    link_update_dev_init(&cp.upd, &cp.io, g_flash[0], g_flash[1], SLOT_SMALL,
+                         (uint16_t)(LINK_UPD_SLOT_A | LINK_UPD_SLOT_TRIAL));
+    CHECK_EQ(ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER, 0u);
+    link_update_dev_init(&cp.upd, &cp.io, g_flash[0], g_flash[1], SLOT_SMALL,
+                         LINK_UPD_SLOT_A);
+    CHECK((ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER) != 0u);
+    /* A BEGIN erases the sector itself: nothing owed after it. */
+    CHECK_EQ(cmd(LINK_UPD_CMD_BEGIN, 100u, 0u), 0u);
+    CHECK_EQ(ctl(LINK_UPD_SLOT) & LINK_UPD_SLOT_OTHER, 0u);
+    /* A BUY on a partition table this build does not write: bought, and
+     * no slot to erase. */
+    cp.trial = true;
+    cp.running = 1u;
+    link_update_dev_init(&cp.upd, &cp.io, g_flash[1], NULL, SLOT_SMALL,
+                         (uint16_t)(LINK_UPD_SLOT_B | LINK_UPD_SLOT_TRIAL));
+    CHECK_EQ(ctl(LINK_UPD_SLOT),
+             (uint16_t)(LINK_UPD_SLOT_NONE | LINK_UPD_SLOT_TRIAL));
+    const unsigned e0 = cp.erases;
+    CHECK_EQ(cmd(LINK_UPD_CMD_BUY, 0u, 0u), 0u);
+    CHECK(!cp.trial);
+    CHECK_EQ(ctl(LINK_UPD_SLOT), LINK_UPD_SLOT_NONE);
+    advance_us(3000000u);
+    CHECK_EQ(cp.erases, e0);
 }
 
 TEST_CASE(a_buy_the_boot_rom_refuses_is_reported)
@@ -1876,6 +2281,7 @@ int main(void)
     RUN(arm_is_refused_for_the_whole_session_and_disarm_never);
     RUN(link_silence_ends_a_session_and_nothing_shorter_does);
     RUN(no_partition_table_means_no_slots);
+    RUN(the_device_refuses_a_bad_size_a_begin_on_trial_and_null);
     RUN(an_update_moves_the_coprocessor_to_the_image_and_buys_it);
     RUN(image_sizes_at_the_limits);
     RUN(an_image_one_byte_over_a_slot_needs_usb);
@@ -1894,6 +2300,13 @@ int main(void)
     RUN(an_image_never_bought_goes_back_to_the_old_one);
     RUN(an_image_found_on_trial_is_bought_at_link_up);
     RUN(a_new_image_that_never_answers_is_rolled_back);
+    RUN(a_restarted_panel_ends_the_session_it_left_and_checks);
+    RUN(ordinary_polling_does_not_keep_a_session_alive);
+    RUN(a_check_that_finds_a_restart_due_waits_for_it);
+    RUN(an_abort_at_the_check_gone_wrong);
+    RUN(a_failed_erase_after_buy_is_owed_until_it_holds);
+    RUN(the_erase_after_buy_waits_for_the_gate);
+    RUN(nothing_is_owed_on_trial_or_with_a_blank_slot);
     RUN(a_buy_the_boot_rom_refuses_is_reported);
     RUN(an_old_coprocessor_needs_usb);
     RUN(another_minor_or_major_still_updates);

@@ -102,9 +102,10 @@ Bring-up-Moduls ist nicht bekannt.
 
 Mit der Tabelle geht `rcbench-iomcu.uf2` allein in den Slot, der nicht läuft.
 Welchen Slot ein Einschalten startet, wenn beide Slots ein Image derselben
-Version halten, sagt das Datenblatt des RP2350 nicht; um nach einem
-Entwicklungs-Laden sicher zu wissen, welcher Build läuft, zuerst den anderen
-Slot löschen:
+Version halten, sagt das Datenblatt des RP2350 nicht. Das Image, das
+startet, löscht den ersten Sektor des anderen Slots, die Wahl bleibt also,
+und der andere Build ist weg. Um nach einem Entwicklungs-Laden sicher zu
+wissen, welcher Build läuft, zuerst den anderen Slot löschen:
 
 ```bash
 picotool erase -p 1

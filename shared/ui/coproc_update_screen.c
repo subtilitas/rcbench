@@ -326,6 +326,65 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/* ----------------------------------------------------------- the driver */
+
+void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
+                         cu_hand_t *out)
+{
+    if (out != NULL) {
+        out->starts = 0u;
+        out->decline = false;
+    }
+    if (d == NULL || f == NULL || out == NULL) {
+        return;
+    }
+
+    /* Both latches, wherever the router is: a way off the question other
+     * than START latches CANCEL as the screen is left. */
+    if (coproc_update_screen_take_start()) {
+        ++d->starts_sent;
+        ++out->starts;
+    }
+    if (coproc_update_screen_take_cancel() && f->offered) {
+        out->decline = true;
+        if (ui_router_current() == SCREEN_COPROC_UPDATE
+            && s.view == CU_VIEW_QUESTION) {
+            ui_router_goto(SCREEN_OVERVIEW);
+            (void)coproc_update_screen_take_cancel();
+        }
+    }
+
+    if (f->active) {
+        coproc_update_screen_progress(f->step, f->block, f->blocks);
+        if (ui_router_current() != SCREEN_COPROC_UPDATE) {
+            ui_router_goto(SCREEN_COPROC_UPDATE);
+        }
+        return;
+    }
+
+    if (ui_router_current() == SCREEN_COPROC_UPDATE) {
+        if (s.view == CU_VIEW_PROGRESS) {
+            /* Ended, or the START was spent on an offer that had gone. */
+            if (f->starts_taken == d->starts_sent) {
+                ui_router_goto(SCREEN_OVERVIEW);
+            }
+        } else if (!f->offered) {
+            /* The offer went -- another link-up checks again -- and with
+             * it the question.  Leaving it declines nothing. */
+            ui_router_goto(SCREEN_OVERVIEW);
+            (void)coproc_update_screen_take_cancel();
+        }
+        return;
+    }
+
+    if (f->offered && f->offer_gen != d->shown_gen && !unsafe
+        && ui_router_current() == SCREEN_OVERVIEW) {
+        d->shown_gen = f->offer_gen;
+        coproc_update_screen_offer(f->running, f->carried);
+        ui_router_goto(SCREEN_COPROC_UPDATE);
+    }
+}
+
 static const ui_screen_t k_screen = {
     .title  = "UPDATE",
     .reset  = reset,

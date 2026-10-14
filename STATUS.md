@@ -113,7 +113,7 @@ is taken in a gap ahead of the save that needs it.
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
 | Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry -- speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
-| Coprocessor firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036 KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the coprocessor restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7 s watchdog returns to the old image. The coprocessor refuses ARM for the whole session and writes flash only behind the store's gate. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the coprocessor's build by SHA-256 at link-up and offers the update on a question that takes the 2 s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6 s. A coprocessor loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
+| Coprocessor firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036 KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the coprocessor restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7 s watchdog returns to the old image. The coprocessor refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5 s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the coprocessor erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the coprocessor's build by SHA-256 at link-up and offers the update on a question that takes the 2 s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6 s. A coprocessor loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers, at every edit, and in the frame that switches to ARMED, so a run starts on the count that was sent or does not start; with none sent the coprocessor reports no speed rather than one derived from a guess |
@@ -275,8 +275,8 @@ fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
-4160 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
-one interrupt and 256 bytes to the core's stack: core 0 reaches 1708 of
+4144 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
+one interrupt and 256 bytes to the core's stack: core 0 reaches 1716 of
 4096 with 528 for an interrupt. `check_docs.py` holds the protocol version,
 the heartbeat and link timings, the heartbeat and CAN pins, the coverage
 floors, the stack margin, the servo test's constants and the frame-cost
@@ -320,7 +320,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/picker_screen.c` | 617 | 610 | 98.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
-| `shared/ui/coproc_update_screen.c` | 177 | 176 | 99.4% |
+| `shared/ui/coproc_update_screen.c` | 210 | 209 | 99.5% |
 | `shared/settings/settings.c` | 234 | 228 | 97.4% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 682 | 647 | 94.9% |
@@ -378,8 +378,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/link/link_port.c` | 38 | 38 | 100.0% |
 | `shared/link/link_sha256.c` | 85 | 85 | 100.0% |
 | `shared/link/link_update_image.c` | 95 | 89 | 93.7% |
-| `shared/link/link_update_dev.c` | 244 | 235 | 96.3% |
-| `shared/link/link_update_host.c` | 407 | 404 | 99.3% |
+| `shared/link/link_update_dev.c` | 277 | 276 | 99.6% |
+| `shared/link/link_update_host.c` | 428 | 425 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 194 | 190 | 97.9% |
@@ -415,7 +415,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **37754** | **36965** | **97.9%** |
+| **total** | **37841** | **37060** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

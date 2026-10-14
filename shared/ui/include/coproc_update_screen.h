@@ -72,6 +72,45 @@ bool coproc_update_screen_take_cancel(void);
 
 void coproc_update_screen_invalidate(void);
 
+/** The update as the application knows it, once a frame. */
+typedef struct {
+    bool         offered;       /**< the question waits for START or CANCEL */
+    uint32_t     offer_gen;     /**< grows with each new offer              */
+    bool         active;        /**< an update runs                         */
+    cu_step_t    step;          /**< while active: the step and the blocks  */
+    uint16_t     block;
+    uint16_t     blocks;
+    uint32_t     starts_taken;  /**< STARTs the update side has taken      */
+    cu_version_t running;       /**< the version the coprocessor runs       */
+    cu_version_t carried;       /**< the version this panel carries         */
+} cu_feed_t;
+
+/** What the driver keeps between frames. */
+typedef struct {
+    uint32_t shown_gen;         /**< the offer the question opened for      */
+    uint32_t starts_sent;       /**< STARTs handed to the update side       */
+} cu_driver_t;
+
+/** What one frame hands to the update side. */
+typedef struct {
+    unsigned starts;            /**< STARTs given on the question           */
+    bool     decline;           /**< the question was declined              */
+} cu_hand_t;
+
+/**
+ * The screen's half of the update, once a frame, whichever screen is
+ * current: moves the router to the question, the progress and back, and
+ * drains both latches.
+ *
+ * Leaving the question any way but START -- CANCEL, the HOME tag, an alert,
+ * STOP, any jump of the router -- latches CANCEL on the way out, after the
+ * router has left the screen; the latch is drained here on the next frame
+ * and handed over as a decline while the offer stands.  The question
+ * opens once per offer, on the overview of a bench that is not @p unsafe.
+ */
+void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
+                         cu_hand_t *out);
+
 const ui_screen_t *coproc_update_screen(void);
 
 #ifdef __cplusplus

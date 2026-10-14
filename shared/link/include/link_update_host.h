@@ -97,6 +97,7 @@ typedef struct {
     uint8_t  restarts;
     uint8_t  block_tries;
     uint8_t  after_resync;    /**< the phase a RESYNC was entered from    */
+    bool     aborted;         /**< check: a session found was ended       */
 
     uint8_t  build[LINK_SHA256_BYTES];   /**< this end's build hash       */
     uint8_t  expect[LINK_SHA256_BYTES];  /**< the image as sent           */
@@ -120,6 +121,11 @@ typedef struct {
  * Find out whether the coprocessor runs the build in @p img: this end's
  * build hash, then the coprocessor's over its running slot.  Ends SAME,
  * DIFFERENT, TRIAL, NEEDS_USB, NO_ANSWER or REFUSED.
+ *
+ * A session found in the coprocessor -- this panel's own, from before it
+ * restarted or lost the link -- is ended with ABORT first: nobody sends its
+ * blocks any more, and it would hold ARM.  An ACTIVATE found is waited out
+ * for LINK_UPH_HASH_MS: the restart it leads to ends it.
  */
 void link_uph_check(link_uph_t *u, const uint8_t *img, uint32_t len,
                     uint32_t now_ms);

@@ -228,10 +228,41 @@ static void step_check_ask(link_uph_t *u, link_host_t *h,
         done(u, LINK_UPH_NEEDS_USB);
         return;
     }
-    if (r.regs[LINK_UPD_STATE] == LINK_UPD_HASHING) {
+    const uint16_t state = r.regs[LINK_UPD_STATE];
+    if (state == LINK_UPD_HASHING) {
         /* A HASH_RUNNING whose acknowledgement was lost: its hash runs. */
         u->phase = LINK_UPH_CHECK_WAIT;
         u->since_ms = now_ms;
+        return;
+    }
+    if (state == LINK_UPD_ACTIVATED) {
+        /* A restart is due in LINK_UPD_RESTART_MS: wait for it. */
+        if ((uint32_t)(now_ms - u->since_ms) >= LINK_UPH_HASH_MS) {
+            u->error = LINK_UPD_ERR_STATE;
+            done(u, LINK_UPH_REFUSED);
+        }
+        return;
+    }
+    if (state == LINK_UPD_RECEIVING || state == LINK_UPD_RECEIVED
+        || state == LINK_UPD_VERIFYING || state == LINK_UPD_VERIFIED) {
+        /* A session nobody sends to: ended, then read again.  Once; a
+         * session that is still there after its ABORT is not this
+         * panel's to end. */
+        if (u->aborted) {
+            u->error = LINK_UPD_ERR_STATE;
+            done(u, LINK_UPH_REFUSED);
+            return;
+        }
+        const x_t a = command(h, port, LINK_UPD_CMD_ABORT, 0u, 0u, &r);
+        if (a == X_NONE) {
+            (void)missed(u, port);
+            return;
+        }
+        if (a == X_NACK) {
+            refused(u, h, port, &r);
+            return;
+        }
+        u->aborted = true;
         return;
     }
     const x_t c = command(h, port, LINK_UPD_CMD_HASH_RUNNING,

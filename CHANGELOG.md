@@ -28,7 +28,11 @@ history is in git.
   new slot on trial and keeps it with BUY; without the BUY the boot ROM
   returns to the old image after 16.7 s. The coprocessor refuses ARM for the
   whole update and writes flash only while the bank is not driving, the
-  supply's output is off and no servo programming session runs. A panel
+  supply's output is off and no servo programming session runs. A session
+  ends after 5 s without a request to UPDATE_CTL or UPDATE_DATA, and a panel
+  that finds one at its check ends it with ABORT. After the BUY the
+  coprocessor erases the old slot's first sector and retries the erase once
+  a second until it holds; `SLOT` bit 9 says it is owed. A panel
   built with `RCBENCH_IOMCU_BIN` carries the coprocessor image of its own
   build, compares builds by SHA-256 at link-up and offers the update on a
   question that START takes with the 2 s hold, an older image included; a

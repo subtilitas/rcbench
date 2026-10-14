@@ -13,6 +13,9 @@
 #include "link_crc.h"
 #include "link_msg.h"
 
+/* link_update_dev_refuses_arm() reads ARM from a frame's first register. */
+_Static_assert(LINK_CT_ARM == 0, "ARM is not CONTROL's first register");
+
 void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,
                           const uint8_t *running, const uint8_t *target,
                           uint32_t slot_bytes, uint16_t slot)
@@ -38,6 +41,17 @@ void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,
                              | LINK_UPD_SLOT_NONE);
     }
     u->state = LINK_UPD_IDLE;
+    /* A bought image with an image in the other slot: a BUY whose erase
+     * did not happen before the coprocessor stopped, or the image a
+     * trial came from.  Either way a normal boot would choose. */
+    if (usable && (slot & LINK_UPD_SLOT_TRIAL) == 0u) {
+        for (uint32_t i = 0; i < LINK_UPD_SECTOR_BYTES; ++i) {
+            if (target[i] != 0xFFu) {
+                u->sweep = true;
+                break;
+            }
+        }
+    }
 }
 
 static bool in_session(uint8_t state)
@@ -117,6 +131,7 @@ static uint8_t cmd_begin(link_update_dev_t *u, const uint16_t *a)
     if (!u->io->erase(u->io->ctx, 0u)) {
         return fail(u, LINK_UPD_ERR_FLASH);
     }
+    u->sweep = false;
     u->size = size;
     u->blocks = (uint16_t)((size + LINK_UPD_BLOCK_BYTES - 1u)
                            / LINK_UPD_BLOCK_BYTES);
@@ -253,6 +268,23 @@ static uint8_t cmd_buy(link_update_dev_t *u)
     }
     u->slot = (uint16_t)(u->slot & (uint16_t)~LINK_UPD_SLOT_TRIAL);
     u->error = LINK_UPD_ERR_NONE;
+    /*
+     * And the other slot's first sector, whatever the versions say.  The
+     * boot ROM erases it only for a downgrade; for two images of the same
+     * version which one a normal boot starts is not stated in the RP2350
+     * datasheet.  The BUY stands whether the erase does or not: an erase
+     * that cannot happen now is owed, and poll() tries it again until it
+     * holds (LINK_UPD_SLOT_OTHER meanwhile).  Without a slot this end
+     * writes there is no other slot to erase.
+     */
+    if (u->slot_bytes == 0u) {
+        return 0u;
+    }
+    u->sweep = true;
+    u->sweep_tried = false;
+    if (gate_open(u) && u->io->erase(u->io->ctx, 0u)) {
+        u->sweep = false;
+    }
     return 0u;
 }
 
@@ -262,12 +294,15 @@ void link_update_dev_read_ctl(link_update_dev_t *u, uint8_t offset,
     if (u == NULL || out == NULL) {
         return;
     }
+    u->heard = true;
     uint16_t r[LINK_UPD_COUNT];
     memset(r, 0, sizeof(r));
     r[LINK_UPD_VERSION]      = LINK_UPD_PROTOCOL;
     r[LINK_UPD_STATE]        = u->state;
     r[LINK_UPD_ERROR]        = u->error;
-    r[LINK_UPD_SLOT]         = u->slot;
+    r[LINK_UPD_SLOT]         = (uint16_t)(u->slot
+                                          | (u->sweep ? LINK_UPD_SLOT_OTHER
+                                                      : 0u));
     r[LINK_UPD_SLOT_SECTORS] = (uint16_t)(u->slot_bytes
                                           / LINK_UPD_SECTOR_BYTES);
     r[LINK_UPD_NEXT_BLOCK]   = u->next;
@@ -293,6 +328,7 @@ uint8_t link_update_dev_write_ctl(link_update_dev_t *u, uint8_t offset,
     if (u == NULL || in == NULL) {
         return LINK_NACK_BAD_VALUE;
     }
+    u->heard = true;
     /* One command, one frame: CMD first and its arguments after it. */
     if (offset != LINK_UPD_CMD || count == 0u || count > 4u) {
         return LINK_NACK_READ_ONLY;
@@ -320,6 +356,7 @@ void link_update_dev_read_data(link_update_dev_t *u, uint8_t offset,
     if (u == NULL || out == NULL) {
         return;
     }
+    u->heard = true;
     for (uint32_t i = 0; i < count && offset + i < LINK_UPD_DATA_COUNT; ++i) {
         out[i] = u->data[offset + i];
     }
@@ -328,8 +365,11 @@ void link_update_dev_read_data(link_update_dev_t *u, uint8_t offset,
 uint8_t link_update_dev_write_data(link_update_dev_t *u, uint8_t offset,
                                    uint8_t count, const uint16_t *in)
 {
-    if (u == NULL || in == NULL
-        || (uint32_t)offset + count > LINK_UPD_DATA_COUNT) {
+    if (u == NULL || in == NULL) {
+        return LINK_NACK_BAD_RANGE;
+    }
+    u->heard = true;
+    if ((uint32_t)offset + count > LINK_UPD_DATA_COUNT) {
         return LINK_NACK_BAD_RANGE;
     }
     memcpy(&u->data[offset], in, (size_t)count * sizeof(in[0]));
@@ -343,17 +383,41 @@ static const uint8_t *verify_src(const link_update_dev_t *u, uint32_t pos)
     return (pos < LINK_UPD_SECTOR_BYTES) ? &u->first[pos] : &u->target[pos];
 }
 
-void link_update_dev_poll(link_update_dev_t *u, uint32_t now_ms,
-                          uint32_t heard_ms)
+/* The owed erase of the other slot's first sector: outside a session and
+ * a trial, with the gate open, once every LINK_UPD_SWEEP_MS. */
+static void sweep(link_update_dev_t *u, uint32_t now_ms)
+{
+    if (!u->sweep || in_session(u->state) || u->state == LINK_UPD_ACTIVATED
+        || (u->slot & LINK_UPD_SLOT_TRIAL) != 0u
+        || (u->sweep_tried
+            && (uint32_t)(now_ms - u->sweep_ms) < LINK_UPD_SWEEP_MS)
+        || !gate_open(u)) {
+        return;
+    }
+    u->sweep_tried = true;
+    u->sweep_ms = now_ms;
+    if (u->io->erase(u->io->ctx, 0u)) {
+        u->sweep = false;
+    }
+}
+
+void link_update_dev_poll(link_update_dev_t *u, uint32_t now_ms)
 {
     if (u == NULL) {
         return;
     }
+    if (u->heard || !in_session(u->state)) {
+        /* Out of a session the clock runs from now: a session starts
+         * with the request that began it. */
+        u->heard = false;
+        u->heard_ms = now_ms;
+    }
     if (in_session(u->state)
-        && (uint32_t)(now_ms - heard_ms) >= LINK_UPD_SILENCE_MS) {
+        && (uint32_t)(now_ms - u->heard_ms) >= LINK_UPD_SILENCE_MS) {
         (void)fail(u, LINK_UPD_ERR_LINK);
         return;
     }
+    sweep(u, now_ms);
     if (u->state == LINK_UPD_HASHING || u->state == LINK_UPD_VERIFYING) {
         const uint32_t pos = u->hash.pos;
         /* A step never crosses a sector, so it reads from one place. */
@@ -407,9 +471,8 @@ bool link_update_dev_refuses_arm(const link_update_dev_t *u, uint8_t off,
     if (u == NULL || in == NULL || !link_update_dev_holds_arm(u)) {
         return false;
     }
-    /* ARM is the page's first register, so only a frame from register 0
-     * carries it. */
-    _Static_assert(LINK_CT_ARM == 0, "ARM is not CONTROL's first register");
+    /* ARM is the page's first register (asserted at the top of the file),
+     * so only a frame from register 0 carries it. */
     if (off != LINK_CT_ARM || n == 0u) {
         return false;   /* the frame does not carry ARM */
     }

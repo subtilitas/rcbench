@@ -69,7 +69,8 @@ static bool io_gate(void *ctx)
 
 /* Inside a flash window: the boot ROM clears the TBYB (try before you buy)
  * flag in flash, and for a version downgrade erases the other slot's first
- * sector. */
+ * sector.  link_update_dev erases that sector after every BUY, and owes the
+ * erase until it holds. */
 static void buy_in_window(void *arg)
 {
     (void)arg;
@@ -82,18 +83,7 @@ static bool io_buy(void *ctx)
 {
     (void)ctx;
     s_buy_rc = -1;
-    if (!out_store_flash_call(buy_in_window, NULL) || s_buy_rc != 0) {
-        return false;
-    }
-    /*
-     * And the other slot's first sector, whatever the versions say.  The
-     * boot ROM erases it only for a downgrade; for two images of the same
-     * version which one a normal boot starts is not stated in the RP2350
-     * datasheet, and this leaves it one image to choose.  The panel carries
-     * the image it replaced and can send it again.
-     */
-    (void)out_store_flash_erase(s_target_off);
-    return true;
+    return out_store_flash_call(buy_in_window, NULL) && s_buy_rc == 0;
 }
 
 static void io_restart(void *ctx)
@@ -193,9 +183,9 @@ uint8_t update_hw_data_write(void *ctx, uint8_t off, uint8_t n,
     return link_update_dev_write_data(&s_upd, off, n, in);
 }
 
-void update_hw_poll(uint32_t now_ms, uint32_t heard_ms)
+void update_hw_poll(uint32_t now_ms)
 {
-    link_update_dev_poll(&s_upd, now_ms, heard_ms);
+    link_update_dev_poll(&s_upd, now_ms);
 }
 
 bool update_hw_holds_arm(void)

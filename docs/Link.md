@@ -1627,7 +1627,7 @@ UPDATE_CTL (0xF0), 32 registers:
 | 0 | `VERSION` | the update registers' own version, 1; it grows when a register or command is added at the end |
 | 1 | `STATE` | 0 idle, 1 hashing the running slot, 2 receiving, 3 received, 4 verifying, 5 verified, 6 failed, 7 activated |
 | 2 | `ERROR` | why the last refusal: 0 none, 1 no slots, 2 gate shut, 3 size, 4 order, 5 CRC, 6 flash, 7 digest, 8 state, 9 an image on trial, 10 link silent, 11 BUY refused, 12 no such command |
-| 3 | `SLOT` | the running slot in bits 0 to 3 (0 A, 1 B, 15 none); bit 8 the running image is on trial and waits for BUY |
+| 3 | `SLOT` | the running slot in bits 0 to 3 (0 A, 1 B, 15 none); bit 8 the running image is on trial and waits for BUY; bit 9 the other slot's first sector waits for its erase |
 | 4 | `SLOT_SECTORS` | 4 KiB sectors in one slot, 509; 0 without a table |
 | 5 | `NEXT_BLOCK` | the block COMMIT takes next |
 | 6, 7 | `SIZE` | bytes of the session's image, or of the running slot hashed by HASH_RUNNING, low half first |
@@ -1678,7 +1678,13 @@ first in each register. Nothing on either page is kept over a restart.
    16.7 s watchdog. The panel waits 500 ms, reads IDENTITY until the new
    image answers, and writes BUY. The boot ROM clears the TBYB flag in flash.
    The coprocessor then erases the first sector of the slot it came from, so
-   the boot ROM has one image to choose at the next start.
+   the boot ROM has one image to choose at the next start. The BUY is
+   acknowledged once the boot ROM took it. An erase that fails, or waits for
+   the store's gate, is owed: `SLOT` bit 9 is set, the coprocessor tries
+   again once a second while the gate is open, and a start that finds the
+   other slot's first sector written outside a session or a trial owes the
+   erase again. The panel shows nothing for it. A coprocessor without a
+   partition table it writes has no other slot and erases nothing.
 
 A block before `NEXT_BLOCK` is acknowledged and not written again: a COMMIT
 whose acknowledgement was lost is sent again harmlessly. Any other block
@@ -1697,7 +1703,9 @@ is 1000 x major + minor and patch, so 0.18.0 is version 18.0.
 | --- | --- | --- |
 | a session or an image on trial | refuses ARM with NOT_ARMED; SAFE is never refused | shows the progress screen, no band |
 | store gate shut (bank driving, supply output on, servo programming session) | refuses BEGIN, COMMIT and ACTIVATE with BUSY | asks again, gives up after 10 s |
-| link silent for 5 s in a session | ends it with error 10 | starts again from block 0 |
+| 5 s without a request to UPDATE_CTL or UPDATE_DATA in a session; requests to other pages do not count | ends it with error 10 | starts again from block 0 |
+| a session found at the check, left by this panel before a restart or a lost link | ended with ABORT | checks on: the check reads the state again and asks for the hash |
+| ACTIVATED found at the check | restarts within 20 ms | reads again until the restart, gives up after 10 s |
 | a restart mid-transfer | the session is gone | starts again from block 0, at most 3 times |
 | no answer for 4 s | | gives up: `no answer` |
 | SHA-256 mismatch at FINISH | state failed, error 7 | `image check failed`, the old image runs |
@@ -1757,7 +1765,12 @@ the link layer against a simulated flash and boot ROM: block 0, the last
 partial block, an image of exactly one slot and one byte over, a CRC error,
 blocks out of order and repeated, a restart mid-transfer, NACKs, a link drop,
 ARM during the session, a shut gate, a digest mismatch, a missing BUY, a
-4.21 coprocessor's BAD_PAGE, and another minor and major.
+4.21 coprocessor's BAD_PAGE, and another minor and major. It also runs a
+panel restart that leaves the session in each of RECEIVING, RECEIVED,
+VERIFYING and VERIFIED with the ordinary poll running, a session that only
+the ordinary poll talks to, a check that finds the restart due or a restart
+that never comes, an ABORT at the check lost, refused or not taking, and an
+erase after BUY that fails or waits for the gate, across a restart.
 `test_link_sha256` holds the hash against the FIPS 180-4 vectors.
 `test_link_pages` holds the frozen register numbers.
 

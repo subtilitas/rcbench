@@ -226,6 +226,186 @@ TEST_CASE(the_router_draws_the_band_over_the_question_only)
     CHECK(ui_router_stop_live());
 }
 
+/* ------------------------------------------------------------ the driver */
+
+static cu_driver_t g_drv;
+static cu_feed_t   g_feed;
+
+/* The menu, nothing offered, the driver fresh. */
+static void drive_fresh(void)
+{
+    ui_theme_set(UI_THEME_DARK);
+    ui_router_init();
+    ui_router_goto(SCREEN_OVERVIEW);
+    scr()->reset();
+    memset(&g_drv, 0, sizeof(g_drv));
+    memset(&g_feed, 0, sizeof(g_feed));
+    g_feed.running = k_old;
+    g_feed.carried = k_new;
+}
+
+static cu_hand_t frame(void)
+{
+    cu_hand_t h;
+    coproc_update_drive(&g_drv, &g_feed, false, &h);
+    return h;
+}
+
+/* An offer, and the frame that opens the question for it. */
+static void offer(void)
+{
+    g_feed.offered = true;
+    ++g_feed.offer_gen;
+    (void)frame();
+}
+
+static void router_tap(int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y, .strength = 40 } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+}
+
+TEST_CASE(an_offer_opens_the_question_once_on_a_safe_menu)
+{
+    drive_fresh();
+    g_feed.offered = true;
+    g_feed.offer_gen = 1u;
+    cu_hand_t h;
+    coproc_update_drive(&g_drv, &g_feed, true, &h);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);   /* armed: not yet */
+    ui_router_goto(SCREEN_MOTOR);
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);      /* not on the menu */
+    ui_router_goto(SCREEN_OVERVIEW);
+    h = frame();
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_QUESTION);
+    CHECK(!h.decline);
+    CHECK_EQ(h.starts, 0u);
+}
+
+TEST_CASE(cancel_declines_once_and_the_question_stays_shut)
+{
+    drive_fresh();
+    offer();
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    ev(TOUCH_EVENT_DOWN, 1, CANCEL_X, BTN_Y, 0);
+    ev(TOUCH_EVENT_UP, 1, CANCEL_X, BTN_Y, 0);
+    cu_hand_t h = frame();
+    CHECK(h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    /* The way out latched CANCEL again: drained, not handed over twice. */
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * The HOME tag, an alert's jump, STOP's way to the menu, any screen the
+ * router goes to: CANCEL latches on the way out, after the router has left
+ * the question, and the next frame hands it over as a decline.
+ */
+TEST_CASE(every_way_off_the_question_is_a_decline_handed_over_once)
+{
+    drive_fresh();
+    offer();
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    const gfx_rect_t home =
+        ui_home_tag_rect(ui_router_title(SCREEN_COPROC_UPDATE));
+    router_tap(home.x + home.w / 2, home.y + home.h / 2);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    cu_hand_t h = frame();
+    CHECK(h.decline);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);   /* not reopened */
+
+    static const ui_screen_id_t k_to[] = {
+        SCREEN_OVERVIEW, SCREEN_MOTOR, SCREEN_LOGS, SCREEN_SETUP,
+        SCREEN_OUTPUTS, SCREEN_SUPPLY,
+    };
+    for (size_t i = 0; i < sizeof(k_to) / sizeof(k_to[0]); ++i) {
+        drive_fresh();
+        offer();
+        CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+        ui_router_goto(k_to[i]);
+        h = frame();
+        CHECK(h.decline);
+        CHECK_EQ(ui_router_current(), k_to[i]);
+        h = frame();
+        CHECK(!h.decline);
+    }
+}
+
+TEST_CASE(an_offer_that_goes_closes_the_question_and_declines_nothing)
+{
+    drive_fresh();
+    offer();
+    g_feed.offered = false;
+    cu_hand_t h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    h = frame();
+    CHECK(!h.decline);
+    /* And a question left after its offer went declines nothing. */
+    drive_fresh();
+    offer();
+    g_feed.offered = false;
+    ui_router_goto(SCREEN_MOTOR);
+    h = frame();
+    CHECK(!h.decline);
+}
+
+TEST_CASE(start_runs_the_progress_and_the_end_returns_to_the_menu)
+{
+    drive_fresh();
+    offer();
+    ev(TOUCH_EVENT_DOWN, 1, START_X, BTN_Y, 0);
+    ticks(HOLD_TICKS);
+    ev(TOUCH_EVENT_UP, 1, START_X, BTN_Y, 0);
+    cu_hand_t h = frame();
+    CHECK_EQ(h.starts, 1u);
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_PROGRESS);
+
+    /* Taken: the offer goes, the update runs. */
+    g_feed.offered = false;
+    g_feed.active = true;
+    g_feed.starts_taken = 1u;
+    g_feed.step = CU_STEP_SEND;
+    g_feed.blocks = 2994u;
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(h.starts, 0u);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    /* An alert's jump during the update is undone, and declines nothing. */
+    ui_router_goto(SCREEN_LOGS);
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+
+    g_feed.active = false;
+    h = frame();
+    CHECK(!h.decline);
+    CHECK_EQ(h.starts, 0u);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+TEST_CASE(the_driver_takes_no_null)
+{
+    cu_hand_t h = { 5u, true };
+    coproc_update_drive(NULL, &g_feed, false, &h);
+    CHECK_EQ(h.starts, 0u);
+    CHECK(!h.decline);
+    coproc_update_drive(&g_drv, NULL, false, &h);
+    coproc_update_drive(&g_drv, &g_feed, false, NULL);
+}
+
 /* Every step, with the count at 0, part way, at the end and past it, in
  * both views and both languages, inside the canvas. */
 TEST_CASE(every_view_renders_inside_its_canvas)
@@ -288,5 +468,11 @@ int main(void)
     RUN(a_new_offer_returns_to_the_question_with_clear_latches);
     RUN(the_router_draws_the_band_over_the_question_only);
     RUN(every_view_renders_inside_its_canvas);
+    RUN(an_offer_opens_the_question_once_on_a_safe_menu);
+    RUN(cancel_declines_once_and_the_question_stays_shut);
+    RUN(every_way_off_the_question_is_a_decline_handed_over_once);
+    RUN(an_offer_that_goes_closes_the_question_and_declines_nothing);
+    RUN(start_runs_the_progress_and_the_end_returns_to_the_menu);
+    RUN(the_driver_takes_no_null);
     return test_summary("coproc_update_screen");
 }

@@ -1773,7 +1773,7 @@ UPDATE_CTL (0xF0), 32 Register:
 | 0 | `VERSION` | die eigene Version der Update-Register, 1; sie wächst, wenn am Ende ein Register oder Kommando hinzukommt |
 | 1 | `STATE` | 0 untätig, 1 hasht den laufenden Slot, 2 empfängt, 3 empfangen, 4 prüft, 5 geprüft, 6 fehlgeschlagen, 7 aktiviert |
 | 2 | `ERROR` | Grund der letzten Ablehnung: 0 keiner, 1 keine Slots, 2 Sperre zu, 3 Größe, 4 Reihenfolge, 5 CRC, 6 Flash, 7 Digest, 8 Zustand, 9 ein Image auf Probe, 10 Link still, 11 BUY abgelehnt, 12 kein solches Kommando |
-| 3 | `SLOT` | der laufende Slot in Bit 0 bis 3 (0 A, 1 B, 15 keiner); Bit 8 das laufende Image ist auf Probe und wartet auf BUY |
+| 3 | `SLOT` | der laufende Slot in Bit 0 bis 3 (0 A, 1 B, 15 keiner); Bit 8 das laufende Image ist auf Probe und wartet auf BUY; Bit 9 der erste Sektor des anderen Slots wartet auf sein Löschen |
 | 4 | `SLOT_SECTORS` | Sektoren zu 4 KiB in einem Slot, 509; 0 ohne Tabelle |
 | 5 | `NEXT_BLOCK` | der Block, den COMMIT als nächsten nimmt |
 | 6, 7 | `SIZE` | Bytes des Images der Sitzung oder des laufenden Slots, den HASH_RUNNING hasht, niederwertige Hälfte zuerst |
@@ -1827,7 +1827,14 @@ einen Neustart.
    das neue Image antwortet, und schreibt BUY. Das Boot-ROM löscht das
    TBYB-Flag im Flash. Danach löscht der Koprozessor den ersten Sektor des
    Slots, aus dem er kam, sodass das Boot-ROM beim nächsten Start ein Image
-   zur Wahl hat.
+   zur Wahl hat. BUY wird bestätigt, sobald das Boot-ROM es angenommen hat.
+   Ein Löschen, das scheitert oder auf die Sperre des Speichers wartet, bleibt
+   offen: `SLOT` Bit 9 ist gesetzt, der Koprozessor versucht es einmal je
+   Sekunde erneut, solange die Sperre offen ist, und ein Start, der den
+   ersten Sektor des anderen Slots außerhalb einer Sitzung oder einer Probe
+   beschrieben findet, schuldet das Löschen erneut. Das Panel zeigt dafür
+   nichts an. Ein Koprozessor ohne eine Partitionstabelle, die er schreibt,
+   hat keinen anderen Slot und löscht nichts.
 
 Ein Block vor `NEXT_BLOCK` wird bestätigt und nicht noch einmal geschrieben:
 ein COMMIT, dessen Bestätigung verloren ging, wird folgenlos erneut gesendet.
@@ -1848,7 +1855,9 @@ Patch, 0.18.0 ist also Version 18.0.
 | --- | --- | --- |
 | eine Sitzung oder ein Image auf Probe | lehnt ARM mit NOT_ARMED ab; SAFE wird nie abgelehnt | zeigt den Fortschritt, kein Band |
 | Sperre des Speichers zu (Bank treibt, Ausgang der Versorgung an, Sitzung der Servo-Programmierung) | lehnt BEGIN, COMMIT und ACTIVATE mit BUSY ab | fragt erneut, gibt nach 10 s auf |
-| Link 5 s still in einer Sitzung | beendet sie mit Fehler 10 | beginnt wieder bei Block 0 |
+| 5 s keine Anfrage an UPDATE_CTL oder UPDATE_DATA in einer Sitzung; Anfragen an andere Pages zählen nicht | beendet sie mit Fehler 10 | beginnt wieder bei Block 0 |
+| eine Sitzung bei der Prüfung gefunden, die dieses Panel vor einem Neustart oder einem verlorenen Link hinterlassen hat | mit ABORT beendet | prüft weiter: liest den Zustand erneut und fragt nach dem Hash |
+| ACTIVATED bei der Prüfung gefunden | startet innerhalb von 20 ms neu | liest erneut bis zum Neustart, gibt nach 10 s auf |
 | ein Neustart mitten in der Übertragung | die Sitzung ist weg | beginnt wieder bei Block 0, höchstens 3-mal |
 | 4 s keine Antwort | | gibt auf: `keine Antwort` |
 | SHA-256 passt bei FINISH nicht | Zustand fehlgeschlagen, Fehler 7 | `Image-Prüfung fehlgeschlagen`, das alte Image läuft |
@@ -1912,7 +1921,13 @@ und eines mit einem Byte mehr, ein CRC-Fehler, Blöcke außer der Reihe und
 wiederholt, ein Neustart mitten in der Übertragung, NACKs, ein Linkausfall,
 ARM während der Sitzung, eine geschlossene Sperre, ein falscher Digest, ein
 fehlendes BUY, das BAD_PAGE eines 4.21-Koprozessors sowie eine andere Minor
-und Major. `test_link_sha256` prüft den Hash an den Vektoren aus FIPS 180-4.
+und Major. Dazu kommen ein Neustart des Panels, der die Sitzung in RECEIVING,
+RECEIVED, VERIFYING und VERIFIED zurücklässt, während das gewöhnliche Polling
+läuft, eine Sitzung, mit der nur das gewöhnliche Polling spricht, eine
+Prüfung, die den fälligen Neustart findet oder einen Neustart, der nie kommt,
+ein ABORT bei der Prüfung, das verloren geht, abgelehnt wird oder nicht
+greift, und ein Löschen nach BUY, das scheitert oder auf die Sperre wartet, auch über einen
+Neustart hinweg. `test_link_sha256` prüft den Hash an den Vektoren aus FIPS 180-4.
 `test_link_pages` prüft die eingefrorenen Registernummern.
 
 ### Bit Timing

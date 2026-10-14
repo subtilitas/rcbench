@@ -98,8 +98,10 @@ The stepping of the bring-up module is not known.
 
 With the table in place, `rcbench-iomcu.uf2` alone goes to the slot that is
 not running. Which slot a power-up starts when both slots hold an image of
-the same version is not stated in the RP2350 datasheet; to be certain which
-build runs after a development load, erase the other slot first:
+the same version is not stated in the RP2350 datasheet. The image that
+starts erases the other slot's first sector, so the choice holds and the
+other build is gone. To be certain which build runs after a development
+load, erase the other slot first:
 
 ```bash
 picotool erase -p 1
