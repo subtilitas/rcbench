@@ -6,6 +6,13 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- The bench configurator describes release 0.20.0. Every repository source
+  of its data is a file and line at the tag `v0.20.0`; 24 sources carry the
+  line of that tag, in `STATUS.md`, `docs/Building.md` and
+  `docs/FirstRun.md`. Release 0.20.0 adds no bench function.
+
 ## 0.20.0 - 2026-10-15
 
 A bench on 0.19.0 loads the panel over USB (Universal Serial Bus) once more,
