@@ -492,17 +492,12 @@ OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol", "overview-alert"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word
-# for word as --fit prints them.  Each is a defect of the screen, listed
-# here so the check holds every other string; none is a decision that the
-# overflow is wanted.  An entry that --fit no longer finds fails, so the
-# list cannot outlive its defects.  SETUP shows 36 cells of a help line;
-# two APPLICATION help lines in settings.c are longer.
-KNOWN_OVERFLOWS = {
-    ("setup-application", "Scales the palette; see help on backlight",
-     "is cut at the edge of its area (252 to 580, area 236 to 546)"),
-    ("setup-application", "0 keeps the screen at full brightness",
-     "is cut at the edge of its area (252 to 548, area 236 to 546)"),
-}
+# for word as --fit prints them; none today.  Each is a defect of the
+# screen, listed here so the check holds every other string; none is a
+# decision that the overflow is wanted.  An entry that --fit no longer
+# finds fails, so the list cannot outlive its defects.  SETUP shows 36
+# cells of a help line.
+KNOWN_OVERFLOWS = set()
 
 
 class Rect:

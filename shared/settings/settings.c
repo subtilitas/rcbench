@@ -85,7 +85,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "theme", "Theme", "", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_theme) },
     [SET_BRIGHTNESS] = {
-        "brightness", "Brightness", "Scales the palette; see help on backlight", "%",
+        "brightness", "Brightness", "Scales the palette; see Backlight", "%",
         SET_CAT_APP, SET_TYPE_INT, 20, 100, 5, 100, NULL, 0 },
     [SET_CONTRAST] = {
         "contrast", "Contrast", "Pushes colours away from mid grey", "%",
@@ -100,7 +100,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "units", "Units", "", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_units) },
     [SET_DIM_AFTER] = {
-        "dim_after", "Dim after", "0 keeps the screen at full brightness", "min",
+        "dim_after", "Dim after", "0 keeps full brightness", "min",
         SET_CAT_APP, SET_TYPE_INT, 0, 60, 5, 0, NULL, 0 },
     [SET_PLOT_PAN] = {
         "plot_pan1", "One finger pans", "Zoomed log plot: a drag moves the view", "",

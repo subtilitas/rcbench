@@ -1188,7 +1188,7 @@ AUTO and with a fixed rate alike.
 
 ![Analyser](img/analyser.png)
 
-Sixteen channels, each with 1.5 s of history and a bar for its current value.
+Sixteen channels, each with about 1.7 s of history (118 samples) and a bar for its current value.
 CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
 dropout is a notch across all sixteen at the same instant.
 
@@ -1387,6 +1387,9 @@ from 30 mV, REPLACE from 60 mV. The scale follows the pack down to a floor of
 12 mV and is printed beside the plot.
 
 Measure under load. At rest a weak cell reads like the others.
+
+No firmware feeds this screen: no cell monitor is read, so a bench shows
+NO PACK. The picture above is rendered from a model.
 
 ## Logs
 
@@ -1772,6 +1775,11 @@ German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under the log viewer.
+
+Nine settings are stored and shown, and no part of the firmware reads them:
+Backlight, Units and Dim after under APPLICATION; Cells, Capacity and
+Internal R; Vibration, Optical tacho and Tacho pin. Ramp limit is read only
+as the slew of the modelled bench.
 
 ### Keys and the list
 

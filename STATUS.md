@@ -273,7 +273,7 @@ or a core file under `protocols/` that is in neither of its two lists, is not co
 `render_ui.py --check` holds 376 committed screenshots to the current
 render, 188 in English and the same 188 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
-except an English overflow it lists as known (two listed: the help lines of Brightness and Dim after on SETUP, APPLICATION, cut at 36 characters); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
+except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 4144 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
