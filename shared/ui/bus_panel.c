@@ -176,7 +176,7 @@ static const bus_proto_t *proto(void)
     return p != NULL ? p : bus_proto_get(0);
 }
 
-static uint16_t st(unsigned r)
+static uint16_t sreg(unsigned r)
 {
     return r < BUS_LINK_STATUS_N ? b.f.rd.status[r] : 0u;
 }
@@ -188,13 +188,13 @@ static bool page_ok(void)
 
 static link_bus_state_t bus_state(void)
 {
-    return page_ok() ? (link_bus_state_t)LINK_BS_STATE_OF(st(LINK_BS_STATE))
+    return page_ok() ? (link_bus_state_t)LINK_BS_STATE_OF(sreg(LINK_BS_STATE))
                      : LINK_BUS_CLOSED;
 }
 
 static bool page_busy(void)
 {
-    return page_ok() && (st(LINK_BS_STATE) & LINK_BS_F_BUSY) != 0u;
+    return page_ok() && (sreg(LINK_BS_STATE) & LINK_BS_F_BUSY) != 0u;
 }
 
 static bool bus_open(void)
@@ -211,7 +211,7 @@ static uint8_t series_now(void)
 static uint8_t baud_now(void)
 {
     if (bus_state() == LINK_BUS_OPEN || bus_state() == LINK_BUS_CLOSING) {
-        return (uint8_t)(st(LINK_BS_OP) >> 8);
+        return (uint8_t)(sreg(LINK_BS_OP) >> 8);
     }
     return b.baud;
 }
@@ -230,7 +230,7 @@ static bool found(unsigned id)
 
 static unsigned found_n(void)
 {
-    return (unsigned)(st(LINK_BS_SCAN) >> 8);
+    return (unsigned)(sreg(LINK_BS_SCAN) >> 8);
 }
 
 static bool scanning(void)
@@ -667,10 +667,10 @@ static void push_backup(void)
 /* The bytes the last read gave. */
 static unsigned read_bytes(uint8_t *out, unsigned room)
 {
-    const unsigned n = (unsigned)(st(LINK_BS_COUNTS) >> 8);
+    const unsigned n = (unsigned)(sreg(LINK_BS_COUNTS) >> 8);
 
     for (unsigned i = 0; i < n && i < room; ++i) {
-        const uint16_t r = st(LINK_BS_DATA + i / 2u);
+        const uint16_t r = sreg(LINK_BS_DATA + i / 2u);
 
         out[i] = (uint8_t)(i % 2u == 0u ? r & 0xFFu : r >> 8);
     }
@@ -805,19 +805,19 @@ static void watch_answer(void)
             return;
         }
     }
-    if (b.taken && r->known && st(LINK_BS_SEQ) != b.taken_seq
+    if (b.taken && r->known && sreg(LINK_BS_SEQ) != b.taken_seq
         && (uint32_t)(b.f.now_ms - b.wait_ms) >= BUS_PANEL_ANSWER_MS) {
         /* Taken, and no read of the page shows it: another command took
          * the page over, or the coprocessor started again. */
         failed(TR(BS_A_NO_ANSWER));
         return;
     }
-    if (!b.taken || !r->known || st(LINK_BS_SEQ) != b.taken_seq) {
+    if (!b.taken || !r->known || sreg(LINK_BS_SEQ) != b.taken_seq) {
         return;
     }
     {
-        const uint8_t refusal = (uint8_t)(st(LINK_BS_RESULT) >> 8);
-        const uint8_t result = (uint8_t)(st(LINK_BS_RESULT) & 0xFFu);
+        const uint8_t refusal = (uint8_t)(sreg(LINK_BS_RESULT) >> 8);
+        const uint8_t result = (uint8_t)(sreg(LINK_BS_RESULT) & 0xFFu);
 
         if (refusal != 0u) {
             failed(refusal_text(refusal));
@@ -861,7 +861,7 @@ static void reconcile(void)
         return;
     }
     {
-        const uint8_t watched = (uint8_t)(st(LINK_BS_WATCH) & 0xFFu);
+        const uint8_t watched = (uint8_t)(sreg(LINK_BS_WATCH) & 0xFFu);
         const int want = b.id;
 
         if ((want < 0 && watched != 0xFFu)
@@ -1458,13 +1458,13 @@ static void make_lines(void)
         b.line_warn |= 1u;
     } else if (s == LINK_BUS_OPEN) {
         snprintf(l, BUS_PANEL_LINE, TR(BS_L_OPEN),
-                 (unsigned)st(LINK_BS_PIN), p->name,
+                 (unsigned)sreg(LINK_BS_PIN), p->name,
                  (unsigned long)p->baud(baud_now()));
     } else if (s == LINK_BUS_OPENING) {
         snprintf(l, BUS_PANEL_LINE, TR(BS_L_OPENING), pin);
     } else if (s == LINK_BUS_CLOSING) {
         snprintf(l, BUS_PANEL_LINE, TR(BS_L_CLOSING),
-                 (unsigned)st(LINK_BS_PIN));
+                 (unsigned)sreg(LINK_BS_PIN));
     } else if (pin == 0xFFu) {
         snprintf(l, BUS_PANEL_LINE, "%s", TR(BS_L_NO_PIN));
         b.line_warn |= 1u;
@@ -1474,26 +1474,26 @@ static void make_lines(void)
 
     if (!page_ok() || s == LINK_BUS_CLOSED) {
         /* nothing on the bus to show */
-    } else if ((uint8_t)(st(LINK_BS_OP) & 0xFFu) == LINK_BUS_OP_SCAN
+    } else if ((uint8_t)(sreg(LINK_BS_OP) & 0xFFu) == LINK_BUS_OP_SCAN
                && (b.use == U_SCAN || b.id < 0)) {
-        const unsigned from = st(LINK_BS_RANGE) & 0xFFu;
-        const unsigned to = st(LINK_BS_RANGE) >> 8;
+        const unsigned from = sreg(LINK_BS_RANGE) & 0xFFu;
+        const unsigned to = sreg(LINK_BS_RANGE) >> 8;
 
         if (scanning() || page_busy()) {
             snprintf(b.lines[1], BUS_PANEL_LINE, TR(BS_L_SCANNING), from, to,
-                     (unsigned)(st(LINK_BS_SCAN) & 0xFFu), found_n());
+                     (unsigned)(sreg(LINK_BS_SCAN) & 0xFFu), found_n());
         } else {
             snprintf(b.lines[1], BUS_PANEL_LINE, TR(BS_L_SCANNED), from, to,
-                     found_n(), (unsigned)(st(LINK_BS_AT) >> 8));
+                     found_n(), (unsigned)(sreg(LINK_BS_AT) >> 8));
         }
     } else if (b.id >= 0
-               && (st(LINK_BS_WATCH) & 0xFFu) == (unsigned)b.id) {
+               && (sreg(LINK_BS_WATCH) & 0xFFu) == (unsigned)b.id) {
         uint8_t bytes[LINK_BS_BYTES];
-        const unsigned n = st(LINK_BS_COUNTS) & 0xFFu;
+        const unsigned n = sreg(LINK_BS_COUNTS) & 0xFFu;
         bus_live_t live;
 
         for (unsigned i = 0; i < n && i < sizeof(bytes); ++i) {
-            const uint16_t r = st(LINK_BS_LIVE + i / 2u);
+            const uint16_t r = sreg(LINK_BS_LIVE + i / 2u);
 
             bytes[i] = (uint8_t)(i % 2u == 0u ? r & 0xFFu : r >> 8);
         }
