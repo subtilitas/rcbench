@@ -16,6 +16,11 @@ typedef enum {
     P_INSTALLED,
     P_FW_NOTE,
     P_UPLOAD,
+    P_IMAGE,
+    P_SIGNATURE,
+    P_SIG_OK,
+    P_SIG_SIZE,
+    P_SIG_NONE,
     P_TOO_BIG,
     P_BROKE,
     P_FILES,
@@ -58,10 +63,20 @@ static const char *const k_en[P_COUNT] = {
     /* One text in three literals: the initialisers are designated, so no
      * comma is missing. */
     /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
-    [P_FW_NOTE]      = "Upload a panel image, rcbench-panel-vX.Y.Z.bin. The "
-                       "panel checks it and asks. It installs only after "
-                       "INSTALL is held for 2 s on the panel.",
+    [P_FW_NOTE]      = "Upload a panel image, rcbench-panel-vX.Y.Z.bin, "
+                       "with its signature, rcbench-panel-vX.Y.Z.bin.sig. "
+                       "The panel checks both and asks. It installs only "
+                       "after INSTALL is held for 2 s on the panel. An image "
+                       "without a signature from the rcbench release key "
+                       "needs a second hold of 2 s.",
     [P_UPLOAD]       = "Upload",
+    [P_IMAGE]        = "Image (.bin) ",
+    [P_SIGNATURE]    = "Signature (.sig, optional) ",
+    [P_SIG_OK]       = "Signature received. The panel checks it at INSTALL.",
+    [P_SIG_SIZE]     = "The signature file is not 8 to 72 bytes long.",
+    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
+    [P_SIG_NONE]     = "No image waits on the panel for this signature. "
+                       "Upload the image first.",
     [P_TOO_BIG]      = "The file is larger than the panel's slot.",
     [P_BROKE]        = "The upload broke off.",
     [P_FILES]        = "Files on the card",
@@ -103,10 +118,20 @@ static const char *const k_de[P_COUNT] = {
     [P_FIRMWARE]     = "Panel-Firmware",
     [P_INSTALLED]    = "Installiert: ",
     /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
-    [P_FW_NOTE]      = "Ein Panel-Image hochladen, rcbench-panel-vX.Y.Z.bin. "
-                       "Das Panel prüft es und fragt. Es installiert erst, "
-                       "wenn INSTALL am Panel 2 s gehalten wird.",
+    [P_FW_NOTE]      = "Ein Panel-Image hochladen, rcbench-panel-vX.Y.Z.bin, "
+                       "mit seiner Signatur, rcbench-panel-vX.Y.Z.bin.sig. "
+                       "Das Panel prüft beides und fragt. Es installiert "
+                       "erst, wenn INSTALL am Panel 2 s gehalten wird. Ein "
+                       "Image ohne Signatur des rcbench-Release-Schlüssels "
+                       "braucht ein zweites Halten von 2 s.",
     [P_UPLOAD]       = "Hochladen",
+    [P_IMAGE]        = "Image (.bin) ",
+    [P_SIGNATURE]    = "Signatur (.sig, optional) ",
+    [P_SIG_OK]       = "Signatur empfangen. Das Panel prüft sie bei INSTALL.",
+    [P_SIG_SIZE]     = "Die Signatur-Datei ist nicht 8 bis 72 Byte lang.",
+    /* NOLINTNEXTLINE(bugprone-suspicious-missing-comma) */
+    [P_SIG_NONE]     = "Am Panel wartet kein Image für diese Signatur. "
+                       "Erst das Image hochladen.",
     [P_TOO_BIG]      = "Die Datei ist größer als der Slot des Panels.",
     [P_BROKE]        = "Der Upload brach ab.",
     [P_FILES]        = "Dateien auf der Karte",
@@ -202,8 +227,13 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
     wa_out_html(o, pi->version);
     wa_out_str(o, "</p><p>");
     wa_out_str(o, pt(pi->de, P_FW_NOTE));
-    wa_out_str(o, "</p><form id=\"f\"><input type=\"file\" id=\"i\" "
-                  "accept=\".bin\"> <button>");
+    wa_out_str(o, "</p><form id=\"f\"><p><label>");
+    wa_out_str(o, pt(pi->de, P_IMAGE));
+    wa_out_str(o, "<input type=\"file\" id=\"i\" accept=\".bin\"></label>"
+                  "</p><p><label>");
+    wa_out_str(o, pt(pi->de, P_SIGNATURE));
+    wa_out_str(o, "<input type=\"file\" id=\"s\" accept=\".sig\"></label>"
+                  "</p><button>");
     wa_out_str(o, pt(pi->de, P_UPLOAD));
     wa_out_str(o, "</button></form>"
                   "<p><progress id=\"p\" max=\"100\" value=\"0\" hidden>"
@@ -222,7 +252,14 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
                   "');p.hidden=false;p.value=0;r.textContent='';"
                   "x.upload.onprogress=function(v){if(v.lengthComputable)"
                   "p.value=Math.floor(v.loaded*100/v.total);};"
-                  "x.onload=function(){r.textContent=x.responseText;};"
+                  "x.onload=function(){r.textContent=x.responseText;"
+                  "var g=document.getElementById('s').files[0];"
+                  "if(g&&x.getResponseHeader('" WA_HDR_UPLOAD "')==='ok'){"
+                  "var y=new XMLHttpRequest();y.open('POST','" WA_URL_UPDATE_SIG
+                  "');y.onload=function(){r.textContent+=' '+y.responseText;};"
+                  "y.onerror=function(){r.textContent+=' ");
+    wa_out_str(o, pt(pi->de, P_BROKE));
+    wa_out_str(o, "';};y.send(g);}};"
                   "x.onerror=function(){r.textContent='");
     wa_out_str(o, pt(pi->de, P_BROKE));
     wa_out_str(o, "';};x.send(f);};</script>");
@@ -358,6 +395,20 @@ void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
     case FW_ERR_FLASH:
     case FW_ERR_COUNT:
     default:               t = P_UP_OTHER;     break;
+    }
+    wa_out_str(o, pt(de, t));
+}
+
+void wa_page_sig_result(wa_out_t *o, bool de, fw_err_t e)
+{
+    p_text_t t;
+    switch (e) {
+    case FW_OK:        t = P_SIG_OK;   break;
+    case FW_ERR_EMPTY:
+    case FW_ERR_TOO_BIG: t = P_SIG_SIZE; break;
+    case FW_ERR_BUSY:  t = P_SIG_NONE; break;
+    case FW_ERR_READ:  t = P_BROKE;    break;
+    default:           t = P_UP_OTHER; break;
     }
     wa_out_str(o, pt(de, t));
 }

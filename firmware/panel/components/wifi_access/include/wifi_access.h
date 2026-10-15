@@ -107,9 +107,13 @@ void wifi_access_discard(void);
 /**
  * Take the staged image for the installer: it stays where it is, and
  * nothing drops it, until wifi_access_release().  False when none waits.
+ * @p sig points at the release signature that came with the image (fw_sign.h)
+ * and @p sig_n is its length in bytes, 0 when none came.  Taking again while
+ * the image is taken gives the same image.
  */
 bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
-                      fw_image_info_t *info);
+                      fw_image_info_t *info, const uint8_t **sig,
+                      uint32_t *sig_n);
 /** After a write that failed: the image is dropped. */
 void wifi_access_release(void);
 

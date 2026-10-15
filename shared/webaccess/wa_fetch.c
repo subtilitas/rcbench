@@ -463,6 +463,65 @@ static void image_add(const wa_run_t *r, void *ctx, const uint8_t *d,
     report(r, WA_PH_IMAGE, done, total);
 }
 
+/* The release signature into r->up beside the staged image. */
+typedef struct {
+    uint8_t  b[FW_SIG_MAX];
+    uint32_t n;
+} sigbuf_t;
+
+static bool sig_begin(const wa_run_t *r, void *ctx, uint32_t bytes,
+                      wa_fetch_res_t *out)
+{
+    (void)r;
+    (void)bytes;
+    (void)out;
+    ((sigbuf_t *)ctx)->n = 0u;
+    return true;
+}
+
+static void sig_add(const wa_run_t *r, void *ctx, const uint8_t *d,
+                    uint32_t n, uint32_t done, uint32_t total)
+{
+    (void)r;
+    (void)total;
+    sigbuf_t *s = ctx;
+    /* fetch() never hands over more than the cap of FW_SIG_MAX. */
+    memcpy(s->b + s->n, d, n);
+    s->n = done;
+}
+
+/*
+ * The signature of the staged image.  A release without one, or one the
+ * answer for which is out of form, leaves the image unsigned and the job
+ * going; only the end of the job (an abort, the budget, a lost connection)
+ * is returned, in @p out.  False: the job has ended.
+ */
+static bool fetch_sig(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
+{
+    char name[FW_REL_SIG_NAME_MAX];
+    fw_release_sig_name(v, name);
+    if (!fw_release_url(v, name, r->url, FW_REL_URL_MAX + 1u)) {
+        return true;
+    }
+    sigbuf_t sb = { { 0u }, 0u };
+    const sink_t ks = { sig_begin, sig_add, &sb, FW_SIG_MAX,
+                        WA_GOT_UNEXPECTED };
+    wa_fetch_res_t got;
+    memset(&got, 0, sizeof(got));
+    if (!fetch(r, &ks, &got)) {
+        if (got.got == WA_GOT_REFUSED || got.got == WA_GOT_UNEXPECTED) {
+            return true;
+        }
+        *out = got;
+        out->found = v;
+        return false;
+    }
+    if (sb.n != 0u) {
+        (void)fw_upload_sig(r->up, sb.b, sb.n);
+    }
+    return true;
+}
+
 void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
 {
     memset(out, 0, sizeof(*out));
@@ -521,6 +580,10 @@ void wa_run_download(const wa_run_t *r, fw_version_t v, wa_fetch_res_t *out)
         /* A file under this release's name that says it is another. */
         fw_upload_discard(r->up);
         res(out, WA_GOT_UNEXPECTED, FW_REL_VERSION);
+        return;
+    }
+    if (!fetch_sig(r, v, out)) {
+        fw_upload_discard(r->up);
         return;
     }
     if (r->stopped(r->ctx) || run_left(r) == 0u) {

@@ -679,6 +679,113 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
     CHECK_STR_EQ(scr()->title, "FILES & UPDATE");
 }
 
+/* An image the release key does not vouch for waits for a second 2 s hold. */
+#define UH_X 500
+#define UH_Y 434
+#define UC_X 144
+#define UC_Y 434
+
+static void u_send(const ui_screen_t *u, touch_event_type_t type, int x, int y)
+{
+    touch_event_t e = { .type = type,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y } };
+    u->event(&e);
+}
+
+static void u_ticks(const ui_screen_t *u, int n)
+{
+    for (int i = 0; i < n; ++i) {
+        u->tick(TICK_S);
+    }
+}
+
+static const ui_screen_t *unsigned_view(bool bad)
+{
+    const ui_screen_t *u = update_screen();
+    u->reset();
+    update_view_t w = { .state = UPDATE_UNSIGNED, .total = 1900000u,
+                        .sig_bad = bad };
+    strcpy(w.version, "0.20.0");
+    update_screen_set(&w);
+    return u;
+}
+
+TEST_CASE(an_unsigned_image_needs_a_second_2_s_hold)
+{
+    gfx_canvas_t full;
+    gfx_canvas_init(&full, s_px, SCREEN_W, SCREEN_H, SCREEN_W);
+    for (int bad = 0; bad < 2; ++bad) {
+        const ui_screen_t *u = unsigned_view(bad != 0);
+        memset(s_px, 0, sizeof(s_px));
+        u->render(&full, 0);
+        int n = 0;
+        for (int i = 0; i < SCREEN_W * SCREEN_H; ++i) {
+            n += (s_px[i] != 0u);
+        }
+        CHECK(n > 10000);
+        /* Nothing asks without a press. */
+        u_ticks(u, HOLD_TICKS);
+        CHECK(!update_screen_take_go());
+        /* A release before the 2 s asks nothing. */
+        u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+        u_ticks(u, HOLD_TICKS / 2);
+        u_send(u, TOUCH_EVENT_UP, UH_X, UH_Y);
+        u_ticks(u, HOLD_TICKS);
+        CHECK(!update_screen_take_go());
+        /* Sliding off the button abandons the hold. */
+        u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+        u_ticks(u, HOLD_TICKS / 2);
+        u_send(u, TOUCH_EVENT_MOVE, 100, 100);
+        u_ticks(u, HOLD_TICKS);
+        CHECK(!update_screen_take_go());
+        u_send(u, TOUCH_EVENT_UP, 100, 100);
+        /* A tap is no hold. */
+        u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+        u_send(u, TOUCH_EVENT_UP, UH_X, UH_Y);
+        u_ticks(u, HOLD_TICKS);
+        CHECK(!update_screen_take_go());
+        /* The full hold asks once. */
+        u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+        u_ticks(u, HOLD_TICKS);
+        CHECK(update_screen_take_go());
+        u_ticks(u, HOLD_TICKS);
+        CHECK(!update_screen_take_go());
+        u_send(u, TOUCH_EVENT_UP, UH_X, UH_Y);
+        CHECK(!update_screen_take_go());
+        CHECK(!update_screen_take_close());
+        u->render(&full, 1);
+    }
+}
+
+TEST_CASE(cancel_on_an_unsigned_image_closes_and_asks_no_install)
+{
+    const ui_screen_t *u = unsigned_view(false);
+    u_send(u, TOUCH_EVENT_DOWN, UC_X, UC_Y);
+    u_ticks(u, HOLD_TICKS);
+    u_send(u, TOUCH_EVENT_UP, UC_X, UC_Y);
+    CHECK(update_screen_take_close());
+    CHECK(!update_screen_take_go());
+    /* The hold under a cancelled press ends. */
+    u = unsigned_view(false);
+    u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+    u_ticks(u, HOLD_TICKS / 2);
+    u->cancel();
+    u_ticks(u, HOLD_TICKS);
+    CHECK(!update_screen_take_go());
+}
+
+TEST_CASE(a_state_change_under_the_second_hold_ends_it)
+{
+    const ui_screen_t *u = unsigned_view(false);
+    u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+    u_ticks(u, HOLD_TICKS / 2);
+    update_view_t w = { .state = UPDATE_FAILED };
+    update_screen_set(&w);
+    u_ticks(u, HOLD_TICKS);
+    CHECK(!update_screen_take_go());
+}
+
 int main(void)
 {
     RUN(the_view_enums_mirror_the_session_and_the_installer);
@@ -702,5 +809,8 @@ int main(void)
     RUN(leaving_switches_off_and_drops_the_image_unless_installing);
     RUN(a_cancelled_press_ends_the_hold);
     RUN(the_write_screen_closes_only_after_a_failure);
+    RUN(an_unsigned_image_needs_a_second_2_s_hold);
+    RUN(cancel_on_an_unsigned_image_closes_and_asks_no_install);
+    RUN(a_state_change_under_the_second_hold_ends_it);
     return test_summary("wifi_screen");
 }

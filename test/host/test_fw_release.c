@@ -347,6 +347,12 @@ TEST_CASE(names_and_urls_of_a_release)
     const fw_version_t v = { 0u, 20u, 1u };
     fw_release_image_name(v, n);
     CHECK_STR_EQ(n, "rcbench-panel-v0.20.1.bin");
+    char sn[FW_REL_SIG_NAME_MAX];
+    fw_release_sig_name(v, sn);
+    CHECK_STR_EQ(sn, "rcbench-panel-v0.20.1.bin.sig");
+    fw_release_sig_name(big, sn);
+    CHECK_STR_EQ(sn, "rcbench-panel-v65535.65535.65535.bin.sig");
+    CHECK(strlen(sn) < (size_t)FW_REL_SIG_NAME_MAX);
     char url[FW_REL_URL_MAX + 1u];
     CHECK(fw_release_url(v, n, url, sizeof(url)));
     CHECK_STR_EQ(url, "https://github.com/subtilitas/rcbench/releases/"

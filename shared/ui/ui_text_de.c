@@ -1383,6 +1383,14 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UP_FAILED]              = "Das Schreiben schlug fehl.",
     [TX_UP_FAILED_2]            = "Die laufende Firmware bleibt; nichts geändert.",
     [TX_UP_CLOSE]               = "SCHLIESSEN",
+    [TX_UPS_TITLE]              = "PANEL-FIRMWARE %s",
+    [TX_UPS_BYTES]              = "%lu Byte, geprüft",
+    [TX_UPS_HEAD]               = "NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT",
+    [TX_UPS_NONE]               = "Das Image hat keine Signatur.",
+    [TX_UPS_BAD]                = "Die Signatur passt nicht zu Image und Schlüssel.",
+    [TX_UPS_NOTE_1]             = "Nur ein selbst gebautes oder vertrautes Image installieren.",
+    [TX_UPS_NOTE_2]             = "Geschrieben wird erst, wenn das Halten unten durch ist.",
+    [TX_UPS_HOLD]               = "2 s HALTEN: TROTZDEM INSTALLIEREN",
 
     /* UPDATES, the reminder, the download */
     [TX_UPD_DOOR]               = "UPDATES",

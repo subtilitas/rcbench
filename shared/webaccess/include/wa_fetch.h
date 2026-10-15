@@ -16,6 +16,11 @@
  *             fw_image_check(); WA_FETCH_DOWNLOAD_MS at most from the start.
  *             What it leaves is an image staged as an upload would leave
  *             it, for the existing installer.  No flash is written here.
+ *             The release signature of the image (fw_release_sig_name()) is
+ *             fetched last, into the staged upload; a release without one,
+ *             or an answer for it that is not a signature body, leaves the
+ *             image unsigned and the job going.  The signature is not
+ *             checked here (fw_sign.h).
  *
  * Two halves.  The job (wa_fetch_t) lives with the session under the
  * platform's lock: started and ticked by the UI loop, which holds the

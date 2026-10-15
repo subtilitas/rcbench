@@ -146,6 +146,43 @@ TEST_CASE(an_end_without_a_begin_changes_nothing)
     CHECK_EQ(fw_upload_percent(&g_up), 0u);
 }
 
+TEST_CASE(a_signature_waits_beside_a_staged_image_and_goes_with_it)
+{
+    uint8_t sig[FW_SIG_MAX + 1u];
+    memset(sig, 0x5A, sizeof(sig));
+    fresh();
+    /* Nothing staged: nothing is stored. */
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 70u), FW_ERR_BUSY);
+    CHECK_EQ(g_up.sig_n, 0u);
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 70u), FW_ERR_BUSY);
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_end(&g_up, true), FW_OK);
+    CHECK_EQ(g_up.sig_n, 0u);
+    /* Both bounds of the size. */
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 0u), FW_ERR_EMPTY);
+    CHECK_EQ(fw_upload_sig(&g_up, NULL, 70u), FW_ERR_EMPTY);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MAX + 1u), FW_ERR_TOO_BIG);
+    CHECK_EQ(g_up.sig_n, 0u);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MAX), FW_OK);
+    CHECK_EQ(g_up.sig_n, FW_SIG_MAX);
+    /* A refused one leaves the stored one; a second one replaces it. */
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MAX + 1u), FW_ERR_TOO_BIG);
+    CHECK_EQ(g_up.sig_n, FW_SIG_MAX);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 8u), FW_OK);
+    CHECK_EQ(g_up.sig_n, 8u);
+    /* Discard clears it, and so does the next image. */
+    fw_upload_discard(&g_up);
+    CHECK_EQ(g_up.sig_n, 0u);
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(send(g_len, 4096u), FW_OK);
+    CHECK_EQ(fw_upload_end(&g_up, true), FW_OK);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 9u), FW_OK);
+    g_up.state = FW_UP_IDLE;
+    CHECK_EQ(fw_upload_begin(&g_up, g_len), FW_OK);
+    CHECK_EQ(g_up.sig_n, 0u);
+}
+
 int main(void)
 {
     g_img = malloc(SLOT + 64u);
@@ -159,6 +196,7 @@ int main(void)
     RUN(a_second_upload_waits_for_the_first_to_be_answered);
     RUN(a_damaged_image_arrives_refused_with_its_reason);
     RUN(an_end_without_a_begin_changes_nothing);
+    RUN(a_signature_waits_beside_a_staged_image_and_goes_with_it);
     free(g_img);
     free(g_buf);
     return test_summary("fw_upload");

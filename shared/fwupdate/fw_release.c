@@ -271,6 +271,12 @@ void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX])
              (unsigned)v.major, (unsigned)v.minor, (unsigned)v.patch);
 }
 
+void fw_release_sig_name(fw_version_t v, char out[FW_REL_SIG_NAME_MAX])
+{
+    snprintf(out, FW_REL_SIG_NAME_MAX, "rcbench-panel-v%u.%u.%u.bin.sig",
+             (unsigned)v.major, (unsigned)v.minor, (unsigned)v.patch);
+}
+
 bool fw_release_url(fw_version_t v, const char *file, char *out, size_t cap)
 {
     if (file == NULL || out == NULL || cap == 0u) {

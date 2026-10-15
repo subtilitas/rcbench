@@ -807,17 +807,22 @@ static struct {
     update_view_t v;
     bool          close;
     bool          cancel;
+    bool          go;            /**< the second hold completed          */
     bool          have_press;
     bool          pressed;
+    bool          on_hold;       /**< the press is on the hold button    */
     uint8_t       press_id;
     unsigned      drawn_mask;
+    ui_hold_t     hold;          /**< INSTALL ANYWAY                     */
 } u;
 
 #define U_CLOSE gfx_rect_make(24, 480 - 18 - 56, 240, 56)
+#define U_HOLD  gfx_rect_make(300, 480 - 18 - 56, 476, 56)
 
 static void u_reset(void)
 {
     memset(&u, 0, sizeof(u));
+    ui_hold_reset(&u.hold);
 }
 
 void update_screen_set(const update_view_t *v)
@@ -839,6 +844,13 @@ bool update_screen_take_close(void)
     return was;
 }
 
+bool update_screen_take_go(void)
+{
+    const bool was = u.go;
+    u.go = false;
+    return was;
+}
+
 bool update_screen_take_cancel(void)
 {
     const bool was = u.cancel;
@@ -846,11 +858,31 @@ bool update_screen_take_cancel(void)
     return was;
 }
 
-/* The one button: CLOSE after a failure, CANCEL while downloading. */
+/* The button: CLOSE after a failure, CANCEL while downloading or on an
+ * image the release key does not vouch for (which also has the hold). */
 static bool u_has_button(void)
 {
     return u.v.state == UPDATE_FAILED || u.v.state == UPDATE_FETCH_FAILED
-           || u.v.state == UPDATE_FETCHING;
+           || u.v.state == UPDATE_FETCHING || u.v.state == UPDATE_UNSIGNED;
+}
+
+static void u_tick(float dt_s)
+{
+    if (u.v.state != UPDATE_UNSIGNED) {
+        if (u.hold.down || u.hold.flash_left > 0) {
+            (void)ui_hold_left(&u.hold);
+            u.have_press = u.pressed = u.on_hold = false;
+            u.drawn_mask = 0u;
+        }
+        return;
+    }
+    if (u.hold.down || u.hold.flash_left > 0) {
+        u.drawn_mask = 0u;         /* the fill follows the hold */
+    }
+    if (ui_hold_tick(&u.hold, dt_s)) {
+        u.go = true;
+        ui_hold_reached(&u.hold);
+    }
 }
 
 static void u_event(const touch_event_t *evt)
@@ -858,18 +890,40 @@ static void u_event(const touch_event_t *evt)
     if (evt == NULL || !u_has_button()) {
         return;
     }
+    const bool unsigned_img = (u.v.state == UPDATE_UNSIGNED);
     const bool on = in(U_CLOSE, evt->point.x, evt->point.y);
+    const bool on_hold = unsigned_img
+                         && in(U_HOLD, evt->point.x, evt->point.y);
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (!u.have_press && on) {
+        if (!u.have_press && (on || on_hold)) {
             u.have_press = true;
-            u.pressed = true;
+            u.pressed = on;
+            u.on_hold = on_hold;
             u.press_id = evt->point.id;
+            if (on_hold) {
+                ui_hold_begin(&u.hold);
+            }
             u.drawn_mask = 0u;
         }
         return;
     }
-    if (!u.have_press || evt->point.id != u.press_id
-        || evt->type != TOUCH_EVENT_UP) {
+    if (!u.have_press || evt->point.id != u.press_id) {
+        return;
+    }
+    if (u.on_hold) {
+        /* The hold acts when it completes; sliding off or lifting ends it. */
+        if (evt->type == TOUCH_EVENT_MOVE && !on_hold) {
+            (void)ui_hold_leave(&u.hold);
+        } else if (evt->type == TOUCH_EVENT_UP) {
+            (void)ui_hold_end(&u.hold);
+        } else {
+            return;
+        }
+        u.have_press = u.on_hold = false;
+        u.drawn_mask = 0u;
+        return;
+    }
+    if (evt->type != TOUCH_EVENT_UP) {
         return;
     }
     u.have_press = false;
@@ -886,6 +940,10 @@ static void u_event(const touch_event_t *evt)
 
 static void u_cancel(void)
 {
+    if (u.on_hold) {
+        (void)ui_hold_left(&u.hold);
+    }
+    u.on_hold = false;
     u.have_press = false;
     u.pressed = false;
     u.drawn_mask = 0u;
@@ -904,30 +962,61 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
     gfx_clear(c, UI_BG);
     const bool fetch = (u.v.state == UPDATE_FETCHING
                         || u.v.state == UPDATE_FETCH_FAILED);
+    const bool unsig = (u.v.state == UPDATE_UNSIGNED);
     const bool failed = (u.v.state == UPDATE_FAILED
                          || u.v.state == UPDATE_FETCH_FAILED);
-    const gfx_color_t head = failed ? UI_DANGER : UI_ACCENT;
+    const gfx_color_t head = failed ? UI_DANGER
+                                    : (unsig ? UI_WARN : UI_ACCENT);
     gfx_fill_rect(c, 0, 0, 800, 56, head);
     char line[96];
-    snprintf(line, sizeof(line), fetch ? TR(UPD_DL_TITLE) : TR(UP_TITLE),
+    snprintf(line, sizeof(line),
+             fetch ? TR(UPD_DL_TITLE) : (unsig ? TR(UPS_TITLE) : TR(UP_TITLE)),
              u.v.version);
     gfx_text_in(c, gfx_rect_make(24, 13, 752, 30), line, UI_FONT_HEAD,
                 ui_is_light(head) ? UI_TEXT_ON_LIGHT : GFX_WHITE, 1,
                 GFX_ALIGN_LEFT);
     const unsigned pct = (u.v.total > 0u)
         ? (unsigned)((uint64_t)u.v.written * 100u / u.v.total) : 0u;
-    if (!fetch || u.v.total > 0u) {
+    if (unsig) {
+        snprintf(line, sizeof(line), TR(UPS_BYTES), (unsigned long)u.v.total);
+        gfx_text_in(c, gfx_rect_make(24, 96, 752, 30), line, UI_FONT_HEAD,
+                    UI_TEXT, 1, GFX_ALIGN_LEFT);
+    } else if (!fetch || u.v.total > 0u) {
         /* A download names its bytes once the image's size is known. */
         snprintf(line, sizeof(line), TR(UP_BYTES),
                  (unsigned long)u.v.written, (unsigned long)u.v.total, pct);
         gfx_text_in(c, gfx_rect_make(24, 96, 752, 30), line, UI_FONT_HEAD,
                     UI_TEXT, 1, GFX_ALIGN_LEFT);
     }
-    ui_bar(c, gfx_rect_make(24, 140, 752, 24),
-           (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total : 0.0f,
-           -1.0f, failed ? UI_DANGER : UI_ACCENT);
+    if (!unsig) {
+        ui_bar(c, gfx_rect_make(24, 140, 752, 24),
+               (u.v.total > 0u) ? (float)u.v.written / (float)u.v.total
+                                : 0.0f,
+               -1.0f, failed ? UI_DANGER : UI_ACCENT);
+    }
     int y = 200;
-    if (u.v.state == UPDATE_FETCHING) {
+    if (unsig) {
+        gfx_text_in(c, gfx_rect_make(24, 150, 752, 30), TR(UPS_HEAD),
+                    UI_FONT_HEAD, UI_WARN, 1, GFX_ALIGN_LEFT);
+        gfx_text_in(c, gfx_rect_make(24, 200, 752, 18),
+                    u.v.sig_bad ? TR(UPS_BAD) : TR(UPS_NONE), UI_FONT_LABEL,
+                    UI_TEXT, 1, GFX_ALIGN_LEFT);
+        gfx_text_in(c, gfx_rect_make(24, 232, 752, 18), TR(UPS_NOTE_1),
+                    UI_FONT_LABEL, UI_TEXT, 1, GFX_ALIGN_LEFT);
+        gfx_text_in(c, gfx_rect_make(24, 256, 752, 18), TR(UPS_NOTE_2),
+                    UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
+        ui_button(c, U_CLOSE, TR(CANCEL), UI_PANEL_HI, u.pressed, true);
+        ui_button(c, U_HOLD, TR(UPS_HOLD),
+                  (u.hold.flash_left > 0)
+                      ? ui_hold_flash(UI_WARN, u.hold.flash_left)
+                      : ui_hold_fill(UI_PANEL_HI, UI_WARN, u.hold.held_s),
+                  false, true);
+        if (u.hold.flash_left > 0) {
+            ui_hold_flash_step(&u.hold);
+            u.drawn_mask = 0u;
+            return;
+        }
+    } else if (u.v.state == UPDATE_FETCHING) {
         gfx_text_in(c, gfx_rect_make(24, y, 752, 30), u.v.what, UI_FONT_HEAD,
                     UI_TEXT, 1, GFX_ALIGN_LEFT);
         gfx_text_in(c, gfx_rect_make(24, y + 40, 752, 18), u.v.why,
@@ -979,7 +1068,7 @@ static const ui_screen_t k_update = {
     .reset  = u_reset,
     .enter  = NULL,
     .leave  = NULL,
-    .tick   = NULL,
+    .tick   = u_tick,
     .event  = u_event,
     .cancel = u_cancel,
     .render = u_render,

@@ -34,6 +34,10 @@ extern "C" {
 /** The paths the page uses. */
 #define WA_URL_CODE    "/code"
 #define WA_URL_UPDATE  "/update"
+/** The signature of the image just uploaded: POST, 8 to 72 bytes. */
+#define WA_URL_UPDATE_SIG "/update.sig"
+/** The header of an upload's answer; "ok" when the image is staged. */
+#define WA_HDR_UPLOAD  "X-Rcbench-Upload"
 #define WA_URL_FILE    "/card/"
 #define WA_URL_ZIP     "/card.zip"
 /** The cookie that carries the access code. */
@@ -59,6 +63,12 @@ void wa_page_main(wa_out_t *o, const wa_page_info_t *pi, const wa_fs_t *fs);
  */
 void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
                            const fw_image_info_t *info, bool same);
+
+/**
+ * The text a signature upload's response carries: @p e as fw_upload_sig()
+ * gave it, FW_ERR_READ for a body that broke off.
+ */
+void wa_page_sig_result(wa_out_t *o, bool de, fw_err_t e);
 
 #ifdef __cplusplus
 }

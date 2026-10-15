@@ -511,12 +511,88 @@ static esp_err_t answer_upload(httpd_req_t *r, fw_err_t e,
     (void)wa_out_flush(&b->out);
     httpd_resp_set_type(r, "text/plain; charset=utf-8");
     httpd_resp_set_hdr(r, "Cache-Control", "no-store");
+    if (e == FW_OK) {
+        /* The page sends the signature only after this. */
+        httpd_resp_set_hdr(r, WA_HDR_UPLOAD, "ok");
+    }
     if (cut) {
         /* The body was not read: the connection goes with the answer. */
         httpd_resp_set_hdr(r, "Connection", "close");
     }
     const esp_err_t s_ = httpd_resp_sendstr(r, b->text);
     return cut ? ESP_FAIL : s_;
+}
+
+static esp_err_t answer_sig(httpd_req_t *r, fw_err_t e, bool cut)
+{
+    b->text[0] = '\0';
+    wa_out_init(&b->out, upload_text, b->text);
+    wa_page_sig_result(&b->out, atomic_load(&s.de), e);
+    (void)wa_out_flush(&b->out);
+    httpd_resp_set_type(r, "text/plain; charset=utf-8");
+    httpd_resp_set_hdr(r, "Cache-Control", "no-store");
+    if (cut) {
+        httpd_resp_set_hdr(r, "Connection", "close");
+    }
+    const esp_err_t s_ = httpd_resp_sendstr(r, b->text);
+    return cut ? ESP_FAIL : s_;
+}
+
+/*
+ * The signature of the image just uploaded: 8 to 72 bytes, accepted only
+ * while that image is staged and not yet taken by the installer.  Nothing is
+ * verified here; the installer does that with the image in hand.
+ */
+static esp_err_t h_update_sig(httpd_req_t *r)
+{
+    if (!req_begin()) {
+        return closed(r);
+    }
+    if (req_code(r) != WA_CODE_OK) {
+        req_end();
+        return refused(r, "403 Forbidden");
+    }
+    const uint32_t bytes = (r->content_len > UINT32_MAX)
+                           ? UINT32_MAX : (uint32_t)r->content_len;
+    fw_err_t e = FW_OK;
+    lock();
+    if (s.taken || s.up.state != FW_UP_STAGED) {
+        e = FW_ERR_BUSY;
+    } else if (bytes == 0u) {
+        e = FW_ERR_EMPTY;
+    } else if (bytes > FW_SIG_MAX) {
+        e = FW_ERR_TOO_BIG;
+    }
+    unlock();
+    if (e != FW_OK) {
+        req_end();
+        return answer_sig(r, e, true);
+    }
+    uint8_t sig[FW_SIG_MAX] = {0};
+    uint32_t got = 0u;
+    unsigned waits = 0u;
+    while (got < bytes) {
+        if (atomic_load(&s.abort)) {
+            break;
+        }
+        const int n = httpd_req_recv(r, (char *)(sig + got), bytes - got);
+        if (n == HTTPD_SOCK_ERR_TIMEOUT && ++waits < 6u) {
+            continue;
+        }
+        if (n <= 0) {
+            break;
+        }
+        got += (uint32_t)n;
+    }
+    if (got != bytes) {
+        req_end();
+        return ESP_FAIL;              /* the sender is gone or cut off */
+    }
+    lock();
+    e = s.taken ? FW_ERR_BUSY : fw_upload_sig(&s.up, sig, bytes);
+    unlock();
+    req_end();
+    return answer_sig(r, e, false);
 }
 
 /*
@@ -773,6 +849,8 @@ static esp_err_t httpd_up(void)
         { .uri = "/",               .method = HTTP_GET,  .handler = h_root },
         { .uri = WA_URL_CODE,       .method = HTTP_POST, .handler = h_code },
         { .uri = WA_URL_UPDATE,     .method = HTTP_POST, .handler = h_update },
+        { .uri = WA_URL_UPDATE_SIG, .method = HTTP_POST,
+          .handler = h_update_sig },
         { .uri = WA_URL_ZIP,        .method = HTTP_GET,  .handler = h_zip },
         { .uri = WA_URL_FILE "*",   .method = HTTP_GET,  .handler = h_file },
     };
@@ -1543,7 +1621,8 @@ void wifi_access_discard(void)
 }
 
 bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
-                      fw_image_info_t *info)
+                      fw_image_info_t *info, const uint8_t **sig,
+                      uint32_t *sig_n)
 {
     lock();
     const bool ok = (s.up.state == FW_UP_STAGED && s.up.buf != NULL);
@@ -1552,6 +1631,8 @@ bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
         *img = s.up.buf;
         *bytes = s.up.bytes;
         *info = s.up.info;
+        *sig = s.up.sig;
+        *sig_n = s.up.sig_n;
     }
     unlock();
     return ok;

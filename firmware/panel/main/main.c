@@ -191,6 +191,7 @@ static uint16_t pct_to_span(float pct)
 #include "fw_install.h"
 #include "fw_ota.h"
 #include "fw_release.h"
+#include "fw_sign.h"
 #include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
@@ -8800,30 +8801,93 @@ static void update_frame(update_state_t st, const char *version,
     }
 }
 
+/* The release key (keys/release_signing_pub.pem), embedded as text. */
+extern const char _binary_release_signing_pub_pem_start[];
+extern const char _binary_release_signing_pub_pem_end[];
+#define release_key_start _binary_release_signing_pub_pem_start
+#define release_key_end _binary_release_signing_pub_pem_end
+
+/*
+ * Whether the release key vouches for the image: FW_SIG_OK, or why not.  The
+ * whole image is hashed once more here, in PSRAM, before the write starts.
+ */
+static fw_sig_t image_signature(const uint8_t *img, uint32_t bytes,
+                                const uint8_t *sig, uint32_t sig_n)
+{
+    fw_pubkey_t key;
+    /* The linker places both symbols in one object. */
+    /* cppcheck-suppress subtractPointers */
+    const size_t n = (size_t)(release_key_end - release_key_start);
+    if (!fw_pubkey_parse_pem(release_key_start, n, &key)) {
+        return FW_SIG_KEY;
+    }
+    return fw_sig_verify(&key, img, bytes, sig, sig_n);
+}
+
+/* An image the release key does not vouch for waits on the PANEL UPDATE
+ * screen for a second hold; this is that wait. */
+static bool s_sig_wait;
+
+/* The wait ends without the install: the image is dropped. */
+static void sig_wait_drop(void)
+{
+    s_sig_wait = false;
+    atomic_store(&s_fw_installing, false);
+    wifi_access_release();
+}
+
 /*
  * INSTALL: the 2 s hold completed on the question.
  *
- * In order: the update screen, the radio off and waited for, the image
- * checked once more against the slot and the running build, the gate once
- * more, the control task stood still, then the write a piece at a time with
- * the bytes on screen, the check of what the slot holds, otadata, and the
- * restart.  Nothing touches the flash before the control task stands still
- * and the radio is off.  A failure before the first erase changes nothing;
- * one after it leaves the running build as the one that starts.
+ * In order: the update screen, the release signature checked, the radio off
+ * and waited for, the image checked once more against the slot and the
+ * running build, the gate once more, the control task stood still, then the
+ * write a piece at a time with the bytes on screen, the check of what the
+ * slot holds, otadata, and the restart.  Nothing touches the flash before
+ * the control task stands still and the radio is off.  A failure before the
+ * first erase changes nothing; one after it leaves the running build as the
+ * one that starts.
+ *
+ * An image the release key does not vouch for (no signature, one that is not
+ * a signature, one that does not verify) stops after the check: the screen
+ * says so and waits for the second hold of the same length (@p acked true
+ * on the call that follows it).  The radio is off meanwhile; leaving the
+ * screen, STOP and ARM drop the image.
  */
-static void fw_install_run(void)
+static void fw_install_run(bool acked)
 {
     const uint8_t  *img = NULL;
     uint32_t        bytes = 0u;
     fw_image_info_t info;
-    if (!wifi_access_take(&img, &bytes, &info)) {
+    const uint8_t  *sig = NULL;
+    uint32_t        sig_n = 0u;
+    if (!wifi_access_take(&img, &bytes, &info, &sig, &sig_n)) {
         return;
     }
-    /* Before the gate is read: see s_fw_installing. */
+    s_sig_wait = false;
     atomic_store(&s_fw_installing, true);
     ui_router_goto(SCREEN_UPDATE);
     (void)wifi_screen_take();        /* the screen's leave: radio off */
     update_frame(UPDATE_WRITING, info.version_text, 0u, bytes);
+
+    if (!acked) {
+        const fw_sig_t sr = image_signature(img, bytes, sig, sig_n);
+        if (sr != FW_SIG_OK) {
+            ESP_LOGW(TAG, "image %s: %s", info.version_text, fw_sig_str(sr));
+            wifi_access_close(WA_OFF_INSTALL);
+            /* Waiting for the operator is not an install under way: the
+             * bench may arm, which ends the wait (wifi_service()). */
+            atomic_store(&s_fw_installing, false);
+            s_sig_wait = true;
+            update_view_t v = { .state = UPDATE_UNSIGNED, .written = 0u,
+                                .total = bytes,
+                                .sig_bad = (sr == FW_SIG_BAD
+                                            || sr == FW_SIG_FORM) };
+            snprintf(v.version, sizeof(v.version), "%s", info.version_text);
+            update_screen_set(&v);
+            return;
+        }
+    }
 
     /* The radio goes first, and wholly: no request may be under way. */
     wifi_access_close(WA_OFF_INSTALL);
@@ -8957,9 +9021,19 @@ static void wifi_service(bool armed, uint32_t stops_now)
     }
     if ((req & WIFI_REQ_INSTALL) != 0u) {
         s_update_back = SCREEN_LOGS;
-        fw_install_run();
+        fw_install_run(false);
+    }
+    if (s_sig_wait && (stop || gate == WA_OFF_ARMED
+                       || ui_router_current() != SCREEN_UPDATE)) {
+        sig_wait_drop();
+    }
+    if (update_screen_take_go() && s_sig_wait) {
+        fw_install_run(true);
     }
     if (update_screen_take_close()) {
+        if (s_sig_wait) {
+            sig_wait_drop();
+        }
         ui_router_goto(s_update_back);
     }
 
@@ -9234,7 +9308,7 @@ static void upd_service(bool armed, bool unsafe, uint32_t stops_now,
          * the coprocessor's again. */
         atomic_store(&s_fw_installing, false);
         ESP_LOGI(TAG, "GitHub: %s downloaded and checked", v.found);
-        fw_install_run();
+        fw_install_run(false);
         return;
     }
     atomic_store(&s_fw_installing, false);

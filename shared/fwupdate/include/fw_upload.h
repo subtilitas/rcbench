@@ -15,6 +15,10 @@
  * (fw_image_check()), so what waits for the operator is an image that can be
  * installed or one that says why not.
  *
+ * A release signature (fw_sign.h) of a staged image is stored beside it with
+ * fw_upload_sig().  It is data the image carries to the installer; nothing
+ * here verifies it.  A new image and a discard clear it.
+ *
  * Not thread-safe: the platform serialises the calls.  No flash is touched.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
@@ -29,6 +33,7 @@
 #include <stdint.h>
 
 #include "fw_image.h"
+#include "fw_sign.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +55,8 @@ typedef struct {
     fw_up_state_t   state;
     fw_err_t        err;
     fw_image_info_t info;     /**< of a staged image            */
+    uint8_t         sig[FW_SIG_MAX]; /**< the signature, sig_n bytes */
+    uint32_t        sig_n;    /**< 0: none                      */
 } fw_upload_t;
 
 /** Into @p buf of @p cap bytes, for a slot of @p slot bytes. */
@@ -75,6 +82,14 @@ fw_err_t fw_upload_add(fw_upload_t *u, const uint8_t *data, uint32_t len);
  * sent less than announced, anything fw_image_check() refuses.
  */
 fw_err_t fw_upload_end(fw_upload_t *u, bool whole);
+
+/**
+ * Store @p n bytes of signature beside the staged image.  FW_ERR_BUSY unless
+ * an image is STAGED, FW_ERR_EMPTY for 0, FW_ERR_TOO_BIG over FW_SIG_MAX; on
+ * an error nothing is stored and a signature stored before stays.  A second
+ * call replaces the first.
+ */
+fw_err_t fw_upload_sig(fw_upload_t *u, const uint8_t *sig, uint32_t n);
 
 /** Drop what is received or staged: IDLE. */
 void fw_upload_discard(fw_upload_t *u);

@@ -190,6 +190,7 @@ TRACKED = [
     "shared/fwupdate/fw_image.c",
     "shared/fwupdate/fw_upload.c",
     "shared/fwupdate/fw_release.c",
+    "shared/fwupdate/fw_sign.c",
     "shared/fwupdate/fw_install.c",
     "shared/fwupdate/fw_boot.c",
     "shared/webaccess/wa_session.c",

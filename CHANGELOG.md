@@ -8,6 +8,15 @@ history is in git.
 
 ### Added
 
+- The release workflow signs the panel image with ECDSA (elliptic curve
+  digital signature algorithm) P-256 over its SHA-256 and publishes
+  `rcbench-panel-vX.Y.Z.bin.sig` (DER, 70 to 72 bytes) beside it. The panel
+  embeds the public key and checks the signature when INSTALL begins. A
+  valid signature installs with the single 2 s hold. An image with no
+  signature, or one that does not verify, installs after PANEL UPDATE says
+  `NOT SIGNED BY THE RCBENCH RELEASE KEY` and a second 2 s hold completes.
+  The Wi-Fi page takes the signature as an optional second file and the
+  release download fetches it.
 - The bench configurator lists 2 more functions of the base setup: the panel
   update and the card files in a browser over Wi-Fi (the FILES & UPDATE
   screen), and the coprocessor firmware update over CAN (Controller Area
