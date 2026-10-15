@@ -83,10 +83,26 @@ typedef struct {
      */
     void (*cancel)(void);
     void (*render)(gfx_canvas_t *c, int buffer_index);
+    /**
+     * The home tag was tapped.  Return true when the screen went up a level
+     * of its own, such as SETUP from a settings list to its tiles; the
+     * router has released every contact the screen owned, as at a change of
+     * screen.  False, or NULL, leaves the screen: to SETUP from a screen
+     * SETUP's tiles open, to the menu from every other.
+     */
+    bool (*back)(void);
 } ui_screen_t;
 
 /** The band the router owns, in panel coordinates. */
 #define UI_BAND_H 48
+
+/**
+ * The alert band the router draws across the bottom of the 480 px panel
+ * while an alert shows: its height, and its top in panel coordinates.  It
+ * takes the touches under it, so a screen puts nothing that acts there.
+ */
+#define UI_ALERT_H 34
+#define UI_ALERT_Y (480 - UI_ALERT_H)
 
 void ui_router_init(void);
 

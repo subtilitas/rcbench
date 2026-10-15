@@ -159,24 +159,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const gfx_rect_t r = tile_rect(i);
         const bool down = (i == s.pressed);
 
-        gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 8,
-                            down ? ui_theme_color(UI_C_PANEL_HI)
-                                 : ui_theme_color(UI_C_PANEL));
-        gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8,
-                            ui_theme_color(UI_C_EDGE));
-
         /* A screen whose hardware is missing is fully usable, so its icon
          * stays lit. */
-        t->icon(c, r.x + r.w / 2, r.y + 64, 30, ui_theme_color(UI_C_ACCENT));
-
-        /* Clipped to the tile: centring a string wider than its tile puts the
-         * overhang on the neighbour. */
-        const gfx_rect_t name = { r.x, (int16_t)(r.y + 104), r.w, 22 };
-        gfx_text_in(c, name, t->name, &gfx_font_8x16,
-                    ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_CENTER);
-        const gfx_rect_t line = { r.x, (int16_t)(r.y + 128), r.w, 20 };
-        gfx_text_in(c, line, ui_tr(t->line), &gfx_font_8x16,
-                    ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
+        ui_tile(c, r, 64, t->icon, t->name, ui_tr(t->line), down);
 
         /*
          * Two states.  MODELLED: the hardware is not fitted, so the values

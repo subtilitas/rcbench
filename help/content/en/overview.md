@@ -6,7 +6,7 @@ order: 1
 
 # Menu
 
-The menu is the panel's home screen. It opens after the splash and holds one tile per bench screen. A tap on a tile opens its screen. The home tag at the top left of every other screen returns here.
+The menu is the panel's home screen. It opens after the splash and holds one tile per bench screen. A tap on a tile opens its screen. The home tag at the top left of every other screen climbs one level: from a screen the menu opens it returns here, from a list or screen that SETUP's tiles open it returns to the tiles.
 
 ## The tiles
 

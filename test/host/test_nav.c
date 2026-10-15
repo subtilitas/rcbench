@@ -23,6 +23,7 @@
 #include "overview_screen.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "settings_screen.h"
 #include "splash_screen.h"
 #include "supply_screen.h"
 #include "ui_band.h"
@@ -274,49 +275,117 @@ TEST_CASE(a_second_contact_cannot_steal_the_release)
     CHECK(ui_router_take_stop());
 }
 
-/*
- * The three doors on the Setup screen. They are the only way to either
- * outputs view and to UPDATES, so a tile that stopped navigating would leave
- * a screen nobody can reach -- and the geometry here is what says the last
- * door did not land on top of RESET CATEGORY.
- */
-TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
+/* The middle of SETUP's tile @p index, in panel coordinates. */
+static void hub_point(int index, int *x, int *y)
 {
-    /* Matching settings_screen.c: three doors of 36 in the left column,
-     * the pins' caption between the second and the third. */
-    const int door_x = 16 + 208 / 2;
-    const int outputs_y = UI_BAND_H + 204 + 36 / 2;
-    const int picker_y  = UI_BAND_H + 204 + 36 + 4 + 36 / 2;
-    const int updates_y = UI_BAND_H + 308 + 36 / 2;
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    CHECK(settings_hub_slot(index, &r));
+    *x = r.x + r.w / 2;
+    *y = UI_BAND_H + r.y + r.h / 2;
+}
 
+static void tap_tile(int index)
+{
+    int x = 0, y = 0;
+    hub_point(index, &x, &y);
+    tap(x, y);
+}
+
+static void tap_home(void)
+{
+    const gfx_rect_t home =
+        ui_home_tag_rect(ui_router_title(ui_router_current()));
+    tap(home.x + home.w / 2, home.y + home.h / 2);
+}
+
+/*
+ * SETUP's tiles.  They are the only way to either outputs view and to
+ * UPDATES, so a tile that stopped navigating would leave a screen nobody
+ * can reach.  The table's order: the three categories, then OUTPUTS, PICK A
+ * PIN and UPDATES.
+ */
+TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_and_updates)
+{
+    static const ui_screen_id_t k_tools[] = {
+        SCREEN_OUTPUTS, SCREEN_PICKER, SCREEN_UPDATES,
+    };
     fresh();
+    for (int i = 0; i < 3; ++i) {
+        ui_router_goto(SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+        tap_tile(3 + i);
+        CHECK_EQ(ui_router_current(), k_tools[i]);
+        CHECK(settings_screen_opens(k_tools[i]));
+        /* Its home tag leads back to the tiles, not to the menu. */
+        tap_home();
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+    }
+
+    /* A tile's edge rows are the tile's; the margin between two is not. */
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    CHECK(settings_hub_slot(3, &r));
     ui_router_goto(SCREEN_SETUP);
-    tap(door_x, outputs_y);
+    tap(r.x + 1, UI_BAND_H + r.y + r.h - 1);
     CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    ui_router_goto(SCREEN_SETUP);
+    tap(r.x + r.w + 4, UI_BAND_H + r.y + r.h / 2);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    /* An empty slot opens nothing. */
+    int x = 0, y = 0;
+    hub_point(settings_hub_tiles(), &x, &y);
+    tap(x, y);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), -1);
 
-    ui_router_goto(SCREEN_SETUP);
-    tap(door_x, picker_y);
-    CHECK_EQ(ui_router_current(), SCREEN_PICKER);
-
-    ui_router_goto(SCREEN_SETUP);
-    tap(door_x, updates_y);
-    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
-
-    /* Its lowest row is still the door, and the row under it RESET's
-     * margin: 6 px between the two. */
-    ui_router_goto(SCREEN_SETUP);
-    tap(door_x, UI_BAND_H + 308 + 35);
-    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
-    ui_router_goto(SCREEN_SETUP);
-    tap(door_x, UI_BAND_H + 308 + 36 + 2);
+    /* And a press that slides off a tile is not a tap on it. */
+    hub_point(4, &x, &y);
+    touch(x, y, TOUCH_EVENT_DOWN, 1);
+    touch(x + 300, y, TOUCH_EVENT_MOVE, 1);
+    touch(x + 300, y, TOUCH_EVENT_UP, 1);
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-    /* And a press that slides off a door is not a tap on it. */
+    /* The reminder's own screen is not a tile's: its tag leaves to the
+     * menu, as every screen's that no tile opens. */
+    CHECK(!settings_screen_opens(SCREEN_UPD_REMIND));
+    CHECK(!settings_screen_opens(SCREEN_MOTOR));
+    CHECK(!settings_screen_opens(SCREEN_SETUP));
+    ui_router_goto(SCREEN_WIFI);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * A category's tile opens its list on the same screen, and the home tag
+ * goes back up: from the list to the tiles, from the tiles to the menu.
+ */
+TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
+{
+    fresh();
+    to_overview();
     ui_router_goto(SCREEN_SETUP);
-    touch(door_x, picker_y, TOUCH_EVENT_DOWN, 1);
-    touch(door_x + 300, picker_y, TOUCH_EVENT_MOVE, 1);
-    touch(door_x + 300, picker_y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
+        const uint32_t n0 = ui_router_navigations();
+        tap_tile(cat);
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), cat);
+        CHECK_EQ(ui_router_navigations(), n0);
+        tap_home();
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+        CHECK_EQ(ui_router_navigations(), n0);
+    }
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* SETUP opens on its tiles again, whichever list was open when it
+     * was left. */
+    ui_router_goto(SCREEN_SETUP);
+    tap_tile(SET_CAT_IFACE);
+    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+    ui_router_goto(SCREEN_MOTOR);
+    ui_router_goto(SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), -1);
 }
 
 /* Tiles navigate, and a press that slid off its tile is not a tap on it. */
@@ -1533,6 +1602,39 @@ TEST_CASE(home_under_a_drag_leaves_the_dragging_contact_to_no_screen)
     lift(0);
 }
 
+/*
+ * The home tag under a scroll of a SETUP list: the list goes, and the
+ * contact that was scrolling is nobody's on the tiles.  Its moves and its
+ * lift over a tile reach no screen and open nothing.
+ */
+TEST_CASE(home_under_a_setup_scroll_leaves_the_contact_to_no_screen)
+{
+    on_screen(SCREEN_SETUP);
+    feed_reset();
+    int x = 0, y = 0;
+    hub_point(SET_CAT_IFACE, &x, &y);
+    feed_tap(FEED_LONE, x, y);
+    CHECK_EQ(settings_screen_category(), SET_CAT_IFACE);
+
+    finger(0, 300, UI_BAND_H + 300);
+    glide(0, 300, UI_BAND_H + 200, 8);
+    CHECK(settings_screen_scroll(NULL) > 0);
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SETUP));
+    feed_tap(1, home.x + home.w / 2, home.y + home.h / 2);
+    CHECK_EQ(settings_screen_category(), -1);
+
+    const uint32_t d0 = ui_router_dispatched();
+    hub_point(3, &x, &y);
+    glide(0, x, y, 8);                  /* onto OUTPUTS */
+    lift(0);
+    CHECK_EQ(ui_router_dispatched(), d0);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+
+    /* The next press is an ordinary one. */
+    feed_tap(0, x, y);
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+}
+
 /* The alert strip answers a second finger during a drag, and the drag goes
  * on.  A press on the strip that wanders to the band and lifts there clears
  * nothing and leaves the strip answering the next tap. */
@@ -2391,7 +2493,7 @@ static void bubble_in_bounds(const ui_bench_status_t *st)
         const bool apart = r.y >= stop.y + stop.h || r.x >= stop.x + stop.w
                            || r.x + r.w <= stop.x || r.y + r.h <= stop.y;
         if (!apart || r.x < 0 || r.x + r.w > W || r.y < UI_BAND_H
-            || r.y + r.h > H - 34) {
+            || r.y + r.h > UI_ALERT_Y) {
             T_FAIL("chip %d, faults %04X, language %d: bubble %d,%d %dx%d",
                    chip, (unsigned)st->faults, (int)ui_text_language(),
                    r.x, r.y, r.w, r.h);
@@ -2766,7 +2868,9 @@ int main(void)
     RUN(the_home_tag_returns_to_the_overview);
     RUN(the_overview_has_no_home_tag);
     RUN(a_second_contact_cannot_steal_the_release);
-    RUN(the_setup_screen_opens_both_views_of_the_outputs);
+    RUN(the_setup_tiles_open_the_outputs_the_picker_and_updates);
+    RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
+    RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);
     RUN(every_screen_renders_something_and_has_a_title);
     RUN(an_unknown_screen_id_falls_back_to_the_overview);

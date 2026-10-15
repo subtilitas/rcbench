@@ -52,7 +52,7 @@ A touch belongs to what it came down on until it lifts. The band is the top
   slides onto STOP from the screen stops nothing.
 - A second finger on STOP, on the home tag or on the alert band is answered
   while the first finger drags. After the home tag, the finger still on the
-  glass moves nothing on the overview.
+  glass moves nothing on the screen the tag leads to.
 
 ### Chip help
 
@@ -1774,15 +1774,45 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 
 ## Setup
 
+The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
+style. Each tile is 256 x 108 px, its icon centred over its name.
+
 ![Setup](img/setup.png)
 
-Settings are behind the SETUP tile, in both themes:
+- Three categories: ESC / BENCH, APPLICATION and INTERFACES. Each tile
+  names its number of settings. A tap opens the category's list.
+- Three screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pick a pin](#pick-a-pin)) and UPDATES ([Updates](#updates)).
+- Three slots are free. A tenth entry has no slot: the page holds 9, and
+  the build fails at the tenth.
+- SAVE, bottom right, is the same button the lists show
+  ([Keeping the values](#keeping-the-values)). A change left unsaved in any
+  category shows here too:
+
+![The tiles with a value unsaved](img/setup-hub-dirty.png)
+
+The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-The left column holds the three categories, then three keys to screens of
-their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-([Pick a pin](#pick-a-pin)) and UPDATES ([Updates](#updates)).
+A category's list spans the panel's width, 776 px, and shows 348 px of it,
+6 rows, over a strip of three columns: the category's name, RESET CATEGORY
+and SAVE. The strip ends at panel y 442, 4 px above the alert band
+([The alert band](#the-alert-band)), so an alert never covers a key, a row,
+RESET CATEGORY or SAVE, on the tiles or on a list.
+
+![ESC / BENCH](img/setup-esc.png)
+
+The home tag climbs one level at a time:
+
+| From | The home tag leads to |
+| --- | --- |
+| a category's list | the tiles; the list keeps its position |
+| the tiles | the menu |
+| OUTPUTS, PICK A PIN, UPDATES | the tiles |
+
+The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
+from the tiles or from a list.
 
 APPLICATION's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
@@ -2100,8 +2130,9 @@ current monitors:
 ### Keeping the values
 
 A changed value takes effect at once and is not written to flash until SAVE is
-pressed. The button under RESET CATEGORY says which of three states the
-screen is in:
+pressed. SAVE, beside RESET CATEGORY on a list and alone on the tiles,
+says which of four states the values are in. The values are one set: the
+state is the same on the tiles and on every list.
 
 | Label | Meaning |
 | --- | --- |
@@ -2264,7 +2295,8 @@ the link, and LOGS is about the SD card.
 ## Updates
 
 UPDATES asks GitHub which panel firmware release is the newest, and installs
-it. It opens from the UPDATES key on the Setup screen. A reminder at start
+it. It opens from the UPDATES tile on SETUP, and its home tag leads back
+there. A reminder at start
 asks the same question once per start of the panel.
 
 ![UPDATES](img/updates.png)
@@ -2272,7 +2304,7 @@ asks the same question once per start of the panel.
 | Control | Action |
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
-| `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on the Setup screen, as every setting. On by default. |
+| `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 
 The card names the running version and the kept home network. Both the
@@ -2423,7 +2455,8 @@ Current limitations:
 
 ## Outputs
 
-Behind the OUTPUTS key on the Setup screen. The protocols bound to the
+Behind the OUTPUTS tile on SETUP; its home tag leads back there. The
+protocols bound to the
 coprocessor's pins, and which pins each one drives.
 
 ![Outputs](img/outputs.png)
@@ -2611,7 +2644,8 @@ in its flash.
 
 ### Pick a pin
 
-Behind the PICK A PIN key on the Setup screen, and the same binding the
+Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
+The same binding the
 Outputs screen holds. The list answers "which GPIO is bound"; this answers
 "where do I put the lead".
 
