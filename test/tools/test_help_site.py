@@ -133,6 +133,21 @@ def test_links(tree):
     assert '<a href="index.html">e</a>' in html
 
 
+def test_a_link_target_keeps_balanced_parentheses(tree):
+    html = ok(tree, "[spec](https://example.com/Foo_(bar)) after\n")
+    assert '<a href="https://example.com/Foo_(bar)" ' in html
+    assert "</a> after" in html
+
+
+def test_an_unindented_line_after_a_list_fails(tree):
+    fails(tree, "- item\nparagraph\n", "leave a blank line after a list",
+          line=8)
+
+
+def test_an_indented_line_continues_a_list_item(tree):
+    assert "<li>item more</li>" in ok(tree, "- item\n  more\n")
+
+
 def test_a_bracket_without_a_target_is_text(tree):
     assert "[1] and [x]" in ok(tree, "[1] and [x]\n")
 
@@ -363,6 +378,22 @@ def test_a_screen_without_a_page_fails_in_each_language(tree):
     assert not any("has no en page" in p for p in problems)
 
 
+def test_a_screen_page_must_name_its_screen(tree):
+    full(tree)
+    put(tree, "de", "servo", "# Servo\n\nLead.\n\n## Run\n\n"
+                             "![a](view:servo)\n\n[motor](motor.md#hold)\n",
+        screen="none", order=2)
+    _, problems = run(tree)
+    assert any("SCREEN_SERVO has no de page" in p for p in problems)
+
+
+def test_index_is_not_a_page_id(tree):
+    full(tree)
+    both(tree, "index", "text\n")
+    _, problems = run(tree)
+    assert any("index is the generated list" in p for p in problems)
+
+
 def test_the_splash_needs_no_page(tree):
     full(tree)
     _, problems = run(tree)
@@ -526,6 +557,13 @@ def test_the_site(tree):
     # paragraph.
     assert index.index("motor.html") < index.index("servo.html")
     assert "<p>Lead.</p>" in index
+    # A lead's link to its own heading points at its page from the index.
+    both(tree, "motor", "Lead [hold](#hold).\n\n## Hold\n\n"
+                        "![m](view:motor)\n", order=1)
+    pages, problems = run(tree)
+    assert list(problems) == []
+    hs.write(out, pages, VIEWS, tree / "img")
+    assert 'href="motor.html#hold"' in (out / "index.html").read_text()
     assert 'href="de/index.html"' in index
     assert 'href="../index.html"' in (out / "de" / "index.html").read_text()
 

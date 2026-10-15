@@ -279,7 +279,17 @@ class Inline:
                             "write [text](target)")
             out.append("[")
             return i + 1
-        end = text.find(")", close + 2)
+        # The target ends at the ) that closes the ( after the label, so a
+        # URL with balanced parentheses inside stays whole.
+        end, depth = -1, 0
+        for k in range(close + 2, len(text)):
+            if text[k] == "(":
+                depth += 1
+            elif text[k] == ")":
+                if depth == 0:
+                    end = k
+                    break
+                depth -= 1
         if end < 0:
             self.fail(line, "unclosed link target: a ( without )")
             out.append(html.escape(text[i:]))
@@ -573,6 +583,11 @@ class Renderer:
                 self.fail(num + k, f"a {kind} needs a blank line before "
                                    "it")
                 return
+            if line == s:
+                self.fail(num + k, "a line after a list item is indented "
+                                   "to continue it; leave a blank line "
+                                   "after a list")
+                return
             items[-1].append((s, num + k))
         tag = "ol" if ordered else "ul"
         attr = f' start="{start}"' if ordered and start != 1 else ""
@@ -763,9 +778,13 @@ def cross_check(pages: dict[str, dict[str, Page]], screens: list[str],
         for name in screens:
             if name in NO_PAGE:
                 continue
-            if screen_id(name) not in pages[lang]:
+            if name not in by_screen:
                 problems.add(CONTENT / lang / f"{screen_id(name)}.md", 0,
                              f"{name} has no {lang} page")
+        if "index" in pages[lang]:
+            problems.add(pages[lang]["index"].path, 0,
+                         "index is the generated list of pages; name the "
+                         "page otherwise")
         for page in pages[lang].values():
             for link in page.links:
                 if link.page is None:
@@ -888,9 +907,12 @@ def render_index(lang: str, pages: dict[str, Page],
     words = CHROME[lang]
     root = "../" if LANG_DIR[lang] else ""
     other_dir = LANG_DIR[other] if lang == "en" else ""
+    # A lead's link to a heading of its own page points at that page from
+    # the index.
     entries = "".join(
         f'<li><a href="{p.id}.html">{html.escape(p.title)}</a>'
-        + (f"{p.lead}" if p.lead else "") + "</li>"
+        + (p.lead.replace('href="#', f'href="{p.id}.html#')
+           if p.lead else "") + "</li>"
         for p in sorted_pages(pages))
     body = (f"<h1>{html.escape(words['name'])}</h1>\n"
             f"<p>{html.escape(words['intro'])}</p>\n"
