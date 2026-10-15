@@ -835,43 +835,43 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
   );
 
   // A line that is present and holds another row: no text is named for it.
-  moved.functions[SERVO]!.src = at(120);
-  reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:120 names no text of 4 characters or more/);
-  reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:120 names no text/);
+  moved.functions[SERVO]!.src = at(122);
+  reports(checkSrc(moved, tree).findings, 'function.servo', /Building\.md:122 names no text of 4 characters or more/);
+  reports(checkSrc(moved, null).findings, 'function.servo', /Building\.md:122 names no text/);
   reports(checkAll(moved, tree, true).findings, 'function.servo', /names no text/);
 
   // A named text that the line does not hold.
-  const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 120, has: '| PGO | GND |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:120 does not hold "\| PGO \| GND \|" at v0\.19\.0/);
+  const wrong = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: '| PGO | GND |' }];
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /Building\.md:122 does not hold "\| PGO \| GND \|" at v0\.20\.0/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
 
   // Every text named for the line is compared.
   const rows = fakeTree(CATALOGUE, (files) => {
-    lines(files, 'docs/Building.md')[119] = '|  DIR |   GND or VCC, never open |';
+    lines(files, 'docs/Building.md')[121] = '|  DIR |   GND or VCC, never open |';
   });
-  const dir = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 120, has: '| DIR | GND or VCC' }];
+  const dir = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: '| DIR | GND or VCC' }];
   assert.deepEqual(checkSrc(moved, rows, dir).findings, []);
   reports(checkSrc(moved, rows, [...dir, ...wrong]).findings, 'function.servo', /does not hold "\| PGO/);
 
   // A text under the shortest length names nothing.
   assert.equal(ANCHOR_TEXT_MIN, 4);
-  const short = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 120, has: ' |  D ' }];
+  const short = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122, has: ' |  D ' }];
   reports(checkSrc(moved, rows, short).findings, 'function.servo', /names no text/);
-  const none = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 120 } as { path: string; line: number; has: string }];
+  const none = [...ANCHOR_TEXTS, { path: 'docs/Building.md', line: 122 } as { path: string; line: number; has: string }];
   reports(checkSrc(moved, rows, none).findings, 'function.servo', /names no text/);
 
   // A row of the data moved off its line in the tree.
   const shifted = fakeTree(CATALOGUE, (files) => {
     const doc = lines(files, 'docs/Building.md');
-    doc.splice(119, 0, '| DIR | GND or VCC, never open |');
+    doc.splice(121, 0, '| DIR | GND or VCC, never open |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'part.as5600.GPO', /Building\.md:121 does not hold "\| PGO \| GND \|"/);
-  reports(found, 'part.as5600.OUT', /Building\.md:122 does not hold/);
-  reports(found, 'wire.54', /Building\.md:121 does not hold/);
-  reports(found, 'check.as5600-board', /Building\.md:121 does not hold/);
+  reports(found, 'part.as5600.GPO', /Building\.md:123 does not hold "\| PGO \| GND \|"/);
+  reports(found, 'part.as5600.OUT', /Building\.md:124 does not hold/);
+  reports(found, 'wire.54', /Building\.md:123 does not hold/);
+  reports(found, 'check.as5600-board', /Building\.md:123 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -882,16 +882,16 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The AS5600 rows of docs/Building.md at the tag: 120 DIR, 121 PGO, 122 OUT.
+  // The AS5600 rows of docs/Building.md at the tag: 122 DIR, 123 PGO, 124 OUT.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
   const line = (pin: string): number | null => {
     const src = as5600?.pins.find((p) => p.id === pin)?.src;
     return src?.kind === 'repo' ? src.line : null;
   };
-  assert.equal(line('GPO'), 121);
-  assert.equal(line('OUT'), 122);
+  assert.equal(line('GPO'), 123);
+  assert.equal(line('OUT'), 124);
   const strap = CATALOGUE.wires.find((w) => w.n === 54)?.src;
-  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 121, tag: TAG });
+  assert.deepEqual(strap, { kind: 'repo', path: 'docs/Building.md', line: 123, tag: TAG });
   const board = CATALOGUE.checks.find((k) => k.id === 'as5600-board')?.src;
   assert.deepEqual(board, strap);
 });
@@ -1081,10 +1081,10 @@ test('tree: stale pin defaults are reported', () => {
 });
 
 test('tree: a newer release tag is a warning, not an error', () => {
-  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.20.0' };
+  const tree = { ...fakeTree(CATALOGUE), newestTag: 'v0.21.0' };
   const findings = checkTree(CATALOGUE, tree);
   assert.deepEqual(findings, [
-    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.20.0` },
+    { level: 'warn', id: 'release', msg: `the data describes ${VERSION}; the newest release tag is v0.21.0` },
   ]);
   assert.deepEqual(checkTree(CATALOGUE, { ...tree, newestTag: null }), []);
 });
@@ -1112,8 +1112,8 @@ test('counts: a missing safety note, stage or pad is reported', () => {
   reports(checkCounts(gpio), 'pads', /GP1 is on two pads/);
 
   const release = copy();
-  release.release = '0.20.0';
-  reports(checkCounts(release), 'release', /0\.20\.0/);
+  release.release = '0.21.0';
+  reports(checkCounts(release), 'release', /0\.21\.0/);
   release.release = 'next';
   reports(checkCounts(release), 'release', /version number/);
 
