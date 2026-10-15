@@ -111,6 +111,8 @@ SOURCES = [
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_report.c",
+    "shared/servo/servo_limit.c",
+    "shared/servo/servo_limrun.c",
     "protocols/sbus/sbus.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",

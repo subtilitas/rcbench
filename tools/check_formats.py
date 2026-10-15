@@ -2,9 +2,10 @@
 """Hold every translated format string to the call that formats it.
 
 A format from the string tables reaches snprintf() through a lookup --
-`TR(ID)` on the screens, `S(ID)` in the servo report -- so the compiler's
--Wformat never sees it.  `test_text` holds each translation to its English;
-this holds the English to the call site.
+`TR(ID)` on the screens, `S(ID)` in the servo report and `LS(ID)` in the
+limit run's report -- so the compiler's -Wformat never sees it.
+`test_text` holds each translation to its English; this holds the English
+to the call site.
 
 It compiles every C file of `shared/` once more with the lookups replaced by
 the English literals, generated here from `shared/ui/include/ui_text.def`
@@ -37,6 +38,9 @@ PROTOCOLS = ROOT / "protocols"
 DEF = SHARED / "ui" / "include" / "ui_text.def"
 UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 REPORT = SHARED / "servo" / "servo_report.c"
+# The files that look the report's strings up, each with its macro: the
+# automatic test's report and the limit run's.
+LOOKUPS = ((REPORT, "S"), (SHARED / "servo" / "servo_limrun.c", "LS"))
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]
@@ -93,12 +97,18 @@ def main() -> int:
 
         report = tree / REPORT.relative_to(SHARED)
         text = report.read_text(encoding="utf-8")
-        s_macro = "#define S(id) servo_str_in(c->text, SERVO_STR_##id)"
-        if s_macro not in text:
-            sys.exit("S() is not defined as %r in %s" % (s_macro, REPORT))
-        report.write_text(text.replace(
-            s_macro, literals_from_report(text) + "#define S(id) (SVS_##id)"),
-            encoding="utf-8")
+        svs = literals_from_report(text)
+        for path, name in LOOKUPS:
+            copy = tree / path.relative_to(SHARED)
+            body = copy.read_text(encoding="utf-8")
+            macro = ("#define %s(id) servo_str_in(c->text, SERVO_STR_##id)"
+                     % name)
+            if macro not in body:
+                sys.exit("%s() is not defined as %r in %s"
+                         % (name, macro, path))
+            copy.write_text(body.replace(
+                macro, svs + "#define %s(id) (SVS_##id)" % name),
+                encoding="utf-8")
 
         includes = []
         for d in sorted(tree.glob("*/include")):

@@ -49,7 +49,7 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     /* The run's reasons are also a line of the SERVO screen's result box:
      * 31 characters at most. */
     [SERVO_STR_AB_CC]            = "constant current for 1 s",
-    [SERVO_STR_AB_WIN_STALE]     = "no INA3221 window for 0.5 s",
+    [SERVO_STR_AB_WIN_STALE]     = "no INA3221 window for 0.2 s",
     [SERVO_STR_AB_INA_RESET]     = "INA3221 reset itself",
     [SERVO_STR_AB_INA_SILENT]    = "INA3221 not answering",
     [SERVO_STR_AB_INA_NO_WINDOW] = "INA3221 window without current",
@@ -269,6 +269,111 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "a window holds their mean, highest and "
                                    "lowest.",
     [SERVO_STR_R_METER_MODEL]    = "the panel's model",
+
+    /* The limit run.  Its reasons are a line of the SERVO screen's box
+     * too: 31 characters at most. */
+    [SERVO_STR_L_FOUND]          = "FOUND",
+    [SERVO_STR_L_FREE]           = "FREE",
+    [SERVO_STR_L_PH_SEARCH]      = "SEARCH",
+    [SERVO_STR_L_PH_SAFE]        = "SAFE",
+    [SERVO_STR_L_PH_CONNECT]     = "CONNECT",
+    [SERVO_STR_L_PH_WRITE]       = "WRITE",
+    [SERVO_STR_L_PH_LEAVE]       = "LEAVE",
+    [SERVO_STR_L_PH_ARM]         = "ARM",
+    [SERVO_STR_L_PH_PROBE]       = "PROBE",
+    [SERVO_STR_L_PH_CHECK]       = "CHECK",
+    [SERVO_STR_L_WHY_HARD]       = "a sample at 3.0 A or more",
+    [SERVO_STR_L_WHY_CLIPPED]    = "INA3221 at the end of its range",
+    [SERVO_STR_L_WHY_STALL]      = "above 1.0 A for 400 ms",
+    [SERVO_STR_L_WHY_SEARCH_LONG] = "a search took longer than 40 s",
+    [SERVO_STR_L_WHY_SUPPLY]     = "supply or rail voltage changed",
+    [SERVO_STR_L_WHY_BENCH]      = "bench did not switch in 3 s",
+    [SERVO_STR_L_WHY_NOT_KST]    = "no KST or Chaservo servo read",
+    [SERVO_STR_L_WHY_PROG]       = "programming port did not finish",
+    [SERVO_STR_L_WHY_WRITE]      = "a write refused or lost",
+    [SERVO_STR_L_WHY_OTHER]      = "servo holds other values",
+    [SERVO_STR_L_WHY_MAPPING]    = "LEFT/RIGHT ANGLE side not found",
+    [SERVO_STR_L_WHY_SMALLEST]   = "binds at the smallest angle",
+    [SERVO_STR_L_WHY_CAP]        = "write cap of 8 values reached",
+    [SERVO_STR_L_WHY_STILL]      = "an end binds after programming",
+    [SERVO_STR_L_WHY_NO_VOLTAGE] = "no rail voltage in a window",
+    [SERVO_STR_L_WHY_NO_STOP]    = "no stop after the overset write",
+    [SERVO_STR_L_WHY_BEFORE_NEUTRAL] = "free end not past NEUTRAL",
+    [SERVO_STR_L_WHY_NEUTRAL]    = "NEUTRAL outside LOWER/UPPER",
+    [SERVO_STR_L_WHY_RANGE]      = "servo pulses outside MIN/MAX",
+    [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO LIMIT REPORT",
+    [SERVO_STR_L_R_MODE_SEARCH]  = "Mode:           search only, nothing "
+                                   "written to the servo",
+    [SERVO_STR_L_R_MODE_PROGRAM] = "Mode:           search, then LEFT ANGLE "
+                                   "and RIGHT ANGLE programmed",
+    [SERVO_STR_L_R_MODE_PULSES]  = "Mode:           search only; PULSE LOWER "
+                                   "and PULSE UPPER set to 1000 and 2000 us "
+                                   "first",
+    [SERVO_STR_L_R_SEARCH]       = "Searched:       from %u us out to %u us "
+                                   "and %u us",
+    [SERVO_STR_L_R_OUTPUT]       = "Output:         %s, %u Hz",
+    [SERVO_STR_L_R_PULSE]        = "Pulse range:    centre %u us, %u-%u us",
+    [SERVO_STR_L_R_METER]        = "Current:        INA3221 CH1, 50 ms "
+                                   "windows, shunt %.1f mOhm",
+    [SERVO_STR_L_R_RULE]         = "Search rule:    10 us steps, settle 120 "
+                                   "ms, mean of 80 ms; bound above %.1f x "
+                                   "free and +%.2f A",
+    [SERVO_STR_L_R_PROTECT]      = "Protections:    a sample at %.1f A, above "
+                                   "%.1f A for %u ms, no window for %u ms, "
+                                   "%u s a search",
+    [SERVO_STR_L_R_ENDS_HEAD]    = "ENDS (the search before programming)",
+    [SERVO_STR_L_R_CHECK_HEAD]   = "ENDS AFTER PROGRAMMING (both searched "
+                                   "again)",
+    [SERVO_STR_L_R_LOW]          = "Low end:        ",
+    [SERVO_STR_L_R_HIGH]         = "High end:       ",
+    [SERVO_STR_L_R_END_BOUND]    = "%sbound at %u us, endpoint %u us; free "
+                                   "%.3f A, bound %.3f A",
+    [SERVO_STR_L_R_END_FREE]     = "%sfree to %u us; free %.3f A",
+    [SERVO_STR_L_R_END_NOT_RUN]  = "%snot searched",
+    [SERVO_STR_L_R_ANGLE]        = "                AS5600 %+.1f deg at the "
+                                   "last free position",
+    [SERVO_STR_L_R_ANGLE_NONE]   = "                AS5600: no angle at the "
+                                   "last free position",
+    [SERVO_STR_L_R_ENC_OFF]      = "AS5600:         not fitted, no angles",
+    [SERVO_STR_L_R_PROG_HEAD]    = "PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, "
+                                   "unit not known)",
+    [SERVO_STR_L_R_PROG_OFF]     = "Not run: search only.",
+    [SERVO_STR_L_R_PROG_FREE]    = "Not run: neither end binds.",
+    [SERVO_STR_L_R_PROG_NO_SERVO] = "No servo read: nothing written.",
+    [SERVO_STR_L_R_SERVO]        = "Servo:          type %u, REVERSION %s",
+    [SERVO_STR_L_R_PULSES]       = "Servo pulses:   NEUTRAL %.1f us, PULSE "
+                                   "LOWER %.1f us, PULSE UPPER %.1f us",
+    [SERVO_STR_L_R_PULSE_SET]    = "Pulse write:    PULSE LOWER %.1f -> %.1f "
+                                   "us, PULSE UPPER %.1f -> %.1f us",
+    [SERVO_STR_L_R_RANGE]        = "Range:          servo pulses %.1f-%.1f us "
+                                   "outside PULSE MIN/MAX %u-%u us",
+    [SERVO_STR_L_R_LEFT]         = "LEFT ANGLE:     ",
+    [SERVO_STR_L_R_RIGHT]        = "RIGHT ANGLE:    ",
+    [SERVO_STR_L_R_REG]          = "%s%u before, %u after; %s",
+    [SERVO_STR_L_R_REG_LIN]      = "                share free %s, bound %s; "
+                                   "overset %s, share %s; final %s",
+    [SERVO_STR_L_R_SIDE_LO]      = "limits the low end",
+    [SERVO_STR_L_R_SIDE_HI]      = "limits the high end",
+    [SERVO_STR_L_R_SIDE_UNKNOWN] = "end it limits not found",
+    [SERVO_STR_L_R_METHOD]       = "Method:         linear in the pulse; "
+                                   "overset +%u %% on the share at the first "
+                                   "bound pulse, then the share its search "
+                                   "found free",
+    [SERVO_STR_L_R_WRITES]       = "Writes:         values written %u, writes "
+                                   "sent %u, cap %u values; sessions %u",
+    [SERVO_STR_L_R_BACKUP]       = "Backup:         %s, the values before "
+                                   "the run",
+    [SERVO_STR_L_R_BACKUP_MEM]   = "Backup:         the panel's memory only, "
+                                   "no card",
+    [SERVO_STR_L_R_RESTORE]      = "Restore:        RESTORE on the programming "
+                                   "page, from the values before the limit run",
+    [SERVO_STR_L_R_UNIT]         = "Unit: the unit of LEFT ANGLE and RIGHT "
+                                   "ANGLE is not known; the travel is taken "
+                                   "as linear in the pulse from NEUTRAL to "
+                                   "PULSE LOWER and PULSE UPPER, which is "
+                                   "not measured.",
+    [SERVO_STR_L_R_BENCH]        = "Bench: the ends found are not applied to "
+                                   "PULSE MIN and PULSE MAX.",
 };
 
 const char *servo_str_in(const char *const *table, servo_str_t id)

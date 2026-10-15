@@ -2,12 +2,14 @@
 
 <sub>**English** · [Deutsch](Servo-de.md)</sub>
 
-Three procedures on a servo. The first two measure a servo as installed;
-both need a current sensor on the servo output, which is not fitted, and both
-run against a modelled servo. Their defaults are from `servo_limit_defaults()`
-and `servo_sync_defaults()` in `shared/servo/`. The third, the
-[automatic test](#automatic-test), reads the current of the supply that feeds
-the servo.
+Three procedures on a servo. The first measures a servo as installed: the
+limit search runs on the SERVO screen and reads INA3221 CH1, and for a KST
+or Chaservo servo on the programming port it can lower the servo's own
+travel limits. The second, the synchroniser, needs a current sensor across a
+pair of outputs, which is not fitted, and runs against a modelled servo only.
+Their defaults are from `servo_limit_defaults()` and `servo_sync_defaults()`
+in `shared/servo/`. The third, the [automatic test](#automatic-test), reads
+the current of the supply that feeds the servo.
 
 ## Installed mechanical limit
 
@@ -27,28 +29,365 @@ when the current exceeds 1.8 times the free-running baseline and exceeds it by
 at least 0.15 A. The search stops at the first such step, backs off 25 µs, and
 reports that pulse width as the endpoint.
 
+On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
+side first, then the high side. Where depends on the target:
+
+| PWM TARGET | Read first | Search |
+| --- | --- | --- |
+| a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
+| PROG PORT | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
+
+The distance to that end replaces the 600 µs. The current is INA3221 CH1's
+50 ms windows, so each position takes 250 ms. The servo is held at the
+centre for 1000 ms before each search and after it: the return from an end,
+600 µs at 0.67 µs/ms, takes 900 ms, and the baseline is not to see it.
+
 Duration: the host test holds a full search against the modelled servo to under
-12 s. Not measured on hardware.
+12 s. A run on the bench is not measured.
+
+### Running it
+
+The LIMITS page of the SERVO screen's settings holds the run. **LIMIT RUN**
+chooses SEARCH ONLY or SEARCH+PROG with a tap. **SERVO PULSES**, shown with
+PWM TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
+starts at KEEP. **START LIMIT RUN** starts the run with a 2 s hold, as START
+TEST does; a tap or a shorter hold starts nothing.
+
+![The limit run, ready](img/servo-limrun-ready.png)
+
+The line under the button names what the run drives and reads, the whole
+time: `OUTPUT PROG PORT GP13, CURRENT INA3221 CH1`, or the GPIOs bound as
+SERVO PWM with PWM TARGET on OUTPUTS. While the run goes on, the left card
+shows its box: the phase, the side and the pulse commanded, and the output
+again on its third line. The right card's TARGET row stays in sight as well.
+
+![The limit run, programming](img/servo-limrun.png)
+
+The run reads the INA3221 and nothing else. The PD mini's readings and the
+panel's model are refused before anything is driven: the button stays grey
+and the line under it says why.
+
+| Line | Condition |
+| --- | --- |
+| `ARM FIRST` | the bench is SAFE |
+| `LAST REPORT STILL WRITING` | an automatic test or a limit run is under way, or its report is still going to the card |
+| `INA3221 NOT SET UP AS THE SERVO RAIL'S METER` | INA3221 or its CH1 off in SETUP, a coprocessor older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| `INA3221 NOT ONLINE` | no link, the part not answering, or its reset count moved |
+| `NO INA3221 WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
+| `SERVO RAIL UNDER 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
+| `PORT PWM OFF: THE PORT RENDERS NO PULSE` | PWM TARGET on PROG PORT with PORT PWM off |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
+| `CENTRE NOT BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
+
+### Programming the servo's travel limits
+
+SEARCH+PROG is offered for a servo on the programming port: PWM TARGET on
+PROG PORT, the port in PWM, and a supply of 4.8 V or more. With a PD mini
+answering, its output must be on and its set point counts; without one, the servo rail's mean in the
+INA3221's last window. On the bench's outputs the run searches only, the
+row reads SEARCH ONLY, and the third line reads `PROGRAMMING: ONLY A SERVO
+ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
+the other conditions stop SEARCH ONLY as well: the button stays grey and the
+third line names the condition.
+
+| Line | Condition |
+| --- | --- |
+| `PROGRAMMING: THE PORT IS NOT IN PWM` | the programmer holds the port, or the port is not ready for a run |
+| `PROGRAMMING: PD MINI OUTPUT OFF` | a PD mini answers with its output off: the read session would switch it on beside the supply that feeds the rail |
+| `PROGRAMMING: SUPPLY SET BELOW 4.8 V` | a PD mini answers and its set point is under 4.8 V |
+| `PROGRAMMING: SERVO RAIL BELOW 4.8 V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8 V or not read |
+
+#### The read first
+
+Every run on PROG PORT, SEARCH ONLY as well, starts with a read session.
+The servo is held at PULSE CENTRE, the run switches the bench to SAFE,
+CONNECT reads every register, LEAVE gives the port back, and the run
+switches the bench to ARMED. Nothing is driven before that.
+
+- A read that fails ends the run before any search: ABORTED, `programming
+  port did not finish`, where CONNECT or its read does not complete; FAIL,
+  `no KST or Chaservo servo read`, where the servo read holds values the
+  hard rules do not take. A servo that is no KST or Chaservo is searched
+  with PWM TARGET on a SERVO PWM pin.
+- NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
+  `NEUTRAL outside LOWER/UPPER`.
+- PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX
+  ends it as FAIL, `servo pulses outside MIN/MAX`. The bench stays SAFE,
+  nothing is driven, and the box and the report name both ranges, for
+  example `900-2100 NOT IN 1000-2000 us`.
+
+A KST servo as delivered holds PULSE LOWER 900.0 µs and PULSE UPPER
+2100.0 µs. The STANDARD PWM type's PULSE MIN and PULSE MAX are 1000 µs and
+2000 µs, so that servo is refused at KEEP. SERVO PULSES at 1000-2000, or a
+PWM type with a range that holds 900 to 2100 µs, lets it run.
+
+SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 µs and PULSE UPPER
+2000.0 µs in the read session, before anything is driven, and reads them
+back. NEUTRAL is not written. A servo that holds those values already gets
+no write. NEUTRAL outside the new range ends the run as FAIL before
+anything is driven, with RESTORE offered. The setting works with SEARCH
+ONLY and with SEARCH+PROG; with SEARCH ONLY the pulses are the only write,
+and the third line says `SEARCH ONLY: SETS PULSE LOWER/UPPER, NOTHING ELSE`.
+
+#### The registers and the model
+
+LEFT ANGLE and RIGHT ANGLE are the servo's own travel limits, one 8-bit
+register each, in a unit that is not known. The smallest value the
+programmer's hard rules take is 1 on a KST: 0 is refused. A value under 50
+is a soft limit; the run's 2 s hold is the consent to it.
+
+The run takes the servo as linear. PULSE LOWER and PULSE UPPER are the
+input pulses at which the servo reaches the full travel that LEFT ANGLE and
+RIGHT ANGLE set. Between NEUTRAL and that pulse the travel is linear in the
+pulse; past it the servo holds full travel. The share of a side at pulse p
+is
+
+```text
+f = (p - NEUTRAL) / (P_lim - NEUTRAL)
+```
+
+with P_lim PULSE LOWER on the low side and PULSE UPPER on the high side, as
+the servo holds them when the search runs. The unit of LEFT ANGLE and RIGHT
+ANGLE is not known, and the linear relation is an assumption, not a
+measurement. A bound side whose last free pulse is not past NEUTRAL ends
+the run as FAIL, `free end not past NEUTRAL`, before any write.
+
+#### Two writes a bound side
+
+v0 is the value the side's register holds at the read.
+
+1. The overset: `v1 = ceil(v0 x fb x 1.03)`, fb the share at the first
+   search's first bound pulse, at most v0 and at least the smallest value.
+   The first bound pulse lies at or past the stop, so at v1 the stop stays
+   reachable and moves close to the pulse limit. The side is searched
+   again. Free there, the run ends as FAIL, `no stop after the overset
+   write`, with no second write and RESTORE offered.
+2. The final value: `v2 = floor(v1 x f1)`, f1 the share at the overset
+   search's last free pulse, at least the smallest value. No margin is
+   added: the last free pulse lies one 10 µs step short of the bound one.
+   An overset search that binds far inside the pulse limit still gives v2
+   this way; no further overset follows.
+
+Worked, on the host's modelled servo: NEUTRAL 1500.2 µs, PULSE LOWER
+900.0 µs, v0 150, the stop at 1000 µs. The first search is free at 1000 µs
+and bound at 990 µs: fb = 510.2 / 600.2 = 0.850, v1 = ceil(150 x 0.850 x
+1.03) = 132. At 132 the search is free out to 930 µs: f1 = 570.2 / 600.2 =
+0.950, v2 = floor(132 x 0.950) = 125. At 125 the full travel ends at
+1000.2 µs.
+
+The overset is left out where v1 would not lie below v0, or where the model
+moves the stop less than 20 µs: d0 x (v0 - v1) / v1 under 20 µs, d0 the
+first search's last free pulse's distance from NEUTRAL. A search could not
+tell that move from none. The first search then counts as the overset's,
+and `v2 = floor(v0 x f0)`, f0 the share at its last free pulse: one write
+for that side.
+
+#### Which register limits which side
+
+The protocol notes do not say which pulse side each register limits, nor
+how REVERSION changes that. The run finds it on the first bound side's
+first write: that value goes to LEFT ANGLE alone (RIGHT ANGLE where LEFT
+ANGLE holds the smallest value already), and the side is searched. The end
+moved when it is free now or its endpoint lies 20 µs further out. An end
+within 20 µs of where it was sends LEFT ANGLE back to its value and the
+value, worked out again from RIGHT ANGLE's v0, to RIGHT ANGLE; moved then,
+RIGHT ANGLE limits that side. An end that stays with both registers tried
+ends the run as FAIL, `LEFT/RIGHT ANGLE side not found`. An end that moved
+inward by 20 µs or more ends it as FAIL too. An end that binds with its
+register at the smallest value ends it as FAIL, `binds at the smallest
+angle`. A register whose side never bound keeps its value.
+
+Last, both ends are searched again: PASS when both are free, FAIL `an end
+binds after programming` when either binds. No further write follows a
+FAIL; RESTORE gives the values before the run back.
+
+#### Sessions
+
+The run writes in sessions of the [programmer](ServoProgrammer.md):
+
+1. The servo goes back to the centre and is held there for 1000 ms.
+2. The run switches the bench to SAFE.
+3. CONNECT takes the port and reads every register.
+4. The write: ENABLE WRITE TO SERVO on, the run's fields, the write switch
+   off again. The write is the programmer's ordinary write with every limit
+   check, and reads the values back.
+5. LEAVE gives the port back to PWM.
+6. The run switches the bench to ARMED and searches the side the write
+   was for.
+
+The read session writes nothing but the pulses of SERVO PULSES. A LEAVE
+this link or supply does not complete ends the run before any value
+changes. The first write of the run saves the servo's values to a backup
+file on the card, as the programmer's first write does; the later sessions
+save none. Each later session reads the servo again. Another type,
+REVERSION switched, another range of values the hard rules take, other
+pulses, or LEFT ANGLE and RIGHT ANGLE other than the run last wrote end the
+run as ABORTED, `servo holds other values`, before it writes again.
+
+| Constant | Value | Purpose |
+| --- | ---: | --- |
+| `SERVO_LIMRUN_WRITES_MAX` | 8 | register values a run writes at most: PULSE LOWER and PULSE UPPER (2), the overset and the final value on each side (4), and LEFT ANGLE's first write with its value back when RIGHT ANGLE limits that side (2). A session whose values would pass it is not sent: FAIL `write cap of 8 values reached` |
+| `SERVO_LIMRUN_OVERSET_PCT` | 3 % | the overset above the share at the first bound pulse |
+| `SERVO_LIMRUN_STD_LOWER_DUS`, `SERVO_LIMRUN_STD_UPPER_DUS` | 1000.0 µs, 2000.0 µs | what SERVO PULSES at 1000-2000 writes |
+| `SERVO_LIMRUN_MOVED_US` | 20 µs | an end that moved, or stayed; the smallest stop move an overset is written for |
+| `SERVO_LIMRUN_RETURN_MS` | 1000 ms | at the centre before each search and before each SAFE |
+
+Writes: no step of the protocol is known to make a value permanent, and no
+write that changes RAM only is known. Every write is the register write the
+programmer reads back. Whether a KST servo keeps the value in EEPROM
+(electrically erasable programmable read-only memory) at every write, and
+how many writes that memory takes, is not known; the cap keeps a run to 8
+values. A run with both ends bound and SERVO PULSES at 1000-2000 on the
+host's modelled servo wrote 6 values in 4 writes and 4 sessions, 85.6 s,
+with REVERSION OFF, and 8 values in 5 writes and 5 sessions, 97.7 s, with
+REVERSION ON.
+
+The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 
 ### Protections
 
 | Protection | Value | Effect |
 | --- | ---: | --- |
-| Current ceiling | 3.0 A | abort immediately, checked at every sample |
-| Stall timeout | above 1.0 A for 400 ms | abort |
+| Current ceiling | 3.0 A | abort, checked at every 1 ms sample of a window |
+| The INA3221 at the end of its range | a clipped sample | abort |
+| Stall timeout | window means above 1.0 A for 400 ms | abort |
+| No window | 200 ms, 4 windows of 50 ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window |
+| One search | 40 s | abort: 1000 µs of travel is 100 positions of 250 ms, 25 s |
+| One programmer step | 150 s | abort: CONNECT with its read, a write or LEAVE |
+| The bench switching | 3 s | abort when SAFE or ARMED is not in place 3 s after the run asked |
+| The supply | set points and output, on or off, as at its first reading, answering or not, in every phase but the programmer's sessions (CONNECT to LEAVE), which own the supply; an output off at the start and switched on, or a supply that did not answer at the start and answers later, its output on or off, ends the run as `supply or rail voltage changed`, so no second supply is switched on beside a rail fed from elsewhere; a CONNECT is not sent while a PD mini answers that the run did not start with, or one whose output is off: the run ends as a reading outside a session ends it, `supply or rail voltage changed` for a PD mini the run did not start with and `supply output went off` for its own; during a search also the rail within 1.0 V of the first window | abort |
+| The rail voltage in a search's window | present in every window of a search, its mean at 3.0 V or more (`SERVO_LIMRUN_RAIL_MIN_MV`), the first window included | abort before the window moves the search: `no rail voltage in a window` without a reading, `supply or rail voltage changed` under 3.0 V; the 1.0 V band's reference is the run's first window, which holds the rail |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
-The limit search and the synchroniser are modules in `shared/servo`, tested on
-the host against a modelled servo. Neither firmware image calls them, so the
-protections above are not active on the bench.
+These hold in every phase. The search and the protections read the
+current's magnitude: a shunt fitted the other way round reads a bound servo
+as a more negative current, and the run finds it as it does with the shunt
+the right way round. A reading of -32768 mA counts as 32768 mA, past the
+3.0 A ceiling. The run follows the arming rules of the SERVO
+screen and the programming port: its ARM is refused while the port is
+held, a STOP latch or lost touch events keep the bench SAFE, and an ARM
+that does not land ends the run.
+
+The synchroniser is a module in `shared/servo`, tested on the host against
+a modelled servo; neither firmware image calls it.
+
+### What ends a limit run
+
+STOP, STOP RUN on the box or the LIMITS page, a switch to SAFE by the
+operator, link loss, leaving the screen, the operator taking the servo, a
+change to the servo's settings, lost touch events, the INA3221 no longer the
+meter, and a supply that stops answering, trips, switches off or has its set
+points changed: the reasons of the automatic test, in
+[What ends a run](#what-ends-a-run). The run's own SAFE and ARM end
+nothing. Each ends the run as ABORTED with the output off and the servo
+released. A run that ends while it waits for ARMED also asks SAFE: an ARM
+it asked that the bench has not taken yet does not arm the bench after the
+end. A start of the panel clears the run without a report.
+
+The values last written stay in the servo. A run that wrote and did not
+pass says `RESTORE IN PROGRAM` on its box. A write that fails once sent,
+with no answer or an answer the programmer does not take, counts as
+written: part of it may have landed. A write the programmer refuses before
+it is sent counts as none. RESTORE on the programmer, after
+CONNECT and READ ALL, offers `Values before the limit run`: the servo as the
+run's first session read it, written back as an ordinary write of LEFT
+ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
+servo read differs from it in those four fields and in no other. The hold is in the panel's memory: a start of the
+panel forgets it, and the backup file on the card remains. A session after
+the run is the operator's: its first write saves its own backup file.
+
+![A run stopped after a write](img/servo-limrun-stopped.png)
+![RESTORE after a limit run](img/servo-limrun-restore.png)
 
 ### Results
 
 - An endpoint is reported already backed off by 25 µs.
-- "No limit found" means the search measured the end of its travel, 600 µs
-  from centre or the end of 500 to 2500 µs, without binding.
+- "No limit found" (`FREE`) means the search measured the end of its
+  travel without binding: PULSE MIN or PULSE MAX on a SERVO PWM pin, the
+  servo's PULSE LOWER or PULSE UPPER on PROG PORT.
 - A limit close to centre may be a tight spot in the linkage, such as a binding
   bellcrank or a rubbing pushrod, rather than the end of travel.
+
+| Verdict | Meaning |
+| --- | --- |
+| FOUND | search only: an end binds; the endpoints are reported |
+| FREE | neither end binds; nothing is written |
+| PASS | programmed, and both ends free in the last search |
+| FAIL | the run ended as planned and an end still binds, or the servo cannot be programmed |
+| ABORTED | a protection, the operator, the link, the meter, the supply or the programmer ended it |
+
+The box on the left card shows the verdict, the reason or the values
+(`LEFT 150>87  RIGHT 150>95`), the ends or the output the run started on,
+and the report's file name until CLOSE.
+
+![A programmed servo](img/servo-limrun-pass.png)
+![Search only](img/servo-limrun-found.png)
+![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
+
+The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
+the next free number, written whatever the DUT page's REPORT says. During a
+run neither the bench log nor the supply log writes a row; the supply
+log's time runs on through the run, as its totals do. From the run's start
+until the card has closed the report it counts as an open log run: Wi-Fi and
+an update wait for it, as for a run's CSV. A run on the host's modelled servo with
+REVERSION OFF and SERVO PULSES at 1000-2000; the stops at 1150 µs and
+1880 µs of horn travel lie at 1208 µs and 1817 µs of input pulse once
+PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
+
+```text
+RCBENCH SERVO LIMIT REPORT
+Result:         PASS
+Device:         SERVO
+Firmware:       rcbench 0.20.0
+Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
+Output:         PROG PORT GP13, 50 Hz
+Pulse range:    centre 1500 us, 1000-2000 us
+Searched:       from 1500 us out to 1000 us and 2000 us
+Current:        INA3221 CH1, 50 ms windows, shunt 100.0 mOhm
+Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above 1.8 x free and +0.15 A
+Protections:    a sample at 3.0 A, above 1.0 A for 400 ms, no window for 200 ms, 40 s a search
+Duration:       85.6 s
+AS5600:         not fitted, no angles
+
+ENDS (the search before programming)
+Low end:        bound at 1200 us, endpoint 1235 us; free 0.120 A, bound 0.627 A
+High end:       bound at 1820 us, endpoint 1785 us; free 0.120 A, bound 0.322 A
+
+PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)
+Servo:          type 6, REVERSION OFF
+Servo pulses:   NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, PULSE UPPER 2100.0 us
+Pulse write:    PULSE LOWER 900.0 -> 1000.0 us, PULSE UPPER 2100.0 -> 2000.0 us
+LEFT ANGLE:     150 before, 87 after; limits the low end
+                share free 0.580, bound 0.600; overset 93, share 0.940; final 87
+RIGHT ANGLE:    150 before, 95 after; limits the high end
+                share free 0.620, bound 0.640; overset 99, share 0.960; final 95
+Method:         linear in the pulse; overset +3 % on the share at the first bound pulse, then the share its search found free
+Writes:         values written 6, writes sent 4, cap 8 values; sessions 4
+Backup:         KST001, the values before the run
+
+ENDS AFTER PROGRAMMING (both searched again)
+Low end:        free to 1000 us; free 0.120 A
+High end:       free to 2000 us; free 0.120 A
+
+Unit: the unit of LEFT ANGLE and RIGHT ANGLE is not known; the travel is taken as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER, which is not measured.
+Bench: the ends found are not applied to PULSE MIN and PULSE MAX.
+```
+
+With the AS5600 fitted, each end has a line with the horn's angle at its
+last free position, `AS5600 +38.5 deg at the last free position`. A run
+that wrote and did not pass has a `Restore:` line. A run that sent no
+write has no `Backup:` line: the values before the run are held from the
+first write on. The `Backup:` line names the file this run's first write
+saved, also when that write was sent and lost, never an earlier run's file.
+The `Searched:` line
+names the search's centre and ends; a run that ended before its first
+search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
+
+Not measured: every figure above on a real servo. The unit of LEFT ANGLE
+and RIGHT ANGLE, which register limits which pulse side on a real KST or
+Chaservo servo, whether a written value persists through a power cycle,
+whether the servo moves when its limit is written, the time a session
+takes on hardware, and the time from LEAVE to a working ARM are not known.
 
 ## Synchronising two servos on one surface
 
@@ -222,7 +561,7 @@ threshold.
 | `SERVO_TEST_STALE_MS` | 1500 ms | no new reading ends the run |
 | `SERVO_TEST_STALL_ABORT_MS` | 1000 ms | above STALL AT this long ends the run |
 | `SERVO_TEST_CC_ABORT_MS` | 1000 ms | the supply in constant current this long ends the run |
-| `SERVO_TEST_WIN_STALE_MS` | 500 ms | a run on the INA3221: no window this long ends it |
+| `SERVO_TEST_WIN_STALE_MS` | 200 ms | a run on the INA3221: no window this long ends it; 4 windows of 50 ms. The limit run shares it |
 | `SERVO_TEST_WIN_MS` | 50 ms | one window of the INA3221 |
 | `SERVO_TEST_NEG_IDLE_A` | 0.020 A | an idle current below minus this is reported as the shunt's direction |
 | `SERVO_TEST_BROWNOUT_START_V` | 5.00 V | where the brown-out walk starts |
@@ -306,7 +645,7 @@ the run.
 - **Held to the end.** A run on the INA3221 ends ABORTED when the INA3221
   stops being the rail's meter, with the condition that failed as its
   reason (see [What ends a run](#what-ends-a-run)), and when no window
-  reaches it for 500 ms (`SERVO_TEST_WIN_STALE_MS`). It never goes on with
+  reaches it for 200 ms (`SERVO_TEST_WIN_STALE_MS`). It never goes on with
   the PD mini: the two meters do not agree. In one recorded run of an MS24
   the PD mini's highest reading was 0.390 A and the INA3221's highest 1 ms
   sample 1.637 A. A run on the PD mini goes on with it when the INA3221
@@ -515,7 +854,7 @@ left as they are.
 | `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the input voltage of the PD mini less 0.7 V |
 | `above STALL AT for 1 s` | `SERVO_TEST_STALL_ABORT_MS` |
 | `constant current for 1 s` | the supply reported constant current for `SERVO_TEST_CC_ABORT_MS` |
-| `no INA3221 window for 0.5 s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 499 ms after the last window leaves the run running, one at 500 ms ends it |
+| `no INA3221 window for 0.2 s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 199 ms after the last window leaves the run running, one at 200 ms ends it |
 | `INA3221 reset itself` | a run on the INA3221: the part's reset count moved |
 | `INA3221 not answering` | a run on the INA3221: no SENSE read in 200 ms shows the part online and identified on a bus that is not stuck |
 | `INA3221 window without current` | a run on the INA3221: the newest window holds no current samples, or its number has stood for 200 ms |
@@ -572,7 +911,11 @@ run ends. A number carried by a
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to
-the card had no room for are counted in the report.
+the card had no room for are counted in the report. From the run's start
+until the card has closed its CSV and its report, the run counts as an open
+log run, the time between the file's OPEN and its answer included: Wi-Fi
+and an update wait for it, and the log viewer neither lists nor opens the
+file still being written.
 
 The CSV, semicolon-separated with a decimal point, as every log the bench
 writes:
@@ -738,7 +1081,9 @@ read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an
 MS24's whole CSV on the PD mini (`servo-ms24-pdmini.csv`), with its two
 spells of constant current, and the bench log written beside it
 (`servo-ms24-windows.csv`), which holds 1309 of the 3817 windows the
-INA3221 closed and ends a run on the INA3221 at its first gap of 500 ms.
+INA3221 closed and ends a run on the INA3221 at its first gap of more than
+200 ms: window 19804 is followed by 20409, 30.25 s later. The run reads 50
+windows and counts the 5 window numbers missing before that gap as skipped.
 Not measured on a bench: a window's lag behind the horn, whether the 50 ms
 mean shows the moves of a servo that the PD mini does not, what CH1 reads
 with a servo on a stop, and the constant-current rule against a PD mini.
@@ -823,11 +1168,12 @@ runs at the new rate.
 
 ## Prerequisites
 
-Current sensing on the servo outputs: one sensor per output for the limit
-search, one across the pair for the synchroniser. Neither is fitted, and both
-procedures are the reason they are wanted -- every number here is a current.
-The automatic test needs neither: it reads the PD mini, wired and enabled in
-SETUP INTERFACES, or runs on the panel's supply model.
+Current sensing on the servo rail. The limit search reads INA3221 CH1,
+wired and enabled in SETUP INTERFACES, and nothing else. The synchroniser
+needs a sensor across the pair of outputs, which is not fitted. The
+automatic test reads the INA3221 or the PD mini, or runs on the panel's
+supply model. Programming LEFT ANGLE and RIGHT ANGLE needs the programming
+port ([Servo programmer](ServoProgrammer.md)).
 
 The pulses themselves exist: the coprocessor's PWM (pulse-width modulation)
 driver is written, and [DShot and the output drivers](DShot.md) describes it.

@@ -57,6 +57,14 @@ float servo_sim_step(servo_sim_t *s, uint16_t cmd_us, uint32_t now_ms)
     const uint32_t dt_ms = (uint32_t)(now_ms - s->last_ms);
     s->last_ms = now_ms;
 
+    /* The servo's own limits first: past one, the servo holds it. */
+    if (s->cfg.limit_hi_us != 0u && cmd_us > s->cfg.limit_hi_us) {
+        cmd_us = s->cfg.limit_hi_us;
+    }
+    if (s->cfg.limit_lo_us != 0u && cmd_us < s->cfg.limit_lo_us) {
+        cmd_us = s->cfg.limit_lo_us;
+    }
+
     /*
      * The horn travels toward the command at a finite rate and cannot go past
      * the stop, so the target it tracks is the command clamped to the

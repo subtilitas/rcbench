@@ -577,6 +577,11 @@ void servo_screen_set_link(bool up);
 /** Whether a run is under way, for the application and tests. */
 bool servo_screen_testing(void);
 
+/** Whether a limit run (servo_limrun.h) is under way, for the tests. */
+bool servo_screen_limit_running(void);
+/** The limit run's phase (servo_limrun_phase_t), for the tests. */
+int servo_screen_limit_phase(void);
+
 /**
  * The run's next item for the card, without taking it (servo_test_peek()),
  * and taking it once it is on its way.  The application drains these every
@@ -591,6 +596,12 @@ void servo_screen_test_pop(void);
  * the card took the .TXT whole.
  */
 void servo_screen_test_files(int number, bool report);
+/** Whether the logger still holds an OPEN or an END the outbox gave it,
+ *  or an OPEN waits for the queue.  While it does no automatic test and no
+ *  limit run starts (LAST REPORT STILL WRITING), so the number and report
+ *  state servo_screen_test_files() passes go to the run that sent them.
+ *  Every frame, after servo_screen_test_files(). */
+void servo_screen_test_logger_busy(bool busy);
 
 /**
  * Every frame, whichever screen is up: a run's end is seen, and SUPPLY's

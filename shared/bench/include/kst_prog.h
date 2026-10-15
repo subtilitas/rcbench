@@ -277,6 +277,8 @@ typedef enum {
     KST_PROG_FROM_NONE = 0,
     KST_PROG_FROM_SESSION,  /**< the backup of the coprocessor's session */
     KST_PROG_FROM_JOURNAL,  /**< the image recorded before a write       */
+    KST_PROG_FROM_RUN,      /**< the servo before a limit run's first
+                                 write (kst_prog_run_hold())             */
     KST_PROG_FROM_COUNT
 } kst_prog_from_t;
 
@@ -578,6 +580,15 @@ typedef struct {
     uint8_t file_next;        /**< what the write wanted is for    */
     uint8_t file_for;         /**< what the write on its way is for */
 
+    /* The limit run (servo_limrun.h): the servo as its first session read
+     * it, kept across its sessions and after it, until the next run. */
+    bool run_hold;
+    bool run_own;             /**< the run is under way: its sessions
+                                   take the file of its first write  */
+    bool run_written;         /**< the run's first write was sent */
+    kst_image_t run_img;
+    char run_backup[KST_PROG_NAME_MAX];  /**< the file of run_img; "" none */
+
     kst_prog_msg_t msg;
     kst_plan_t plan;          /**< work space; not on the stack */
 } kst_prog_t;
@@ -817,6 +828,44 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
 /** Discard the journal.  KST_PROG_MSG_START + KST_LINK_START_BUSY, and
  *  nothing discarded, while an operation is on its way. */
 void kst_prog_forget(kst_prog_t *p);
+/* --- the limit run ----------------------------------------------------------- */
+
+/*
+ * A limit run (servo_limrun.h) programs LEFT ANGLE and RIGHT ANGLE, and
+ * PULSE LOWER and PULSE UPPER where its SERVO PULSES setting is 1000-2000,
+ * over many sessions: a session per write.  These four are the run's
+ * fields.  The run keeps the servo as its first session read it:
+ *
+ *   - RESTORE offers it (KST_PROG_FROM_RUN) while the servo read differs
+ *     from it in the run's fields and in no other: an ordinary write of
+ *     those fields, checked as every write is.
+ *   - A later session of the run whose servo differs from it in the run's
+ *     fields at most saves no file before its write: the file of the
+ *     first write holds the servo as the run found it.
+ *
+ * The hold is in memory: a start of the panel forgets it.
+ */
+
+/** Hold the servo as read now as the run's.  False, and nothing held, with
+ *  no servo read. */
+bool kst_prog_run_hold(kst_prog_t *p);
+/** The run's first write was sent, whether it ended well or not: the file
+ *  it saved, if any, holds the servo as held. */
+void kst_prog_run_written(kst_prog_t *p);
+/** The run is over: the servo stays held for RESTORE, and a later
+ *  session's first write saves its own file again. */
+void kst_prog_run_close(kst_prog_t *p);
+/** Nothing held. */
+void kst_prog_run_drop(kst_prog_t *p);
+/** The servo the run held, or NULL. */
+const kst_image_t *kst_prog_run_image(const kst_prog_t *p);
+/** The file of that servo; "" for none: no card, or the first write not
+ *  ended yet. */
+const char *kst_prog_run_backup(const kst_prog_t *p);
+/** The servo read differs from the run's in LEFT ANGLE, RIGHT ANGLE,
+ *  PULSE LOWER and PULSE UPPER at most. */
+bool kst_prog_run_matches(const kst_prog_t *p);
+
 /** End the session: the port goes back to PWM and the supply stays as it
  *  is.  The one place a session is ended by the operator.  While a PD mini
  *  answers the port has no command for it and the answer is
