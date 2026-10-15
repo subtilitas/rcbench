@@ -139,7 +139,8 @@ def test_a_bracket_without_a_target_is_text(tree):
 
 def test_one_image(tree):
     html = ok(tree, "![The **SERVO** screen](view:servo)\n")
-    assert '<div class="shot"><figure><img src="img/servo.png"' in html
+    assert ('<div class="shot"><figure><a href="img/servo.png">'
+            '<img src="img/servo.png"') in html
     assert 'alt="The SERVO screen" width="800" height="480"' in html
     assert "<figcaption>The <strong>SERVO</strong> screen</figcaption>" \
         in html

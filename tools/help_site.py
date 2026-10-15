@@ -678,8 +678,12 @@ class Renderer:
         dims = f' width="{size[0]}" height="{size[1]}"' if size else ""
         alt = html.escape(plain(caption))
         cap = self.inline.render(caption, num)
-        return (f'<figure><img src="{html.escape(src)}" alt="{alt}"{dims} '
-                f'loading="lazy"><figcaption>{cap}</figcaption></figure>')
+        # The image links to itself: a row shows each at under half the
+        # column, and a tap opens the 800 x 480 px file.
+        src = html.escape(src)
+        return (f'<figure><a href="{src}"><img src="{src}" alt="{alt}"'
+                f'{dims} loading="lazy"></a><figcaption>{cap}</figcaption>'
+                '</figure>')
 
 
 def parse(path: pathlib.Path, lang: str, problems: Problems,
