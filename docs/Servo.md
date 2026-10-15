@@ -275,7 +275,10 @@ it asked that the bench has not taken yet does not arm the bench after the
 end. A start of the panel clears the run without a report.
 
 The values last written stay in the servo. A run that wrote and did not
-pass says `RESTORE IN PROGRAM` on its box. RESTORE on the programmer, after
+pass says `RESTORE IN PROGRAM` on its box. A write that fails once sent,
+with no answer or an answer the programmer does not take, counts as
+written: part of it may have landed. A write the programmer refuses before
+it is sent counts as none. RESTORE on the programmer, after
 CONNECT and READ ALL, offers `Values before the limit run`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT
 ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
@@ -313,7 +316,8 @@ name until CLOSE.
 
 The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
 the next free number, written whatever the DUT page's REPORT says. During a
-run neither the bench log nor the supply log writes a row. Until the card
+run neither the bench log nor the supply log writes a row; the supply
+log's time runs on through the run, as its totals do. Until the card
 has closed the report it counts as an open log run: Wi-Fi and an update wait
 for it, as for a run's CSV. A run on the host's modelled servo with
 REVERSION OFF and SERVO PULSES at 1000-2000; the stops at 1150 µs and
@@ -361,7 +365,9 @@ Bench: the ends found are not applied to PULSE MIN and PULSE MAX.
 
 With the AS5600 fitted, each end has a line with the horn's angle at its
 last free position, `AS5600 +38.5 deg at the last free position`. A run
-that wrote and did not pass has a `Restore:` line. The `Searched:` line
+that wrote and did not pass has a `Restore:` line. A run that sent no
+write has no `Backup:` line: the values before the run are held from the
+first write on. The `Searched:` line
 names the search's centre and ends; a run that ended before its first
 search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
 

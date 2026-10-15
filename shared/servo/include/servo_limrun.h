@@ -402,9 +402,10 @@ typedef struct {
     int32_t  d1_dus[2];     /**< the overset search's; 0 not searched     */
     int8_t   probe_side;    /**< the side the next search looks at, -1 both */
     unsigned writes;        /**< register values written                  */
-    unsigned write_ops;     /**< writes sent                              */
+    unsigned write_ops;     /**< writes sent, one that failed included    */
     unsigned sessions;
-    bool     programmed;    /**< a value differs from the servo's own     */
+    bool     programmed;    /**< a value differs from the servo's own, or
+                                 *   a write failed once sent              */
 
     /* The meter. */
     bool     have_win;

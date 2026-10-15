@@ -838,6 +838,17 @@ static void mark_programmed(servo_limrun_t *r)
                               sizeof(r->pulse_now)) != 0;
 }
 
+/* A write that failed once sent -- no answer, or one the programmer did not
+ * take: part of it may have landed, so the servo's values count as changed
+ * and RESTORE is offered.  A write refused before it was sent is
+ * servo_limrun_refused()'s. */
+static void sent_failed(servo_limrun_t *r, uint32_t now_ms)
+{
+    r->write_ops += 1u;
+    r->programmed = true;
+    abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
+}
+
 void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
                           uint32_t now_ms)
 {
@@ -846,7 +857,7 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
         return;
     }
     if (!ok || angle == NULL) {
-        abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
+        sent_failed(r, now_ms);
         return;
     }
     const unsigned n = changes(r, r->want);
@@ -881,7 +892,7 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
         return;
     }
     if (!ok || pulse_dus == NULL) {
-        abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
+        sent_failed(r, now_ms);
         return;
     }
     r->writes += (unsigned)(pulse_dus[SERVO_LIMRUN_P_LOWER]
@@ -1335,7 +1346,9 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
                  (unsigned)SERVO_LIMRUN_WRITES_MAX, r->sessions);
         return true;
     }
-    if (here(c)) {
+    /* The programmer holds the values before the run from the run's first
+     * write on: a run that sent none has no backup. */
+    if (r->write_ops > 0u && here(c)) {
         if (r->servo.backup[0] != '\0') {
             snprintf(c->buf, c->n, LS(L_R_BACKUP), r->servo.backup);
         } else {

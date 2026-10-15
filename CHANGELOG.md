@@ -104,7 +104,10 @@ history is in git.
   session that reads another type, REVERSION, other pulses or another range
   of values ends the run, `servo holds other values`. A run that ends while it waits for ARMED asks SAFE, so an
   ARM not yet taken does not arm the bench. A run's write refused before it
-  is sent switches ENABLE WRITE TO SERVO off again. RESTORE offers `Values
+  is sent switches ENABLE WRITE TO SERVO off again. A write that fails once
+  sent counts as written, so the box and the report offer RESTORE; a run
+  that sent no write reports no backup. During a run the supply log writes
+  no row and its time runs on. RESTORE offers `Values
   before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
   UPPER as the run found them; a session after the run saves its own backup
   file at its first write.

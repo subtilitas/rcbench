@@ -973,6 +973,10 @@ TEST_CASE(search_only_reports_the_endpoints)
     CHECK(strstr(g.report, "search only") != NULL);
     CHECK(strstr(g.report, "Searched:       from 1500 us out to 900 us and "
                            "2100 us") != NULL);
+    /* Nothing sent, so no backup: the line is left out. */
+    CHECK(strstr(g.report, "Writes:         values written 0, writes "
+                           "sent 0") != NULL);
+    CHECK(strstr(g.report, "Backup:") == NULL);
 }
 
 /* The PWM pin: no read, no session, the search out to the bench's PULSE
@@ -1198,6 +1202,8 @@ TEST_CASE(a_pulse_write_refused_or_lost_aborts_before_the_search)
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_WRITE);
     CHECK(!g.driven);
     CHECK(!servo_limrun_wrote(&g.run));
+    CHECK(servo_limrun_restore(&g.run));     /* sent: it may have landed */
+    CHECK(strstr(g.report, "RESTORE") != NULL);
 
     rig_init(0u, false);
     g.cfg.set_pulses = true;
@@ -1302,14 +1308,34 @@ TEST_CASE(a_refused_write_aborts_and_offers_restore)
     CHECK(strstr(g.report, "a write refused or lost") != NULL);
     CHECK(strstr(g.report, "RESTORE") != NULL);
 
-    /* The first write refused: nothing written, no RESTORE line. */
+    /* The first write fails once sent: no value is known written, but
+     * part of it may have landed, so RESTORE is offered, and the
+     * programmer holds the values before the run. */
     rig_init(0u, false);
     g.refuse_write = 1u;
     CHECK(start());
     run_for(RUN_MS);
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_WRITE);
     CHECK(!servo_limrun_wrote(&g.run));
+    CHECK(servo_limrun_restore(&g.run));
+    CHECK_EQ(g.run.write_ops, 1u);
+    CHECK(strstr(g.report, "Writes:         values written 0, writes "
+                           "sent 1") != NULL);
+    CHECK(strstr(g.report, "Backup:") != NULL);
+    CHECK(strstr(g.report, "RESTORE") != NULL);
+
+    /* The first write refused before it is sent: nothing written, no
+     * backup, no RESTORE line. */
+    rig_init(0u, false);
+    CHECK(start());
+    CHECK(run_to(SERVO_LIMRUN_PH_WRITE, RUN_MS));
+    g.op = OP_NONE;
+    servo_limrun_refused(&g.run, g.now);
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_WRITE);
+    CHECK_EQ(g.run.write_ops, 0u);
     CHECK(!servo_limrun_restore(&g.run));
+    CHECK(strstr(g.report, "Backup:") == NULL);
     CHECK(strstr(g.report, "RESTORE") == NULL);
 }
 

@@ -4128,12 +4128,15 @@ static void supply_log_tail(void)
     supply_count_totals(&s_supply, dt);
     s_supply_ms = t;
     /* No row while a servo run is under way: a limit run switches the bench
-     * to SAFE for each write, and its report is the record. */
-    if (s_log_kind == LOG_RUN_SUPPLY && !atomic_load(&s_servo_testing)) {
+     * to SAFE for each write, and its report is the record.  The log's clock
+     * runs on through it, as the totals do. */
+    if (s_log_kind == LOG_RUN_SUPPLY) {
         s_log_t += dt;
-        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-        row.u.supply = s_supply;
-        log_post(&row);
+        if (!atomic_load(&s_servo_testing)) {
+            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+            row.u.supply = s_supply;
+            log_post(&row);
+        }
     }
 }
 
@@ -6277,13 +6280,16 @@ static void supply_pump(void)
     supply_step(step_s);
 
     /* Not after a trip or a lost supply in this step: the switch-off wrote
-     * the run's last row already, and the run ends at the next edge. */
-    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output
-        && !atomic_load(&s_servo_testing)) {
+     * the run's last row already, and the run ends at the next edge.  No
+     * row while a servo run is under way, and the log's clock runs on
+     * through it, as the totals do. */
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
         s_log_t += step_s;
-        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-        row.u.supply = s_supply;
-        log_post(&row);
+        if (!atomic_load(&s_servo_testing)) {
+            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+            row.u.supply = s_supply;
+            log_post(&row);
+        }
     }
 
     snap_lock();

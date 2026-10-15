@@ -301,7 +301,11 @@ Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
 Lauf ohne Bericht.
 
 Die zuletzt geschriebenen Werte bleiben im Servo. Ein Lauf, der schrieb und
-nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMM.`.
+nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMM.`. Ein
+Schreiben, das nach dem Senden scheitert, ohne Antwort oder mit einer
+Antwort, die der Programmierer nicht annimmt, gilt als geschrieben: ein Teil
+davon kann angekommen sein. Ein Schreiben, das der Programmierer vor dem
+Senden ablehnt, gilt als keines.
 ZURÜCKSPIELEN im Programmierer bietet nach VERBINDEN und ALLES LESEN `Werte
 vor dem Endlagenlauf` an: das Servo, wie die erste Sitzung des Laufs es las,
 zurückgeschrieben als gewöhnliches Schreiben von LEFT ANGLE, RIGHT ANGLE,
@@ -344,7 +348,8 @@ und den Dateinamen des Berichts.
 Der Bericht ist eine eigene `BENCHnnn.TXT` ohne CSV-Datei daneben, unter
 der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
 der Seite PRÜFLING sagt. Während eines Laufs schreiben weder das
-Prüfstandslog noch das Netzteillog eine Zeile. Bis die Karte den Bericht
+Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
+läuft durch den Lauf weiter, wie seine Summen. Bis die Karte den Bericht
 geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
 darauf, wie auf die CSV eines Laufs. Ein Lauf am modellierten
 Servo des Hosts mit REVERSION AUS und SERVOPULSE auf 1000-2000; die
@@ -394,7 +399,8 @@ Prüfstand: die gefundenen Enden werden nicht auf PULS MIN und PULS MAX angewend
 Mit eingebautem AS5600 hat jedes Ende eine Zeile mit dem Winkel des Horns
 an seiner letzten freien Stellung, `AS5600 +38.5 Grad an der letzten freien
 Stellung`. Ein Lauf, der schrieb und nicht bestand, hat eine Zeile
-`Rückholen:`. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
+`Rückholen:`. Ein Lauf, der kein Schreiben sendete, hat keine Zeile
+`Sicherung:`: die Werte vor dem Lauf liegen ab dem ersten Schreiben vor. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
 Lauf, der vor seiner ersten Suche endete, hat keine. Ein Lauf an einem
 SERVO-PWM-Pin hat keine Zeile `Servopulse:`.
 
