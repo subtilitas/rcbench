@@ -91,6 +91,15 @@ typedef struct {
      * SETUP's tiles open, to the menu from every other.
      */
     bool (*back)(void);
+    /**
+     * The home tag leaves the screen, for @p to: back() returned false or
+     * is NULL.  Return true to hold the navigation; the screen stays on top
+     * and later resumes it with ui_router_goto(@p to) or drops it.  False,
+     * or NULL, leaves at once.  Only the home tag asks: ui_router_goto()
+     * never does, so STOP, a safety route and every route the application
+     * takes leave at once.  SETUP holds it while settings are unsaved.
+     */
+    bool (*hold)(ui_screen_id_t to);
 } ui_screen_t;
 
 /** The band the router owns, in panel coordinates. */

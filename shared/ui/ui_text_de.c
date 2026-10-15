@@ -317,6 +317,14 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_NOT_SAVED]          = "NICHT GESPEICHERT",
     [TX_SET_SAVE]               = "SPEICHERN",
     [TX_SET_UNHELD]             = "Vom Koprozessor nicht übernommen",
+    [TX_SET_LEAVE_TITLE]        = "UNGESPEICHERTE ÄNDERUNGEN",
+    [TX_SET_LEAVE_WHY]          = "Gelten jetzt; ohne SPEICHERN beim nächsten Neustart verloren.",
+    [TX_SET_LEAVE_MORE]         = "und %d weitere",
+    [TX_SET_LEAVE_FAILED]       = "Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.",
+    [TX_SET_LEAVE_ARMED]        = "VERWERFEN wartet auf SAFE.",
+    [TX_SET_STAY]               = "BLEIBEN",
+    [TX_SET_DISCARD]            = "VERWERFEN",
+    [TX_SET_DUT_NAME]           = "Name des Prüflings",
 
     /* -------------------------------------------- plots and hero cards */
     [TX_PLOT_NOW]               = "JETZT",

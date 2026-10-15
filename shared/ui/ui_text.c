@@ -11,6 +11,7 @@
 
 #include "ui_text.h"
 
+#include <math.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
@@ -185,16 +186,22 @@ const char *ui_on_off(int on)
 
 const char *ui_setting_value(setting_id_t id, char *buf, size_t n)
 {
+    return ui_setting_value_of(id, settings_get(id), buf, n);
+}
+
+const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
+                                size_t n)
+{
     const setting_def_t *d = settings_def(id);
     if (d == NULL || buf == NULL || n == 0u) {
-        return settings_value_text(id, buf, n);
+        return settings_value_text_of(id, value, buf, n);
     }
     if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", ui_on_off(settings_get_bool(id)));
+        snprintf(buf, n, "%s", ui_on_off(value != 0.0f));
         return buf;
     }
     if (d->type == SET_TYPE_ENUM) {
-        const int i = settings_get_int(id);
+        const int i = (int)lrintf(value);
         const ui_language_t *l = ui_text_table(ui_text_language());
         const char *const *opts = (l != NULL && l->setting_options != NULL)
                                       ? l->setting_options[id] : NULL;
@@ -204,7 +211,7 @@ const char *ui_setting_value(setting_id_t id, char *buf, size_t n)
             return buf;
         }
     }
-    return settings_value_text(id, buf, n);
+    return settings_value_text_of(id, value, buf, n);
 }
 
 /* ----------------------------------------------------- the servo test's */

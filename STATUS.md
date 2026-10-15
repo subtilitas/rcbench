@@ -96,7 +96,7 @@ is taken in a gap ahead of the save that needs it.
 | --- | --- |
 | Rasteriser, fonts, touch mapping, theme, widgets, icons, router | built and tested; text is UTF-8, one cell a code point, and the two text faces carry Ä Ö Ü ß ä ö ü |
 | Interface language | built and tested on the host: English and German, chosen by SETUP's Language and applied on the next frame without a restart. Every translated string is an ID in `shared/ui/include/ui_text.def`, German is `shared/ui/ui_text_de.c`, and a missing entry shows the English. The servo test's TXT report is in the language its run started in; its CSV stays English. `render_ui.py --fit` draws every view in both languages and fails on a German string that overflows; `test_text` holds the rest. [Reference](docs/Language.md) |
-| Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/` |
+| Settings model and screen | built and tested on the host. The panel loads and saves the values in NVS (non-volatile storage) through `firmware/panel/components/settings_nvs/`. The home tag that leaves SETUP with values unsaved opens a warning listing each change against the stored copy, with SAVE, DISCARD (refused while ARMED) and STAY; no route the panel takes by itself is held (`test_settings`) |
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
 | Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
@@ -282,8 +282,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 414 committed screenshots to the current
-render, 207 in English and the same 207 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 418 committed screenshots to the current
+render, 209 in English and the same 209 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
@@ -313,8 +313,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
-| `shared/ui/ui_text.c` | 91 | 90 | 98.9% |
-| `shared/ui/ui_router.c` | 319 | 315 | 98.8% |
+| `shared/ui/ui_text.c` | 93 | 92 | 98.9% |
+| `shared/ui/ui_router.c` | 322 | 318 | 98.8% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 72 | 70 | 97.2% |
 | `shared/ui/motor_screen.c` | 631 | 615 | 97.5% |
@@ -330,7 +330,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/programmer_screen.c` | 2419 | 2318 | 95.8% |
 | `shared/ui/log_viewer_screen.c` | 1049 | 985 | 93.9% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
-| `shared/ui/settings_screen.c` | 398 | 396 | 99.5% |
+| `shared/ui/settings_screen.c` | 516 | 511 | 99.0% |
 | `shared/ui/outputs_screen.c` | 371 | 365 | 98.4% |
 | `shared/ui/picker_screen.c` | 617 | 610 | 98.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
@@ -338,7 +338,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/wifi_screen.c` | 593 | 576 | 97.1% |
 | `shared/ui/coproc_update_screen.c` | 210 | 209 | 99.5% |
 | `shared/ui/upd_screen.c` | 491 | 465 | 94.7% |
-| `shared/settings/settings.c` | 234 | 228 | 97.4% |
+| `shared/settings/settings.c` | 290 | 283 | 97.6% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 682 | 647 | 94.9% |
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
@@ -454,7 +454,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 146 | 141 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **43833** | **42801** | **97.6%** |
+| **total** | **44012** | **42976** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -490,7 +490,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, the ARMED state, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: press ARM, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming's beep timing | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 207 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 209 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 
 ## Constraints
 

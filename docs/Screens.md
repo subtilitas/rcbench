@@ -1821,7 +1821,7 @@ The home tag climbs one level at a time:
 | From | The home tag leads to |
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
-| the tiles | the menu |
+| the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
 | OUTPUTS, PICK A PIN, UPDATES | the tiles |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
@@ -2175,6 +2175,68 @@ and says so once more on the splash as `NVS unavailable`.
 
 Values not saved are kept until the panel is switched off. Leaving the screen
 writes nothing.
+
+A value stepped back to the one stored is no change, and the label returns to
+`SAVED`; a write asked for and not yet taken is dropped. A float stepped
+away and back can miss its stored word by a rounding, and counts as back
+while it is less than half a step from it. The stored values are a copy the panel keeps: the ones loaded at
+start-up, the defaults where the store had none, or the ones the last
+successful save wrote. A refused save leaves the copy as it was and no
+longer known to be the medium's, so the label stays `NOT SAVED` or `SAVE`
+until a save succeeds, even with every value stepped back.
+
+### Leaving with values unsaved
+
+The home tag on the tiles, the only way from SETUP to the menu, is held while
+the label reads `SAVE` or `NOT SAVED`. A warning covers the body instead: a
+card of 784 x 344 px with a 3 px edge in the warning colour, over the strip.
+
+![One value unsaved, at the home tag](img/setup-leave.png)
+
+It lists each value and string that differs from the stored copy, one line
+of 22 px each, as `name: stored -> now`. A value is written as the list
+writes it, with its unit; a string, the DUT (device under test) name, as it
+is. Values set on other screens, such as SERVO's settings or ESC STICK's,
+are listed too: they are in the same set and the same save keeps them. The
+lines follow the schema's order, the strings after the values. With more
+than 10 changes, 9 lines show and the tenth reads `and 3 more` for 12.
+
+![Twelve values unsaved](img/setup-leave-many.png)
+
+The strip's three columns hold the answers:
+
+| Button | What it does |
+| --- | --- |
+| STAY | Closes the warning. The tiles show again; a list keeps its category and its scroll. |
+| DISCARD | Sets every changed value back to its stored one through the path a step by hand takes, then opens the menu. |
+| SAVE | Asks for a write as the save button does, then opens the menu. The write follows the same rule: the first idle frame. |
+
+DISCARD sets each value with the same call a key does, in schema order, so
+the coprocessor hears each pin and port that moves, and APPLICATION's
+language, theme, brightness and contrast apply on the next frame. A PD mini
+wiring set back switches the supply output off and raises the alert a change by hand
+raises. PWM target and Port PWM are not set back while the servo programmer
+holds the servo port, as a key does not step them then; they stay unsaved.
+After a refused save DISCARD also asks for a write of the values put back:
+the medium can hold part of the refused write, and a restart would load it.
+
+While the bench is ARMED, DISCARD is drawn inert and a line
+`DISCARD waits for SAFE.` says why. Setting back several values at once,
+pins among them, on a running bench is a change the operator did not make
+in that moment. STAY and SAVE work while ARMED; a save waits for SAFE as
+`WHEN IDLE`. The line `The last save failed. SAVE tries again.` shows in
+the danger colour after a refused save.
+
+The warning holds only the home tag:
+
+- Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
+- OUTPUTS, PICK A PIN and UPDATES open from a tile and return to SETUP: no
+  warning on the way out or back.
+- The home tag over the warning is STAY.
+- STOP stops the bench and leaves the warning as it is.
+- A screen the panel opens by itself, such as the bus-fault screen after a
+  link loss, closes the warning at once. The values stay in force and
+  unsaved.
 
 ## The bus-fault screen
 

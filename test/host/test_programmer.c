@@ -1125,6 +1125,10 @@ TEST_CASE(timing_steps_the_settings_and_closing_asks_for_a_save)
     tap(READ_X, BTN_CY);                     /* DEFAULTS */
     CHECK_EQ(settings_get_int(SET_STICK_BEEP_MIN), 200);
     CHECK_EQ(settings_get_int(SET_STICK_HYST), 40);
+    /* The defaults are the values loaded at start: nothing to write. */
+    CHECK(!settings_dirty());
+    tap(STEP_DN_X, STEP_CY(6));              /* HYSTERESIS again */
+    CHECK_EQ(settings_get_int(SET_STICK_HYST), 30);
     tap(WRITE_X, BTN_CY);                    /* CLOSE */
     CHECK(settings_save_asked());
     settings_cancel_save();
