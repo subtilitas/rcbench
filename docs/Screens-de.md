@@ -1803,12 +1803,15 @@ Aktuelle Einschränkungen:
 - Die Seite ist einfaches HTTP (Hypertext Transfer Protocol). Im Heimnetz
   gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
   Bildschirm sagt es, solange das Panel verbunden ist.
-- Ein hochgeladenes Image wird gegen seinen eigenen SHA-256 geprüft, nicht
-  gegen eine Signatur. Jedes Image, das als `rcbench-panel` für den ESP32-S3
-  gebaut ist, wird nach dem 2-s-Halten installiert, und im Heimnetz kann ein
-  Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
-  Koprozessor-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
-  Koprozessor beim nächsten Link-up angeboten.
+- Ein Image ohne gültige Signatur des rcbench-Release-Schlüssels wird nach
+  einem zweiten 2-s-Halten trotzdem installiert
+  ([Installieren](#installieren-panel-update)). Jedes Image, das als
+  `rcbench-panel` für den ESP32-S3 gebaut ist, geht so, und im Heimnetz kann
+  ein Gerät zwischen Browser und Panel Image und Signatur unterwegs
+  austauschen; das Panel fragt dann nach dem zweiten Halten. Das
+  Koprozessor-Image, das ein Panel-Image mitbringt, ist von der Signatur des
+  Panel-Image gedeckt und wird dem Koprozessor beim nächsten Link-up
+  angeboten.
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
@@ -1834,9 +1837,15 @@ Eine HTML-Seite (Hypertext Markup Language) ohne Skript oder Stil von
 anderswo, sie geht also auf einem Telefon ohne andere Verbindung. Sie folgt
 der Sprache des Panels. Sie hat zwei Teile.
 
-**Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
-mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
-ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
+**Panel-Firmware.** Die installierte Version, zwei Dateiauswahlen, Hochladen
+mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die erste
+Datei ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Die zweite,
+optionale Datei ist seine Signatur, das Release-Asset
+`rcbench-panel-vX.Y.Z.bin.sig`. Die Seite sendet zuerst das Image und danach
+die Signatur als zweite Anfrage an `/update.sig`, nur wenn das Panel das
+Image angenommen hat. Eine Signatur von weniger als 8 oder mehr als 72 Bytes
+wird abgewiesen, ebenso eine, zu der kein Image wartet. Ohne Signatur-Datei
+gilt das Image als unsigniert. Eine Datei, die größer
 als der Slot des Panels ist, 4 063 232 Bytes, wird abgewiesen, bevor ein
 Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
 den ESP-Image-Header für den ESP32-S3, den Projektnamen `rcbench-panel`
@@ -1892,6 +1901,27 @@ starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf,
 keine Platinenzeichnung, die geladen oder gespeichert wird, und kein
 laufendes Update des Koprozessors (`Installation wartet: das Update des
 Koprozessors läuft.`). ABBRECHEN verwirft das Image.
+
+Eine Signatur wird bei diesem Halten geprüft, bevor der Funk ausgeht. Das
+Image ist mit ECDSA (Elliptic Curve Digital Signature Algorithm) auf der
+Kurve P-256 über seinen SHA-256 signiert, so wie
+`openssl dgst -sha256 -sign` es schreibt (DER, 70 bis 72 Bytes). Das Panel
+trägt die öffentliche Hälfte des Release-Schlüssels in seiner Firmware. Eine
+gültige Signatur installiert mit diesem einen Halten. In jedem anderen Fall,
+ohne Signatur, mit einer, die keine ist, oder mit einer, die nicht zu Image
+und Schlüssel passt, hält das Panel an, bevor der Funk ausgeht. PANEL UPDATE
+sagt `NICHT VOM RCBENCH-RELEASE-SCHLÜSSEL SIGNIERT` und welcher der beiden
+Fälle es ist:
+
+![Keine Signatur](img/de/panel-update-unsigned.png)
+![Eine Signatur, die nicht passt](img/de/panel-update-badsig.png)
+
+Es wird nichts geschrieben. Ein zweites Halten von 2 s auf
+`2 s HALTEN: TROTZDEM INSTALLIEREN` installiert das Image; es ist vom ersten
+getrennt und zählt ab seinem eigenen Beginn. Ein Loslassen vor den 2 s
+fragt nichts. ABBRECHEN verwirft das Image, ebenso STOP, ARMED und das
+Verlassen des Bildschirms. Der Funk bleibt aus, solange der Bildschirm
+wartet.
 
 ![Schreiben](img/de/panel-update.png)
 
@@ -2568,9 +2598,9 @@ sie nichts. Ihr Ergebnis steht auf UPDATES.
 
 Das Halten über 2 s ist die einzige Bestätigung: Nach dem Download folgt
 keine Frage. Das Panel verbindet sich innerhalb von 30 s mit dem Heimnetz
-und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
-`rcbench-panel-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
-seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
+und lädt dann drei Dateien des Release-Tags über HTTPS, `SHA256SUMS`,
+`rcbench-panel-v0.20.0.bin` und `rcbench-panel-v0.20.0.bin.sig`. GitHub
+beantwortet jede mit einem Redirect zu seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 `github.com`, `release-assets.githubusercontent.com` und
 `objects.githubusercontent.com`. Dann:
 
@@ -2584,6 +2614,13 @@ seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
 4. Jede Prüfung, die ein hochgeladenes Image besteht
    ([Installieren](#installieren-panel-update)), läuft, und das Image muss
    die Version des Release nennen.
+
+Die Signatur-Datei kommt zuletzt, mit höchstens 72 Bytes. Ein Release ohne
+sie (`HTTP-Status 404`) oder mit einer Datei, die nicht 8 bis 72 Bytes lang
+ist, lässt das Image unsigniert; nur eine verlorene Verbindung beendet den
+Download. Die Signatur wird geprüft, wenn die Installation beginnt, wie bei
+INSTALL, und ein unsigniertes Image oder eines, das nicht passt, wartet auf
+PANEL UPDATE auf das zweite Halten.
 
 Erst dann beginnt die Installation, so wie INSTALL sie beginnt: Funk ganz
 aus, Schreiben, Neustart, Versuchsstart. Vom Halten bis zum Schreiben
@@ -2622,7 +2659,12 @@ Aktuelle Einschränkungen:
   gemessen.
 - Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
-  `SHA256SUMS` heißen, lässt sich nicht laden.
+  `SHA256SUMS` heißen, lässt sich nicht laden. Eine Signatur-Datei ist
+  optional.
+- Die Signatur steht nicht in `SHA256SUMS`; ein Gerät, das Image und
+  Signatur-Datei zugleich austauscht, fällt am Hash nicht auf. Der
+  Schlüssel fängt das ab: Ein Austausch, mit einem anderen Schlüssel
+  signiert, verlangt das zweite Halten.
 
 ## Outputs
 

@@ -410,6 +410,12 @@ SCREENS = {
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
+    # An image the release key does not vouch for: no signature, and a
+    # signature that does not match.
+    "panel-update-unsigned": ("panel-update-unsigned.png", "panel-update",
+                              "dark"),
+    "panel-update-badsig": ("panel-update-badsig.png", "panel-update",
+                            "dark"),
     # SETUP > UPDATES: nothing asked yet; a check asking GitHub; a newer
     # release found, with the download's hold; up to date; no answer in
     # time.  The reminder a start-up check opens on OVERVIEW.  The download

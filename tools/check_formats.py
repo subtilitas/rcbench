@@ -24,6 +24,7 @@ SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -70,6 +71,33 @@ def literals_from_report(text: str) -> str:
     return "\n".join(out) + "\n"
 
 
+def mbedtls_include(root, env):
+    """The mbedTLS include directory, or None.
+
+    The source tree named by RCBENCH_MBEDTLS_DIR, else the one a host build
+    fetched under test/host/build*/_deps.
+    """
+    found = [Path(env["RCBENCH_MBEDTLS_DIR"])] \
+        if env.get("RCBENCH_MBEDTLS_DIR") else []
+    found += sorted((root / "test" / "host").glob("build*/_deps/mbedtls-src"))
+    for d in found:
+        if (d / "include" / "mbedtls" / "pk.h").is_file():
+            return d / "include"
+    return None
+
+
+def without_mbedtls(sources):
+    """(sources that do not include mbedTLS, those that do)."""
+    kept, skipped = [], []
+    for src in sources:
+        text = Path(src).read_text(encoding="utf-8", errors="replace")
+        if re.search(r'#\s*include\s*[<"]mbedtls/', text):
+            skipped.append(src)
+        else:
+            kept.append(src)
+    return kept, skipped
+
+
 def main() -> int:
     cc = shutil.which("cc") or shutil.which("gcc")
     if cc is None:
@@ -107,8 +135,18 @@ def main() -> int:
         # they are, since no lookup is swapped in them.
         for d in sorted(PROTOCOLS.glob("*/include")):
             includes += ["-I", str(d)]
+        # mbedTLS headers, which fw_sign.c includes: the source tree named
+        # by RCBENCH_MBEDTLS_DIR, or the one the host build fetched.
+        mbed_inc = mbedtls_include(ROOT, os.environ)
+        if mbed_inc is not None:
+            includes += ["-isystem", str(mbed_inc)]
         sources = sorted(p for p in tree.rglob("*.c")
                          if not p.name.startswith("gfx_font"))
+        if mbed_inc is None:
+            sources, skipped = without_mbedtls(sources)
+            for src in skipped:
+                print("skipped %s: no mbedTLS headers found"
+                      % str(src).replace(str(tree), "shared"))
         failed = False
         for src in sources:
             run = subprocess.run([cc, *FLAGS, *includes, str(src)],

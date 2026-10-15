@@ -190,6 +190,10 @@ typedef enum {
      *  SHA256SUMS, the image, its checks.  CANCEL ends it. */
     UPDATE_FETCHING,
     UPDATE_FETCH_FAILED,   /**< nothing written: the running image stays  */
+    /** The image checked out, but the release key does not vouch for it (no
+     *  signature, or one that does not verify).  Nothing is written; a
+     *  second 2 s hold writes it, CANCEL drops it. */
+    UPDATE_UNSIGNED,
 } update_state_t;
 
 typedef struct {
@@ -201,13 +205,20 @@ typedef struct {
      *  line or two.  The application writes them (upd_result_text()). */
     char           what[96];
     char           why[96];
+    /** UNSIGNED: a signature came with the image and does not verify; false
+     *  when none came. */
+    bool           sig_bad;
 } update_view_t;
 
 void update_screen_set(const update_view_t *v);
 
-/** True once CLOSE was tapped on a failed write or download; cleared when
- *  read. */
+/** True once CLOSE was tapped on a failed write or download, or CANCEL on an
+ *  UNSIGNED image; cleared when read. */
 bool update_screen_take_close(void);
+
+/** True once the second hold of an UNSIGNED image completed; cleared when
+ *  read. */
+bool update_screen_take_go(void);
 
 /** True once CANCEL was tapped on a download; cleared when read. */
 bool update_screen_take_cancel(void);

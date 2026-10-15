@@ -4,6 +4,10 @@ idf_component_register(
              settings settings_nvs art_flash esp_psram
              fwupdate webaccess fw_ota wifi_access
              esp_driver_gpio esp_driver_uart esp_timer
+    # The public half of the release signing key (fw_sign.h), as PEM text:
+    # the panel installs an image signed by it with one hold, any other with
+    # a second.  Replaced by the key whose private half signs the releases.
+    EMBED_TXTFILES "keys/release_signing_pub.pem"
 )
 
 # The coprocessor image of the same release, carried so the panel can move

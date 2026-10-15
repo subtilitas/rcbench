@@ -56,6 +56,8 @@ extern "C" {
 #define FW_REL_VER_TEXT    18u
 /** "rcbench-panel-v65535.65535.65535.bin" and its terminator. */
 #define FW_REL_NAME_MAX    40u
+/** "rcbench-panel-v65535.65535.65535.bin.sig" and its terminator. */
+#define FW_REL_SIG_NAME_MAX 44u
 /** A redirect's Location, in bytes; a longer one is refused. */
 #define FW_REL_URL_MAX     2048u
 /** Redirects followed in one fetch at most. */
@@ -143,6 +145,13 @@ void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
 
 /** "rcbench-panel-v0.20.0.bin" into @p out of FW_REL_NAME_MAX bytes. */
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX]);
+
+/**
+ * "rcbench-panel-v0.20.0.bin.sig" into @p out of FW_REL_SIG_NAME_MAX bytes:
+ * the release signature (fw_sign.h) of the image, a separate release asset
+ * that SHA256SUMS does not list.
+ */
+void fw_release_sig_name(fw_version_t v, char out[FW_REL_SIG_NAME_MAX]);
 
 /**
  * The download URL of @p file in release @p v into @p out of @p cap bytes;

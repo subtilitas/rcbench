@@ -185,14 +185,14 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,672 | 2,496 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,880 | 2,288 |
 | `control` | `control_task` | 6,144 | 4,288 | 832 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,400 | 4,768 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,576 | 4,592 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the Wi-Fi driver, the TCP/IP (transmission control
@@ -214,7 +214,7 @@ bound for that reason:
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks and the start check's after
   an update, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 232 such calls are
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 240 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

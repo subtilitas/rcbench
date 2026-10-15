@@ -1462,6 +1462,10 @@ static void pose_update(const char *view)
     } else if (strcmp(view, "panel-update-failed") == 0) {
         u.written = 262144u;
         u.state = UPDATE_FAILED;
+    } else if (strcmp(view, "panel-update-unsigned") == 0
+               || strcmp(view, "panel-update-badsig") == 0) {
+        u.state = UPDATE_UNSIGNED;
+        u.sig_bad = (strcmp(view, "panel-update-badsig") == 0);
     }
     update_screen_set(&u);
 }

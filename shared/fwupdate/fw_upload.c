@@ -34,6 +34,7 @@ fw_err_t fw_upload_begin(fw_upload_t *u, uint32_t bytes)
     u->bytes = bytes;
     u->done  = 0u;
     u->err   = FW_OK;
+    u->sig_n = 0u;
     u->state = FW_UP_RECEIVING;
     memset(&u->info, 0, sizeof(u->info));
     return FW_OK;
@@ -78,8 +79,25 @@ fw_err_t fw_upload_end(fw_upload_t *u, bool whole)
     return FW_OK;
 }
 
+fw_err_t fw_upload_sig(fw_upload_t *u, const uint8_t *sig, uint32_t n)
+{
+    if (u->state != FW_UP_STAGED) {
+        return FW_ERR_BUSY;
+    }
+    if (sig == NULL || n < FW_SIG_MIN) {
+        return FW_ERR_EMPTY;
+    }
+    if (n > FW_SIG_MAX) {
+        return FW_ERR_TOO_BIG;
+    }
+    memcpy(u->sig, sig, n);
+    u->sig_n = n;
+    return FW_OK;
+}
+
 void fw_upload_discard(fw_upload_t *u)
 {
+    u->sig_n = 0u;
     u->state = FW_UP_IDLE;
     u->err   = FW_OK;
     u->bytes = 0u;

@@ -185,12 +185,21 @@ TEST_CASE(without_a_card_the_page_says_so_and_still_takes_an_upload)
     self_contained(g_p.buf);
     CHECK(strstr(g_p.buf, "No card, or the card cannot be read.") != NULL);
     CHECK(strstr(g_p.buf, "POST','/update'") != NULL);
+    /* The signature has its own optional input and its own address, and is
+     * sent only after the image was staged. */
+    CHECK(strstr(g_p.buf, "id=\"s\" accept=\".sig\"") != NULL);
+    CHECK(strstr(g_p.buf, "POST','/update.sig'") != NULL);
+    CHECK(strstr(g_p.buf, "getResponseHeader('X-Rcbench-Upload')==='ok'")
+          != NULL);
+    CHECK(strstr(g_p.buf, "(.sig, optional)") != NULL);
     CHECK(strstr(g_p.buf, "/card.zip") == NULL);
     begin(-1);
     wa_page_main(&g_o, &k_de, &w);
     CHECK(wa_out_flush(&g_o));
     CHECK(strstr(g_p.buf, "Keine Karte, oder die Karte ist nicht lesbar.")
           != NULL);
+    CHECK(strstr(g_p.buf, "Signatur (.sig, optional)") != NULL);
+    CHECK(strstr(g_p.buf, "zweites Halten von 2 s") != NULL);
     fake_free(&fs);
 }
 
@@ -274,6 +283,33 @@ TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
     memset(&g_p, 0, sizeof(g_p));
 }
 
+TEST_CASE(every_signature_answer_has_its_own_text_in_both_languages)
+{
+    const fw_err_t errs[] = { FW_OK, FW_ERR_EMPTY, FW_ERR_BUSY, FW_ERR_READ,
+                              FW_ERR_MEMORY };
+    static char seen[2][8][200];
+    for (int de = 0; de < 2; ++de) {
+        for (unsigned i = 0; i < sizeof(errs) / sizeof(errs[0]); ++i) {
+            begin(-1);
+            wa_page_sig_result(&g_o, de != 0, errs[i]);
+            CHECK(wa_out_flush(&g_o));
+            CHECK(g_p.len > 10u);
+            CHECK(g_p.len < sizeof(seen[0][0]));
+            strcpy(seen[de][i], g_p.buf);
+            for (unsigned k = 0; k < i; ++k) {
+                CHECK(strcmp(seen[de][k], seen[de][i]) != 0);
+            }
+        }
+    }
+    /* Too small and too big share the size text. */
+    begin(-1);
+    wa_page_sig_result(&g_o, false, FW_ERR_TOO_BIG);
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_p.buf, "The signature file is not 8 to 72 bytes long.");
+    free(g_p.buf);
+    memset(&g_p, 0, sizeof(g_p));
+}
+
 int main(void)
 {
     RUN(the_code_form_asks_for_the_code_and_shows_nothing_else);
@@ -282,5 +318,6 @@ int main(void)
     RUN(an_empty_card_and_names_left_out_are_said);
     RUN(a_long_listing_streams_and_stops_when_the_browser_goes);
     RUN(every_upload_answer_has_its_own_text_in_both_languages);
+    RUN(every_signature_answer_has_its_own_text_in_both_languages);
     return test_summary("wa_page");
 }

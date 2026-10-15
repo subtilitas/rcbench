@@ -10,6 +10,14 @@ name: Release
 # checks on the docs have passed on that commit, and nothing at all when
 # they fail.  A manual run for a tag is held to the same rule.
 #
+# The panel's application image is signed with ECDSA (elliptic curve digital
+# signature algorithm) P-256 over SHA-256, with the private key in the
+# repository secret RCBENCH_PANEL_SIGNING_KEY (PEM text).  The signature is
+# the release asset rcbench-panel-vX.Y.Z.bin.sig, DER, and is not listed in
+# SHA256SUMS.  The publish job fails, and nothing is published, when the
+# secret is empty or the signature does not verify against the public key
+# the panel firmware embeds (firmware/panel/main/keys/release_signing_pub.pem).
+#
 # The configurator-data job runs beside the others and gates nothing: it
 # shows a release tag newer than the configurator data as a warning.
 
@@ -288,6 +296,41 @@ jobs:
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
 
+      # The private key reaches this step through the environment only.  It
+      # is written to a file readable by this user alone, which is deleted on
+      # any exit, and is never printed.  An empty secret fails the step: no
+      # unsigned release goes out.  The signature is then checked with the
+      # public key committed for the panel, so a secret that holds another
+      # key than the firmware embeds fails here and not on a bench.
+      - name: Sign the panel image
+        env:
+          RCBENCH_PANEL_SIGNING_KEY: ${{ secrets.RCBENCH_PANEL_SIGNING_KEY }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          set +x
+          if [ -z "$RCBENCH_PANEL_SIGNING_KEY" ]; then
+            echo "::error::the secret RCBENCH_PANEL_SIGNING_KEY is not set; the release would go out unsigned"
+            exit 1
+          fi
+          umask 077
+          key=$(mktemp)
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$RCBENCH_PANEL_SIGNING_KEY" > "$key"
+          img="dist/rcbench-panel-$TAG.bin"
+          sig="$img.sig"
+          openssl dgst -sha256 -sign "$key" -out "$sig" "$img" 2>/dev/null || {
+            echo "::error::signing failed; the secret is not a P-256 private key in PEM form"
+            exit 1
+          }
+          openssl dgst -sha256 \
+            -verify firmware/panel/main/keys/release_signing_pub.pem \
+            -signature "$sig" "$img" || {
+            echo "::error::the signature does not verify against firmware/panel/main/keys/release_signing_pub.pem"
+            exit 1
+          }
+          rm -f "$key"
+          ls -l "$sig"
+
       - name: Publish the release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -345,7 +388,7 @@ jobs:
           }
           trap cleanup EXIT
 
-          assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
+          assets=(dist/*.zip dist/*.bin dist/*.bin.sig dist/SHA256SUMS)
 
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed

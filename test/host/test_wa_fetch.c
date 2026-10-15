@@ -380,6 +380,9 @@ static void make_release(const char *version, bool right_hash)
                        "00000000000000000000000000000000", hex);
 }
 
+#define SIG_URL "https://github.com/subtilitas/rcbench/releases/download/" \
+                "v0.20.0/rcbench-panel-v0.20.0.bin.sig"
+
 #define ASSET "https://release-assets.githubusercontent.com/github-" \
               "production-release-asset/1?sp=r&sig=abc"
 
@@ -401,12 +404,30 @@ static answer_t image_body(void)
                        .body_n = g_img_n };
 }
 
+/* The release has no signature asset: GitHub answers 404. */
+static answer_t sig_missing(void)
+{
+    return (answer_t){ .status = 404, .length = 0 };
+}
+
+static uint8_t g_sig[FW_SIG_MAX];
+
+static answer_t sig_body(uint32_t n)
+{
+    for (uint32_t i = 0; i < n && i < sizeof(g_sig); ++i) {
+        g_sig[i] = (uint8_t)(0xA0u + i);
+    }
+    return (answer_t){ .status = 200, .length = n, .body = g_sig,
+                       .body_n = n };
+}
+
 static void script_good(void)
 {
     answer(to_asset());
     answer(sums_body());
     answer(to_asset());
     answer(image_body());
+    answer(sig_missing());
 }
 
 static wa_fetch_res_t download(uint32_t start)
@@ -435,8 +456,10 @@ TEST_CASE(a_release_downloads_checked_and_staged)
     CHECK_STR_EQ(g.urls[1], ASSET);
     CHECK_STR_EQ(g.urls[2], "https://github.com/subtilitas/rcbench/releases/"
                             "download/v0.20.0/rcbench-panel-v0.20.0.bin");
-    CHECK_EQ(g.opens, 4u);
-    CHECK_EQ(g.closes, 4u);
+    CHECK_STR_EQ(g.urls[4], SIG_URL);
+    CHECK_EQ(g.opens, 5u);
+    CHECK_EQ(g.closes, 5u);
+    CHECK_EQ(g_up.sig_n, 0u);
     /* The phases in order, and the bytes of the last report. */
     CHECK_EQ(g.phase_n, 3u);
     CHECK_EQ(g.phases[0], WA_PH_SUMS);
@@ -444,6 +467,81 @@ TEST_CASE(a_release_downloads_checked_and_staged)
     CHECK_EQ(g.phases[2], WA_PH_CHECKING);
     CHECK_EQ(g.done, g_img_n);
     CHECK_EQ(g.total, g_img_n);
+}
+
+TEST_CASE(the_signature_asset_is_fetched_beside_the_image)
+{
+    fresh(0u);
+    make_release("0.20.0", true);
+    answer(to_asset());
+    answer(sums_body());
+    answer(to_asset());
+    answer(image_body());
+    answer(to_asset());
+    answer(sig_body(71u));
+    const wa_fetch_res_t out = download(0u);
+    CHECK_EQ(out.got, WA_GOT_STAGED);
+    CHECK_EQ(g_up.state, FW_UP_STAGED);
+    CHECK_EQ(g_up.sig_n, 71u);
+    CHECK_EQ(memcmp(g_up.sig, g_sig, 71u), 0);
+    CHECK_EQ(g.opens, 6u);
+    CHECK_STR_EQ(g.urls[4], SIG_URL);
+}
+
+static void script_to_image(void)
+{
+    fresh(0u);
+    make_release("0.20.0", true);
+    answer(to_asset());
+    answer(sums_body());
+    answer(to_asset());
+    answer(image_body());
+}
+
+TEST_CASE(a_signature_asset_out_of_form_leaves_the_image_unsigned)
+{
+    const uint32_t lens[] = { 0u, 1u, FW_SIG_MIN - 1u, FW_SIG_MIN, FW_SIG_MAX,
+                              FW_SIG_MAX + 1u, 5000u };
+    for (unsigned i = 0; i < 7u; ++i) {
+        script_to_image();
+        answer_t a = sig_body(lens[i]);
+        if (lens[i] > sizeof(g_sig)) {
+            a.body_n = 0u;               /* never read: refused by length */
+        }
+        answer(a);
+        const wa_fetch_res_t out = download(0u);
+        CHECK_EQ(out.got, WA_GOT_STAGED);
+        CHECK_EQ(g_up.state, FW_UP_STAGED);
+        const bool fits = lens[i] >= FW_SIG_MIN && lens[i] <= FW_SIG_MAX;
+        CHECK_EQ(g_up.sig_n, fits ? lens[i] : 0u);
+    }
+    /* A server error, and a body with no length. */
+    script_to_image();
+    answer((answer_t){ .status = 500, .length = 0 });
+    CHECK_EQ(download(0u).got, WA_GOT_STAGED);
+    CHECK_EQ(g_up.sig_n, 0u);
+    script_to_image();
+    answer((answer_t){ .status = 200, .length = -1, .chunked = true });
+    CHECK_EQ(download(0u).got, WA_GOT_STAGED);
+    CHECK_EQ(g_up.sig_n, 0u);
+}
+
+TEST_CASE(a_signature_fetch_that_loses_the_connection_ends_the_job)
+{
+    script_to_image();
+    answer((answer_t){ .no_connect = true });
+    const wa_fetch_res_t out = download(0u);
+    CHECK_EQ(out.got, WA_GOT_CONNECT);
+    CHECK(g_up.state != FW_UP_STAGED);
+    CHECK_EQ(g_up.sig_n, 0u);
+
+    script_to_image();
+    answer_t a = sig_body(70u);
+    a.read_breaks = true;
+    a.body_n = 0u;                       /* the first read fails */
+    answer(a);
+    CHECK_EQ(download(0u).got, WA_GOT_CONNECT);
+    CHECK(g_up.state != FW_UP_STAGED);
 }
 
 TEST_CASE(a_hash_other_than_sha256sums_stages_nothing)
@@ -566,6 +664,7 @@ TEST_CASE(a_redirect_chain_is_held_to_its_hosts_and_its_length)
     answer(sums_body());
     answer(to_asset());
     answer(image_body());
+    answer(sig_missing());
     out = download(0u);
     CHECK_EQ(out.got, WA_GOT_STAGED);
     fresh(0u);
@@ -990,6 +1089,9 @@ int main(void)
     RUN(the_check_waits_within_its_budget_across_the_wrap);
     RUN(a_check_stopped_before_the_request_sends_none);
     RUN(a_release_downloads_checked_and_staged);
+    RUN(the_signature_asset_is_fetched_beside_the_image);
+    RUN(a_signature_asset_out_of_form_leaves_the_image_unsigned);
+    RUN(a_signature_fetch_that_loses_the_connection_ends_the_job);
     RUN(a_hash_other_than_sha256sums_stages_nothing);
     RUN(an_image_that_says_another_version_stages_nothing);
     RUN(an_image_the_checks_refuse_stages_nothing);

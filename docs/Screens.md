@@ -1642,12 +1642,14 @@ Current limitations:
 - The page is plain HTTP (hypertext transfer protocol). On a home network
   the access code and every file cross the network unencrypted. The screen
   says so while joined.
-- An uploaded image is checked against its own SHA-256, not against a
-  signature. Any image built as `rcbench-panel` for the ESP32-S3 installs
-  after the 2 s hold, and on a home network a device between the browser
-  and the panel can replace the image on its way. The coprocessor image a
-  panel image carries comes with it and is offered to the coprocessor at the
-  next link-up.
+- An image without a valid signature from the rcbench release key still
+  installs, after a second 2 s hold ([Installing](#installing-panel-update)).
+  Any image built as `rcbench-panel` for the ESP32-S3 can be installed that
+  way, and on a home network a device between the browser and the panel can
+  replace the image and its signature on their way; the panel then asks for
+  the second hold. The coprocessor image a panel image carries is covered by
+  the panel image's signature and is offered to the coprocessor at the next
+  link-up.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 
@@ -1671,9 +1673,14 @@ One HTML (hypertext markup language) page, with no script or style from
 elsewhere, so it works on a phone with no other connection. It follows the
 panel's language. It has two parts.
 
-**Panel firmware.** The version installed, a file picker, Upload with a
-progress bar, and the panel's answer as a line of text. The file is the
-release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than the panel's
+**Panel firmware.** The version installed, two file pickers, Upload with a
+progress bar, and the panel's answer as a line of text. The first file is
+the release asset `rcbench-panel-vX.Y.Z.bin`. The second, optional file is
+its signature, the release asset `rcbench-panel-vX.Y.Z.bin.sig`. The page
+sends the image first and the signature after it, as a second request to
+`/update.sig`, only when the panel has accepted the image. A signature of
+fewer than 8 or more than 72 bytes is refused, and so is one for which no
+image waits. Without a signature file the image counts as unsigned. A file larger than the panel's
 slot, 4,063,232 bytes, is refused before a byte is sent. The panel checks
 the whole image before it asks anything: the ESP image header for the
 ESP32-S3, the application's project name `rcbench-panel`, a version of the
@@ -1723,6 +1730,25 @@ INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
 drawing being fetched or kept and no update of the coprocessor running
 (`Install waits: the coprocessor's update runs.`). CANCEL drops the image.
+
+A signature is checked at that hold, before the radio is switched off. The
+image was signed with ECDSA (elliptic curve digital signature algorithm) on
+the curve P-256 over its SHA-256, as `openssl dgst -sha256 -sign` writes it
+(DER, 70 to 72 bytes). The panel holds the public half of the release key
+in its firmware. A valid signature installs with this single hold. Any
+other case, with no signature, a signature that is not one, or one that
+does not match the image and the key, stops before the radio goes off. PANEL
+UPDATE says `NOT SIGNED BY THE RCBENCH RELEASE KEY` and which of the two
+cases it is:
+
+![No signature](img/panel-update-unsigned.png)
+![A signature that does not match](img/panel-update-badsig.png)
+
+Nothing is written. A second hold of 2 s on `HOLD 2 s: INSTALL ANYWAY`
+installs the image; the hold is separate from the first and counts from its
+own start. A release before the 2 s asks nothing. CANCEL drops the image, as
+do STOP, ARMED and leaving the screen. The radio stays off while the screen
+waits.
 
 ![Writing](img/panel-update.png)
 
@@ -2359,8 +2385,9 @@ Its result is on UPDATES.
 ### The download
 
 The 2 s hold is the one confirmation: no question follows the download. The
-panel joins the home network within 30 s, then fetches two files of the
-release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-v0.20.0.bin`.
+panel joins the home network within 30 s, then fetches three files of the
+release's tag over HTTPS, `SHA256SUMS`, `rcbench-panel-v0.20.0.bin` and
+`rcbench-panel-v0.20.0.bin.sig`.
 GitHub answers each with a redirect to its file host; the panel follows at
 most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
 and `objects.githubusercontent.com`. Then:
@@ -2374,6 +2401,12 @@ and `objects.githubusercontent.com`. Then:
    in `SHA256SUMS`.
 4. Every check an uploaded image passes ([Installing](#installing-panel-update))
    runs, and the image must name the release's version.
+
+The signature file is read last, at 72 bytes at most. A release without it
+(`HTTP status 404`), or one whose file is not 8 to 72 bytes long, leaves the
+image unsigned; only a lost connection ends the download. The signature is
+checked when the install starts, as at INSTALL, and an image that is
+unsigned or does not match waits for the second hold on PANEL UPDATE.
 
 Only then does the install start, as INSTALL starts it: the radio off
 wholly, the write, the restart, the trial start. From the hold to the write,
@@ -2411,7 +2444,10 @@ Current limitations:
   measured.
 - No certificate's dates are checked: the panel has no clock.
 - A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and
-  `SHA256SUMS` cannot be downloaded.
+  `SHA256SUMS` cannot be downloaded. A signature asset is optional.
+- The signature is not listed in `SHA256SUMS`; a device that replaces both
+  the image and the signature file is not caught by the hash. The key ends
+  that: a replacement signed by another key asks for the second hold.
 
 ## Outputs
 
