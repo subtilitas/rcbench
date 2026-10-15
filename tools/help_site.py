@@ -357,12 +357,14 @@ def starts_block(line: str) -> str | None:
 
 def split_cells(row: str) -> list[str]:
     """The cells of a row that starts and ends with '|', split on every
-    '|' not escaped with a backslash."""
+    '|' not escaped with a backslash; an escaped one stays in its cell."""
     inner = row[1:-1]
     cells, cur, i = [], [], 0
     while i < len(inner):
         if inner[i] == "\\" and i + 1 < len(inner):
-            cur.append(inner[i:i + 2])
+            # An escaped pipe is a pipe in the cell, in a code span too;
+            # every other escape is the inline renderer's.
+            cur.append("|" if inner[i + 1] == "|" else inner[i:i + 2])
             i += 2
             continue
         if inner[i] == "|":
@@ -431,7 +433,8 @@ class Renderer:
             self.fail(1, "the title is empty")
         page.screen = seen.get("screen", "")
         if page.screen and page.screen != "none" \
-                and not re.fullmatch(r"[A-Z0-9_]+", page.screen):
+                and (not re.fullmatch(r"[A-Z0-9_]+", page.screen)
+                     or page.screen.startswith("SCREEN_")):
             self.fail(1, f"screen {page.screen!r} is a SCREEN_* name "
                          "without SCREEN_, or none")
         order = seen.get("order")
