@@ -1216,6 +1216,14 @@ static void wifi_type(const char *text)
     }
 }
 
+/* The versions of the update screens' examples, fixed rather than read from
+ * rcbench_version.h: a panel and a coprocessor on 0.18.0, an image of 0.19.0
+ * offered and installed, 0.17.0 as the older one.  The screenshots and the
+ * alerts quoted in Screens.md then tell one sequence at every release. */
+#define EX_RUNNING "0.18.0"
+#define EX_NEWER   "0.19.0"
+#define EX_OLDER   "0.17.0"
+
 /* The views of FILES & UPDATE, reached as an operator reaches them: the
  * application's view handed in, the controls tapped. */
 static void pose_wifi(const char *view)
@@ -1224,7 +1232,7 @@ static void pose_wifi(const char *view)
     memset(&v, 0, sizeof(v));
     v.code_on = true;
     strcpy(v.name, "rcbench-3F7A");
-    strcpy(v.run_ver, RCBENCH_VERSION_STRING);
+    strcpy(v.run_ver, EX_RUNNING);
     if (strcmp(view, "wifi-home") == 0) {
         v.have_net = true;
         strcpy(v.net, "Workshop 2.4");
@@ -1274,23 +1282,19 @@ static void pose_wifi(const char *view)
         strcpy(v.pass, "k7mqx3ha");
         strcpy(v.code, "r4tcw9pe");
         v.up = WIFI_UP_STAGED;
-        /* One release either side of the running one, so a version bump
-         * keeps a newer image newer and an older one older. */
-        snprintf(v.new_ver, sizeof(v.new_ver), "%d.%d.0",
-                 RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR + 1);
+        strcpy(v.new_ver, EX_NEWER);
         v.offer = WIFI_OFFER_NEWER;
         if (strcmp(view, "wifi-older") == 0) {
-            snprintf(v.new_ver, sizeof(v.new_ver), "%d.%d.0",
-                     RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR - 1);
+            strcpy(v.new_ver, EX_OLDER);
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
         } else if (strcmp(view, "wifi-coproc") == 0) {
             v.gate = WIFI_GATE_COPROC;
         } else if (strcmp(view, "wifi-rebuild") == 0) {
-            strcpy(v.new_ver, RCBENCH_VERSION_STRING);
+            strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_REBUILD;
         } else if (strcmp(view, "wifi-installed") == 0) {
-            strcpy(v.new_ver, RCBENCH_VERSION_STRING);
+            strcpy(v.new_ver, EX_RUNNING);
             v.offer = WIFI_OFFER_INSTALLED;
         }
     }
@@ -1361,7 +1365,7 @@ static void pose_update(const char *view)
 {
     update_view_t u;
     memset(&u, 0, sizeof(u));
-    strcpy(u.version, "0.19.0");
+    strcpy(u.version, EX_NEWER);
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
@@ -2412,15 +2416,13 @@ int main(int argc, char **argv)
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: a coprocessor one release
-         * behind and the image this panel carries; the older one with the
-         * two swapped.  The progress half way through the blocks of a
-         * 191,592-byte image. */
-        const cu_version_t old_v = { RCBENCH_VERSION_MAJOR,
-                                     RCBENCH_VERSION_MINOR - 1, 0 };
-        const cu_version_t new_v = { RCBENCH_VERSION_MAJOR,
-                                     RCBENCH_VERSION_MINOR,
-                                     RCBENCH_VERSION_PATCH };
+        /* The question as a link-up poses it: a coprocessor on 0.17.0 and
+         * a panel carrying 0.18.0, the version of the alert `coprocessor
+         * updated to 0.18.0` in Screens.md; the older one with the two
+         * swapped.  Fixed, as the examples above are.  The progress half
+         * way through the blocks of a 191,592-byte image. */
+        const cu_version_t old_v = { 0, 17, 0 };
+        const cu_version_t new_v = { 0, 18, 0 };
         if (strcmp(view, "coproc-update-older") == 0) {
             coproc_update_screen_offer(new_v, old_v);
         } else {
