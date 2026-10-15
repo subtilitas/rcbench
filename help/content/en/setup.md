@@ -6,11 +6,38 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION and INTERFACES. It opens from the SETUP tile on the [menu](overview.md); the band names it SETTINGS. The left column picks the category and holds OUTPUTS, PICK A PIN, UPDATES, RESET CATEGORY and the save button. The list of the category takes the right.
+SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION and INTERFACES. It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3; the band names it SETTINGS. A category's tile opens its list across the screen's width.
+
+## The tiles
+
+![The tiles, everything saved](view:setup)
+
+| Tile | Second line | What it opens |
+|---|---|---|
+| ESC / BENCH | `8 SETTINGS` | the list of ESC / BENCH |
+| APPLICATION | `10 SETTINGS` | the list of APPLICATION |
+| INTERFACES | `26 SETTINGS` | the list of INTERFACES |
+| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each coprocessor pin, as a list |
+| PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
+| UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
+
+Three slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+
+![The tiles with a value unsaved](view:setup-hub-dirty)
+
+The home tag at the top left climbs one level at a time:
+
+| From | The home tag leads to |
+|---|---|
+| a category's list | the tiles; the list keeps its position |
+| the tiles | the menu |
+| OUTPUTS, PICK A PIN, UPDATES | the tiles |
 
 ## Changing a value
 
-![ESC / BENCH, everything saved](view:setup)
+![ESC / BENCH, everything saved](view:setup-esc)
+
+The list spans the screen and shows 6 rows. Under it a strip holds the category's name, RESET CATEGORY and the save button. The strip ends 4 px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
 A row shows the setting, a help line and its value with its unit. A number has `-` and `+` keys; a switch or a choice has `<` and `>`.
 
@@ -23,9 +50,6 @@ A changed value is in force at once. RESET CATEGORY sets every value of the open
 
 | Button | What it does |
 |---|---|
-| OUTPUTS | opens [Outputs](outputs.md): the role of each coprocessor pin, as a list |
-| PICK A PIN | opens the [pin picker](picker.md): the same, on a drawing of the board |
-| UPDATES | opens [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | RESET CATEGORY | the open category's defaults, at once |
 | SAVED, SAVE, WHEN IDLE, NOT SAVED | the save button; see below |
 
@@ -42,7 +66,7 @@ A changed value is not written to flash until SAVE is pressed.
 | `WHEN IDLE` | the write waits for a quiet bench |
 | `NOT SAVED` | the store refused the write; a press tries again |
 
-The write happens on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. While ARMED the button reads `WHEN IDLE` until the bench is SAFE. Values not saved last until the panel is switched off. Leaving the screen writes nothing.
+The write happens on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. While ARMED the button reads `WHEN IDLE` until the bench is SAFE. Values not saved last until the panel is switched off. Leaving a list or the tiles writes nothing.
 
 `NOT SAVED` cannot say how much reached the flash: a refusal part way leaves the keys written before it, so the next start can load a mix of new and old values.
 

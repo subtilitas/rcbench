@@ -13,6 +13,7 @@
 #include <stdbool.h>
 
 #include "gfx.h"
+#include "ui_icons.h"
 #include "ui_theme.h"
 
 #ifdef __cplusplus
@@ -37,6 +38,20 @@ bool ui_is_light(gfx_color_t c);
 
 /** A raised surface with a hairline edge: the base of every panel. */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
+
+/**
+ * A tile of a grid that opens what it names: the menu's, and SETUP's.
+ *
+ * A rounded surface, @p icon in a UI_TILE_ICON px box whose top is
+ * @p icon_dy px from the tile's and whose centre is the tile's centre in x,
+ * @p name 40 px under the box's top in the text colour and @p line 24 px
+ * under the name in the dim one, both centred and clipped to the tile.
+ * @p pressed lightens the surface.  The 30 px icon, the 22 px name and the
+ * 20 px line take 76 px from @p icon_dy.
+ */
+#define UI_TILE_ICON 30
+void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
+             const char *name, const char *line, bool pressed);
 
 /** Small status pill: a filled dot, then a label. */
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,

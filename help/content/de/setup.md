@@ -6,11 +6,38 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md); das Band nennt ihn SETTINGS. Die linke Spalte wählt die Kategorie und trägt OUTPUTS, PICK A PIN, UPDATES, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Liste der Kategorie belegt die rechte.
+SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3; das Band nennt ihn SETTINGS. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+
+## Die Kacheln
+
+![Die Kacheln, alles gespeichert](view:setup)
+
+| Kachel | Zweite Zeile | Was sie öffnet |
+|---|---|---|
+| ESC / PRÜFSTAND | `8 EINSTELLUNGEN` | die Liste von ESC / PRÜFSTAND |
+| ANWENDUNG | `10 EINSTELLUNGEN` | die Liste von ANWENDUNG |
+| ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
+| OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
+| PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
+| UPDATES | `RELEASES AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
+
+Drei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+
+![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
+
+Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
+
+| Von | Das Home-Tag führt zu |
+|---|---|
+| der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
+| den Kacheln | dem Menü |
+| OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
 
 ## Einen Wert ändern
 
-![ESC / PRÜFSTAND, alles gespeichert](view:setup)
+![ESC / PRÜFSTAND, alles gespeichert](view:setup-esc)
+
+Die Liste reicht über den Bildschirm und zeigt 6 Zeilen. Darunter trägt eine Leiste den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
 
 Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
 
@@ -23,9 +50,6 @@ Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der o
 
 | Taste | Was sie tut |
 |---|---|
-| OUTPUTS | öffnet [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
-| PICK A PIN | öffnet die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
-| UPDATES | öffnet [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 | KATEGORIE ZURÜCKSETZEN | die Vorgaben der offenen Kategorie, sofort |
 | GESPEICHERT, SPEICHERN, BEI STILLSTAND, NICHT GESPEICHERT | die Speichertaste; siehe unten |
 
@@ -42,7 +66,7 @@ Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrück
 | `BEI STILLSTAND` | das Schreiben wartet auf einen ruhenden Prüfstand |
 | `NICHT GESPEICHERT` | der Speicher hat das Schreiben abgelehnt; ein Druck versucht es erneut |
 
-Geschrieben wird im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Bei ARMED lautet die Taste `BEI STILLSTAND`, bis der Prüfstand SAFE ist. Nicht gespeicherte Werte gelten, bis das Panel ausgeschaltet wird. Das Verlassen des Bildschirms schreibt nichts.
+Geschrieben wird im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Bei ARMED lautet die Taste `BEI STILLSTAND`, bis der Prüfstand SAFE ist. Nicht gespeicherte Werte gelten, bis das Panel ausgeschaltet wird. Das Verlassen einer Liste oder der Kacheln schreibt nichts.
 
 `NICHT GESPEICHERT` kann nicht sagen, wie viel den Flash erreicht hat: Eine Ablehnung mittendrin lässt die zuvor geschriebenen Schlüssel stehen; der nächste Start kann eine Mischung aus neuen und alten Werten laden.
 

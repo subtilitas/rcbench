@@ -308,7 +308,9 @@ static const char *const k_text[TX_COUNT] = {
 
     /* ----------------------------------------------------------- SETUP */
     [TX_SET_COUNT]              = "%d EINSTELLUNGEN",
-    [TX_SET_PINS_CAPTION]       = "PINS: LISTE ODER PLATINE",
+    [TX_SET_HUB_OUTPUTS]        = "PROTOKOLLE UND PINS",
+    [TX_SET_HUB_PICKER]         = "AUF DER PLATINE",
+    [TX_SET_HUB_UPDATES]        = "RELEASES AUF GITHUB",
     [TX_SET_RESET]              = "KATEGORIE ZURÜCKSETZEN",
     [TX_SET_SAVED]              = "GESPEICHERT",
     [TX_SET_WHEN_IDLE]          = "BEI STILLSTAND",
@@ -1479,7 +1481,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UP_CLOSE]               = "SCHLIESSEN",
 
     /* UPDATES, the reminder, the download */
-    [TX_UPD_DOOR]               = "UPDATES",
     [TX_UPD_CHECK]              = "NACH UPDATES SUCHEN",
     [TX_UPD_REMIND_ON]          = "ERINNERUNG BEIM START: EIN",
     [TX_UPD_REMIND_OFF]         = "ERINNERUNG BEIM START: AUS",
