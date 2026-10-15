@@ -46,13 +46,26 @@ auslöst, statt eine Leiterbahn zu verbrennen.
 
 ## 1. Beide Platinen flashen
 
-Jede Bench bekommt für 0.19.0 einmal beide Platinen über USB (Universal
-Serial Bus) geladen: eine neue Bench und eine Bench mit 0.18.0 oder älter.
-Das Laden bringt die Partitionstabelle des Koprozessors und die zwei
-Anwendungs-Slots des Panels an ihren Platz, und keins von beiden kommt über
-den Link. Danach installiert das Panel ein Release über WLAN ([Bildschirme:
-Dateien & Update](Screens-de.md#dateien--update)), und der Koprozessor
-bekommt sein Image vom Panel über CAN (Controller Area Network).
+Was eine Bench für 0.20.0 über USB (Universal Serial Bus) lädt, hängt vom
+Release ab, das sie hat:
+
+| Bench hat | Koprozessor | Panel |
+| --- | --- | --- |
+| nichts (eine neue Bench), oder 0.18.0 und älter | über USB, [Schritt 2](#aus-den-release-assets) | über USB, [Schritt 3](#aus-den-release-assets) |
+| 0.19.0 | über CAN (Controller Area Network) vom Panel ([Ab 0.19.0](#ab-0190)) | über USB, [Schritt 3](#aus-den-release-assets) |
+| 0.20.0 und neuer | über CAN vom Panel | über WLAN |
+
+Das USB-Laden einer neuen Bench, oder einer mit 0.18.0 und älter, bringt
+die Partitionstabelle des Koprozessors und die zwei Anwendungs-Slots des
+Panels an ihren Platz, und keins von beiden kommt über den Link. Ein Panel
+mit 0.19.0 nimmt kein Image über WLAN: ACCESS POINT endet beim Drücken mit
+`WLAN startete nicht.`, und nach der Schätzung des internen RAM
+(Random-Access Memory) in [Performance](Performance-de.md#interner-ram)
+endet HEIMNETZ VERBINDEN genauso. Ab 0.20.0 installiert das Panel ein
+Release über WLAN ([Bildschirme: Dateien &
+Update](Screens-de.md#dateien--update)) oder lädt es von GitHub
+([Bildschirme: Updates](Screens-de.md#updates)), und der Koprozessor bekommt
+sein Image vom Panel über CAN.
 
 ### Aus den Release-Assets
 
@@ -60,8 +73,8 @@ bekommt sein Image vom Panel über CAN (Controller Area Network).
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des Koprozessors: `rcbench-iomcu-install.uf2` |
 | `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | den USB-Flash des Panels |
-| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem Koprozessor-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.19.0 oder neuer; nicht für USB |
-| `SHA256SUMS` | die SHA-256 der drei Dateien oben | die Prüfung in Schritt 1 |
+| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem Koprozessor-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.20.0 oder neuer; nicht für USB |
+| `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
 
 Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
 `esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
@@ -96,6 +109,9 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
    esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
 
+   Ein Browser-Flasher, der eine Datei an einen Offset schreibt, etwa das
+   ESP Web Tool, nimmt `rcbench-panel-merged.bin` bei 0x0, mit derselben
+   Wirkung wie der zweite Befehl.
 4. Beide Platinen mit verdrahtetem Link einschalten. Das Panel findet auf
    dem Koprozessor den Build, den es trägt, und bietet kein Update an. Es
    lädt die Zeichnung der Platine neu
@@ -110,9 +126,60 @@ Der Koprozessor behält seine Bindungen, die Verdrahtung der Versorgung und
 die Einrichtung der Strommonitore, mit der Ausnahme für einen RP2350 der
 Stepping A2, die [unten](#die-partitionstabelle-des-koprozessors) steht.
 
-Das Panel darf zuerst kommen. Ein Panel mit 0.19.0 an einem Koprozessor
-ohne Partitionstabelle zeigt `Koprozessor nimmt kein Update über CAN --
-einmal über USB laden`, bis Schritt 2 erledigt ist; der Link läuft solange.
+Das Panel darf zuerst kommen. Ein Panel mit 0.19.0 oder neuer an einem
+Koprozessor ohne Partitionstabelle zeigt `Koprozessor nimmt kein Update über
+CAN -- einmal über USB laden`, bis Schritt 2 erledigt ist; der Link läuft
+solange.
+
+### Ab 0.19.0
+
+Eine Bench mit 0.19.0 lädt das Panel über USB, und nur das Panel. Der
+Koprozessor hat die Partitionstabelle vom USB-Laden für 0.19.0 und bekommt
+0.20.0 über CAN aus dem Image, das das neue Panel mitbringt. Das
+Link-Protokoll bleibt 4.22, also verbinden sich beide Platinen vor und nach
+dem Update.
+
+1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
+   Dateien `OK` aus.
+2. **Panel.** `rcbench-panel-v0.20.0.zip` wie in
+   [Schritt 3](#aus-den-release-assets) oben flashen: `write_flash
+   @flash_args`, um die Einstellungen zu behalten, oder
+   `rcbench-panel-merged.bin` bei 0x0, mit `esptool.py` oder dem
+   Browser-Flasher, um mit den Standardeinstellungen zu beginnen.
+3. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
+   vergleicht das Panel das laufende Image des Koprozessors per SHA-256 mit
+   dem Image, das es mitbringt, findet einen anderen Build, und das Band
+   meldet `Koprozessor hat einen anderen Build -- das Menü bietet sein
+   Update an`.
+4. **Koprozessor.** Die Frage öffnet sich auf dem Menü, solange die Bench
+   SAFE ist, der Ausgang der Versorgung aus und der Funk des Panels aus. Sie
+   nennt 0.19.0 auf dem Koprozessor und 0.20.0 im Panel. START 2 s halten.
+   Der Fortschritt füllt den Bildschirm ([Bildschirme:
+   Koprozessor-Update](Screens-de.md#koprozessor-update)), und zurück auf
+   dem Menü meldet das Band `Koprozessor auf 0.20.0 aktualisiert`.
+
+| Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
+| --- | --- | --- |
+| Einstellungen und WLAN-Einstellungen des Panels, im NVS (24 KiB bei 0x9000) | bleiben | gelöscht; das Panel startet mit den Standardwerten |
+| Gespeicherte Platinenzeichnung des Panels, `boardart` bei 0x7E0000 | bleibt: das letzte Teil endet mit der Anwendung, etwa 2,1 MB ab 0x0 | bleibt: das Image endet mit der Anwendung, etwa 2,1 MB ab 0x0 |
+
+Das Panel zeigt die gespeicherte Zeichnung wieder, wenn die ARTWORK-Seite
+des Koprozessors dieselbe Zeichnung nennt, und lädt sie sonst neu
+([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)). Die Einstellung
+ERINNERUNG BEIM START ist neu in 0.20.0 und steht auf EIN.
+
+Das Update des Koprozessors schreibt den Slot, aus dem er nicht läuft.
+Seine Bindungen, die Verdrahtung der Versorgung und die Einrichtung der
+Strommonitore bleiben: sie liegen in der Store-Partition bei 0x3FC000, oder
+vor deren erstem Speichern im alten Store bei 0x3FE000, und das Update
+schreibt keins von beiden. CANCEL auf der Frage lässt den Koprozessor auf
+0.19.0; das Panel fragt nach seinem nächsten Start wieder. Fällt während des
+Updates der Strom aus, läuft das alte Image weiter, und der nächste
+Link-Aufbau bietet das Update wieder an. Ein Koprozessor, der das USB-Laden
+für 0.19.0 verpasst hat, hat keine Partitionstabelle: das Band meldet
+`Koprozessor nimmt kein Update über CAN -- einmal über USB laden`, und er
+bekommt [Schritt 2](#aus-den-release-assets). Die Dauer des Updates über CAN
+ist nicht gemessen.
 
 ### Aus einem Quellbaum
 
@@ -221,7 +288,7 @@ zusammengeführte Image die Einstellungen.
 In beiden Fällen ist die gespeicherte Platinenzeichnung einmal verloren:
 `boardart` ist von 0x410000 nach 0x7E0000 umgezogen. Das Panel lädt sie beim
 nächsten Link-Aufbau neu ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
-Nach diesem Flash installieren spätere Panel-Releases über WLAN aus dem
+Ab 0.20.0 installiert das Panel spätere Releases über WLAN aus dem
 Release-Asset `rcbench-panel-vX.Y.Z.bin`.
 
 ---
