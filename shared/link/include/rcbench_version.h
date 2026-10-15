@@ -19,13 +19,13 @@
 #define RCBENCH_VERSION_H
 
 #define RCBENCH_VERSION_MAJOR 0
-#define RCBENCH_VERSION_MINOR 18
+#define RCBENCH_VERSION_MINOR 19
 #define RCBENCH_VERSION_PATCH 0
 
 #define RCBENCH_STRINGIFY_(x) #x
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
-/** "0.18.0", for anything that prints it rather than sends it. */
+/** "0.19.0", for anything that prints it rather than sends it. */
 #define RCBENCH_VERSION_STRING              \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MAJOR) "." \
     RCBENCH_STRINGIFY(RCBENCH_VERSION_MINOR) "." \

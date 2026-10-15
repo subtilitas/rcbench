@@ -46,6 +46,76 @@ auslöst, statt eine Leiterbahn zu verbrennen.
 
 ## 1. Beide Platinen flashen
 
+Jede Bench bekommt für 0.19.0 einmal beide Platinen über USB (Universal
+Serial Bus) geladen: eine neue Bench und eine Bench mit 0.18.0 oder älter.
+Das Laden bringt die Partitionstabelle des Koprozessors und die zwei
+Anwendungs-Slots des Panels an ihren Platz, und keins von beiden kommt über
+den Link. Danach installiert das Panel ein Release über WLAN ([Bildschirme:
+Dateien & Update](Screens-de.md#dateien--update)), und der Koprozessor
+bekommt sein Image vom Panel über CAN (Controller Area Network).
+
+### Aus den Release-Assets
+
+| Asset | Enthält | Für |
+| --- | --- | --- |
+| `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des Koprozessors: `rcbench-iomcu-install.uf2` |
+| `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | den USB-Flash des Panels |
+| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem Koprozessor-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.19.0 oder neuer; nicht für USB |
+| `SHA256SUMS` | die SHA-256 der drei Dateien oben | die Prüfung in Schritt 1 |
+
+Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
+`esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
+`/dev/ttyACM0` unten heißt unter Windows `COMx`.
+
+1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
+   Dateien `OK` aus.
+2. **Koprozessor.** `rcbench-iomcu-vX.Y.Z.zip` entpacken. BOOTSEL halten,
+   während die USB-Buchse des Koprozessors angeschlossen wird, sodass das
+   Modul sein Laufwerk `RP2350` zeigt. `rcbench-iomcu-install.uf2` auf das
+   Laufwerk kopieren, oder:
+
+   ```bash
+   picotool load -v -x rcbench-iomcu-install.uf2
+   ```
+
+   Das Modul startet neu in Slot A. Seine Konsole gibt alle 3 s
+   `rcbench-iomcu: running from slot A` aus
+   ([unten](#die-partitionstabelle-des-koprozessors)).
+3. **Panel.** `rcbench-panel-vX.Y.Z.zip` entpacken und die USB-C-Buchse des
+   Panels anschließen (gebrückte Buchse: Schalter auf `UART1`,
+   [§0](#0-vor-dem-einschalten)). Im entpackten Ordner, auf einer Bench,
+   deren Einstellungen bleiben:
+
+   ```bash
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+   ```
+
+   Auf einer neuen Bench, oder um mit den Standardeinstellungen zu beginnen:
+
+   ```bash
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+   ```
+
+4. Beide Platinen mit verdrahtetem Link einschalten. Das Panel findet auf
+   dem Koprozessor den Build, den es trägt, und bietet kein Update an. Es
+   lädt die Zeichnung der Platine neu
+   ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
+
+| Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
+| --- | --- | --- |
+| Einstellungen und WLAN-Einstellungen des Panels, im NVS (non-volatile storage, 24 KiB bei 0x9000) | bleiben | gelöscht; das Panel startet mit den Standardwerten |
+| Gespeicherte Platinenzeichnung des Panels | einmal verloren; beim Link-Aufbau neu geladen | einmal verloren; beim Link-Aufbau neu geladen |
+
+Der Koprozessor behält seine Bindungen, die Verdrahtung der Versorgung und
+die Einrichtung der Strommonitore, mit der Ausnahme für einen RP2350 der
+Stepping A2, die [unten](#die-partitionstabelle-des-koprozessors) steht.
+
+Das Panel darf zuerst kommen. Ein Panel mit 0.19.0 an einem Koprozessor
+ohne Partitionstabelle zeigt `Koprozessor nimmt kein Update über CAN --
+einmal über USB laden`, bis Schritt 2 erledigt ist; der Link läuft solange.
+
+### Aus einem Quellbaum
+
 ```bash
 # Koprozessor — erzeugt rcbench-iomcu-install.uf2 und rcbench-iomcu.uf2
 cmake -S firmware/iomcu -B firmware/iomcu/build
@@ -59,7 +129,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
 
-    -- rcbench: image 191592 bytes, 9% of the 2084864 bytes of one slot
+    -- rcbench: image 191808 bytes, 9% of the 2084864 bytes of one slot
 
 **Achtung:** das Modul für das Bring-up ist ein Waveshare RP2350-CAN mit
 **4 MB**, während `PICO_BOARD` auf eine Board-Datei zeigt, die **16 MB**
@@ -72,8 +142,9 @@ Der Flash des Koprozessors trägt eine Partitionstabelle: zwei Image-Slots
 von je 2036 KiB und eine eigene 8-KiB-Partition für den Ausgangsspeicher
 ([Link](Link-de.md#firmware-update-über-den-link) zeigt die Aufteilung).
 Spätere Koprozessor-Images schickt das Panel über CAN in den Slot, der nicht
-läuft. Ein Koprozessor mit einem Image des Protokolls 4.21 oder älter hat
-keine Tabelle und bekommt Tabelle und erstes Image einmal über USB.
+läuft. Ein neues Modul und ein Koprozessor mit 0.18.0 oder älter (einem Image des
+Protokolls 4.21 oder älter) haben keine Tabelle und bekommen Tabelle und
+erstes Image einmal über USB.
 
 Die USB-Buchse des Koprozessors angeschlossen und BOOTSEL beim Einschalten
 gehalten, sodass das Modul sein Laufwerk `RP2350` zeigt:
@@ -114,15 +185,13 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 
 ### Die Anwendungs-Slots des Panels
 
-**Ein Flash über USB bringt das Panel auf zwei Anwendungs-Slots.** Ab diesem
-Release hat der Flash des Panels zwei Slots mit je 4 063 232 Bytes, `ota_0`
-und `ota_1`, damit es sich über WLAN selbst aktualisieren kann ([Bildschirme:
-Dateien & Update](Screens-de.md#dateien--update)). Ein Panel, das mit einem
-früheren Release geflasht ist, hat einen 3 MB großen `factory`-Slot und
-braucht diesen einen Flash über USB (Universal Serial Bus), um das neue
-Layout zu bekommen:
+Der Flash des Panels hat zwei Anwendungs-Slots mit je 4 063 232 Bytes,
+`ota_0` und `ota_1`, damit es sich über WLAN selbst aktualisieren kann
+([Bildschirme: Dateien & Update](Screens-de.md#dateien--update)). Ein Panel,
+das mit 0.18.0 oder älter geflasht ist, hat einen 3 MiB großen
+`factory`-Slot und bekommt das neue Layout mit einem Flash über USB:
 
-| Offset | Frühere Releases | Dieses Release und später |
+| Offset | 0.18.0 und älter | 0.19.0 und neuer |
 | --- | --- | --- |
 | 0x9000 | `nvs`, 24 KiB | `nvs`, 24 KiB |
 | 0xF000 | `phy_init`, 4 KiB | `phy_init`, 4 KiB |
@@ -133,32 +202,27 @@ Layout zu bekommen:
 | 0x410000 | `boardart`, 2 MiB | |
 | 0x7E0000 | | `boardart`, 128 KiB |
 
-Die Einzelteile behalten die Einstellungen: Sie schreiben Bootloader,
-Partitionstabelle, `otadata` und die Anwendung und lassen `nvs` in Ruhe. Aus
-einem Quellbaum:
+Die Einzelteile behalten die Einstellungen: Sie schreiben den Bootloader bei
+0x0, die Partitionstabelle bei 0x8000, `otadata` bei 0x10000 und die
+Anwendung bei 0x20000 und lassen `nvs` in Ruhe. Aus einem Quellbaum:
 
 ```bash
 idf.py -C firmware/panel -p /dev/ttyACM0 flash
 ```
 
-Aus dem Release-Archiv `rcbench-panel-vX.Y.Z.zip`, im entpackten Ordner:
+Aus dem Release-Archiv `esptool.py ... write_flash @flash_args` im
+entpackten Ordner, wie in [Schritt 3](#aus-den-release-assets).
 
-```bash
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
-```
+Das zusammengeführte Image bei Offset 0 reicht von 0x0 bis zum Ende der
+Anwendung in `ota_0`, etwa 2 MB, und füllt die Lücken zwischen den Teilen
+mit 0xFF. `nvs` bei 0x9000 liegt in einer solchen Lücke, also löscht das
+zusammengeführte Image die Einstellungen.
 
-Das zusammengeführte Image bei Offset 0 schreibt die ganzen 8 MB, `nvs`
-eingeschlossen, und löscht damit die Einstellungen:
-
-```bash
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
-```
-
-In beiden Fällen ist die gespeicherte Platinenzeichnung weg: `boardart` ist
-umgezogen. Das Panel lädt sie beim nächsten Link-Aufbau neu
-([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)). Nach diesem Flash
-installieren spätere Panel-Releases über WLAN aus dem Release-Asset
-`rcbench-panel-vX.Y.Z.bin`.
+In beiden Fällen ist die gespeicherte Platinenzeichnung einmal verloren:
+`boardart` ist von 0x410000 nach 0x7E0000 umgezogen. Das Panel lädt sie beim
+nächsten Link-Aufbau neu ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
+Nach diesem Flash installieren spätere Panel-Releases über WLAN aus dem
+Release-Asset `rcbench-panel-vX.Y.Z.bin`.
 
 ---
 
