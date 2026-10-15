@@ -36,6 +36,14 @@ CONFIG_SPIRAM_XIP_FROM_PSRAM=n
 CONFIG_SPIRAM_RODATA=n
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=n
 CONFIG_SPIRAM_MEMTEST=n
+#
+# Zero-initialised data in PSRAM where a linker fragment asks for it:
+# main/psram_bss.lf names the panel's objects and why each is safe there,
+# and ESP-IDF's own fragments move the .bss of lwIP and of the Wi-Fi
+# driver's libraries.  Internal RAM keeps what the Wi-Fi driver must have
+# internal: about 51 KB of DMA (direct memory access) buffers at
+# esp_wifi_init().  tools/ram_budget.py holds the budget.
+CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y
 
 # Cache --------------------------------------------------------------------
 CONFIG_ESP32S3_INSTRUCTION_CACHE_32KB=y

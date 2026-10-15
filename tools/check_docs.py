@@ -996,6 +996,9 @@ def python_constant(tool: str, name: str) -> float | None:
 # for a constant in another unit.  A pattern that matches nowhere fails: a
 # reworded sentence takes its check along.
 N = r"(\d[\d,.]*)"
+# A German number of five digits or more, 32 768: a space between the
+# groups of three.
+N_DE = r"(\d{1,3}(?: \d{3})*)"
 FACTS = [
     # The link protocol's version.
     ("docs/Link.md", rf"Protocol version {N}\.{N}\.",
@@ -1103,6 +1106,22 @@ FACTS = [
      ("stack_check.py:MARGIN",)),
     ("docs/Performance-de.md", rf"abzüglich {N} Bytes überschreitet",
      ("stack_check.py:MARGIN",)),
+    # The panel's internal RAM floor with the radio up.
+    ("docs/Performance.md", rf"largest mode up is under {N} bytes",
+     ("ram_budget.py:FLOOR",)),
+    ("docs/Performance-de.md",
+     rf"größten Modus weniger als {N_DE} Bytes Heap",
+     ("ram_budget.py:FLOOR",)),
+    ("docs/Building.md", rf"largest mode leaves under {N} bytes",
+     ("ram_budget.py:FLOOR",)),
+    ("docs/Building-de.md", rf"größte Modus weniger als {N_DE} Bytes",
+     ("ram_budget.py:FLOOR",)),
+    ("CONTRIBUTING.md", rf"largest Wi-Fi mode up is under {N} bytes",
+     ("ram_budget.py:FLOOR",)),
+    ("STATUS.md", rf"largest Wi-Fi mode up to at least {N} bytes",
+     ("ram_budget.py:FLOOR",)),
+    (".github/workflows/ci.yml", rf"against a floor of {N} bytes",
+     ("ram_budget.py:FLOOR",)),
 ]
 
 

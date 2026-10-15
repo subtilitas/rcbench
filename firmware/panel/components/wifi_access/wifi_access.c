@@ -1193,21 +1193,53 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     poke();
 }
 
-static void net_once(void)
+/*
+ * A step of a start that failed: its name, the error, and what internal
+ * RAM held at that moment.  The Wi-Fi driver takes about 51 KB of
+ * DMA-capable internal RAM (direct memory access) at esp_wifi_init(), and a
+ * start that finds less fails there (tools/ram_budget.py).
+ */
+static void start_failed(const char *step, esp_err_t e)
+{
+    ESP_LOGE(TAG, "%s: %s; internal RAM %u B free, largest block %u B",
+             step, esp_err_to_name(e),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+}
+
+/* The network interface layer, the default event loop and the handlers,
+ * once.  A step that fails is tried again at the next start. */
+static bool net_once(void)
 {
     if (s.net_ready) {
-        return;
+        return true;
     }
-    ESP_ERROR_CHECK(esp_netif_init());
-    const esp_err_t e = esp_event_loop_create_default();
+    esp_err_t e = esp_netif_init();
+    if (e != ESP_OK) {
+        start_failed("esp_netif_init", e);
+        return false;
+    }
+    e = esp_event_loop_create_default();
     if (e != ESP_OK && e != ESP_ERR_INVALID_STATE) {
-        ESP_ERROR_CHECK(e);
+        start_failed("esp_event_loop_create_default", e);
+        return false;
     }
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID,
-                                               on_event, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
-                                               on_event, NULL));
+    e = esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, on_event,
+                                   NULL);
+    if (e != ESP_OK) {
+        start_failed("esp_event_handler_register WIFI_EVENT", e);
+        return false;
+    }
+    e = esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, on_event,
+                                   NULL);
+    if (e != ESP_OK) {
+        (void)esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID,
+                                           on_event);
+        start_failed("esp_event_handler_register IP_EVENT", e);
+        return false;
+    }
     s.net_ready = true;
+    return true;
 }
 
 /* Up to @p wait_ms for the fetch task to end; whether it has. */
@@ -1257,17 +1289,24 @@ static void radio_down(void)
 
 static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
 {
-    net_once();
     atomic_store(&s.down, false);
+    if (!net_once()) {
+        return false;
+    }
     s.up_mode = mode;
     s.netif = (mode == WA_MODE_AP) ? esp_netif_create_default_wifi_ap()
                                    : esp_netif_create_default_wifi_sta();
     if (s.netif == NULL) {
+        start_failed((mode == WA_MODE_AP)
+                         ? "esp_netif_create_default_wifi_ap"
+                         : "esp_netif_create_default_wifi_sta", ESP_FAIL);
         return false;
     }
     wifi_init_config_t ic = WIFI_INIT_CONFIG_DEFAULT();
     ic.nvs_enable = 0;   /* nothing of the radio's is kept */
-    if (esp_wifi_init(&ic) != ESP_OK) {
+    esp_err_t e = esp_wifi_init(&ic);
+    if (e != ESP_OK) {
+        start_failed("esp_wifi_init", e);
         esp_netif_destroy_default_wifi(s.netif);
         s.netif = NULL;
         return false;
@@ -1275,7 +1314,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     s.radio_up = true;
     (void)esp_wifi_set_storage(WIFI_STORAGE_RAM);
     wifi_config_t cfg = { 0 };
-    esp_err_t e;
+    const char *step = "esp_wifi_set_mode";
     if (mode == WA_MODE_AP) {
         memcpy(cfg.ap.ssid, s.name, strlen(s.name));
         cfg.ap.ssid_len = (uint8_t)strlen(s.name);
@@ -1286,6 +1325,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
         cfg.ap.pmf_cfg.required = false;
         e = esp_wifi_set_mode(WIFI_MODE_AP);
         if (e == ESP_OK) {
+            step = "esp_wifi_set_config";
             e = esp_wifi_set_config(WIFI_IF_AP, &cfg);
         }
     } else {
@@ -1301,6 +1341,7 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
             cfg.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
             cfg.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
             cfg.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+            step = "esp_wifi_set_config";
             e = esp_wifi_set_config(WIFI_IF_STA, &cfg);
             if (e == ESP_OK) {
                 (void)esp_netif_set_hostname(s.netif, s.name);
@@ -1308,14 +1349,16 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
         }
     }
     if (e == ESP_OK) {
+        step = "esp_wifi_start";
         e = esp_wifi_start();
     }
     /* The page in AP and JOIN only: FETCH serves nothing. */
     if (e == ESP_OK && (mode == WA_MODE_AP || mode == WA_MODE_JOIN)) {
+        step = "httpd_start";
         e = httpd_up();
     }
     if (e != ESP_OK) {
-        ESP_LOGE(TAG, "radio: %s", esp_err_to_name(e));
+        start_failed(step, e);
         return false;
     }
     return true;
@@ -1363,7 +1406,7 @@ static void worker(void *arg)
             if (xTaskCreatePinnedToCore(mdns_task, "mdns", MDNS_STACK, NULL,
                                         WORKER_PRIO, NULL, NET_CORE)
                 != pdPASS) {
-                ESP_LOGW(TAG, "mDNS task not started");
+                start_failed("mdns task", ESP_ERR_NO_MEM);
                 atomic_store(&s.mdns_run, false);
                 atomic_store(&s.mdns_alive, false);
             }
@@ -1413,6 +1456,7 @@ wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate)
                                    WORKER_PRIO, &s.worker, NET_CORE)
            != pdPASS) {
         s.worker = NULL;
+        start_failed("wifi_ctl task", ESP_ERR_NO_MEM);
         lock();
         s.w.off = WA_OFF_FAILED;
         unlock();
@@ -1574,6 +1618,7 @@ wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
                                    WORKER_PRIO, &s.worker, NET_CORE)
            != pdPASS) {
         s.worker = NULL;
+        start_failed("wifi_ctl task", ESP_ERR_NO_MEM);
         no_worker = true;
     }
     lock();
@@ -1631,6 +1676,7 @@ void wifi_access_fetch_tick(wa_why_t abort)
         && xTaskCreatePinnedToCore(fetch_task, "wifi_get", FETCH_STACK, NULL,
                                    NET_PRIORITY, NULL, NET_CORE)
            != pdPASS) {
+        start_failed("wifi_get task", ESP_ERR_NO_MEM);
         atomic_store(&s.fetch_alive, false);
         const wa_fetch_res_t r = { .got = WA_GOT_MEMORY };
         lock();

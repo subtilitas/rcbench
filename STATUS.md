@@ -279,9 +279,11 @@ chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
 4672 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
 one interrupt and 256 bytes to the core's stack: core 0 reaches 1716 of
-4096 with 528 for an interrupt. `check_docs.py` holds the protocol version,
+4096 with 528 for an interrupt. `ram_budget.py` holds the panel's
+internal heap left with the largest Wi-Fi mode up to at least 32,768 bytes,
+by an estimate that counts three allowances that are not measured. `check_docs.py` holds the protocol version,
 the heartbeat and link timings, the heartbeat and CAN pins, the coverage
-floors, the stack margin, the servo test's constants and the frame-cost
+floors, the stack margin, the internal RAM floor, the servo test's constants and the frame-cost
 ceilings the pages state to the headers, the tools and `ci.yml`.
 `check_sanitizers.py` holds every compile command of the sanitizer build to
 `-fsanitize=address,undefined -fno-sanitize-recover=all`.
