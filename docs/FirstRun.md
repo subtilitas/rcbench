@@ -43,13 +43,25 @@ than burning a track.
 
 ## 1. Flash both boards
 
-Every bench takes one load of both boards over USB (Universal Serial Bus)
-for 0.19.0: a new bench, and a bench that runs 0.18.0 or older. The load
-puts the coprocessor's partition table and the panel's two application
-slots in place, and neither comes over the link. After it, the panel
-installs a release over Wi-Fi ([Screens: Files &
-update](Screens.md#files--update)) and the coprocessor takes its image over
-CAN (Controller Area Network) from the panel.
+What a bench loads over USB (Universal Serial Bus) for 0.20.0 depends on
+the release it runs:
+
+| Bench runs | Coprocessor | Panel |
+| --- | --- | --- |
+| nothing (a new bench), or 0.18.0 and older | over USB, [step 2](#from-the-release-assets) | over USB, [step 3](#from-the-release-assets) |
+| 0.19.0 | over CAN (Controller Area Network) from the panel ([From 0.19.0](#from-0190)) | over USB, [step 3](#from-the-release-assets) |
+| 0.20.0 and later | over CAN from the panel | over Wi-Fi |
+
+The USB load of a new bench, or of one on 0.18.0 and older, puts the
+coprocessor's partition table and the panel's two application slots in
+place, and neither comes over the link. A 0.19.0 panel takes no image over
+Wi-Fi: ACCESS POINT stops with `Wi-Fi did not start.` as it is pressed, and
+by the estimate of internal RAM (random-access memory) in
+[Performance](Performance.md#internal-ram) JOIN HOME NETWORK stops the same
+way. From 0.20.0 on, the panel installs a release over Wi-Fi ([Screens:
+Files & update](Screens.md#files--update)) or downloads it from GitHub
+([Screens: Updates](Screens.md#updates)), and the coprocessor takes its
+image over CAN from the panel.
 
 ### From the release assets
 
@@ -57,8 +69,8 @@ CAN (Controller Area Network) from the panel.
 | --- | --- | --- |
 | `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the coprocessor's USB load: `rcbench-iomcu-install.uf2` |
 | `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | the panel's USB flash |
-| `rcbench-panel-vX.Y.Z.bin` | the panel's application alone, with the coprocessor image it offers over CAN | an update over Wi-Fi of a panel that runs 0.19.0 or later; not for USB |
-| `SHA256SUMS` | the SHA-256 of the three files above | the check in step 1 |
+| `rcbench-panel-vX.Y.Z.bin` | the panel's application alone, with the coprocessor image it offers over CAN | an update over Wi-Fi of a panel that runs 0.20.0 or later; not for USB |
+| `SHA256SUMS` | the SHA-256 (Secure Hash Algorithm) of the three files above | the check in step 1 |
 
 Tools: the RP2350's `RP2350` drive or `picotool` for the coprocessor,
 `esptool.py` for the panel (`pip install esptool`; ESP-IDF carries it).
@@ -90,6 +102,9 @@ Tools: the RP2350's `RP2350` drive or `picotool` for the coprocessor,
    esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
    ```
 
+   A browser flasher that writes one file at an offset, such as the ESP Web
+   Tool, takes `rcbench-panel-merged.bin` at 0x0, with the same effect as
+   the second command.
 4. Power both boards with the link wired. The panel finds the build it
    carries on the coprocessor and offers no update. It fetches the board
    drawing again ([§4](#4-first-link-up-the-board-drawing)).
@@ -103,9 +118,55 @@ The coprocessor keeps its bindings, the supply's wiring and the current
 monitors' set-up, with the exception for an RP2350 of stepping A2 stated
 [below](#the-coprocessors-partition-table).
 
-The panel can go first. A 0.19.0 panel linked to a coprocessor without the
-partition table shows `coprocessor takes no update over CAN -- load it once
-over USB` until step 2 is done; the link runs meanwhile.
+The panel can go first. A panel of 0.19.0 or later linked to a coprocessor
+without the partition table shows `coprocessor takes no update over CAN --
+load it once over USB` until step 2 is done; the link runs meanwhile.
+
+### From 0.19.0
+
+A bench on 0.19.0 loads the panel over USB, and only the panel. The
+coprocessor carries the partition table from the USB load of 0.19.0 and
+takes 0.20.0 over CAN from the image the new panel carries. The link
+protocol stays 4.22, so the two boards link before and after the update.
+
+1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
+   of the three files.
+2. **Panel.** Flash `rcbench-panel-v0.20.0.zip` as in
+   [step 3](#from-the-release-assets) above: `write_flash @flash_args` to
+   keep the settings, or `rcbench-panel-merged.bin` at 0x0, from
+   `esptool.py` or the browser flasher, to start from the default settings.
+3. Power both boards with the link wired. At link-up the panel compares the
+   coprocessor's running image with the image it carries by SHA-256, finds
+   another build, and the band says `coprocessor runs another build -- the
+   menu offers its update`.
+4. **Coprocessor.** The question opens on the menu while the bench is SAFE,
+   the supply's output is off and the panel's Wi-Fi radio is off. It names
+   0.19.0 on the coprocessor and 0.20.0 in the panel. Hold START for 2 s.
+   The progress fills the screen ([Screens: Coprocessor
+   update](Screens.md#coprocessor-update)), and back on the menu the band
+   says `coprocessor updated to 0.20.0`.
+
+| What | Parts (`@flash_args`) | Merged image at 0x0 |
+| --- | --- | --- |
+| Panel settings and Wi-Fi settings, in NVS (24 KiB at 0x9000) | kept | erased; the panel starts on its defaults |
+| Panel's stored board drawing, `boardart` at 0x7E0000 | kept: the last part ends with the application, about 2.1 MB from 0x0 | kept: the image ends with the application, about 2.1 MB from 0x0 |
+
+The panel shows the stored drawing again when the coprocessor's ARTWORK
+page names the same drawing, and fetches it otherwise
+([§4](#4-first-link-up-the-board-drawing)). The setting REMINDER AT START
+is new in 0.20.0 and starts on.
+
+The coprocessor's update writes the slot it does not run from. Its
+bindings, the supply's wiring and the current monitors' set-up stay: they
+are in the store partition at 0x3FC000, or before its first save in the old
+store at 0x3FE000, and the update writes neither. CANCEL on the
+question leaves the coprocessor on 0.19.0; the panel asks again after its
+next start. Power lost during the update leaves the old image running, and
+the next link-up offers the update again. A coprocessor that missed the USB
+load of 0.19.0 has no partition table: the band says `coprocessor takes no
+update over CAN -- load it once over USB`, and it takes
+[step 2](#from-the-release-assets). The time of the update over CAN is not
+measured.
 
 ### From a source tree
 
@@ -212,8 +273,8 @@ the settings.
 
 Either way the stored board drawing is lost once: `boardart` moved from
 0x410000 to 0x7E0000. The panel fetches it again at the next link-up
-([§4](#4-first-link-up-the-board-drawing)). After this flash, later panel
-releases install over Wi-Fi from the release asset
+([§4](#4-first-link-up-the-board-drawing)). From 0.20.0 on, the panel
+installs later releases over Wi-Fi from the release asset
 `rcbench-panel-vX.Y.Z.bin`.
 
 ---
