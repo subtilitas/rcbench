@@ -23,7 +23,9 @@
  *
  * bus_link_stop() is for STOP: a command whose frame has not gone is
  * dropped, and the command STOP goes to a bus the page last read open or
- * opening.
+ * opening.  A command whose frame went unanswered is not sent again: it
+ * ends as BUS_LINK_ANS_NO_ANSWER and the STOP goes next, to the OPEN's
+ * port when that command was an OPEN.
  *
  * The page is read every BUS_LINK_POLL_MS while the bus is not closed or an
  * operation runs, and every BUS_LINK_IDLE_MS otherwise.  The IDs a scan

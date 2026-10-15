@@ -211,6 +211,25 @@ TEST_CASE(every_reply_fault_comes_back_as_its_result)
     CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
 }
 
+TEST_CASE(a_driver_that_hears_itself_keeps_the_echo_and_the_whole_reply)
+{
+    setup(0);
+    ftsim_add(&sim, 1, FEETECH_STS);
+    sim.echo = true;
+    /* A PING's echo is 6 bytes, as long as its reply: n_rx is the reply's
+     * count alone, so the driver keeps both. */
+    CHECK_EQ(feetech_bus_scan(&bus, 1, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_rx, 6u);
+    CHECK(feetech_bus_found(&bus, 1));
+    /* The longest read: 15 bytes of reply past an 8-byte echo. */
+    CHECK_EQ(feetech_bus_read(&bus, 1, FEETECH_REG_PRESENT, FEETECH_LIVE_STS),
+             FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_rx, FEETECH_LIVE_STS + FEETECH_FRAME_OVERHEAD);
+    CHECK_EQ(bus.read_n, FEETECH_LIVE_STS);
+}
+
 TEST_CASE(a_driver_that_does_not_start_or_does_not_end_is_driver)
 {
     uint32_t t0;
@@ -469,6 +488,120 @@ TEST_CASE(the_lock_flag_alone_is_one_write_and_its_read)
         CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_SERIES_COUNT, 1, 38,
                                       two_bytes, 2), FEETECH_RES_ARG);
     }
+}
+
+TEST_CASE(the_lock_flag_written_on_purpose_settles_what_is_owed)
+{
+    const uint8_t zero = 0;
+    const uint8_t one = 1;
+    const uint8_t mode1 = 1;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    /* LOCK 0 on purpose: the session owes no lock, STOP sends none. */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_LOCK_STS,
+                                  &zero, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(bus.unlocked, 0);
+    feetech_bus_stop(&bus);
+    (void)run(100);
+    CHECK_EQ(sim.n_log, 3u);               /* write, read, torque off */
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    /* A write whose lock went unanswered leaves it owed; LOCK 1 on purpose
+     * settles it. */
+    v->regs[FEETECH_REG_LOCK_STS] = 1;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    past_the_unlock();
+    (void)feetech_bus_step(&bus, now);     /* the write out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* its reply in */
+    now += 200u;
+    sim.drop = true;                       /* the lock's reply */
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_LOCK_STS,
+                                  &one, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+}
+
+TEST_CASE(a_lock_owed_to_one_servo_goes_before_a_write_to_another)
+{
+    const uint8_t mode1 = 1;
+    const uint8_t mode2 = 2;
+    ftsim_servo_t *v1;
+    ftsim_servo_t *v2;
+    unsigned at;
+
+    setup(0);
+    v1 = ftsim_add(&sim, 1, FEETECH_STS);
+    v2 = ftsim_add(&sim, 2, FEETECH_SCS);
+    /* Servo 1's lock goes unanswered and stays owed. */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    past_the_unlock();
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    sim.deaf = true;                       /* the lock reaches nobody */
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(bus.unlocked_id, 1);
+    CHECK_EQ(v1->regs[FEETECH_REG_LOCK_STS], 0);
+    /* A write to servo 2 locks servo 1 first, then runs its own four. */
+    at = sim.n_log;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_SCS, 2, FEETECH_REG_MODE,
+                                  &mode2, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_log, at + 5u);
+    CHECK(ftsim_is_write1(&sim.log[at], 1, FEETECH_REG_LOCK_STS, 1));
+    CHECK(ftsim_is_write1(&sim.log[at + 1u], 2, FEETECH_REG_LOCK_SCS, 0));
+    CHECK_EQ(v1->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(v2->regs[FEETECH_REG_MODE], 2);
+    CHECK_EQ(bus.unlocked, 0);
+    /* Owed again, and the lock first is unanswered: the write does not
+     * start, the debt stays with servo 1, STOP sends it. */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode2, 1), FEETECH_RES_OK);
+    past_the_unlock();
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    sim.deaf = true;
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(bus.unlocked_id, 1);
+    at = sim.n_log;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_SCS, 2, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    sim.deaf = true;
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(sim.n_log, at + 1u);
+    CHECK_EQ(v2->regs[FEETECH_REG_MODE], 2);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(bus.unlocked_id, 1);
+    CHECK_EQ(bus.unlocked_series, FEETECH_STS);
+    feetech_bus_stop(&bus);
+    (void)run(100);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(v1->regs[FEETECH_REG_LOCK_STS], 1);
+    /* A write to the servo owed the lock needs no lock first. */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    bus.unlocked = 1;
+    bus.unlocked_id = 1;
+    bus.unlocked_series = FEETECH_STS;
+    bus.op = FEETECH_OP_NONE;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    at = sim.n_log;
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_log, at + 4u);
+    CHECK(ftsim_is_write1(&sim.log[at], 1, FEETECH_REG_LOCK_STS, 0));
 }
 
 TEST_CASE(a_servo_that_keeps_nothing_fails_the_read_back)
@@ -800,6 +933,60 @@ TEST_CASE(the_watch_reads_the_live_block_every_50_ms_between_operations)
     CHECK_EQ(bus.watch_id, 0xFF);
 }
 
+/* @p n passes, 100 us apart. */
+static void steps(unsigned n)
+{
+    for (unsigned i = 0; i < n; ++i) {
+        (void)feetech_bus_step(&bus, now);
+        now += 100u;
+    }
+}
+
+TEST_CASE(a_read_on_the_wire_for_a_watch_since_changed_is_dropped)
+{
+    ftsim_servo_t *v1;
+    ftsim_servo_t *v2;
+
+    setup(0);
+    v1 = ftsim_add(&sim, 1, FEETECH_STS);
+    v2 = ftsim_add(&sim, 2, FEETECH_STS);
+    feetech_put16(FEETECH_STS, &v1->regs[56], 1000);
+    feetech_put16(FEETECH_STS, &v2->regs[56], 3000);
+    feetech_bus_watch(&bus, 1, FEETECH_STS);
+    (void)feetech_bus_step(&bus, now);     /* servo 1's read out */
+    CHECK(feetech_bus_on_wire(&bus));
+    feetech_bus_watch(&bus, 2, FEETECH_STS);
+    now += 300u;
+    (void)feetech_bus_step(&bus, now);     /* servo 1's reply in */
+    CHECK_EQ(bus.live_n, 0);
+    CHECK_EQ(bus.watch_ok, 0);
+    CHECK_EQ(bus.watch_bad, 0);
+    /* The next pass reads servo 2 at once. */
+    steps(20);
+    CHECK_EQ(sim.log[sim.n_log - 1u].bytes[2], 2);
+    CHECK_EQ(bus.watch_ok, 1);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &bus.live[0]), 3000);
+    /* The series changed mid-read: dropped as well. */
+    bus.watch_now = 1;
+    (void)feetech_bus_step(&bus, now);
+    CHECK(feetech_bus_on_wire(&bus));
+    feetech_bus_watch(&bus, 2, FEETECH_SCS);
+    now += 300u;
+    (void)feetech_bus_step(&bus, now);
+    CHECK_EQ(bus.live_n, 0);
+    CHECK_EQ(bus.watch_ok, 1);
+    /* The watch ended mid-read: nothing kept. */
+    steps(20);
+    bus.watch_now = 1;
+    (void)feetech_bus_step(&bus, now);
+    CHECK(feetech_bus_on_wire(&bus));
+    feetech_bus_watch(&bus, 254, FEETECH_SCS);
+    now += 300u;
+    (void)feetech_bus_step(&bus, now);
+    CHECK_EQ(bus.watch_drop, 0);
+    CHECK_EQ(bus.watch_id, 0xFF);
+}
+
 TEST_CASE(init_refuses_a_driver_without_a_function)
 {
     feetech_driver_t d;
@@ -825,6 +1012,7 @@ int main(void)
     RUN(a_read_gives_the_bytes_and_the_err_byte);
     RUN(a_read_or_write_outside_the_limits_is_refused);
     RUN(every_reply_fault_comes_back_as_its_result);
+    RUN(a_driver_that_hears_itself_keeps_the_echo_and_the_whole_reply);
     RUN(a_driver_that_does_not_start_or_does_not_end_is_driver);
     RUN(the_reply_wait_is_the_window_and_twice_the_reply);
     RUN(the_gap_between_transactions_holds_across_a_clock_wrap);
@@ -835,6 +1023,8 @@ int main(void)
     RUN(a_rate_write_that_never_arrived_puts_the_line_back);
     RUN(an_id_write_answered_only_by_its_lock_moved);
     RUN(the_lock_flag_alone_is_one_write_and_its_read);
+    RUN(the_lock_flag_written_on_purpose_settles_what_is_owed);
+    RUN(a_lock_owed_to_one_servo_goes_before_a_write_to_another);
     RUN(a_servo_that_keeps_nothing_fails_the_read_back);
     RUN(a_failed_unlock_or_write_still_sends_the_lock);
     RUN(stop_during_a_scan_ends_it_and_sends_torque_off);
@@ -845,6 +1035,7 @@ int main(void)
     RUN(a_lock_the_stop_cannot_start_stays_owed);
     RUN(a_rate_the_stop_cannot_follow_says_driver);
     RUN(the_watch_reads_the_live_block_every_50_ms_between_operations);
+    RUN(a_read_on_the_wire_for_a_watch_since_changed_is_dropped);
     RUN(init_refuses_a_driver_without_a_function);
     return test_summary("feetech_bus");
 }

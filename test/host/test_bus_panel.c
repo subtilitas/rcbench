@@ -502,6 +502,76 @@ TEST_CASE(torque_and_goal_reach_an_sts_servo_little_endian)
     CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
 }
 
+TEST_CASE(torque_is_kept_per_id_across_a_change_of_selection)
+{
+    ftsim_servo_t *v1;
+    ftsim_servo_t *v2;
+
+    fresh();
+    v1 = ftsim_add(&sim, 1u, FEETECH_STS);
+    v2 = ftsim_add(&sim, 2u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v1->regs[FEETECH_REG_TORQUE], 1);
+    /* Servo 2 was sent nothing: OFF. */
+    pick_id(2);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    /* Back on servo 1, still powered: ON, and one tap turns it off. */
+    pick_id(1);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v1->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_EQ(v2->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    /* An ID change carries the state to the new ID. */
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v1->regs[FEETECH_REG_TORQUE], 1);
+    eeprom_item("ID");
+    enter(7);
+    hold(2.2f);
+    run(500);
+    CHECK_EQ(v1->regs[FEETECH_REG_ID], 7);
+    CHECK_EQ(bus_panel_id(), 7);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    pick_id(2);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+}
+
+TEST_CASE(a_failed_eeprom_write_keeps_the_old_value_but_for_an_id)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    /* The read-back differs: the write may have landed, RESTORE has it. */
+    eeprom_item("MIN ANGLE");
+    enter(100);
+    sim.stuck_lock = true;
+    hold(2.2f);
+    run(500);
+    CHECK(page_says(3, "Read-back differs from the write."));
+    CHECK_EQ(bus_panel_backups(), 1u);
+    sim.stuck_lock = false;
+    /* An ID write that fails keeps nothing: the servo may answer on
+     * either ID. */
+    eeprom_item("ID");
+    enter(9);
+    sim.stuck_lock = true;
+    hold(2.2f);
+    run(500);
+    CHECK_EQ(bus_panel_backups(), 1u);
+    CHECK_EQ(bus_panel_id(), 1);
+    (void)v;
+}
+
 TEST_CASE(a_servo_that_stops_answering_shows_no_reading)
 {
     ftsim_servo_t *v;
@@ -983,6 +1053,8 @@ int main(void)
     RUN(a_scan_reaches_both_ends_of_the_id_range);
     RUN(the_keypad_keeps_from_at_most_to_and_refuses_254);
     RUN(torque_and_goal_reach_an_sts_servo_little_endian);
+    RUN(torque_is_kept_per_id_across_a_change_of_selection);
+    RUN(a_failed_eeprom_write_keeps_the_old_value_but_for_an_id);
     RUN(a_servo_that_stops_answering_shows_no_reading);
     RUN(an_eeprom_baud_write_moves_the_next_open);
     RUN(an_scs_servo_takes_its_goal_big_endian_and_has_no_acc);

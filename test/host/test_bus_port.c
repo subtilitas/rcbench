@@ -594,6 +594,66 @@ TEST_CASE(a_baud_write_moves_the_page_with_the_line)
     CHECK_EQ(reg(LINK_BS_OP) >> 8, 7);
 }
 
+/* Passes until a watch read is on the wire. */
+static void until_a_watch_read_is_on_the_wire(void)
+{
+    for (unsigned i = 0; i < 1000u && !feetech_bus_on_wire(&g_port.bus);
+         ++i) {
+        pass(true, false);
+    }
+    CHECK(feetech_bus_on_wire(&g_port.bus));
+}
+
+TEST_CASE(a_baud_taken_during_a_watch_read_follows_its_end)
+{
+    setup();
+    open_bus();
+    ftsim_add(&sim, 2, FEETECH_STS);
+    CHECK_EQ(cmd(LINK_BUS_OP_WATCH, STS, 2u, 0), 0);
+    until_a_watch_read_is_on_the_wire();
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 4, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_NONE);
+    CHECK_EQ(result(), FEETECH_RES_BUSY);
+    CHECK(reg(LINK_BS_STATE) & LINK_BS_F_BUSY);
+    CHECK_EQ(sim.baud, 1000000u);
+    /* Nothing else is taken until the rate moved. */
+    CHECK_EQ(cmd(LINK_BUS_OP_READ, STS, 2u | (56u << 8), 2), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_BUSY);
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 4, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_BUSY);
+    run(100);
+    CHECK_EQ(result(), FEETECH_RES_OK);
+    CHECK_EQ(reg(LINK_BS_STATE) & LINK_BS_F_BUSY, 0);
+    CHECK_EQ(sim.baud, 115200u);
+    CHECK_EQ(reg(LINK_BS_OP), LINK_BUS_OP_BAUD | (4u << 8));
+    /* A driver that refuses the rate then: DRIVER, the rate stays. */
+    until_a_watch_read_is_on_the_wire();
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    sim.refuse_baud = true;
+    run(100);
+    CHECK_EQ(result(), FEETECH_RES_DRIVER);
+    CHECK_EQ(reg(LINK_BS_OP) >> 8, 4);
+    sim.refuse_baud = false;
+    /* STOP before the read ends: the rate never moves. */
+    until_a_watch_read_is_on_the_wire();
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    run(1000);
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_STOP);
+    CHECK_EQ(result(), FEETECH_RES_OK);
+    CHECK_EQ(sim.baud, 115200u);
+    CHECK_EQ(g_port.baud_due, 0);
+    /* CLOSE likewise. */
+    CHECK_EQ(cmd(LINK_BUS_OP_WATCH, STS, 2u, 0), 0);
+    until_a_watch_read_is_on_the_wire();
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    CHECK_EQ(cmd(LINK_BUS_OP_CLOSE, STS, 0, 0), 0);
+    run(1000);
+    CHECK_EQ(state(), LINK_BUS_CLOSED);
+    CHECK_EQ(g_port.baud_due, 0);
+    CHECK_EQ(sim.baud, 115200u);
+}
+
 TEST_CASE(the_watch_puts_the_live_block_on_the_page)
 {
     setup();
@@ -853,6 +913,7 @@ int main(void)
     RUN(a_write_takes_ram_only_and_never_the_lock);
     RUN(an_eeprom_write_needs_the_key_and_the_eeprom_area);
     RUN(a_baud_write_moves_the_page_with_the_line);
+    RUN(a_baud_taken_during_a_watch_read_follows_its_end);
     RUN(the_watch_puts_the_live_block_on_the_page);
     RUN(stop_during_a_scan_sends_torque_off_and_the_bus_stays_open);
     RUN(close_during_an_eeprom_write_relocks_then_gives_the_pin);

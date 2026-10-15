@@ -846,7 +846,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
 | FOUND n | SCAN, STOP | a PING to every ID of the range; STOP while it runs |
 | ID | the IDs found, OTHER ID | the servo the page drives and watches; OTHER ID opens the keypad, 0 to 253 |
-| TORQUE | ON, OFF | writes torque enable (register 40); STOP and CLOSE set it to OFF, as they send torque off |
+| TORQUE | ON, OFF | writes torque enable (register 40); kept per ID, so a servo picked again shows what was sent to it; STOP and CLOSE set every ID to OFF, as they send torque off |
 | SPEED | 0 to 3400 on STS, 0 to 1000 on SCS, 1000 at start | the goal's speed, sent with every goal |
 | ACC | 0 to 255, 0 at start | the goal's acceleration, sent with every goal; STS only, dimmed on SCS |
 | EEPROM | CHANGE | the list of EEPROM writes below |
@@ -892,7 +892,10 @@ one the next OPEN uses. When neither the write nor that lock is answered,
 the write counts as lost: the lock goes to the old ID at the old rate and
 the page stays on them. The warning adds a
 line when the new ID answered the last scan too: two servos on one ID. LOCK 0
-leaves the EEPROM open to every write, and the warning says so.
+leaves the EEPROM open to every write, and the warning says so; STOP and
+CLOSE leave a LOCK 0 written here as it is. A lock that went unanswered is
+sent again by STOP and CLOSE, and before the next write to another servo; a
+write to another servo does not start while that lock is unanswered.
 
 ![The EEPROM list](img/servo-bus-eeprom.png)
 ![The warning of an ID change](img/servo-bus-warning.png)
@@ -901,9 +904,10 @@ leaves the EEPROM open to every write, and the warning says so.
 **RESTORE.** Each EEPROM write keeps the old value, up to 8, until a
 restart of the panel. `RESTORE n` in the EEPROM list writes them back,
 newest first, behind its own 2 s hold. With 8 kept a ninth write is refused
-with `8 changes kept: RESTORE first.` A write that STOP ended keeps its old
-value for RESTORE, because it may have landed; an ID change that STOP ended
-is not kept, because the servo may answer on either ID.
+with `8 changes kept: RESTORE first.` A write that STOP ended, that failed
+after it went, or whose answer was lost keeps its old value for RESTORE,
+because it may have landed; such an ID change is not kept, because the
+servo may answer on either ID.
 
 ![RESTORE of two writes](img/servo-bus-restore.png)
 

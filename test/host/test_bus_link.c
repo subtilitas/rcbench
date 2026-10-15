@@ -543,6 +543,71 @@ TEST_CASE(stop_drops_a_command_not_sent_and_stops_the_bus)
     CHECK_EQ(page_state(), LINK_BUS_OPEN);
 }
 
+TEST_CASE(stop_goes_before_a_command_whose_frame_went_unanswered)
+{
+    bus_link_cmd_t c = cmd_of(LINK_BUS_OP_SCAN, (uint16_t)(253u << 8),
+                              15u);
+    bus_link_xfer_t x;
+
+    setup();
+    (void)ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    CHECK(bus_link_send(&g_link, &c));
+    /* The scan's frame reaches the page; its answer is lost. */
+    CHECK(next_write(&x));
+    CHECK_EQ(x.off, 0u);
+    CHECK_EQ(bus_port_write(&g_port, x.off, x.n, x.regs), 0u);
+    bus_link_done(&g_link, BUS_LINK_NO_ANSWER, NULL);
+    CHECK(rd().sending);
+    bus_link_stop(&g_link);
+    /* The next frame is the STOP, not the scan again: the scan ends
+     * without an answer. */
+    CHECK(next_write(&x));
+    CHECK_EQ((x.regs[LINK_BS_W_CMD] & 0xFu), LINK_BUS_OP_STOP);
+    CHECK_EQ(rd().ans, BUS_LINK_ANS_NO_ANSWER);
+    CHECK_EQ(rd().ans_id, 15u);
+    /* Its SEQ went with the scan: refused, read, sent again, taken. */
+    CHECK_EQ(bus_port_write(&g_port, x.off, x.n, x.regs),
+             LINK_NACK_BAD_VALUE);
+    bus_link_done(&g_link, LINK_NACK_BAD_VALUE, NULL);
+    CHECK(next_write(&x));
+    CHECK_EQ((x.regs[LINK_BS_W_CMD] & 0xFu), LINK_BUS_OP_STOP);
+    CHECK_EQ(bus_port_write(&g_port, x.off, x.n, x.regs), 0u);
+    bus_link_done(&g_link, BUS_LINK_ACK, NULL);
+    for (int i = 0; i < 100; ++i) {
+        pass();
+    }
+    CHECK_EQ((uint8_t)(rd().status[LINK_BS_OP] & 0xFFu), LINK_BUS_OP_STOP);
+    CHECK_EQ(page_result(), FEETECH_RES_OK);
+    CHECK_EQ(page_state(), LINK_BUS_OPEN);
+}
+
+TEST_CASE(stop_closes_an_open_whose_frame_went_unanswered)
+{
+    const bus_link_cmd_t c = cmd_of(LINK_BUS_OP_OPEN, 0u, 16u);
+    bus_link_xfer_t x;
+
+    setup();
+    for (int i = 0; i < 3; ++i) {
+        pass();
+    }
+    CHECK(bus_link_send(&g_link, &c));
+    CHECK(next_write(&x));
+    CHECK_EQ(bus_port_write(&g_port, x.off, x.n, x.regs), 0u);
+    bus_link_done(&g_link, BUS_LINK_NO_ANSWER, NULL);
+    CHECK_EQ(bus_port_state(&g_port), LINK_BUS_OPENING);
+    bus_link_stop(&g_link);
+    CHECK(next_write(&x));
+    CHECK_EQ((x.regs[LINK_BS_W_CMD] & 0xFu), LINK_BUS_OP_STOP);
+    CHECK_EQ(LINK_BS_PORT_OF(x.regs[LINK_BS_W_CMD]), PORT);
+    CHECK_EQ(rd().ans, BUS_LINK_ANS_NO_ANSWER);
+    for (int i = 0; i < 100; ++i) {
+        pass();
+    }
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK_EQ(bus_port_state(&g_port), LINK_BUS_CLOSED);
+}
+
 TEST_CASE(stop_sends_nothing_to_a_closed_bus)
 {
     unsigned before;
@@ -730,6 +795,8 @@ int main(void)
     RUN(a_frame_refused_for_its_seq_goes_again_after_a_read);
     RUN(a_refused_window_or_a_frame_refused_twice_ends_nack);
     RUN(stop_drops_a_command_not_sent_and_stops_the_bus);
+    RUN(stop_goes_before_a_command_whose_frame_went_unanswered);
+    RUN(stop_closes_an_open_whose_frame_went_unanswered);
     RUN(stop_sends_nothing_to_a_closed_bus);
     RUN(the_link_lost_ends_a_command_down);
     RUN(a_page_that_goes_ends_a_command_down);

@@ -94,7 +94,9 @@ static struct {
     int      id;
     uint8_t  series[ID_COUNT];
     uint8_t  series_all;        /* while no ID is chosen */
-    bool     torque;
+    uint8_t  torque_on[(ID_COUNT + 7) / 8];  /* bit: torque sent on */
+    int      torque_id;         /* the TORQUE command's ID */
+    bool     torque_want;       /* and the state it sends */
     uint16_t speed;
     uint8_t  acc;
     bool     goal_due;
@@ -214,6 +216,26 @@ static uint8_t baud_now(void)
         return (uint8_t)(sreg(LINK_BS_OP) >> 8);
     }
     return b.baud;
+}
+
+/* Torque as the page last sent it to @p id: on until it sends off, a STOP
+ * or a CLOSE. */
+static bool torque_of(int id)
+{
+    return id >= 0 && id < ID_COUNT
+           && (b.torque_on[id / 8] & (1u << (id % 8))) != 0u;
+}
+
+static void torque_put(int id, bool on)
+{
+    if (id < 0 || id >= ID_COUNT) {
+        return;
+    }
+    if (on) {
+        b.torque_on[id / 8] |= (uint8_t)(1u << (id % 8));
+    } else {
+        b.torque_on[id / 8] &= (uint8_t)~(1u << (id % 8));
+    }
 }
 
 static bool reg_of(bus_role_t role, bus_reg_t *r)
@@ -664,6 +686,16 @@ static void push_backup(void)
     }
 }
 
+/* An EEPROM write that may have landed: a failure after it went proves
+ * nothing, so its old value is kept for RESTORE.  Not for an ID, whose
+ * servo may answer on either. */
+static void keep_uncertain(void)
+{
+    if (b.use == U_EE_WRITE && b.ee_role != BUS_R_ID) {
+        push_backup();
+    }
+}
+
 /* The bytes the last read gave. */
 static unsigned read_bytes(uint8_t *out, unsigned room)
 {
@@ -701,12 +733,15 @@ static void done(uint8_t result)
     }
     case U_EE_WRITE:
         if (!ok) {
+            keep_uncertain();
             say(true, result_text(result));
             return;
         }
         push_backup();
         if (b.ee_role == BUS_R_ID) {
             b.series[b.ee_new] = b.ee_series;
+            torque_put(b.ee_new, torque_of(b.ee_id));
+            torque_put(b.ee_id, false);
             b.id = b.ee_new;
         } else if (b.ee_role == BUS_R_BAUD
                    && b.ee_new < proto()->baud_count) {
@@ -724,9 +759,13 @@ static void done(uint8_t result)
         {
             const backup_t *k = &b.bk[b.bk_n - 1u];
 
-            if (k->role == BUS_R_ID && b.id == (int)k->id) {
-                b.id = k->old[0];
-                b.series[b.id] = k->series;
+            if (k->role == BUS_R_ID && k->old[0] < ID_COUNT) {
+                torque_put(k->old[0], torque_of(k->id));
+                torque_put(k->id, false);
+                if (b.id == (int)k->id) {
+                    b.id = k->old[0];
+                    b.series[k->old[0]] = k->series;
+                }
             } else if (k->role == BUS_R_BAUD
                        && k->old[0] < proto()->baud_count) {
                 b.baud = k->old[0];
@@ -740,7 +779,7 @@ static void done(uint8_t result)
         return;
     case U_TORQUE:
         if (ok) {
-            b.torque = !b.torque;
+            torque_put(b.torque_id, b.torque_want);
         }
         say(!ok, result_text(result));
         return;
@@ -802,12 +841,14 @@ static void watch_answer(void)
                 failed(TR(BS_A_DOWN));
                 return;
             default:
+                keep_uncertain();
                 failed(TR(BS_A_NO_ANSWER));
                 return;
             }
         } else if (!b.out_due
                    && (uint32_t)(b.f.now_ms - b.wait_ms)
                           >= BUS_PANEL_ANSWER_MS) {
+            keep_uncertain();
             failed(TR(BS_A_NO_ANSWER));
             return;
         }
@@ -816,6 +857,7 @@ static void watch_answer(void)
         && (uint32_t)(b.f.now_ms - b.wait_ms) >= BUS_PANEL_ANSWER_MS) {
         /* Taken, and no read of the page shows it: another command took
          * the page over, or the coprocessor started again. */
+        keep_uncertain();
         failed(TR(BS_A_NO_ANSWER));
         return;
     }
@@ -1018,7 +1060,10 @@ static void act(const row_t *r)
     }
     case A_TORQUE:
         if (reg_of(BUS_R_TORQUE, &reg)) {
-            const uint8_t v = (uint8_t)(b.torque ? 0u : 1u);
+            const uint8_t v = (uint8_t)(torque_of(b.id) ? 0u : 1u);
+
+            b.torque_id = b.id;
+            b.torque_want = v != 0u;
 
             send_bytes(U_TORQUE, LINK_BUS_OP_WRITE, (uint8_t)b.id, reg.addr,
                        &v, 1u, false);
@@ -1062,7 +1107,6 @@ static void id_chosen(int id)
         return;
     }
     b.id = id;
-    b.torque = false;
     slider_range();
 }
 
@@ -1573,7 +1617,8 @@ void bus_panel_feed(const bus_panel_feed_t *f)
     b.fed = true;
     if (page_ok() && (bus_state() == LINK_BUS_CLOSED
                       || bus_state() == LINK_BUS_CLOSING)) {
-        b.torque = false;       /* closing sends torque off */
+        memset(b.torque_on, 0, sizeof(b.torque_on));  /* closing sends
+                                                         torque off */
     }
     if (f->stops != b.stops_seen) {
         b.stops_seen = f->stops;
@@ -1597,7 +1642,8 @@ void bus_panel_feed(const bus_panel_feed_t *f)
         b.goal_due = false;
         b.out_due = false;
         b.waiting = false;
-        b.torque = false;       /* the stop sent torque off */
+        memset(b.torque_on, 0, sizeof(b.torque_on));  /* the stop sent
+                                                         torque off */
         if (was || bus_state() != LINK_BUS_CLOSED) {
             say(false, TR(BS_M_STOPPED));
         }
@@ -1694,7 +1740,7 @@ static void row_value(const row_t *r, char *out, size_t n)
         }
         break;
     case A_TORQUE:
-        snprintf(out, n, "%s", b.torque ? TR(ON) : TR(OFF));
+        snprintf(out, n, "%s", torque_of(b.id) ? TR(ON) : TR(OFF));
         break;
     case A_SPEED:
         snprintf(out, n, "%u", (unsigned)b.speed);
@@ -1791,7 +1837,7 @@ static void draw_row(gfx_canvas_t *c, int i)
              live ? col(UI_C_TEXT_DIM) : col(UI_C_TEXT_FAINT), 1);
     row_value(r, v, sizeof(v));
     if ((r->what == A_BUS && bus_state() != LINK_BUS_CLOSED)
-        || (r->what == A_TORQUE && b.torque)) {
+        || (r->what == A_TORQUE && torque_of(b.id))) {
         fill = col(UI_C_ACCENT);
     }
     ui_button(c, value_rect(r), v, fill, pressed, live);

@@ -246,7 +246,10 @@ static inline bool ftsim_start(void *ctx, const uint8_t *tx, unsigned n_tx,
         n_out = s->truncate >= n_out ? 0u : n_out - s->truncate;
         s->truncate = 0;
     }
-    for (unsigned i = 0; i < n_out && s->cap.n < FEETECH_CAPTURE_MAX; ++i) {
+    /* The driver's contract: n_rx bytes of reply past an echo. */
+    for (unsigned i = 0; i < n_out && s->cap.n < FEETECH_CAPTURE_MAX
+                         && s->cap.n < (s->echo ? n_tx : 0u) + n_rx;
+         ++i) {
         s->cap.bytes[s->cap.n++] = out[i];
     }
     return true;

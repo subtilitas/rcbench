@@ -80,7 +80,7 @@ parameter count than asked, bytes and no frame, and a stop bit low.
 | Silence between two transactions | 100 us |
 | Driver that has not ended a transaction | ended with `FEETECH_RES_DRIVER` 5 ms after the window |
 | Live read of the watched servo | every 50 ms, between operations |
-| Live block | 11 bytes from address 56 on SCS, 15 bytes on STS; empty after a read that fails |
+| Live block | 11 bytes from address 56 on SCS, 15 bytes on STS; empty after a read that fails; the reply of a read for a watch changed while it was on the wire is dropped |
 | Starts of one stop frame the driver refuses | 3 (`FEETECH_BUS_STOP_TRIES`), one pass apart |
 
 None of these times is measured on a servo.
@@ -97,7 +97,13 @@ old ID, and the operation ends with the write's result. A servo that took
 the write and answered neither frame stays unlocked at the new ID; whether
 that happens is not measured. The lock is sent after a failed unlock or
 write as well. A write of the lock flag alone is that one write and its
-read.
+read; it settles a lock the session owes that servo: 1 locks it, 0 leaves
+it open on purpose, and a stop sends no lock to it.
+
+The session owes a lock to one servo at a time: a lock that went
+unanswered stays owed. An EEPROM write to another servo sends that lock
+first; when it is not answered the write ends with its result and sends
+nothing else.
 
 `feetech_bus_stop()` ends the operation and the watch, sends torque off
 (register 40 := 0) to the broadcast ID and sends the lock flag 1 to a servo
@@ -120,16 +126,17 @@ typedef struct {
 ```
 
 - `start()` sends `n_tx` bytes, releases the line after the last stop bit
-  and keeps the bytes that come until `n_rx` came or `wait_us` passed. With
-  `n_rx` 0 the transaction ends with the last stop bit. It returns at once,
-  `false` when it cannot start.
+  and keeps the bytes that come until `n_rx` came or `wait_us` passed.
+  `n_rx` counts the reply's bytes only. With `n_rx` 0 the transaction ends
+  with the last stop bit. It returns at once, `false` when it cannot start.
 - `poll()` returns `false` while the transaction runs and `true` once at
   its end, with the bytes, the count of bytes whose stop bit was low, and
   whether more came than were kept.
 - `set_baud()` moves the line to another rate for the next transaction. It
   is never called while a transaction runs.
-- A driver that hears its own frame hands it back ahead of the reply; the
-  session counts it off (`feetech_echo()`).
+- A driver that hears its own frame hands it back ahead of the reply and
+  keeps `n_tx` + `n_rx` bytes; the session counts the echo off
+  (`feetech_echo()`).
 
 ## Use
 
@@ -246,7 +253,7 @@ it. No vendor code is included. The full notice is in the repository's
 | --- | --- |
 | `test_feetech_wire` | the 23 published frames, the derived SCS frame, the decoder's faults, the builders' limits |
 | `test_feetech_reg` | byte order per series, the tables, the rates, sign and magnitude, the live block |
-| `test_feetech_bus` | the session against simulated servos (`feetech_sim.h`): scan ends 0 and 253, 254 refused, every reply fault, a driver that hangs, EEPROM writes in both byte orders, an ID or rate write that never arrived, STOP during a scan and an EEPROM write, stop frames the driver refuses, the watch and its block emptied by a failed read, the clock wrapping |
+| `test_feetech_bus` | the session against simulated servos (`feetech_sim.h`): scan ends 0 and 253, 254 refused, every reply fault, a driver that hangs, EEPROM writes in both byte orders, an ID or rate write that never arrived, the lock flag written on purpose, a lock owed to one servo before a write to another, STOP during a scan and an EEPROM write, stop frames the driver refuses, the watch and its block emptied by a failed read, a read for a watch changed on the wire, a driver that hears its own frame, the clock wrapping |
 | `test_feetech_pio` | `ft_line.pio` assembled and run in a cycle model: the frame's timing, replies 3 % off the rate at 8 phases, a framing error, the dividers |
 | `feetech_headers_cxx` | the 4 headers as C++17 |
 

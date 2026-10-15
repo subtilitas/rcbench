@@ -97,8 +97,10 @@ typedef struct {
     void *ctx;
     /**
      * Send @p n_tx bytes, then keep the bytes that come until @p n_rx came
-     * or @p wait_us after the last stop bit.  @p n_rx 0: no reply; the
-     * transaction ends with the last stop bit.  Returns at once; false
+     * or @p wait_us after the last stop bit.  @p n_rx counts the reply's
+     * bytes only: a driver that hears its own frame hands it back ahead of
+     * the reply and keeps @p n_tx + @p n_rx bytes.  @p n_rx 0: no reply;
+     * the transaction ends with the last stop bit.  Returns at once; false
      * when it cannot start.
      */
     bool (*start)(void *ctx, const uint8_t *tx, unsigned n_tx, unsigned n_rx,
@@ -197,6 +199,8 @@ typedef struct {
     uint8_t  watch_res;   /**< feetech_res_t of its last read             */
     uint8_t  watch_error; /**< the ERR byte of its last good reply        */
     uint8_t  watch_now;   /**< the next read is due at once               */
+    uint8_t  watch_drop;  /**< the read on the wire is for a watch since
+                               changed: its reply is not this one's       */
     uint8_t  live_n;
     uint8_t  live[FEETECH_LIVE_STS];
     uint16_t watch_ok;    /**< reads that decoded, wrapping               */
@@ -213,7 +217,7 @@ bool feetech_bus_init(feetech_bus_t *b, const feetech_driver_t *d,
                       uint32_t baud);
 
 /** The line to another rate: FEETECH_RES_BUSY while an operation or a
- *  stop runs, FEETECH_RES_ARG for 0, FEETECH_RES_DRIVER when the driver
+ *  stop runs or a transaction is on the wire, FEETECH_RES_ARG for 0, FEETECH_RES_DRIVER when the driver
  *  refuses it (the rate stays). */
 feetech_res_t feetech_bus_set_baud(feetech_bus_t *b, uint32_t baud);
 
@@ -229,7 +233,11 @@ feetech_res_t feetech_bus_write(feetech_bus_t *b, uint8_t id, uint8_t addr,
                                 const uint8_t *data, uint8_t n);
 
 /** A write kept over a power cycle, in @p series' table: an address below
- *  FEETECH_RAM_FIRST, or the lock flag alone. */
+ *  FEETECH_RAM_FIRST, or the lock flag alone.  A lock the session owes to
+ *  another servo goes out first; when it is not answered the write ends
+ *  with its result and nothing else is sent.  A write of the lock flag
+ *  alone settles what the session owes that servo: 1 locks it, 0 leaves it
+ *  open on purpose. */
 feetech_res_t feetech_bus_write_ee(feetech_bus_t *b, feetech_series_t series,
                                    uint8_t id, uint8_t addr,
                                    const uint8_t *data, uint8_t n);

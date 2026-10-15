@@ -64,6 +64,7 @@ static void go_closed(bus_port_t *p)
 {
     const bool had_pin = p->has_pin != 0u;
 
+    p->baud_due = 0;
     p->state = (uint8_t)LINK_BUS_CLOSED;
     p->has_pin = 0;
     p->running = 0;
@@ -77,6 +78,7 @@ static void go_closed(bus_port_t *p)
  * stop or an unsafe link, which the result says. */
 static void begin_close(bus_port_t *p, bool asked)
 {
+    p->baud_due = 0;
     p->op = (uint8_t)LINK_BUS_OP_CLOSE;
     p->result = asked ? (uint8_t)FEETECH_RES_BUSY
                       : (uint8_t)FEETECH_RES_ABORTED;
@@ -117,6 +119,17 @@ static void step_opening(bus_port_t *p, uint32_t now_us)
 }
 
 /* --- commands ------------------------------------------------------------- */
+
+/* The line to the rate of index @p idx: BAUD's result. */
+static void set_rate(bus_port_t *p, uint8_t idx)
+{
+    p->baud_due = 0;
+    p->running = 0;
+    p->result = (uint8_t)feetech_bus_set_baud(&p->bus, feetech_baud(idx));
+    if (p->result == (uint8_t)FEETECH_RES_OK) {
+        p->baud_idx = idx;
+    }
+}
 
 static void started(bus_port_t *p, link_bus_op_t op, feetech_res_t r)
 {
@@ -238,6 +251,7 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
             return LINK_BUS_REF_NONE;
         }
         feetech_bus_stop(&p->bus);
+        p->baud_due = 0;
         p->op = (uint8_t)LINK_BUS_OP_STOP;
         p->result = (uint8_t)FEETECH_RES_BUSY;
         p->running = 1;
@@ -252,7 +266,8 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
     if (state == LINK_BUS_CLOSED) {
         return LINK_BUS_REF_NOT_OPEN;
     }
-    if (state != LINK_BUS_OPEN || feetech_bus_busy(&p->bus)) {
+    if (state != LINK_BUS_OPEN || feetech_bus_busy(&p->bus)
+        || p->baud_due != 0u) {
         return LINK_BUS_REF_BUSY;
     }
     if (port != p->port) {
@@ -303,12 +318,14 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
             return LINK_BUS_REF_RANGE;
         }
         p->op = (uint8_t)op;
-        p->running = 0;
-        p->result = (uint8_t)feetech_bus_set_baud(&p->bus,
-                                                  feetech_baud(arg));
-        if (p->result == (uint8_t)FEETECH_RES_OK) {
-            p->baud_idx = (uint8_t)arg;
+        if (feetech_bus_on_wire(&p->bus)) {
+            /* A watch read is on the wire: the rate follows its end. */
+            p->baud_due = (uint8_t)(arg + 1u);
+            p->result = (uint8_t)FEETECH_RES_BUSY;
+            p->running = 1;
+            return LINK_BUS_REF_NONE;
         }
+        set_rate(p, (uint8_t)arg);
         return LINK_BUS_REF_NONE;
     default:
         return LINK_BUS_REF_RANGE;
@@ -368,7 +385,8 @@ static bool busy(const bus_port_t *p)
     const link_bus_state_t s = (link_bus_state_t)p->state;
 
     return s == LINK_BUS_OPENING || s == LINK_BUS_CLOSING
-           || (s == LINK_BUS_OPEN && feetech_bus_busy(&p->bus));
+           || (s == LINK_BUS_OPEN
+               && (feetech_bus_busy(&p->bus) || p->baud_due != 0u));
 }
 
 static uint16_t state_reg(const bus_port_t *p)
@@ -457,9 +475,16 @@ void bus_port_step(bus_port_t *p, bool safe, bool stop, uint32_t now_us)
         step_opening(p, now_us);
         break;
     case LINK_BUS_OPEN: {
-        const feetech_res_t r = feetech_bus_step(&p->bus, now_us);
+        feetech_res_t r;
 
-        if (p->running != 0u && r != FEETECH_RES_BUSY) {
+        /* A transaction ends in a pass and the next starts in a later one:
+         * the rate goes between them. */
+        if (p->baud_due != 0u && !feetech_bus_on_wire(&p->bus)) {
+            set_rate(p, (uint8_t)(p->baud_due - 1u));
+        }
+        r = feetech_bus_step(&p->bus, now_us);
+        if (p->running != 0u && p->baud_due == 0u
+            && r != FEETECH_RES_BUSY) {
             p->running = 0;
             /* A STOP ends as its frames went: DRIVER when one never
              * started; the operation it cut reads ABORTED until then. */

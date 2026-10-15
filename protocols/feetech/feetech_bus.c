@@ -14,8 +14,9 @@ enum { FL_NONE = 0, FL_OP = 1, FL_WATCH = 2, FL_STOP = 3 };
 #define STOP_LOCK   0x02u
 #define STOP_BAUD   0x04u
 
-/* The steps of a WRITE_EE. */
-enum { EE_UNLOCK = 0, EE_WRITE, EE_LOCK, EE_VERIFY };
+/* The steps of a WRITE_EE; EE_RELOCK, the lock owed to another servo,
+ * goes first. */
+enum { EE_UNLOCK = 0, EE_WRITE, EE_LOCK, EE_VERIFY, EE_RELOCK };
 
 /* No baud change. */
 #define SAME_BAUD 0xFFu
@@ -182,8 +183,14 @@ feetech_res_t feetech_bus_write_ee(feetech_bus_t *b, feetech_series_t series,
     b->old_id = NO_OLD_ID;
     memcpy(b->data, data, n);
     (void)begin(b, FEETECH_OP_WRITE_EE);
-    /* The lock flag alone is one write and its read. */
-    b->step = addr == lock ? (uint8_t)EE_WRITE : (uint8_t)EE_UNLOCK;
+    /* The lock flag alone is one write and its read.  One servo at a time
+     * is owed a lock: another's goes out first. */
+    if (b->unlocked != 0u
+        && (b->unlocked_id != id || b->unlocked_series != (uint8_t)series)) {
+        b->step = EE_RELOCK;
+    } else {
+        b->step = addr == lock ? (uint8_t)EE_WRITE : (uint8_t)EE_UNLOCK;
+    }
     return FEETECH_RES_OK;
 }
 
@@ -199,9 +206,12 @@ void feetech_bus_watch(feetech_bus_t *b, uint8_t id, feetech_series_t series)
 {
     if (id > FEETECH_ID_MAX || feetech_live_bytes(series) == 0u) {
         b->watch_id = 0xFFu;
+        b->watch_drop = b->flight == FL_WATCH ? 1u : 0u;
         return;
     }
     if (id != b->watch_id || (uint8_t)series != b->watch_series) {
+        /* A read on the wire is the old watch's. */
+        b->watch_drop = b->flight == FL_WATCH ? 1u : 0u;
         b->live_n = 0;
         b->watch_res = FEETECH_RES_OK;
         b->watch_error = 0;
@@ -386,6 +396,10 @@ static void op_reply(feetech_bus_t *b, feetech_res_t r,
             ee_failed(b, r);
             return;
         }
+        /* The lock flag written on purpose: nothing is owed it. */
+        if (lock_only && b->unlocked != 0u && b->unlocked_id == b->id) {
+            b->unlocked = 0;
+        }
         /* Unanswered: the lock at the new ID and rate tells whether the
          * servo moved; if it does not answer either, the old ones get it. */
         b->old_id = r != FEETECH_RES_OK ? b->id : NO_OLD_ID;
@@ -421,6 +435,16 @@ static void op_reply(feetech_bus_t *b, feetech_res_t r,
         } else {
             b->step = EE_VERIFY;
         }
+        return;
+    case EE_RELOCK:
+        /* Unanswered, the lock stays owed and the write does not start. */
+        if (r != FEETECH_RES_OK) {
+            end_op(b, r);
+            return;
+        }
+        b->unlocked = 0;
+        b->step = b->addr == feetech_lock_addr((feetech_series_t)b->series)
+                      ? (uint8_t)EE_WRITE : (uint8_t)EE_UNLOCK;
         return;
     default:
         if (r == FEETECH_RES_OK) {
@@ -478,6 +502,12 @@ static void op_next(feetech_bus_t *b, uint32_t now)
             ok = feetech_write(&b->tx, b->id, feetech_lock_addr(series),
                                &one, 1u)
                  && send(b, FL_OP, b->id, 0, now);
+        } else if (b->step == EE_RELOCK) {
+            ok = feetech_write(&b->tx, b->unlocked_id,
+                               feetech_lock_addr((feetech_series_t)
+                                                     b->unlocked_series),
+                               &one, 1u)
+                 && send(b, FL_OP, b->unlocked_id, 0, now);
         } else {
             ok = feetech_read(&b->tx, b->id, b->addr, b->n)
                  && send(b, FL_OP, b->id, b->n, now);
@@ -559,6 +589,7 @@ static void watch_next(feetech_bus_t *b, uint32_t now)
 
     b->due_us = now + FEETECH_BUS_WATCH_US;
     b->watch_now = 0;
+    b->watch_drop = 0;
     if (!feetech_read(&b->tx, b->watch_id, FEETECH_REG_PRESENT, n)
         || !send(b, FL_WATCH, b->watch_id, n, now)) {
         b->watch_res = FEETECH_RES_DRIVER;
@@ -570,6 +601,10 @@ static void watch_next(feetech_bus_t *b, uint32_t now)
 static void watch_reply(feetech_bus_t *b, feetech_res_t r,
                         const feetech_status_t *st)
 {
+    if (b->watch_drop != 0u) {
+        b->watch_drop = 0;      /* the reply of a watch since changed */
+        return;
+    }
     if (b->watch_id > FEETECH_ID_MAX) {
         return;
     }

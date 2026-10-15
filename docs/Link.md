@@ -1230,7 +1230,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | WATCH | 7 | reads one servo's live block every 50 ms between operations; done when taken, `RESULT` 0 |
 | TORQUE_OFF | 8 | torque off to every servo |
 | STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed |
-| BAUD | 10 | the line to another baud index; the servos keep theirs |
+| BAUD | 10 | the line to another baud index; the servos keep theirs. Taken while a watch read is on the wire, it waits for the read's end: `RESULT` 1 and BUSY set until then, and other commands are refused BUSY |
 
 `SEQ` is the page's plus 1; the frame just taken, sent again, is
 acknowledged and does nothing; any other `SEQ` is refused with BAD_VALUE.
@@ -1271,7 +1271,9 @@ with the page's `SEQ`. The page is read at once after a command, every
 and every 500 ms (`BUS_LINK_IDLE_MS`) otherwise. BUS_IDS is read when a read
 of the page shows a scan with another count found, or a scan done whose IDs
 were not read. For STOP the module drops a command whose frame has not gone
-and sends the operation STOP to a bus the page last read open or opening.
+and sends the operation STOP to a bus the page last read open or opening. A
+command whose frame went unanswered is not sent again: it ends without an
+answer and the STOP goes next, to the OPEN's port when it was an OPEN.
 The SERVO screen's BUS page is the caller ([Servo](Servo.md#the-bus-page)).
 
 `test_bus_port` runs the page against the bus model: the opening's 50 ms
@@ -1279,14 +1281,15 @@ without a pulse, OPEN refused for each reason, a driver that does not open,
 a command frame taken whole and once, staged registers in any windows and
 with a damaged CRC, a scan that finds IDs 0 and 253 and one to 254 refused,
 a READ, a WRITE refused on the lock flag and the EEPROM area, an EEPROM
-write without the key, BAUD, the watch, a STOP during a scan, a CLOSE
+write without the key, BAUD, BAUD during a watch read, the watch, a STOP during a scan, a CLOSE
 during an EEPROM write, a lost link and a switch to SAFE with the bus open,
 a stop while opening, a driver that hangs, a STOP whose torque-off frame
 never starts, ARM refused while the port is held, and a second port
 refused while one is open. `test_bus_link` runs the panel's module against it: the
 polling intervals, a scan of 0 to 253, a WRITE in its three staged windows
 and a 16-byte goal in the servo's byte order, lost answers, a stale `SEQ`,
-a STOP with a command not yet sent, a lost link, and a 4.22 coprocessor.
+a STOP with a command not yet sent, a STOP after a command or an OPEN
+whose frame went unanswered, a lost link, and a 4.22 coprocessor.
 
 ### Identifier
 

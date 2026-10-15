@@ -1349,7 +1349,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen; fertig, sobald angenommen, `RESULT` 0 |
 | TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
 | STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt |
-| BAUD | 10 | die Leitung auf einen anderen Baud-Index; die Servos behalten ihren |
+| BAUD | 10 | die Leitung auf einen anderen Baud-Index; die Servos behalten ihren. Angenommen, während ein Lesen der Beobachtung auf der Leitung ist, wartet es auf dessen Ende: bis dahin `RESULT` 1 und BUSY gesetzt, und andere Befehle werden mit BUSY abgewiesen |
 
 `SEQ` ist die der Page plus 1; der eben angenommene Frame, noch einmal
 geschickt, wird bestätigt und tut nichts; jede andere `SEQ` wird mit
@@ -1394,7 +1394,10 @@ wird gelesen, wenn ein Lesen der Page einen Scan mit einer anderen Zahl
 gefundener IDs zeigt, oder einen fertigen Scan, dessen IDs nicht gelesen
 sind. Für STOP verwirft das Modul ein Kommando, dessen Frame nicht
 gegangen ist, und schickt die Operation STOP an einen Bus, den die Page
-zuletzt offen oder öffnend gelesen hat. Der Aufrufer ist die BUS-Seite des
+zuletzt offen oder öffnend gelesen hat. Ein Kommando, dessen Frame ohne
+Antwort blieb, geht nicht noch einmal: es endet ohne Antwort, und das STOP
+geht als Nächstes, an den Port des OPEN, wenn es ein OPEN war. Der Aufrufer
+ist die BUS-Seite des
 SERVO-Bildschirms ([Servo](Servo-de.md#die-bus-seite)).
 
 `test_bus_port` fährt die Page gegen das Busmodell: die 50 ms ohne Puls
@@ -1403,7 +1406,8 @@ beim Öffnen, OPEN für jeden Grund abgewiesen, einen Treiber, der nicht
 Register in beliebigen Fenstern und mit beschädigter CRC, einen Scan, der
 die IDs 0 und 253 findet, und einen bis 254, der abgewiesen wird, ein READ,
 ein WRITE, das auf dem Sperrflag und dem EEPROM-Bereich abgewiesen wird,
-ein EEPROM-Schreiben ohne Schlüssel, BAUD, die Beobachtung, ein STOP
+ein EEPROM-Schreiben ohne Schlüssel, BAUD, BAUD während eines Lesens der
+Beobachtung, die Beobachtung, ein STOP
 während eines Scans, ein CLOSE während eines EEPROM-Schreibens, einen
 verlorenen Link und ein Schalten auf SAFE bei offenem Bus, einen Stopp
 beim Öffnen, einen Treiber, der hängt, ein STOP, dessen Frame für
@@ -1413,8 +1417,9 @@ ist. `test_bus_link` fährt das Modul
 des Panels dagegen: die Leseintervalle, einen Scan von 0 bis 253, ein WRITE
 in seinen drei bereitgestellten Fenstern und ein Ziel von 16 Bytes in der
 Byte-Reihenfolge des Servos, verlorene Antworten, eine veraltete `SEQ`, ein
-STOP mit einem noch nicht geschickten Kommando, einen verlorenen Link und
-einen 4.22-Koprozessor.
+STOP mit einem noch nicht geschickten Kommando, ein STOP nach einem
+Kommando oder OPEN, dessen Frame ohne Antwort blieb, einen verlorenen Link
+und einen 4.22-Koprozessor.
 
 ### Identifier
 

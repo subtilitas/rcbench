@@ -832,7 +832,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
 | GEFUNDEN n | SCAN, STOP | ein PING an jede ID des Bereichs; STOP, solange er läuft |
 | ID | die gefundenen IDs, ANDERE ID | das Servo, das die Seite steuert und beobachtet; ANDERE ID öffnet das Tastenfeld, 0 bis 253 |
-| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40); STOP und SCHLIESSEN setzen es auf AUS, weil sie Drehmoment aus schicken |
+| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40); je ID gehalten, ein wieder gewähltes Servo zeigt, was ihm geschickt wurde; STOP und SCHLIESSEN setzen jede ID auf AUS, weil sie Drehmoment aus schicken |
 | TEMPO | 0 bis 3400 bei STS, 0 bis 1000 bei SCS, beim Start 1000 | die Geschwindigkeit des Ziels, mit jedem Ziel geschickt |
 | BESCHL. | 0 bis 255, beim Start 0 | die Beschleunigung des Ziels, mit jedem Ziel geschickt; nur STS, bei SCS gedimmt |
 | EEPROM | ÄNDERN | die Liste der EEPROM-Schreibvorgänge unten |
@@ -884,7 +884,10 @@ Schreiben als verloren: die Sperre geht an die alte ID mit der alten Rate,
 und die Seite bleibt bei ihnen. Die Warnung fügt eine Zeile an, wenn die neue
 ID auch auf den letzten Scan geantwortet hat: zwei Servos auf einer ID.
 SPERRE 0 lässt das EEPROM für jedes Schreiben offen, und die Warnung sagt
-es.
+es; STOP und SCHLIESSEN lassen eine hier geschriebene SPERRE 0, wie sie ist.
+Eine Sperre ohne Antwort schicken STOP und SCHLIESSEN noch einmal, und auch
+das nächste Schreiben an ein anderes Servo vor sich selbst; dieses beginnt
+nicht, solange jene Sperre unbeantwortet bleibt.
 
 ![Die EEPROM-Liste](img/de/servo-bus-eeprom.png)
 ![Die Warnung zu einem ID-Wechsel](img/de/servo-bus-warning.png)
@@ -895,9 +898,10 @@ bis zu einem Neustart des Panels. `ZURÜCKSPIELEN n` in der EEPROM-Liste
 schreibt sie zurück, das neueste zuerst, hinter einem eigenen Halten von
 2 s. Mit 8 behaltenen wird ein neuntes Schreiben mit
 `8 Änderungen gespeichert: erst zurückspielen.` abgewiesen. Ein Schreiben,
-das STOP beendet hat, behält seinen alten Wert zum Zurückspielen, weil es
-angekommen sein kann; ein ID-Wechsel, den STOP beendet hat, wird nicht
-behalten, weil das Servo auf beiden IDs antworten kann.
+das STOP beendet hat, das nach dem Absenden scheiterte oder dessen Antwort
+verloren ging, behält seinen alten Wert zum Zurückspielen, weil es
+angekommen sein kann; ein solcher ID-Wechsel wird nicht behalten, weil das
+Servo auf beiden IDs antworten kann.
 
 ![Zurückspielen zweier Schreibvorgänge](img/de/servo-bus-restore.png)
 

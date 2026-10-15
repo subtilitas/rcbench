@@ -175,15 +175,13 @@ static void frame(bus_link_t *k)
     k->framed = true;
 }
 
-/* A STOP to the bus the page last showed. */
-static void stop_cmd(bus_link_t *k)
+/* A STOP to @p port. */
+static void stop_cmd(bus_link_t *k, uint8_t port, uint8_t proto)
 {
-    const uint16_t st = k->status[LINK_BS_STATE];
-
     memset(&k->cmd, 0, sizeof(k->cmd));
     k->cmd.op = LINK_BUS_OP_STOP;
-    k->cmd.port = LINK_BS_PORT_OF(st);
-    k->cmd.proto = LINK_BS_PROTO_OF(st);
+    k->cmd.port = port;
+    k->cmd.proto = proto;
     k->cmd.id = 0u;
     k->active = true;
     k->framed = false;
@@ -212,13 +210,26 @@ bool bus_link_next(bus_link_t *k, uint32_t now_ms, bus_link_xfer_t *x)
         status_x(k, now_ms, x);
         return true;
     }
-    if (k->stop_due && (!k->active || !k->sent)) {
+    /* A STOP goes before any frame but its own: a command whose frame
+     * went unanswered may have been taken, so it ends without an answer and
+     * the STOP follows; an OPEN that may have been taken gets the STOP
+     * too. */
+    if (k->stop_due
+        && (!k->active || !k->sent || k->cmd.op != LINK_BUS_OP_STOP)) {
+        const uint16_t st = k->status[LINK_BS_STATE];
+        const bool open_went = k->active && k->sent
+                               && k->cmd.op == LINK_BUS_OP_OPEN;
+        const uint8_t port = open_went ? k->cmd.port : LINK_BS_PORT_OF(st);
+        const uint8_t proto = open_went ? k->cmd.proto
+                                        : LINK_BS_PROTO_OF(st);
+
         k->stop_due = false;
         if (k->active) {
-            answer(k, BUS_LINK_ANS_DROPPED, 0);
+            answer(k, k->sent ? BUS_LINK_ANS_NO_ANSWER
+                              : BUS_LINK_ANS_DROPPED, 0);
         }
-        if (bus_up(k)) {
-            stop_cmd(k);
+        if (bus_up(k) || open_went) {
+            stop_cmd(k, port, proto);
         }
     }
     if (k->active) {
