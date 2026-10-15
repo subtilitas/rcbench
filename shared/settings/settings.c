@@ -426,6 +426,17 @@ static const struct { const char *key; const char *def; }
 static struct {
     float values[SETTING_COUNT];
     char  texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
+    /*
+     * What the medium holds, as far as the panel knows: the values and
+     * strings settings_init() loaded, or the last successful save wrote.
+     * A changed setting is one that differs from this copy.  stored_sure
+     * is false after a refused save: a refusal part way leaves the keys
+     * written before it, so the medium can hold a mix and the copy is no
+     * longer known to be it.
+     */
+    float stored[SETTING_COUNT];
+    char  stored_texts[SETTING_TEXT_COUNT][SETTINGS_TEXT_MAX];
+    bool  stored_sure;
     bool  dirty;
     bool     save_asked;   /* asked for, not yet taken */
     bool     save_failed;  /* the last attempt did not reach the medium */
@@ -434,15 +445,41 @@ static struct {
     settings_hold_fn hold;
 } s;
 
+static bool differs_from_stored(void)
+{
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        if (s.values[i] != s.stored[i]) {
+            return true;
+        }
+    }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (strcmp(s.texts[i], s.stored_texts[i]) != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /*
- * Something changed and is not on the medium.  A new edit is also a fresh
- * attempt, so it retires any earlier failure: that failure described values
- * these no longer are.
+ * Something changed.  Dirty is whether the values in force differ from the
+ * stored copy: an edit back to the stored value leaves nothing to write, and
+ * a write of it would spend an erase cycle on what is there.  After a
+ * refused save the copy is not known to be the medium, and dirty stands
+ * until a save succeeds.  A new edit is also a fresh attempt, so it retires
+ * any earlier failure: that failure described values these no longer are.
  */
 static void mark_dirty(void)
 {
-    s.dirty = true;
+    s.dirty = !s.stored_sure || differs_from_stored();
     s.save_failed = false;
+}
+
+/* The values in force are what the medium holds. */
+static void take_stored(void)
+{
+    memcpy(s.stored, s.values, sizeof(s.stored));
+    memcpy(s.stored_texts, s.texts, sizeof(s.stored_texts));
+    s.stored_sure = true;
 }
 
 static float clampf(float v, float lo, float hi)
@@ -642,6 +679,7 @@ void settings_init(void)
             s.texts[i][SETTINGS_TEXT_MAX - 1] = '\0';
         }
     }
+    take_stored();
     s.dirty = false;
     s.save_failed = false;
     s.save_asked = false;   /* what is loaded is what is kept */
@@ -744,6 +782,12 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max)
 
 const char *settings_value_text(setting_id_t id, char *buf, size_t n)
 {
+    return settings_value_text_of(id, settings_get(id), buf, n);
+}
+
+const char *settings_value_text_of(setting_id_t id, float v, char *buf,
+                                   size_t n)
+{
     const setting_def_t *d = settings_def(id);
     if (!buf || n == 0) {
         return "";
@@ -752,7 +796,6 @@ const char *settings_value_text(setting_id_t id, char *buf, size_t n)
         snprintf(buf, n, "--");
         return buf;
     }
-    float v = s.values[id];
     switch (d->type) {
     case SET_TYPE_BOOL:
         snprintf(buf, n, "%s", (v != 0.0f) ? "ON" : "OFF");
@@ -805,7 +848,10 @@ bool settings_save(void)
     s.save_asked  = false;
     s.save_failed = !wrote;
     if (wrote) {
+        take_stored();
         s.dirty = false;
+    } else {
+        s.stored_sure = false;
     }
     return wrote;
 }
@@ -873,4 +919,73 @@ bool settings_save_tick(bool safe)
         return false;
     }
     return settings_save();
+}
+
+/* ------------------------------------------------------ the stored copy */
+
+float settings_stored(setting_id_t id)
+{
+    return (id >= 0 && id < SETTING_COUNT) ? s.stored[id] : 0.0f;
+}
+
+const char *settings_stored_text(setting_text_id_t id)
+{
+    if (id < 0 || id >= SETTING_TEXT_COUNT) {
+        return "";
+    }
+    return s.stored_texts[id];
+}
+
+bool settings_differs(setting_id_t id)
+{
+    return id >= 0 && id < SETTING_COUNT && s.values[id] != s.stored[id];
+}
+
+bool settings_text_differs(setting_text_id_t id)
+{
+    return id >= 0 && id < SETTING_TEXT_COUNT
+           && strcmp(s.texts[id], s.stored_texts[id]) != 0;
+}
+
+int settings_changes(void)
+{
+    int n = 0;
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        n += settings_differs((setting_id_t)i) ? 1 : 0;
+    }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        n += settings_text_differs((setting_text_id_t)i) ? 1 : 0;
+    }
+    return n;
+}
+
+int settings_discard(void)
+{
+    /*
+     * Through settings_set() and settings_set_text(), one setting at a
+     * time, as an edit by hand: the observer hears each value that moves,
+     * in schema order, and a held value is left as settings_set() leaves
+     * it.  A derived value is not set; it follows its source, which comes
+     * before it in the schema.  The copy is not written, so a value the
+     * copy holds is coerced already and settings_set() takes it as it is.
+     */
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        if (settings_differs((setting_id_t)i)
+            && !settings_derived((setting_id_t)i)) {
+            settings_set((setting_id_t)i, s.stored[i]);
+        }
+    }
+    /* A string has no observer: settings_set_text() is the copy and the
+     * dirty flag, and so is this. */
+    bool texts = false;
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        if (settings_text_differs((setting_text_id_t)i)) {
+            memcpy(s.texts[i], s.stored_texts[i], SETTINGS_TEXT_MAX);
+            texts = true;
+        }
+    }
+    if (texts) {
+        mark_dirty();
+    }
+    return settings_changes();
 }

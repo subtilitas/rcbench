@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- The home tag that leaves SETUP for the menu with values unsaved opens a
+  warning, `UNSAVED CHANGES`. It lists each value that differs from the
+  stored one as `name: stored -> now`, 9 lines and `and N more` past 10
+  changes. STAY closes it; DISCARD sets every value back through the path a
+  key takes and opens the menu, and is refused while the bench is ARMED;
+  SAVE asks for the write and opens the menu. A save asked (`WHEN IDLE`)
+  opens no warning; a refused one does. STOP, the tool tiles and every
+  screen the panel opens by itself pass without it. The copy of the stored
+  values takes 400 bytes of internal RAM; the heap left with the largest
+  Wi-Fi mode up is 90,984 bytes.
 - The bench configurator lists 2 more functions of the base setup: the panel
   update and the card files in a browser over Wi-Fi (the FILES & UPDATE
   screen), and the coprocessor firmware update over CAN (Controller Area
@@ -76,6 +86,9 @@ history is in git.
 
 ### Changed
 
+- A value stepped back to the one stored is no change: SAVE returns to
+  `SAVED`. After a refused save the label stays `NOT SAVED` or `SAVE` until
+  a save succeeds.
 - SETUP opens on a page of 3 by 3 tiles in the menu's style: ESC / BENCH,
   APPLICATION and INTERFACES with their number of settings, and OUTPUTS,
   PICK A PIN and UPDATES with a line each; 3 slots are free. A category's

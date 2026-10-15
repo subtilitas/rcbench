@@ -254,6 +254,9 @@ int settings_in_category(setting_cat_t cat, setting_id_t *out, int max);
 
 /** Render the value as it should appear on screen, unit excluded. */
 const char *settings_value_text(setting_id_t id, char *buf, size_t n);
+/** Render @p value as settings_value_text() renders the value of @p id. */
+const char *settings_value_text_of(setting_id_t id, float value, char *buf,
+                                   size_t n);
 
 /** A string setting.  Never NULL. */
 const char *settings_text(setting_text_id_t id);
@@ -267,7 +270,42 @@ void settings_set_text(setting_text_id_t id, const char *text);
 const settings_store_t *settings_nvs_store(void);
 #endif
 
+/**
+ * Whether the values in force differ from the stored copy, or the copy is
+ * not known to be the medium: true after a refused save until a save
+ * succeeds.  An edit back to the stored value leaves it false.
+ */
 bool settings_dirty(void);
+
+/* ------------------------------------------------------ the stored copy */
+
+/*
+ * The values and strings the medium holds, as far as the panel knows: the
+ * ones settings_init() loaded (the defaults where the store had none), or
+ * the ones the last successful settings_save() wrote.  A refused save leaves
+ * the copy as it was.
+ */
+
+/** The stored value of @p id; 0 for an id out of range. */
+float settings_stored(setting_id_t id);
+/** The stored string of @p id; "" for an id out of range.  Never NULL. */
+const char *settings_stored_text(setting_text_id_t id);
+/** Whether the value of @p id in force differs from its stored value. */
+bool settings_differs(setting_id_t id);
+/** Whether the string of @p id differs from its stored string. */
+bool settings_text_differs(setting_text_id_t id);
+/** How many values and strings differ from their stored ones. */
+int settings_changes(void);
+
+/**
+ * Put every changed value and string back to its stored one, by
+ * settings_set() and settings_set_text(): the observer hears each value
+ * that moves as it hears an edit by hand, in schema order.  A held value is
+ * left, as settings_set() leaves it; a derived one follows its source.
+ * Returns how many values and strings still differ: the held ones.
+ */
+int settings_discard(void);
+
 /** Persist through the store and clear the dirty flag. */
 /*
  * Write the values through the store.  True if the store took them.  False

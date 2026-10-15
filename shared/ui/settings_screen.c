@@ -10,6 +10,11 @@
  * enum.  A new setting is a schema row, and a new tile is a line of
  * k_tiles; nothing else here changes.
  *
+ * The home tag that leaves SETUP with settings unsaved and no save asked
+ * is held: a warning lists what differs from the stored values and offers
+ * SAVE, DISCARD and STAY.  A tile that opens a screen of its own is not a
+ * way out, and no route the application takes is held (ui_screen_t.hold).
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -95,7 +100,24 @@
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_SAVE };
+       HIT_SAVE, HIT_STAY, HIT_DISCARD, HIT_LEAVE_SAVE };
+
+/*
+ * The warning that holds a way out: a card over the body down to the
+ * strip, its title, one line on what unsaved means, then one line per
+ * change and up to two notes under them.  STAY, DISCARD and SAVE take the
+ * strip's three columns, SAVE where SAVE is on the tiles.
+ * SETTINGS_WARN_LINES lines of 22 px fit; more changes than that leave the
+ * last line to their count.
+ */
+#define WARN_X      HUB_M
+#define WARN_Y      HUB_M
+#define WARN_W      (SCREEN_W - 2 * HUB_M)
+#define WARN_H      (STRIP_Y - HUB_M - WARN_Y)
+#define WARN_LINE_Y 84
+#define WARN_PITCH  22
+#define WARN_NOTE_Y (WARN_LINE_Y + SETTINGS_WARN_LINES * WARN_PITCH + 4)
+#define WARN_NOTE_PITCH 18
 
 /*
  * The hub's tiles, in their order on the grid, row by row.  A category's
@@ -139,6 +161,13 @@ _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
 _Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
 _Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
                "the strip ends above the alert band");
+_Static_assert(WARN_NOTE_Y + 2 * WARN_NOTE_PITCH <= WARN_Y + WARN_H - 4,
+               "the warning's notes end inside its card");
+
+/* The names the warning gives the strings, which have no row on SETUP. */
+static const ui_text_id_t k_text_label[SETTING_TEXT_COUNT] = {
+    [SET_TEXT_DUT_NAME] = TX_SET_DUT_NAME,
+};
 
 static struct {
     /* The list of cat is open; the hub shows while this is false. */
@@ -175,6 +204,13 @@ static struct {
     bool     drawn_dirty;
     bool     drawn_asked;
     bool     drawn_failed;
+
+    /* The warning is open and holds the way out to warn_to.  drawn_* are
+     * what the last frame drew of it. */
+    bool     warn;
+    ui_screen_id_t warn_to;
+    bool     drawn_warn;
+    bool     drawn_armed;
 } s;
 
 /*
@@ -238,6 +274,8 @@ bool settings_screen_unheld(setting_id_t id)
     }
     return (s_sense_unheld & sense) != 0u || (s_tone_unheld & tone) != 0u;
 }
+
+static void drop_press(void);
 
 /* ---------------------------------------------------------------- geometry */
 
@@ -313,6 +351,103 @@ static gfx_rect_t save_rect(void)
 static bool save_offered(void)
 {
     return settings_dirty() && !settings_save_asked();
+}
+
+/*
+ * The same condition holds the home tag.  A save asked for is the operator
+ * saying keep, and holds nothing; a save refused (NOT SAVED) leaves the
+ * values dirty and holds it.
+ */
+static bool leave_held(void)
+{
+    return save_offered();
+}
+
+/* DISCARD changes nothing while the bench is ARMED: see release(). */
+static bool bench_armed(void)
+{
+    return ui_router_status()->armed;
+}
+
+static gfx_rect_t stay_rect(void)
+{
+    return strip_rect(0);
+}
+
+static gfx_rect_t discard_rect(void)
+{
+    return strip_rect(1);
+}
+
+/* ------------------------------------------------------------ the warning */
+
+/* Change @p k, in schema order and the strings after the values, into
+ * @p line as "name: saved -> now", each value with its unit. */
+static void change_line(int k, char *line, size_t n)
+{
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_id_t id = (setting_id_t)i;
+        if (!settings_differs(id) || k-- > 0) {
+            continue;
+        }
+        const setting_def_t *d = settings_def(id);
+        const char *unit = (d != NULL && d->unit != NULL) ? d->unit : "";
+        const char *gap = (unit[0] != '\0') ? " " : "";
+        char was[32], now[32];
+        (void)ui_setting_value_of(id, settings_stored(id), was, sizeof(was));
+        (void)ui_setting_value(id, now, sizeof(now));
+        snprintf(line, n, "%s: %s%s%s -> %s%s%s", ui_setting_label(id), was,
+                 gap, unit, now, gap, unit);
+        return;
+    }
+    for (int i = 0; i < SETTING_TEXT_COUNT; ++i) {
+        const setting_text_id_t id = (setting_text_id_t)i;
+        if (!settings_text_differs(id) || k-- > 0) {
+            continue;
+        }
+        snprintf(line, n, "%s: %s -> %s", ui_tr(k_text_label[i]),
+                 settings_stored_text(id), settings_text(id));
+        return;
+    }
+    line[0] = '\0';
+}
+
+bool settings_screen_warning(void)
+{
+    return s.warn;
+}
+
+bool settings_screen_warn_line(int i, char *line, size_t n)
+{
+    if (line == NULL || n == 0u) {
+        return false;
+    }
+    line[0] = '\0';
+    const int changes = settings_changes();
+    const bool more = changes > SETTINGS_WARN_LINES;
+    const int shown = more ? SETTINGS_WARN_LINES - 1 : changes;
+    if (!s.warn || i < 0 || i > shown || (i == shown && !more)) {
+        return false;
+    }
+    if (i == shown) {
+        snprintf(line, n, TR(SET_LEAVE_MORE), changes - shown);
+    } else {
+        change_line(i, line, n);
+    }
+    return true;
+}
+
+/* The home tag leaves for @p to: held while something is unsaved. */
+static bool hold(ui_screen_id_t to)
+{
+    drop_press();
+    if (!leave_held()) {
+        return false;
+    }
+    s.warn = true;
+    s.warn_to = to;
+    settings_screen_invalidate();
+    return true;
 }
 
 static int row_count(void)
@@ -415,6 +550,7 @@ static void enter(void)
     /* SETUP opens on its tiles, from the menu and from a screen a tile
      * opened alike.  The list keeps its category and its scroll. */
     s.list = false;
+    s.warn = false;
     drop_press();
     clamp_scroll();
     settings_screen_invalidate();
@@ -426,13 +562,25 @@ static void leave(void)
      * Nothing is written here.  The SAVE button asks, and the application
      * takes it when the bench is idle.  A request outlives this screen on
      * purpose: the operator has said what they want kept.
+     *
+     * The warning closes with any way out.  A route the application takes
+     * while it shows drops the way out it held, and the values stay as
+     * they are, unsaved.
      */
+    s.warn = false;
+    drop_press();
 }
 
-/* The home tag on a list goes back to the tiles; on the tiles it leaves. */
+/* The home tag on a list goes back to the tiles; on the tiles it leaves,
+ * through hold().  Over the warning it is STAY. */
 static bool back(void)
 {
     drop_press();
+    if (s.warn) {
+        s.warn = false;
+        settings_screen_invalidate();
+        return true;
+    }
     if (!s.list) {
         return false;
     }
@@ -445,7 +593,8 @@ static void tick(float dt_s)
 {
     if (s.drawn_dirty != settings_dirty()
         || s.drawn_asked != settings_save_asked()
-        || s.drawn_failed != settings_save_failed()) {
+        || s.drawn_failed != settings_save_failed()
+        || (s.warn && s.drawn_armed != bench_armed())) {
         settings_screen_invalidate();
     }
 
@@ -494,6 +643,19 @@ static void open_tile(int index)
 /* The DOWN of the contact that holds the screen: what it presses. */
 static void press(const touch_event_t *evt, int x, int y)
 {
+    if (s.warn) {
+        /* The warning covers the screen: its three buttons and nothing
+         * under them.  DISCARD presses only while it is offered. */
+        s.hit_kind = gfx_rect_contains(stay_rect(), x, y)   ? HIT_STAY
+                     : gfx_rect_contains(save_rect(), x, y) ? HIT_LEAVE_SAVE
+                     : (gfx_rect_contains(discard_rect(), x, y)
+                        && !bench_armed())                  ? HIT_DISCARD
+                                                            : HIT_NONE;
+        if (s.hit_kind != HIT_NONE) {
+            settings_screen_invalidate();
+        }
+        return;
+    }
     if (!s.list) {
         const int tile = tile_at(x, y);
         if (tile >= 0) {
@@ -566,6 +728,29 @@ static void release(int kind, int index, bool repeated, int x, int y)
          * can afford to stop for it. */
         settings_request_save();
         settings_screen_invalidate();
+    } else if (kind == HIT_STAY && s.warn
+               && gfx_rect_contains(stay_rect(), x, y)) {
+        /* The tiles again; the list keeps its category and its scroll. */
+        s.warn = false;
+        settings_screen_invalidate();
+    } else if (kind == HIT_LEAVE_SAVE && s.warn
+               && gfx_rect_contains(save_rect(), x, y)) {
+        /* The SAVE button's request, then the way out.  leave() closes
+         * the warning. */
+        settings_request_save();
+        ui_router_goto(s.warn_to);
+    } else if (kind == HIT_DISCARD && s.warn && !bench_armed()
+               && gfx_rect_contains(discard_rect(), x, y)) {
+        /*
+         * Every changed value back to its stored one, each by the path an
+         * edit by hand takes: the observer, which sends a pin or a port to
+         * the coprocessor, and settings_apply_ui() for the APPLICATION
+         * rows.  Never while ARMED, asked again at the release: a bench
+         * that armed while the finger was down keeps its values.
+         */
+        (void)settings_discard();
+        settings_apply_ui();
+        ui_router_goto(s.warn_to);
     }
 }
 
@@ -806,29 +991,85 @@ static void draw_list(gfx_canvas_t *c)
               s.hit_kind == HIT_RESET, true);
 }
 
+/*
+ * The warning: what differs from the stored values, one line each as
+ * "name: saved -> now" with the values as the list shows them, and the
+ * three answers.  DISCARD is drawn inert while the bench is ARMED, and a
+ * note says why; another says that the last save failed.
+ */
+static void draw_warning(gfx_canvas_t *c)
+{
+    const bool armed = bench_armed();
+    s.drawn_armed  = armed;
+    s.drawn_dirty  = settings_dirty();
+    s.drawn_asked  = settings_save_asked();
+    s.drawn_failed = settings_save_failed();
+
+    gfx_fill_rect(c, WARN_X, WARN_Y, WARN_W, WARN_H, UI_PANEL);
+    for (int i = 0; i < 3; ++i) {
+        gfx_draw_rect(c, WARN_X + i, WARN_Y + i, WARN_W - 2 * i,
+                      WARN_H - 2 * i, UI_WARN);
+    }
+    const gfx_rect_t saved = gfx_clip_get(c);
+    gfx_clip_intersect(c, gfx_rect_make(WARN_X + 4, WARN_Y + 4, WARN_W - 8,
+                                        WARN_H - 8));
+    gfx_text(c, WARN_X + 16, WARN_Y + 12, TR(SET_LEAVE_TITLE), UI_FONT_HEAD,
+             UI_WARN, 1);
+    gfx_text(c, WARN_X + 16, WARN_Y + 48, TR(SET_LEAVE_WHY), UI_FONT_LABEL,
+             UI_TEXT_DIM, 1);
+    char line[128];
+    for (int i = 0; settings_screen_warn_line(i, line, sizeof(line)); ++i) {
+        gfx_text(c, WARN_X + 16, WARN_LINE_Y + i * WARN_PITCH, line,
+                 UI_FONT_LABEL, UI_TEXT, 1);
+    }
+    int note_y = WARN_NOTE_Y;
+    if (s.drawn_failed) {
+        gfx_text(c, WARN_X + 16, note_y, TR(SET_LEAVE_FAILED), UI_FONT_LABEL,
+                 UI_DANGER, 1);
+        note_y += WARN_NOTE_PITCH;
+    }
+    if (armed) {
+        gfx_text(c, WARN_X + 16, note_y, TR(SET_LEAVE_ARMED), UI_FONT_LABEL,
+                 UI_WARN, 1);
+    }
+    c->clip = saved;
+
+    ui_button(c, stay_rect(), TR(SET_STAY), UI_PANEL_HI,
+              s.hit_kind == HIT_STAY, true);
+    ui_button(c, discard_rect(), TR(SET_DISCARD), UI_WARN,
+              s.hit_kind == HIT_DISCARD, !armed);
+    ui_button(c, save_rect(), TR(SET_SAVE), UI_ACCENT,
+              s.hit_kind == HIT_LEAVE_SAVE, true);
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat
-                || s.drawn_list != s.list;
+                || s.drawn_list != s.list || s.drawn_warn != s.warn;
     }
     if (!stale) {
         return;
     }
 
     gfx_clear(c, UI_BG);
-    if (s.list) {
-        draw_list(c);
+    if (s.warn) {
+        draw_warning(c);
     } else {
-        draw_hub(c);
+        if (s.list) {
+            draw_list(c);
+        } else {
+            draw_hub(c);
+        }
+        draw_save(c);
     }
-    draw_save(c);
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
         s.drawn_cat = s.cat;
         s.drawn_list = s.list;
+        s.drawn_warn = s.warn;
     }
 }
 
@@ -856,6 +1097,7 @@ static const ui_screen_t s_screen = {
     .cancel = cancel,
     .render = render,
     .back = back,
+    .hold = hold,
 };
 
 const ui_screen_t *settings_screen(void)

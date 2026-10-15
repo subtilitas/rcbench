@@ -1985,7 +1985,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | Von | Das Home-Tag führt zu |
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
-| den Kacheln | dem Menü |
+| den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
 | OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
@@ -2360,6 +2360,74 @@ schreibt nichts und sagt das zusätzlich einmal auf dem Splash als
 
 Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
 Verlassen des Bildschirms schreibt nichts.
+
+Ein Wert, der auf den gespeicherten zurückgestellt ist, ist keine Änderung,
+und die Beschriftung kehrt zu `GESPEICHERT` zurück. Die gespeicherten Werte
+sind eine Kopie, die das Panel hält: die beim Start geladenen, die Vorgaben,
+wo der Store keine hatte, oder die, die das letzte gelungene Speichern
+geschrieben hat. Ein abgelehntes Speichern lässt die Kopie, wie sie war, aber
+nicht mehr als Inhalt des Mediums gesichert. Die Beschriftung bleibt deshalb
+bei `NICHT GESPEICHERT` oder `SPEICHERN`, bis ein Speichern gelingt, auch wenn
+jeder Wert zurückgestellt ist.
+
+### Mit ungespeicherten Werten verlassen
+
+Das Home-Tag auf den Kacheln, der einzige Weg von SETUP zum Menü, wird
+gehalten, solange die Beschriftung `SPEICHERN` oder `NICHT GESPEICHERT`
+lautet. Stattdessen deckt eine Warnung den Inhalt ab: eine Karte von
+784 x 344 px mit einem 3 px breiten Rand in der Warnfarbe, über der Leiste.
+
+![Ein ungespeicherter Wert, am Home-Tag](img/de/setup-leave.png)
+
+Sie nennt jeden Wert und jeden Text, der von der gespeicherten Kopie
+abweicht, eine Zeile von 22 px je Änderung, als `Name: gespeichert -> jetzt`.
+Ein Wert steht so da, wie die Liste ihn schreibt, mit Einheit; ein Text, der
+Name des Prüflings (DUT, device under test), so, wie er ist. Werte anderer
+Bildschirme, etwa die Einstellungen von SERVO oder ESC STICK, stehen mit
+darin: Sie gehören zum selben Satz, und dasselbe Speichern behält sie. Die
+Zeilen folgen der Reihenfolge des Schemas, die Texte nach den Werten. Bei
+mehr als 10 Änderungen zeigen sich 9 Zeilen, und die zehnte lautet bei 12
+`und 3 weitere`.
+
+![Zwölf ungespeicherte Werte](img/de/setup-leave-many.png)
+
+Die drei Spalten der Leiste tragen die Antworten:
+
+| Taste | Was sie tut |
+| --- | --- |
+| BLEIBEN | Schließt die Warnung. Die Kacheln zeigen sich wieder; eine Liste behält ihre Kategorie und ihre Scroll-Position. |
+| VERWERFEN | Stellt jeden geänderten Wert auf dem Weg eines Schritts von Hand auf den gespeicherten zurück und öffnet dann das Menü. |
+| SPEICHERN | Fordert das Schreiben an wie die Speichertaste und öffnet dann das Menü. Das Schreiben folgt derselben Regel: der erste ruhige Frame. |
+
+VERWERFEN setzt jeden Wert mit demselben Aufruf wie eine Taste, in der
+Reihenfolge des Schemas. Der Koprozessor erfährt so jeden Pin und Port, der
+sich bewegt, und Sprache, Theme, Helligkeit und Kontrast aus ANWENDUNG
+gelten ab dem nächsten Frame. Eine zurückgestellte Verdrahtung des PD mini
+schaltet den Netzteilausgang ab und meldet denselben Alert wie eine Änderung
+von Hand. PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der
+Servo-Programmierer den Servo-Port hält, so wie eine Taste sie dann nicht
+schaltet; sie bleiben ungespeichert.
+
+Bei ARMED ist VERWERFEN inaktiv gezeichnet, und die Zeile
+`VERWERFEN wartet auf SAFE.` sagt warum. Mehrere Werte auf einmal
+zurückzustellen, Pins darunter, ist auf einem laufenden Prüfstand eine
+Änderung, die der Bediener in diesem Moment nicht vorgenommen hat. BLEIBEN
+und SPEICHERN wirken bei ARMED; ein Speichern wartet als `BEI STILLSTAND` auf
+SAFE. Nach einem abgelehnten Speichern steht die Zeile
+`Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.` in der
+Danger-Farbe.
+
+Die Warnung hält nur das Home-Tag:
+
+- Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
+  keine Warnung, das Menü öffnet.
+- OUTPUTS, PICK A PIN und UPDATES öffnen von einer Kachel und kehren zu
+  SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
+- Das Home-Tag über der Warnung ist BLEIBEN.
+- STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
+- Ein Bildschirm, den das Panel selbst öffnet, etwa der Bus-Fehler-Bildschirm
+  nach einem Verbindungsverlust, schließt die Warnung sofort. Die Werte
+  gelten weiter und bleiben ungespeichert.
 
 ## Der Bus-Fehler-Bildschirm
 

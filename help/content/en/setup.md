@@ -30,7 +30,7 @@ The home tag at the top left climbs one level at a time:
 | From | The home tag leads to |
 |---|---|
 | a category's list | the tiles; the list keeps its position |
-| the tiles | the menu |
+| the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
 | OUTPUTS, PICK A PIN, UPDATES | the tiles |
 
 ## Changing a value
@@ -57,7 +57,7 @@ A changed value is in force at once. RESET CATEGORY sets every value of the open
 
 ![A changed value, with SAVE offered](view:setup-dirty)
 
-A changed value is not written to flash until SAVE is pressed.
+A changed value is not written to flash until SAVE is pressed. A value stepped back to the one stored is no change: the button reads `SAVED` again.
 
 | Label | Meaning |
 |---|---|
@@ -68,7 +68,29 @@ A changed value is not written to flash until SAVE is pressed.
 
 The write happens on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. While ARMED the button reads `WHEN IDLE` until the bench is SAFE. Values not saved last until the panel is switched off. Leaving a list or the tiles writes nothing.
 
-`NOT SAVED` cannot say how much reached the flash: a refusal part way leaves the keys written before it, so the next start can load a mix of new and old values.
+`NOT SAVED` cannot say how much reached the flash: a refusal part way leaves the keys written before it, so the next start can load a mix of new and old values. After a refusal the button stays `NOT SAVED` or `SAVE` until a save succeeds, even with every value stepped back.
+
+## Leaving with values unsaved
+
+![One value unsaved, at the home tag](view:setup-leave)
+
+The home tag on the tiles leads to the menu. While the save button reads `SAVE` or `NOT SAVED`, it opens a warning first. The warning lists each value that differs from the stored one as `name: stored -> now`, with the value and unit as the list shows them. The stored values are the ones loaded at start-up or written by the last successful save. The list includes the DUT (device under test) name and the values set on other screens, such as SERVO or ESC STICK: one save keeps them all.
+
+| Button | What it does |
+|---|---|
+| STAY | closes the warning; the tiles show again, a list keeps its category and position |
+| DISCARD | sets every listed value back to its stored one, as a step by hand would, then opens the menu |
+| SAVE | asks for a write, as the save button does, then opens the menu |
+
+- DISCARD sends a pin or a port back to the coprocessor at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
+- While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits for SAFE.` says so. STAY and SAVE work.
+- PWM target and Port PWM are not set back while the servo programmer holds the servo port; they stay unsaved.
+- With more than 10 changes, 9 lines show and the last line reads `and 3 more` for 12.
+- After a refused save the line `The last save failed. SAVE tries again.` shows under the list.
+
+![Twelve values unsaved](view:setup-leave-many)
+
+No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, PICK A PIN and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
 
 ## ESC / BENCH
 
