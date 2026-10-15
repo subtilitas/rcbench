@@ -1664,7 +1664,8 @@ Liste und läse sich wie ein fertiger.
 FILES & UPDATE betreibt das WLAN des Panels für zwei Aufgaben im Browser:
 jede Datei der Karte zum Herunterladen und ein Panel-Firmware-Image zum
 Hochladen. Der Bildschirm öffnet aus LOGS, mit WLAN in der unteren Reihe
-neben NEU LESEN. Der Funk läuft nur, solange dieser Bildschirm offen ist. Er
+neben NEU LESEN. Der Funk läuft nur, solange dieser Bildschirm offen ist,
+und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
 ohne Anfrage.
@@ -1906,7 +1907,7 @@ startet neu.
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.19.0 installiert`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
-zu LOGS.
+zu LOGS, nach einem Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
@@ -1940,6 +1941,10 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Designs:
 
 ![Setup im hellen Design](img/de/setup-light.png)
+
+Die linke Spalte trägt die drei Kategorien, darunter drei Tasten zu eigenen
+Bildschirmen: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+([Pin auswählen](#pin-auswählen)) und UPDATES ([Updates](#updates)).
 
 Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
@@ -2442,6 +2447,173 @@ gemessen.
 
 Die Frage öffnet sich vom Menü aus, nicht von LOGS: das Angebot kommt mit dem
 Link, und LOGS gehört der SD-Karte.
+
+## Updates
+
+UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist,
+und installiert es. Der Bildschirm öffnet über die Taste UPDATES auf dem
+Setup-Bildschirm. Eine Erinnerung beim Start stellt dieselbe Frage einmal
+pro Start des Panels.
+
+![UPDATES](img/de/updates.png)
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
+| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf dem Setup-Bildschirm, wie jede Einstellung. Ab Werk an. |
+| `2 s HALTEN: DOWNLOAD & INSTALL` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+
+Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
+und Download brauchen:
+
+- ein auf FILES & UPDATE gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
+  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
+  `Speichern unter LOGS > WLAN.`, und NACH UPDATES SUCHEN ist grau;
+- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
+  Sonst ist die Taste grau, und die Karte sagt
+  `WLAN braucht SAFE, Netzteil aus` und `und keinen offenen Log-Lauf.`;
+- kein laufendes Update des Koprozessors und keine Panel-Installation im
+  Gang.
+
+Der Download braucht wie eine Installation außerdem, dass keine
+Platinenzeichnung geladen oder gespeichert wird.
+
+### Die Suche
+
+Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP
+über Transport Layer Security) an
+`https://github.com/subtilitas/rcbench/releases/latest` und liest den
+`Location`-Header der Antwort, der den Tag des neuesten Release nennt
+(`.../releases/tag/v0.20.0`). Den Body der Antwort liest es nicht. Danach
+geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen höchstens
+30 s.
+
+![Eine laufende Suche](img/de/updates-checking.png)
+
+Die Karte zeigt den Schritt (`Verbinde mit Workshop 2.4`, `Frage GitHub`)
+und die verbleibenden Sekunden (`noch 26 s`). Das Ergebnis bleibt auf der
+Karte bis zur nächsten Suche:
+
+![Ein neueres Release](img/de/updates-newer.png)
+![Aktuell](img/de/updates-current.png)
+
+| Karte | Bedeutung |
+| --- | --- |
+| `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
+| `Aktuell: dieses Panel hat 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Verbinden scheiterte: Passwort abgelehnt.`, `Verbinden scheiterte: Netz nicht gefunden.`, `Verbinden scheiterte: keine Adresse in 15 s.`, `Das Heimnetz ist weggefallen.` | Das Verbinden scheiterte, wie auf FILES & UPDATE. |
+| `Keine Antwort in 30 s.` | Die 30 s sind abgelaufen. |
+| `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
+| `GitHub lehnte ab: HTTP 404.` | Eine andere Antwort als ein Redirect. |
+| `Unerwartete Antwort von GitHub.` | Der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabelle unten). |
+| `WLAN ging aus: ARMED.`, `...: Netzteilausgang an.`, `...: ein Log-Lauf begann.`, `...: STOP.` | Die Suche endete deshalb. |
+| `Abgebrochen: FILES & UPDATE nahm das WLAN.` | FILES & UPDATE wurde geöffnet. |
+| `Abgebrochen: Update des Koprozessors begann.` | Das Update des Koprozessors begann. |
+| `Abgebrochen: ABBRECHEN.` | ABBRECHEN. |
+| `WLAN startete nicht.` | Der Funk kam nicht hoch. |
+
+![Eine Suche ohne Antwort](img/de/updates-failed.png)
+
+Der Versionstext wird streng gelesen: `v`, dann MAJOR.MINOR.PATCH, nur
+Ziffern, jede Zahl von 0 bis 65535 in höchstens 5 Ziffern und ohne führende
+Null (`v0.20.0`, nicht `v0.020.0`), und nichts danach. Ein Release ist
+neuer, wenn sein MAJOR größer ist, oder MAJOR gleich und MINOR größer, oder
+beide gleich und PATCH größer.
+
+| Zweite Zeile | Bedeutung |
+| --- | --- |
+| `Kein Location-Header in der Antwort.` | Der Redirect trägt keinen `Location`-Header. |
+| `Eine Adresse über ihrer Längengrenze.` | Ein `Location` über 69 Bytes: die Tag-Adresse und 18 Bytes. |
+| `Ein Byte außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
+| `Eine Adresse an unerwarteter Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
+| `Der Versionstext ist ungültig.` | Der Tag verletzt die Regel oben. |
+
+### Die Erinnerung
+
+![Die Erinnerung](img/de/upd-remind.png)
+
+Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
+Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
+Prüfstand erlaubt: Splash vorbei, Prüfstand SAFE, Netzteilausgang aus, kein
+offener Log-Lauf, FILES & UPDATE geschlossen und kein Update des
+Koprozessors angeboten oder im Gang. Findet sie 10 min nach dem Start keinen
+solchen Moment, läuft sie bei diesem Start nicht.
+
+Findet die Suche ein neueres Release, öffnet sich die Erinnerung auf dem
+Menü (OVERVIEW). Sie öffnet sich nicht, solange der Prüfstand ARMED ist oder
+ein Schalten auf ARMED wartet, solange der Netzteilausgang an ist und solange
+die Frage oder der Fortschritt des Koprozessor-Updates zu sehen ist: Diese
+gehen vor, und die Erinnerung öffnet sich, sobald sie vorbei sind und das
+Menü zu sehen ist.
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| `JETZT IGNORIEREN` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über den HOME-Tag wirkt genauso. |
+| `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
+| `2 s HALTEN: DOWNLOAD & INSTALL` | Dasselbe Halten wie auf UPDATES. |
+
+Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
+sie nichts. Ihr Ergebnis steht auf UPDATES.
+
+### Der Download
+
+Das Halten über 2 s ist die einzige Bestätigung: Nach dem Download folgt
+keine Frage. Das Panel verbindet sich innerhalb von 30 s mit dem Heimnetz
+und lädt dann zwei Dateien des Release-Tags über HTTPS, `SHA256SUMS` und
+`rcbench-panel-v0.20.0.bin`. GitHub beantwortet beide mit einem Redirect zu
+seinem Datei-Host; das Panel folgt höchstens 3 Redirects und nur zu
+`github.com`, `release-assets.githubusercontent.com` und
+`objects.githubusercontent.com`. Dann:
+
+1. `SHA256SUMS` hat höchstens 4096 Bytes und genau eine Zeile für den
+   Dateinamen des Image.
+2. Das Image kündigt seine Größe an, bevor ein Byte behalten wird. Ein Image
+   ohne Größe, mit 0 Bytes oder größer als der Slot (4.063.232 Bytes) wird
+   abgelehnt. Das Image liegt im PSRAM (Pseudo-Static Random-Access Memory).
+3. Der SHA-256 (Secure Hash Algorithm, 256 Bit) des Image muss seiner Zeile
+   in `SHA256SUMS` gleichen.
+4. Jede Prüfung, die ein hochgeladenes Image besteht
+   ([Installieren](#installieren-panel-update)), läuft, und das Image muss
+   die Version des Release nennen.
+
+Erst dann beginnt die Installation, so wie INSTALL sie beginnt: Funk ganz
+aus, Schreiben, Neustart, Versuchsstart. Vom Halten bis zum Schreiben
+berührt nichts den Flash.
+
+![Der Download](img/de/panel-download.png)
+
+| Schritt | Zu sehen, solange |
+| --- | --- |
+| `Verbinde mit Workshop 2.4` | Verbinden und Adresse laufen |
+| `Lese SHA256SUMS` | die erste Datei kommt |
+| `Lade das Image` | das Image kommt; der Balken und `720896 von 1843200 Bytes (39 %)` zählen es |
+| `Prüfe SHA-256 und das Image` | die Prüfungen laufen |
+
+ABBRECHEN beendet den Download. Er endet auch bei STOP, bei ARMED, wenn der
+Netzteilausgang angeht, wenn ein Log-Lauf beginnt, wenn eine
+Platinenzeichnung geladen wird, und 180 s nach dem Halten. Der laufende
+Build bleibt, und SCHLIESSEN geht zurück zu UPDATES, oder zum Menü, wenn das
+Halten das der Erinnerung war.
+
+![Ein abgebrochener Download](img/de/panel-download-failed.png)
+
+| Zeile | Bedeutung |
+| --- | --- |
+| `SHA256SUMS nicht verwendbar.` | `SHA256SUMS` fehlt (`HTTP-Status 404.`), ist über 4096 Bytes groß, `Eine Zeile ist ungültig.`, `Keine Zeile für das Image.` oder `Das Image in zwei Zeilen.` |
+| `SHA-256 weicht von SHA256SUMS ab.` | Das Image ist nicht das, das das Release nennt. |
+| `Das Image fiel durch die Prüfungen.` | Eine der Prüfungen des Image lehnte es ab. |
+| `GitHub lehnte ab: HTTP 404.` | Eine Antwort auf das Image, die weder die Datei noch ein Redirect ist. |
+| `Unerwartete Antwort von GitHub.` | `Mehr als 3 Redirects.`, `Ein Redirect zu einem fremden Host.`, `Eine Adresse über ihrer Längengrenze.` (ein `Location` über 2048 Bytes), `Keine Größe angekündigt.`, `Eine leere Antwort.`, `Größer als das Panel annimmt.`, `Kürzer als angekündigt.`, `Das Image nennt eine andere Version.` |
+| `Kein Speicher für das Image.` | Der PSRAM hatte keinen Platz für die angekündigte Größe. |
+| `Keine Antwort in 30 s.`, `Keine Antwort in 180 s.` | Die 30 s des Verbindens oder die 180 s des Downloads sind abgelaufen. |
+
+Aktuelle Einschränkungen:
+
+- Wie lange Suche und Download in einem echten Netz dauern, ist nicht
+  gemessen.
+- Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
+- Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und
+  `SHA256SUMS` heißen, lässt sich nicht laden.
 
 ## Outputs
 

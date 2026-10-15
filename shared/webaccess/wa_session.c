@@ -312,7 +312,8 @@ wa_off_t wa_start(wa_t *w, wa_mode_t mode, wa_off_t gate, uint32_t now_ms,
     wa_secret_make(w->pass, rand, ctx);
     wa_secret_make(w->code, rand, ctx);
     switch (mode) {
-    case WA_MODE_JOIN: enter(w, WA_ST_JOINING, now_ms);   break;
+    case WA_MODE_JOIN:
+    case WA_MODE_FETCH: enter(w, WA_ST_JOINING, now_ms);  break;
     case WA_MODE_SCAN: enter(w, WA_ST_SCANNING, now_ms);  break;
     case WA_MODE_AP:
     default:           enter(w, WA_ST_STARTING, now_ms);  break;
@@ -341,7 +342,8 @@ bool wa_radio(const wa_t *w)
 
 bool wa_serving(const wa_t *w)
 {
-    return w->state == WA_ST_AP || w->state == WA_ST_JOINED;
+    return w->state == WA_ST_AP
+           || (w->state == WA_ST_JOINED && w->mode != WA_MODE_FETCH);
 }
 
 void wa_on_ap_up(wa_t *w, uint32_t now_ms)

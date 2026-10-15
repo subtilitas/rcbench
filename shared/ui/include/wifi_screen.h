@@ -186,19 +186,31 @@ typedef enum {
     UPDATE_WRITING = 0,
     UPDATE_RESTARTING,     /**< written and checked                       */
     UPDATE_FAILED,         /**< nothing changed: the running image stays  */
+    /** SETUP > UPDATES' download from GitHub, before the write: joining,
+     *  SHA256SUMS, the image, its checks.  CANCEL ends it. */
+    UPDATE_FETCHING,
+    UPDATE_FETCH_FAILED,   /**< nothing written: the running image stays  */
 } update_state_t;
 
 typedef struct {
     update_state_t state;
     char           version[WIFI_VER_MAX + 1];
-    uint32_t       written;
+    uint32_t       written;    /**< FETCHING: bytes received              */
     uint32_t       total;
+    /** FETCHING: the step and the time left; FETCH_FAILED: why, in one
+     *  line or two.  The application writes them (upd_result_text()). */
+    char           what[96];
+    char           why[96];
 } update_view_t;
 
 void update_screen_set(const update_view_t *v);
 
-/** True once CLOSE was tapped on a failed write; cleared when read. */
+/** True once CLOSE was tapped on a failed write or download; cleared when
+ *  read. */
 bool update_screen_take_close(void);
+
+/** True once CANCEL was tapped on a download; cleared when read. */
+bool update_screen_take_cancel(void);
 
 void update_screen_invalidate(void);
 
