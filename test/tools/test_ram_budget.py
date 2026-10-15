@@ -67,8 +67,9 @@ def test_a_commented_out_queue_is_not_counted(panel):
     assert rb.queues() == ([], [])
 
 
-def test_the_build_directory_is_not_read(panel):
-    panel("build/x.c", "void f(void) { xQueueCreate(n, sizeof(x_t)); }\n")
+@pytest.mark.parametrize("tree", ["build", "build-inject"])
+def test_the_build_directory_is_not_read(panel, tree):
+    panel(f"{tree}/x.c", "void f(void) { xQueueCreate(n, sizeof(x_t)); }\n")
     assert rb.queues() == ([], [])
 
 

@@ -1787,10 +1787,18 @@ ohne Heimnetz geht:
 
 | Zeile auf der Karte | Bedingung |
 | --- | --- |
-| `Verbinden scheiterte: Passwort abgelehnt.` | das Netz lehnte das Passwort ab |
-| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb 20 s (`WA_JOIN_MS`) |
+| `Verbinden scheiterte: Passwort abgelehnt.` | 3 Abbrüche der Authentifizierung in Folge innerhalb 20 s (`WA_AUTH_TRIES`): Schlüssel abgelehnt, MIC-Fehler (Message Integrity Code) oder Schlüssel-Handshake ohne Antwort in der Zeit; oder keine Verbindung innerhalb 20 s (`WA_JOIN_MS`) mit einem Abbruch der Authentifizierung als letztem Abbruch |
+| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb 20 s (`WA_JOIN_MS`), und der letzte Abbruch von anderer Art oder keiner |
 | `Verbinden scheiterte: keine Adresse in 15 s.` | verbunden, aber keine Adresse per DHCP (Dynamic Host Configuration Protocol) innerhalb 15 s (`WA_ADDRESS_MS`) |
 | `Das Heimnetz ist weggefallen.` | verbunden, dann hat das Netz das Panel getrennt |
+
+Ein Abbruch während des Verbindens verbindet neu. Ein einzelner Abbruch der
+Authentifizierung beendet das Verbinden nicht: ESP-IDF meldet ein falsches
+Passwort und einen zu spät beantworteten Schlüssel-Handshake mit denselben
+Gründen, 15 und 204, und ein richtiges Passwort wird zu spät beantwortet,
+wenn Panel oder Router beschäftigt sind. Jeder andere Abbruch setzt die
+Zählung auf 0 zurück. Jeder Abbruch steht als eine Zeile mit seiner
+Grundnummer im seriellen Log (`wifi_err_reason_t` von ESP-IDF).
 
 HEIMNETZ VERGESSEN löscht Name und Passwort aus dem NVS und schaltet den
 Zugangscode wieder ein.

@@ -1626,10 +1626,17 @@ the home network:
 
 | Line on the card | Condition |
 | --- | --- |
-| `Join failed: password refused.` | the network refused the password |
-| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`) |
+| `Join failed: password refused.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20 s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
+| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`), and the last drop of another kind, or none |
 | `Join failed: no address in 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
 | `The home network went away.` | joined, then the network dropped the panel |
+
+A drop while joining connects again. One auth-class drop does not end the
+join: ESP-IDF reports a wrong password and a key handshake answered late
+with the same reasons, 15 and 204, and a correct password is answered late
+when the panel or the router is busy. Any other drop sets the count back
+to 0. Each drop goes to the serial log as one line with its reason number
+(ESP-IDF's `wifi_err_reason_t`).
 
 FORGET HOME NETWORK erases the name and the password from NVS and sets the
 access code back to on.

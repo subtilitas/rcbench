@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- A touch injector for the measurement bench: a Waveshare RP2350-Zero that
+  answers as a GT911 at 0x14 and presses where a USB serial command says
+  (`testbench/touch-injector`). It starts listen-only, names the line that
+  carries SCL, and attaches only after `confirm scl=GP5`. A panel built
+  with `RCBENCH_TOUCH_INJECTOR=ON` reads 0x14 after the glass, merges both
+  with the glass first, shows `INJECT` in the MODE chip, and counts a silent
+  injector as lost touch. Release images are built without the option.
+
 - The home tag that leaves SETUP for the menu with values unsaved opens a
   warning, `UNSAVED CHANGES`. It lists each value that differs from the
   stored one as `name: stored -> now`, 9 lines and `and N more` past 10
@@ -33,6 +41,17 @@ history is in git.
 
 ### Fixed
 
+- The start-up check of 0.20.0 can end with `Join failed: password
+  refused.` on a correct password, and JOIN HOME NETWORK pressed after it
+  joins. One auth-class drop of the station ended a join: ESP-IDF reports
+  a wrong password and a key handshake answered late with the same
+  reasons, 15 and 204. A join ends as `password refused` after 3
+  auth-class drops in a row within 20 s (`WA_AUTH_TRIES`, `WA_JOIN_MS`);
+  a single one connects again, and any other drop sets the count back to
+  0. A join that reaches 20 s ends as `password refused` when its last
+  drop was auth-class, and as `network not found` after any other drop or
+  none. The GitHub check, the download and JOIN HOME NETWORK count alike.
+  Every drop goes to the serial log as one line with its reason number.
 - The panel's picture can sit 17 px to the left, with the tail of each
   line wrapped one line down, until the panel restarts. It happens after a
   frame whose bounce-buffer refill interrupt is held off for more than
