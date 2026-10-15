@@ -381,6 +381,339 @@ TEST_CASE(no_injector_leaves_the_glass_alone)
     CHECK(touch_merge_age(0, 0) < PANEL_TOUCH_FRESH_MS);
 }
 
+/* ------------------------------------------ detach and re-attach */
+
+/* What touch_inject.c does on every poll of the touch task: detach when
+ * due; then probe a detached injector, or read an attached one.  @p answers
+ * is whether 0x14 answers this time. */
+static void inj_poll(touch_merge_t *m, uint32_t t, bool answers)
+{
+    (void)touch_merge_expire(m, t);
+    if (!touch_merge_attached(m)) {
+        if (touch_merge_probe_due(m, t)) {
+            (void)touch_merge_probe(m, answers, t);
+        }
+    } else if (touch_merge_inject_due(m, t)) {
+        if (answers) {
+            (void)touch_merge_inject(m, NULL, 0, false, t);
+        } else {
+            (void)touch_merge_inject_failed(m, t);
+        }
+    }
+}
+
+/* touch_age_ms() in a build with the injector. */
+static uint32_t panel_age(const touch_merge_t *m, uint32_t glass_age,
+                          uint32_t t)
+{
+    return touch_merge_age(glass_age,
+                           touch_merge_inject_age(touch_merge_attached(m),
+                                                  m->ok_ms, t));
+}
+
+/* Silent since its last good read at 0: attached and counting at 999 ms,
+ * detached at 1000 ms and after. */
+TEST_CASE(an_injector_silent_for_1000_ms_detaches)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    CHECK(touch_merge_attached(&m));
+    CHECK(!touch_merge_expire(&m, 999));
+    CHECK(touch_merge_attached(&m));
+    CHECK_EQ(touch_merge_inject_age(true, m.ok_ms, 999), 999);
+    CHECK_EQ(panel_age(&m, 5, 999), 999);
+
+    CHECK(touch_merge_expire(&m, 1000));
+    CHECK(!touch_merge_attached(&m));
+    CHECK_EQ(panel_age(&m, 5, 1000), 5);
+    CHECK(!touch_merge_expire(&m, 1000));   /* once */
+
+    touch_merge_t late;
+    touch_merge_attach(&late, 0);
+    CHECK(touch_merge_expire(&late, 1001));
+    CHECK(!touch_merge_attached(&late));
+
+    /* The age stops counting at 1000 ms even before the touch task has
+     * detached it: touch_age_ms() runs in another task. */
+    CHECK_EQ(touch_merge_inject_age(true, 0, 999), 999);
+    CHECK_EQ(touch_merge_inject_age(true, 0, 1000), 0);
+    CHECK_EQ(touch_merge_inject_age(true, 0, 1001), 0);
+    CHECK_EQ(touch_merge_inject_age(false, 0, 500), 0);
+}
+
+/* The last good read, not the attach, starts the clock. */
+TEST_CASE(a_good_read_restarts_the_detach_clock)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    CHECK(!touch_merge_inject(&m, NULL, 0, false, 600));
+    CHECK(!touch_merge_expire(&m, 1599));
+    CHECK(touch_merge_expire(&m, 1600));
+}
+
+/* A detach drops the injected contacts, whether or not three reads failed
+ * before it: the glass's poll can stop reading 0x14 altogether. */
+TEST_CASE(a_detach_drops_the_injected_contacts)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    const touch_point_t g[1] = { pt(0, 10, 10) };
+    const touch_point_t i[2] = { pt(0, 50, 60), pt(1, 70, 80) };
+    touch_merge_glass(&m, g, 1);
+    CHECK(touch_merge_inject(&m, i, 2, true, 0));
+    CHECK(!touch_merge_expire(&m, 999));
+    CHECK_EQ(m.inject_n, 2);
+    CHECK(touch_merge_expire(&m, 1000));
+    CHECK_EQ(m.inject_n, 0);
+    touch_point_t f[TOUCH_MAX_POINTS];
+    CHECK_EQ(touch_merge_frame(&m, f, TOUCH_MAX_POINTS), 1);
+    CHECK_EQ(f[0].x, 10);
+}
+
+/* Detached, the glass's age is touch's age, however long the injector
+ * stays silent. */
+TEST_CASE(a_detached_injector_leaves_the_glass_age)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    for (uint32_t t = 10; t <= 30000; t += 10) {
+        inj_poll(&m, t, false);
+        if (t >= TOUCH_MERGE_DETACH_MS) {
+            CHECK(!touch_merge_attached(&m));
+            CHECK_EQ(panel_age(&m, 0, t), 0);
+            CHECK_EQ(panel_age(&m, 150, t), 150);
+        }
+    }
+    /* Not due, and a stray report is not taken. */
+    CHECK(!touch_merge_inject_due(&m, 30000));
+    const touch_point_t i[1] = { pt(0, 50, 60) };
+    CHECK(!touch_merge_inject(&m, i, 1, true, 30000));
+    CHECK_EQ(m.inject_n, 0);
+    CHECK(!touch_merge_inject_failed(&m, 30000));
+    CHECK(!touch_merge_attached(&m));
+}
+
+/* Detached at 1000 ms: probed at 2000 ms, again at 3000 ms, and the first
+ * answer re-attaches it with a fresh age. */
+TEST_CASE(the_first_good_probe_reattaches)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    CHECK(touch_merge_expire(&m, 1000));
+    CHECK(!touch_merge_probe_due(&m, 1999));
+    CHECK(touch_merge_probe_due(&m, 2000));
+    CHECK(!touch_merge_probe(&m, false, 2000));
+    CHECK(!touch_merge_attached(&m));
+    CHECK(!touch_merge_probe_due(&m, 2999));
+    CHECK(touch_merge_probe_due(&m, 3000));
+    CHECK(touch_merge_probe(&m, true, 3000));
+    CHECK(touch_merge_attached(&m));
+    CHECK_EQ(m.ok_ms, 3000);
+    CHECK_EQ(m.fails, 0);
+    CHECK_EQ(panel_age(&m, 0, 3000), 0);
+    CHECK_EQ(panel_age(&m, 0, 3010), 10);
+    /* Attached again: read on every poll, no more probes. */
+    CHECK(touch_merge_inject_due(&m, 3010));
+    CHECK(!touch_merge_probe_due(&m, 9000));
+    CHECK(!touch_merge_probe(&m, true, 9000));
+    /* A probe of an attached injector changes nothing. */
+    CHECK_EQ(m.ok_ms, 3000);
+}
+
+/* Reads that fail just after a re-attach do not detach it at once: the
+ * 1000 ms run from the re-attach, and the next probe 1000 ms after that. */
+TEST_CASE(a_read_failing_just_after_reattach)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    CHECK(touch_merge_expire(&m, 1000));
+    CHECK(touch_merge_probe(&m, true, 2000));
+    for (uint32_t t = 2010; t < 3000; t += 10) {
+        inj_poll(&m, t, false);
+        CHECK(touch_merge_attached(&m));
+        CHECK_EQ(panel_age(&m, 0, t), t - 2000u);
+    }
+    CHECK(touch_merge_expire(&m, 3000));
+    CHECK(!touch_merge_probe_due(&m, 3999));
+    CHECK(touch_merge_probe_due(&m, 4000));
+}
+
+/* An injector that never answers is probed once a second, never more. */
+TEST_CASE(no_probe_more_often_than_once_a_second)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    uint32_t probes = 0;
+    uint32_t last = 0;
+    for (uint32_t t = 1; t <= 20000; ++t) {
+        (void)touch_merge_expire(&m, t);
+        if (!touch_merge_attached(&m) && touch_merge_probe_due(&m, t)) {
+            if (probes > 0u) {
+                CHECK(t - last >= TOUCH_MERGE_PROBE_MS);
+            }
+            CHECK(t >= 2000u);
+            last = t;
+            ++probes;
+            (void)touch_merge_probe(&m, false, t);
+        }
+    }
+    /* Detached at 1000 ms, probed at 2000, 3000, ... 20000 ms. */
+    CHECK_EQ(probes, 19);
+}
+
+/* The detach and probe timers across the 32-bit millisecond wrap. */
+TEST_CASE(detach_and_probe_survive_the_clock_wrap)
+{
+    touch_merge_t m;
+    const uint32_t t = UINT32_MAX - 500u;
+    touch_merge_attach(&m, t);
+    CHECK(!touch_merge_expire(&m, t + 999u));
+    CHECK_EQ(panel_age(&m, 0, t + 999u), 999);
+    CHECK(touch_merge_expire(&m, t + 1000u));
+    CHECK(!touch_merge_probe_due(&m, t + 1999u));
+    CHECK(touch_merge_probe_due(&m, t + 2000u));
+}
+
+/* An injected press held when the injector goes silent is released by the
+ * detach and does not come back with the re-attach: not on the probe, not
+ * on a read with nothing new, not from a report taken while detached. */
+TEST_CASE(no_injected_press_survives_a_detach_and_reattach)
+{
+    panel_fresh();
+    touch_merge_attach(&mg, 0);
+    const touch_point_t hold[1] = { pt(0, 400, 300) };
+    CHECK(touch_merge_inject(&mg, hold, 1, true, 0));
+    publish();
+    CHECK_EQ(trk.prev_count, 1);
+
+    CHECK(touch_merge_expire(&mg, 1000));
+    publish();
+    CHECK_EQ(trk.prev_count, 0);
+
+    CHECK(!touch_merge_inject(&mg, hold, 1, true, 1500));
+    CHECK(touch_merge_probe(&mg, true, 2000));
+    publish();
+    CHECK_EQ(trk.prev_count, 0);
+    CHECK(!touch_merge_inject(&mg, NULL, 0, false, 2010));
+    publish();
+    CHECK_EQ(trk.prev_count, 0);
+    touch_point_t f[TOUCH_MAX_POINTS];
+    CHECK_EQ(touch_merge_frame(&mg, f, TOUCH_MAX_POINTS), 0);
+
+    /* A press the injector reports after the re-attach is a press. */
+    CHECK(touch_merge_inject(&mg, hold, 1, true, 2020));
+    publish();
+    CHECK_EQ(trk.prev_count, 1);
+}
+
+/* The glass answers every 10 ms; the injector stops at 1000 ms and never
+ * comes back.  The bench disarms within 700 ms of its last answer, the
+ * heartbeat comes back at the detach, and nothing arms again. */
+TEST_CASE(a_detached_injector_gives_the_heartbeat_back)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+    const uint32_t inj_stops = 1000;
+    uint32_t disarmed_at = 0;
+    uint32_t beat_back = 0;
+    bool beat_lost = false;
+    for (uint32_t t = 10; t <= 5000; t += 10) {
+        inj_poll(&m, t, t < inj_stops);
+        if (panel_age(&m, 0, t) < PANEL_TOUCH_FRESH_MS) {
+            arming_touch_seen(&a, t);
+        }
+        arming_touch_poll(&a, t);
+        const arming_action_t act = arming_step(&a, t);
+        if (act == ARMING_ACT_DISARM && disarmed_at == 0u) {
+            disarmed_at = t;
+        }
+        const bool beat = arming_heartbeat(&a, t);
+        if (!beat) {
+            beat_lost = true;
+        } else if (beat_lost && beat_back == 0u) {
+            beat_back = t;
+        }
+        if (t > inj_stops + TOUCH_MERGE_DETACH_MS) {
+            CHECK(!a.armed);
+            CHECK(beat);
+        }
+    }
+    const uint32_t last_ok = inj_stops - 10u;
+    CHECK(disarmed_at > last_ok + ARMING_TOUCH_DEAD_MS);
+    CHECK(disarmed_at <= last_ok + PANEL_TOUCH_FRESH_MS + ARMING_TOUCH_DEAD_MS);
+    CHECK(beat_lost);
+    CHECK(beat_back >= last_ok + TOUCH_MERGE_DETACH_MS);
+    CHECK(beat_back <= last_ok + TOUCH_MERGE_DETACH_MS + 10u);
+    CHECK(!touch_merge_attached(&m));
+}
+
+/*
+ * An injector that answers every probe and fails every read: attached for
+ * 1000 ms, detached for 1000 ms, and again.  Its age never reaches
+ * TOUCH_MERGE_DETACH_MS, so each loss of the heartbeat lasts at most from
+ * 700 ms (200 ms to lose touch, then ARMING_TOUCH_DEAD_MS) to the detach,
+ * plus one poll.  Nothing arms in between.
+ */
+TEST_CASE(a_flapping_injector_holds_the_heartbeat_no_longer)
+{
+    touch_merge_t m;
+    touch_merge_attach(&m, 0);
+    arming_t a;
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, 0);
+    arming_request_arm(&a, 0);
+    uint32_t low_since = 0;
+    uint32_t longest = 0;
+    uint32_t reattached = 0;
+    bool was_attached = true;
+    for (uint32_t t = 10; t <= 20000; t += 10) {
+        inj_poll(&m, t, !touch_merge_attached(&m) || t < 500u);
+        if (touch_merge_attached(&m) && !was_attached) {
+            ++reattached;
+        }
+        was_attached = touch_merge_attached(&m);
+        const uint32_t inj = touch_merge_inject_age(touch_merge_attached(&m),
+                                                    m.ok_ms, t);
+        CHECK(inj < TOUCH_MERGE_DETACH_MS);
+        if (panel_age(&m, 0, t) < PANEL_TOUCH_FRESH_MS) {
+            arming_touch_seen(&a, t);
+        }
+        arming_touch_poll(&a, t);
+        (void)arming_step(&a, t);
+        /* Last good read at 490 ms: lost from 700 ms, dead from 1200 ms. */
+        if (t >= 490u + PANEL_TOUCH_FRESH_MS + ARMING_TOUCH_DEAD_MS + 10u) {
+            CHECK(!a.armed);
+        }
+        if (arming_heartbeat(&a, t)) {
+            low_since = 0;
+        } else {
+            if (low_since == 0u) {
+                low_since = t;
+            }
+            if (t - low_since > longest) {
+                longest = t - low_since;
+            }
+        }
+    }
+    CHECK(reattached >= 8u);
+    CHECK(longest > 0u);
+    CHECK(longest <= TOUCH_MERGE_DETACH_MS - PANEL_TOUCH_FRESH_MS
+                     - ARMING_TOUCH_DEAD_MS + 10u);
+}
+
+TEST_CASE(null_detach_calls_are_harmless)
+{
+    touch_merge_attach(NULL, 0);
+    CHECK(!touch_merge_attached(NULL));
+    CHECK(!touch_merge_expire(NULL, 5000));
+    CHECK(!touch_merge_probe_due(NULL, 5000));
+    CHECK(!touch_merge_probe(NULL, true, 5000));
+}
+
 int main(void)
 {
     RUN(glass_first_and_injected_ids_marked);
@@ -398,5 +731,17 @@ int main(void)
     RUN(an_injected_stop_stops);
     RUN(a_silent_injector_takes_the_bench_to_safe);
     RUN(no_injector_leaves_the_glass_alone);
+    RUN(an_injector_silent_for_1000_ms_detaches);
+    RUN(a_good_read_restarts_the_detach_clock);
+    RUN(a_detach_drops_the_injected_contacts);
+    RUN(a_detached_injector_leaves_the_glass_age);
+    RUN(the_first_good_probe_reattaches);
+    RUN(a_read_failing_just_after_reattach);
+    RUN(no_probe_more_often_than_once_a_second);
+    RUN(detach_and_probe_survive_the_clock_wrap);
+    RUN(no_injected_press_survives_a_detach_and_reattach);
+    RUN(a_detached_injector_gives_the_heartbeat_back);
+    RUN(a_flapping_injector_holds_the_heartbeat_no_longer);
+    RUN(null_detach_calls_are_harmless);
     return test_summary("touch_merge");
 }

@@ -5,6 +5,7 @@
 #include "touch_inject.h"
 
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "gt911.h"
 #include "touch_merge.h"
 
@@ -13,21 +14,29 @@ static const char *TAG = "touch_inject";
 /* The probe's own timeout, in ms: an address-only write. */
 #define PROBE_TIMEOUT_MS 5
 
-/* Written by touch_init() before the touch task exists, then by that task
- * alone; s_ok_ms is read from other tasks as one aligned 32-bit load. */
+/*
+ * Written by touch_init() before the touch task exists, then by that task
+ * alone.  s_ok_ms and s_attached are copies of the merge's state for
+ * touch_age_ms() and the status band, which run in other tasks: each is one
+ * aligned load, and s_ok_ms is stored before s_attached is set.  A reader
+ * that sees s_attached with an s_ok_ms from before a detach gets an age of
+ * at least TOUCH_MERGE_DETACH_MS, which touch_merge_inject_age() counts as
+ * 0, so the order of the two loads cannot age touch.
+ */
 static gt911_handle_t    s_dev;
-static bool              s_attached;
+static bool              s_is_glass;
 static touch_merge_t     s_merge;
 static volatile uint32_t s_ok_ms;
+static volatile bool     s_attached;
 
 void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
                          uint32_t now_ms)
 {
-    touch_merge_reset(&s_merge);
+    touch_merge_attach(&s_merge, now_ms);
     s_ok_ms = now_ms;
     if (glass_addr == TOUCH_INJECT_ADDR) {
         /* No controller at 0x5D, and the injector took the glass's place. */
-        s_attached = true;
+        s_is_glass = true;
         ESP_LOGW(TAG, "no GT911 at 0x5d; the injector is the only touch");
         return;
     }
@@ -47,7 +56,16 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
 
 bool touch_injector_attached(void)
 {
-    return s_attached;
+    if (s_is_glass) {
+        return true;
+    }
+    if (!s_attached) {
+        return false;
+    }
+    /* touch_age_ms()'s rule: an injector silent this long counts as
+     * detached before the touch task has detached it. */
+    const uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
+    return (uint32_t)(now - s_ok_ms) < TOUCH_MERGE_DETACH_MS;
 }
 
 bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh)
@@ -60,20 +78,58 @@ bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh)
     return true;
 }
 
+/* A detached injector, asked once a second whether it answers as a GT911
+ * again: the product ID read on the handle made at start. */
+static void probe(uint32_t now_ms)
+{
+    if (!touch_merge_probe_due(&s_merge, now_ms)) {
+        return;
+    }
+    char id[5] = { 0 };
+    const bool answered = gt911_info(s_dev, id, NULL) == ESP_OK
+                          && id[0] == '9';
+    if (touch_merge_probe(&s_merge, answered, now_ms)) {
+        s_ok_ms = now_ms;
+        s_attached = true;
+        ESP_LOGW(TAG, "touch injector at 0x%02x answers again; re-attached",
+                 TOUCH_INJECT_ADDR);
+    }
+}
+
 bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
 {
-    if (s_dev == NULL || !touch_merge_inject_due(&s_merge, now_ms)) {
+    if (s_dev == NULL) {
         return false;
     }
-    touch_point_t got[TOUCH_MAX_POINTS];
-    int n = 0;
-    bool fresh = false;
-    bool changed;
-    if (gt911_read(s_dev, got, TOUCH_MAX_POINTS, &n, &fresh) == ESP_OK) {
-        s_ok_ms = now_ms;
-        changed = touch_merge_inject(&s_merge, got, n, fresh, now_ms);
-    } else {
-        changed = touch_merge_inject_failed(&s_merge, now_ms);
+    bool changed = false;
+    /*
+     * Silent for TOUCH_MERGE_DETACH_MS (1000 ms): its contacts go, and the
+     * glass alone decides touch age, so the heartbeat comes back.  Touch
+     * read as dead 300 ms before this at the latest (200 ms to lose touch in
+     * main.c, then ARMING_TOUCH_DEAD_MS), which counted a stop and disarmed
+     * (shared/safety/arming.c:259-274).  The coprocessor latched its arm
+     * when the heartbeat stopped (shared/safety/safety_gate.c:43-46), and
+     * only a new ARM written by the panel releases it; nothing here writes
+     * one.
+     */
+    if (touch_merge_expire(&s_merge, now_ms)) {
+        s_attached = false;
+        changed = true;
+        ESP_LOGW(TAG, "touch injector at 0x%02x silent for %u ms; detached",
+                 TOUCH_INJECT_ADDR, (unsigned)TOUCH_MERGE_DETACH_MS);
+    }
+    if (!touch_merge_attached(&s_merge)) {
+        probe(now_ms);
+    } else if (touch_merge_inject_due(&s_merge, now_ms)) {
+        touch_point_t got[TOUCH_MAX_POINTS];
+        int n = 0;
+        bool fresh = false;
+        if (gt911_read(s_dev, got, TOUCH_MAX_POINTS, &n, &fresh) == ESP_OK) {
+            s_ok_ms = now_ms;
+            changed = touch_merge_inject(&s_merge, got, n, fresh, now_ms);
+        } else {
+            changed = touch_merge_inject_failed(&s_merge, now_ms);
+        }
     }
     if (changed) {
         *count = touch_merge_frame(&s_merge, pts, TOUCH_MAX_POINTS);
@@ -83,5 +139,10 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
 
 uint32_t touch_inject_age_ms(uint32_t now_ms)
 {
-    return (s_dev != NULL) ? (uint32_t)(now_ms - s_ok_ms) : 0u;
+    if (s_dev == NULL) {
+        return 0u;
+    }
+    const bool attached = s_attached;
+    const uint32_t ok_ms = s_ok_ms;
+    return touch_merge_inject_age(attached, ok_ms, now_ms);
 }
