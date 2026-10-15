@@ -36,8 +36,10 @@
  * the value the servo held.  Last, both ends are searched again: PASS when
  * both are free, FAIL when either binds.
  *
- * Writes.  A value is written in a session of the programmer: the bench
- * switched to SAFE, the port taken (CONNECT reads all registers), the
+ * Writes.  A value is written in a session of the programmer: the servo
+ * held at PULSE CENTRE for SERVO_LIMRUN_RETURN_MS after the search, so a
+ * session never starts with the servo against an end, the bench switched to
+ * SAFE, the port taken (CONNECT reads all registers), the
  * write, the port given back (LEAVE), the bench switched to ARMED again.
  * The run's first session writes nothing: CONNECT, the read, LEAVE, and
  * the first writing session right after it.  A LEAVE this link or supply
@@ -108,9 +110,11 @@ extern "C" {
  *  a 1500 us centre, is 100 positions of 250 ms, 25 s; the baseline's three
  *  and the slower windows of a busy panel fit in the rest. */
 #define SERVO_LIMRUN_SEARCH_MS    40000u
-/** Each search starts with the servo held at PULSE CENTRE this long: the
- *  return from the last end, 600 us at 0.67 us/ms (0.3 s for 60 degrees) is
- *  900 ms, and the search's baseline is not to see it travel. */
+/** Each search starts with the servo held at PULSE CENTRE this long, and
+ *  each session waits this long at PULSE CENTRE before the bench is asked
+ *  to SAFE: the return from the last end, 600 us at 0.67 us/ms (0.3 s for
+ *  60 degrees) is 900 ms, and the search's baseline is not to see it
+ *  travel. */
 #define SERVO_LIMRUN_RETURN_MS    1000u
 /** One step of the programmer -- CONNECT with its read, a write, LEAVE --
  *  at most: past the programmer's own 120 s of an operation. */
@@ -196,7 +200,8 @@ typedef enum {
 typedef enum {
     SERVO_LIMRUN_PH_NONE = 0,
     SERVO_LIMRUN_PH_SEARCH,     /**< the first search of a side          */
-    SERVO_LIMRUN_PH_SAFE,       /**< the bench on its way to SAFE        */
+    SERVO_LIMRUN_PH_SAFE,       /**< the servo back at the centre, then
+                                     the bench on its way to SAFE        */
     SERVO_LIMRUN_PH_CONNECT,
     SERVO_LIMRUN_PH_WRITE,
     SERVO_LIMRUN_PH_LEAVE,
@@ -257,6 +262,7 @@ typedef struct {
     servo_limrun_why_t   why;
     servo_test_abort_t   test_why;
     uint32_t start_ms, end_ms, phase_ms;
+    bool     safe_asked;    /**< PH_SAFE: SAFE asked, after the return    */
 
     /* The search under way. */
     servo_limit_t lf;
@@ -333,7 +339,7 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
 
 /** The programmer's answers: the servo read after CONNECT, a write's end
  *  with the values the servo holds, and the port back in PWM. */
-void servo_limrun_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
+void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
                        uint32_t now_ms);
 void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
                           uint32_t now_ms);
@@ -356,8 +362,10 @@ void servo_limrun_abort(servo_limrun_t *r, servo_test_abort_t why,
                         uint32_t now_ms);
 
 bool servo_limrun_running(const servo_limrun_t *r);
-/** The run asked the bench to SAFE or to ARMED and waits for it: a disarm
- *  then is its own, not the operator's. */
+/** The run asked the bench to SAFE or to ARMED and waits for it, or holds
+ *  the programmer: a disarm then is its own, not the operator's.  Not while
+ *  the servo returns to the centre before a session: a disarm then is the
+ *  operator's. */
 bool servo_limrun_switching(const servo_limrun_t *r);
 /** The run holds the programmer: CONNECT to LEAVE. */
 bool servo_limrun_programming(const servo_limrun_t *r);

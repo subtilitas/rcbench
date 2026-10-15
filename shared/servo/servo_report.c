@@ -340,8 +340,8 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_SIDE_UNKNOWN] = "end it limits not found",
     [SERVO_STR_L_R_MARGIN]       = "Margin:         %u %% of the free value, "
                                    "at least %u, below it",
-    [SERVO_STR_L_R_WRITES]       = "Writes:         %u values in %u writes, "
-                                   "cap %u values; %u sessions",
+    [SERVO_STR_L_R_WRITES]       = "Writes:         values written %u, writes "
+                                   "sent %u, cap %u values; sessions %u",
     [SERVO_STR_L_R_BACKUP]       = "Backup:         %s, the values before "
                                    "the run",
     [SERVO_STR_L_R_BACKUP_MEM]   = "Backup:         the panel's memory only, "

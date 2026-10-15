@@ -200,9 +200,9 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 672 | 2 496 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 960 | 2 208 |
 | `control` | `control_task` | 6 144 | 4 288 | 832 |
-| `runlog` | `log_task` | 4 352 | 2 976 | 352 |
+| `runlog` | `log_task` | 4 352 | 2 992 | 336 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
@@ -229,7 +229,7 @@ Untergrenze:
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
   den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers
   und denen der Startprüfung nach einem Update, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 232
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 226
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

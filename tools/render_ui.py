@@ -183,6 +183,17 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
+    # The limit run on LIMITS (servo_limrun.h) against the simulated KST
+    # servo on the programming port: SEARCH+PROG chosen, a run partway, run
+    # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
+    # with RESTORE named, and RESTORE's list in the programmer after a STOP
+    # in a session.
+    "servo-limrun-ready":   ("servo-limrun-ready.png",   "servo", "dark"),
+    "servo-limrun":         ("servo-limrun.png",         "servo", "dark"),
+    "servo-limrun-pass":    ("servo-limrun-pass.png",    "servo", "dark"),
+    "servo-limrun-found":   ("servo-limrun-found.png",   "servo", "dark"),
+    "servo-limrun-stopped": ("servo-limrun-stopped.png", "servo", "dark"),
+    "servo-limrun-restore": ("servo-limrun-restore.png", "servo", "dark"),
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
     # simulated servo.

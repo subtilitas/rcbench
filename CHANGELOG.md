@@ -51,9 +51,28 @@ history is in git.
   image grows by 127,856 bytes, and the free static internal RAM goes from
   42,806 to 40,174 bytes. How long the check and the download take on a real
   network is not measured.
+- The SERVO screen runs the installed-limit search: START LIMIT RUN on the
+  LIMITS page, a 2 s hold while ARMED. It searches from PULSE CENTRE to
+  PULSE MIN and to PULSE MAX in 10 us steps on INA3221 CH1's 50 ms windows,
+  reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
+  nothing of the bench's own pulse range. It runs only with the INA3221 as
+  the servo rail's meter; the line under the button names the output it
+  drives and why it cannot start. The search's protections are active: 3.0
+  A at every 1 ms sample, above 1.0 A for 400 ms, no window for 200 ms, 40 s
+  a search.
+- SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
+  on the programming port until neither end binds, 5 % (at least 2) below
+  the last free value, at most 24 values written a run. The register for
+  each side is found from the run's first write. RESTORE offers `Values
+  before the limit run`.
 
 ### Changed
 
+- The automatic servo test on the INA3221 ends ABORTED after 200 ms without
+  a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
+  run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
+- The SERVO settings' line that says the setup is not saved spans the
+  card: the German text is 296 px wide.
 - The bench configurator describes release 0.19.0. Every repository source
   of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
   line of that tag, in `STATUS.md`, `docs/Building.md` and

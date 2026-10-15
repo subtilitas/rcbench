@@ -216,7 +216,7 @@ static void programmer(void)
         sv.type = 0x0815u;
         snprintf(sv.backup, sizeof(sv.backup), "%s", "KST00001.KST");
         ++g.connects;
-        servo_limrun_read(&g.run, &sv, g.now);
+        servo_limrun_connected(&g.run, &sv, g.now);
     } else if (op == OP_WRITE) {
         ++g.write_ops;
         if (g.write_ops == g.refuse_write) {
@@ -472,6 +472,12 @@ static void converges(bool reversion)
     CHECK_EQ(g.opens, 1u);
     CHECK_EQ(g.ends, 1u);
     CHECK(strstr(g.report, "RCBENCH SERVO LIMIT REPORT") != NULL);
+    /* The values the run found, for the box's LEFT 150>84. */
+    uint16_t was_l = 0u, was_r = 0u;
+    CHECK(servo_limrun_original(&g.run, &was_l, &was_r));
+    CHECK_EQ(was_l, 150u);
+    CHECK_EQ(was_r, 150u);
+    CHECK(servo_limrun_original(&g.run, NULL, NULL));
 }
 
 TEST_CASE(both_sides_converge_with_reversion_off)
@@ -824,7 +830,7 @@ TEST_CASE(the_runs_own_timeouts_end_it)
     run_for(1u);
     g.bench_ms = 0xFFFFFFFFu;
     CHECK(run_to(SERVO_LIMRUN_PH_SAFE, RUN_MS));
-    run_for(SERVO_LIMRUN_BENCH_MS + 100u);
+    run_for(SERVO_LIMRUN_RETURN_MS + SERVO_LIMRUN_BENCH_MS + 100u);
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_BENCH);
 
     CHECK(to_phase(SERVO_LIMRUN_PH_LEAVE));
@@ -861,6 +867,46 @@ TEST_CASE(the_runs_own_timeouts_end_it)
     run_for(100u);
     CHECK_EQ(g.run.test_why, SERVO_TEST_AB_DISARMED);
     CHECK_EQ(g.offs, 1u);
+}
+
+/* Before every session the servo goes back to PULSE CENTRE from the end the
+ * search left it at, and SAFE is asked SERVO_LIMRUN_RETURN_MS later, not
+ * sooner: a session never starts with the servo against an end.  A disarm
+ * while it returns is the operator's and ends the run. */
+TEST_CASE(a_session_starts_with_the_servo_back_at_the_centre)
+{
+    for (int k = 0; k < 2; ++k) {
+        rig_init(0u, false);
+        CHECK(start());
+        CHECK(run_to(SERVO_LIMRUN_PH_SAFE, RUN_MS));
+        const uint32_t at = g.run.phase_ms;
+        /* The horn still out at the end the search reached. */
+        CHECK(fabsf(g.servo.position_us - (float)CENTRE) > 200.0f);
+        while (g.now - at < 20u) {
+            tick();
+        }
+        CHECK_EQ(g.cmd, CENTRE);
+        CHECK(!servo_limrun_switching(&g.run));
+        if (k == 1) {
+            g.live = false;
+            run_for(100u);
+            CHECK(!servo_limrun_running(&g.run));
+            CHECK_EQ(g.run.test_why, SERVO_TEST_AB_DISARMED);
+            CHECK_EQ(g.disarms, 0u);
+            CHECK_EQ(g.offs, 1u);
+            continue;
+        }
+        while (g.now - at < SERVO_LIMRUN_RETURN_MS - 1u) {
+            tick();
+        }
+        CHECK_EQ(g.disarms, 0u);
+        while (g.now - at < SERVO_LIMRUN_RETURN_MS + 10u) {
+            tick();
+        }
+        CHECK_EQ(g.disarms, 1u);
+        CHECK(servo_limrun_switching(&g.run));
+        CHECK(run_to(SERVO_LIMRUN_PH_CONNECT, 5000u));
+    }
 }
 
 /* --- the protections ------------------------------------------------------- */
@@ -1091,8 +1137,8 @@ TEST_CASE(the_report_holds_the_run)
     snprintf(want, sizeof(want), "RIGHT ANGLE:    150 before, %u after",
              (unsigned)reg_get(KST_F_RIGHT_ANGLE));
     CHECK(strstr(g.report, want) != NULL);
-    snprintf(want, sizeof(want), "%u values in %u writes", g.run.writes,
-             g.run.write_ops);
+    snprintf(want, sizeof(want), "values written %u, writes sent %u",
+             g.run.writes, g.run.write_ops);
     CHECK(strstr(g.report, want) != NULL);
     CHECK(strstr(g.report, "KST00001.KST") != NULL);
     CHECK(strstr(g.report, "5 %") != NULL);
@@ -1137,6 +1183,46 @@ TEST_CASE(a_start_with_its_centre_outside_min_and_max_is_refused)
 
 /* The margin: 5 % of the free value, at least 2 counts, never below the
  * smallest value. */
+/* Every reason and every phase has words of its own, and a reason fits the
+ * box's line of 31 characters.  No servo read: no values to give. */
+TEST_CASE(every_reason_and_phase_has_its_words)
+{
+    servo_limrun_t r;
+    servo_limrun_init(&r);
+    CHECK(!servo_limrun_original(&r, NULL, NULL));
+    CHECK(!servo_limrun_original(NULL, NULL, NULL));
+    CHECK_EQ(servo_limrun_why_str(NULL), SERVO_STR_AB_NONE);
+    servo_str_t seen[SERVO_LIMRUN_WHY_COUNT];
+    for (int w = SERVO_LIMRUN_WHY_HARD; w < SERVO_LIMRUN_WHY_COUNT; ++w) {
+        r.why = (servo_limrun_why_t)w;
+        const servo_str_t id = servo_limrun_why_str(&r);
+        seen[w] = id;
+        CHECK(id != SERVO_STR_AB_NONE);
+        CHECK(strlen(servo_str(id)) > 0u);
+        CHECK(strlen(servo_str(id)) <= 31u);
+        for (int k = SERVO_LIMRUN_WHY_HARD; k < w; ++k) {
+            CHECK(seen[k] != id);
+        }
+    }
+    r.why = SERVO_LIMRUN_WHY_TEST;
+    r.test_why = SERVO_TEST_AB_STOP;
+    CHECK_EQ(servo_limrun_why_str(&r), servo_test_abort_str(SERVO_TEST_AB_STOP));
+    r.why = SERVO_LIMRUN_WHY_COUNT;
+    CHECK_EQ(servo_limrun_why_str(&r), SERVO_STR_AB_NONE);
+    for (int p = SERVO_LIMRUN_PH_SEARCH; p <= SERVO_LIMRUN_PH_CHECK; ++p) {
+        const servo_str_t id = servo_limrun_phase_str((servo_limrun_phase_t)p);
+        CHECK(id != SERVO_STR_PHASE_NONE);
+        CHECK(strlen(servo_str(id)) > 0u);
+        for (int k = SERVO_LIMRUN_PH_SEARCH; k < p; ++k) {
+            CHECK(servo_limrun_phase_str((servo_limrun_phase_t)k) != id);
+        }
+    }
+    CHECK_EQ(servo_limrun_phase_str(SERVO_LIMRUN_PH_NONE),
+             SERVO_STR_PHASE_NONE);
+    CHECK(servo_limrun_verdict_str(SERVO_LIMRUN_FOUND)
+          != servo_limrun_verdict_str(SERVO_LIMRUN_FREE));
+}
+
 TEST_CASE(the_margin)
 {
     CHECK_EQ(servo_limrun_final(100u, 1u), 95u);
@@ -1166,6 +1252,7 @@ int main(void)
     RUN(a_step_the_programmer_refuses_aborts);
     RUN(every_caller_abort_ends_every_phase_with_the_output_off);
     RUN(the_runs_own_timeouts_end_it);
+    RUN(a_session_starts_with_the_servo_back_at_the_centre);
     RUN(a_sample_at_3_a_ends_the_run_in_every_phase);
     RUN(above_1_a_for_400_ms_ends_the_run);
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
@@ -1173,6 +1260,7 @@ int main(void)
     RUN(a_run_across_the_tick_wrap_ends_as_at_tick_0);
     RUN(the_report_holds_the_run);
     RUN(a_start_with_its_centre_outside_min_and_max_is_refused);
+    RUN(every_reason_and_phase_has_its_words);
     RUN(the_margin);
     return test_summary("servo_limrun");
 }

@@ -764,6 +764,26 @@ plot does:
 
 ![A result on the INA3221](img/servo-result-ina.png)
 
+**START LIMIT RUN runs the limit search** on the LIMITS page: the servo
+stepped from PULSE CENTRE to PULSE MIN and to PULSE MAX in 10 us steps
+until its current shows the linkage bound, and, with LIMIT RUN on
+SEARCH+PROG, a KST or Chaservo servo's LEFT ANGLE and RIGHT ANGLE lowered
+until neither end binds. [Servo procedures](Servo.md#installed-mechanical-limit)
+gives the method, the protections and the report. It is a 2 s hold while
+the bench is ARMED and the INA3221 is the servo rail's meter; the line
+under it names the output it drives and the meter, `OUTPUT PROG PORT GP13,
+CURRENT INA3221 CH1`, and the next line says why it cannot start. The
+settings close as the run starts. Its box on the left card shows the
+values written of 24, the phase with the side and the pulse, and the output
+it drives, with STOP RUN; after the run, the verdict, the values or the
+ends, and `BENCHnnn.TXT` until CLOSE. The run switches the bench to SAFE and
+to ARMED itself for each write; the operator's STOP, SAFE or any of the
+automatic test's reasons end it with the output off.
+
+![The limit run, ready](img/servo-limrun-ready.png)
+![The limit run, programming](img/servo-limrun.png)
+![A programmed servo](img/servo-limrun-pass.png)
+
 ### Programmer
 
 PROGRAM, beside SETTINGS, opens the programmer for KST and Chaservo servos
@@ -810,6 +830,8 @@ name opens a keyboard.
 | LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
 | LIMITS | STALL AT | above this current the servo counts as stalled |
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
+| LIMITS | LIMIT RUN | SEARCH ONLY or SEARCH+PROG, a tap switches; SEARCH+PROG is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under START LIMIT RUN otherwise. For the session |
+| LIMITS | START LIMIT RUN | the limit search: a 2 s hold while the bench is ARMED and the INA3221 is the servo rail's meter; STOP RUN while it runs |
 | DUT | NAME | the device under test, up to 23 characters, for the report |
 | DUT | REPORT | a text report beside each test's log |
 | DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |

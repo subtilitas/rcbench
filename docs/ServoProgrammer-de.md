@@ -813,6 +813,7 @@ Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
 | --- | --- | --- |
 | `Backup dieser Sitzung, wie zuerst gelesen` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
 | `Werte vor dem unterbrochenen Schreiben` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
+| `Werte vor dem Endlagenlauf` | LEFT ANGLE und RIGHT ANGLE, wie die erste Sitzung des [Endlagenlaufs](#der-endlagenlauf) sie las, als Schreiben mit jeder Limit-Prüfung. Angeboten, solange das gelesene Servo sich in diesen beiden Feldern und in keinem anderen davon unterscheidet | jedes andere Feld: es ist so, wie der Lauf es vorfand |
 
 Ein Zurückspielen aus dem Abbild des Panels ist ein gewöhnliches
 Schreiben: der Koprozessor nimmt ein ungeprüftes Zurückspielen nur für das
@@ -887,6 +888,32 @@ das Servo ist, wie die erste **ALLES LESEN** es vorfindet. Eine
 Backup-Datei auf der Karte bleibt dort.
 
 ![Ein anderes Servo als das des Backups](img/de/servo-kst-swapped.png)
+
+## Der Endlagenlauf
+
+Der Endlagenlauf des SERVO-Bildschirms führt mit SUCHE+PROG den
+Programmierer selbst
+([Servoverfahren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
+Jeder Wert, den er schreibt, ist eine Sitzung: VERBINDEN mit seinem Lesen,
+SCHREIBEN AUF SERVO FREIGEBEN an, LEFT ANGLE und RIGHT ANGLE geschrieben und
+zurückgelesen, der Schreibschalter aus, VERLASSEN. Was das Overlay offen
+hat, schließt sich bei jedem Schritt. Ein Wert unter 50 passiert seine
+weiche Grenze ohne die Seite: das Halten von 2 s beim Start des Laufs ist
+die Zustimmung. Eine harte Grenze lehnt einen Wert ab wie eine Änderung,
+und der Lauf endet.
+
+Das erste Schreiben des Laufs sichert die Backup-Datei, wie jedes erste
+Schreiben. Eine spätere Sitzung des Laufs, deren Servo sich vom ersten Lesen
+des Laufs höchstens in LEFT ANGLE und RIGHT ANGLE unterscheidet, sichert
+keine Datei: die erste Datei hält das Servo, wie der Lauf es vorfand. Der
+Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des nächsten Laufs oder
+einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem
+Endlagenlauf` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
+und das Feld des Laufs ihn: `PROG-PORT GP13`.
+
+Ein Lauf, der in einer Sitzung endet, lässt den Port im Programmiermodus
+mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn an PWM zurück;
+VERBINDEN und ALLES LESEN bieten das Zurückspielen an.
 
 ## Weiteres
 

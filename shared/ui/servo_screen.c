@@ -3086,6 +3086,11 @@ static void ask_hv_test(void)
 
 bool servo_screen_testing(void) { return servo_test_running(&s.test); }
 
+bool servo_screen_limit_running(void)
+{
+    return servo_limrun_running(&s.lim);
+}
+
 /* The automatic test's outbox first, then the limit run's: one of the two
  * runs at a time, and each drained before the other starts. */
 servo_test_out_t servo_screen_test_peek(const char **text)
@@ -3316,7 +3321,7 @@ static void lim_poll(void)
                                     &sv.reversion, &type_no);
         sv.type = type_no;
         snprintf(sv.backup, sizeof(sv.backup), "%s", kst_panel_run_backup());
-        servo_limrun_read(&s.lim, &sv, test_now());
+        servo_limrun_connected(&s.lim, &sv, test_now());
         break;
     case SERVO_LIMRUN_PH_WRITE:
         if (ok) {
@@ -5067,6 +5072,12 @@ static void draw_lim_box(gfx_canvas_t *c)
              * puts back the ones before the run. */
             snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
             col3 = ui_theme_color(UI_C_WARN);
+        } else if (v == SERVO_LIMRUN_FOUND || v == SERVO_LIMRUN_FREE) {
+            /* The ends are the line above: the output they were found on
+             * under them. */
+            (void)servo_target_line(l3, sizeof(l3), s.drive_target,
+                                    s.drive_pin, s.drive_pwm, s.pins,
+                                    s.pins_known);
         } else {
             char a[24], z[24];
             lim_end_text(a, sizeof(a), r->after[0].done ? &r->after[0]
@@ -5540,10 +5551,11 @@ static uint8_t save_state(void)
     return settings_dirty() ? 3u : 0u;
 }
 
+/* Across the card: the German "not saved" line is 296 px. */
 static gfx_rect_t save_line_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
-                         (int16_t)(OV_W / 2), 18 };
+                         (int16_t)(OV_W - 20), 18 };
 }
 
 static void draw_save_line(gfx_canvas_t *c)

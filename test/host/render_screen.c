@@ -842,6 +842,25 @@ static void servo_run_view(bool to_the_end, bool ina)
     for (int i = 0; i < 115; ++i) {
         now += 20u;
         servo_screen_clock(now);
+        if (ina && (now / 50u) != ((now - 20u) / 50u)) {
+            /* The windows go on under the finger: a run that starts
+             * before the release ends after 200 ms without one. */
+            const int ma = (int)(servo_sim_step(&sv, cmd, now) * 1000.0f);
+            sense_link_win_t w;
+            memset(&w, 0, sizeof(w));
+            w.number   = ++win_number;
+            w.current  = true;
+            w.voltage  = true;
+            w.mean_ma  = (int16_t)ma;
+            w.max_ma   = (int16_t)ma;
+            w.min_ma   = (int16_t)ma;
+            w.mean_mv  = (uint16_t)((int)(supply_screen_set_v() * 1000.0f)
+                                    - ma / 4);
+            w.min_mv   = w.mean_mv;
+            w.taken_ms = now;
+            w.stamped  = true;
+            servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
+        }
         ui_router_tick(0.02f);
     }
     e.type = TOUCH_EVENT_UP;
@@ -916,6 +935,234 @@ static void servo_run_view(bool to_the_end, bool ina)
         servo_screen_test_files(12, true);
         ui_router_tick(0.02f);
     }
+}
+
+/*
+ * The limit run of LIMITS, on the bench of the host tests (test_kst_panel.c):
+ * the simulated KST servo on programming port 1, GP13, behind the servo
+ * model, whose travel LEFT ANGLE and RIGHT ANGLE limit at 4 us a count
+ * (kst_sim.h sim_travel()); its stops at 1150 and 1880 us; the INA3221's
+ * CH1 windows from it every 50 ms; a bench that goes SAFE and ARMED as the
+ * screen asks.  One frame of the rig is 1 ms.
+ *
+ *   -ready    LIMITS with SEARCH+PROG chosen, before the hold
+ *   (none)    running, a probe after the third session
+ *   -pass     SEARCH+PROG run out: PASS
+ *   -found    SEARCH ONLY on the bench's own output, GP2: FOUND
+ *   -stopped  STOP in the probe after the first write: ABORTED, RESTORE
+ *             named
+ *   -restore  STOP in the session after the first write, then READ ALL
+ *             and RESTORE's list: the servo as the run found it
+ */
+static struct {
+    servo_sim_t sv;
+    uint16_t cmd;
+    bool armed, prog, out;
+    uint16_t win_no;
+    uint32_t win_end;
+    float sum;
+    unsigned n;
+} s_lr;
+
+static void limrun_ms(uint32_t ms)
+{
+    for (uint32_t k = 0; k < ms; ++k) {
+        uint16_t lo, hi;
+
+        rig_frame();
+        sim_travel(g_rig.sim.reg, 1500u, 0.0f, 4.0f, &lo, &hi);
+        s_lr.sv.cfg.limit_lo_us = s_lr.prog ? lo : 1u;
+        s_lr.sv.cfg.limit_hi_us = s_lr.prog ? hi : 65000u;
+        s_lr.sum += s_lr.out ? servo_sim_step(&s_lr.sv, s_lr.cmd, g_rig.ms)
+                             : 0.0f;
+        s_lr.n++;
+        if ((int32_t)(g_rig.ms - s_lr.win_end) >= 0) {
+            const int ma = (int)(s_lr.sum / (float)s_lr.n * 1000.0f + 0.5f);
+            sense_link_win_t w;
+
+            memset(&w, 0, sizeof(w));
+            w.number   = ++s_lr.win_no;
+            w.current  = true;
+            w.voltage  = true;
+            w.mean_ma  = (int16_t)ma;
+            w.max_ma   = (int16_t)ma;
+            w.min_ma   = (int16_t)ma;
+            w.mean_mv  = s_lr.out ? (uint16_t)(6000 - ma / 4) : 0u;
+            w.min_mv   = w.mean_mv;
+            w.taken_ms = g_rig.ms;
+            w.stamped  = true;
+            servo_screen_window(&w, SERVO_SOURCE_INA3221, 2u);
+            s_lr.win_end += 50u;
+            s_lr.sum = 0.0f;
+            s_lr.n = 0u;
+        }
+        if (g_rig.ms % 20u != 0u) {
+            continue;
+        }
+        servo_screen_clock(g_rig.ms);
+        supply_cmd_t sc;
+        while (supply_screen_poll_cmd(&sc)) {
+            s_lr.out = sc.off ? false : (sc.on ? true : s_lr.out);
+        }
+        supply_screen_set_output(s_lr.out);
+        if (g_rig.ms % 100u == 0u) {
+            /* SUPPLY's own readings, for its OUTPUT button: the servo
+             * screen's run reads the INA3221 alone. */
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online   = true;
+            st.ok       = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output   = s_lr.out;
+            st.set_v    = supply_screen_set_v();
+            st.set_i    = supply_screen_set_i();
+            st.v        = s_lr.out ? st.set_v : 0.0f;
+            st.mode     = s_lr.out ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+            st.taken_ms = g_rig.ms;
+            st.stamped  = true;
+            supply_screen_push(&st);
+        }
+        if (s_lr.prog) {
+            servo_screen_set_drive(
+                1u, 13u,
+                kst_prog_state(kst_panel_model()) == KST_PROG_PWM
+                    && !kst_panel_holds_port());
+        }
+        servo_cmd_t c;
+        while (servo_screen_take(&c)) {
+            if (c.kind == SERVO_CMD_POSITION) {
+                s_lr.cmd = c.value_us;
+            } else if (c.kind == SERVO_CMD_RELEASE) {
+                s_lr.cmd = 1500u;
+            } else if (c.kind == SERVO_CMD_DISARM) {
+                s_lr.armed = false;
+            } else if (c.kind == SERVO_CMD_ARM
+                       && !kst_panel_holds_port()
+                       && kst_prog_state(kst_panel_model())
+                              == KST_PROG_PWM) {
+                /* The control task drops an ARM while the programmer holds
+                 * the port. */
+                s_lr.armed = true;
+            }
+        }
+        g_rig.safe = !s_lr.armed;
+        servo_screen_set_armed(s_lr.armed);
+        ui_router_tick(0.02f);
+        const char *text = NULL;
+        while (servo_screen_test_peek(&text) != SERVO_TEST_OUT_NONE) {
+            servo_screen_test_pop();
+        }
+    }
+}
+
+static void limrun_view(const char *view)
+{
+    const char *v = view + strlen("servo-limrun");
+    servo_sim_cfg_t cfg;
+
+    memset(&s_lr, 0, sizeof(s_lr));
+    s_lr.prog = strcmp(v, "-found") != 0;
+    rig_fresh();
+    g_rig.card = true;
+    (void)rig_link_up(LINK_PROTOCOL_MINOR);
+    servo_sim_defaults(&cfg);                   /* stops at 1150 and 1880 */
+    servo_sim_init(&s_lr.sv, &cfg);
+    s_lr.sv.position_us = 1500.0f;
+    s_lr.cmd = 1500u;
+    s_lr.armed = true;
+    s_lr.out = true;
+    settings_set_text(SET_TEXT_DUT_NAME, "DS3218 #2");
+    settings_set(SET_INA3221_EN, 1.0f);
+    if (s_lr.prog) {
+        settings_set(SET_SERVO_TARGET, 1.0f);
+        servo_screen_set_drive(1u, 13u, true);
+    }
+    servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
+    servo_screen_source(SERVO_SOURCE_INA3221, 2u);
+    servo_screen_set_armed(true);
+    servo_screen_feedback(0u, 0.0f, false);
+    ui_router_goto(SCREEN_SERVO);
+    s_lr.win_end = g_rig.ms + 50u;
+    limrun_ms(400u);
+    tap(734, UI_BAND_H + 24);                   /* SETTINGS */
+    tap(216, UI_BAND_H + 27);                   /* LIMITS */
+    if (s_lr.prog) {
+        tap(100, UI_BAND_H + 323);              /* LIMIT RUN: SEARCH+PROG */
+    }
+    limrun_ms(100u);
+    if (strcmp(v, "-ready") == 0) {
+        return;
+    }
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = 369,
+                                   .y = (int16_t)(UI_BAND_H + 323),
+                                   .strength = 40 } };
+    ui_router_event(&e);                        /* START LIMIT RUN, held */
+    limrun_ms(2300u);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    if (v[0] == '\0') {
+        /* A probe of the third writing session, partway out. */
+        unsigned sessions = 0u;
+        bool held = false;
+        for (int i = 0; i < 400000 && sessions < 4u; ++i) {
+            limrun_ms(1u);
+            const bool now = kst_panel_holds_port();
+            sessions += (held && !now) ? 1u : 0u;
+            held = now;
+        }
+        limrun_ms(5000u);
+        return;
+    }
+    if (strcmp(v, "-stopped") == 0) {
+        /* STOP 3 s into the probe after the first write. */
+        unsigned sessions = 0u;
+        bool held = false;
+        for (int i = 0; i < 400000 && sessions < 2u; ++i) {
+            limrun_ms(1u);
+            const bool now = kst_panel_holds_port();
+            sessions += (held && !now) ? 1u : 0u;
+            held = now;
+        }
+        limrun_ms(4000u);
+        rig_stop(true);
+        servo_screen_cancel_arm();
+        s_lr.armed = false;                     /* the bench drops to SAFE */
+        limrun_ms(1000u);
+        servo_screen_test_files(14, true);
+        limrun_ms(20u);
+        return;
+    }
+    if (strcmp(v, "-restore") == 0) {
+        /* STOP in the session after the first write; STOP let go, READ
+         * ALL, ENABLE WRITE and RESTORE's list. */
+        unsigned sessions = 0u;
+        bool held = false;
+        for (int i = 0; i < 400000 && sessions < 3u; ++i) {
+            limrun_ms(1u);
+            const bool now = kst_panel_holds_port();
+            sessions += (!held && now) ? 1u : 0u;
+            held = now;
+        }
+        limrun_ms(300u);
+        rig_stop(true);
+        servo_screen_cancel_arm();
+        s_lr.armed = false;                     /* the bench drops to SAFE */
+        limrun_ms(2000u);
+        rig_stop(false);
+        limrun_ms(100u);
+        ktap(kst_panel_value_rect(0, 1, 0));        /* READ ALL */
+        ksettle();
+        kenable();
+        ktap(kst_panel_value_rect(0, 2, 0));        /* RESTORE */
+        ui_router_tick(0.02f);
+        return;
+    }
+    for (int i = 0; i < 1200 && servo_screen_limit_running(); ++i) {
+        limrun_ms(500u);
+    }
+    limrun_ms(1000u);
+    servo_screen_test_files(s_lr.prog ? 13 : 12, true);
+    limrun_ms(20u);
 }
 
 /*
@@ -2411,7 +2658,9 @@ int main(int argc, char **argv)
              * over the plot carries the MODELLED pill. */
             supply_screen_set_model(true);
         }
-        if (strncmp(view, "servo-kst", 9) == 0) {
+        if (strncmp(view, "servo-limrun", 12) == 0) {
+            limrun_view(view);
+        } else if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
@@ -2478,7 +2727,10 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-result") == 0
                    || strcmp(view, "servo-result-ina") == 0
                    || strcmp(view, "servo-sweep") == 0
-                   || strcmp(view, "servo-paused") == 0;
+                   || strcmp(view, "servo-paused") == 0
+                   || (strncmp(view, "servo-limrun", 12) == 0
+                       && strcmp(view, "servo-limrun-restore") != 0
+                       && strcmp(view, "servo-limrun-stopped") != 0);
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;

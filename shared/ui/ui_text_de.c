@@ -916,7 +916,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIM_VERDICT]         = "ENDLAGEN %s",
     [TX_SV_LIM_ENDS]            = "UNTEN %s  OBEN %s",
     [TX_SV_LIM_SET]             = "LEFT %u>%u  RIGHT %u>%u",
-    [TX_SV_LIM_RESTORE]         = "RESTORE IN %s",
+    [TX_SV_LIM_RESTORE]         = "ZURÜCKSPIELEN IN %s",
     [TX_SV_DUT_NOTE]            = "Der Name steht über jedem Testbericht.",
     [TX_SV_ENC_NOTE_1]          = "AS5600: Winkelsensor an der Hornwelle.",
     [TX_SV_ENC_NOTE_2]          = "ENC-MITTE tippen, wenn der Servo in Neutral steht.",
@@ -1963,9 +1963,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_FREE]           = "FREI",
     [SERVO_STR_L_PH_SEARCH]      = "SUCHE",
     [SERVO_STR_L_PH_SAFE]        = "SAFE",
-    [SERVO_STR_L_PH_CONNECT]     = "CONNECT",
+    [SERVO_STR_L_PH_CONNECT]     = "VERBINDEN",
     [SERVO_STR_L_PH_WRITE]       = "SCHREIBEN",
-    [SERVO_STR_L_PH_LEAVE]       = "LEAVE",
+    [SERVO_STR_L_PH_LEAVE]       = "VERLASSEN",
     [SERVO_STR_L_PH_ARM]         = "ARM",
     [SERVO_STR_L_PH_PROBE]       = "PRÜFUNG",
     [SERVO_STR_L_PH_CHECK]       = "KONTROLLE",
@@ -2029,14 +2029,14 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_SIDE_UNKNOWN] = "begrenztes Ende nicht gefunden",
     [SERVO_STR_L_R_MARGIN]       = "Abstand:         %u %% des freien Werts, "
                                    "mindestens %u, darunter",
-    [SERVO_STR_L_R_WRITES]       = "Schreibvorgänge: %u Werte in %u "
-                                   "Schreibvorgängen, Grenze %u Werte; %u "
-                                   "Sitzungen",
+    [SERVO_STR_L_R_WRITES]       = "Schreibvorgänge: Werte geschrieben %u, "
+                                   "Schreibvorgänge gesendet %u, Grenze %u "
+                                   "Werte; Sitzungen %u",
     [SERVO_STR_L_R_BACKUP]       = "Sicherung:       %s, die Werte vor dem "
                                    "Lauf",
     [SERVO_STR_L_R_BACKUP_MEM]   = "Sicherung:       nur im Speicher des "
                                    "Panels, keine Karte",
-    [SERVO_STR_L_R_RESTORE]      = "Rückholen:       RESTORE auf der "
+    [SERVO_STR_L_R_RESTORE]      = "Rückholen:       ZURÜCKSPIELEN auf der "
                                    "Programmierseite, aus den Werten vor dem "
                                    "Endlagenlauf",
     [SERVO_STR_L_R_UNIT]         = "Einheit: die Einheit von LEFT ANGLE und "

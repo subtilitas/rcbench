@@ -4538,7 +4538,7 @@ static struct {
     bool     released;
     bool     stepped;          /* a position went out with no slew   */
     float    set_v_max;        /* the highest set point while it ran */
-    unsigned opens, csv, txt, ends;
+    unsigned opens, opens_txt, csv, txt, ends;
     char     report[4096];
     size_t   report_len;
     char     csv_head[256];     /* the CSV's first line */
@@ -4604,6 +4604,8 @@ static void bench_drain(void)
         }
         if (o == SERVO_TEST_OUT_OPEN) {
             ++bench.opens;
+        } else if (o == SERVO_TEST_OUT_OPEN_TXT) {
+            ++bench.opens_txt;
         } else if (o == SERVO_TEST_OUT_CSV) {
             if (bench.csv == 0u) {
                 snprintf(bench.csv_head, sizeof(bench.csv_head), "%s", text);
@@ -4753,11 +4755,12 @@ static bool both_whole_in(int x0, int y0, int w, int h)
     return true;
 }
 
-/* Hold START TEST for @p secs on the TEST page, which is opened first. */
-static void hold_start(float secs)
+/* Hold the button at START TEST's place for @p secs on the page @p tab,
+ * which is opened first. */
+static void hold_start_on(int tab, float secs)
 {
     open_settings();
-    tap(TAB_X(1), TAB_Y);
+    tap(TAB_X(tab), TAB_Y);
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
         if (bench.ina) {
@@ -4772,6 +4775,12 @@ static void hold_start(float secs)
         scr->tick(0.02f);
     }
     ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+}
+
+/* Hold START TEST for @p secs on the TEST page, which is opened first. */
+static void hold_start(float secs)
+{
+    hold_start_on(1, secs);
 }
 
 /* Short runs: two movements a step. */
@@ -8701,6 +8710,321 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
     CHECK(!servo_screen_testing());
 }
 
+/* ------------------------------------------------------------ the limit run */
+
+/*
+ * START LIMIT RUN, mirrored from servo_screen.c: at START TEST's place on
+ * the LIMITS page, LIMIT RUN at the left column's row 6, and the page's
+ * three lines under them from 2 px under the top of row 7, 18 px apart.
+ */
+#define LIM_TAB     2
+#define LIM_MODE_Y  ROW_Y(6)
+#define LIM_LINE_Y(i) (54 + 7 * 42 + 2 + 18 * (i))
+
+/* Buffer 0 drawn with the LIMITS page open, and whether its line @p i
+ * reads @p text in @p col on the page's background, and nothing else. */
+static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
+{
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = LIM_LINE_Y(i);
+    const gfx_color_t bg = fb[(size_t)y * W + 12u];
+    gfx_fill_rect(&want_cv, 10, (int16_t)y, 478, 16, bg);
+    gfx_text(&want_cv, 16, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
+    return same_in(fb, want_fb, 10, y, 478, 16);
+}
+
+/* Line @p i of the limit run's box on the left card: its text at the
+ * box's left edge on the box's own fill, compared across the box. */
+#define LIM_BOX_X 16
+#define LIM_BOX_Y 16
+static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
+{
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = LIM_BOX_Y + 8 + 20 * i;
+    const gfx_color_t bg = fb[(size_t)y * W + LIM_BOX_X + 4];
+    gfx_fill_rect(&want_cv, LIM_BOX_X + 2, (int16_t)y, 264, 16, bg);
+    gfx_text(&want_cv, LIM_BOX_X + 10, y, text, &gfx_font_8x16,
+             ui_theme_color(col), 1);
+    return same_in(fb, want_fb, LIM_BOX_X + 2, y, 264, 16);
+}
+
+/* bench_on_ina() with the supply's output on, as the operator leaves it
+ * for a limit run, and servo_sim's own stops at 1150 and 1880 us. */
+static void lim_bench(void)
+{
+    bench_on_ina();
+    servo_sim_cfg_t sc;
+    servo_sim_defaults(&sc);
+    servo_sim_init(&bench.sv, &sc);
+    bench.sv.position_us = 1500.0f;
+    bench.out = true;
+    bench_frames(200u);
+}
+
+static void lim_hold(float secs)
+{
+    hold_start_on(LIM_TAB, secs);
+}
+
+/* The settings open on the LIMITS page. */
+static void lim_page(void)
+{
+    open_settings();
+    tap(TAB_X(LIM_TAB), TAB_Y);
+}
+
+/* The run to its end, 120 s at most. */
+static void lim_run_out(void)
+{
+    for (int i = 0; i < 240 && servo_screen_limit_running(); ++i) {
+        bench_frames(500u);
+    }
+    CHECK(!servo_screen_limit_running());
+    bench_frames(500u);
+}
+
+/* START LIMIT RUN starts nothing until the bench is armed and the INA3221
+ * is the servo rail's meter, and the page says which is missing; a tap or a
+ * hold under 2 s starts nothing either.  The PD mini and the model as the
+ * meter are refused: the run reads the INA3221 or nothing. */
+TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        /* The INA3221 off in SETUP. */
+        bench_fresh();
+        bench.out = true;
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_INA_SETUP), UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        CHECK(!servo_screen_testing());
+        /* On, with no window yet: the PD mini is the meter. */
+        close_settings();
+        settings_set(SET_INA3221_EN, 1.0f);
+        meter(SERVO_SOURCE_PDMINI);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_INA_NO_WIN), UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        /* The model as the meter. */
+        meter(SERVO_SOURCE_MODEL);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_INA_NO_WIN), UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        /* The INA3221 silent, and the link down. */
+        lim_bench();
+        servo_screen_source_why(SERVO_SOURCE_WHY_SILENT);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_INA_OFFLINE), UI_C_WARN));
+        close_settings();
+        servo_screen_source_why(SERVO_SOURCE_WHY_NONE);
+        lim_bench();
+        servo_screen_set_link(false);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_INA_OFFLINE), UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        servo_screen_set_link(true);
+        /* Not armed. */
+        lim_bench();
+        servo_screen_set_armed(false);
+        lim_page();
+        CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_NOT_ARMED),
+                             UI_C_WARN));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        /* A port in its programmer's hands renders no pulse. */
+        lim_bench();
+        servo_screen_set_drive(1u, 13u, false);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_LIM_PWM_OFF), UI_C_WARN));
+        close_settings();
+        servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
+        /* Ready: the page says so, and only the whole hold starts it. */
+        lim_bench();
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        tap(START_X, START_Y);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        lim_hold(1.8f);
+        CHECK(!servo_screen_limit_running());
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        CHECK(!servo_screen_testing());
+        /* START TEST is busy while it runs. */
+        hold_start(2.3f);
+        CHECK(!servo_screen_testing());
+        servo_screen_set_armed(false);
+        CHECK(!servo_screen_limit_running());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The bench's own output is no programming port: SEARCH+PROG is not
+ * offered, the page says why, and a tap on LIMIT RUN keeps SEARCH ONLY. */
+TEST_CASE(programming_is_not_offered_off_the_programming_port)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        lim_bench();
+        lim_page();
+        CHECK(lim_line_reads(2, TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
+        tap(ROW_L_X, LIM_MODE_Y);
+        CHECK(lim_line_reads(2, TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
+        /* The line naming the output and the meter. */
+        CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        close_settings();
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* SEARCH ONLY on the INA3221: both ends found, the servo let go, nothing
+ * else asked of the bench, and BENCHnnn.TXT opened alone with the limit
+ * report: both endpoints inside the servo's stops, nothing written. */
+TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
+{
+    lim_bench();
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    /* The box over the dial while it runs: the search, then STOP RUN. */
+    CHECK(lim_box_reads(0, TR(SV_LIM_TITLE), UI_C_ACCENT));
+    lim_run_out();
+    CHECK(bench.released);
+    CHECK(bench.out);                       /* a search leaves it on */
+    CHECK_EQ(bench.opens, 0u);
+    CHECK_EQ(bench.opens_txt, 1u);
+    CHECK_EQ(bench.csv, 0u);
+    CHECK_EQ(bench.ends, 1u);
+    CHECK(strstr(bench.report, "RCBENCH SERVO LIMIT REPORT\n") == bench.report);
+    CHECK(strstr(bench.report, "FOUND") != NULL);
+    CHECK(strstr(bench.report, "search only, nothing written") != NULL);
+    CHECK(strstr(bench.report, "INA3221 CH1, 50 ms windows") != NULL);
+    CHECK(strstr(bench.report, "Not run: search only.") != NULL);
+    CHECK(strstr(bench.report, "RESTORE") == NULL);
+    unsigned lo = 0u, hi = 0u;
+    const char *l = strstr(bench.report, "Low end:        bound at ");
+    const char *h = strstr(bench.report, "High end:       bound at ");
+    CHECK(l != NULL && h != NULL);
+    if (l != NULL && h != NULL) {
+        CHECK(sscanf(strstr(l, "endpoint"), "endpoint %u", &lo) == 1);
+        CHECK(sscanf(strstr(h, "endpoint"), "endpoint %u", &hi) == 1);
+        /* Inside the stops, by the 25 us backoff and a step or two. */
+        CHECK(lo > 1150u && lo < 1220u);
+        CHECK(hi < 1880u && hi > 1810u);
+    }
+    /* The box after it: FOUND, and the two endpoints. */
+    char want[64], a[16], z[16];
+    snprintf(want, sizeof(want), TR(SV_LIM_VERDICT),
+             ui_servo_str(SERVO_STR_L_FOUND));
+    CHECK(lim_box_reads(0, want, UI_C_ACCENT));
+    snprintf(a, sizeof(a), "%u us", lo);
+    snprintf(z, sizeof(z), "%u us", hi);
+    snprintf(want, sizeof(want), TR(SV_LIM_ENDS), a, z);
+    CHECK(lim_box_reads(1, want, UI_C_TEXT));
+    /* The page says how it ended. */
+    lim_page();
+    CHECK(!lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+}
+
+/* Each end of a limit run's watch, at a search: ABORTED, the output asked
+ * off, the servo let go, and the report naming the reason.  A reset of the
+ * screen, as at the panel's start, takes the run with it and asks
+ * nothing, as it does for a test. */
+TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
+{
+    for (int how = 0; how < 9; ++how) {
+        lim_bench();
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        bench_frames(3000u);
+        CHECK(servo_screen_limit_running());
+        bench.released = false;
+        switch (how) {
+        case 0:                         /* the meter to the PD mini */
+            bench.ina = false;
+            meter(SERVO_SOURCE_PDMINI);
+            break;
+        case 1:                         /* the meter to the model */
+            bench.ina = false;
+            meter(SERVO_SOURCE_MODEL);
+            break;
+        case 2:                         /* STOP and DISARM: the bench SAFE */
+            servo_screen_set_armed(false);
+            break;
+        case 3:                         /* the link */
+            servo_screen_set_link(false);
+            break;
+        case 4:                         /* the screen left */
+            scr->leave();
+            break;
+        case 5:                         /* no window for 200 ms */
+            bench.ina = false;
+            bench_frames(160u);
+            CHECK(servo_screen_limit_running());
+            bench_frames(60u);
+            break;
+        case 6: {                       /* the supply's set point moved */
+            supply_state_t st;
+            memset(&st, 0, sizeof(st));
+            st.online = true;
+            st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+            st.output = true;
+            st.mode = SUPPLY_MODE_CV;
+            st.set_v = supply_screen_set_v() + 0.5f;
+            st.set_i = supply_screen_set_i();
+            st.v = st.set_v;
+            st.samples = ++bench.samples;
+            st.taken_ms = bench.now;
+            st.stamped = true;
+            servo_screen_supply(&st);
+            break;
+        }
+        case 7:                         /* STOP RUN on the LIMITS page */
+            lim_page();
+            tap(START_X, START_Y);
+            close_settings();
+            break;
+        default:                        /* the screen reset under it */
+            scr->reset();
+            break;
+        }
+        CHECK(!servo_screen_limit_running());
+        bench_frames(500u);
+        if (how != 8) {                 /* a reset asks nothing, as for a test */
+            CHECK(bench.released);
+            CHECK(!bench.out);
+            CHECK(strstr(bench.report, "ABORTED") != NULL);
+        }
+        if (how == 5) {
+            CHECK(strstr(bench.report, "no INA3221 window for 0.2 s")
+                  != NULL);
+            /* The box says it too, under ABORTED. */
+            char want[64];
+            snprintf(want, sizeof(want), TR(SV_LIM_VERDICT),
+                     ui_servo_str(SERVO_STR_ABORTED));
+            CHECK(lim_box_reads(0, want, UI_C_WARN));
+            CHECK(lim_box_reads(1, ui_servo_str(SERVO_STR_AB_WIN_STALE),
+                                UI_C_TEXT));
+        }
+        servo_screen_set_link(true);
+    }
+}
+
 int main(void)
 {
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
@@ -8916,5 +9240,9 @@ int main(void)
     RUN(a_stalled_servo_at_the_shipped_limits_ends_the_run);
     RUN(a_stall_at_out_of_reach_is_said_under_start_test);
     RUN(a_runs_start_and_end_are_told_where_they_happen);
+    RUN(a_limit_run_starts_only_armed_on_the_ina3221);
+    RUN(programming_is_not_offered_off_the_programming_port);
+    RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
+    RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     return test_summary("servo");
 }

@@ -755,6 +755,7 @@ the write switch and a 2 s hold.
 | --- | --- | --- |
 | `Backup of this session, as first read` | every register that differs, by the coprocessor from the image it holds itself; without the limit checks, and the page says so. A register that differs and that no write of the session changed ends the restore before its first write | nothing |
 | `Values before the interrupted write` | the editable fields, as a write with every limit check | the locked fields, register 00 and the pairing value |
+| `Values before the limit run` | LEFT ANGLE and RIGHT ANGLE as the [limit run](#the-limit-run)'s first session read them, as a write with every limit check. Offered while the servo read differs from them in those two fields and in no other | every other field: it is the same as the run found it |
 
 A restore from the panel's image is an ordinary write: the coprocessor
 accepts an unchecked restore only of the backup it holds itself, and that
@@ -818,6 +819,29 @@ session backup. **CONNECT** begins a session whose backup is the servo as
 its first **READ ALL** finds it. A backup file on the card stays there.
 
 ![Another servo than the backup's](img/servo-kst-swapped.png)
+
+## The limit run
+
+The SERVO screen's limit run, with SEARCH+PROG, drives the programmer
+itself ([Servo procedures](Servo.md#programming-the-servos-travel-limits)).
+Each value it writes is a session: CONNECT with its read, ENABLE WRITE TO
+SERVO on, LEFT ANGLE and RIGHT ANGLE written and read back, the write
+switch off, LEAVE. Whatever the overlay has open closes at each step. A
+value under 50 passes its soft limit without the page: the run's 2 s start
+hold is the consent. A hard limit refuses a value as it refuses an edit,
+and the run ends.
+
+The run's first write saves the backup file, as any first write does. A
+later session of the run whose servo differs from the run's first read in
+LEFT ANGLE and RIGHT ANGLE at most saves no file: the first file holds the
+servo as the run found it. The run holds that read in the panel's memory
+until the next run's first write or a start of the panel, and RESTORE offers it as
+`Values before the limit run`. While the run holds the port, the screen's
+TARGET row and the run's box name it: `PROG PORT GP13`.
+
+A run that ends inside a session leaves the port in programming mode with
+the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
+offer the restore.
 
 ## More
 

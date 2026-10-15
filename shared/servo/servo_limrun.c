@@ -37,7 +37,7 @@ bool servo_limrun_running(const servo_limrun_t *r)
 bool servo_limrun_switching(const servo_limrun_t *r)
 {
     return servo_limrun_running(r)
-        && (r->phase == SERVO_LIMRUN_PH_SAFE
+        && ((r->phase == SERVO_LIMRUN_PH_SAFE && r->safe_asked)
             || r->phase == SERVO_LIMRUN_PH_CONNECT
             || r->phase == SERVO_LIMRUN_PH_WRITE
             || r->phase == SERVO_LIMRUN_PH_LEAVE
@@ -178,14 +178,12 @@ static int32_t outward(uint8_t side, const servo_limrun_side_t *now,
     return side == SERVO_LIMRUN_HI ? d : -d;
 }
 
-static int reg_of(const servo_limrun_t *r, uint8_t side)
+static unsigned reg_of(const servo_limrun_t *r, uint8_t side)
 {
-    for (int g = 0; g < 2; ++g) {
-        if (r->reg_side[g] == (int8_t)side) {
-            return g;
-        }
-    }
-    return -1;
+    /* Called once the mapping is known, where the two registers limit the
+     * two sides: the one that is not LEFT ANGLE's is RIGHT ANGLE's. */
+    return r->reg_side[SERVO_LIMRUN_LEFT] == (int8_t)side
+               ? (unsigned)SERVO_LIMRUN_LEFT : (unsigned)SERVO_LIMRUN_RIGHT;
 }
 
 /* The bisection's next value for @p side: the middle of what is left, or
@@ -272,11 +270,15 @@ static plan_t plan(servo_limrun_t *r, uint16_t *want, uint8_t *side)
     return PLAN_FINAL;
 }
 
+/* A session next: the servo back to PULSE CENTRE first, SAFE asked once it
+ * had SERVO_LIMRUN_RETURN_MS to get there (servo_limrun_step()). */
 static void go_safe(servo_limrun_t *r, uint32_t now_ms)
 {
-    r->phase       = SERVO_LIMRUN_PH_SAFE;
-    r->phase_ms    = now_ms;
-    r->pend.disarm = true;
+    r->phase      = SERVO_LIMRUN_PH_SAFE;
+    r->phase_ms   = now_ms;
+    r->safe_asked = false;
+    r->cmd_us     = r->cfg.centre_us;
+    r->cmd_due    = true;
 }
 
 static void begin_check(servo_limrun_t *r, uint32_t now_ms)
@@ -394,18 +396,19 @@ static void search_done(servo_limrun_t *r, uint16_t bind_us, uint32_t now_ms)
         return;
     }
     r->probe = side_result(r, bind_us);
+    /* Back to the centre from the end it reached, whatever comes next. */
+    r->cmd_us  = r->cfg.centre_us;
+    r->cmd_due = true;
     switch (r->phase) {
     case SERVO_LIMRUN_PH_SEARCH:
         r->first[r->side] = r->probe;
         if (r->side == SERVO_LIMRUN_LO) {
             begin_search(r, SERVO_LIMRUN_HI, SERVO_LIMRUN_PH_SEARCH, now_ms);
         } else {
-            r->cmd_due = true;          /* the centre */
             after_first_search(r, now_ms);
         }
         break;
     case SERVO_LIMRUN_PH_PROBE:
-        r->cmd_due = true;
         next_after_probe(r, now_ms);
         break;
     case SERVO_LIMRUN_PH_CHECK:
@@ -566,7 +569,7 @@ void servo_limrun_backup(servo_limrun_t *r, const char *name)
     }
 }
 
-void servo_limrun_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
+void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
                        uint32_t now_ms)
 {
     if (!servo_limrun_running(r) || r->phase != SERVO_LIMRUN_PH_CONNECT
@@ -739,7 +742,16 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
             }
             break;
         case SERVO_LIMRUN_PH_SAFE:
-            if (in->safe) {
+            if (!r->safe_asked) {
+                if (!in->live) {
+                    servo_limrun_abort(r, SERVO_TEST_AB_DISARMED, now_ms);
+                } else if (due(now_ms, r->phase_ms,
+                               SERVO_LIMRUN_RETURN_MS)) {
+                    r->safe_asked  = true;
+                    r->phase_ms    = now_ms;
+                    r->pend.disarm = true;
+                }
+            } else if (in->safe) {
                 r->phase    = SERVO_LIMRUN_PH_CONNECT;
                 r->phase_ms = now_ms;
                 r->pend.connect = true;

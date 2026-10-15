@@ -577,6 +577,9 @@ void servo_screen_set_link(bool up);
 /** Whether a run is under way, for the application and tests. */
 bool servo_screen_testing(void);
 
+/** Whether a limit run (servo_limrun.h) is under way, for the tests. */
+bool servo_screen_limit_running(void);
+
 /**
  * The run's next item for the card, without taking it (servo_test_peek()),
  * and taking it once it is on its way.  The application drains these every
