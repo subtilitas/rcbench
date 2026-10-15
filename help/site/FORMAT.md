@@ -85,7 +85,7 @@ Inline, in paragraphs, list items, table cells and headings:
 | `<id>.md` | another help page of the same language |
 | `<id>.md#<anchor>` | a heading on another help page |
 | `#<anchor>` | a heading on the same page |
-| `index.md` | the help's index of the same language |
+| `index.md` | the help's index of the same language; no content page is named `index.md` |
 
 An anchor is the heading text in lower case, with every run of characters
 other than letters and digits replaced by `-`, and no `-` at either end:
