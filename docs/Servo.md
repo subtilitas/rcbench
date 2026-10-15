@@ -82,11 +82,19 @@ and the line under it says why.
 ### Programming the servo's travel limits
 
 SEARCH+PROG is offered for a servo on the programming port: PWM TARGET on
-PROG PORT, the port in PWM, and, with a PD mini answering, a supply set to
-4.8 V or more. Otherwise the run searches only, the row reads SEARCH ONLY,
-and the third line says why: `PROGRAMMING: ONLY A SERVO ON THE PROG PORT`,
-`PROGRAMMING: THE PORT IS NOT IN PWM` or `PROGRAMMING: SUPPLY SET BELOW 4.8
-V`.
+PROG PORT, the port in PWM, and a supply of 4.8 V or more. With a PD mini
+answering, its set point counts; without one, the servo rail's mean in the
+INA3221's last window. On the bench's outputs the run searches only, the
+row reads SEARCH ONLY, and the third line reads `PROGRAMMING: ONLY A SERVO
+ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
+the other conditions stop SEARCH ONLY as well: the button stays grey and the
+third line names the condition.
+
+| Line | Condition |
+| --- | --- |
+| `PROGRAMMING: THE PORT IS NOT IN PWM` | the programmer holds the port, or the port is not ready for a run |
+| `PROGRAMMING: SUPPLY SET BELOW 4.8 V` | a PD mini answers and its set point is under 4.8 V |
+| `PROGRAMMING: SERVO RAIL BELOW 4.8 V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8 V or not read |
 
 #### The read first
 
@@ -308,8 +316,8 @@ the run is the operator's: its first write saves its own backup file.
 | ABORTED | a protection, the operator, the link, the meter, the supply or the programmer ended it |
 
 The box on the left card shows the verdict, the reason or the values
-(`LEFT 150>87  RIGHT 150>95`), the ends or the output, and the report's file
-name until CLOSE.
+(`LEFT 150>87  RIGHT 150>95`), the ends or the output the run started on,
+and the report's file name until CLOSE.
 
 ![A programmed servo](img/servo-limrun-pass.png)
 ![Search only](img/servo-limrun-found.png)
@@ -318,9 +326,9 @@ name until CLOSE.
 The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
 the next free number, written whatever the DUT page's REPORT says. During a
 run neither the bench log nor the supply log writes a row; the supply
-log's time runs on through the run, as its totals do. Until the card
-has closed the report it counts as an open log run: Wi-Fi and an update wait
-for it, as for a run's CSV. A run on the host's modelled servo with
+log's time runs on through the run, as its totals do. From the run's start
+until the card has closed the report it counts as an open log run: Wi-Fi and
+an update wait for it, as for a run's CSV. A run on the host's modelled servo with
 REVERSION OFF and SERVO PULSES at 1000-2000; the stops at 1150 µs and
 1880 µs of horn travel lie at 1208 µs and 1817 µs of input pulse once
 PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
@@ -900,8 +908,9 @@ run ends. A number carried by a
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to
-the card had no room for are counted in the report. Until the card has
-closed a run's CSV and its report, the run counts as an open log run: Wi-Fi
+the card had no room for are counted in the report. From the run's start
+until the card has closed its CSV and its report, the run counts as an open
+log run, the time between the file's OPEN and its answer included: Wi-Fi
 and an update wait for it, and the log viewer neither lists nor opens the
 file still being written.
 

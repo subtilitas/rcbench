@@ -8809,13 +8809,17 @@ static void outputs_apply(const outbind_t *b)
 /* ------------------------------------------------- Wi-Fi and the update */
 
 /* Whether a run's log, or a servo run's CSV or report, is open or about
- * to be. */
+ * to be: a servo run under way, an OPEN queued for the logger and not yet
+ * answered, and the file from its open to its close, without a gap. */
 static bool run_open_now(void)
 {
     return atomic_load(&s_log_run_now) != 0u
            || atomic_load(&s_log_open_run) != 0u
            || atomic_load(&s_test_open_run) != 0u
-           || atomic_load(&s_test_open_txt) != 0u;
+           || atomic_load(&s_test_open_txt) != 0u
+           || atomic_load(&s_servo_testing)
+           || atomic_load(&s_test_opens_sent)
+                  != atomic_load(&s_test_opens_done);
 }
 
 /* Whether flash may be written now, and if not why: see fw_gate(). */

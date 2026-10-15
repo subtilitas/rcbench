@@ -9011,6 +9011,17 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     snprintf(z, sizeof(z), "%u us", hi);
     snprintf(want, sizeof(want), TR(SV_LIM_ENDS), a, z);
     CHECK(lim_box_reads(1, want, UI_C_TEXT));
+    /* Under them the output they were found on, GP2.  It stays GP2 when
+     * the bench is switched to SAFE and another output is bound before
+     * CLOSE: the ends belong to the run, not to the target now. */
+    CHECK(lim_box_reads(2, "GP2", UI_C_TEXT_DIM));
+    servo_screen_set_armed(false);
+    servo_screen_set_pins(PIN(5), true);
+    bench_frames(100u);
+    CHECK(lim_box_reads(2, "GP2", UI_C_TEXT_DIM));
+    servo_screen_set_pins(PIN(2), true);
+    servo_screen_set_armed(true);
+    bench_frames(100u);
     /* The page says how it ended. */
     lim_page();
     CHECK(!lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));

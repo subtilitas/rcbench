@@ -5283,6 +5283,7 @@ static struct {
     bool armed;
     bool ina;                   /* the windows arrive */
     bool pin;                   /* the target is the bench's GP2 */
+    uint16_t rail_mv;           /* the windows' rail; 0 is 6000 mV */
     uint16_t win_no;
     uint32_t win_end;
     float sum;
@@ -5365,7 +5366,9 @@ static void lr_ms(uint32_t ms)
             const sense_link_win_t w = {
                 .number = ++lr.win_no, .current = true, .voltage = true,
                 .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma,
-                .min_ma = (int16_t)ma, .mean_mv = 6000u, .min_mv = 6000u,
+                .min_ma = (int16_t)ma,
+                .mean_mv = lr.rail_mv != 0u ? lr.rail_mv : 6000u,
+                .min_mv = lr.rail_mv != 0u ? lr.rail_mv : 6000u,
                 .taken_ms = g_rig.ms, .stamped = true,
             };
 
@@ -5624,6 +5627,29 @@ TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
     CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_NONE);
     CHECK(kst_panel_is_open());
     g_rig.deaf = false;
+}
+
+/* With no PD mini to set, the servo rail as the INA3221 reads it holds
+ * the programmer's 4.8 V: 4799 mV refuses every run on the programming
+ * port before anything is driven, 4800 mV starts one. */
+TEST_CASE(a_run_on_the_programming_port_needs_4_8_v_on_the_rail)
+{
+    lr_fresh(false);
+    lr.rail_mv = KST_PORT_SUPPLY_MIN_MV - 1u;
+    lr_ms(200u);
+    lr_start();
+    CHECK(!servo_screen_limit_running());
+    CHECK_EQ(lr.disarms, 0u);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(lr.cmd, 1500u);
+
+    lr_fresh(false);
+    lr.rail_mv = KST_PORT_SUPPLY_MIN_MV;
+    lr_ms(200u);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(strstr(lr.report, "Result:         PASS") != NULL);
 }
 
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
@@ -5938,6 +5964,7 @@ int main(void)
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
     RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
     RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
+    RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
     RUN(a_session_after_a_limit_run_saves_its_own_backup);

@@ -90,11 +90,20 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 ### Die Weggrenzen des Servos programmieren
 
 SUCHE+PROG wird für ein Servo am Programmierport angeboten: PWM-ZIEL auf
-PROG-PORT, der Port in PWM und, mit einem antwortenden PD mini, eine
-Versorgung von 4,8 V oder mehr. Sonst sucht der Lauf nur, die Zeile lautet
-NUR SUCHE, und die dritte Zeile sagt warum: `PROGRAMMIEREN: NUR EIN SERVO AM
-PROG-PORT`, `PROGRAMMIEREN: DER PORT IST NICHT IN PWM` oder `PROGRAMMIEREN:
-VERSORGUNG UNTER 4.8 V`.
+PROG-PORT, der Port in PWM und eine Versorgung von 4,8 V oder mehr. Mit
+einem antwortenden PD mini zählt dessen Sollwert, ohne ihn der Mittelwert
+der Servoschiene im letzten Fenster des INA3221. An den Ausgängen des
+Prüfstands sucht der Lauf nur, die Zeile lautet NUR SUCHE, und die dritte
+Zeile lautet `PROGRAMMIEREN: NUR EIN SERVO AM PROG-PORT`. Am PROG-PORT
+beginnt jeder Lauf mit einer Lesesitzung, deshalb halten die übrigen
+Bedingungen auch NUR SUCHE an: die Schaltfläche bleibt grau, und die dritte
+Zeile nennt die Bedingung.
+
+| Zeile | Bedingung |
+| --- | --- |
+| `PROGRAMMIEREN: DER PORT IST NICHT IN PWM` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
+| `PROGRAMMIEREN: VERSORGUNG UNTER 4.8 V` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8 V |
+| `PROGRAMMIEREN: SERVOSCHIENE UNTER 4.8 V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8 V oder ist nicht gelesen |
 
 #### Zuerst lesen
 
@@ -340,7 +349,7 @@ Schreiben sichert eine eigene Sicherungsdatei.
 
 Das Feld auf der linken Karte zeigt bis SCHLIESSEN das Urteil, den Grund
 oder die Werte (`LEFT 150>87  RIGHT 150>95`), die Enden oder den Ausgang,
-und den Dateinamen des Berichts.
+an dem der Lauf begann, und den Dateinamen des Berichts.
 
 ![Ein programmiertes Servo](img/de/servo-limrun-pass.png)
 ![Nur Suche](img/de/servo-limrun-found.png)
@@ -350,8 +359,8 @@ Der Bericht ist eine eigene `BENCHnnn.TXT` ohne CSV-Datei daneben, unter
 der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
 der Seite PRÜFLING sagt. Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
-läuft durch den Lauf weiter, wie seine Summen. Bis die Karte den Bericht
-geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
+läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
+Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
 darauf, wie auf die CSV eines Laufs. Ein Lauf am modellierten
 Servo des Hosts mit REVERSION AUS und SERVOPULSE auf 1000-2000; die
 Anschläge bei 1150 µs und 1880 µs Hornweg liegen bei 1208 µs und 1817 µs
@@ -971,9 +980,10 @@ wieder, wenn der Lauf endet. Eine Nummer, die nur ein
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `OHNE DATEI`. Zeilen, für
-die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht. Bis
-die Karte die CSV eines Laufs und seinen Bericht geschlossen hat, gilt der
-Lauf als offener Log-Lauf: WLAN und ein Update warten darauf, und die
+die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht. Vom
+Start des Laufs, bis die Karte seine CSV und seinen Bericht geschlossen hat,
+gilt der Lauf als offener Log-Lauf, die Zeit zwischen dem OPEN der Datei und
+seiner Antwort eingeschlossen: WLAN und ein Update warten darauf, und die
 Log-Ansicht listet und öffnet die Datei, die noch geschrieben wird, nicht.
 
 Die CSV, mit Semikolon getrennt und Dezimalpunkt, wie jedes Log des

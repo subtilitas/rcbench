@@ -109,7 +109,12 @@ history is in git.
   that sent no write reports no backup. During a run the supply log writes
   no row and its time runs on. A run that fails inside a session ends the
   programmer's part of it once its LEAVE is over. A current reading of
-  -32768 mA counts as 32768 mA in the protections. RESTORE offers `Values
+  -32768 mA counts as 32768 mA in the protections. Without a PD mini a run
+  on PROG PORT needs 4.8 V or more on the servo rail in the INA3221's last
+  window, `PROGRAMMING: SERVO RAIL BELOW 4.8 V`. From a servo run's start,
+  and from an automatic test's OPEN on, to the close of its file, Wi-Fi
+  and an update wait. The FOUND and FREE boxes name the output the run
+  started on. RESTORE offers `Values
   before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
   UPPER as the run found them; a session after the run saves its own backup
   file at its first write.

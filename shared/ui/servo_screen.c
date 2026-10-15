@@ -3235,7 +3235,7 @@ static const char *lim_blocked(void)
 
 /* Why the programming is not offered, or NULL: only a servo on the
  * programming port, with the port in PWM, and a PD mini set where a
- * session can run. */
+ * session can run, or without one a servo rail read at 4.8 V or more. */
 static const char *lim_prog_why(void)
 {
     if (s.drive_target == 0u || s.drive_target == SERVO_SCREEN_TARGET_UNKNOWN
@@ -3250,6 +3250,14 @@ static const char *lim_prog_why(void)
         && supply_screen_set_v() * 1000.0f
                < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f) {
         return TR(SV_LIM_PROG_LOW);
+    }
+    /* No PD mini to set: an external supply, or the model.  The servo
+     * rail as the INA3221's last window read it holds the same 4.8 V the
+     * coprocessor asks of a PD mini, which it cannot check here.  At the
+     * start only: the rail is the run's to watch after it. */
+    if (!servo_limrun_running(&s.lim) && !lim_pd_answers()
+        && (!s.win.voltage || s.win.mean_mv < KST_PORT_SUPPLY_MIN_MV)) {
+        return TR(SV_LIM_PROG_RAIL);
     }
     return NULL;
 }
@@ -5169,10 +5177,9 @@ static void draw_lim_box(gfx_canvas_t *c)
                      (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
         } else if (v == SERVO_LIMRUN_FOUND || v == SERVO_LIMRUN_FREE) {
             /* The ends are the line above: the output they were found on
-             * under them. */
-            (void)servo_target_line(l3, sizeof(l3), s.drive_target,
-                                    s.drive_pin, s.drive_pwm, s.pins,
-                                    s.pins_known);
+             * under them, as the run named it at its start -- not the
+             * target now, which may have changed since. */
+            snprintf(l3, sizeof(l3), "%s", r->cfg.output);
         } else {
             char a[24], z[24];
             lim_end_text(a, sizeof(a), r->after[0].done ? &r->after[0]
