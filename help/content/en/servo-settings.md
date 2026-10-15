@@ -82,6 +82,10 @@ With HV SERVO on and a step above 6.0 V chosen, START TEST opens HV SERVOS ONLY 
 | IDLE CURRENT | 0 to 5.00 A | 0, not checked | fail above this at rest |
 | HOLD CURRENT | 0 to 5.00 A | 0, not checked | fail above this holding an end |
 | TRAVEL TIME | 0 to 5000 ms | 0, not checked | fail above this from end to end |
+| LIMIT RUN | SEARCH ONLY, SEARCH+PROG | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
+| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with PWM TARGET on PROG PORT only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us before the search |
+
+START LIMIT RUN, under the table, starts the [limit run](servo.md#the-limit-run) with a 2 s hold while ARMED. The line under it names the output and the meter, or why the run cannot start.
 
 ## DUT
 
@@ -119,4 +123,4 @@ The row follows the target the coprocessor holds, not the setting. A PWM TARGET 
 
 ## Keeping the values
 
-OUTPUT and HV SERVO are kept for the session. TEST, LIMITS and DUT are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.
+OUTPUT, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the session. TEST, the rest of LIMITS, and DUT are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.

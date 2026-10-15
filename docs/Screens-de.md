@@ -857,6 +857,33 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
+**ENDLAGENLAUF STARTEN führt die Endlagensuche aus**, auf der Seite
+GRENZEN: das Servo wird in Schritten von 10 us nach außen gefahren, bis
+sein Strom ein angelaufenes Gestänge zeigt, und mit ENDLAGENLAUF auf
+SUCHE+PROG werden LEFT ANGLE und RIGHT ANGLE eines KST- oder
+Chaservo-Servos gesenkt, bis kein Ende mehr anläuft. An einem SERVO-PWM-Pin
+läuft die Suche von PULS CENTRE bis PULS MIN und PULS MAX; am PROG-PORT
+kommt zuerst eine Lesesitzung, und die Suche läuft von NEUTRAL des Servos
+bis zu seinem eigenen PULSE LOWER und PULSE UPPER.
+[Servoverfahren](Servo-de.md#eingebaute-mechanische-endlage) beschreibt
+das Verfahren, die Schutzmechanismen und den Bericht. Es ist ein Halten von
+2 s bei einem Prüfstand in ARMED und dem INA3221 als Messgerät der
+Servoschiene; die Zeile darunter nennt den Ausgang, den er treibt, und das
+Messgerät, `AUSGANG PROG-PORT GP13, STROM INA3221 CH1`, und die nächste
+Zeile sagt, warum er nicht starten kann. Die Einstellungen schließen sich
+beim Start. Sein Feld auf der linken Karte zeigt die geschriebenen Werte
+von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
+LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
+Enden und `BENCHnnn.TXT`. Der Lauf schaltet den Prüfstand für jedes
+Schreiben selbst auf SAFE und auf ARMED; STOP und SAFE durch den Bediener
+oder einer der Gründe des automatischen Tests beenden ihn mit
+ausgeschaltetem Ausgang.
+
+![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
+![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
+![Ein programmiertes Servo](img/de/servo-limrun-pass.png)
+![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](img/de/servo-limrun-range.png)
+
 ### Programmierer
 
 PROGRAMM., neben OPTIONEN, öffnet den Programmierer für KST- und
@@ -904,6 +931,9 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
 | GRENZEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
 | GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
+| GRENZEN | ENDLAGENLAUF | NUR SUCHE oder SUCHE+PROG, ein Tippen schaltet um; SUCHE+PROG wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund unter ENDLAGENLAUF STARTEN. Für die Sitzung |
+| GRENZEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit PWM-ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0 us. Vorgabe BEHALTEN; für die Sitzung |
+| GRENZEN | ENDLAGENLAUF STARTEN | die Endlagensuche: 2 s Halten bei einem Prüfstand in ARMED und dem INA3221 als Messgerät der Servoschiene; LAUF BEENDEN, solange sie läuft |
 | PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |

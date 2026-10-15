@@ -94,7 +94,7 @@ Ein Tipp, der eine harte Grenze verletzen würde, ändert nichts und nennt die G
 
 ![ÄNDERUNG PRÜFEN](view:servo-kst-soft)
 
-Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2 s; ABBRECHEN lässt den Entwurf, wie er war.
+Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2 s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2 s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
 
 ![Der Reiter SPERRE](view:servo-kst-locked)
 
@@ -135,7 +135,7 @@ Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nic
 ![Die Liste von ZURÜCKSPIELEN](view:servo-kst-restore-list)
 ![Das Zurückspielen des Backups der Sitzung](view:servo-kst-restore)
 
-ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, oder die Werte vor einem unterbrochenen Schreiben. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2 s.
+ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, die Werte vor einem unterbrochenen Schreiben oder `Werte vor dem Endlagenlauf`. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2 s.
 
 ![WEITERES im Programmiermodus](view:servo-kst-more)
 

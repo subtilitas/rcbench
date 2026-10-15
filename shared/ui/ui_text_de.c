@@ -900,6 +900,41 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIMITS_2]            = "der Seite SUPPLY.  Eine Grenze von 0 wird",
     [TX_SV_LIMITS_3]            = "nicht geprüft.  Über BLOCKIERT AB gilt das",
     [TX_SV_LIMITS_4]            = "Servo als blockiert.",
+    [TX_SV_ROW_LIM_MODE]        = "ENDLAGENLAUF",
+    [TX_SV_LIM_SEARCH]          = "NUR SUCHE",
+    [TX_SV_LIM_PROGRAM]         = "SUCHE+PROG",
+    [TX_SV_ROW_LIM_PULSES]      = "SERVOPULSE",
+    [TX_SV_LIM_PULSES_KEEP]     = "BEHALTEN",
+    [TX_SV_LIM_PULSES_STD]      = "1000-2000",
+    [TX_SV_LIM_START]           = "ENDLAGENLAUF STARTEN",
+    [TX_SV_LIM_STOP]            = "LAUF BEENDEN",
+    [TX_SV_LIM_LINE]            = "AUSGANG %s, STROM INA3221 CH1",
+    [TX_SV_LIM_RUNNING]         = "LÄUFT: %s",
+    [TX_SV_LIM_INA_SETUP]       = "INA3221 NICHT FÜR DIE SERVOSCHIENE EINGERICHTET",
+    [TX_SV_LIM_INA_OFFLINE]     = "INA3221 NICHT ONLINE",
+    [TX_SV_LIM_INA_NO_WIN]      = "NOCH KEINE INA3221-FENSTER",
+    [TX_SV_LIM_PWM_OFF]         = "PORT-PWM AUS: DER PORT GIBT KEINEN PULS AUS",
+    [TX_SV_LIM_RAIL_LOW]        = "SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN",
+    [TX_SV_LIM_REFUSED]         = "MITTE NICHT ZWISCHEN PULS MIN UND PULS MAX",
+    [TX_SV_LIM_SEARCH_NOTE]     = "NUR SUCHE: NICHTS WIRD INS SERVO GESCHRIEBEN",
+    [TX_SV_LIM_PULSES_NOTE]     = "NUR SUCHE: SETZT PULSE LOWER/UPPER, SONST NICHTS",
+    [TX_SV_LIM_PROG_NOTE]       = "SENKT LEFT/RIGHT ANGLE EINES KST- ODER CHASERVO-SERVOS",
+    [TX_SV_LIM_PROG_PORT]       = "PROGRAMMIEREN: NUR EIN SERVO AM PROG-PORT",
+    [TX_SV_LIM_PROG_BUSY]       = "PROGRAMMIEREN: DER PORT IST NICHT IN PWM",
+    [TX_SV_LIM_PROG_LOW]        = "PROGRAMMIEREN: VERSORGUNG UNTER 4.8 V",
+    [TX_SV_LIM_PROG_PD_OFF]     = "PROGRAMMIEREN: PD-MINI-AUSGANG AUS",
+    [TX_SV_LIM_PROG_RAIL]       = "PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8 V",
+    [TX_SV_LIM_TITLE]           = "ENDLAGENSUCHE",
+    [TX_SV_LIM_TITLE_PROG]      = "ENDLAGENLAUF, %u VON %u WERTEN",
+    [TX_SV_LIM_AT]              = "%s %s ENDE %u us",
+    [TX_SV_LIM_LOW]             = "UNTERES",
+    [TX_SV_LIM_HIGH]            = "OBERES",
+    [TX_SV_LIM_VALUES]          = "%s LEFT %u RIGHT %u",
+    [TX_SV_LIM_VERDICT]         = "ENDLAGEN %s",
+    [TX_SV_LIM_ENDS]            = "UNTEN %s  OBEN %s",
+    [TX_SV_LIM_SET]             = "LEFT %u>%u  RIGHT %u>%u",
+    [TX_SV_LIM_RESTORE]         = "ZURÜCKSPIELEN IN %s",
+    [TX_SV_LIM_RANGE]           = "%u-%u NICHT IN %u-%u us",
     [TX_SV_DUT_NOTE]            = "Der Name steht über jedem Testbericht.",
     [TX_SV_ENC_NOTE_1]          = "AS5600: Winkelsensor an der Hornwelle.",
     [TX_SV_ENC_NOTE_2]          = "ENC-MITTE tippen, wenn der Servo in Neutral steht.",
@@ -1040,6 +1075,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_KP_WRITE_ONE]             = "1 WERT SCHREIBEN",
     [TX_KP_FROM_SESSION]         = "Backup dieser Sitzung, wie zuerst gelesen",
     [TX_KP_FROM_JOURNAL]         = "Werte vor dem unterbrochenen Schreiben",
+    [TX_KP_FROM_RUN]             = "Werte vor dem Endlagenlauf",
     [TX_KP_FORGET]               = "Vermerk des unterbrochenen Schreibens verwerfen",
     [TX_KP_VERIFY]               = "PRÜFEN: Servo mit dem Gelesenen vergleichen",
     [TX_KP_DISCARD]              = "ÄNDERUNGEN VERWERFEN: zurück zu den Werten des Servos",
@@ -1715,7 +1751,7 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_AB_CAP]           = "Stufe über Spannungsobergrenze",
     [SERVO_STR_AB_STALL]         = "1 s über BLOCKIERT AB",
     [SERVO_STR_AB_CC]            = "1 s im Konstantstrom",
-    [SERVO_STR_AB_WIN_STALE]     = "0.5 s kein INA3221-Fenster",
+    [SERVO_STR_AB_WIN_STALE]     = "0.2 s kein INA3221-Fenster",
     [SERVO_STR_AB_INA_RESET]     = "INA3221 setzte sich zurück",
     [SERVO_STR_AB_INA_SILENT]    = "INA3221 antwortet nicht",
     [SERVO_STR_AB_INA_NO_WINDOW] = "INA3221-Fenster ohne Strom",
@@ -1939,6 +1975,114 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "CH1: ein Fenster enthält deren Mittel, "
                                    "Höchst- und Tiefstwert.",
     [SERVO_STR_R_METER_MODEL]    = "Modell des Panels",
+
+    [SERVO_STR_L_FOUND]          = "GEFUNDEN",
+    [SERVO_STR_L_FREE]           = "FREI",
+    [SERVO_STR_L_PH_SEARCH]      = "SUCHE",
+    [SERVO_STR_L_PH_SAFE]        = "SAFE",
+    [SERVO_STR_L_PH_CONNECT]     = "VERBINDEN",
+    [SERVO_STR_L_PH_WRITE]       = "SCHREIBEN",
+    [SERVO_STR_L_PH_LEAVE]       = "VERLASSEN",
+    [SERVO_STR_L_PH_ARM]         = "ARM",
+    [SERVO_STR_L_PH_PROBE]       = "PRÜFUNG",
+    [SERVO_STR_L_PH_CHECK]       = "KONTROLLE",
+    [SERVO_STR_L_WHY_HARD]       = "ein Messwert ab 3.0 A",
+    [SERVO_STR_L_WHY_CLIPPED]    = "INA3221 am Ende seines Bereichs",
+    [SERVO_STR_L_WHY_STALL]      = "400 ms über 1.0 A",
+    [SERVO_STR_L_WHY_SEARCH_LONG] = "eine Suche dauerte über 40 s",
+    [SERVO_STR_L_WHY_SUPPLY]     = "Netzteil oder Spannung geändert",
+    [SERVO_STR_L_WHY_BENCH]      = "Prüfstand 3 s nicht geschaltet",
+    [SERVO_STR_L_WHY_NOT_KST]    = "kein KST- oder Chaservo-Servo",
+    [SERVO_STR_L_WHY_PROG]       = "Programmierport ohne Abschluss",
+    [SERVO_STR_L_WHY_WRITE]      = "Schreiben abgelehnt/verloren",
+    [SERVO_STR_L_WHY_OTHER]      = "Servo hat andere Werte",
+    [SERVO_STR_L_WHY_MAPPING]    = "LEFT/RIGHT ANGLE: Seite unklar",
+    [SERVO_STR_L_WHY_SMALLEST]   = "läuft beim kleinsten Winkel an",
+    [SERVO_STR_L_WHY_CAP]        = "Grenze von 8 Werten erreicht",
+    [SERVO_STR_L_WHY_STILL]      = "ein Ende läuft weiterhin an",
+    [SERVO_STR_L_WHY_NO_VOLTAGE] = "kein Spannungswert im Fenster",
+    [SERVO_STR_L_WHY_NO_STOP]    = "kein Anschlag nach dem Vorhalt",
+    [SERVO_STR_L_WHY_BEFORE_NEUTRAL] = "freies Ende vor NEUTRAL",
+    [SERVO_STR_L_WHY_NEUTRAL]    = "NEUTRAL außerhalb LOWER/UPPER",
+    [SERVO_STR_L_WHY_RANGE]      = "Servopulse außerhalb MIN/MAX",
+    [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO-ENDLAGEN-BERICHT",
+    [SERVO_STR_L_R_MODE_SEARCH]  = "Modus:           nur Suche, nichts ins "
+                                   "Servo geschrieben",
+    [SERVO_STR_L_R_MODE_PROGRAM] = "Modus:           Suche, dann LEFT ANGLE "
+                                   "und RIGHT ANGLE programmiert",
+    [SERVO_STR_L_R_MODE_PULSES]  = "Modus:           nur Suche; PULSE LOWER "
+                                   "und PULSE UPPER zuerst auf 1000 und "
+                                   "2000 us gesetzt",
+    [SERVO_STR_L_R_SEARCH]       = "Gesucht:         von %u us bis %u us und "
+                                   "%u us",
+    [SERVO_STR_L_R_OUTPUT]       = "Ausgang:         %s, %u Hz",
+    [SERVO_STR_L_R_PULSE]        = "Pulsbereich:     Centre %u us, %u-%u us",
+    [SERVO_STR_L_R_METER]        = "Strom:           INA3221 CH1, Fenster "
+                                   "zu 50 ms, Shunt %.1f mOhm",
+    [SERVO_STR_L_R_RULE]         = "Suchregel:       Schritte zu 10 us, 120 "
+                                   "ms warten, Mittel über 80 ms; angelaufen "
+                                   "über %.1f x frei und +%.2f A",
+    [SERVO_STR_L_R_PROTECT]      = "Schutz:          ein Messwert ab %.1f A, "
+                                   "über %.1f A für %u ms, %u ms kein "
+                                   "Fenster, %u s je Suche",
+    [SERVO_STR_L_R_ENDS_HEAD]    = "ENDEN (die Suche vor dem Programmieren)",
+    [SERVO_STR_L_R_CHECK_HEAD]   = "ENDEN NACH DEM PROGRAMMIEREN (beide neu "
+                                   "gesucht)",
+    [SERVO_STR_L_R_LOW]          = "Unteres Ende:    ",
+    [SERVO_STR_L_R_HIGH]         = "Oberes Ende:     ",
+    [SERVO_STR_L_R_END_BOUND]    = "%sangelaufen bei %u us, Endpunkt %u us; "
+                                   "frei %.3f A, angelaufen %.3f A",
+    [SERVO_STR_L_R_END_FREE]     = "%sfrei bis %u us; frei %.3f A",
+    [SERVO_STR_L_R_END_NOT_RUN]  = "%snicht gesucht",
+    [SERVO_STR_L_R_ANGLE]        = "                 AS5600 %+.1f Grad an der "
+                                   "letzten freien Stellung",
+    [SERVO_STR_L_R_ANGLE_NONE]   = "                 AS5600: kein Winkel an "
+                                   "der letzten freien Stellung",
+    [SERVO_STR_L_R_ENC_OFF]      = "AS5600:          nicht eingebaut, keine "
+                                   "Winkel",
+    [SERVO_STR_L_R_PROG_HEAD]    = "PROGRAMMIEREN (LEFT ANGLE und RIGHT "
+                                   "ANGLE, Einheit unbekannt)",
+    [SERVO_STR_L_R_PROG_OFF]     = "Nicht gelaufen: nur Suche.",
+    [SERVO_STR_L_R_PROG_FREE]    = "Nicht gelaufen: kein Ende läuft an.",
+    [SERVO_STR_L_R_PROG_NO_SERVO] = "Kein Servo gelesen: nichts geschrieben.",
+    [SERVO_STR_L_R_SERVO]        = "Servo:           Typ %u, REVERSION %s",
+    [SERVO_STR_L_R_PULSES]       = "Servopulse:      NEUTRAL %.1f us, PULSE "
+                                   "LOWER %.1f us, PULSE UPPER %.1f us",
+    [SERVO_STR_L_R_PULSE_SET]    = "Pulse schreiben: PULSE LOWER %.1f -> %.1f "
+                                   "us, PULSE UPPER %.1f -> %.1f us",
+    [SERVO_STR_L_R_RANGE]        = "Bereich:         Servopulse %.1f-%.1f us "
+                                   "außerhalb PULS MIN/MAX %u-%u us",
+    [SERVO_STR_L_R_LEFT]         = "LEFT ANGLE:      ",
+    [SERVO_STR_L_R_RIGHT]        = "RIGHT ANGLE:     ",
+    [SERVO_STR_L_R_REG]          = "%s%u vorher, %u nachher; %s",
+    [SERVO_STR_L_R_REG_LIN]      = "                 Anteil frei %s, "
+                                   "angelaufen %s; Vorhalt %s, Anteil %s; "
+                                   "Endwert %s",
+    [SERVO_STR_L_R_SIDE_LO]      = "begrenzt das untere Ende",
+    [SERVO_STR_L_R_SIDE_HI]      = "begrenzt das obere Ende",
+    [SERVO_STR_L_R_SIDE_UNKNOWN] = "begrenztes Ende nicht gefunden",
+    [SERVO_STR_L_R_METHOD]       = "Verfahren:       linear im Puls; Vorhalt "
+                                   "+%u %% auf den Anteil am ersten "
+                                   "angelaufenen Puls, dann der Anteil, den "
+                                   "seine Suche frei fand",
+    [SERVO_STR_L_R_WRITES]       = "Schreibvorgänge: Werte geschrieben %u, "
+                                   "Schreibvorgänge gesendet %u, Grenze %u "
+                                   "Werte; Sitzungen %u",
+    [SERVO_STR_L_R_BACKUP]       = "Sicherung:       %s, die Werte vor dem "
+                                   "Lauf",
+    [SERVO_STR_L_R_BACKUP_MEM]   = "Sicherung:       nur im Speicher des "
+                                   "Panels, keine Karte",
+    [SERVO_STR_L_R_RESTORE]      = "Rückholen:       ZURÜCKSPIELEN auf der "
+                                   "Programmierseite, aus den Werten vor dem "
+                                   "Endlagenlauf",
+    [SERVO_STR_L_R_UNIT]         = "Einheit: die Einheit von LEFT ANGLE und "
+                                   "RIGHT ANGLE ist unbekannt; der Weg gilt "
+                                   "als linear im Puls von NEUTRAL bis PULSE "
+                                   "LOWER und PULSE UPPER, das ist nicht "
+                                   "gemessen.",
+    [SERVO_STR_L_R_BENCH]        = "Prüfstand: die gefundenen Enden werden "
+                                   "nicht auf PULS MIN und PULS MAX "
+                                   "angewendet.",
 };
 
 const ui_language_t ui_lang_de = {
