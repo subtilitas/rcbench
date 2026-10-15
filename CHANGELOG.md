@@ -73,6 +73,10 @@ history is in git.
 
 ### Changed
 
+- The bench configurator describes release 0.20.0. Every repository source
+  of its data is a file and line at the tag `v0.20.0`; 24 sources carry the
+  line of that tag, in `STATUS.md`, `docs/Building.md` and
+  `docs/FirstRun.md`. Release 0.20.0 adds no bench function.
 - The automatic servo test on the INA3221 ends ABORTED after 200 ms without
   a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
   run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
