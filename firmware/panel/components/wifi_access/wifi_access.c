@@ -1088,6 +1088,13 @@ static void fetch_task(void *arg)
 
 /* ------------------------------------------------------------ the radio */
 
+/*
+ * The reasons a refused key gives, auth-class to wa_on_drop().  ESP-IDF
+ * reports 15 (4WAY_HANDSHAKE_TIMEOUT) and 204 (HANDSHAKE_TIMEOUT) for a
+ * wrong key and for a key handshake that ran out of time, and its
+ * supplicant sends 15 itself after a 4th message 1 of the handshake: one of
+ * them alone does not tell the two apart (WA_AUTH_TRIES).
+ */
 static bool auth_refused(uint8_t reason)
 {
     switch (reason) {
@@ -1164,17 +1171,17 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             break;
         case WIFI_EVENT_STA_DISCONNECTED: {
             const wifi_event_sta_disconnected_t *d = data;
+            const bool auth = auth_refused(d->reason);
             lock();
-            if (s.w.state == WA_ST_JOINED || s.w.state == WA_ST_ADDRESS) {
-                wa_on_join_failed(&s.w, WA_JOIN_LOST);
-            } else if (s.w.state == WA_ST_JOINING) {
-                if (auth_refused(d->reason)) {
-                    wa_on_join_failed(&s.w, WA_JOIN_PASSWORD);
-                } else {
-                    retry = true;   /* until WA_JOIN_MS: NOT_FOUND */
-                }
-            }
+            const wa_state_t was = s.w.state;
+            retry = wa_on_drop(&s.w, auth);
+            const unsigned drops = s.w.auth_drops;
             unlock();
+            ESP_LOGW(TAG, "station dropped: reason %u%s, state %d, "
+                     "auth-class %u of %u, %s",
+                     (unsigned)d->reason, auth ? " (auth-class)" : "",
+                     (int)was, drops, WA_AUTH_TRIES,
+                     retry ? "connecting again" : "no retry");
             break;
         }
         default:
