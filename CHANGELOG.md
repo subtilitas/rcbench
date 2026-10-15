@@ -60,7 +60,10 @@ history is in git.
   started on. A PD mini that answers with its output off at a run's start
   stays off: switched on outside a session it ends the run, `supply or rail
   voltage changed`, and a run on PROG PORT does not start,
-  `PROGRAMMING: PD MINI OUTPUT OFF`. A run's `Backup:` line names the file
+  `PROGRAMMING: PD MINI OUTPUT OFF`. A PD mini first heard after the
+  start with its output on ends the run the same way. A search window
+  under 3.0 V, the first one included, ends the run, `supply or rail
+  voltage changed`. A run's `Backup:` line names the file
   its own first write saved, also when that write is sent and lost. No
   automatic test or limit run starts until the card has taken the last
   run's file open and close. RESTORE offers `Values

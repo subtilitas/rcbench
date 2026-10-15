@@ -1955,6 +1955,96 @@ TEST_CASE(a_supply_off_at_the_start_that_switches_on_ends_the_run)
     }
 }
 
+/* A supply that does not answer at the start: the run passes while it
+ * stays away.  It comes back with its output off: watched from there, and
+ * its output switched on ends the run.  It comes back with its output on,
+ * in SAFE, a search or on the way to ARMED: the run ends as a changed
+ * supply. */
+TEST_CASE(a_supply_that_answers_late_with_its_output_on_ends_the_run)
+{
+    rig_init(0u, false);
+    g.sup.online = false;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(g.run.sup_watch);
+    CHECK(!g.run.sup_online);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_PASS);
+
+    rig_init(0u, false);
+    g.sup.online = false;
+    CHECK(start());
+    CHECK(run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
+    run_for(500u);
+    g.sup.online = true;
+    g.sup.output = false;
+    run_for(500u);
+    CHECK(servo_limrun_running(&g.run));
+    CHECK(g.run.sup_online);
+    CHECK(!g.run.sup_out);
+    g.sup.output = true;
+    run_for(500u);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+    CHECK_EQ(g.offs, 1u);
+
+    static const servo_limrun_phase_t k_ph[] = {
+        SERVO_LIMRUN_PH_SAFE, SERVO_LIMRUN_PH_SEARCH, SERVO_LIMRUN_PH_ARM,
+    };
+    for (size_t p = 0; p < sizeof(k_ph) / sizeof(k_ph[0]); ++p) {
+        rig_init(0u, false);
+        g.sup.online = false;
+        CHECK(start());
+        CHECK(run_to(k_ph[p], RUN_MS));
+        for (int k = 0; k < 1000 && !g.run.sup_watch; ++k) {
+            tick();
+        }
+        CHECK(g.run.sup_watch);
+        CHECK_EQ(g.run.phase, k_ph[p]);
+        g.bench_ms = 2000u;
+        g.sup.online = true;
+        g.sup.output = true;
+        run_for(300u);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+        CHECK_EQ(g.offs, 1u);
+    }
+}
+
+/* Every search window holds 3.0 V on the rail, the first included: a rail
+ * that goes off in the read session ends the run at the first search
+ * window, before a step; 3000 mV searches on. */
+TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
+{
+    for (int k = 0; k < 3; ++k) {
+        rig_init(0u, false);
+        CHECK(start());
+        CHECK(run_to(SERVO_LIMRUN_PH_ARM, RUN_MS));
+        g.rail_mv = k == 0 ? 0u
+                  : k == 1 ? (uint16_t)(SERVO_LIMRUN_RAIL_MIN_MV - 1u)
+                           : (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
+        CHECK(run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
+        run_for(1000u);
+        if (k < 2) {
+            CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+            CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+            CHECK(!g.driven);                   /* no step taken */
+            CHECK_EQ(g.offs, 1u);
+        } else {
+            CHECK(servo_limrun_running(&g.run));
+            CHECK_EQ(g.run.rail_mv, (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV);
+        }
+    }
+    /* A search already under way: the band of 1.0 V and the floor. */
+    rig_init(0u, false);
+    g.rail_mv = 3500u;
+    CHECK(start());
+    CHECK(run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
+    run_for(1000u);
+    CHECK(servo_limrun_running(&g.run));
+    g.rail_mv = 2999u;
+    run_for(500u);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+}
+
 /* The run aborted in the step after its ARM was asked, before the bench
  * took it: SAFE is asked behind it and the bench ends SAFE. */
 TEST_CASE(an_abort_behind_the_arm_leaves_the_bench_safe)
@@ -2441,6 +2531,8 @@ int main(void)
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
     RUN(the_supply_is_watched_in_safe_and_on_the_way_to_armed);
     RUN(a_supply_off_at_the_start_that_switches_on_ends_the_run);
+    RUN(a_supply_that_answers_late_with_its_output_on_ends_the_run);
+    RUN(a_rail_under_3_v_in_any_search_window_ends_the_run);
     RUN(an_abort_behind_the_arm_leaves_the_bench_safe);
     RUN(no_window_for_200_ms_ends_the_run);
     RUN(a_window_without_the_rail_voltage_ends_a_search);

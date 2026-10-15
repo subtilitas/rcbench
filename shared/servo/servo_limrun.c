@@ -640,6 +640,13 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
         abort_why(r, SERVO_LIMRUN_WHY_NO_VOLTAGE, at);
         return;
     }
+    /* Every search window holds the rail the start was let through on: a
+     * rail that went off after START, its first window included, reads
+     * free ends on a servo that never moved. */
+    if (searching(r) && w->mean_mv < SERVO_LIMRUN_RAIL_MIN_MV) {
+        abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, at);
+        return;
+    }
     if (searching(r)) {
         if (!r->have_rail) {
             r->have_rail = true;
@@ -688,16 +695,24 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
          * back to ARMED, the supply is the run's again. */
         return;
     }
-    if (!r->sup_watch) {
-        /* A supply that answers is watched from its first reading on: its
-         * set points, and its output on or off.  An output off at the
-         * start stays off: a rail fed from elsewhere gets no second
-         * supply switched on beside it. */
+    if (!r->sup_watch || (!r->sup_online && s->online && !s->output)) {
+        /* The supply is watched from its first reading on: answering or
+         * not, its set points, and its output on or off.  One that did
+         * not answer and answers with its output off is watched from
+         * there as off.  An output off stays off, and a supply that did
+         * not answer does not come with its output on: a rail fed from
+         * elsewhere gets no second supply switched on beside it. */
+        r->sup_watch  = true;
+        r->sup_online = s->online;
+        r->sup_out    = s->online && s->output;
+        r->sup_v      = s->set_v;
+        r->sup_i      = s->set_i;
+        return;
+    }
+    if (!r->sup_online) {
         if (s->online) {
-            r->sup_watch = true;
-            r->sup_out   = s->output;
-            r->sup_v     = s->set_v;
-            r->sup_i     = s->set_i;
+            /* Answering now, with its output on. */
+            abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
         }
         return;
     }

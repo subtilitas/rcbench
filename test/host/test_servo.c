@@ -4633,6 +4633,9 @@ static void bench_drain(void)
     }
 }
 
+/* No supply state reaches the screen: no PD mini heard yet. */
+static bool s_bench_no_supply;
+
 static void bench_frames(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; k += 20u) {
@@ -4682,7 +4685,7 @@ static void bench_frames(uint32_t ms)
             window(&w);
             ++bench.wins;
         }
-        if ((int32_t)(bench.now - bench.next) >= 0) {
+        if ((int32_t)(bench.now - bench.next) >= 0 && !s_bench_no_supply) {
             bench.next += 100u;
             supply_state_t st;
             memset(&st, 0, sizeof(st));
@@ -9052,6 +9055,28 @@ TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
     CHECK(servo_screen_testing());
 }
 
+/* A limit run started with no PD mini heard yet: one heard during the run
+ * with its output on, beside the rail the run started on, ends it as a
+ * changed supply, with the output asked off. */
+TEST_CASE(a_pd_mini_heard_first_with_its_output_on_ends_a_limit_run)
+{
+    s_bench_no_supply = true;
+    lim_bench();
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    bench_frames(1000u);
+    CHECK(servo_screen_limit_running());
+    s_bench_no_supply = false;
+    bench.online = true;
+    bench.out = true;
+    bench_frames(500u);
+    CHECK(!servo_screen_limit_running());
+    lim_run_out();
+    CHECK(strstr(bench.report, "ABORTED") != NULL);
+    CHECK(strstr(bench.report, "supply or rail voltage changed") != NULL);
+    CHECK(bench.released);
+}
+
 /* Each end of a limit run's watch, at a search: ABORTED, the output asked
  * off, the servo let go, and the report naming the reason.  A reset of the
  * screen, as at the panel's start, takes the run with it and asks
@@ -9356,6 +9381,7 @@ int main(void)
     RUN(programming_is_not_offered_off_the_programming_port);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
     RUN(no_run_starts_while_the_logger_holds_the_last_report);
+    RUN(a_pd_mini_heard_first_with_its_output_on_ends_a_limit_run);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     return test_summary("servo");
 }

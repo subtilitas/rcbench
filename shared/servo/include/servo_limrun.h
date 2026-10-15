@@ -418,6 +418,7 @@ typedef struct {
 
     /* The supply as at its first reading, when one answered. */
     bool     sup_watch;
+    bool     sup_online;    /**< it answered                             */
     bool     sup_out;       /**< its output was on                       */
 
     float    sup_v, sup_i;
@@ -440,10 +441,13 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
 /** One INA3221 window, as the automatic test takes it. */
 void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w);
 
-/** The supply's reading.  The first one after the start, with the supply
- *  answering, is what it must stay at: its set points, and its output on
- *  or off.  An output off then and on later ends the run as a changed
- *  supply (SERVO_LIMRUN_WHY_SUPPLY_CHANGED). */
+/** The supply's reading.  The first one after the start, answering or
+ *  not, is what it must stay at: its set points, and its output on or off.
+ *  An output off then and on later, or a supply that did not answer and
+ *  answers with its output on, ends the run as a changed supply
+ *  (SERVO_LIMRUN_WHY_SUPPLY_CHANGED); one that answers with its output off
+ *  is watched from there.  The caller passes a reading that does not
+ *  answer where it has none at the start. */
 void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                          uint32_t now_ms);
 

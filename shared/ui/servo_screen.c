@@ -3517,8 +3517,15 @@ static void lim_begin(void)
     if (c.read) {
         kst_panel_run_begin();
     }
-    if (s.have_sup) {
-        const servo_test_reading_t r = test_reading_of(&s.sup);
+    {
+        /* The supply as the run starts: with none read yet, one that does
+         * not answer, so a PD mini that comes with its output on ends the
+         * run. */
+        servo_test_reading_t r;
+        memset(&r, 0, sizeof(r));
+        if (s.have_sup) {
+            r = test_reading_of(&s.sup);
+        }
         servo_limrun_supply(&s.lim, &r, test_now());
     }
     test_tell();
