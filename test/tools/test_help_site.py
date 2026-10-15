@@ -139,6 +139,16 @@ def test_a_link_target_keeps_balanced_parentheses(tree):
     assert "</a> after" in html
 
 
+def test_an_escaped_parenthesis_in_a_link_target(tree):
+    html = ok(tree, "[x](https://example.com/a\\)b) after\n")
+    assert '<a href="https://example.com/a)b" ' in html
+    assert "</a> after" in html
+
+
+def test_a_heading_without_an_anchor_fails(tree):
+    fails(tree, "## ???\n", "no letter or digit for its anchor")
+
+
 def test_an_unindented_line_after_a_list_fails(tree):
     fails(tree, "- item\nparagraph\n", "leave a blank line after a list",
           line=8)

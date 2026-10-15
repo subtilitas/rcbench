@@ -280,9 +280,14 @@ class Inline:
             out.append("[")
             return i + 1
         # The target ends at the ) that closes the ( after the label, so a
-        # URL with balanced parentheses inside stays whole.
-        end, depth = -1, 0
-        for k in range(close + 2, len(text)):
+        # URL with balanced parentheses inside stays whole.  An escaped
+        # character is part of the target, not a delimiter.
+        end, depth, k = -1, 0, close + 2
+        while k < len(text):
+            if text[k] == "\\" and k + 1 < len(text) \
+                    and text[k + 1] in ESCAPABLE:
+                k += 2
+                continue
             if text[k] == "(":
                 depth += 1
             elif text[k] == ")":
@@ -290,11 +295,15 @@ class Inline:
                     end = k
                     break
                 depth -= 1
+            k += 1
         if end < 0:
             self.fail(line, "unclosed link target: a ( without )")
             out.append(html.escape(text[i:]))
             return len(text)
-        label, target = text[i + 1:close], text[close + 2:end].strip()
+        label = text[i + 1:close]
+        target = re.sub(r"\\(.)", lambda m: m.group(1)
+                        if m.group(1) in ESCAPABLE else m.group(0),
+                        text[close + 2:end].strip())
         if in_link:
             self.fail(line, "a link inside a link")
         if not label.strip():
@@ -502,6 +511,10 @@ class Renderer:
                                "block; use ## and ###")
             self.page.has_h1 = True
         slug = slugify(plain(text))
+        if not slug:
+            self.fail(num, f"the heading {text!r} has no letter or digit "
+                           "for its anchor")
+            return
         if any(h.slug == slug for h in self.page.headings):
             self.fail(num, f"a second heading with the anchor #{slug}")
         self.page.headings.append(Heading(level, text, slug, num))
