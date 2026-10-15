@@ -146,8 +146,12 @@ SCREENS = {
     "band-link-refused": ("band-link-refused.png", "overview", "dark"),
     "band-safe":  ("band-safe.png",  "overview", "dark"),
     "band-armed": ("band-armed.png", "overview", "dark"),
+    # An alert across the bottom of the menu, with its x.
+    "overview-alert": ("overview-alert.png", "overview", "dark"),
     "motor":      ("motor.png",      "motor",      "dark"),
     "motor-held": ("motor-held.png", "motor-held", "dark"),
+    # A linked bench before its first run, no pin bound as a motor.
+    "motor-idle": ("motor-idle.png", "motor", "dark"),
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
@@ -155,6 +159,8 @@ SCREENS = {
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
+    # The same bench ARMED: DISARM, the dial live.
+    "servo-armed": ("servo-armed.png", "servo", "dark"),
     # The INA3221 as the servo rail's meter: its name over the plot and
     # CH1's windows in the CURRENT row, the line and the plot; and the same
     # with the last window clipped, its current in the warning colour.
@@ -252,7 +258,11 @@ SCREENS = {
     "servo-kst-swapped": ("servo-kst-swapped.png", "servo", "dark"),
     "servo-paused":   ("servo-paused.png",   "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
+    # Nothing decoded: what a bench shows, where no firmware feeds it.
+    "analyser-silent": ("analyser-silent.png", "analyser", "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
+    # No card mounted.
+    "logs-nocard": ("logs-nocard.png", "logs", "dark"),
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
     "programmer-protocols": ("programmer-protocols.png", "programmer", "dark"),
     "programmer-idle": ("programmer-idle.png", "programmer", "dark"),
@@ -304,6 +314,8 @@ SCREENS = {
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
     "setup":      ("setup.png",      "setup",      "dark"),
+    # APPLICATION: the language, the theme and the knob.
+    "setup-application": ("setup-application.png", "setup", "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # INTERFACES with both current monitors enabled, at the top of the list
     # and drawn on to the INA3221's rows and the bus's pins.
@@ -345,6 +357,8 @@ SCREENS = {
     "supply-settings": ("supply-settings.png", "supply", "dark"),
     "supply-keypad": ("supply-keypad.png", "supply", "dark"),
     "supply-confirm": ("supply-confirm.png", "supply", "dark"),
+    # The PD mini enabled and not answering, the output never on.
+    "supply-offline": ("supply-offline.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
     # The coprocessor update: the question a link-up poses, the same with
@@ -356,6 +370,8 @@ SCREENS = {
                                "coproc-update", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
+    # No cell monitor: what a bench shows, where no firmware feeds it.
+    "battery-none": ("battery-none.png", "battery", "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
     "balance-rig": ("balance-rig.png", "balance", "dark"),
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
@@ -469,19 +485,24 @@ FIT_ONLY = {
     "wifi-coproc":      (None, "wifi", "dark"),
 }
 
-# Views that open a drop-down or a chip's help bubble over the screen: the
-# list or the bubble covers the labels under it by design, so a fill drawn
-# over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"} | {
+# Views that open a drop-down, a chip's help bubble or the alert band over
+# the screen: the list, the bubble or the band covers the labels under it by
+# design, so a fill drawn over a string is not a finding there.
+OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol", "overview-alert"} | {
     name for name in (*SCREENS, *FIT_ONLY) if name.startswith("band-")}
 
 # English overflows the layout has for a time: (view, string, finding), word
-# for word as --fit prints them; none today.  Each is a defect of the
-# screen, listed here so the check holds every other string; none is a
-# decision that the overflow is wanted.  An entry that --fit no longer
-# finds fails, so the list cannot outlive its defects.  SETUP shows 36
-# cells of a help line.
-KNOWN_OVERFLOWS = set()
+# for word as --fit prints them.  Each is a defect of the screen, listed
+# here so the check holds every other string; none is a decision that the
+# overflow is wanted.  An entry that --fit no longer finds fails, so the
+# list cannot outlive its defects.  SETUP shows 36 cells of a help line;
+# two APPLICATION help lines in settings.c are longer.
+KNOWN_OVERFLOWS = {
+    ("setup-application", "Scales the palette; see help on backlight",
+     "is cut at the edge of its area (252 to 580, area 236 to 546)"),
+    ("setup-application", "0 keeps the screen at full brightness",
+     "is cut at the edge of its area (252 to 548, area 236 to 546)"),
+}
 
 
 class Rect:

@@ -7,7 +7,8 @@ go anywhere, is that list of test binaries the list CMake builds, is that
 count the count.
 
 Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
-the pages under hardware/.  The wiki pages are additionally held to the
+the pages under hardware/.  A screenshot the web help (help/content) shows
+by view name counts as shown.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
 screenshot count in STATUS.md from docs/img.  The stick pages' table of how
@@ -44,6 +45,10 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 IMG = DOCS / "img"
 HARDWARE = REPO / "hardware"
+# The web help's pages show screenshots by view name, `view:<name>`: an
+# English page shows docs/img/<name>.png, a German one docs/img/de/<name>.png.
+HELP = REPO / "help" / "content"
+VIEW_RE = re.compile(r"\]\(view:([A-Za-z0-9_-]+)\)")
 
 # Markdown outside docs/ that the link and anchor checks also cover: the
 # README in both languages, the running record, and the hardware pages.
@@ -161,6 +166,15 @@ def check_links(problems: list[str]) -> None:
                 problems.append(f"{page.name}: link to {target} goes nowhere")
             elif resolved.suffix.lower() == ".png":
                 referenced.add(resolved)
+
+    # A view the web help shows counts as shown; tools/help_site.py --check
+    # holds that each one exists.
+    for lang, folder in (("en", IMG), ("de", IMG / "de")):
+        for page in sorted((HELP / lang).glob("*.md")):
+            if page.name.startswith("_"):
+                continue
+            for view in VIEW_RE.findall(read(page)):
+                referenced.add((folder / f"{view}.png").resolve())
 
     # docs/img/de holds the same screens in German, for the German pages.
     for image in sorted(IMG.rglob("*.png")):
