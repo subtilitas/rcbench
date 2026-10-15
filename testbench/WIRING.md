@@ -378,7 +378,7 @@ running, open its port on the Pi and ask:
 
     ping      ->  pong rcbench-touch 1 addr=0x14 res=800x480 state=listen
     wiring    ->  ok wiring
-              ->  wiring ok scl=GP5 sda=GP4 tx=<n> agree=<pct> rate=<Msps>
+              ->  wiring ok scl=GP5 sda=GP4 tx=<n> named=<n> agree=<pct> rate=<Msps>
 
 `wiring` listens to the panel's polling for 500 ms and names the line that
 carries SCL from the START and STOP conditions. `swapped` means the two
@@ -389,7 +389,9 @@ names a line held low, and `noise` means no verdict. Only after `ok`:
 
 The injector then answers at 0x14. A panel image built with
 `RCBENCH_TOUCH_INJECTOR=ON` finds it at its next start: pulse its RESET, and
-the status band's MODE chip reads `INJECT`. Capture one again: the decode now
+the status band's MODE chip reads `INJECT`. After an injector reset the
+panel needs no RESET: it detached the silent injector after 1000 ms and
+re-attaches it within about 1 s of `confirm`. Capture one again: the decode now
 shows 0x14 polled after every read of 0x5D.
 
 ---
