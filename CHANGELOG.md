@@ -6,6 +6,22 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The bench configurator lists 2 more functions of the base setup: the panel
+  update and the card files in a browser over Wi-Fi (the FILES & UPDATE
+  screen), and the coprocessor firmware update over CAN (Controller Area
+  Network) from the panel. Neither needs a part beyond the panel and the
+  coprocessor; the panel update needs no microSD card. The base setup runs
+  12 functions.
+
+### Changed
+
+- The bench configurator describes release 0.19.0. Every repository source
+  of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
+  line of that tag, in `STATUS.md`, `docs/Building.md` and
+  `docs/FirstRun.md`.
+
 ## 0.19.0 - 2026-10-15
 
 Load both boards over USB (Universal Serial Bus) once, on every bench: a

@@ -169,7 +169,7 @@ test('a link written without the functions that need no part resolves to the sam
   assert.deepEqual(setup.functions.filter((f) => f.chosen).map((f) => f.fn.id), ['servo', 'esc']);
   // The functions that need no part are enabled and are not part of the link.
   const base = CATALOGUE.functions.filter((f) => alwaysOn(CATALOGUE, f)).map((f) => f.id);
-  assert.equal(base.length, 10);
+  assert.equal(base.length, 12);
   for (const id of base) assert.ok(setup.functions.find((f) => f.fn.id === id)?.enabled, id);
   const written = formatHash(parsed.selection, 'en', 'en', CATALOGUE);
   assert.equal(written, hash);

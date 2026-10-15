@@ -254,7 +254,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
 test('the count of subsets is inside the limit of the sweep', () => {
   assert.equal(SELECTABLE.length, 8);
   assert.equal(FUNCTIONS.length, 12);
-  assert.equal(BASE.length, 10);
+  assert.equal(BASE.length, 12);
   assert.deepEqual(TEST_OBJECTS, ['servo', 'esc']);
   assert.equal(OPTION_SETS.length, 16);
   for (const [name, count] of [['parts you own', SELECTABLE.length], ['functions', FUNCTIONS.length]] as const) {

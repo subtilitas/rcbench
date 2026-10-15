@@ -12,7 +12,7 @@ import { OPTION_KEYS, OPTION_VALUES } from '../resolve.ts';
 const LOCKED = ['panel', 'copro', 'usb', 'wire'];
 const SELECTABLE = CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id);
 const FUNCTIONS = CATALOGUE.functions.map((f) => f.id);
-const BASE = ['link', 'interlock', 'stop', 'bind', 'signals', 'sweep', 'ppm', 'settings', 'language', 'profiles'];
+const BASE = ['link', 'interlock', 'stop', 'bind', 'signals', 'sweep', 'ppm', 'settings', 'language', 'profiles', 'wifi', 'canupdate'];
 
 function select(functions: string[] = [], owned: string[] = [], options: Partial<Options> = {}): Selection {
   return { functions, owned, options: { ...DEFAULT_OPTIONS, ...options } };
