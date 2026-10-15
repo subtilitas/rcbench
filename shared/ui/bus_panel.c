@@ -84,8 +84,11 @@ enum {
 /* No second rate. */
 #define NO_ALT 0xFFu
 
-/* The result of a frame no servo answered (feetech_res_t). */
-#define RES_NO_REPLY 2u
+/* Results (feetech_res_t) the page tells apart. */
+#define RES_BUSY     1u         /* the operation was not taken */
+#define RES_NO_REPLY 2u         /* a frame no servo answered */
+#define RES_DRIVER   10u        /* the driver refused a frame or the rate */
+#define RES_ARG      12u        /* the operation was not taken */
 
 typedef struct {
     uint8_t id, series, addr, n;
@@ -807,6 +810,21 @@ static unsigned read_bytes(uint8_t *out, unsigned room)
     return n < room ? n : room;
 }
 
+/* A baud write or BAUD, which start with torque off to every servo, ended
+ * in @p result short of success.  BUSY and ARG refused it before any frame.
+ * DRIVER may be the broadcast itself refused, so it goes again.  Any other
+ * result came after the broadcast went. */
+static void torque_off_went(uint8_t result)
+{
+    if (result == RES_BUSY || result == RES_ARG) {
+        return;
+    }
+    memset(b.torque_on, 0, sizeof(b.torque_on));
+    if (result == RES_DRIVER) {
+        b.tq_off_due = true;
+    }
+}
+
 /* The command came to @p result (feetech_res_t), with nothing refused. */
 static void done(uint8_t result)
 {
@@ -832,6 +850,9 @@ static void done(uint8_t result)
     case U_EE_WRITE:
         ee_forget();
         if (!ok) {
+            if (b.ee_role == BUS_R_BAUD) {
+                torque_off_went(result);
+            }
             keep_uncertain();
             say(true, result_text(result));
             return;
@@ -853,6 +874,9 @@ static void done(uint8_t result)
         return;
     case U_RESTORE:
         if (!ok) {
+            if (b.bk_n > 0u && b.bk[b.bk_n - 1u].role == BUS_R_BAUD) {
+                torque_off_went(result);
+            }
             b.restoring = false;
             say(true, result_text(result));
             return;
@@ -903,6 +927,7 @@ static void done(uint8_t result)
     }
     case U_BAUD:
         if (!ok) {
+            torque_off_went(result);
             b.restoring = false;
             say(true, result_text(result));
             return;
