@@ -2164,7 +2164,9 @@ Values not saved are kept until the panel is switched off. Leaving the screen
 writes nothing.
 
 A value stepped back to the one stored is no change, and the label returns to
-`SAVED`. The stored values are a copy the panel keeps: the ones loaded at
+`SAVED`; a write asked for and not yet taken is dropped. A float stepped
+away and back can miss its stored word by a rounding, and counts as back
+while it is less than half a step from it. The stored values are a copy the panel keeps: the ones loaded at
 start-up, the defaults where the store had none, or the ones the last
 successful save wrote. A refused save leaves the copy as it was and no
 longer known to be the medium's, so the label stays `NOT SAVED` or `SAVE`
@@ -2202,6 +2204,8 @@ language, theme, brightness and contrast apply on the next frame. A PD mini
 wiring set back switches the supply output off and raises the alert a change by hand
 raises. PWM target and Port PWM are not set back while the servo programmer
 holds the servo port, as a key does not step them then; they stay unsaved.
+After a refused save DISCARD also asks for a write of the values put back:
+the medium can hold part of the refused write, and a restart would load it.
 
 While the bench is ARMED, DISCARD is drawn inert and a line
 `DISCARD waits for SAFE.` says why. Setting back several values at once,

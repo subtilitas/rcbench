@@ -57,7 +57,7 @@ Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der o
 
 ![Ein geänderter Wert, SPEICHERN wird angeboten](view:setup-dirty)
 
-Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrückt wird. Ein Wert, der auf den gespeicherten zurückgestellt ist, ist keine Änderung: Die Taste lautet wieder `GESPEICHERT`.
+Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrückt wird. Ein Wert, der auf den gespeicherten zurückgestellt ist, ist keine Änderung: Die Taste lautet wieder `GESPEICHERT`, und ein angefordertes Schreiben entfällt.
 
 | Beschriftung | Bedeutung |
 |---|---|
@@ -86,7 +86,7 @@ Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICH
 - Bei ARMED ist VERWERFEN abgeblendet und tut nichts; die Zeile `VERWERFEN wartet auf SAFE.` sagt das. BLEIBEN und SPEICHERN wirken.
 - PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der Servo-Programmierer den Servo-Port hält; sie bleiben ungespeichert.
 - Bei mehr als 10 Änderungen zeigen sich 9 Zeilen, und die letzte Zeile lautet bei 12 `und 3 weitere`.
-- Nach einem abgelehnten Speichern steht unter der Liste die Zeile `Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.`
+- Nach einem abgelehnten Speichern steht unter der Liste die Zeile `Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.` VERWERFEN fordert dann zusätzlich das Schreiben der zurückgestellten Werte an, denn der Flash kann einen Teil des abgelehnten Schreibens halten.
 
 ![Zwölf ungespeicherte Werte](view:setup-leave-many)
 

@@ -302,7 +302,10 @@ int settings_changes(void);
  * settings_set() and settings_set_text(): the observer hears each value
  * that moves as it hears an edit by hand, in schema order.  A held value is
  * left, as settings_set() leaves it; a derived one follows its source.
- * Returns how many values and strings still differ: the held ones.
+ * After a refused save, when the medium can hold part of that write, it
+ * also asks for a save (settings_request_save()), so a restart loads the
+ * values put back.  Returns how many values and strings still differ: the
+ * held ones.
  */
 int settings_discard(void);
 

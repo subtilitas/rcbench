@@ -2362,7 +2362,11 @@ Nicht gespeicherte Werte bleiben, bis das Panel ausgeschaltet wird. Das
 Verlassen des Bildschirms schreibt nichts.
 
 Ein Wert, der auf den gespeicherten zurückgestellt ist, ist keine Änderung,
-und die Beschriftung kehrt zu `GESPEICHERT` zurück. Die gespeicherten Werte
+und die Beschriftung kehrt zu `GESPEICHERT` zurück; ein angefordertes, noch
+nicht ausgeführtes Schreiben entfällt. Eine Kommazahl, die weg- und
+zurückgestellt ist, kann ihr gespeichertes Wort um eine Rundung verfehlen
+und gilt als zurück, solange sie weniger als einen halben Schritt davon
+entfernt ist. Die gespeicherten Werte
 sind eine Kopie, die das Panel hält: die beim Start geladenen, die Vorgaben,
 wo der Store keine hatte, oder die, die das letzte gelungene Speichern
 geschrieben hat. Ein abgelehntes Speichern lässt die Kopie, wie sie war, aber
@@ -2406,7 +2410,10 @@ gelten ab dem nächsten Frame. Eine zurückgestellte Verdrahtung des PD mini
 schaltet den Netzteilausgang ab und meldet denselben Alert wie eine Änderung
 von Hand. PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der
 Servo-Programmierer den Servo-Port hält, so wie eine Taste sie dann nicht
-schaltet; sie bleiben ungespeichert.
+schaltet; sie bleiben ungespeichert. Nach einem abgelehnten Speichern
+fordert VERWERFEN zusätzlich das Schreiben der zurückgestellten Werte an:
+Das Medium kann einen Teil des abgelehnten Schreibens halten, und ein
+Neustart würde ihn laden.
 
 Bei ARMED ist VERWERFEN inaktiv gezeichnet, und die Zeile
 `VERWERFEN wartet auf SAFE.` sagt warum. Mehrere Werte auf einmal

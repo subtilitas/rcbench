@@ -3178,6 +3178,112 @@ TEST_CASE(discard_puts_back_every_value_through_the_observer)
     settings_set_observer(NULL);
 }
 
+/*
+ * Every setting stepped one key away and one back is no change.  A float
+ * comes back by arithmetic, off its stored word by a rounding (Voltage max:
+ * 21.0 is stored, 20.999998 comes back), and Sensor SDA's SCL follows it
+ * after the set: neither leaves SAVE offered or a line in the warning.  One
+ * step away is a change.
+ */
+TEST_CASE(a_key_away_and_back_is_no_change_for_every_setting)
+{
+    settings_set_hold(NULL);
+    for (int i = 0; i < SETTING_COUNT; ++i) {
+        const setting_id_t id = (setting_id_t)i;
+        if (settings_derived(id)) {
+            continue;
+        }
+        const setting_def_t *d = settings_def(id);
+        fresh_model();
+        const int first = (settings_get(id) > d->min) ? -1 : 1;
+        settings_adjust(id, first);
+        if (settings_changes() == 0) {
+            continue;                    /* one value only: no step */
+        }
+        CHECK(settings_differs(id));
+        CHECK(settings_dirty());
+        settings_adjust(id, -first);
+        CHECK(!settings_differs(id));
+        CHECK_EQ(settings_changes(), 0);
+        CHECK(!settings_dirty());
+    }
+    /* The case that showed it, by name. */
+    fresh_model();
+    settings_adjust(SET_SUPPLY_V_MAX, -1);
+    settings_adjust(SET_SUPPLY_V_MAX, 1);
+    CHECK(!settings_dirty());
+    fresh_model();
+    settings_set(SET_SENSE_SDA, 4.0f);
+    settings_set(SET_SENSE_SDA, 16.0f);
+    CHECK_EQ(settings_get_int(SET_SENSE_SCL), 17);
+    CHECK(!settings_dirty());
+}
+
+/*
+ * A save asked for falls with the last change: the values are back, and a
+ * later edit is not one the operator asked to keep.  The write waits for
+ * a new SAVE.
+ */
+TEST_CASE(a_save_asked_falls_when_every_value_is_back)
+{
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set(SET_PACK_CELLS, 4.0f);
+    settings_request_save();
+    CHECK(settings_save_asked());
+    settings_set(SET_PACK_CELLS, 6.0f);
+    CHECK(!settings_save_asked());
+    settings_set(SET_PACK_MAH, 5200.0f);
+    CHECK(settings_dirty());
+    CHECK(!settings_save_asked());       /* not the old request again */
+    CHECK(!settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 0);
+    CHECK(settings_dirty());
+
+    /* A request with a change left stands. */
+    settings_set(SET_PACK_CELLS, 4.0f);
+    settings_request_save();
+    settings_set(SET_PACK_CELLS, 6.0f);
+    CHECK(settings_save_asked());        /* Capacity still differs */
+    settings_set_store(NULL);
+}
+
+/*
+ * After a refused save the medium can hold part of that write.  DISCARD
+ * puts the stored values back and asks for a write of them, so a restart
+ * loads what was discarded to; without a refusal it asks nothing.
+ */
+TEST_CASE(discard_after_a_refused_save_asks_for_a_write)
+{
+    fresh_model();
+    settings_set_store(&s_mem_store);
+    settings_set(SET_PDMINI_TX, 4.0f);
+    CHECK_EQ(settings_discard(), 0);
+    CHECK(!settings_save_asked());
+    CHECK(!settings_dirty());
+
+    settings_set(SET_PDMINI_TX, 7.0f);
+    CHECK(settings_save());              /* the medium holds 7 */
+    settings_set(SET_PDMINI_TX, 4.0f);
+    settings_set_store(&s_refusing_store);
+    CHECK(!settings_save());
+    s_saved[SET_PDMINI_TX] = 4.0f;       /* the part that reached it */
+    CHECK_EQ(settings_discard(), 0);
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 7);
+    CHECK(settings_dirty());             /* the medium is not known */
+    CHECK(settings_save_asked());
+
+    settings_set_store(&s_mem_store);
+    const int calls = s_save_calls;
+    CHECK(settings_save_tick(true));
+    CHECK_EQ(s_save_calls, calls + 1);
+    CHECK(!settings_dirty());
+    settings_set(SET_PDMINI_TX, 4.0f);
+    settings_init();                     /* the restart */
+    CHECK_EQ(settings_get_int(SET_PDMINI_TX), 7);
+    settings_set_store(NULL);
+}
+
 /* A held value is left by DISCARD as by an edit, and stays to save. */
 TEST_CASE(discard_leaves_a_held_value)
 {
@@ -3632,6 +3738,9 @@ int main(void)
     RUN(the_stored_copy_follows_a_successful_save_only);
     RUN(discard_puts_back_every_value_through_the_observer);
     RUN(discard_leaves_a_held_value);
+    RUN(a_key_away_and_back_is_no_change_for_every_setting);
+    RUN(a_save_asked_falls_when_every_value_is_back);
+    RUN(discard_after_a_refused_save_asks_for_a_write);
     RUN(leaving_setup_with_nothing_changed_warns_nothing);
     RUN(leaving_with_one_change_warns_and_names_it);
     RUN(a_changed_string_is_named_in_the_warning);

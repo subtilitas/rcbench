@@ -445,10 +445,26 @@ static struct {
     settings_hold_fn hold;
 } s;
 
+/*
+ * Whether value @p i is off its stored value by a step of its grid or more.
+ * A value stepped away and back lands on the grid by arithmetic, which can
+ * miss the stored word by a rounding (20.999998 for 21.0), and both read
+ * the same on the screen: that is the same value.  Half a step tells them
+ * apart from a real step.
+ */
+static bool value_differs(int i)
+{
+    const float step = k_defs[i].step;
+    if (step > 0.0f) {
+        return fabsf(s.values[i] - s.stored[i]) >= 0.5f * step;
+    }
+    return s.values[i] != s.stored[i];
+}
+
 static bool differs_from_stored(void)
 {
     for (int i = 0; i < SETTING_COUNT; ++i) {
-        if (s.values[i] != s.stored[i]) {
+        if (value_differs(i)) {
             return true;
         }
     }
@@ -467,11 +483,17 @@ static bool differs_from_stored(void)
  * refused save the copy is not known to be the medium, and dirty stands
  * until a save succeeds.  A new edit is also a fresh attempt, so it retires
  * any earlier failure: that failure described values these no longer are.
+ * Nothing left to write drops a save asked for: the request was for the
+ * values edited back, and the next edit is not one the operator asked to
+ * keep.  Called after every value an edit moves is set, a derived one too.
  */
 static void mark_dirty(void)
 {
     s.dirty = !s.stored_sure || differs_from_stored();
     s.save_failed = false;
+    if (!s.dirty) {
+        s.save_asked = false;
+    }
 }
 
 /* The values in force are what the medium holds. */
@@ -717,8 +739,8 @@ void settings_set(setting_id_t id, float value)
         return;
     }
     s.values[id] = v;
-    mark_dirty();
     const bool scl = (id == SET_SENSE_SDA) && derive();
+    mark_dirty();
     if (s.observer) {
         s.observer(id);
         if (scl) {
@@ -938,7 +960,7 @@ const char *settings_stored_text(setting_text_id_t id)
 
 bool settings_differs(setting_id_t id)
 {
-    return id >= 0 && id < SETTING_COUNT && s.values[id] != s.stored[id];
+    return id >= 0 && id < SETTING_COUNT && value_differs(id);
 }
 
 bool settings_text_differs(setting_text_id_t id)
@@ -986,6 +1008,14 @@ int settings_discard(void)
     }
     if (texts) {
         mark_dirty();
+    }
+    /*
+     * After a refused save the medium can hold part of the refused write,
+     * and a restart would load it.  The values put back are kept only by a
+     * write of them, so one is asked for.
+     */
+    if (!s.stored_sure) {
+        settings_request_save();
     }
     return settings_changes();
 }

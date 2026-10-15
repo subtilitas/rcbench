@@ -15,14 +15,16 @@ history is in git.
   key takes and opens the menu, and is refused while the bench is ARMED;
   SAVE asks for the write and opens the menu. A save asked (`WHEN IDLE`)
   opens no warning; a refused one does. STOP, the tool tiles and every
-  screen the panel opens by itself pass without it. The copy of the stored
+  screen the panel opens by itself pass without it. After a refused save,
+  DISCARD also asks for a write of the values put back. The copy of the stored
   values takes 400 bytes of internal RAM; the heap left with the largest
   Wi-Fi mode up is 90,984 bytes.
 
 ### Changed
 
 - A value stepped back to the one stored is no change: SAVE returns to
-  `SAVED`. After a refused save the label stays `NOT SAVED` or `SAVE` until
+  `SAVED`, and a write asked for and not yet taken is dropped. After a
+  refused save the label stays `NOT SAVED` or `SAVE` until
   a save succeeds.
 
 ## 0.20.0 - 2026-10-15

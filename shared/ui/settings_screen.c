@@ -746,7 +746,8 @@ static void release(int kind, int index, bool repeated, int x, int y)
          * edit by hand takes: the observer, which sends a pin or a port to
          * the coprocessor, and settings_apply_ui() for the APPLICATION
          * rows.  Never while ARMED, asked again at the release: a bench
-         * that armed while the finger was down keeps its values.
+         * that armed while the finger was down keeps its values.  After a
+         * refused save settings_discard() also asks for a write.
          */
         (void)settings_discard();
         settings_apply_ui();

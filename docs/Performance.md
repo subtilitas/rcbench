@@ -218,7 +218,7 @@ bound for that reason:
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks and the start check's after
   an update, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 232 such calls are
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 230 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

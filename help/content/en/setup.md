@@ -57,7 +57,7 @@ A changed value is in force at once. RESET CATEGORY sets every value of the open
 
 ![A changed value, with SAVE offered](view:setup-dirty)
 
-A changed value is not written to flash until SAVE is pressed. A value stepped back to the one stored is no change: the button reads `SAVED` again.
+A changed value is not written to flash until SAVE is pressed. A value stepped back to the one stored is no change: the button reads `SAVED` again, and a write asked for is dropped.
 
 | Label | Meaning |
 |---|---|
@@ -86,7 +86,7 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 - While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits for SAFE.` says so. STAY and SAVE work.
 - PWM target and Port PWM are not set back while the servo programmer holds the servo port; they stay unsaved.
 - With more than 10 changes, 9 lines show and the last line reads `and 3 more` for 12.
-- After a refused save the line `The last save failed. SAVE tries again.` shows under the list.
+- After a refused save the line `The last save failed. SAVE tries again.` shows under the list. DISCARD then also asks for a write of the values put back, since the flash can hold part of the refused write.
 
 ![Twelve values unsaved](view:setup-leave-many)
 
