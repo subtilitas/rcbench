@@ -7,15 +7,17 @@
  * and v5.5 restart the ESP32-S3's scan through a DMA (direct memory
  * access) link that skips 17 px of a FIFO (first-in, first-out buffer)
  * they have just emptied, which leaves the picture 17 px to the left with
- * each line's tail wrapped one line down until the next power-on.  The
+ * each line's tail wrapped one line down until the panel restarts.  The
  * tool's docstring has the mechanism.
  *
- * The driver restarts the scan at a VBlank (vertical blanking interval)
- * when that frame counted fewer than 48 bounce-buffer refills, i.e. when
- * its refill interrupt was held off for longer than one 10-line buffer
- * (512 us at 16 MHz): a main-flash operation masks it for its whole
- * length.  With the clean start that frame is the only disturbed one; the
- * next frame scans from its first pixel.
+ * The driver restarts the scan in its VBlank (vertical blanking interval)
+ * interrupt when the frame counted fewer than 48 bounce-buffer refills,
+ * i.e. when its refill interrupt was held off for longer than one 10-line
+ * buffer (512 us at 16 MHz): a main-flash operation masks it for its whole
+ * length.  An operation longer than one frame (25.6 ms) masks the VBlank
+ * interrupt too, which then runs when the operation ends, possibly
+ * mid-frame.  The clean start cuts the frame in progress; the next frame
+ * scans from its first pixel.
  *
  * The copy's public functions carry an rcbench_ prefix.  Every file that
  * calls them includes this header before esp_lcd_panel_rgb.h (display.h

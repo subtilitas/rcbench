@@ -1853,8 +1853,9 @@ static bool bring_up(void)
      * random-access memory) through the external memory cache, and a flash
      * operation closes that cache.  ESP-IDF masks the handler for the length
      * of the operation (CONFIG_LCD_RGB_ISR_IRAM_SAFE is off), so the picture
-     * stalls, and past 512 us the scan restarts at the next VBlank
-     * (display.h).
+     * stalls, and past 512 us the scan restarts at the first VBlank
+     * (vertical blanking interval) interrupt after the operation ends,
+     * which can be mid-frame (display.h).
      */
     const settings_store_t *store = settings_nvs_store();
     settings_set_store(store);
@@ -9989,8 +9990,8 @@ void app_main(void)
             const uint32_t restarts = display_restarts();
             if (restarts != seen_restarts) {
                 seen_restarts = restarts;
-                ESP_LOGW(TAG, "display: scan restarted at VBlank, %u since "
-                              "start", (unsigned)restarts);
+                ESP_LOGW(TAG, "display: scan restarted, %u since start",
+                         (unsigned)restarts);
             }
         }
 

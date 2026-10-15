@@ -125,11 +125,12 @@ uint32_t display_frame_count(void);
 float display_fps(void);
 
 /**
- * Restarts of the scan since boot.  The driver restarts it at a VBlank
- * (vertical blanking interval) after a frame that lost a bounce-buffer
- * refill, which a main-flash operation of more than 512 us can cause; each
- * restart is the clean start of boot (rgb_panel_rcbench.h), and the frame
- * after it is whole.
+ * Restarts of the scan since boot.  The driver restarts it after a frame
+ * that lost a bounce-buffer refill, which a main-flash operation of more
+ * than 512 us can cause, at the first VBlank (vertical blanking interval)
+ * interrupt after the operation ends, which can be mid-frame.  Each
+ * restart is the clean start of boot (rgb_panel_rcbench.h): it cuts the
+ * frame in progress, and the next frame is whole.
  */
 uint32_t display_restarts(void);
 

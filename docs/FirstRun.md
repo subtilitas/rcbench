@@ -356,8 +356,9 @@ On the panel console, in this order:
   flash operation closes the cache the panel's bounce-buffer refill reads
   PSRAM through, so the panel stops for the length of each. An operation
   that holds the refill off for more than 512 us restarts the scan at the
-  next VBlank (vertical blanking interval), and the console prints
-  `display: scan restarted at VBlank`; the frame after it is in place.
+  first VBlank (vertical blanking interval) interrupt after it ends, which
+  can be mid-frame, and the console prints `display: scan restarted`; the
+  first whole frame after it is in place.
   Settings saves do the same.
 - **The write waits for a safe bench.** It takes one step per 5 ms control
   pass, and only while the bench is SAFE with the supply off. ARMED or with

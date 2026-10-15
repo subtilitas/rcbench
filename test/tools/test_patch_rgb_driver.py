@@ -3,7 +3,9 @@
 becomes the start of boot, and a driver the patches do not fit exactly
 once stops the build instead of building without the fix."""
 
+import os
 import pathlib
+import re
 
 import pytest
 
@@ -127,6 +129,22 @@ def test_the_prelude_refuses_an_iram_safe_isr_and_another_target():
     assert "#if !CONFIG_IDF_TARGET_ESP32S3\n#error" in p.PRELUDE
 
 
+def test_the_prelude_refuses_a_restart_on_every_vblank():
+    # With the clean start on every frame the restart count would rise
+    # 39 times a second and the console line with it.
+    vsync = p.PRELUDE.index("#if CONFIG_LCD_RGB_RESTART_IN_VSYNC\n")
+    assert p.PRELUDE.index("#error", vsync) < p.PRELUDE.index("#endif", vsync)
+
+
+def test_the_prelude_clears_the_tx_end_of_buffer_interrupt():
+    drop = p.PRELUDE[p.PRELUDE.index("static void rcbench_gdma_drop_eof"):]
+    drop = drop[:drop.index("\n}\n")]
+    call = drop.index("gdma_ll_tx_clear_interrupt_status(&GDMA,")
+    assert drop.index("GDMA_LL_EVENT_TX_EOF", call) > call
+    for wrong in ("GDMA_LL_EVENT_TX_DONE", "gdma_ll_rx_", "RX_"):
+        assert wrong not in drop
+
+
 def test_the_header_declares_what_the_prelude_defines():
     header = HEADER.read_text(encoding="utf-8")
     assert '#include "rgb_panel_rcbench.h"' in p.PRELUDE
@@ -174,3 +192,17 @@ def test_main_fails_on_a_missing_source(tmp_path, capsys):
                    "--out", str(out)]) == 1
     assert not out.exists()
     assert "patch_rgb_driver:" in capsys.readouterr().err
+
+
+@pytest.mark.skipif(not os.environ.get("IDF_PATH"),
+                    reason="IDF_PATH is not set")
+def test_the_real_driver_patches_and_every_public_function_is_renamed():
+    src = (pathlib.Path(os.environ["IDF_PATH"]) / "components" / "esp_lcd"
+           / "rgb" / "esp_lcd_panel_rgb.c")
+    text = src.read_text(encoding="utf-8")
+    p.patch(text)
+    public = set(re.findall(r"^esp_err_t (esp_lcd_\w+)\(", text, re.M))
+    header = HEADER.read_text(encoding="utf-8").replace("\\\n", "")
+    renamed = {line.split()[1] for line in header.splitlines()
+               if line.startswith("#define esp_lcd_")}
+    assert public == renamed

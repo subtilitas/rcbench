@@ -4,20 +4,24 @@
 The panel scans out of two bounce buffers of 10 lines each, which an
 interrupt handler refills from the frame buffer in PSRAM (pseudo-static
 random-access memory) on every DMA (direct memory access) end of buffer,
-48 times a frame.  At each VBlank (vertical blanking interval) the driver
-counts those refills.  Fewer than 48 means a refill was lost -- the
-handler was masked for longer than one buffer, 512 us at the 16 MHz pixel
-clock, by a main-flash operation or by anything else that holds the
-interrupts off -- and the driver restarts the scan.
+48 times a frame.  In its VBlank (vertical blanking interval) interrupt
+the driver counts those refills.  Fewer than 48 means a refill was lost --
+the handler was masked for longer than one buffer, 512 us at the 16 MHz
+pixel clock, by a main-flash operation or by anything else that holds the
+interrupts off -- and the driver restarts the scan.  An operation longer
+than one frame of 25.6 ms, such as a typical 4 kB sector erase, masks the
+VBlank interrupt as well; it runs when the operation ends, which can be
+mid-frame.
 
 ESP-IDF v5.4 and v5.5 restart it through a "restart link" on the
-ESP32-S3: lcd_ll_fifo_reset() empties the LCD FIFO (first-in, first-out
-buffer), then the DMA resumes 17 px (LCD_LL_FIFO_DEPTH + 1) into bounce
-buffer 0, on the assumption that the FIFO still holds the first 17.  It
-does not, so the scan runs 17 px ahead of the panel: the picture sits
-17 px to the left and the tail of every line wraps one line down.  The
+ESP32-S3: lcd_ll_fifo_reset() empties the LCD (liquid crystal display)
+FIFO (first-in, first-out buffer), then the DMA resumes 17 px
+(LCD_LL_FIFO_DEPTH + 1) into bounce buffer 0, on the assumption that the
+FIFO still holds the first 17.  It does not, so the scan runs 17 px ahead
+of the panel: the picture sits 17 px to the left and the tail of every
+line wraps one line down.  The
 stream is a ring and every later frame counts its 48 refills, so nothing
-corrects it until the next power-on.  A restart on every VBlank
+corrects it until the panel restarts.  A restart on every VBlank
 (CONFIG_LCD_RGB_RESTART_IN_VSYNC) showed the same 17 px shift on every
 frame on this board.
 
@@ -34,10 +38,14 @@ writes a copy of the driver in which every restart is that start:
             raised and nothing has handled yet, and zeroes the refill
             count.  Left pending, that interrupt would refill a third
             buffer after the start and run the picture 10 lines ahead
-            until the next power-on.
+            until the panel restarts.
   vsync     the start clears a VBlank interrupt its own stop and start
             may raise.  Handled, it would find no refill counted and
             restart again.
+
+The copy refuses CONFIG_LCD_RGB_ISR_IRAM_SAFE (the clean start runs code
+in flash from the VBlank interrupt) and CONFIG_LCD_RGB_RESTART_IN_VSYNC
+(the clean start on every frame).
 
 The copy carries an rcbench_ prefix on its public functions
 (firmware/panel/components/display/include/rgb_panel_rcbench.h), so
@@ -83,6 +91,11 @@ PRELUDE = """\
 /* The clean restart runs flash-resident code from the VBlank interrupt,
  * which ESP-IDF masks while the cache is off only when this is off. */
 #error "CONFIG_LCD_RGB_ISR_IRAM_SAFE must stay off"
+#endif
+#if CONFIG_LCD_RGB_RESTART_IN_VSYNC
+/* With the clean start this stops and restarts the LCD on every frame, and
+ * the restart count rises 39 times a second. */
+#error "CONFIG_LCD_RGB_RESTART_IN_VSYNC must stay off"
 #endif
 
 volatile uint32_t rcbench_lcd_rgb_restarts;
