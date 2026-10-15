@@ -62,8 +62,8 @@ order: 3
 
 ## Body
 
-Blocks are separated by a blank line. A heading line is a block of its own;
-every other block runs to the next blank line or heading.
+Blocks are separated by a blank line. A heading is one line with a blank
+line before and after it; every other block runs to the next blank line.
 
 | Block | Syntax | Notes |
 |---|---|---|
@@ -93,8 +93,9 @@ Inline, in paragraphs, list items, table cells and headings:
 | `#<anchor>` | a heading on the same page |
 | `index.md` | the help's index of the same language; no content page is named `index.md` |
 
-An anchor is the heading text in lower case, with every run of characters
-other than letters and digits replaced by `-`, and no `-` at either end:
+An anchor is the heading text as shown (a code span with its characters, a
+link with its label only) in lower case, with every run of characters other
+than letters and digits replaced by `-`, and no `-` at either end:
 `## Run a test` is `#run-a-test`. Every other target fails, including
 relative paths into the repository and `javascript:`.
 
@@ -111,7 +112,7 @@ the referenced images.
 
 These fail: headings `####` and deeper, `#` without a space after it, setext
 headings (`===` or `---` under a line), a `---` rule, fenced code blocks,
-block quotes (`>`), `*` and `+` list markers, nested lists, single `*` or
+block quotes (`>`), `*` and `+` list markers (on any line of a block), nested lists, single `*` or
 `_` emphasis, reference links (`[text][ref]`), images inside text, image
 targets without `view:`, an unclosed `**` or backtick.
 

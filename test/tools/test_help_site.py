@@ -160,6 +160,32 @@ def test_a_cell_ending_in_a_literal_backslash(tree):
     assert "C:\\</td>" in html
 
 
+def test_a_heading_anchor_keeps_the_marks_of_a_code_span(tree):
+    html = ok(tree, "## `C**D`\n\n[x](#c-d)\n")
+    assert '<h2 id="c-d"><code>C**D</code></h2>' in html
+
+
+def test_a_heading_anchor_drops_a_link_target_but_not_code(tree):
+    html = ok(tree, "## `[a](b)` and [c](https://x.example)\n\n"
+                    "[x](#a-b-and-c)\n")
+    assert '<h2 id="a-b-and-c">' in html
+
+
+def test_a_nested_link_names_its_line(tree):
+    fails(tree, "## X\n\n## Y\n\n[a [b](#x)](#y)\n",
+          "a link inside a link", line=11)
+
+
+def test_brackets_inside_a_link_label_stay_text(tree):
+    html = ok(tree, "[see [1] here](https://x.example)\n")
+    assert ">see [1] here</a>" in html
+
+
+def test_an_image_alt_keeps_the_marks_of_a_code_span(tree):
+    html = ok(tree, "![The `C**D` key](view:motor)\n")
+    assert 'alt="The C**D key"' in html
+
+
 def test_a_heading_without_an_anchor_fails(tree):
     fails(tree, "## ???\n", "no letter or digit for its anchor")
 
@@ -300,7 +326,16 @@ def test_a_view_whose_file_is_not_a_png_fails(tree):
     ("[a][ref]\n", "reference link"),
     ("[a](https://x.example\n", r"unclosed link"),
     ("[](https://x.example)\n", "without text"),
-    ("[a [b](#x)](#y)\n", "outside the format|no heading"),
+    ("## X\n\n## Y\n\n[a [b](#x)](#y)\n", "a link inside a link"),
+    ("[****](https://x.example)\n", "without text"),
+    ("[``](https://x.example)\n", "without text|single backticks"),
+    ("text\n## Heading\n", "blank line before it"),
+    ("## Heading\ntext\n", "blank line after it"),
+    ("text\n+ item\n", "starts with '- '"),
+    ("text\n* item\n", "starts with '- '"),
+    ("text\n> quote\n", "block quote"),
+    ("text\n```\n", "fenced code"),
+    ("text\n***\n", "rule"),
     ("```\ncode\n```\n", "fenced code"),
     ("> quote\n", "block quote"),
     ("---\n", "rule"),

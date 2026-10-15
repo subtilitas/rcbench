@@ -194,12 +194,10 @@ def slugify(text: str) -> str:
     return re.sub(r"[\W_]+", "-", text.lower()).strip("-")
 
 
-def plain(text: str) -> str:
-    """Inline Markdown as text: the marks dropped, link targets dropped."""
-    text = re.sub(r"\[((?:\\.|[^\]\\])*)\]"
-                  r"\((?:\\.|[^()\\]|\([^()]*\))*\)", r"\1", text)
-    text = re.sub(r"\\(.)", r"\1", text)
-    return text.replace("**", "").replace("`", "")
+def text_of(rendered: str) -> str:
+    """The visible text of rendered inline HTML: the tags dropped, the
+    entities decoded."""
+    return html.unescape(re.sub(r"<[^>]*>", "", rendered))
 
 
 class Inline:
@@ -224,6 +222,7 @@ class Inline:
                             f"{m.group(0)[:40]!r}; write \\_ for an "
                             "underscore")
         out = []
+        brackets = None
         bold = False
         i, n = 0, len(text)
         while i < n:
@@ -257,7 +256,10 @@ class Inline:
                 out.append("!")
                 i += 1
             elif c == "[":
-                j = self._link(text, i, line, out, in_link)
+                if brackets is None:
+                    brackets = self._brackets(text)
+                j = self._link(text, i, brackets.get(i, -1), line, out,
+                               in_link)
                 i = j
             else:
                 # Plain text up to the next character that may start a mark.
@@ -271,10 +273,9 @@ class Inline:
             out.append("</strong>")
         return "".join(out)
 
-    def _link(self, text, i, line, out, in_link) -> int:
+    def _link(self, text, i, close, line, out, in_link) -> int:
         """A link at text[i] == '['; returns the index after it.  A '['
         that does not open a link is the character itself."""
-        close = self._closing_bracket(text, i)
         if close < 0 or close + 1 >= len(text) \
                 or text[close + 1] not in "([":
             out.append("[")
@@ -311,10 +312,10 @@ class Inline:
                         text[close + 2:end].strip())
         if in_link:
             self.fail(line, "a link inside a link")
-        if not label.strip():
-            self.fail(line, f"a link without text, to {target!r}")
         href = self._href(target, line)
         inner = self.render(label, line, in_link=True)
+        if not text_of(inner).strip():
+            self.fail(line, f"a link without text, to {target!r}")
         if href is None:
             out.append(inner)
         elif href.startswith("http"):
@@ -325,18 +326,21 @@ class Inline:
         return end + 1
 
     @staticmethod
-    def _closing_bracket(text, i) -> int:
-        j = i + 1
+    def _brackets(text) -> dict[int, int]:
+        """Each [ that a ] closes, to the index of that ], in one pass: the
+        brackets in between are counted, so a link inside a label reaches
+        the in_link check.  An escaped bracket is no bracket."""
+        match, stack, j = {}, [], 0
         while j < len(text):
             if text[j] == "\\":
                 j += 2
                 continue
-            if text[j] == "]":
-                return j
             if text[j] == "[":
-                return -1
+                stack.append(j)
+            elif text[j] == "]" and stack:
+                match[stack.pop()] = j
             j += 1
-        return -1
+        return match
 
     def _href(self, target: str, line: int) -> str | None:
         m = LINK_TARGET.match(target)
@@ -481,6 +485,12 @@ class Renderer:
                 continue
             line = lines[i].rstrip()
             if line.lstrip().startswith("#"):
+                if i > start and lines[i - 1].strip():
+                    self.fail(i + 1, "a heading needs a blank line before "
+                                     "it")
+                if i + 1 < n and lines[i + 1].strip():
+                    self.fail(i + 2, "a heading needs a blank line after "
+                                     "it")
                 self.heading(line, i + 1, first)
                 i += 1
                 first = False
@@ -515,7 +525,10 @@ class Renderer:
                 self.fail(num, "# is the page title: once, as the first "
                                "block; use ## and ###")
             self.page.has_h1 = True
-        slug = slugify(plain(text))
+        # The anchor comes from the text as rendered, so a code span keeps
+        # its marks and a link keeps only its label.
+        inner = self.inline.render(text, num)
+        slug = slugify(text_of(inner))
         if not slug:
             self.fail(num, f"the heading {text!r} has no letter or digit "
                            "for its anchor")
@@ -523,25 +536,31 @@ class Renderer:
         if any(h.slug == slug for h in self.page.headings):
             self.fail(num, f"a second heading with the anchor #{slug}")
         self.page.headings.append(Heading(level, text, slug, num))
-        inner = self.inline.render(text, num)
         self.out.append(f'<h{level} id="{html.escape(slug)}">{inner}'
                         f'</h{level}>')
+
+    @staticmethod
+    def outside_format(line: str) -> str | None:
+        """The problem with a line that starts a block outside the format,
+        or None."""
+        s = line.lstrip()
+        if re.match(r"(```|~~~)", s):
+            return "a fenced code block is outside the format; use `code` " \
+                   "in a line"
+        if s.startswith(">"):
+            return "a block quote is outside the format"
+        if re.fullmatch(r"(-{3,}|\*{3,}|_{3,}|={3,})", s.replace(" ", "")):
+            return "a rule (---) is outside the format"
+        if re.match(r"[*+] ", s):
+            return "a list item starts with '- ' or '1. '"
+        return None
 
     def block(self, block: list[str], num: int) -> None:
         first = block[0]
         s = first.lstrip()
-        if re.match(r"(```|~~~)", s):
-            self.fail(num, "a fenced code block is outside the format; "
-                           "use `code` in a line")
-            return
-        if s.startswith(">"):
-            self.fail(num, "a block quote is outside the format")
-            return
-        if re.fullmatch(r"(-{3,}|\*{3,}|_{3,}|={3,})", s.replace(" ", "")):
-            self.fail(num, "a rule (---) is outside the format")
-            return
-        if re.match(r"[*+] ", s):
-            self.fail(num, "a list item starts with '- ' or '1. '")
+        problem = self.outside_format(first)
+        if problem:
+            self.fail(num, problem)
             return
         kind = starts_block(first)
         if first != s and kind is not None:
@@ -567,6 +586,10 @@ class Renderer:
             if k and kind:
                 self.fail(num + k, f"a {kind} needs a blank line before "
                                    "it")
+                return
+            problem = self.outside_format(line)
+            if k and problem:
+                self.fail(num + k, problem)
                 return
         # Each line is rendered on its own so a problem names its line.
         parts = [self.inline.render(line.strip(), num + k)
@@ -711,8 +734,8 @@ class Renderer:
                     self.fail(num, f"{path.name} is not a PNG file")
         src = f"{self.root}img/{LANG_DIR[self.page.lang]}{filename}"
         dims = f' width="{size[0]}" height="{size[1]}"' if size else ""
-        alt = html.escape(plain(caption))
         cap = self.inline.render(caption, num)
+        alt = html.escape(text_of(cap))
         # The image links to itself: a row shows each at under half the
         # column, and a tap opens the 800 x 480 px file.
         src = html.escape(src)
