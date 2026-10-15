@@ -8825,12 +8825,24 @@ static fw_sig_t image_signature(const uint8_t *img, uint32_t bytes,
  * screen for a second hold; this is that wait. */
 static bool s_sig_wait;
 
-/* The wait ends without the install: the image is dropped. */
-static void sig_wait_drop(void)
+static char s_sig_version[WIFI_VER_MAX + 1];  /* the image waiting */
+
+/*
+ * The wait ends without the install: the image is dropped.  @p show: a
+ * safety event (STOP, ARM) ended it while the screen is still up, so the
+ * screen leaves the question for the failed state, whose hold does nothing;
+ * a CANCEL or a screen already left needs no view.
+ */
+static void sig_wait_drop(bool show)
 {
     s_sig_wait = false;
     atomic_store(&s_fw_installing, false);
     wifi_access_release();
+    if (show) {
+        update_view_t v = { .state = UPDATE_FAILED };
+        snprintf(v.version, sizeof(v.version), "%s", s_sig_version);
+        update_screen_set(&v);
+    }
 }
 
 /*
@@ -8876,6 +8888,8 @@ static void fw_install_run(bool acked)
              * bench may arm, which ends the wait (wifi_service()). */
             atomic_store(&s_fw_installing, false);
             s_sig_wait = true;
+            snprintf(s_sig_version, sizeof(s_sig_version), "%s",
+                     info.version_text);
             update_view_t v = { .state = UPDATE_UNSIGNED, .written = 0u,
                                 .total = bytes,
                                 .sig_bad = (sr == FW_SIG_BAD
@@ -9022,14 +9036,14 @@ static void wifi_service(bool armed, uint32_t stops_now)
     }
     if (s_sig_wait && (stop || gate == WA_OFF_ARMED
                        || ui_router_current() != SCREEN_UPDATE)) {
-        sig_wait_drop();
+        sig_wait_drop(ui_router_current() == SCREEN_UPDATE);
     }
     if (update_screen_take_go() && s_sig_wait) {
         fw_install_run(true);
     }
     if (update_screen_take_close()) {
         if (s_sig_wait) {
-            sig_wait_drop();
+            sig_wait_drop(false);
         }
         ui_router_goto(s_update_back);
     }

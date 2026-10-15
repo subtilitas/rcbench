@@ -784,6 +784,11 @@ TEST_CASE(a_state_change_under_the_second_hold_ends_it)
     update_screen_set(&w);
     u_ticks(u, HOLD_TICKS);
     CHECK(!update_screen_take_go());
+    /* A press on the old hold area after the change starts no hold. */
+    u_send(u, TOUCH_EVENT_DOWN, UH_X, UH_Y);
+    u_ticks(u, HOLD_TICKS);
+    u_send(u, TOUCH_EVENT_UP, UH_X, UH_Y);
+    CHECK(!update_screen_take_go());
 }
 
 int main(void)
