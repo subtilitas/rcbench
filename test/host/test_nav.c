@@ -2521,6 +2521,8 @@ TEST_CASE(the_bubble_never_covers_stop_and_fits_in_both_languages)
                         st.run_seconds = 3600u * 9u + 59u;
                         st.link_refused = UINT32_MAX;
                         bubble_in_bounds(&st);
+                        st.mode        = ui_band_mode_inject();
+                        bubble_in_bounds(&st);
                     }
                 }
             }
@@ -2626,6 +2628,36 @@ TEST_CASE(the_link_bubble_follows_the_link)
     follows(&down, &up, UI_BAND_CHIP_LINK);
     follows(&up, &down, UI_BAND_CHIP_MODE);
     follows(&down, &up, UI_BAND_CHIP_MODE);
+}
+
+/*
+ * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
+ * injector answered at start-up, has a body under its title in both
+ * languages, as BENCH and SIM have; a mode string the band has no text for
+ * is its title alone.
+ */
+TEST_CASE(the_inject_bubble_explains_the_injector)
+{
+    const int title_only = 30 + 10;   /* HELP_TOP + HELP_BOTTOM */
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int link = 0; link < 2; ++link) {
+            ui_bench_status_t st = k_all_chips;
+            st.link_up = link != 0;
+            st.mode    = ui_band_mode_inject();
+            gfx_rect_t r;
+            REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_MODE, &r));
+            if (r.h <= title_only) {
+                T_FAIL("language %d, link %d: INJECT's bubble is %d px, "
+                       "its title alone", lang, link, r.h);
+            }
+            st.mode = "OTHER";
+            REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_MODE, &r));
+            CHECK_EQ(r.h, title_only);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_band_mode_inject(), "INJECT");
 }
 
 TEST_CASE(the_armed_bubble_follows_the_roles)
@@ -2940,6 +2972,7 @@ int main(void)
     RUN(the_fault_bubble_follows_the_bits_while_open);
     RUN(a_bubble_whose_chip_goes_closes);
     RUN(the_link_bubble_follows_the_link);
+    RUN(the_inject_bubble_explains_the_injector);
     RUN(the_armed_bubble_follows_the_roles);
     RUN(the_link_bubble_carries_the_refused_frames);
     RUN(the_refused_line_follows_while_open);

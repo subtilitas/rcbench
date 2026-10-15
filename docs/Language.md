@@ -205,7 +205,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 218 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 219 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

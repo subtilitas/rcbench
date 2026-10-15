@@ -9821,8 +9821,9 @@ void app_main(void)
             /* A bench build names an attached touch injector where the
              * mode goes; LINK still tells BENCH from SIM, and the
              * SIMULATION watermark still covers a simulated bench. */
-            .mode        = touch_injector_attached() ? "INJECT"
-                                                     : ui_band_mode(link_up),
+            .mode        = touch_injector_attached()
+                               ? ui_band_mode_inject()
+                               : ui_band_mode(link_up),
 #else
             .mode        = ui_band_mode(link_up),
 #endif

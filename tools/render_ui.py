@@ -498,6 +498,9 @@ FIT_ONLY = {
     "band-nolink":      (None, "overview", "sim"),
     "band-bench":       (None, "overview", "dark"),
     "band-sim":         (None, "overview", "sim"),
+    # The mode chip of a build with RCBENCH_TOUCH_INJECTOR, an injector
+    # attached.
+    "band-inject":      (None, "overview", "dark"),
     "band-armed-servo": (None, "overview", "dark"),
     "band-armed-all":   (None, "overview", "dark"),
     "band-armed-sim":   (None, "overview", "sim"),

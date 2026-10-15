@@ -41,20 +41,27 @@
 
 /*
  * Layout in the 432 px body the router hands this screen (480 minus the
- * 48 px band).  The footer has to stay inside it for RESCAN, OPEN and PLOT
- * to be reachable.
+ * 48 px band).  Each view's footer row of buttons ends 4 px above the
+ * router's alert band, which covers the bottom UI_ALERT_H (34) px of the
+ * body while an alert shows and takes the touches there: nothing that acts
+ * sits under it.  The footer is body y 352 to 393; the band starts at 398.
  */
-#define BR_LIST   gfx_rect_make(16, 36, 768, 352)
+#define FOOT_H    42
+#define FOOT_Y    (SCREEN_H - UI_ALERT_H - 4 - FOOT_H)
+/* What a view shows above the footer ends this far above it. */
+#define FOOT_GAP  6
+
+#define BR_LIST   gfx_rect_make(16, 36, 768, FOOT_Y - FOOT_GAP - 36)
 #define BR_ROW_H  44
-/* (352 - 30) / 44 = 7 rows fit the list.  An eighth needs 382 px and would
+/* (310 - 30) / 44 = 6 rows fit the list.  A seventh needs 338 px and would
  * cross the panel border into the footer. */
-#define BR_ROWS   7
+#define BR_ROWS   6
 
 /* Footer buttons, in the order browse_event() hit-tests them. */
-#define BR_RESCAN gfx_rect_make(16, FOOT_Y + 2, 120, FOOT_H)
-#define BR_WIFI   gfx_rect_make(144, FOOT_Y + 2, 120, FOOT_H)
-#define BR_OPEN   gfx_rect_make(664, FOOT_Y + 2, 120, FOOT_H)
-#define BR_DELETE gfx_rect_make(536, FOOT_Y + 2, 120, FOOT_H)
+#define BR_RESCAN gfx_rect_make(16, FOOT_Y, 120, FOOT_H)
+#define BR_WIFI   gfx_rect_make(144, FOOT_Y, 120, FOOT_H)
+#define BR_OPEN   gfx_rect_make(664, FOOT_Y, 120, FOOT_H)
+#define BR_DELETE gfx_rect_make(536, FOOT_Y, 120, FOOT_H)
 /* 32 cells to DELETE: the 26 a message about a file declares, and more. */
 #define BR_MSG_X  272
 
@@ -65,20 +72,24 @@
 
 /* ------------------------------------------------------------- import ---- */
 
-#define IM_LEFT   gfx_rect_make(16, 36, 300, 320)
-#define IM_RIGHT  gfx_rect_make(328, 36, 456, 320)
+#define IM_LEFT   gfx_rect_make(16, 36, 300, FOOT_Y - FOOT_GAP - 36)
+#define IM_RIGHT  gfx_rect_make(328, 36, 456, FOOT_Y - FOOT_GAP - 36)
 #define IM_ROW_H  36
+/* (310 - 30) / 36 = 7 rows fit the column list. */
 #define IM_ROWS   7
-#define IM_BTN_Y  368
-#define IM_BTN_H  46
+#define IM_BTN_Y  FOOT_Y
+#define IM_BTN_H  FOOT_H
 
 /* --------------------------------------------------------------- plot ---- */
 
-#define PV_PANEL  gfx_rect_make(16, 68, 768, 292)
+/* The plot's panel, and under it a 16 px row of time labels 4 px down,
+ * above the footer. */
+#define PV_PANEL_H (FOOT_Y - FOOT_GAP - 16 - 4 - 68)
+#define PV_PANEL  gfx_rect_make(16, 68, 768, PV_PANEL_H)
 #define PV_X      24
 #define PV_Y      76
 #define PV_W      752
-#define PV_H      276
+#define PV_H      (PV_PANEL_H - 16)
 #define PV_BAND   10
 #define PV_DIV_X  6
 #define PV_DIV_Y  4
@@ -99,8 +110,14 @@
 #define CHIP_W    190
 #define CHIP_GAP  6
 
-#define FOOT_Y    390
-#define FOOT_H    42
+_Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
+               "the footer ends 4 px above the alert band");
+_Static_assert(30 + BR_ROWS * BR_ROW_H <= FOOT_Y - FOOT_GAP - 36,
+               "the file list's rows fit its panel");
+_Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
+               "the column list's rows fit its panel");
+_Static_assert(PV_POS_Y + PV_POS_H <= 68 + PV_PANEL_H,
+               "the position bar is inside the plot's panel");
 
 typedef enum { VIEW_BROWSE = 0, VIEW_IMPORT, VIEW_PLOT } view_t;
 
@@ -810,7 +827,7 @@ static void render_browse(gfx_canvas_t *c)
     if (s.message[0] != '\0') {
         /* Clipped to the gap between the buttons: a long name runs out of
          * room rather than over DELETE. */
-        gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y + 2,
+        gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
                                      msg_end - 8 - BR_MSG_X, FOOT_H),
                     s.message, UI_FONT_LABEL,
                     s.message_ok ? UI_TEXT_DIM : UI_DANGER, 1, GFX_ALIGN_LEFT);
@@ -953,7 +970,7 @@ static void render_import(gfx_canvas_t *c)
         }
 
         /* The override controls for the two detections above. */
-        int hy = IM_LEFT.y + IM_LEFT.h - 60;
+        int hy = IM_LEFT.y + IM_LEFT.h - 50;
         ui_rule(c, IM_LEFT.x + 16, hy - 10, IM_LEFT.w - 32, UI_EDGE);
         gfx_text(c, IM_LEFT.x + 16, hy, TR(LOG_HINT_NUM),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);

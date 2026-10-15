@@ -38,6 +38,11 @@ const char *ui_band_mode(bool link_up)
     return link_up ? "BENCH" : "SIM";
 }
 
+const char *ui_band_mode_inject(void)
+{
+    return "INJECT";
+}
+
 const char *ui_band_armed_label(uint8_t roles)
 {
     switch (roles & (UI_ARMED_MOTOR | UI_ARMED_SERVO)) {
@@ -265,13 +270,16 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
         }
         break;
     case UI_BAND_CHIP_MODE:
-        /* The two modes ui_band_mode() names; another string has no
-         * text, and its bubble is its title. */
+        /* The two modes ui_band_mode() names and INJECT; another string
+         * has no text, and its bubble is its title. */
         if (st->mode != NULL && strcmp(st->mode, ui_band_mode(true)) == 0) {
             ids[n++] = TX_BH_MODE_BENCH;
         } else if (st->mode != NULL
                    && strcmp(st->mode, ui_band_mode(false)) == 0) {
             ids[n++] = TX_BH_MODE_SIM;
+        } else if (st->mode != NULL
+                   && strcmp(st->mode, ui_band_mode_inject()) == 0) {
+            ids[n++] = TX_BH_MODE_INJECT;
         }
         break;
     case UI_BAND_CHIP_ARMED:

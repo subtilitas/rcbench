@@ -28,6 +28,13 @@ gfx_rect_t ui_band_stop_rect(void);
 const char *ui_band_mode(bool link_up);
 
 /**
+ * INJECT: the mode a panel built with RCBENCH_TOUCH_INJECTOR names in place
+ * of BENCH and SIM while a touch injector (testbench/touch-injector)
+ * answered at start-up.  A mode name, so English in every language.
+ */
+const char *ui_band_mode_inject(void);
+
+/**
  * The armed chip's label for @p roles, UI_ARMED_* bits: ARMED MOTOR, ARMED
  * SERVO, or ARMED for both and for none.  English in every language, as
  * STOP and the other controls are.

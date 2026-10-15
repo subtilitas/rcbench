@@ -302,9 +302,9 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
 
 /* IM_BTN_Y from log_viewer_screen.c.  If the layout moves, this moves with
  * it; render_ui --check reports the drift. */
-#define IM_BTN_Y_LOCAL 368
-/* FOOT_Y + 2 and the DELETE button's x from the same file. */
-#define BR_FOOT_Y_LOCAL 392
+#define IM_BTN_Y_LOCAL 352
+/* FOOT_Y and the DELETE button's x from the same file. */
+#define BR_FOOT_Y_LOCAL 352
 #define BR_DELETE_CX    596
 
 static void tap(int x, int y)
@@ -1496,6 +1496,10 @@ static void band_view(const char *view, ui_bench_status_t *st)
         chip = UI_BAND_CHIP_FAULT;
     } else if (strcmp(view, "band-bench") == 0
                || strcmp(view, "band-sim") == 0) {
+        chip = UI_BAND_CHIP_MODE;
+    } else if (strcmp(view, "band-inject") == 0) {
+        /* A build with RCBENCH_TOUCH_INJECTOR and an injector attached. */
+        st->mode = ui_band_mode_inject();
         chip = UI_BAND_CHIP_MODE;
     } else if (strcmp(view, "band-clock") == 0) {
         chip = UI_BAND_CHIP_CLOCK;
