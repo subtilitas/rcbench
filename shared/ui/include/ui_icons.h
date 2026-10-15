@@ -1,7 +1,7 @@
 /*
  * Icons drawn with primitives rather than stored as bitmaps.
  *
- * Eight glyphs at any size, a few hundred bytes of code each, built from
+ * Eleven glyphs at any size, a few hundred bytes of code each, built from
  * filled spans and discs, which are cheap to draw into PSRAM (pseudo-static
  * random-access memory).
  *
@@ -16,6 +16,7 @@
 extern "C" {
 #endif
 
+/* An icon centred on (x, y), inside a box of size x size px around it. */
 typedef void (*ui_icon_fn)(gfx_canvas_t *c, int x, int y, int size,
                            gfx_color_t color);
 
@@ -28,6 +29,8 @@ void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 
 #ifdef __cplusplus
 }

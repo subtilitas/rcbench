@@ -197,9 +197,9 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
 }
 
 /*
- * SETUP draws a label in 18 cells of the heading face and its help in 36
- * cells, a category name in 22 of the label face (the heading face's 12
- * where it fits) and an option in 13;
+ * SETUP draws a label in 32 cells of the heading face and its help in 65
+ * cells, a category name in 30 of the label face (the heading face's 15
+ * where it fits; 32 on its tile) and an option in 13;
  * ESC STICK's TIMING page a label in 47 and its help in 96; the SERVO
  * screen an option in a button of 12.  Translations only: tools/render_ui.py
  * --fit holds the English strings where they are drawn.
@@ -214,8 +214,8 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
             const int help = gfx_text_cells(ui_setting_help((setting_id_t)i));
             int label_max = 99, help_max = 99, option_max = 99;
             if (d->cat < SET_CAT_SETUP_COUNT) {
-                label_max = 18;
-                help_max = 36;
+                label_max = 32;
+                help_max = 65;
                 option_max = 13;
             } else if (d->cat == SET_CAT_STICK) {
                 label_max = 47;
@@ -236,8 +236,12 @@ TEST_CASE(translated_settings_fit_where_they_are_drawn)
             }
         }
         for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
-            CHECK(gfx_text_cells(ui_setting_category((setting_cat_t)c)) <= 22);
+            CHECK(gfx_text_cells(ui_setting_category((setting_cat_t)c)) <= 30);
         }
+        /* A tile's line under its name, in 32 cells of the label face. */
+        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_OUTPUTS)) <= 32);
+        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_PICKER)) <= 32);
+        CHECK(gfx_text_cells(ui_tr(TX_SET_HUB_UPDATES)) <= 32);
     }
     ui_text_set_language(UI_LANG_EN);
 }

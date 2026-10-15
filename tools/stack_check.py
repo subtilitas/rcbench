@@ -140,6 +140,7 @@ SCREEN_CALLS = {
     "ui_router_goto": ("leave", "enter"),
     "ui_router_tick": ("tick",),
     "router_hand": ("event",),
+    "router_back": ("back",),
     "ui_router_cancel_gestures": ("cancel",),
     "ui_router_render": ("render",),
 }
