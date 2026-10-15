@@ -331,6 +331,10 @@ SCREENS = {
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
     "setup-tap": ("setup-tap.png", "setup", "dark"),
+    # The warning on leaving SETUP unsaved: one change, and twelve, of
+    # which nine fit beside the count of the rest.
+    "setup-leave": ("setup-leave.png", "setup", "dark"),
+    "setup-leave-many": ("setup-leave-many.png", "setup", "dark"),
     "outputs":    ("outputs.png",    "outputs",    "dark"),
     "outputs-protocol": ("outputs-protocol.png", "outputs", "dark"),
     "outputs-held": ("outputs-held.png", "outputs", "dark"),
@@ -507,6 +511,8 @@ FIT_ONLY = {
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
+    # The warning on leaving SETUP with a save refused and the bench ARMED.
+    "setup-leave-armed": (None, "setup", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

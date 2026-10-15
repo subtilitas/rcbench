@@ -30,7 +30,7 @@ Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
 | Von | Das Home-Tag führt zu |
 |---|---|
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
-| den Kacheln | dem Menü |
+| den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
 | OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
 
 ## Einen Wert ändern
@@ -57,7 +57,7 @@ Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der o
 
 ![Ein geänderter Wert, SPEICHERN wird angeboten](view:setup-dirty)
 
-Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrückt wird.
+Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrückt wird. Ein Wert, der auf den gespeicherten zurückgestellt ist, ist keine Änderung: Die Taste lautet wieder `GESPEICHERT`, und ein angefordertes Schreiben entfällt.
 
 | Beschriftung | Bedeutung |
 |---|---|
@@ -68,7 +68,29 @@ Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrück
 
 Geschrieben wird im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Bei ARMED lautet die Taste `BEI STILLSTAND`, bis der Prüfstand SAFE ist. Nicht gespeicherte Werte gelten, bis das Panel ausgeschaltet wird. Das Verlassen einer Liste oder der Kacheln schreibt nichts.
 
-`NICHT GESPEICHERT` kann nicht sagen, wie viel den Flash erreicht hat: Eine Ablehnung mittendrin lässt die zuvor geschriebenen Schlüssel stehen; der nächste Start kann eine Mischung aus neuen und alten Werten laden.
+`NICHT GESPEICHERT` kann nicht sagen, wie viel den Flash erreicht hat: Eine Ablehnung mittendrin lässt die zuvor geschriebenen Schlüssel stehen; der nächste Start kann eine Mischung aus neuen und alten Werten laden. Nach einer Ablehnung bleibt die Taste bei `NICHT GESPEICHERT` oder `SPEICHERN`, bis ein Speichern gelingt, auch wenn jeder Wert zurückgestellt ist.
+
+## Mit ungespeicherten Werten verlassen
+
+![Ein ungespeicherter Wert, am Home-Tag](view:setup-leave)
+
+Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICHERN` oder `NICHT GESPEICHERT` lautet, öffnet es zuerst eine Warnung. Die Warnung nennt jeden Wert, der vom gespeicherten abweicht, als `Name: gespeichert -> jetzt`, mit Wert und Einheit wie auf der Liste. Gespeichert sind die Werte, die beim Start geladen oder beim letzten gelungenen Speichern geschrieben wurden. Die Warnung nennt auch den Namen des Prüflings (DUT, device under test) und die Werte anderer Bildschirme, etwa SERVO oder ESC STICK: Ein Speichern behält sie alle.
+
+| Taste | Was sie tut |
+|---|---|
+| BLEIBEN | schließt die Warnung; die Kacheln zeigen sich wieder, eine Liste behält Kategorie und Position |
+| VERWERFEN | stellt jeden genannten Wert auf den gespeicherten zurück, wie ein Schritt von Hand, und öffnet dann das Menü |
+| SPEICHERN | fordert das Schreiben an wie die Speichertaste und öffnet dann das Menü |
+
+- VERWERFEN schickt einen Pin oder einen Port sofort zurück an den Koprozessor. Eine zurückgestellte Verdrahtung des PD mini schaltet den Netzteilausgang ab, wie eine Änderung von Hand.
+- Bei ARMED ist VERWERFEN abgeblendet und tut nichts; die Zeile `VERWERFEN wartet auf SAFE.` sagt das. BLEIBEN und SPEICHERN wirken.
+- PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der Servo-Programmierer den Servo-Port hält; sie bleiben ungespeichert.
+- Bei mehr als 10 Änderungen zeigen sich 9 Zeilen, und die letzte Zeile lautet bei 12 `und 3 weitere`.
+- Nach einem abgelehnten Speichern steht unter der Liste die Zeile `Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.` VERWERFEN fordert dann zusätzlich das Schreiben der zurückgestellten Werte an, denn der Flash kann einen Teil des abgelehnten Schreibens halten.
+
+![Zwölf ungespeicherte Werte](view:setup-leave-many)
+
+Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angefordert ist (`BEI STILLSTAND`) und auf dem Weg zu OUTPUTS, PICK A PIN und UPDATES. STOP stoppt den Prüfstand und lässt die Warnung offen. Ein Bildschirm, den das Panel selbst öffnet, etwa der Busfehler-Bildschirm nach einem Verbindungsverlust, schließt die Warnung; die Werte gelten weiter und bleiben ungespeichert.
 
 ## ESC / PRÜFSTAND
 
