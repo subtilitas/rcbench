@@ -71,7 +71,7 @@ line before and after it; every other block runs to the next blank line.
 | Paragraph | lines of text | lines join with a space |
 | Bulleted list | `- item` | one level; an indented line continues the item above |
 | Numbered list | `1. item` | one level; numbering starts at the first number |
-| Table | `\| a \| b \|` rows | every row starts and ends with `\|`; the second row is the separator `\|---\|---\|`, with `:` for alignment; every row has the header's cell count |
+| Table | `\| a \| b \|` rows | every row starts and ends with `\|`; the second row is the separator `\|---\|---\|`, 3 characters a cell at least, with `:` for alignment; every row has the header's cell count |
 | Images | `![caption](view:<name>)` | one image per line, nothing else in the block; 2 or more lines form a row of screenshots |
 
 Inline, in paragraphs, list items, table cells and headings:

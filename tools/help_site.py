@@ -371,7 +371,9 @@ HEADING = re.compile(r"(#+)(\s+)(.*)\Z")
 BULLET = re.compile(r"- (.*)\Z")
 NUMBER = re.compile(r"(\d{1,9})\. (.*)\Z")
 IMAGE_LINE = re.compile(r"!\[([^\]\[]*)\]\(([^()]*)\)\Z")
-SEPARATOR_CELL = re.compile(r":?-+:?\Z")
+# A separator cell: hyphens with an optional : at either end, 3 characters
+# at least.
+SEPARATOR_CELL = re.compile(r"(?=.{3}):?-+:?\Z")
 
 
 def starts_block(line: str) -> str | None:
@@ -466,7 +468,10 @@ class Renderer:
         if "title" in seen and not page.title:
             self.fail(1, "the title is empty")
         page.screen = seen.get("screen", "")
-        if page.screen and page.screen != "none" \
+        if "screen" in seen and not page.screen:
+            self.fail(1, "the screen is empty: a SCREEN_* name without "
+                         "SCREEN_, or none")
+        elif page.screen and page.screen != "none" \
                 and (not re.fullmatch(r"[A-Z0-9_]+", page.screen)
                      or page.screen.startswith("SCREEN_")):
             self.fail(1, f"screen {page.screen!r} is a SCREEN_* name "
@@ -630,6 +635,10 @@ class Renderer:
                 self.fail(num + k, f"a {kind} needs a blank line before "
                                    "it")
                 return
+            problem = self.outside_format(line)
+            if problem:
+                self.fail(num + k, problem)
+                return
             if line == s:
                 self.fail(num + k, "a line after a list item is indented "
                                    "to continue it; leave a blank line "
@@ -697,6 +706,10 @@ class Renderer:
     def images(self, block, num) -> None:
         figures = []
         for k, line in enumerate(block):
+            if line != line.lstrip():
+                self.fail(num + k, "an indented image: an image line starts "
+                                   "in the first column")
+                return
             m = IMAGE_LINE.match(line.strip())
             if not m:
                 self.fail(num + k, "a block of images holds one "
