@@ -1217,6 +1217,36 @@ static void restore_one(void)
     run(1000);
 }
 
+TEST_CASE(a_restored_baud_write_clears_the_torque_marks)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    hold_apply();
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    CHECK_EQ(bus_panel_backups(), 1u);
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    restore_one();
+    CHECK_EQ(bus_panel_backups(), 0u);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    /* One tap turns it on again. */
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+}
+
 TEST_CASE(a_baud_write_cut_by_a_link_drop_restores_at_either_rate)
 {
     ftsim_servo_t *v;
@@ -1703,6 +1733,7 @@ int main(void)
     RUN(an_unanswered_torque_on_and_read_send_torque_off_to_all);
     RUN(stop_or_a_link_drop_during_the_torque_read_back_ends_off);
     RUN(an_eeprom_baud_write_clears_the_torque_marks);
+    RUN(a_restored_baud_write_clears_the_torque_marks);
     RUN(a_baud_write_cut_by_a_link_drop_restores_at_either_rate);
     RUN(a_baud_write_cut_by_stop_restores_at_either_rate);
     RUN(a_coprocessor_without_the_page_is_named_and_sent_nothing);

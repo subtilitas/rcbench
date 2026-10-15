@@ -1214,7 +1214,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | ---: | --- | --- |
 | 0 | `CMD` | bits 0-3 the operation, bit 4 the series (0 SCS, 1 STS), bits 8-11 the programming port, bits 12-15 the protocol |
 | 1 | `SEQ` | the page's `SEQ` plus 1, modulo 65536 |
-| 2 | `ARG` | OPEN and BAUD: the baud index; SCAN: low byte the first ID, high byte the last; READ, WRITE and EEPROM: low byte the ID, high byte the address; WATCH: the ID, 0xFF none |
+| 2 | `ARG` | OPEN and BAUD: the baud index, all 16 bits, 0 to 7; 8 and above, 0x0100 included, are refused with RANGE; SCAN: low byte the first ID, high byte the last; READ, WRITE and EEPROM: low byte the ID, high byte the address; WATCH: the ID, 0xFF none |
 | 3 | `AUX` | READ: the bytes, 1 to 16; WRITE and EEPROM: the CRC of registers 4 to 13; else 0 |
 | 4 | `N` | staged: the bytes of a WRITE or an EEPROM write, 1 to 16 |
 | 5 | `KEY` | staged: 0x57A5 (`LINK_BUS_WRITE_KEY`) for an EEPROM write, else 0 |

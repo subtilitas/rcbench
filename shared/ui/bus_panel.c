@@ -869,7 +869,9 @@ static void done(uint8_t result)
                 }
             } else if (k->role == BUS_R_BAUD
                        && k->old[0] < proto()->baud_count) {
+                /* The write sent torque off to every servo first. */
                 b.baud = k->old[0];
+                memset(b.torque_on, 0, sizeof(b.torque_on));
             }
         }
         b.bk_n--;

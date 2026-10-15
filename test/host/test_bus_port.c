@@ -294,6 +294,28 @@ TEST_CASE(open_is_refused_for_each_reason)
     CHECK_EQ(refusal(), LINK_BUS_REF_BUSY);
 }
 
+TEST_CASE(open_checks_the_whole_baud_argument)
+{
+    setup();
+    pass(true, false);
+    /* A high byte with a valid low byte is out of range. */
+    CHECK_EQ(cmd(LINK_BUS_OP_OPEN, STS, 0x0100, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_RANGE);
+    CHECK_EQ(state(), LINK_BUS_CLOSED);
+    CHECK_EQ(cmd(LINK_BUS_OP_OPEN, STS, 0xFF07, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_RANGE);
+    CHECK_EQ(cmd(LINK_BUS_OP_OPEN, STS, FEETECH_BAUD_COUNT, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_RANGE);
+    CHECK_EQ(state(), LINK_BUS_CLOSED);
+    CHECK_EQ(bus_port_quiet_mask(&g_port), 0);
+    /* The last index opens. */
+    CHECK_EQ(cmd(LINK_BUS_OP_OPEN, STS, FEETECH_BAUD_COUNT - 1u, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_NONE);
+    run(1000);
+    CHECK_EQ(state(), LINK_BUS_OPEN);
+    CHECK_EQ(g_hw.take_baud, 38400u);
+}
+
 TEST_CASE(a_driver_that_does_not_open_returns_the_pin)
 {
     setup();
@@ -966,6 +988,7 @@ int main(void)
     RUN(init_refuses_missing_hardware_and_starts_closed);
     RUN(open_quiets_the_port_50_ms_then_takes_the_pin);
     RUN(open_is_refused_for_each_reason);
+    RUN(open_checks_the_whole_baud_argument);
     RUN(a_driver_that_does_not_open_returns_the_pin);
     RUN(nothing_but_open_is_taken_while_closed);
     RUN(a_command_frame_is_taken_whole_and_once);

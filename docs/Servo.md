@@ -846,7 +846,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
 | FOUND n | SCAN, STOP | a PING to every ID of the range; STOP while it runs |
 | ID | the IDs found, OTHER ID | the servo the page drives and watches; OTHER ID opens the keypad, 0 to 253 |
-| TORQUE | ON, OFF | writes torque enable (register 40); kept per ID, so a servo picked again shows what was sent to it; STOP, CLOSE and a BAUD or EEPROM baud write set every ID to OFF, as they send torque off. An ON without an answer (a servo at response level 0 answers no write) is read back from register 40 and shows what the servo says; when the read is not answered either, or STOP or a lost link cuts it, torque off goes to every servo and the row shows OFF |
+| TORQUE | ON, OFF | writes torque enable (register 40); kept per ID, so a servo picked again shows what was sent to it; STOP, CLOSE and a baud write by BAUD, the EEPROM list or RESTORE set every ID to OFF, as they send torque off. An ON without an answer (a servo at response level 0 answers no write) is read back from register 40 and shows what the servo says; when the read is not answered either, or STOP or a lost link cuts it, torque off goes to every servo and the row shows OFF |
 | SPEED | 0 to 3400 on STS, 0 to 1000 on SCS, 1000 at start | the goal's speed, sent with every goal |
 | ACC | 0 to 255, 0 at start | the goal's acceleration, sent with every goal; STS only, dimmed on SCS |
 | EEPROM | CHANGE | the list of EEPROM writes below |

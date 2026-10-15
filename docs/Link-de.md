@@ -1334,7 +1334,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | ---: | --- | --- |
 | 0 | `CMD` | Bits 0-3 die Operation, Bit 4 die Serie (0 SCS, 1 STS), Bits 8-11 der Programmierport, Bits 12-15 das Protokoll |
 | 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
-| 2 | `ARG` | OPEN und BAUD: der Baud-Index; SCAN: niederwertiges Byte die erste ID, höherwertiges Byte die letzte; READ, WRITE und EEPROM: niederwertiges Byte die ID, höherwertiges Byte die Adresse; WATCH: die ID, 0xFF keine |
+| 2 | `ARG` | OPEN und BAUD: der Baud-Index, alle 16 Bit, 0 bis 7; 8 und mehr, auch 0x0100, werden mit RANGE abgelehnt; SCAN: niederwertiges Byte die erste ID, höherwertiges Byte die letzte; READ, WRITE und EEPROM: niederwertiges Byte die ID, höherwertiges Byte die Adresse; WATCH: die ID, 0xFF keine |
 | 3 | `AUX` | READ: die Bytes, 1 bis 16; WRITE und EEPROM: die CRC der Register 4 bis 13; sonst 0 |
 | 4 | `N` | bereitgestellt: die Bytes eines WRITE oder EEPROM-Schreibens, 1 bis 16 |
 | 5 | `KEY` | bereitgestellt: 0x57A5 (`LINK_BUS_WRITE_KEY`) für ein EEPROM-Schreiben, sonst 0 |

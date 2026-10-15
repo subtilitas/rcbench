@@ -196,8 +196,9 @@ static link_bus_refusal_t write_op(bus_port_t *p, link_bus_op_t op,
     return LINK_BUS_REF_NONE;
 }
 
-static link_bus_refusal_t open_op(bus_port_t *p, uint8_t port, uint8_t idx)
+static link_bus_refusal_t open_op(bus_port_t *p, uint8_t port, uint16_t arg)
 {
+    uint8_t idx;
     uint8_t pin;
 
     if (p->state != (uint8_t)LINK_BUS_CLOSED) {
@@ -206,9 +207,11 @@ static link_bus_refusal_t open_op(bus_port_t *p, uint8_t port, uint8_t idx)
     if (p->armed != 0u) {
         return LINK_BUS_REF_ARMED;
     }
-    if (idx >= FEETECH_BAUD_COUNT) {
+    /* The whole argument: a high byte is out of range, not dropped. */
+    if (arg >= FEETECH_BAUD_COUNT) {
         return LINK_BUS_REF_RANGE;
     }
+    idx = (uint8_t)arg;
     pin = p->hw.pin(p->hw.ctx, port);
     if (pin > OUT_MAX_PIN || p->hw.held(p->hw.ctx, port)) {
         return LINK_BUS_REF_NO_PIN;
@@ -262,7 +265,7 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
         return LINK_BUS_REF_UNSAFE;
     }
     if (op == LINK_BUS_OP_OPEN) {
-        return open_op(p, port, (uint8_t)arg);
+        return open_op(p, port, arg);
     }
     if (state == LINK_BUS_CLOSED) {
         return LINK_BUS_REF_NOT_OPEN;
