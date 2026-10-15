@@ -39,6 +39,20 @@ history is in git.
   line of that tag, in `STATUS.md`, `docs/Building.md` and
   `docs/FirstRun.md`. Release 0.20.0 adds no bench function.
 
+### Fixed
+
+- The start-up check of 0.20.0 can end with `Join failed: password
+  refused.` on a correct password, and JOIN HOME NETWORK pressed after it
+  joins. One auth-class drop of the station ended a join: ESP-IDF reports
+  a wrong password and a key handshake answered late with the same
+  reasons, 15 and 204. A join ends as `password refused` after 3
+  auth-class drops in a row within 20 s (`WA_AUTH_TRIES`, `WA_JOIN_MS`);
+  a single one connects again, and any other drop sets the count back to
+  0. A join that reaches 20 s ends as `password refused` when its last
+  drop was auth-class, and as `network not found` after any other drop or
+  none. The GitHub check, the download and JOIN HOME NETWORK count alike.
+  Every drop goes to the serial log as one line with its reason number.
+
 ## 0.20.0 - 2026-10-15
 
 A bench on 0.19.0 loads the panel over USB (Universal Serial Bus) once more,
