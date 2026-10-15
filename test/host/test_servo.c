@@ -4760,6 +4760,13 @@ static void hold_start(float secs)
     tap(TAB_X(1), TAB_Y);
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
+        if (bench.ina) {
+            /* The INA3221's windows go on under the finger, as on the
+             * panel: a run that starts before the release reads them, and
+             * ends after 200 ms without one. */
+            bench_frames(20u);
+            continue;
+        }
         bench.now += 20u;
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
@@ -8500,8 +8507,10 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     bench_frames(3000u);
+    /* The last window at most 40 ms back: 160 ms more is under 200 ms
+     * without one, 60 ms after that is past it. */
     bench.ina = false;
-    bench_frames(480u);
+    bench_frames(160u);
     CHECK(servo_screen_testing());
     bench_frames(60u);
     CHECK(!servo_screen_testing());
@@ -8509,7 +8518,7 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
     CHECK(!bench.out);
     CHECK(bench.released);
     CHECK(strstr(bench.report, "Result:         ABORTED - no INA3221 window "
-                           "for 0.5 s\n") != NULL);
+                           "for 0.2 s\n") != NULL);
 }
 
 /* A servo on a stop against a supply at its limit, through the screen

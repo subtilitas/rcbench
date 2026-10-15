@@ -39,6 +39,9 @@
  * Writes.  A value is written in a session of the programmer: the bench
  * switched to SAFE, the port taken (CONNECT reads all registers), the
  * write, the port given back (LEAVE), the bench switched to ARMED again.
+ * The run's first session writes nothing: CONNECT, the read, LEAVE, and
+ * the first writing session right after it.  A LEAVE this link or supply
+ * does not complete ends the run before any value changes.
  * No step of the protocol is known to make a value permanent, and no
  * RAM-only write exists: every write is the register write the programmer
  * reads back.  The run counts register values written and stops at
@@ -271,6 +274,7 @@ typedef struct {
 
     /* The programming. */
     bool     read_once;
+    bool     dry;           /**< the read-only first session is under way */
     servo_limrun_servo_t servo;     /**< as the first session read it  */
     uint16_t cur[2];        /**< what the servo holds, register by register */
     uint16_t want[2];       /**< the write under way                     */
@@ -334,6 +338,14 @@ void servo_limrun_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
 void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
                           uint32_t now_ms);
 void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms);
+
+/** The file the servo's values before the run were saved in, once the
+ *  programmer names it: its first write saves it. */
+void servo_limrun_backup(servo_limrun_t *r, const char *name);
+
+/** The programmer refused the CONNECT, write or LEAVE asked: it never
+ *  started. */
+void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms);
 
 /** Advance to @p now_ms: what to do comes back in @p out. */
 void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,

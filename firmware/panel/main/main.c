@@ -2498,7 +2498,8 @@ static void log_close(void)
 
 /*
  * The automatic servo test's files: its CSV as BENCHnnn.CSV under the next
- * run number, and its report as BENCHnnn.TXT under the same number.  The
+ * run number, and its report as BENCHnnn.TXT under the same number.  A limit
+ * run writes its report alone, as BENCHnnn.TXT under the next number.  The
  * render loop hands the lines over through s_test_q (servo_screen_test_peek())
  * and this task writes them.  The armed bench's own log writes no row while
  * a test runs (log_cadence_bench_run()), so a test is one CSV.  One test
@@ -2511,7 +2512,8 @@ typedef struct {
 
 #define TEST_Q_LEN 24
 static QueueHandle_t s_test_q;           /**< render loop -> logger */
-/* An automatic servo test is running, for the control task's bench log:
+/* An automatic servo test or a limit run is running, for the control
+ * task's bench and supply logs:
  * stored by the SERVO screen in the call that starts or ends a run
  * (servo_screen_on_testing()), so a row is neither written into a run nor
  * left out after it by a frame's length. */
@@ -2568,8 +2570,10 @@ static void test_close(void)
     }
 }
 
-/* A run's OPEN: the next run number, as log_open() takes one. */
-static void test_open(void)
+/* A run's OPEN: the next run number, as log_open() takes one.  With @p txt
+ * the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit run): its
+ * BENCHnnn.TXT is opened under the number, and no CSV. */
+static void test_open(bool txt)
 {
     test_close();
     s_test_num    = -1;
@@ -2585,7 +2589,12 @@ static void test_open(void)
             if (!log_number_free(i, path, sizeof(path))) {
                 continue;
             }
-            atomic_store(&s_test_open_run, (unsigned)i);
+            if (txt) {
+                test_path(i, true, path, sizeof(path));
+            } else {
+                atomic_store(&s_test_open_run, (unsigned)i);
+            }
+            s_test_txt = txt;
             s_test_fp = fopen(path, "w");
             if (s_test_fp != NULL) {
                 s_log_next = i + 1;
@@ -2611,8 +2620,9 @@ static void test_open(void)
 
 static void test_write(const test_line_t *l)
 {
-    if (l->kind == SERVO_TEST_OUT_OPEN) {
-        test_open();
+    if (l->kind == SERVO_TEST_OUT_OPEN
+        || l->kind == SERVO_TEST_OUT_OPEN_TXT) {
+        test_open(l->kind == SERVO_TEST_OUT_OPEN_TXT);
         return;
     }
     if (l->kind == SERVO_TEST_OUT_END) {
@@ -4100,7 +4110,9 @@ static void supply_log_tail(void)
     }
     supply_count_totals(&s_supply, dt);
     s_supply_ms = t;
-    if (s_log_kind == LOG_RUN_SUPPLY) {
+    /* No row while a servo run is under way: a limit run switches the bench
+     * to SAFE for each write, and its report is the record. */
+    if (s_log_kind == LOG_RUN_SUPPLY && !atomic_load(&s_servo_testing)) {
         s_log_t += dt;
         log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
         row.u.supply = s_supply;
@@ -6249,7 +6261,8 @@ static void supply_pump(void)
 
     /* Not after a trip or a lost supply in this step: the switch-off wrote
      * the run's last row already, and the run ends at the next edge. */
-    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
+    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output
+        && !atomic_load(&s_servo_testing)) {
         s_log_t += step_s;
         log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
         row.u.supply = s_supply;
@@ -8502,11 +8515,13 @@ static void test_lines_service(void)
         test_line_t l;
         l.kind = (uint8_t)k;
         snprintf(l.text, sizeof(l.text), "%s", text);
+        const bool open = k == SERVO_TEST_OUT_OPEN
+                          || k == SERVO_TEST_OUT_OPEN_TXT;
         if (xQueueSend(s_test_q, &l, 0) != pdTRUE) {
-            open_waits = (k == SERVO_TEST_OUT_OPEN);
+            open_waits = open;
             break;
         }
-        if (k == SERVO_TEST_OUT_OPEN) {
+        if (open) {
             atomic_fetch_add(&s_test_opens_sent, 1u);
         }
         servo_screen_test_pop();

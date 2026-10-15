@@ -70,6 +70,7 @@ typedef struct {
     unsigned refuse_write;       /* this write op (1-based) is refused    */
     unsigned lose_write;         /* this one does not land                */
     bool not_kst, prog_silent, leave_fails;
+    unsigned leave_fail_at;      /* this LEAVE (1-based) does not end well */
     uint32_t prog_ms;
 
     /* the meter */
@@ -239,7 +240,9 @@ static void programmer(void)
         servo_limrun_written(&g.run, true, back, g.now);
     } else {
         ++g.leaves;
-        servo_limrun_left(&g.run, !g.leave_fails, g.now);
+        servo_limrun_left(&g.run,
+                          !g.leave_fails && g.leaves != g.leave_fail_at,
+                          g.now);
     }
 }
 
@@ -459,6 +462,8 @@ static void converges(bool reversion)
     CHECK(g.smallest >= LO_RAW);
     CHECK_EQ(g.connects, g.run.sessions);
     CHECK_EQ(g.leaves, g.connects);
+    /* The first session reads only: one write a session after it. */
+    CHECK_EQ(g.run.sessions, g.run.write_ops + 1u);
     /* Ended well: the servo let go, the output left on. */
     CHECK_EQ(g.offs, 0u);
     CHECK_EQ(g.releases, 1u);
@@ -689,6 +694,52 @@ TEST_CASE(a_failed_leave_aborts)
     CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_PROG);
     CHECK_EQ(g.offs, 1u);
+    /* The read-only first session's LEAVE: nothing was written. */
+    CHECK_EQ(g.connects, 1u);
+    CHECK_EQ(g.write_ops, 0u);
+    CHECK(!servo_limrun_wrote(&g.run));
+    CHECK(strstr(g.report, "RESTORE") == NULL);
+
+    /* The LEAVE after the first write: the value stays, RESTORE named. */
+    rig_init(0u, false);
+    g.leave_fail_at = 2u;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_PROG);
+    CHECK_EQ(g.write_ops, 1u);
+    CHECK(servo_limrun_wrote(&g.run));
+    CHECK(strstr(g.report, "RESTORE") != NULL);
+}
+
+/* A CONNECT, write or LEAVE the programmer does not take ends the run. */
+TEST_CASE(a_step_the_programmer_refuses_aborts)
+{
+    static const struct {
+        servo_limrun_phase_t ph;
+        servo_limrun_why_t why;
+    } k[] = {
+        { SERVO_LIMRUN_PH_CONNECT, SERVO_LIMRUN_WHY_PROG },
+        { SERVO_LIMRUN_PH_WRITE,   SERVO_LIMRUN_WHY_WRITE },
+        { SERVO_LIMRUN_PH_LEAVE,   SERVO_LIMRUN_WHY_PROG },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig_init(0u, false);
+        CHECK(start());
+        CHECK(run_to(k[i].ph, RUN_MS));
+        g.op = OP_NONE;
+        servo_limrun_refused(&g.run, g.now);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, k[i].why);
+        run_for(100u);
+        CHECK_EQ(g.offs, 1u);
+    }
+    /* Outside the programmer's phases it changes nothing. */
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(1000u);
+    servo_limrun_refused(&g.run, g.now);
+    CHECK(servo_limrun_running(&g.run));
 }
 
 /* --- aborts at every phase -------------------------------------------------- */
@@ -1112,6 +1163,7 @@ int main(void)
     RUN(other_values_at_a_later_connect_abort);
     RUN(no_kst_servo_read_fails_before_a_write);
     RUN(a_failed_leave_aborts);
+    RUN(a_step_the_programmer_refuses_aborts);
     RUN(every_caller_abort_ends_every_phase_with_the_output_off);
     RUN(the_runs_own_timeouts_end_it);
     RUN(a_sample_at_3_a_ends_the_run_in_every_phase);

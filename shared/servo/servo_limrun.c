@@ -559,6 +559,13 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
     }
 }
 
+void servo_limrun_backup(servo_limrun_t *r, const char *name)
+{
+    if (r != NULL && r->read_once && name != NULL && name[0] != '\0') {
+        snprintf(r->servo.backup, sizeof(r->servo.backup), "%s", name);
+    }
+}
+
 void servo_limrun_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
                        uint32_t now_ms)
 {
@@ -600,6 +607,14 @@ void servo_limrun_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
         r->probe_value = sv->lo_raw;
         r->probe_side  = r->need[SERVO_LIMRUN_LO] ? SERVO_LIMRUN_LO
                                                   : SERVO_LIMRUN_HI;
+        /* The first session reads and gives the port back: a LEAVE that
+         * fails on this link or supply ends the run before a value
+         * changes. */
+        r->dry      = true;
+        r->phase    = SERVO_LIMRUN_PH_LEAVE;
+        r->phase_ms = now_ms;
+        r->pend.leave = true;
+        return;
     } else if (sv->angle[0] != r->cur[0] || sv->angle[1] != r->cur[1]) {
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
@@ -668,9 +683,30 @@ void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms)
         abort_why(r, SERVO_LIMRUN_WHY_PROG, now_ms);
         return;
     }
+    if (r->dry) {
+        /* The read-only session is over: the first writing one. */
+        r->dry      = false;
+        r->phase    = SERVO_LIMRUN_PH_CONNECT;
+        r->phase_ms = now_ms;
+        r->pend.connect = true;
+        return;
+    }
     r->phase    = SERVO_LIMRUN_PH_ARM;
     r->phase_ms = now_ms;
     r->pend.arm = true;
+}
+
+void servo_limrun_refused(servo_limrun_t *r, uint32_t now_ms)
+{
+    if (!servo_limrun_running(r)) {
+        return;
+    }
+    if (r->phase == SERVO_LIMRUN_PH_WRITE) {
+        abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
+    } else if (r->phase == SERVO_LIMRUN_PH_CONNECT
+               || r->phase == SERVO_LIMRUN_PH_LEAVE) {
+        abort_why(r, SERVO_LIMRUN_WHY_PROG, now_ms);
+    }
 }
 
 void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,

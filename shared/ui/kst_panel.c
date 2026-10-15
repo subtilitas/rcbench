@@ -2580,6 +2580,11 @@ const char *kst_panel_run_backup(void)
     return kst_prog_run_backup(&k.prog);
 }
 
+bool kst_panel_run_ready(void)
+{
+    return kst_prog_state(&k.prog) == KST_PROG_PWM;
+}
+
 void kst_panel_run_begin(void)
 {
     k.run.op = RUN_OP_NONE;

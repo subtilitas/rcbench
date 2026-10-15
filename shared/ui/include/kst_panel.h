@@ -144,6 +144,9 @@ typedef enum {
     KST_PANEL_RUN_FAILED,    /**< once: it did not                         */
 } kst_panel_run_t;
 
+/** The programmer's port is in PWM with no operation under way: a run's
+ *  CONNECT can start. */
+bool kst_panel_run_ready(void);
 /** A run begins: no write of it yet. */
 void kst_panel_run_begin(void);
 /** CONNECT on the SERVO screen's port.  With @p supply, a PD mini answers
