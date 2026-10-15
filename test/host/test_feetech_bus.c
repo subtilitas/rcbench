@@ -895,6 +895,39 @@ TEST_CASE(a_lock_the_stop_cannot_start_stays_owed)
     CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
 }
 
+TEST_CASE(a_lock_the_servo_does_not_answer_stays_owed)
+{
+    const uint8_t mode1 = 1;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    (void)feetech_bus_step(&bus, now);     /* the unlock out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* its reply in */
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    feetech_bus_stop(&bus);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* torque off out */
+    CHECK_EQ(sim.n_log, 2u);
+    /* The lock reaches no servo: no answer, and the flag is still 0. */
+    sim.deaf = true;
+    CHECK_EQ(run(100), FEETECH_RES_ABORTED);
+    CHECK_EQ(sim.n_log, 3u);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_NO_REPLY);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    /* Still owed: no rate change, and the next stop sends it again. */
+    CHECK_EQ(feetech_bus_set_baud(&bus, 500000u), FEETECH_RES_BUSY);
+    feetech_bus_stop(&bus);
+    (void)run(100);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+}
+
 TEST_CASE(a_rate_the_stop_cannot_follow_says_driver)
 {
     const uint8_t baud7 = 7;
@@ -1082,6 +1115,7 @@ int main(void)
     RUN(stop_while_a_rate_write_is_on_the_wire_follows_the_rate);
     RUN(stop_with_nothing_running_sends_only_torque_off);
     RUN(a_lock_the_stop_cannot_start_stays_owed);
+    RUN(a_lock_the_servo_does_not_answer_stays_owed);
     RUN(a_rate_the_stop_cannot_follow_says_driver);
     RUN(the_watch_reads_the_live_block_every_50_ms_between_operations);
     RUN(a_read_on_the_wire_for_a_watch_since_changed_is_dropped);

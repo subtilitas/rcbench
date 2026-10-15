@@ -325,6 +325,9 @@ void bus_link_done(bus_link_t *k, int result, const uint16_t *regs)
         if (result == BUS_LINK_ACK && regs != NULL) {
             memcpy(k->status, regs, sizeof(k->status));
             k->known = true;
+            /* BUS_LINK_RETRIES counts frames unanswered in a row: an
+             * answered read ends the streak. */
+            k->tries = 0;
             ids_look(k);
         } else if (result == BUS_LINK_NO_ANSWER) {
             k->poll_now = true;

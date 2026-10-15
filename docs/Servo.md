@@ -936,9 +936,12 @@ while the bus holds the port, with `no arm: the BUS page holds the
 programming port`; ARM is drawn disabled and COMMANDED reads `---`. The bus
 is open only while the page is shown: another page, CLOSE on the overlay
 and leaving SERVO close it, with torque off to every servo, the lock flag
-set again where a write left it open, and the pin back to PWM. STOP ends a
-scan, a write or a restore, sends torque off to the broadcast ID and leaves
-the bus open; a command not yet sent is dropped. A heartbeat lost, a silent
+set again where a write left it open, and the pin back to PWM. A command
+not yet sent when the page goes is dropped, and the close goes next. STOP
+ends a scan, a write or a restore, sends torque off to the broadcast ID and
+leaves the bus open; a command not yet sent is dropped. A lock flag the
+servo does not answer stays owed: the next STOP sends it again, and a
+close sends it once more before the pin goes back. A heartbeat lost, a silent
 link or a switch to SAFE closes the bus at the coprocessor. The servo's
 supply is not switched by the page: SUPPLY sets it, or another source feeds
 the servo.

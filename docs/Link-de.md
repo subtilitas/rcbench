@@ -1350,7 +1350,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | EEPROM | 6 | entsperren, schreiben, sperren und zurücklesen; braucht den Schlüssel; der EEPROM-Bereich oder das Sperrflag allein |
 | WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen; fertig, sobald angenommen, `RESULT` 0 |
 | TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
-| STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt |
+| STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt. Eine Sperre, auf die ihr Servo nicht antwortet, steht weiter aus, und `RESULT` nennt, was zurückkam (NO_REPLY, wenn nichts kam) |
 | BAUD | 10 | Drehmoment aus an jedes Servo mit der alten Rate, dann die Leitung auf einen anderen Baud-Index; die Servos behalten ihren. `RESULT` 1 und BUSY gesetzt, bis die Leitung gewechselt hat, und andere Befehle werden so lange mit BUSY abgewiesen |
 
 `SEQ` ist die der Page plus 1; der eben angenommene Frame, noch einmal
@@ -1365,14 +1365,14 @@ das nichts gestartet hat:
 | PORT | 2 | kein solcher Programmierport, oder nicht der offene |
 | PROTOCOL | 3 | ein Protokoll, das dieser Build nicht hat |
 | UNSAFE | 4 | der Heartbeat nicht vertraut oder der Link still |
-| ARMED | 5 | ein OPEN, solange die Bank ARMED ist |
+| ARMED | 5 | ein OPEN, solange die Bank ARMED ist oder ein ARM auf CONTROL steht, auch eines aus demselben Durchlauf |
 | NOT_OPEN | 6 | der Bus ist geschlossen |
 | NO_PIN | 7 | der Port hat keinen gebundenen Pin, oder die KST-Page hält ihn |
 | NO_KEY | 8 | ein EEPROM-Schreiben ohne den Schlüssel |
 | RANGE | 9 | eine ID, Adresse, Anzahl oder ein Baud-Index, den das Protokoll nicht nimmt |
 | EEPROM | 10 | ein WRITE in den EEPROM-Bereich oder auf das Sperrflag, oder ein EEPROM-Schreiben außerhalb davon |
 | STAGED | 11 | die bereitgestellten Register haben nicht die CRC, die das Kommando nennt |
-| LOCK | 12 | ein BAUD, solange eine Sperre aussteht (`STATE` Bit 4): die Sperre geht mit der Rate, mit der ihr Servo antwortet, und STOP schickt sie |
+| LOCK | 12 | ein BAUD, solange eine Sperre aussteht (`STATE` Bit 4): die Sperre geht mit der Rate, mit der ihr Servo antwortet, und STOP schickt sie, bis das Servo antwortet |
 
 Der Koprozessor führt die Session in jedem Durchlauf weiter, mindestens
 einmal je Millisekunde. Antwortfenster und Pausen der Session stehen in

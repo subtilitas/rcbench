@@ -1230,7 +1230,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | EEPROM | 6 | unlock, write, lock and read back; needs the key; the EEPROM area or the lock flag alone |
 | WATCH | 7 | reads one servo's live block every 50 ms between operations; done when taken, `RESULT` 0 |
 | TORQUE_OFF | 8 | torque off to every servo |
-| STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed |
+| STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed. A lock its servo does not answer stays owed, and `RESULT` names what came back (NO_REPLY when nothing did) |
 | BAUD | 10 | torque off to every servo at the old rate, then the line to another baud index; the servos keep theirs. `RESULT` 1 and BUSY set until the line moved, and other commands are refused BUSY meanwhile |
 
 `SEQ` is the page's plus 1; the frame just taken, sent again, is
@@ -1244,14 +1244,14 @@ A command that is taken is acknowledged, and what became of it is in
 | PORT | 2 | no such programming port, or not the port that is open |
 | PROTOCOL | 3 | a protocol this build does not have |
 | UNSAFE | 4 | the heartbeat not trusted or the link silent |
-| ARMED | 5 | an OPEN while the bank is ARMED |
+| ARMED | 5 | an OPEN while the bank is ARMED or an ARM is stored on CONTROL, including one served earlier in the same pass |
 | NOT_OPEN | 6 | the bus is closed |
 | NO_PIN | 7 | the port has no bound pin, or the KST page holds it |
 | NO_KEY | 8 | an EEPROM write without the key |
 | RANGE | 9 | an ID, address, count or baud index the protocol does not take |
 | EEPROM | 10 | a WRITE to the EEPROM area or the lock flag, or an EEPROM write outside it |
 | STAGED | 11 | the staged registers do not have the CRC the command names |
-| LOCK | 12 | a BAUD while a lock is owed (`STATE` bit 4): the lock goes at the rate its servo answers at, and STOP sends it |
+| LOCK | 12 | a BAUD while a lock is owed (`STATE` bit 4): the lock goes at the rate its servo answers at, and STOP sends it until the servo answers it |
 
 The coprocessor steps the session every pass, at least once a millisecond.
 The session's reply window and gaps are in

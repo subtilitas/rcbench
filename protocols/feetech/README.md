@@ -111,7 +111,10 @@ the session left unlocked. When the frame on the wire at the stop is an
 EEPROM write that moves the rate, torque off goes out at the old rate and
 at the new one. A stop frame the driver refuses 3 times in a row is left
 out, and `stop_res` reads `FEETECH_RES_DRIVER` until the next stop; a lock
-left out stays owed.
+left out stays owed. The lock is the one frame of a stop that expects an
+answer: the debt ends when the servo answers it. One unanswered stays owed,
+and `stop_res` reads what came back (`FEETECH_RES_NO_REPLY` when nothing
+did).
 
 ## Interface
 

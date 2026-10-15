@@ -905,6 +905,68 @@ TEST_CASE(leaving_during_a_scan_closes_the_bus)
     CHECK_EQ(page_state(), LINK_BUS_CLOSED);
 }
 
+/* The warning's 2 s hold on APPLY, held to the end. */
+static void hold_apply(void)
+{
+    const gfx_rect_t r = bus_panel_apply_rect();
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < 90 && bus_panel_editor() == 3; ++i) {
+        bus_panel_tick(1.0f / 39.0f);
+    }
+    ev(cx(r), cy(r), TOUCH_EVENT_UP);
+}
+
+TEST_CASE(leaving_drops_a_command_not_sent_and_closes_next)
+{
+    ftsim_servo_t *v;
+    uint8_t old;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    old = v->regs[FEETECH_REG_MIN_ANGLE];
+    eeprom_item("MIN ANGLE");
+    enter(50);
+    hold_apply();
+    CHECK_EQ(bus_panel_editor(), 0);
+    /* The page goes before the write is taken: the CLOSE is next. */
+    bus_panel_show(false);
+    run(1);
+    CHECK_EQ(g_cmd.op, LINK_BUS_OP_CLOSE);
+    run(100);
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK(!bus_panel_holds_port());
+    CHECK_EQ(v->regs[FEETECH_REG_MIN_ANGLE], old);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(bus_panel_backups(), 0u);
+}
+
+TEST_CASE(leaving_during_an_eeprom_write_keeps_its_old_value)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("MIN ANGLE");
+    enter(50);
+    hold_apply();
+    pass();                             /* the command is taken */
+    bus_panel_show(false);
+    run(100);
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK(bus_panel_backups() <= 1u);
+    if (v->regs[FEETECH_REG_MIN_ANGLE] == 50) {
+        CHECK_EQ(bus_panel_backups(), 1u);
+    }
+}
+
 TEST_CASE(a_coprocessor_without_the_page_is_named_and_sent_nothing)
 {
     fresh_minor(LINK_MINOR_BUS - 1u);
@@ -1307,6 +1369,8 @@ int main(void)
     RUN(an_armed_bench_gets_no_open);
     RUN(a_page_not_shown_closes_the_bus_with_torque_off);
     RUN(leaving_during_a_scan_closes_the_bus);
+    RUN(leaving_drops_a_command_not_sent_and_closes_next);
+    RUN(leaving_during_an_eeprom_write_keeps_its_old_value);
     RUN(a_coprocessor_without_the_page_is_named_and_sent_nothing);
     RUN(a_link_down_is_named);
     RUN(a_command_the_control_task_never_takes_times_out_after_3_s);

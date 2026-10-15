@@ -624,8 +624,20 @@ TEST_CASE(a_baud_write_moves_the_page_with_the_line)
     run(100);
     CHECK_EQ(sim.n_log, 0u);
     CHECK_EQ(sim.baud, 38400u);
+    /* The servo answers at 250000 baud, the line runs at 38400: the
+     * STOP's lock goes unanswered and stays owed. */
     CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
     run(100);
+    CHECK_EQ(result(), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(g_port.bus.unlocked, 1);
+    CHECK(reg(LINK_BS_STATE) & LINK_BS_F_UNLOCKED);
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_LOCK);
+    /* At the servo's rate the lock is answered and paid. */
+    ftsim_find(&sim, 1)->regs[FEETECH_REG_BAUD] = 7;
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    run(100);
+    CHECK_EQ(result(), FEETECH_RES_OK);
     CHECK_EQ(g_port.bus.unlocked, 0);
     CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
     CHECK_EQ(refusal(), LINK_BUS_REF_NONE);

@@ -1582,6 +1582,22 @@ void bus_panel_show(bool shown)
         if (!shown) {
             b.goal_due = false;
             b.restoring = false;
+            /* The page goes, and the CLOSE goes next: a command not sent
+             * goes with it, and the wait for one the control task runs is
+             * dropped (the CLOSE ends it).  An EEPROM write it ran may
+             * have landed: its old value is kept for RESTORE, as at STOP.
+             * A command still on the link is answered within
+             * BUS_PANEL_ANSWER_MS and waited for. */
+            if (b.out_due) {
+                b.out_due = false;
+                b.waiting = false;
+            } else if (b.waiting && b.taken) {
+                keep_uncertain();
+                if (b.use == U_EE_WRITE) {
+                    ee_forget();
+                }
+                b.waiting = false;
+            }
         }
         ++b.rev;
     }

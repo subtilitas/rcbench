@@ -585,11 +585,22 @@ static void stop_next(feetech_bus_t *b, uint32_t now)
                        b->unlocked_id, 0, now)) {
         return;
     }
-    /* A lock that never went out leaves the flag owed: bit 4 of STATE. */
-    if (b->flight == FL_STOP) {
-        b->unlocked = 0;
-    }
+    /* The lock is paid when its servo answers (stop_reply()); one that
+     * never went out or went unanswered leaves it owed: bit 4 of STATE. */
     b->stop_due = 0;
+}
+
+/* The answer to a frame of the stop.  Only the lock expects one. */
+static void stop_reply(feetech_bus_t *b, feetech_res_t r)
+{
+    if (b->want_params == 0xFFu) {
+        return;
+    }
+    if (r == FEETECH_RES_OK) {
+        b->unlocked = 0;
+    } else if (b->stop_res == (uint8_t)FEETECH_RES_OK) {
+        b->stop_res = (uint8_t)r;
+    }
 }
 
 static void watch_next(feetech_bus_t *b, uint32_t now)
@@ -655,6 +666,8 @@ feetech_res_t feetech_bus_step(feetech_bus_t *b, uint32_t now_us)
             op_reply(b, r, &st);
         } else if (who == FL_WATCH) {
             watch_reply(b, r, &st);
+        } else if (who == FL_STOP) {
+            stop_reply(b, r);
         }
     }
     if (b->timed != 0u && now_us - b->t_us < FEETECH_BUS_GAP_US) {

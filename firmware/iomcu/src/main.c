@@ -584,7 +584,14 @@ static void bus_ids_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 static uint8_t bus_write(void *ctx, uint8_t off, uint8_t n,
                          const uint16_t *in)
 {
-    (void)ctx;
+    const iomcu_state_t *s = (const iomcu_state_t *)ctx;
+
+    /* The port learns the bench's arm after can_service(): an ARM served
+     * earlier in this pass is told here, so an OPEN in the same pass is
+     * refused ARMED and no stored ARM waits for the bus to close. */
+    if (bank_armed(s)) {
+        bus_port_bench_armed(&s_bus, true);
+    }
     const uint8_t nack = bus_port_write(&s_bus, off, n, in);
 
     /* An OPEN ends the port's pulses in this frame. */

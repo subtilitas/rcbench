@@ -488,6 +488,44 @@ TEST_CASE(a_frame_refused_for_its_seq_goes_again_after_a_read)
     CHECK_EQ(rd().ans_seq, (uint16_t)(f[LINK_BS_W_SEQ] + 1u));
 }
 
+TEST_CASE(an_answered_read_ends_the_streak_of_unanswered_frames)
+{
+    bus_link_cmd_t c = cmd_of(LINK_BUS_OP_TORQUE_OFF, 0u, 14u);
+    bus_link_xfer_t x;
+    uint16_t regs[32];
+
+    setup();
+    open_bus();
+    CHECK(bus_link_send(&g_link, &c));
+    CHECK(next_write(&x));
+    CHECK_EQ(x.off, 0);
+    /* Refused for its SEQ: the read goes, unanswered twice, then read. */
+    bus_link_done(&g_link, (int)LINK_NACK_BAD_VALUE, NULL);
+    for (int i = 0; i < 2; ++i) {
+        CHECK(bus_link_next(&g_link, now_ms, &x));
+        CHECK(!x.write);
+        bus_link_done(&g_link, BUS_LINK_NO_ANSWER, NULL);
+        CHECK(rd().sending);
+    }
+    CHECK(bus_link_next(&g_link, now_ms, &x));
+    CHECK(!x.write);
+    serve_read(&x, regs);
+    bus_link_done(&g_link, BUS_LINK_ACK, regs);
+    /* The frame has its full BUS_LINK_RETRIES again. */
+    for (unsigned i = 0; i + 1u < BUS_LINK_RETRIES; ++i) {
+        CHECK(next_write(&x));
+        CHECK_EQ(x.off, 0);
+        bus_link_done(&g_link, BUS_LINK_NO_ANSWER, NULL);
+        CHECK(rd().sending);
+    }
+    CHECK(next_write(&x));
+    CHECK_EQ(x.off, 0);
+    bus_link_done(&g_link, BUS_LINK_NO_ANSWER, NULL);
+    CHECK(!rd().sending);
+    CHECK_EQ(rd().ans, BUS_LINK_ANS_NO_ANSWER);
+    CHECK_EQ(rd().ans_id, 14u);
+}
+
 TEST_CASE(a_refused_window_or_a_frame_refused_twice_ends_nack)
 {
     bus_link_cmd_t c = cmd_of(LINK_BUS_OP_WRITE,
@@ -839,6 +877,7 @@ int main(void)
     RUN(a_lost_answer_sends_the_same_frame_and_the_page_takes_it_once);
     RUN(three_exchanges_without_an_answer_give_the_command_up);
     RUN(a_frame_refused_for_its_seq_goes_again_after_a_read);
+    RUN(an_answered_read_ends_the_streak_of_unanswered_frames);
     RUN(a_refused_window_or_a_frame_refused_twice_ends_nack);
     RUN(stop_drops_a_command_not_sent_and_stops_the_bus);
     RUN(stop_goes_before_a_command_whose_frame_went_unanswered);

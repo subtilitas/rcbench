@@ -35,7 +35,10 @@
  * switch goes to 0 at both rates; one that moves the ID gets the lock at
  * the new ID.  A frame of the stop the driver does not start is tried
  * FEETECH_BUS_STOP_TRIES times, one pass apart; then the stop goes on
- * without it and stop_res reads FEETECH_RES_DRIVER.
+ * without it and stop_res reads FEETECH_RES_DRIVER.  The lock is the one
+ * frame of the stop that expects an answer: it is paid when the servo
+ * answers it, and one unanswered leaves it owed and stop_res reading what
+ * came back (FEETECH_RES_NO_REPLY when nothing did).
  *
  * Timing.  A transaction is the frame out, then bytes in until the reply
  * is complete or FEETECH_BUS_REPLY_US plus twice the reply's own time has
@@ -163,8 +166,9 @@ typedef struct {
     uint8_t  stop_due;    /**< bit 0 torque off, bit 1 lock owed, bit 2
                                the rate an EEPROM write moved            */
     uint8_t  follow_baud; /**< that rate's index                          */
-    uint8_t  stop_res;    /**< FEETECH_RES_OK, or FEETECH_RES_DRIVER when
-                               the last stop could not send a frame       */
+    uint8_t  stop_res;    /**< FEETECH_RES_OK; FEETECH_RES_DRIVER when
+                               the last stop could not send a frame, or
+                               the lock's result when it went unanswered */
     uint8_t  stop_tries;  /**< starts refused of the stop's next frame    */
     uint8_t  unlocked;    /**< a servo's lock flag is 0 by this session   */
     uint8_t  unlocked_id;

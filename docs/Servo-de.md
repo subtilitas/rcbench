@@ -936,9 +936,13 @@ gesperrt gezeichnet und PULSBREITE liest `---`. Der Bus ist nur offen,
 solange die Seite gezeigt wird: eine andere Seite, SCHLIESSEN am Overlay und
 das Verlassen von SERVO schließen ihn, mit Drehmoment aus an jedes Servo,
 dem Sperrflag wieder gesetzt, wo ein Schreiben es offen gelassen hat, und
-dem Pin zurück auf PWM. STOP beendet einen Scan, ein Schreiben oder ein
-Zurückspielen, schickt Drehmoment aus an die Broadcast-ID und lässt den Bus
-offen; ein noch nicht geschicktes Kommando wird verworfen. Ein verlorener
+dem Pin zurück auf PWM. Ein noch nicht geschicktes Kommando wird beim
+Verlassen der Seite verworfen, und das Schließen kommt als Nächstes. STOP
+beendet einen Scan, ein Schreiben oder ein Zurückspielen, schickt
+Drehmoment aus an die Broadcast-ID und lässt den Bus offen; ein noch nicht
+geschicktes Kommando wird verworfen. Ein Sperrflag, auf das das Servo nicht
+antwortet, steht weiter aus: der nächste STOP schickt es noch einmal, und
+das Schließen schickt es ein letztes Mal, bevor der Pin zurückgeht. Ein verlorener
 Heartbeat, ein stiller Link oder ein Schalten auf SAFE schließt den Bus im
 Koprozessor. Die Versorgung des Servos schaltet die Seite nicht: SUPPLY
 stellt sie ein, oder eine andere Quelle speist das Servo.
