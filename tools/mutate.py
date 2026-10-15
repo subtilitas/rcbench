@@ -71,8 +71,10 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # What the host build reads: the code under test, the suite, the
 # coprocessor's pin header and PIO program, which two tests read, and the
-# profile generator, which the esc_parity test holds the card reader to.
+# profile generator, which the esc_parity test holds the card reader to, and
+# the panel's release key, which test_fw_sign parses.
 COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
+          "firmware/panel/main/keys",
           "tools/gen_esc_profiles.py")
 # Where a mutant is made, and the folder under it where none is: a pin
 # driver is compiled by the coprocessor build only.

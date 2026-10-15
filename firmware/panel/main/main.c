@@ -8801,11 +8801,10 @@ static void update_frame(update_state_t st, const char *version,
     }
 }
 
-/* The release key (keys/release_signing_pub.pem), embedded as text. */
+/* The release key (keys/release_signing_pub.pem), embedded as text with a
+ * terminating NUL. */
 extern const char _binary_release_signing_pub_pem_start[];
-extern const char _binary_release_signing_pub_pem_end[];
 #define release_key_start _binary_release_signing_pub_pem_start
-#define release_key_end _binary_release_signing_pub_pem_end
 
 /*
  * Whether the release key vouches for the image: FW_SIG_OK, or why not.  The
@@ -8815,10 +8814,8 @@ static fw_sig_t image_signature(const uint8_t *img, uint32_t bytes,
                                 const uint8_t *sig, uint32_t sig_n)
 {
     fw_pubkey_t key;
-    /* The linker places both symbols in one object. */
-    /* cppcheck-suppress subtractPointers */
-    const size_t n = (size_t)(release_key_end - release_key_start);
-    if (!fw_pubkey_parse_pem(release_key_start, n, &key)) {
+    if (!fw_pubkey_parse_pem(release_key_start, strlen(release_key_start),
+                             &key)) {
         return FW_SIG_KEY;
     }
     return fw_sig_verify(&key, img, bytes, sig, sig_n);
