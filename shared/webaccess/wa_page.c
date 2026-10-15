@@ -216,7 +216,7 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
                   "if(!f)return;if(f.size>");
     wa_out_u64(o, pi->slot);
     wa_out_str(o, "){r.textContent='");
-    wa_out_str(o, pt(pi->de, P_TOO_BIG));
+    wa_out_js(o, pt(pi->de, P_TOO_BIG));
     wa_out_str(o, "';return;}"
                   "var x=new XMLHttpRequest();x.open('POST','" WA_URL_UPDATE
                   "');p.hidden=false;p.value=0;r.textContent='';"
@@ -224,7 +224,7 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
                   "p.value=Math.floor(v.loaded*100/v.total);};"
                   "x.onload=function(){r.textContent=x.responseText;};"
                   "x.onerror=function(){r.textContent='");
-    wa_out_str(o, pt(pi->de, P_BROKE));
+    wa_out_js(o, pt(pi->de, P_BROKE));
     wa_out_str(o, "';};x.send(f);};</script>");
 }
 

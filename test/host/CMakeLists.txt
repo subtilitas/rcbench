@@ -175,6 +175,12 @@ target_compile_definitions(test_wa_zip PRIVATE
     "ZIP_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_zip\"")
 set_tests_properties(wa_zip PROPERTIES FIXTURES_SETUP wa_zip_archives)
 
+# The pages test_wa_page writes, their script handed to node: a text that
+# breaks the script leaves the Upload button without its handler.
+target_compile_definitions(test_wa_page PRIVATE
+    "PAGE_OUT_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/wa_page\"")
+set_tests_properties(wa_page PROPERTIES FIXTURES_SETUP wa_page_files)
+
 # The headers of protocols/kst as C++: a driver may be written in it.  The
 # program includes all 7, calls one function of each module and links against
 # the C library, so a header that is not valid C++ fails the build and a
@@ -231,6 +237,15 @@ add_test(NAME wa_zip_check
             "${CMAKE_CURRENT_BINARY_DIR}/wa_zip")
 set_tests_properties(wa_zip_check PROPERTIES
     FIXTURES_REQUIRED wa_zip_archives)
+
+# node reads the script of each page.  Without node on the PATH the test is
+# skipped (exit 77); the CI host job installs node and so runs it.
+add_test(NAME wa_page_script
+    COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_page.py"
+            "${CMAKE_CURRENT_BINARY_DIR}/wa_page")
+set_tests_properties(wa_page_script PROPERTIES
+    FIXTURES_REQUIRED wa_page_files SKIP_RETURN_CODE 77)
 
 # The profile generator against the card reader: fuzz_parity.py changes the
 # profiles of record, reads each result with tools/gen_esc_profiles.py and,

@@ -41,6 +41,16 @@ history is in git.
 
 ### Fixed
 
+- UPLOAD on the English page of the browser access works. The script of
+  the page wrote the texts `The file is larger than the panel's slot.` and
+  `The upload broke off.` inside single quotes unescaped; the apostrophe
+  ended the string, the script did not parse, the form had no handler, and
+  the browser sent the form itself: it went to `/?` and the file was
+  dropped. The German page was not affected. The writer `wa_out_js()`
+  escapes backslash, `'`, `"`, `<` (as `\x3c`) and control characters in
+  every text inside the script. `test/host/check_wa_page.py` hands the
+  script of both pages to `node --check`; the CI host job runs it.
+
 - The start-up check of 0.20.0 can end with `Join failed: password
   refused.` on a correct password, and JOIN HOME NETWORK pressed after it
   joins. One auth-class drop of the station ended a join: ESP-IDF reports
