@@ -72,6 +72,9 @@ python3 tools/mutate.py               # what the suite misses in the changed lin
 # After a panel build, on ESP-IDF v5.4 for --check-doc: task stacks, and the
 # table in docs/Performance.md.
 python3 tools/stack_check.py firmware/panel/build --check-doc
+# After a panel build, on ESP-IDF v5.4 for --check-doc: internal RAM with
+# the largest Wi-Fi mode up, and its table in docs/Performance.md.
+python3 tools/ram_budget.py firmware/panel/build --check-doc
 # After a coprocessor build: the stacks of its two cores, and core 0's row
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
@@ -121,10 +124,16 @@ A change fails if:
 - a panel task's deepest call chain exceeds its stack less 1024 bytes, or
   a coprocessor core's deepest chain, one interrupt and 256 bytes exceed
   its stack ([Performance](docs/Performance.md#stacks));
+- the panel's internal heap with the largest Wi-Fi mode up is under 32,768
+  bytes, a task, queue or semaphore in `firmware/panel` is one
+  `tools/ram_budget.py` cannot size, or the internal RAM table in
+  [Performance](docs/Performance.md#internal-ram) differs from the ESP-IDF
+  v5.4 build;
 - a string overflows where it is drawn, in English or in German, and is not
   one of the overflows `tools/render_ui.py` lists as known;
 - a page states a protocol version, a timing, a pin, a coverage floor, a
-  stack margin, a servo test constant or a frame-cost ceiling that differs
+  stack margin, the internal RAM floor, a servo test constant or a
+  frame-cost ceiling that differs
   from the constant in the headers, the tools or `ci.yml`. A reworded
   sentence takes its entry in `FACTS` in `tools/check_docs.py` along;
 - a compile command of the sanitizer build lacks one of

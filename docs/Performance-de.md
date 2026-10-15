@@ -336,3 +336,113 @@ auf PROGRAMMER ist der Frame von `render()` 32 Bytes groß und der der größten
 Seite 464. Eine Zeile, die zur Anzeige kopiert wird, wird ohne `snprintf()`
 kopiert, das die Gleitkommawandlung von newlib erreicht: 1 952 Bytes tief im
 Aufrufgraphen.
+
+## Interner RAM
+
+Das WLAN braucht internen RAM (Random-Access Memory), für den PSRAM nicht
+einspringen kann. `esp_wifi_init()` nimmt die statischen RX- und
+TX-Puffer (Empfangen, Senden) des WLAN-Treibers: je 16 zu etwa 1 600
+Bytes, 51 200 Bytes DMA-fähiger (Direct Memory Access) interner RAM.
+`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` macht die TX-Puffer statisch.
+Passen sie nicht, startet das WLAN nicht, und FILES & UPDATE zeigt „WLAN
+startete nicht.“.
+
+`tools/ram_budget.py` liest den internen Heap, den ein Panel-Build übrig
+lässt, und zieht ab, was das Panel zur Laufzeit belegt, dann, was jeder
+WLAN-Modus dazu belegt. CI führt es nach beiden Panel-Builds aus und
+schlägt fehl, wenn mit dem größten Modus weniger als 32 768 Bytes Heap
+übrig bleiben: die Größe des Vorrats, den ESP-IDF zur Laufzeit für interne
+und DMA-Belegungen zurückhält (`CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL`).
+Daraus nehmen die Sockets des WLANs, die Puffer der Hardware-Einheiten für
+AES (Advanced Encryption Standard) und SHA (Secure Hash Algorithm) und eine
+Kartenübertragung, solange das WLAN läuft.
+
+| Posten | Was es ist | Bytes |
+| --- | --- | ---: |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 126 664 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 299 320 |
+| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 104 776 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 194 544 |
+| `AP` | ACCESS POINT: das WLAN, der Server der Seite und seine Task | 98 724 |
+| `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
+| `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
+| `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
+| `left` | übriger Heap mit dem größten Modus | 91 384 |
+
+Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
+Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm
+abweicht. `-v` listet jede Belegung und woher ihre Größe stammt.
+
+Jede Zahl ist eine Schätzung. Der Stack einer Task, die Länge einer Queue
+und die Zahl der WLAN-Puffer stammen aus dem Build und dem Quelltext; die
+Größen des Kontrollblocks einer Task, des Kopfes einer Queue und eines
+Queue-Eintrags sind `sizeof()`-Werte, mit GDB aus dem v5.4-Build gelesen.
+Drei Zuschläge stammen aus nichts davon: 12 288 Bytes für die Belegungen
+der Treiber beim Start, 16 384 Bytes für die Blöcke des WLAN-Treibers
+neben seinen Puffern und seiner Task und 4 096 Bytes für TLS. Das Werkzeug
+lässt den Fast-Speicher der RTC (Real-Time Clock) aus, etwa 8 KB Heap, der
+nicht DMA-fähig ist. Der freie Heap auf einem Panel ist nicht gemessen. Das
+Panel gibt ihn beim Start aus:
+
+```text
+I (…) rcbench: internal RAM: <n> B free, largest block <n> B; PSRAM: <n> B free
+```
+
+Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des
+Fehlers und den internen Heap in diesem Moment:
+
+```text
+E (…) wifi: esp_wifi_init: ESP_ERR_NO_MEM; internal RAM <n> B free, largest block <n> B
+```
+
+Die Schritte sind `esp_netif_init`, `esp_event_loop_create_default`, die
+beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
+`esp_wifi_set_mode`, `esp_wifi_set_config`, `esp_wifi_start`,
+`httpd_start` und das Anlegen der Tasks `wifi_ctl`, `wifi_get` und `mdns`.
+Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
+stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
+
+Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 15
+Objekten, 161 340 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
+ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
+wpa_supplicant, 13 742 Bytes.
+
+| Objekt | Komponente | .bss (Bytes) |
+| --- | --- | ---: |
+| `log_viewer_screen` | ui | 35 328 |
+| `servo_screen` | ui | 28 509 |
+| `ui_watermark` | ui | 20 504 |
+| `supply_screen` | ui | 20 412 |
+| `motor_screen` | ui | 19 968 |
+| `programmer_screen` | ui | 6 396 |
+| `kst_card` | bench | 6 208 |
+| `log_csv` | logfile | 4 905 |
+| `kst_panel` | ui | 4 645 |
+| `esc_registry` | esc | 4 228 |
+| `analyser_screen` | ui | 4 036 |
+| `wa_zip` | webaccess | 2 433 |
+| `wa_page` | webaccess | 1 408 |
+| `wifi_screen` | ui | 1 320 |
+| `ui_band` | ui | 1 040 |
+
+Ein Objekt zieht nur um, wenn seinen Zustand
+
+- kein Interrupt-Handler liest oder schreibt: die IRAM-Handler (Instruction
+  RAM) des Panels sind die von `display.c` und `touch.c`, und ihr Zustand
+  bleibt intern;
+- kein DMA liest oder schreibt: der SPI-Treiber (Serial Peripheral
+  Interface) der Karte kopiert einen Puffer, der nicht DMA-fähig ist, über
+  einen, der es ist;
+- kein Atomic, kein Spinlock, kein Mutex und keine Queue enthält: der
+  Compare-and-Swap-Befehl des ESP32-S3 arbeitet nur auf internem RAM.
+
+Ein Flash-Schreibvorgang schließt den Cache und mit ihm den PSRAM. Für
+seine Dauer läuft die schreibende Task aus dem IRAM, und der andere Kern
+wartet im IRAM; kein Code, der diese Objekte liest, läuft.
+
+Der Zustand der Bildschirme wird über denselben 64-KB-Datencache gelesen
+wie die Framebuffer. `tools/frame_cost.py` bildet die Frames, die es zeichnet,
+mit jedem Lesen und Schreiben über diesen Cache nach, das dieser Objekte
+eingeschlossen. Die Frame Rate auf einem Panel mit ihnen im PSRAM ist nicht
+gemessen.

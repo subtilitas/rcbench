@@ -1,0 +1,62 @@
+# The zero-initialised state of the screens and of the card and page
+# helpers, in PSRAM (pseudo-static random-access memory) instead of
+# internal RAM.
+#
+# SPDX-License-Identifier: MIT
+#
+# Internal RAM is what the Wi-Fi driver needs at esp_wifi_init(): 16 static
+# RX and 16 static TX buffers of about 1.6 KB each, DMA-capable (direct
+# memory access) and internal.  tools/ram_budget.py holds the budget.
+#
+# What moves is .bss only, object by object, and only an object whose state
+#
+# - no interrupt handler reads or writes: the panel's IRAM handlers are
+#   display.c's and touch.c's, and their state stays internal;
+# - no DMA reads or writes: the card's SPI (Serial Peripheral Interface)
+#   driver copies a buffer that is not DMA-capable through one that is;
+# - holds no atomic, spinlock, mutex or queue: the ESP32-S3's
+#   compare-and-swap instruction works on internal RAM only.
+#
+# A flash write (OTA (over-the-air) update, NVS (non-volatile storage),
+# the drawing store) closes the cache, and PSRAM with it.  For its length
+# the writing task runs from IRAM and the other core waits in IRAM; no code
+# that reads these objects runs.
+#
+# CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY puts the .bss of lwIP,
+# net80211, pp and wpa_supplicant in PSRAM as well, by ESP-IDF's own
+# linker fragments.
+
+[mapping:rcbench_ui_psram]
+archive: libui.a
+entries:
+    log_viewer_screen (extram_bss)
+    servo_screen (extram_bss)
+    ui_watermark (extram_bss)
+    supply_screen (extram_bss)
+    motor_screen (extram_bss)
+    programmer_screen (extram_bss)
+    kst_panel (extram_bss)
+    analyser_screen (extram_bss)
+    wifi_screen (extram_bss)
+    ui_band (extram_bss)
+
+[mapping:rcbench_bench_psram]
+archive: libbench.a
+entries:
+    kst_card (extram_bss)
+
+[mapping:rcbench_logfile_psram]
+archive: liblogfile.a
+entries:
+    log_csv (extram_bss)
+
+[mapping:rcbench_esc_psram]
+archive: libesc.a
+entries:
+    esc_registry (extram_bss)
+
+[mapping:rcbench_webaccess_psram]
+archive: libwebaccess.a
+entries:
+    wa_zip (extram_bss)
+    wa_page (extram_bss)

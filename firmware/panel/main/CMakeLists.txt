@@ -4,6 +4,7 @@ idf_component_register(
              settings settings_nvs art_flash esp_psram
              fwupdate webaccess fw_ota wifi_access
              esp_driver_gpio esp_driver_uart esp_timer
+    LDFRAGMENTS "psram_bss.lf"
 )
 
 # The coprocessor image of the same release, carried so the panel can move
