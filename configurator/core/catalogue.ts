@@ -524,11 +524,11 @@ const parts: Part[] = [
     slot: { column: 'R', order: 15 },
     pins: [
       pin('VCC', same('VCC'), guide('stage-4')),
-      pin('OUT', same('OUT'), repo('docs/Building.md', 120, '| OUT | not connected')),
+      pin('OUT', same('OUT'), repo('docs/Building.md', 122, '| OUT | not connected')),
       pin('GND', same('GND'), guide('stage-4')),
       // docs/Building.md names this pin PGO and ties it to GND. The print on
       // the board is not confirmed.
-      pin('GPO', same('GPO'), repo('docs/Building.md', 119, '| PGO | GND |'), false),
+      pin('GPO', same('GPO'), repo('docs/Building.md', 121, '| PGO | GND |'), false),
       pin('SDA', same('SDA'), guide('stage-4')),
       pin('SCL', same('SCL'), guide('stage-4')),
       pin('DIR', same('DIR'), guide('stage-4')),
@@ -1155,14 +1155,14 @@ const wires: Wire[] = [
       'Ein Bus für alle Sensoren, 400 kHz. Kein Ausgang auf GP16 oder GP17.',
     ),
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 7 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 294, '| SDA | GP16 (pad 21) |'),
+    src: repo('docs/FirstRun.md', 437, '| SDA | GP16 (pad 21) |'),
   },
   {
     n: 27, kind: 'wire', a: 'pad.22', b: 'ina3221.SCL', net: 'scl', cls: 'scl',
     signal: SCL,
     note: null,
     when: { has: 'ina3221' }, stage: 3, route: { kind: 'R', lane: 8 }, pin: 'default',
-    src: repo('docs/FirstRun.md', 295, '| SCL | GP17 (pad 22) |'),
+    src: repo('docs/FirstRun.md', 438, '| SCL | GP17 (pad 22) |'),
   },
   {
     n: 28, kind: 'wire', a: 'pdmini.OP', b: 'ina3221.C1A', net: 'pd_out', cls: 'power',
@@ -1371,7 +1371,7 @@ const wires: Wire[] = [
       'docs/Building.md names the pin PGO. No wire to the coprocessor.',
       'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
     ),
-    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 119, '| PGO | GND |'),
+    when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 121, '| PGO | GND |'),
   },
   {
     n: 55, kind: 'wire', a: 'pad.36', b: 'ina228.V3', net: '3v3', cls: 'logic',
@@ -1488,14 +1488,14 @@ const functions: Fn[] = [
   {
     id: 'link', group: 'bench',
     name: t('CAN link at 1 Mbit/s with an echo self-test at every start', 'CAN-Verbindung mit 1 Mbit/s und Echo-Selbsttest bei jedem Start'),
-    needs: [], src: repo('STATUS.md', 112, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
+    needs: [], src: repo('STATUS.md', 113, 'CAN drivers (TWAI on the panel, XL2515 on the coprocessor) and the echo self-test'),
   },
   {
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
     // the host only; the check entry `interlock-state` carries both.
-    needs: [], src: repo('STATUS.md', 115, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
+    needs: [], src: repo('STATUS.md', 116, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
     id: 'stop', group: 'bench',
@@ -1505,12 +1505,12 @@ const functions: Fn[] = [
   {
     id: 'bind', group: 'bench',
     name: t('Bind protocols to pads on the OUTPUTS screen', 'Protokolle auf dem OUTPUTS-Bildschirm an Pads binden'),
-    needs: [], src: repo('STATUS.md', 119, 'Ticking or unticking a pin writes the binding and reads it back'),
+    needs: [], src: repo('STATUS.md', 121, 'Ticking or unticking a pin writes the binding and reads it back'),
   },
   {
     id: 'signals', group: 'bench',
     name: t('Send PWM and DShot signals on bound pads', 'PWM- und DShot-Signale auf gebundenen Pads ausgeben'),
-    needs: [], src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 118, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'sweep', group: 'bench',
@@ -1519,12 +1519,12 @@ const functions: Fn[] = [
       'Servosignal: Sweep (Rechteck, Sinus, Dreieck) und eine andere Frame Rate als 50 Hz',
     ),
     needs: [],
-    src: repo('STATUS.md', 105, 'a sweep (square, sine or triangle, run by the coprocessor)'),
+    src: repo('STATUS.md', 106, 'a sweep (square, sine or triangle, run by the coprocessor)'),
   },
   {
     id: 'ppm', group: 'bench',
     name: t('Send a PPM signal with 8 channels on 1 pad', 'PPM-Signal mit 8 Kanälen auf 1 Pad ausgeben'),
-    needs: [], src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], src: repo('STATUS.md', 118, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'settings', group: 'bench',
@@ -1543,12 +1543,24 @@ const functions: Fn[] = [
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
     // No statement of a run of the list on a panel. The check entry
     // `profiles-state` carries it.
-    needs: [], src: repo('STATUS.md', 128, '72 families, 451 models, from 153 manuals'),
+    needs: [], src: repo('STATUS.md', 130, '72 families, 451 models, from 153 manuals'),
+  },
+  {
+    id: 'wifi', group: 'bench',
+    name: t('Panel update and card files in a browser over Wi-Fi', 'Panel-Update und Kartendateien im Browser über WLAN'),
+    // The FILES & UPDATE screen. The upload works with no card; the file
+    // list then says the card is missing (docs/Screens.md, "Files & update").
+    needs: [], src: repo('STATUS.md', 103, 'Panel firmware update and card files over Wi-Fi'),
+  },
+  {
+    id: 'canupdate', group: 'bench',
+    name: t('Coprocessor firmware update over CAN from the panel', 'Firmware-Update des Koprozessors über CAN vom Panel'),
+    needs: [], src: repo('STATUS.md', 117, 'Coprocessor firmware update over CAN'),
   },
   {
     id: 'servo', group: 'servo',
     name: t('Drive a servo', 'Servo ansteuern'),
-    needs: [], drives: 'servo', src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'servo', src: repo('STATUS.md', 118, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'servotest', group: 'servo',
@@ -1561,12 +1573,12 @@ const functions: Fn[] = [
   {
     id: 'servocur', group: 'servo',
     name: t('Servo current from 1 ms samples', 'Servostrom aus 1-ms-Abtastwerten'),
-    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 121, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina3221'], drives: 'servo', src: repo('STATUS.md', 123, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'angle', group: 'servo',
     name: t('Angle of the servo horn', 'Winkel des Ruderhorns'),
-    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 123, 'Output encoder (AS5600)'),
+    needs: ['as5600'], drives: 'servo', src: repo('STATUS.md', 125, 'Output encoder (AS5600)'),
   },
   {
     id: 'servoprog', group: 'servo',
@@ -1581,12 +1593,12 @@ const functions: Fn[] = [
   {
     id: 'esc', group: 'esc',
     name: t('Drive an ESC and motor', 'ESC und Motor ansteuern'),
-    needs: [], drives: 'esc', src: repo('STATUS.md', 116, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
+    needs: [], drives: 'esc', src: repo('STATUS.md', 118, 'Output drivers (PWM, PPM, DShot, bidirectional DShot)'),
   },
   {
     id: 'escpow', group: 'esc',
     name: t('ESC voltage, current, energy', 'Spannung, Strom, Energie des ESC'),
-    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 121, 'Current monitors (INA228, INA3221)'),
+    needs: ['ina228'], drives: 'esc', src: repo('STATUS.md', 123, 'Current monitors (INA228, INA3221)'),
   },
   {
     id: 'stick', group: 'esc',
@@ -1594,17 +1606,17 @@ const functions: Fn[] = [
     // The bench powers the ESC from the PD mini and counts the beeps from the
     // supply current (docs/StickProgramming.md, line 6).
     needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
-    src: repo('STATUS.md', 129, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
+    src: repo('STATUS.md', 131, 'the ESC STICK class on PROGRAMMER runs 24 of the 72 profiles'),
   },
   {
     id: 'tap', group: 'esc',
     name: t('Read the beeps of the ESC (phase tap)', 'ESC-Pieptöne lesen (Phasenabgriff)'),
-    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 124, 'Phase tap (ESC tones)'),
+    needs: ['sim', 'tap'], drives: 'esc', src: repo('STATUS.md', 126, 'Phase tap (ESC tones)'),
   },
   {
     id: 'supply', group: 'bench',
     name: t('Supply set from the bench, 1 to 20 V', 'Versorgung vom Prüfstand gestellt, 1 bis 20 V'),
-    needs: ['pdmini'], src: repo('STATUS.md', 107, 'the coprocessor runs it on a PIO UART on the pins the SUPPLY page'),
+    needs: ['pdmini'], src: repo('STATUS.md', 108, 'the coprocessor runs it on a PIO UART on the pins the SUPPLY page'),
   },
   {
     id: 'logs', group: 'bench',
@@ -1746,7 +1758,7 @@ const checks: Check[] = [
       'Pull-ups with the INA3221 on the bus: the sources disagree. The build guide lists none, because the INA3221 board carries 10 kΩ pull-ups. docs/FirstRun.md lists 2.2 kΩ from SDA and from SCL to 3V3 (pad 36) as well. The drawing follows the build guide. No measurement of the bus at 400 kHz is stated.',
       'Pull-ups mit dem INA3221 am Bus: Die Quellen widersprechen sich. Die Bauanleitung nennt keine, weil die INA3221-Platine 10-kΩ-Pull-ups trägt. docs/FirstRun.md nennt zusätzlich je 2,2 kΩ von SDA und SCL nach 3V3 (Pad 36). Die Zeichnung folgt der Bauanleitung. Eine Messung des Busses bei 400 kHz ist nicht angegeben.',
     ),
-    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 296, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
+    when: { has: 'ina3221' }, src: repo('docs/FirstRun.md', 439, '| Pull-ups | 2.2 kΩ from SDA and from SCL | 3V3 (pad 36) |'),
   },
   {
     id: 'matek-pullup', kind: 'measure',
@@ -1790,7 +1802,7 @@ const checks: Check[] = [
       'AS5600 board: pull-ups on the board are not known. The print of the pin GPO, named PGO in Building.md, is not confirmed. It is tied to GND.',
       'AS5600-Platine: Die Pull-ups auf der Platine sind nicht bekannt. Der Aufdruck des Pins GPO, in Building.md PGO genannt, ist nicht bestätigt. Er liegt an GND.',
     ),
-    when: { has: 'as5600' }, src: repo('docs/Building.md', 119, '| PGO | GND |'),
+    when: { has: 'as5600' }, src: repo('docs/Building.md', 121, '| PGO | GND |'),
   },
   {
     id: 'tap-ground', kind: 'measure',
@@ -2158,7 +2170,7 @@ const notInRelease: Catalogue['notInRelease'] = [
       'Serielle ESC-Programmierung (BLHeli_S, AM32 und andere): kein Protokoll auf einem Draht.',
     ),
     release: 'planned',
-    src: repo('STATUS.md', 546, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
+    src: repo('STATUS.md', 565, 'ESCs with BLHeli_S and AM32 firmware, Hitec D-series servos | screen built; no protocol on a wire'),
   },
 ];
 

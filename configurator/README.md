@@ -1,6 +1,6 @@
 # rcbench bench configurator
 
-A static page for release 0.18.0 of rcbench. The visitor ticks what the bench
+A static page for release 0.19.0 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
 The functions stand in groups by the bench hardware they need. A part of the
 result beyond the base setup has a remove control.
@@ -232,7 +232,7 @@ microSD card, emergency stop switch, motor simulator + phase tap.
 
 The first group is "Runs on the base setup". It has 2 parts:
 
-- A list of the 10 functions every setup runs. A row has no tick and reads
+- A list of the 12 functions every setup runs. A row has no tick and reads
   "Included with the base setup.". The id of such a function is never written
   into the link and never counts as selected by the visitor. The removal of a
   part and of a tick never lists such a function as going off.

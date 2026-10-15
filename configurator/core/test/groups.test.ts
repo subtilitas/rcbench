@@ -180,9 +180,9 @@ test('groups of the data file: every function is in exactly one group, keyed by 
     }
   }
   assert.deepEqual(g.map((x) => x.key), ['', 'pdmini', 'ina3221', 'as5600', 'ina228', 'sd', 'estop', 'sim+tap']);
-  // The first group: the 10 functions every setup runs, then the 3 that drive a test object on the base setup.
+  // The first group: the 12 functions every setup runs, then the 3 that drive a test object on the base setup.
   assert.deepEqual(g[0]?.functions.filter((id) => !alwaysOn(CATALOGUE, CATALOGUE.functions.find((f) => f.id === id) as Fn)), ['servo', 'servoprog', 'esc']);
-  assert.equal(g[0]?.functions.length, 13);
+  assert.equal(g[0]?.functions.length, 15);
   assert.deepEqual([plainDrive(CATALOGUE, 'servo'), plainDrive(CATALOGUE, 'esc'), plainDrive(CATALOGUE, 'sd')], ['servo', 'esc', null]);
   assert.deepEqual(g.find((x) => x.key === 'pdmini')?.functions, ['servotest', 'stick', 'supply']);
 });

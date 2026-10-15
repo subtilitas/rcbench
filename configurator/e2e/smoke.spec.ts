@@ -130,7 +130,7 @@ for (const size of SIZES) {
       await page.locator('#f-servo').check();
       await expect(page).toHaveURL(/#v=1&f=servo$/);
       await expect(page.locator('#f-servo')).toBeFocused();
-      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 11 functions\.$/);
+      await expect(page.locator('#live')).toHaveText(/^\d+ parts, \d+ wires, 13 functions\.$/);
       const rows = await page.locator('table.wires tbody tr').count();
       expect(rows).toBeGreaterThan(BASE_WIRES);
 
