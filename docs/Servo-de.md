@@ -105,7 +105,7 @@ Zeile nennt die Bedingung.
 | `PROGRAMMIEREN: DER PORT IST NICHT IN PWM` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
 | `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist |
 | `PROGRAMMIEREN: VERSORGUNG UNTER 4.8 V` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8 V |
-| `PROGRAMMIEREN: SERVOSCHIENE UNTER 4.8 V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8 V oder ist nicht gelesen |
+| `PROGRAMMIEREN: SERVOVERSORGUNG UNTER 4.8 V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8 V oder ist nicht gelesen |
 
 #### Zuerst lesen
 
