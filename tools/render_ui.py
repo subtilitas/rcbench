@@ -92,6 +92,7 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
+    "shared/ui/coproc_update_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -345,6 +346,11 @@ SCREENS = {
     "supply-confirm": ("supply-confirm.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
+    # The coprocessor update: the question a link-up poses, the same with
+    # an image older than the one running, and the progress half way.
+    "update":          ("update.png",          "update", "dark"),
+    "update-older":    ("update-older.png",    "update", "dark"),
+    "update-progress": ("update-progress.png", "update", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),

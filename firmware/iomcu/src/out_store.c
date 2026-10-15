@@ -18,41 +18,54 @@
 #include "out_store_map.h"
 
 /*
- * Where it goes: the last two sectors of the first four megabytes.
+ * Where it goes: the data partition "store" of partitions.json, two sectors
+ * at 4 MiB - 16 KiB (0x3FC000), below the last 8 KiB the layout leaves
+ * unused.  The build reads the offset out of that file (IOMCU_STORE_OFFSET).
  *
- * Not PICO_FLASH_SIZE_BYTES.  The build's default board file is a
- * pimoroni_pico_plus2_rp2350 and claims sixteen megabytes, while the module
- * the bring-up runs on has four; a sector placed from that number would be
- * past the end of the part actually fitted, and an erase off the end of a
- * flash chip is not a diagnosable failure.  Four megabytes is the smaller of
- * the two and is inside both, and 4 MB - 8 kB is far past an image that is
- * under 300 kB.
+ * Read by its storage address, through the XIP (execute in place) window
+ * that neither translates nor caches.  The image runs from slot A or B and
+ * the boot ROM maps that slot to XIP_BASE, so XIP_BASE + offset is an
+ * address inside the running slot, not the store.  Uncached, because an
+ * erase or a program does not pass through the cache.
  *
  * Two sectors rather than one.  A record is only ever written into an erased
  * slot and a sector is only ever erased while the live record is in the other
  * one, so a power cut during either leaves the binding from before the save
  * readable.  See out_store_map.h.
+ *
+ * Not PICO_FLASH_SIZE_BYTES.  The build's default board file is a
+ * pimoroni_pico_plus2_rp2350 and claims sixteen megabytes, while the module
+ * has four; the partition table is written for the four.
  */
-#define STORE_SIZE_BYTES  (4u * 1024u * 1024u)
+#define STORE_FLASH_BYTES (4u * 1024u * 1024u)
 #define STORE_SECTORS     OUT_STORE_SECTORS
 #define STORE_RECORDS     (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE)
 #define STORE_SLOTS       (STORE_SECTORS * STORE_RECORDS)
-#define STORE_OFFSET      (STORE_SIZE_BYTES - STORE_SECTORS * FLASH_SECTOR_SIZE)
+#define STORE_OFFSET      IOMCU_STORE_OFFSET
+
+/*
+ * Where a build without a partition table kept the store: the last two
+ * sectors of the 4 MiB.  Read once, by out_store_load(), when the store holds
+ * no record yet, so the bindings survive the USB load that installs the
+ * partition table.  Never written.
+ */
+#define STORE_OLD_OFFSET  (STORE_FLASH_BYTES - STORE_SECTORS * FLASH_SECTOR_SIZE)
+
+#define STORE_READ_BASE   XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE
 
 /*
  * Held at compile time as well as in the paragraph above.
  *
- * This catches a board file with less flash than the store needs -- a
- * -DPICO_BOARD for a smaller module would otherwise put the sectors past the
- * end and the erase would go somewhere nobody can diagnose.
- *
- * It cannot catch the mismatch that actually exists: the board file claims
- * sixteen megabytes and the module fitted has four, and no compiler can see
- * a part it is not told about. That direction is guarded after the link
- * instead, by the image-size check in this directory's CMakeLists.txt.
+ * This catches a board file with less flash than the store needs, and a
+ * partition table whose store partition is not the two sectors this file
+ * writes.
  */
-_Static_assert(STORE_SIZE_BYTES <= PICO_FLASH_SIZE_BYTES,
+_Static_assert(STORE_FLASH_BYTES <= PICO_FLASH_SIZE_BYTES,
                "the output store is past the end of this board's flash");
+_Static_assert(IOMCU_STORE_BYTES == STORE_SECTORS * FLASH_SECTOR_SIZE,
+               "partitions.json: the store partition is not two sectors");
+_Static_assert(STORE_OFFSET + IOMCU_STORE_BYTES <= STORE_OLD_OFFSET,
+               "partitions.json: the store overlaps the old store's sectors");
 _Static_assert(STORE_SLOTS <= 255u,
                "the store has more slots than a slot index holds");
 
@@ -196,10 +209,15 @@ static uint32_t record_zeros(const record_t *r, size_t size)
     return zeros;
 }
 
+/* The store read is at STORE_OFFSET, or at STORE_OLD_OFFSET while
+ * out_store_load() looks there. */
+static uint32_t s_read_offset = STORE_OFFSET;
+
 static const record_t *record_at(uint8_t slot)
 {
     return (const record_t *)(const void *)
-           (XIP_BASE + STORE_OFFSET + (uint32_t)slot * FLASH_PAGE_SIZE);
+           (STORE_READ_BASE + s_read_offset
+            + (uint32_t)slot * FLASH_PAGE_SIZE);
 }
 
 /*
@@ -250,17 +268,25 @@ static void survey(out_store_rec_t *recs)
  */
 typedef struct {
     uint32_t off;
-    bool     erase;       /* a sector erase; else a page program of s_page */
+    bool     erase;       /* a sector erase; else a program of data        */
     bool     done;        /* the operation ran                             */
     uint32_t window_us;
+    const uint8_t *data;  /* what a program writes; NULL: s_page           */
+    uint32_t len;         /* and how many bytes of it                      */
+    void   (*call)(void *); /* in place of either: the boot ROM's BUY      */
+    void    *arg;
 } flash_op_t;
 
 static void flash_op_run(void *arg)
 {
     flash_op_t *op = (flash_op_t *)arg;
     const absolute_time_t began = get_absolute_time();
-    if (op->erase) {
+    if (op->call != NULL) {
+        op->call(op->arg);
+    } else if (op->erase) {
         flash_range_erase(op->off, FLASH_SECTOR_SIZE);
+    } else if (op->data != NULL) {
+        flash_range_program(op->off, op->data, op->len);
     } else {
         flash_range_program(op->off, s_page.bytes, FLASH_PAGE_SIZE);
     }
@@ -389,19 +415,33 @@ bool out_store_load(out_store_t *out)
     }
     out_store_rec_t recs[STORE_SLOTS];
     survey(recs);
-    const int newest = out_store_map_newest(recs, STORE_SECTORS,
-                                            STORE_RECORDS);
+    int newest = out_store_map_newest(recs, STORE_SECTORS, STORE_RECORDS);
+    bool old = false;
     if (newest < 0) {
+        /* Nothing saved since the partition table went in: the bindings of
+         * the build before it, where that build kept them. */
+        s_read_offset = STORE_OLD_OFFSET;
+        survey(recs);
+        newest = out_store_map_newest(recs, STORE_SECTORS, STORE_RECORDS);
+        old = true;
+    }
+    bool ok = false;
+    if (newest >= 0) {
+        const record_t *r = record_at((uint8_t)newest);
+        /* Valid, so its version is one out_store_cfg_size() knows. */
+        ok = out_store_cfg_read(r->version, &r->cfg, out);
+    }
+    s_read_offset = STORE_OFFSET;
+    if (!ok) {
         return false;
     }
-    const record_t *r = record_at((uint8_t)newest);
-    /* Valid, so its version is one out_store_cfg_size() knows. */
-    if (!out_store_cfg_read(r->version, &r->cfg, out)) {
-        return false;
+    if (!old) {
+        /* Saved as it is.  One read from the old place is not: the first
+         * save writes it into the store. */
+        s_saved = *out;
+        s_have_saved = true;
+        s_last_record = (uint8_t)newest;
     }
-    s_saved = *out;
-    s_have_saved = true;
-    s_last_record = (uint8_t)newest;
     return true;
 }
 
@@ -512,4 +552,41 @@ bool out_store_reclaim(bool driving, uint32_t quiet_ms)
         return false;
     }
     return erase_sector((uint8_t)stale, &s_last_erase_us);
+}
+
+/* ------------------------------------------------- the firmware update's */
+
+bool out_store_window_open(void)
+{
+    return s_mode != STORE_OFF && !s_pending && !refusing();
+}
+
+bool out_store_flash_erase(uint32_t off)
+{
+    if (off % FLASH_SECTOR_SIZE != 0u
+        || off + FLASH_SECTOR_SIZE > STORE_OFFSET) {
+        return false;
+    }
+    flash_op_t op = { .off = off, .erase = true };
+    return flash_window(&op);
+}
+
+bool out_store_flash_program(uint32_t off, const uint8_t *data, uint32_t len)
+{
+    if (data == NULL || off % FLASH_SECTOR_SIZE != 0u
+        || len % FLASH_PAGE_SIZE != 0u || len > FLASH_SECTOR_SIZE
+        || off + len > STORE_OFFSET) {
+        return false;
+    }
+    flash_op_t op = { .off = off, .erase = false, .data = data, .len = len };
+    return flash_window(&op);
+}
+
+bool out_store_flash_call(void (*fn)(void *), void *arg)
+{
+    if (fn == NULL) {
+        return false;
+    }
+    flash_op_t op = { .call = fn, .arg = arg };
+    return flash_window(&op);
 }

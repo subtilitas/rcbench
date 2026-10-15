@@ -1550,7 +1550,7 @@ TEST_CASE(the_artwork_page_serves_a_drawing_with_its_hash)
  */
 TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 21u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_REFUSED);
     CHECK_EQ(LINK_MINOR_REFUSED, 21u);
     CHECK(LINK_MINOR_REFUSED > LINK_MINOR_DRAWING);
     CHECK_EQ(LINK_PAGE_STATUS, 0x01);
@@ -1561,6 +1561,59 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
     CHECK_EQ(LINK_ST_REFUSED_HI, 9);
     CHECK_EQ(LINK_ST_COUNT, 10);
     CHECK(LINK_ST_COUNT <= LINK_MAX_REGS);
+}
+
+/*
+ * Frozen across majors (link_pages.h): the identity registers a panel reads
+ * before it compares majors, and the two update pages, keep their numbers
+ * and their layout.  A change here is a coprocessor no later panel can move
+ * to its own image over the link.
+ */
+TEST_CASE(the_frozen_registers_keep_their_numbers)
+{
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 22u);
+    CHECK_EQ(LINK_MINOR_UPDATE, 22u);
+    CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
+
+    CHECK_EQ(LINK_PAGE_IDENTITY, 0x00);
+    CHECK_EQ(LINK_ID_PROTOCOL_MAJOR, 0);
+    CHECK_EQ(LINK_ID_PROTOCOL_MINOR, 1);
+    CHECK_EQ(LINK_ID_FIRMWARE_MAJOR, 2);
+    CHECK_EQ(LINK_ID_FIRMWARE_MINOR, 3);
+    CHECK_EQ(LINK_ID_FIRMWARE_PATCH, 4);
+    CHECK_EQ(LINK_ID_HARDWARE, 5);
+    CHECK_EQ(LINK_ID_CAPABILITIES, 6);
+    CHECK_EQ(LINK_ID_COUNT, 7);
+
+    CHECK_EQ(LINK_PAGE_UPDATE_CTL, 0xF0);
+    CHECK_EQ(LINK_PAGE_UPDATE_DATA, 0xF1);
+    CHECK_EQ(LINK_UPD_VERSION, 0);
+    CHECK_EQ(LINK_UPD_STATE, 1);
+    CHECK_EQ(LINK_UPD_ERROR, 2);
+    CHECK_EQ(LINK_UPD_SLOT, 3);
+    CHECK_EQ(LINK_UPD_SLOT_SECTORS, 4);
+    CHECK_EQ(LINK_UPD_NEXT_BLOCK, 5);
+    CHECK_EQ(LINK_UPD_SIZE_LO, 6);
+    CHECK_EQ(LINK_UPD_SIZE_HI, 7);
+    CHECK_EQ(LINK_UPD_CMD, 8);
+    CHECK_EQ(LINK_UPD_ARG0, 9);
+    CHECK_EQ(LINK_UPD_ARG1, 10);
+    CHECK_EQ(LINK_UPD_ARG2, 11);
+    CHECK_EQ(LINK_UPD_DIGEST_OF, 12);
+    CHECK_EQ(LINK_UPD_DIGEST, 16);
+    CHECK_EQ(LINK_UPD_COUNT, 32);
+    CHECK_EQ(LINK_UPD_BLOCK_BYTES, 64u);
+    CHECK_EQ(LINK_UPD_DATA_COUNT, 32u);
+    CHECK_EQ(LINK_UPD_SECTOR_BYTES, 4096u);
+    CHECK_EQ(LINK_UPD_CMD_HASH_RUNNING, 1);
+    CHECK_EQ(LINK_UPD_CMD_BEGIN, 2);
+    CHECK_EQ(LINK_UPD_CMD_COMMIT, 3);
+    CHECK_EQ(LINK_UPD_CMD_FINISH, 4);
+    CHECK_EQ(LINK_UPD_CMD_ACTIVATE, 5);
+    CHECK_EQ(LINK_UPD_CMD_ABORT, 6);
+    CHECK_EQ(LINK_UPD_CMD_BUY, 7);
+    CHECK_EQ(LINK_UPD_SLOT_TRIAL, 0x0100u);
+    CHECK_EQ(LINK_UPD_SLOT_NONE, 0x000Fu);
 }
 
 int main(void)
@@ -1616,5 +1669,6 @@ int main(void)
     RUN(the_servo_rate_follows_the_target_without_a_new_register);
     RUN(the_artwork_page_serves_a_drawing_with_its_hash);
     RUN(the_status_page_counts_refused_frames_after_its_old_registers);
+    RUN(the_frozen_registers_keep_their_numbers);
     return test_summary("link_pages");
 }

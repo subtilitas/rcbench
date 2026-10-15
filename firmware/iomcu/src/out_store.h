@@ -244,4 +244,28 @@ uint32_t out_store_last_program_us(void);
  */
 uint8_t out_store_last_record(void);
 
+/*
+ * The firmware update's flash access (link_update_dev.h), through the same
+ * windows as the store's own: interrupts off on this core and core 1 parked,
+ * or nothing at all while the store is off.  An erase or a program here
+ * holds this core for its length; the panel waits for the answer to the
+ * COMMIT that caused it, so no request is in flight to be lost.
+ */
+
+/** Whether a window may open now: the store is not off, no save is
+ *  waiting, and core 1 did not refuse the last one. */
+bool out_store_window_open(void);
+
+/** Erase the 4 KiB sector at flash offset @p off, below the store.  True
+ *  when the erase ran. */
+bool out_store_flash_erase(uint32_t off);
+
+/** Program @p len bytes, whole 256-byte pages up to one sector, at flash
+ *  offset @p off, below the store.  True when the program ran. */
+bool out_store_flash_program(uint32_t off, const uint8_t *data, uint32_t len);
+
+/** Run @p fn inside a window: the boot ROM's BUY, which rewrites flash.
+ *  True when it ran. */
+bool out_store_flash_call(void (*fn)(void *), void *arg);
+
 #endif /* RCBENCH_OUT_STORE_H */

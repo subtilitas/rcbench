@@ -1919,6 +1919,68 @@ console at all.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
+## Coprocessor update
+
+A panel built with the coprocessor's image carries it and offers it when the
+coprocessor runs another build. The check runs at every link-up and compares
+SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
+build raises the alert `coprocessor runs another build -- the menu offers its
+update`, and the question opens on the menu while the bench is SAFE and the
+supply's output is off.
+
+![The coprocessor update question](img/update.png)
+
+The question names the version the coprocessor runs and the version this
+panel carries. CANCEL is a tap: the question closes, and the panel does not
+ask again for that coprocessor version until it restarts. Leaving the
+question another way declines the same way. START takes the 2 s hold, the
+ARM gesture and the same fade.
+
+An older image is offered too. The question then says `The image this panel
+carries is older.` in the warning colour, and START takes the same hold.
+
+![An older image](img/update-older.png)
+
+Once START's hold completes, the update has the panel to itself: the link to
+the coprocessor goes down, the outputs are off, the coprocessor refuses ARM
+until the update ends, and the progress fills the screen. It has no band and
+no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
+behind it.
+
+![The progress](img/update-progress.png)
+
+| Step | Shown while |
+| --- | --- |
+| `Preparing the image` | the panel hashes the image, 8 KiB a step |
+| `Sending the image` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
+| `Coprocessor checks the image` | the coprocessor hashes the slot it wrote |
+| `Coprocessor starts the new image` | it restarts into the new slot, on trial |
+| `Keeping the new image` | the panel reads the new image's identity and writes BUY |
+
+The screen returns to the menu when the update ends. The alert band then
+says how it ended:
+
+| Alert | Meaning |
+| --- | --- |
+| `coprocessor updated to 0.18.0` | the new image runs and is kept |
+| `coprocessor update stopped: no answer -- the old image runs` | nothing answered for 4 s |
+| `coprocessor update stopped: refused, error 6 -- the old image runs` | the coprocessor refused a step; the error numbers are in [Link](Link.md#the-pages) |
+| `coprocessor update stopped: image check failed -- the old image runs` | the SHA-256 of the slot is not the image's |
+| `coprocessor update stopped: flash stayed busy -- the old image runs` | the store's gate stayed shut for 10 s |
+| `coprocessor update stopped: coprocessor restarted 3 times -- the old image runs` | three starts from block 0 |
+| `coprocessor update stopped: new image did not start -- the old image runs` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
+| `coprocessor takes no update over CAN -- load it once over USB` | a coprocessor without the update pages or without the partition table ([First run](FirstRun.md#the-coprocessors-partition-table)) |
+| `coprocessor's new image kept` | an image found on trial at link-up was bought |
+
+Power off during the update: the coprocessor starts its old image, and the
+next link-up offers the update again. The update writes the slot the
+coprocessor does not run from. [Link](Link.md#firmware-update-over-the-link)
+has the transfer, the flash layout and the limits. The transfer time is not
+measured.
+
+The question opens from the menu rather than from LOGS: the offer comes with
+the link, and LOGS is about the SD card.
+
 ## Outputs
 
 Behind the OUTPUTS key on the Setup screen. The protocols bound to the

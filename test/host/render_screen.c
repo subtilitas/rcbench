@@ -25,6 +25,7 @@
 
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
+#include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -1153,6 +1154,7 @@ static ui_screen_id_t id_of(const char *name)
         { "outputs",    SCREEN_OUTPUTS },
         { "picker",     SCREEN_PICKER },
         { "busfault",   SCREEN_BUSFAULT },
+        { "update",     SCREEN_COPROC_UPDATE },
         { "supply",     SCREEN_SUPPLY },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
@@ -2221,6 +2223,24 @@ int main(int argc, char **argv)
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
+    if (id == SCREEN_COPROC_UPDATE) {
+        /* The question as a link-up poses it: a coprocessor on 0.17.0 and
+         * the image this panel carries; the older one with the two
+         * swapped.  The progress half way through the blocks of a
+         * 191,592-byte image. */
+        const cu_version_t old_v = { 0, 17, 0 };
+        const cu_version_t new_v = { RCBENCH_VERSION_MAJOR,
+                                     RCBENCH_VERSION_MINOR,
+                                     RCBENCH_VERSION_PATCH };
+        if (strcmp(view, "update-older") == 0) {
+            coproc_update_screen_offer(new_v, old_v);
+        } else {
+            coproc_update_screen_offer(old_v, new_v);
+        }
+        if (strcmp(view, "update-progress") == 0) {
+            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
+        }
+    }
     ui_router_goto(id);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);

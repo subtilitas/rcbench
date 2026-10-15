@@ -148,6 +148,24 @@ static const char *const k_text[TX_COUNT] = {
     [TX_BF_CAN_DOWN]            = "CAN INAKTIV",
     [TX_BF_DROPPED]             = "verworfen %u",
 
+    /* ------------------------------------------- coprocessor update */
+    [TX_CU_TITLE]               = "KOPROZESSOR-UPDATE",
+    [TX_CU_Q_VERSIONS]          = "Koprozessor hat %s, dieses Panel bringt %s mit.",
+    [TX_CU_Q_OLDER]             = "Das Image dieses Panels ist älter.",
+    [TX_CU_Q_SAME]              = "Gleiche Versionsnummer, anderer Build.",
+    [TX_CU_Q_WHAT]              = "Ausgänge bleiben aus, ARMED ist bis zum Ende gesperrt.",
+    [TX_CU_START]               = "2 s HALTEN ZUM STARTEN",
+    [TX_CU_P_PREPARE]           = "Image wird vorbereitet",
+    [TX_CU_P_SEND]              = "Image wird gesendet",
+    [TX_CU_P_VERIFY]            = "Koprozessor prüft das Image",
+    [TX_CU_P_RESTART]           = "Koprozessor startet das neue Image",
+    [TX_CU_P_BUY]               = "Neues Image wird behalten",
+    [TX_CU_P_FROM_TO]           = "%s auf %s",
+    [TX_CU_P_BLOCKS]            = "Block %u von %u, %u %%",
+    [TX_CU_P_NOTE_OFF]          = "Ausgänge sind aus. Der Prüfstand schaltet bis zum Ende nicht auf ARMED.",
+    [TX_CU_P_NOTE_POWER]        = "Jetzt ausgeschaltet, startet der Koprozessor sein altes Image.",
+    [TX_CU_P_NOTE_PANEL]        = "Das neue Image bleibt, sobald dieses Panel es laufen sieht.",
+
     /* --------------------- CAN self-test verdicts, in the heading face */
     [TX_CAN_OK]                 = "alle Testframes intakt zurück",
     [TX_CAN_SILENT]             = "kein Testframe kam zurück",
@@ -959,6 +977,17 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_TONE_SETUP]       = "Phasenabgriff: Sprung, Pause oder Perioden abgelehnt -- siehe SETUP ANSCHLÜSSE",
     [TX_ALERT_TONE_BUSY]        = "Phasenabgriff: Pin GP%u nicht frei -- Abgriff läuft nicht",
     [TX_ALERT_TONE_OVERRUN]     = "Phasenabgriff: Aufnahme übergelaufen -- Pieptöne abgeschnitten",
+    [TX_ALERT_CU_OFFER]         = "Koprozessor hat einen anderen Build -- das Menü bietet sein Update an",
+    [TX_ALERT_CU_USB]           = "Koprozessor nimmt kein Update über CAN -- einmal über USB laden",
+    [TX_ALERT_CU_DONE]          = "Koprozessor auf %u.%u.%u aktualisiert",
+    [TX_ALERT_CU_KEPT]          = "Neues Image des Koprozessors behalten",
+    [TX_ALERT_CU_FAILED]        = "Koprozessor-Update abgebrochen: %s -- das alte Image läuft",
+    [TX_CU_WHY_NO_ANSWER]       = "keine Antwort",
+    [TX_CU_WHY_REFUSED]         = "abgelehnt, Fehler %u",
+    [TX_CU_WHY_DIGEST]          = "Image-Prüfung fehlgeschlagen",
+    [TX_CU_WHY_BUSY]            = "Flash blieb belegt",
+    [TX_CU_WHY_RESTARTS]        = "Koprozessor 3-mal neu gestartet",
+    [TX_CU_WHY_NOT_STARTED]     = "neues Image startete nicht",
 
     /* ----------------- the splash's details, from the panel's start-up */
     [TX_SPLASH_NO_PANEL]        = "kein Panel",

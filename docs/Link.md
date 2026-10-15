@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.21. The
+coprocessor transmits only in answer to a request. Protocol version 4.22. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -80,6 +80,14 @@ the alert `protocol mismatch -- will not switch to ARMED`, and no write reaches 
 coprocessor. Its outputs stay off, and the panel runs as it does with no
 coprocessor connected. A panel and a coprocessor on different sides of a
 major bump are therefore flashed together.
+
+Registers 0 to 6 of IDENTITY and the two update pages, UPDATE_CTL (0xF0)
+and UPDATE_DATA (0xF1), are frozen: they keep their numbers, layout and
+meaning under every later major, and a coprocessor of any later major
+answers them. Changing one of them is a new page, not a major change. A
+panel that meets another major therefore still reads what the coprocessor
+runs and offers its own coprocessor image
+([Firmware update over the link](#firmware-update-over-the-link)).
 
 ### Compatibility
 
@@ -107,7 +115,11 @@ it again. From 4.20 ARTWORK serves the board's drawing with a hash of it in
 registers 7 and 8, and the panel reads ARTWORK from 4.20 only
 ([The board drawing](#the-board-drawing)). From 4.21 STATUS counts the
 frames the coprocessor refused in registers 8 and 9, and the panel reads
-them from 4.21 only ([Refused frames](#refused-frames)). The
+them from 4.21 only ([Refused frames](#refused-frames)). From 4.22
+UPDATE_CTL and UPDATE_DATA take a new coprocessor image over the link; an
+older coprocessor refuses both with BAD_PAGE, and the panel then says a USB
+(Universal Serial Bus) load is needed
+([Firmware update over the link](#firmware-update-over-the-link)). The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1199,6 +1211,8 @@ Clearing a latched failsafe is such a side effect.
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 24 registers. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints. [The programming ports](#the-programming-ports) has the rules. Pin, slew and endpoints are kept in the coprocessor's flash |
+| 0xF0 | UPDATE_CTL | read, write | the coprocessor's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
+| 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
 
 Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6
@@ -1568,6 +1582,197 @@ DLC 8 READ, 0x0001FFFF and the wrap, and reads a 4.20 page without it.
 `test_text` holds the label: hidden at 0 and with the link down, shown above
 0 in English and German. The screenshot `docs/img/motor-refused.png` shows a
 count of 37.
+
+### Firmware update over the link
+
+From 4.22 the panel writes a new coprocessor image over CAN. The coprocessor
+is an RP2350; its boot ROM holds two equal image slots behind a partition
+table and starts a new image on trial, as TBYB (try before you buy). There is
+no bootloader of the bench's own.
+
+The coprocessor's flash (4 MB module, RP2350A):
+
+| Range | Size | Before 4.22 | From 4.22 |
+| --- | ---: | --- | --- |
+| 0x000000 to 0x001FFF | 8 KiB | image | partition table |
+| 0x002000 to 0x1FEFFF | 2036 KiB | image | slot A (partition 0) |
+| 0x1FF000 to 0x3FBFFF | 2036 KiB | image space, unused | slot B (partition 1) |
+| 0x3FC000 to 0x3FDFFF | 8 KiB | unused | output store, data partition `store` (partition 2) |
+| 0x3FE000 to 0x3FFFFF | 8 KiB | output store | unused: read once for old bindings, never written |
+
+A slot is 2,084,864 bytes, 509 sectors of 4 KiB. The 0.18 image is about
+192 KB, 9% of a slot. The last sector stays unused because the RP2350-E10
+workaround of an A2 chip's UF2 (USB Flashing Format) load can erase it.
+`firmware/iomcu/partitions.json` is the table; the build passes its offsets
+to the code, and the build fails when the image does not fit one slot.
+
+The store is read by its storage address through the XIP (execute in place)
+window that neither translates nor caches (0x1C000000 + offset): the boot ROM
+maps the running slot to 0x10000000, so 0x10000000 + offset is an address in
+the slot, not the store. A store with no record yet reads the old store at
+0x3FE000 once, so the bindings survive the USB load that installs the table.
+The first save goes to the new store.
+
+A coprocessor without the table -- a build before 4.22, or a 4.22 image
+loaded alone over USB onto a board without it -- runs as before and reports
+no slots: the panel then says a USB load is needed. The one USB load that
+installs the table is in [First run](FirstRun.md#the-coprocessors-partition-table).
+
+#### The pages
+
+UPDATE_CTL (0xF0), 32 registers:
+
+| Register | Name | Meaning |
+| ---: | --- | --- |
+| 0 | `VERSION` | the update registers' own version, 1; it grows when a register or command is added at the end |
+| 1 | `STATE` | 0 idle, 1 hashing the running slot, 2 receiving, 3 received, 4 verifying, 5 verified, 6 failed, 7 activated |
+| 2 | `ERROR` | why the last refusal: 0 none, 1 no slots, 2 gate shut, 3 size, 4 order, 5 CRC, 6 flash, 7 digest, 8 state, 9 an image on trial, 10 link silent, 11 BUY refused, 12 no such command |
+| 3 | `SLOT` | the running slot in bits 0 to 3 (0 A, 1 B, 15 none); bit 8 the running image is on trial and waits for BUY; bit 9 the other slot's first sector waits for its erase |
+| 4 | `SLOT_SECTORS` | 4 KiB sectors in one slot, 509; 0 without a table |
+| 5 | `NEXT_BLOCK` | the block COMMIT takes next |
+| 6, 7 | `SIZE` | bytes of the session's image, or of the running slot hashed by HASH_RUNNING, low half first |
+| 8 | `CMD` | a write is a command; a read gives the last one taken |
+| 9 to 11 | `ARG0` to `ARG2` | the command's arguments |
+| 12 | `DIGEST_OF` | what `DIGEST` holds: 0 nothing, 1 the running slot, 2 the image written |
+| 13 to 15 | | read 0 |
+| 16 to 31 | `DIGEST` | a SHA-256 (Secure Hash Algorithm) digest, 32 bytes, low byte first in each register |
+
+A command is one frame: a write of 1 to 4 registers that starts at register
+8, the arguments after it. Any other write to UPDATE_CTL is refused with
+READ_ONLY. A command that does not fit the state is refused with BAD_VALUE
+and the reason in `ERROR`.
+
+| Command | Value | Arguments | Does |
+| --- | ---: | --- | --- |
+| `HASH_RUNNING` | 1 | bytes, low and high half | SHA-256 of the running slot's first bytes, the TBYB flag read as clear; idle only |
+| `BEGIN` | 2 | image bytes, low and high half | starts a session: 1 byte to one slot, erases the other slot's first sector |
+| `COMMIT` | 3 | block number, CRC-16 | UPDATE_DATA is that block |
+| `FINISH` | 4 | | compares the slot's SHA-256 with UPDATE_DATA registers 0 to 15 |
+| `ACTIVATE` | 5 | | writes the first sector, reads it back and restarts into the slot |
+| `ABORT` | 6 | | ends the session; the slot holds no image |
+| `BUY` | 7 | | keeps the image on trial; acknowledged with nothing to do when none is |
+
+UPDATE_DATA (0xF1) holds the 64 bytes of one block in 32 registers, low byte
+first in each register. Nothing on either page is kept over a restart.
+
+#### The transfer
+
+1. The panel reads IDENTITY, then UPDATE_CTL. BAD_PAGE on UPDATE_CTL, or
+   `SLOT` 15, ends here: the coprocessor takes images over USB only.
+2. The panel hashes the image it carries, 8 KiB a step, and sends BEGIN with
+   its size.
+3. For each 64-byte block, in order from block 0: 8 data frames into
+   UPDATE_DATA, then COMMIT with the block number and its CRC-16 (cyclic
+   redundancy check, CCITT polynomial 0x1021 seeded 0xFFFF, over the block's
+   bytes). The last block is the image's remainder and its CRC covers those
+   bytes only. Each frame waits for its acknowledgement; nothing else is in
+   flight.
+4. The coprocessor buffers 64 blocks and writes a 4 KiB sector when the
+   last of them commits. That COMMIT is answered only after the sector is
+   erased and programmed, about 19.2 ms.
+5. FINISH: the coprocessor hashes the slot as written, with the first
+   sector as it will be, 1 KiB a pass, and compares the digest.
+6. ACTIVATE: the coprocessor writes the first sector last, reads it back,
+   answers, and 20 ms later restarts as a flash update boot of the new slot.
+7. The boot ROM checks the image's SHA-256 and starts it on trial under its
+   16.7 s watchdog. The panel waits 500 ms, reads IDENTITY until the new
+   image answers, and writes BUY. The boot ROM clears the TBYB flag in flash.
+   The coprocessor then erases the first sector of the slot it came from, so
+   the boot ROM has one image to choose at the next start. The BUY is
+   acknowledged once the boot ROM took it. An erase that fails, or waits for
+   the store's gate, is owed: `SLOT` bit 9 is set, the coprocessor tries
+   again once a second while the gate is open, and a start that finds the
+   other slot's first sector written outside a session or a trial owes the
+   erase again. The panel shows nothing for it. A coprocessor without a
+   partition table it writes has no other slot and erases nothing.
+
+A block before `NEXT_BLOCK` is acknowledged and not written again: a COMMIT
+whose acknowledgement was lost is sent again harmlessly. Any other block
+number is refused with ORDER. A block that fails its CRC is refused and sent
+again, up to 3 times. A slot written in part holds no image the boot ROM
+starts: the first sector is erased at BEGIN and written at ACTIVATE.
+
+The image the panel sends carries the TBYB flag. Each build's binary carries
+none, so an image loaded over USB starts as a normal boot. The panel sets the
+flag in its copy as it sends it. The boot ROM's picobin version of the image
+is 1000 x major + minor and patch, so 0.18.0 is version 18.0.
+
+#### Limits and failure
+
+| Condition | Coprocessor | Panel |
+| --- | --- | --- |
+| a session or an image on trial | refuses ARM with NOT_ARMED; SAFE is never refused | shows the progress screen, no band |
+| store gate shut (bank driving, supply output on, servo programming session) | refuses BEGIN, COMMIT and ACTIVATE with BUSY | asks again, gives up after 10 s |
+| 5 s without a request to UPDATE_CTL or UPDATE_DATA in a session; requests to other pages do not count | ends it with error 10 | starts again from block 0 |
+| a session found at the check, left by this panel before a restart or a lost link | ended with ABORT | checks on: the check reads the state again and asks for the hash |
+| ACTIVATED found at the check | restarts within 20 ms | reads again until the restart, gives up after 10 s |
+| a restart mid-transfer | the session is gone | starts again from block 0, at most 3 times |
+| no answer for 4 s | | gives up: `no answer` |
+| SHA-256 mismatch at FINISH | state failed, error 7 | `image check failed`, the old image runs |
+| no BUY within 16.7 s of the restart | the boot ROM restarts into the old slot | gives up at 12 s: `new image did not start` |
+| hash of the running slot or the image | | gives up after 10 s |
+
+A failed or abandoned update leaves the old image running and the other slot
+without an image. The next update writes it again from block 0.
+
+#### Checking which build runs
+
+Versions alone do not identify a development build. At link-up the panel
+compares the SHA-256 of the image it carries, the TBYB flag read as clear,
+with the coprocessor's HASH_RUNNING over the same number of bytes.
+
+| Result | Panel |
+| --- | --- |
+| same | nothing |
+| different | the alert `coprocessor runs another build -- the menu offers its update`; the question opens on the menu while the bench is SAFE and the supply output off |
+| an image on trial | writes BUY at once and says `coprocessor's new image kept` |
+| BAD_PAGE or no slots | the alert `coprocessor takes no update over CAN -- load it once over USB` |
+
+The check runs at a protocol major mismatch as well: the identity registers
+and the update pages answer across majors, and the update moves the
+coprocessor to the panel's own major. A CANCEL is kept for that coprocessor
+version until the panel restarts. An older carried image is offered too; the
+question then says so. [Screens](Screens.md#coprocessor-update) shows the
+question and the progress.
+
+A panel built without `RCBENCH_IOMCU_BIN` carries no image, runs no check and
+offers nothing.
+
+#### Time
+
+For the 0.18 image, 191,592 bytes: 2,994 blocks, 9 exchanges a block,
+26,946 exchanges and 47 sectors. A frame takes 131 to 160 µs at 1 Mbit/s,
+so the bus time of request and acknowledgement is 7.1 to 8.6 s, and the
+sector writes add 0.9 s. With the 334 to 1400 µs round trip quoted under
+[Budget](#budget) the exchanges take 9.0 to 37.7 s. The whole update, the
+coprocessor's hashes and its restart are not measured.
+
+The host suite's simulated coprocessor runs a full-size update of the 0.18.0
+image (184,872 bytes, 2,889 blocks) in 26,104 exchanges.
+
+#### Update compatibility
+
+| Panel | Coprocessor | Behaviour |
+| --- | --- | --- |
+| 4.22 with an image | 4.21 or older | BAD_PAGE: the USB alert; the link runs as before |
+| 4.22 with an image | 4.22, no table | no slots: the USB alert |
+| 4.22 with an image | 4.22 or later minor, table | check, offer, update |
+| 4.22 with an image | another major, 4.22 or later | the link stays down; check, offer, update over the frozen pages |
+| 4.21 or older | 4.22 | the update pages are never asked; the coprocessor runs as a 4.21 one |
+
+`test_link_update` runs the coprocessor's pages and the panel's engine over
+the link layer against a simulated flash and boot ROM: block 0, the last
+partial block, an image of exactly one slot and one byte over, a CRC error,
+blocks out of order and repeated, a restart mid-transfer, NACKs, a link drop,
+ARM during the session, a shut gate, a digest mismatch, a missing BUY, a
+4.21 coprocessor's BAD_PAGE, and another minor and major. It also runs a
+panel restart that leaves the session in each of RECEIVING, RECEIVED,
+VERIFYING and VERIFIED with the ordinary poll running, a session that only
+the ordinary poll talks to, a check that finds the restart due or a restart
+that never comes, an ABORT at the check lost, refused or not taking, and an
+erase after BUY that fails or waits for the gate, across a restart.
+`test_link_sha256` holds the hash against the FIPS 180-4 vectors.
+`test_link_pages` holds the frozen register numbers.
 
 ### Bit timing
 

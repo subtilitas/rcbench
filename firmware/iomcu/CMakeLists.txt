@@ -56,6 +56,7 @@ add_executable(rcbench-iomcu
     src/out_pwm.c
     src/outputs_hw.c
     src/out_store.c
+    src/update_hw.c
     src/sense_i2c.c
     src/sense_core1.c
     src/tone_core1.c
@@ -169,15 +170,82 @@ target_link_libraries(rcbench-iomcu
 pico_enable_stdio_usb(rcbench-iomcu 1)
 pico_enable_stdio_uart(rcbench-iomcu 0)
 
+# The flash layout is written once, in partitions.json: the boot ROM's
+# partition table, which the install UF2 (USB Flashing Format) below puts at
+# 0x0.  Two equal slots A and B for the image, the output store's own data
+# partition after them, and the last 8 KiB of the 4 MB part left unused: the
+# RP2350-E10 workaround block of an A2 chip's UF2 can erase the last sector.
+# The offsets reach the code as compile definitions, so out_store.c and the
+# update pages cannot disagree with the table.
+file(READ "${CMAKE_CURRENT_LIST_DIR}/partitions.json" iomcu_pt_json)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+             "${CMAKE_CURRENT_LIST_DIR}/partitions.json")
+set_property(TARGET rcbench-iomcu APPEND PROPERTY LINK_DEPENDS
+             "${CMAKE_CURRENT_LIST_DIR}/partitions.json")
+function(iomcu_pt_bytes index field out)
+    string(JSON v GET "${iomcu_pt_json}" partitions ${index} ${field})
+    string(REGEX REPLACE "[kK]$" "" kib "${v}")
+    math(EXPR bytes "${kib} * 1024")
+    set(${out} ${bytes} PARENT_SCOPE)
+endfunction()
+iomcu_pt_bytes(0 start iomcu_slot_a)
+iomcu_pt_bytes(0 size  iomcu_slot_bytes)
+iomcu_pt_bytes(1 start iomcu_slot_b)
+iomcu_pt_bytes(1 size  iomcu_slot_b_bytes)
+iomcu_pt_bytes(2 start iomcu_store)
+iomcu_pt_bytes(2 size  iomcu_store_bytes)
+if(NOT iomcu_slot_bytes EQUAL iomcu_slot_b_bytes)
+    message(FATAL_ERROR "partitions.json: slots A and B differ in size")
+endif()
+target_compile_definitions(rcbench-iomcu PRIVATE
+    IOMCU_SLOT_A_OFFSET=${iomcu_slot_a}u
+    IOMCU_SLOT_B_OFFSET=${iomcu_slot_b}u
+    IOMCU_SLOT_BYTES=${iomcu_slot_bytes}u
+    IOMCU_STORE_OFFSET=${iomcu_store}u
+    IOMCU_STORE_BYTES=${iomcu_store_bytes}u)
+
+# The image's own version, in the IMAGE_DEF block the boot ROM reads:
+# major = 1000 x rcbench major + rcbench minor, minor = rcbench patch, so
+# 0.18.0 is 18.0.  Between two valid slots the ROM boots the higher version.
+file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/../../shared/link/include/rcbench_version.h"
+     iomcu_version_lines REGEX "^#define RCBENCH_VERSION_(MAJOR|MINOR|PATCH) ")
+foreach(line IN LISTS iomcu_version_lines)
+    string(REGEX MATCH "RCBENCH_VERSION_([A-Z]+) +([0-9]+)" _ "${line}")
+    set(iomcu_v_${CMAKE_MATCH_1} ${CMAKE_MATCH_2})
+endforeach()
+math(EXPR iomcu_pico_major "${iomcu_v_MAJOR} * 1000 + ${iomcu_v_MINOR}")
+pico_set_binary_version(rcbench-iomcu MAJOR ${iomcu_pico_major}
+                        MINOR ${iomcu_v_PATCH})
+# A SHA-256 hash of the image in its end block: the boot ROM checks it before
+# it boots a slot, so a slot written in part is never started.  No image of
+# this build carries the TBYB (try before you buy) flag; the panel sets it in
+# the copy it sends over CAN (shared/link/link_update_image.c).
+pico_hash_binary(rcbench-iomcu)
+
 pico_add_extra_outputs(rcbench-iomcu)
 
-# The image has to fit the module fitted, not the one the board file names.
-# out_store.c pins its two sectors to the top of 4 MB for the same reason;
-# this is the other half of that, and it is checked after the link because a
-# binary's size is not a compile-time constant. 4 MB - 8 kB = 4186112.
+# The image has to fit one slot of the module fitted, not the flash the
+# board file names (sixteen megabytes): 2036 KiB = 2084864 bytes.
 add_custom_command(TARGET rcbench-iomcu POST_BUILD
     COMMAND ${CMAKE_COMMAND}
             -DIMAGE=$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.bin
-            -DLIMIT=4186112
+            -DLIMIT=${iomcu_slot_bytes}
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/image_fits.cmake"
+    VERBATIM)
+
+# The install UF2: the partition table at 0x0 and the image in slot A, for
+# the one USB load that moves a bench to this layout (docs/FirstRun.md).
+# rcbench-iomcu.uf2 alone goes to whichever slot is not running on a board
+# that has the table already.
+add_custom_command(TARGET rcbench-iomcu POST_BUILD
+    COMMAND picotool partition create --quiet
+            "${CMAKE_CURRENT_LIST_DIR}/partitions.json"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
+    COMMAND picotool uf2 combine --quiet
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-pt.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu.uf2"
+            "$<TARGET_FILE_DIR:rcbench-iomcu>/rcbench-iomcu-install.uf2"
+            --partition 0
+    BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-pt.uf2"
+               "${CMAKE_CURRENT_BINARY_DIR}/rcbench-iomcu-install.uf2"
     VERBATIM)

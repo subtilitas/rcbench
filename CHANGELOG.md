@@ -18,6 +18,29 @@ history is in git.
   MOTOR & ESC shows `Link frames refused: N` (German `Abgelehnte
   Link-Frames: N`) in its header strip after the error count, while the link
   is up and N is above 0; the bring-up log line `iomcu` adds `refused N`.
+- The panel updates the coprocessor's firmware over CAN. Protocol 4.22 adds
+  UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1); with registers 0 to 6 of
+  IDENTITY they are frozen and answer under every later protocol major. The
+  coprocessor's flash carries a boot ROM partition table: slots A and B of
+  2036 KiB, the output store in its own 8 KiB data partition at 0x3FC000, the
+  last 8 KiB unused. The panel sends 64-byte blocks, each committed with a
+  CRC-16, checks a SHA-256 over the image, restarts the coprocessor into the
+  new slot on trial and keeps it with BUY; without the BUY the boot ROM
+  returns to the old image after 16.7 s. The coprocessor refuses ARM for the
+  whole update and writes flash only while the bank is not driving, the
+  supply's output is off and no servo programming session runs. A session
+  ends after 5 s without a request to UPDATE_CTL or UPDATE_DATA, and a panel
+  that finds one at its check ends it with ABORT. After the BUY the
+  coprocessor erases the old slot's first sector and retries the erase once
+  a second until it holds; `SLOT` bit 9 says it is owed. A panel
+  built with `RCBENCH_IOMCU_BIN` carries the coprocessor image of its own
+  build, compares builds by SHA-256 at link-up and offers the update on a
+  question that START takes with the 2 s hold, an older image included; a
+  progress screen without band follows. New texts: the question, the five
+  progress steps, three notes and the alerts `coprocessor runs another build
+  -- the menu offers its update`, `coprocessor takes no update over CAN --
+  load it once over USB`, `coprocessor updated to %u.%u.%u`, `coprocessor's
+  new image kept` and `coprocessor update stopped: %s -- the old image runs`.
 - A tap on a chip of the status band opens a help bubble under the band
   that says what the chip's state means for the bench and what to do: LINK
   or NO LINK, BENCH or SIM, FAULT, SAFE or ARMED and the run clock. The
@@ -31,6 +54,12 @@ history is in git.
 
 ### Changed
 
+- A coprocessor loaded with protocol 4.21 or older has no partition table
+  and takes one USB load of `rcbench-iomcu-install.uf2` (table and slot A).
+  Bindings are read from the old store at 0x3FE000 until the first save. On
+  an RP2350 of stepping A2 the load can erase 0x3FF000, the old store's
+  second sector. Later coprocessor images come over CAN. See
+  [First run](docs/FirstRun.md#the-coprocessors-partition-table).
 - The bench configurator describes release 0.18.0. Every repository source
   of its data is a file and line at the tag `v0.18.0`; 28 sources carry the
   line of that tag. The sources of the logger, of the arm decision and of the

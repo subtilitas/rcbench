@@ -142,6 +142,10 @@ idf.py -C firmware/panel set-target esp32s3
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
+# panel carrying the coprocessor image it offers over CAN; build the
+# coprocessor first
+idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
+
 # panel, as one image at offset 0
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
@@ -157,8 +161,19 @@ cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
 cmake --build firmware/iomcu/build-trace
 ```
 
-The coprocessor build produces `rcbench-iomcu.uf2`. Copy it to the module's
-mass-storage drive while the module is held in BOOTSEL.
+The coprocessor build produces three UF2 (USB Flashing Format) files:
+
+| File | Holds | For |
+| --- | --- | --- |
+| `rcbench-iomcu-install.uf2` | the partition table at 0x0 and the image in slot A | a module without the table: the one USB load of [First run](FirstRun.md#the-coprocessors-partition-table) |
+| `rcbench-iomcu.uf2` | the image alone | a module with the table; the boot ROM writes it into the slot that is not running |
+| `rcbench-iomcu-pt.uf2` | the partition table alone | `picotool` |
+
+Copy one to the module's mass-storage drive while the module is held in
+BOOTSEL. `rcbench-iomcu.bin` is the image the panel carries: the panel build
+option `RCBENCH_IOMCU_BIN` takes its path, and the panel then offers it over
+CAN ([Link](Link.md#firmware-update-over-the-link)). A panel built without
+the option offers no coprocessor update.
 
 `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350`. The module used for
 bring-up is a Waveshare RP2350-CAN (RP2350A, 4 MB flash), which has no board

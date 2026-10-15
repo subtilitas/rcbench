@@ -35,6 +35,7 @@ set(SRCS
     picker_screen.c
     board_drawing.c
     busfault_screen.c
+    coproc_update_screen.c
 )
 
 if(ESP_PLATFORM)

@@ -51,6 +51,7 @@
 #include "tone_cap.h"
 #include "tone_core1.h"
 #include "tone_page.h"
+#include "update_hw.h"
 #include "xl2515.h"
 #if SENSE_TRACE
 #include "sense_trace_hw.h"
@@ -1341,6 +1342,15 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     /*
+     * No ARM while the coprocessor's own firmware is being written or waits
+     * for its BUY: the flash windows of the update stop this core for 19 ms
+     * at a time.  Refused before the page's rules run, so nothing of the
+     * frame is stored; a disarm is always taken.
+     */
+    if (update_hw_refuses_arm(off, n, in)) {
+        return LINK_NACK_NOT_ARMED;
+    }
+    /*
      * The page's rules are link_control_write()'s and whether the bench may
      * arm is safety_gate_control_write()'s, both host-tested: every
      * register of the frame is validated before any is stored, so a refused
@@ -1519,6 +1529,10 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
     { LINK_PAGE_KST,       LINK_KS_COUNT,  kst_read,       kst_write },
     { LINK_PAGE_PROG,      LINK_PG_REGS,   prog_read,      prog_write },
+    { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
+      update_hw_ctl_write },
+    { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
+      update_hw_data_write },
 };
 
 /* ------------------------------------------------------------ the heartbeat */
@@ -1720,6 +1734,17 @@ static void can_report(uint32_t now)
         printf("rcbench-iomcu: flash store OFF -- core 1 did not register "
                "for the flash lock-out; set-ups run from RAM and are lost at "
                "restart\n");
+    }
+    /* Which slot runs: a bench without the partition table takes its
+     * next image over USB only. */
+    if (update_hw_slot() < 0) {
+        printf("rcbench-iomcu: no partition table -- firmware updates over "
+               "CAN need one USB load of rcbench-iomcu-install.uf2\n");
+    } else {
+        printf("rcbench-iomcu: running from slot %c%s\n",
+               update_hw_slot() == 0 ? 'A' : 'B',
+               update_hw_on_trial() ? ", on trial until the panel buys it"
+                                    : "");
     }
     if (!s_can_up) {
         printf("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
@@ -1939,6 +1964,21 @@ static void outputs_off(void)
     outputs_hw_service(&s_outputs);
 }
 
+/*
+ * Whether flash may not be written now, for the store and for the firmware
+ * update alike.  The bank driving: a window stops this core and steps no
+ * output.  The supply asked on or perhaps on: its UART replies would overrun
+ * the 8-byte FIFO in a 19 ms window, and an OFF asked over the link would
+ * wait for it.  A KST session: a flash write stalls the pass that steps it.
+ */
+static bool flash_busy(void)
+{
+    return outputs_driving(&s_outputs)
+           || s_supply.regs[LINK_SP_OUTPUT] != 0u
+           || (s_pd_open && pdmini_may_be_on(&s_pd))
+           || kst_port_state(&s_kst) != LINK_KST_PWM;
+}
+
 int main(void)
 {
     stdio_init_all();
@@ -2147,6 +2187,9 @@ int main(void)
     }
 #endif
     capabilities_update();
+    /* Which slot runs and whether it waits for BUY, before the first
+     * request can ask. */
+    update_hw_init(flash_busy);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 
     heartbeat_init();
@@ -2243,6 +2286,9 @@ int main(void)
         can_service(now);
         /* Core 1's beeps and status into the TONE page. */
         tone_core1_sync(&s_tone);
+        /* The firmware update's slice of a hash, its restart, and the end
+         * of a session the panel stopped talking to. */
+        update_hw_poll(now);
 
         /*
          * Two independent watchdogs, and both before the bank is armed.  The
@@ -2282,7 +2328,11 @@ int main(void)
         /* Not while a programming port is out of PWM: programming and an
          * armed bank are exclusive at this end too, and the port takes no
          * ENTER while the bank is armed. */
-        const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u;
+        /* Nor while a firmware update runs or its image waits for BUY: the
+         * control page refuses the ARM, and this holds the bank down for
+         * an ARM written before the session began. */
+        const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u
+                             && !update_hw_holds_arm();
         /* Only the roles ARM names: an arm for the throttle leaves the
          * servos and the programming ports without a pulse, and an arm for
          * the surfaces leaves the motors without one. */
@@ -2422,15 +2472,8 @@ int main(void)
          * much of the gap after it is left.
          */
         const uint32_t quiet = (uint32_t)(now - s_last_rx_ms);
-        /* And the supply, asked on or perhaps on: its UART replies would
-         * overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over
-         * the link would wait for it. */
-        /* And a KST session: a flash write stalls the pass that steps
-         * it. */
-        const bool driving = outputs_driving(&s_outputs)
-                             || s_supply.regs[LINK_SP_OUTPUT] != 0u
-                             || (s_pd_open && pdmini_may_be_on(&s_pd))
-                             || kst_port_state(&s_kst) != LINK_KST_PWM;
+        /* And the supply and a KST session: flash_busy(). */
+        const bool driving = flash_busy();
         const out_store_step_t step = out_store_tick(driving, quiet, now);
         switch (step) {
         case OUT_STORE_WROTE:

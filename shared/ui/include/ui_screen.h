@@ -42,6 +42,9 @@ typedef enum {
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */
     SCREEN_BUSFAULT,
+    /* Not reachable from the menu either: the panel opens it to offer the
+     * coprocessor an update, and shows the update's progress on it. */
+    SCREEN_COPROC_UPDATE,
     SCREEN_COUNT
 } ui_screen_id_t;
 
