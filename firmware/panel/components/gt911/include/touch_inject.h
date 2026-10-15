@@ -4,11 +4,14 @@
  *
  * The injector (testbench/touch-injector) answers as a GT911 at 0x14 on the
  * touch bus.  touch_init() asks for it once, before the touch task starts;
- * one that answers later is not seen until the next start.  While it is
- * attached, the touch task reads it after the glass on every poll and merges
- * the two contact sets (touch_merge.h), and touch_age_ms() is the older of
- * the two ages.  A release build compiles none of this and never addresses
- * 0x14.
+ * one that first answers later is not seen until the next start.  While it
+ * is attached, the touch task reads it after the glass on every poll and
+ * merges the two contact sets (touch_merge.h), and touch_age_ms() is the
+ * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000 ms) is
+ * detached: its age no longer counts, and the touch task reads its product
+ * ID once every TOUCH_MERGE_PROBE_MS (1000 ms) until it answers, which
+ * re-attaches it.  A release build compiles none of this; it addresses
+ * 0x14 only as the glass's alternate address, when nothing answers at 0x5D.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -48,12 +51,17 @@ void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
 bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh);
 
 /**
- * Read the injector, when it is attached and due.  Returns true, with the
- * merged set in @p pts / @p count, when its contacts changed.
+ * Read the injector when it is attached and due, detach it when it has been
+ * silent too long, and probe it when it is detached and due.  Returns true,
+ * with the merged set in @p pts / @p count, when its contacts changed or it
+ * was detached.
  */
 bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms);
 
-/** Milliseconds since the injector last answered; 0 when none is attached. */
+/**
+ * Milliseconds since the injector last answered; 0 when none is attached,
+ * and from TOUCH_MERGE_DETACH_MS on, when it counts as detached.
+ */
 uint32_t touch_inject_age_ms(uint32_t now_ms);
 
 #ifdef __cplusplus

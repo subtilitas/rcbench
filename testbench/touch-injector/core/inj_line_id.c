@@ -156,10 +156,20 @@ void inj_line_classify(uint8_t first, const inj_edge_t *edges, uint32_t n,
     out->edges5 = c.edges[1];
     out->end_state = c.s;
     out->rate_ksps = rate_ksps;
+    /*
+     * Agreement is over the transactions that name a line.  One that names
+     * none, such as a poll of an absent address whose NACK leaves both
+     * lines high before its STOP, says nothing about the wiring.  The second
+     * floor keeps a bus where most transactions name nothing, shorted lines
+     * among them, from a verdict.
+     */
+    const uint32_t named = c.named[0] + c.named[1];
     const uint32_t major = c.named[0] >= c.named[1] ? c.named[0] : c.named[1];
-    out->agree_pct = c.tx ? (uint32_t)((uint64_t)major * 100u / c.tx) : 0u;
+    out->named = named;
+    out->agree_pct = named ? (uint32_t)((uint64_t)major * 100u / named) : 0u;
 
-    if (c.tx >= INJ_LINE_MIN_TX && out->agree_pct >= INJ_LINE_MIN_AGREE_PCT) {
+    if (named >= INJ_LINE_MIN_TX && 2u * (uint64_t)named >= c.tx
+        && out->agree_pct >= INJ_LINE_MIN_AGREE_PCT) {
         out->verdict = c.named[0] >= c.named[1] ? INJ_WIRING_OK
                                                 : INJ_WIRING_SWAPPED;
     } else if ((c.edges[0] == 0u && (c.s & INJ_LINE_GP4) == 0u)

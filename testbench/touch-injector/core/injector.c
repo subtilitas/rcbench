@@ -377,10 +377,11 @@ void injector_wiring_done(injector_t *in, const inj_line_result_t *r)
     case INJ_WIRING_OK:
     case INJ_WIRING_SWAPPED: {
         const bool ok = r->verdict == INJ_WIRING_OK;
-        reply(in, "wiring %s scl=%s sda=%s tx=%lu agree=%lu rate=%lu.%lu",
+        reply(in, "wiring %s scl=%s sda=%s tx=%lu named=%lu agree=%lu"
+              " rate=%lu.%lu",
               ok ? "ok" : "swapped", ok ? "GP5" : "GP4", ok ? "GP4" : "GP5",
-              (unsigned long)r->tx, (unsigned long)r->agree_pct,
-              rate10 / 10u, rate10 % 10u);
+              (unsigned long)r->tx, (unsigned long)r->named,
+              (unsigned long)r->agree_pct, rate10 / 10u, rate10 % 10u);
         break;
     }
     case INJ_WIRING_IDLE:
@@ -389,9 +390,11 @@ void injector_wiring_done(injector_t *in, const inj_line_result_t *r)
               g4, g5);
         break;
     default:
-        reply(in, "wiring noise edges4=%lu edges5=%lu tx=%lu agree=%lu",
+        reply(in, "wiring noise edges4=%lu edges5=%lu tx=%lu named=%lu"
+              " agree=%lu",
               (unsigned long)r->edges4, (unsigned long)r->edges5,
-              (unsigned long)r->tx, (unsigned long)r->agree_pct);
+              (unsigned long)r->tx, (unsigned long)r->named,
+              (unsigned long)r->agree_pct);
         break;
     }
 }

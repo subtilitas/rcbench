@@ -360,7 +360,8 @@ uint32_t touch_age_ms(void)
         return UINT32_MAX;
     }
 #ifdef RCBENCH_TOUCH_INJECTOR
-    /* An injector that stops answering is touch that stops answering. */
+    /* An injector that stops answering is touch that stops answering,
+     * until it is detached 1000 ms after its last answer. */
     const uint32_t now = now_ms();
     return touch_merge_age(now - s_touch.last_ok_ms, touch_inject_age_ms(now));
 #else

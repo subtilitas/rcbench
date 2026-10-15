@@ -102,9 +102,11 @@ uint32_t touch_age_ms(void);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
 /**
- * Whether a touch injector (testbench/touch-injector) answered at start-up.
- * Declared in a build with RCBENCH_TOUCH_INJECTOR only; touch_inject.h has
- * the rest.
+ * Whether a touch injector (testbench/touch-injector) is attached: it
+ * answered at start-up and has not been silent for 1000 ms since, or a
+ * probe has re-attached it.  Always true when the injector is the only touch
+ * device (no GT911 at 0x5D).  Declared in a build with RCBENCH_TOUCH_INJECTOR
+ * only; touch_inject.h has the rest.
  */
 bool touch_injector_attached(void);
 #endif

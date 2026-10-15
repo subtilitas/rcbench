@@ -323,16 +323,17 @@ TEST_CASE(the_wiring_verdicts_read_as_documented)
         inj_line_result_t r;
         const char *line;
     } cases[] = {
-        { { INJ_WIRING_OK, 63, 100, 1000, 1500, 3, 24500 },
-          "wiring ok scl=GP5 sda=GP4 tx=63 agree=100 rate=24.5" },
-        { { INJ_WIRING_SWAPPED, 40, 97, 1, 1, 3, 9999 },
-          "wiring swapped scl=GP4 sda=GP5 tx=40 agree=97 rate=9.9" },
-        { { INJ_WIRING_IDLE, 0, 0, 0, 0, 3, 24000 },
+        { { INJ_WIRING_OK, 63, 100, 1000, 1500, 3, 24500, 58 },
+          "wiring ok scl=GP5 sda=GP4 tx=63 named=58 agree=100 rate=24.5" },
+        { { INJ_WIRING_SWAPPED, 40, 97, 1, 1, 3, 9999, 40 },
+          "wiring swapped scl=GP4 sda=GP5 tx=40 named=40 agree=97"
+          " rate=9.9" },
+        { { INJ_WIRING_IDLE, 0, 0, 0, 0, 3, 24000, 0 },
           "wiring idle gp4=1 gp5=1" },
-        { { INJ_WIRING_LOW, 0, 0, 0, 0, 1, 24000 },
+        { { INJ_WIRING_LOW, 0, 0, 0, 0, 1, 24000, 0 },
           "wiring low gp4=1 gp5=0" },
-        { { INJ_WIRING_NOISE, 12, 50, 300, 280, 3, 24000 },
-          "wiring noise edges4=300 edges5=280 tx=12 agree=50" },
+        { { INJ_WIRING_NOISE, 12, 50, 300, 280, 3, 24000, 10 },
+          "wiring noise edges4=300 edges5=280 tx=12 named=10 agree=50" },
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); ++i) {
         send("wiring");

@@ -85,6 +85,14 @@ their pulls off, the I2C block is not attached, and nothing on the bus is
 acknowledged. It leaves LISTEN only on `confirm scl=GP5` after a `wiring`
 check that read `ok`. ACTIVE answers at 0x14 until the next reset.
 
+A panel image built with `RCBENCH_TOUCH_INJECTOR=ON` that has the injector
+attached detaches it after 1000 ms without an answer from 0x14. Its injected
+contacts are released, `INJECT` leaves the mode chip, and the glass alone
+decides whether touch is alive. The panel then reads the product ID at 0x14
+once every 1000 ms; the first answer re-attaches the injector with no
+contacts down. An injector reset therefore needs no panel restart: after
+`wiring` and `confirm` the panel re-attaches it within about 1 s.
+
 The watchdog resets the chip when the main loop stalls for 200 ms. A reset
 is LISTEN again.
 
@@ -135,7 +143,7 @@ A gesture that fails after its `ok` gets one of:
 | Reply | Cause |
 | --- | --- |
 | `fail <gesture> no_master` | the panel did not read a frame within 100 ms, or stopped reading for 100 ms while a contact was down |
-| `fail <gesture> panel_reset` | the panel read the product ID again: it restarted; the contact is withdrawn |
+| `fail <gesture> panel_reset` | the panel read the product ID again: it restarted, or it re-attached the injector; the contact is withdrawn |
 | `fail <gesture> released` | `release` arrived |
 
 Closing the port lifts a contact that is down, without a reply.
@@ -145,15 +153,24 @@ Closing the port lifts a contact that is down, without a reply.
 `wiring` samples GP4 and GP5 for 500 ms and applies two rules to every
 transaction: out of idle the line that falls first is SDA (START), into idle
 the line that rises last is SDA (STOP). Idle is both lines high for at least
-10 µs. A verdict needs 20 whole transactions, of which 95 % agree.
+10 µs. A transaction names a line when both rules name the same one.
+
+A verdict needs at least 20 whole transactions that name a line, and at
+least half of all whole transactions. `agree=` is the share of the named
+ones that name the majority line, and a verdict needs 95 %. A transaction
+that names no line is counted in `tx=` and left out of `agree=`. The panel's
+poll of 0x14 while the injector listens is one: the address goes
+unacknowledged, both lines go high after the ninth clock, and a bare STOP
+follows more than 10 µs later. SDA and SCL shorted together name no line at
+all and give `noise`.
 
 | Verdict | Meaning | Next step |
 | --- | --- | --- |
-| `wiring ok scl=GP5 sda=GP4 tx=<n> agree=<pct> rate=<Msps>` | wired as in the table | `confirm scl=GP5` |
+| `wiring ok scl=GP5 sda=GP4 tx=<n> named=<n> agree=<pct> rate=<Msps>` | wired as in the table | `confirm scl=GP5` |
 | `wiring swapped scl=GP4 sda=GP5 ...` | SDA and SCL crossed | swap the two wires, reset, check again |
 | `wiring idle gp4=1 gp5=1` | both high, no traffic | the panel is not polling: check that it runs |
 | `wiring low gp4=<0/1> gp5=<0/1>` | a line low all window | the 0 names the line: wiring, ground or a held bus |
-| `wiring noise edges4= edges5= tx= agree=` | edges, no verdict | too few transactions, or noise |
+| `wiring noise edges4= edges5= tx= named= agree=` | edges, no verdict | too few named transactions, or noise |
 
 A level shorter than 2 samples is dropped as a glitch before the rules run.
 The host suite checks the rules at 10 Msps (mega-samples per second) with
@@ -170,6 +187,9 @@ reaches is not measured; the verdict line reports it as `rate=`.
 5. `confirm scl=GP5`. The LED goes dim green once the panel reads 0x14.
 6. Reset the panel. A panel image built with `RCBENCH_TOUCH_INJECTOR=ON`
    finds 0x14 at start and shows `INJECT` in the status band's mode chip.
+   After an injector reset, repeat steps 3 to 5 only: the panel detached the
+   silent injector after 1000 ms and re-attaches it within about 1 s of
+   `confirm`, and `INJECT` shows again.
 7. `tap 83 370` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
 
