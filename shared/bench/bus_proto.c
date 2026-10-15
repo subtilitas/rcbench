@@ -93,6 +93,42 @@ static uint16_t ft_get16(uint8_t series, const uint8_t *at)
     return feetech_get16((feetech_series_t)series, at);
 }
 
+/* STS: the mode register, 0 position.  SCS has no mode register: both
+ * angle limits 0 run it as a motor (feetech_reg.h). */
+static uint8_t ft_goal_check(uint8_t series, uint8_t *addr)
+{
+    feetech_reg_t r, hi;
+
+    if (addr == NULL) {
+        return 0u;
+    }
+    if (feetech_reg((feetech_series_t)series, FEETECH_R_MODE, &r)) {
+        *addr = r.addr;
+        return r.size;
+    }
+    if (feetech_reg((feetech_series_t)series, FEETECH_R_MIN_ANGLE, &r)
+        && feetech_reg((feetech_series_t)series, FEETECH_R_MAX_ANGLE, &hi)
+        && hi.addr == (uint8_t)(r.addr + r.size)) {
+        *addr = r.addr;
+        return (uint8_t)(r.size + hi.size);
+    }
+    return 0u;
+}
+
+static bool ft_goal_mode(uint8_t series, const uint8_t *bytes, unsigned n)
+{
+    if (bytes == NULL) {
+        return false;
+    }
+    if (feetech_reg((feetech_series_t)series, FEETECH_R_MODE, NULL)) {
+        return n == 1u && bytes[0] == 0u;
+    }
+    return feetech_reg((feetech_series_t)series, FEETECH_R_MIN_ANGLE, NULL)
+           && n == 4u
+           && (feetech_get16((feetech_series_t)series, &bytes[0]) != 0u
+               || feetech_get16((feetech_series_t)series, &bytes[2]) != 0u);
+}
+
 static const bus_proto_t k_protos[] = {
     {
         .name = "FEETECH",
@@ -112,6 +148,8 @@ static const bus_proto_t k_protos[] = {
         .get16 = ft_get16,
         .mode_count = 4u,
         .mode_names = k_ft_modes,
+        .goal_check = ft_goal_check,
+        .goal_mode = ft_goal_mode,
         .error_bit = {
             [BUS_E_VOLTAGE]     = FEETECH_ERR_VOLTAGE,
             [BUS_E_SENSOR]      = FEETECH_ERR_SENSOR,

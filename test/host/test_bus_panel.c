@@ -1054,6 +1054,223 @@ TEST_CASE(the_servo_screen_holds_the_bus_open_only_on_its_bus_tab)
     CHECK_EQ(page_state(), LINK_BUS_CLOSED);
 }
 
+/* A slider press: its right end. */
+static void slide_to_end(void)
+{
+    const gfx_rect_t s = bus_panel_slider_rect();
+
+    ev(s.x + s.w - 1, cy(s), TOUCH_EVENT_DOWN);
+    ev(s.x + s.w - 1, cy(s), TOUCH_EVENT_UP);
+}
+
+TEST_CASE(a_baud_change_that_fails_keeps_the_rate_of_the_next_open)
+{
+    fresh();
+    (void)ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    sim.refuse_baud = true;
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    run(500);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK(page_says(3, "Line driver did not start."));
+    CHECK_STR_EQ(bus_panel_button(0, 1), "1000000");
+    tap_row(1, 1);
+    run(300);
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "1000000");
+    sim.refuse_baud = false;
+    open_bus();
+    CHECK_EQ(sim.baud, 1000000u);
+    scan();
+    CHECK(page_says(1, "1 found"));
+    /* The one that works moves the next OPEN. */
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    run(500);
+    CHECK_EQ(sim.baud, 115200u);
+    tap_row(1, 1);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "115200");
+}
+
+TEST_CASE(restore_moves_the_line_to_each_servos_rate)
+{
+    ftsim_servo_t *v1, *v2;
+
+    fresh();
+    v1 = ftsim_add(&sim, 1u, FEETECH_STS);
+    v2 = ftsim_add(&sim, 2u, FEETECH_STS);
+    v2->regs[FEETECH_REG_BAUD] = 4u;            /* 115200 */
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("MIN ANGLE");
+    enter(100);
+    hold(2.2f);
+    run(300);
+    CHECK_EQ(v1->regs[FEETECH_REG_MIN_ANGLE], 100);
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    run(500);
+    CHECK_EQ(sim.baud, 115200u);
+    scan();
+    pick_id(2);
+    eeprom_item("MIN ANGLE");
+    enter(200);
+    hold(2.2f);
+    run(300);
+    CHECK_EQ(v2->regs[FEETECH_REG_MIN_ANGLE], 200);
+    CHECK_EQ(bus_panel_backups(), 2u);
+    tap_row(5, 1);
+    CHECK(choose("RESTORE 2"));
+    CHECK_STR_EQ(bus_panel_warning_line(0), "ID 2, MIN ANGLE back to 0");
+    CHECK_STR_EQ(bus_panel_warning_line(1), "ID 1, MIN ANGLE back to 0");
+    CHECK_STR_EQ(bus_panel_warning_line(3),
+                 "Other baud rates: torque off to all, then the line moves.");
+    hold(2.2f);
+    run(1500);
+    CHECK_EQ(v2->regs[FEETECH_REG_MIN_ANGLE], 0);
+    CHECK_EQ(v1->regs[FEETECH_REG_MIN_ANGLE], 0);
+    CHECK_EQ(bus_panel_backups(), 0u);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK(page_says(3, "Restored."));
+    tap_row(1, 1);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "1000000");
+}
+
+TEST_CASE(restore_at_one_rate_names_no_line_move)
+{
+    fresh();
+    (void)ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("MIN ANGLE");
+    enter(100);
+    hold(2.2f);
+    run(300);
+    tap_row(5, 1);
+    CHECK(choose("RESTORE 1"));
+    CHECK_STR_EQ(bus_panel_warning_line(1), "1 EEPROM writes, newest first.");
+    CHECK(bus_panel_warning_line(2) == NULL);
+}
+
+TEST_CASE(a_goal_goes_only_to_a_servo_in_position_mode)
+{
+    ftsim_servo_t *v;
+    unsigned sent;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    v->regs[FEETECH_REG_MODE] = 1u;             /* constant speed */
+    open_bus();
+    scan();
+    pick_id(1);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 0u);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_SPEED]), 0u);
+    CHECK(page_says(3, "Not in POSITION mode: no goal sent."));
+    /* Known now: the next press reads nothing and sends nothing. */
+    sent = g_commands;
+    slide_to_end();
+    run(300);
+    CHECK_EQ(g_commands, sent);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_SPEED]), 0u);
+    /* MODE back to POSITION through the EEPROM list: the goal goes. */
+    eeprom_item("MODE");
+    CHECK(choose("POSITION"));
+    hold(2.2f);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_MODE], 0);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 4095u);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_SPEED]), 1000u);
+    /* A mode changed behind the page's back shows after the next SCAN. */
+    v->regs[FEETECH_REG_MODE] = 2u;             /* PWM */
+    v->regs[FEETECH_REG_GOAL] = 0u;
+    v->regs[FEETECH_REG_GOAL + 1] = 0u;
+    scan();
+    pick_id(1);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 0u);
+    CHECK(page_says(3, "Not in POSITION mode: no goal sent."));
+}
+
+TEST_CASE(an_scs_servo_with_both_angle_limits_0_gets_no_goal)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 3u, FEETECH_SCS);
+    v->regs[FEETECH_REG_MAX_ANGLE] = 0u;        /* motor mode */
+    v->regs[FEETECH_REG_MAX_ANGLE + 1] = 0u;
+    open_bus();
+    scan();
+    pick_id(3);
+    tap_row(1, 0);
+    CHECK(choose("SCS"));
+    run(300);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_SCS, &v->regs[FEETECH_REG_GOAL]), 0u);
+    CHECK(page_says(3, "Not in POSITION mode: no goal sent."));
+    /* The series named again: the limits are read again. */
+    v->regs[FEETECH_REG_MAX_ANGLE] = 0x03u;
+    v->regs[FEETECH_REG_MAX_ANGLE + 1] = 0xFFu;
+    tap_row(1, 0);
+    CHECK(choose("SCS"));
+    run(300);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_SCS, &v->regs[FEETECH_REG_GOAL]), 1023u);
+}
+
+TEST_CASE(a_mode_read_without_an_answer_sends_no_goal_and_no_retry)
+{
+    ftsim_servo_t *v;
+    unsigned sent;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    v->present = false;
+    slide_to_end();
+    run(500);
+    CHECK(page_says(3, "No reply."));
+    sent = g_commands;
+    run(1000);
+    CHECK_EQ(g_commands, sent);
+    v->present = true;
+    slide_to_end();
+    run(300);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 4095u);
+}
+
+TEST_CASE(stop_during_the_mode_read_sends_no_goal)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    slide_to_end();
+    pass();
+    pass();
+    g_stops++;
+    run(500);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 0u);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_SPEED]), 0u);
+}
+
 int main(void)
 {
     RUN(the_page_starts_closed_with_the_scan_range_1_to_20);
@@ -1084,6 +1301,13 @@ int main(void)
     RUN(the_baud_list_has_the_eight_feetech_rates);
     RUN(the_german_page_keeps_the_protocol_names);
     RUN(the_servo_screen_holds_the_bus_open_only_on_its_bus_tab);
+    RUN(a_baud_change_that_fails_keeps_the_rate_of_the_next_open);
+    RUN(restore_moves_the_line_to_each_servos_rate);
+    RUN(restore_at_one_rate_names_no_line_move);
+    RUN(a_goal_goes_only_to_a_servo_in_position_mode);
+    RUN(an_scs_servo_with_both_angle_limits_0_gets_no_goal);
+    RUN(a_mode_read_without_an_answer_sends_no_goal_and_no_retry);
+    RUN(stop_during_the_mode_read_sends_no_goal);
     free(fb);
     return test_summary("bus_panel");
 }

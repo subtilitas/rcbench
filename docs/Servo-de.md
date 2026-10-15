@@ -826,7 +826,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | Reihe | Werte | Was sie tut |
 | --- | --- | --- |
 | PROTOKOLL | FEETECH | das Protokoll; die Liste hält die Protokolle des Builds. Nur bei geschlossenem Bus |
-| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: Drehmoment aus an jedes Servo mit der alten Rate, dann wechselt die Leitung auf sie; die Servos behalten ihre |
+| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: Drehmoment aus an jedes Servo mit der alten Rate, dann wechselt die Leitung auf sie; die Servos behalten ihre. Ein Wechsel, der scheitert, lässt die Leitung und das nächste ÖFFNEN auf der alten Rate |
 | SERIE | SCS, STS/SMS | Registertabelle und Byte-Reihenfolge: SCS Big-Endian, Ziel 0 bis 1023; STS und SMS Little-Endian, Ziel 0 bis 4095. Je ID, für die Sitzung; beim Start STS/SMS |
 | BUS | ÖFFNEN, SCHLIESSEN | nimmt den Pin des Ports aus PWM, oder gibt ihn mit Drehmoment aus zurück |
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
@@ -836,7 +836,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | TEMPO | 0 bis 3400 bei STS, 0 bis 1000 bei SCS, beim Start 1000 | die Geschwindigkeit des Ziels, mit jedem Ziel geschickt |
 | BESCHL. | 0 bis 255, beim Start 0 | die Beschleunigung des Ziels, mit jedem Ziel geschickt; nur STS, bei SCS gedimmt |
 | EEPROM | ÄNDERN | die Liste der EEPROM-Schreibvorgänge unten |
-| POSITION | der Schieber | die Zielposition, geschrieben, während der Schieber sich bewegt, und beim Loslassen |
+| POSITION | der Schieber | die Zielposition, geschrieben, während der Schieber sich bewegt, und beim Loslassen, nur an ein Servo im Positionsmodus |
 
 ![Die Liste der Serien](img/de/servo-bus-series.png)
 
@@ -866,6 +866,19 @@ Ein Lesen, das scheitert, zeigt `ID 1: kein Messwert`, bis eines gelingt.
 Das Vorzeichen der Last und die Skala des Stroms sind nicht gemessen.
 
 ![Ein beobachtetes Servo mit zwei Fehlerflags](img/de/servo-bus-live.png)
+
+**Positionsmodus.** Vor dem ersten Ziel an eine ID liest die Seite, was das
+Servo mit einem Ziel macht. Bei STS ist das das Modusregister (33), wobei 0
+POSITION ist. SCS hat kein Modusregister: beide Winkelgrenzen (9 und 11)
+auf 0 lassen es als Motor laufen. Ein Ziel geht nur an ein Servo im
+Positionsmodus. Sonst schickt die Seite nichts und meldet
+`Nicht im Modus POSITION: kein Ziel gesendet.`, denn der Zielblock setzt
+das Geschwindigkeitsregister, mit dem ein drehendes Servo läuft. Die Seite
+liest den Modus wieder nach ÖFFNEN, SCAN, BAUD, ZURÜCKSPIELEN, einem
+Wechsel der SERIE und einem EEPROM-Schreiben an dieses Servo. Einen Modus,
+den ein anderer Master dazwischen ändert, sieht sie nicht.
+
+![Ein Ziel an ein Servo im Geschwindigkeitsmodus abgewiesen](img/de/servo-bus-mode.png)
 
 **EEPROM-Schreiben.** ÄNDERN listet ID, BAUD, MIN. WINKEL, MAX. WINKEL,
 MODUS (STS: POSITION, SPEED, PWM, STEP) und SPERRE. Eine Wahl liest zuerst
@@ -901,7 +914,11 @@ schreibt sie zurück, das neueste zuerst, hinter einem eigenen Halten von
 das STOP beendet hat, das nach dem Absenden scheiterte oder dessen Antwort
 verloren ging, behält seinen alten Wert zum Zurückspielen, weil es
 angekommen sein kann; ein solcher ID-Wechsel wird nicht behalten, weil das
-Servo auf beiden IDs antworten kann.
+Servo auf beiden IDs antworten kann. Jeder behaltene Wert trägt die Rate,
+mit der sein Servo antwortet. Vor einem Eintrag mit einer anderen Rate
+wechselt ZURÜCKSPIELEN die Leitung dorthin, mit Drehmoment aus an jedes
+Servo, wie BAUD es schickt, und seine Warnung sagt das. Die Leitung bleibt
+auf der Rate des zuletzt zurückgespielten Eintrags.
 
 ![Zurückspielen zweier Schreibvorgänge](img/de/servo-bus-restore.png)
 
@@ -935,6 +952,9 @@ Aktuelle Einschränkungen:
   Frames können kollidieren. Was ein Scan dann liest, ist nicht gemessen.
 - Die zum Zurückspielen behaltenen Werte gehen bei einem Neustart des Panels
   verloren.
+- Die Prüfung auf den Positionsmodus nutzt die Tabellen von STS3215 und
+  SCS15. Was ein Ziel bei anderen Modellen oder bei einem STS mit beiden
+  Winkelgrenzen auf 0 macht, ist nicht gemessen.
 
 ## Voraussetzungen
 

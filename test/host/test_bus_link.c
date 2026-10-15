@@ -794,8 +794,39 @@ TEST_CASE(the_protocol_table_has_feetech_and_nothing_else)
     CHECK_EQ(bus_proto_goal(NULL, 0, 0u, 0u, 0u, &addr, out, 6u), 0u);
 }
 
+TEST_CASE(the_mode_check_reads_sts_mode_and_scs_angle_limits)
+{
+    const bus_proto_t *p = bus_proto_get(0);
+    uint8_t addr = 0;
+    static const uint8_t pos[1] = { 0 }, speed[1] = { 1 }, step[1] = { 3 };
+    static const uint8_t lim0[4] = { 0, 0, 0, 0 };
+    static const uint8_t lim_hi[4] = { 0, 0, 0x03, 0xFF };   /* 0..1023 */
+    static const uint8_t lim_lo[4] = { 0, 1, 0, 0 };         /* 1..0    */
+
+    /* STS: register 33, 1 byte; 0 is position. */
+    CHECK_EQ(p->goal_check(1, &addr), 1u);
+    CHECK_EQ(addr, FEETECH_REG_MODE);
+    CHECK(p->goal_mode(1, pos, 1u));
+    CHECK(!p->goal_mode(1, speed, 1u));
+    CHECK(!p->goal_mode(1, step, 1u));
+    CHECK(!p->goal_mode(1, pos, 0u));
+    CHECK(!p->goal_mode(1, pos, 2u));
+    /* SCS: no mode register; both limits 0 run it as a motor. */
+    CHECK_EQ(p->goal_check(0, &addr), 4u);
+    CHECK_EQ(addr, FEETECH_REG_MIN_ANGLE);
+    CHECK(!p->goal_mode(0, lim0, 4u));
+    CHECK(p->goal_mode(0, lim_hi, 4u));
+    CHECK(p->goal_mode(0, lim_lo, 4u));
+    CHECK(!p->goal_mode(0, lim_hi, 3u));
+    CHECK(!p->goal_mode(0, NULL, 4u));
+    CHECK_EQ(p->goal_check(0, NULL), 0u);
+    CHECK_EQ(p->goal_check(7, &addr), 0u);      /* no such series */
+    CHECK(!p->goal_mode(7, lim_hi, 4u));
+}
+
 int main(void)
 {
+    RUN(the_mode_check_reads_sts_mode_and_scs_angle_limits);
     RUN(a_coprocessor_without_the_page_is_sent_nothing);
     RUN(a_command_is_refused_for_none_and_beyond_the_last);
     RUN(open_and_close_through_the_page);

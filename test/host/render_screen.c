@@ -1002,6 +1002,9 @@ static void bus_view(const char *view)
     feetech_put16(FEETECH_STS, &s1->regs[60], 125u);
     s1->regs[65] = 0x21u;
     feetech_put16(FEETECH_STS, &s1->regs[69], 20u);
+    if (strcmp(v, "-mode") == 0) {
+        s1->regs[FEETECH_REG_MODE] = 1u;            /* constant speed */
+    }
     memset(&hw, 0, sizeof(hw));
     hw.ports = 1;
     hw.pin = bus_hw_pin;
@@ -1036,6 +1039,11 @@ static void bus_view(const char *view)
     btap(bus_panel_value_rect(3, 1));               /* ID */
     bchoose("1");
     bus_run(300);
+    if (strcmp(v, "-mode") == 0) {
+        btap(bus_panel_slider_rect());              /* a goal: refused */
+        bus_run(300);
+        return;
+    }
     btap(bus_panel_value_rect(4, 0));               /* TORQUE */
     bus_run(300);
     if (strcmp(v, "-live") == 0) {

@@ -233,7 +233,7 @@ Untergrenze:
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
   den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers
   und denen der Startprüfung nach einem Update, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 253
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 255
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

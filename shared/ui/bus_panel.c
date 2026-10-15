@@ -60,8 +60,11 @@ static const row_t k_rows[] = {
 /* What a command was for. */
 enum {
     U_NONE = 0, U_OPEN, U_CLOSE, U_BAUD, U_SCAN, U_STOP, U_WATCH, U_TORQUE,
-    U_GOAL, U_EE_READ, U_EE_WRITE, U_RESTORE
+    U_GOAL, U_EE_READ, U_EE_WRITE, U_RESTORE, U_CHECK
 };
+
+/* What a servo does with a goal position, as the page last read it. */
+enum { CTL_UNKNOWN = 0, CTL_POSITION, CTL_OTHER };
 
 /* The open editors. */
 enum { C_PROTOCOL = 0, C_BAUD, C_SERIES, C_ID, C_EEPROM, C_EE_VALUE };
@@ -81,6 +84,7 @@ typedef struct {
     uint8_t id, series, addr, n;
     uint8_t old[2];
     uint8_t role;
+    uint8_t baud;               /* the rate the servo answers at */
 } backup_t;
 
 static struct {
@@ -90,11 +94,15 @@ static struct {
     /* what the operator set */
     uint8_t  proto;
     uint8_t  baud;              /* the index OPEN asks for */
+    uint8_t  baud_want;         /* the index a BAUD sent asks for */
     uint8_t  from, to;
     int      id;
     uint8_t  series[ID_COUNT];
     uint8_t  series_all;        /* while no ID is chosen */
     uint8_t  torque_on[(ID_COUNT + 7) / 8];  /* bit: torque sent on */
+    uint8_t  ctl[ID_COUNT];     /* CTL_*: position mode, as read */
+    int      chk_id;            /* the mode read's ID */
+    uint8_t  chk_series, chk_n;
     int      torque_id;         /* the TORQUE command's ID */
     bool     torque_want;       /* and the state it sends */
     uint16_t speed;
@@ -125,6 +133,7 @@ static struct {
     uint8_t  ee_role;
     uint8_t  ee_id, ee_series, ee_addr, ee_n;
     uint16_t ee_old, ee_new;
+    uint8_t  ee_baud;           /* the line's rate when it went */
 
     backup_t bk[BUS_PANEL_BACKUPS];
     unsigned bk_n;
@@ -463,6 +472,30 @@ static void send_goal(void)
                (uint8_t)n, false);
 }
 
+/* Before the first goal to an ID: whether it runs in position mode. */
+static void send_check(void)
+{
+    uint8_t addr = 0;
+    const uint8_t n = proto()->goal_check(series_now(), &addr);
+
+    if (n == 0u) {
+        b.ctl[b.id] = CTL_POSITION;     /* nothing tells another mode */
+        send_goal();
+        return;
+    }
+    b.chk_id = b.id;
+    b.chk_series = series_now();
+    b.chk_n = n;
+    send(U_CHECK, LINK_BUS_OP_READ,
+         (uint16_t)((unsigned)b.id | ((unsigned)addr << 8)), n);
+}
+
+/* The mode of every servo is read again before its next goal. */
+static void ctl_forget(void)
+{
+    memset(b.ctl, CTL_UNKNOWN, sizeof(b.ctl));
+}
+
 static void send_watch(void)
 {
     b.watch_id = b.id;
@@ -470,10 +503,17 @@ static void send_watch(void)
     send(U_WATCH, LINK_BUS_OP_WATCH, b.id >= 0 ? (uint16_t)b.id : 0xFFu, 0u);
 }
 
+/* The newest backup goes back at the rate its servo answers at: the line
+ * moves there first, with torque off to every servo, as BAUD. */
 static void restore_next(void)
 {
     const backup_t *k = &b.bk[b.bk_n - 1u];
 
+    if (k->baud != baud_now() && k->baud < proto()->baud_count) {
+        b.baud_want = k->baud;
+        send(U_BAUD, LINK_BUS_OP_BAUD, k->baud, 0u);
+        return;
+    }
     send_bytes(U_RESTORE, LINK_BUS_OP_EEPROM, k->id, k->addr, k->old, k->n,
                true);
     b.out.sts = k->series != 0u;
@@ -562,6 +602,8 @@ static void warn_eeprom(void)
 
 static void warn_restore(void)
 {
+    bool moves = false;
+
     warn_open(W_RESTORE, TR(BS_W_R_TITLE), TR(KP_HOLD_RESTORE));
     for (unsigned i = b.bk_n; i-- > 0u;) {
         const backup_t *k = &b.bk[i];
@@ -574,8 +616,12 @@ static void warn_restore(void)
         fmt_reg(k->role, old, v, sizeof(v));
         snprintf(warn_line(), BUS_PANEL_LINE, TR(BS_W_R_LINE),
                  (unsigned)k->id, role_name(k->role), v);
+        moves = moves || k->baud != baud_now();
     }
     snprintf(warn_line(), BUS_PANEL_LINE, TR(BS_W_R_ORDER), b.bk_n);
+    if (moves) {
+        snprintf(warn_line(), BUS_PANEL_LINE, "%s", TR(BS_W_R_BAUD));
+    }
 }
 
 /* The EEPROM list: the roles the series has, then RESTORE. */
@@ -665,7 +711,19 @@ static void eeprom_value(uint16_t v)
 
 /* ---------------------------------------------------------------- answers */
 
-static void push_backup(void)
+/* An EEPROM write, landed or not, may have changed the servo's mode. */
+static void ee_forget(void)
+{
+    if (b.ee_id < ID_COUNT) {
+        b.ctl[b.ee_id] = CTL_UNKNOWN;
+    }
+    if (b.ee_role == BUS_R_ID && b.ee_new < ID_COUNT) {
+        b.ctl[b.ee_new] = CTL_UNKNOWN;
+    }
+}
+
+/* @p landed: the write was read back. */
+static void push_backup(bool landed)
 {
     backup_t *k;
 
@@ -679,6 +737,11 @@ static void push_backup(void)
     k->addr = b.ee_addr;
     k->n = b.ee_n;
     k->role = b.ee_role;
+    /* A baud write read back moved the servo and the line with it. */
+    k->baud = landed && b.ee_role == BUS_R_BAUD
+                      && b.ee_new < proto()->baud_count
+                  ? (uint8_t)b.ee_new
+                  : b.ee_baud;
     if (b.ee_n == 2u) {
         proto()->put16(b.ee_series, k->old, b.ee_old);
     } else {
@@ -692,7 +755,7 @@ static void push_backup(void)
 static void keep_uncertain(void)
 {
     if (b.use == U_EE_WRITE && b.ee_role != BUS_R_ID) {
-        push_backup();
+        push_backup(false);
     }
 }
 
@@ -732,13 +795,14 @@ static void done(uint8_t result)
         return;
     }
     case U_EE_WRITE:
+        ee_forget();
         if (!ok) {
             keep_uncertain();
             say(true, result_text(result));
             return;
         }
-        push_backup();
-        if (b.ee_role == BUS_R_ID) {
+        push_backup(true);
+        if (b.ee_role == BUS_R_ID && b.ee_new < ID_COUNT) {
             b.series[b.ee_new] = b.ee_series;
             torque_put(b.ee_new, torque_of(b.ee_id));
             torque_put(b.ee_id, false);
@@ -777,27 +841,52 @@ static void done(uint8_t result)
             say(false, TR(BS_M_RESTORED));
         }
         return;
+    case U_CHECK: {
+        uint8_t bytes[4] = { 0, 0, 0, 0 };
+        const unsigned n = ok ? read_bytes(bytes, sizeof(bytes)) : 0u;
+        bool pos = false;
+
+        if (!ok || n != b.chk_n) {
+            b.goal_due = false;
+            say(true, ok ? TR(BS_M_LENGTH) : result_text(result));
+            return;
+        }
+        pos = proto()->goal_mode(b.chk_series, bytes, n);
+        if (b.chk_id >= 0 && b.chk_id < ID_COUNT
+            && b.series[b.chk_id] == b.chk_series) {
+            b.ctl[b.chk_id] = (uint8_t)(pos ? CTL_POSITION : CTL_OTHER);
+        }
+        if (!pos) {
+            b.goal_due = false;
+            say(true, TR(BS_M_MODE));
+        }
+        return;                 /* the goal goes next */
+    }
+    case U_BAUD:
+        if (!ok) {
+            b.restoring = false;
+            say(true, result_text(result));
+            return;
+        }
+        /* BAUD sent torque off at the old rate; the next OPEN uses the
+         * new one. */
+        b.baud = b.baud_want;
+        memset(b.torque_on, 0, sizeof(b.torque_on));
+        ctl_forget();
+        if (!b.restoring) {
+            say(false, TR(BS_M_DONE));
+        }
+        return;
     case U_TORQUE:
         if (ok) {
             torque_put(b.torque_id, b.torque_want);
         }
         say(!ok, result_text(result));
         return;
-    case U_WATCH:
-    case U_GOAL:
-    case U_SCAN:
+    default:
         /* A scan: the line under the rows has what it found. */
         if (!ok) {
             say(true, result_text(result));
-        }
-        return;
-    default:
-        if (!ok) {
-            say(true, result_text(result));
-        } else if (use == U_BAUD) {
-            /* BAUD sent torque off at the old rate. */
-            memset(b.torque_on, 0, sizeof(b.torque_on));
-            say(false, TR(BS_M_DONE));
         }
         return;
     }
@@ -806,8 +895,11 @@ static void done(uint8_t result)
 /* The command started nothing, or never reached the page. */
 static void failed(const char *why)
 {
-    if (b.use == U_RESTORE) {
+    if (b.use == U_RESTORE || b.use == U_BAUD) {
         b.restoring = false;
+    }
+    if (b.use == U_CHECK) {
+        b.goal_due = false;
     }
     b.waiting = false;
     say(true, why);
@@ -903,6 +995,7 @@ static void reconcile(void)
     if (s != LINK_BUS_OPEN || page_busy()) {
         return;
     }
+    b.baud = baud_now();        /* the line's rate, for the next OPEN */
     if (b.restoring) {
         if (b.bk_n == 0u) {
             b.restoring = false;
@@ -924,7 +1017,14 @@ static void reconcile(void)
         }
     }
     if (b.goal_due && b.id >= 0) {
-        send_goal();
+        if (b.ctl[b.id] == CTL_UNKNOWN) {
+            send_check();
+        } else if (b.ctl[b.id] == CTL_POSITION) {
+            send_goal();
+        } else {
+            b.goal_due = false;
+            say(true, TR(BS_M_MODE));
+        }
     }
 }
 
@@ -1011,6 +1111,7 @@ static void act(const row_t *r)
                 break;
             }
             b.msg[0] = '\0';
+            ctl_forget();
             send(U_OPEN, LINK_BUS_OP_OPEN, b.baud, 0u);
         } else {
             preempt();
@@ -1032,6 +1133,7 @@ static void act(const row_t *r)
             send(U_STOP, LINK_BUS_OP_STOP, 0u, 0u);
         } else {
             b.msg[0] = '\0';
+            ctl_forget();
             send(U_SCAN, LINK_BUS_OP_SCAN,
                  (uint16_t)(b.from | ((unsigned)b.to << 8)), 0u);
         }
@@ -1129,9 +1231,12 @@ static void choice_done(int v)
             break;
         }
         if (bus_open()) {
+            /* The next OPEN keeps the old rate until the line moved. */
+            b.baud_want = (uint8_t)v;
             send(U_BAUD, LINK_BUS_OP_BAUD, (uint16_t)v, 0u);
+        } else {
+            b.baud = (uint8_t)v;
         }
-        b.baud = (uint8_t)v;
         break;
     case C_SERIES:
         if (v < 0 || v >= proto()->series_count) {
@@ -1139,9 +1244,11 @@ static void choice_done(int v)
         }
         if (b.id >= 0) {
             b.series[b.id] = (uint8_t)v;
+            b.ctl[b.id] = CTL_UNKNOWN;
         } else {
             b.series_all = (uint8_t)v;
             memset(b.series, v, sizeof(b.series));
+            ctl_forget();
         }
         slider_range();
         break;
@@ -1222,6 +1329,7 @@ static void warn_apply(void)
         return;
     }
     if (kind == W_RESTORE) {
+        ctl_forget();
         b.restoring = b.bk_n > 0u;
         reconcile();
         return;
@@ -1234,6 +1342,7 @@ static void warn_apply(void)
         } else {
             data[0] = (uint8_t)b.ee_new;
         }
+        b.ee_baud = baud_now();
         send_bytes(U_EE_WRITE, LINK_BUS_OP_EEPROM, b.ee_id, b.ee_addr, data,
                    b.ee_n, true);
         b.out.sts = b.ee_series != 0u;
@@ -1447,6 +1556,7 @@ void bus_panel_init(gfx_rect_t area)
     b.to = BUS_PANEL_TO;
     b.id = NO_ID;
     b.watch_id = NO_ID;
+    b.chk_id = NO_ID;
     b.series_all = p->series_default;
     memset(b.series, p->series_default, sizeof(b.series));
     b.speed = 1000u;
@@ -1621,6 +1731,7 @@ void bus_panel_feed(const bus_panel_feed_t *f)
                       || bus_state() == LINK_BUS_CLOSING)) {
         memset(b.torque_on, 0, sizeof(b.torque_on));  /* closing sends
                                                          torque off */
+        ctl_forget();
     }
     if (f->stops != b.stops_seen) {
         b.stops_seen = f->stops;
@@ -1638,7 +1749,10 @@ void bus_panel_feed(const bus_panel_feed_t *f)
         }
         if (b.waiting && !b.out_due && b.use == U_EE_WRITE
             && b.ee_role != BUS_R_ID) {
-            push_backup();
+            push_backup(false);
+        }
+        if (b.waiting && b.use == U_EE_WRITE) {
+            ee_forget();
         }
         b.restoring = false;
         b.goal_due = false;

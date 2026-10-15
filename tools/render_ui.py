@@ -270,7 +270,7 @@ SCREENS = {
     # The BUS page against two simulated Feetech STS servos: closed, the
     # series list, a scan, one servo watched with two error flags, the
     # EEPROM list, an ID change onto an ID the scan found, a write done,
-    # and RESTORE of two writes.
+    # RESTORE of two writes, and a goal refused to a servo in speed mode.
     "servo-bus": ("servo-bus.png", "servo", "dark"),
     "servo-bus-series": ("servo-bus-series.png", "servo", "dark"),
     "servo-bus-scan": ("servo-bus-scan.png", "servo", "dark"),
@@ -279,6 +279,7 @@ SCREENS = {
     "servo-bus-warning": ("servo-bus-warning.png", "servo", "dark"),
     "servo-bus-written": ("servo-bus-written.png", "servo", "dark"),
     "servo-bus-restore": ("servo-bus-restore.png", "servo", "dark"),
+    "servo-bus-mode": ("servo-bus-mode.png", "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     # Nothing decoded: what a bench shows, where no firmware feeds it.
     "analyser-silent": ("analyser-silent.png", "analyser", "dark"),

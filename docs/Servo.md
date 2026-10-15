@@ -840,7 +840,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | Row | Values | What it does |
 | --- | --- | --- |
 | PROTOCOL | FEETECH | the protocol; the list holds the protocols of the build. Set while the bus is closed |
-| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: torque off to every servo at the old rate, then the line moves to it; the servos keep theirs |
+| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: torque off to every servo at the old rate, then the line moves to it; the servos keep theirs. A move that fails leaves the line, and the next OPEN, at the old rate |
 | SERIES | SCS, STS/SMS | the register table and byte order: SCS big-endian, goal 0 to 1023; STS and SMS little-endian, goal 0 to 4095. Per ID, for the session; STS/SMS at start |
 | BUS | OPEN, CLOSE | takes the port's pin out of PWM, or gives it back with torque off |
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
@@ -850,7 +850,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | SPEED | 0 to 3400 on STS, 0 to 1000 on SCS, 1000 at start | the goal's speed, sent with every goal |
 | ACC | 0 to 255, 0 at start | the goal's acceleration, sent with every goal; STS only, dimmed on SCS |
 | EEPROM | CHANGE | the list of EEPROM writes below |
-| POSITION | the slider | the goal position, written while the slider moves and on its release |
+| POSITION | the slider | the goal position, written while the slider moves and on its release, to a servo in position mode only |
 
 ![The series list](img/servo-bus-series.png)
 
@@ -877,6 +877,18 @@ fails shows `ID 1: no reading` until one succeeds. The sign of the load and
 the current's scale are not measured.
 
 ![One servo watched, with two error flags](img/servo-bus-live.png)
+
+**Position mode.** Before the first goal to an ID the page reads what the
+servo does with one. On STS that is the mode register (33), where 0 is
+POSITION. SCS has no mode register: both angle limits (9 and 11) at 0 run
+it as a motor. A goal goes only to a servo in position mode. Otherwise the
+page sends nothing and says `Not in POSITION mode: no goal sent.`, since
+the goal block sets the speed register a turning servo runs at. The page
+reads the mode again after OPEN, SCAN, BAUD, RESTORE, a SERIES change and
+an EEPROM write to that servo. A mode another master changes in between is
+not seen.
+
+![A goal refused to a servo in speed mode](img/servo-bus-mode.png)
 
 **EEPROM writes.** CHANGE lists ID, BAUD, MIN ANGLE, MAX ANGLE, MODE (STS:
 POSITION, SPEED, PWM, STEP) and LOCK. A pick reads the servo's value first,
@@ -907,7 +919,10 @@ newest first, behind its own 2 s hold. With 8 kept a ninth write is refused
 with `8 changes kept: RESTORE first.` A write that STOP ended, that failed
 after it went, or whose answer was lost keeps its old value for RESTORE,
 because it may have landed; such an ID change is not kept, because the
-servo may answer on either ID.
+servo may answer on either ID. Each kept value carries the rate its servo
+answers at. Before an entry at another rate, RESTORE moves the line there,
+with torque off to every servo as BAUD sends it, and its warning says so.
+The line stays at the rate of the last entry written back.
 
 ![RESTORE of two writes](img/servo-bus-restore.png)
 
@@ -938,6 +953,9 @@ Current limitations:
 - Two servos on one ID both answer; a scan reads one ID, and the frames may
   collide. What a scan reads then is not measured.
 - Kept values for RESTORE are lost at a restart of the panel.
+- The position-mode check uses the STS3215 and SCS15 tables. What a goal
+  does on other models, or on an STS with both angle limits 0, is not
+  measured.
 
 ## Prerequisites
 

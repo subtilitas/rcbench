@@ -86,6 +86,12 @@ typedef struct {
     uint16_t  (*get16)(uint8_t series, const uint8_t *at);
     uint8_t     mode_count;        /**< values of BUS_R_MODE              */
     const char *const *mode_names;
+    /** The registers that tell whether a goal position moves the servo to
+     *  a position, or runs it as a motor: returns the bytes to read, 0 for
+     *  none; @p addr gets the first register. */
+    uint8_t   (*goal_check)(uint8_t series, uint8_t *addr);
+    /** Whether the @p n bytes goal_check() named show position control. */
+    bool      (*goal_mode)(uint8_t series, const uint8_t *bytes, unsigned n);
     uint8_t     error_bit[BUS_E_COUNT];  /**< 0: the protocol has none    */
 } bus_proto_t;
 
