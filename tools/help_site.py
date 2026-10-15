@@ -184,8 +184,35 @@ LINK_TARGET = re.compile(
     r"|(?P<page>[a-z0-9][a-z0-9_-]*)\.md(?:#(?P<panchor>[^\s#]+))?"
     r"|#(?P<anchor>[^\s#]+))\Z")
 
-UNDERSCORE_EMPHASIS = re.compile(r"(?<![\w\\])_(?=[^\s_])[^_\n]*?(?<=\S)_"
-                                 r"(?!\w)")
+def underscore_emphasis(text: str) -> str | None:
+    """The first span of _ or __ emphasis in @p text, or None.  A run of
+    underscores opens when no letter, digit or backslash stands before it
+    and a character other than a space follows; a later run closes when a
+    character other than a space stands before it and no letter or digit
+    follows.  The text between may hold underscores of its own (_a_b_).
+    One pass over the text."""
+    opener = -1
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == "\\":
+            i += 2
+            continue
+        if c != "_":
+            i += 1
+            continue
+        j = i
+        while j < n and text[j] == "_":
+            j += 1
+        before = text[i - 1] if i else " "
+        after = text[j] if j < n else " "
+        if opener >= 0 and not before.isspace() and not after.isalnum():
+            return text[opener:j]
+        if opener < 0 and not (before.isalnum() or before == "\\") \
+                and not after.isspace():
+            opener = i
+        i = j
+    return None
 
 
 def slugify(text: str) -> str:
@@ -216,10 +243,10 @@ class Inline:
         # no emphasis.
         outside_code = re.sub(r"\]\((?:\\.|[^()\\]|\([^()]*\))*\)", "]",
                               outside_code)
-        m = UNDERSCORE_EMPHASIS.search(outside_code)
-        if m:
+        span = underscore_emphasis(outside_code)
+        if span:
             self.fail(line, f"_ emphasis is outside the format: "
-                            f"{m.group(0)[:40]!r}; write \\_ for an "
+                            f"{span[:40]!r}; write \\_ for an "
                             "underscore")
         out = []
         brackets = None
@@ -573,6 +600,10 @@ class Renderer:
         if problem:
             self.fail(num, problem)
             return
+        if first.startswith(("    ", "\t")):
+            self.fail(num, "an indented code block (4 spaces or a tab) is "
+                           "outside the format; use `code` in a line")
+            return
         kind = starts_block(first)
         if first != s and kind is not None:
             self.fail(num, f"an indented {kind}: a block starts in the "
@@ -754,6 +785,9 @@ class Renderer:
         src = f"{self.root}img/{LANG_DIR[self.page.lang]}{filename}"
         dims = f' width="{size[0]}" height="{size[1]}"' if size else ""
         cap = self.inline.render(caption, num)
+        if not text_of(cap).strip():
+            self.fail(num, "an image caption renders as no text; it is the "
+                           "image's text alternative")
         alt = html.escape(text_of(cap))
         # The image links to itself: a row shows each at under half the
         # column, and a tap opens the 800 x 480 px file.

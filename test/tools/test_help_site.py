@@ -346,6 +346,11 @@ def test_a_view_whose_file_is_not_a_png_fails(tree):
     ("text\n> quote\n", "block quote"),
     ("text\n```\n", "fenced code"),
     ("text\n***\n", "rule"),
+    ("a _a_b_ c\n", "_ emphasis"),
+    ("a __bold__ c\n", "_ emphasis"),
+    ("![****](view:motor)\n", "renders as no text"),
+    ("    code block\n", "indented code block"),
+    ("\tcode block\n", "indented code block"),
     ("- item\n  > quote\n", "block quote"),
     ("- item\n  ---\n", "rule"),
     ("| h |\n| - |\n", "separator"),
@@ -379,6 +384,15 @@ def test_outside_the_subset_fails(tree, body, pattern):
 def test_an_empty_screen_fails(tree):
     fails(tree, "text\n", "the screen is empty",
           header="---\nscreen:\ntitle: T\norder: 1\n---\n")
+
+
+@pytest.mark.parametrize("body", [
+    "snake_case and a_b_c stay text\n",
+    "an escaped \\_a\\_ stays text\n",
+    "`_a_` in code\n",
+])
+def test_underscores_that_are_no_emphasis_pass(tree, body):
+    ok(tree, body)
 
 
 def test_a_problem_names_its_line(tree):

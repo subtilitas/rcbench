@@ -272,9 +272,17 @@ jobs:
   help:
     name: Web help
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
+
+      # The help publishes docs/img; a screenshot that is not the panel's
+      # render fails here as it fails in ci.yml, so Pages never carries one.
+      # The renderer needs the runner image's C compiler and Pillow.
+      - name: The committed screenshots match the current render
+        run: |
+          python3 -m pip install pillow==12.3.0
+          python3 tools/render_ui.py --check
 
       # Python 3 of the runner image and its standard library: the
       # generator imports nothing else.
