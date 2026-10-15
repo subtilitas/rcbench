@@ -99,7 +99,7 @@ JOIN HOME NETWORK joins the kept network. Joined, the screen shows the network, 
 | Line | Condition |
 |---|---|
 | `Join failed: password refused.` | the network refused the password 3 times in a row, or refused it last when 20 s ran out |
-| `Join failed: network not found.` | no association within 20 s |
+| `Join failed: network not found.` | no association within 20 s, and the last drop of another kind, or none |
 | `Join failed: no address in 15 s.` | associated, and no address within 15 s |
 | `The home network went away.` | joined, then the network dropped the panel |
 

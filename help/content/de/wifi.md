@@ -99,7 +99,7 @@ HEIMNETZ VERBINDEN verbindet mit dem gespeicherten Netz. Verbunden zeigt der Bil
 | Zeile | Bedingung |
 |---|---|
 | `Verbinden scheiterte: Passwort abgelehnt.` | das Netz hat das Passwort 3-mal in Folge abgelehnt, oder zuletzt abgelehnt, als die 20 s abliefen |
-| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb von 20 s |
+| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb von 20 s, und der letzte Abbruch von anderer Art oder keiner |
 | `Verbinden scheiterte: keine Adresse in 15 s.` | verbunden, aber keine Adresse innerhalb von 15 s |
 | `Das Heimnetz ist weggefallen.` | verbunden, dann hat das Netz das Panel verloren |
 
