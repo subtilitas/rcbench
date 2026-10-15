@@ -1,0 +1,144 @@
+/* The web help's one stylesheet: system fonts, light and dark from the
+ * browser's setting, one column of at most 48 rem, nothing loaded from
+ * elsewhere.  Copied to help/style.css by tools/help_site.py. */
+
+:root {
+  --bg: #ffffff;
+  --fg: #1b1d21;
+  --muted: #5a606b;
+  --line: #d5d8de;
+  --panel: #f3f4f6;
+  --link: #0b5cad;
+  --code-bg: #eceef1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15171a;
+    --fg: #e6e8eb;
+    --muted: #a3a9b3;
+    --line: #353a42;
+    --panel: #1e2125;
+    --link: #79b4f2;
+    --code-bg: #262a30;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow-wrap: break-word;
+}
+
+a { color: var(--link); }
+
+.top, main, nav.pages, footer {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.top .home { font-weight: 600; text-decoration: none; color: var(--fg); }
+.top .switch { white-space: nowrap; }
+
+h1 { font-size: 1.75rem; line-height: 1.25; margin: 1.25rem 0 0.75rem; }
+h2 { font-size: 1.35rem; line-height: 1.3; margin: 2rem 0 0.5rem; }
+h3 { font-size: 1.1rem; line-height: 1.3; margin: 1.5rem 0 0.5rem; }
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--code-bg);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+ul, ol { padding-left: 1.4rem; }
+li + li { margin-top: 0.25rem; }
+
+.table { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; min-width: 50%; }
+th, td {
+  border: 1px solid var(--line);
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--panel); }
+th.c, td.c { text-align: center; }
+th.r, td.r { text-align: right; }
+
+figure { margin: 0; }
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 0.35rem; }
+
+.shot { margin: 1rem 0 1.5rem; }
+.shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+ol.index { list-style: none; padding: 0; }
+ol.index > li {
+  border-top: 1px solid var(--line);
+  padding: 0.75rem 0;
+  margin: 0;
+}
+ol.index > li > a { font-weight: 600; font-size: 1.1rem; }
+ol.index p { margin: 0.25rem 0 0; color: var(--muted); }
+
+nav.pages {
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--line);
+}
+nav.pages h2 { font-size: 1rem; margin: 1rem 0 0.5rem; }
+nav.pages ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+}
+nav.pages li + li { margin-top: 0; }
+nav.pages a[aria-current="page"] {
+  color: var(--fg);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.9rem;
+}

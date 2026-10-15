@@ -270,6 +270,7 @@ const S = {
     `Produkt- und Firmennamen gehören ihren jeweiligen Inhabern. Sie dienen der Beschreibung der Kompatibilität. Es besteht keine Verbindung zu den Herstellern. Pins und Zahlen stammen aus dem rcbench-Repository und seiner Bauanleitung zum Release ${RELEASE}. Diese Seite sendet keine Daten und lädt nichts von anderen Servern.`,
   ],
   footNotice: ['Trademark notice', 'Markenhinweis'],
+  footHelp: ['Panel help', 'Panel-Hilfe'],
   printHead: [`rcbench bench configurator, release ${RELEASE}`, `rcbench Prüfstand-Konfigurator, Release ${RELEASE}`],
   copro: ['Coprocessor', 'Koprozessor'],
   coproSub: ['RP2350-CAN', 'RP2350-CAN'],

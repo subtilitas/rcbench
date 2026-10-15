@@ -83,6 +83,7 @@ The [wiki](https://github.com/subtilitas/rcbench/wiki) is generated from
 | --- | --- |
 | [What this is for](https://github.com/subtilitas/rcbench/wiki/Manifest) | requirements and how each is met |
 | [Bench configurator](https://subtilitas.github.io/rcbench/) | web page, English and German: select functions or parts, get the parts list, a list to buy with maker pages and web search links, the wiring drawing and the pin-to-pin table of that setup |
+| [Panel help](https://subtilitas.github.io/rcbench/help/) | web page, English and German: every screen of the panel with screenshots of its states, what it shows and what it lets the user do |
 | [Building](https://github.com/subtilitas/rcbench/wiki/Building) | toolchains, commands, CI |
 | [Bringing up the link](https://github.com/subtilitas/rcbench/wiki/Bringup) | wiring the two boards and verifying the bus |
 | [Screens](https://github.com/subtilitas/rcbench/wiki/Screens) | operating the bench |

@@ -7,7 +7,7 @@ import { benchParts, optionsOf, testObjectsOf } from '../src/names.ts';
 import { describe, sweep } from './geometry.ts';
 import { chooser, deselectText, groupId, reasonText, removalWarning, removeControl, statusText } from '../src/view/chooser.ts';
 import type { Pending, View } from '../src/view/chooser.ts';
-import { NOTICE_URL, result, resultError } from '../src/view/result.ts';
+import { HELP_URL, NOTICE_URL, result, resultError } from '../src/view/result.ts';
 
 function view(part: Partial<Selection>, lang: Lang = 'en'): View {
   const selection: Selection = { functions: [], owned: [], options: { ...DEFAULT_OPTIONS }, ...part };
@@ -604,6 +604,18 @@ test('the footer links to the trademark notice of the repository in both languag
       // The sentence on the names stands before the link, and the link has no tabindex that takes it out of the Tab order.
       assert.ok(html.includes(`${STRINGS.foot[col(lang)]} <a id="noticelink"`));
       assert.ok(!/<a id="noticelink"[^>]*tabindex/.test(html));
+    }
+  }
+});
+
+test('the footer links to the panel help of its language, on the same site', () => {
+  assert.deepEqual(HELP_URL, { en: 'help/index.html', de: 'help/de/index.html' });
+  const name = { en: 'Panel help', de: 'Panel-Hilfe' };
+  for (const lang of LANGS) {
+    for (const html of [result(view({ functions: ['servo'] }, lang), URL, []), resultError(lang, CATALOGUE, URL)]) {
+      const foot = html.slice(html.indexOf('<footer>'));
+      assert.equal(count(foot, 'id="helplink"'), 1);
+      assert.ok(foot.includes(`<p><a id="helplink" href="${HELP_URL[lang]}">${name[lang]}</a></p>`), foot);
     }
   }
 });

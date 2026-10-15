@@ -14,6 +14,21 @@ history is in git.
   Network) from the panel. Neither needs a part beyond the panel and the
   coprocessor; the panel update needs no microSD card. The base setup runs
   12 functions.
+- Web help for the panel at
+  [subtilitas.github.io/rcbench/help/](https://subtilitas.github.io/rcbench/help/),
+  in English and German, published to GitHub Pages beside the bench
+  configurator. `tools/help_site.py` builds it from `help/content/` and the
+  screenshots of `tools/render_ui.py`, with no package outside the Python
+  standard library. Its format is in `help/site/FORMAT.md`. The pages carry
+  no script and load nothing from other servers. The README in both
+  languages and the configurator's footer link to it; the footer link adds
+  0.2 kB to the configurator's first load, 249.1 kB of 250.0 kB.
+- `tools/help_site.py --check` in CI (continuous integration) fails on a
+  screen without a page in either language, a screenshot that
+  `render_ui.py` does not render or that has no PNG (Portable Network
+  Graphics) file in the page's language, an English and a German page whose
+  headings or screenshots differ, a link to a missing page or heading, and
+  Markdown outside the subset.
 - SETUP has an UPDATES key (German `UPDATES`) under PICK A PIN, which
   opens the UPDATES screen. CHECK FOR UPDATES joins the home network kept
   on FILES & UPDATE, sends one HTTPS (hypertext transfer protocol over
