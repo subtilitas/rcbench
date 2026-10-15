@@ -1956,11 +1956,11 @@ TEST_CASE(a_supply_off_at_the_start_that_switches_on_ends_the_run)
 }
 
 /* A supply that does not answer at the start: the run passes while it
- * stays away.  It comes back with its output off: watched from there, and
- * its output switched on ends the run.  It comes back with its output on,
- * in SAFE, a search or on the way to ARMED: the run ends as a changed
- * supply. */
-TEST_CASE(a_supply_that_answers_late_with_its_output_on_ends_the_run)
+ * stays away.  It answers later, its output off: the run ends before the
+ * next CONNECT, which would switch it on beside the rail's feed.  It
+ * answers later with its output on, in SAFE, a search or on the way to
+ * ARMED: the run ends as a changed supply. */
+TEST_CASE(a_supply_that_answers_late_ends_the_run)
 {
     rig_init(0u, false);
     g.sup.online = false;
@@ -1974,22 +1974,24 @@ TEST_CASE(a_supply_that_answers_late_with_its_output_on_ends_the_run)
     g.sup.online = false;
     CHECK(start());
     CHECK(run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
-    run_for(500u);
+    const unsigned c0 = g.connects;
     g.sup.online = true;
     g.sup.output = false;
-    run_for(500u);
-    CHECK(servo_limrun_running(&g.run));
-    CHECK(g.run.sup_online);
-    CHECK(!g.run.sup_out);
-    g.sup.output = true;
-    run_for(500u);
+    for (int k = 0; k < 100000 && servo_limrun_running(&g.run)
+                    && g.connects == c0; ++k) {
+        tick();
+    }
+    CHECK(!servo_limrun_running(&g.run));
+    CHECK_EQ(g.connects, c0);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
     CHECK_EQ(g.offs, 1u);
 
     static const servo_limrun_phase_t k_ph[] = {
         SERVO_LIMRUN_PH_SAFE, SERVO_LIMRUN_PH_SEARCH, SERVO_LIMRUN_PH_ARM,
     };
-    for (size_t p = 0; p < sizeof(k_ph) / sizeof(k_ph[0]); ++p) {
+    for (size_t q = 0; q < 2u * sizeof(k_ph) / sizeof(k_ph[0]); ++q) {
+        const size_t p = q / 2u;
         rig_init(0u, false);
         g.sup.online = false;
         CHECK(start());
@@ -2001,7 +2003,7 @@ TEST_CASE(a_supply_that_answers_late_with_its_output_on_ends_the_run)
         CHECK_EQ(g.run.phase, k_ph[p]);
         g.bench_ms = 2000u;
         g.sup.online = true;
-        g.sup.output = true;
+        g.sup.output = (q % 2u) != 0u;
         run_for(300u);
         CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
         CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
@@ -2011,7 +2013,9 @@ TEST_CASE(a_supply_that_answers_late_with_its_output_on_ends_the_run)
 
 /* Every search window holds 3.0 V on the rail, the first included: a rail
  * that goes off in the read session ends the run at the first search
- * window, before a step; 3000 mV searches on. */
+ * window.  The search holds the centre for SERVO_LIMRUN_RETURN_MS first;
+ * the run is followed past that, so a run that went on would have
+ * stepped.  3000 mV searches on and steps. */
 TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
 {
     for (int k = 0; k < 3; ++k) {
@@ -2022,7 +2026,7 @@ TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
                   : k == 1 ? (uint16_t)(SERVO_LIMRUN_RAIL_MIN_MV - 1u)
                            : (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV;
         CHECK(run_to(SERVO_LIMRUN_PH_SEARCH, RUN_MS));
-        run_for(1000u);
+        run_for(SERVO_LIMRUN_RETURN_MS + 1000u);
         if (k < 2) {
             CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
             CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
@@ -2030,6 +2034,7 @@ TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
             CHECK_EQ(g.offs, 1u);
         } else {
             CHECK(servo_limrun_running(&g.run));
+            CHECK(g.driven);
             CHECK_EQ(g.run.rail_mv, (uint16_t)SERVO_LIMRUN_RAIL_MIN_MV);
         }
     }
@@ -2531,7 +2536,7 @@ int main(void)
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
     RUN(the_supply_is_watched_in_safe_and_on_the_way_to_armed);
     RUN(a_supply_off_at_the_start_that_switches_on_ends_the_run);
-    RUN(a_supply_that_answers_late_with_its_output_on_ends_the_run);
+    RUN(a_supply_that_answers_late_ends_the_run);
     RUN(a_rail_under_3_v_in_any_search_window_ends_the_run);
     RUN(an_abort_behind_the_arm_leaves_the_bench_safe);
     RUN(no_window_for_200_ms_ends_the_run);

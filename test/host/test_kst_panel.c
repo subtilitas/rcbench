@@ -5689,6 +5689,48 @@ TEST_CASE(a_run_on_the_programming_port_needs_the_pd_mini_on)
     }
 }
 
+/* A run that started with no PD mini answering, the rail fed from
+ * elsewhere: a PD mini heard first inside the read session, its output
+ * off, is not handed the next CONNECT, which would switch it on beside
+ * that feed.  The run ends as a changed supply before that session and
+ * no supply is asked on. */
+TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
+{
+    lr_fresh(false);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    for (int i = 0; i < 200000 && servo_screen_limit_running()
+                    && kst_prog_state(M) != KST_PROG_PROGRAMMING; ++i) {
+        lr_ms(1u);
+    }
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.output = false;
+        st.set_v = supply_screen_set_v();
+        st.set_i = supply_screen_set_i();
+        st.samples = 1u;
+        st.taken_ms = g_rig.ms;
+        st.stamped = true;
+        servo_screen_supply(&st);
+    }
+    for (int i = 0; i < 200000 && servo_screen_limit_running()
+                    && kst_prog_state(M) != KST_PROG_PWM; ++i) {
+        lr_ms(1u);
+    }
+    const unsigned sets = g_rig.sup_sets;
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(!servo_screen_limit_running());
+    CHECK_EQ(g_rig.sup_sets, sets);
+    CHECK(!g_rig.sup_on);
+    CHECK(strstr(lr.report, "Result:         ABORTED - supply or rail "
+                            "voltage changed\n") != NULL);
+}
+
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
  * page and a tap where it stands on the programming port changes nothing;
  * the run searches out to PULSE MIN and PULSE MAX with no session. */
@@ -6065,6 +6107,7 @@ int main(void)
     RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
     RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);
+    RUN(a_pd_mini_heard_first_in_a_session_gets_no_connect);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
     RUN(a_later_run_names_its_own_backup_when_its_first_write_is_lost);

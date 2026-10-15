@@ -4570,6 +4570,9 @@ static struct {
 
 static void window(const sense_link_win_t *w);
 
+/* bench_fresh() sends no reading: the screen starts with none. */
+static bool s_bench_no_first;
+
 static void bench_fresh(void)
 {
     fresh();
@@ -4595,7 +4598,9 @@ static void bench_fresh(void)
     st.samples = ++bench.samples;
     st.taken_ms = bench.now;
     st.stamped = true;
-    servo_screen_supply(&st);
+    if (!s_bench_no_first) {
+        servo_screen_supply(&st);
+    }
     scr->tick(0.02f);
 }
 
@@ -9055,26 +9060,32 @@ TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
     CHECK(servo_screen_testing());
 }
 
-/* A limit run started with no PD mini heard yet: one heard during the run
- * with its output on, beside the rail the run started on, ends it as a
- * changed supply, with the output asked off. */
-TEST_CASE(a_pd_mini_heard_first_with_its_output_on_ends_a_limit_run)
+/* A limit run started with no supply reading at all: a PD mini heard
+ * during the run, its output on or off, beside the rail the run started
+ * on, ends it as a changed supply, with the output asked off. */
+TEST_CASE(a_pd_mini_heard_first_after_the_start_ends_a_limit_run)
 {
-    s_bench_no_supply = true;
-    lim_bench();
-    lim_hold(2.3f);
-    CHECK(servo_screen_limit_running());
-    bench_frames(1000u);
-    CHECK(servo_screen_limit_running());
-    s_bench_no_supply = false;
-    bench.online = true;
-    bench.out = true;
-    bench_frames(500u);
-    CHECK(!servo_screen_limit_running());
-    lim_run_out();
-    CHECK(strstr(bench.report, "ABORTED") != NULL);
-    CHECK(strstr(bench.report, "supply or rail voltage changed") != NULL);
-    CHECK(bench.released);
+    for (int on = 1; on >= 0; --on) {
+        s_bench_no_first = true;
+        s_bench_no_supply = true;
+        lim_bench();
+        s_bench_no_first = false;
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        bench_frames(1000u);
+        CHECK(servo_screen_limit_running());
+        s_bench_no_supply = false;
+        bench.online = true;
+        bench.out = on != 0;
+        bench.rail_set = true;
+        bench.rail_mv = (unsigned)lroundf(supply_screen_set_v() * 1000.0f);
+        bench_frames(500u);
+        CHECK(!servo_screen_limit_running());
+        lim_run_out();
+        CHECK(strstr(bench.report, "ABORTED") != NULL);
+        CHECK(strstr(bench.report, "supply or rail voltage changed") != NULL);
+        CHECK(bench.released);
+    }
 }
 
 /* Each end of a limit run's watch, at a search: ABORTED, the output asked
@@ -9381,7 +9392,7 @@ int main(void)
     RUN(programming_is_not_offered_off_the_programming_port);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
     RUN(no_run_starts_while_the_logger_holds_the_last_report);
-    RUN(a_pd_mini_heard_first_with_its_output_on_ends_a_limit_run);
+    RUN(a_pd_mini_heard_first_after_the_start_ends_a_limit_run);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     return test_summary("servo");
 }

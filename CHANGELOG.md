@@ -61,7 +61,8 @@ history is in git.
   stays off: switched on outside a session it ends the run, `supply or rail
   voltage changed`, and a run on PROG PORT does not start,
   `PROGRAMMING: PD MINI OUTPUT OFF`. A PD mini first heard after the
-  start with its output on ends the run the same way. A search window
+  start ends the run the same way, its output on or off, and no CONNECT
+  goes to a PD mini the run did not start with. A search window
   under 3.0 V, the first one included, ends the run, `supply or rail
   voltage changed`. A run's `Backup:` line names the file
   its own first write saved, also when that write is sent and lost. No

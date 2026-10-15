@@ -190,7 +190,7 @@ Jeder dieser Gründe beendet den Lauf als ABGEBROCHEN, mit abgeschaltetem Ausgan
 - während einer Suche ein Fenster ohne Schienenspannung (`kein Spannungswert im Fenster`) oder mit einem Mittel unter 3,0 V, das erste Fenster eingeschlossen (`Netzteil oder Spannung geändert`);
 - ein Messwert ab 3,0 A, ein Messwert am Ende des Bereichs des INA3221 oder Fenstermittel über 1,0 A für 400 ms;
 - eine Suche länger als 40 s, ein Prüfstand, der nicht in 3 s schaltet, oder ein Schritt des Programmierers länger als 150 s;
-- eine Änderung an Sollwerten oder Ausgang des Netzteils außerhalb der Sitzungen des Programmierers, darunter ein PD mini, der erst nach dem Start mit eingeschaltetem Ausgang antwortet; während einer Suche die Schiene mehr als 1,0 V vom ersten Fenster des Laufs entfernt;
+- eine Änderung an Sollwerten oder Ausgang des Netzteils außerhalb der Sitzungen des Programmierers, darunter ein PD mini, der erst nach dem Start antwortet, mit ein- oder ausgeschaltetem Ausgang; während einer Suche die Schiene mehr als 1,0 V vom ersten Fenster des Laufs entfernt;
 - bei einer späteren Sitzung ein anderes Servo, oder REVERSION, die Pulse oder der Wertebereich geändert (`Servo hat andere Werte`).
 
 Ein Lauf, der endet, während er auf ARMED wartet, schaltet den Prüfstand zudem auf SAFE.

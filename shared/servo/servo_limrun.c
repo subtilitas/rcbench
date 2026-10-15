@@ -695,13 +695,11 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
          * back to ARMED, the supply is the run's again. */
         return;
     }
-    if (!r->sup_watch || (!r->sup_online && s->online && !s->output)) {
+    if (!r->sup_watch) {
         /* The supply is watched from its first reading on: answering or
-         * not, its set points, and its output on or off.  One that did
-         * not answer and answers with its output off is watched from
-         * there as off.  An output off stays off, and a supply that did
-         * not answer does not come with its output on: a rail fed from
-         * elsewhere gets no second supply switched on beside it. */
+         * not, its set points, and its output on or off.  An output off
+         * stays off: a rail fed from elsewhere gets no second supply
+         * switched on beside it. */
         r->sup_watch  = true;
         r->sup_online = s->online;
         r->sup_out    = s->online && s->output;
@@ -711,7 +709,9 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
     }
     if (!r->sup_online) {
         if (s->online) {
-            /* Answering now, with its output on. */
+            /* A supply that did not answer at the start answers now, its
+             * output on or off: a later CONNECT would hand it the rail
+             * beside the feed the run started on. */
             abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
         }
         return;
@@ -727,6 +727,13 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                || s->set_i > r->sup_i + 0.0005f
                || s->set_i < r->sup_i - 0.0005f) {
         /* Switched on from off, or its set points moved. */
+        abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
+    }
+}
+
+void servo_limrun_supply_refused(servo_limrun_t *r, uint32_t now_ms)
+{
+    if (servo_limrun_running(r)) {
         abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
     }
 }

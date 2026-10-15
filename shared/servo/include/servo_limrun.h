@@ -444,10 +444,9 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w);
 /** The supply's reading.  The first one after the start, answering or
  *  not, is what it must stay at: its set points, and its output on or off.
  *  An output off then and on later, or a supply that did not answer and
- *  answers with its output on, ends the run as a changed supply
- *  (SERVO_LIMRUN_WHY_SUPPLY_CHANGED); one that answers with its output off
- *  is watched from there.  The caller passes a reading that does not
- *  answer where it has none at the start. */
+ *  answers later, its output on or off, ends the run as a changed supply
+ *  (SERVO_LIMRUN_WHY_SUPPLY_CHANGED).  The caller passes a reading that
+ *  does not answer where it has none at the start. */
 void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                          uint32_t now_ms);
 
@@ -461,6 +460,11 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
 void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
                          const uint16_t *pulse_dus, uint32_t now_ms);
 void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms);
+
+/** The caller will not hand the programmer's CONNECT a supply the run did
+ *  not start with: the run ends as a changed supply
+ *  (SERVO_LIMRUN_WHY_SUPPLY_CHANGED). */
+void servo_limrun_supply_refused(servo_limrun_t *r, uint32_t now_ms);
 
 /** The file the servo's values before the run were saved in, once the
  *  programmer names it: its first write saves it. */

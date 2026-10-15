@@ -3336,7 +3336,13 @@ static bool lim_apply(const servo_limrun_do_t *d)
         ++s.arm_rev;
     }
     kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
-    if (d->connect) {
+    if (d->connect && lim_pd_answers()
+        && (!s.sup.output || !s.lim.sup_online)) {
+        /* A PD mini the run did not start with, or one with its output
+         * off: the session would switch it on beside the rail's feed. */
+        servo_limrun_supply_refused(&s.lim, test_now());
+        again = true;
+    } else if (d->connect) {
         const bool pd = lim_pd_answers();
         m = kst_panel_run_connect(
             pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),

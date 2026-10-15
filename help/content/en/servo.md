@@ -190,7 +190,7 @@ Each of these ends the run as ABORTED, with the output off and the servo release
 - during a search, a window without the rail voltage (`no rail voltage in a window`), or with its mean under 3.0 V, the first window included (`supply or rail voltage changed`);
 - a sample at 3.0 A or more, a sample at the end of the INA3221's range, or window means above 1.0 A for 400 ms;
 - a search longer than 40 s, a bench that does not switch in 3 s, or a programmer step longer than 150 s;
-- a change to the supply's set points or output, outside the programmer's sessions, a PD mini first heard after the start with its output on among them; during a search, the rail more than 1.0 V from the run's first window;
+- a change to the supply's set points or output, outside the programmer's sessions, a PD mini first heard after the start among them, its output on or off; during a search, the rail more than 1.0 V from the run's first window;
 - at a later session, another servo, or REVERSION, the pulses or the range of values changed (`servo holds other values`).
 
 A run that ends while it waits for ARMED also switches the bench to SAFE.
