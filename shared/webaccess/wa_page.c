@@ -18,6 +18,7 @@ typedef enum {
     P_UPLOAD,
     P_TOO_BIG,
     P_BROKE,
+    P_REFUSED,
     P_FILES,
     P_ALL,
     P_ALL_SIZE_1,
@@ -64,6 +65,7 @@ static const char *const k_en[P_COUNT] = {
     [P_UPLOAD]       = "Upload",
     [P_TOO_BIG]      = "The file is larger than the panel's slot.",
     [P_BROKE]        = "The upload broke off.",
+    [P_REFUSED]      = "The panel did not take the upload: HTTP ",
     [P_FILES]        = "Files on the card",
     [P_ALL]          = "Download all as one ZIP file",
     [P_ALL_SIZE_1]   = " files, ",
@@ -109,6 +111,7 @@ static const char *const k_de[P_COUNT] = {
     [P_UPLOAD]       = "Hochladen",
     [P_TOO_BIG]      = "Die Datei ist größer als der Slot des Panels.",
     [P_BROKE]        = "Der Upload brach ab.",
+    [P_REFUSED]      = "Das Panel hat den Upload nicht angenommen: HTTP ",
     [P_FILES]        = "Dateien auf der Karte",
     [P_ALL]          = "Alles als eine ZIP-Datei herunterladen",
     [P_ALL_SIZE_1]   = " Dateien, ",
@@ -203,7 +206,7 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
     wa_out_str(o, "</p><p>");
     wa_out_str(o, pt(pi->de, P_FW_NOTE));
     wa_out_str(o, "</p><form id=\"f\"><input type=\"file\" id=\"i\" "
-                  "accept=\".bin\"> <button>");
+                  "accept=\".bin\" required> <button>");
     wa_out_str(o, pt(pi->de, P_UPLOAD));
     wa_out_str(o, "</button></form>"
                   "<p><progress id=\"p\" max=\"100\" value=\"0\" hidden>"
@@ -222,8 +225,12 @@ static void firmware(wa_out_t *o, const wa_page_info_t *pi)
                   "');p.hidden=false;p.value=0;r.textContent='';"
                   "x.upload.onprogress=function(v){if(v.lengthComputable)"
                   "p.value=Math.floor(v.loaded*100/v.total);};"
-                  "x.onload=function(){r.textContent=x.responseText;};"
-                  "x.onerror=function(){r.textContent='");
+                  "x.onload=function(){var t=x.responseText;p.hidden=true;"
+                  "p.value=0;if(t===''&&x.status!==200)t='");
+    wa_out_js(o, pt(pi->de, P_REFUSED));
+    wa_out_str(o, "'+x.status+'.';r.textContent=t;};"
+                  "x.onerror=function(){p.hidden=true;p.value=0;"
+                  "r.textContent='");
     wa_out_js(o, pt(pi->de, P_BROKE));
     wa_out_str(o, "';};x.send(f);};</script>");
 }

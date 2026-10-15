@@ -324,6 +324,18 @@ TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
                        "\\'s slot.';return;}") != NULL);
     CHECK(strstr(g_js, "r.textContent='The upload broke off.';};") != NULL);
     CHECK(strstr(g_js, "panel's") == NULL);
+    /* No file chosen: the browser says so; the guard stays as well. */
+    CHECK(strstr(g_p.buf, "type=\"file\" id=\"i\" accept=\".bin\" required>")
+          != NULL);
+    CHECK(strstr(g_js, "if(!f)return;") != NULL);
+    /* A refusal without a body (403, 503) says so with its status and
+     * ends the progress bar; so does a broken connection. */
+    CHECK(strstr(g_js, "if(t===''&&x.status!==200)t='The panel did not take "
+                       "the upload: HTTP '+x.status+'.';r.textContent=t;};")
+          != NULL);
+    CHECK(strstr(g_js, "x.onload=function(){var t=x.responseText;"
+                       "p.hidden=true;p.value=0;") != NULL);
+    CHECK(strstr(g_js, "x.onerror=function(){p.hidden=true;p.value=0;") != NULL);
 
     /* Without an apostrophe a text passes unchanged, umlaut included. */
     begin(-1);
@@ -333,6 +345,9 @@ TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
     CHECK(strstr(g_js, "r.textContent='Die Datei ist gr\xc3\xb6\xc3\x9f"
                        "er als der Slot des Panels.';return;}") != NULL);
     CHECK(strstr(g_js, "r.textContent='Der Upload brach ab.';};") != NULL);
+    CHECK(strstr(g_js, "t='Das Panel hat den Upload nicht angenommen: HTTP "
+                       "'+x.status+'.';") != NULL);
+    CHECK(strstr(g_p.buf, "accept=\".bin\" required>") != NULL);
     fake_free(&fs);
 }
 

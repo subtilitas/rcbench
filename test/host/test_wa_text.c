@@ -264,6 +264,13 @@ TEST_CASE(texts_are_escaped_for_a_javascript_string)
     wa_out_js(&g_o, "gr\xc3\xb6\xc3\x9f" "er \xc3\xa4\xc3\xb6 \xe2\x82\xac");
     CHECK(wa_out_flush(&g_o));
     CHECK_STR_EQ(g_s.buf, "gr\xc3\xb6\xc3\x9f" "er \xc3\xa4\xc3\xb6 \xe2\x82\xac");
+    /* U+2028 and U+2029 end a line in older engines: escapes.  The code
+     * points around them, and a lone E2 80, pass unchanged. */
+    out_begin(-1);
+    wa_out_js(&g_o, "a\xe2\x80\xa8" "b\xe2\x80\xa9" "c\xe2\x80\xa7\xe2\x80\xb0"
+                    "\xe2\x80");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "a\\u2028b\\u2029c\xe2\x80\xa7\xe2\x80\xb0\xe2\x80");
     /* An empty text and no text write nothing. */
     out_begin(-1);
     wa_out_js(&g_o, "");

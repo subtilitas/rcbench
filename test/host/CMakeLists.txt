@@ -239,7 +239,8 @@ set_tests_properties(wa_zip_check PROPERTIES
     FIXTURES_REQUIRED wa_zip_archives)
 
 # node reads the script of each page.  Without node on the PATH the test is
-# skipped (exit 77); the CI host job installs node and so runs it.
+# skipped (exit 77); the CI runner image carries node, and a CI step fails
+# the job if it does not.
 add_test(NAME wa_page_script
     COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/check_wa_page.py"

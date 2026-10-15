@@ -228,6 +228,11 @@ void wa_out_js(wa_out_t *o, const char *s)
         } else if (b == '<' || b < 0x20u || b == 0x7Fu) {
             const char esc[4] = { '\\', 'x', k_hex[b >> 4], k_hex[b & 0x0Fu] };
             wa_out_raw(o, esc, 4u);
+        } else if (b == 0xE2u && (uint8_t)s[1] == 0x80u
+                   && ((uint8_t)s[2] == 0xA8u || (uint8_t)s[2] == 0xA9u)) {
+            /* U+2028 and U+2029 end a line in a script of older engines. */
+            wa_out_str(o, (uint8_t)s[2] == 0xA8u ? "\\u2028" : "\\u2029");
+            s += 2;
         } else {
             wa_out_raw(o, s, 1u);
         }

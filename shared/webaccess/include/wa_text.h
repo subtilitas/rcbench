@@ -86,8 +86,9 @@ void wa_out_html(wa_out_t *o, const char *s);
  * @p s as the inside of a JavaScript string literal in single or double
  * quotes.  Backslash, ' and " get a backslash before them.  < is written
  * as \x3c, so "</script>" cannot end the script, and each control
- * character 0x00-0x1F and 0x7F as \xHH.  Bytes from 0x80 up pass
- * unchanged.
+ * character 0x00-0x1F and 0x7F as \xHH.  U+2028 and U+2029 (UTF-8
+ * E2 80 A8 and E2 80 A9) are written as \u2028 and \u2029.  Other bytes
+ * from 0x80 up pass unchanged.
  */
 void wa_out_js(wa_out_t *o, const char *s);
 /** @p path with every byte but A-Z a-z 0-9 - . _ ~ and / percent-encoded. */
