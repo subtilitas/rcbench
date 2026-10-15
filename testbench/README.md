@@ -341,8 +341,11 @@ per run:
 - **Responder.** It pretends to be the device at the other end — an ESC that
   answers a BLHeli_S bootloader handshake, or one that emits OpenYGE
   telemetry, or a servo that answers the Hitec D-series protocol or the KST wire. That makes the panel's
-  programmer and telemetry paths testable without owning every device. It also
-  answers as a touch controller at its own address; see below.
+  programmer and telemetry paths testable without owning every device.
+
+**Touch injector** — a Waveshare RP2350-Zero of its own on the panel's touch
+bus, answering as a second touch controller at 0x14. See *Touch, which is
+the one that matters*, and `touch-injector/README.md`.
 - **Hands.** It closes the relays across both boards' reset and boot buttons,
   which is what makes a cold start scriptable and a bad flash recoverable.
 
@@ -396,7 +399,7 @@ Proposed channel map, to be checked against the wiring as built:
 | 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
 | 7 | CAN CS | coprocessor GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
 | 8 | RXCAN | XL2515 to transceiver | the bit stream itself, which is when a frame actually arrived |
-| 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the emulator at 0x14 |
+| 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the injector at 0x14 |
 | 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
 | 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
 | 12 | KST port | coprocessor GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
@@ -581,41 +584,48 @@ a stop pressed while a hold is running, and touch that stops answering
 altogether. All of them are decided by what the GT911 touch controller reports
 over I²C (inter-integrated circuit).
 
-**So the RP2350 pretends to be the GT911, at an address of its own.**
+**So a second board answers as a GT911, at an address of its own.** The
+touch injector (`touch-injector/`) is a Waveshare RP2350-Zero on the panel's
+touch bus. It emulates a GT911 at 0x14 and presses where a USB (Universal
+Serial Bus) serial command from the Pi tells it to.
 
-Sharing an address does not work: two devices both acknowledge and their
-open-drain pulls combine, so what the panel reads is neither, and the panel
-probes the physical part at start-up anyway --
-`firmware/panel/components/gt911/gt911.c` tries 0x5D and then 0x14.
+Sharing the glass's address does not work: two devices both acknowledge and
+their open-drain pulls combine, so what the panel reads is neither. The glass
+answers at 0x5D and the injector at 0x14, so nothing on the bus collides.
 
-Giving the emulator the second of those two addresses removes the conflict
-entirely. The real controller answers at 0x5D as it always did, the emulator
-answers at 0x14, and nothing on the bus collides. What changes is which one
-the panel asks first: it probes the debug address, uses it if something is
-there, and falls back to the real controller when nothing answers. A panel
-with no bench attached finds nothing at 0x14 and behaves exactly as it does
-now, one failed probe later.
+**The panel reads both.** A panel image built with
+`idf.py -D RCBENCH_TOUCH_INJECTOR=ON build` probes 0x14 once at start-up,
+after it has found the glass. When 0x14 answers as a GT911, the touch task
+reads it every poll after the glass and merges the two
+(`shared/touch/touch_merge.c`):
 
-**The panel does not do this yet.** `firmware/panel/components/gt911/touch.c`
-passes a zeroed configuration, so `gt911.c` tries 0x5D first, finds the real
-controller and never asks 0x14. Until that changes the emulator can sit on the
-bus answering perfectly and the panel will not have spoken to it: every
-gesture and every silence in the table below is a plan, not a capability.
+- The glass's contacts go out first, before the injector is read, so a slow
+  or failing injector never delays a contact on the glass.
+- The merged frame holds at most 5 contacts. The glass's are always in it;
+  injected ones fill what is left and carry ids from 0x80 up.
+- STOP pressed on the glass during an injected gesture stops the bench. So
+  does STOP pressed by the injector.
+- Three failed reads of 0x14 in a row drop the injected contacts. The next
+  read is tried 100 ms later.
+- Touch counts as seen only while both controllers answer. An injector that
+  goes silent ages the touch reading as a silent glass does, and an armed
+  bench goes SAFE at most 700 ms after its last answer: 200 ms until touch
+  reads as lost, then `ARMING_TOUCH_DEAD_MS` (500 ms).
 
-What the change is: `gt911_new()` already takes an address to try
-(`cfg.i2c_addr`), so it is which candidate goes first and where that choice
-comes from -- a build option, off in a release, so a shipped panel does not
-look for a debug device at all. It is one small change to the panel and it
-belongs in its own pull request, with its own review, rather than inside a
-description of a bench.
+A release image is built without the option. It compiles none of this and
+never addresses 0x14 a second time; CI (continuous integration) checks that
+its ELF holds no injector symbol.
 
-**And the panel says so while it is doing it.** A bench being driven by
-something other than the panel's own glass is a fact the operator must be able
-to see, in the same way a run that is not being recorded says so. `touch.h`
-already reports which address answered, so the band has what it needs.
+**And the panel says so.** While an injector is attached the status band's
+MODE chip reads `INJECT` in place of BENCH or SIM. LINK still tells a bench
+from the simulator.
 
-With it built, a recipe says "press at (612, 396), hold 2.1 s, release" and
-the panel cannot tell the difference. With the
+Injected coordinates go through the same mapping as the glass's, which
+scales from the resolution the glass reports. They are panel pixels when the
+glass reports 800 x 480; the resolution of the panel's GT911 is not measured.
+
+A recipe says "press at (612, 396), hold 2.1 s, release" and the panel
+handles it as a finger. With the
 analyser on the heartbeat and the output pin at the same time, one capture
 holds the gesture and what the bench did about it:
 
@@ -626,9 +636,10 @@ holds the gesture and what the bench did about it:
 | hold, slide off the button, hold | nothing drives |
 | second contact lands, first leaves | nothing drives |
 | STOP while a hold is running | the heartbeat stops being asserted within 150 ms |
-| the emulator stops answering | the bank comes down, and the far end fails safe |
+| the injector stops answering | the bench goes SAFE within 700 ms, and the far end fails safe |
 
-That last one has no test. Here it is a wire going quiet on purpose.
+The host suite checks that bound (`test_touch_merge`); here it is a wire
+going quiet on purpose.
 
 It also gives the failure that cannot be staged any other way: a touch
 controller that answers slowly, or that reports a contact that was never
@@ -769,9 +780,6 @@ firmware and the decoder agree, and no more than that.
 
 ## What is not built yet
 
-- **The panel's debug touch address.** Described above; without it the touch
-  emulator injects nothing. One build option and one probe order, in its own
-  pull request.
 - **The decoders.** Described in `decoders/README.md`. Two of their three
   checks wait on nothing: the round trip against this tree's own builder, and
   the published vectors that prove the convention. Only the comparison against
@@ -801,4 +809,5 @@ firmware and the decoder agree, and no more than that.
   after every merge.
 - **Relays across BOOT and RESET**, closed by the RP2350.
 - **A camera on the display**, on a fixed mount, calibrated from the splash.
-- **The touch emulator answers at 0x14**, beside the real controller at 0x5D.
+- **The touch injector answers at 0x14**, beside the real controller at 0x5D,
+  and a panel built with `RCBENCH_TOUCH_INJECTOR` reads and merges both.

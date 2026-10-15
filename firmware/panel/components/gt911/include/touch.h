@@ -100,6 +100,15 @@ uint16_t touch_i2c_address(void);
  */
 uint32_t touch_age_ms(void);
 
+#ifdef RCBENCH_TOUCH_INJECTOR
+/**
+ * Whether a touch injector (testbench/touch-injector) answered at start-up.
+ * Declared in a build with RCBENCH_TOUCH_INJECTOR only; touch_inject.h has
+ * the rest.
+ */
+bool touch_injector_attached(void);
+#endif
+
 
 #ifdef __cplusplus
 }

@@ -231,3 +231,14 @@ def test_core_0s_row_is_held_to_the_measurement():
 def test_a_run_that_did_not_measure_core_0_does_not_hold_its_row():
     assert sc.check_iomcu_doc([("core 1", "core1_main", 1, 2, 3, 4)]) == [
         "core 0 is not measured; its row in the docs is not held"]
+
+
+@pytest.mark.parametrize("rel, inside", [
+    ("build/esp-idf/x.c", True),
+    ("build-inject/esp-idf/mbedtls/library/error.c", True),
+    ("main/main.c", False),
+    ("components/gt911/touch_inject.c", False),
+    ("components/builder/x.c", False),
+])
+def test_build_trees_are_not_read_as_source(rel, inside):
+    assert sc.in_build_dir(sc.Path(rel)) is inside
