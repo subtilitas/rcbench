@@ -708,6 +708,10 @@ static void done(uint8_t result)
         if (b.ee_role == BUS_R_ID) {
             b.series[b.ee_new] = b.ee_series;
             b.id = b.ee_new;
+        } else if (b.ee_role == BUS_R_BAUD
+                   && b.ee_new < proto()->baud_count) {
+            /* The coprocessor followed the servo; the next OPEN does too. */
+            b.baud = (uint8_t)b.ee_new;
         }
         say(false, TR(BS_M_WRITTEN));
         return;
@@ -723,6 +727,9 @@ static void done(uint8_t result)
             if (k->role == BUS_R_ID && b.id == (int)k->id) {
                 b.id = k->old[0];
                 b.series[b.id] = k->series;
+            } else if (k->role == BUS_R_BAUD
+                       && k->old[0] < proto()->baud_count) {
+                b.baud = k->old[0];
             }
         }
         b.bk_n--;
@@ -1497,7 +1504,9 @@ static void make_lines(void)
 
             bytes[i] = (uint8_t)(i % 2u == 0u ? r & 0xFFu : r >> 8);
         }
-        if (n > 0u && p->live(series_now(), bytes, n, &live)) {
+        /* Only the last read's block is live: a failed read shows none. */
+        if (n > 0u && (sreg(LINK_BS_WATCH) >> 8) == 0u
+            && p->live(series_now(), bytes, n, &live)) {
             const unsigned load = live.load > 1000u ? 1000u : live.load;
             int k = snprintf(b.lines[1], BUS_PANEL_LINE, TR(BS_L_LIVE),
                              (unsigned)b.id, (unsigned)live.position,
@@ -1562,6 +1571,10 @@ void bus_panel_feed(const bus_panel_feed_t *f)
     }
     b.f = *f;
     b.fed = true;
+    if (page_ok() && (bus_state() == LINK_BUS_CLOSED
+                      || bus_state() == LINK_BUS_CLOSING)) {
+        b.torque = false;       /* closing sends torque off */
+    }
     if (f->stops != b.stops_seen) {
         b.stops_seen = f->stops;
         /* STOP: a command not sent goes, a restore and a goal with it, and
@@ -1584,6 +1597,7 @@ void bus_panel_feed(const bus_panel_feed_t *f)
         b.goal_due = false;
         b.out_due = false;
         b.waiting = false;
+        b.torque = false;       /* the stop sent torque off */
         if (was || bus_state() != LINK_BUS_CLOSED) {
             say(false, TR(BS_M_STOPPED));
         }

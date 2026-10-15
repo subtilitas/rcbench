@@ -832,7 +832,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
 | GEFUNDEN n | SCAN, STOP | ein PING an jede ID des Bereichs; STOP, solange er läuft |
 | ID | die gefundenen IDs, ANDERE ID | das Servo, das die Seite steuert und beobachtet; ANDERE ID öffnet das Tastenfeld, 0 bis 253 |
-| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40) |
+| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40); STOP und SCHLIESSEN setzen es auf AUS, weil sie Drehmoment aus schicken |
 | TEMPO | 0 bis 3400 bei STS, 0 bis 1000 bei SCS, beim Start 1000 | die Geschwindigkeit des Ziels, mit jedem Ziel geschickt |
 | BESCHL. | 0 bis 255, beim Start 0 | die Beschleunigung des Ziels, mit jedem Ziel geschickt; nur STS, bei SCS gedimmt |
 | EEPROM | ÄNDERN | die Liste der EEPROM-Schreibvorgänge unten |
@@ -862,6 +862,7 @@ höchstens 100,0 %), Spannung in 0,1 V, Temperatur in Grad Celsius und bei
 STS den aktuellen Strom mit 6,5 mA je Zählwert. Die Fehlerflags sind die des
 Statusbytes: SPANNUNG (Bit 0), SENSOR (Bit 1), TEMPERATUR (Bit 2), STROM
 (Bit 3) und ÜBERLAST (Bit 5), in der Warnfarbe, solange eines gesetzt ist.
+Ein Lesen, das scheitert, zeigt `ID 1: kein Messwert`, bis eines gelingt.
 Das Vorzeichen der Last und die Skala des Stroms sind nicht gemessen.
 
 ![Ein beobachtetes Servo mit zwei Fehlerflags](img/de/servo-bus-live.png)
@@ -876,8 +877,11 @@ Finger, der abrutscht, und das Verlassen der Seite schreiben nichts. Das
 Schreiben entsperrt das EEPROM des Servos, schreibt, sperrt es und liest
 den Wert zurück: `Geschrieben und zurückgelesen.` oder
 `Zurückgelesen weicht vom Geschriebenen ab.` Einer neuen ID oder Rate wird
-gefolgt: Sperre und Zurücklesen gehen an die neue ID mit der neuen Rate, und
-die Seite steuert die neue ID. Die Warnung fügt eine Zeile an, wenn die neue
+gefolgt: Sperre und Zurücklesen gehen an die neue ID mit der neuen Rate, die
+Seite steuert die neue ID, und eine neue Rate ist die, mit der das nächste
+ÖFFNEN öffnet. Wird weder das Schreiben noch diese Sperre beantwortet, gilt das
+Schreiben als verloren: die Sperre geht an die alte ID mit der alten Rate,
+und die Seite bleibt bei ihnen. Die Warnung fügt eine Zeile an, wenn die neue
 ID auch auf den letzten Scan geantwortet hat: zwei Servos auf einer ID.
 SPERRE 0 lässt das EEPROM für jedes Schreiben offen, und die Warnung sagt
 es.

@@ -1432,6 +1432,11 @@ static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
     if (update_hw_refuses_arm(off, n, in)) {
         return LINK_NACK_NOT_ARMED;
     }
+    /* Nor while the BUS page holds a programming port: an ARM stored now
+     * would arm the bank the moment the bus closes. */
+    if (bus_port_refuses_arm(&s_bus, off, n, in)) {
+        return LINK_NACK_NOT_ARMED;
+    }
     /*
      * The page's rules are link_control_write()'s and whether the bench may
      * arm is safety_gate_control_write()'s, both host-tested: every

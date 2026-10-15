@@ -42,6 +42,7 @@ typedef struct {
     uint32_t baud;
     /* faults */
     bool     refuse_start;
+    unsigned refuse_n;         /* the next this many starts are refused */
     bool     hang;
     bool     refuse_baud;
     bool     echo;
@@ -49,6 +50,7 @@ typedef struct {
     unsigned truncate;         /* the next reply loses this many bytes */
     bool     wrong_id;         /* the next reply */
     bool     drop;             /* the next reply */
+    bool     deaf;             /* the next frame reaches no servo */
     bool     stuck_lock;       /* writes of the lock flag are answered and
                                   not kept */
     /* what went on the wire */
@@ -191,6 +193,10 @@ static inline bool ftsim_start(void *ctx, const uint8_t *tx, unsigned n_tx,
     if (s->refuse_start || s->open || n_tx < 6u || n_tx > FEETECH_FRAME_MAX) {
         return false;
     }
+    if (s->refuse_n > 0u) {
+        s->refuse_n--;
+        return false;
+    }
     if (s->n_log < FTSIM_LOG) {
         memcpy(s->log[s->n_log].bytes, tx, n_tx);
         s->log[s->n_log].n = (uint8_t)n_tx;
@@ -208,6 +214,10 @@ static inline bool ftsim_start(void *ctx, const uint8_t *tx, unsigned n_tx,
     /* A frame whose checksum is right reaches the servos at the rate. */
     if (feetech_checksum(&tx[2], n_tx - 3u) != tx[n_tx - 1u]
         || tx[3] + 4u != n_tx) {
+        return true;
+    }
+    if (s->deaf) {
+        s->deaf = false;
         return true;
     }
     for (unsigned i = 0; i < FTSIM_SERVOS; ++i) {

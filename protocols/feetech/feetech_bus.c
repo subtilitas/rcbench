@@ -20,6 +20,9 @@ enum { EE_UNLOCK = 0, EE_WRITE, EE_LOCK, EE_VERIFY };
 /* No baud change. */
 #define SAME_BAUD 0xFFu
 
+/* No write to go back from. */
+#define NO_OLD_ID 0xFFu
+
 bool feetech_bus_init(feetech_bus_t *b, const feetech_driver_t *d,
                       uint32_t baud)
 {
@@ -176,6 +179,7 @@ feetech_res_t feetech_bus_write_ee(feetech_bus_t *b, feetech_series_t series,
     b->series = (uint8_t)series;
     b->new_id = new_id;
     b->new_baud = new_baud;
+    b->old_id = NO_OLD_ID;
     memcpy(b->data, data, n);
     (void)begin(b, FEETECH_OP_WRITE_EE);
     /* The lock flag alone is one write and its read. */
@@ -211,6 +215,8 @@ void feetech_bus_watch(feetech_bus_t *b, uint8_t id, feetech_series_t series)
 void feetech_bus_stop(feetech_bus_t *b)
 {
     b->stop_due = STOP_TORQUE | STOP_LOCK;
+    b->stop_res = FEETECH_RES_OK;
+    b->stop_tries = 0;
     /* An EEPROM write on the wire is finished by the driver: an ID or a
      * rate it moves is the servo's from its end, and the stop follows it.
      * The torque switch goes to 0 at the old rate and again at the new
@@ -294,6 +300,31 @@ static void ee_failed(feetech_bus_t *b, feetech_res_t r)
     b->step = EE_LOCK;
 }
 
+/* Neither a write that moves the ID or the rate nor the lock after it
+ * answered at the new ID and rate: the write is taken as lost.  The line
+ * goes back to the old rate and the lock to the old ID, and the operation
+ * ends with the write's result.  A servo that moved and answered neither
+ * stays unlocked at the new ID; not measured whether that happens. */
+static void back_to_old(feetech_bus_t *b)
+{
+    if (b->step_res == FEETECH_RES_OK) {
+        b->step_res = b->write_res;
+    }
+    if (b->old_baud != b->baud) {
+        if (b->drv.set_baud(b->drv.ctx, b->old_baud)) {
+            b->baud = b->old_baud;
+        } else {
+            b->step_res = FEETECH_RES_DRIVER;
+        }
+    }
+    if (b->unlocked != 0u && b->unlocked_id == b->id) {
+        b->unlocked_id = b->old_id;
+    }
+    b->id = b->old_id;
+    b->old_id = NO_OLD_ID;
+    b->step = EE_LOCK;
+}
+
 static void op_reply(feetech_bus_t *b, feetech_res_t r,
                      const feetech_status_t *st)
 {
@@ -355,6 +386,11 @@ static void op_reply(feetech_bus_t *b, feetech_res_t r,
             ee_failed(b, r);
             return;
         }
+        /* Unanswered: the lock at the new ID and rate tells whether the
+         * servo moved; if it does not answer either, the old ones get it. */
+        b->old_id = r != FEETECH_RES_OK ? b->id : NO_OLD_ID;
+        b->old_baud = b->baud;
+        b->write_res = (uint8_t)r;
         if (b->new_baud != SAME_BAUD) {
             const uint32_t baud = feetech_baud(b->new_baud);
 
@@ -374,6 +410,9 @@ static void op_reply(feetech_bus_t *b, feetech_res_t r,
     case EE_LOCK:
         if (r == FEETECH_RES_OK) {
             b->unlocked = 0;
+        } else if (b->old_id <= FEETECH_ID_MAX) {
+            back_to_old(b);
+            return;
         } else if (b->step_res == FEETECH_RES_OK) {
             b->step_res = (uint8_t)r;
         }
@@ -452,6 +491,24 @@ static void op_next(feetech_bus_t *b, uint32_t now)
     }
 }
 
+/* One frame of the stop, in b->tx when @p built: true when it is on the
+ * wire, or when the driver refused it FEETECH_BUS_STOP_TRIES times and the
+ * stop goes on without it; false to try again at the next pass. */
+static bool stop_frame(feetech_bus_t *b, bool built, uint8_t want_id,
+                       uint8_t params, uint32_t now)
+{
+    if (built && send(b, FL_STOP, want_id, params, now)) {
+        b->stop_tries = 0;
+        return true;
+    }
+    if (++b->stop_tries < FEETECH_BUS_STOP_TRIES) {
+        return false;
+    }
+    b->stop_tries = 0;
+    b->stop_res = FEETECH_RES_DRIVER;
+    return true;
+}
+
 /* The stop's next frame: torque off, the rate an EEPROM write moved and
  * torque off again, then the lock where it is owed. */
 static void stop_next(feetech_bus_t *b, uint32_t now)
@@ -467,26 +524,33 @@ static void stop_next(feetech_bus_t *b, uint32_t now)
         if (b->drv.set_baud(b->drv.ctx, baud)) {
             b->baud = baud;
             b->stop_due |= STOP_TORQUE;
+        } else {
+            b->stop_res = FEETECH_RES_DRIVER;
         }
     }
     if ((b->stop_due & STOP_TORQUE) != 0u) {
-        b->stop_due &= (uint8_t)~STOP_TORQUE;
-        if (feetech_write(&b->tx, FEETECH_ID_BROADCAST, FEETECH_REG_TORQUE,
-                          &zero, 1u)) {
-            (void)send(b, FL_STOP, FEETECH_ID_BROADCAST, 0xFFu, now);
+        if (stop_frame(b,
+                       feetech_write(&b->tx, FEETECH_ID_BROADCAST,
+                                     FEETECH_REG_TORQUE, &zero, 1u),
+                       FEETECH_ID_BROADCAST, 0xFFu, now)) {
+            b->stop_due &= (uint8_t)~STOP_TORQUE;
         }
         return;
     }
-    b->stop_due = 0;
-    if (b->unlocked != 0u) {
-        b->unlocked = 0;
-        if (feetech_write(&b->tx, b->unlocked_id,
-                          feetech_lock_addr(
-                              (feetech_series_t)b->unlocked_series),
-                          &one, 1u)) {
-            (void)send(b, FL_STOP, b->unlocked_id, 0, now);
-        }
+    if (b->unlocked != 0u
+        && !stop_frame(b,
+                       feetech_write(&b->tx, b->unlocked_id,
+                                     feetech_lock_addr((feetech_series_t)
+                                                           b->unlocked_series),
+                                     &one, 1u),
+                       b->unlocked_id, 0, now)) {
+        return;
     }
+    /* A lock that never went out leaves the flag owed: bit 4 of STATE. */
+    if (b->flight == FL_STOP) {
+        b->unlocked = 0;
+    }
+    b->stop_due = 0;
 }
 
 static void watch_next(feetech_bus_t *b, uint32_t now)
@@ -498,6 +562,7 @@ static void watch_next(feetech_bus_t *b, uint32_t now)
     if (!feetech_read(&b->tx, b->watch_id, FEETECH_REG_PRESENT, n)
         || !send(b, FL_WATCH, b->watch_id, n, now)) {
         b->watch_res = FEETECH_RES_DRIVER;
+        b->live_n = 0;
         ++b->watch_bad;
     }
 }
@@ -515,6 +580,8 @@ static void watch_reply(feetech_bus_t *b, feetech_res_t r,
         memcpy(b->live, st->params, st->n_params);
         ++b->watch_ok;
     } else {
+        /* A block that is not this read's is no reading. */
+        b->live_n = 0;
         ++b->watch_bad;
     }
 }

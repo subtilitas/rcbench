@@ -1793,7 +1793,8 @@ enum {
     LINK_BS_LIVE  = 10,  /**< 8 registers: the live block of the watched
                               servo, byte 2 k in the low byte of register
                               10 + k, 2 k + 1 in the high byte; as the
-                              servo sent it */
+                              servo sent it; empty after a read that
+                              failed */
     LINK_BS_COUNTS = 18, /**< low byte the bytes of LINK_BS_LIVE, high byte
                               the bytes of LINK_BS_DATA */
     LINK_BS_AT    = 19,  /**< low byte the address of the last read or

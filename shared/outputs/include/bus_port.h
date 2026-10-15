@@ -154,6 +154,13 @@ link_bus_state_t bus_port_state(const bus_port_t *p);
  *  state but CLOSED. */
 uint8_t bus_port_quiet_mask(const bus_port_t *p);
 
+/** Whether a CONTROL write of @p n registers from @p off is refused: it
+ *  carries an ARM other than 0 while the bus is not closed.  The caller
+ *  answers LINK_NACK_NOT_ARMED and stores nothing of the frame, so no ARM
+ *  waits in the page for the bus to close. */
+bool bus_port_refuses_arm(const bus_port_t *p, uint8_t off, uint8_t n,
+                          const uint16_t *in);
+
 /** Bit n: programming port n's pin is the bus driver's. */
 uint8_t bus_port_pin_mask(const bus_port_t *p);
 

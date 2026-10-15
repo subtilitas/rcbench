@@ -482,6 +482,78 @@ TEST_CASE(torque_and_goal_reach_an_sts_servo_little_endian)
     run(300);
     CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
     CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    /* STOP sends torque off: the button says OFF, one tap turns it on. */
+    tap_row(4, 0);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    g_stops++;
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    /* So does CLOSE. */
+    tap_row(1, 1);
+    run(300);
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+}
+
+TEST_CASE(a_servo_that_stops_answering_shows_no_reading)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    run(200);
+    CHECK(page_says(1, "ID 1  POS 0"));
+    v->present = false;
+    run(200);
+    CHECK_STR_EQ(bus_panel_line(1), "ID 1: no reading");
+    v->present = true;
+    run(200);
+    CHECK(page_says(1, "ID 1  POS 0"));
+}
+
+TEST_CASE(an_eeprom_baud_write_moves_the_next_open)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    CHECK_EQ(bus_panel_editor(), 3);
+    hold(2.2f);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    CHECK(page_says(0, "at 115200 baud."));
+    tap_row(1, 1);
+    run(300);
+    CHECK_EQ(page_state(), LINK_BUS_CLOSED);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "115200");
+    open_bus();
+    CHECK_EQ(sim.baud, 115200u);
+    scan();
+    CHECK(page_says(1, "1 found"));
+    /* RESTORE puts both back. */
+    tap_row(5, 1);
+    CHECK(choose("RESTORE 1"));
+    hold(2.2f);
+    run(1000);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    tap_row(1, 1);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "1000000");
 }
 
 TEST_CASE(an_scs_servo_takes_its_goal_big_endian_and_has_no_acc)
@@ -911,6 +983,8 @@ int main(void)
     RUN(a_scan_reaches_both_ends_of_the_id_range);
     RUN(the_keypad_keeps_from_at_most_to_and_refuses_254);
     RUN(torque_and_goal_reach_an_sts_servo_little_endian);
+    RUN(a_servo_that_stops_answering_shows_no_reading);
+    RUN(an_eeprom_baud_write_moves_the_next_open);
     RUN(an_scs_servo_takes_its_goal_big_endian_and_has_no_acc);
     RUN(an_eeprom_write_waits_for_the_2_s_hold_and_keeps_the_old_value);
     RUN(cancel_on_the_warning_writes_nothing);

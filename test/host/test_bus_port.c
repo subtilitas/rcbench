@@ -5,7 +5,8 @@
  * its SEQ, the staged registers and their CRC (cyclic redundancy check),
  * each operation through the page, the key of an EEPROM write, STOP and
  * CLOSE during a scan and an EEPROM write, the link lost, a driver that
- * hangs, and the opening wait across the wrap of the microsecond clock.
+ * hangs or starts no torque-off frame, ARM refused while the port is held,
+ * and the opening wait across the wrap of the microsecond clock.
  *
  * The clock: a pass is 100 us.
  *
@@ -600,8 +601,16 @@ TEST_CASE(the_watch_puts_the_live_block_on_the_page)
     ftsim_add(&sim, 2, FEETECH_STS);
     CHECK_EQ(cmd(LINK_BUS_OP_WATCH, STS, 254u, 0), 0);
     CHECK_EQ(refusal(), LINK_BUS_REF_RANGE);
+    /* After a read that failed: RESULT at the WATCH's SEQ is the
+     * watch's, not the scan's. */
+    sim.bad_checksum = true;
+    CHECK_EQ(cmd(LINK_BUS_OP_READ, STS, 2u | (56u << 8), 2), 0);
+    run(1000);
+    CHECK_EQ(result(), FEETECH_RES_CHECKSUM);
     CHECK_EQ(cmd(LINK_BUS_OP_WATCH, STS, 2u, 0), 0);
     CHECK_EQ(refusal(), LINK_BUS_REF_NONE);
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_WATCH);
+    CHECK_EQ(result(), FEETECH_RES_OK);
     CHECK(reg(LINK_BS_STATE) & LINK_BS_F_WATCH);
     for (unsigned i = 0; i < 1200u; ++i) {    /* 120 ms */
         pass(true, false);
@@ -612,6 +621,14 @@ TEST_CASE(the_watch_puts_the_live_block_on_the_page)
     CHECK_EQ(reg(LINK_BS_COUNTS) & 0xFFu, FEETECH_LIVE_STS);
     /* Bytes 6 and 7 of the block: register 62 (7.4 V) and 63 (31 C). */
     CHECK_EQ(reg(LINK_BS_LIVE + 3), 74u | (31u << 8));
+    /* The servo goes: the block empties, the result says why. */
+    ftsim_find(&sim, 2)->present = false;
+    for (unsigned i = 0; i < 600u; ++i) {     /* 60 ms */
+        pass(true, false);
+    }
+    CHECK(reg(LINK_BS_WATCH_BAD) >= 1u);
+    CHECK_EQ(reg(LINK_BS_WATCH) >> 8, FEETECH_RES_NO_REPLY);
+    CHECK_EQ(reg(LINK_BS_COUNTS) & 0xFFu, 0);
     CHECK_EQ(cmd(LINK_BUS_OP_WATCH, STS, 0xFFu, 0), 0);
     CHECK_EQ(reg(LINK_BS_STATE) & LINK_BS_F_WATCH, 0);
 }
@@ -755,6 +772,57 @@ TEST_CASE(a_driver_that_hangs_still_closes)
     }
     CHECK_EQ(state(), LINK_BUS_CLOSED);
     CHECK_EQ(g_hw.gives, 1);
+    /* The torque-off frame never started: the CLOSE says so. */
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_CLOSE);
+    CHECK_EQ(result(), FEETECH_RES_DRIVER);
+    CHECK_EQ(torque_offs(), 0);
+}
+
+TEST_CASE(a_stop_whose_torque_off_never_starts_says_driver)
+{
+    setup();
+    open_bus();
+    ftsim_add(&sim, 1, FEETECH_STS);
+    sim.refuse_start = true;
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    run(1000);
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_STOP);
+    CHECK_EQ(result(), FEETECH_RES_DRIVER);
+    CHECK_EQ(state(), LINK_BUS_OPEN);
+    /* Started on the second try: OK. */
+    sim.refuse_start = false;
+    sim.refuse_n = 1;
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    run(1000);
+    CHECK_EQ(result(), FEETECH_RES_OK);
+    CHECK_EQ(torque_offs(), 1);
+}
+
+TEST_CASE(arm_is_refused_while_the_bus_holds_the_port)
+{
+    const uint16_t arm[3] = { LINK_ARM_ALL, 0, 0 };
+    const uint16_t disarm[3] = { 0, 0, 0 };
+    const uint16_t throttle[1] = { 0 };
+
+    setup();
+    /* Closed: nothing refused. */
+    CHECK(!bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, arm));
+    open_bus();
+    CHECK(bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, arm));
+    CHECK(bus_port_refuses_arm(&g_port, LINK_CT_ARM, 1, arm));
+    /* A disarm, a frame without ARM, an empty one: taken. */
+    CHECK(!bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, disarm));
+    CHECK(!bus_port_refuses_arm(&g_port, 1, 1, throttle));
+    CHECK(!bus_port_refuses_arm(&g_port, LINK_CT_ARM, 0, arm));
+    CHECK(!bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, NULL));
+    CHECK(!bus_port_refuses_arm(NULL, LINK_CT_ARM, 3, arm));
+    /* Closing still holds the port. */
+    CHECK_EQ(cmd(LINK_BUS_OP_CLOSE, STS, 0, 0), 0);
+    CHECK_EQ(state(), LINK_BUS_CLOSING);
+    CHECK(bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, arm));
+    run(1000);
+    CHECK_EQ(state(), LINK_BUS_CLOSED);
+    CHECK(!bus_port_refuses_arm(&g_port, LINK_CT_ARM, 3, arm));
 }
 
 TEST_CASE(another_port_is_refused_while_one_is_open)
@@ -792,6 +860,8 @@ int main(void)
     RUN(a_stop_of_the_bank_closes_the_bus);
     RUN(a_stop_while_opening_ends_with_nothing_sent);
     RUN(a_driver_that_hangs_still_closes);
+    RUN(a_stop_whose_torque_off_never_starts_says_driver);
+    RUN(arm_is_refused_while_the_bus_holds_the_port);
     RUN(another_port_is_refused_while_one_is_open);
     return test_summary("bus_port");
 }

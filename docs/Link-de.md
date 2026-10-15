@@ -1285,15 +1285,19 @@ Busverkehr läuft nur auf einem Prüfstand in SAFE, wie das
 KST-Programmieren. OPEN wird mit ARMED abgewiesen, solange die Bank ARMED
 ist, und das Panel schickt keines, solange der Prüfstand ARMED ist oder
 ARMED angefordert ist. Der Koprozessor hält die Bank in SAFE, solange der
-Bus nicht CLOSED ist, und das Panel weist ARM so lange mit
+Bus nicht CLOSED ist, und weist so lange ein CONTROL-Schreiben, das ein
+ARM ungleich 0 trägt, mit NOT_ARMED ab, ohne etwas davon zu speichern. Das
+Panel weist ARM so lange mit
 `kein ARM: die BUS-Seite hält den PROG-PORT` ab. Ein Stopp -- Heartbeat verloren, Link
 still oder die Bank auf SAFE geschaltet -- schließt den Bus. Solange der
 Heartbeat nicht vertraut ist oder der Link still ist, wird jedes Kommando
 mit UNSAFE abgewiesen; die Frames des Schließens gehen trotzdem hinaus. Die
 Operation STOP, die das Panel für seine STOP-Taste schickt, beendet die
 Operation und die Beobachtung und schickt Drehmoment aus an die
-Broadcast-ID; der Bus bleibt offen. Die Versorgung des Servos wird hier
-nicht geschaltet.
+Broadcast-ID; der Bus bleibt offen. STOP und CLOSE enden mit `RESULT` 0,
+oder mit DRIVER (10), wenn der Leitungstreiber einen Frame für Drehmoment
+aus oder für die Sperre 3-mal abgewiesen hat und der Stopp ohne ihn
+weiterging. Die Versorgung des Servos wird hier nicht geschaltet.
 
 Ein Lesen der Page gibt 29 Register:
 
@@ -1308,7 +1312,7 @@ Ein Lesen der Page gibt 29 Register:
 | 6 | `RANGE` | niederwertiges Byte die erste ID des letzten Scans, höherwertiges Byte die letzte |
 | 7 | `WATCH` | niederwertiges Byte die beobachtete ID, 0xFF keine; höherwertiges Byte das Ergebnis ihres letzten Lesens |
 | 8, 9 | `WATCH_OK`, `WATCH_BAD` | Lesevorgänge des beobachteten Servos, die dekodiert wurden und die nicht, je modulo 65536 |
-| 10 bis 17 | `LIVE` | der Live-Block des beobachteten Servos, wie es ihn geschickt hat, Byte 2 k im niederwertigen Byte von Register 10 + k |
+| 10 bis 17 | `LIVE` | der Live-Block des beobachteten Servos, wie es ihn geschickt hat, Byte 2 k im niederwertigen Byte von Register 10 + k; leer, mit dem niederwertigen Byte von `COUNTS` bei 0, nach einem Lesen, das gescheitert ist |
 | 18 | `COUNTS` | niederwertiges Byte die Bytes von `LIVE`, höherwertiges Byte die Bytes von `DATA` |
 | 19 | `AT` | niederwertiges Byte die Adresse des letzten Lesens oder EEPROM-Schreibens, höherwertiges Byte die IDs, deren Scan-Antwort nicht dekodiert wurde |
 | 20 bis 27 | `DATA` | die Bytes des letzten Lesens oder eines zurückgelesenen EEPROM-Schreibens, gepackt wie `LIVE` |
@@ -1342,7 +1346,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | READ | 4 | 1 bis 16 Bytes von einem Servo |
 | WRITE | 5 | 1 bis 16 Bytes in den RAM-Bereich (Random-Access Memory) eines Servos; nie das Sperrflag |
 | EEPROM | 6 | entsperren, schreiben, sperren und zurücklesen; braucht den Schlüssel; der EEPROM-Bereich oder das Sperrflag allein |
-| WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen |
+| WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen; fertig, sobald angenommen, `RESULT` 0 |
 | TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
 | STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt |
 | BAUD | 10 | die Leitung auf einen anderen Baud-Index; die Servos behalten ihren |
@@ -1402,8 +1406,10 @@ ein WRITE, das auf dem Sperrflag und dem EEPROM-Bereich abgewiesen wird,
 ein EEPROM-Schreiben ohne Schlüssel, BAUD, die Beobachtung, ein STOP
 während eines Scans, ein CLOSE während eines EEPROM-Schreibens, einen
 verlorenen Link und ein Schalten auf SAFE bei offenem Bus, einen Stopp
-beim Öffnen, einen Treiber, der hängt, und einen zweiten Port, der
-abgewiesen wird, solange einer offen ist. `test_bus_link` fährt das Modul
+beim Öffnen, einen Treiber, der hängt, ein STOP, dessen Frame für
+Drehmoment aus nie startet, ARM abgewiesen, solange der Port gehalten
+wird, und einen zweiten Port, der abgewiesen wird, solange einer offen
+ist. `test_bus_link` fährt das Modul
 des Panels dagegen: die Leseintervalle, einen Scan von 0 bis 253, ein WRITE
 in seinen drei bereitgestellten Fenstern und ein Ziel von 16 Bytes in der
 Byte-Reihenfolge des Servos, verlorene Antworten, eine veraltete `SEQ`, ein

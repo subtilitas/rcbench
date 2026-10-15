@@ -80,7 +80,8 @@ parameter count than asked, bytes and no frame, and a stop bit low.
 | Silence between two transactions | 100 us |
 | Driver that has not ended a transaction | ended with `FEETECH_RES_DRIVER` 5 ms after the window |
 | Live read of the watched servo | every 50 ms, between operations |
-| Live block | 11 bytes from address 56 on SCS, 15 bytes on STS |
+| Live block | 11 bytes from address 56 on SCS, 15 bytes on STS; empty after a read that fails |
+| Starts of one stop frame the driver refuses | 3 (`FEETECH_BUS_STOP_TRIES`), one pass apart |
 
 None of these times is measured on a servo.
 
@@ -90,14 +91,21 @@ None of these times is measured on a servo.
 1, then reads the bytes back and compares them (`FEETECH_RES_VERIFY` on a
 difference). A write that moves the servo's ID (register 5) or rate
 (register 6) is followed: the lock and the read go to the new ID at the new
-rate. The lock is sent after a failed unlock or write as well. A write of
-the lock flag alone is that one write and its read.
+rate. When neither that write nor the lock after it is answered, the write
+counts as lost: the line goes back to the old rate, the lock goes to the
+old ID, and the operation ends with the write's result. A servo that took
+the write and answered neither frame stays unlocked at the new ID; whether
+that happens is not measured. The lock is sent after a failed unlock or
+write as well. A write of the lock flag alone is that one write and its
+read.
 
 `feetech_bus_stop()` ends the operation and the watch, sends torque off
 (register 40 := 0) to the broadcast ID and sends the lock flag 1 to a servo
 the session left unlocked. When the frame on the wire at the stop is an
 EEPROM write that moves the rate, torque off goes out at the old rate and
-at the new one.
+at the new one. A stop frame the driver refuses 3 times in a row is left
+out, and `stop_res` reads `FEETECH_RES_DRIVER` until the next stop; a lock
+left out stays owed.
 
 ## Interface
 
@@ -238,7 +246,7 @@ it. No vendor code is included. The full notice is in the repository's
 | --- | --- |
 | `test_feetech_wire` | the 23 published frames, the derived SCS frame, the decoder's faults, the builders' limits |
 | `test_feetech_reg` | byte order per series, the tables, the rates, sign and magnitude, the live block |
-| `test_feetech_bus` | the session against simulated servos (`feetech_sim.h`): scan ends 0 and 253, 254 refused, every reply fault, a driver that hangs, EEPROM writes in both byte orders, STOP during a scan and an EEPROM write, the watch, the clock wrapping |
+| `test_feetech_bus` | the session against simulated servos (`feetech_sim.h`): scan ends 0 and 253, 254 refused, every reply fault, a driver that hangs, EEPROM writes in both byte orders, an ID or rate write that never arrived, STOP during a scan and an EEPROM write, stop frames the driver refuses, the watch and its block emptied by a failed read, the clock wrapping |
 | `test_feetech_pio` | `ft_line.pio` assembled and run in a cycle model: the frame's timing, replies 3 % off the rate at 8 phases, a framing error, the dividers |
 | `feetech_headers_cxx` | the 4 headers as C++17 |
 

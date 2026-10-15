@@ -20,8 +20,11 @@
  *               write, the lock flag to 1, a read of the bytes written.
  *               A write that moves the servo's ID or baud rate is
  *               followed: the lock and the read go to the new ID at the
- *               new rate.  A write of the lock flag alone is that one
- *               write and its read.
+ *               new rate.  When neither the write nor that lock is
+ *               answered, the write counts as lost: the line goes back to
+ *               the old rate, the lock to the old ID, and the operation
+ *               ends with the write's result.  A write of the lock flag
+ *               alone is that one write and its read.
  *   TORQUE_OFF  the torque switch 0 to the broadcast ID; no answer.
  *
  * feetech_bus_stop() ends the operation and the watch.  A frame on the
@@ -30,7 +33,9 @@
  * lock flag at 0 gets it at 1.  When the frame on the wire was an EEPROM
  * write that moves the servo's rate, the line follows it and the torque
  * switch goes to 0 at both rates; one that moves the ID gets the lock at
- * the new ID.
+ * the new ID.  A frame of the stop the driver does not start is tried
+ * FEETECH_BUS_STOP_TRIES times, one pass apart; then the stop goes on
+ * without it and stop_res reads FEETECH_RES_DRIVER.
  *
  * Timing.  A transaction is the frame out, then bytes in until the reply
  * is complete or FEETECH_BUS_REPLY_US plus twice the reply's own time has
@@ -73,6 +78,8 @@ extern "C" {
 #define FEETECH_BUS_GRACE_US 5000u
 /** The watch reads its servo this often. */
 #define FEETECH_BUS_WATCH_US 50000u
+/** Starts a frame of the stop gets before the stop goes on without it. */
+#define FEETECH_BUS_STOP_TRIES 3u
 
 /** Bytes a driver keeps of one reply window. */
 #define FEETECH_CAPTURE_MAX FEETECH_FRAME_MAX
@@ -154,6 +161,9 @@ typedef struct {
     uint8_t  stop_due;    /**< bit 0 torque off, bit 1 lock owed, bit 2
                                the rate an EEPROM write moved            */
     uint8_t  follow_baud; /**< that rate's index                          */
+    uint8_t  stop_res;    /**< FEETECH_RES_OK, or FEETECH_RES_DRIVER when
+                               the last stop could not send a frame       */
+    uint8_t  stop_tries;  /**< starts refused of the stop's next frame    */
     uint8_t  unlocked;    /**< a servo's lock flag is 0 by this session   */
     uint8_t  unlocked_id;
     uint8_t  unlocked_series;
@@ -165,6 +175,11 @@ typedef struct {
     uint8_t  new_id;      /**< WRITE_EE: the ID after the write           */
     uint8_t  new_baud;    /**< WRITE_EE: the baud index after it; 0xFF same */
     uint8_t  step_res;    /**< WRITE_EE: how the write went               */
+    uint8_t  old_id;      /**< WRITE_EE: the ID before a write that moves
+                               the ID or the rate and went unanswered,
+                               0xFF none                                  */
+    uint8_t  write_res;   /**< that write's result                        */
+    uint32_t old_baud;    /**< and the rate before it                     */
     uint8_t  data[FEETECH_DATA_MAX];
     /* The scan. */
     uint8_t  scan_from, scan_to, scan_at;
@@ -222,8 +237,8 @@ feetech_res_t feetech_bus_write_ee(feetech_bus_t *b, feetech_series_t series,
 feetech_res_t feetech_bus_torque_off(feetech_bus_t *b);
 
 /** Read @p id's live block every FEETECH_BUS_WATCH_US between operations;
- *  an ID above FEETECH_ID_MAX ends the watch.  The last block stays until
- *  the watch moves to another ID. */
+ *  an ID above FEETECH_ID_MAX ends the watch.  The block holds the last
+ *  read's bytes; a read that fails empties it (live_n 0). */
 void feetech_bus_watch(feetech_bus_t *b, uint8_t id, feetech_series_t series);
 
 /** End the operation and the watch; torque off by broadcast, and the lock

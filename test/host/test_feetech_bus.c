@@ -9,8 +9,10 @@
  * unlock, write, lock, read back, the ID and the rate it moves followed,
  * the lock flag alone, a servo that keeps nothing, a failure at each step;
  * STOP during a scan, during an EEPROM write before and while the write is
- * on the wire, and with the rate moving; the watch and its counters; the
- * clock wrapping.
+ * on the wire, and with the rate moving; an ID or rate write that never
+ * arrived, locked at the old ID and rate; a stop whose frames the driver
+ * refuses, retried and then reported; the watch, its counters and its
+ * block emptied by a failed read; the clock wrapping.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -352,6 +354,92 @@ TEST_CASE(a_new_id_and_a_new_rate_are_followed)
     }
 }
 
+/* Step until the unlock's reply is in and the write is next. */
+static void past_the_unlock(void)
+{
+    (void)feetech_bus_step(&bus, now);     /* the unlock out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* its reply in */
+    now += 200u;
+}
+
+TEST_CASE(an_id_write_that_never_arrived_is_locked_at_the_old_id)
+{
+    const uint8_t id9 = 9;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_ID, &id9,
+                                  1), FEETECH_RES_OK);
+    past_the_unlock();
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    sim.deaf = true;                       /* the write reaches nobody */
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    /* Unlock at 1, the write, the lock at 9 unanswered, the lock at 1. */
+    CHECK_EQ(sim.n_log, 4u);
+    CHECK(ftsim_is_write1(&sim.log[2], 9, FEETECH_REG_LOCK_STS, 1));
+    CHECK(ftsim_is_write1(&sim.log[3], 1, FEETECH_REG_LOCK_STS, 1));
+    CHECK_EQ(v->regs[FEETECH_REG_ID], 1);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(bus.id, 1);
+    CHECK_EQ(bus.old_id, 0xFF);
+}
+
+TEST_CASE(a_rate_write_that_never_arrived_puts_the_line_back)
+{
+    const uint8_t baud4 = 4;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
+                                  &baud4, 1), FEETECH_RES_OK);
+    past_the_unlock();
+    sim.deaf = true;
+    CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
+    CHECK_EQ(sim.n_log, 4u);
+    CHECK_EQ(sim.log_baud[2], 115200u);   /* the lock where it would be */
+    CHECK_EQ(sim.log_baud[3], 1000000u);  /* and where it is */
+    CHECK_EQ(bus.baud, 1000000u);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], FEETECH_BAUD_DEFAULT);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(bus.unlocked, 0);
+    /* A line that cannot go back says DRIVER. */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
+                                  &baud4, 1), FEETECH_RES_OK);
+    now += 200u;
+    past_the_unlock();
+    sim.deaf = true;
+    for (unsigned i = 0; i < 20u && bus.baud != 115200u; ++i) {
+        (void)feetech_bus_step(&bus, now);
+        now += 200u;
+    }
+    CHECK_EQ(bus.baud, 115200u);
+    sim.refuse_baud = true;
+    CHECK_EQ(run(100), FEETECH_RES_DRIVER);
+    CHECK_EQ(bus.baud, 115200u);
+}
+
+TEST_CASE(an_id_write_answered_only_by_its_lock_moved)
+{
+    const uint8_t id9 = 9;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_ID, &id9,
+                                  1), FEETECH_RES_OK);
+    past_the_unlock();
+    sim.drop = true;                       /* the write's reply only */
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(v->regs[FEETECH_REG_ID], 9);
+    CHECK_EQ(sim.n_log, 4u);               /* unlock, write, lock, read */
+    CHECK_EQ(bus.id, 9);
+}
+
 TEST_CASE(the_lock_flag_alone_is_one_write_and_its_read)
 {
     const uint8_t zero = 0;
@@ -568,11 +656,88 @@ TEST_CASE(stop_with_nothing_running_sends_only_torque_off)
     CHECK_EQ(run(100), FEETECH_RES_OK);
     CHECK_EQ(sim.n_log, 1u);
     CHECK_EQ(ftsim_find(&sim, 1)->regs[FEETECH_REG_TORQUE], 0);
-    /* A driver that cannot start: the stop ends all the same. */
-    sim.refuse_start = true;
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+    /* A driver that refuses twice: the third start sends torque off. */
+    ftsim_find(&sim, 1)->regs[FEETECH_REG_TORQUE] = 1;
+    sim.refuse_n = FEETECH_BUS_STOP_TRIES - 1u;
     feetech_bus_stop(&bus);
     CHECK_EQ(run(100), FEETECH_RES_OK);
-    CHECK(!feetech_bus_busy(&bus));
+    CHECK_EQ(sim.n_log, 2u);
+    CHECK_EQ(ftsim_find(&sim, 1)->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+    /* A driver that cannot start: FEETECH_BUS_STOP_TRIES starts, then the
+     * stop ends and says so. */
+    sim.refuse_start = true;
+    {
+        const unsigned starts = sim.n_start;
+
+        feetech_bus_stop(&bus);
+        CHECK_EQ(run(100), FEETECH_RES_OK);
+        CHECK(!feetech_bus_busy(&bus));
+        CHECK_EQ(sim.n_start - starts, FEETECH_BUS_STOP_TRIES);
+        CHECK_EQ(bus.stop_res, FEETECH_RES_DRIVER);
+    }
+    /* The next stop starts clean. */
+    sim.refuse_start = false;
+    feetech_bus_stop(&bus);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+}
+
+TEST_CASE(a_lock_the_stop_cannot_start_stays_owed)
+{
+    const uint8_t mode1 = 1;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    (void)feetech_bus_step(&bus, now);     /* the unlock out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* its reply in */
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    feetech_bus_stop(&bus);
+    /* Torque off goes; the lock's starts are all refused. */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    CHECK_EQ(sim.n_log, 2u);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    sim.refuse_start = true;
+    CHECK_EQ(run(100), FEETECH_RES_ABORTED);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_DRIVER);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    /* The next stop sends it. */
+    sim.refuse_start = false;
+    feetech_bus_stop(&bus);
+    (void)run(100);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_OK);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+}
+
+TEST_CASE(a_rate_the_stop_cannot_follow_says_driver)
+{
+    const uint8_t baud7 = 7;
+
+    setup(0);
+    ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
+                                  &baud7, 1), FEETECH_RES_OK);
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    CHECK(feetech_bus_on_wire(&bus));
+    feetech_bus_stop(&bus);
+    sim.refuse_baud = true;
+    CHECK_EQ(run(100), FEETECH_RES_ABORTED);
+    CHECK_EQ(bus.baud, 1000000u);
+    CHECK_EQ(bus.stop_res, FEETECH_RES_DRIVER);
 }
 
 /* ---------------------------------------------------------------- watch */
@@ -609,12 +774,20 @@ TEST_CASE(the_watch_reads_the_live_block_every_50_ms_between_operations)
     CHECK_EQ(feetech_bus_read(&bus, 1, 5, 1), FEETECH_RES_OK);
     CHECK_EQ(run(10), FEETECH_RES_OK);
     CHECK_EQ(bus.read[0], 1);
-    /* A servo that stops answering counts bad reads, the block stays. */
+    /* A servo that stops answering counts bad reads and empties the block:
+     * the last good one is not shown as live. */
     v->present = false;
     bus.watch_now = 1;
     (void)run(20);
     CHECK_EQ(bus.watch_bad, 1);
     CHECK_EQ(bus.watch_res, FEETECH_RES_NO_REPLY);
+    CHECK_EQ(bus.live_n, 0);
+    /* It answers again: the next read fills it. */
+    v->present = true;
+    bus.watch_now = 1;
+    (void)run(20);
+    CHECK_EQ(bus.watch_ok, 3);
+    CHECK_EQ(bus.watch_res, FEETECH_RES_OK);
     CHECK_EQ(bus.live_n, FEETECH_LIVE_STS);
     /* SCS reads 11 bytes; an ID above 253 ends the watch. */
     feetech_bus_watch(&bus, 2, FEETECH_SCS);
@@ -658,6 +831,9 @@ int main(void)
     RUN(an_eeprom_write_unlocks_writes_locks_and_reads_back);
     RUN(an_scs_eeprom_write_puts_the_high_byte_first_and_uses_lock_48);
     RUN(a_new_id_and_a_new_rate_are_followed);
+    RUN(an_id_write_that_never_arrived_is_locked_at_the_old_id);
+    RUN(a_rate_write_that_never_arrived_puts_the_line_back);
+    RUN(an_id_write_answered_only_by_its_lock_moved);
     RUN(the_lock_flag_alone_is_one_write_and_its_read);
     RUN(a_servo_that_keeps_nothing_fails_the_read_back);
     RUN(a_failed_unlock_or_write_still_sends_the_lock);
@@ -666,6 +842,8 @@ int main(void)
     RUN(stop_while_an_id_write_is_on_the_wire_locks_the_new_id);
     RUN(stop_while_a_rate_write_is_on_the_wire_follows_the_rate);
     RUN(stop_with_nothing_running_sends_only_torque_off);
+    RUN(a_lock_the_stop_cannot_start_stays_owed);
+    RUN(a_rate_the_stop_cannot_follow_says_driver);
     RUN(the_watch_reads_the_live_block_every_50_ms_between_operations);
     RUN(init_refuses_a_driver_without_a_function);
     return test_summary("feetech_bus");

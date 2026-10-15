@@ -1170,13 +1170,17 @@ page finds no pin on a port the bus holds.
 Bus traffic runs on a SAFE bench only, as KST programming does. OPEN is
 refused with ARMED while the bank is ARMED, and the panel sends none while
 the bench is ARMED or asked to arm. The coprocessor holds the bank in SAFE
-while the bus is not CLOSED, and the panel refuses ARM for as long with
+while the bus is not CLOSED, and refuses a CONTROL write that carries an
+ARM other than 0 for as long with NOT_ARMED, storing nothing of it. The
+panel refuses ARM for as long with
 `no arm: the BUS page holds the programming port`. A stop -- the heartbeat lost, the link silent or the bank switched
 to SAFE -- closes the bus. While the heartbeat is not trusted or the link is
 silent every command is refused with UNSAFE; the closing frames go out all
 the same. The operation STOP, which the panel sends for its STOP button,
 ends the operation and the watch and sends torque off to the broadcast ID;
-the bus stays open. The servo's supply is not switched here.
+the bus stays open. STOP and CLOSE end with `RESULT` 0, or with DRIVER (10)
+when the line driver refused a torque-off or lock frame 3 times and the
+stop went on without it. The servo's supply is not switched here.
 
 A read of the page gives 29 registers:
 
@@ -1191,7 +1195,7 @@ A read of the page gives 29 registers:
 | 6 | `RANGE` | low byte the first ID of the last scan, high byte the last |
 | 7 | `WATCH` | low byte the watched ID, 0xFF none; high byte the result of its last read |
 | 8, 9 | `WATCH_OK`, `WATCH_BAD` | reads of the watched servo that decoded and that did not, each modulo 65536 |
-| 10 to 17 | `LIVE` | the watched servo's live block as it sent it, byte 2 k in the low byte of register 10 + k |
+| 10 to 17 | `LIVE` | the watched servo's live block as it sent it, byte 2 k in the low byte of register 10 + k; empty, with `COUNTS` low byte 0, after a read that failed |
 | 18 | `COUNTS` | low byte the bytes of `LIVE`, high byte the bytes of `DATA` |
 | 19 | `AT` | low byte the address of the last read or EEPROM write, high byte the IDs whose scan answer did not decode |
 | 20 to 27 | `DATA` | the bytes the last read gave, or an EEPROM write read back, packed as `LIVE` |
@@ -1223,7 +1227,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | READ | 4 | 1 to 16 bytes from one servo |
 | WRITE | 5 | 1 to 16 bytes to a servo's RAM (random-access memory) area; never the lock flag |
 | EEPROM | 6 | unlock, write, lock and read back; needs the key; the EEPROM area or the lock flag alone |
-| WATCH | 7 | reads one servo's live block every 50 ms between operations |
+| WATCH | 7 | reads one servo's live block every 50 ms between operations; done when taken, `RESULT` 0 |
 | TORQUE_OFF | 8 | torque off to every servo |
 | STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed |
 | BAUD | 10 | the line to another baud index; the servos keep theirs |
@@ -1277,8 +1281,9 @@ with a damaged CRC, a scan that finds IDs 0 and 253 and one to 254 refused,
 a READ, a WRITE refused on the lock flag and the EEPROM area, an EEPROM
 write without the key, BAUD, the watch, a STOP during a scan, a CLOSE
 during an EEPROM write, a lost link and a switch to SAFE with the bus open,
-a stop while opening, a driver that hangs, and a second port refused while
-one is open. `test_bus_link` runs the panel's module against it: the
+a stop while opening, a driver that hangs, a STOP whose torque-off frame
+never starts, ARM refused while the port is held, and a second port
+refused while one is open. `test_bus_link` runs the panel's module against it: the
 polling intervals, a scan of 0 to 253, a WRITE in its three staged windows
 and a 16-byte goal in the servo's byte order, lost answers, a stale `SEQ`,
 a STOP with a command not yet sent, a lost link, and a 4.22 coprocessor.

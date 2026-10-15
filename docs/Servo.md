@@ -846,7 +846,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
 | FOUND n | SCAN, STOP | a PING to every ID of the range; STOP while it runs |
 | ID | the IDs found, OTHER ID | the servo the page drives and watches; OTHER ID opens the keypad, 0 to 253 |
-| TORQUE | ON, OFF | writes torque enable (register 40) |
+| TORQUE | ON, OFF | writes torque enable (register 40); STOP and CLOSE set it to OFF, as they send torque off |
 | SPEED | 0 to 3400 on STS, 0 to 1000 on SCS, 1000 at start | the goal's speed, sent with every goal |
 | ACC | 0 to 255, 0 at start | the goal's acceleration, sent with every goal; STS only, dimmed on SCS |
 | EEPROM | CHANGE | the list of EEPROM writes below |
@@ -872,8 +872,9 @@ present position, load in 0.1 % (the low 10 bits of the register, at most
 100.0 %), voltage in 0.1 V, temperature in degrees Celsius and, on STS, the
 present current at 6.5 mA a count. The error flags are the status byte's
 VOLTAGE (bit 0), SENSOR (bit 1), TEMPERATURE (bit 2), CURRENT (bit 3) and
-OVERLOAD (bit 5), in the warning colour while one is set. The sign of the
-load and the current's scale are not measured.
+OVERLOAD (bit 5), in the warning colour while one is set. A read that
+fails shows `ID 1: no reading` until one succeeds. The sign of the load and
+the current's scale are not measured.
 
 ![One servo watched, with two error flags](img/servo-bus-live.png)
 
@@ -886,7 +887,10 @@ the servo keeps the value after power-off. HOLD TO WRITE applies it after
 nothing. The write unlocks the servo's EEPROM, writes, locks it and reads
 the value back: `Written and read back.`, or `Read-back differs from the
 write.` A new ID or rate is followed: the lock and the read-back go to the
-new ID at the new rate, and the page drives the new ID. The warning adds a
+new ID at the new rate, the page drives the new ID, and a new rate is the
+one the next OPEN uses. When neither the write nor that lock is answered,
+the write counts as lost: the lock goes to the old ID at the old rate and
+the page stays on them. The warning adds a
 line when the new ID answered the last scan too: two servos on one ID. LOCK 0
 leaves the EEPROM open to every write, and the warning says so.
 
