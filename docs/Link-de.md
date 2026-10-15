@@ -1294,7 +1294,9 @@ Heartbeat nicht vertraut ist oder der Link still ist, wird jedes Kommando
 mit UNSAFE abgewiesen; die Frames des Schließens gehen trotzdem hinaus. Die
 Operation STOP, die das Panel für seine STOP-Taste schickt, beendet die
 Operation und die Beobachtung und schickt Drehmoment aus an die
-Broadcast-ID; der Bus bleibt offen. STOP und CLOSE enden mit `RESULT` 0,
+Broadcast-ID; der Bus bleibt offen. Ein STOP, während der Bus öffnet,
+schließt ihn, ohne etwas zu schicken, und `OP` liest STOP. STOP und CLOSE
+enden mit `RESULT` 0,
 oder mit DRIVER (10), wenn der Leitungstreiber einen Frame für Drehmoment
 aus oder für die Sperre 3-mal abgewiesen hat und der Stopp ohne ihn
 weiterging. Die Versorgung des Servos wird hier nicht geschaltet.
@@ -1307,7 +1309,7 @@ Ein Lesen der Page gibt 29 Register:
 | 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
 | 2 | `OP` | niederwertiges Byte die zuletzt gestartete Operation, höherwertiges Byte der geltende Baud-Index |
 | 3 | `RESULT` | niederwertiges Byte das Ergebnis dieser Operation (0 fertig, 1 solange sie läuft, sonst die Ergebniscodes des Moduls), höherwertiges Byte, warum das zuletzt angenommene Kommando nichts gestartet hat (0: es hat gestartet) |
-| 4 | `REPLY` | niederwertiges Byte das Fehlerbyte der letzten guten Antwort, höherwertiges Byte ihre ID, 0xFF keine |
+| 4 | `REPLY` | niederwertiges Byte das Fehlerbyte der letzten guten Antwort, einer Operation oder der Beobachtung, höherwertiges Byte ihre ID, 0xFF keine |
 | 5 | `SCAN` | niederwertiges Byte die ID, die der Scan als nächste fragt, höherwertiges Byte die gefundenen IDs |
 | 6 | `RANGE` | niederwertiges Byte die erste ID des letzten Scans, höherwertiges Byte die letzte |
 | 7 | `WATCH` | niederwertiges Byte die beobachtete ID, 0xFF keine; höherwertiges Byte das Ergebnis ihres letzten Lesens |
@@ -1349,7 +1351,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen; fertig, sobald angenommen, `RESULT` 0 |
 | TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
 | STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt |
-| BAUD | 10 | die Leitung auf einen anderen Baud-Index; die Servos behalten ihren. Angenommen, während ein Lesen der Beobachtung auf der Leitung ist, wartet es auf dessen Ende: bis dahin `RESULT` 1 und BUSY gesetzt, und andere Befehle werden mit BUSY abgewiesen |
+| BAUD | 10 | Drehmoment aus an jedes Servo mit der alten Rate, dann die Leitung auf einen anderen Baud-Index; die Servos behalten ihren. `RESULT` 1 und BUSY gesetzt, bis die Leitung gewechselt hat, und andere Befehle werden so lange mit BUSY abgewiesen |
 
 `SEQ` ist die der Page plus 1; der eben angenommene Frame, noch einmal
 geschickt, wird bestätigt und tut nichts; jede andere `SEQ` wird mit

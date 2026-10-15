@@ -826,7 +826,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | Reihe | Werte | Was sie tut |
 | --- | --- | --- |
 | PROTOKOLL | FEETECH | das Protokoll; die Liste hält die Protokolle des Builds. Nur bei geschlossenem Bus |
-| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: die Leitung wechselt auf sie, die Servos behalten ihre |
+| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: Drehmoment aus an jedes Servo mit der alten Rate, dann wechselt die Leitung auf sie; die Servos behalten ihre |
 | SERIE | SCS, STS/SMS | Registertabelle und Byte-Reihenfolge: SCS Big-Endian, Ziel 0 bis 1023; STS und SMS Little-Endian, Ziel 0 bis 4095. Je ID, für die Sitzung; beim Start STS/SMS |
 | BUS | ÖFFNEN, SCHLIESSEN | nimmt den Pin des Ports aus PWM, oder gibt ihn mit Drehmoment aus zurück |
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |

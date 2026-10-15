@@ -248,6 +248,7 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
         }
         if (op == LINK_BUS_OP_CLOSE || state == LINK_BUS_OPENING) {
             begin_close(p, true);
+            p->op = (uint8_t)op;    /* STOP while opening ends as STOP */
             return LINK_BUS_REF_NONE;
         }
         feetech_bus_stop(&p->bus);
@@ -317,15 +318,12 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
         if (arg >= FEETECH_BAUD_COUNT) {
             return LINK_BUS_REF_RANGE;
         }
-        p->op = (uint8_t)op;
-        if (feetech_bus_on_wire(&p->bus)) {
-            /* A watch read is on the wire: the rate follows its end. */
+        /* The servos keep their rate: torque off goes to them at the old
+         * one first, and the line moves once it is out. */
+        started(p, op, feetech_bus_torque_off(&p->bus));
+        if (p->running != 0u) {
             p->baud_due = (uint8_t)(arg + 1u);
-            p->result = (uint8_t)FEETECH_RES_BUSY;
-            p->running = 1;
-            return LINK_BUS_REF_NONE;
         }
-        set_rate(p, (uint8_t)arg);
         return LINK_BUS_REF_NONE;
     default:
         return LINK_BUS_REF_RANGE;
@@ -478,9 +476,17 @@ void bus_port_step(bus_port_t *p, bool safe, bool stop, uint32_t now_us)
         feetech_res_t r;
 
         /* A transaction ends in a pass and the next starts in a later one:
-         * the rate goes between them. */
-        if (p->baud_due != 0u && !feetech_bus_on_wire(&p->bus)) {
-            set_rate(p, (uint8_t)(p->baud_due - 1u));
+         * the rate goes between them, after BAUD's torque off. */
+        if (p->baud_due != 0u && !feetech_bus_busy(&p->bus)
+            && !feetech_bus_on_wire(&p->bus)) {
+            if (p->bus.result == (uint8_t)FEETECH_RES_OK) {
+                set_rate(p, (uint8_t)(p->baud_due - 1u));
+            } else {
+                /* No torque off went: the line stays. */
+                p->baud_due = 0;
+                p->running = 0;
+                p->result = p->bus.result;
+            }
         }
         r = feetech_bus_step(&p->bus, now_us);
         if (p->running != 0u && p->baud_due == 0u

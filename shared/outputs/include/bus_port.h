@@ -118,8 +118,8 @@ typedef struct {
     uint8_t  armed;
     uint8_t  at;         /**< the address of the last read or EEPROM write */
     uint8_t  timed;      /**< t0_us is set */
-    uint8_t  baud_due;   /**< BAUD taken while a watch read was on the
-                              wire: its index + 1, set when the read ends */
+    uint8_t  baud_due;   /**< BAUD's index + 1: the line moves once its
+                              torque off is out */
 } bus_port_t;
 
 /** Prepare a port, CLOSED.  False when @p hw names no port or lacks a

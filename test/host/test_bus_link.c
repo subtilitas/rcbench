@@ -338,6 +338,21 @@ TEST_CASE(a_scan_of_0_to_253_reads_the_ids_found)
     CHECK_EQ((r.ids[1] >> 1) & 1u, 1u);
     CHECK_EQ((r.ids[15] >> 13) & 1u, 1u);
     CHECK_EQ(r.ids[2], 0u);
+    /* CLOSE and OPEN: the new session found nothing, and the IDs of the
+     * last one are not offered. */
+    {
+        const bus_link_cmd_t c = cmd_of(LINK_BUS_OP_CLOSE, 0u, 4u);
+        const bus_link_cmd_t o = cmd_of(LINK_BUS_OP_OPEN, 0u, 5u);
+
+        CHECK_EQ(run_cmd(&c, 500), BUS_LINK_ANS_TAKEN);
+        CHECK_EQ(run_cmd(&o, 500), BUS_LINK_ANS_TAKEN);
+    }
+    r = rd();
+    CHECK_EQ(page_state(), LINK_BUS_OPEN);
+    CHECK_EQ(r.status[LINK_BS_SCAN] >> 8, 0);
+    CHECK(!r.ids_known);
+    CHECK_EQ(r.ids[0], 0u);
+    CHECK_EQ(r.ids[15], 0u);
 }
 
 TEST_CASE(a_scan_to_254_is_refused_by_the_page)

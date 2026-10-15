@@ -1178,7 +1178,8 @@ to SAFE -- closes the bus. While the heartbeat is not trusted or the link is
 silent every command is refused with UNSAFE; the closing frames go out all
 the same. The operation STOP, which the panel sends for its STOP button,
 ends the operation and the watch and sends torque off to the broadcast ID;
-the bus stays open. STOP and CLOSE end with `RESULT` 0, or with DRIVER (10)
+the bus stays open. A STOP while the bus opens closes it, with nothing sent,
+and `OP` reads STOP. STOP and CLOSE end with `RESULT` 0, or with DRIVER (10)
 when the line driver refused a torque-off or lock frame 3 times and the
 stop went on without it. The servo's supply is not switched here.
 
@@ -1190,7 +1191,7 @@ A read of the page gives 29 registers:
 | 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
 | 2 | `OP` | low byte the last operation started, high byte the baud index in force |
 | 3 | `RESULT` | low byte that operation's result (0 done, 1 while it runs, the module's result codes otherwise), high byte why the last command taken started nothing (0: it started) |
-| 4 | `REPLY` | low byte the error byte of the last good reply, high byte its ID, 0xFF none |
+| 4 | `REPLY` | low byte the error byte of the last good reply, an operation's or the watch's, high byte its ID, 0xFF none |
 | 5 | `SCAN` | low byte the ID the scan asks next, high byte the IDs found |
 | 6 | `RANGE` | low byte the first ID of the last scan, high byte the last |
 | 7 | `WATCH` | low byte the watched ID, 0xFF none; high byte the result of its last read |
@@ -1230,7 +1231,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | WATCH | 7 | reads one servo's live block every 50 ms between operations; done when taken, `RESULT` 0 |
 | TORQUE_OFF | 8 | torque off to every servo |
 | STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed |
-| BAUD | 10 | the line to another baud index; the servos keep theirs. Taken while a watch read is on the wire, it waits for the read's end: `RESULT` 1 and BUSY set until then, and other commands are refused BUSY |
+| BAUD | 10 | torque off to every servo at the old rate, then the line to another baud index; the servos keep theirs. `RESULT` 1 and BUSY set until the line moved, and other commands are refused BUSY meanwhile |
 
 `SEQ` is the page's plus 1; the frame just taken, sent again, is
 acknowledged and does nothing; any other `SEQ` is refused with BAD_VALUE.

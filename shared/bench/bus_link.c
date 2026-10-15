@@ -280,6 +280,14 @@ static void ids_look(bus_link_t *k)
     const uint8_t found = (uint8_t)(k->status[LINK_BS_SCAN] >> 8);
     const uint8_t result = (uint8_t)(k->status[LINK_BS_RESULT] & 0xFFu);
 
+    if (op == (uint8_t)LINK_BUS_OP_OPEN) {
+        /* A new session found nothing yet. */
+        k->ids_known = false;
+        k->ids_due = false;
+        k->ids_found = 0;
+        memset(k->ids, 0, sizeof(k->ids));
+        return;
+    }
     if (op != (uint8_t)LINK_BUS_OP_SCAN) {
         return;
     }

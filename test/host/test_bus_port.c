@@ -581,17 +581,37 @@ TEST_CASE(a_baud_write_moves_the_page_with_the_line)
     CHECK_EQ(result(), FEETECH_RES_OK);
     CHECK_EQ(sim.baud, 250000u);
     CHECK_EQ(reg(LINK_BS_OP) >> 8, 2);
-    /* BAUD: the line alone. */
+    /* BAUD: torque off to every servo at the old rate, then the line;
+     * the servos keep theirs. */
     CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 8, 0), 0);
     CHECK_EQ(refusal(), LINK_BUS_REF_RANGE);
+    ftsim_find(&sim, 1)->regs[FEETECH_REG_TORQUE] = 1;
+    sim.n_log = 0;
     CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 7, 0), 0);
+    CHECK_EQ(result(), FEETECH_RES_BUSY);
+    CHECK(reg(LINK_BS_STATE) & LINK_BS_F_BUSY);
+    run(100);
     CHECK_EQ(result(), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_log, 1u);
+    CHECK(is_torque_off(&sim.log[0]));
+    CHECK_EQ(sim.log_baud[0], 250000u);
+    CHECK_EQ(ftsim_find(&sim, 1)->regs[FEETECH_REG_TORQUE], 0);
     CHECK_EQ(sim.baud, 38400u);
     CHECK_EQ(reg(LINK_BS_OP), LINK_BUS_OP_BAUD | (7u << 8));
     sim.refuse_baud = true;
     CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    run(100);
     CHECK_EQ(result(), FEETECH_RES_DRIVER);
     CHECK_EQ(reg(LINK_BS_OP) >> 8, 7);
+    /* A torque off that never starts: DRIVER, the line stays. */
+    sim.refuse_baud = false;
+    sim.refuse_start = true;
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    run(100);
+    CHECK_EQ(result(), FEETECH_RES_DRIVER);
+    CHECK_EQ(g_port.baud_due, 0);
+    CHECK_EQ(sim.baud, 38400u);
+    sim.refuse_start = false;
 }
 
 /* Passes until a watch read is on the wire. */
@@ -604,7 +624,7 @@ static void until_a_watch_read_is_on_the_wire(void)
     CHECK(feetech_bus_on_wire(&g_port.bus));
 }
 
-TEST_CASE(a_baud_taken_during_a_watch_read_follows_its_end)
+TEST_CASE(a_baud_taken_during_a_watch_read_waits_for_its_end)
 {
     setup();
     open_bus();
@@ -626,6 +646,9 @@ TEST_CASE(a_baud_taken_during_a_watch_read_follows_its_end)
     CHECK_EQ(reg(LINK_BS_STATE) & LINK_BS_F_BUSY, 0);
     CHECK_EQ(sim.baud, 115200u);
     CHECK_EQ(reg(LINK_BS_OP), LINK_BUS_OP_BAUD | (4u << 8));
+    /* The torque off went at the old rate, after the read. */
+    CHECK(is_torque_off(&sim.log[sim.n_log - 1u])
+          || is_torque_off(&sim.log[sim.n_log - 2u]));
     /* A driver that refuses the rate then: DRIVER, the rate stays. */
     until_a_watch_read_is_on_the_wire();
     CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
@@ -813,6 +836,14 @@ TEST_CASE(a_stop_while_opening_ends_with_nothing_sent)
     CHECK_EQ(cmd(LINK_BUS_OP_CLOSE, STS, 0, 0), 0);
     CHECK_EQ(state(), LINK_BUS_CLOSED);
     CHECK_EQ(result(), FEETECH_RES_OK);
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_CLOSE);
+    /* A STOP while opening closes as well and reads as the STOP. */
+    CHECK_EQ(cmd(LINK_BUS_OP_OPEN, STS, 0, 0), 0);
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_NONE);
+    CHECK_EQ(state(), LINK_BUS_CLOSED);
+    CHECK_EQ(reg(LINK_BS_OP) & 0xFFu, LINK_BUS_OP_STOP);
+    CHECK_EQ(result(), FEETECH_RES_OK);
     CHECK_EQ(sim.n_start, 0);
 }
 
@@ -913,7 +944,7 @@ int main(void)
     RUN(a_write_takes_ram_only_and_never_the_lock);
     RUN(an_eeprom_write_needs_the_key_and_the_eeprom_area);
     RUN(a_baud_write_moves_the_page_with_the_line);
-    RUN(a_baud_taken_during_a_watch_read_follows_its_end);
+    RUN(a_baud_taken_during_a_watch_read_waits_for_its_end);
     RUN(the_watch_puts_the_live_block_on_the_page);
     RUN(stop_during_a_scan_sends_torque_off_and_the_bus_stays_open);
     RUN(close_during_an_eeprom_write_relocks_then_gives_the_pin);

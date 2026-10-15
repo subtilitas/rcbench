@@ -538,6 +538,15 @@ TEST_CASE(torque_is_kept_per_id_across_a_change_of_selection)
     CHECK_EQ(v1->regs[FEETECH_REG_ID], 7);
     CHECK_EQ(bus_panel_id(), 7);
     CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    /* BAUD on the open bus sends torque off at the old rate first. */
+    run(300);
+    CHECK(bus_panel_row_live(0, 1));
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    run(500);
+    CHECK_EQ(sim.baud, 115200u);
+    CHECK_EQ(v1->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
     pick_id(2);
     CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
 }

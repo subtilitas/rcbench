@@ -795,6 +795,8 @@ static void done(uint8_t result)
         if (!ok) {
             say(true, result_text(result));
         } else if (use == U_BAUD) {
+            /* BAUD sent torque off at the old rate. */
+            memset(b.torque_on, 0, sizeof(b.torque_on));
             say(false, TR(BS_M_DONE));
         }
         return;

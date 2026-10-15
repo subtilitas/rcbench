@@ -610,6 +610,8 @@ static void watch_reply(feetech_bus_t *b, feetech_res_t r,
     }
     b->watch_res = (uint8_t)r;
     if (r == FEETECH_RES_OK) {
+        b->rx_id = st->id;
+        b->rx_error = st->error;
         b->watch_error = st->error;
         b->live_n = st->n_params;
         memcpy(b->live, st->params, st->n_params);

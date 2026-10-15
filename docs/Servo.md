@@ -840,7 +840,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | Row | Values | What it does |
 | --- | --- | --- |
 | PROTOCOL | FEETECH | the protocol; the list holds the protocols of the build. Set while the bus is closed |
-| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: the line moves to it, the servos keep theirs |
+| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: torque off to every servo at the old rate, then the line moves to it; the servos keep theirs |
 | SERIES | SCS, STS/SMS | the register table and byte order: SCS big-endian, goal 0 to 1023; STS and SMS little-endian, goal 0 to 4095. Per ID, for the session; STS/SMS at start |
 | BUS | OPEN, CLOSE | takes the port's pin out of PWM, or gives it back with torque off |
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |

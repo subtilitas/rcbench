@@ -65,7 +65,7 @@ typedef enum {
 #define FEETECH_REG_MODE       33u  /**< STS only: 0 position, 1 speed,
                                          2 PWM, 3 step */
 #define FEETECH_REG_TORQUE     40u  /**< 0 off, 1 on */
-#define FEETECH_REG_ACC        41u  /**< STS only: 0 to 254 */
+#define FEETECH_REG_ACC        41u  /**< STS only: 0 to 255 */
 #define FEETECH_REG_GOAL       42u  /**< 2 bytes */
 #define FEETECH_REG_GOAL_TIME  44u  /**< 2 bytes */
 #define FEETECH_REG_SPEED      46u  /**< 2 bytes */

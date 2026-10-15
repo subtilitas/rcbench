@@ -1779,7 +1779,8 @@ enum {
                               (feetech_res_t: 0 done, 1 while it runs),
                               high byte why the last command taken started
                               nothing (link_bus_refusal_t; 0: it started) */
-    LINK_BS_REPLY = 4,   /**< low byte the error byte of the last good
+    LINK_BS_REPLY = 4,   /**< an operation's or the watch's: low byte
+                              the error byte of the last good
                               reply, high byte its ID, 0xFF none */
     LINK_BS_SCAN  = 5,   /**< low byte the ID the scan asks next, high byte
                               the IDs found */

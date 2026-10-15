@@ -884,10 +884,15 @@ TEST_CASE(the_watch_reads_the_live_block_every_50_ms_between_operations)
     v = ftsim_add(&sim, 1, FEETECH_STS);
     feetech_put16(FEETECH_STS, &v->regs[56], 2048);
     v->regs[69] = 100;
+    v->regs[FEETECH_REG_STATUS] = 0x04;
     feetech_bus_watch(&bus, 1, FEETECH_STS);
     (void)run(5);
     CHECK_EQ(bus.watch_ok, 1);
     CHECK_EQ(bus.live_n, FEETECH_LIVE_STS);
+    /* The last good reply is the watch's. */
+    CHECK_EQ(bus.rx_id, 1);
+    CHECK_EQ(bus.rx_error, 0x04);
+    v->regs[FEETECH_REG_STATUS] = 0;
     CHECK(feetech_live(FEETECH_STS, bus.live, bus.live_n, &live));
     CHECK_EQ(live.position, 2048);
     CHECK_EQ(live.voltage_dv, 74);
