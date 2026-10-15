@@ -386,6 +386,26 @@ void wa_on_join_failed(wa_t *w, wa_join_err_t why)
     }
 }
 
+bool wa_on_drop(wa_t *w, bool auth)
+{
+    if (w->state == WA_ST_ADDRESS || w->state == WA_ST_JOINED) {
+        wa_on_join_failed(w, WA_JOIN_LOST);
+        return false;
+    }
+    if (w->state != WA_ST_JOINING) {
+        return false;
+    }
+    if (!auth) {
+        w->auth_drops = 0u;
+        return true;
+    }
+    if (++w->auth_drops >= WA_AUTH_TRIES) {
+        wa_on_join_failed(w, WA_JOIN_PASSWORD);
+        return false;
+    }
+    return true;
+}
+
 void wa_on_failed(wa_t *w)
 {
     wa_close(w, WA_OFF_FAILED);

@@ -59,6 +59,13 @@ extern "C" {
 #define WA_IDLE_MS      (10u * 60u * 1000u)
 /** A join that has not reached the network after this long failed. */
 #define WA_JOIN_MS      20000u
+/**
+ * Auth-class drops in a row that end a join as WA_JOIN_PASSWORD.  The radio
+ * reports a refused key and a key handshake that ran out of time with the
+ * same reasons, and a correct key times out when the panel or the router
+ * answers late; one drop says nothing about the password.
+ */
+#define WA_AUTH_TRIES   3u
 /** A join that reached the network and has no address after this long. */
 #define WA_ADDRESS_MS   15000u
 /** A start of the access point, or a scan, that has not come up. */
@@ -266,6 +273,7 @@ typedef struct {
     uint32_t      last_ms;    /**< the last request's start or end        */
     unsigned      busy;       /**< requests under way                     */
     unsigned      guesses;    /**< wrong codes in this session            */
+    unsigned      auth_drops; /**< auth-class drops in a row in this join */
     uint32_t      ip;         /**< the address, network byte order       */
     char          pass[WA_SECRET_LEN + 1u];   /**< the access point's    */
     char          code[WA_SECRET_LEN + 1u];   /**< the page's access code */
@@ -306,6 +314,17 @@ void wa_on_address(wa_t *w, uint32_t ip, uint32_t now_ms);
 /** A join failed or a joined network went away; @p why as the platform
  *  reads its reason code. */
 void wa_on_join_failed(wa_t *w, wa_join_err_t why);
+/**
+ * The radio dropped the station; @p auth when the platform reads the
+ * reason as auth-class (the key refused, a MIC (message integrity code)
+ * failure, the key handshake out of time).  Joining: an auth-class drop
+ * counts, any other drop clears the count, and the WA_AUTH_TRIES-th
+ * auth-class drop in a row ends the join as WA_JOIN_PASSWORD.  On the
+ * network, with or without an address: WA_JOIN_LOST.  Returns whether the
+ * platform asks the radio to connect again: true while the join goes on,
+ * which then ends as WA_JOIN_NOT_FOUND at WA_JOIN_MS.
+ */
+bool wa_on_drop(wa_t *w, bool auth);
 /** The radio could not be started. */
 void wa_on_failed(wa_t *w);
 

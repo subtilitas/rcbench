@@ -674,6 +674,162 @@ TEST_CASE(each_way_a_join_fails_is_named)
     CHECK(!wa_radio(&g_w));
 }
 
+/* A join in @p mode, started at 0 ms. */
+static void joining(wa_mode_t mode)
+{
+    wa_init(&g_w);
+    CHECK_EQ(wa_start(&g_w, mode, WA_OFF_NONE, 0u, counter_rand, NULL),
+             WA_OFF_NONE);
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    CHECK_EQ(g_w.auth_drops, 0u);
+}
+
+TEST_CASE(one_handshake_time_out_then_success_joins)
+{
+    const wa_mode_t modes[] = { WA_MODE_JOIN, WA_MODE_FETCH };
+    for (size_t m = 0; m < 2u; ++m) {
+        joining(modes[m]);
+        /* A correct key that the panel or the router answered late. */
+        CHECK(wa_on_drop(&g_w, true));
+        CHECK_EQ(g_w.state, WA_ST_JOINING);
+        CHECK_EQ(g_w.auth_drops, 1u);
+        wa_on_associated(&g_w, 6000u);
+        wa_on_address(&g_w, 0x1701A8C0u, 7000u);
+        CHECK_EQ(g_w.state, WA_ST_JOINED);
+        CHECK_EQ(g_w.join_err, WA_JOIN_OK);
+        CHECK_EQ(g_w.off, WA_OFF_NONE);
+    }
+}
+
+TEST_CASE(three_auth_drops_in_a_row_refuse_the_password)
+{
+    const wa_mode_t modes[] = { WA_MODE_JOIN, WA_MODE_FETCH };
+    for (size_t m = 0; m < 2u; ++m) {
+        joining(modes[m]);
+        for (unsigned i = 1u; i < WA_AUTH_TRIES; ++i) {
+            CHECK(wa_on_drop(&g_w, true));        /* connect again */
+            CHECK_EQ(g_w.state, WA_ST_JOINING);
+            CHECK_EQ(g_w.auth_drops, i);
+        }
+        CHECK(!wa_on_drop(&g_w, true));           /* the 3rd: over */
+        CHECK(!wa_radio(&g_w));
+        CHECK_EQ(g_w.off, WA_OFF_JOIN);
+        CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+        /* A drop the radio reports after the end changes nothing. */
+        CHECK(!wa_on_drop(&g_w, true));
+        CHECK(!wa_on_drop(&g_w, false));
+        CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+        CHECK_EQ(g_w.off, WA_OFF_JOIN);
+    }
+    CHECK_EQ(WA_AUTH_TRIES, 3u);
+}
+
+TEST_CASE(another_drop_between_auth_drops_starts_the_count_again)
+{
+    joining(WA_MODE_JOIN);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.auth_drops, 2u);
+    CHECK(wa_on_drop(&g_w, false));               /* no such network */
+    CHECK_EQ(g_w.auth_drops, 0u);
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, false));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.state, WA_ST_JOINING);           /* 6 auth, none 3 in a row */
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+    /* Other drops alone go on until WA_JOIN_MS. */
+    joining(WA_MODE_FETCH);
+    for (int i = 0; i < 50; ++i) {
+        CHECK(wa_on_drop(&g_w, false));
+    }
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+}
+
+TEST_CASE(auth_drops_short_of_three_end_at_the_join_time_as_not_found)
+{
+    joining(WA_MODE_JOIN);
+    for (unsigned i = 1u; i < WA_AUTH_TRIES; ++i) {
+        CHECK(wa_on_drop(&g_w, true));
+    }
+    CHECK(!wa_tick(&g_w, WA_JOIN_MS - 1u, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.off, WA_OFF_JOIN);
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    /* The 3rd after WA_JOIN_MS finds the join over. */
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    /* The 3rd at WA_JOIN_MS - 1 ms is in time. */
+    joining(WA_MODE_FETCH);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(!wa_tick(&g_w, WA_JOIN_MS - 1u, WA_OFF_NONE, false));
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+    CHECK(!wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+}
+
+TEST_CASE(the_auth_count_starts_again_with_each_join)
+{
+    joining(WA_MODE_FETCH);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    /* The start-up check ends; JOIN HOME NETWORK starts a join of its own. */
+    wa_close(&g_w, WA_OFF_ASKED);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_JOIN, WA_OFF_NONE, 100u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK_EQ(g_w.auth_drops, 0u);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    /* A start over a running join, as well. */
+    CHECK_EQ(wa_start(&g_w, WA_MODE_JOIN, WA_OFF_NONE, 200u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK_EQ(g_w.auth_drops, 0u);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+}
+
+TEST_CASE(a_drop_on_the_network_is_lost_and_off_it_asks_nothing)
+{
+    /* Associated, or with an address: the network went away, whatever the
+     * reason, and the radio does not connect again. */
+    const bool kinds[] = { false, true };
+    for (size_t k = 0; k < 2u; ++k) {
+        joining(WA_MODE_JOIN);
+        wa_on_associated(&g_w, 1000u);
+        CHECK(!wa_on_drop(&g_w, kinds[k]));
+        CHECK_EQ(g_w.join_err, WA_JOIN_LOST);
+        joining(WA_MODE_JOIN);
+        wa_on_associated(&g_w, 1000u);
+        wa_on_address(&g_w, 1u, 2000u);
+        CHECK(!wa_on_drop(&g_w, kinds[k]));
+        CHECK_EQ(g_w.join_err, WA_JOIN_LOST);
+    }
+    /* No join under way: off, the access point, a scan. */
+    wa_init(&g_w);
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.state, WA_ST_OFF);
+    CHECK_EQ(g_w.join_err, WA_JOIN_OK);
+    up_ap(0u);
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK(!wa_on_drop(&g_w, false));
+    CHECK_EQ(g_w.state, WA_ST_AP);
+    CHECK_EQ(g_w.auth_drops, 0u);
+    (void)wa_start(&g_w, WA_MODE_SCAN, WA_OFF_NONE, 0u, counter_rand, NULL);
+    CHECK(!wa_on_drop(&g_w, true));
+    CHECK_EQ(g_w.state, WA_ST_SCANNING);
+}
+
 TEST_CASE(a_scan_runs_the_radio_and_ends_off)
 {
     wa_init(&g_w);
@@ -824,6 +980,12 @@ int main(void)
     RUN(an_access_point_that_does_not_come_up_is_a_failure);
     RUN(a_join_reaches_the_network_then_an_address);
     RUN(each_way_a_join_fails_is_named);
+    RUN(one_handshake_time_out_then_success_joins);
+    RUN(three_auth_drops_in_a_row_refuse_the_password);
+    RUN(another_drop_between_auth_drops_starts_the_count_again);
+    RUN(auth_drops_short_of_three_end_at_the_join_time_as_not_found);
+    RUN(the_auth_count_starts_again_with_each_join);
+    RUN(a_drop_on_the_network_is_lost_and_off_it_asks_nothing);
     RUN(a_scan_runs_the_radio_and_ends_off);
     RUN(a_fetch_joins_and_serves_no_page);
     RUN(with_the_code_on_the_page_answers_only_the_right_code);
