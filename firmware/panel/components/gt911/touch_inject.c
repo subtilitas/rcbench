@@ -63,9 +63,12 @@ bool touch_injector_attached(void)
         return false;
     }
     /* touch_age_ms()'s rule: an injector silent this long counts as
-     * detached before the touch task has detached it. */
+     * detached before the touch task has detached it.  s_ok_ms is loaded
+     * before the clock, so a good read in between cannot put it ahead of
+     * now and wrap the age. */
+    const uint32_t ok_ms = s_ok_ms;
     const uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
-    return (uint32_t)(now - s_ok_ms) < TOUCH_MERGE_DETACH_MS;
+    return (uint32_t)(now - ok_ms) < TOUCH_MERGE_DETACH_MS;
 }
 
 bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh)

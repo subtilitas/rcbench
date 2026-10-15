@@ -10,8 +10,8 @@
  * older of the two ages.  One silent for TOUCH_MERGE_DETACH_MS (1000 ms) is
  * detached: its age no longer counts, and the touch task reads its product
  * ID once every TOUCH_MERGE_PROBE_MS (1000 ms) until it answers, which
- * re-attaches it.  A release build compiles none of this and never
- * addresses 0x14.
+ * re-attaches it.  A release build compiles none of this; it addresses
+ * 0x14 only as the glass's alternate address, when nothing answers at 0x5D.
  *
  * SPDX-License-Identifier: MIT
  */
