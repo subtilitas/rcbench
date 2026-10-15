@@ -40,7 +40,9 @@ history is in git.
   reasons, 15 and 204. A join ends as `password refused` after 3
   auth-class drops in a row within 20 s (`WA_AUTH_TRIES`, `WA_JOIN_MS`);
   a single one connects again, and any other drop sets the count back to
-  0. The GitHub check, the download and JOIN HOME NETWORK count alike.
+  0. A join that reaches 20 s ends as `password refused` when its last
+  drop was auth-class, and as `network not found` after any other drop or
+  none. The GitHub check, the download and JOIN HOME NETWORK count alike.
   Every drop goes to the serial log as one line with its reason number.
 
 ## 0.20.0 - 2026-10-15

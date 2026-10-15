@@ -321,8 +321,10 @@ void wa_on_join_failed(wa_t *w, wa_join_err_t why);
  * counts, any other drop clears the count, and the WA_AUTH_TRIES-th
  * auth-class drop in a row ends the join as WA_JOIN_PASSWORD.  On the
  * network, with or without an address: WA_JOIN_LOST.  Returns whether the
- * platform asks the radio to connect again: true while the join goes on,
- * which then ends as WA_JOIN_NOT_FOUND at WA_JOIN_MS.
+ * platform asks the radio to connect again: true while the join goes on.
+ * A join that reaches WA_JOIN_MS ends as WA_JOIN_PASSWORD when its last
+ * drop was auth-class, and as WA_JOIN_NOT_FOUND after any other drop or
+ * none (wa_tick()).
  */
 bool wa_on_drop(wa_t *w, bool auth);
 /** The radio could not be started. */

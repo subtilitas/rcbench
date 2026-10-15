@@ -751,21 +751,25 @@ TEST_CASE(another_drop_between_auth_drops_starts_the_count_again)
     CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
 }
 
-TEST_CASE(auth_drops_short_of_three_end_at_the_join_time_as_not_found)
+TEST_CASE(a_join_time_out_after_an_auth_drop_refuses_the_password)
 {
-    joining(WA_MODE_JOIN);
-    for (unsigned i = 1u; i < WA_AUTH_TRIES; ++i) {
-        CHECK(wa_on_drop(&g_w, true));
+    /* 1 and 2 auth-class drops, then WA_JOIN_MS: the network answered and
+     * took no key, even where 3 attempts do not fit into the time. */
+    for (unsigned n = 1u; n < WA_AUTH_TRIES; ++n) {
+        joining(WA_MODE_JOIN);
+        for (unsigned i = 0u; i < n; ++i) {
+            CHECK(wa_on_drop(&g_w, true));
+        }
+        CHECK(!wa_tick(&g_w, WA_JOIN_MS - 1u, WA_OFF_NONE, false));
+        CHECK_EQ(g_w.state, WA_ST_JOINING);
+        CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+        CHECK_EQ(g_w.off, WA_OFF_JOIN);
+        CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+        /* A drop after the end changes nothing. */
+        CHECK(!wa_on_drop(&g_w, false));
+        CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
     }
-    CHECK(!wa_tick(&g_w, WA_JOIN_MS - 1u, WA_OFF_NONE, false));
-    CHECK_EQ(g_w.state, WA_ST_JOINING);
-    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
-    CHECK_EQ(g_w.off, WA_OFF_JOIN);
-    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
-    /* The 3rd after WA_JOIN_MS finds the join over. */
-    CHECK(!wa_on_drop(&g_w, true));
-    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
-    /* The 3rd at WA_JOIN_MS - 1 ms is in time. */
+    /* The 3rd at WA_JOIN_MS - 1 ms ends the join itself. */
     joining(WA_MODE_FETCH);
     CHECK(wa_on_drop(&g_w, true));
     CHECK(wa_on_drop(&g_w, true));
@@ -774,6 +778,33 @@ TEST_CASE(auth_drops_short_of_three_end_at_the_join_time_as_not_found)
     CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
     CHECK(!wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
     CHECK_EQ(g_w.join_err, WA_JOIN_PASSWORD);
+}
+
+TEST_CASE(a_join_time_out_after_another_drop_or_none_is_not_found)
+{
+    /* An auth-class drop, then another kind, then WA_JOIN_MS. */
+    joining(WA_MODE_JOIN);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, false));
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.off, WA_OFF_JOIN);
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    /* 2 auth-class, then another kind. */
+    joining(WA_MODE_FETCH);
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, true));
+    CHECK(wa_on_drop(&g_w, false));
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    /* Other drops only. */
+    joining(WA_MODE_JOIN);
+    CHECK(wa_on_drop(&g_w, false));
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    /* No drop at all. */
+    joining(WA_MODE_FETCH);
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
 }
 
 TEST_CASE(the_auth_count_starts_again_with_each_join)
@@ -983,7 +1014,8 @@ int main(void)
     RUN(one_handshake_time_out_then_success_joins);
     RUN(three_auth_drops_in_a_row_refuse_the_password);
     RUN(another_drop_between_auth_drops_starts_the_count_again);
-    RUN(auth_drops_short_of_three_end_at_the_join_time_as_not_found);
+    RUN(a_join_time_out_after_an_auth_drop_refuses_the_password);
+    RUN(a_join_time_out_after_another_drop_or_none_is_not_found);
     RUN(the_auth_count_starts_again_with_each_join);
     RUN(a_drop_on_the_network_is_lost_and_off_it_asks_nothing);
     RUN(a_scan_runs_the_radio_and_ends_off);

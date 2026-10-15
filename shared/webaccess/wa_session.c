@@ -435,7 +435,10 @@ bool wa_tick(wa_t *w, uint32_t now_ms, wa_off_t gate, bool stop)
         break;
     case WA_ST_JOINING:
         if (in_state >= WA_JOIN_MS) {
-            w->join_err = WA_JOIN_NOT_FOUND;
+            /* The last drop auth-class: the network answered and took no
+             * key, whatever the drops in a row before it. */
+            w->join_err = (w->auth_drops > 0u) ? WA_JOIN_PASSWORD
+                                               : WA_JOIN_NOT_FOUND;
             wa_close(w, WA_OFF_JOIN);
             return true;
         }

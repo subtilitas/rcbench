@@ -1626,8 +1626,8 @@ the home network:
 
 | Line on the card | Condition |
 | --- | --- |
-| `Join failed: password refused.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time |
-| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`), and fewer than 3 auth-class drops in a row |
+| `Join failed: password refused.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20 s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
+| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`), and the last drop of another kind, or none |
 | `Join failed: no address in 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
 | `The home network went away.` | joined, then the network dropped the panel |
 
