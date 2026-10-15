@@ -140,22 +140,25 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 ![Das Funktionsmenü](img/de/overview.png)
 
-| Marke | Bedeutung |
+Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
+der Prüfstand nicht meldet: Der Koprozessor meldet dafür keine Fähigkeit, oder
+sein Sensor ist in SETUP unter ANSCHLÜSSE nicht aktiviert. Ein Bildschirm ohne
+seine Hardware öffnet trotzdem und arbeitet aus dem Modell. Die Marke ordnet
+nicht jeden Wert auf einem Bildschirm ein. ANALYSER und BATTERY tragen die
+Marke und zeigen keine Werte. SERVO ohne Marke zeigt das Versorgungsmodell des
+Panels als Messung der Servoschiene, wenn weder ein PD mini noch ein INA3221
+aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
+
+| Kachel | Ohne Marke, wenn |
 | --- | --- |
-| SIMULIERT | der Koprozessor meldet für den Bildschirm keine Fähigkeit, oder sein Sensor ist auf SETUP nicht aktiviert |
-| keine | der Koprozessor meldet die Fähigkeit, und der Sensor ist aktiviert |
+| MOTOR & ESC | der Koprozessor ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
+| SERVO | der Koprozessor Servo-PWM-Ausgänge ansteuert |
+| SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist, unabhängig davon, was der Koprozessor meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
+| ANALYSER, BATTERY, BALANCE, PROGRAMMER | in diesem Release nie: kein Koprozessor meldet diese Fähigkeiten |
+| LOGS, SETUP | immer: sie enthalten keine Messung |
 
-Die Marke ordnet nicht jeden Wert auf einem Bildschirm ein. ANALYSER und
-BATTERY tragen die Marke und zeigen keine Werte. SERVO ohne Marke zeigt das
-Versorgungsmodell des Panels als Messung der Servoschiene, wenn weder ein PD
-mini noch ein INA3221 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner
-Werte selbst.
-
-Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
-Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und
-arbeitet aus dem Modell. SUPPLY trägt SIMULIERT, solange der PD mini in SETUP
-unter ANSCHLÜSSE abgeschaltet ist, unabhängig davon, was der Koprozessor
-meldet: Das Panel rechnet dann sein eigenes Modell eines Netzteils.
+Die Capability-Bits meldet der Koprozessor beim Hochfahren. Ohne antwortenden
+Koprozessor tragen MOTOR & ESC und SERVO die Marke ebenfalls.
 
 Das Menü im hellen Design:
 

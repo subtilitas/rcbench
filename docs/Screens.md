@@ -130,21 +130,24 @@ bottom of the screen, ARM included, while it shows.
 
 ![The feature menu](img/overview.png)
 
-| Mark | Meaning |
+A tile marked MODELLED opens a screen whose source the bench does not
+report: the coprocessor reports no capability for it, or its sensor is not
+enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
+from the model. The mark does not classify each value on a screen. ANALYSER
+and BATTERY carry the mark and show no values. SERVO without the mark shows the
+panel's supply model as its rail meter when neither a PD mini nor an INA3221 is
+enabled. Each screen names the source of its readings itself.
+
+| Tile | Without the mark when |
 | --- | --- |
-| MODELLED | the coprocessor reports no capability for the screen, or its sensor is not enabled on SETUP |
-| none | the coprocessor reports the capability and the sensor is enabled |
+| MOTOR & ESC | the coprocessor drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
+| SERVO | the coprocessor drives servo PWM outputs |
+| SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the coprocessor reports; otherwise the panel runs its own model of a supply |
+| ANALYSER, BATTERY, BALANCE, PROGRAMMER | never in this release: no coprocessor reports these capabilities |
+| LOGS, SETUP | always: they hold no measurement |
 
-The mark does not classify each value on a screen. ANALYSER and BATTERY carry
-the mark and show no values. SERVO without the mark shows the panel's supply
-model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each
-screen names the source of its readings itself.
-
-The mark is derived from the capability bits the coprocessor reports at
-bring-up. A screen whose hardware is missing opens and runs from the model.
-SUPPLY is marked MODELLED while the PD mini is disabled on SETUP under
-INTERFACES, whatever the coprocessor reports: the panel then runs its own
-model of a supply.
+The capability bits come from the coprocessor at bring-up. With no coprocessor
+answering, MOTOR & ESC and SERVO carry the mark too.
 
 The menu in the light theme:
 
