@@ -1713,6 +1713,17 @@ TEST_CASE(a_sample_at_3_a_ends_the_run_in_every_phase)
         servo_limrun_window(&g.run, &w);
         CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_HARD);
 
+        /* The reading's most negative value, -32768 mA, in mean, minimum
+         * and maximum and not marked clipped: 32768 mA as a magnitude, not
+         * a negative value under the ceiling. */
+        CHECK(to_phase_at(ph, at));
+        w = win_at(g.now, INT16_MIN, INT16_MIN);
+        w.min_ma = INT16_MIN;
+        servo_limrun_window(&g.run, &w);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_HARD);
+        run_for(20u);
+        CHECK_EQ(g.offs, 1u);
+
         CHECK(to_phase_at(ph, at));
         w = win_at(g.now, 200, 300);
         w.clipped = 1u;

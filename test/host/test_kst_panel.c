@@ -5573,6 +5573,59 @@ TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
     CHECK_EQ(lr.cmd, 1500u);
 }
 
+/* A run that ends inside a session gives the port back with a LEAVE and
+ * ends the programmer's run once that LEAVE is over: through the LEAVE the
+ * programmer's run still holds it (its poll says BUSY), after it the run
+ * is over (NONE), and the programmer does not open over the box.  A LEAVE
+ * that fails leaves the port in programming mode and opens the
+ * programmer. */
+TEST_CASE(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave)
+{
+    bool leaving_seen = false;
+
+    lr_fresh(false);
+    lr_start_with(false);
+    CHECK(servo_screen_limit_running());
+    for (int i = 0; i < 200000 && servo_screen_limit_running(); ++i) {
+        lr_ms(1u);
+    }
+    CHECK(!servo_screen_limit_running());
+    for (int i = 0; i < 20000 && kst_prog_state(M) != KST_PROG_PWM; ++i) {
+        if (kst_prog_state(M) == KST_PROG_LEAVING) {
+            leaving_seen = true;
+            CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_BUSY);
+            CHECK(!kst_panel_is_open());
+        }
+        lr_ms(1u);
+    }
+    CHECK(leaving_seen);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    lr_ms(40u);
+    CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_NONE);
+    CHECK(!kst_panel_is_open());
+    CHECK(strstr(lr.report, "Result:         FAIL - servo pulses outside "
+                            "MIN/MAX\n") != NULL);
+
+    /* A LEAVE the control task never takes: the port stays in programming
+     * mode, the programmer's run ends, and the programmer opens. */
+    lr_fresh(false);
+    lr_start_with(false);
+    for (int i = 0; i < 200000 && servo_screen_limit_running(); ++i) {
+        lr_ms(1u);
+    }
+    CHECK(!servo_screen_limit_running());
+    g_rig.deaf = true;
+    for (int i = 0; i < 400 && kst_prog_state(M) == KST_PROG_LEAVING; ++i) {
+        CHECK(!kst_panel_is_open());
+        lr_ms(500u);
+    }
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    lr_ms(40u);
+    CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_NONE);
+    CHECK(kst_panel_is_open());
+    g_rig.deaf = false;
+}
+
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
  * page and a tap where it stands on the programming port changes nothing;
  * the run searches out to PULSE MIN and PULSE MAX with no session. */
@@ -5884,6 +5937,7 @@ int main(void)
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
     RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
+    RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
     RUN(a_session_after_a_limit_run_saves_its_own_backup);

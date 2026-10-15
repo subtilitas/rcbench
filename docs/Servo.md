@@ -253,7 +253,8 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 These hold in every phase. The search and the protections read the
 current's magnitude: a shunt fitted the other way round reads a bound servo
 as a more negative current, and the run finds it as it does with the shunt
-the right way round. The run follows the arming rules of the SERVO
+the right way round. A reading of -32768 mA counts as 32768 mA, past the
+3.0 A ceiling. The run follows the arming rules of the SERVO
 screen and the programming port: its ARM is refused while the port is
 held, a STOP latch or lost touch events keep the bench SAFE, and an ARM
 that does not land ends the run.

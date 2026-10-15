@@ -923,7 +923,11 @@ Ein Lauf, der in einer Sitzung abgebrochen wird, lässt den Port im
 Programmiermodus mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn
 an PWM zurück; VERBINDEN und ALLES LESEN bieten das Zurückspielen an. Ein
 Lauf, der in einer Sitzung nicht besteht, gibt den Port selbst mit
-VERLASSEN zurück, und sein Feld bleibt auf der linken Karte.
+VERLASSEN zurück, und sein Feld bleibt auf der linken Karte. Der Teil des
+Laufs im Programmierer, mit den Netzteilwerten, die er hält, endet, sobald
+dieses VERLASSEN vorbei ist. Ein VERLASSEN, das scheitert, lässt den Port
+im Programmiermodus, und der Programmierer öffnet sich auf der linken
+Karte.
 
 ## Weiteres
 

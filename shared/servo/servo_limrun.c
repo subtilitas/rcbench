@@ -585,9 +585,11 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
     return true;
 }
 
-static int16_t mag(int16_t ma)
+/* A current's magnitude, mA.  Wider than the reading: -32768 mA is
+ * 32768 mA, past every ceiling, not a negative value under them. */
+static int32_t mag(int16_t ma)
 {
-    return (int16_t)(ma < 0 ? -(int32_t)ma : ma);
+    return ma < 0 ? -(int32_t)ma : (int32_t)ma;
 }
 
 void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)

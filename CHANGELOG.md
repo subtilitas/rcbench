@@ -107,7 +107,9 @@ history is in git.
   is sent switches ENABLE WRITE TO SERVO off again. A write that fails once
   sent counts as written, so the box and the report offer RESTORE; a run
   that sent no write reports no backup. During a run the supply log writes
-  no row and its time runs on. RESTORE offers `Values
+  no row and its time runs on. A run that fails inside a session ends the
+  programmer's part of it once its LEAVE is over. A current reading of
+  -32768 mA counts as 32768 mA in the protections. RESTORE offers `Values
   before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
   UPPER as the run found them; a session after the run saves its own backup
   file at its first write.

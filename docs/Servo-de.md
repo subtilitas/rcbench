@@ -275,7 +275,8 @@ Prüfstands angewendet.
 Sie gelten in jeder Phase. Die Suche und die Schutzmechanismen lesen den
 Betrag des Stroms: ein verkehrt herum eingebauter Shunt liest ein
 anlaufendes Servo als stärker negativen Strom, und der Lauf findet es wie
-mit richtig eingebautem Shunt. Der Lauf folgt den Regeln für ARMED des
+mit richtig eingebautem Shunt. Ein Messwert von -32768 mA zählt als
+32768 mA, über der Grenze von 3,0 A. Der Lauf folgt den Regeln für ARMED des
 SERVO-Bildschirms und des Programmierports: sein ARM wird abgelehnt,
 solange der Port gehalten wird, eine STOP-Sperre oder verlorene
 Touch-Ereignisse halten den Prüfstand SAFE, und ein ARM, das nicht ankommt,

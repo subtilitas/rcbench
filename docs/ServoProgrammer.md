@@ -848,7 +848,10 @@ TARGET row and the run's box name it: `PROG PORT GP13`.
 A run aborted inside a session leaves the port in programming mode with
 the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
 offer the restore. A run that fails inside a session gives the port back
-with LEAVE itself, and the run's box stays on the left card.
+with LEAVE itself, and the run's box stays on the left card. The
+programmer's part of the run, with the supply values it keeps, ends once
+that LEAVE is over. A LEAVE that fails leaves the port in programming mode,
+and the programmer opens on the left card.
 
 ## More
 

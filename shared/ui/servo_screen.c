@@ -659,8 +659,10 @@ static struct {
     bool      lim_box;       /**< the left card shows the limit run     */
     bool      lim_seen;      /**< it was running when last looked       */
     /** The run ended in a session and its LEAVE is on its way: the box,
-     *  not the programmer, stays on the left card. */
+     *  not the programmer, stays on the left card, and the programmer's
+     *  run ends once the LEAVE has (lim_end_due). */
     bool      lim_leaving;
+    bool      lim_end_due;
     int       lim_file;      /**< its report's number; 0 not yet, -1 none */
     bool      lim_report;    /**< the card took the report whole       */
     const char *lim_note;    /**< why the last START was refused, or NULL */
@@ -2454,6 +2456,9 @@ static uint32_t lim_signature(void);
 
 static void reset(void)
 {
+    if (s.lim_end_due) {
+        kst_panel_run_end();
+    }
     memset(&s, 0, sizeof(s));
     s.drive_pin   = SERVO_SCREEN_NO_PIN;
     servo_test_init(&s.test);
@@ -3404,10 +3409,30 @@ static void lim_ended(void)
         return;
     }
     s.lim_seen = false;
-    kst_panel_run_end();
+    /* A LEAVE on its way is the run's to the end: the programmer's run, and
+     * the supply values it keeps, end when the port is back. */
+    if (s.lim_leaving) {
+        s.lim_end_due = true;
+    } else {
+        kst_panel_run_end();
+    }
     test_tell();
     ++s.test_rev;
     ++s.ctrl_rev;
+}
+
+/* The ended run's LEAVE: over once the port has left LEAVING, back in PWM
+ * or, refused, still in programming.  Whichever screen is up. */
+static void lim_leave_follow(void)
+{
+    if (s.lim_leaving
+        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
+        s.lim_leaving = false;
+    }
+    if (s.lim_end_due && !s.lim_leaving) {
+        s.lim_end_due = false;
+        kst_panel_run_end();
+    }
 }
 
 /* End the run now and do what that asks -- the output off, the servo let
@@ -3521,6 +3546,7 @@ static void lim_tick(void)
 
 void servo_screen_service(void)
 {
+    lim_leave_follow();
     test_ended();
     test_restore_service();
 }
@@ -6304,10 +6330,7 @@ static void tick_body(float dt_s)
     kst_panel_tick(dt_s);
     /* Not while a limit run holds the port: its box stays on the left
      * card, and the run gives the port back itself. */
-    if (s.lim_leaving
-        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
-        s.lim_leaving = false;
-    }
+    lim_leave_follow();
     if (kst_panel_holds_port() && !kst_panel_is_open()
         && !servo_limrun_running(&s.lim) && !s.lim_leaving) {
         kst_panel_open();
