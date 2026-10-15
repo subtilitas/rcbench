@@ -108,14 +108,50 @@ picotool erase -p 1
 picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 ```
 
-**The panel's partition table changed.** It now carries a 2 MB `boardart`
-partition. If the panel was flashed before that, flash the merged image at
-offset 0 rather than only the app:
+### The panel's application slots
+
+**One flash over USB moves the panel to two application slots.** From this
+release the panel's flash holds two slots of 4,063,232 bytes, `ota_0` and
+`ota_1`, so it can update itself over Wi-Fi ([Screens: Files &
+update](Screens.md#files--update)). A panel flashed with an earlier release
+has one 3 MB `factory` slot and needs this one flash over USB (Universal
+Serial Bus) to reach the new layout:
+
+| Offset | Earlier releases | This release and later |
+| --- | --- | --- |
+| 0x9000 | `nvs`, 24 KiB | `nvs`, 24 KiB |
+| 0xF000 | `phy_init`, 4 KiB | `phy_init`, 4 KiB |
+| 0x10000 | `factory`, 3 MiB | `otadata`, 8 KiB |
+| 0x20000 | | `ota_0`, 3,968 KiB |
+| 0x310000 | `storage`, 1 MiB, unused | |
+| 0x400000 | | `ota_1`, 3,968 KiB |
+| 0x410000 | `boardart`, 2 MiB | |
+| 0x7E0000 | | `boardart`, 128 KiB |
+
+The parts keep the settings: they write the bootloader, the partition table,
+`otadata` and the application, and leave `nvs` alone. From a source tree:
 
 ```bash
-idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
-esptool.py -p /dev/ttyACM0 write_flash 0x0 firmware/panel/build/rcbench-panel-merged.bin
+idf.py -C firmware/panel -p /dev/ttyACM0 flash
 ```
+
+From the release archive `rcbench-panel-vX.Y.Z.zip`, in its unpacked folder:
+
+```bash
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+```
+
+The merged image at offset 0 writes the whole 8 MB, `nvs` included, so it
+erases the settings:
+
+```bash
+esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+```
+
+Either way the stored board drawing is gone: `boardart` moved. The panel
+fetches it again at the next link-up ([§4](#4-first-link-up-the-board-drawing)).
+After this flash, later panel releases install over Wi-Fi from the release
+asset `rcbench-panel-vX.Y.Z.bin`.
 
 ---
 

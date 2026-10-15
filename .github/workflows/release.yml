@@ -157,6 +157,7 @@ jobs:
             firmware/panel/build/rcbench-panel.elf
             firmware/panel/build/bootloader/bootloader.bin
             firmware/panel/build/partition_table/partition-table.bin
+            firmware/panel/build/ota_data_initial.bin
             firmware/panel/build/flash_args
           if-no-files-found: error
 
@@ -277,11 +278,14 @@ jobs:
           # over different cables, and the UF2 (USB flashing format) image
           # does not belong inside an ESP-IDF (Espressif Internet-of-Things
           # Development Framework) archive.  The panel archive carries the
-          # merged image, which goes to 0x0 on its own, and the three parts
+          # merged image, which goes to 0x0 on its own, and the four parts
           # for flashing them separately.
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
-          (cd dist && sha256sum ./*.zip > SHA256SUMS)
+          # And the panel's application on its own: the file the panel's
+          # Wi-Fi page takes for an update (FILES & UPDATE).
+          cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-$TAG.bin"
+          (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist
 
       - name: Publish the release
@@ -341,7 +345,7 @@ jobs:
           }
           trap cleanup EXIT
 
-          assets=(dist/*.zip dist/SHA256SUMS)
+          assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
 
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed

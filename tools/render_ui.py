@@ -92,6 +92,7 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
+    "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
@@ -348,9 +349,11 @@ SCREENS = {
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
     # The coprocessor update: the question a link-up poses, the same with
     # an image older than the one running, and the progress half way.
-    "update":          ("update.png",          "update", "dark"),
-    "update-older":    ("update-older.png",    "update", "dark"),
-    "update-progress": ("update-progress.png", "update", "dark"),
+    "coproc-update": ("coproc-update.png", "coproc-update", "dark"),
+    "coproc-update-older": ("coproc-update-older.png", "coproc-update",
+                            "dark"),
+    "coproc-update-progress": ("coproc-update-progress.png",
+                               "coproc-update", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
@@ -358,6 +361,38 @@ SCREENS = {
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
+    # FILES & UPDATE from LOGS: the radio off with nothing kept; a home
+    # network kept whose join failed, the access code off; the gate shut.
+    "wifi": ("wifi.png", "wifi", "dark"),
+    "wifi-home": ("wifi-home.png", "wifi", "dark"),
+    "wifi-blocked": ("wifi-blocked.png", "wifi", "dark"),
+    # The access point up and an upload arriving; joining; joined.
+    "wifi-ap": ("wifi-ap.png", "wifi", "dark"),
+    "wifi-joining": ("wifi-joining.png", "wifi", "dark"),
+    "wifi-joined": ("wifi-joined.png", "wifi", "dark"),
+    # CHOOSE HOME NETWORK: the scan running, and its list.
+    "wifi-scanning": ("wifi-scanning.png", "wifi", "dark"),
+    "wifi-scan": ("wifi-scan.png", "wifi", "dark"),
+    # The Wi-Fi keyboard: a hidden network's name on each layer, an empty
+    # one refused, and a password masked, shown, and refused at 7.
+    "wifi-key-lower": ("wifi-key-lower.png", "wifi", "dark"),
+    "wifi-key-upper": ("wifi-key-upper.png", "wifi", "dark"),
+    "wifi-key-marks": ("wifi-key-marks.png", "wifi", "dark"),
+    "wifi-key-ssid": ("wifi-key-ssid.png", "wifi", "dark"),
+    "wifi-key-pass": ("wifi-key-pass.png", "wifi", "dark"),
+    "wifi-key-shown": ("wifi-key-shown.png", "wifi", "dark"),
+    "wifi-key-short": ("wifi-key-short.png", "wifi", "dark"),
+    # An uploaded image's question: newer; older with a drawing being
+    # kept; the same version rebuilt; the build that runs.
+    "wifi-question": ("wifi-question.png", "wifi", "dark"),
+    "wifi-older": ("wifi-older.png", "wifi", "dark"),
+    "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
+    "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
+    # PANEL UPDATE: writing, written, failed.
+    "panel-update": ("panel-update.png", "panel-update", "dark"),
+    "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
+    "panel-update-failed": ("panel-update-failed.png", "panel-update",
+                            "dark"),
 }
 INCLUDES = [
     "shared/gfx/include",
@@ -415,7 +450,9 @@ SLACK_Y = 2
 MIN_SHAPE = 8
 
 # Views the fit check draws and no page shows: the band's other bubbles,
-# so every string of every bubble is measured where it is drawn.  The same
+# so every string of every bubble is measured where it is drawn, and the
+# Wi-Fi screen's failure lines and its install question held by the
+# coprocessor's update.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
     "band-fault-all":   (None, "overview", "dark"),
@@ -427,6 +464,9 @@ FIT_ONLY = {
     "band-armed-sim":   (None, "overview", "sim"),
     "band-clock":       (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
+    "wifi-unavailable": (None, "wifi", "dark"),
+    "wifi-save-failed": (None, "wifi", "dark"),
+    "wifi-coproc":      (None, "wifi", "dark"),
 }
 
 # Views that open a drop-down or a chip's help bubble over the screen: the

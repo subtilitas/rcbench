@@ -25,6 +25,8 @@
 
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
+#include "ui_textkey.h"
+#include "wifi_screen.h"
 #include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
@@ -282,7 +284,7 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
 #define IM_BTN_Y_LOCAL 368
 /* FOOT_Y + 2 and the DELETE button's x from the same file. */
 #define BR_FOOT_Y_LOCAL 392
-#define BR_DELETE_CX    551
+#define BR_DELETE_CX    596
 
 static void tap(int x, int y)
 {
@@ -1154,8 +1156,10 @@ static ui_screen_id_t id_of(const char *name)
         { "outputs",    SCREEN_OUTPUTS },
         { "picker",     SCREEN_PICKER },
         { "busfault",   SCREEN_BUSFAULT },
-        { "update",     SCREEN_COPROC_UPDATE },
+        { "coproc-update", SCREEN_COPROC_UPDATE },
         { "supply",     SCREEN_SUPPLY },
+        { "wifi",       SCREEN_WIFI },
+        { "panel-update", SCREEN_UPDATE },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -1185,6 +1189,186 @@ static void pose_splash(void)
              (unsigned)LINK_PROTOCOL_MAJOR, (unsigned)LINK_PROTOCOL_MINOR,
              RCBENCH_VERSION_STRING);
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
+}
+
+/* ------------------------------------------------- FILES & UPDATE */
+
+/* A key of the Wi-Fi keyboard as FILES & UPDATE opens it, tapped. */
+static void wifi_key(int key)
+{
+    ui_textkey_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_textkey_open_wifi(&probe, gfx_rect_make(8, 8, 784, 416), "", "",
+                         true);
+    const gfx_rect_t r = ui_textkey_key_rect(&probe, key);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
+/* @p text on the lower-case layer: letters, digits and "-". */
+static void wifi_type(const char *text)
+{
+    static const char lower[] = "1234567890qwertyuiopasdfghjkl- zxcvbnm";
+    for (; *text != '\0'; ++text) {
+        const char *p = strchr(lower, *text);
+        if (p != NULL) {
+            wifi_key((int)(p - lower));
+        }
+    }
+}
+
+/* The views of FILES & UPDATE, reached as an operator reaches them: the
+ * application's view handed in, the controls tapped. */
+static void pose_wifi(const char *view)
+{
+    wifi_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.code_on = true;
+    strcpy(v.name, "rcbench-3F7A");
+    strcpy(v.run_ver, RCBENCH_VERSION_STRING);
+    if (strcmp(view, "wifi-home") == 0) {
+        v.have_net = true;
+        strcpy(v.net, "Workshop 2.4");
+        v.code_on = false;
+        v.off = WIFI_WHY_JOIN;
+        v.join = WIFI_JOIN_PASSWORD;
+    } else if (strcmp(view, "wifi-blocked") == 0) {
+        v.block = WIFI_WHY_ARMED;
+        v.off = WIFI_WHY_ARMED;
+    } else if (strcmp(view, "wifi-unavailable") == 0) {
+        v.block = WIFI_WHY_UNAVAILABLE;
+    } else if (strcmp(view, "wifi-save-failed") == 0) {
+        /* The tallest main view: every line the card can hold at once. */
+        v.have_net = true;
+        strcpy(v.net, "Workshop 2.4");
+        v.code_on = false;
+        v.save_failed = true;
+        v.block = WIFI_WHY_RUN;
+        v.off = WIFI_WHY_JOIN;
+        v.join = WIFI_JOIN_NO_ADDRESS;
+    } else if (strcmp(view, "wifi-ap") == 0) {
+        v.radio = WIFI_RADIO_AP;
+        strcpy(v.pass, "k7mqx3ha");
+        strcpy(v.code, "r4tcw9pe");
+        v.channel = 6;   /* WIFI_ACCESS_AP_CHANNEL */
+        v.idle_left_s = 574;
+        v.up = WIFI_UP_RECEIVING;
+        v.received = 917504u;
+        v.total = 1843200u;
+    } else if (strcmp(view, "wifi-joining") == 0) {
+        v.have_net = true;
+        strcpy(v.net, "Workshop 2.4");
+        v.radio = WIFI_RADIO_JOINING;
+    } else if (strcmp(view, "wifi-joined") == 0) {
+        v.have_net = true;
+        strcpy(v.net, "Workshop 2.4");
+        v.radio = WIFI_RADIO_JOINED;
+        v.code_on = false;
+        v.ip[0] = 192; v.ip[1] = 168; v.ip[2] = 178; v.ip[3] = 41;
+        v.idle_left_s = 600;
+    } else if (strcmp(view, "wifi-question") == 0
+               || strcmp(view, "wifi-older") == 0
+               || strcmp(view, "wifi-rebuild") == 0
+               || strcmp(view, "wifi-installed") == 0
+               || strcmp(view, "wifi-coproc") == 0) {
+        v.radio = WIFI_RADIO_AP;
+        strcpy(v.pass, "k7mqx3ha");
+        strcpy(v.code, "r4tcw9pe");
+        v.up = WIFI_UP_STAGED;
+        strcpy(v.new_ver, "0.19.0");
+        v.offer = WIFI_OFFER_NEWER;
+        if (strcmp(view, "wifi-older") == 0) {
+            strcpy(v.new_ver, "0.17.0");
+            v.offer = WIFI_OFFER_OLDER;
+            v.gate = WIFI_GATE_DRAWING;
+        } else if (strcmp(view, "wifi-coproc") == 0) {
+            v.gate = WIFI_GATE_COPROC;
+        } else if (strcmp(view, "wifi-rebuild") == 0) {
+            strcpy(v.new_ver, RCBENCH_VERSION_STRING);
+            v.offer = WIFI_OFFER_REBUILD;
+        } else if (strcmp(view, "wifi-installed") == 0) {
+            strcpy(v.new_ver, RCBENCH_VERSION_STRING);
+            v.offer = WIFI_OFFER_INSTALLED;
+        }
+    }
+    wifi_screen_set(&v);
+
+    const bool keys = strncmp(view, "wifi-key", 8) == 0;
+    if (strcmp(view, "wifi-scan") == 0 || strcmp(view, "wifi-scanning") == 0
+        || keys) {
+        tap(16 + 180, UI_BAND_H + 16 + 2 * 68 + 28);       /* CHOOSE */
+        v.radio = WIFI_RADIO_SCANNING;
+        wifi_screen_set(&v);
+    }
+    if (strcmp(view, "wifi-scan") == 0 || keys) {
+        static const struct { const char *ssid; int rssi; } nets[] = {
+            { "Workshop 2.4", -43 },
+            { "Werkstatt Grö\xc3\x9f" "e", -58 },
+            { "FRITZ!Box 7590 KL", -64 },
+            { "Hangar guest", -70 },
+            { "a-network-name-of-32-characters!", -77 },
+            { "Vodafone-8C2E", -81 },
+            { "Field office", -86 },
+        };
+        v.radio = WIFI_RADIO_OFF;
+        v.scanned = true;
+        v.scan_n = (int)(sizeof(nets) / sizeof(nets[0]));
+        for (int i = 0; i < v.scan_n; ++i) {
+            strcpy(v.scan[i], nets[i].ssid);
+            v.rssi[i] = (int8_t)nets[i].rssi;
+        }
+        wifi_screen_set(&v);
+    }
+    if (keys) {
+        const bool pass = strncmp(view, "wifi-key-pass", 13) == 0
+                          || strcmp(view, "wifi-key-shown") == 0
+                          || strcmp(view, "wifi-key-short") == 0;
+        if (pass) {
+            tap(16 + 100, UI_BAND_H + 16 + 20);             /* row 1 */
+            wifi_type("cedar");
+            wifi_key(UI_TK_SHIFT);
+            wifi_type("q");
+            wifi_key(UI_TK_SHIFT);
+            if (strcmp(view, "wifi-key-short") == 0) {
+                wifi_type("4");
+                wifi_key(UI_TK_OK);                         /* 7: refused */
+            } else {
+                wifi_type("42x");
+                if (strcmp(view, "wifi-key-shown") == 0) {
+                    wifi_key(UI_TK_SHOW);
+                }
+            }
+        } else {
+            tap(272 + 128, UI_BAND_H + 376 + 24);          /* HIDDEN */
+            wifi_type("lab");
+            if (strcmp(view, "wifi-key-upper") == 0) {
+                wifi_key(UI_TK_SHIFT);
+            } else if (strcmp(view, "wifi-key-marks") == 0) {
+                wifi_key(UI_TK_LAYER);
+            } else if (strcmp(view, "wifi-key-ssid") == 0) {
+                wifi_key(UI_TK_CLR);
+                wifi_key(UI_TK_OK);                         /* refused */
+            }
+        }
+    }
+}
+
+/* The firmware write, at a point inside it, at its end, or failed. */
+static void pose_update(const char *view)
+{
+    update_view_t u;
+    memset(&u, 0, sizeof(u));
+    strcpy(u.version, "0.19.0");
+    u.total = 1843200u;
+    u.written = 720896u;
+    u.state = UPDATE_WRITING;
+    if (strcmp(view, "panel-update-done") == 0) {
+        u.written = u.total;
+        u.state = UPDATE_RESTARTING;
+    } else if (strcmp(view, "panel-update-failed") == 0) {
+        u.written = 262144u;
+        u.state = UPDATE_FAILED;
+    }
+    update_screen_set(&u);
 }
 
 /*
@@ -2232,12 +2416,12 @@ int main(int argc, char **argv)
         const cu_version_t new_v = { RCBENCH_VERSION_MAJOR,
                                      RCBENCH_VERSION_MINOR,
                                      RCBENCH_VERSION_PATCH };
-        if (strcmp(view, "update-older") == 0) {
+        if (strcmp(view, "coproc-update-older") == 0) {
             coproc_update_screen_offer(new_v, old_v);
         } else {
             coproc_update_screen_offer(old_v, new_v);
         }
-        if (strcmp(view, "update-progress") == 0) {
+        if (strcmp(view, "coproc-update-progress") == 0) {
             coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
         }
     }
@@ -2276,6 +2460,13 @@ int main(int argc, char **argv)
             drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (6 * 58 + 8));
             drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
         }
+    }
+
+    if (id == SCREEN_WIFI) {
+        pose_wifi(view);
+    }
+    if (id == SCREEN_UPDATE) {
+        pose_update(view);
     }
 
     if (id == SCREEN_LOGS) {

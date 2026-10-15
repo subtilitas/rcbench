@@ -1724,7 +1724,7 @@ with the coprocessor's HASH_RUNNING over the same number of bytes.
 | Result | Panel |
 | --- | --- |
 | same | nothing |
-| different | the alert `coprocessor runs another build -- the menu offers its update`; the question opens on the menu while the bench is SAFE and the supply output off |
+| different | the alert `coprocessor runs another build -- the menu offers its update`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
 | an image on trial | writes BUY at once and says `coprocessor's new image kept` |
 | BAD_PAGE or no slots | the alert `coprocessor takes no update over CAN -- load it once over USB` |
 

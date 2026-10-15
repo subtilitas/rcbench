@@ -100,6 +100,7 @@ is taken in a gap ahead of the save that needs it.
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
 | Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
+| Panel firmware update and card files over Wi-Fi | built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_screen`); the panel side is `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the coprocessor's update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the install waits while the coprocessor's update or BUY runs, and the coprocessor's question opens and its START is taken only with the radio wholly off and no install under way. Not run on a panel: the transfer rate, the range, the time of an erase and a write, what the glass shows during an erase and the free internal heap with the radio and the display up are not measured. [Files & update](docs/Screens.md#files--update), [migration](docs/FirstRun.md#1-flash-both-boards) |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; switching to ARMED writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel SAFE. The throttle changes only while ARMED: while SAFE, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0 %, which every switch to SAFE returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
 | Servo screen | built; writes `CHAN_CFG` and `CHANNELS` over the link, the frame rate on `SERVO` to a coprocessor speaking protocol 4.1, and a sweep (square, sine or triangle, run by the coprocessor) to one speaking 4.2, which PAUSE holds (the button then reads PAUSED) and a tap on PAUSED carries on from the phase it was held at on a coprocessor speaking 4.6 (`LINK_SV_RESUME`), and starts over from the curve's beginning, with an alert, on an older one or one that refuses; SPEED's row reads SPEED LIMITS THE SWEEP while SPEED is slower than the curve's fastest change. A SETTINGS overlay sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session, and the automatic test, its limits and the device under test in NVS; a heli type or a rate above 60 Hz is applied only through a warning held for 2 s, and every restart is STANDARD PWM at 50 Hz. The right card shows the servo rail as its meter reads it (`servo_source.h`), in the CURRENT row, on the line over the plot and in the plot: CH1's 50 ms windows under the name `INA3221 CH1` while the INA3221 is the meter, the supply's samples under `PD MINI` otherwise -- the PD mini's when SETUP enables it, `supply_sim_t`'s with a MODELLED pill if not. A current is signed and shown in hundredths of an amp, a window with a sample at an end of the range in the warning colour, a reading that did not arrive as dashes; the row's value is repainted by itself when its digits or colour change (`test_servo`; host suite only). START TEST on the TEST page runs the automatic test (`shared/servo/servo_test.c`): the supply stepped through 4.8 and 6.0 V, and 7.4 and 8.4 V with HV SERVO on (session only, through the HV warning's 2 s hold), idle, moving and holding current and the travel time at each, a brown-out walk from 5.0 V down in 0.2 V steps, and `BENCHnnn.CSV` and `BENCHnnn.TXT` written by the `runlog` task. A run reads one meter from its start to its end, the servo rail's at START TEST: the PD mini's readings, or, while the INA3221 is the meter and the supply is the PD mini, CH1's 50 ms windows -- mean current, the highest and lowest 1 ms sample, the bus voltage at the load side of the shunt and its lowest sample -- with the supply read for its state only (`test_servo_test_win`, through the modelled INA3221, the coprocessor's schedule and pages, `sense_link` and `servo_source`). A run on the INA3221 ends ABORTED when the INA3221 stops being the meter or no window arrives for 500 ms, and never goes on with the PD mini. Currents are compared by magnitude in whole mA; the supply in constant current for 1000 ms ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the INA3221's range is said on the TEST page and in the report. Movement is a reading max(0.020 A, 3 x the idle readings' standard deviation) from the level before the command; a move with none is unseen, neither timed nor late, and a run with unseen moves and nothing failed reads NOT MEASURABLE. On the PD mini, whose readings lag about 0.3 s and repeat, and on the INA3221's windows, from which the panel times a move to 50 ms, every travel time is an upper bound and TRAVEL TIME is reported, not checked. STOP, a switch to SAFE, link loss, the supply and the operator end a run with the output off and a report marked ABORTED. A position is taken only while ARMED: while SAFE, the dial, the rotary knob, CENTRE and SWEEP are refused and the value shown is the one last driven, and at every switch to ARMED the commanded value is the surface's rest, the midpoint of the channel's endpoints; RELEASE while ARMED sets it to that rest as well (`test_servo_arm`; host suite only). |
@@ -154,7 +155,7 @@ rcbench/
 
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
-    safety/ servo/ can/ esc/ sense/
+    safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
@@ -171,7 +172,7 @@ rcbench/
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `artwork` · `esc` | ✔ | | ✔ |
+| `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
@@ -207,7 +208,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 105 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 116 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -219,7 +220,7 @@ The host suite is 105 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card` and `test_prog_link`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_wa_session`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -269,8 +270,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 316 committed screenshots to the current
-render, 158 in English and the same 158 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 360 committed screenshots to the current
+render, 180 in English and the same 180 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
@@ -299,13 +300,13 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
 | `shared/ui/ui_text.c` | 91 | 90 | 98.9% |
-| `shared/ui/ui_router.c` | 300 | 296 | 98.7% |
+| `shared/ui/ui_router.c` | 305 | 301 | 98.7% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 83 | 80 | 96.4% |
 | `shared/ui/motor_screen.c` | 631 | 615 | 97.5% |
 | `shared/ui/supply_screen.c` | 1089 | 1072 | 98.4% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
-| `shared/ui/ui_textkey.c` | 171 | 170 | 99.4% |
+| `shared/ui/ui_textkey.c` | 236 | 229 | 97.0% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
 | `shared/ui/servo_screen.c` | 3144 | 3092 | 98.3% |
 | `shared/ui/kst_panel.c` | 1532 | 1510 | 98.6% |
@@ -313,13 +314,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 178 | 173 | 97.2% |
 | `shared/ui/programmer_screen.c` | 2419 | 2318 | 95.8% |
-| `shared/ui/log_viewer_screen.c` | 1045 | 983 | 94.1% |
+| `shared/ui/log_viewer_screen.c` | 1049 | 985 | 93.9% |
 | `shared/ui/log_select.c` | 26 | 26 | 100.0% |
 | `shared/ui/settings_screen.c` | 370 | 368 | 99.5% |
 | `shared/ui/outputs_screen.c` | 371 | 365 | 98.4% |
 | `shared/ui/picker_screen.c` | 617 | 610 | 98.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 299 | 296 | 99.0% |
+| `shared/ui/wifi_screen.c` | 556 | 538 | 96.8% |
 | `shared/ui/coproc_update_screen.c` | 210 | 209 | 99.5% |
 | `shared/settings/settings.c` | 234 | 228 | 97.4% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
@@ -415,7 +417,19 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
-| **total** | **37841** | **37060** | **97.9%** |
+| `shared/fwupdate/fw_sha256.c` | 83 | 83 | 100.0% |
+| `shared/fwupdate/fw_image.c` | 131 | 129 | 98.5% |
+| `shared/fwupdate/fw_upload.c` | 55 | 55 | 100.0% |
+| `shared/fwupdate/fw_install.c` | 60 | 60 | 100.0% |
+| `shared/fwupdate/fw_boot.c` | 11 | 11 | 100.0% |
+| `shared/webaccess/wa_session.c` | 297 | 293 | 98.7% |
+| `shared/webaccess/wa_text.c` | 272 | 270 | 99.3% |
+| `shared/webaccess/wa_walk.c` | 98 | 93 | 94.9% |
+| `shared/webaccess/wa_send.c` | 33 | 33 | 100.0% |
+| `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
+| `shared/webaccess/wa_page.c` | 146 | 141 | 96.6% |
+| `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
+| **total** | **40125** | **39283** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -451,7 +465,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, the ARMED state, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: `main.c` is not in the host suite. The `runlog` task beside it, which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: press ARM, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill and can starve it into the screen shift already seen on this board; the control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves and the driver restarts the DMA at the next VBlank | nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming's beep timing | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 158 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 180 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 
 ## Constraints
 
@@ -501,7 +515,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
   colliding with the receiver's own sensors is out of scope.
 - **A USB oscilloscope.** The ESP32-S3's USB is full speed only.
 - **A web browser on the panel.** The leanest headless Chromium build is
-  over 100 MB against a 3 MB app partition; one blank tab needs more memory
+  over 100 MB against a 3,968 KiB app slot; one blank tab needs more memory
   than the board's PSRAM, of which 1.5 MB is the two framebuffers; and the
   multi-process sandbox and the JIT (just-in-time compiler) need processes,
   an MMU (memory management unit) and a POSIX layer, none of which exist

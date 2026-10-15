@@ -27,35 +27,38 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            8,828     1104 KiB     29.0      19.5
-frame-idle        1,278      160 KiB      4.2      39.0
-held             4,752      594 KiB     15.6      39.0
-sim              9,794     1224 KiB     32.1      19.5
-throttle        10,728     1341 KiB     35.2      19.5
-chrome          33,141     4143 KiB    108.8       7.8
-overview           956      120 KiB      3.1      39.0
-servo           15,559     1945 KiB     51.1      19.5
-servo-grip        3,061      383 KiB     10.0      39.0
-servo-current        4,055      507 KiB     13.3      39.0
-supply           8,555     1069 KiB     28.1      19.5
-supply-chrome       31,494     3937 KiB    103.4       7.8
-analyser           892      112 KiB      2.9      39.0
-logs               909      114 KiB      3.0      39.0
-settings           872      109 KiB      2.9      39.0
-battery            885      111 KiB      2.9      39.0
-balance            870      109 KiB      2.9      39.0
-programmer          903      113 KiB      3.0      39.0
-balance-sim        2,380      298 KiB      7.8      39.0
-settings-sim        2,396      300 KiB      7.9      39.0
-battery-sim        2,387      298 KiB      7.8      39.0
-analyser-chrome       39,201     4900 KiB    128.7       6.5
-logs-chrome       16,025     2003 KiB     52.6      13.0
-settings-chrome       23,979     2997 KiB     78.7       9.8
-battery-chrome       36,962     4620 KiB    121.3       7.8
-balance-chrome       40,776     5097 KiB    133.8       6.5
-programmer-chrome       29,203     3650 KiB     95.8       9.8
-picker             892      112 KiB      2.9      39.0
-picker-chrome       22,075     2759 KiB     72.5      13.0
+frame            8,860     1108 KiB     29.1      19.5
+frame-idle        1,293      162 KiB      4.2      39.0
+held             4,774      597 KiB     15.7      39.0
+sim              9,831     1229 KiB     32.3      19.5
+throttle        10,779     1347 KiB     35.4      19.5
+chrome          33,223     4153 KiB    109.0       7.8
+overview           979      122 KiB      3.2      39.0
+servo           15,568     1946 KiB     51.1      19.5
+servo-grip        3,083      385 KiB     10.1      39.0
+servo-current        4,078      510 KiB     13.4      39.0
+supply           8,586     1073 KiB     28.2      19.5
+supply-chrome       31,575     3947 KiB    103.6       7.8
+analyser           925      116 KiB      3.0      39.0
+logs               960      120 KiB      3.2      39.0
+settings           910      114 KiB      3.0      39.0
+battery            918      115 KiB      3.0      39.0
+balance            910      114 KiB      3.0      39.0
+programmer          924      116 KiB      3.0      39.0
+balance-sim        2,396      300 KiB      7.9      39.0
+settings-sim        2,410      301 KiB      7.9      39.0
+battery-sim        2,404      300 KiB      7.9      39.0
+analyser-chrome       39,239     4905 KiB    128.8       6.5
+logs-chrome       16,194     2024 KiB     53.1      13.0
+settings-chrome       24,048     3006 KiB     78.9       9.8
+battery-chrome       37,010     4626 KiB    121.5       7.8
+balance-chrome       40,820     5102 KiB    134.0       6.5
+programmer-chrome       29,233     3654 KiB     95.9       9.8
+picker             922      115 KiB      3.0      39.0
+picker-chrome       22,103     2763 KiB     72.5      13.0
+wifi             1,041      130 KiB      3.4      39.0
+wifi-chrome       13,870     1734 KiB     45.5      19.5
+wifi-keys       22,174     2772 KiB     72.8      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -75,7 +78,8 @@ hlines               0        0 KiB      0.0      39.0
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker` | one steady frame of that screen, chrome cached |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker`, `wifi` | one steady frame of that screen, chrome cached |
+| `wifi-keys` | FILES & UPDATE with the Wi-Fi keyboard open, a key typed every frame |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -150,9 +154,10 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | `servo` | 17,000 | the arm and grip drawing growing |
 | `servo-grip` | 4,000 | a breath repainting the whole card |
 | `servo-current` | 4,500 | a changed digit of the current repainting the whole card |
-| the seven per-screen modes | 1,200 | a screen that has started repainting |
+| the eight per-screen modes | 1,200 | a screen that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
-| the eight `-chrome` modes | 45,000 | a full repaint growing |
+| the nine `-chrome` modes | 45,000 | a full repaint growing |
+| `wifi-keys` | 24,000 | a key of the Wi-Fi keyboard repainting more than the screen |
 
 `tools/check_docs.py` holds this table to the `--max-lines` arguments in
 `.github/workflows/ci.yml`: a ceiling that differs, a mode CI holds with no
@@ -180,11 +185,19 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,144 | 3,024 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,008 | 2,160 |
 | `control` | `control_task` | 6,144 | 4,288 | 832 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,344 | 752 |
+| `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
+
+The page's HTTP (hypertext transfer protocol) server runs on a task of
+8,192 bytes, and the Wi-Fi driver, the TCP/IP (transmission control
+protocol, internet protocol) stack and the event loop on tasks of their own.
+ESP-IDF creates them, so they are not in the table: their depth is not
+measured.
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved
@@ -194,9 +207,10 @@ the deepest frame. The other
 bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
-  which the tool reads out of every screen's table, and the link port's and
-  the drawing store's flash callbacks, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`): 190 such calls are
+  which the tool reads out of every screen's table, and the link port's
+  callbacks, the drawing store's flash callbacks and the start check's after
+  an update, which it follows by name
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 232 such calls are
   reachable from `main_task`, most of them in ESP-IDF's storage and display
   drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

@@ -163,6 +163,14 @@ FLASH_CALLS = {
     "art_store_read": ("part_read",),
 }
 
+# The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
+# check after an update, in components/fw_ota, which writes otadata on the
+# main task.  The same checks as PORT_CALLS.
+BOOT_CALLS = {
+    "fw_boot_decide": ("boot_pending", "boot_mark_invalid", "boot_mark_valid",
+                       "boot_restart", "boot_last_invalid"),
+}
+
 
 def die(msg: str) -> None:
     sys.exit(f"stack_check: {msg}")
@@ -1336,7 +1344,9 @@ def main() -> int:
 
     for table, home, calls in (("PORT_CALLS", "shared/link", PORT_CALLS),
                                ("FLASH_CALLS", "shared/artwork",
-                                FLASH_CALLS)):
+                                FLASH_CALLS),
+                               ("BOOT_CALLS", "shared/fwupdate",
+                                BOOT_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:

@@ -1657,6 +1657,282 @@ Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ei
 noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
 Liste und läse sich wie ein fertiger.
 
+## Dateien & Update
+
+![FILES & UPDATE, kein Heimnetz gespeichert](img/de/wifi.png)
+
+FILES & UPDATE betreibt das WLAN des Panels für zwei Aufgaben im Browser:
+jede Datei der Karte zum Herunterladen und ein Panel-Firmware-Image zum
+Hochladen. Der Bildschirm öffnet aus LOGS, mit WLAN in der unteren Reihe
+neben NEU LESEN. Der Funk läuft nur, solange dieser Bildschirm offen ist. Er
+ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
+verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
+ohne Anfrage.
+
+Der Funk startet nur, wenn der Prüfstand SAFE ist, der Netzteilausgang aus
+und kein Log-Lauf offen. Sonst sind die Tasten, die ihn starten, grau, und
+die Karte sagt, was fehlt:
+
+![Der Funk darf nicht starten](img/de/wifi-blocked.png)
+
+Er geht von selbst aus beim Schalten auf ARMED, bei STOP, beim Einschalten
+des Netzteilausgangs, beim Beginn eines Log-Laufs, nach 10 min ohne Anfrage
+und nach 16 falschen Zugangscodes. Die Karte sagt dann in einer Zeile,
+warum: `WLAN ging aus: ARMED.`, `WLAN ging aus: STOP.`,
+`WLAN ging aus: Netzteilausgang an.`, `WLAN ging aus: ein Log-Lauf begann.`,
+`WLAN ging aus: 10 min ohne Anfrage.`,
+`WLAN ging aus: 16 falsche Zugangscodes.` oder `WLAN startete nicht.` Ein
+STOP oder ein Schalten auf ARMED verwirft auch ein hochgeladenes Image, das
+am Panel wartet. Solange der Funk läuft, laufen der Link zum Koprozessor und
+der Heartbeat wie auf jedem anderen Bildschirm.
+
+Ließ sich das WLAN beim Start nicht einrichten (kein Speicher für seine
+Sperre oder seine Puffer), sind alle Tasten grau, und die Karte sagt
+`WLAN nicht verfügbar: Einrichtung beim Start gescheitert; ein Neustart
+versucht es.` Der Rest des Panels läuft wie ohne WLAN.
+
+### ACCESS POINT
+
+ACCESS POINT startet das eigene Netz des Panels. Der Bildschirm zeigt, was
+ein Telefon oder ein Rechner braucht:
+
+![Der Access Point läuft](img/de/wifi-ap.png)
+
+| | |
+| --- | --- |
+| Band und Kanal | 2.4 GHz, Kanal 6 (`WIFI_ACCESS_AP_CHANNEL`) |
+| Sicherheit | WPA2 (Wi-Fi Protected Access 2) Personal |
+| Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-3F7A` |
+| Passwort | 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o) |
+| Clients | 1 gleichzeitig |
+| Adresse | `http://192.168.4.1/` |
+| Reichweite | nicht gemessen |
+
+1. LOGS → WLAN → ACCESS POINT.
+2. Am Telefon oder Rechner dem Netz beitreten, das der Bildschirm nennt, mit
+   dem Passwort, das er zeigt.
+3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
+   Bildschirm zeigt.
+
+### Heimnetz
+
+Das Panel kann stattdessen einem vorhandenen Netz beitreten: WPA2 oder WPA3
+(Wi-Fi Protected Access 3) Personal. Enterprise-Netze und offene Netze
+werden nicht angeboten.
+
+HEIMNETZ WÄHLEN sucht höchstens 10 s lang und listet dann bis zu 16 Netze,
+das stärkste zuerst, mit ihrem Signal in dBm. Ein Netz ohne Namen, ein
+offenes und ein Enterprise-Netz fehlen in der Liste. Ein Netz mit mehreren
+Access Points steht einmal darin.
+
+![Suche](img/de/wifi-scanning.png)
+![Die gefundenen Netze](img/de/wifi-scan.png)
+
+Ein Tippen auf ein Netz öffnet die Tastatur für sein Passwort.
+VERSTECKTES NETZ öffnet sie für den Namen eines Netzes, das sich nicht
+ankündigt, und danach für das Passwort. NEU SUCHEN sucht erneut; ABBRECHEN
+geht zurück.
+
+![Der Netzname](img/de/wifi-key-ssid.png)
+![Kleinbuchstaben](img/de/wifi-key-lower.png)
+![ABC: Großbuchstaben](img/de/wifi-key-upper.png)
+![#+=: Zeichen](img/de/wifi-key-marks.png)
+
+Die Tastatur hat drei Ebenen desselben Rasters: Kleinbuchstaben, `ABC` für
+Großbuchstaben, `#+=` für die 32 druckbaren Zeichen von ASCII (American
+Standard Code for Information Interchange), die keine Buchstaben oder
+Ziffern sind. Jedes der 95 druckbaren ASCII-Zeichen liegt einmal auf einer
+Ebene; LEERZEICHEN ist die breite Taste. Ein Name hat 1 bis 32 Bytes. Ein
+Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
+64. Zeichen wird abgewiesen, und OK unter 8 Zeichen sagt es.
+
+![Das Passwort, verborgen](img/de/wifi-key-pass.png)
+![ZEIGEN](img/de/wifi-key-shown.png)
+![Weniger als 8 Zeichen](img/de/wifi-key-short.png)
+
+Das Passwort steht als Punkte da bis ZEIGEN; VERBERGEN verbirgt es wieder.
+OK behält das Netz: Name und Passwort gehen in den NVS (Non-Volatile
+Storage), und der Bildschirm bietet dann HEIMNETZ VERBINDEN an.
+
+![Ein Heimnetz ist gespeichert](img/de/wifi-home.png)
+
+![Verbinden](img/de/wifi-joining.png)
+![Verbunden](img/de/wifi-joined.png)
+
+Verbunden zeigt der Bildschirm das Netz, die Adresse des Panels und seinen
+Namen, `http://rcbench-3F7A.local/`, mit denselben 4 Hex-Ziffern wie der
+Name des Access Points. Der Name antwortet über mDNS (Multicast Domain Name
+System) auf Rechnern, die `.local`-Namen auflösen; welche Telefone das tun,
+ist nicht gemessen. Die Adresse geht auf jedem. Ein Namensdienst, der nicht
+startet (kein Task, kein Socket, keine Multicast-Gruppe), wird noch 3-mal im
+Abstand von 5 s versucht (`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); danach
+bleibt der Name bis zum nächsten Verbinden stumm, und die Adresse geht
+weiter.
+
+Ein Verbinden, das scheitert, sagt warum und bietet ACCESS POINT an, das
+ohne Heimnetz geht:
+
+| Zeile auf der Karte | Bedingung |
+| --- | --- |
+| `Verbinden scheiterte: Passwort abgelehnt.` | das Netz lehnte das Passwort ab |
+| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb 20 s (`WA_JOIN_MS`) |
+| `Verbinden scheiterte: keine Adresse in 15 s.` | verbunden, aber keine Adresse per DHCP (Dynamic Host Configuration Protocol) innerhalb 15 s (`WA_ADDRESS_MS`) |
+| `Das Heimnetz ist weggefallen.` | verbunden, dann hat das Netz das Panel getrennt |
+
+HEIMNETZ VERGESSEN löscht Name und Passwort aus dem NVS und schaltet den
+Zugangscode wieder ein.
+
+Eine Änderung des Gespeicherten (ein Netz, VERGESSEN, der Schalter des
+Zugangscodes) gilt sofort und erreicht den NVS im nächsten Frame, der den
+Flash schreiben darf. Ein Schreiben, das fehlschlägt, wird noch 3-mal im
+Abstand von 10 s versucht (`WA_PENDING_RETRIES`, `WA_PENDING_RETRY_MS`),
+und die Karte sagt `Nicht gespeichert: Flash-Schreibfehler. Die nächste
+Änderung versucht es neu.`, bis eines gelingt. Die Änderung gilt in jedem
+Fall bis zum Neustart des Panels; nur ein gelungenes Schreiben überdauert
+ihn.
+
+Aktuelle Einschränkungen:
+
+- Der NVS ist nicht verschlüsselt. Das Passwort des Heimnetzes liegt im
+  Klartext im Flash des Panels, wo es jeder liest, der den Flash über USB
+  (Universal Serial Bus) ausliest.
+- Die Seite ist einfaches HTTP (Hypertext Transfer Protocol). Im Heimnetz
+  gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
+  Bildschirm sagt es, solange das Panel verbunden ist.
+- Ein hochgeladenes Image wird gegen seinen eigenen SHA-256 geprüft, nicht
+  gegen eine Signatur. Jedes Image, das als `rcbench-panel` für den ESP32-S3
+  gebaut ist, wird nach dem 2-s-Halten installiert, und im Heimnetz kann ein
+  Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
+  Koprozessor-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
+  Koprozessor beim nächsten Link-up angeboten.
+- Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
+  Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
+  nicht gebaut.
+
+### Der Zugangscode
+
+Die Seite fragt nach einem Code aus 8 Zeichen, bevor sie eine Datei listet
+oder einen Upload annimmt. Der Bildschirm zeigt ihn, und er entsteht bei
+jedem Start des Funks neu; ein Code aus einer früheren Sitzung öffnet
+nichts. Der Browser behält ihn für die Sitzung. 16 falsche Codes schalten
+den Funk aus.
+
+ZUGANGSCODE schaltet ihn, für beide Wege. Er ist voreingestellt ein, nach
+HEIMNETZ VERGESSEN und auf einem Panel ohne gespeicherte Werte. Der Schalter
+liegt im NVS. Aus listet die Seite, sendet Dateien und nimmt einen Upload
+ohne Code an, und der Bildschirm sagt
+`Zugangscode aus: die Seite ist für jedes Gerät im Netz offen.` Ein Upload
+installiert trotzdem erst nach 2 s Halten am Panel.
+
+### Die Seite
+
+Eine HTML-Seite (Hypertext Markup Language) ohne Skript oder Stil von
+anderswo, sie geht also auf einem Telefon ohne andere Verbindung. Sie folgt
+der Sprache des Panels. Sie hat zwei Teile.
+
+**Panel-Firmware.** Die installierte Version, eine Dateiauswahl, Hochladen
+mit Fortschrittsbalken und die Antwort des Panels als Textzeile. Die Datei
+ist das Release-Asset `rcbench-panel-vX.Y.Z.bin`. Eine Datei, die größer
+als der Slot des Panels ist, 4 063 232 Bytes, wird abgewiesen, bevor ein
+Byte gesendet ist. Das Panel prüft das ganze Image, bevor es etwas fragt:
+den ESP-Image-Header für den ESP32-S3, den Projektnamen `rcbench-panel`
+der Anwendung, eine Version der Form MAJOR.MINOR.PATCH und den angehängten
+SHA-256 (Secure Hash Algorithm, 256 Bit). Ein zweiter Upload, während einer
+wartet, wird abgewiesen, bis ABBRECHEN am Panel. Während ein Upload läuft,
+zeigt der Bildschirm die empfangenen Bytes.
+
+**Dateien auf der Karte.** Jede Datei, Ordner für Ordner, mit Namen, Größe
+in Bytes und Änderungszeit, wie die Karte sie hat. Jeder Name lädt seine
+Datei herunter. Die Seite liest die Karte nur: Nichts darauf wird gelöscht,
+umbenannt oder geschrieben. Ein Name über 255 Zeichen, ein Pfad über
+384 Bytes und ein Ordner tiefer als 16 fehlen, und die Seite sagt, wie
+viele. Ohne Karte oder mit einer Karte, die nicht lesbar ist, sagt die Seite
+es, und der Upload geht trotzdem.
+
+**Alles als eine ZIP-Datei herunterladen** sendet die ganze Karte als eine
+ZIP-Datei. Die Seite nennt vor dem Klick die Zahl der Dateien, ihre Bytes
+und die Bytes der ZIP-Datei. Die Dateien liegen darin, wie sie sind, nicht
+komprimiert, mit ihren Ordnerpfaden ab der Wurzel der Karte, Namen in UTF-8
+und den Zeiten der Karte. Eine Datei über 4 GiB − 1 B, ein Archiv über
+4 GiB − 1 B und mehr als 65 535 Einträge nutzen ZIP64. Nichts wird dafür im
+Speicher gehalten oder auf die Karte geschrieben: Es wird gesendet, wie es
+gelesen wird.
+
+Die Übertragungsrate ist nicht gemessen. Ein Download von S Bytes bei einer
+Rate von R Bytes pro Sekunde dauert S / R Sekunden: bei 1 000 000 B/s
+braucht eine Karte mit 50 000 000 Bytes 50 s. Eine Karte, die während eines
+Downloads gezogen wird, beendet den Download zu kurz; der Browser meldet ihn
+als fehlgeschlagen, und das Panel läuft weiter.
+
+### Installieren: PANEL UPDATE
+
+Ein Image, das die Seite empfangen hat, wartet am Panel als Frage mit
+beiden Versionen:
+
+![Ein neueres Image](img/de/wifi-question.png)
+
+Eine ältere Version ist erlaubt, und die Frage sagt, dass sie älter ist.
+Eine Platinenzeichnung, die geladen oder gespeichert wird, lässt die
+Installation warten:
+
+![Ein älteres Image und eine Zeichnung, die gespeichert wird](img/de/wifi-older.png)
+
+Dieselbe Version aus einem anderen Build wird als Neuinstallation
+angeboten. Der Build, der schon läuft, wird nicht angeboten:
+
+![Dieselbe Version, ein anderer Build](img/de/wifi-rebuild.png)
+![Der Build, der läuft](img/de/wifi-installed.png)
+
+INSTALL ist 2 s Halten (`2 s HALTEN: INSTALL`). Der Browser kann es nicht
+starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf,
+keine Platinenzeichnung, die geladen oder gespeichert wird, und kein
+laufendes Update des Koprozessors (`Installation wartet: das Update des
+Koprozessors läuft.`). ABBRECHEN verwirft das Image.
+
+![Schreiben](img/de/panel-update.png)
+
+Das Halten schaltet zuerst den Funk aus. Dann stoppt der Control-Task seine
+Abfragen und hält den Heartbeat absichtlich zurück, sodass der Koprozessor
+seine Ausgänge im Failsafe hält, wie bei jedem Neustart des Panels.
+PANEL UPDATE nimmt den ganzen Bildschirm, ohne Band und ohne STOP: Nichts
+kann dahinter auf ARMED geschaltet werden. Es schreibt den Slot, der nicht
+läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Das
+Bild kann gestört sein, während der Flash gelöscht wird. Dann wird der Slot
+zurückgelesen und geprüft, er wird der Slot, der startet, und das Panel
+startet neu.
+
+![Geschrieben und geprüft](img/de/panel-update-done.png)
+
+Der Splash zeigt die neue Version, und das Band sagt
+`Panel-Firmware 0.19.0 installiert`. Ein Schreiben, das fehlschlägt, ändert
+nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
+zu LOGS.
+
+![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
+
+Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
+Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
+Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
+zum Build davor, der dann
+`Panel-Firmware 0.19.0 startete nicht -- 0.18.0 läuft wieder` im Band
+zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
+ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
+Bootloader geht trotzdem zurück. Schlägt das Behalten eines guten Starts
+fehl (otadata nicht geschrieben), sagt das Band
+`Panel-Firmware 0.19.0 nicht übernommen -- der nächste Start geht zurück`;
+der Build läuft bis dahin.
+
+Aktuelle Einschränkungen:
+
+- Ein Stromausfall während des Versuchsstarts verliert diese Zeile; das
+  Panel geht trotzdem zum Build davor zurück.
+- Wie lange Löschen und Schreiben dauern, ist nicht gemessen, ebenso wenig,
+  was das Glas während eines Löschens zeigt.
+
+Vor dem ersten Update über WLAN braucht das Panel einmal einen Flash über
+USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
+[Erster Start, §1](FirstRun-de.md#1-beide-platinen-flashen).
+
 ## Setup
 
 ![Setup](img/de/setup.png)
@@ -2106,10 +2382,13 @@ bietet es an, wenn der Koprozessor einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
 `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`, und
-die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE und der
-Ausgang der Versorgung aus ist.
+die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
+Ausgang der Versorgung aus, der Funk des Panels ganz aus und
+keine Installation eines Panel-Images im Gang. Ein START, während eines
+davon gilt, verfällt, und die Frage öffnet sich wieder, sobald beides vorbei
+ist.
 
-![Die Frage zum Koprozessor-Update](img/de/update.png)
+![Die Frage zum Koprozessor-Update](img/de/coproc-update.png)
 
 Die Frage nennt die Version, die der Koprozessor laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
@@ -2121,7 +2400,7 @@ Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Das Image
 dieses Panels ist älter.` in der Warnfarbe, und START braucht dasselbe
 Halten.
 
-![Ein älteres Image](img/de/update-older.png)
+![Ein älteres Image](img/de/coproc-update-older.png)
 
 Sobald das Halten von START vollständig ist, gehört das Panel dem Update: der
 Link zum Koprozessor geht herunter, die Ausgänge sind aus, der Koprozessor
@@ -2129,7 +2408,7 @@ lehnt ARM bis zum Ende des Updates ab, und der Fortschritt füllt den
 Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
 hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
-![Der Fortschritt](img/de/update-progress.png)
+![Der Fortschritt](img/de/coproc-update-progress.png)
 
 | Schritt | Gezeigt, während |
 | --- | --- |

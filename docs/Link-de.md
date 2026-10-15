@@ -1877,7 +1877,7 @@ gelesen, mit HASH_RUNNING des Koprozessors über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE und der Ausgang der Versorgung aus ist |
+| verschieden | der Alarm `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neues Image des Koprozessors behalten` |
 | BAD_PAGE oder keine Slots | der Alarm `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` |
 

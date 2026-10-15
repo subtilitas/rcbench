@@ -145,3 +145,47 @@ CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG=y
 # hand them back whole.
 CONFIG_FATFS_LFN_HEAP=y
 CONFIG_FATFS_MAX_LFN=255
+# File names in UTF-8 ------------------------------------------------------
+#
+# The Wi-Fi page lists and sends the card's files by name, and a browser
+# reads names as UTF-8.  Without this, a name with characters outside ASCII
+# (American Standard Code for Information Interchange) comes out of FatFs
+# in code page 437.
+CONFIG_FATFS_API_ENCODING_UTF_8=y
+
+# Application slots ---------------------------------------------------------
+#
+# Two application slots and otadata (partitions.csv).  An update writes the
+# slot that is not running; the bootloader starts a new build once as a
+# trial, and a start that does not reach fw_ota_boot_check() with the
+# display and touch up goes back to the build before it.  No anti-rollback,
+# no secure boot, no flash encryption, no signing: an image is checked by
+# its header, its project name and its appended SHA-256 (secure hash
+# algorithm, 256 bits), which say what it is and that it arrived whole, and
+# not who built it.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# Wi-Fi ---------------------------------------------------------------------
+#
+# The radio runs only while FILES & UPDATE asks for it.  Its buffers and
+# lwIP's (lightweight IP stack) come from PSRAM where the driver allows, so
+# internal RAM keeps what the display and the bench need.
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+# The hot paths stay in flash: the transfer rate matters less than the
+# internal RAM (IRAM, instruction RAM) they would take.
+CONFIG_ESP_WIFI_IRAM_OPT=n
+CONFIG_ESP_WIFI_RX_IRAM_OPT=n
+# Nothing of the radio's is kept in NVS: no driver settings, no PHY
+# (physical layer) calibration.  A start calibrates in full, and no flash is
+# written by the radio.
+CONFIG_ESP_WIFI_NVS_ENABLED=n
+CONFIG_ESP_PHY_CALIBRATION_AND_DATA_STORAGE=n
+# WPA2 and WPA3 personal only.
+CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT=n
+# lwIP's task on core 0, with the radio and the UI (user interface).  Core 1
+# runs the control task, which owns STOP and the heartbeat.
+CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
+# A phone browser's request headers run past the default 512 bytes, and a
+# card path of WA_PATH_MAX (384) bytes is up to 1152 bytes percent-encoded.
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_HTTPD_MAX_URI_LEN=1280

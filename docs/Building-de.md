@@ -28,6 +28,8 @@ rcbench/
     can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
     sense/                Treiber für die Strommonitore INA228 und INA3221
+    fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer
+    webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
@@ -77,7 +79,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
-| `artwork` · `esc` | ✔ | | ✔ |
+| `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 

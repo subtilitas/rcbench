@@ -38,7 +38,7 @@ extern "C" {
 #endif
 
 /** One slot: a sector of header and the payload after it. */
-#define ART_SLOT_BYTES  (256u * 1024u)
+#define ART_SLOT_BYTES  (16u * 1024u)
 
 /**
  * The flash a store lives in.

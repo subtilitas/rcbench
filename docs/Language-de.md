@@ -55,14 +55,14 @@ Sicherheitsbedienelemente, die in jeder Sprache gleich lauten. Ein
 übersetztes ARM würde nicht zum Wort in der Anleitung neben dem Prüfstand
 passen.
 
-- Die Sicherheits- und Antriebsbedienung: ARM, DISARM, STOP, SWEEP, PAUSE,
-  TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die
+- Die Sicherheits- und Antriebsbedienung und INSTALL, das Halten des
+  Panel-Updates: ARM, DISARM, STOP, SWEEP, PAUSE, TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die
   Taste auf SERVO, die das Servo dorthin fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
   SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
-  CAN BUS FAULT, LINK LOST. Ein Hinweis, der eine Seite nennt, nennt sie
+  CAN BUS FAULT, LINK LOST, FILES & UPDATE, PANEL UPDATE. Ein Hinweis, der eine Seite nennt, nennt sie
   beim Titel: "der Seite SUPPLY".
 - Protokoll- und Modusnamen: DShot, PWM (Pulse-Width Modulation), PPM
   (Pulse-Position Modulation), OneShot, S.BUS, CAN (Controller Area
@@ -74,7 +74,8 @@ passen.
   die Tasten, SAFE und ARMED die Zustände.
 - Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
   Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
-  Bad tail, tx err, rx err, bus err, Frame.
+  Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT auf
+  FILES & UPDATE), Upload, Build.
 - Einheiten, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen
   DEL, CLR und OK.
 - Die Namen, die das Werkzeug des Herstellers den Einstellungen eines KST-
@@ -137,6 +138,11 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | probe (des CAN-Selbsttests) | Testframe |
 | terminator, branch (eines Busses) | Abschluss, Stichleitung |
 | separator, row, column | Trenner, Zeile, Spalte |
+| Wi-Fi | WLAN |
+| home network, network name, hidden network | Heimnetz, Netzname, verstecktes Netz |
+| access code | Zugangscode |
+| upload, download | hochladen, herunterladen |
+| image (a firmware file), install | Image, installieren |
 | plot, table | Grafik, Tabelle |
 | simulated, modelled (vom Panel berechnet) | simuliert |
 | model (ein Flugmodell, ein ESC-Produkt) | Modell |
@@ -205,7 +211,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 167 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 192 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 

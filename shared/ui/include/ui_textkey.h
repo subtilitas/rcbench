@@ -14,6 +14,18 @@
  * longer translations fit an area narrower than the SERVO screen's.  The
  * caller reads the text as it is typed from @c text.
  *
+ * Opened for Wi-Fi (ui_textkey_open_wifi()) it types a network name of up
+ * to 32 bytes or a password of 8 to 63 characters: any printable ASCII
+ * (American Standard Code for Information Interchange) character, lower
+ * case included.  Three layers share the grid: lower case, capitals, and
+ * the 32 marks.  The key left of Z switches lower case and capitals ("ABC",
+ * "abc"); the key left of DEL switches to the marks and back ("#+=",
+ * "abc").  The digits stay on the top row of both letter layers.  A
+ * password shows as "*" until SHOW, which a sixth bottom key carries
+ * (UI_TK_SHOW); SHOW again hides it.  OK takes the text as typed, spaces
+ * included, and refuses a password under 8 characters or an empty name.
+ * A text longer than the field shows its end.
+ *
  * The screen routes events to it while it is open and draws it last, as it
  * does the keypad.
  *
@@ -32,8 +44,13 @@
 extern "C" {
 #endif
 
-/** The longest text it takes, in characters. */
+/** The longest name or search it takes, in characters. */
 #define UI_TEXTKEY_MAX 23
+/** The longest Wi-Fi password, and the shortest. */
+#define UI_TEXTKEY_PASS_MAX 63
+#define UI_TEXTKEY_PASS_MIN 8
+/** The longest Wi-Fi network name, in bytes. */
+#define UI_TEXTKEY_SSID_MAX 32
 
 /** The keys: forty characters in four rows of ten, then SPACE, CLR, CANCEL
  *  and OK along the bottom. */
@@ -45,6 +62,11 @@ enum {
     UI_TK_OK,
     UI_TK_KEYS
 };
+/** SHOW, the password keyboard's sixth bottom key; zero size otherwise. */
+#define UI_TK_SHOW UI_TK_KEYS
+/** The Wi-Fi keyboard's layer keys: capitals, and marks. */
+#define UI_TK_SHIFT 30
+#define UI_TK_LAYER 38
 /** The DEL key, last of the character rows. */
 #define UI_TK_DEL (UI_TEXTKEY_CHARS - 1)
 /** The key that types "_", or "*" in a search. */
@@ -56,15 +78,26 @@ typedef enum {
     UI_TEXTKEY_CANCELLED,  /**< closed, the name as it was             */
 } ui_textkey_result_t;
 
+/** The Wi-Fi keyboard's layers. */
+typedef enum {
+    UI_TK_LOWER = 0,
+    UI_TK_UPPER,
+    UI_TK_MARKS,
+} ui_textkey_layer_t;
+
 typedef struct {
     bool       open;
     gfx_rect_t area;
     char       title[48];
-    char       text[UI_TEXTKEY_MAX + 1];
+    char       text[UI_TEXTKEY_PASS_MAX + 1];
     int        len;
     int        max_len;
     bool       refused;     /**< OK on an empty name                  */
     bool       search;      /**< a search pattern: see the top        */
+    bool       wifi;        /**< a Wi-Fi name or password             */
+    bool       secret;      /**< a password: masked, 8 at least       */
+    bool       show;        /**< the password shown                   */
+    ui_textkey_layer_t layer;
     int        pressed;     /**< the key under the press, or -1       */
     uint8_t    press_id;
     uint32_t   revision;    /**< bumped on every change a render shows */
@@ -79,6 +112,11 @@ void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
 void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
                             const char *title, const char *text,
                             int max_len);
+
+/** Open for a Wi-Fi password (@p secret) or network name; see the top of
+ *  this file.  Lower case first. */
+void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
+                          const char *title, const char *text, bool secret);
 
 void ui_textkey_close(ui_textkey_t *k);
 
@@ -102,7 +140,8 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key);
  *  it. */
 const char *ui_textkey_label(int key);
 
-/** A key's label as @p k shows it: "*" for UI_TK_MARK in a search. */
+/** A key's label as @p k shows it: "*" for UI_TK_MARK in a search, the
+ *  layer's character on a Wi-Fi keyboard, "" for a blank key. */
 const char *ui_textkey_key_label(const ui_textkey_t *k, int key);
 
 /** The whole keyboard over its area.  Nothing while it is closed. */

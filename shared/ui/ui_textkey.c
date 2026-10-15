@@ -28,6 +28,16 @@
 static const char k_chars[UI_TEXTKEY_CHARS + 1] =
     "1234567890" "QWERTYUIOP" "ASDFGHJKL-" "ZXCVBNM_.";
 
+/* The Wi-Fi layers.  Key UI_TK_SHIFT and key UI_TK_LAYER switch them and
+ * type nothing; a blank ("\0") types nothing either.  The marks are the 32
+ * printable ASCII characters that are neither a letter, a digit nor a
+ * space, in code order. */
+static const char k_wifi[3][UI_TEXTKEY_CHARS + 1] = {
+    "1234567890" "qwertyuiop" "asdfghjkl-" " zxcvbnm  ",
+    "1234567890" "QWERTYUIOP" "ASDFGHJKL-" " ZXCVBNM  ",
+    "!\"#$%&'()*" "+,-./:;<=>" "?@[\\]^_`{|" "}~        ",
+};
+
 /* SPACE and CANCEL are translated; CLR and OK are legends. */
 static const ui_text_id_t k_bottom_tx[] = { TX_SPACE, TX_COUNT, TX_CANCEL,
                                             TX_COUNT };
@@ -35,6 +45,9 @@ static const char *const k_bottom[] = { NULL, "CLR", NULL, "OK" };
 /* How many columns each bottom key spans, for a name and for a search. */
 static const int k_bottom_span[] = { 4, 2, 2, 2 };
 static const int k_search_span[] = { 3, 2, 3, 2 };
+/* A password's bottom row, in key order SPACE, CLR, CANCEL, OK, SHOW:
+ * where each starts, two columns each, SHOW second from the left. */
+static const int k_secret_col[] = { 0, 4, 6, 8, 2 };
 
 void ui_textkey_open(ui_textkey_t *k, gfx_rect_t area, const char *title,
                      const char *text, int max_len)
@@ -64,6 +77,21 @@ void ui_textkey_open_search(ui_textkey_t *k, gfx_rect_t area,
     if (k != NULL) {
         k->search = true;
     }
+}
+
+void ui_textkey_open_wifi(ui_textkey_t *k, gfx_rect_t area,
+                          const char *title, const char *text, bool secret)
+{
+    if (k == NULL) {
+        return;
+    }
+    ui_textkey_open(k, area, title, NULL, 0);
+    k->wifi    = true;
+    k->secret  = secret;
+    k->max_len = secret ? UI_TEXTKEY_PASS_MAX : UI_TEXTKEY_SSID_MAX;
+    snprintf(k->text, (size_t)k->max_len + 1u, "%s",
+             (text != NULL) ? text : "");
+    k->len = (int)strlen(k->text);
 }
 
 void ui_textkey_close(ui_textkey_t *k)
@@ -107,12 +135,41 @@ const char *ui_textkey_key_label(const ui_textkey_t *k, int key)
     if (k != NULL && k->search && key == UI_TK_MARK) {
         return "*";
     }
+    if (k != NULL && k->wifi) {
+        if (key == UI_TK_SHOW) {
+            return k->secret ? (k->show ? TR(TK_HIDE) : TR(TK_SHOW)) : "";
+        }
+        if (key == UI_TK_SHIFT && k->layer != UI_TK_MARKS) {
+            return (k->layer == UI_TK_UPPER) ? "abc" : "ABC";
+        }
+        if (key == UI_TK_LAYER) {
+            return (k->layer == UI_TK_MARKS) ? "abc" : "#+=";
+        }
+        if (key >= 0 && key < UI_TK_DEL) {
+            static char one[2];
+            one[0] = k_wifi[k->layer][key];
+            one[1] = '\0';
+            return (one[0] == ' ') ? "" : one;
+        }
+    }
     return ui_textkey_label(key);
+}
+
+/* The character a Wi-Fi key types, or 0. */
+static char wifi_char(const ui_textkey_t *k, int key)
+{
+    if (key < 0 || key >= UI_TK_DEL || key == UI_TK_LAYER
+        || (key == UI_TK_SHIFT && k->layer != UI_TK_MARKS)) {
+        return '\0';
+    }
+    const char ch = k_wifi[k->layer][key];
+    return (ch == ' ') ? '\0' : ch;
 }
 
 gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
 {
-    if (k == NULL || key < 0 || key >= UI_TK_KEYS) {
+    const bool secret = k != NULL && k->wifi && k->secret;
+    if (k == NULL || key < 0 || key > (secret ? UI_TK_SHOW : UI_TK_KEYS - 1)) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     const int left   = k->area.x + TK_PAD;
@@ -126,8 +183,13 @@ gfx_rect_t ui_textkey_key_rect(const ui_textkey_t *k, int key)
         row  = key / TK_COLS;
         col  = key % TK_COLS;
         span = 1;
+    } else if (secret) {
+        row  = TK_ROWS - 1;
+        col  = k_secret_col[key - UI_TEXTKEY_CHARS];
+        span = 2;
     } else {
-        const int *spans = k->search ? k_search_span : k_bottom_span;
+        const int *spans = (k->search || k->wifi) ? k_search_span
+                                                  : k_bottom_span;
         row  = TK_ROWS - 1;
         col  = 0;
         for (int i = 0; i < key - UI_TEXTKEY_CHARS; ++i) {
@@ -160,8 +222,25 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         }
         return UI_TEXTKEY_NONE;
     }
+    if (k->wifi && key < UI_TEXTKEY_CHARS) {
+        if (key == UI_TK_LAYER) {
+            k->layer = (k->layer == UI_TK_MARKS) ? UI_TK_LOWER : UI_TK_MARKS;
+        } else if (key == UI_TK_SHIFT && k->layer != UI_TK_MARKS) {
+            k->layer = (k->layer == UI_TK_UPPER) ? UI_TK_LOWER : UI_TK_UPPER;
+        } else {
+            const char ch = wifi_char(k, key);
+            if (ch != '\0') {
+                add(k, ch);
+            }
+        }
+        return UI_TEXTKEY_NONE;
+    }
     if (key < UI_TEXTKEY_CHARS) {
         add(k, (k->search && key == UI_TK_MARK) ? '*' : k_chars[key]);
+        return UI_TEXTKEY_NONE;
+    }
+    if (key == UI_TK_SHOW) {
+        k->show = !k->show;
         return UI_TEXTKEY_NONE;
     }
     switch (key) {
@@ -176,7 +255,11 @@ static ui_textkey_result_t press(ui_textkey_t *k, int key, char *out,
         ui_textkey_close(k);
         return UI_TEXTKEY_CANCELLED;
     default: {                       /* OK */
-        if (k->search) {             /* as typed: what the list shows */
+        if (k->wifi && k->len < (k->secret ? UI_TEXTKEY_PASS_MIN : 1)) {
+            k->refused = true;       /* the radio would refuse it */
+            return UI_TEXTKEY_NONE;
+        }
+        if (k->search || k->wifi) {  /* as typed: spaces count */
             if (out != NULL && n > 0u) {
                 snprintf(out, n, "%s", k->text);
             }
@@ -219,7 +302,7 @@ ui_textkey_result_t ui_textkey_event(ui_textkey_t *k, const touch_event_t *evt,
             return UI_TEXTKEY_NONE;     /* one press at a time */
         }
         k->pressed = -1;
-        for (int key = 0; key < UI_TK_KEYS; ++key) {
+        for (int key = 0; key <= UI_TK_SHOW; ++key) {
             if (gfx_rect_contains(ui_textkey_key_rect(k, key), x, y)) {
                 k->pressed  = key;
                 k->press_id = evt->point.id;
@@ -259,7 +342,14 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
     gfx_text_in(c, hdr, k->title, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
                 1, GFX_ALIGN_LEFT);
     char room[40];
-    if (k->refused) {
+    if (k->refused && k->wifi) {
+        if (k->secret) {
+            snprintf(room, sizeof(room), TR(TEXTKEY_SHORT),
+                     UI_TEXTKEY_PASS_MIN);
+        } else {
+            snprintf(room, sizeof(room), "%s", TR(TEXTKEY_SSID_NEEDED));
+        }
+    } else if (k->refused) {
         snprintf(room, sizeof(room), "%s", TR(TEXTKEY_NEEDED));
     } else {
         snprintf(room, sizeof(room), TR(TEXTKEY_COUNT), k->len, k->max_len);
@@ -274,19 +364,39 @@ void ui_textkey_render(const ui_textkey_t *k, gfx_canvas_t *c)
                              (int16_t)(a.w - 2 * TK_PAD), TK_ENTRY_H };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h,
                   ui_theme_color(UI_C_PANEL_SUNK));
-    char shown[UI_TEXTKEY_MAX + 2];
-    snprintf(shown, sizeof(shown), "%s_", k->text);   /* the caret */
+    char shown[UI_TEXTKEY_PASS_MAX + 2];
+    if (k->wifi) {
+        /* A password as "*" unless shown; the end of a text longer than
+         * the field, 16 px a character at scale 2. */
+        int fit = (box.w - 20) / 16 - 1;
+        fit = (fit < 1) ? 1 : fit;
+        const int from = (k->len > fit) ? k->len - fit : 0;
+        int n = 0;
+        for (int i = from; i < k->len; ++i) {
+            shown[n++] = (k->secret && !k->show) ? '*' : k->text[i];
+        }
+        shown[n++] = '_';
+        shown[n] = '\0';
+    } else {
+        snprintf(shown, sizeof(shown), "%s_", k->text);   /* the caret */
+    }
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(box.x + 10), box.y,
                                  (int16_t)(box.w - 20), box.h },
                 shown, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 2,
                 GFX_ALIGN_LEFT);
 
-    for (int key = 0; key < UI_TK_KEYS; ++key) {
+    for (int key = 0; key <= UI_TK_SHOW; ++key) {
+        const gfx_rect_t r = ui_textkey_key_rect(k, key);
+        if (r.w == 0) {
+            continue;
+        }
+        const char *label = ui_textkey_key_label(k, key);
+        if (k->wifi && key < UI_TK_DEL && label[0] == '\0') {
+            continue;                /* a blank of the marks layer */
+        }
         const gfx_color_t fill = (key == UI_TK_OK)
                                      ? ui_theme_color(UI_C_ACCENT)
                                      : ui_theme_color(UI_C_PANEL_SUNK);
-        ui_button(c, ui_textkey_key_rect(k, key),
-                  ui_textkey_key_label(k, key), fill, k->pressed == key,
-                  true);
+        ui_button(c, r, label, fill, k->pressed == key, true);
     }
 }

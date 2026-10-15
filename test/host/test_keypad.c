@@ -342,6 +342,243 @@ TEST_CASE(a_search_keyboard_types_a_star_and_takes_an_empty_text)
     CHECK_STR_EQ(ui_textkey_key_label(NULL, UI_TK_MARK), "_");
 }
 
+/* ------------------------------------------------- the Wi-Fi keyboard */
+
+/* The key that types @p ch on the Wi-Fi keyboard's @p layer, or -1. */
+static int wf_key(ui_textkey_layer_t layer, char ch)
+{
+    ui_textkey_t probe = tk;
+    probe.layer = layer;
+    for (int k = 0; k < UI_TK_DEL; ++k) {
+        if (k == UI_TK_LAYER || (k == UI_TK_SHIFT && layer != UI_TK_MARKS)) {
+            continue;
+        }
+        const char *l = ui_textkey_key_label(&probe, k);
+        if (l[0] == ch && l[1] == '\0') {
+            return k;
+        }
+    }
+    return -1;
+}
+
+/* Type @p s, switching layers as a hand would. */
+static void wf_type(const char *s)
+{
+    char out[80];
+    for (; *s != '\0'; ++s) {
+        if (*s == ' ') {
+            (void)tk_press(UI_TK_SPACE, out, sizeof(out));
+            continue;
+        }
+        ui_textkey_layer_t want = UI_TK_MARKS;
+        if ((*s >= 'a' && *s <= 'z') || (*s >= '0' && *s <= '9')
+            || *s == '-') {
+            want = (tk.layer == UI_TK_UPPER && !(*s >= 'a' && *s <= 'z'))
+                       ? UI_TK_UPPER : UI_TK_LOWER;
+        } else if (*s >= 'A' && *s <= 'Z') {
+            want = UI_TK_UPPER;
+        }
+        if (want != tk.layer) {
+            if (tk.layer == UI_TK_MARKS || want == UI_TK_MARKS) {
+                (void)tk_press(UI_TK_LAYER, out, sizeof(out));
+            }
+            if (want == UI_TK_UPPER && tk.layer != UI_TK_UPPER) {
+                (void)tk_press(UI_TK_SHIFT, out, sizeof(out));
+            } else if (want == UI_TK_LOWER && tk.layer == UI_TK_UPPER) {
+                (void)tk_press(UI_TK_SHIFT, out, sizeof(out));
+            }
+        }
+        CHECK_EQ((int)tk.layer, (int)want);
+        const int key = wf_key(tk.layer, *s);
+        CHECK(key >= 0);
+        (void)tk_press(key, out, sizeof(out));
+    }
+}
+
+/* Every printable ASCII character has one key on one layer, and the layer
+ * keys type nothing. */
+TEST_CASE(the_wifi_layers_hold_every_printable_character_once)
+{
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "", true);
+    CHECK(tk.wifi && tk.secret && !tk.search);
+    CHECK_EQ(tk.max_len, 63);
+    CHECK_EQ((int)tk.layer, (int)UI_TK_LOWER);
+    int seen[128] = { 0 };
+    for (int layer = UI_TK_LOWER; layer <= UI_TK_MARKS; ++layer) {
+        for (int k = 0; k < UI_TK_DEL; ++k) {
+            ui_textkey_t probe = tk;
+            probe.layer = (ui_textkey_layer_t)layer;
+            const char *l = ui_textkey_key_label(&probe, k);
+            if (k == UI_TK_LAYER
+                || (k == UI_TK_SHIFT && layer != UI_TK_MARKS)
+                || l[0] == '\0') {
+                continue;
+            }
+            CHECK_EQ(l[1], '\0');
+            const int ch = (unsigned char)l[0];
+            CHECK(ch > 0x20 && ch < 0x7F);
+            /* Digits and "-" stand on both letter layers. */
+            if (layer == UI_TK_UPPER
+                && ((ch >= '0' && ch <= '9') || ch == '-')) {
+                continue;
+            }
+            ++seen[ch];
+        }
+    }
+    for (int ch = 0x21; ch < 0x7F; ++ch) {
+        if (ch == '-') {
+            CHECK_EQ(seen[ch], 2);       /* the letters' and the marks' */
+        } else if (seen[ch] != 1) {
+            T_FAIL("character 0x%02X on %d keys", ch, seen[ch]);
+        }
+    }
+    /* The layer keys' legends, and what they do. */
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHIFT), "ABC");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_LAYER), "#+=");
+    char out[80];
+    (void)tk_press(UI_TK_SHIFT, out, sizeof(out));
+    CHECK_EQ((int)tk.layer, (int)UI_TK_UPPER);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHIFT), "abc");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, tk_key('Q')), "Q");
+    (void)tk_press(UI_TK_LAYER, out, sizeof(out));
+    CHECK_EQ((int)tk.layer, (int)UI_TK_MARKS);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_LAYER), "abc");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, 0), "!");
+    (void)tk_press(UI_TK_LAYER, out, sizeof(out));
+    CHECK_EQ((int)tk.layer, (int)UI_TK_LOWER);
+    CHECK_EQ(tk.len, 0);                 /* no layer key typed anything */
+    /* A blank of the marks layer types nothing either. */
+    (void)tk_press(UI_TK_LAYER, out, sizeof(out));
+    (void)tk_press(UI_TK_DEL - 2, out, sizeof(out));
+    CHECK_EQ(tk.len, 0);
+}
+
+/* A password: 8 to 63 characters, any of them, spaces kept. */
+TEST_CASE(a_password_takes_8_to_63_characters_as_typed)
+{
+    char out[80] = "unset";
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "", true);
+    wf_type("Ab1 %~x");
+    CHECK_STR_EQ(tk.text, "Ab1 %~x");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    CHECK(tk.refused);                   /* 7 characters */
+    CHECK(tk.open);
+    CHECK_STR_EQ(out, "unset");
+    wf_type("\\");
+    CHECK(!tk.refused);
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "Ab1 %~x\\");      /* 8, as typed */
+    CHECK(!tk.open);
+
+    /* 63 is the most; the 64th is refused. */
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "", true);
+    for (int i = 0; i < 63; ++i) {
+        wf_type((i % 2 == 0) ? "q" : "\"");
+    }
+    CHECK_EQ(tk.len, 63);
+    wf_type("z");
+    CHECK_EQ(tk.len, 63);
+    CHECK_EQ(tk.text[62], 'q');
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_EQ((int)strlen(out), 63);
+
+    /* Opened on a text longer than 63, it keeps 63. */
+    char long_[80];
+    memset(long_, 'p', sizeof(long_) - 1u);
+    long_[sizeof(long_) - 1u] = '\0';
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", long_, true);
+    CHECK_EQ(tk.len, 63);
+}
+
+/* A network name: up to 32 bytes, an empty one refused. */
+TEST_CASE(a_network_name_takes_1_to_32_bytes)
+{
+    char out[80] = "unset";
+    ui_textkey_open_wifi(&tk, k_area, "NETWORK NAME", "", false);
+    CHECK(tk.wifi && !tk.secret);
+    CHECK_EQ(tk.max_len, 32);
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_NONE);
+    CHECK(tk.refused);
+    for (int i = 0; i < 33; ++i) {
+        wf_type("N");
+    }
+    CHECK_EQ(tk.len, 32);
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_EQ((int)strlen(out), 32);
+    /* No SHOW on a name; the bottom row is the search keyboard's. */
+    ui_textkey_open_wifi(&tk, k_area, "NETWORK NAME", "Lab 2", false);
+    CHECK_EQ(ui_textkey_key_rect(&tk, UI_TK_SHOW).w, 0);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHOW), "");
+    wf_type(" ");
+    CHECK_EQ(tk_press(UI_TK_OK, out, sizeof(out)), UI_TEXTKEY_OK);
+    CHECK_STR_EQ(out, "Lab 2 ");         /* spaces are part of a name */
+}
+
+/* A password shows as "*" until SHOW, and SHOW again hides it. */
+TEST_CASE(a_password_is_masked_until_shown)
+{
+    gfx_color_t *fb = calloc((size_t)800 * 480, sizeof(gfx_color_t));
+    CHECK(fb != NULL);
+    if (fb == NULL) {
+        return;
+    }
+    gfx_canvas_t cv;
+    gfx_canvas_init(&cv, fb, 800, 480, 800);
+    char out[80];
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "secret99", true);
+    const gfx_rect_t show = ui_textkey_key_rect(&tk, UI_TK_SHOW);
+    CHECK(show.w >= 40 && show.h >= 40);
+    CHECK(show.x >= k_area.x && show.x + show.w <= k_area.x + k_area.w);
+    /* No bottom key overlaps another. */
+    for (int a = UI_TK_SPACE; a <= UI_TK_SHOW; ++a) {
+        for (int b = a + 1; b <= UI_TK_SHOW; ++b) {
+            const gfx_rect_t ra = ui_textkey_key_rect(&tk, a);
+            const gfx_rect_t rb = ui_textkey_key_rect(&tk, b);
+            CHECK(ra.x + ra.w <= rb.x || rb.x + rb.w <= ra.x);
+        }
+    }
+    CHECK(!tk.show);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHOW), "SHOW");
+    ui_textkey_render(&tk, &cv);
+    gfx_color_t *masked = malloc((size_t)800 * 480 * sizeof(gfx_color_t));
+    CHECK(masked != NULL);
+    if (masked == NULL) {
+        free(fb);
+        return;
+    }
+    memcpy(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t));
+    (void)tk_press(UI_TK_SHOW, out, sizeof(out));
+    CHECK(tk.show);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHOW), "HIDE");
+    CHECK_EQ(tk.len, 8);                 /* SHOW types nothing */
+    ui_textkey_render(&tk, &cv);
+    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) != 0);
+    (void)tk_press(UI_TK_SHOW, out, sizeof(out));
+    CHECK(!tk.show);
+    ui_textkey_render(&tk, &cv);
+    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) == 0);
+    /* The same password with other characters masks to the same picture. */
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "QQQQQQQQ", true);
+    ui_textkey_render(&tk, &cv);
+    CHECK(memcmp(masked, fb, (size_t)800 * 480 * sizeof(gfx_color_t)) == 0);
+    free(masked);
+    free(fb);
+}
+
+/* The name and search keyboards are what they were: no SHOW, capitals. */
+TEST_CASE(the_name_keyboards_have_no_wifi_keys)
+{
+    ui_textkey_open_wifi(&tk, k_area, "PASSWORD", "", true);
+    ui_textkey_open(&tk, k_area, "NAME", "", 23);
+    CHECK(!tk.wifi && !tk.secret);
+    CHECK_EQ(ui_textkey_key_rect(&tk, UI_TK_SHOW).w, 0);
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_SHIFT), "Z");
+    CHECK_STR_EQ(ui_textkey_key_label(&tk, UI_TK_LAYER), ".");
+    char out[8];
+    (void)tk_press(UI_TK_SHIFT, out, sizeof(out));
+    CHECK_STR_EQ(tk.text, "Z");
+}
+
 TEST_CASE(a_keyboard_key_acts_on_its_own_release_only)
 {
     char out[32] = "";
@@ -480,6 +717,11 @@ int main(void)
     RUN(the_keyboard_edits_the_name_it_was_opened_with);
     RUN(the_keyboard_refuses_an_empty_name_and_keeps_its_length);
     RUN(a_search_keyboard_types_a_star_and_takes_an_empty_text);
+    RUN(the_wifi_layers_hold_every_printable_character_once);
+    RUN(a_password_takes_8_to_63_characters_as_typed);
+    RUN(a_network_name_takes_1_to_32_bytes);
+    RUN(a_password_is_masked_until_shown);
+    RUN(the_name_keyboards_have_no_wifi_keys);
     RUN(a_keyboard_key_acts_on_its_own_release_only);
     RUN(a_release_the_tracker_makes_for_a_jump_types_nothing);
     RUN(the_keyboard_draws_inside_its_area_and_only_while_open);

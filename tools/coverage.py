@@ -89,6 +89,7 @@ TRACKED = [
     "shared/ui/picker_screen.c",
     "shared/ui/board_drawing.c",
     "shared/ui/busfault_screen.c",
+    "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
@@ -184,6 +185,18 @@ TRACKED = [
     "protocols/phase_tap/tone.c",
     "protocols/phase_tap/edge_ring.c",
     "protocols/phase_tap/tone_svc.c",
+    "shared/fwupdate/fw_sha256.c",
+    "shared/fwupdate/fw_image.c",
+    "shared/fwupdate/fw_upload.c",
+    "shared/fwupdate/fw_install.c",
+    "shared/fwupdate/fw_boot.c",
+    "shared/webaccess/wa_session.c",
+    "shared/webaccess/wa_text.c",
+    "shared/webaccess/wa_walk.c",
+    "shared/webaccess/wa_send.c",
+    "shared/webaccess/wa_zip.c",
+    "shared/webaccess/wa_page.c",
+    "shared/webaccess/wa_mdns.c",
 ]
 
 # Sources under shared/ that are tables and hold no function: gcc gives them
