@@ -111,6 +111,8 @@ The browser page asks for an 8-character code before it lists a file or takes an
 
 ## The browser page
 
+The page uses the panel's language.
+
 - **Panel firmware**: the version installed, a file picker and Upload. The file is the release asset `rcbench-panel-vX.Y.Z.bin`. A file larger than 4,063,232 bytes is refused before a byte is sent.
 - **Files on the card**: every file with its name, size in bytes and time; each name downloads that file. The page writes nothing on the card.
 - **Download all as one ZIP file**: the whole card, stored uncompressed. The transfer rate is not measured.

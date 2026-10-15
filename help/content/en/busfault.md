@@ -21,12 +21,12 @@ The panel runs a CAN echo self-test at every start, for 1200 ms inside the splas
 
 ![Nothing came back](view:busfault-silent)
 
-| Verdict | Meaning |
-|---|---|
-| `Nothing answered on the bus.` | the two boards do not talk: power, CANH and CANL crossed, the release, the terminators |
-| `Frames cross and arrive changed.` | the wire or the bit timing |
-| `Frames cross, some are lost, and the bus reported errors.` | terminators, bus length, a connector |
-| `Frames arrived intact and were dropped unread.` | not the wire; report it with the numbers on the right |
+| Heading | WHAT THIS MEANS | The checks point to |
+|---|---|---|
+| `no probe came back` | `Nothing answered on the bus. The two boards are not talking.` | power, CANH and CANL crossed, the release, the terminators |
+| `probes come back altered` | `Frames cross and arrive changed. The wire or the bit timing.` | the terminators, the branch length, CANH and CANL twisted |
+| `not every probe crosses` | `Frames cross, some are lost, and the bus reported errors.` | the terminators, the bus length, CANH and CANL twisted, a connector |
+| `probes lost, no bus error` | `Frames arrived intact and were dropped unread. Not the wire.` | not the wire; report it with the numbers on the right |
 
 The terminators read about 60 ohms across CANH and CANL with the bench switched off. 120 ohms means one of the two is missing. The total bus stays under 5 m, each branch under 30 cm.
 
