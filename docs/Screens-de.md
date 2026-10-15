@@ -2522,7 +2522,7 @@ beide gleich und PATCH größer.
 
 | Zweite Zeile | Bedeutung |
 | --- | --- |
-| `Kein Location in der Antwort.` | Der Redirect trägt keinen `Location`-Header. |
+| `Kein Location-Header in der Antwort.` | Der Redirect trägt keinen `Location`-Header. |
 | `Eine Adresse über ihrer Längengrenze.` | Ein `Location` über 69 Bytes: die Tag-Adresse und 18 Bytes. |
 | `Ein Byte außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
 | `Eine Adresse an unerwarteter Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
