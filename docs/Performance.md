@@ -314,3 +314,110 @@ separate function, so only the page on screen holds its buffers: on
 PROGRAMMER, `render()`'s frame is 32 bytes and the largest page's 464. A
 line copied for display is copied without `snprintf()`, which reaches
 newlib's float conversion: 1,952 bytes deep in the call graph.
+
+## Internal RAM
+
+The radio needs internal RAM (random-access memory) that PSRAM cannot
+stand in for. `esp_wifi_init()` takes the Wi-Fi driver's static RX
+(receive) and TX (transmit) buffers: 16 of each, about 1,600 bytes each,
+51,200 bytes of DMA-capable (direct memory access) internal RAM.
+`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` makes the TX buffers static. When
+they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi
+did not start.".
+
+`tools/ram_budget.py` reads the internal heap a panel build leaves and
+subtracts what the panel allocates at run time, then what each Wi-Fi mode
+allocates on top. CI runs it after both panel builds and fails when the
+heap left with the largest mode up is under 32,768 bytes: the size of the
+pool ESP-IDF keeps for internal and DMA allocations at run time
+(`CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL`). The radio's sockets, the
+hardware AES (Advanced Encryption Standard) and SHA (Secure Hash Algorithm)
+engines' buffers and a card transfer take from it while the radio runs.
+
+| Item | What it is | Bytes |
+| --- | --- | ---: |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 126,664 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 299,320 |
+| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 104,776 |
+| `before` | heap left with the panel up and the radio off | 194,544 |
+| `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
+| `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
+| `SCAN` | the network search: the radio alone | 86,096 |
+| `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
+| `left` | heap left with the largest mode up | 91,384 |
+
+Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
+that build, which fails when the table differs from it. `-v` lists every
+allocation and where its size comes from.
+
+Each figure is an estimate. A task's stack, a queue's length and the Wi-Fi
+buffer count are read from the build and the source; the sizes of a task's
+control block, a queue's header and a queue's item are `sizeof()` values
+read with GDB from the v5.4 build. Three allowances are not read from
+anything: 12,288 bytes for the drivers' start-up allocations, 16,384 bytes
+for the Wi-Fi driver's blocks beyond its buffers and its task, and 4,096
+bytes for TLS. The tool leaves out RTC (real-time clock) fast memory, about
+8 KB of heap that is not DMA-capable. The free heap on a panel is not
+measured. The panel prints it at start-up:
+
+```text
+I (…) rcbench: internal RAM: <n> B free, largest block <n> B; PSRAM: <n> B free
+```
+
+A radio start that fails logs the step, the error's name and the internal
+heap at that moment:
+
+```text
+E (…) wifi: esp_wifi_init: ESP_ERR_NO_MEM; internal RAM <n> B free, largest block <n> B
+```
+
+The steps are `esp_netif_init`, `esp_event_loop_create_default`, the two
+event handlers, the network interface, `esp_wifi_init`,
+`esp_wifi_set_mode`, `esp_wifi_set_config`, `esp_wifi_start`,
+`httpd_start`, and the creation of the `wifi_ctl`, `wifi_get` and `mdns`
+tasks. A network interface ESP-IDF cannot allocate stops the panel with an
+assertion inside ESP-IDF instead, and the panel restarts.
+
+What lives in PSRAM instead: the zero-initialised data (.bss) of 15 objects,
+161,340 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+`CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
+.bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
+13,742 bytes.
+
+| Object | Component | .bss (bytes) |
+| --- | --- | ---: |
+| `log_viewer_screen` | ui | 35,328 |
+| `servo_screen` | ui | 28,509 |
+| `ui_watermark` | ui | 20,504 |
+| `supply_screen` | ui | 20,412 |
+| `motor_screen` | ui | 19,968 |
+| `programmer_screen` | ui | 6,396 |
+| `kst_card` | bench | 6,208 |
+| `log_csv` | logfile | 4,905 |
+| `kst_panel` | ui | 4,645 |
+| `esc_registry` | esc | 4,228 |
+| `analyser_screen` | ui | 4,036 |
+| `wa_zip` | webaccess | 2,433 |
+| `wa_page` | webaccess | 1,408 |
+| `wifi_screen` | ui | 1,320 |
+| `ui_band` | ui | 1,040 |
+
+An object moves only when its state
+
+- is read and written by no interrupt handler: the panel's IRAM
+  (instruction RAM) handlers are `display.c`'s and `touch.c`'s, and their
+  state stays internal;
+- is read and written by no DMA: the card's SPI (Serial Peripheral
+  Interface) driver copies a buffer that is not DMA-capable through one
+  that is;
+- holds no atomic, spinlock, mutex or queue: the ESP32-S3's
+  compare-and-swap instruction works on internal RAM only.
+
+A flash write closes the cache, and PSRAM with it. For its length the
+writing task runs from IRAM and the other core waits in IRAM, so no code
+that reads these objects runs.
+
+The screens' state is read through the same 64 KB data cache as the
+framebuffers. `tools/frame_cost.py` models the frames it renders through
+that cache with every read and write, these objects' included. The frame rate on a
+panel with them in PSRAM is not measured.

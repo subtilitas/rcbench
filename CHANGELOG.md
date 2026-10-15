@@ -113,6 +113,14 @@ history is in git.
   before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
   UPPER as the run found them; a session after the run saves its own backup
   file at its first write.
+- A radio start that fails logs the step, the error's name and the free
+  internal heap with its largest block. The panel logs the free internal
+  heap, its largest block and the free PSRAM once at start-up.
+- `tools/ram_budget.py` estimates the internal heap left with each Wi-Fi
+  mode up from the panel build, the panel's task stacks, queues and
+  buffers and three allowances, and fails under 32,768 bytes. CI runs it
+  after both panel builds; on ESP-IDF v5.4 it holds the table in
+  [Performance](docs/Performance.md#internal-ram).
 
 ### Changed
 
@@ -142,6 +150,21 @@ history is in git.
   of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
   line of that tag, in `STATUS.md`, `docs/Building.md` and
   `docs/FirstRun.md`.
+
+### Fixed
+
+- ACCESS POINT fails on 0.19.0 with "Wi-Fi did not start." the moment it
+  is pressed: internal RAM (random-access memory) cannot hold the Wi-Fi
+  driver's static buffers, 51,200 bytes of DMA-capable (direct memory
+  access) memory that `esp_wifi_init()` takes. By the same estimate a home
+  network, the network search and the release check fail the same way.
+  The zero-initialised data of 15 screen, card and page objects, 161,340
+  bytes, and that of lwIP (lightweight IP stack) and the Wi-Fi driver's
+  libraries, 13,742 bytes, move to PSRAM. The internal heap at start goes
+  from 126,768 to 299,320 bytes, and the heap left with the largest Wi-Fi
+  mode up from an estimated -81,168 to 91,384 bytes. The free heap on a
+  panel and the frame rate with the screens' state in PSRAM are not
+  measured.
 
 ## 0.19.0 - 2026-10-15
 

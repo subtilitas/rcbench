@@ -463,6 +463,17 @@ jobs:
         if: matrix.idf == 'v5.4'
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
+      # The internal heap the build leaves, less every task stack, queue
+      # and buffer the panel allocates at run time and what the largest
+      # Wi-Fi mode allocates on top, against a floor of 32768 bytes.  The
+      # Wi-Fi driver takes 51,200 bytes of DMA-capable internal RAM at
+      # esp_wifi_init(), and a panel short of it refuses ACCESS POINT at
+      # once.  On both matrix entries; the table in the docs is the v5.4
+      # build's.
+      - name: Internal RAM holds the largest Wi-Fi mode
+        run: python3 tools/ram_budget.py firmware/panel/build
+             ${{ matrix.idf == 'v5.4' && '--check-doc' || '' }}
+
       - uses: actions/upload-artifact@v7
         with:
           name: panel-${{ matrix.idf }}

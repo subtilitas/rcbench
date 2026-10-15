@@ -9414,6 +9414,16 @@ void app_main(void)
 
     knob_task_start();
 
+    /* What internal RAM holds with every task of the panel running and the
+     * radio off.  A Wi-Fi start takes about 100 KB of it, 51 KB of that as
+     * the driver's DMA (direct memory access) buffers
+     * (tools/ram_budget.py). */
+    ESP_LOGI(TAG, "internal RAM: %u B free, largest block %u B; "
+             "PSRAM: %u B free",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+
     uint32_t frames  = 0;
     uint32_t last_us = (uint32_t)esp_timer_get_time();
     bool     was_armed = false;
