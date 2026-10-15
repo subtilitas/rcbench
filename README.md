@@ -100,7 +100,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 39,283 of 40,125 lines in 141 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 39,910 of 40,753 lines in 145 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
@@ -142,7 +142,7 @@ repository is a name or trademark of its owner. Each appears only to
 describe compatibility, to identify a part, to credit the source of a font
 or to name a design or protocol reference. This covers:
 
-- the servo makers and brands Futaba, Feetech and Dynamixel;
+- the servo makers and brands Futaba, Feetech, ROBOTIS and Dynamixel;
 - the ESC (electronic speed controller) makers YGE, Kontronik, Hobbywing,
   Hacker, Jeti, Castle Creations, Graupner, Multiplex and Spektrum;
 - the protocol and firmware names OpenYGE, S.BUS, S.BUS2, JETI EX Bus, SRXL2,

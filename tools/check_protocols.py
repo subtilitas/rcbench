@@ -334,7 +334,7 @@ SOURCE_SUFFIXES = (".c", ".h", ".pio")
 # section whose heading has "Trademark" in it.
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
-          "FrSky", "FlySky")
+          "FrSky", "FlySky", "ROBOTIS", "Dynamixel")
 # A brand is found in any case, with a version suffix (DShot300, S.BUS2),
 # inside an identifier, file name, path or address (kst_session_t,
 # hitec_x.c, www.futaba.com, 2kst), and not next to a letter: KSTART is no

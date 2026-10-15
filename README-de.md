@@ -103,7 +103,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 39 283 von 40 125 Zeilen in 141 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 39 910 von 40 753 Zeilen in 145 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
@@ -147,7 +147,7 @@ Inhabers. Jeder steht nur dort, um Kompatibilität zu beschreiben, ein Teil
 zu bezeichnen, die Quelle einer Schrift anzugeben oder eine Design- oder
 Protokoll-Referenz zu nennen. Das gilt für:
 
-- die Servo-Hersteller und -Marken Futaba, Feetech und Dynamixel;
+- die Servo-Hersteller und -Marken Futaba, Feetech, ROBOTIS und Dynamixel;
 - die ESC-Hersteller (Electronic Speed Controller) YGE, Kontronik, Hobbywing,
   Hacker, Jeti, Castle Creations, Graupner, Multiplex und Spektrum;
 - die Protokoll- und Firmware-Namen OpenYGE, S.BUS, S.BUS2, JETI EX Bus,

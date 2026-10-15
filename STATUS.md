@@ -173,7 +173,7 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
-| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` · `dynamixel` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -208,7 +208,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 116 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 120 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -220,7 +220,7 @@ The host suite is 116 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_wa_session`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_wa_session`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page`, `test_wa_mdns`, `test_dxl_packet`, `test_dxl_table`, `test_dxl_bus` and `test_dxl_pio`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -263,6 +263,14 @@ fills and is removed, and `test_prog_link` the panel's module for the
 ports' page. ctest also
 builds and runs `kst_headers_cxx`, which calls the module through its 7
 headers from C++11, when the host has a C++ compiler.
+The 4 `test_dxl_*` binaries run the core of `protocols/dynamixel/`: the
+packets against the 20 packet examples of the ROBOTIS e-Manual, the
+control table, the transactions and the ID scan against the bus model in
+`test/host/dxl_sim.h`, and `test_dxl_pio` the pin driver's arithmetic and
+its PIO program in a model of the state machine; the coprocessor build
+fails when the assembled program differs from the words the test runs.
+No servo is connected. ctest also builds and runs `dxl_headers_cxx`, which
+calls the module through its 4 core headers from C++17.
 ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
 (`test/host/test_sense_trace_tool.py`).
@@ -359,6 +367,10 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_session.c` | 584 | 583 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
+| `protocols/dynamixel/dxl_packet.c` | 180 | 180 | 100.0% |
+| `protocols/dynamixel/dxl_table.c` | 116 | 116 | 100.0% |
+| `protocols/dynamixel/dxl_bus.c` | 304 | 303 | 99.7% |
+| `protocols/dynamixel/dxl_pio.c` | 28 | 28 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
 | `shared/outputs/prog_port.c` | 313 | 313 | 100.0% |
@@ -429,7 +441,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 146 | 141 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **40125** | **39283** | **97.9%** |
+| **total** | **40753** | **39910** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

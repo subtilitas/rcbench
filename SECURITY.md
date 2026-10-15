@@ -38,6 +38,7 @@ Everything that parses input somebody else produced:
 | `shared/logfile` | CSV (comma-separated values) from an SD card |
 | `shared/esc` | ESC (electronic speed controller) profile JSON (JavaScript Object Notation) from an SD card; files over 65536 bytes, nesting deeper than 16 levels, objects of more than 64 members and duplicate keys are refused |
 | `protocols/kst` | servo configuration text files (line length, field values, the CRC-32 (32-bit cyclic redundancy check) checksum line, type and limits against the connected servo) and servo replies (edge timestamps checked against timing windows; the wire has no parity, checksum or length field) |
+| `protocols/dynamixel` | status packets from a bus of ROBOTIS Dynamixel servos: the header search, a Length of at least 4 for a status packet and a packet of at most 182 bytes (`DXL_WIRE_MAX`), the CRC-16 (cyclic redundancy check) before destuffing, the byte stuffing, at most 128 parameters after destuffing, IDs 253 and 255 refused, then the instruction, the ID asked for, the ERR byte and the parameter count of the instruction |
 | `protocols/sbus`, and the receiver decoders that follow it | frames from a receiver |
 | `protocols/openyge` | ESC telemetry and parameter frames |
 | `protocols/dshot` | the ESC telemetry reply: 21 line bits, GCR (group-coded recording) decode, 4-bit checksum, extended telemetry frame types |

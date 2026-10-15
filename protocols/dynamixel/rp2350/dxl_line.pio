@@ -1,0 +1,72 @@
+;
+; A half-duplex UART, 8N1, least significant bit first, on one pin: a
+; packet out with the pad driven, the pad released after the last stop bit,
+; then every byte that comes back into the receive FIFO.  For a bus of
+; ROBOTIS Dynamixel servos (Protocol 2.0); ROBOTIS and Dynamixel are names or
+; trademarks of their owner, used here only to say which servos this
+; program works with.
+;
+; The pad is the state machine's OUT, SET, IN and JMP pin.  8 cycles a bit;
+; the clock divider sets the rate (protocols/dynamixel/include/dxl_pio.h).
+; The output shift register shifts right without autopull, the input shift
+; register shifts right without autopush: a received byte lands in bits 31
+; to 24 of the word pushed.
+;
+; Transmit, entered at `send` with the state machine restarted: the latch goes
+; high before the pad drives, so the pad never drives low before the first
+; start bit.  The pad drives high for 158 cycles, 19.75 bit times, then the
+; stream from the transmit FIFO, one byte per word, low byte used: the byte
+; count less 1, then the bytes.  A byte is a start bit of 8 cycles, 8 data
+; bits of 8 cycles and a stop bit of 11 cycles, 83 cycles; the last stop bit
+; is driven 9 cycles, then the pad is an input.
+;
+; Receive: the start bit's falling edge, the first data bit sampled 12
+; cycles after the cycle that saw it, the next 7 every 8 cycles, the stop
+; bit 8 cycles after the last, in its middle.  A byte with a high stop bit
+; is pushed; one with a low stop bit is dropped and the program waits for
+; the line to go high.  The push does not block: a full FIFO drops the
+; byte.  The program waits for the next start bit 2 cycles after the stop
+; bit's sample, 2 cycles before a back-to-back start bit is due; a start
+; bit that comes earlier is seen late by as much, which moves the samples
+; of that byte later by as much.
+;
+; test/host/test_dxl_pio.c assembles this file, runs the words in a model of
+; the state machine and holds them to fixtures/dxl_line_words.txt, which a
+; firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program dxl_line
+
+public send:
+    set pins, 1             ; the latch high, the pad still an input
+    set pindirs, 1          ; drive: idle high
+    set x, 18
+lead:
+    jmp x--, lead [7]       ; 19 x 8 cycles
+    pull block
+    out y, 8                ; bytes less 1
+byte:
+    pull block
+    set x, 7
+    set pins, 0 [7]         ; start bit
+bit:
+    out pins, 1
+    jmp x--, bit [6]
+    set pins, 1 [7]         ; stop bit
+    jmp y--, byte
+    set pindirs, 0          ; release
+.wrap_target
+public listen:
+    wait 0 pin 0
+    set x, 7 [10]           ; to the middle of the first data bit
+rxbit:
+    in pins, 1
+    jmp x--, rxbit [6]
+    jmp pin, good           ; the stop bit
+    wait 1 pin 0            ; low: dropped, wait for the line
+    jmp listen
+good:
+    push noblock
+.wrap
