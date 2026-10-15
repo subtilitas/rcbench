@@ -176,6 +176,16 @@ def test_a_nested_link_names_its_line(tree):
           "a link inside a link", line=11)
 
 
+def test_a_bracket_in_a_code_span_does_not_close_a_label(tree):
+    html = ok(tree, "## A\n\n[x `]` y](#a)\n")
+    assert '<a href="#a">x <code>]</code> y</a>' in html
+
+
+def test_a_bracket_in_a_code_span_does_not_open_a_label(tree):
+    html = ok(tree, "`[` [x](https://x.example)\n")
+    assert '<code>[</code> <a href="https://x.example"' in html
+
+
 def test_brackets_inside_a_link_label_stay_text(tree):
     html = ok(tree, "[see [1] here](https://x.example)\n")
     assert ">see [1] here</a>" in html

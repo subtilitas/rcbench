@@ -329,12 +329,18 @@ class Inline:
     def _brackets(text) -> dict[int, int]:
         """Each [ that a ] closes, to the index of that ], in one pass: the
         brackets in between are counted, so a link inside a label reaches
-        the in_link check.  An escaped bracket is no bracket."""
+        the in_link check.  An escaped bracket, or one inside a code span,
+        is no bracket."""
         match, stack, j = {}, [], 0
         while j < len(text):
             if text[j] == "\\":
                 j += 2
                 continue
+            if text[j] == "`":
+                end = text.find("`", j + 1)
+                if end >= 0:
+                    j = end + 1
+                    continue
             if text[j] == "[":
                 stack.append(j)
             elif text[j] == "]" and stack:
