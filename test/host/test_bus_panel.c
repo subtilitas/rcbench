@@ -53,7 +53,6 @@ static uint32_t g_stops, g_stops_sent;
 static bool g_pending;
 static bus_link_cmd_t g_cmd;
 static bool g_deaf;           /* the control task loses every command */
-static uint8_t g_result_as;   /* nonzero: a finished result reads as this */
 static bool g_mute;           /* the coprocessor answers no exchange */
 static unsigned g_commands;   /* commands the control task took */
 
@@ -116,7 +115,6 @@ static void fresh_minor(uint16_t minor)
     g_stops = g_stops_sent = 0u;
     g_pending = false;
     g_deaf = false;
-    g_result_as = 0u;
     g_mute = false;
     g_commands = 0u;
     CHECK(bus_port_init(&g_port, &hw));
@@ -157,15 +155,6 @@ static bool exchange(void)
         CHECK_EQ(x.page, LINK_PAGE_BUS);
         CHECK((unsigned)x.off + x.n <= LINK_BS_COUNT);
         bus_port_read(&g_port, x.off, x.n, regs);
-        if (g_result_as != 0u && x.off <= LINK_BS_RESULT
-            && LINK_BS_RESULT < x.off + x.n) {
-            uint16_t *res = &regs[LINK_BS_RESULT - x.off];
-
-            if ((*res & 0xFFu) != FEETECH_RES_OK
-                && (*res & 0xFFu) != FEETECH_RES_BUSY) {
-                *res = (uint16_t)((*res & 0xFF00u) | g_result_as);
-            }
-        }
     }
     bus_link_done(&g_link, BUS_LINK_ACK, regs);
     return true;
@@ -1375,35 +1364,64 @@ TEST_CASE(a_baud_refused_before_any_frame_keeps_the_torque_marks)
     CHECK(!logged_torque_off());
     CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
     CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+}
 
-    /* A result that says the operation was not taken (ARG): nothing went,
-     * the marks stay. */
-    v = torque_on_at_1();
-    sim.refuse_n = 1u;              /* and indeed no frame starts */
-    g_result_as = FEETECH_RES_ARG;
-    sim.n_log = 0;
-    tap_row(0, 1);
-    CHECK(choose("115200"));
-    run(500);
-    g_result_as = 0u;
-    CHECK(!logged_torque_off());
-    CHECK_EQ(sim.baud, 1000000u);
-    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
-    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+TEST_CASE(a_link_drop_after_the_broadcast_sends_torque_off_again)
+{
+    ftsim_servo_t *v = torque_on_at_1();
 
-    /* The EEPROM baud write the same. */
-    v = torque_on_at_1();
     eeprom_item("BAUD");
     CHECK(choose("115200"));
-    sim.refuse_n = 1u;
-    g_result_as = FEETECH_RES_ARG;
-    sim.n_log = 0;
     hold_apply();
-    run(500);
-    g_result_as = 0u;
-    CHECK(!logged_torque_off());
-    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+    pass();                             /* the command is handed over */
+    bus_link_lost(&g_link);
+    run(5);
+    /* Not known whether the broadcast went: the row stays ON. */
     CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    sim.n_log = 0;
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    CHECK(logged_torque_off());
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+
+    /* BAUD the same. */
+    v = torque_on_at_1();
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    pass();
+    pass();
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    sim.n_log = 0;
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK(logged_torque_off());
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+}
+
+TEST_CASE(a_torque_off_the_driver_refuses_twice_keeps_the_row)
+{
+    ftsim_servo_t *v = torque_on_at_1();
+    unsigned c0;
+
+    sim.refuse_start = true;
+    c0 = g_commands;
+    tap_row(0, 1);
+    CHECK(choose("115200"));
+    run(3000);
+    /* BAUD and one torque off sent again, no more. */
+    CHECK_EQ(g_commands - c0, 2u);
+    sim.refuse_start = false;
+    run(2000);
+    CHECK_EQ(g_commands - c0, 2u);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);  /* nothing reached it */
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    CHECK(page_says(3, "Line driver did not start."));
 }
 
 TEST_CASE(a_baud_write_cut_by_a_link_drop_restores_at_either_rate)
@@ -1898,6 +1916,8 @@ int main(void)
     RUN(a_failed_baud_still_sent_torque_off);
     RUN(a_broadcast_the_driver_refused_goes_again);
     RUN(a_baud_refused_before_any_frame_keeps_the_torque_marks);
+    RUN(a_link_drop_after_the_broadcast_sends_torque_off_again);
+    RUN(a_torque_off_the_driver_refuses_twice_keeps_the_row);
     RUN(a_baud_write_cut_by_a_link_drop_restores_at_either_rate);
     RUN(a_baud_write_cut_by_stop_restores_at_either_rate);
     RUN(a_coprocessor_without_the_page_is_named_and_sent_nothing);

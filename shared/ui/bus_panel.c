@@ -85,10 +85,8 @@ enum {
 #define NO_ALT 0xFFu
 
 /* Results (feetech_res_t) the page tells apart. */
-#define RES_BUSY     1u         /* the operation was not taken */
 #define RES_NO_REPLY 2u         /* a frame no servo answered */
 #define RES_DRIVER   10u        /* the driver refused a frame or the rate */
-#define RES_ARG      12u        /* the operation was not taken */
 
 typedef struct {
     uint8_t id, series, addr, n;
@@ -811,16 +809,34 @@ static unsigned read_bytes(uint8_t *out, unsigned room)
 }
 
 /* A baud write or BAUD, which start with torque off to every servo, ended
- * in @p result short of success.  BUSY and ARG refused it before any frame.
- * DRIVER may be the broadcast itself refused, so it goes again.  Any other
- * result came after the broadcast went. */
+ * in @p result short of success.  DRIVER may be the broadcast itself
+ * refused: the marks stay and torque off goes again, whose answer settles
+ * them.  Any other result came after the broadcast went. */
 static void torque_off_went(uint8_t result)
 {
-    if (result == RES_BUSY || result == RES_ARG) {
-        return;
-    }
-    memset(b.torque_on, 0, sizeof(b.torque_on));
     if (result == RES_DRIVER) {
+        b.tq_off_due = true;
+    } else {
+        memset(b.torque_on, 0, sizeof(b.torque_on));
+    }
+}
+
+/* The command in hand starts with torque off to every servo: a baud write
+ * by the EEPROM list or RESTORE, or BAUD. */
+static bool sends_torque_off(void)
+{
+    return (b.use == U_EE_WRITE && b.ee_role == BUS_R_BAUD)
+           || (b.use == U_RESTORE && b.bk_n > 0u
+               && b.bk[b.bk_n - 1u].role == BUS_R_BAUD)
+           || b.use == U_BAUD;
+}
+
+/* A command handed over came to no answer: its torque off may have gone.
+ * The marks stay and torque off goes again, whose answer settles them. */
+static void handed_over_unanswered(void)
+{
+    keep_uncertain();
+    if (sends_torque_off()) {
         b.tq_off_due = true;
     }
 }
@@ -965,8 +981,11 @@ static void done(uint8_t result)
         return;
     }
     case U_TQ_OFF:
-        memset(b.torque_on, 0, sizeof(b.torque_on));
-        if (!ok) {
+        /* Only an answer of OK says torque off went out; otherwise the
+         * marks stay and the message stands. */
+        if (ok) {
+            memset(b.torque_on, 0, sizeof(b.torque_on));
+        } else {
             say(true, result_text(result));
         }
         return;
@@ -1024,7 +1043,7 @@ static void watch_answer(void)
          * servo: an EEPROM write keeps its old value for RESTORE, and the
          * mode it may have changed is read again. */
         if (!b.out_due) {
-            keep_uncertain();
+            handed_over_unanswered();
             if (b.use == U_EE_WRITE) {
                 ee_forget();
             }
@@ -1054,14 +1073,14 @@ static void watch_answer(void)
                 failed(TR(BS_A_DOWN));
                 return;
             default:
-                keep_uncertain();
+                handed_over_unanswered();
                 failed(TR(BS_A_NO_ANSWER));
                 return;
             }
         } else if (!b.out_due
                    && (uint32_t)(b.f.now_ms - b.wait_ms)
                           >= BUS_PANEL_ANSWER_MS) {
-            keep_uncertain();
+            handed_over_unanswered();
             failed(TR(BS_A_NO_ANSWER));
             return;
         }
@@ -1070,7 +1089,7 @@ static void watch_answer(void)
         && (uint32_t)(b.f.now_ms - b.wait_ms) >= BUS_PANEL_ANSWER_MS) {
         /* Taken, and no read of the page shows it: another command took
          * the page over, or the coprocessor started again. */
-        keep_uncertain();
+        handed_over_unanswered();
         failed(TR(BS_A_NO_ANSWER));
         return;
     }
@@ -1116,9 +1135,9 @@ static void reconcile(void)
     }
     b.baud = baud_now();        /* the line's rate, for the next OPEN */
     if (b.tq_off_due) {
+        /* The marks go with its answer (done()). */
         b.tq_off_due = false;
         b.tq_read_due = false;
-        memset(b.torque_on, 0, sizeof(b.torque_on));
         send(U_TQ_OFF, LINK_BUS_OP_TORQUE_OFF, 0u, 0u);
         return;
     }
