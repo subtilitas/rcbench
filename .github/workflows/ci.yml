@@ -124,6 +124,14 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
+      # The web help: every screen has a page in English and German, every
+      # screenshot it shows exists in render_ui.py and in docs/img/, the two
+      # languages of a page have the same headings and screenshots, every
+      # link between pages lands, and the Markdown stays inside the subset
+      # of help/site/FORMAT.md.
+      - name: The web help covers every screen
+        run: python3 tools/help_site.py --check
+
       # A module under protocols/ is built in other pico-sdk projects, C
       # and C++, without the rest of this tree: no include leaves the
       # module, and every public header compiles alone as C11 and as C++17.

@@ -1,0 +1,126 @@
+---
+screen: SETUP
+title: Setup
+order: 60
+---
+
+# Setup
+
+SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3; das Band nennt ihn SETTINGS. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+
+## Die Kacheln
+
+![Die Kacheln, alles gespeichert](view:setup)
+
+| Kachel | Zweite Zeile | Was sie öffnet |
+|---|---|---|
+| ESC / PRÜFSTAND | `8 EINSTELLUNGEN` | die Liste von ESC / PRÜFSTAND |
+| ANWENDUNG | `10 EINSTELLUNGEN` | die Liste von ANWENDUNG |
+| ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
+| OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
+| PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
+| UPDATES | `RELEASES AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
+
+Drei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
+
+![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
+
+Das Home-Tag oben links führt eine Ebene nach der anderen zurück:
+
+| Von | Das Home-Tag führt zu |
+|---|---|
+| der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
+| den Kacheln | dem Menü |
+| OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
+
+## Einen Wert ändern
+
+![ESC / PRÜFSTAND, alles gespeichert](view:setup-esc)
+
+Die Liste reicht über den Bildschirm und zeigt 6 Zeilen. Darunter trägt eine Leiste den Namen der Kategorie, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Leiste endet 4 px über dem Band, das ein Alert unten zeigt; ein Alert verdeckt so weder eine Taste noch eine Zeile oder Schaltfläche.
+
+Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Eine Zahl hat die Tasten `-` und `+`; ein Schalter oder eine Auswahl hat `<` und `>`.
+
+- **Tipp**: Eine Taste schaltet einmal, wenn der Finger innerhalb von 8 px um den Druckpunkt auf der Taste abhebt.
+- **Halten**: Eine gehaltene Taste schaltet zuerst nach 0,45 s, dann 8-mal pro Sekunde und ab 2,25 s 30-mal pro Sekunde.
+- **Scrollen**: Ein senkrechtes Ziehen über mehr als 8 px irgendwo auf der Liste scrollt sie und ändert keinen Wert.
+- Ein Finger zur selben Zeit: Ein zweiter Finger tut nichts, solange einer drückt oder scrollt.
+
+Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der offenen Kategorie auf seine Vorgabe zurück.
+
+| Taste | Was sie tut |
+|---|---|
+| KATEGORIE ZURÜCKSETZEN | die Vorgaben der offenen Kategorie, sofort |
+| GESPEICHERT, SPEICHERN, BEI STILLSTAND, NICHT GESPEICHERT | die Speichertaste; siehe unten |
+
+## Die Werte behalten
+
+![Ein geänderter Wert, SPEICHERN wird angeboten](view:setup-dirty)
+
+Ein geänderter Wert wird erst in den Flash geschrieben, wenn SPEICHERN gedrückt wird.
+
+| Beschriftung | Bedeutung |
+|---|---|
+| `GESPEICHERT` | nichts ist ungeschrieben; die Taste tut nichts |
+| `SPEICHERN` | etwas ist ungeschrieben; ein Druck fordert das Schreiben an |
+| `BEI STILLSTAND` | das Schreiben wartet auf einen ruhenden Prüfstand |
+| `NICHT GESPEICHERT` | der Speicher hat das Schreiben abgelehnt; ein Druck versucht es erneut |
+
+Geschrieben wird im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Bei ARMED lautet die Taste `BEI STILLSTAND`, bis der Prüfstand SAFE ist. Nicht gespeicherte Werte gelten, bis das Panel ausgeschaltet wird. Das Verlassen einer Liste oder der Kacheln schreibt nichts.
+
+`NICHT GESPEICHERT` kann nicht sagen, wie viel den Flash erreicht hat: Eine Ablehnung mittendrin lässt die zuvor geschriebenen Schlüssel stehen; der nächste Start kann eine Mischung aus neuen und alten Werten laden.
+
+## ESC / PRÜFSTAND
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| Zellen | 1 bis 14 S | 6 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
+| Kapazität | 0 bis 30000 mAh, Schritte von 100 mAh | 5000 | gespeichert; kein Bildschirm nutzt sie in diesem Release |
+| Innenwiderstand | 0 bis 200 mOhm | 18,0 | gespeichert; kein Bildschirm nutzt ihn in diesem Release |
+| Motorpole | 2 bis 42, Schritte von 2 | 14 | die Drehzahl ist eRPM (elektrische Drehzahl) geteilt durch Pole/2 |
+| Nenn-kV | 0 bis 10000 rpm/V, Schritte von 10 | 0 | der kV-Wert auf [MOTOR & ESC](motor.md#kv-rpm-v-und-eff); 0 lässt ihn leer |
+| Leerlaufpuls | 800 bis 1600 us, Schritte von 10 | 1000 | die PWM-Breite (Pulsweitenmodulation) bei 0 % Throttle |
+| Vollpuls | 1400 bis 2400 us, Schritte von 10 | 2000 | die PWM-Breite bei 100 % Throttle |
+| Rampengrenze | 5 bis 300 %/s, Schritte von 5 | 55 | die Throttle-Rampe des Panelmodells, genutzt, solange kein Koprozessor antwortet |
+
+Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den Koprozessor. Der Koprozessor fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
+
+## ANWENDUNG
+
+![ANWENDUNG](view:setup-application)
+
+| Einstellung | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| Design | DUNKEL, HELL | DUNKEL | das Farbschema, ab dem nächsten Frame |
+| Helligkeit | 20 bis 100 %, Schritte von 5 | 100 | skaliert die Palette |
+| Kontrast | 60 bis 140 %, Schritte von 5 | 100 | drückt Farben weg vom Mittelgrau |
+| Beleuchtung | EIN, AUS | EIN | gespeichert; kein Bildschirm nutzt sie in diesem Release; die Platine verdrahtet die Hintergrundbeleuchtung nur als ein oder aus |
+| Sprache | ENGLISH, DEUTSCH | ENGLISH | die Sprache der Oberfläche, ab dem nächsten Frame, ohne Neustart |
+| Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
+| Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
+| Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
+| Drehknopf | EIN, AUS | AUS | ein AS5600 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
+| Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
+
+![SETUP im hellen Design](view:setup-light)
+
+### Der Drehknopf
+
+- Der Knopf bewegt einen Wert um den Drehweg, nie dorthin, wohin er zeigt. Bei 270 deg bewegt eine Vierteldrehung den Throttle um 33,3 Punkte.
+- Er schaltet nie auf ARMED. Solange der Prüfstand SAFE ist, bewegt eine Drehung nichts und wird nicht gemerkt.
+- Der erste Messwert nach dem Einschalten, oder nachdem der Sensor nicht mehr antwortete, setzt einen Bezug und bewegt nichts.
+- Ein Finger auf dem Throttle-Balken oder dem SERVO-Zifferblatt hat den Wert, solange er aufliegt.
+- Der Sensor wird alle 10 ms gelesen. Ein Sprung über 90 deg zwischen zwei Messwerten wird verworfen.
+
+Bekannte Einschränkung: Auf dem Panel Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G der Platine auf den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F. Das schließt die feste Adresse 0x36 des AS5600 ein; ein AS5600 als Knopf lässt sich an diesem Bus nicht lesen.
+
+## ANSCHLÜSSE
+
+ANSCHLÜSSE hält die Strommonitore, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho und den PD mini. [Anschlüsse](setup-interfaces.md) beschreibt sie.
+
+## Verwandte Seiten
+
+- [Anschlüsse](setup-interfaces.md)
+- [Ausgänge](outputs.md) und [Pin-Auswahl](picker.md)
+- [Updates](updates.md)
+- [Netzteil](supply.md) und [Servo-Optionen](servo-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

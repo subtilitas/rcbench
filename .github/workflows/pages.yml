@@ -1,6 +1,7 @@
 name: Configurator
 
-# Checks, builds and publishes the bench configurator under configurator/.
+# Checks, builds and publishes the bench configurator under configurator/,
+# and the panel's web help under help/ of the same site.
 #
 # - core: type check, test suite, static checks on the data file against the
 #   tree at the release tag, the release of package.json against the firmware
@@ -14,8 +15,13 @@ name: Configurator
 #   1280 x 800 px, English and German, light and dark, reduced motion) and
 #   on every link of the hash corpus, in 4 shards. No test is retried. A
 #   failed test leaves its trace and screenshot as an artifact for 14 days.
-# - deploy: publishes the built page to GitHub Pages. It runs on a push to
-#   main only. A pull request builds and tests and publishes nothing.
+# - help: builds the web help with tools/help_site.py from help/content/
+#   and the screenshots in docs/img/. The build runs every check of the
+#   help first and fails on one. The built help is an artifact of every run.
+# - deploy: publishes the built page to GitHub Pages, with the help in its
+#   help/ folder. It runs on a push to main only. A pull request builds and
+#   tests and publishes nothing. The help is not part of the configurator's
+#   size budget: the budget is checked on the configurator's files alone.
 #
 # The repository setting "Pages source: GitHub Actions" is a precondition of
 # the deploy job.
@@ -26,12 +32,22 @@ on:
       - 'configurator/**'
       - 'shared/link/include/rcbench_version.h'
       - '.github/workflows/pages.yml'
+      - 'help/**'
+      - 'docs/img/**'
+      - 'tools/help_site.py'
+      - 'tools/render_ui.py'
+      - 'shared/ui/include/ui_screen.h'
   push:
     branches: [main]
     paths:
       - 'configurator/**'
       - 'shared/link/include/rcbench_version.h'
       - '.github/workflows/pages.yml'
+      - 'help/**'
+      - 'docs/img/**'
+      - 'tools/help_site.py'
+      - 'tools/render_ui.py'
+      - 'shared/ui/include/ui_screen.h'
 
 # A newer push to a pull request replaces the run in progress. A run on main
 # finishes, so a deployment is never cut off.
@@ -253,10 +269,38 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  help:
+    name: Web help
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      # The help publishes docs/img; a screenshot that is not the panel's
+      # render fails here as it fails in ci.yml, so Pages never carries one.
+      # The renderer needs the runner image's C compiler and Pillow.
+      - name: The committed screenshots match the current render
+        run: |
+          python3 -m pip install pillow==12.3.0
+          python3 tools/render_ui.py --check
+
+      # Python 3 of the runner image and its standard library: the
+      # generator imports nothing else.
+      - name: Build the help
+        run: python3 tools/help_site.py --out help-site
+
+      - name: Keep the built help
+        uses: actions/upload-artifact@v7
+        with:
+          name: help-site
+          path: help-site
+          if-no-files-found: error
+          retention-days: 14
+
   deploy:
     name: Publish to GitHub Pages
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [core, build, smoke, matrix]
+    needs: [core, build, smoke, matrix, help]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -270,6 +314,16 @@ jobs:
         with:
           name: configurator-dist
           path: dist
+
+      # The help goes into a folder the configurator does not have, so no
+      # file of the configurator is replaced.
+      - name: The configurator has no help folder
+        run: test ! -e dist/help
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: help-site
+          path: dist/help
 
       - uses: actions/upload-pages-artifact@v5
         with:
