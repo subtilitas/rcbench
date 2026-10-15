@@ -354,8 +354,12 @@ On the panel console, in this order:
 - **A display stall** when it writes to flash: one per flash operation, 4
   for this drawing (2 sector erases of 4 kB, the payload, the header). A
   flash operation closes the cache the panel's bounce-buffer refill reads
-  PSRAM through, so the panel stops for the length of each. Settings saves
-  do the same.
+  PSRAM through, so the panel stops for the length of each. An operation
+  that holds the refill off for more than 512 us restarts the scan at the
+  first VBlank (vertical blanking interval) interrupt after it ends, which
+  can be mid-frame, and the console prints `display: scan restarted`; the
+  first whole frame after it is in place.
+  Settings saves do the same.
 - **The write waits for a safe bench.** It takes one step per 5 ms control
   pass, and only while the bench is SAFE with the supply off. ARMED or with
   the supply on, `keeping hardware 1's drawing waits for a bench in SAFE
