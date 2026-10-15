@@ -17,6 +17,10 @@
 #include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "gt911.h"
+#ifdef RCBENCH_TOUCH_INJECTOR
+#include "touch_inject.h"
+#include "touch_merge.h"
+#endif
 
 static const char *TAG = "touch";
 
@@ -145,6 +149,17 @@ static void touch_task(void *arg)
             continue;
         }
         s_touch.last_ok_ms = now_ms();
+#ifdef RCBENCH_TOUCH_INJECTOR
+        /* The glass's report goes out before the injector is read, so a
+         * slow or failing injector never delays a contact on the glass. */
+        if (touch_inject_glass(raw, &count, fresh)) {
+            for (int i = 0; i < count; ++i) {
+                touch_map_point(&s_touch.map, &raw[i]);
+            }
+            publish(raw, count);
+        }
+        fresh = touch_inject_read(raw, &count, now_ms());
+#endif
         if (!fresh) {
             continue;
         }
@@ -178,6 +193,13 @@ esp_err_t touch_init(const touch_config_t *cfg)
     const gt911_config_t gt_cfg = { 0 }; /* probe 0x5D then 0x14 */
     ESP_RETURN_ON_ERROR(gt911_new(board_i2c_bus(), &gt_cfg, &s_touch.gt911),
                         TAG, "gt911 probe");
+
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /* Before the task exists: adding a device to the bus is not safe
+     * against a transaction on it. */
+    touch_inject_attach(board_i2c_bus(), gt911_address(s_touch.gt911),
+                        now_ms());
+#endif
 
     uint16_t x_max = 0, y_max = 0;
     if (gt911_resolution(s_touch.gt911, &x_max, &y_max) != ESP_OK ||
@@ -337,7 +359,13 @@ uint32_t touch_age_ms(void)
     if (!s_touch.initialised) {
         return UINT32_MAX;
     }
+#ifdef RCBENCH_TOUCH_INJECTOR
+    /* An injector that stops answering is touch that stops answering. */
+    const uint32_t now = now_ms();
+    return touch_merge_age(now - s_touch.last_ok_ms, touch_inject_age_ms(now));
+#else
     return now_ms() - s_touch.last_ok_ms;
+#endif
 }
 
 

@@ -27,10 +27,6 @@ uint8_t gt911_emu_peek(const gt911_emu_t *e, uint16_t reg)
     case 0x804A: return lo(e->res_y);
     case 0x804B: return hi(e->res_y);
     case 0x804C: return 5;
-    case 0x8140: return '9';
-    case 0x8141: return '1';
-    case 0x8142: return '1';
-    case 0x8143: return 0;
     case 0x8144: return 0x01;
     case 0x8145: return 0xE0;
     case 0x8146: return lo(e->res_x);
@@ -40,6 +36,11 @@ uint8_t gt911_emu_peek(const gt911_emu_t *e, uint16_t reg)
     case GT911_EMU_REG_STATUS: return e->status;
     default:
         break;
+    }
+    if (reg >= 0x8140u && reg < 0x8144u) {
+        /* The product ID, "911" and a NUL. */
+        static const uint8_t id[4] = { '9', '1', '1', 0 };
+        return id[reg - 0x8140u];
     }
     if (reg >= GT911_EMU_REG_POINT1 && reg < GT911_EMU_REG_POINT1 + 8u) {
         return e->point[reg - GT911_EMU_REG_POINT1];

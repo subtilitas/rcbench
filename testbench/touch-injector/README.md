@@ -14,16 +14,16 @@ image.
 
 | RP2350-Zero | Connects to | Notes |
 | --- | --- | --- |
-| GP4 | panel I2C SDA (bus header pin 3) | I2C0 SDA once confirmed; an input before |
-| GP5 | panel I2C SCL (bus header pin 4) | I2C0 SCL once confirmed; an input before |
-| GND | panel GND (bus header pin 2) | short wire, to the star point (see `testbench/WIRING.md`) |
+| GP4 | panel I2C SDA (connector pin 3) | I2C0 SDA once confirmed; an input before |
+| GP5 | panel I2C SCL (connector pin 4) | I2C0 SCL once confirmed; an input before |
+| GND | the bench's star point | short wire; the one second ground path the bench accepts (`testbench/WIRING.md`, section 5) |
 | GP6 | not connected | reserved for the GT911 INT line; an input, never driven |
 | GP7 | not connected | reserved for a panel reset sense; an input |
 | GP16 | on-board WS2812 LED | status, see below |
 | 3V3 | not connected | the Zero runs from its own USB port; the bus has its pull-ups on the panel |
 
-The bus header is the panel's 4-pin PH2.0 I2C connector, pinned out in
-`docs/Building.md`. The injector has no pull-ups and enables none.
+The connector is the panel's 4-pin PH2.0 I2C connector, pinned out in
+`docs/Building.md`: 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. The injector has no pull-ups and enables none.
 
 ## Build
 
@@ -105,6 +105,13 @@ one reply line; a gesture gets a second when it ends.
 | `release` | `ok release`; a gesture under way first gets `fail <gesture> released` |
 
 Coordinates are panel pixels: x 0 to 799, y 0 to 479. `ms` is 1 to 30000.
+The panel maps injected points as it maps the glass's, scaled from the
+resolution the glass reports; they land on the pixel named when the glass
+reports 800 x 480. The resolution the panel's GT911 reports is not measured.
+
+A tap or a hold is two frames: one puts the contact down, one lifts it at
+the end of `ms`. The panel keeps a contact down while the controller has
+nothing new to report, as it does for the glass.
 
 A swipe moves at most 100 px (|dx| + |dy|) between two frames, under the
 panel's 120 px jump split; `slowed=1` says that limit stretched it.
@@ -155,7 +162,7 @@ reaches is not measured; the verdict line reports it as `rate=`.
 
 ## Bring-up on the bench
 
-1. Wire GP4, GP5 and GND as in the pin table. Leave 3V3 open.
+1. Wire GP4, GP5 and GND as in the pin table. Leave 3V3, GP6 and GP7 open.
 2. Power the panel and let it run. Plug the Zero into the Pi.
 3. `ping` returns `state=listen`. The LED blinks white at 1 Hz.
 4. `wiring` returns `wiring ok scl=GP5 sda=GP4 ...`. Any other verdict: fix

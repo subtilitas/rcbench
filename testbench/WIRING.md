@@ -249,7 +249,7 @@ Coil unpowered is button not pressed, which is the state a board runs in.
 Four driver inputs need four pins. The testbench firmware does not exist yet,
 so the whole of this table is a proposal to fix when it is written rather than
 something the tree already says. It is here because an assembler cannot wire
-steps 5 and 7 without it.
+step 7 without it.
 
 | RP2350 pin | Carries | Direction |
 |---|---|---|
@@ -257,20 +257,7 @@ steps 5 and 7 without it.
 | GP17 | panel BOOT relay | out |
 | GP18 | coprocessor RESET relay | out |
 | GP19 | coprocessor BOOT relay | out |
-| GP20 | touch emulator SDA, step 5 | open drain, both ways |
-| GP21 | touch emulator SCL, step 5 | open drain, both ways |
 | GP22 | heartbeat injection, step 7 | out |
-
-GP20 and GP21 are an I²C0 pair on this part: the function table gives
-`I2C0_SDA` on GP20 and `I2C0_SCL` on GP21. They must be **open drain with no
-pull-up added here** -- the panel's bus already has its pull-ups, and a second
-set changes the rise time on a bus this bench exists to measure. The emulator
-is an I²C target at 0x14, not a master; the panel is the master and the real
-controller stays at 0x5D.
-
-The same two pins do double duty in step 5's second check, where the emulator
-pulls one line at a time to prove which lead is on which. That is the same
-open-drain drive, so it needs no extra pin.
 
 GP22 is a plain output, and it is an input at every other moment. It drives
 the heartbeat junction with an edge every 20 ms inside step 7 alone.
@@ -316,19 +303,36 @@ normally-closed contact.
 
 ## 5. The touch bus
 
-Two probe leads on the panel's I²C bus, SCL and SDA, and the emulator's two
-lines to the same bus -- SDA to the RP2350's GP20 and SCL to GP21, open drain,
-adding no pull-up. The emulator answers at 0x14; the real controller stays at
-0x5D and is not disturbed.
+Two analyser probe leads on the panel's I²C bus, SCL and SDA, and the touch
+injector's three wires to the same bus. The injector is a Waveshare
+RP2350-Zero of its own (`touch-injector/README.md`), not the bench RP2350.
+It answers at 0x14; the real controller stays at 0x5D.
 
 **Which two lines on the panel.** `BOARD_I2C_PIN_SDA` is GPIO8 and
 `BOARD_I2C_PIN_SCL` is GPIO9, on `I2C_NUM_0` at `BOARD_I2C_FREQ_HZ`
-(400,000 Hz) -- `firmware/panel/components/board/include/board_pins.h`. That
-is the bus; **where it is brought out is not documented in this tree.** No
-page here gives a connector, a pad or a pin order for it, so this step and
-every step after it wait on that being established against the board in hand
-and written down beside the J8 heartbeat pin. Guessing a pad and finding out
-later means every capture in this section was of something else.
+(400,000 Hz) -- `firmware/panel/components/board/include/board_pins.h`. The
+bus is brought out on the panel's 4-pin PH2.0 I²C connector:
+1 I2C_VCC, 2 GND, 3 SDA, 4 SCL, as `docs/Building.md` gives it. Check the
+order with a meter against the board in hand before the first lead goes on.
+
+| RP2350-Zero | Goes to | Notes |
+|---|---|---|
+| GP4 | connector pin 3, SDA | an input until confirmed, then I²C0 SDA, open drain |
+| GP5 | connector pin 4, SCL | an input until confirmed, then I²C0 SCL, open drain |
+| GND | the star point | short wire; see below |
+| GP6 | not connected | reserved for the GT911 INT line |
+| GP7 | not connected | reserved for a panel reset sense |
+| 3V3 | not connected | the Zero runs from its own USB port |
+
+No pull-up is added on the Zero: the panel's bus has its own, and a second
+set changes the rise time on a bus this bench measures. The injector enables
+none.
+
+**The injector's ground is the one exception to section 1.** The Zero is
+powered and driven over USB from the Pi, so its ground reaches the star a
+second time through the Pi. No isolator sits in that lead, and the second
+ground path is accepted for this lead alone. Keep its GND wire short and run
+it to the star point, not to the panel's connector pin 2.
 
 400 kHz is also what sets the capture rate below: 4 MHz is ten samples a bit.
 
@@ -365,32 +369,28 @@ late costs nothing. Without it the window has to be hit by hand, and a miss
 reads as a bus with nothing on it.
 
 Decoded as I²C, it shows the panel addressing 0x5D and the real controller
-answering. That is the correct result today: the panel does not yet ask for
-0x14, so this says the probes are on the right two lines and nothing about the
-emulator.
+answering. That says the probes are on the right two lines. With the injector
+still listening, nothing answers at 0x14.
 
-**Check, two: the emulator's own leads.** The capture above passes with the
-emulator unplugged, or with its two leads swapped, and the fault would then
-surface only when the panel starts probing 0x14 -- one firmware change and
-many steps later.
+**Check, two: the injector's own leads.** After every reset the injector only
+listens: GP4 and GP5 are inputs and it acknowledges nothing. With the panel
+running, open its port on the Pi and ask:
 
-So make the emulator prove each lead, one at a time, while the panel is idle.
-**A repeating stimulus, not one pass of it**: a single pull is over before
-`capture.sh` is asked for samples, and the trace then reads as a bus with
-nothing on it whichever way the leads are wired. Have the emulator loop --
-SDA low 5 ms, release, SCL low 20 ms, release, once every 200 ms -- and leave
-it looping until the capture returns.
+    ping      ->  pong rcbench-touch 1 addr=0x14 res=800x480 state=listen
+    wiring    ->  ok wiring
+              ->  wiring ok scl=GP5 sda=GP4 tx=<n> agree=<pct> rate=<Msps>
 
-    testbench/host/capture.sh touch-leads D9,D10 1m 2m 1.65
+`wiring` listens to the panel's polling for 500 ms and names the line that
+carries SCL from the START and STOP conditions. `swapped` means the two
+leads are crossed: swap them and ask again. `idle` means no traffic, `low`
+names a line held low, and `noise` means no verdict. Only after `ok`:
 
-1 MHz over 2m samples is 2 s, which holds ten cycles, so no phase of the loop
-can fall outside it. The two pulls are different lengths so that one of them
-on its own says which line it is: 5 ms is SDA and 20 ms is SCL, without having
-to find the start of a cycle. The line it was told to pull is the line that
-moves. If the 5 ms pull appears on SCL the leads are swapped; if neither moves,
-the lead is not on the bus. Do this before the panel's touch is in use -- a
-line held low during a transaction costs that transaction, which is a missed
-touch sample and nothing worse.
+    confirm scl=GP5  ->  ok confirm
+
+The injector then answers at 0x14. A panel image built with
+`RCBENCH_TOUCH_INJECTOR=ON` finds it at its next start: pulse its RESET, and
+the status band's MODE chip reads `INJECT`. Capture one again: the decode now
+shows 0x14 polled after every read of 0x5D.
 
 ---
 
@@ -797,7 +797,7 @@ show:
    the servo and ESC power path -- so the path can be checked against
    `docs/Safety.md` rather than taken on trust.
 6. **The panel's touch connector**, close enough to read the silkscreen, with
-   the tap and the emulator's leads.
+   the tap and the injector's leads.
 7. **The coprocessor and its transceiver**, close enough to identify RXCAN.
 8. **The analyser's probe ends**, labelled, against the channel map.
 9. **One frame from the camera**, showing the splash, so the calibration can
