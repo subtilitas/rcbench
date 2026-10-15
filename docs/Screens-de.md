@@ -1799,6 +1799,12 @@ Aktuelle Einschränkungen:
 - Die Seite ist einfaches HTTP (Hypertext Transfer Protocol). Im Heimnetz
   gehen der Zugangscode und jede Datei unverschlüsselt durchs Netz. Der
   Bildschirm sagt es, solange das Panel verbunden ist.
+- Ein hochgeladenes Image wird gegen seinen eigenen SHA-256 geprüft, nicht
+  gegen eine Signatur. Jedes Image, das als `rcbench-panel` für den ESP32-S3
+  gebaut ist, wird nach dem 2-s-Halten installiert, und im Heimnetz kann ein
+  Gerät zwischen Browser und Panel das Image unterwegs austauschen. Das
+  Koprozessor-Image, das ein Panel-Image mitbringt, kommt mit und wird dem
+  Koprozessor beim nächsten Link-up angeboten.
 - Das Panel ist nur verbunden, solange dieser Bildschirm offen ist. Ein
   Panel, das immer verbunden bleibt, solange der Prüfstand SAFE ist, ist
   nicht gebaut.
@@ -1878,11 +1884,12 @@ angeboten. Der Build, der schon läuft, wird nicht angeboten:
 ![Der Build, der läuft](img/de/wifi-installed.png)
 
 INSTALL ist 2 s Halten (`2 s HALTEN: INSTALL`). Der Browser kann es nicht
-starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf
-und keine Platinenzeichnung, die geladen oder gespeichert wird. ABBRECHEN
-verwirft das Image.
+starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf,
+keine Platinenzeichnung, die geladen oder gespeichert wird, und kein
+laufendes Update des Koprozessors (`Installation wartet: das Update des
+Koprozessors läuft.`). ABBRECHEN verwirft das Image.
 
-![Schreiben](img/de/update.png)
+![Schreiben](img/de/panel-update.png)
 
 Das Halten schaltet zuerst den Funk aus. Dann stoppt der Control-Task seine
 Abfragen und hält den Heartbeat absichtlich zurück, sodass der Koprozessor
@@ -1894,14 +1901,14 @@ Bild kann gestört sein, während der Flash gelöscht wird. Dann wird der Slot
 zurückgelesen und geprüft, er wird der Slot, der startet, und das Panel
 startet neu.
 
-![Geschrieben und geprüft](img/de/update-done.png)
+![Geschrieben und geprüft](img/de/panel-update-done.png)
 
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.19.0 installiert`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
 zu LOGS.
 
-![Das Schreiben schlug fehl](img/de/update-failed.png)
+![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
 Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
 Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
@@ -2367,6 +2374,74 @@ gar keine Konsole.
 
 [Den Link in Betrieb nehmen](Link-de.md) hat die Urteile und was jedes
 bedeutet.
+
+## Koprozessor-Update
+
+Ein Panel, das mit dem Image des Koprozessors gebaut ist, bringt es mit und
+bietet es an, wenn der Koprozessor einen anderen Build laufen hat. Die
+Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
+Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
+`Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`, und
+die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
+Ausgang der Versorgung aus, der Funk des Panels ganz aus und
+keine Installation eines Panel-Images im Gang. Ein START, während eines
+davon gilt, verfällt, und die Frage öffnet sich wieder, sobald beides vorbei
+ist.
+
+![Die Frage zum Koprozessor-Update](img/de/coproc-update.png)
+
+Die Frage nennt die Version, die der Koprozessor laufen hat, und die Version,
+die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
+und das Panel fragt für diese Koprozessor-Version nicht noch einmal, bis es
+neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab. START
+braucht das 2-s-Halten, die ARM-Geste mit demselben Überblenden.
+
+Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Das Image
+dieses Panels ist älter.` in der Warnfarbe, und START braucht dasselbe
+Halten.
+
+![Ein älteres Image](img/de/coproc-update-older.png)
+
+Sobald das Halten von START vollständig ist, gehört das Panel dem Update: der
+Link zum Koprozessor geht herunter, die Ausgänge sind aus, der Koprozessor
+lehnt ARM bis zum Ende des Updates ab, und der Fortschritt füllt den
+Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
+hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+
+![Der Fortschritt](img/de/coproc-update-progress.png)
+
+| Schritt | Gezeigt, während |
+| --- | --- |
+| `Image wird vorbereitet` | das Panel das Image hasht, 8 KiB je Schritt |
+| `Image wird gesendet` | die Blöcke hinausgehen, je 64 Byte; der Balken und `Block 1497 von 2994, 50 %` zählen sie |
+| `Koprozessor prüft das Image` | der Koprozessor den geschriebenen Slot hasht |
+| `Koprozessor startet das neue Image` | er in den neuen Slot neu startet, auf Probe |
+| `Neues Image wird behalten` | das Panel die Identität des neuen Images liest und BUY schreibt |
+
+Der Bildschirm kehrt zum Menü zurück, wenn das Update endet. Das Alarmband
+sagt dann, wie es endete:
+
+| Alarm | Bedeutung |
+| --- | --- |
+| `Koprozessor auf 0.18.0 aktualisiert` | das neue Image läuft und bleibt |
+| `Koprozessor-Update abgebrochen: keine Antwort -- das alte Image läuft` | 4 s lang hat nichts geantwortet |
+| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6 -- das alte Image läuft` | der Koprozessor hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
+| `Koprozessor-Update abgebrochen: Image-Prüfung fehlgeschlagen -- das alte Image läuft` | der SHA-256 des Slots ist nicht der des Images |
+| `Koprozessor-Update abgebrochen: Flash blieb belegt -- das alte Image läuft` | die Sperre des Speichers blieb 10 s zu |
+| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet -- das alte Image läuft` | drei Anläufe ab Block 0 |
+| `Koprozessor-Update abgebrochen: neues Image startete nicht -- das alte Image läuft` | keine Identität vom neuen Image innerhalb 12 s; das Boot-ROM kehrt zum alten zurück |
+| `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` | ein Koprozessor ohne die Update-Pages oder ohne die Partitionstabelle ([Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors)) |
+| `Neues Image des Koprozessors behalten` | ein beim Link-up gefundenes Image auf Probe wurde behalten |
+
+Ausschalten während des Updates: der Koprozessor startet sein altes Image,
+und das nächste Link-up bietet das Update wieder an. Das Update schreibt den
+Slot, aus dem der Koprozessor nicht läuft.
+[Link](Link-de.md#firmware-update-über-den-link) hat die Übertragung, die
+Aufteilung des Flash und die Grenzen. Die Dauer der Übertragung ist nicht
+gemessen.
+
+Die Frage öffnet sich vom Menü aus, nicht von LOGS: das Angebot kommt mit dem
+Link, und LOGS gehört der SD-Karte.
 
 ## Outputs
 

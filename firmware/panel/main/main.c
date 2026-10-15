@@ -65,6 +65,7 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "link_port.h"
+#include "link_update_host.h"
 #include "log_name.h"
 #include "log_select.h"
 #include "log_cadence.h"
@@ -93,6 +94,7 @@
 #include "knob.h"
 #include "knob_task.h"
 #include "log_viewer_screen.h"
+#include "coproc_update_screen.h"
 #include "storage.h"
 #include "telemetry_sim.h"
 #include "touch_loss.h"
@@ -393,6 +395,15 @@ static void beat(bool alive)
  */
 static atomic_bool s_fw_quiet_req;
 static atomic_bool s_fw_quiet_ack;
+/*
+ * An install and the coprocessor's update exclude each other.  An install
+ * says so from INSTALL's hold until its write has failed (s_fw_installing);
+ * the control task says so for an update, and for the BUY of an image on
+ * trial (s_cu_busy).  Each side stores its own flag before it reads the
+ * other's, so of two starting at once at least one sees the other.
+ */
+static atomic_bool s_fw_installing;
+static atomic_bool s_cu_busy;
 /* What the start check found, for the band once the splash has gone. */
 static char        s_boot_alert[ALERT_MAX];
 /* False when wifi_access_init() failed: no call into wifi_access then. */
@@ -594,6 +605,23 @@ typedef struct {
 static QueueHandle_t     s_win_q;     /**< control task -> app_main */
 static SemaphoreHandle_t s_snap_lock;
 
+/*
+ * The coprocessor's update as the render side needs it: an offer, numbered,
+ * with the version the coprocessor runs; while an update runs, its step and
+ * blocks; and the STARTs the control task has taken, so a progress screen
+ * whose START was spent leaves.
+ */
+typedef struct {
+    uint32_t     offer_gen;
+    bool         offered;
+    cu_version_t running;
+    bool         active;
+    uint8_t      step;      /* a cu_step_t */
+    uint16_t     block;
+    uint16_t     blocks;
+    uint32_t     starts_taken;
+} cu_snap_t;
+
 /* What the screen reads.  Written by the control task, copied by app_main. */
 static struct {
     bench_state_t bench;
@@ -635,6 +663,8 @@ static struct {
     uint32_t      servo_win_lost;
     /* What the servo programmer's model is fed; see kst_publish(). */
     kst_prog_feed_t kst;
+    /* The coprocessor's update; see cu_service(). */
+    cu_snap_t     cu;
 } s_snap;
 
 static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
@@ -7068,6 +7098,8 @@ static bool poll_bench(bench_state_t *bench)
  */
 /* A protocol mismatch has been reported and has not ended since. */
 static bool s_mismatch_told;
+/* The coprocessor update's check, for a coprocessor that just answered. */
+static void cu_link_up(const link_msg_t *reply);
 
 static bool probe_identity(link_msg_t *reply)
 {
@@ -7109,6 +7141,10 @@ static bool probe_identity(link_msg_t *reply)
                      (unsigned)LINK_PROTOCOL_MAJOR);
             control_alert(TR(ALERT_MISMATCH));
             s_mismatch_told = true;
+            /* The identity registers and the update pages answer across
+             * majors (link_pages.h), so a coprocessor this panel cannot
+             * drive can still be moved to the image it carries. */
+            cu_link_up(reply);
         }
         answered = false;
     } else {
@@ -7428,6 +7464,9 @@ static void link_came_up(const link_msg_t *reply)
      * are different things, and only one of them is driving pins.
      */
     read_outputs_binding();
+
+    /* And whether it runs the image this panel carries. */
+    cu_link_up(reply);
 }
 
 /*
@@ -7772,6 +7811,369 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
     }
 }
 
+/* -------------------------------------------- the coprocessor's update */
+
+/*
+ * The coprocessor image this panel carries: the release's own, embedded by
+ * the build option RCBENCH_IOMCU_BIN (main/CMakeLists.txt).  A build without
+ * it carries none and offers no update.
+ */
+#ifdef RCBENCH_IOMCU_IMAGE
+extern const uint8_t _binary_rcbench_iomcu_bin_start[];
+extern const uint8_t _binary_rcbench_iomcu_bin_end[];
+#define CU_IMG _binary_rcbench_iomcu_bin_start
+#define CU_LEN ((uint32_t)(_binary_rcbench_iomcu_bin_end \
+                           - _binary_rcbench_iomcu_bin_start))
+#else
+#define CU_IMG ((const uint8_t *)NULL)
+#define CU_LEN 0u
+#endif
+
+/* Steps run back to back in one pass of the control task while an update
+ * sends: a block is 9 exchanges, and the pass's own work and its 5 ms
+ * delay come between two slices. */
+#define CU_SLICE_MS 20u
+
+typedef enum {
+    CU_IDLE = 0,
+    CU_CHECKING,    /* does it run the carried build: link_uph_check()   */
+    CU_OFFERED,     /* it does not; the question waits for START         */
+    CU_DECLINED,    /* CANCEL, until the next link-up                    */
+    CU_UPDATING,    /* link_uph_update(): the link is the update's       */
+    CU_CONFIRMING,  /* an image found on trial is bought                 */
+} cu_state_t;
+
+/* Control task only. */
+static link_uph_t s_cu;
+static cu_state_t s_cu_state;
+static cu_version_t s_cu_running;
+static bool       s_cu_missed;     /* the update's last exchange went unanswered */
+static bool       s_cu_took_down;  /* the update has taken the link down  */
+static uint32_t   s_cu_starts_taken;
+/* CANCEL holds for the version it was given for, until the panel restarts. */
+static bool         s_cu_declined;
+static cu_version_t s_cu_declined_for;
+/* Render side -> control task: STARTs given on the question, and the offer
+ * the question was declined for (its offer_gen; 0 none). */
+static atomic_uint s_cu_starts;
+static atomic_uint s_cu_declined_gen;
+/* Control task: the offer_gen of the offer published last. */
+static uint32_t    s_cu_offer_gen;
+
+/* Control task: every change of s_cu_state, and with it s_cu_busy. */
+static void cu_enter(cu_state_t st)
+{
+    s_cu_state = st;
+    atomic_store(&s_cu_busy, st == CU_UPDATING || st == CU_CONFIRMING);
+}
+
+/* Whether the update may start: see fw_coproc_may_start().  From any task. */
+static bool cu_may_start(void)
+{
+    return fw_coproc_may_start(!s_wifi_ok || wifi_access_down(),
+                               atomic_load(&s_fw_installing));
+}
+
+static cu_version_t cu_carried(void)
+{
+    return (cu_version_t){ RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR,
+                           RCBENCH_VERSION_PATCH };
+}
+
+/*
+ * The update's own wire: exchange() after the bus has been asked back.  A
+ * coprocessor that restarts answers nothing for a few hundred milliseconds,
+ * and a transmitter nobody acknowledges is off the bus in about 4 ms and
+ * does not come back on its own (probe_identity()).  Asked only after an
+ * exchange went unanswered, so a block costs no status read.
+ */
+static bool cu_port_exchange(void *ctx, link_host_t *host,
+                             const link_msg_t *req, link_msg_t *reply)
+{
+    (void)ctx;
+    if (s_cu_missed && can_twai_recover() == CAN_TWAI_RECOVERING) {
+        ++s_recoveries;
+        ++s_recoveries_total;
+    }
+    s_cu_missed = !exchange(host, req, reply);
+    return !s_cu_missed;
+}
+
+static const link_port_t k_cu_port = {
+    cu_port_exchange, port_now, NULL, port_between,
+};
+
+static void cu_publish_offer(bool offered)
+{
+    snap_lock();
+    s_snap.cu.offered = offered;
+    s_snap.cu.running = s_cu_running;
+    s_snap.cu.starts_taken = s_cu_starts_taken;
+    if (offered) {
+        ++s_snap.cu.offer_gen;
+    }
+    s_cu_offer_gen = s_snap.cu.offer_gen;
+    snap_unlock();
+}
+
+static cu_step_t cu_step_of(uint8_t phase)
+{
+    switch (phase) {
+    case LINK_UPH_BEGIN:
+    case LINK_UPH_SEND:
+    case LINK_UPH_RESYNC:
+    case LINK_UPH_FINISH:      return CU_STEP_SEND;
+    case LINK_UPH_VERIFY:
+    case LINK_UPH_ACTIVATE:    return CU_STEP_VERIFY;
+    case LINK_UPH_RESTARTING:  return CU_STEP_RESTART;
+    case LINK_UPH_BUY:
+    case LINK_UPH_DONE:        return CU_STEP_BUY;
+    case LINK_UPH_PREPARE:
+    default:                   return CU_STEP_PREPARE;
+    }
+}
+
+static void cu_publish_progress(bool active)
+{
+    snap_lock();
+    s_snap.cu.active = active;
+    s_snap.cu.step   = (uint8_t)cu_step_of(s_cu.phase);
+    s_snap.cu.block  = s_cu.block;
+    s_snap.cu.blocks = s_cu.blocks;
+    s_snap.cu.starts_taken = s_cu_starts_taken;
+    snap_unlock();
+}
+
+/*
+ * A coprocessor answered its identity: a link-up, or a probe from a
+ * coprocessor of another major.  Its build is checked against the carried
+ * image, whatever was decided for the coprocessor before it.
+ */
+static void cu_link_up(const link_msg_t *reply)
+{
+    if (CU_LEN == 0u || reply == NULL || s_cu_state == CU_UPDATING) {
+        return;
+    }
+    s_cu_running = (cu_version_t){ reply->regs[LINK_ID_FIRMWARE_MAJOR],
+                                   reply->regs[LINK_ID_FIRMWARE_MINOR],
+                                   reply->regs[LINK_ID_FIRMWARE_PATCH] };
+    cu_publish_offer(false);
+    link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
+    cu_enter(CU_CHECKING);
+}
+
+/* Why an update stopped, in the alert's words. */
+static void cu_alert_failed(void)
+{
+    char why[48];
+    switch (s_cu.result) {
+    case LINK_UPH_NO_ANSWER:
+        snprintf(why, sizeof(why), "%s", TR(CU_WHY_NO_ANSWER));
+        break;
+    case LINK_UPH_BAD_DIGEST:
+        snprintf(why, sizeof(why), "%s", TR(CU_WHY_DIGEST));
+        break;
+    case LINK_UPH_BUSY:
+        snprintf(why, sizeof(why), "%s", TR(CU_WHY_BUSY));
+        break;
+    case LINK_UPH_RESTARTED_OUT:
+        snprintf(why, sizeof(why), "%s", TR(CU_WHY_RESTARTS));
+        break;
+    case LINK_UPH_NOT_STARTED:
+        snprintf(why, sizeof(why), "%s", TR(CU_WHY_NOT_STARTED));
+        break;
+    case LINK_UPH_REFUSED:
+    default:
+        snprintf(why, sizeof(why), TR(CU_WHY_REFUSED),
+                 (unsigned)s_cu.error);
+        break;
+    }
+    char line[ALERT_MAX];
+    snprintf(line, sizeof(line), TR(ALERT_CU_FAILED), why);
+    control_alert(line);
+}
+
+/* The check has ended: what it found decides the offer. */
+static void cu_checked(void)
+{
+    switch (s_cu.result) {
+    case LINK_UPH_SAME:
+        ESP_LOGI(TAG, "coprocessor runs the build this panel carries");
+        cu_enter(CU_IDLE);
+        break;
+    case LINK_UPH_DIFFERENT:
+        if (s_cu_declined
+            && memcmp(&s_cu_declined_for, &s_cu_running,
+                      sizeof(s_cu_running)) == 0) {
+            ESP_LOGI(TAG, "coprocessor runs another build; its update was "
+                          "declined");
+            cu_enter(CU_DECLINED);
+            break;
+        }
+        ESP_LOGI(TAG, "coprocessor %u.%u.%u runs another build; %u.%u.%u "
+                      "offered", (unsigned)s_cu_running.major,
+                 (unsigned)s_cu_running.minor, (unsigned)s_cu_running.patch,
+                 (unsigned)RCBENCH_VERSION_MAJOR,
+                 (unsigned)RCBENCH_VERSION_MINOR,
+                 (unsigned)RCBENCH_VERSION_PATCH);
+        cu_enter(CU_OFFERED);
+        control_alert(TR(ALERT_CU_OFFER));
+        cu_publish_offer(true);
+        break;
+    case LINK_UPH_TRIAL:
+        /* A new image runs on trial, and answered: that is the condition
+         * for keeping it (link_pages.h), whichever panel sent it. */
+        ESP_LOGI(TAG, "coprocessor runs an image on trial; buying it");
+        link_uph_confirm(&s_cu, now_ms());
+        cu_enter(CU_CONFIRMING);
+        break;
+    case LINK_UPH_NEEDS_USB:
+        ESP_LOGW(TAG, "coprocessor takes no update over CAN");
+        control_alert(TR(ALERT_CU_USB));
+        cu_enter(CU_IDLE);
+        break;
+    default:
+        ESP_LOGW(TAG, "coprocessor build check ended %u, error %u",
+                 (unsigned)s_cu.result, (unsigned)s_cu.error);
+        cu_enter(CU_IDLE);
+        break;
+    }
+}
+
+/* The update has ended: the link goes back to the poll, which finds the
+ * coprocessor again by its identity. */
+static void cu_ended(void)
+{
+    if (s_cu.result == LINK_UPH_UPDATED) {
+        ESP_LOGI(TAG, "coprocessor updated to %u.%u.%u",
+                 (unsigned)RCBENCH_VERSION_MAJOR,
+                 (unsigned)RCBENCH_VERSION_MINOR,
+                 (unsigned)RCBENCH_VERSION_PATCH);
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), TR(ALERT_CU_DONE),
+                 (unsigned)RCBENCH_VERSION_MAJOR,
+                 (unsigned)RCBENCH_VERSION_MINOR,
+                 (unsigned)RCBENCH_VERSION_PATCH);
+        control_alert(line);
+    } else if (s_cu.result == LINK_UPH_NEEDS_USB) {
+        control_alert(TR(ALERT_CU_USB));
+    } else {
+        ESP_LOGW(TAG, "coprocessor update ended %u, error %u, block %u of %u",
+                 (unsigned)s_cu.result, (unsigned)s_cu.error,
+                 (unsigned)s_cu.block, (unsigned)s_cu.blocks);
+        cu_alert_failed();
+    }
+    cu_enter(CU_IDLE);
+    s_cu_took_down = false;
+    s_cu_missed = false;
+    /* The link-lost screen counts from here, not from the update's start:
+     * the poll finds the coprocessor inside its LINK_LOST_SCREEN_MS. */
+    if (atomic_load(&s_link_lost_ms) != 0u) {
+        atomic_store(&s_link_lost_ms, now_ms());
+    }
+    cu_publish_progress(false);
+}
+
+/*
+ * One pass of the update, before the poll.  Returns true while the update
+ * holds the link, and the poll is then not run.
+ *
+ * The check and the BUY of an image on trial share the link with the poll,
+ * one step a pass.  An update takes the link down first -- the poll's own
+ * edge, with everything that ends there: the arm, the supply, the pages'
+ * state -- and then runs alone for CU_SLICE_MS a pass.  The coprocessor
+ * refuses ARM for the whole session, and the panel shows no band.
+ */
+static bool cu_service(bool *link_up, bench_state_t *bench,
+                       uint32_t *last_poll, uint32_t *last_status)
+{
+    switch (s_cu_state) {
+    case CU_CHECKING:
+        if (link_uph_step(&s_cu, &s_host, &k_port) == LINK_UPH_DONE) {
+            cu_checked();
+        }
+        return false;
+    case CU_CONFIRMING:
+        if (link_uph_step(&s_cu, &s_host, &k_port) == LINK_UPH_DONE) {
+            if (s_cu.result == LINK_UPH_UPDATED) {
+                control_alert(TR(ALERT_CU_KEPT));
+            } else {
+                ESP_LOGW(TAG, "the image on trial was not bought: %u, "
+                              "error %u", (unsigned)s_cu.result,
+                         (unsigned)s_cu.error);
+            }
+            cu_enter(CU_IDLE);
+        }
+        return false;
+    case CU_OFFERED:
+        /* A decline counts for the offer it was given on only: one that
+         * crossed a newer link-up's check is for an offer gone. */
+        if (atomic_load(&s_cu_declined_gen) == s_cu_offer_gen) {
+            ESP_LOGI(TAG, "coprocessor update declined");
+            cu_enter(CU_DECLINED);
+            s_cu_declined = true;
+            s_cu_declined_for = s_cu_running;
+            cu_publish_offer(false);
+            return false;
+        }
+        if (atomic_load(&s_cu_starts) == s_cu_starts_taken) {
+            return false;
+        }
+        s_cu_starts_taken = atomic_load(&s_cu_starts);
+        /* Busy first, then the install's flag: see s_fw_installing. */
+        atomic_store(&s_cu_busy, true);
+        if (!cu_may_start()) {
+            /* The panel's radio is up or an install of the panel has
+             * begun: the START is spent and the offer made again, so the
+             * question opens once both have ended. */
+            ESP_LOGW(TAG, "coprocessor update refused: the radio is on or "
+                          "the panel installs");
+            atomic_store(&s_cu_busy, false);
+            cu_publish_offer(true);
+            return false;
+        }
+        ESP_LOGI(TAG, "coprocessor update: %lu bytes",
+                 (unsigned long)CU_LEN);
+        cu_publish_offer(false);
+        link_uph_update(&s_cu, CU_IMG, CU_LEN, now_ms());
+        cu_enter(CU_UPDATING);
+        s_cu_took_down = false;
+        s_cu_missed = false;
+        cu_publish_progress(true);
+        return true;
+    case CU_UPDATING:
+        break;
+    case CU_IDLE:
+    case CU_DECLINED:
+    default:
+        /* A START given while nothing is offered is spent. */
+        if (atomic_load(&s_cu_starts) != s_cu_starts_taken) {
+            s_cu_starts_taken = atomic_load(&s_cu_starts);
+            cu_publish_offer(false);
+        }
+        return false;
+    }
+
+    if (!s_cu_took_down) {
+        /* The poll's edge, once: s_link_quiet takes the link down at this
+         * poll without a request. */
+        if (*link_up) {
+            s_link_quiet = true;
+            (void)poll_far_end(link_up, bench, last_poll, last_status);
+        }
+        s_cu_took_down = true;
+    }
+    const uint32_t t0 = now_ms();
+    do {
+        if (link_uph_step(&s_cu, &s_host, &k_cu_port) == LINK_UPH_DONE) {
+            cu_ended();
+            return false;
+        }
+    } while ((uint32_t)(now_ms() - t0) < CU_SLICE_MS);
+    cu_publish_progress(true);
+    return true;
+}
+
 /*
  * Everything the bench does, at a fixed 5 ms on the core the renderer does
  * not use: touch, STOP, arming, the outputs, the link and the heartbeat.
@@ -7860,8 +8262,11 @@ static void control_task(void *arg)
         (void)link_host_tick(&s_host, now_ms());
 
         /* --- the far end, at 1 Hz until it answers ----------------------- */
-        bool new_sample = poll_far_end(&link_up, &bench, &last_poll,
-                                       &last_status);
+        bool new_sample = false;
+        if (!cu_service(&link_up, &bench, &last_poll, &last_status)) {
+            new_sample = poll_far_end(&link_up, &bench, &last_poll,
+                                      &last_status);
+        }
 
         advance_model_and_log(link_up, emitted, &sim, &bench, &new_sample);
 
@@ -8372,7 +8777,8 @@ static bool run_open_now(void)
 static fw_gate_t fw_gate_now(bool armed)
 {
     return fw_gate(armed, supply_live_or_coming(), run_open_now(),
-                   s_artbusy || atomic_load(&s_keeping));
+                   s_artbusy || atomic_load(&s_keeping),
+                   atomic_load(&s_cu_busy));
 }
 
 /* The update screen, drawn now: the install's loop runs no router tick. */
@@ -8408,6 +8814,8 @@ static void fw_install_run(void)
     if (!wifi_access_take(&img, &bytes, &info)) {
         return;
     }
+    /* Before the gate is read: see s_fw_installing. */
+    atomic_store(&s_fw_installing, true);
     ui_router_goto(SCREEN_UPDATE);
     (void)wifi_screen_take();        /* the screen's leave: radio off */
     update_frame(UPDATE_WRITING, info.version_text, 0u, bytes);
@@ -8459,6 +8867,7 @@ static void fw_install_run(void)
     ESP_LOGE(TAG, "install of %s failed: %s", info.version_text,
              fw_err_str((e != FW_OK) ? e : in.err));
     atomic_store(&s_fw_quiet_req, false);
+    atomic_store(&s_fw_installing, false);
     wifi_access_release();
     update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
 }
@@ -8605,6 +9014,37 @@ static void wifi_service(bool armed, uint32_t stops_now)
 }
 
 /* ------------------------------------------------------------------ main */
+
+/*
+ * The coprocessor update's screen, once a frame on the render side:
+ * coproc_update_drive() moves the router and drains the screen's latches,
+ * and its STARTs and decline go to the control task.
+ * @p unsafe: armed, an arm waiting, or the supply's output on or coming.
+ */
+static void cu_render_service(bool unsafe, const cu_snap_t *cs)
+{
+    static cu_driver_t driver;
+
+    const cu_feed_t feed = {
+        .offered      = cs->offered,
+        .offer_gen    = cs->offer_gen,
+        .active       = cs->active,
+        .step         = (cu_step_t)cs->step,
+        .block        = cs->block,
+        .blocks       = cs->blocks,
+        .starts_taken = cs->starts_taken,
+        .running      = cs->running,
+        .carried      = cu_carried(),
+    };
+    cu_hand_t hand;
+    coproc_update_drive(&driver, &feed, unsafe, &hand);
+    if (hand.starts > 0u) {
+        atomic_fetch_add(&s_cu_starts, hand.starts);
+    }
+    if (hand.decline) {
+        atomic_store(&s_cu_declined_gen, feed.offer_gen);
+    }
+}
 
 void app_main(void)
 {
@@ -9098,7 +9538,9 @@ void app_main(void)
         uint32_t run_seconds;
         char     alert[ALERT_MAX];
         bool     have_alert;
+        cu_snap_t cu;
         snap_lock();
+        cu          = s_snap.cu;
         bench       = s_snap.bench;
         link_up     = s_snap.link_up;
         faults      = s_snap.faults;
@@ -9122,6 +9564,7 @@ void app_main(void)
         /* The armed state this frame acted on, read before the touch was
          * dispatched; the band shows what the screens were told. */
         const bool armed = armed_now;
+        const bool cu_active = cu.active;
         const ui_bench_status_t status = {
             .link_up     = link_up,
             .armed       = armed,
@@ -9131,7 +9574,9 @@ void app_main(void)
             .faults      = faults,
             .run_seconds = run_seconds,
             .mode        = ui_band_mode(link_up),
-            .simulated   = bench_state_simulated(&bench),
+            /* Not over an update: the link is down for it, and the
+             * simulator that runs while it is down drives nothing shown. */
+            .simulated   = bench_state_simulated(&bench) && !cu_active,
             .capabilities = (uint16_t)atomic_load(&s_capabilities),
             .link_errors = link_errors,
             .link_refused = link_refused,
@@ -9162,6 +9607,18 @@ void app_main(void)
         }
 
         /*
+         * The coprocessor's update.  The question opens on the menu, on a
+         * bench that is SAFE with the supply off, the panel's radio wholly
+         * off and no install of the panel under way, once per offer; START
+         * and CANCEL go to the control task.  While the update runs the screen
+         * shows its progress, and the menu comes back when it has ended --
+         * the alert says how.
+         */
+        cu_render_service(armed || arm_wanted_now || supply_now
+                              || supply_live_or_coming() || !cu_may_start(),
+                          &cu);
+
+        /*
          * A link that was up and has been gone for LINK_LOST_SCREEN_MS says
          * so, with the controller's own counters on it.  The panel has no
          * console an operator can reach while the bench runs, so a fault it
@@ -9184,7 +9641,7 @@ void app_main(void)
          * passes, and the screen takes over on a link that is up.
          */
         const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-        if (!armed && !supply_now && !supply_seen && !supply_live_or_coming()
+        if (!armed && !cu_active && !supply_now && !supply_seen && !supply_live_or_coming()
             && lost_ms != 0u && !s_link_lost_shown
             && (uint32_t)(now_ms() - lost_ms) >= LINK_LOST_SCREEN_MS
             && ui_router_current() != SCREEN_SPLASH

@@ -115,8 +115,10 @@ jobs:
           SHA: ${{ steps.pin.outputs.sha }}
         run: python3 gate/tools/ci_gate.py --repo "$REPO" --sha "$SHA"
 
+  # Carries the coprocessor image the iomcu job built from the same commit,
+  # and offers it over CAN to a coprocessor running another build.
   panel:
-    needs: [version]
+    needs: [version, iomcu]
     name: Panel image
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -125,6 +127,13 @@ jobs:
         with:
           # The commit the version job pinned, not the tag again.
           ref: ${{ needs.version.outputs.sha }}
+
+      # Inside firmware/panel, the directory the build runs in, so the
+      # container sees it under the same relative path.
+      - uses: actions/download-artifact@v7
+        with:
+          name: iomcu
+          path: firmware/panel/iomcu-image
 
       - name: Build
         uses: espressif/esp-idf-ci-action@v1
@@ -135,7 +144,9 @@ jobs:
           # A single image flashable at 0x0, as well as the three parts.
           # Flashing bootloader, partition table and app at three offsets is
           # three chances to get an offset wrong; the merged one has none.
-          command: idf.py build && idf.py merge-bin -o rcbench-panel-merged.bin
+          command: >-
+            idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin build
+            && idf.py merge-bin -o rcbench-panel-merged.bin
 
       - uses: actions/upload-artifact@v7
         with:
@@ -200,6 +211,9 @@ jobs:
           name: iomcu
           path: |
             firmware/iomcu/build/rcbench-iomcu.uf2
+            firmware/iomcu/build/rcbench-iomcu-install.uf2
+            firmware/iomcu/build/rcbench-iomcu-pt.uf2
+            firmware/iomcu/build/rcbench-iomcu.bin
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
 

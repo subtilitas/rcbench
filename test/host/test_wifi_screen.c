@@ -166,6 +166,7 @@ TEST_CASE(the_view_enums_mirror_the_session_and_the_installer)
     CHECK_EQ((int)WIFI_GATE_SUPPLY, (int)FW_GATE_SUPPLY);
     CHECK_EQ((int)WIFI_GATE_RUN, (int)FW_GATE_RUN);
     CHECK_EQ((int)WIFI_GATE_DRAWING, (int)FW_GATE_DRAWING);
+    CHECK_EQ((int)WIFI_GATE_COPROC, (int)FW_GATE_COPROC);
     CHECK_EQ(WIFI_SSID_MAX, (int)WA_SSID_MAX);
     CHECK_EQ(WIFI_PASS_MAX, (int)WA_PASS_MAX);
     CHECK_EQ(WIFI_SCAN_ROWS, (int)WA_SCAN_MAX);
@@ -547,7 +548,8 @@ TEST_CASE(a_closed_install_gate_ends_and_refuses_the_hold)
     send(TOUCH_EVENT_UP, INSTALL_CX, Q_CY);
     CHECK_EQ(wifi_screen_take(), 0u);
     static const wifi_gate_t shut[] = { WIFI_GATE_ARMED, WIFI_GATE_SUPPLY,
-                                        WIFI_GATE_RUN, WIFI_GATE_DRAWING };
+                                        WIFI_GATE_RUN, WIFI_GATE_DRAWING,
+                                        WIFI_GATE_COPROC };
     for (size_t g = 0; g < sizeof(shut) / sizeof(shut[0]); ++g) {
         staged(WIFI_OFFER_NEWER, shut[g]);
         CHECK(render_lit() > 2000);

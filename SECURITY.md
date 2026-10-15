@@ -17,7 +17,10 @@ home network the code and the files cross the network unencrypted; the home
 network's password is kept unencrypted in NVS (non-volatile storage); an
 image is checked against its own SHA-256 (secure hash algorithm, 256 bits),
 not against a signature, so any image built as `rcbench-panel` for the
-ESP32-S3 installs. Two classes of report apply.
+ESP32-S3 installs, and on a home network a device between the browser and
+the panel can replace the image on its way; the coprocessor image a panel
+image carries comes with it and is offered to the coprocessor, after its own
+2 s hold, at the next link-up. Two classes of report apply.
 
 ## Unexpected output
 

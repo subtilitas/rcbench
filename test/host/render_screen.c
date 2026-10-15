@@ -27,6 +27,7 @@
 #include "busfault_screen.h"
 #include "ui_textkey.h"
 #include "wifi_screen.h"
+#include "coproc_update_screen.h"
 #include "sense_link.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -1155,9 +1156,10 @@ static ui_screen_id_t id_of(const char *name)
         { "outputs",    SCREEN_OUTPUTS },
         { "picker",     SCREEN_PICKER },
         { "busfault",   SCREEN_BUSFAULT },
+        { "coproc-update", SCREEN_COPROC_UPDATE },
         { "supply",     SCREEN_SUPPLY },
         { "wifi",       SCREEN_WIFI },
-        { "update",     SCREEN_UPDATE },
+        { "panel-update", SCREEN_UPDATE },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -1266,7 +1268,8 @@ static void pose_wifi(const char *view)
     } else if (strcmp(view, "wifi-question") == 0
                || strcmp(view, "wifi-older") == 0
                || strcmp(view, "wifi-rebuild") == 0
-               || strcmp(view, "wifi-installed") == 0) {
+               || strcmp(view, "wifi-installed") == 0
+               || strcmp(view, "wifi-coproc") == 0) {
         v.radio = WIFI_RADIO_AP;
         strcpy(v.pass, "k7mqx3ha");
         strcpy(v.code, "r4tcw9pe");
@@ -1277,6 +1280,8 @@ static void pose_wifi(const char *view)
             strcpy(v.new_ver, "0.17.0");
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
+        } else if (strcmp(view, "wifi-coproc") == 0) {
+            v.gate = WIFI_GATE_COPROC;
         } else if (strcmp(view, "wifi-rebuild") == 0) {
             strcpy(v.new_ver, RCBENCH_VERSION_STRING);
             v.offer = WIFI_OFFER_REBUILD;
@@ -1356,10 +1361,10 @@ static void pose_update(const char *view)
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
-    if (strcmp(view, "update-done") == 0) {
+    if (strcmp(view, "panel-update-done") == 0) {
         u.written = u.total;
         u.state = UPDATE_RESTARTING;
-    } else if (strcmp(view, "update-failed") == 0) {
+    } else if (strcmp(view, "panel-update-failed") == 0) {
         u.written = 262144u;
         u.state = UPDATE_FAILED;
     }
@@ -2402,6 +2407,24 @@ int main(int argc, char **argv)
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
+    if (id == SCREEN_COPROC_UPDATE) {
+        /* The question as a link-up poses it: a coprocessor on 0.17.0 and
+         * the image this panel carries; the older one with the two
+         * swapped.  The progress half way through the blocks of a
+         * 191,592-byte image. */
+        const cu_version_t old_v = { 0, 17, 0 };
+        const cu_version_t new_v = { RCBENCH_VERSION_MAJOR,
+                                     RCBENCH_VERSION_MINOR,
+                                     RCBENCH_VERSION_PATCH };
+        if (strcmp(view, "coproc-update-older") == 0) {
+            coproc_update_screen_offer(new_v, old_v);
+        } else {
+            coproc_update_screen_offer(old_v, new_v);
+        }
+        if (strcmp(view, "coproc-update-progress") == 0) {
+            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
+        }
+    }
     ui_router_goto(id);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);

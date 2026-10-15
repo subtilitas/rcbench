@@ -259,7 +259,7 @@ static void write_sparse(const char *name, const uint64_t *sizes, int n)
     wa_zip_len_init(&l);
     uint64_t offsets[8];
     uint32_t crcs[8];
-    char nm[8][8];
+    char nm[8][16];
     for (int i = 0; i < n; ++i) {
         snprintf(nm[i], sizeof(nm[i]), "f%d.bin", i);
         const size_t nl = strlen(nm[i]);

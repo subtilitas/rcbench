@@ -56,6 +56,9 @@ typedef enum {
     LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
     LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
+    /* Frozen: the same numbers, layout and meaning under every major. */
+    LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the coprocessor's own firmware update */
+    LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
 } link_page_id_t;
 
 /*
@@ -95,12 +98,23 @@ typedef enum {
  * panel reads ARTWORK from 4.20 only and draws an older coprocessor's board
  * from its shape page.  From 4.21 STATUS has 10 registers: registers 8 and
  * 9 count the CAN frames the coprocessor refused to decode; the panel asks
- * an older coprocessor for the 8 it has (LINK_ST_COUNT_V420).  A
+ * an older coprocessor for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
+ * UPDATE_CTL and UPDATE_DATA take a new coprocessor image over the link;
+ * an older coprocessor refuses both with LINK_NACK_BAD_PAGE, which the panel
+ * answers by saying a USB (Universal Serial Bus) load is needed.  A
  * coprocessor never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
+ *
+ * Frozen across majors.  Registers 0 to 6 of IDENTITY (LINK_ID_*) and the
+ * two update pages keep their numbers, their layout and their meaning under
+ * every later major, and a coprocessor of any later major answers them.  A
+ * panel reads them before it compares majors, so a panel and a coprocessor
+ * whose majors differ still find out what the other runs and can still move
+ * the coprocessor to the panel's own image.  Changing one of them is not a
+ * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 21u
+#define LINK_PROTOCOL_MINOR 22u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -158,6 +172,10 @@ typedef enum {
  *  page has LINK_ST_COUNT_V420 registers and refuses a longer read with
  *  LINK_NACK_BAD_RANGE. */
 #define LINK_MINOR_REFUSED 21u
+/** The first minor that serves UPDATE_CTL and UPDATE_DATA.  An older minor
+ *  refuses both with LINK_NACK_BAD_PAGE; it takes a new image over USB
+ *  only. */
+#define LINK_MINOR_UPDATE 22u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1784,6 +1802,156 @@ enum {
 
 /** Throttle is hundredths of a percent: 0..10000 inclusive. */
 #define LINK_THROTTLE_MAX 10000u
+
+/* ----------------------------------------------------------------- update */
+
+/*
+ * The coprocessor's firmware, written over the link into the flash slot it
+ * is not running from.  Frozen: see LINK_PROTOCOL_MAJOR.  The registers are
+ * versioned by LINK_UPD_VERSION in register 0, which only grows, and only by
+ * registers or commands added at the end.
+ *
+ * The flash holds two equal slots, A and B, behind the boot ROM's partition
+ * table.  The image goes to the slot that is not running, in 64-byte blocks
+ * (LINK_UPD_BLOCK_BYTES), strictly in order, each staged in UPDATE_DATA and
+ * then committed with its CRC-16 (cyclic redundancy check, link_crc() seeded
+ * LINK_CRC_INIT over the block's bytes).  The coprocessor writes a 4 KiB
+ * sector once its 64 blocks are in, and acknowledges the COMMIT that filled
+ * it only once the sector is erased and programmed.  The slot's first sector
+ * is erased at BEGIN and written last, at ACTIVATE, so a slot written in part
+ * holds no image the boot ROM would start.
+ *
+ * Once every block is in, FINISH compares the SHA-256 (Secure Hash
+ * Algorithm) of the slot with the digest the panel staged in UPDATE_DATA
+ * registers 0 to 15.  ACTIVATE writes the first sector, reads the whole
+ * sector back and restarts into the new slot as a flash update boot.  The
+ * image the panel sends carries the TBYB (try before you buy) flag, so the
+ * boot ROM starts it under a 16.7 s watchdog; it stays only when the panel
+ * reads its identity over the link and writes BUY.  Without the BUY the
+ * watchdog restarts the coprocessor into the slot it came from.
+ *
+ * A session runs from BEGIN to ACTIVATE, ABORT, a failure or a restart.
+ * While one runs, and while a BUY is pending, the coprocessor refuses ARM
+ * with LINK_NACK_NOT_ARMED.  BEGIN, COMMIT and ACTIVATE need the store's
+ * gate open -- the bank not driving, the supply's output off, no servo
+ * programming session -- and refuse with LINK_NACK_BUSY while it is shut.
+ * Five seconds (LINK_UPD_SILENCE_MS) without a request to UPDATE_CTL or
+ * UPDATE_DATA ends a session with LINK_UPD_ERR_LINK; the panel's ordinary
+ * polling does not keep one alive.  A restart ends it as well; the panel
+ * then starts again from block 0.  A panel that finds a session it did not
+ * start -- its own, from before it restarted -- ends it with ABORT.
+ *
+ * After a BUY the slot the image came from must hold no image the boot ROM
+ * could start, or a later normal boot may choose between two.  The
+ * coprocessor erases that slot's first sector: at the BUY when the gate is
+ * open, and otherwise, or after an erase that failed, once a second while
+ * the gate is open until the erase holds.  It owes the same erase after any
+ * start that finds the other slot's first sector written outside a session
+ * or a trial.  LINK_UPD_SLOT_OTHER says the erase is owed.  The BUY is
+ * acknowledged when the boot ROM took it, owed erase or not: the bought
+ * image is the one a normal boot prefers either way.
+ *
+ * A command is one frame: a write of 1 to 4 registers starting at
+ * LINK_UPD_CMD, the arguments after it.  Any other write to UPDATE_CTL is
+ * refused with LINK_NACK_READ_ONLY.  A command that does not fit the state
+ * is refused with LINK_NACK_BAD_VALUE and the reason in LINK_UPD_ERROR.
+ */
+enum {
+    LINK_UPD_VERSION     = 0,  /**< LINK_UPD_PROTOCOL; read-only            */
+    LINK_UPD_STATE       = 1,  /**< a link_upd_state_t                       */
+    LINK_UPD_ERROR       = 2,  /**< a link_upd_err_t: why the last refusal   */
+    LINK_UPD_SLOT        = 3,  /**< LINK_UPD_SLOT_* bits                     */
+    LINK_UPD_SLOT_SECTORS = 4, /**< 4 KiB sectors in one slot; 0 when none   */
+    LINK_UPD_NEXT_BLOCK  = 5,  /**< the block COMMIT takes next              */
+    LINK_UPD_SIZE_LO     = 6,  /**< bytes of the session's image, or of the  */
+    LINK_UPD_SIZE_HI     = 7,  /**<   running slot hashed by HASH_RUNNING     */
+    LINK_UPD_CMD         = 8,  /**< a link_upd_cmd_t; reads the last taken   */
+    LINK_UPD_ARG0        = 9,
+    LINK_UPD_ARG1        = 10,
+    LINK_UPD_ARG2        = 11,
+    LINK_UPD_DIGEST_OF   = 12, /**< a link_upd_digest_t: what DIGEST holds   */
+    /* 13 to 15 read 0. */
+    LINK_UPD_DIGEST      = 16, /**< 16 registers, 32 bytes, low byte first   */
+    LINK_UPD_COUNT       = 32,
+};
+
+/** The update registers' own version; it grows when a register or command
+ *  is added. */
+#define LINK_UPD_PROTOCOL 1u
+
+/** Bytes in a block, and registers in UPDATE_DATA. */
+#define LINK_UPD_BLOCK_BYTES 64u
+#define LINK_UPD_DATA_COUNT  32u
+/** Bytes in a flash sector, the unit of an erase. */
+#define LINK_UPD_SECTOR_BYTES 4096u
+/** UPDATE_DATA registers FINISH takes the expected SHA-256 from. */
+#define LINK_UPD_EXPECT_REGS 16u
+
+/** LINK_UPD_SLOT: the running slot in bits 0 to 3, and two flags. */
+#define LINK_UPD_SLOT_A      0x0000u
+#define LINK_UPD_SLOT_B      0x0001u
+/** No slot to write: no partition table, or not the one this build has. */
+#define LINK_UPD_SLOT_NONE   0x000Fu
+#define LINK_UPD_SLOT_MASK   0x000Fu
+/** The running image is on trial and waits for BUY. */
+#define LINK_UPD_SLOT_TRIAL  0x0100u
+/** The other slot's first sector still waits for its erase. */
+#define LINK_UPD_SLOT_OTHER  0x0200u
+
+typedef enum {
+    LINK_UPD_IDLE      = 0, /**< no session                                 */
+    LINK_UPD_HASHING   = 1, /**< HASH_RUNNING works through the slot        */
+    LINK_UPD_RECEIVING = 2, /**< BEGIN taken; blocks go in                  */
+    LINK_UPD_RECEIVED  = 3, /**< every block is in                          */
+    LINK_UPD_VERIFYING = 4, /**< FINISH hashes the slot                     */
+    LINK_UPD_VERIFIED  = 5, /**< the digest matched; ACTIVATE may go        */
+    LINK_UPD_FAILED    = 6, /**< LINK_UPD_ERROR says why; BEGIN starts over */
+    LINK_UPD_ACTIVATED = 7, /**< the first sector is in; restart follows    */
+} link_upd_state_t;
+
+typedef enum {
+    LINK_UPD_CMD_NONE         = 0,
+    /** SHA-256 of the running slot's first ARG0 | ARG1 << 16 bytes, with the
+     *  image's TBYB flag read as clear (link_update_image.h).  Idle only. */
+    LINK_UPD_CMD_HASH_RUNNING = 1,
+    /** A session for an image of ARG0 | ARG1 << 16 bytes: 1 to the slot. */
+    LINK_UPD_CMD_BEGIN        = 2,
+    /** UPDATE_DATA is block ARG0; ARG1 is its CRC-16.  The last block is
+     *  the image's remainder, its CRC over those bytes only.  The block
+     *  before LINK_UPD_NEXT_BLOCK again is acknowledged and not written. */
+    LINK_UPD_CMD_COMMIT       = 3,
+    /** UPDATE_DATA registers 0 to 15 hold the expected SHA-256. */
+    LINK_UPD_CMD_FINISH       = 4,
+    /** Write the first sector and restart into the new slot. */
+    LINK_UPD_CMD_ACTIVATE     = 5,
+    /** End the session; the slot is left without an image. */
+    LINK_UPD_CMD_ABORT        = 6,
+    /** Keep the image on trial.  Acknowledged with nothing to do when no
+     *  image is on trial. */
+    LINK_UPD_CMD_BUY          = 7,
+} link_upd_cmd_t;
+
+typedef enum {
+    LINK_UPD_ERR_NONE     = 0,
+    LINK_UPD_ERR_NO_SLOTS = 1,  /**< no partition table to write into        */
+    LINK_UPD_ERR_GATE     = 2,  /**< the store's gate is shut; try again     */
+    LINK_UPD_ERR_SIZE     = 3,  /**< 0, or larger than a slot                */
+    LINK_UPD_ERR_ORDER    = 4,  /**< not the block expected next             */
+    LINK_UPD_ERR_CRC      = 5,  /**< the staged block fails its CRC          */
+    LINK_UPD_ERR_FLASH    = 6,  /**< an erase, a program or a read-back      */
+    LINK_UPD_ERR_DIGEST   = 7,  /**< the slot's SHA-256 is not the one sent  */
+    LINK_UPD_ERR_STATE    = 8,  /**< the command does not fit the state      */
+    LINK_UPD_ERR_TRIAL    = 9,  /**< an image on trial: BUY it first         */
+    LINK_UPD_ERR_LINK     = 10, /**< the link went silent in a session       */
+    LINK_UPD_ERR_BUY      = 11, /**< the boot ROM refused the BUY            */
+    LINK_UPD_ERR_COMMAND  = 12, /**< no such command                         */
+} link_upd_err_t;
+
+typedef enum {
+    LINK_UPD_DIGEST_NONE    = 0,
+    LINK_UPD_DIGEST_RUNNING = 1, /**< HASH_RUNNING's, over SIZE bytes        */
+    LINK_UPD_DIGEST_IMAGE   = 2, /**< FINISH's, over the image written       */
+} link_upd_digest_t;
 
 #ifdef __cplusplus
 }

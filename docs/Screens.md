@@ -1638,6 +1638,12 @@ Current limitations:
 - The page is plain HTTP (hypertext transfer protocol). On a home network
   the access code and every file cross the network unencrypted. The screen
   says so while joined.
+- An uploaded image is checked against its own SHA-256, not against a
+  signature. Any image built as `rcbench-panel` for the ESP32-S3 installs
+  after the 2 s hold, and on a home network a device between the browser
+  and the panel can replace the image on its way. The coprocessor image a
+  panel image carries comes with it and is offered to the coprocessor at the
+  next link-up.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
 
@@ -1710,10 +1716,11 @@ that runs already is not offered:
 ![The build that runs](img/wifi-installed.png)
 
 INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
-It needs the bench SAFE, the supply output off, no log run open and no board
-drawing being fetched or kept. CANCEL drops the image.
+It needs the bench SAFE, the supply output off, no log run open, no board
+drawing being fetched or kept and no update of the coprocessor running
+(`Install waits: the coprocessor's update runs.`). CANCEL drops the image.
 
-![Writing](img/update.png)
+![Writing](img/panel-update.png)
 
 The hold switches the radio off first. Then the control task stops its polls
 and withholds the heartbeat on purpose, so the coprocessor holds its outputs
@@ -1724,13 +1731,13 @@ shows the bytes and the percentage. The picture can be disturbed while the
 flash is erased. Then the slot is read back and checked, it becomes the one
 that starts, and the panel restarts.
 
-![Written and checked](img/update-done.png)
+![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
 `panel firmware 0.19.0 installed`. A write that fails changes nothing that
 starts: the running build stays, and CLOSE goes back to LOGS.
 
-![The write failed](img/update-failed.png)
+![The write failed](img/panel-update-failed.png)
 
 A new build's first start is a trial. The build is kept once the display and
 touch are up. A start that does not get there, by a fault, a restart or a
@@ -2167,6 +2174,70 @@ enumerates and passes nothing in either direction, and the panel then has no
 console at all.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
+
+## Coprocessor update
+
+A panel built with the coprocessor's image carries it and offers it when the
+coprocessor runs another build. The check runs at every link-up and compares
+SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
+build raises the alert `coprocessor runs another build -- the menu offers its
+update`, and the question opens on the menu while the bench is SAFE, the
+supply's output is off, the panel's Wi-Fi radio is wholly off and no install
+of a panel image is under way. A START given while either holds is spent,
+and the question opens again once both have ended.
+
+![The coprocessor update question](img/coproc-update.png)
+
+The question names the version the coprocessor runs and the version this
+panel carries. CANCEL is a tap: the question closes, and the panel does not
+ask again for that coprocessor version until it restarts. Leaving the
+question another way declines the same way. START takes the 2 s hold, the
+ARM gesture and the same fade.
+
+An older image is offered too. The question then says `The image this panel
+carries is older.` in the warning colour, and START takes the same hold.
+
+![An older image](img/coproc-update-older.png)
+
+Once START's hold completes, the update has the panel to itself: the link to
+the coprocessor goes down, the outputs are off, the coprocessor refuses ARM
+until the update ends, and the progress fills the screen. It has no band and
+no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
+behind it.
+
+![The progress](img/coproc-update-progress.png)
+
+| Step | Shown while |
+| --- | --- |
+| `Preparing the image` | the panel hashes the image, 8 KiB a step |
+| `Sending the image` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
+| `Coprocessor checks the image` | the coprocessor hashes the slot it wrote |
+| `Coprocessor starts the new image` | it restarts into the new slot, on trial |
+| `Keeping the new image` | the panel reads the new image's identity and writes BUY |
+
+The screen returns to the menu when the update ends. The alert band then
+says how it ended:
+
+| Alert | Meaning |
+| --- | --- |
+| `coprocessor updated to 0.18.0` | the new image runs and is kept |
+| `coprocessor update stopped: no answer -- the old image runs` | nothing answered for 4 s |
+| `coprocessor update stopped: refused, error 6 -- the old image runs` | the coprocessor refused a step; the error numbers are in [Link](Link.md#the-pages) |
+| `coprocessor update stopped: image check failed -- the old image runs` | the SHA-256 of the slot is not the image's |
+| `coprocessor update stopped: flash stayed busy -- the old image runs` | the store's gate stayed shut for 10 s |
+| `coprocessor update stopped: coprocessor restarted 3 times -- the old image runs` | three starts from block 0 |
+| `coprocessor update stopped: new image did not start -- the old image runs` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
+| `coprocessor takes no update over CAN -- load it once over USB` | a coprocessor without the update pages or without the partition table ([First run](FirstRun.md#the-coprocessors-partition-table)) |
+| `coprocessor's new image kept` | an image found on trial at link-up was bought |
+
+Power off during the update: the coprocessor starts its old image, and the
+next link-up offers the update again. The update writes the slot the
+coprocessor does not run from. [Link](Link.md#firmware-update-over-the-link)
+has the transfer, the flash layout and the limits. The transfer time is not
+measured.
+
+The question opens from the menu rather than from LOGS: the offer comes with
+the link, and LOGS is about the SD card.
 
 ## Outputs
 

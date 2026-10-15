@@ -97,6 +97,10 @@ static struct {
     atomic_bool     abort;        /* requests under way end now         */
     atomic_bool     mdns_run;
     atomic_bool     down;
+    /* The session wants the radio: written under the lock, by a start and
+     * by the worker as it reads the session, so wifi_access_down() never
+     * sees a start that has not reached the radio as a radio off. */
+    atomic_bool     asked;
     atomic_bool     de;
 } s;
 
@@ -1035,6 +1039,7 @@ static void worker(void *arg)
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
         lock();
         const bool want = wa_radio(&s.w);
+        atomic_store(&s.asked, want);
         const uint32_t gen = s.gen;
         const wa_t w = s.w;
         const wa_conf_t c = s.conf;
@@ -1130,6 +1135,7 @@ wa_off_t wifi_access_start(wa_mode_t mode, wa_off_t gate)
     }
     const wa_off_t r = wa_start(&s.w, mode, gate, ms(), rand32, NULL);
     if (r == WA_OFF_NONE) {
+        atomic_store(&s.asked, true);
         ++s.gen;
         if (mode == WA_MODE_SCAN) {
             s.scanned = false;
@@ -1196,6 +1202,11 @@ void wifi_access_get(wifi_access_state_t *out)
     out->idle_left_ms = wa_idle_left(&s.w, ms());
     unlock();
     out->down = atomic_load(&s.down);
+}
+
+bool wifi_access_down(void)
+{
+    return atomic_load(&s.down) && !atomic_load(&s.asked);
 }
 
 bool wifi_access_save_net(const char *ssid, const char *pass)

@@ -80,6 +80,13 @@ bool wifi_access_tick(wa_off_t gate, bool stop, bool may_write);
 
 void wifi_access_get(wifi_access_state_t *out);
 
+/**
+ * Whether the radio is wholly off and no start of it is asked for; from
+ * any task, without the lock.  A start asked for counts as up from the
+ * call on, a close until the radio is off.
+ */
+bool wifi_access_down(void);
+
 /** Keep a home network; false when wa_conf_set_net() refuses it. */
 bool wifi_access_save_net(const char *ssid, const char *pass);
 /** FORGET: no home network, the access code on. */

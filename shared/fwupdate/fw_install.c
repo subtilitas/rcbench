@@ -10,7 +10,8 @@
 
 #include "flash_gate.h"
 
-fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing)
+fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing,
+                  bool coproc)
 {
     if (!flash_gate_open(armed, supply)) {
         return armed ? FW_GATE_ARMED : FW_GATE_SUPPLY;
@@ -18,7 +19,15 @@ fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing)
     if (run_open) {
         return FW_GATE_RUN;
     }
-    return drawing ? FW_GATE_DRAWING : FW_GATE_OPEN;
+    if (drawing) {
+        return FW_GATE_DRAWING;
+    }
+    return coproc ? FW_GATE_COPROC : FW_GATE_OPEN;
+}
+
+bool fw_coproc_may_start(bool radio_down, bool installing)
+{
+    return radio_down && !installing;
 }
 
 fw_err_t fw_install_begin(fw_install_t *in, const fw_flash_t *f,

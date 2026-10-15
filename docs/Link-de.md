@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.21. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.22. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -88,6 +88,15 @@ Panel protokolliert beide Majors und meldet `Protokoll passt nicht -- kein ARM`,
 und das Panel läuft wie ohne angeschlossenen Koprozessor. Panel und
 Koprozessor auf verschiedenen Seiten eines Major-Sprungs werden deshalb
 zusammen geflasht.
+
+Register 0 bis 6 von IDENTITY und die beiden Update-Pages, UPDATE_CTL (0xF0)
+und UPDATE_DATA (0xF1), sind eingefroren: sie behalten ihre Nummern, ihren
+Aufbau und ihre Bedeutung unter jeder späteren Major, und ein Koprozessor
+jeder späteren Major beantwortet sie. Eine Änderung an ihnen ist eine neue
+Page, keine Major-Änderung. Ein Panel, das auf eine andere Major trifft, liest
+deshalb trotzdem, was der Koprozessor laufen hat, und bietet sein eigenes
+Koprozessor-Image an
+([Firmware-Update über den Link](#firmware-update-über-den-link)).
 
 ### Kompatibilität
 
@@ -117,7 +126,11 @@ der Platine mit einem Hash über sie in Register 7 und 8, und das Panel liest
 ARTWORK erst ab 4.20 ([Die Zeichnung der Platine](#die-zeichnung-der-platine)).
 Ab 4.21 zählt STATUS in Register 8 und 9 die Frames, die der Koprozessor
 abgelehnt hat, und das Panel liest sie erst ab 4.21
-([Abgelehnte Frames](#abgelehnte-frames)).
+([Abgelehnte Frames](#abgelehnte-frames)). Ab 4.22 nehmen UPDATE_CTL und
+UPDATE_DATA ein neues Koprozessor-Image über den Link an; ein älterer
+Koprozessor lehnt beide mit BAD_PAGE ab, und das Panel sagt dann, dass ein
+USB-Laden (Universal Serial Bus) nötig ist
+([Firmware-Update über den Link](#firmware-update-über-den-link)).
 Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1312,6 +1325,8 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des Koprozessors gehalten |
+| 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des Koprozessors selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
+| 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
@@ -1710,6 +1725,210 @@ Koprozessors zum Panel, mit einem abgelehnten READ mit DLC 8, 0x0001FFFF
 und dem Überlauf, und liest eine 4.20-Page ohne sie. `test_text` prüft das
 Label: verborgen bei 0 und ohne Link, gezeigt über 0 auf Englisch und
 Deutsch. Der Screenshot `docs/img/de/motor-refused.png` zeigt die Zahl 37.
+
+### Firmware-Update über den Link
+
+Ab 4.22 schreibt das Panel ein neues Koprozessor-Image über CAN. Der
+Koprozessor ist ein RP2350; sein Boot-ROM hält zwei gleich große Image-Slots
+hinter einer Partitionstabelle und startet ein neues Image auf Probe, als
+TBYB (Try Before You Buy). Einen eigenen Bootloader hat der Prüfstand nicht.
+
+Der Flash des Koprozessors (Modul mit 4 MB, RP2350A):
+
+| Bereich | Größe | Vor 4.22 | Ab 4.22 |
+| --- | ---: | --- | --- |
+| 0x000000 bis 0x001FFF | 8 KiB | Image | Partitionstabelle |
+| 0x002000 bis 0x1FEFFF | 2036 KiB | Image | Slot A (Partition 0) |
+| 0x1FF000 bis 0x3FBFFF | 2036 KiB | Platz für das Image, ungenutzt | Slot B (Partition 1) |
+| 0x3FC000 bis 0x3FDFFF | 8 KiB | ungenutzt | Ausgangsspeicher, Datenpartition `store` (Partition 2) |
+| 0x3FE000 bis 0x3FFFFF | 8 KiB | Ausgangsspeicher | ungenutzt: einmal für alte Bindungen gelesen, nie geschrieben |
+
+Ein Slot hat 2.084.864 Byte, 509 Sektoren zu 4 KiB. Das Image von 0.18 hat
+etwa 192 KB, 9 % eines Slots. Der letzte Sektor bleibt ungenutzt, weil die
+Umgehung für RP2350-E10 beim Laden einer UF2 (USB Flashing Format) auf einen
+Chip der Stepping A2 ihn löschen kann. `firmware/iomcu/partitions.json` ist
+die Tabelle; der Build gibt ihre Offsets an den Code weiter und schlägt fehl,
+wenn das Image nicht in einen Slot passt.
+
+Der Speicher wird über seine Speicheradresse gelesen, durch das
+XIP-Fenster (Execute In Place), das weder übersetzt noch cacht
+(0x1C000000 + Offset): das Boot-ROM bildet den laufenden Slot auf 0x10000000
+ab, also ist 0x10000000 + Offset eine Adresse im Slot, nicht im Speicher.
+Ein Speicher ohne Eintrag liest einmal den alten Speicher bei 0x3FE000,
+sodass die Bindungen das USB-Laden überstehen, das die Tabelle schreibt. Das
+erste Speichern geht in den neuen Speicher.
+
+Ein Koprozessor ohne die Tabelle -- ein Build vor 4.22 oder ein 4.22-Image,
+allein über USB auf ein Modul ohne Tabelle geladen -- läuft wie bisher und
+meldet keine Slots: das Panel sagt dann, dass ein USB-Laden nötig ist. Das
+eine USB-Laden, das die Tabelle schreibt, steht in
+[Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors).
+
+#### Die Pages
+
+UPDATE_CTL (0xF0), 32 Register:
+
+| Register | Name | Bedeutung |
+| ---: | --- | --- |
+| 0 | `VERSION` | die eigene Version der Update-Register, 1; sie wächst, wenn am Ende ein Register oder Kommando hinzukommt |
+| 1 | `STATE` | 0 untätig, 1 hasht den laufenden Slot, 2 empfängt, 3 empfangen, 4 prüft, 5 geprüft, 6 fehlgeschlagen, 7 aktiviert |
+| 2 | `ERROR` | Grund der letzten Ablehnung: 0 keiner, 1 keine Slots, 2 Sperre zu, 3 Größe, 4 Reihenfolge, 5 CRC, 6 Flash, 7 Digest, 8 Zustand, 9 ein Image auf Probe, 10 Link still, 11 BUY abgelehnt, 12 kein solches Kommando |
+| 3 | `SLOT` | der laufende Slot in Bit 0 bis 3 (0 A, 1 B, 15 keiner); Bit 8 das laufende Image ist auf Probe und wartet auf BUY; Bit 9 der erste Sektor des anderen Slots wartet auf sein Löschen |
+| 4 | `SLOT_SECTORS` | Sektoren zu 4 KiB in einem Slot, 509; 0 ohne Tabelle |
+| 5 | `NEXT_BLOCK` | der Block, den COMMIT als nächsten nimmt |
+| 6, 7 | `SIZE` | Bytes des Images der Sitzung oder des laufenden Slots, den HASH_RUNNING hasht, niederwertige Hälfte zuerst |
+| 8 | `CMD` | ein Schreiben ist ein Kommando; ein Lesen gibt das zuletzt angenommene |
+| 9 bis 11 | `ARG0` bis `ARG2` | die Argumente des Kommandos |
+| 12 | `DIGEST_OF` | was `DIGEST` hält: 0 nichts, 1 den laufenden Slot, 2 das geschriebene Image |
+| 13 bis 15 | | lesen 0 |
+| 16 bis 31 | `DIGEST` | ein SHA-256-Digest (Secure Hash Algorithm), 32 Byte, in jedem Register das niederwertige Byte zuerst |
+
+Ein Kommando ist ein Frame: ein Schreiben von 1 bis 4 Registern ab Register
+8, die Argumente dahinter. Jedes andere Schreiben auf UPDATE_CTL wird mit
+READ_ONLY abgelehnt. Ein Kommando, das nicht zum Zustand passt, wird mit
+BAD_VALUE abgelehnt, der Grund steht in `ERROR`.
+
+| Kommando | Wert | Argumente | Wirkung |
+| --- | ---: | --- | --- |
+| HASH_RUNNING | 1 | Bytes, niederwertige und höherwertige Hälfte | SHA-256 der ersten Bytes des laufenden Slots, das TBYB-Flag als gelöscht gelesen; nur untätig |
+| BEGIN | 2 | Bytes des Images, niederwertige und höherwertige Hälfte | beginnt eine Sitzung: 1 Byte bis ein Slot, löscht den ersten Sektor des anderen Slots |
+| COMMIT | 3 | Blocknummer, CRC-16 | UPDATE_DATA ist dieser Block |
+| FINISH | 4 | | vergleicht den SHA-256 des Slots mit UPDATE_DATA Register 0 bis 15 |
+| ACTIVATE | 5 | | schreibt den ersten Sektor, liest ihn zurück und startet neu in den Slot |
+| ABORT | 6 | | beendet die Sitzung; der Slot hält kein Image |
+| BUY | 7 | | behält das Image auf Probe; ohne ein solches bestätigt, ohne etwas zu tun |
+
+UPDATE_DATA (0xF1) hält die 64 Byte eines Blocks in 32 Registern, in jedem
+Register das niederwertige Byte zuerst. Nichts auf beiden Pages übersteht
+einen Neustart.
+
+#### Die Übertragung
+
+1. Das Panel liest IDENTITY, dann UPDATE_CTL. BAD_PAGE auf UPDATE_CTL oder
+   `SLOT` 15 beendet hier: der Koprozessor nimmt Images nur über USB.
+2. Das Panel hasht das Image, das es mitbringt, 8 KiB je Schritt, und sendet
+   BEGIN mit seiner Größe.
+3. Für jeden 64-Byte-Block, der Reihe nach ab Block 0: 8 Daten-Frames in
+   UPDATE_DATA, dann COMMIT mit der Blocknummer und ihrem CRC-16 (Cyclic
+   Redundancy Check, CCITT-Polynom 0x1021 mit Startwert 0xFFFF, über die
+   Bytes des Blocks). Der letzte Block ist der Rest des Images, und sein CRC
+   deckt nur diese Bytes. Jeder Frame wartet auf seine Bestätigung; nichts
+   anderes ist unterwegs.
+4. Der Koprozessor puffert 64 Blöcke und schreibt einen 4-KiB-Sektor, wenn
+   der letzte davon committet. Dieses COMMIT wird erst beantwortet, wenn der
+   Sektor gelöscht und programmiert ist, etwa 19,2 ms.
+5. FINISH: der Koprozessor hasht den Slot wie geschrieben, mit dem ersten
+   Sektor, wie er sein wird, 1 KiB je Durchlauf, und vergleicht den Digest.
+6. ACTIVATE: der Koprozessor schreibt den ersten Sektor zuletzt, liest ihn
+   zurück, antwortet und startet 20 ms später als Flash-Update-Boot in den
+   neuen Slot.
+7. Das Boot-ROM prüft den SHA-256 des Images und startet es auf Probe unter
+   seinem Watchdog von 16,7 s. Das Panel wartet 500 ms, liest IDENTITY, bis
+   das neue Image antwortet, und schreibt BUY. Das Boot-ROM löscht das
+   TBYB-Flag im Flash. Danach löscht der Koprozessor den ersten Sektor des
+   Slots, aus dem er kam, sodass das Boot-ROM beim nächsten Start ein Image
+   zur Wahl hat. BUY wird bestätigt, sobald das Boot-ROM es angenommen hat.
+   Ein Löschen, das scheitert oder auf die Sperre des Speichers wartet, bleibt
+   offen: `SLOT` Bit 9 ist gesetzt, der Koprozessor versucht es einmal je
+   Sekunde erneut, solange die Sperre offen ist, und ein Start, der den
+   ersten Sektor des anderen Slots außerhalb einer Sitzung oder einer Probe
+   beschrieben findet, schuldet das Löschen erneut. Das Panel zeigt dafür
+   nichts an. Ein Koprozessor ohne eine Partitionstabelle, die er schreibt,
+   hat keinen anderen Slot und löscht nichts.
+
+Ein Block vor `NEXT_BLOCK` wird bestätigt und nicht noch einmal geschrieben:
+ein COMMIT, dessen Bestätigung verloren ging, wird folgenlos erneut gesendet.
+Jede andere Blocknummer wird mit ORDER abgelehnt. Ein Block, der seinen CRC
+nicht besteht, wird abgelehnt und bis zu 3-mal neu gesendet. Ein teilweise
+geschriebener Slot hält kein Image, das das Boot-ROM startet: der erste
+Sektor wird bei BEGIN gelöscht und bei ACTIVATE geschrieben.
+
+Das Image, das das Panel sendet, trägt das TBYB-Flag. Das Binary eines
+Builds trägt keines, also startet ein über USB geladenes Image als normaler
+Boot. Das Panel setzt das Flag in seiner Kopie beim Senden. Die
+picobin-Version des Images für das Boot-ROM ist 1000 x Major + Minor und
+Patch, 0.18.0 ist also Version 18.0.
+
+#### Grenzen und Fehler
+
+| Bedingung | Koprozessor | Panel |
+| --- | --- | --- |
+| eine Sitzung oder ein Image auf Probe | lehnt ARM mit NOT_ARMED ab; SAFE wird nie abgelehnt | zeigt den Fortschritt, kein Band |
+| Sperre des Speichers zu (Bank treibt, Ausgang der Versorgung an, Sitzung der Servo-Programmierung) | lehnt BEGIN, COMMIT und ACTIVATE mit BUSY ab | fragt erneut, gibt nach 10 s auf |
+| 5 s keine Anfrage an UPDATE_CTL oder UPDATE_DATA in einer Sitzung; Anfragen an andere Pages zählen nicht | beendet sie mit Fehler 10 | beginnt wieder bei Block 0 |
+| eine Sitzung bei der Prüfung gefunden, die dieses Panel vor einem Neustart oder einem verlorenen Link hinterlassen hat | mit ABORT beendet | prüft weiter: liest den Zustand erneut und fragt nach dem Hash |
+| ACTIVATED bei der Prüfung gefunden | startet innerhalb von 20 ms neu | liest erneut bis zum Neustart, gibt nach 10 s auf |
+| ein Neustart mitten in der Übertragung | die Sitzung ist weg | beginnt wieder bei Block 0, höchstens 3-mal |
+| 4 s keine Antwort | | gibt auf: `keine Antwort` |
+| SHA-256 passt bei FINISH nicht | Zustand fehlgeschlagen, Fehler 7 | `Image-Prüfung fehlgeschlagen`, das alte Image läuft |
+| kein BUY innerhalb 16,7 s nach dem Neustart | das Boot-ROM startet neu in den alten Slot | gibt nach 12 s auf: `neues Image startete nicht` |
+| Hash des laufenden Slots oder des Images | | gibt nach 10 s auf |
+
+Ein gescheitertes oder abgebrochenes Update lässt das alte Image laufen und
+den anderen Slot ohne Image. Das nächste Update schreibt ihn wieder ab
+Block 0.
+
+#### Welcher Build läuft
+
+Versionen allein erkennen keinen Entwicklungs-Build. Beim Link-up vergleicht
+das Panel den SHA-256 des mitgebrachten Images, das TBYB-Flag als gelöscht
+gelesen, mit HASH_RUNNING des Koprozessors über dieselbe Zahl von Bytes.
+
+| Ergebnis | Panel |
+| --- | --- |
+| gleich | nichts |
+| verschieden | der Alarm `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| ein Image auf Probe | schreibt sofort BUY und meldet `Neues Image des Koprozessors behalten` |
+| BAD_PAGE oder keine Slots | der Alarm `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` |
+
+Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
+Identitätsregister und die Update-Pages antworten über Majors hinweg, und das
+Update bringt den Koprozessor auf die Major des Panels. Ein CANCEL gilt für
+diese Version des Koprozessors, bis das Panel neu startet. Ein älteres
+mitgebrachtes Image wird ebenfalls angeboten; die Frage sagt das dann.
+[Screens](Screens-de.md#koprozessor-update) zeigt Frage und Fortschritt.
+
+Ein Panel, das ohne `RCBENCH_IOMCU_BIN` gebaut ist, bringt kein Image mit,
+prüft nichts und bietet nichts an.
+
+#### Zeit
+
+Für das Image von 0.18, 191.592 Byte: 2.994 Blöcke, 9 Exchanges je Block,
+26.946 Exchanges und 47 Sektoren. Ein Frame dauert bei 1 Mbit/s 131 bis
+160 µs, die Buszeit von Anfrage und Bestätigung ist also 7,1 bis 8,6 s, und
+das Schreiben der Sektoren fügt 0,9 s hinzu. Mit der Round Trip von 334 bis
+1400 µs aus [Budget](#budget) dauern die Exchanges 9,0 bis 37,7 s. Das ganze
+Update, die Hashes des Koprozessors und sein Neustart sind nicht gemessen.
+
+Der simulierte Koprozessor der Host-Suite führt ein Update in voller Größe
+mit dem Image von 0.18.0 (184.872 Byte, 2.889 Blöcke) in 26.104 Exchanges
+aus.
+
+#### Kompatibilität des Updates
+
+| Panel | Koprozessor | Verhalten |
+| --- | --- | --- |
+| 4.22 mit Image | 4.21 oder älter | BAD_PAGE: der USB-Alarm; der Link läuft wie bisher |
+| 4.22 mit Image | 4.22, ohne Tabelle | keine Slots: der USB-Alarm |
+| 4.22 mit Image | 4.22 oder spätere Minor, mit Tabelle | prüfen, anbieten, aktualisieren |
+| 4.22 mit Image | eine andere Major, 4.22 oder später | der Link bleibt unten; prüfen, anbieten, aktualisieren über die eingefrorenen Pages |
+| 4.21 oder älter | 4.22 | die Update-Pages werden nie gefragt; der Koprozessor läuft wie ein 4.21-Koprozessor |
+
+`test_link_update` führt die Pages des Koprozessors und die Engine des Panels
+über die Link-Schicht gegen einen simulierten Flash und ein simuliertes
+Boot-ROM aus: Block 0, der letzte Teilblock, ein Image von genau einem Slot
+und eines mit einem Byte mehr, ein CRC-Fehler, Blöcke außer der Reihe und
+wiederholt, ein Neustart mitten in der Übertragung, NACKs, ein Linkausfall,
+ARM während der Sitzung, eine geschlossene Sperre, ein falscher Digest, ein
+fehlendes BUY, das BAD_PAGE eines 4.21-Koprozessors sowie eine andere Minor
+und Major. Dazu kommen ein Neustart des Panels, der die Sitzung in RECEIVING,
+RECEIVED, VERIFYING und VERIFIED zurücklässt, während das gewöhnliche Polling
+läuft, eine Sitzung, mit der nur das gewöhnliche Polling spricht, eine
+Prüfung, die den fälligen Neustart findet oder einen Neustart, der nie kommt,
+ein ABORT bei der Prüfung, das verloren geht, abgelehnt wird oder nicht
+greift, und ein Löschen nach BUY, das scheitert oder auf die Sperre wartet, auch über einen
+Neustart hinweg. `test_link_sha256` prüft den Hash an den Vektoren aus FIPS 180-4.
+`test_link_pages` prüft die eingefrorenen Registernummern.
 
 ### Bit Timing
 

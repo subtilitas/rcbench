@@ -93,6 +93,7 @@ SOURCES = [
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
+    "shared/ui/coproc_update_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -346,6 +347,13 @@ SCREENS = {
     "supply-confirm": ("supply-confirm.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
+    # The coprocessor update: the question a link-up poses, the same with
+    # an image older than the one running, and the progress half way.
+    "coproc-update": ("coproc-update.png", "coproc-update", "dark"),
+    "coproc-update-older": ("coproc-update-older.png", "coproc-update",
+                            "dark"),
+    "coproc-update-progress": ("coproc-update-progress.png",
+                               "coproc-update", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
     "battery":    ("battery.png",    "battery",    "dark"),
     "balance":    ("balance.png",    "balance",    "dark"),
@@ -381,9 +389,10 @@ SCREENS = {
     "wifi-rebuild": ("wifi-rebuild.png", "wifi", "dark"),
     "wifi-installed": ("wifi-installed.png", "wifi", "dark"),
     # PANEL UPDATE: writing, written, failed.
-    "update": ("update.png", "update", "dark"),
-    "update-done": ("update-done.png", "update", "dark"),
-    "update-failed": ("update-failed.png", "update", "dark"),
+    "panel-update": ("panel-update.png", "panel-update", "dark"),
+    "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
+    "panel-update-failed": ("panel-update-failed.png", "panel-update",
+                            "dark"),
 }
 INCLUDES = [
     "shared/gfx/include",
@@ -442,7 +451,8 @@ MIN_SHAPE = 8
 
 # Views the fit check draws and no page shows: the band's other bubbles,
 # so every string of every bubble is measured where it is drawn, and the
-# Wi-Fi screen's failure lines.  The same
+# Wi-Fi screen's failure lines and its install question held by the
+# coprocessor's update.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
     "band-fault-all":   (None, "overview", "dark"),
@@ -456,6 +466,7 @@ FIT_ONLY = {
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-save-failed": (None, "wifi", "dark"),
+    "wifi-coproc":      (None, "wifi", "dark"),
 }
 
 # Views that open a drop-down or a chip's help bubble over the screen: the

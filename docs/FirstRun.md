@@ -44,7 +44,7 @@ than burning a track.
 ## 1. Flash both boards
 
 ```bash
-# coprocessor — produces rcbench-iomcu.uf2, copy it while holding BOOTSEL
+# coprocessor — produces rcbench-iomcu-install.uf2 and rcbench-iomcu.uf2
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
@@ -56,13 +56,59 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 The coprocessor build prints its own size check:
 
-    -- rcbench: image 184360 bytes, 4% of the 4186112 bytes a four-megabyte
-       module leaves below the store
+    -- rcbench: image 191592 bytes, 9% of the 2084864 bytes of one slot
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
 **4 MB**, while `PICO_BOARD` defaults to a board file claiming **16 MB**. The
 linker measures against 16 MB and will not warn. The line above is the only
 thing that will, so read it.
+
+### The coprocessor's partition table
+
+The coprocessor's flash carries a partition table: two image slots of
+2036 KiB each and the output store's own 8 KiB partition
+([Link](Link.md#firmware-update-over-the-link) has the layout). The panel
+sends later coprocessor images over CAN into the slot that is not running.
+A coprocessor loaded with an image of protocol 4.21 or older has no table
+and takes the table and its first image over USB, once.
+
+With the coprocessor's USB socket connected and BOOTSEL held at power-up, so
+the module shows its drive `RP2350`:
+
+```bash
+# drag and drop the file onto the drive, or:
+picotool load -v -x firmware/iomcu/build/rcbench-iomcu-install.uf2
+
+# check: partitions 0 (A), 1 (B) and 2 (store, data)
+picotool partition info
+```
+
+**Good:** the coprocessor's console prints `rcbench-iomcu: running from
+slot A` every 3 s. The bindings, the supply's wiring and the current
+monitors' set-up are read from the old store at 0x3FE000 until the first
+save writes the new one. `no partition table -- firmware updates over CAN
+need one USB load of rcbench-iomcu-install.uf2` means the image runs without
+the table: load `rcbench-iomcu-install.uf2` again.
+
+On an RP2350 of stepping A2 the load also writes the RP2350-E10 workaround
+block, which lands in the last 4 KiB sector of the 4 MB, 0x3FF000: the old
+store's second sector. Bindings whose newest save sits there are lost, and
+the newest save in 0x3FE000 comes back instead. Check OUTPUTS after the load.
+The stepping of the bring-up module is not known.
+
+With the table in place, `rcbench-iomcu.uf2` alone goes to the slot that is
+not running. Which slot a power-up starts when both slots hold an image of
+the same version is not stated in the RP2350 datasheet. The image that
+starts erases the other slot's first sector, so the choice holds and the
+other build is gone. To be certain which build runs after a development
+load, erase the other slot first:
+
+```bash
+picotool erase -p 1
+picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
+```
+
+### The panel's application slots
 
 **One flash over USB moves the panel to two application slots.** From this
 release the panel's flash holds two slots of 4,063,232 bytes, `ota_0` and

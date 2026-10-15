@@ -739,6 +739,8 @@ static void draw_question(gfx_canvas_t *c)
     if (s.v.offer != WIFI_OFFER_INSTALLED && s.v.gate != WIFI_GATE_OPEN) {
         if (s.v.gate == WIFI_GATE_DRAWING) {
             text_in(c, x, y, w, TR(WF_Q_DRAWING), UI_FONT_LABEL, UI_WARN);
+        } else if (s.v.gate == WIFI_GATE_COPROC) {
+            text_in(c, x, y, w, TR(WF_Q_COPROC), UI_FONT_LABEL, UI_WARN);
         } else {
             text_in(c, x, y, w, TR(WF_NEEDS_1), UI_FONT_LABEL, UI_WARN);
             text_in(c, x, y + 20, w, TR(WF_NEEDS_2), UI_FONT_LABEL, UI_WARN);

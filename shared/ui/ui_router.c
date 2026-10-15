@@ -3,6 +3,7 @@
  */
 
 #include "busfault_screen.h"
+#include "coproc_update_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
@@ -109,6 +110,7 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_BUSFAULT: return busfault_screen();
     case SCREEN_WIFI:     return wifi_screen();
     case SCREEN_UPDATE:   return update_screen();
+    case SCREEN_COPROC_UPDATE: return coproc_update_screen();
     default:              return overview_screen();
     }
 }
@@ -181,6 +183,7 @@ void ui_router_invalidate(void)
     outputs_screen_invalidate();
     picker_screen_invalidate();
     busfault_screen_invalidate();
+    coproc_update_screen_invalidate();
     supply_invalidate();
     wifi_screen_invalidate();
     update_screen_invalidate();
@@ -269,8 +272,16 @@ static bool has_band(ui_screen_id_t id)
 {
     /* The bus-fault screen carries none either. Its whole claim is that the
      * bench cannot be driven, and a STOP button on it would offer to stop
-     * something that is not running.  Nor does the firmware write, for the
-     * same reason: the bench is SAFE and the coprocessor in failsafe. */
+     * something that is not running.  Nor does the panel's firmware write,
+     * for the same reason: the bench is SAFE and the coprocessor in
+     * failsafe. */
+    if (id == SCREEN_COPROC_UPDATE) {
+        /* Nor does an update under way: the coprocessor refuses ARM for
+         * the whole session, so there is nothing for STOP to stop, and
+         * the menu would lead to screens that cannot reach it.  The
+         * question before it carries the band. */
+        return coproc_update_screen_view() == CU_VIEW_QUESTION;
+    }
     return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT
            && id != SCREEN_UPDATE;
 }

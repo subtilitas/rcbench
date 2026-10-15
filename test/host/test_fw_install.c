@@ -265,14 +265,29 @@ TEST_CASE(a_slot_that_will_not_open_writes_nothing)
 
 TEST_CASE(the_gate_names_the_first_reason_that_holds)
 {
-    CHECK_EQ(fw_gate(false, false, false, false), FW_GATE_OPEN);
-    CHECK_EQ(fw_gate(true, false, false, false), FW_GATE_ARMED);
-    CHECK_EQ(fw_gate(false, true, false, false), FW_GATE_SUPPLY);
-    CHECK_EQ(fw_gate(false, false, true, false), FW_GATE_RUN);
-    CHECK_EQ(fw_gate(false, false, false, true), FW_GATE_DRAWING);
-    CHECK_EQ(fw_gate(true, true, true, true), FW_GATE_ARMED);
-    CHECK_EQ(fw_gate(false, true, true, true), FW_GATE_SUPPLY);
-    CHECK_EQ(fw_gate(false, false, true, true), FW_GATE_RUN);
+    CHECK_EQ(fw_gate(false, false, false, false, false), FW_GATE_OPEN);
+    CHECK_EQ(fw_gate(true, false, false, false, false), FW_GATE_ARMED);
+    CHECK_EQ(fw_gate(false, true, false, false, false), FW_GATE_SUPPLY);
+    CHECK_EQ(fw_gate(false, false, true, false, false), FW_GATE_RUN);
+    CHECK_EQ(fw_gate(false, false, false, true, false), FW_GATE_DRAWING);
+    CHECK_EQ(fw_gate(false, false, false, false, true), FW_GATE_COPROC);
+    CHECK_EQ(fw_gate(true, true, true, true, true), FW_GATE_ARMED);
+    CHECK_EQ(fw_gate(false, true, true, true, true), FW_GATE_SUPPLY);
+    CHECK_EQ(fw_gate(false, false, true, true, true), FW_GATE_RUN);
+    CHECK_EQ(fw_gate(false, false, false, true, true), FW_GATE_DRAWING);
+}
+
+/* The coprocessor's update and the panel's install exclude each other:
+ * one running closes the other's gate, in both directions. */
+TEST_CASE(a_coprocessor_update_and_a_panel_install_exclude_each_other)
+{
+    CHECK(fw_coproc_may_start(true, false));
+    CHECK(!fw_coproc_may_start(false, false));   /* radio up or going down */
+    CHECK(!fw_coproc_may_start(true, true));     /* an install under way   */
+    CHECK(!fw_coproc_may_start(false, true));
+    /* and a coprocessor update closes the install's gate whatever else
+     * holds open */
+    CHECK(fw_gate(false, false, false, false, true) != FW_GATE_OPEN);
 }
 
 /* ------------------------------------------------------- the first start */
@@ -393,6 +408,7 @@ int main(void)
     RUN(a_finish_that_fails_leaves_the_boot_slot_alone);
     RUN(a_slot_that_will_not_open_writes_nothing);
     RUN(the_gate_names_the_first_reason_that_holds);
+    RUN(a_coprocessor_update_and_a_panel_install_exclude_each_other);
     RUN(a_first_start_with_display_and_touch_is_kept);
     RUN(a_first_start_without_touch_goes_back_and_is_never_kept);
     RUN(a_first_start_that_cannot_be_kept_says_so);
