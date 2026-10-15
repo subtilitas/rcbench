@@ -142,8 +142,14 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 | Marke | Bedeutung |
 | --- | --- |
-| SIMULIERT | den Bildschirm gibt es und er funktioniert, aber seine Hardware ist nicht bestückt; jeder Wert ist simuliert, und der Bildschirm sagt das |
-| keine | die Hardware ist bestückt, die Messwerte sind gemessen |
+| SIMULIERT | der Koprozessor meldet für den Bildschirm keine Fähigkeit, oder sein Sensor ist auf SETUP nicht aktiviert |
+| keine | der Koprozessor meldet die Fähigkeit, und der Sensor ist aktiviert |
+
+Die Marke ordnet nicht jeden Wert auf einem Bildschirm ein. ANALYSER und
+BATTERY tragen die Marke und zeigen keine Werte. SERVO ohne Marke zeigt das
+Versorgungsmodell des Panels als Messung der Servoschiene, wenn weder ein PD
+mini noch ein INA3221 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner
+Werte selbst.
 
 Die Marke wird aus den Capability-Bits abgeleitet, die der Koprozessor beim
 Hochfahren meldet. Ein Bildschirm ohne seine Hardware öffnet trotzdem und

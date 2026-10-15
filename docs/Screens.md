@@ -132,8 +132,13 @@ bottom of the screen, ARM included, while it shows.
 
 | Mark | Meaning |
 | --- | --- |
-| MODELLED | the screen exists and works, but its hardware is not fitted; every value is simulated and the screen says so |
-| none | the hardware is fitted and the readings are measured |
+| MODELLED | the coprocessor reports no capability for the screen, or its sensor is not enabled on SETUP |
+| none | the coprocessor reports the capability and the sensor is enabled |
+
+The mark does not classify each value on a screen. ANALYSER and BATTERY carry
+the mark and show no values. SERVO without the mark shows the panel's supply
+model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each
+screen names the source of its readings itself.
 
 The mark is derived from the capability bits the coprocessor reports at
 bring-up. A screen whose hardware is missing opens and runs from the model.

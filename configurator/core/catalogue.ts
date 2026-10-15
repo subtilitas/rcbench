@@ -1494,7 +1494,7 @@ const functions: Fn[] = [
     id: 'interlock', group: 'bench',
     name: t('ARM by a 2 s hold, DISARM and the heartbeat interlock', 'ARM durch 2 s Halten, DISARM und Heartbeat-Verriegelung'),
     // Arming works on the bring-up bench. The decision to arm is tested on
-    // the host only; the check entry `interlock-state` carries both.
+    // the host only.
     needs: [], src: repo('STATUS.md', 116, 'The decision to switch to ARMED is `shared/safety/safety_gate.c`'),
   },
   {
@@ -1535,14 +1535,12 @@ const functions: Fn[] = [
   {
     id: 'language', group: 'bench',
     name: t('User interface in English or German', 'Bedienoberfläche auf Englisch oder Deutsch'),
-    // The check entry `language-state` carries the state.
     needs: [], src: repo('STATUS.md', 98, 'English and German, chosen by SETUP'),
   },
   {
     id: 'profiles', group: 'bench',
     name: t('Browse and search the ESC profiles: 72 families, 451 models', 'ESC-Profile durchsuchen: 72 Familien, 451 Modelle'),
-    // No statement of a run of the list on a panel. The check entry
-    // `profiles-state` carries it.
+    // No statement of a run of the list on a panel.
     needs: [], src: repo('STATUS.md', 130, '72 families, 451 models, from 153 manuals'),
   },
   {
@@ -1565,9 +1563,7 @@ const functions: Fn[] = [
   {
     id: 'servotest', group: 'servo',
     name: t('Automatic servo test', 'Automatischer Servotest'),
-    // docs/Servo.md names three runs of 0.13.0; docs/Screens.md line 753
-    // states the opposite. The check entry `servotest-state` carries it.
-    // The test reads the current of the PD mini (docs/Servo.md, line 92).
+    // The test reads the current of the PD mini (docs/Servo.md, line 97).
     needs: ['pdmini'], drives: 'servo', src: repo('docs/Servo.md', 97, 'the current of the supply that feeds the servo: the PD mini'),
   },
   {
