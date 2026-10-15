@@ -500,8 +500,9 @@ static void script_to_image(void)
 
 TEST_CASE(a_signature_asset_out_of_form_leaves_the_image_unsigned)
 {
-    const uint32_t lens[] = { 0u, FW_SIG_MAX, FW_SIG_MAX + 1u, 5000u };
-    for (unsigned i = 0; i < 4u; ++i) {
+    const uint32_t lens[] = { 0u, 1u, FW_SIG_MIN - 1u, FW_SIG_MIN, FW_SIG_MAX,
+                              FW_SIG_MAX + 1u, 5000u };
+    for (unsigned i = 0; i < 7u; ++i) {
         script_to_image();
         answer_t a = sig_body(lens[i]);
         if (lens[i] > sizeof(g_sig)) {
@@ -511,7 +512,8 @@ TEST_CASE(a_signature_asset_out_of_form_leaves_the_image_unsigned)
         const wa_fetch_res_t out = download(0u);
         CHECK_EQ(out.got, WA_GOT_STAGED);
         CHECK_EQ(g_up.state, FW_UP_STAGED);
-        CHECK_EQ(g_up.sig_n, (lens[i] == FW_SIG_MAX) ? FW_SIG_MAX : 0u);
+        const bool fits = lens[i] >= FW_SIG_MIN && lens[i] <= FW_SIG_MAX;
+        CHECK_EQ(g_up.sig_n, fits ? lens[i] : 0u);
     }
     /* A server error, and a body with no length. */
     script_to_image();

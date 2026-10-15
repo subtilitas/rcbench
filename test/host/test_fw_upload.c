@@ -161,7 +161,14 @@ TEST_CASE(a_signature_waits_beside_a_staged_image_and_goes_with_it)
     CHECK_EQ(g_up.sig_n, 0u);
     /* Both bounds of the size. */
     CHECK_EQ(fw_upload_sig(&g_up, sig, 0u), FW_ERR_EMPTY);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, 1u), FW_ERR_EMPTY);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MIN - 1u), FW_ERR_EMPTY);
     CHECK_EQ(fw_upload_sig(&g_up, NULL, 70u), FW_ERR_EMPTY);
+    CHECK_EQ(g_up.sig_n, 0u);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MIN), FW_OK);
+    CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MIN - 1u), FW_ERR_EMPTY);
+    CHECK_EQ(g_up.sig_n, FW_SIG_MIN);
+    g_up.sig_n = 0u;
     CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MAX + 1u), FW_ERR_TOO_BIG);
     CHECK_EQ(g_up.sig_n, 0u);
     CHECK_EQ(fw_upload_sig(&g_up, sig, FW_SIG_MAX), FW_OK);

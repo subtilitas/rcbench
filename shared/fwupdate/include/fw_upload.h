@@ -85,7 +85,7 @@ fw_err_t fw_upload_end(fw_upload_t *u, bool whole);
 
 /**
  * Store @p n bytes of signature beside the staged image.  FW_ERR_BUSY unless
- * an image is STAGED, FW_ERR_EMPTY for 0, FW_ERR_TOO_BIG over FW_SIG_MAX; on
+ * an image is STAGED, FW_ERR_EMPTY under FW_SIG_MIN, FW_ERR_TOO_BIG over FW_SIG_MAX; on
  * an error nothing is stored and a signature stored before stays.  A second
  * call replaces the first.
  */

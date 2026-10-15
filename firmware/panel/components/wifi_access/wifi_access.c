@@ -558,7 +558,7 @@ static esp_err_t h_update_sig(httpd_req_t *r)
     lock();
     if (s.taken || s.up.state != FW_UP_STAGED) {
         e = FW_ERR_BUSY;
-    } else if (bytes == 0u) {
+    } else if (bytes < FW_SIG_MIN) {
         e = FW_ERR_EMPTY;
     } else if (bytes > FW_SIG_MAX) {
         e = FW_ERR_TOO_BIG;

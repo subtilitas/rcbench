@@ -84,7 +84,7 @@ fw_err_t fw_upload_sig(fw_upload_t *u, const uint8_t *sig, uint32_t n)
     if (u->state != FW_UP_STAGED) {
         return FW_ERR_BUSY;
     }
-    if (sig == NULL || n == 0u) {
+    if (sig == NULL || n < FW_SIG_MIN) {
         return FW_ERR_EMPTY;
     }
     if (n > FW_SIG_MAX) {
