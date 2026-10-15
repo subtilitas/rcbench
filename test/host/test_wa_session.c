@@ -692,6 +692,36 @@ TEST_CASE(a_scan_runs_the_radio_and_ends_off)
     CHECK_EQ(g_w.off, WA_OFF_FAILED);
 }
 
+TEST_CASE(a_fetch_joins_and_serves_no_page)
+{
+    wa_init(&g_w);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_FETCH, WA_OFF_NONE, 0u, counter_rand,
+                      NULL),
+             WA_OFF_NONE);
+    CHECK_EQ(g_w.state, WA_ST_JOINING);
+    CHECK(wa_radio(&g_w));
+    wa_on_associated(&g_w, 1000u);
+    wa_on_address(&g_w, 0x1701A8C0u, 2000u);
+    CHECK_EQ(g_w.state, WA_ST_JOINED);
+    CHECK(wa_radio(&g_w));
+    /* Joined, and no page: a request is not counted. */
+    CHECK(!wa_serving(&g_w));
+    wa_request_begin(&g_w, 2000u);
+    CHECK_EQ(g_w.busy, 0u);
+    /* The join's own time-outs and the gate hold as for JOIN. */
+    wa_init(&g_w);
+    (void)wa_start(&g_w, WA_MODE_FETCH, WA_OFF_NONE, 0u, counter_rand, NULL);
+    CHECK(wa_tick(&g_w, WA_JOIN_MS, WA_OFF_NONE, false));
+    CHECK_EQ(g_w.join_err, WA_JOIN_NOT_FOUND);
+    (void)wa_start(&g_w, WA_MODE_FETCH, WA_OFF_NONE, 0u, counter_rand, NULL);
+    CHECK(wa_tick(&g_w, 10u, WA_OFF_ARMED, false));
+    CHECK_EQ(g_w.off, WA_OFF_ARMED);
+    CHECK_EQ(wa_start(&g_w, WA_MODE_FETCH, WA_OFF_SUPPLY, 0u, counter_rand,
+                      NULL),
+             WA_OFF_SUPPLY);
+    CHECK(!wa_radio(&g_w));
+}
+
 /* ------------------------------------------------------- the code */
 
 TEST_CASE(with_the_code_on_the_page_answers_only_the_right_code)
@@ -795,6 +825,7 @@ int main(void)
     RUN(a_join_reaches_the_network_then_an_address);
     RUN(each_way_a_join_fails_is_named);
     RUN(a_scan_runs_the_radio_and_ends_off);
+    RUN(a_fetch_joins_and_serves_no_page);
     RUN(with_the_code_on_the_page_answers_only_the_right_code);
     RUN(with_the_code_off_every_request_passes);
     RUN(a_code_from_before_the_screen_was_reopened_opens_nothing);

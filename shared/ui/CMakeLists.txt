@@ -38,6 +38,7 @@ set(SRCS
     busfault_screen.c
     wifi_screen.c
     coproc_update_screen.c
+    upd_screen.c
 )
 
 if(ESP_PLATFORM)

@@ -1,6 +1,6 @@
 /*
- * The panel's Wi-Fi over esp_wifi, esp_http_server and a UDP (user datagram
- * protocol) socket for the mDNS name.
+ * The panel's Wi-Fi over esp_wifi, esp_http_server, esp_http_client and a
+ * UDP (user datagram protocol) socket for the mDNS name.
  *
  * Three tasks touch the session: the UI loop (start, close, tick), the event
  * loop (what the radio reports) and the HTTP server (requests).  Everything
@@ -8,7 +8,8 @@
  * across a socket or a card read.  A fourth task, the worker, owns bringing
  * the radio up and down: it compares what the session wants with what runs
  * and acts, so a stop that waits for a download to end never waits on the
- * UI loop.
+ * UI loop.  A fifth, the fetch task, runs one job's requests to GitHub
+ * (wa_fetch.h) and ends with it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,10 +22,13 @@
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "esp_crt_bundle.h"
 #include "esp_event.h"
+#include "esp_http_client.h"
 #include "esp_http_server.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -62,6 +66,18 @@ static const char *TAG = "wifi";
 #define NET_CORE      0
 #define IO_CHUNK      4096u
 #define SCAN_READ     24u
+/* The fetch task: TLS (transport layer security) needs the stack of the
+ * page's server, which never runs beside it. */
+#define FETCH_STACK   8192u
+/* A read waits this long at a time, so a job ended from outside stops its
+ * task within about this much once the data flows. */
+#define FETCH_SLICE_MS 1000u
+/* The radio goes off after this much, task ended or not: a connection or a
+ * name lookup that waits on the network ends when the radio does. */
+#define FETCH_GRACE_MS 1500u
+/* And the task's end is waited for this long at most after it. */
+#define FETCH_EXIT_MS  20000u
+#define FETCH_AGENT    "rcbench-panel"
 
 static struct {
     SemaphoreHandle_t lock;
@@ -76,6 +92,13 @@ static struct {
     bool            taken;
     fw_offer_t      offer;
     uint32_t        gen;          /* sessions started                   */
+    wa_fetch_t      f;            /* the job asking GitHub              */
+    struct {
+        uint32_t     gen;         /* the job's, wa_fetch_t.gen          */
+        wa_job_t     job;
+        fw_version_t want;
+        uint32_t     start_ms;
+    } job;                        /* what the fetch task runs           */
 
     /* Set once. */
     char            name[WA_NAME_MAX];
@@ -102,6 +125,12 @@ static struct {
      * sees a start that has not reached the radio as a radio off. */
     atomic_bool     asked;
     atomic_bool     de;
+
+    /* The fetch task's.  fetch_alive from its creation to its last touch
+     * of anything shared; fetch_stop asks it to end. */
+    atomic_bool     fetch_alive;
+    atomic_bool     fetch_stop;
+    fw_upload_t     fup;          /* its image, until staged            */
 } s;
 
 /*
@@ -119,6 +148,11 @@ typedef struct {
     wa_send_t       snd;
     uint8_t         mdns_q[WA_MDNS_MAX];
     uint8_t         mdns_out[WA_MDNS_MAX];
+    /* The fetch task's. */
+    char            url[FW_REL_URL_MAX + 1u];
+    char            loc[FW_REL_URL_MAX + 1u];
+    uint8_t         fio[IO_CHUNK];
+    char            sums[FW_REL_SUMS_MAX];
 } bufs_t;
 
 static bufs_t *b;
@@ -818,6 +852,240 @@ static void mdns_task(void *arg)
     vTaskDelete(NULL);
 }
 
+/* ----------------------------------------------------------- GitHub */
+
+/*
+ * The HTTP client wa_fetch.c runs against: esp_http_client over TLS, the
+ * server's chain checked against the certificate bundle, one request per
+ * connection, no redirect followed by the client.  esp_http_client keeps
+ * every header value in memory of its own, without a bound of its own;
+ * only a server whose chain checks reaches it.
+ */
+typedef struct {
+    esp_http_client_handle_t c;
+    char  *loc;
+    size_t loc_cap;
+    size_t loc_n;
+    bool   loc_cut;
+    bool   loc_seen;
+} http_ctx_t;
+
+static http_ctx_t s_http;
+
+static esp_err_t on_http(esp_http_client_event_t *e)
+{
+    http_ctx_t *h = e->user_data;
+    if (e->event_id != HTTP_EVENT_ON_HEADER || h == NULL || h->loc == NULL
+        || e->header_key == NULL || e->header_value == NULL
+        || strcasecmp(e->header_key, "Location") != 0) {
+        return ESP_OK;
+    }
+    if (h->loc_seen) {
+        /* Two of them: neither is taken, and the answer is refused as one
+         * whose Location does not fit. */
+        h->loc_n = 0u;
+        h->loc_cut = true;
+        return ESP_OK;
+    }
+    h->loc_seen = true;
+    size_t n = strlen(e->header_value);
+    if (n > h->loc_cap) {
+        n = h->loc_cap;
+        h->loc_cut = true;
+    }
+    memcpy(h->loc, e->header_value, n);
+    h->loc_n = n;
+    return ESP_OK;
+}
+
+static void h_close(void *ctx)
+{
+    http_ctx_t *h = ctx;
+    if (h->c != NULL) {
+        (void)esp_http_client_close(h->c);
+        (void)esp_http_client_cleanup(h->c);
+        h->c = NULL;
+    }
+}
+
+static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
+                   wa_http_head_t *head, char *loc, size_t loc_cap)
+{
+    http_ctx_t *h = ctx;
+    h_close(h);
+    h->loc = loc;
+    h->loc_cap = loc_cap;
+    h->loc_n = 0u;
+    h->loc_cut = false;
+    h->loc_seen = false;
+    const esp_http_client_config_t cfg = {
+        .url = url,
+        .method = HTTP_METHOD_GET,
+        .timeout_ms = (int)timeout_ms,
+        .disable_auto_redirect = true,
+        .crt_bundle_attach = esp_crt_bundle_attach,
+        .event_handler = on_http,
+        .user_data = h,
+        .user_agent = FETCH_AGENT,
+        .keep_alive_enable = false,
+        .buffer_size = 2048,
+        /* The request line carries the whole address: FW_REL_URL_MAX. */
+        .buffer_size_tx = (int)(FW_REL_URL_MAX + 512u),
+    };
+    h->c = esp_http_client_init(&cfg);
+    if (h->c == NULL) {
+        return false;
+    }
+    if (esp_http_client_open(h->c, 0) != ESP_OK) {
+        return false;
+    }
+    if (esp_http_client_fetch_headers(h->c) < 0) {
+        return false;
+    }
+    head->status = esp_http_client_get_status_code(h->c);
+    head->length = esp_http_client_get_content_length(h->c);
+    /* The client calls every answer without a length chunked: only one
+     * with a length and the chunked coding both is told as chunked. */
+    head->chunked = (head->length > 0)
+                    && esp_http_client_is_chunked_response(h->c);
+    head->loc_n = h->loc_n;
+    head->loc_cut = h->loc_cut;
+    return true;
+}
+
+static int32_t h_read(void *ctx, uint8_t *dst, uint32_t n,
+                      uint32_t timeout_ms)
+{
+    http_ctx_t *h = ctx;
+    const uint32_t t0 = ms();
+    for (;;) {
+        if (atomic_load(&s.fetch_stop) || h->c == NULL) {
+            return -1;
+        }
+        const uint32_t spent = (uint32_t)(ms() - t0);
+        if (spent >= timeout_ms) {
+            return -1;
+        }
+        const uint32_t left = timeout_ms - spent;
+        (void)esp_http_client_set_timeout_ms(
+            h->c, (int)((left < FETCH_SLICE_MS) ? left : FETCH_SLICE_MS));
+        const int got = esp_http_client_read(h->c, (char *)dst, (int)n);
+        if (got >= 0) {
+            return got;          /* 0: the server closed: short */
+        }
+        if (got != -ESP_ERR_HTTP_EAGAIN) {
+            return -1;
+        }
+    }
+}
+
+static const wa_http_t k_http = { h_open, h_read, h_close, &s_http };
+
+static uint32_t f_now(void *ctx)
+{
+    (void)ctx;
+    return ms();
+}
+
+/* Asked to end, or the job ended under the task. */
+static bool f_stopped(void *ctx)
+{
+    (void)ctx;
+    if (atomic_load(&s.fetch_stop)) {
+        return true;
+    }
+    lock();
+    const bool over = (s.f.gen != s.job.gen) || !wa_fetch_busy(&s.f);
+    unlock();
+    return over;
+}
+
+static void f_report(void *ctx, wa_phase_t ph, uint32_t done, uint32_t total)
+{
+    (void)ctx;
+    lock();
+    wa_fetch_on_phase(&s.f, s.job.gen, ph);
+    if (ph == WA_PH_IMAGE) {
+        wa_fetch_on_bytes(&s.f, s.job.gen, done, total);
+    }
+    unlock();
+}
+
+static uint8_t *f_alloc(void *ctx, uint32_t bytes)
+{
+    (void)ctx;
+    return heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM);
+}
+
+/*
+ * One job's requests, from the join on.  A staged image moves to where an
+ * upload leaves one, for wifi_access_take(), if the job is still the one
+ * running; anything else is freed here.
+ */
+static void fetch_task(void *arg)
+{
+    (void)arg;
+    lock();
+    const uint32_t     gen = s.job.gen;
+    const wa_job_t     job = s.job.job;
+    const fw_version_t want = s.job.want;
+    const uint32_t     start_ms = s.job.start_ms;
+    unlock();
+    fw_upload_init(&s.fup, NULL, 0u, s.slot);
+    const wa_run_t run = {
+        .http = &k_http,
+        .now = f_now,
+        .stopped = f_stopped,
+        .report = f_report,
+        .alloc = f_alloc,
+        .ctx = NULL,
+        .start_ms = start_ms,
+        .budget_ms = (job == WA_JOB_CHECK) ? WA_FETCH_CHECK_MS
+                                           : WA_FETCH_DOWNLOAD_MS,
+        .slot = s.slot,
+        .running = s.running.version,
+        .url = b->url,
+        .loc = b->loc,
+        .io = b->fio,
+        .io_cap = sizeof(b->fio),
+        .sums = b->sums,
+        .up = &s.fup,
+    };
+    wa_fetch_res_t res;
+    if (job == WA_JOB_CHECK) {
+        wa_run_check(&run, &res);
+    } else {
+        wa_run_download(&run, want, &res);
+    }
+    h_close(&s_http);
+
+    bool moved = false;
+    lock();
+    if (res.got == WA_GOT_STAGED && s.f.gen == gen && wa_fetch_busy(&s.f)
+        && !atomic_load(&s.fetch_stop)) {
+        if (s.taken) {
+            res.got = WA_GOT_ABORTED;
+            res.why = WA_WHY_INSTALL;
+        } else {
+            heap_caps_free(s.up.buf);
+            s.up = s.fup;
+            s.offer = fw_offer(&s.running, &s.up.info);
+            moved = true;
+        }
+    }
+    wa_fetch_on_end(&s.f, gen, &res);
+    unlock();
+    if (!moved) {
+        heap_caps_free(s.fup.buf);
+    }
+    memset(&s.fup, 0, sizeof(s.fup));
+    ESP_LOGI(TAG, "GitHub: job %lu ended: %d", (unsigned long)gen,
+             (int)res.got);
+    atomic_store(&s.fetch_alive, false);
+    poke();
+    vTaskDelete(NULL);
+}
+
 /* ------------------------------------------------------------ the radio */
 
 static bool auth_refused(uint8_t reason)
@@ -942,13 +1210,28 @@ static void net_once(void)
     s.net_ready = true;
 }
 
+/* Up to @p wait_ms for the fetch task to end; whether it has. */
+static bool fetch_wait(uint32_t wait_ms)
+{
+    const uint32_t t0 = ms();
+    while (atomic_load(&s.fetch_alive)
+           && (uint32_t)(ms() - t0) < wait_ms) {
+        (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(50));
+    }
+    return !atomic_load(&s.fetch_alive);
+}
+
 static void radio_down(void)
 {
     atomic_store(&s.abort, true);
+    atomic_store(&s.fetch_stop, true);
     atomic_store(&s.mdns_run, false);
     while (atomic_load(&s.mdns_alive)) {
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(50));
     }
+    /* A read ends within FETCH_SLICE_MS; a connection or a name lookup
+     * under way ends when the radio goes, after the grace. */
+    (void)fetch_wait(FETCH_GRACE_MS);
     if (s.httpd != NULL) {
         /* Waits for a request under way, which ends at its next piece. */
         (void)httpd_stop(s.httpd);
@@ -964,6 +1247,10 @@ static void radio_down(void)
     }
     s.radio_up = false;
     memset(s.ip, 0, sizeof(s.ip));
+    if (!fetch_wait(FETCH_EXIT_MS)) {
+        /* No new job starts while it lives (wifi_access_fetch_start()). */
+        ESP_LOGW(TAG, "GitHub: the fetch task has not ended");
+    }
     atomic_store(&s.abort, false);
     atomic_store(&s.down, true);
 }
@@ -1003,7 +1290,8 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
         }
     } else {
         e = esp_wifi_set_mode(WIFI_MODE_STA);
-        if (e == ESP_OK && mode == WA_MODE_JOIN) {
+        if (e == ESP_OK
+            && (mode == WA_MODE_JOIN || mode == WA_MODE_FETCH)) {
             memcpy(cfg.sta.ssid, c->ssid, strnlen(c->ssid, sizeof(cfg.sta.ssid)));
             memcpy(cfg.sta.password, c->pass,
                    strnlen(c->pass, sizeof(cfg.sta.password) - 1u));
@@ -1022,7 +1310,8 @@ static bool radio_bring_up(wa_mode_t mode, const wa_t *w, const wa_conf_t *c)
     if (e == ESP_OK) {
         e = esp_wifi_start();
     }
-    if (e == ESP_OK && mode != WA_MODE_SCAN) {
+    /* The page in AP and JOIN only: FETCH serves nothing. */
+    if (e == ESP_OK && (mode == WA_MODE_AP || mode == WA_MODE_JOIN)) {
         e = httpd_up();
     }
     if (e != ESP_OK) {
@@ -1105,6 +1394,7 @@ esp_err_t wifi_access_init(uint32_t slot, const fw_image_info_t *running)
     wa_pending_init(&s.pend);
     wa_scan_clear(&s.scan);
     fw_upload_init(&s.up, NULL, 0u, slot);
+    wa_fetch_init(&s.f, running->version);
     uint8_t mac[6] = { 0 };
     (void)esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP);
     wa_name(mac, s.name);
@@ -1273,4 +1563,97 @@ void wifi_access_release(void)
     s.taken = false;
     unlock();
     wifi_access_discard();
+}
+
+wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
+                                 wa_why_t gate)
+{
+    bool no_worker = false;
+    if (s.worker == NULL && gate == WA_WHY_NONE
+        && xTaskCreatePinnedToCore(worker, "wifi_ctl", WORKER_STACK, NULL,
+                                   WORKER_PRIO, &s.worker, NET_CORE)
+           != pdPASS) {
+        s.worker = NULL;
+        no_worker = true;
+    }
+    lock();
+    wa_why_t g = gate;
+    if (g == WA_WHY_NONE
+        && (s.taken || atomic_load(&s.fetch_alive)
+            || (wa_radio(&s.w) && s.w.mode != WA_MODE_FETCH))) {
+        g = WA_WHY_BUSY;
+    }
+    const wa_got_t r = wa_fetch_start(&s.f, job, want, s.conf.have_net, g,
+                                      ms());
+    if (r == WA_GOT_NONE) {
+        if (job == WA_JOB_DOWNLOAD && s.up.state != FW_UP_RECEIVING) {
+            /* What the page left: the download takes its place. */
+            fw_upload_discard(&s.up);
+            heap_caps_free(s.up.buf);
+            s.up.buf = NULL;
+            s.up.cap = 0u;
+        }
+        (void)wa_start(&s.w, WA_MODE_FETCH, WA_OFF_NONE, ms(), rand32, NULL);
+        atomic_store(&s.asked, true);
+        ++s.gen;
+        if (no_worker) {
+            /* Ends the job as the radio's failure on the next tick. */
+            wa_close(&s.w, WA_OFF_FAILED);
+        }
+    }
+    unlock();
+    poke();
+    return r;
+}
+
+void wifi_access_fetch_tick(wa_why_t abort)
+{
+    lock();
+    wa_fetch_tick(&s.f, ms(), abort, &s.w);
+    const bool off = wa_fetch_take_off(&s.f);
+    const bool run = wa_fetch_take_run(&s.f);
+    if (off) {
+        atomic_store(&s.fetch_stop, true);
+        if (s.w.mode == WA_MODE_FETCH) {
+            wa_close(&s.w, WA_OFF_ASKED);   /* not FILES & UPDATE's session */
+        }
+    }
+    if (run) {
+        s.job.gen = s.f.gen;
+        s.job.job = s.f.job;
+        s.job.want = s.f.found;
+        s.job.start_ms = s.f.start_ms;
+        atomic_store(&s.fetch_stop, false);
+        atomic_store(&s.fetch_alive, true);
+    }
+    unlock();
+    if (run
+        && xTaskCreatePinnedToCore(fetch_task, "wifi_get", FETCH_STACK, NULL,
+                                   NET_PRIORITY, NULL, NET_CORE)
+           != pdPASS) {
+        atomic_store(&s.fetch_alive, false);
+        const wa_fetch_res_t r = { .got = WA_GOT_MEMORY };
+        lock();
+        wa_fetch_on_end(&s.f, s.job.gen, &r);
+        unlock();
+    }
+    if (off) {
+        poke();
+    }
+}
+
+void wifi_access_fetch_get(wa_fetch_t *out)
+{
+    lock();
+    *out = s.f;
+    unlock();
+}
+
+bool wifi_access_home(char *ssid, size_t n)
+{
+    lock();
+    const bool have = s.conf.have_net;
+    snprintf(ssid, n, "%s", have ? s.conf.ssid : "");
+    unlock();
+    return have;
 }

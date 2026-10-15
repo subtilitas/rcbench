@@ -29,13 +29,15 @@ typedef enum {
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_STICK,       /**< stick programming: supply and timing    */
+    SET_CAT_UPDATE,      /**< the release reminder, on SETUP's UPDATES */
     SET_CAT_COUNT
 } setting_cat_t;
 
 /**
  * The categories SETUP lists.  SET_CAT_SUPPLY, SET_CAT_SERVO and
- * SET_CAT_STICK are edited on their own screens, beside what they set, and
- * SETUP has no room for a fourth category button.
+ * SET_CAT_STICK are edited on their own screens, beside what they set,
+ * SET_CAT_UPDATE on the UPDATES screen SETUP opens, and SETUP has no room
+ * for a fourth category button.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
 
@@ -143,6 +145,8 @@ typedef enum {
     SET_STICK_TIMEOUT,
     SET_STICK_THRESHOLD,
     SET_STICK_HYST,
+    /* --- updates --------------------------------------------------------- */
+    SET_UPD_REMIND,
 
     SETTING_COUNT
 } setting_id_t;

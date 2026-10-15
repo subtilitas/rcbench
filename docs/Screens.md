@@ -1523,7 +1523,8 @@ would list at its last committed length and read as a finished one.
 FILES & UPDATE runs the panel's Wi-Fi for two jobs in a browser: every file
 on the card to download, and a panel firmware image to upload. It opens from
 LOGS, with WI-FI in the bottom row beside RESCAN. The radio runs only while
-this screen is open. It is off at every start of the panel, and it goes off
+this screen is open, and for the release check and the download of
+[Updates](#updates). It is off at every start of the panel, and it goes off
 when the screen is left, before an install writes the flash, and after
 10 min without a request.
 
@@ -1748,7 +1749,8 @@ that starts, and the panel restarts.
 
 The splash shows the new version, and the band says
 `panel firmware 0.19.0 installed`. A write that fails changes nothing that
-starts: the running build stays, and CLOSE goes back to LOGS.
+starts: the running build stays, and CLOSE goes back to LOGS, or after a
+download from GitHub to where the download started.
 
 ![The write failed](img/panel-update-failed.png)
 
@@ -1779,6 +1781,10 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 Settings are behind the SETUP tile, in both themes:
 
 ![Setup in the light theme](img/setup-light.png)
+
+The left column holds the three categories, then three keys to screens of
+their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+([Pick a pin](#pick-a-pin)) and UPDATES ([Updates](#updates)).
 
 APPLICATION's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
@@ -2251,6 +2257,166 @@ measured.
 
 The question opens from the menu rather than from LOGS: the offer comes with
 the link, and LOGS is about the SD card.
+
+## Updates
+
+UPDATES asks GitHub which panel firmware release is the newest, and installs
+it. It opens from the UPDATES key on the Setup screen. A reminder at start
+asks the same question once per start of the panel.
+
+![UPDATES](img/updates.png)
+
+| Control | Action |
+| --- | --- |
+| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
+| `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on the Setup screen, as every setting. On by default. |
+| `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
+
+The card names the running version and the kept home network. Both the
+check and the download need:
+
+- a home network kept on FILES & UPDATE ([Home network](#home-network)).
+  Without one, the card says `No home network kept.` and
+  `Keep one on LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
+- the bench SAFE, the supply output off and no log run open. Otherwise the
+  key is grey and the card says `Wi-Fi needs SAFE, the supply off` and
+  `and no log run open.`;
+- no update of the coprocessor running and no panel install under way.
+
+The download needs, as an install does, no board drawing being fetched or
+kept.
+
+### The check
+
+The panel joins the home network, sends one HTTPS (HTTP over transport layer
+security) request to `https://github.com/subtilitas/rcbench/releases/latest`
+and reads the `Location` header of the answer, which names the newest
+release's tag (`.../releases/tag/v0.20.0`). The answer's body is not read.
+Then the radio goes off. The join, the address and the request take 30 s at
+most, together.
+
+![A check under way](img/updates-checking.png)
+
+The card shows the step (`Joining Workshop 2.4`, `Asking GitHub`) and the
+seconds left (`26 s left`). The result stays on the card until the next
+check:
+
+![A newer release](img/updates-newer.png)
+![Up to date](img/updates-current.png)
+
+| Card | Meaning |
+| --- | --- |
+| `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
+| `Up to date: this panel runs 0.19.0.` and `Newest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
+| `Join failed: password refused.`, `Join failed: network not found.`, `Join failed: no address in 15 s.`, `The home network went away.` | The join failed, as on FILES & UPDATE. |
+| `No answer within 30 s.` | The 30 s ran out. |
+| `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
+| `GitHub refused: HTTP 404.` | An answer other than a redirect. |
+| `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
+| `Wi-Fi went off: ARMED.`, `...: supply output on.`, `...: a log run opened.`, `...: STOP.` | The check ended for that. |
+| `Stopped: FILES & UPDATE took the radio.` | FILES & UPDATE opened. |
+| `Stopped: the coprocessor's update began.` | The coprocessor's update began. |
+| `Stopped: CANCEL.` | CANCEL. |
+| `Wi-Fi did not start.` | The radio did not come up. |
+
+![A check that found no answer](img/updates-failed.png)
+
+The version text is read strictly: `v`, then MAJOR.MINOR.PATCH, digits only,
+each number from 0 to 65535 in at most 5 digits and without a leading zero
+(`v0.20.0`, not `v0.020.0`), and nothing after it. A release is newer when
+its MAJOR is higher, or MAJOR is equal and MINOR is higher, or both are
+equal and PATCH is higher.
+
+| Second line | Meaning |
+| --- | --- |
+| `No Location in the answer.` | The redirect carries no `Location`. |
+| `An address over its length bound.` | A `Location` longer than 69 bytes: the tag address and 18 bytes. |
+| `A byte outside printable ASCII.` | A space, a control character or a byte above 126. |
+| `An address in an unexpected place.` | Not `https://github.com/subtilitas/rcbench/releases/tag/...`. |
+| `The version text is out of form.` | The tag fails the rule above. |
+
+### The reminder
+
+![The reminder](img/upd-remind.png)
+
+With REMINDER AT START on and a home network kept, the panel runs the check
+once after each start. It waits for a moment the bench allows: the splash
+gone, the bench SAFE, the supply output off, no log run open, FILES &
+UPDATE closed and no coprocessor update offered or running. A start-up check
+that has found no such moment 10 min after the start does not run at that
+start.
+
+When the check finds a newer release, the reminder opens on the menu
+(OVERVIEW). It does not open while the bench is ARMED or an arm waits,
+while the supply output is on, or while the coprocessor's update question or
+its progress is up: those come first, and the reminder opens once they have
+gone and the menu shows.
+
+| Control | Action |
+| --- | --- |
+| `IGNORE NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
+| `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
+| `HOLD 2 s: DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
+
+The start-up check shows nothing when it finds no newer release or fails.
+Its result is on UPDATES.
+
+### The download
+
+The 2 s hold is the one confirmation: no question follows the download. The
+panel joins the home network within 30 s, then fetches two files of the
+release's tag over HTTPS, `SHA256SUMS` and `rcbench-panel-v0.20.0.bin`.
+GitHub answers each with a redirect to its file host; the panel follows at
+most 3 redirects, and only to `github.com`, `release-assets.githubusercontent.com`
+and `objects.githubusercontent.com`. Then:
+
+1. `SHA256SUMS` is 4096 bytes at most, and holds exactly one line for the
+   image's file name.
+2. The image announces its size before a byte is kept. An image without a
+   size, of 0 bytes, or larger than the slot (4,063,232 bytes) is refused.
+   The image is kept in PSRAM (pseudo-static random-access memory).
+3. The image's SHA-256 (Secure Hash Algorithm, 256 bits) must equal its line
+   in `SHA256SUMS`.
+4. Every check an uploaded image passes ([Installing](#installing-panel-update))
+   runs, and the image must name the release's version.
+
+Only then does the install start, as INSTALL starts it: the radio off
+wholly, the write, the restart, the trial start. From the hold to the write,
+nothing touches the flash.
+
+![The download](img/panel-download.png)
+
+| Step | Shown while |
+| --- | --- |
+| `Joining Workshop 2.4` | the join and the address |
+| `Reading SHA256SUMS` | the first file |
+| `Downloading the image` | the image; the bar and `720896 of 1843200 bytes (39 %)` count it |
+| `Checking SHA-256 and the image` | the checks |
+
+CANCEL ends the download. The download also ends on STOP, on ARMED, on the
+supply output coming on, on a log run opening, on a board drawing being
+fetched, and after 180 s from the hold. The running build stays, and CLOSE
+goes back to UPDATES, or to the menu when the hold was the reminder's.
+
+![A download that stopped](img/panel-download-failed.png)
+
+| Line | Meaning |
+| --- | --- |
+| `SHA256SUMS not usable.` | `SHA256SUMS` missing (`HTTP status 404.`), over 4096 bytes, `A line out of form.`, `No line for the image.` or `The image on two lines.` |
+| `SHA-256 differs from SHA256SUMS.` | The image is not the one the release lists. |
+| `The image failed the panel's checks.` | One of the image checks refused it. |
+| `GitHub refused: HTTP 404.` | An answer to the image other than the file or a redirect. |
+| `Unexpected answer from GitHub.` | `More than 3 redirects.`, `A redirect to an unlisted host.`, `An address over its length bound.` (a `Location` over 2048 bytes), `No size announced.`, `An empty answer.`, `Larger than the panel takes.`, `Shorter than its announced size.`, `The image names another version.` |
+| `No memory for the image.` | PSRAM had no room for the announced size. |
+| `No answer within 30 s.`, `No answer within 180 s.` | The join's 30 s or the download's 180 s ran out. |
+
+Current limitations:
+
+- The check's and the download's durations on a real network are not
+  measured.
+- No certificate's dates are checked: the panel has no clock.
+- A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and
+  `SHA256SUMS` cannot be downloaded.
 
 ## Outputs
 

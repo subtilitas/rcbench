@@ -26,6 +26,7 @@
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
 #include "ui_textkey.h"
+#include "upd_screen.h"
 #include "wifi_screen.h"
 #include "coproc_update_screen.h"
 #include "sense_link.h"
@@ -1407,6 +1408,8 @@ static ui_screen_id_t id_of(const char *name)
         { "supply",     SCREEN_SUPPLY },
         { "wifi",       SCREEN_WIFI },
         { "panel-update", SCREEN_UPDATE },
+        { "updates",    SCREEN_UPDATES },
+        { "upd-remind", SCREEN_UPD_REMIND },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         if (strcmp(name, k[i].name) == 0) {
@@ -1607,7 +1610,58 @@ static void pose_wifi(const char *view)
     }
 }
 
-/* The firmware write, at a point inside it, at its end, or failed. */
+/* SETUP > UPDATES and the reminder: the application's view handed in, as
+ * the panel hands it after a check with a home network kept. */
+static void pose_upd(const char *view)
+{
+    upd_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.have_net = true;
+    strcpy(v.net, "Workshop 2.4");
+    strcpy(v.running, EX_RUNNING);
+    v.job = UPD_JOB_CHECK;
+    v.phase = UPD_PH_ENDED;
+    v.budget_s = 30u;
+    if (strcmp(view, "updates") == 0) {
+        v.phase = UPD_PH_IDLE;
+    } else if (strcmp(view, "updates-checking") == 0) {
+        v.phase = UPD_PH_ASKING;
+        v.block = UPD_WHY_BUSY;
+        v.left_s = 21u;
+    } else if (strcmp(view, "updates-joining") == 0) {
+        v.phase = UPD_PH_JOINING;
+        v.block = UPD_WHY_BUSY;
+        v.left_s = 30u;
+    } else if (strcmp(view, "updates-current") == 0) {
+        v.got = UPD_GOT_CURRENT;
+        strcpy(v.found, EX_RUNNING);
+    } else if (strcmp(view, "updates-failed") == 0) {
+        v.got = UPD_GOT_TIMEOUT;
+    } else if (strcmp(view, "updates-unexpected") == 0) {
+        v.got = UPD_GOT_UNEXPECTED;
+        v.rel = UPD_REL_HOST;
+    } else if (strcmp(view, "updates-nonet") == 0) {
+        v.have_net = false;
+        v.net[0] = '\0';
+        v.got = UPD_GOT_NO_NET;
+        settings_set(SET_UPD_REMIND, 0.0f);
+    } else if (strcmp(view, "updates-blocked") == 0) {
+        v.phase = UPD_PH_IDLE;
+        v.block = UPD_WHY_ARMED;
+        v.dl_block = UPD_WHY_ARMED;
+    } else {
+        /* updates-newer, upd-remind, upd-remind-blocked */
+        v.got = UPD_GOT_NEWER;
+        strcpy(v.found, EX_NEWER);
+        if (strcmp(view, "upd-remind-blocked") == 0) {
+            v.dl_block = UPD_WHY_DRAWING;
+        }
+    }
+    upd_screen_set(&v);
+}
+
+/* The firmware write, at a point inside it, at its end, or failed; and the
+ * download from GitHub before it, under way or stopped. */
 static void pose_update(const char *view)
 {
     update_view_t u;
@@ -1616,7 +1670,21 @@ static void pose_update(const char *view)
     u.total = 1843200u;
     u.written = 720896u;
     u.state = UPDATE_WRITING;
-    if (strcmp(view, "panel-update-done") == 0) {
+    if (strncmp(view, "panel-download", 14) == 0) {
+        upd_view_t v;
+        memset(&v, 0, sizeof(v));
+        v.job = UPD_JOB_DOWNLOAD;
+        v.phase = UPD_PH_IMAGE;
+        v.left_s = 142u;
+        u.state = UPDATE_FETCHING;
+        if (strcmp(view, "panel-download-failed") == 0) {
+            v.phase = UPD_PH_ENDED;
+            v.got = UPD_GOT_HASH;
+            u.written = u.total;
+            u.state = UPDATE_FETCH_FAILED;
+        }
+        upd_result_text(&v, u.what, sizeof(u.what), u.why, sizeof(u.why));
+    } else if (strcmp(view, "panel-update-done") == 0) {
         u.written = u.total;
         u.state = UPDATE_RESTARTING;
     } else if (strcmp(view, "panel-update-failed") == 0) {
@@ -2697,7 +2765,7 @@ int main(int argc, char **argv)
         || strcmp(view, "setup-sensors") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0) {
-        tap(120, UI_BAND_H + 16 + 2 * 72 + 32);        /* INTERFACES */
+        tap(120, UI_BAND_H + 16 + 2 * 62 + 28);        /* INTERFACES */
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows, and the INA3221 the page
              * leaves off for them. */
@@ -2723,6 +2791,9 @@ int main(int argc, char **argv)
     }
     if (id == SCREEN_UPDATE) {
         pose_update(view);
+    }
+    if (id == SCREEN_UPDATES || id == SCREEN_UPD_REMIND) {
+        pose_upd(view);
     }
 
     if (id == SCREEN_LOGS) {

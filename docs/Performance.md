@@ -185,19 +185,23 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,008 | 2,160 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,672 | 2,496 |
 | `control` | `control_task` | 6,144 | 4,288 | 832 |
 | `runlog` | `log_task` | 4,352 | 2,976 | 352 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
-| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,344 | 752 |
+| `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,400 | 4,768 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the Wi-Fi driver, the TCP/IP (transmission control
 protocol, internet protocol) stack and the event loop on tasks of their own.
 ESP-IDF creates them, so they are not in the table: their depth is not
-measured.
+measured. `wifi_get`'s depth leaves out the TLS (transport layer security)
+handshake and every read under it: esp_http_client reaches its transport
+through a function pointer. Its stack is the page server's, which never runs
+beside it; the handshake's depth is not measured.
 
 Measured on ESP-IDF v5.4 at -O2. Of the margin, 528 bytes are spent outside
 the frames: 320 for the FPU (floating-point unit) and vector-unit state saved

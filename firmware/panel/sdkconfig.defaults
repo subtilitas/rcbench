@@ -167,9 +167,10 @@ CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 # Wi-Fi ---------------------------------------------------------------------
 #
-# The radio runs only while FILES & UPDATE asks for it.  Its buffers and
-# lwIP's (lightweight IP stack) come from PSRAM where the driver allows, so
-# internal RAM keeps what the display and the bench need.
+# The radio runs only while FILES & UPDATE asks for it, and while the panel
+# asks GitHub for a release (SETUP > UPDATES and the start-up check).  Its
+# buffers and lwIP's (lightweight IP stack) come from PSRAM where the driver
+# allows, so internal RAM keeps what the display and the bench need.
 CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
 # The hot paths stay in flash: the transfer rate matters less than the
 # internal RAM (IRAM, instruction RAM) they would take.
@@ -189,3 +190,17 @@ CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU0=y
 # card path of WA_PATH_MAX (384) bytes is up to 1152 bytes percent-encoded.
 CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
 CONFIG_HTTPD_MAX_URI_LEN=1280
+
+# TLS (transport layer security) to GitHub --------------------------------
+#
+# The server's chain is checked against ESP-IDF's bundle of the common
+# certificate authorities, not the full one: github.com chains to USERTrust
+# ECC, its release files' host to ISRG Root X1, and both are in it.  A
+# bundle of those two alone would be smaller and would stop working the day
+# GitHub changes its authority.  No clock is set, so no certificate's dates
+# are checked.
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
+# mbedTLS's memory, the 16 KB record buffer for what arrives among it, in
+# PSRAM.
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
