@@ -200,7 +200,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 672 | 2 496 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 880 | 2 288 |
 | `control` | `control_task` | 6 144 | 4 288 | 832 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -229,7 +229,7 @@ Untergrenze:
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
   den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers
   und denen der Startprüfung nach einem Update, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 232
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 253
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -265,10 +265,10 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 708 Bytes ergibt.
+für Kern 0 1 748 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (472 Bytes), `can_service` (336),
+im pico-sdk scheitert: `main` (512 Bytes), `can_service` (336),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
