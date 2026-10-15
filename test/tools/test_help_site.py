@@ -150,6 +150,19 @@ def test_a_heading_link_with_an_escaped_bracket_gets_its_label_anchor(tree):
     assert '<h2 id="a-b">' in html
 
 
+def test_an_underscore_in_a_deeply_nested_link_target_is_no_emphasis(tree):
+    html = ok(tree, "[x](https://example.com/a_(_b_(c)))\n")
+    assert 'href="https://example.com/a_(_b_(c))"' in html
+
+
+def test_an_escaped_backslash_at_a_line_end_is_no_hard_break(tree):
+    ok(tree, "first \\\\\nsecond\n")
+
+
+def test_trailing_spaces_on_the_last_line_pass(tree):
+    ok(tree, "only line  \n")
+
+
 def test_an_underscore_in_a_link_target_is_no_emphasis(tree):
     html = ok(tree, "[x](https://example.com/_private_)\n")
     assert 'href="https://example.com/_private_"' in html
@@ -346,6 +359,9 @@ def test_a_view_whose_file_is_not_a_png_fails(tree):
     ("text\n> quote\n", "block quote"),
     ("text\n```\n", "fenced code"),
     ("text\n***\n", "rule"),
+    ("[docs]\n\n[docs]: https://x.example\n", "reference definition"),
+    ("first  \nsecond\n", "hard line break"),
+    ("first\\\nsecond\n", "hard line break"),
     ("a _a_b_ c\n", "_ emphasis"),
     ("a __bold__ c\n", "_ emphasis"),
     ("![****](view:motor)\n", "renders as no text"),

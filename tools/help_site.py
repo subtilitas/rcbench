@@ -240,9 +240,8 @@ class Inline:
     def render(self, text: str, line: int, in_link: bool = False) -> str:
         outside_code = re.sub(r"`[^`]*`", "", text)
         # A link target is an address, not text: an underscore in it is
-        # no emphasis.
-        outside_code = re.sub(r"\]\((?:\\.|[^()\\]|\([^()]*\))*\)", "]",
-                              outside_code)
+        # no emphasis.  The target ends where _link() ends it.
+        outside_code = self._without_targets(outside_code)
         span = underscore_emphasis(outside_code)
         if span:
             self.fail(line, f"_ emphasis is outside the format: "
@@ -315,20 +314,7 @@ class Inline:
         # The target ends at the ) that closes the ( after the label, so a
         # URL with balanced parentheses inside stays whole.  An escaped
         # character is part of the target, not a delimiter.
-        end, depth, k = -1, 0, close + 2
-        while k < len(text):
-            if text[k] == "\\" and k + 1 < len(text) \
-                    and text[k + 1] in ESCAPABLE:
-                k += 2
-                continue
-            if text[k] == "(":
-                depth += 1
-            elif text[k] == ")":
-                if depth == 0:
-                    end = k
-                    break
-                depth -= 1
-            k += 1
+        end = self._target_end(text, close + 2)
         if end < 0:
             self.fail(line, "unclosed link target: a ( without )")
             out.append(html.escape(text[i:]))
@@ -351,6 +337,42 @@ class Inline:
         else:
             out.append(f'<a href="{html.escape(href)}">{inner}</a>')
         return end + 1
+
+    @staticmethod
+    def _target_end(text, k) -> int:
+        """The index of the ) that closes a link target starting at
+        text[k], or -1.  Parentheses inside nest to any depth; an escaped
+        character is part of the target, not a delimiter."""
+        depth = 0
+        while k < len(text):
+            if text[k] == "\\" and k + 1 < len(text) \
+                    and text[k + 1] in ESCAPABLE:
+                k += 2
+                continue
+            if text[k] == "(":
+                depth += 1
+            elif text[k] == ")":
+                if depth == 0:
+                    return k
+                depth -= 1
+            k += 1
+        return -1
+
+    @classmethod
+    def _without_targets(cls, text) -> str:
+        """@p text with every link target "(...)" after a "]" taken out."""
+        out, i, n = [], 0, len(text)
+        while i < n:
+            j = text.find("](", i)
+            if j < 0:
+                out.append(text[i:])
+                break
+            out.append(text[i:j + 1])
+            end = cls._target_end(text, j + 2)
+            if end < 0:
+                break
+            i = end + 1
+        return "".join(out)
 
     @staticmethod
     def _brackets(text) -> dict[int, int]:
@@ -400,6 +422,7 @@ NUMBER = re.compile(r"(\d{1,9})\. (.*)\Z")
 IMAGE_LINE = re.compile(r"!\[([^\]\[]*)\]\(([^()]*)\)\Z")
 # A separator cell: hyphens with an optional : at either end, 3 characters
 # at least.
+REFERENCE_DEFINITION = re.compile(r" {0,3}\[(?:\\.|[^\]\\])+\]:")
 SEPARATOR_CELL = re.compile(r"(?=.{3}):?-+:?\Z")
 
 
@@ -537,6 +560,17 @@ class Renderer:
             while j < n and lines[j].strip() \
                     and not lines[j].lstrip().startswith("#"):
                 j += 1
+            raw = [ln.rstrip("\r\n") for ln in lines[i:j]]
+            for k, ln in enumerate(raw[:-1]):
+                if ln.endswith("  ") or (len(ln) - len(ln.rstrip("\\"))) % 2:
+                    self.fail(i + k + 1, "a hard line break (two spaces or "
+                                         "a \\ at the end of a line) is "
+                                         "outside the format")
+            for k, ln in enumerate(raw):
+                if REFERENCE_DEFINITION.match(ln):
+                    self.fail(i + k + 1, "a reference definition "
+                                         "([label]: target) is outside the "
+                                         "format; write [text](target)")
             block = [ln.rstrip() for ln in lines[i:j]]
             self.block(block, i + 1)
             first = False

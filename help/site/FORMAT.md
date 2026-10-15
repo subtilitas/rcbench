@@ -112,9 +112,12 @@ the referenced images.
 
 These fail: headings `####` and deeper, `#` without a space after it, setext
 headings (`===` or `---` under a line), a `---` rule, fenced code blocks,
-block quotes (`>`), `*` and `+` list markers (on any line of a block), nested lists, single `*` or
-`_` emphasis, reference links (`[text][ref]`), images inside text, image
-targets without `view:`, an unclosed `**` or backtick.
+indented code blocks (4 spaces or a tab), block quotes (`>`), `*` and `+`
+list markers (on any line of a block), nested lists, single `*` emphasis,
+`_` and `__` emphasis, reference links (`[text][ref]`) and reference
+definitions (`[label]: target`), hard line breaks (two spaces or a `\` at
+the end of a line), images inside text, image targets without `view:`, a
+link or caption that renders as no text, and an unclosed `**` or backtick.
 
 HTML in the text is escaped: `<b>` shows as the characters `<b>`.
 
