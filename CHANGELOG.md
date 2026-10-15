@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- A touch injector for the measurement bench: a Waveshare RP2350-Zero that
+  answers as a GT911 at 0x14 and presses where a USB serial command says
+  (`testbench/touch-injector`). It starts listen-only, names the line that
+  carries SCL, and attaches only after `confirm scl=GP5`. A panel built
+  with `RCBENCH_TOUCH_INJECTOR=ON` reads 0x14 after the glass, merges both
+  with the glass first, shows `INJECT` in the MODE chip, and counts a silent
+  injector as lost touch. Release images are built without the option.
+
 - The home tag that leaves SETUP for the menu with values unsaved opens a
   warning, `UNSAVED CHANGES`. It lists each value that differs from the
   stored one as `name: stored -> now`, 9 lines and `and N more` past 10

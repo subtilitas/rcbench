@@ -170,7 +170,7 @@ def queues() -> tuple:
     read fails rather than being guessed."""
     rows, errors = [], []
     for src in sorted(PANEL_DIR.rglob("*.c")):
-        if "build" in src.relative_to(PANEL_DIR).parts:
+        if stack_check.in_build_dir(src.relative_to(PANEL_DIR)):
             continue
         text = source_text(src)
         macros = dict(re.findall(r"^\s*#\s*define\s+(\w+)\s+\(?\s*(\d+)u?"

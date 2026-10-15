@@ -261,6 +261,7 @@ jobs:
       - name: clang-tidy
         run: |
           git ls-files 'shared/**/*.c' 'protocols/**/*.c' 'test/host/*.c' \
+                       'testbench/touch-injector/core/*.c' \
               | grep -v -e 'gfx_font' -e '/rp2350/' \
                         -e 'test/host/render_screen.c' \
                         -e 'test/host/bench_frame.c' \
@@ -282,7 +283,9 @@ jobs:
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             $(git ls-files 'protocols/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
+            -Itestbench/touch-injector/core/include \
             $(git ls-files 'shared/**/*.c' 'protocols/**/*.c' \
+                'testbench/touch-injector/core/*.c' \
                 | grep -v -e 'gfx_font' -e '/rp2350/') \
             $(git ls-files 'test/host/*.c')
 
@@ -306,7 +309,9 @@ jobs:
             $(git ls-files 'protocols/*/rp2350/*.h' \
                 | sed 's|/[^/]*$||; s|^|-I|' | sort -u) \
             -Ifirmware/iomcu/src -Ifirmware/panel/main \
+            -Itestbench/touch-injector/core/include \
             $(git ls-files 'firmware/**/*.c' 'protocols/*/rp2350/*.c' \
+                'testbench/touch-injector/rp2350/*.c' \
                 | grep -v '^firmware/panel/main/main\.c$')
           cppcheck --error-exitcode=1 --std=c11 --quiet \
             --enable=warning,performance,portability \
@@ -474,6 +479,31 @@ jobs:
         run: python3 tools/ram_budget.py firmware/panel/build
              ${{ matrix.idf == 'v5.4' && '--check-doc' || '' }}
 
+      # The test-bench build that reads a touch injector at 0x14 beside the
+      # glass (testbench/touch-injector).  Built so it keeps building; not
+      # uploaded.  The released image must hold none of it.
+      - name: The injector build compiles, and the released image has none
+        if: matrix.idf == 'v5.4'
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: ${{ matrix.idf }}
+          target: esp32s3
+          path: 'firmware/panel'
+          command: idf.py -B build-inject -D RCBENCH_TOUCH_INJECTOR=ON build
+
+      - name: The injector code is in the injector build only
+        if: matrix.idf == 'v5.4'
+        run: |
+          grep -aq touch_inject_attach \
+            firmware/panel/build-inject/rcbench-panel.elf
+          if grep -aq -e touch_inject_ -e touch_merge_ \
+              firmware/panel/build/rcbench-panel.elf; then
+            echo "::error::the released image holds touch injector code"
+            exit 1
+          fi
+          python3 tools/stack_check.py firmware/panel/build-inject
+          python3 tools/ram_budget.py firmware/panel/build-inject
+
       - uses: actions/upload-artifact@v7
         with:
           name: panel-${{ matrix.idf }}
@@ -583,3 +613,49 @@ jobs:
             firmware/iomcu/build/rcbench-iomcu.bin
             firmware/iomcu/build/rcbench-iomcu.elf
           if-no-files-found: error
+
+  touch-injector:
+    # A test-bench tool (testbench/touch-injector), built so it keeps
+    # building.  Its UF2 is not uploaded and no release carries it.
+    name: Touch injector (pico-sdk 2.3.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install the ARM toolchain
+        run: |
+          # Third-party lists this build never installs from; one serving a
+          # stale index fails the whole step.  See the note in the host job.
+          sudo rm -fv /etc/apt/sources.list.d/*google* \
+                      /etc/apt/sources.list.d/*microsoft* || true
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
+
+      # The same key as the coprocessor job: one SDK checkout for both.
+      - name: Cache the pico-sdk
+        id: sdk-cache
+        uses: actions/cache@v6
+        with:
+          path: pico-sdk
+          key: pico-sdk-${{ env.PICO_SDK_TAG }}
+
+      - name: Clone the pico-sdk
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 -b "$PICO_SDK_TAG" --recursive \
+            --shallow-submodules https://github.com/raspberrypi/pico-sdk.git
+
+      # From its own directory with PICO_SDK_PATH alone, as the README
+      # builds it.
+      - name: Build
+        env:
+          PICO_SDK_PATH: ${{ github.workspace }}/pico-sdk
+        working-directory: testbench/touch-injector
+        run: |
+          cmake -S . -B build -G Ninja -DPICO_BOARD=waveshare_rp2350_zero
+          cmake --build build -j"$(nproc)"
+          ls -l build/rcbench-touch-injector.uf2
+          sha256sum build/rcbench-touch-injector.uf2

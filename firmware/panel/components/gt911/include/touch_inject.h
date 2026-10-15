@@ -1,0 +1,61 @@
+/*
+ * The touch injector's side of the touch task, in a build with
+ * RCBENCH_TOUCH_INJECTOR only (idf.py -D RCBENCH_TOUCH_INJECTOR=ON build).
+ *
+ * The injector (testbench/touch-injector) answers as a GT911 at 0x14 on the
+ * touch bus.  touch_init() asks for it once, before the touch task starts;
+ * one that answers later is not seen until the next start.  While it is
+ * attached, the touch task reads it after the glass on every poll and merges
+ * the two contact sets (touch_merge.h), and touch_age_ms() is the older of
+ * the two ages.  A release build compiles none of this and never addresses
+ * 0x14.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "driver/i2c_master.h"
+#include "esp_err.h"
+
+#include "touch.h"
+#include "touch_types.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/** The injector's I2C address: the GT911's second strap address. */
+#define TOUCH_INJECT_ADDR 0x14
+
+/**
+ * Look for the injector on @p bus.  @p glass_addr is the address the glass's
+ * controller answered on: when it is TOUCH_INJECT_ADDR, the glass's
+ * controller is absent and the injector answered in its place, so no second
+ * handle is made.  Never fails touch: an absent injector is the normal case.
+ */
+void touch_inject_attach(i2c_master_bus_handle_t bus, uint16_t glass_addr,
+                         uint32_t now_ms);
+
+/**
+ * The glass reported (@p fresh) or did not.  Merges its set with the
+ * injector's last one into @p pts / @p count, and returns whether there is
+ * a new merged frame.  No bus traffic.
+ */
+bool touch_inject_glass(touch_point_t *pts, int *count, bool fresh);
+
+/**
+ * Read the injector, when it is attached and due.  Returns true, with the
+ * merged set in @p pts / @p count, when its contacts changed.
+ */
+bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms);
+
+/** Milliseconds since the injector last answered; 0 when none is attached. */
+uint32_t touch_inject_age_ms(uint32_t now_ms);
+
+#ifdef __cplusplus
+}
+#endif

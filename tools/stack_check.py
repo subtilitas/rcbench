@@ -522,6 +522,12 @@ def call_args(text: str, start: int) -> list | None:
     return None
 
 
+def in_build_dir(rel: Path) -> bool:
+    """Whether @p rel, relative to firmware/panel, lies in a build tree:
+    build/, or a second one such as build-inject/ (docs/Building.md)."""
+    return any(p == "build" or p.startswith("build-") for p in rel.parts)
+
+
 def task_stacks() -> tuple:
     """(entry function, task name, stack bytes, where) for every task the
     panel's own code creates, and the errors: a creation whose entry, name
@@ -530,7 +536,7 @@ def task_stacks() -> tuple:
     skipped."""
     tasks, errors = [], []
     for src in sorted(PANEL_DIR.rglob("*.c")):
-        if "build" in src.relative_to(PANEL_DIR).parts:
+        if in_build_dir(src.relative_to(PANEL_DIR)):
             continue
         raw = src.read_text(encoding="utf-8")
         # Comments out, line breaks kept, so line numbers hold.

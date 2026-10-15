@@ -9814,7 +9814,15 @@ void app_main(void)
                                                         : 0u)),
             .faults      = faults,
             .run_seconds = run_seconds,
+#ifdef RCBENCH_TOUCH_INJECTOR
+            /* A bench build names an attached touch injector where the
+             * mode goes; LINK still tells BENCH from SIM, and the
+             * SIMULATION watermark still covers a simulated bench. */
+            .mode        = touch_injector_attached() ? "INJECT"
+                                                     : ui_band_mode(link_up),
+#else
             .mode        = ui_band_mode(link_up),
+#endif
             /* Not over an update: the link is down for it, and the
              * simulator that runs while it is down drives nothing shown. */
             .simulated   = bench_state_simulated(&bench) && !cu_active,
