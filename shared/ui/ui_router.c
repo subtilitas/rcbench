@@ -361,23 +361,26 @@ static void help_open(ui_band_chip_t chip)
 /*
  * The home tag, tapped.  The screen on top goes up a level of its own when
  * it has one; otherwise a screen SETUP's tiles open goes back to SETUP and
- * every other to the menu.  A level change inside a screen is a change of
- * what is on the glass, as a change of screen is: the contacts the screen
- * owned are released first and are nobody's until they lift.  Not inlined,
- * so tools/stack_check.py finds the call into back() by name.
+ * every other to the menu, unless the screen holds that navigation.  A
+ * level change inside a screen and a held navigation are a change of what
+ * is on the glass, as a change of screen is: the contacts the screen owned
+ * are released first and are nobody's until they lift.  Not inlined, so
+ * tools/stack_check.py finds the calls into back() and hold() by name.
  */
 static __attribute__((noinline)) void router_back(void)
 {
     const ui_screen_t *scr = screen_for(s.current);
-    if (scr != NULL && scr->back != NULL) {
+    const ui_screen_id_t to = settings_screen_opens(s.current)
+                                  ? SCREEN_SETUP : SCREEN_OVERVIEW;
+    if (scr != NULL && (scr->back != NULL || scr->hold != NULL)) {
         release_owned();
-        if (scr->back()) {
+        if ((scr->back != NULL && scr->back())
+            || (scr->hold != NULL && scr->hold(to))) {
             ui_router_invalidate();
             return;
         }
     }
-    ui_router_goto(settings_screen_opens(s.current) ? SCREEN_SETUP
-                                                    : SCREEN_OVERVIEW);
+    ui_router_goto(to);
 }
 
 /* The slot of contact @p id in the screen's table, or -1 when the screen

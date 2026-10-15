@@ -60,6 +60,7 @@ extern const uint8_t  board_drawing_rp2350_can[];
 extern const uint32_t board_drawing_rp2350_can_bytes;
 #include "ui_screen.h"
 #include "ui_theme.h"
+#include "ui_widgets.h"
 
 #define W 800
 #define H 480
@@ -2328,6 +2329,34 @@ int main(int argc, char **argv)
         settings_set(SET_PACK_CELLS, 4.0f);
     }
 
+    /*
+     * The warning that holds the home tag on SETUP's tiles: the PD mini's
+     * TX pin set and not saved; twelve changes, of which nine fit beside
+     * the count of the rest; and, for the fit check only, a pin and the
+     * device's name under a save the store refused, the bench ARMED.
+     */
+    if (id == SCREEN_SETUP && strncmp(view, "setup-leave", 11) == 0) {
+        settings_set(SET_PDMINI_TX, 4.0f);
+        if (strcmp(view, "setup-leave-many") == 0) {
+            settings_set(SET_PDMINI_EN, 1.0f);
+            settings_set(SET_PDMINI_RX, 5.0f);
+            settings_set(SET_PDMINI_BAUD, 0.0f);
+            settings_set(SET_PACK_CELLS, 4.0f);
+            settings_set(SET_PACK_MAH, 2200.0f);
+            settings_set(SET_PACK_MOHM, 12.0f);
+            settings_set(SET_MOTOR_POLES, 12.0f);
+            settings_set(SET_MOTOR_KV, 1100.0f);
+            settings_set(SET_OUT_MIN_US, 1100.0f);
+            settings_set(SET_OUT_MAX_US, 1900.0f);
+            settings_set_text(SET_TEXT_DUT_NAME, "X8");
+        }
+        if (strcmp(view, "setup-leave-armed") == 0) {
+            settings_set_text(SET_TEXT_DUT_NAME, "X8");
+            /* The language store keeps nothing: the save is refused. */
+            (void)settings_save();
+        }
+    }
+
     if (id == SCREEN_BUSFAULT) {
         /* The bench that is wired but not terminated: frames cross and come
          * back altered, which is the verdict a reflection produces. */
@@ -2808,7 +2837,8 @@ int main(int argc, char **argv)
                    || (strncmp(view, "servo-limrun", 12) == 0
                        && strcmp(view, "servo-limrun-restore") != 0
                        && strcmp(view, "servo-limrun-stopped") != 0
-                       && strcmp(view, "servo-limrun-range") != 0);
+                       && strcmp(view, "servo-limrun-range") != 0)
+                   || strcmp(view, "setup-leave-armed") == 0;
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
@@ -2840,6 +2870,11 @@ int main(int argc, char **argv)
     }
     if (strcmp(view, "motor-table") == 0) {
         tap(6 + 93, UI_BAND_H + 11);                    /* TABLE */
+    }
+    /* The home tag on SETUP's tiles, held by the warning. */
+    if (strncmp(view, "setup-leave", 11) == 0) {
+        const gfx_rect_t home = ui_home_tag_rect(ui_router_title(id));
+        tap(home.x + home.w / 2, home.y + home.h / 2);
     }
     /* SETUP opens on its tiles; ESC / BENCH's list is the first tile's. */
     if (strcmp(view, "setup-esc") == 0 || strcmp(view, "setup-dirty") == 0) {

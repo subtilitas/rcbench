@@ -108,6 +108,9 @@ const char *ui_setting_help(setting_id_t id);
 const char *ui_setting_category(setting_cat_t cat);
 /** As settings_value_text(), with ON, OFF and the options translated. */
 const char *ui_setting_value(setting_id_t id, char *buf, size_t n);
+/** As ui_setting_value(), for @p value rather than the value in force. */
+const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
+                                size_t n);
 /** Option @p k of an enum setting; "?" for one out of range. */
 const char *ui_setting_option(setting_id_t id, int k);
 

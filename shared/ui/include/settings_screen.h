@@ -11,6 +11,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "settings.h"
@@ -71,6 +72,26 @@ int settings_hub_tiles(void);
  * screen leads back to SETUP rather than to the menu.
  */
 bool settings_screen_opens(ui_screen_id_t id);
+
+/**
+ * Whether the warning shows: the home tag left SETUP with settings unsaved
+ * and no save asked (settings_dirty() and not settings_save_asked()), and
+ * nothing has answered it yet.  STAY, the home tag again, SAVE, DISCARD and
+ * any change of screen close it.
+ */
+bool settings_screen_warning(void);
+
+/** The warning's change lines: SETTINGS_WARN_LINES fit. */
+#define SETTINGS_WARN_LINES 10
+
+/**
+ * Line @p i of the warning's changes into @p line, as drawn: "name: saved
+ * -> now", the values as the list shows them, each with its unit; the
+ * values in schema order, then the strings.  With more changes than
+ * SETTINGS_WARN_LINES, the last line counts the rest.  False past the last
+ * line, and while the warning does not show.
+ */
+bool settings_screen_warn_line(int i, char *line, size_t n);
 
 #ifdef __cplusplus
 }
