@@ -157,7 +157,7 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 us and PULSE UPPER 2000.0 us
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
-SEARCH+PROG needs a KST or Chaservo servo on the programming port: PWM TARGET on PROG PORT, the port in PWM, and 4.8 V or more. With a PD mini, its set point counts; without one, the servo rail in the INA3221's last window. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the third line says why. On PROG PORT every run starts with a read session: a port not in PWM or a supply under 4.8 V keeps the button grey for SEARCH ONLY as well, and the third line names the condition.
+SEARCH+PROG needs a KST or Chaservo servo on the programming port: PWM TARGET on PROG PORT, the port in PWM, and 4.8 V or more. With a PD mini, its output must be on and its set point counts; without one, the servo rail in the INA3221's last window counts. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the third line says why. On PROG PORT every run starts with a read session: a port not in PWM, a PD mini output that is off, or a supply under 4.8 V keeps the button grey for SEARCH ONLY as well, and the third line names the condition.
 
 ![The limit run, programming](view:servo-limrun)
 

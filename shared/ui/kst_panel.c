@@ -2559,10 +2559,12 @@ kst_panel_run_t kst_panel_run_poll(void)
              && kst_field_get(kst_prog_servo(p), k.run.want_id[1])
                     == k.run.want[1];
         (void)kst_prog_enable(p, false);
+        /* Sent, whether it ended well or not: the file saved before it
+         * holds the servo as the run found it. */
+        if (k.run.writes == 0u) {
+            kst_prog_run_written(p);
+        }
         if (ok) {
-            if (k.run.writes == 0u) {
-                kst_prog_run_written(p);
-            }
             ++k.run.writes;
         }
         break;

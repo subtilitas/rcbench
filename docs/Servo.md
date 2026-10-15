@@ -83,7 +83,7 @@ and the line under it says why.
 
 SEARCH+PROG is offered for a servo on the programming port: PWM TARGET on
 PROG PORT, the port in PWM, and a supply of 4.8 V or more. With a PD mini
-answering, its set point counts; without one, the servo rail's mean in the
+answering, its output must be on and its set point counts; without one, the servo rail's mean in the
 INA3221's last window. On the bench's outputs the run searches only, the
 row reads SEARCH ONLY, and the third line reads `PROGRAMMING: ONLY A SERVO
 ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
@@ -93,6 +93,7 @@ third line names the condition.
 | Line | Condition |
 | --- | --- |
 | `PROGRAMMING: THE PORT IS NOT IN PWM` | the programmer holds the port, or the port is not ready for a run |
+| `PROGRAMMING: PD MINI OUTPUT OFF` | a PD mini answers with its output off: the read session would switch it on beside the supply that feeds the rail |
 | `PROGRAMMING: SUPPLY SET BELOW 4.8 V` | a PD mini answers and its set point is under 4.8 V |
 | `PROGRAMMING: SERVO RAIL BELOW 4.8 V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8 V or not read |
 
@@ -254,7 +255,7 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 | One search | 40 s | abort: 1000 µs of travel is 100 positions of 250 ms, 25 s |
 | One programmer step | 150 s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3 s | abort when SAFE or ARMED is not in place 3 s after the run asked |
-| The supply | set points and output as at the start, in every phase but the programmer's sessions (CONNECT to LEAVE), which own the supply; during a search also the rail within 1.0 V of the first window | abort |
+| The supply | set points and output, on or off, as at its first reading, in every phase but the programmer's sessions (CONNECT to LEAVE), which own the supply; an output off at the start and switched on ends the run as `supply or rail voltage changed`, so no second supply is switched on beside a rail fed from elsewhere; during a search also the rail within 1.0 V of the first window | abort |
 | The rail voltage in a search's window | present in every window of a search | abort `no rail voltage in a window`, before the window moves the search; the 1.0 V band's reference is the run's first window, which holds the rail |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
@@ -376,7 +377,9 @@ With the AS5600 fitted, each end has a line with the horn's angle at its
 last free position, `AS5600 +38.5 deg at the last free position`. A run
 that wrote and did not pass has a `Restore:` line. A run that sent no
 write has no `Backup:` line: the values before the run are held from the
-first write on. The `Searched:` line
+first write on. The `Backup:` line names the file this run's first write
+saved, also when that write was sent and lost, never an earlier run's file.
+The `Searched:` line
 names the search's centre and ends; a run that ended before its first
 search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
 

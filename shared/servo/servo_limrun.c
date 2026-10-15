@@ -689,9 +689,13 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
         return;
     }
     if (!r->sup_watch) {
-        /* A supply that answers at the start is watched from here on. */
-        if (s->online && s->output) {
+        /* A supply that answers is watched from its first reading on: its
+         * set points, and its output on or off.  An output off at the
+         * start stays off: a rail fed from elsewhere gets no second
+         * supply switched on beside it. */
+        if (s->online) {
             r->sup_watch = true;
+            r->sup_out   = s->output;
             r->sup_v     = s->set_v;
             r->sup_i     = s->set_i;
         }
@@ -699,13 +703,15 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
     }
     if (!s->online) {
         servo_limrun_abort(r, SERVO_TEST_AB_SUPPLY_LOST, now_ms);
-    } else if (s->trip != 0u) {
+    } else if (r->sup_out && s->trip != 0u) {
         servo_limrun_abort(r, SERVO_TEST_AB_TRIPPED, now_ms);
-    } else if (!s->output) {
+    } else if (r->sup_out && !s->output) {
         servo_limrun_abort(r, SERVO_TEST_AB_SUPPLY_OFF, now_ms);
-    } else if (s->set_v > r->sup_v + 0.005f || s->set_v < r->sup_v - 0.005f
+    } else if (s->output != r->sup_out
+               || s->set_v > r->sup_v + 0.005f || s->set_v < r->sup_v - 0.005f
                || s->set_i > r->sup_i + 0.0005f
                || s->set_i < r->sup_i - 0.0005f) {
+        /* Switched on from off, or its set points moved. */
         abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
     }
 }

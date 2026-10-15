@@ -1903,6 +1903,58 @@ TEST_CASE(the_supply_is_watched_in_safe_and_on_the_way_to_armed)
     }
 }
 
+/* A supply that answers with its output off -- the rail fed from
+ * elsewhere -- is watched as well: the run passes while it stays off, a
+ * trip flag on it ends nothing, and its output switched on outside a
+ * session ends the run as a changed supply.  Switched on inside a session,
+ * the session runs on and the run ends once it is back. */
+TEST_CASE(a_supply_off_at_the_start_that_switches_on_ends_the_run)
+{
+    rig_init(0u, false);
+    g.sup.output = false;
+    g.sup.trip = 1u;
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK(g.run.sup_watch);
+    CHECK(!g.run.sup_out);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_PASS);
+
+    static const struct {
+        servo_limrun_phase_t ph;
+        at_t at;
+    } k_ph[] = {
+        { SERVO_LIMRUN_PH_SAFE, AT_READ },   { SERVO_LIMRUN_PH_SEARCH, AT_SEARCH },
+        { SERVO_LIMRUN_PH_ARM, AT_LATER },   { SERVO_LIMRUN_PH_PROBE, AT_LATER },
+        { SERVO_LIMRUN_PH_CONNECT, AT_READ }, { SERVO_LIMRUN_PH_CONNECT, AT_LATER },
+    };
+    for (size_t p = 0; p < sizeof(k_ph) / sizeof(k_ph[0]); ++p) {
+        rig_init(0u, false);
+        g.sup.output = false;
+        CHECK(start());
+        if (k_ph[p].at == AT_LATER && k_ph[p].ph != SERVO_LIMRUN_PH_PROBE) {
+            CHECK(run_to(SERVO_LIMRUN_PH_PROBE, RUN_MS));
+        }
+        CHECK(run_to(k_ph[p].ph, RUN_MS));
+        for (int k = 0; k < 1000 && !g.run.sup_watch; ++k) {
+            tick();
+        }
+        CHECK(g.run.sup_watch);
+        CHECK_EQ(g.run.phase, k_ph[p].ph);
+        g.bench_ms = 2000u;
+        g.sup.output = true;
+        if (k_ph[p].ph == SERVO_LIMRUN_PH_CONNECT) {
+            /* The session's: it runs on, and the run ends after it. */
+            run_for(300u);
+            CHECK(servo_limrun_running(&g.run));
+        }
+        run_for(RUN_MS);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+        CHECK_EQ(g.offs, 1u);
+        CHECK_EQ(g.releases, 1u);
+    }
+}
+
 /* The run aborted in the step after its ARM was asked, before the bench
  * took it: SAFE is asked behind it and the bench ends SAFE. */
 TEST_CASE(an_abort_behind_the_arm_leaves_the_bench_safe)
@@ -2388,6 +2440,7 @@ int main(void)
     RUN(above_1_a_for_400_ms_ends_the_run);
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
     RUN(the_supply_is_watched_in_safe_and_on_the_way_to_armed);
+    RUN(a_supply_off_at_the_start_that_switches_on_ends_the_run);
     RUN(an_abort_behind_the_arm_leaves_the_bench_safe);
     RUN(no_window_for_200_ms_ends_the_run);
     RUN(a_window_without_the_rail_voltage_ends_a_search);

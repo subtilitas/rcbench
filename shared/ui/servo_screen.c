@@ -673,6 +673,9 @@ static struct {
     bool      peek_lim;
     servo_test_out_t peek_kind;
     bool      files_lim;
+    /* The logger has an OPEN or an END of the last run not answered yet
+     * (servo_screen_test_logger_busy()). */
+    bool      logger_busy;
 
     uint32_t ctrl_rev;
     uint8_t  drive_target; /* 0 the outputs, 1 + n programming port n */
@@ -2995,7 +2998,7 @@ static int test_blocked(void)
         return SERVO_STR_START_NOT_ARMED;
     }
     if (!servo_test_drained(&s.test) || servo_limrun_running(&s.lim)
-        || !servo_limrun_drained(&s.lim)) {
+        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }
     /* What the engine would refuse, said live: a refusal stays on the
@@ -3148,6 +3151,14 @@ void servo_screen_test_files(int number, bool report)
     }
 }
 
+void servo_screen_test_logger_busy(bool busy)
+{
+    if (busy != s.logger_busy) {
+        s.logger_busy = busy;
+        ++s.ctrl_rev;
+    }
+}
+
 /* ------------------------------------------------------------ limit run */
 
 /* A PD mini answers on the servo rail: the programmer's CONNECT asks it
@@ -3202,7 +3213,7 @@ static const char *lim_blocked(void)
         return ui_servo_str(SERVO_STR_START_NOT_ARMED);
     }
     if (servo_test_running(&s.test) || !servo_test_drained(&s.test)
-        || !servo_limrun_drained(&s.lim)) {
+        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return ui_servo_str(SERVO_STR_START_BUSY);
     }
     const char *meter = lim_meter_why();
@@ -3234,7 +3245,7 @@ static const char *lim_blocked(void)
 }
 
 /* Why the programming is not offered, or NULL: only a servo on the
- * programming port, with the port in PWM, and a PD mini set where a
+ * programming port, with the port in PWM, and a PD mini on and set where a
  * session can run, or without one a servo rail read at 4.8 V or more. */
 static const char *lim_prog_why(void)
 {
@@ -3245,6 +3256,12 @@ static const char *lim_prog_why(void)
     if (!servo_limrun_running(&s.lim)
         && (kst_panel_holds_port() || !kst_panel_run_ready())) {
         return TR(SV_LIM_PROG_BUSY);
+    }
+    /* A PD mini that answers with its output off, on a rail fed from
+     * elsewhere: the read session's ENTER would switch it on beside that
+     * supply, and the run ends on an output switched on. */
+    if (!servo_limrun_running(&s.lim) && lim_pd_answers() && !s.sup.output) {
+        return TR(SV_LIM_PROG_PD_OFF);
     }
     if (lim_pd_answers()
         && supply_screen_set_v() * 1000.0f
@@ -3383,15 +3400,18 @@ static void lim_poll(void)
         sv.ok = kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
                                     &sv.reversion, &type_no, sv.pulse_dus);
         sv.type = type_no;
-        snprintf(sv.backup, sizeof(sv.backup), "%s", kst_panel_run_backup());
+        /* No backup at a CONNECT: the programmer's is an earlier run's
+         * until this run's first write (servo_limrun_backup()). */
         servo_limrun_connected(&s.lim, &sv, test_now());
         break;
     case SERVO_LIMRUN_PH_WRITE:
         if (ok) {
             (void)kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
                                       &sv.reversion, &type_no, sv.pulse_dus);
-            servo_limrun_backup(&s.lim, kst_panel_run_backup());
         }
+        /* The file saved before the run's first write, sent whether it
+         * ended well or not. */
+        servo_limrun_backup(&s.lim, kst_panel_run_backup());
         if (s.lim.pulse_op) {
             servo_limrun_pulsed(&s.lim, ok, ok ? sv.pulse_dus : NULL,
                                 test_now());

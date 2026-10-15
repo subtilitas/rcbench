@@ -114,7 +114,13 @@ history is in git.
   window, `PROGRAMMING: SERVO RAIL BELOW 4.8 V`. From a servo run's start,
   and from an automatic test's OPEN on, to the close of its file, Wi-Fi
   and an update wait. The FOUND and FREE boxes name the output the run
-  started on. RESTORE offers `Values
+  started on. A PD mini that answers with its output off at a run's start
+  stays off: switched on outside a session it ends the run, `supply or rail
+  voltage changed`, and a run on PROG PORT does not start,
+  `PROGRAMMING: PD MINI OUTPUT OFF`. A run's `Backup:` line names the file
+  its own first write saved, also when that write is sent and lost. No
+  automatic test or limit run starts until the card has taken the last
+  run's file open and close. RESTORE offers `Values
   before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
   UPPER as the run found them; a session after the run saves its own backup
   file at its first write.
@@ -166,8 +172,8 @@ history is in git.
   The zero-initialised data of 15 screen, card and page objects, 161,340
   bytes, and that of lwIP (lightweight IP stack) and the Wi-Fi driver's
   libraries, 13,742 bytes, move to PSRAM. The internal heap at start goes
-  from 126,768 to 299,320 bytes, and the heap left with the largest Wi-Fi
-  mode up from an estimated -81,168 to 91,384 bytes. The free heap on a
+  from 126,768 to 299,312 bytes, and the heap left with the largest Wi-Fi
+  mode up from an estimated -81,168 to 91,376 bytes. The free heap on a
   panel and the frame rate with the screens' state in PSRAM are not
   measured.
 

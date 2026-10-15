@@ -416,8 +416,10 @@ typedef struct {
     bool     elevated;
     uint32_t elevated_ms;
 
-    /* The supply as at the start, when one answered. */
+    /* The supply as at its first reading, when one answered. */
     bool     sup_watch;
+    bool     sup_out;       /**< its output was on                       */
+
     float    sup_v, sup_i;
 
     /* The outbox: OPEN_TXT, the report's lines, END. */
@@ -439,7 +441,9 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
 void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w);
 
 /** The supply's reading.  The first one after the start, with the supply
- *  answering, is what it must stay at. */
+ *  answering, is what it must stay at: its set points, and its output on
+ *  or off.  An output off then and on later ends the run as a changed
+ *  supply (SERVO_LIMRUN_WHY_SUPPLY_CHANGED). */
 void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                          uint32_t now_ms);
 

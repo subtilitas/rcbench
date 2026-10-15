@@ -157,7 +157,7 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0 us und P
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHE+PROG braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini zählt dessen Sollwert, ohne ihn die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und die dritte Zeile nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die dritte Zeile nennt die Bedingung.
+SUCHE+PROG braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und die dritte Zeile nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die dritte Zeile nennt die Bedingung.
 
 ![Der Endlagenlauf beim Programmieren](view:servo-limrun)
 

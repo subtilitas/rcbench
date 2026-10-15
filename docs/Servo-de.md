@@ -91,7 +91,8 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 
 SUCHE+PROG wird für ein Servo am Programmierport angeboten: PWM-ZIEL auf
 PROG-PORT, der Port in PWM und eine Versorgung von 4,8 V oder mehr. Mit
-einem antwortenden PD mini zählt dessen Sollwert, ohne ihn der Mittelwert
+einem antwortenden PD mini muss dessen Ausgang eingeschaltet sein, und sein
+Sollwert zählt; ohne ihn der Mittelwert
 der Servoschiene im letzten Fenster des INA3221. An den Ausgängen des
 Prüfstands sucht der Lauf nur, die Zeile lautet NUR SUCHE, und die dritte
 Zeile lautet `PROGRAMMIEREN: NUR EIN SERVO AM PROG-PORT`. Am PROG-PORT
@@ -102,6 +103,7 @@ Zeile nennt die Bedingung.
 | Zeile | Bedingung |
 | --- | --- |
 | `PROGRAMMIEREN: DER PORT IST NICHT IN PWM` | der Programmierer hält den Port, oder der Port ist nicht für einen Lauf bereit |
+| `PROGRAMMIEREN: PD-MINI-AUSGANG AUS` | ein PD mini antwortet mit ausgeschaltetem Ausgang: die Lesesitzung schaltete ihn neben dem Netzteil ein, das die Schiene speist |
 | `PROGRAMMIEREN: VERSORGUNG UNTER 4.8 V` | ein PD mini antwortet, und sein Sollwert liegt unter 4,8 V |
 | `PROGRAMMIEREN: SERVOSCHIENE UNTER 4.8 V` | kein PD mini antwortet, und die Servoschiene liegt im letzten Fenster des INA3221 unter 4,8 V oder ist nicht gelesen |
 
@@ -277,7 +279,7 @@ Prüfstands angewendet.
 | Eine Suche | 40 s | Abbruch: 1000 µs Weg sind 100 Stellungen zu 250 ms, 25 s |
 | Ein Schritt des Programmierers | 150 s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3 s | Abbruch, wenn SAFE oder ARMED 3 s nach der Anforderung nicht steht |
-| Das Netzteil | Sollwerte und Ausgang wie beim Start, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; während einer Suche zudem die Schienenspannung innerhalb 1,0 V des ersten Fensters | Abbruch |
+| Das Netzteil | Sollwerte und Ausgang, ein oder aus, wie bei seiner ersten Messung, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; ein Ausgang, der beim Start aus ist und eingeschaltet wird, beendet den Lauf als `Netzteil oder Spannung geändert`, so wird neben einer Schiene, die anderswo gespeist wird, kein zweites Netzteil eingeschaltet; während einer Suche zudem die Schienenspannung innerhalb 1,0 V des ersten Fensters | Abbruch |
 | Die Schienenspannung im Fenster einer Suche | in jedem Fenster einer Suche vorhanden | Abbruch `kein Spannungswert im Fenster`, bevor das Fenster die Suche bewegt; Bezug des 1,0-V-Bands ist das erste Fenster des Laufs, das die Spannung enthält |
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
@@ -410,7 +412,10 @@ Mit eingebautem AS5600 hat jedes Ende eine Zeile mit dem Winkel des Horns
 an seiner letzten freien Stellung, `AS5600 +38.5 Grad an der letzten freien
 Stellung`. Ein Lauf, der schrieb und nicht bestand, hat eine Zeile
 `Rückholen:`. Ein Lauf, der kein Schreiben sendete, hat keine Zeile
-`Sicherung:`: die Werte vor dem Lauf liegen ab dem ersten Schreiben vor. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
+`Sicherung:`: die Werte vor dem Lauf liegen ab dem ersten Schreiben vor.
+Die Zeile `Sicherung:` nennt die Datei, die das erste Schreiben dieses
+Laufs sicherte, auch wenn dieses Schreiben gesendet wurde und verloren ging,
+nie die Datei eines früheren Laufs. Die Zeile `Gesucht:` nennt Mitte und Enden der Suche; ein
 Lauf, der vor seiner ersten Suche endete, hat keine. Ein Lauf an einem
 SERVO-PWM-Pin hat keine Zeile `Servopulse:`.
 

@@ -2537,6 +2537,10 @@ static void servo_testing_told(bool running)
  * number in s_test_file (-1: not recorded). */
 static atomic_uint s_test_opens_sent;
 static atomic_uint s_test_opens_done;
+/* ENDs the render loop queued, and those this task has taken: a run's
+ * file is closed and s_test_report set for it once they match. */
+static unsigned    s_test_ends_sent;
+static atomic_uint s_test_ends_done;
 static atomic_int  s_test_file;
 /* Whether the last run's report reached the card whole; set at its END. */
 static atomic_bool s_test_report;
@@ -2649,6 +2653,7 @@ static void test_write(const test_line_t *l)
             control_alert(TR(ALERT_CARD_SERVO_SHORT));
         }
         s_test_num = -1;
+        atomic_fetch_add(&s_test_ends_done, 1u);
         return;
     }
     if (s_test_num <= 0) {
@@ -8547,15 +8552,26 @@ static void test_lines_service(void)
         if (open) {
             atomic_fetch_add(&s_test_opens_sent, 1u);
         }
+        if (k == SERVO_TEST_OUT_END) {
+            ++s_test_ends_sent;
+        }
         servo_screen_test_pop();
     }
-    /* Not the last run's number for a run whose OPEN still waits. */
+    /* Not the last run's number for a run whose OPEN still waits.  The
+     * counts are read before the number and the report state, which the
+     * logger stores before it counts. */
     const unsigned sent = atomic_load(&s_test_opens_sent);
-    if (sent != 0u && !open_waits
-        && atomic_load(&s_test_opens_done) == sent) {
+    const unsigned done = atomic_load(&s_test_opens_done);
+    const unsigned ends = atomic_load(&s_test_ends_done);
+    if (sent != 0u && !open_waits && done == sent) {
         servo_screen_test_files(atomic_load(&s_test_file),
                                 atomic_load(&s_test_report));
     }
+    /* No run starts until the logger has taken the last run's OPEN and
+     * END, and the screen has their answer: one number and one report
+     * state in flight at a time, each the run's that sent it. */
+    servo_screen_test_logger_busy(open_waits || done != sent
+                                  || ends != s_test_ends_sent);
 }
 
 /*

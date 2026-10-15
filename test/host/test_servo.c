@@ -9027,6 +9027,31 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     CHECK(!lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
 }
 
+/* A run's report taken from the outbox but its OPEN or END not answered
+ * by the logger yet: no limit run and no automatic test starts, and the
+ * page says the last report is still writing.  Answered, the automatic
+ * test starts. */
+TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
+{
+    lim_bench();
+    lim_hold(2.3f);
+    CHECK(servo_screen_limit_running());
+    lim_run_out();
+    servo_screen_test_logger_busy(true);
+    bench_frames(100u);
+    lim_hold(2.3f);                       /* the settings stay open */
+    CHECK(!servo_screen_limit_running());
+    CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_BUSY), UI_C_WARN));
+    close_settings();
+    hold_start(2.3f);
+    CHECK(!servo_screen_testing());
+    close_settings();
+    servo_screen_test_logger_busy(false);
+    bench_frames(100u);
+    hold_start(2.3f);
+    CHECK(servo_screen_testing());
+}
+
 /* Each end of a limit run's watch, at a search: ABORTED, the output asked
  * off, the servo let go, and the report naming the reason.  A reset of the
  * screen, as at the panel's start, takes the run with it and asks
@@ -9330,6 +9355,7 @@ int main(void)
     RUN(a_limit_run_needs_a_powered_rail_and_a_bound_output);
     RUN(programming_is_not_offered_off_the_programming_port);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
+    RUN(no_run_starts_while_the_logger_holds_the_last_report);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);
     return test_summary("servo");
 }

@@ -585,7 +585,7 @@ typedef struct {
     bool run_hold;
     bool run_own;             /**< the run is under way: its sessions
                                    take the file of its first write  */
-    bool run_written;         /**< the run's first write ended well */
+    bool run_written;         /**< the run's first write was sent */
     kst_image_t run_img;
     char run_backup[KST_PROG_NAME_MAX];  /**< the file of run_img; "" none */
 
@@ -849,8 +849,8 @@ void kst_prog_forget(kst_prog_t *p);
 /** Hold the servo as read now as the run's.  False, and nothing held, with
  *  no servo read. */
 bool kst_prog_run_hold(kst_prog_t *p);
-/** The run's first write ended well: the file it saved, if any, holds the
- *  servo as held. */
+/** The run's first write was sent, whether it ended well or not: the file
+ *  it saved, if any, holds the servo as held. */
 void kst_prog_run_written(kst_prog_t *p);
 /** The run is over: the servo stays held for RESTORE, and a later
  *  session's first write saves its own file again. */

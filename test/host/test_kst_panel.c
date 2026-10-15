@@ -5652,6 +5652,43 @@ TEST_CASE(a_run_on_the_programming_port_needs_4_8_v_on_the_rail)
     CHECK(strstr(lr.report, "Result:         PASS") != NULL);
 }
 
+/* A PD mini that answers with its output off, the rail fed from
+ * elsewhere: the read session's ENTER would switch it on beside that
+ * supply, so no run on the programming port starts, and the page says why.
+ * With its output on, the run starts. */
+TEST_CASE(a_run_on_the_programming_port_needs_the_pd_mini_on)
+{
+    for (int on = 0; on < 2; ++on) {
+        lr_fresh(false);
+        CHECK(!supply_screen_model());
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.online = true;
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.output = on != 0;
+        st.set_v = supply_screen_set_v();
+        st.set_i = supply_screen_set_i();
+        st.v = st.set_v;
+        st.samples = 1u;
+        st.taken_ms = g_rig.ms;
+        st.stamped = true;
+        servo_screen_supply(&st);
+        lr_ms(200u);
+        lr_start();
+        CHECK_EQ(servo_screen_limit_running(), on != 0);
+        if (on == 0) {
+            CHECK_EQ(lr.disarms, 0u);
+            CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+            CHECK_EQ(lr.cmd, 1500u);
+        } else {
+            servo_screen_set_link(false);
+            lr_ms(200u);
+            CHECK(!servo_screen_limit_running());
+            servo_screen_set_link(true);
+        }
+    }
+}
+
 /* The bench's own PWM output as the target: SERVO PULSES is not on the
  * page and a tap where it stands on the programming port changes nothing;
  * the run searches out to PULSE MIN and PULSE MAX with no session. */
@@ -5729,6 +5766,68 @@ TEST_CASE(a_limit_run_ended_in_a_session_offers_restore)
         g_rig.cut = false;
         CHECK(rig_settle());
     }
+}
+
+/* A run after a run: its report names the file its own first write saved,
+ * also when that write is sent and lost on the line, never the earlier
+ * run's file. */
+TEST_CASE(a_later_run_names_its_own_backup_when_its_first_write_is_lost)
+{
+    char first[sizeof(g_rig.fc.file[0].name)];
+
+    lr_fresh(false);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(strstr(lr.report, "PASS") != NULL);
+    CHECK_EQ(g_rig.fc.saves, 1u);
+    snprintf(first, sizeof(first), "%s", g_rig.fc.file[0].name);
+    CHECK(first[0] != '\0' && strstr(lr.report, first) != NULL);
+
+    /* The servo set back by hand: the second run binds and writes again,
+     * its first write lost on the line once sent. */
+    {
+        kst_image_t img = rig_servo();
+
+        (void)kst_field_set(&img, KST_F_LEFT_ANGLE, 150u);
+        (void)kst_field_set(&img, KST_F_RIGHT_ANGLE, 150u);
+        memcpy(g_rig.sim.reg, img.r, sizeof(img.r));
+    }
+    memset(lr.report, 0, sizeof(lr.report));
+    lr.len = 0u;
+    lr_ms(1000u);
+    /* SEARCH+PROG stays chosen from the first run. */
+    screen_tap(LR_SETB_X, BTN_Y);
+    screen_tap(LR_TAB_X, LR_TAB_Y);
+    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
+    lr_ms(2300u);
+    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
+    lr_ms(20u);
+    CHECK(servo_screen_limit_running());
+    bool cut = false;
+    for (int i = 0; i < 400000 && servo_screen_limit_running(); ++i) {
+        lr_ms(1u);
+        /* The file saved before the write goes out: the line cut. */
+        if (g_rig.fc.saves == 2u) {
+            g_rig.cut = true;
+            cut = true;
+            break;
+        }
+    }
+    CHECK(cut);
+    for (int i = 0; i < 400 && servo_screen_limit_running(); ++i) {
+        lr_ms(500u);
+    }
+    CHECK(!servo_screen_limit_running());
+    lr_ms(1000u);
+    CHECK_EQ(g_rig.fc.saves, 2u);
+    CHECK(strstr(lr.report, "RESTORE") != NULL);
+    CHECK(strstr(lr.report, "Backup:") != NULL);
+    CHECK(strstr(lr.report, g_rig.fc.file[1].name) != NULL);
+    CHECK(strstr(lr.report, first) == NULL);
+    g_rig.cut = false;
+    rig_stop(false);
+    CHECK(rig_settle());
 }
 
 /* After a limit run that passed, an ordinary session is the operator's: its
@@ -5965,8 +6064,10 @@ int main(void)
     RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
     RUN(a_run_ended_in_a_session_ends_the_programmers_run_after_its_leave);
     RUN(a_run_on_the_programming_port_needs_4_8_v_on_the_rail);
+    RUN(a_run_on_the_programming_port_needs_the_pd_mini_on);
     RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
+    RUN(a_later_run_names_its_own_backup_when_its_first_write_is_lost);
     RUN(a_session_after_a_limit_run_saves_its_own_backup);
     RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);
     RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
