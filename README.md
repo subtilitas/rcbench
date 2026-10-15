@@ -100,7 +100,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 40,698 of 41,589 lines in 145 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 40,432 of 41,314 lines in 145 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).
@@ -125,7 +125,9 @@ rcbench is MIT licensed: [LICENSE](LICENSE).
   written; the published protocols and configurators of BLHeli, AM32, ESCape32,
   VESC and Hitec.
 - **Third-party code in the tree: none.** `test/host/greatest.h` is a test
-  harness written for this project; it is not the `greatest` library.
+  harness written for this project; it is not the `greatest` library. The
+  panel links the Mbed TLS that ESP-IDF ships, and the host tests download
+  Mbed TLS 3.6.2; see [NOTICE](NOTICE).
 
 ## Legal notice and disclaimer
 

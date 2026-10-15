@@ -103,7 +103,7 @@ anderen Implementierungen (eine Lizenzregel), und die Coverage hat neben der
 Gesamtuntergrenze eine Untergrenze je Datei.
 
 <!-- coverage:start -->
-Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 40 698 von 41 589 Zeilen in 145 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
+Zeilenabdeckung von `shared/` und `protocols/` durch die Host-Suite: **97,9 %**, 40 432 von 41 314 Zeilen in 145 Dateien. CI schlägt unter 94 % gesamt oder unter 85 % in einer Datei fehl. Die Tabelle je Datei steht in [STATUS.md](STATUS.md#tests-and-ci).
 <!-- coverage:end -->
 
 Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
@@ -129,7 +129,9 @@ rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
   geschrieben ist; die veröffentlichten Protokolle und Konfiguratoren von
   BLHeli, AM32, ESCape32, VESC und Hitec.
 - **Fremdcode im Baum: keiner.** `test/host/greatest.h` ist ein für dieses
-  Projekt geschriebenes Test-Harness; es ist nicht die Bibliothek `greatest`.
+  Projekt geschriebenes Test-Harness; es ist nicht die Bibliothek `greatest`. Das Panel bindet das Mbed TLS
+  ein, das ESP-IDF mitbringt, und die Host-Tests laden Mbed TLS 3.6.2
+  herunter; siehe [NOTICE](NOTICE).
 
 ## Rechtliche Hinweise und Haftungsausschluss
 

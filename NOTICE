@@ -126,3 +126,19 @@ manufacturers and is neither supported nor sponsored by them.
 The programming protocol of KST and Chaservo servos is implemented from wire
 captures of hardware the project owns. No vendor code and no vendor
 documentation is included.
+
+
+Mbed TLS
+--------
+
+The panel verifies the release signature of a panel image with Mbed TLS
+(shared/fwupdate/fw_sign.c). The panel build links the copy that ESP-IDF
+ships (release 3.6.x). The host test build compiles Mbed TLS 3.6.2 from a
+source tree or from the release tarball that CMake downloads and checks
+against its SHA-256 (test/host/CMakeLists.txt). No Mbed TLS source file is
+stored in this repository.
+
+  Copyright The Mbed TLS Contributors
+  Licensed under the Apache License, Version 2.0 or the GNU General Public
+  License, version 2 or later, at the user's choice.
+  https://github.com/Mbed-TLS/mbedtls/blob/v3.6.2/LICENSE

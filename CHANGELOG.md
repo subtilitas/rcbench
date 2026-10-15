@@ -11,7 +11,7 @@ history is in git.
 - The release workflow signs the panel image with ECDSA (elliptic curve
   digital signature algorithm) P-256 over its SHA-256 and publishes
   `rcbench-panel-vX.Y.Z.bin.sig` (DER, 70 to 72 bytes) beside it. The panel
-  embeds the public key and checks the signature when INSTALL begins. A
+  embeds the public key and checks the signature with mbedTLS when INSTALL begins. A
   valid signature installs with the single 2 s hold. An image with no
   signature, or one that does not verify, installs after PANEL UPDATE says
   `NOT SIGNED BY THE RCBENCH RELEASE KEY` and a second 2 s hold completes.

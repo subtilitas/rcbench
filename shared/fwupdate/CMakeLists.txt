@@ -9,9 +9,9 @@ set(SRCS fw_sha256.c fw_sign.c fw_image.c fw_upload.c fw_install.c fw_boot.c
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           REQUIRES safety)
+                           REQUIRES safety mbedtls)
 else()
     add_library(rcbench_fwupdate STATIC ${SRCS})
     target_include_directories(rcbench_fwupdate PUBLIC include)
-    target_link_libraries(rcbench_fwupdate PUBLIC rcbench_safety)
+    target_link_libraries(rcbench_fwupdate PUBLIC rcbench_safety mbedcrypto)
 endif()

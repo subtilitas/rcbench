@@ -37,6 +37,33 @@ if(ENABLE_SANITIZERS)
     add_link_options(${SAN})
 endif()
 
+# mbedTLS verifies the release signature of a panel image
+# (shared/fwupdate/fw_sign.c).  The panel uses the ESP-IDF component; the
+# host builds the same release, 3.6.2, from source.  RCBENCH_MBEDTLS_DIR
+# (cache variable or environment variable) names a source tree; ESP-IDF v5.4
+# carries one in components/mbedtls/mbedtls.  Without it the release tarball
+# is fetched and checked against its SHA-256.  The library keeps its own
+# compile flags: -Werror and the warning set apply to rcbench code only.
+set(RCBENCH_MBEDTLS_DIR "" CACHE PATH "mbedTLS 3.6 source tree, or empty to fetch it")
+if(NOT RCBENCH_MBEDTLS_DIR AND DEFINED ENV{RCBENCH_MBEDTLS_DIR})
+    set(RCBENCH_MBEDTLS_DIR "$ENV{RCBENCH_MBEDTLS_DIR}")
+endif()
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
+set(USE_SHARED_MBEDTLS_LIBRARY OFF CACHE BOOL "" FORCE)
+set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "" FORCE)
+set(GEN_FILES OFF CACHE BOOL "" FORCE)
+if(RCBENCH_MBEDTLS_DIR)
+    add_subdirectory("${RCBENCH_MBEDTLS_DIR}" mbedtls EXCLUDE_FROM_ALL)
+else()
+    include(FetchContent)
+    FetchContent_Declare(mbedtls
+        URL https://github.com/Mbed-TLS/mbedtls/releases/download/mbedtls-3.6.2/mbedtls-3.6.2.tar.bz2
+        URL_HASH SHA256=8b54fb9bcf4d5a7078028e0520acddefb7900b3e66fec7f7175bb5b7d85ccdca)
+    FetchContent_MakeAvailable(mbedtls)
+endif()
+
 set(SHARED "${CMAKE_CURRENT_SOURCE_DIR}/../../shared")
 # The modules that leave this repository whole: a protocol core and, for
 # the coprocessor only, its pin driver (CONTRIBUTING.md, "Where code goes").

@@ -24,6 +24,7 @@ SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -107,6 +108,16 @@ def main() -> int:
         # they are, since no lookup is swapped in them.
         for d in sorted(PROTOCOLS.glob("*/include")):
             includes += ["-I", str(d)]
+        # mbedTLS headers, which fw_sign.c includes: the source tree named
+        # by RCBENCH_MBEDTLS_DIR, or the one the host build fetched.
+        mbed = [Path(os.environ["RCBENCH_MBEDTLS_DIR"])] \
+            if os.environ.get("RCBENCH_MBEDTLS_DIR") else []
+        mbed += sorted((ROOT / "test" / "host").glob(
+            "build*/_deps/mbedtls-src"))
+        for d in mbed:
+            if (d / "include" / "mbedtls" / "pk.h").is_file():
+                includes += ["-isystem", str(d / "include")]
+                break
         sources = sorted(p for p in tree.rglob("*.c")
                          if not p.name.startswith("gfx_font"))
         failed = False

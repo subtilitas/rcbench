@@ -48,8 +48,10 @@ in the repository, the logs or the artifacts. The panel firmware embeds the
 public half (`firmware/panel/main/keys/release_signing_pub.pem`). The panel
 verifies the signature over the whole image in PSRAM when INSTALL, or the
 download's install, begins and before the radio is switched off. The
-verifier (`shared/fwupdate/fw_sign.c`) accepts only a DER signature in
-minimal form with r and s in 1 to n - 1, and a public key on the curve. A
+verifier is mbedTLS (`mbedtls_pk_verify()` over the SHA-256 of
+`fw_sha256()`, called from `shared/fwupdate/fw_sign.c`): the ESP-IDF
+component on the panel, release 3.6.2 on the host. It parses the pinned PEM
+key and accepts only an elliptic curve key on secp256r1 (P-256). A
 valid signature installs with the single 2 s hold. An image with no
 signature, a signature that is not one, or one that does not verify against
 the key and the image is installable only after PANEL UPDATE has said so and
@@ -111,9 +113,11 @@ Everything that parses input somebody else produced:
 | `shared/fwupdate` | the answers to the panel's requests to GitHub: the newest release's tag from a `Location` header (`fw_release_parse_tag()`: printable ASCII without space, at most 69 bytes, `https://github.com/subtilitas/rcbench/releases/tag/v` and then `fw_release_parse_version()`: MAJOR.MINOR.PATCH, digits only, each 0 to 65535 in at most 5 digits without a leading zero, nothing after it); a redirect's `Location` (at most 2048 bytes of printable ASCII, `https://` and one of the 3 listed hosts exactly, at most 3 redirects); the HTTP status (200, or 301, 302, 303, 307 and 308 as redirects; anything else refused); the `Content-Length` (required, above 0, not with chunked transfer, at most the slot or 4096 bytes for `SHA256SUMS`); and `SHA256SUMS` (`fw_release_parse_sums()`: at most 4096 bytes ending in a line feed, every line 64 lowercase hexadecimal digits, a space, a space or `*`, and a name of letters, digits, `.`, `-` and `_`, optionally after `./`; exactly one line for the image's name). The release signature of a panel image and its key (`fw_sig_verify()`,
 `fw_pubkey_parse_pem()`: a signature of 8 to 72 bytes, a PEM (privacy
 enhanced mail) text holding exactly one P-256 public
-key of 91 bytes in DER; a key off the curve, r or s of 0 or at the group
-order or above, a signature with bytes left over or in non-minimal form, and
-any other length are refused; none of these installs without the second
+key of 91 bytes in DER; mbedTLS refuses a key off the curve or on another
+curve, r or s of 0 or at the group order or above, and a signature it cannot
+read, including one with bytes left over; any other length is refused
+before mbedTLS sees it. mbedTLS does not insist on the shortest integer
+encoding of r and s; none of these installs without the second
 hold). A panel firmware image uploaded over Wi-Fi or downloaded from GitHub: refused before it is stored when it is larger than the slot (4,063,232 bytes); then the ESP image header (magic byte, chip ID of the ESP32-S3, a segment count from 1 to 16, every segment's length within the file), the application description (magic word, project name `rcbench-panel` with its terminator, a version of the form MAJOR.MINOR.PATCH), the hash flag, the appended SHA-256 over the whole image and no bytes after it. An image that fails any check is not offered for install; a downloaded one also when its SHA-256 differs from its `SHA256SUMS` line or it names another version than its release |
 | `shared/webaccess` | requests to the Wi-Fi page: the URI (uniform resource identifier) path of a card file (percent decoding; `..`, an absolute path, a backslash, an encoded `.` or `/` that forms a traversal, NUL, a name over 255 characters and a path over 384 bytes are refused, and the path stays under the card's mount point), the access code from the form and the cookie (8 characters, compared in full), the upload's declared length, and mDNS (multicast domain name system) queries: at most 512 bytes, every label and compression pointer checked against the packet's end, at most 16 pointer hops |
 

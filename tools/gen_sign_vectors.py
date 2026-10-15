@@ -2,10 +2,11 @@
 """Write test/host/sign_vectors.h: ECDSA P-256 signatures from the openssl CLI.
 
 The host test of shared/fwupdate/fw_sign.c checks the verifier against
-signatures that openssl produced.  This tool makes two throw-away key pairs,
-signs 48 images with the first and writes the public keys and the signatures
-as C arrays.  The private keys exist only in a temporary directory and are
-deleted when the tool ends; the header holds public data only.
+signatures that openssl produced.  This tool makes two throw-away P-256 key
+pairs and one P-384 key, signs 48 images with the first P-256 key and writes
+the public keys and the signatures as C data.  The private keys exist only in
+a temporary directory and are deleted when the tool ends; the header holds
+public data only.
 
 Image i has 64 + 13 * i bytes, byte j of it is (i * 31 + j * 7) & 0xFF.  The
 test rebuilds the same bytes.
@@ -39,21 +40,6 @@ def run(*args: str, data: bytes | None = None) -> bytes:
                           capture_output=True).stdout
 
 
-def point(pub_pem: pathlib.Path) -> bytes:
-    der = run("openssl", "ec", "-pubin", "-in", str(pub_pem), "-outform",
-              "DER")
-    return der[-64:]
-
-
-def carr(name: str, b: bytes) -> str:
-    rows = []
-    for k in range(0, len(b), 12):
-        rows.append("    " + ", ".join(f"0x{v:02X}" for v in b[k:k + 12])
-                    + ",")
-    return f"static const uint8_t {name}[{len(b)}] = {{\n" + "\n".join(rows) \
-        + "\n};\n"
-
-
 def make(tmp: pathlib.Path) -> str:
     keys = []
     for n in ("a", "b"):
@@ -69,13 +55,17 @@ def make(tmp: pathlib.Path) -> str:
            "#define RCBENCH_SIGN_VECTORS_H\n\n",
            "#include <stdint.h>\n\n",
            f"#define SV_COUNT {COUNT}u\n\n"]
-    pem = keys[0][1].read_text()
-    out.append("static const char sv_pem_a[] =\n")
-    for line in pem.splitlines():
-        out.append(f'    "{line}\\n"\n')
-    out.append(";\n\n")
-    out.append(carr("sv_key_a", point(keys[0][1])))
-    out.append(carr("sv_key_b", point(keys[1][1])))
+    p384 = tmp / "c.pem"
+    p384pub = tmp / "c.pub.pem"
+    run("openssl", "ecparam", "-name", "secp384r1", "-genkey", "-noout",
+        "-out", str(p384))
+    run("openssl", "ec", "-in", str(p384), "-pubout", "-out", str(p384pub))
+    for name, path in (("sv_pem_a", keys[0][1]), ("sv_pem_b", keys[1][1]),
+                       ("sv_pem_p384", p384pub)):
+        out.append(f"static const char {name}[] =\n")
+        for line in path.read_text().splitlines():
+            out.append(f'    "{line}\\n"\n')
+        out.append(";\n\n")
     sigs = []
     for i in range(COUNT):
         s = run("openssl", "dgst", "-sha256", "-sign", str(keys[0][0]),
@@ -94,18 +84,12 @@ def main() -> int:
     check = "--check" in sys.argv[1:]
     if check:
         text = OUT.read_text()
-        pem = "\n".join(re.findall(r'^\s*"(.*)\\n"$', text, re.M))
+        block = re.search(r"sv_pem_a\[\] =\n(.*?);", text, re.S).group(1)
+        pem = "\n".join(re.findall(r'^\s*"(.*)\\n"$', block, re.M))
         ok = True
         with tempfile.TemporaryDirectory() as d:
             pub = pathlib.Path(d) / "a.pub.pem"
             pub.write_text(pem + "\n")
-            key = point(pub)
-            m = re.search(r"sv_key_a\[64\] = \{(.*?)\};", text, re.S)
-            have = bytes(int(x, 16) for x in re.findall(r"0x([0-9A-F]{2})",
-                                                         m.group(1)))
-            if have != key:
-                print("sign_vectors.h: key and PEM differ")
-                ok = False
             sig_len = [int(x) for x in re.search(
                 r"sv_sig_len\[SV_COUNT\] = \{(.*?)\}", text).group(1).split(
                 ",")]
