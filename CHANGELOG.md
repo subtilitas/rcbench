@@ -6,6 +6,49 @@ history is in git.
 
 ## Unreleased
 
+## 0.19.0 - 2026-10-15
+
+Load both boards over USB (Universal Serial Bus) once, on every bench: a
+new one and one that runs 0.18.0 or older. The coprocessor takes
+`rcbench-iomcu-install.uf2` from `rcbench-iomcu-v0.19.0.zip` on its
+`RP2350` drive in BOOTSEL mode: the partition table and the image in slot
+A. The panel takes the parts from `rcbench-panel-v0.19.0.zip` with
+`esptool.py --chip esp32s3 -p PORT write_flash @flash_args`, which keeps
+the settings in NVS (non-volatile storage) at 0x9000, or
+`rcbench-panel-merged.bin` at 0x0, which erases them. The panel's stored
+board drawing is lost once and fetched again at the next link-up. The
+coprocessor keeps its bindings; on an RP2350 of stepping A2 the load can
+erase the old store's second sector at 0x3FF000. The steps are in
+[First run, §1](docs/FirstRun.md#1-flash-both-boards). After this load the
+panel installs a release over Wi-Fi from `rcbench-panel-vX.Y.Z.bin`, and the
+coprocessor takes its image from the panel over CAN (Controller Area
+Network). The link protocol is 4.22, and a 0.18 board still links with a
+0.19 one: a 0.19 panel shows `coprocessor takes no update over CAN -- load
+it once over USB` for a 0.18 coprocessor, and a 0.18 panel never asks a
+0.19 coprocessor's update pages. The coprocessor's flash has two image slots
+of 2036 KiB and the output store at 0x3FC000. A panel built with
+`RCBENCH_IOMCU_BIN`, as the release is, carries the coprocessor image of its
+build, compares builds by SHA-256 at link-up and offers the update behind a
+2 s hold of START: 64-byte blocks with a CRC-16 (cyclic redundancy check)
+each, a SHA-256 over the image, a trial start the panel keeps with BUY, and
+the old image back after 16.7 s without it. The panel's flash has two
+application slots of 4,063,232 bytes. LOGS → WI-FI opens FILES & UPDATE,
+which runs an access point or joins a home network (WPA2 or WPA3 personal)
+behind an 8-character access code, takes an uploaded panel image, checks
+it and installs it on a 2 s hold of INSTALL on the panel, and starts the new
+build on trial with a return to the build before. The same page lists the
+files on the card, sends each one and sends the whole card as one stored
+ZIP. The radio runs only while that screen is open on a bench in SAFE with
+the supply output off and no log run, and goes off after 10 min without a
+request. A panel install and the coprocessor's update exclude each other.
+The coprocessor counts the CAN frames it refuses (protocol 4.21, STATUS
+registers 8 and 9), and MOTOR & ESC (electronic speed controller) shows the
+count above 0. A tap on a chip of the status band opens a help bubble for
+that chip. The time of a whole update over CAN is not measured (the bus
+time of its 26,946 exchanges is 9.0 to 37.7 s for the 0.18 image), nor are
+the transfer rate of the Wi-Fi page and the duration of a panel install's
+erase and write.
+
 ### Added
 
 - The coprocessor counts the CAN frames it receives and refuses to decode:
@@ -96,6 +139,9 @@ history is in git.
   wartet: das Update des Koprozessors läuft.`). The coprocessor's question
   opens only with the panel's radio wholly off and no install under way; a
   START given while either holds is spent and the question opens again.
+- First run §1 lists the four release assets and gives the USB load of both
+  boards from them in four steps, with what each panel flash keeps and
+  loses.
 
 ### Changed
 

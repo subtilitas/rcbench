@@ -148,7 +148,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 # coprocessor first
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
 
-# panel, as one image at offset 0
+# panel, as one image at offset 0; it erases the settings in nvs
 idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin

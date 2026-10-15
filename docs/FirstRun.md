@@ -43,6 +43,72 @@ than burning a track.
 
 ## 1. Flash both boards
 
+Every bench takes one load of both boards over USB (Universal Serial Bus)
+for 0.19.0: a new bench, and a bench that runs 0.18.0 or older. The load
+puts the coprocessor's partition table and the panel's two application
+slots in place, and neither comes over the link. After it, the panel
+installs a release over Wi-Fi ([Screens: Files &
+update](Screens.md#files--update)) and the coprocessor takes its image over
+CAN (Controller Area Network) from the panel.
+
+### From the release assets
+
+| Asset | Holds | For |
+| --- | --- | --- |
+| `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | the coprocessor's USB load: `rcbench-iomcu-install.uf2` |
+| `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | the panel's USB flash |
+| `rcbench-panel-vX.Y.Z.bin` | the panel's application alone, with the coprocessor image it offers over CAN | an update over Wi-Fi of a panel that runs 0.19.0 or later; not for USB |
+| `SHA256SUMS` | the SHA-256 of the three files above | the check in step 1 |
+
+Tools: the RP2350's `RP2350` drive or `picotool` for the coprocessor,
+`esptool.py` for the panel (`pip install esptool`; ESP-IDF carries it).
+`/dev/ttyACM0` below is `COMx` on Windows.
+
+1. In the download folder, `sha256sum -c SHA256SUMS` prints `OK` for each
+   of the three files.
+2. **Coprocessor.** Unpack `rcbench-iomcu-vX.Y.Z.zip`. Hold BOOTSEL while
+   the coprocessor's USB socket is connected, so the module shows its drive
+   `RP2350`. Copy `rcbench-iomcu-install.uf2` onto the drive, or:
+
+   ```bash
+   picotool load -v -x rcbench-iomcu-install.uf2
+   ```
+
+   The module restarts into slot A. Its console prints `rcbench-iomcu:
+   running from slot A` every 3 s ([below](#the-coprocessors-partition-table)).
+3. **Panel.** Unpack `rcbench-panel-vX.Y.Z.zip` and connect the panel's
+   USB-C socket (bridged socket: switch on `UART1`, [§0](#0-before-power)).
+   In the unpacked folder, on a bench whose settings stay:
+
+   ```bash
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
+   ```
+
+   On a new bench, or to start from the default settings:
+
+   ```bash
+   esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
+   ```
+
+4. Power both boards with the link wired. The panel finds the build it
+   carries on the coprocessor and offers no update. It fetches the board
+   drawing again ([§4](#4-first-link-up-the-board-drawing)).
+
+| What | Parts (`@flash_args`) | Merged image at 0x0 |
+| --- | --- | --- |
+| Panel settings and Wi-Fi settings, in NVS (non-volatile storage, 24 KiB at 0x9000) | kept | erased; the panel starts on its defaults |
+| Panel's stored board drawing | lost once; fetched again at link-up | lost once; fetched again at link-up |
+
+The coprocessor keeps its bindings, the supply's wiring and the current
+monitors' set-up, with the exception for an RP2350 of stepping A2 stated
+[below](#the-coprocessors-partition-table).
+
+The panel can go first. A 0.19.0 panel linked to a coprocessor without the
+partition table shows `coprocessor takes no update over CAN -- load it once
+over USB` until step 2 is done; the link runs meanwhile.
+
+### From a source tree
+
 ```bash
 # coprocessor — produces rcbench-iomcu-install.uf2 and rcbench-iomcu.uf2
 cmake -S firmware/iomcu -B firmware/iomcu/build
@@ -56,7 +122,7 @@ idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 
 The coprocessor build prints its own size check:
 
-    -- rcbench: image 191592 bytes, 9% of the 2084864 bytes of one slot
+    -- rcbench: image 191808 bytes, 9% of the 2084864 bytes of one slot
 
 **Watch for:** the module used for bring-up is a Waveshare RP2350-CAN with
 **4 MB**, while `PICO_BOARD` defaults to a board file claiming **16 MB**. The
@@ -69,8 +135,9 @@ The coprocessor's flash carries a partition table: two image slots of
 2036 KiB each and the output store's own 8 KiB partition
 ([Link](Link.md#firmware-update-over-the-link) has the layout). The panel
 sends later coprocessor images over CAN into the slot that is not running.
-A coprocessor loaded with an image of protocol 4.21 or older has no table
-and takes the table and its first image over USB, once.
+A new module and a coprocessor loaded with 0.18.0 or older (an image of
+protocol 4.21 or older) have no table and take the table and their first
+image over USB, once.
 
 With the coprocessor's USB socket connected and BOOTSEL held at power-up, so
 the module shows its drive `RP2350`:
@@ -110,14 +177,13 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 
 ### The panel's application slots
 
-**One flash over USB moves the panel to two application slots.** From this
-release the panel's flash holds two slots of 4,063,232 bytes, `ota_0` and
-`ota_1`, so it can update itself over Wi-Fi ([Screens: Files &
-update](Screens.md#files--update)). A panel flashed with an earlier release
-has one 3 MB `factory` slot and needs this one flash over USB (Universal
-Serial Bus) to reach the new layout:
+The panel's flash holds two application slots of 4,063,232 bytes, `ota_0`
+and `ota_1`, so it can update itself over Wi-Fi ([Screens: Files &
+update](Screens.md#files--update)). A panel flashed with 0.18.0 or older
+has one 3 MiB `factory` slot and reaches the new layout with one flash over
+USB:
 
-| Offset | Earlier releases | This release and later |
+| Offset | 0.18.0 and older | 0.19.0 and later |
 | --- | --- | --- |
 | 0x9000 | `nvs`, 24 KiB | `nvs`, 24 KiB |
 | 0xF000 | `phy_init`, 4 KiB | `phy_init`, 4 KiB |
@@ -128,30 +194,27 @@ Serial Bus) to reach the new layout:
 | 0x410000 | `boardart`, 2 MiB | |
 | 0x7E0000 | | `boardart`, 128 KiB |
 
-The parts keep the settings: they write the bootloader, the partition table,
-`otadata` and the application, and leave `nvs` alone. From a source tree:
+The parts keep the settings: they write the bootloader at 0x0, the
+partition table at 0x8000, `otadata` at 0x10000 and the application at
+0x20000, and leave `nvs` alone. From a source tree:
 
 ```bash
 idf.py -C firmware/panel -p /dev/ttyACM0 flash
 ```
 
-From the release archive `rcbench-panel-vX.Y.Z.zip`, in its unpacked folder:
+From the release archive, `esptool.py ... write_flash @flash_args` in its
+unpacked folder, as in [step 3](#from-the-release-assets).
 
-```bash
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash @flash_args
-```
+The merged image at offset 0 covers the flash from 0x0 to the end of the
+application in `ota_0`, about 2 MB, and fills the gaps between the parts
+with 0xFF. `nvs` at 0x9000 lies in such a gap, so the merged image erases
+the settings.
 
-The merged image at offset 0 writes the whole 8 MB, `nvs` included, so it
-erases the settings:
-
-```bash
-esptool.py --chip esp32s3 -p /dev/ttyACM0 write_flash 0x0 rcbench-panel-merged.bin
-```
-
-Either way the stored board drawing is gone: `boardart` moved. The panel
-fetches it again at the next link-up ([§4](#4-first-link-up-the-board-drawing)).
-After this flash, later panel releases install over Wi-Fi from the release
-asset `rcbench-panel-vX.Y.Z.bin`.
+Either way the stored board drawing is lost once: `boardart` moved from
+0x410000 to 0x7E0000. The panel fetches it again at the next link-up
+([§4](#4-first-link-up-the-board-drawing)). After this flash, later panel
+releases install over Wi-Fi from the release asset
+`rcbench-panel-vX.Y.Z.bin`.
 
 ---
 
