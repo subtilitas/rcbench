@@ -47,6 +47,7 @@
 #include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
+#include "supply_link.h"
 #include "kst_rig.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
@@ -237,6 +238,24 @@ static bool fake_remove(const char *name, void *ctx)
     (void)name;
     return false;
 }
+
+/* No card mounted: the lister has no volume to read. */
+static int nocard_list(log_viewer_file_t *out, int max_entries, void *ctx)
+{
+    (void)out;
+    (void)max_entries;
+    (void)ctx;
+    return -1;
+}
+
+static const log_viewer_io_t k_io_nocard = {
+    .list = nocard_list,
+    .open = NULL,
+    .close = NULL,
+    .volume = NULL,
+    .remove = NULL,
+    .ctx = NULL,
+};
 
 static const log_viewer_io_t k_io = {
     .list = fake_list,
@@ -1787,7 +1806,11 @@ int main(int argc, char **argv)
      * time: spin up, hold, a burst, then settle.  One sample per plot column
      * at the panel's poll rate, 20 Hz.
      */
-    if (id == SCREEN_MOTOR) {
+    if (id == SCREEN_MOTOR && strcmp(view, "motor-idle") == 0) {
+        /* A linked bench before its first run: no sample, never armed, and
+         * a binding read with no pin bound as a motor. */
+        motor_screen_set_throttle_pins(0u, true);
+    } else if (id == SCREEN_MOTOR) {
         telemetry_sim_t tsim;
         bench_state_t bench;
         memset(&bench, 0, sizeof(bench));
@@ -1836,7 +1859,24 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_SUPPLY) {
+    if (id == SCREEN_SUPPLY && strcmp(view, "supply-offline") == 0) {
+        /*
+         * The PD mini enabled on GP12 and GP13 and not answering, the
+         * output never switched on: the header in the warning colour, the
+         * cards without readings and the plot empty.
+         */
+        const supply_caps_t caps = SUPPLY_CAPS_PDMINI;
+        supply_screen_set_caps(&caps);
+        supply_screen_settings_loaded();
+        supply_screen_set_model(false);
+        supply_screen_set_pins(12, 13);
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.set_v  = 6.0f;
+        st.set_i  = 2.0f;
+        st.online = false;
+        supply_screen_push(&st);
+    } else if (id == SCREEN_SUPPLY) {
         /* A run of the panel's model, as the panel drives it: the output on
          * at 6 V and a 2 A limit, the load's bursts holding the limit, the
          * extremes and totals counted from the switch-on. */
@@ -2230,7 +2270,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_BATTERY) {
+    /* battery-none: no cell monitor, as on a bench, where no firmware feeds
+     * the screen. */
+    if (id == SCREEN_BATTERY && strcmp(view, "battery-none") != 0) {
         /*
          * A 6S pack with one cell 40 mV down under load, the case the screen
          * exists to show.  At rest the six voltages agree to two decimals.
@@ -2313,7 +2355,9 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_ANALYSER) {
+    /* analyser-silent: nothing decoded, as on a bench, where no firmware
+     * feeds the screen. */
+    if (id == SCREEN_ANALYSER && strcmp(view, "analyser-silent") != 0) {
         /*
          * Fed through the real S.BUS decoder frame by frame with the channels
          * moving; a still frame shows sixteen straight lines.
@@ -2577,7 +2621,10 @@ int main(int argc, char **argv)
             servo_screen_feedback((uint16_t)ss.position_us, a, true);
             ui_router_tick(0.01f);
         }
-        servo_screen_set_armed(false);
+        /* servo-armed: the bench left ARMED, the horn where it was driven. */
+        if (strcmp(view, "servo-armed") != 0) {
+            servo_screen_set_armed(false);
+        }
         servo_cmd_t moved;
         while (servo_screen_take(&moved)) { }
         /* The supply feeding it, from the panel's supply model, for the
@@ -2681,6 +2728,7 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-paused") == 0) {
             servo_sweep_view(strcmp(view, "servo-paused") == 0);
         } else if (strcmp(view, "servo") != 0
+                   && strcmp(view, "servo-armed") != 0
                    && strcmp(view, "servo-ina") != 0
                    && strcmp(view, "servo-target") != 0
                    && strcmp(view, "servo-model") != 0
@@ -2711,7 +2759,8 @@ int main(int argc, char **argv)
     ui_bench_status_t st = k_status;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-table") != 0
-                           && strcmp(view, "motor-refused") != 0);
+                           && strcmp(view, "motor-refused") != 0
+                           && strcmp(view, "motor-idle") != 0);
     /* A coprocessor that has refused 37 frames: the count in the header
      * strip after the error count. */
     if (strcmp(view, "motor-refused") == 0) {
@@ -2722,7 +2771,9 @@ int main(int argc, char **argv)
     st.link_up   = !st.simulated;
     st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
-                    && strcmp(view, "motor-held") != 0)
+                    && strcmp(view, "motor-held") != 0
+                    && strcmp(view, "motor-idle") != 0)
+                   || strcmp(view, "servo-armed") == 0
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
                    || strcmp(view, "servo-result-ina") == 0
@@ -2755,6 +2806,14 @@ int main(int argc, char **argv)
     ui_router_goto(id);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);
+    }
+    /* An alert on the menu: the band across the bottom, with its x. */
+    if (strcmp(view, "overview-alert") == 0) {
+        ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
+    }
+    /* SETUP's APPLICATION category: the language, the theme, the knob. */
+    if (strcmp(view, "setup-application") == 0) {
+        tap(120, UI_BAND_H + 16 + 1 * 72 + 32);        /* APPLICATION */
     }
 
     if (strcmp(view, "motor-table") == 0) {
@@ -2804,7 +2863,9 @@ int main(int argc, char **argv)
          * in panel coordinates; the router removes the band before the
          * screen sees them. */
         make_log_csv();
-        log_viewer_set_io(&k_io);
+        /* logs-nocard: a lister that finds no volume. */
+        log_viewer_set_io(strcmp(view, "logs-nocard") == 0 ? &k_io_nocard
+                                                            : &k_io);
         log_viewer_refresh();
         /*
          * BR_LIST starts at y = 36 in screen coordinates, its rows begin
@@ -2813,7 +2874,9 @@ int main(int argc, char **argv)
          * ui_router_event takes panel coordinates and strips it on the way
          * in.
          */
-        if (strcmp(view, "logs-delete") == 0) {
+        if (strcmp(view, "logs-nocard") == 0) {
+            /* The browser as it opens: nothing to select. */
+        } else if (strcmp(view, "logs-delete") == 0) {
             tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
             tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
         } else if (strcmp(view, "logs") != 0) {

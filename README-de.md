@@ -85,6 +85,7 @@ erzeugt, auf Englisch und Deutsch. Die Dateien bearbeiten, nicht das Wiki.
 | --- | --- |
 | [Worum es geht](https://github.com/subtilitas/rcbench/wiki/Manifest-de) | Anforderungen und ihre Umsetzung |
 | [Bench configurator](https://subtilitas.github.io/rcbench/) | Webseite, Deutsch und Englisch: Funktionen oder Teile auswählen, ergibt die Teileliste, eine Einkaufsliste mit Herstellerseiten und Links zur Websuche, die Verdrahtungszeichnung und die Pin-zu-Pin-Tabelle dieses Aufbaus |
+| [Panel-Hilfe](https://subtilitas.github.io/rcbench/help/de/index.html) | Webseite, Deutsch und Englisch: jeder Bildschirm des Panels mit Screenshots seiner Zustände, was er zeigt und was er bedienen lässt |
 | [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) | Toolchains, Befehle, CI |
 | [Den Link in Betrieb nehmen](https://github.com/subtilitas/rcbench/wiki/Bringup-de) | die beiden Platinen verkabeln und den Bus prüfen |
 | [Bildschirme](https://github.com/subtilitas/rcbench/wiki/Screens-de) | den Prüfstand bedienen |

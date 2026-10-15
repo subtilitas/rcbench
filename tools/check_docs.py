@@ -7,7 +7,8 @@ go anywhere, is that list of test binaries the list CMake builds, is that
 count the count.
 
 Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
-the pages under hardware/.  The wiki pages are additionally held to the
+the pages under hardware/.  A screenshot the web help (help/content) shows
+by view name counts as shown.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
 screenshot count in STATUS.md from docs/img.  The stick pages' table of how
@@ -44,6 +45,9 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 IMG = DOCS / "img"
 HARDWARE = REPO / "hardware"
+# The web help's pages show screenshots by view name, `view:<name>`: an
+# English page shows docs/img/<name>.png, a German one docs/img/de/<name>.png.
+HELP = REPO / "help" / "content"
 
 # Markdown outside docs/ that the link and anchor checks also cover: the
 # README in both languages, the running record, and the hardware pages.
@@ -148,6 +152,29 @@ def check_anchors(problems: list[str]) -> None:
                     "which has no such heading")
 
 
+def help_images() -> set[pathlib.Path]:
+    """The screenshots the web help shows as images.  The help's own parser
+    decides what is an image, so view syntax in a code span or in prose
+    counts for nothing; tools/help_site.py --check holds that each one
+    exists."""
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    try:
+        import help_site
+    finally:
+        sys.path.pop(0)
+    files = help_site.view_files()
+    shown: set[pathlib.Path] = set()
+    for lang, folder in (("en", IMG), ("de", IMG / "de")):
+        for page in sorted((HELP / lang).glob("*.md")):
+            if page.name.startswith("_"):
+                continue
+            parsed = help_site.parse(page, lang, help_site.Problems(), files,
+                                     img_root=IMG)
+            for view, _ in parsed.views:
+                shown.add((folder / files.get(view, f"{view}.png")).resolve())
+    return shown
+
+
 def check_links(problems: list[str]) -> None:
     """Every relative link and image reference resolves to a real file."""
     referenced: set[pathlib.Path] = set()
@@ -161,6 +188,8 @@ def check_links(problems: list[str]) -> None:
                 problems.append(f"{page.name}: link to {target} goes nowhere")
             elif resolved.suffix.lower() == ".png":
                 referenced.add(resolved)
+
+    referenced |= help_images()
 
     # docs/img/de holds the same screens in German, for the German pages.
     for image in sorted(IMG.rglob("*.png")):

@@ -40,7 +40,7 @@ Band sind die oberen 48 px des Panels.
   rutscht, wird an der letzten Stelle losgelassen, die sie auf dem Bildschirm
   hatte. Ein Drag auf einem Schieberegler oder auf dem SERVO-Zifferblatt endet
   mit dem Wert von dieser Stelle, und der Weg auf dem Band wird nicht
-  dazugerechnet. Ein Halten auf ARM oder OUTPUT ON ist abgebrochen. Eine
+  dazugerechnet. Ein Halten auf ARM oder AUSGANG EIN ist abgebrochen. Eine
   Schaltfläche, eine Taste, eine Kachel, ein Tab oder eine Listenzeile unter
   dieser Stelle ist nicht gedrückt: Das Release stammt vom Panel und nicht
   vom Finger. Drei Bedienelemente nehmen es an, weil sie etwas anhalten:
@@ -1336,7 +1336,7 @@ AUTO wie bei einer festen Rate.
 
 ![Analyser](img/de/analyser.png)
 
-Sechzehn Kanäle, jeder mit 1,5 s Verlauf und einem Balken für den aktuellen
+Sechzehn Kanäle, jeder mit etwa 1,7 s Verlauf (118 Werte) und einem Balken für den aktuellen
 Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
 in einer Spur; ein Dropout ist eine Kerbe durch alle sechzehn im selben
 Moment.
@@ -1547,6 +1547,9 @@ Zellen: GUT unter 30 mV, BEOBACHTEN ab 30 mV, ERSETZEN ab 60 mV. Die Skala folgt
 dem Pack bis hinunter zu einer Untergrenze von 12 mV und steht neben dem Plot.
 
 Unter Last messen. In Ruhe liest sich eine schwache Zelle wie die anderen.
+
+Keine Firmware speist diesen Bildschirm: Kein Zellenmonitor wird gelesen,
+ein Prüfstand zeigt also KEIN AKKU. Das Bild oben ist aus einem Modell gerendert.
 
 ## Logs
 
@@ -1977,6 +1980,12 @@ bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
 Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht bei der
 Logansicht beschrieben.
+
+Neun Einstellungen werden gespeichert und angezeigt, und kein Teil der
+Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter ANWENDUNG;
+Zellen, Kapazität und Innenwiderstand; Vibration, Optischer Tacho und
+Tacho-Pin. Rampengrenze wird nur als Anstieg des simulierten Prüfstands
+gelesen.
 
 ### Tasten und Liste
 
