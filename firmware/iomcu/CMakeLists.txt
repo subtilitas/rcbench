@@ -48,6 +48,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/sbus"    sbus)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
@@ -123,6 +124,16 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -DTEST=test_kst_pio
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
+# The S.BUS line program, the same way (test/host/test_sbus_pio.c,
+# fixtures/sbus_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/sbus/rp2350/sbus_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/sbus_line_words.txt
+            -DNAME=sbus_line
+            -DTEST=test_sbus_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
 
 # The coprocessor's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
@@ -155,6 +166,8 @@ target_link_libraries(rcbench-iomcu
     rcbench_phase_tap_rp2350
     rcbench_kst
     rcbench_kst_rp2350
+    rcbench_sbus
+    rcbench_sbus_rp2350
     rcbench_bench
     rcbench_safety
     rcbench_servo

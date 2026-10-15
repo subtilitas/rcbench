@@ -112,7 +112,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel wifi_screen fw_image fw_install fw_upload wa_session wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen)
+foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus sbus2 sbus_pio sbus_out dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo analyser programmer balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_panel wifi_screen fw_image fw_install fw_upload wa_session wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -162,6 +162,10 @@ target_compile_definitions(test_tone_pio PRIVATE
 target_compile_definitions(test_kst_pio PRIVATE
     "KST_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/kst/rp2350/kst_line.pio\""
     "KST_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kst_line_words.txt\"")
+# The S.BUS line's PIO program, the same way.
+target_compile_definitions(test_sbus_pio PRIVATE
+    "SBUS_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/sbus/rp2350/sbus_line.pio\""
+    "SBUS_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/sbus_line_words.txt\"")
 
 # The ZIP archives test_wa_zip writes, opened by Python's zipfile and by
 # unzip(1): an archive the panel sends has to open in programs other than
@@ -186,11 +190,18 @@ if(CMAKE_CXX_COMPILER)
     set_target_properties(kst_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     add_test(NAME kst_headers_cxx COMMAND kst_headers_cxx)
+    # The headers of protocols/sbus the same way, as C++17.
+    add_executable(sbus_headers_cxx sbus_headers.cpp)
+    target_link_libraries(sbus_headers_cxx PRIVATE rcbench_sbus)
+    target_compile_options(sbus_headers_cxx PRIVATE -Wall -Wextra -Werror)
+    set_target_properties(sbus_headers_cxx PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+    add_test(NAME sbus_headers_cxx COMMAND sbus_headers_cxx)
 elseif(DEFINED ENV{CI})
     message(FATAL_ERROR
-        "No C++ compiler and CI is set: the KST headers cannot be checked")
+        "No C++ compiler and CI is set: the KST and S.BUS headers cannot be checked")
 else()
-    message(STATUS "No C++ compiler: the KST headers are not checked as C++")
+    message(STATUS "No C++ compiler: the KST and S.BUS headers are not checked as C++")
 endif()
 
 # tools/sense_trace.py, the host side of the coprocessor's SENSE_TRACE

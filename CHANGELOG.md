@@ -14,6 +14,14 @@ history is in git.
   Network) from the panel. Neither needs a part beyond the panel and the
   coprocessor; the panel update needs no microSD card. The base setup runs
   12 functions.
+- `protocols/sbus` sends S.BUS and S.BUS2 frames and reads the S.BUS2
+  telemetry slots: a frame encoder with the 4 S.BUS2 footers, a slot
+  decoder with a table of all 32 slots, a sensor map at Futaba's default
+  slots with 2 value encodings (receiver voltage in 0.1 V, temperature),
+  an output that sends a frame every 7 ms to 50 ms, and an RP2350 pin
+  driver of 1 PIO (programmable input/output) state machine and 2 DMA
+  (direct memory access) channels that inverts the pad itself. No screen
+  uses it yet.
 
 ### Changed
 

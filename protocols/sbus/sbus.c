@@ -48,6 +48,33 @@ static void unpack(const uint8_t *p, uint16_t *out)
     }
 }
 
+void sbus_encode(const sbus_frame_t *f, uint8_t footer, uint8_t *out)
+{
+    if (f == NULL || out == NULL) {
+        return;
+    }
+    /* The mirror of unpack(): channel n at bit 11n of the payload, least
+     * significant bit first, each value ORed into a three-byte window. */
+    memset(out, 0, SBUS_FRAME_BYTES);
+    out[0] = SBUS_HEADER;
+    for (unsigned ch = 0; ch < SBUS_CHANNELS; ++ch) {
+        const uint32_t v = f->channel[ch] > SBUS_RAW_MAX ? SBUS_RAW_MAX
+                                                         : f->channel[ch];
+        const unsigned bit = ch * 11u;
+        const unsigned byte = 1u + (bit / 8u);
+        const uint32_t win = v << (bit % 8u);
+
+        out[byte] |= (uint8_t)(win & 0xFFu);
+        out[byte + 1u] |= (uint8_t)((win >> 8) & 0xFFu);
+        out[byte + 2u] |= (uint8_t)((win >> 16) & 0xFFu);
+    }
+    out[23] = (uint8_t)((f->ch17 ? SBUS_FLAG_CH17 : 0u)
+                        | (f->ch18 ? SBUS_FLAG_CH18 : 0u)
+                        | (f->frame_lost ? SBUS_FLAG_FRAME_LOST : 0u)
+                        | (f->failsafe ? SBUS_FLAG_FAILSAFE : 0u));
+    out[24] = footer;
+}
+
 bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
                       sbus_frame_t *out)
 {
@@ -127,4 +154,22 @@ uint16_t sbus_to_us(uint16_t raw)
         us = 2200;
     }
     return (uint16_t)us;
+}
+
+uint16_t sbus_from_us(uint16_t us)
+{
+    /* The same line as sbus_to_us(), solved for the raw value: 1639 counts
+     * per 1000 us, so one count is 0.61 us and the rounding of the raw value
+     * never moves the pulse back by a whole microsecond. */
+    const int32_t span_raw = (int32_t)SBUS_RAW_2000US - (int32_t)SBUS_RAW_1000US;
+    const int32_t num = ((int32_t)us - 1000) * span_raw;
+    int32_t raw = (int32_t)SBUS_RAW_1000US
+                  + (num >= 0 ? (num + 500) / 1000 : (num - 500) / 1000);
+    if (raw < (int32_t)SBUS_RAW_MIN) {
+        raw = (int32_t)SBUS_RAW_MIN;
+    }
+    if (raw > (int32_t)SBUS_RAW_MAX) {
+        raw = (int32_t)SBUS_RAW_MAX;
+    }
+    return (uint16_t)raw;
 }

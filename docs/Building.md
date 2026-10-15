@@ -33,7 +33,7 @@ rcbench/
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
-    sbus/                 S.BUS decoder; no pin driver
+    sbus/                 S.BUS and S.BUS2: frames, telemetry slots, sensor values, output schedule · rp2350: sbus_line.pio · sbus_line
     openyge/              OpenYGE framing, CRC, status and parameter cache; no pin driver
     pdmini/               PD mini driver · PIO UART
     phase_tap/            ESC tone detector · edge ring reader · PIO capture
@@ -76,11 +76,11 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
+| `sense` · `pdmini` · `phase_tap` · `kst` · `sbus` | ✔ | ✔ | ✔ |
 
 ## Toolchains
 

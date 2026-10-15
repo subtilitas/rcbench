@@ -1,0 +1,61 @@
+;
+; One S.BUS transaction on one pin: a frame out as a UART (universal
+; asynchronous receiver-transmitter) at 8 cycles a bit, then for S.BUS2 the
+; pad released and every byte of the telemetry slots read with a stamp.
+;
+; The pad is the state machine's OUT, SET, IN and JMP pin.  The GPIO
+; (general-purpose input/output) overrides invert it both ways, so this
+; program sees a plain UART: idle 1, start bit 0.  The clock divider gives 8
+; cycles per bit, 800 kHz for 100 kbaud.  Autopull at 32 bits, both shift
+; registers shift right; no autopush.  The words come from the transmit FIFO
+; in the order sbus_pio.h gives (protocols/sbus/include): count, bits,
+; window.  Between transactions the machine stalls on the first `out` with
+; the pad driving its latch, which is 1, the idle level.
+;
+; Transmit.  One bit is `out pins` with 6 cycles of delay and `jmp x--`: 8
+; cycles.  The last bit is the footer's second stop bit, a 1; 2 cycles
+; after it ends the pad becomes an input.  A window of 0 skips the receive
+; and the pad keeps driving.
+;
+; Receive.  X counts samples of the pin down from the window; a sample is
+; 2 cycles while the pin is idle.  A 0 is a start bit: 11 cycles after that
+; sample the first of 10 samples 8 cycles apart, data bits 0 to 7, the
+; parity bit and the first stop bit, goes into the ISR, then X's low 22
+; bits behind them, and the word is pushed.  A byte takes 94 cycles from
+; the sample that saw its start bit to the next sample and counts X down by
+; 1.  When X runs out the program returns to `idle` and the pad drives its
+; latch again.
+;
+; The pad never drives a 0 outside the transmit loop: `out pins` is the
+; only instruction that sets the latch, and the last bit it sets is a 1.
+;
+; test/host/test_sbus_pio.c assembles this file, runs the words in a model
+; of the state machine and holds them to fixtures/sbus_line_words.txt,
+; which a firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program sbus_line
+
+.wrap_target
+idle:
+    set pindirs, 1          ; drive the latch, the idle level
+    out x, 32               ; count: bits less 1
+bit:
+    out pins, 1 [6]
+    jmp x--, bit
+    out x, 32               ; window: samples, 0 for none
+    jmp !x, idle
+    set pindirs, 0          ; release
+watch:
+    jmp pin, quiet          ; idle level: one more sample
+    set y, 9 [9]            ; a start bit: to the middle of data bit 0
+sample:
+    in pins, 1 [6]
+    jmp y--, sample
+    in x, 22                ; the stamp behind the 10 bits
+    push noblock
+quiet:
+    jmp x--, watch
+.wrap

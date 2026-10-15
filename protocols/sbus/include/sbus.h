@@ -1,13 +1,16 @@
 /*
  * Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
- * Implements the S.BUS receiver protocol of Futaba.  Futaba and S.BUS are
- * names or trademarks of their respective owners; they are used here only to
- * say which receivers this module works with (NOTICE, "Trademarks").
+ * Implements the S.BUS and S.BUS2 protocols of Futaba.  Futaba, S.BUS and
+ * S.BUS2 are names or trademarks of their respective owners; they are used
+ * here only to say which receivers and servos this module works with
+ * (NOTICE, "Trademarks").
  *
  * The wire is an inverted 8E2 UART (universal asynchronous
- * receiver-transmitter) at 100 kbaud, produced by the coprocessor's PIO
- * (programmable input/output); this file decodes the bytes.
+ * receiver-transmitter) at 100 kbaud.  This file decodes the bytes of a
+ * frame and encodes a frame from channel values; sbus2.h reads the
+ * telemetry slots that follow an S.BUS2 frame, sbus_pio.h and sbus_out.h
+ * put frames on a pin.
  *
  * S.BUS has no checksum and no escaping.  A frame is a header byte, a
  * bit-packed payload and a footer, and the header value 0x0F is an ordinary
@@ -63,6 +66,14 @@ extern "C" {
  */
 #define SBUS_GAP_US 2000u
 
+/** Byte 24.  S.BUS sends 0x00; S.BUS2 sends one of SBUS2_FOOTER_* (sbus2.h)
+ *  per frame. */
+#define SBUS_FOOTER 0x00u
+
+/** Frame periods: standard 14 ms, high-speed 7 ms. */
+#define SBUS_PERIOD_US      14000u
+#define SBUS_PERIOD_FAST_US 7000u
+
 /** Flag bits in byte 23. */
 #define SBUS_FLAG_CH17       0x01u
 #define SBUS_FLAG_CH18       0x02u
@@ -105,6 +116,24 @@ bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
 
 /** Microseconds for a raw channel value, clamped to a sane pulse. */
 uint16_t sbus_to_us(uint16_t raw);
+
+/**
+ * The raw channel value for a pulse of @p us microseconds: the inverse of
+ * sbus_to_us() on the same two points, 1000 us = 172 and 2000 us = 1811,
+ * rounded to nearest and clamped to 0..2047.  For every @p us from 896 to
+ * 2143, sbus_to_us(sbus_from_us(us)) == us.
+ */
+uint16_t sbus_from_us(uint16_t us);
+
+/**
+ * Lay @p f out as a frame of SBUS_FRAME_BYTES bytes in @p out, with
+ * @p footer as byte 24.  A channel above SBUS_RAW_MAX is sent as
+ * SBUS_RAW_MAX.  The flags byte carries ch17, ch18, frame_lost and
+ * failsafe; bits 4 to 7 are 0.  The footer is not checked: S.BUS sends
+ * SBUS_FOOTER, S.BUS2 rotates through SBUS2_FOOTER_0 to SBUS2_FOOTER_3.
+ * Does nothing when an argument is NULL.
+ */
+void sbus_encode(const sbus_frame_t *f, uint8_t footer, uint8_t *out);
 
 #ifdef __cplusplus
 }

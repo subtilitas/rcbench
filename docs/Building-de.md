@@ -33,7 +33,7 @@ rcbench/
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
-    sbus/                 S.BUS-Decoder; kein Pin-Treiber
+    sbus/                 S.BUS und S.BUS2: Frames, Telemetrie-Slots, Sensorwerte, Sendetakt · rp2350: sbus_line.pio · sbus_line
     openyge/              OpenYGE-Framing, CRC, Status und Parameter-Cache; kein Pin-Treiber
     pdmini/               PD-mini-Treiber · PIO-UART
     phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
@@ -77,11 +77,11 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
-| `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
+| `gfx` · `touch` · `ui` · `settings` · `logfile` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
 | `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
-| `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
+| `sense` · `pdmini` · `phase_tap` · `kst` · `sbus` | ✔ | ✔ | ✔ |
 
 ## Toolchains
 

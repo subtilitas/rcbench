@@ -1,13 +1,18 @@
-# S.BUS: 16 channels in 25 bytes, with no checksum and a header byte that is
-# also an ordinary channel value.  Pure C with no include outside this
-# folder and the C standard headers.  The module has no pin driver: a PIO
-# (programmable input/output) receiver that produces the bytes is not
-# written, and everything about what the bytes mean is tested on a host.
-set(SRCS sbus.c)
+# S.BUS and S.BUS2: the 25-byte frame, decoded and encoded; the S.BUS2
+# telemetry slots read after a frame; the arithmetic of the PIO
+# (programmable input/output) pin driver; and the output that sends a frame
+# each period on a driver.  The sources include the C standard headers and
+# each other, nothing else, so the folder builds in any project.  A pin
+# driver implements sbus_driver_t; rp2350/ holds the one for the RP2350.
+set(SRCS sbus.c sbus2.c sbus_pio.c sbus_out.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
 else()
     add_library(rcbench_sbus STATIC ${SRCS})
     target_include_directories(rcbench_sbus PUBLIC include)
+    # The pin driver, in a pico-sdk build only.
+    if(COMMAND pico_generate_pio_header)
+        add_subdirectory(rp2350)
+    endif()
 endif()
