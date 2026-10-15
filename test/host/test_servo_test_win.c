@@ -12,8 +12,8 @@
  * the other's file; the meter held from the start to the end of a run, and
  * a run on the INA3221 ended, never moved to the PD mini, when the part
  * stops answering, resets itself, the link goes, each condition of
- * servo_source.h fails, or no window arrives for 500 ms (at 499, 500 and
- * 501 ms); a run on the PD mini untouched by the INA3221 becoming the
+ * servo_source.h fails, or no window arrives for 200 ms (at 199, 200 and
+ * 201 ms); a run on the PD mini untouched by the INA3221 becoming the
  * meter; STALL AT on the window's mean at 1 mA under, at and 1 mA over,
  * its abort at 999, 1000 and 1001 ms and 20 windows in a row; constant
  * current for 999 and 1000 ms on either meter, and a spell of it shorter
@@ -724,29 +724,30 @@ TEST_CASE(a_window_without_both_quantities_is_no_reading)
 
 /* ------------------------------------------- no window, and no reading */
 
-/* No window for 500 ms ends a run on the INA3221: a pass 499 ms after the
- * last window leaves it running, one at 500 ms and one at 501 ms end it.
+/* No window for 200 ms ends a run on the INA3221: a pass 199 ms after the
+ * last window leaves it running, one at 200 ms and one at 201 ms end it.
  * The supply's readings go on, and so does nothing else.  At tick 5000 and
- * with the 500 ms across the tick wrap. */
-TEST_CASE(no_window_for_500_ms_ends_the_run)
+ * with the 200 ms across the tick wrap. */
+TEST_CASE(no_window_for_200_ms_ends_the_run)
 {
-    static const uint32_t k_after[] = { 499u, 500u, 501u };
+    static const uint32_t k_after[] = { 199u, 200u, 201u };
+    CHECK_EQ(SERVO_TEST_WIN_STALE_MS, 200u);
     servo_test_cfg_t c;
     h_cfg(&c, true);
     /* Where IDLE begins, from the start. */
     h_idle_by_hand(5000u, &c);
     const uint32_t rel = h.t.last_ms - 5000u;
-    const uint32_t k_tick0[] = { 5000u, wrap_at(rel) };
+    const uint32_t k_tick0[] = { 5000u, (uint32_t)(0u - 200u - rel) };
     for (size_t i = 0u; i < 2u; ++i) {
         for (size_t k = 0u; k < 3u; ++k) {
             h_idle_by_hand(k_tick0[i], &c);
             const uint32_t last = h.t.last_ms;
             if (i > 0u) {
-                /* The 500 ms end on the wrap: tick 0 is the 500th. */
-                CHECK_EQ(last, 0u - 500u);
+                /* The 200 ms end on the wrap: tick 0 is the 200th. */
+                CHECK_EQ(last, 0u - 200u);
             }
-            /* The supply answers throughout; passes run to 498 ms. */
-            for (uint32_t at = h.now + 1u; (int32_t)(at - last) < 499;
+            /* The supply answers throughout; passes run to 198 ms. */
+            for (uint32_t at = h.now + 1u; (int32_t)(at - last) < 199;
                  ++at) {
                 if ((at - last) % 100u == 0u) {
                     h_pd_at(at);
@@ -760,9 +761,10 @@ TEST_CASE(no_window_for_500_ms_ends_the_run)
             if (k_after[k] < SERVO_TEST_WIN_STALE_MS) {
                 CHECK(servo_test_running(&h.t));
                 CHECK_EQ(h.offs, 0u);
-                /* And a window then keeps it running past 500 ms. */
+                /* And a window then keeps it running past 200 ms from
+                 * the one before. */
                 h_win_at(h.now, 20);
-                h.now += 400u;
+                h.now += 150u;
                 h_step_at(h.now);
                 CHECK(servo_test_running(&h.t));
                 continue;
@@ -771,18 +773,20 @@ TEST_CASE(no_window_for_500_ms_ends_the_run)
             h_check_ended(SERVO_TEST_AB_WIN_STALE);
             CHECK(strstr(h.out.report,
                          "Result:         ABORTED - no INA3221 window for "
-                         "0.5 s\n") != NULL);
+                         "0.2 s\n") != NULL);
         }
     }
-    /* A run that never has a window ends 500 ms after its start. */
-    h_fresh(wrap_at(0u));
+    /* A run that never has a window ends 200 ms after its start, here
+     * across the wrap. */
+    h_fresh(0u - 100u);
     h.win_on = false;
     h_start(&c);
     const uint32_t start = h.now;
-    h_run_ms(499u);
+    h_run_ms(199u);
     CHECK(servo_test_running(&h.t));
     h_ms();
-    CHECK_EQ(h.t.end_ms, start + 500u);
+    CHECK_EQ(h.t.end_ms, start + 200u);
+    CHECK(start > 0xFFFF0000u && h.t.end_ms < 0x10000u);
     h_check_ended(SERVO_TEST_AB_WIN_STALE);
 }
 
@@ -1691,9 +1695,10 @@ TEST_CASE(the_csv_reads_back_in_the_viewer_old_and_new)
  * Its windows, each at 50 ms a number from the first, are fed to a run on
  * the INA3221 with a supply that answers throughout.
  *
- * The run reads every window the file holds up to its first gap of ten
- * numbers or more, counts the numbers missing between them as skipped,
- * and ends 500 ms after the last window before that gap: a file with its
+ * The run reads every window the file holds up to its first gap longer
+ * than 200 ms, five numbers or more, counts the numbers missing between
+ * them as skipped, and ends 200 ms after the last window before that gap:
+ * the 50th window, number 19804, followed by 20409.  A file with its
  * windows missing cannot feed a run.  The 0.14.0 log has no lowest
  * sample, no lowest voltage and no clip count: the mean stands in for the
  * first two.
@@ -1741,18 +1746,21 @@ TEST_CASE(a_recorded_log_with_windows_missing_ends_the_run_at_its_first_gap)
     CHECK_EQ(rec[0].number, 19750u);
     CHECK_EQ(rec[n - 1u].number, 23566u);
 
-    /* The first gap of ten numbers or more, and what is missing before. */
+    /* The first gap longer than SERVO_TEST_WIN_STALE_MS, and what is
+     * missing before it: a window that arrives at the 200th ms is read
+     * before the run's step at that ms. */
     unsigned upto = 0u, missing = 0u;
     for (unsigned k = 1u; k < n; ++k) {
         const unsigned step = rec[k].number - rec[k - 1u].number;
-        if (step >= 10u) {
+        if (step * SERVO_TEST_WIN_MS > SERVO_TEST_WIN_STALE_MS) {
             upto = k;
             break;
         }
         missing += step - 1u;
     }
-    CHECK(upto > 20u);
-    CHECK(missing > 0u);
+    CHECK_EQ(upto, 50u);
+    CHECK_EQ(rec[upto - 1u].number, 19804u);
+    CHECK_EQ(missing, 5u);
 
     h_fresh(5000u);
     h.win_on = false;
@@ -2327,11 +2335,12 @@ TEST_CASE(the_meter_failing_mid_run_never_switches_meter)
         b_frame();
     }
     CHECK(!servo_test_running(&bench.t));
-    /* Within a window, a poll and a frame of the part going: sooner than
-     * the 500 ms the run's own rule takes. */
+    /* Within a window, a poll and a frame of the part going; the run's own
+     * 200 ms without a window can come first. */
     CHECK(bench.t.end_ms - failed <= 250u);
     CHECK(bench.t.why == SERVO_TEST_AB_INA_SILENT
-          || bench.t.why == SERVO_TEST_AB_INA_NO_WINDOW);
+          || bench.t.why == SERVO_TEST_AB_INA_NO_WINDOW
+          || bench.t.why == SERVO_TEST_AB_WIN_STALE);
     CHECK_EQ(servo_source_id(&bench.src), SERVO_SOURCE_PDMINI);
     CHECK(bench.pd_samples > 20u);
     b_check_ended(bench.t.why);
@@ -2478,7 +2487,7 @@ int main(void)
     RUN(a_run_on_the_pd_mini_reads_no_window);
     RUN(the_ina3221s_range_follows_its_shunt);
     RUN(a_window_without_both_quantities_is_no_reading);
-    RUN(no_window_for_500_ms_ends_the_run);
+    RUN(no_window_for_200_ms_ends_the_run);
     RUN(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221);
     RUN(an_idle_without_a_reading_ends_a_run_on_the_pd_mini);
     RUN(stall_at_is_judged_on_the_windows_mean);

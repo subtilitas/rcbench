@@ -124,6 +124,51 @@ bool kst_panel_file_load(const char *text, size_t len);
  *  with nothing said. */
 bool kst_panel_file_late(const char *text, size_t len);
 
+/* --- the limit run's sessions (servo_limrun.h) ------------------------------- */
+
+/*
+ * A limit run lowers LEFT ANGLE and RIGHT ANGLE through the model the
+ * overlay holds, a session at a time: CONNECT with its read, one write,
+ * LEAVE.  Each call starts the step and kst_panel_run_poll() says how it
+ * ended.  The run's start, held for 2 s, is the operator's consent: no
+ * warning page is shown and the soft rules a value breaks are confirmed.
+ * The rest is the model's: the hard rules, the file the first write of a
+ * session saves (none for a later session of the run: kst_prog_run_hold()),
+ * the journal, the read back of every write.
+ */
+
+typedef enum {
+    KST_PANEL_RUN_NONE = 0,  /**< no step asked, or its end taken          */
+    KST_PANEL_RUN_BUSY,
+    KST_PANEL_RUN_OK,        /**< once: the step ended as asked           */
+    KST_PANEL_RUN_FAILED,    /**< once: it did not                         */
+} kst_panel_run_t;
+
+/** A run begins: no write of it yet. */
+void kst_panel_run_begin(void);
+/** CONNECT on the SERVO screen's port.  With @p supply, a PD mini answers
+ *  and the session asks it for @p mv and @p ma: its set point as it
+ *  stands, so the ENTER changes nothing.  KST_PROG_MSG_NONE when taken. */
+kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
+                                        uint16_t ma);
+/** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
+ *  The run's first write holds the servo as read (kst_prog_run_hold()). */
+kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
+/** LEAVE. */
+kst_prog_msg_id_t kst_panel_run_leave(void);
+kst_panel_run_t kst_panel_run_poll(void);
+/** The servo as read: its two angles, the values both take by the hard
+ *  rules, REVERSION and its type number.  False with none read, or one
+ *  that is not editable (no KST or Chaservo servo, in doubt); the angles
+ *  are filled then where a servo was read. */
+bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
+                         bool *reversion, unsigned *type);
+/** The file that holds the servo as the run found it; "" for none. */
+const char *kst_panel_run_backup(void);
+/** The run is over: the programming voltage and current go back to the
+ *  operator's.  The servo as the run found it stays held for RESTORE. */
+void kst_panel_run_end(void);
+
 /* --- for the tests ------------------------------------------------------------ */
 
 kst_prog_t *kst_panel_model(void);

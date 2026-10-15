@@ -1480,12 +1480,24 @@ static const kst_image_t *file_image(const kst_prog_t *p)
          ? &p->f.backup : &p->servo;
 }
 
+/* The fields a limit run writes. */
+#define RUN_FIELDS (KST_FIELD_BIT(KST_F_LEFT_ANGLE) \
+                    | KST_FIELD_BIT(KST_F_RIGHT_ANGLE))
+
+bool kst_prog_run_matches(const kst_prog_t *p)
+{
+    return p->run_hold && p->have_servo
+        && (differ(&p->run_img, &p->servo) & ~RUN_FIELDS) == 0u;
+}
+
 bool kst_prog_save_first(const kst_prog_t *p)
 {
     /* A record held says the servo may be half written: its image is no
-     * backup, and the record holds the servo as found. */
+     * backup, and the record holds the servo as found.  A limit run's
+     * later session has the file of its first write. */
     return p->have_servo && !p->backed_up && !p->journal
-        && !kst_prog_in_doubt(p);
+        && !kst_prog_in_doubt(p)
+        && !(p->run_written && kst_prog_run_matches(p));
 }
 
 bool kst_prog_save_none(const kst_prog_t *p)
@@ -2053,6 +2065,8 @@ static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
              ? &p->f.backup : NULL;
     case KST_PROG_FROM_JOURNAL:
         return p->journal && !p->journal_other ? &p->journal_img : NULL;
+    case KST_PROG_FROM_RUN:
+        return kst_prog_run_matches(p) ? &p->run_img : NULL;
     default:
         return NULL;
     }
@@ -2273,6 +2287,48 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     r.confirm = plan->unchecked;
     send_write(p, &r, src);
     return KST_PROG_MSG_NONE;
+}
+
+bool kst_prog_run_hold(kst_prog_t *p)
+{
+    if (!p->have_servo) {
+        return false;
+    }
+    p->run_hold = true;
+    p->run_written = false;
+    p->run_img = p->servo;
+    p->run_backup[0] = '\0';
+    return true;
+}
+
+void kst_prog_run_written(kst_prog_t *p)
+{
+    if (p->run_hold && !p->run_written) {
+        p->run_written = true;
+        if (p->backed_up) {
+            memcpy(p->run_backup, p->backup, KST_PROG_NAME_MAX);
+            p->run_backup[KST_PROG_NAME_MAX - 1u] = '\0';
+        } else {
+            p->run_backup[0] = '\0';
+        }
+    }
+}
+
+void kst_prog_run_drop(kst_prog_t *p)
+{
+    p->run_hold = false;
+    p->run_written = false;
+    p->run_backup[0] = '\0';
+}
+
+const kst_image_t *kst_prog_run_image(const kst_prog_t *p)
+{
+    return p->run_hold ? &p->run_img : NULL;
+}
+
+const char *kst_prog_run_backup(const kst_prog_t *p)
+{
+    return p->run_hold ? p->run_backup : "";
 }
 
 void kst_prog_forget(kst_prog_t *p)

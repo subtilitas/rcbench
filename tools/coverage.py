@@ -108,6 +108,7 @@ TRACKED = [
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
     "shared/servo/servo_report.c",
+    "shared/servo/servo_limrun.c",
     "protocols/openyge/openyge_frame.c",
     "protocols/openyge/openyge_status.c",
     "protocols/openyge/openyge_params.c",

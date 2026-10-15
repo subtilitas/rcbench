@@ -121,6 +121,41 @@ static inline kst_image_t sim_bench_image(void)
     return img;
 }
 
+/* --- the travel the registers give ------------------------------------------- */
+
+/*
+ * A programmable servo's own travel limits from its registers, as pulse
+ * widths for a servo model (servo_sim.h, limit_lo_us and limit_hi_us).  The
+ * model's unit: LEFT ANGLE or RIGHT ANGLE at n counts lets the horn travel
+ * @p zero_us + n * @p us_per_count of pulse width from @p centre_us.  With
+ * REVERSION off LEFT ANGLE limits the short pulses, with it on the long
+ * ones.  A real servo's unit and side are not known
+ * (docs/ServoProgrammer.md): the limit run finds the side, and any
+ * monotonic unit serves the model.
+ */
+static inline void sim_travel(const uint8_t *reg, uint16_t centre_us,
+                              float zero_us, float us_per_count,
+                              uint16_t *lo_us, uint16_t *hi_us)
+{
+    kst_image_t img;
+    float left, right, lo, hi;
+
+    memcpy(img.r, reg, sizeof(img.r));
+    left = zero_us + us_per_count * (float)kst_field_get(&img, KST_F_LEFT_ANGLE);
+    right = zero_us
+            + us_per_count * (float)kst_field_get(&img, KST_F_RIGHT_ANGLE);
+    if (kst_field_get(&img, KST_F_REVERSION) != 0u) {
+        const float t = left;
+
+        left = right;
+        right = t;
+    }
+    lo = (float)centre_us - left;
+    hi = (float)centre_us + right;
+    *lo_us = (uint16_t)(lo < 1.0f ? 1.0f : lo);
+    *hi_us = (uint16_t)(hi > 65000.0f ? 65000.0f : hi);
+}
+
 /* --- fault script ------------------------------------------------------------ */
 
 typedef enum {

@@ -234,8 +234,9 @@ extern "C" {
 #define SERVO_TEST_STALL_ABORT_MS    1000u
 /** The supply in constant current for this long ends the run. */
 #define SERVO_TEST_CC_ABORT_MS       1000u
-/** A run on the INA3221: no window for this long ends it, 10 windows. */
-#define SERVO_TEST_WIN_STALE_MS      500u
+/** A run on the INA3221: no window for this long ends it, 4 windows of
+ *  50 ms.  The limit run (servo_limrun.h) takes the same figure. */
+#define SERVO_TEST_WIN_STALE_MS      200u
 /** One window of the INA3221: SENSE_WINDOW_MS. */
 #define SERVO_TEST_WIN_MS            50u
 /** A run whose idle current is below minus this says the shunt is fitted
@@ -597,6 +598,7 @@ typedef enum {
     SERVO_TEST_OUT_CSV,     /**< one line of the CSV                    */
     SERVO_TEST_OUT_TXT,     /**< one line of the report                 */
     SERVO_TEST_OUT_END,     /**< the run's files are complete           */
+    SERVO_TEST_OUT_OPEN_TXT,/**< a report alone begins: a TXT, no CSV    */
 } servo_test_out_t;
 
 typedef struct {
@@ -1011,6 +1013,70 @@ typedef enum {
     SERVO_STR_R_UNM_POSITION_INA,
     SERVO_STR_R_UNM_PEAKS_INA,
     SERVO_STR_R_METER_MODEL,
+
+    /* The limit run (servo_limrun.h): its box on the SERVO screen, then
+     * its report. */
+    SERVO_STR_L_FOUND,
+    SERVO_STR_L_FREE,
+    SERVO_STR_L_PH_SEARCH,
+    SERVO_STR_L_PH_SAFE,
+    SERVO_STR_L_PH_CONNECT,
+    SERVO_STR_L_PH_WRITE,
+    SERVO_STR_L_PH_LEAVE,
+    SERVO_STR_L_PH_ARM,
+    SERVO_STR_L_PH_PROBE,
+    SERVO_STR_L_PH_CHECK,
+    SERVO_STR_L_WHY_HARD,
+    SERVO_STR_L_WHY_CLIPPED,
+    SERVO_STR_L_WHY_STALL,
+    SERVO_STR_L_WHY_SEARCH_LONG,
+    SERVO_STR_L_WHY_SUPPLY,
+    SERVO_STR_L_WHY_BENCH,
+    SERVO_STR_L_WHY_NOT_KST,
+    SERVO_STR_L_WHY_PROG,
+    SERVO_STR_L_WHY_WRITE,
+    SERVO_STR_L_WHY_OTHER,
+    SERVO_STR_L_WHY_MAPPING,
+    SERVO_STR_L_WHY_SMALLEST,
+    SERVO_STR_L_WHY_CAP,
+    SERVO_STR_L_WHY_STILL,
+    SERVO_STR_L_R_TITLE,
+    SERVO_STR_L_R_MODE_SEARCH,
+    SERVO_STR_L_R_MODE_PROGRAM,
+    SERVO_STR_L_R_OUTPUT,
+    SERVO_STR_L_R_PULSE,
+    SERVO_STR_L_R_METER,
+    SERVO_STR_L_R_RULE,
+    SERVO_STR_L_R_PROTECT,
+    SERVO_STR_L_R_ENDS_HEAD,
+    SERVO_STR_L_R_CHECK_HEAD,
+    SERVO_STR_L_R_LOW,
+    SERVO_STR_L_R_HIGH,
+    SERVO_STR_L_R_END_BOUND,
+    SERVO_STR_L_R_END_FREE,
+    SERVO_STR_L_R_END_NOT_RUN,
+    SERVO_STR_L_R_ANGLE,
+    SERVO_STR_L_R_ANGLE_NONE,
+    SERVO_STR_L_R_ENC_OFF,
+    SERVO_STR_L_R_PROG_HEAD,
+    SERVO_STR_L_R_PROG_OFF,
+    SERVO_STR_L_R_PROG_FREE,
+    SERVO_STR_L_R_PROG_NO_SERVO,
+    SERVO_STR_L_R_SERVO,
+    SERVO_STR_L_R_LEFT,
+    SERVO_STR_L_R_RIGHT,
+    SERVO_STR_L_R_REG,
+    SERVO_STR_L_R_REG_BIS,
+    SERVO_STR_L_R_SIDE_LO,
+    SERVO_STR_L_R_SIDE_HI,
+    SERVO_STR_L_R_SIDE_UNKNOWN,
+    SERVO_STR_L_R_MARGIN,
+    SERVO_STR_L_R_WRITES,
+    SERVO_STR_L_R_BACKUP,
+    SERVO_STR_L_R_BACKUP_MEM,
+    SERVO_STR_L_R_RESTORE,
+    SERVO_STR_L_R_UNIT,
+    SERVO_STR_L_R_BENCH,
     SERVO_STR_COUNT
 } servo_str_t;
 

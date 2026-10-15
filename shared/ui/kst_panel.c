@@ -386,7 +386,18 @@ static struct {
     uint32_t sig;
     uint32_t rev;
     uint32_t hold_rev;
+
+    /* A limit run's step of the programmer (kst_panel_run_connect()). */
+    struct {
+        uint8_t  op;            /* RUN_OP_* */
+        bool     kept;          /* the operator's supply values are kept */
+        uint16_t keep_mv, keep_ma;
+        uint16_t want[2];       /* the write's LEFT and RIGHT ANGLE */
+        unsigned writes;        /* writes of the run that ended well */
+    } run;
 } k;
+
+enum { RUN_OP_NONE = 0, RUN_OP_CONNECT, RUN_OP_WRITE, RUN_OP_LEAVE };
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -1245,6 +1256,7 @@ static void warn_write(void)
 static ui_text_id_t from_text(unsigned from)
 {
     return from == KST_PROG_FROM_SESSION ? TX_KP_FROM_SESSION
+         : from == KST_PROG_FROM_RUN     ? TX_KP_FROM_RUN
                                          : TX_KP_FROM_JOURNAL;
 }
 
@@ -1856,7 +1868,8 @@ static bool row_live(const row_t *r)
         return (st == KST_PROG_PWM || st == KST_PROG_PROGRAMMING)
             && (p->journal
                 || kst_prog_restore_offered(p, KST_PROG_FROM_SESSION)
-                || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL));
+                || kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL)
+                || kst_prog_restore_offered(p, KST_PROG_FROM_RUN));
     case A_MORE:
         return (st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p))
             || (st == KST_PROG_PWM && on_port());
@@ -2265,6 +2278,7 @@ static uint32_t signature(void)
         p->f.have_backup,
         kst_prog_restore_offered(p, KST_PROG_FROM_SESSION),
         kst_prog_restore_offered(p, KST_PROG_FROM_JOURNAL),
+        kst_prog_restore_offered(p, KST_PROG_FROM_RUN),
     };
     uint32_t h = 2166136261u;
 
@@ -2383,6 +2397,206 @@ bool kst_panel_file_late(const char *text, size_t len)
      * read that follows the interrupted write: RESTORE offers its values. */
     return !kst_prog_journal_held(&k.prog)
         && kst_panel_file_load(text, len);
+}
+
+/* --- the limit run's sessions ---------------------------------------------- */
+
+/* Whatever the overlay has open goes: the run's step is no operator's. */
+static void run_close_editors(void)
+{
+    close_editors();
+    ++k.rev;
+}
+
+kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
+                                        uint16_t ma)
+{
+    kst_prog_t *p = &k.prog;
+    kst_prog_msg_id_t m;
+
+    if (kst_prog_state(p) != KST_PROG_PWM) {
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    }
+    run_close_editors();
+    if (!k.run.kept) {
+        k.run.kept = true;
+        k.run.keep_mv = kst_prog_supply_mv(p);
+        k.run.keep_ma = kst_prog_supply_ma(p);
+    }
+    if (supply) {
+        /* The PD mini's set point as it stands: the ENTER changes
+         * nothing of it. */
+        kst_prog_supply_set(p, mv, ma);
+    }
+    {
+        const supply_caps_t caps = supply_screen_caps();
+
+        kst_prog_supply_caps(p, (uint16_t)lroundf(caps.v_max * 1000.0f),
+                             (uint16_t)lroundf(caps.i_max * 1000.0f));
+    }
+    kst_prog_supply_floor(p, (uint16_t)KST_PORT_SUPPLY_MIN_MV);
+    m = kst_prog_connect(p, port_no());
+    k.run.op = m == KST_PROG_MSG_NONE ? RUN_OP_CONNECT : RUN_OP_NONE;
+    return m;
+}
+
+/* A field set for the run's write; false where the model refuses it. */
+static bool run_edit(kst_field_id_t id, uint16_t raw)
+{
+    kst_prog_t *p = &k.prog;
+    const kst_prog_edit_t e = kst_prog_edit(p, id, raw);
+
+    if (e == KST_PROG_EDIT_SOFT) {
+        /* The start's hold is the consent: the run lowers the angles and
+         * puts back the servo's own values. */
+        kst_prog_soft_confirm(p);
+        return kst_field_get(kst_prog_draft(p), id) == raw;
+    }
+    return e == KST_PROG_EDIT_OK;
+}
+
+kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
+{
+    kst_prog_t *p = &k.prog;
+    kst_prog_msg_id_t m;
+
+    if (kst_prog_state(p) != KST_PROG_PROGRAMMING || !kst_prog_editable(p)) {
+        return KST_PROG_MSG_NEED_READ;
+    }
+    run_close_editors();
+    if (k.run.writes == 0u && !kst_prog_run_hold(p)) {
+        return KST_PROG_MSG_NEED_READ;
+    }
+    m = kst_prog_enable(p, true);
+    if (m != KST_PROG_MSG_NONE) {
+        return m;
+    }
+    kst_prog_discard(p);
+    if (!run_edit(KST_F_LEFT_ANGLE, left)
+        || !run_edit(KST_F_RIGHT_ANGLE, right)) {
+        const kst_prog_msg_id_t why = kst_prog_message(p)->id;
+
+        kst_prog_discard(p);
+        return why != KST_PROG_MSG_NONE ? why : KST_PROG_MSG_EDIT_LOCKED;
+    }
+    m = kst_prog_write(p);
+    if (m != KST_PROG_MSG_NONE) {
+        kst_prog_discard(p);
+        return m;
+    }
+    k.run.op = RUN_OP_WRITE;
+    k.run.want[0] = left;
+    k.run.want[1] = right;
+    return KST_PROG_MSG_NONE;
+}
+
+kst_prog_msg_id_t kst_panel_run_leave(void)
+{
+    kst_prog_t *p = &k.prog;
+    kst_prog_msg_id_t m;
+
+    if (kst_prog_state(p) != KST_PROG_PROGRAMMING) {
+        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
+    }
+    run_close_editors();
+    (void)kst_prog_enable(p, false);
+    kst_prog_discard(p);
+    m = kst_prog_leave(p);
+    k.run.op = m == KST_PROG_MSG_NONE ? RUN_OP_LEAVE : RUN_OP_NONE;
+    return m;
+}
+
+kst_panel_run_t kst_panel_run_poll(void)
+{
+    kst_prog_t *p = &k.prog;
+    const kst_prog_state_t st = kst_prog_state(p);
+    const kst_prog_msg_id_t msg = kst_prog_message(p)->id;
+    bool ok;
+
+    if (k.run.op == RUN_OP_NONE) {
+        return KST_PANEL_RUN_NONE;
+    }
+    if (st == KST_PROG_ENTERING || st == KST_PROG_WORKING
+        || st == KST_PROG_LEAVING) {
+        return KST_PANEL_RUN_BUSY;
+    }
+    switch (k.run.op) {
+    case RUN_OP_CONNECT:
+        /* The read the ENTER chains is part of it. */
+        ok = st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
+        break;
+    case RUN_OP_WRITE:
+        ok = st == KST_PROG_PROGRAMMING && msg == KST_PROG_MSG_WRITTEN
+             && kst_field_get(kst_prog_servo(p), KST_F_LEFT_ANGLE)
+                    == k.run.want[0]
+             && kst_field_get(kst_prog_servo(p), KST_F_RIGHT_ANGLE)
+                    == k.run.want[1];
+        (void)kst_prog_enable(p, false);
+        if (ok) {
+            if (k.run.writes == 0u) {
+                kst_prog_run_written(p);
+            }
+            ++k.run.writes;
+        }
+        break;
+    default:
+        ok = st == KST_PROG_PWM;
+        break;
+    }
+    k.run.op = RUN_OP_NONE;
+    ++k.rev;
+    return ok ? KST_PANEL_RUN_OK : KST_PANEL_RUN_FAILED;
+}
+
+bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
+                         bool *reversion, unsigned *type)
+{
+    const kst_prog_t *p = &k.prog;
+    const kst_image_t *img = kst_prog_servo(p);
+    uint16_t lo2 = 0u, hi2 = 0u;
+
+    if (!kst_prog_have_servo(p)) {
+        return false;
+    }
+    angle[0] = kst_field_get(img, KST_F_LEFT_ANGLE);
+    angle[1] = kst_field_get(img, KST_F_RIGHT_ANGLE);
+    *reversion = kst_field_get(img, KST_F_REVERSION) != 0u;
+    *type = kst_card_type(img);
+    if (!kst_prog_editable(p)
+        || !kst_prog_range(p, KST_F_LEFT_ANGLE, lo, hi)
+        || !kst_prog_range(p, KST_F_RIGHT_ANGLE, &lo2, &hi2)) {
+        *lo = 0u;
+        *hi = 0u;
+        return false;
+    }
+    /* The narrower of the two: one value for both registers. */
+    *lo = *lo > lo2 ? *lo : lo2;
+    *hi = *hi < hi2 ? *hi : hi2;
+    return *lo <= *hi;
+}
+
+const char *kst_panel_run_backup(void)
+{
+    return kst_prog_run_backup(&k.prog);
+}
+
+void kst_panel_run_begin(void)
+{
+    k.run.op = RUN_OP_NONE;
+    k.run.writes = 0u;
+    k.run.kept = false;
+}
+
+void kst_panel_run_end(void)
+{
+    kst_prog_t *p = &k.prog;
+
+    k.run.op = RUN_OP_NONE;
+    if (k.run.kept) {
+        k.run.kept = false;
+        kst_prog_supply_set(p, k.run.keep_mv, k.run.keep_ma);
+    }
+    ++k.rev;
 }
 
 kst_prog_t *kst_panel_model(void)

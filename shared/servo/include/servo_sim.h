@@ -58,6 +58,15 @@ typedef struct {
 
     float    slew_us_per_ms; /**< how fast the horn actually moves */
     float    noise_a;        /**< peak-to-peak sensor noise */
+
+    /**
+     * The servo's own travel limits, as the pulse widths they stop it at: a
+     * command past one moves the horn to it and no further, and pushes no
+     * harder than there.  A programmable servo's end angles (KST's LEFT and
+     * RIGHT ANGLE) are such limits.  0 is none.
+     */
+    uint16_t limit_lo_us;
+    uint16_t limit_hi_us;
 } servo_sim_cfg_t;
 
 typedef struct {
