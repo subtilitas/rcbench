@@ -3,7 +3,8 @@
 #
 # A host suite (test/host/test_tone_pio.c for
 # protocols/phase_tap/rp2350/tone_cap.pio, test/host/test_kst_pio.c for
-# protocols/kst/rp2350/kst_line.pio) assembles the program with a small
+# protocols/kst/rp2350/kst_line.pio, test/host/test_exbus_pio.c for
+# protocols/exbus/rp2350/exbus_line.pio) assembles the program with a small
 # assembler and runs the words in a model of the state machine.  This holds
 # pioasm's output for the same file to the list the host test is held to, so
 # the model runs what the chip runs.

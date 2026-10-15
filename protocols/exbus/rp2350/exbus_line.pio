@@ -1,0 +1,71 @@
+;
+; One EX Bus transaction on one pin: bytes out as 8N1, the pin released
+; right after the last stop bit, 8N1 bytes in until the line has been quiet
+; for the window (before the first byte) or the quiet time (after a byte),
+; the pin driven high again.
+;
+; The pin is the state machine's OUT, SET, IN and JMP pin.  8 cycles a bit:
+; the clock divider is the system clock over 8 times the rate.  No autopull
+; and no autopush; the output shift register shifts right, so `out pins, 1`
+; sends bit 0 first, and the input shift register shifts right.  The words
+; come from the transmit FIFO in the order exbus_pio.h gives
+; (protocols/exbus/include): count, window, one word per byte with the
+; quiet time above the byte.  Between transactions the machine stalls on
+; the first `pull` with the pin driven high, the idle level of the line.
+;
+; Transmit.  A byte is `pull`, the start bit (`set pins, 0` and `set y`, 8
+; cycles), 8 data bits of 8 cycles and the stop bit (`set pins, 1`, `jmp
+; x--` and the next byte's `pull` or, after the last byte, `mov x, isr`, 8
+; cycles).  A `pull` that waits for a word only lengthens a stop bit.  The
+; last byte's 8 `out`s leave the quiet time in the OSR.
+;
+; Receive.  The watch loop is a tick of 2 cycles: `jmp pin` and `jmp x--`.
+; A low pin starts a byte: X is shifted in as the byte's stamp, X takes the
+; quiet time, and the first data bit is sampled 11 cycles after the sample
+; that saw the start bit, which with the 2-cycle input synchroniser puts
+; each sample within 1 cycle of the middle of its bit.  The stop bit is the
+; ninth sample.  The stamp, the byte and its stop bit are pushed as one
+; word; the byte returns to the watch loop 78 cycles after the sample that
+; saw it.  When X runs out with the pin high the program wraps to `idle`,
+; which drives the pin: its latch is high since the last stop bit.
+;
+; test/host/test_exbus_pio.c assembles this file, runs the words in a model
+; of the state machine and holds them to fixtures/exbus_line_words.txt,
+; which a firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program exbus_line
+
+.wrap_target
+idle:
+    set pindirs, 1          ; and the end of a release: drive the latch, high
+    pull block              ; count
+    mov x, osr
+    pull block              ; window
+    mov isr, osr
+byte:
+    pull block              ; the byte in bits 7:0, the quiet time above
+    set pins, 0 [6]         ; start bit
+    set y, 7
+tbit:
+    out pins, 1
+    jmp y--, tbit [6]
+    set pins, 1 [5]         ; stop bit
+    jmp x--, byte
+    mov x, isr
+    set pindirs, 0          ; release: an input with the pull-up
+watch:
+    jmp pin, high
+    in x, 23                ; a start bit: the stamp
+    mov x, osr              ; the quiet time
+    set y, 7 [7]
+rbit:
+    in pins, 1
+    jmp y--, rbit [6]
+    in pins, 1              ; the stop bit
+    push noblock
+high:
+    jmp x--, watch
+.wrap

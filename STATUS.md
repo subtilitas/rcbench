@@ -159,7 +159,7 @@ rcbench/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
-    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/
+    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/ exbus/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -173,7 +173,7 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
-| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` · `exbus` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -208,7 +208,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 116 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 120 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
@@ -220,7 +220,7 @@ The host suite is 116 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_win`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_wa_session`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_stick`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_bind_link`, `test_logview`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_panel`, `test_kst_card`, `test_exbus_wire`, `test_exbus_telem`, `test_exbus_sched`, `test_exbus_pio`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_wa_session`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -263,6 +263,18 @@ fills and is removed, and `test_prog_link` the panel's module for the
 ports' page. ctest also
 builds and runs `kst_headers_cxx`, which calls the module through its 7
 headers from C++11, when the host has a C++ compiler.
+The 4 `test_exbus_*` binaries run the core of `protocols/exbus/`:
+`test_exbus_wire` the channel packet, the request and the reply check
+against every example packet of the two JETI specifications and packets
+computed with an independent script; `test_exbus_telem` the EX telemetry
+block, each data type and the sensor table; `test_exbus_sched` the cycle
+against a driver model: a reply outside the window, no reply, a stop
+during a request, old channel values, a driver that never ends, a clock
+that wraps; `test_exbus_pio` the pin driver's arithmetic and its PIO
+program in the same kind of state machine model as `test_kst_pio`, at 16
+phases of a device clock 2.5 % fast to 3 % slow. The coprocessor build
+fails when the assembled program differs from the words the test runs.
+`exbus_headers_cxx` calls the module through its 4 core headers from C++.
 ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
 (`test/host/test_sense_trace_tool.py`).
@@ -359,6 +371,10 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_session.c` | 584 | 583 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
+| `protocols/exbus/exbus_wire.c` | 102 | 102 | 100.0% |
+| `protocols/exbus/exbus_telem.c` | 253 | 253 | 100.0% |
+| `protocols/exbus/exbus_sched.c` | 178 | 178 | 100.0% |
+| `protocols/exbus/exbus_pio.c` | 87 | 87 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
 | `shared/outputs/prog_port.c` | 313 | 313 | 100.0% |
@@ -429,7 +445,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 146 | 141 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **40125** | **39283** | **97.9%** |
+| **total** | **40745** | **39903** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -450,7 +466,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | Panel TWAI pins | GPIO19 (RX) and GPIO20 (TX) inferred from the multiplexer | trace on the schematic |
 | UART (universal asynchronous receiver-transmitter) socket GPIOs | UART0's default pins assumed for the bridged USB-C socket; the secondary USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus) serial and debug bridge) console covers a mismatch | read off the schematic |
 | S.BUS receiver | decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is not written | PIO program |
-| Bus servos are not started | step 5 of the servo tester (#223): Feetech SCS/STS and Dynamixel 2.0 serial servos, S.BUS and S.BUS2 output, and JETI EX Bus channel output, each from its published specification. A "ditec" bus servo on the owner's list is unconfirmed, possibly Hitec; a Hitec bus is taken up only if one is specified. S.BUS2 telemetry slots and configuration over EX Bus stay not planned | the specifications, a servo of each, and a decision on the order |
+| Bus servos are not started | step 5 of the servo tester (#223): Feetech SCS/STS and Dynamixel 2.0 serial servos, S.BUS and S.BUS2 output, and JETI EX Bus channel output, each from its published specification. The EX Bus master core and its RP2350 pin driver are built and host-tested ([protocols/exbus](protocols/exbus/README.md)): channel packets, the telemetry request and reply, the EX telemetry decoder; nothing on the panel or the programming port drives them. A "ditec" bus servo on the owner's list is unconfirmed, possibly Hitec; a Hitec bus is taken up only if one is specified. S.BUS2 telemetry slots and configuration over EX Bus stay not planned | the specifications, a servo of each, a decision on the order, and for EX Bus the bus mode on the programming port and the SERVO screen |
 | Measurement front end | round 1 of [the component research](hardware/docs/Research.md) ran from 2026-09-28 to 2026-09-30 and selected 49 parts. The motor monitor is the INA228 and the servo supply three TPS55285, which the owner keeps although round 1 refutes one at 4.0 A continuous from the pack floor (owner, 2026-09-30). The 20 output ports take a channel each of 7 INA3221. Round 2 selects the parts round 1 left open and is planned in the research page. No schematic exists. [The IO board specification](hardware/docs/IOBoard.md) is a draft | [hardware record](hardware/STATUS.md) |
 | Monostable | not on any board | hardware |
 | Rotary knob | the AS5600 reader, the mapping to the throttle and the horn and the settings are built and tested on the host; On the Waveshare ESP32-S3 Touch LCD 7 the CH422G expander answers at 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's 0x36, so the knob cannot be read on that bus. The I2C terminal's pin order is from the schematic's text, and the turn direction with DIR on GND is the datasheet's | an I2C bus scan with and without the sensor, then a turn on a bench screen |

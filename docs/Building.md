@@ -38,6 +38,7 @@ rcbench/
     pdmini/               PD mini driver · PIO UART
     phase_tap/            ESC tone detector · edge ring reader · PIO capture
     kst/                  programming of KST and Chaservo servos: frames, registers, limits, write plans, session · rp2350: kst_line.pio · kst_line
+    exbus/                EX Bus master: channel packet, telemetry request and reply, EX telemetry decoder, cycle scheduler · rp2350: exbus_line.pio · exbus_line
   firmware/
     panel/                ESP-IDF project (ESP32-S3)
     iomcu/                pico-sdk project (RP2350)
@@ -79,7 +80,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
-| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` · `exbus` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
 ## Toolchains

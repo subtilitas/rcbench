@@ -14,6 +14,14 @@ history is in git.
   Network) from the panel. Neither needs a part beyond the panel and the
   coprocessor; the panel update needs no microSD card. The base setup runs
   12 functions.
+- `protocols/exbus`: the master side of EX Bus for JETI receivers and
+  devices, from the published specifications (EX Bus protocol 1.21, EX
+  telemetry protocol 1.07). Channel packets of 1 to 24 channels at 125 or
+  250 kbaud, a telemetry request every nth cycle, the reply check, the EX
+  telemetry decoder with a sensor table, and a cycle scheduler that sends
+  nothing once stopped. The RP2350 pin driver sends and receives on one pin
+  with a PIO program of 23 words. The coprocessor build compiles it; no
+  firmware code calls it. 75 host test cases.
 
 ### Changed
 

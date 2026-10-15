@@ -38,6 +38,7 @@ rcbench/
     pdmini/               PD-mini-Treiber · PIO-UART
     phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
     kst/                  Programmierung von KST- und Chaservo-Servos: Frames, Register, Grenzen, Schreibpläne, Session · rp2350: kst_line.pio · kst_line
+    exbus/                EX-Bus-Master: Kanalpaket, Telemetrie-Request und -Antwort, EX-Telemetrie-Decoder, Zyklus-Scheduler · rp2350: exbus_line.pio · exbus_line
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-S3)
     iomcu/                pico-sdk-Projekt (RP2350)
@@ -80,7 +81,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
-| `openyge` · `dshot` · `ppm` | | ✔ | ✔ |
+| `openyge` · `dshot` · `ppm` · `exbus` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` | ✔ | ✔ | ✔ |
 
 ## Toolchains
