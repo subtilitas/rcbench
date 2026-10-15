@@ -1274,10 +1274,14 @@ static void pose_wifi(const char *view)
         strcpy(v.pass, "k7mqx3ha");
         strcpy(v.code, "r4tcw9pe");
         v.up = WIFI_UP_STAGED;
-        strcpy(v.new_ver, "0.19.0");
+        /* One release either side of the running one, so a version bump
+         * keeps a newer image newer and an older one older. */
+        snprintf(v.new_ver, sizeof(v.new_ver), "%d.%d.0",
+                 RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR + 1);
         v.offer = WIFI_OFFER_NEWER;
         if (strcmp(view, "wifi-older") == 0) {
-            strcpy(v.new_ver, "0.17.0");
+            snprintf(v.new_ver, sizeof(v.new_ver), "%d.%d.0",
+                     RCBENCH_VERSION_MAJOR, RCBENCH_VERSION_MINOR - 1);
             v.offer = WIFI_OFFER_OLDER;
             v.gate = WIFI_GATE_DRAWING;
         } else if (strcmp(view, "wifi-coproc") == 0) {
@@ -2408,11 +2412,12 @@ int main(int argc, char **argv)
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: a coprocessor on 0.17.0 and
-         * the image this panel carries; the older one with the two
-         * swapped.  The progress half way through the blocks of a
+        /* The question as a link-up poses it: a coprocessor one release
+         * behind and the image this panel carries; the older one with the
+         * two swapped.  The progress half way through the blocks of a
          * 191,592-byte image. */
-        const cu_version_t old_v = { 0, 17, 0 };
+        const cu_version_t old_v = { RCBENCH_VERSION_MAJOR,
+                                     RCBENCH_VERSION_MINOR - 1, 0 };
         const cu_version_t new_v = { RCBENCH_VERSION_MAJOR,
                                      RCBENCH_VERSION_MINOR,
                                      RCBENCH_VERSION_PATCH };
