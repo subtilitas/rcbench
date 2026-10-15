@@ -401,3 +401,18 @@ def test_the_tree_holds_the_sdk_tags():
     problems = []
     cd.check_sdk_tags(problems)
     assert problems == []
+
+
+def test_only_a_help_image_block_counts_a_view_as_shown(tmp_path, monkeypatch):
+    help_root, img = tmp_path / "help", tmp_path / "img"
+    for lang in ("en", "de"):
+        (help_root / lang).mkdir(parents=True)
+    (img / "de").mkdir(parents=True)
+    head = "---\nscreen: none\ntitle: T\norder: 1\n---\n\n"
+    (help_root / "en" / "a.md").write_text(
+        head + "Text with `](view:motor)` and ](view:servo) in prose.\n\n"
+        "![The motor](view:motor-table)\n", encoding="utf-8")
+    monkeypatch.setattr(cd, "HELP", help_root)
+    monkeypatch.setattr(cd, "IMG", img)
+    shown = {p.name for p in cd.help_images()}
+    assert shown == {"motor-table.png"}

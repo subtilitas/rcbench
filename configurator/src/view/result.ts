@@ -53,8 +53,12 @@ const button = (lang: Lang, id: string, key: Key): string =>
 /** The trademark notice of the repository: the list of names behind the sentence in the footer. */
 export const NOTICE_URL = 'https://github.com/subtilitas/rcbench/blob/main/NOTICE';
 
+/** The panel's web help beside the page, in the language of the page. */
+export const HELP_URL = { en: 'help/index.html', de: 'help/de/index.html' } as const;
+
 const footer = (lang: Lang): string =>
   `<footer><p id="dev-state">${esc(t(lang, 'devState'))}</p>`
+  + `<p><a id="helplink" href="${HELP_URL[lang]}">${esc(t(lang, 'footHelp'))}</a></p>`
   + `<p>${esc(t(lang, 'foot'))} <a id="noticelink" href="${NOTICE_URL}" rel="noopener noreferrer">${esc(t(lang, 'footNotice'))}</a></p></footer>`;
 
 /** Folder of the picture files, relative to the page. */
