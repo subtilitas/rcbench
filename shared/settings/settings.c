@@ -402,11 +402,19 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
     [SET_SERVO_REPORT] = {
         "srv_report", "Report", "A text report beside each test's log", "",
         SET_CAT_SERVO, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
+    /*
+     * Whether the panel asks GitHub for a newer release at start, on the
+     * home network it keeps, and says so on OVERVIEW.  NEVER REMIND ME
+     * switches it off; the UPDATES screen switches it back on.
+     */
+    [SET_UPD_REMIND] = {
+        "upd_remind", "Reminder at start", "Ask GitHub for a newer release at panel start", "",
+        SET_CAT_UPDATE, SET_TYPE_BOOL, 0, 1, 1, 1, NULL, 0 },
 };
 
 static const char *const k_cat_names[SET_CAT_COUNT] = {
     "ESC / BENCH", "APPLICATION", "INTERFACES", "SUPPLY", "SERVO TEST",
-    "ESC STICK",
+    "ESC STICK", "UPDATES",
 };
 
 /* The string settings' keys and defaults; NVS keys, 15 characters or fewer. */

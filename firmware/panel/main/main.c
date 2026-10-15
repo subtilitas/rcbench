@@ -190,6 +190,8 @@ static uint16_t pct_to_span(float pct)
 #include "touch_map.h"
 #include "fw_install.h"
 #include "fw_ota.h"
+#include "fw_release.h"
+#include "upd_screen.h"
 #include "wifi_access.h"
 #include "wifi_screen.h"
 #include "ui_screen.h"
@@ -408,6 +410,9 @@ static atomic_bool s_cu_busy;
 static char        s_boot_alert[ALERT_MAX];
 /* False when wifi_access_init() failed: no call into wifi_access then. */
 static bool        s_wifi_ok;
+/* Where PANEL UPDATE's CLOSE leads: back to FILES & UPDATE's LOGS after an
+ * upload's install, to UPDATES or OVERVIEW after a download. */
+static ui_screen_id_t s_update_back = SCREEN_LOGS;
 
 /*
  * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
@@ -8822,12 +8827,12 @@ static void fw_install_run(void)
 
     /* The radio goes first, and wholly: no request may be under way. */
     wifi_access_close(WA_OFF_INSTALL);
-    wifi_access_state_t ws;
+    bool down;
     const uint32_t t0 = now_ms();
     do {
         vTaskDelay(pdMS_TO_TICKS(20));
-        wifi_access_get(&ws);
-    } while (!ws.down && (uint32_t)(now_ms() - t0) < 20000u);
+        down = wifi_access_down();
+    } while (!down && (uint32_t)(now_ms() - t0) < 20000u);
 
     static fw_install_t in;
     fw_image_info_t running;
@@ -8837,7 +8842,7 @@ static void fw_install_run(void)
     armed = s_snap.arm_wanted || s_snap.armed;
     snap_unlock();
     fw_err_t e = FW_ERR_BUSY;
-    if (ws.down && fw_gate_now(armed) == FW_GATE_OPEN) {
+    if (down && fw_gate_now(armed) == FW_GATE_OPEN) {
         e = fw_install_begin(&in, fw_ota_flash(), img, bytes,
                              fw_ota_slot_bytes(), &running);
     }
@@ -8951,10 +8956,11 @@ static void wifi_service(bool armed, uint32_t stops_now)
         (void)wifi_access_start(WA_MODE_SCAN, gate);
     }
     if ((req & WIFI_REQ_INSTALL) != 0u) {
+        s_update_back = SCREEN_LOGS;
         fw_install_run();
     }
     if (update_screen_take_close()) {
-        ui_router_goto(SCREEN_LOGS);
+        ui_router_goto(s_update_back);
     }
 
     if (ui_router_current() != SCREEN_WIFI) {
@@ -9011,6 +9017,231 @@ static void wifi_service(bool armed, uint32_t stops_now)
     snprintf(v->new_ver, sizeof(v->new_ver), "%s", a->info.version_text);
     snprintf(v->run_ver, sizeof(v->run_ver), "%s", RCBENCH_VERSION_STRING);
     wifi_screen_set(v);
+}
+
+/* ------------------------------------------- GitHub: check and download */
+
+/*
+ * SETUP > UPDATES, the start-up check and the reminder (upd_screen.h), on
+ * wifi_access's fetch jobs (wa_fetch.h).
+ *
+ * A check needs what the radio needs: SAFE, the supply off, no log run,
+ * and neither a panel install nor the coprocessor's update.  A download
+ * needs what an install needs (fw_gate_now()): it is one, from its hold
+ * on, and says so in s_fw_installing before it reads the coprocessor's
+ * flag.  Each frame a running job is ended for STOP, for FILES & UPDATE
+ * opening, for CANCEL, and for its gate closing.
+ */
+static upd_driver_t s_upd;
+static uint32_t     s_upd_boot_gen;   /* the start-up check's job; 0 none */
+static bool         s_upd_dl;         /* a download, from its hold to its end */
+
+static wa_why_t why_of_fw_gate(fw_gate_t g)
+{
+    switch (g) {
+    case FW_GATE_ARMED:   return WA_WHY_ARMED;
+    case FW_GATE_SUPPLY:  return WA_WHY_SUPPLY;
+    case FW_GATE_RUN:     return WA_WHY_RUN;
+    case FW_GATE_DRAWING: return WA_WHY_DRAWING;
+    case FW_GATE_COPROC:  return WA_WHY_COPROC;
+    case FW_GATE_OPEN:
+    default:              return WA_WHY_NONE;
+    }
+}
+
+static wa_why_t upd_check_gate(bool armed)
+{
+    return wa_fetch_gate(armed, supply_live_or_coming(), run_open_now(),
+                         atomic_load(&s_cu_busy),
+                         atomic_load(&s_fw_installing));
+}
+
+static bool upd_found_newer(const wa_fetch_t *f)
+{
+    return f->job == WA_JOB_CHECK && f->phase == WA_PH_ENDED
+           && f->got == WA_GOT_NEWER;
+}
+
+/* @p unsafe: ARMED, an arm waiting, or the supply's output on or coming. */
+static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
+                               const wa_fetch_t *f, bool have_net)
+{
+    return (upd_feed_t){
+        .now_ms     = now_ms(),
+        .remind     = settings_get_bool(SET_UPD_REMIND),
+        .available  = s_wifi_ok,
+        .have_net   = have_net,
+        .gate_open  = upd_check_gate(armed) == WA_WHY_NONE,
+        .files_open = ui_router_current() == SCREEN_WIFI,
+        .coproc     = cs->offered || cs->active || atomic_load(&s_cu_busy),
+        .unsafe     = unsafe,
+        .newer      = s_upd_boot_gen != 0u && f->gen == s_upd_boot_gen
+                      && upd_found_newer(f),
+    };
+}
+
+/*
+ * The reminder, before the coprocessor's question is served: it yields to
+ * that question in the same frame the question may open.
+ */
+static void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
+{
+    if (!s_wifi_ok) {
+        return;
+    }
+    wa_fetch_t f;
+    wifi_access_fetch_get(&f);
+    char ssid[WIFI_SSID_MAX + 1];
+    const bool have_net = wifi_access_home(ssid, sizeof(ssid));
+    const upd_feed_t feed = upd_feed_now(armed, unsafe, cs, &f, have_net);
+    upd_remind_drive(&s_upd, &feed);
+}
+
+static void upd_ver_text(fw_version_t v, char *out, size_t n)
+{
+    char t[FW_REL_VER_TEXT];
+    fw_release_version_text(v, t);
+    snprintf(out, n, "%s", t);
+}
+
+/*
+ * Once a frame, after wifi_service(): the start-up check, what UPDATES and
+ * the reminder ask for, the job's aborts, the download's screen, and what
+ * UPDATES shows.  @p armed includes an arm waiting.
+ */
+static void upd_service(bool armed, bool unsafe, uint32_t stops_now,
+                        const cu_snap_t *cs)
+{
+    static uint32_t seen_stops;
+    static bool     started;
+    if (!started) {
+        seen_stops = stops_now;
+        started = true;
+    }
+    const bool stop = (stops_now != seen_stops);
+    seen_stops = stops_now;
+
+    static upd_view_t v;     /* off the stack: the loop's is the display's */
+    memset(&v, 0, sizeof(v));
+    snprintf(v.running, sizeof(v.running), "%s", RCBENCH_VERSION_STRING);
+    if (!s_wifi_ok) {
+        (void)upd_screen_take();
+        v.unavailable = true;
+        upd_screen_set(&v);
+        return;
+    }
+
+    v.have_net = wifi_access_home(v.net, sizeof(v.net));
+    wa_fetch_t f;
+    wifi_access_fetch_get(&f);
+    const unsigned req = upd_screen_take();
+    const fw_version_t none = { 0u, 0u, 0u };
+
+    /* The start-up check, once, at a moment the bench allows it. */
+    const upd_feed_t feed = upd_feed_now(armed, unsafe, cs, &f, v.have_net);
+    if (upd_startup_due(&s_upd, &feed)
+        && wifi_access_fetch_start(WA_JOB_CHECK, none, upd_check_gate(armed))
+           == WA_GOT_NONE) {
+        wifi_access_fetch_get(&f);
+        s_upd_boot_gen = f.gen;
+        ESP_LOGI(TAG, "GitHub: start-up check");
+    }
+    if ((req & UPD_REQ_CHECK) != 0u && !wa_fetch_busy(&f)) {
+        (void)wifi_access_fetch_start(WA_JOB_CHECK, none,
+                                      upd_check_gate(armed));
+        wifi_access_fetch_get(&f);
+    }
+    if ((req & UPD_REQ_DOWNLOAD) != 0u && !wa_fetch_busy(&f) && !s_upd_dl
+        && upd_found_newer(&f)) {
+        /* Before the gate is read: see s_fw_installing. */
+        atomic_store(&s_fw_installing, true);
+        s_upd_dl = true;
+        s_update_back = (ui_router_current() == SCREEN_UPDATES)
+                            ? SCREEN_UPDATES : SCREEN_OVERVIEW;
+        (void)wifi_access_fetch_start(WA_JOB_DOWNLOAD, f.found,
+                                      why_of_fw_gate(fw_gate_now(armed)));
+        (void)update_screen_take_cancel();
+        ui_router_goto(SCREEN_UPDATE);
+        wifi_access_fetch_get(&f);
+    }
+
+    /* A job under way ends for any of these. */
+    wa_why_t abort = WA_WHY_NONE;
+    const bool cancel = (req & UPD_REQ_CANCEL) != 0u
+                        || (s_upd_dl && update_screen_take_cancel());
+    if (wa_fetch_busy(&f)) {
+        if (stop) {
+            abort = WA_WHY_STOP;
+        } else if (ui_router_current() == SCREEN_WIFI) {
+            abort = WA_WHY_FILES;
+        } else if (cancel) {
+            abort = WA_WHY_CANCEL;
+        } else if (f.job == WA_JOB_DOWNLOAD) {
+            abort = why_of_fw_gate(fw_gate_now(armed));
+        } else {
+            abort = upd_check_gate(armed);
+        }
+    }
+    wifi_access_fetch_tick(abort);
+    wifi_access_fetch_get(&f);
+
+    /* What UPDATES and the download's screen show. */
+    const bool busy = wa_fetch_busy(&f);
+    v.block = (upd_why_t)upd_check_gate(armed);
+    if (s_upd_dl || busy) {
+        v.dl_block = UPD_WHY_BUSY;
+    } else {
+        v.dl_block = (upd_why_t)why_of_fw_gate(fw_gate_now(armed));
+        if (v.dl_block == UPD_WHY_NONE && atomic_load(&s_fw_installing)) {
+            v.dl_block = UPD_WHY_INSTALL;
+        }
+    }
+    v.job = (upd_job_t)f.job;
+    v.phase = (upd_phase_t)f.phase;
+    v.got = (upd_got_t)f.got;
+    v.why = (upd_why_t)f.why;
+    v.join = (wifi_join_t)f.join;
+    v.rel = (upd_rel_t)f.rel;
+    v.status = f.status;
+    v.budget_s = f.budget_ms / 1000u;
+    if (f.job == WA_JOB_DOWNLOAD || f.got == WA_GOT_NEWER
+        || f.got == WA_GOT_CURRENT) {
+        upd_ver_text(f.found, v.found, sizeof(v.found));
+    }
+    const uint32_t left_ms = wa_fetch_left(&f, now_ms());
+    v.left_s = (left_ms + 999u) / 1000u;
+    v.done = f.done;
+    v.total = f.total;
+    upd_screen_set(&v);
+
+    if (!s_upd_dl) {
+        return;
+    }
+    static update_view_t u;
+    memset(&u, 0, sizeof(u));
+    snprintf(u.version, sizeof(u.version), "%s", v.found);
+    u.written = f.done;
+    u.total = f.total;
+    upd_result_text(&v, u.what, sizeof(u.what), u.why, sizeof(u.why));
+    if (busy) {
+        u.state = UPDATE_FETCHING;
+        update_screen_set(&u);
+        return;
+    }
+    s_upd_dl = false;
+    if (f.got == WA_GOT_STAGED) {
+        /* The installer's own flag from here: it sets it before it reads
+         * the coprocessor's again. */
+        atomic_store(&s_fw_installing, false);
+        ESP_LOGI(TAG, "GitHub: %s downloaded and checked", v.found);
+        fw_install_run();
+        return;
+    }
+    atomic_store(&s_fw_installing, false);
+    ESP_LOGW(TAG, "GitHub: the download of %s ended: %d", v.found,
+             (int)f.got);
+    u.state = UPDATE_FETCH_FAILED;
+    update_screen_set(&u);
 }
 
 /* ------------------------------------------------------------------ main */
@@ -9614,6 +9845,12 @@ void app_main(void)
          * shows its progress, and the menu comes back when it has ended --
          * the alert says how.
          */
+        /* The release reminder first: it yields to the coprocessor's
+         * question, which comes first. */
+        upd_remind_service(armed || arm_wanted_now,
+                           armed || arm_wanted_now || supply_now
+                               || supply_live_or_coming(),
+                           &cu);
         cu_render_service(armed || arm_wanted_now || supply_now
                               || supply_live_or_coming() || !cu_may_start(),
                           &cu);
@@ -9679,6 +9916,10 @@ void app_main(void)
         ui_router_tick(dt_s);
         knob_apply(&knob_turn, frame_lost);
         wifi_service(arm_wanted_now || armed_now, stops_now);
+        upd_service(arm_wanted_now || armed_now,
+                    arm_wanted_now || armed_now || supply_now
+                        || supply_live_or_coming(),
+                    stops_now, &cu);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

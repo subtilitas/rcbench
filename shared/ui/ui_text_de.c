@@ -1383,6 +1383,69 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UP_FAILED]              = "Das Schreiben schlug fehl.",
     [TX_UP_FAILED_2]            = "Die laufende Firmware bleibt; nichts geändert.",
     [TX_UP_CLOSE]               = "SCHLIESSEN",
+
+    /* UPDATES, the reminder, the download */
+    [TX_UPD_DOOR]               = "UPDATES",
+    [TX_UPD_CHECK]              = "NACH UPDATES SUCHEN",
+    [TX_UPD_REMIND_ON]          = "ERINNERUNG BEIM START: EIN",
+    [TX_UPD_REMIND_OFF]         = "ERINNERUNG BEIM START: AUS",
+    [TX_UPD_HOLD_DL]            = "2 s HALTEN: DOWNLOAD & INSTALL",
+    [TX_UPD_KEEP_NET]           = "Speichern unter LOGS > WLAN.",
+    [TX_UPD_ABOUT_1]            = "Mit Erinnerung fragt das Panel beim Start",
+    [TX_UPD_ABOUT_2]            = "GitHub; WLAN bleibt höchstens 30 s an.",
+    [TX_UPD_ASKING]             = "Frage GitHub",
+    [TX_UPD_LEFT]               = "noch %u s",
+    [TX_UPD_NEWER]              = "Version %s ist verfügbar.",
+    [TX_UPD_CURRENT]            = "Aktuell: dieses Panel hat %s.",
+    [TX_UPD_LATEST]             = "Neuestes Release auf GitHub: %s.",
+    [TX_UPD_STAGED]             = "Geladen und geprüft; Installation folgt.",
+    [TX_UPD_WAIT_COPROC]        = "Wartet: das Update des Koprozessors läuft.",
+    [TX_UPD_WAIT_DRAWING]       = "Wartet: eine Platinenzeichnung wird geladen.",
+    [TX_UPD_WAIT_BUSY]          = "Wartet: eine Suche oder Installation läuft.",
+    [TX_UPD_STOP_FILES]         = "Abgebrochen: FILES & UPDATE nahm das WLAN.",
+    [TX_UPD_STOP_CANCEL]        = "Abgebrochen: ABBRECHEN.",
+    [TX_UPD_STOP_COPROC]        = "Abgebrochen: Update des Koprozessors begann.",
+    [TX_UPD_STOP_INSTALL]       = "Abgebrochen: eine Panel-Installation begann.",
+    [TX_UPD_STOP_DRAWING]       = "Abgebrochen: Platinenzeichnung wird geladen.",
+    [TX_UPD_FAIL_TIMEOUT]       = "Keine Antwort in %u s.",
+    [TX_UPD_FAIL_CONNECT]       = "Keine Verbindung zu GitHub.",
+    [TX_UPD_FAIL_REFUSED]       = "GitHub lehnte ab: HTTP %d.",
+    [TX_UPD_FAIL_UNEXPECTED]    = "Unerwartete Antwort von GitHub.",
+    [TX_UPD_FAIL_SUMS]          = "SHA256SUMS nicht verwendbar.",
+    [TX_UPD_FAIL_HASH]          = "SHA-256 weicht von SHA256SUMS ab.",
+    [TX_UPD_FAIL_IMAGE]         = "Das Image fiel durch die Prüfungen.",
+    [TX_UPD_FAIL_MEMORY]        = "Kein Speicher für das Image.",
+    [TX_UPD_REL_MISSING]        = "Kein Location in der Antwort.",
+    [TX_UPD_REL_LONG]           = "Eine Adresse über ihrer Längengrenze.",
+    [TX_UPD_REL_CHAR]           = "Ein Byte außerhalb von druckbarem ASCII.",
+    [TX_UPD_REL_PLACE]          = "Eine Adresse an unerwarteter Stelle.",
+    [TX_UPD_REL_VERSION]        = "Der Versionstext ist ungültig.",
+    [TX_UPD_REL_IMG_VERSION]    = "Das Image nennt eine andere Version.",
+    [TX_UPD_REL_STATUS]         = "HTTP-Status %d.",
+    [TX_UPD_REL_HOPS]           = "Mehr als 3 Redirects.",
+    [TX_UPD_REL_HOST]           = "Ein Redirect zu einem fremden Host.",
+    [TX_UPD_REL_NO_LENGTH]      = "Keine Größe angekündigt.",
+    [TX_UPD_REL_EMPTY]          = "Eine leere Antwort.",
+    [TX_UPD_REL_TOO_BIG]        = "Größer als das Panel annimmt.",
+    [TX_UPD_REL_SHORT]          = "Kürzer als angekündigt.",
+    [TX_UPD_REL_OVERRUN]        = "Länger als angekündigt.",
+    [TX_UPD_REL_SUMS_BAD]       = "Eine Zeile ist ungültig.",
+    [TX_UPD_REL_SUMS_NONE]      = "Keine Zeile für das Image.",
+    [TX_UPD_REL_SUMS_TWICE]     = "Das Image in zwei Zeilen.",
+    [TX_UPD_R_TITLE]            = "PANEL-UPDATE VERFÜGBAR",
+    [TX_UPD_R_VERSIONS]         = "Version %s ist verfügbar; dieses Panel hat %s.",
+    [TX_UPD_R_WHAT_1]           = "Das Halten lädt es von GitHub, prüft es,",
+    [TX_UPD_R_WHAT_2]           = "schreibt es und startet das Panel neu.",
+    [TX_UPD_R_NEVER]            = "SETUP > UPDATES schaltet die Erinnerung wieder ein.",
+    [TX_UPD_IGNORE]             = "JETZT IGNORIEREN",
+    [TX_UPD_NEVER]              = "NICHT MEHR ERINNERN",
+    [TX_UPD_DL_TITLE]           = "LADE PANEL-FIRMWARE %s",
+    [TX_UPD_DL_SUMS]            = "Lese SHA256SUMS",
+    [TX_UPD_DL_IMAGE]           = "Lade das Image",
+    [TX_UPD_DL_CHECKING]        = "Prüfe SHA-256 und das Image",
+    [TX_UPD_DL_NOTE_1]          = "Nichts wird geschrieben, bevor jede Prüfung besteht.",
+    [TX_UPD_DL_NOTE_2]          = "Dann schreibt das Panel das Image und startet neu.",
+    [TX_UPD_DL_FAILED]          = "Der Download brach ab.",
 };
 
 /* ------------------------------------------------------- the settings */
@@ -1483,6 +1546,7 @@ static const char *const k_label[SETTING_COUNT] = {
     [SET_STICK_TIMEOUT]       = "Zeitlimit",
     [SET_STICK_THRESHOLD]     = "Schwelle",
     [SET_STICK_HYST]          = "Hysterese",
+    [SET_UPD_REMIND]          = "Erinnerung beim Start",
 };
 
 static const char *const k_help[SETTING_COUNT] = {
@@ -1576,6 +1640,7 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_STICK_TIMEOUT]       = "Gesuchte Pieptöne in dieser Zeit nicht gehört",
     [SET_STICK_THRESHOLD]     = "Über dem Ruhestrom: ein Piepton",
     [SET_STICK_HYST]          = "Unter der Schwelle minus diesem Wert: Stille",
+    [SET_UPD_REMIND]          = "Beim Start des Panels GitHub nach einem neueren Release fragen",
 };
 
 static const char *const k_theme[]  = { "DUNKEL", "HELL" };
@@ -1602,6 +1667,7 @@ static const char *const k_category[SET_CAT_COUNT] = {
     [SET_CAT_SUPPLY]          = "NETZTEIL",
     [SET_CAT_SERVO]           = "SERVOTEST",
     [SET_CAT_STICK]           = "ESC STICK",
+    [SET_CAT_UPDATE]          = "UPDATES",
 };
 
 /* ------------------------------------------------- the servo test's */

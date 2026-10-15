@@ -51,6 +51,12 @@ typedef enum {
     /* Not reachable from the menu either: the panel opens it to offer the
      * coprocessor an update, and shows the update's progress on it. */
     SCREEN_COPROC_UPDATE,
+    /* UPDATES, from SETUP: the check for a newer release on GitHub, the
+     * reminder's switch, and the download. */
+    SCREEN_UPDATES,
+    /* Not reachable from the menu: the panel opens it on OVERVIEW when the
+     * start-up check found a newer release. */
+    SCREEN_UPD_REMIND,
     SCREEN_COUNT
 } ui_screen_id_t;
 
