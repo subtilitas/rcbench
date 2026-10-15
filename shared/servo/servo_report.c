@@ -296,6 +296,7 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_L_WHY_SMALLEST]   = "binds at the smallest angle",
     [SERVO_STR_L_WHY_CAP]        = "write cap of 24 values reached",
     [SERVO_STR_L_WHY_STILL]      = "an end binds after programming",
+    [SERVO_STR_L_WHY_NO_VOLTAGE] = "no rail voltage in a window",
     [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO LIMIT REPORT",
     [SERVO_STR_L_R_MODE_SEARCH]  = "Mode:           search only, nothing "
                                    "written to the servo",

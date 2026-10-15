@@ -166,11 +166,12 @@ Prüfstands angewendet.
 | Stromobergrenze | 3,0 A | Abbruch, bei jedem 1-ms-Messwert eines Fensters geprüft |
 | Der INA3221 am Ende seines Bereichs | ein begrenzter Messwert | Abbruch |
 | Stall-Timeout | Fenstermittel über 1,0 A für 400 ms | Abbruch |
-| Kein Fenster | 200 ms, 4 Fenster zu 50 ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests |
+| Kein Fenster | 200 ms, 4 Fenster zu 50 ms | Abbruch; `SERVO_TEST_WIN_STALE_MS`, der Wert des automatischen Tests. Ein Fenster ohne Strommesswert zählt nicht als Fenster |
 | Eine Suche | 40 s | Abbruch: 1000 µs Weg sind 100 Stellungen zu 250 ms, 25 s |
 | Ein Schritt des Programmierers | 150 s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3 s | Abbruch, wenn SAFE oder ARMED 3 s nach der Anforderung nicht steht |
 | Das Netzteil während einer Suche | Sollwerte und Ausgang wie beim Start, die Schienenspannung innerhalb 1,0 V des ersten Fensters | Abbruch |
+| Die Schienenspannung im Fenster einer Suche | in jedem Fenster einer Suche vorhanden | Abbruch `kein Spannungswert im Fenster`, bevor das Fenster die Suche bewegt; Bezug des 1,0-V-Bands ist das erste Fenster des Laufs, das die Spannung enthält |
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
 Sie gelten in jeder Phase. Der Lauf folgt den Regeln für ARMED des

@@ -62,7 +62,11 @@
  *
  * While a search drives the servo, the supply is also held to what it was
  * at the start: its set points, its output, and the rail voltage within
- * SERVO_LIMRUN_RAIL_DV_MV.  Between searches the programmer owns the port
+ * SERVO_LIMRUN_RAIL_DV_MV of the run's first window.  A search's window
+ * without the rail voltage ends the run (SERVO_LIMRUN_WHY_NO_VOLTAGE), so
+ * that reference is a window's and no window escapes the band.  A window
+ * without a current reading is not counted at all: the meter's silence
+ * runs on through it.  Between searches the programmer owns the port
  * and the supply's session (kst_prog.h), and a change then is its.
  *
  * The caller ends the run (servo_limrun_abort()) for STOP, SAFE, link loss,
@@ -238,6 +242,8 @@ typedef enum {
     SERVO_LIMRUN_WHY_SMALLEST,      /**< binds at the smallest value      */
     SERVO_LIMRUN_WHY_WRITE_CAP,     /**< SERVO_LIMRUN_WRITES_MAX reached  */
     SERVO_LIMRUN_WHY_STILL_BINDS,   /**< an end binds after programming   */
+    SERVO_LIMRUN_WHY_NO_VOLTAGE,    /**< a search's window without the rail
+                                         voltage                          */
     SERVO_LIMRUN_WHY_COUNT
 } servo_limrun_why_t;
 

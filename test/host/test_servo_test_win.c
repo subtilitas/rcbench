@@ -790,6 +790,43 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
     h_check_ended(SERVO_TEST_AB_WIN_STALE);
 }
 
+/* Windows that arrive without the rail voltage, or without a current, are
+ * no window for the meter's silence either: with one every 50 ms, the last
+ * at the 200 ms edge itself, the run still ends 200 ms after the last
+ * window that held both. */
+TEST_CASE(windows_without_both_quantities_do_not_hold_off_the_200_ms_end)
+{
+    servo_test_cfg_t c;
+    h_cfg(&c, true);
+    for (int q = 0; q < 2; ++q) {
+        h_idle_by_hand(5000u, &c);
+        const uint32_t last = h.t.last_ms;
+        const uint32_t readings = h.t.readings;
+        for (uint32_t k = 1u; k <= 4u; ++k) {
+            servo_test_win_t w;
+            memset(&w, 0, sizeof(w));
+            w.number   = ++h.win_number;
+            w.current  = q != 0;
+            w.voltage  = q == 0;
+            w.mean_ma  = 20;
+            w.mean_mv  = 6000u;
+            w.min_mv   = 5800u;
+            w.taken_ms = last + 50u * k;
+            if (k == 4u) {
+                h.now = last + 199u;
+                h_step_at(h.now);
+                CHECK(servo_test_running(&h.t));
+            }
+            servo_test_window(&h.t, &w, 0u);
+            h.now = w.taken_ms;
+            h_step_at(h.now);
+        }
+        CHECK_EQ(h.t.readings, readings);
+        CHECK_EQ(h.t.end_ms, last + 200u);
+        h_check_ended(SERVO_TEST_AB_WIN_STALE);
+    }
+}
+
 /* The supply's own silence ends a run on the INA3221 as it ends one on the
  * PD mini: no new reading for more than 1500 ms, the windows arriving
  * throughout.  Running at 1500 ms, ended at 1501, and across the wrap. */
@@ -2488,6 +2525,7 @@ int main(void)
     RUN(the_ina3221s_range_follows_its_shunt);
     RUN(a_window_without_both_quantities_is_no_reading);
     RUN(no_window_for_200_ms_ends_the_run);
+    RUN(windows_without_both_quantities_do_not_hold_off_the_200_ms_end);
     RUN(no_supply_reading_for_1500_ms_ends_a_run_on_the_ina3221);
     RUN(an_idle_without_a_reading_ends_a_run_on_the_pd_mini);
     RUN(stall_at_is_judged_on_the_windows_mean);

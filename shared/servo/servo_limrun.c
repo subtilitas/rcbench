@@ -463,13 +463,15 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
     if (!servo_limrun_running(r) || w == NULL) {
         return;
     }
+    /* A window without a current reading is no window: the protections
+     * cannot read it, and the meter's silence runs on through it. */
+    if (!w->current) {
+        return;
+    }
     const uint32_t at = w->taken_ms;
     ++r->windows;
     r->have_win    = true;
     r->last_win_ms = at;
-    if (!w->current) {
-        return;
-    }
     /* Every 1 ms sample against the ceiling, and a sample at the meter's
      * end as one past it: its true value is not known. */
     if (w->clipped != 0u) {
@@ -497,7 +499,14 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
     } else {
         r->elevated = false;
     }
-    if (w->voltage && searching(r)) {
+    /* While a search drives the servo every window holds the rail too: the
+     * rail band's reference is a window's, and a window without the rail
+     * ends the run before it moves the search. */
+    if (searching(r) && !w->voltage) {
+        abort_why(r, SERVO_LIMRUN_WHY_NO_VOLTAGE, at);
+        return;
+    }
+    if (searching(r)) {
         if (!r->have_rail) {
             r->have_rail = true;
             r->rail_mv   = w->mean_mv;
@@ -1119,6 +1128,7 @@ servo_str_t servo_limrun_why_str(const servo_limrun_t *r)
     case SERVO_LIMRUN_WHY_SMALLEST:       return SERVO_STR_L_WHY_SMALLEST;
     case SERVO_LIMRUN_WHY_WRITE_CAP:      return SERVO_STR_L_WHY_CAP;
     case SERVO_LIMRUN_WHY_STILL_BINDS:    return SERVO_STR_L_WHY_STILL;
+    case SERVO_LIMRUN_WHY_NO_VOLTAGE:     return SERVO_STR_L_WHY_NO_VOLTAGE;
     default:                              return SERVO_STR_AB_NONE;
     }
 }

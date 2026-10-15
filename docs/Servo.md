@@ -151,11 +151,12 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 | Current ceiling | 3.0 A | abort, checked at every 1 ms sample of a window |
 | The INA3221 at the end of its range | a clipped sample | abort |
 | Stall timeout | window means above 1.0 A for 400 ms | abort |
-| No window | 200 ms, 4 windows of 50 ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure |
+| No window | 200 ms, 4 windows of 50 ms | abort; `SERVO_TEST_WIN_STALE_MS`, the automatic test's figure. A window without a current reading does not count as a window |
 | One search | 40 s | abort: 1000 µs of travel is 100 positions of 250 ms, 25 s |
 | One programmer step | 150 s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3 s | abort when SAFE or ARMED is not in place 3 s after the run asked |
 | The supply during a search | set points and output as at the start, the rail within 1.0 V of the first window | abort |
+| The rail voltage in a search's window | present in every window of a search | abort `no rail voltage in a window`, before the window moves the search; the 1.0 V band's reference is the run's first window, which holds the rail |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
 These hold in every phase. The run follows the arming rules of the SERVO

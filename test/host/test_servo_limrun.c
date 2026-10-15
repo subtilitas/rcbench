@@ -83,6 +83,8 @@ typedef struct {
     int extra_ma;                /* added to every sample                 */
     uint8_t clip;
     uint16_t rail_mv;
+    bool no_volt;                /* windows without the rail voltage      */
+    bool no_cur;                 /* windows without a current reading     */
     bool enc;
 
     /* the supply */
@@ -286,8 +288,8 @@ static void meter(void)
         servo_test_win_t w;
         memset(&w, 0, sizeof(w));
         w.number   = g.win_no++;
-        w.current  = true;
-        w.voltage  = true;
+        w.current  = !g.no_cur;
+        w.voltage  = !g.no_volt;
         w.clipped  = g.clip;
         w.mean_ma  = (int16_t)lroundf(g.sum / (float)g.n);
         w.max_ma   = g.mx;
@@ -1089,6 +1091,168 @@ TEST_CASE(no_window_for_200_ms_ends_the_run)
     CHECK_EQ(g.run.test_why, SERVO_TEST_AB_WIN_STALE);
 }
 
+/* --- windows without a quantity ---------------------------------------------- */
+
+/* A search's window without the rail voltage ends the run before it moves
+ * the search: at the run's first window, in a search, a probe and the
+ * check.  A programmer's session reads no rail, so there it changes
+ * nothing, and the rail's reference stays the first window's. */
+TEST_CASE(a_window_without_the_rail_voltage_ends_a_search)
+{
+    /* The run's first window. */
+    rig_init(0u, false);
+    g.no_volt = true;
+    CHECK(start());
+    run_for(1000u);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_NO_VOLTAGE);
+    CHECK_EQ(g.run.end_ms, g.t0 + SERVO_TEST_WIN_MS);
+    CHECK(!g.run.have_rail);
+    CHECK_EQ(g.offs, 1u);
+    CHECK(!servo_limrun_wrote(&g.run));
+    CHECK_EQ(servo_limrun_why_str(&g.run), SERVO_STR_L_WHY_NO_VOLTAGE);
+    CHECK(strstr(g.report, "no rail voltage in a window") != NULL);
+
+    /* SEARCH, PROBE and CHECK: the window ends the run and the search does
+     * not take it.  After a write the values stay and RESTORE is offered. */
+    static const servo_limrun_phase_t k_search[] = {
+        SERVO_LIMRUN_PH_SEARCH, SERVO_LIMRUN_PH_PROBE, SERVO_LIMRUN_PH_CHECK,
+    };
+    for (size_t p = 0; p < 3u; ++p) {
+        CHECK(to_phase(k_search[p]));
+        run_for(2000u);
+        CHECK(servo_limrun_running(&g.run));
+        const uint16_t cmd = g.run.cmd_us;
+        const uint16_t lf = g.run.lf.cmd_us;
+        const uint32_t n = g.run.windows;
+        servo_test_win_t w = win_at(g.now + 1u, 200, 250);
+        w.voltage = false;
+        servo_limrun_window(&g.run, &w);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_NO_VOLTAGE);
+        CHECK_EQ(g.run.end_ms, g.now + 1u);
+        CHECK_EQ(g.run.cmd_us, cmd);
+        CHECK_EQ(g.run.lf.cmd_us, lf);
+        CHECK_EQ(g.run.windows, n + 1u);
+        CHECK_EQ(servo_limrun_wrote(&g.run),
+                 k_search[p] != SERVO_LIMRUN_PH_SEARCH);
+        run_for(100u);
+        CHECK_EQ(g.offs, 1u);
+    }
+
+    /* The programmer's phases: no rail read, the run goes on. */
+    static const servo_limrun_phase_t k_session[] = {
+        SERVO_LIMRUN_PH_SAFE, SERVO_LIMRUN_PH_CONNECT, SERVO_LIMRUN_PH_WRITE,
+        SERVO_LIMRUN_PH_LEAVE, SERVO_LIMRUN_PH_ARM,
+    };
+    for (size_t p = 0; p < 5u; ++p) {
+        CHECK(to_phase(k_session[p]));
+        servo_test_win_t w = win_at(g.now + 1u, 20, 30);
+        w.voltage = false;
+        servo_limrun_window(&g.run, &w);
+        CHECK(servo_limrun_running(&g.run));
+        CHECK_EQ(g.run.last_win_ms, g.now + 1u);
+    }
+
+    /* The rail gone through a session and back for the next search: the
+     * run goes on, held to the first window's rail. */
+    CHECK(to_phase(SERVO_LIMRUN_PH_CONNECT));
+    g.no_volt = true;
+    run_for(300u);
+    CHECK(servo_limrun_running(&g.run));
+    g.no_volt = false;
+    CHECK(run_to(SERVO_LIMRUN_PH_PROBE, RUN_MS));
+    run_for(2000u);
+    CHECK(servo_limrun_running(&g.run));
+    CHECK(g.run.have_rail);
+    CHECK_EQ(g.run.rail_mv, 6000u);
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_PASS);
+}
+
+/* The boundaries: after a window at t, one without the rail at t + 199 and
+ * at t + 200 (before the step that would end the run for silence) ends it
+ * for the rail; and the run's last window before it ends. */
+TEST_CASE(a_window_without_the_rail_voltage_at_the_edges)
+{
+    static const uint32_t k_after[] = { 199u, 200u };
+    static const uint32_t k_t0[] = { 0u, 0u - 120u };
+    for (size_t z = 0; z < 2u; ++z) {
+        for (size_t a = 0; a < 2u; ++a) {
+            rig_init(k_t0[z], false);
+            CHECK(start());
+            const uint32_t t = k_t0[z] + 50u;
+            servo_test_win_t w = win_at(t, 120, 150);
+            servo_limrun_window(&g.run, &w);
+            w = win_at(t + k_after[a], 120, 150);
+            w.voltage = false;
+            servo_limrun_window(&g.run, &w);
+            servo_limrun_in_t in = { true, false, false, 0.0f };
+            servo_limrun_do_t d;
+            servo_limrun_step(&g.run, t + k_after[a], &in, &d);
+            CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+            CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_NO_VOLTAGE);
+            CHECK_EQ(g.run.end_ms, t + k_after[a]);
+        }
+    }
+
+    /* The window the run would end on, without the rail. */
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(RUN_MS);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_PASS);
+    const uint32_t last = g.run.last_win_ms;
+    rig_init(0u, false);
+    CHECK(start());
+    while (g.now != last - 1u && servo_limrun_running(&g.run)) {
+        tick();
+    }
+    CHECK(servo_limrun_running(&g.run));
+    g.no_volt = true;
+    run_for(100u);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_NO_VOLTAGE);
+    CHECK_EQ(g.run.end_ms, last);
+    CHECK(servo_limrun_wrote(&g.run));
+}
+
+/* A window without a current reading is no window: the protections cannot
+ * read it, so the meter's silence runs on through it and ends the run 200
+ * ms after the last window with a current, also with one at the edge. */
+TEST_CASE(a_window_without_a_current_is_not_counted)
+{
+    rig_init(0u, false);
+    CHECK(start());
+    run_for(1000u);
+    CHECK(servo_limrun_running(&g.run));
+    const uint32_t last = g.run.last_win_ms;
+    const uint32_t n = g.run.windows;
+    g.no_cur = true;
+    run_for(1000u);
+    CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+    CHECK_EQ(g.run.test_why, SERVO_TEST_AB_WIN_STALE);
+    CHECK_EQ(g.run.end_ms, last + SERVO_LIMRUN_WIN_STALE_MS);
+    CHECK_EQ(g.run.windows, n);
+    CHECK_EQ(g.offs, 1u);
+
+    rig_init(0u - 120u, false);
+    CHECK(start());
+    const uint32_t t = g.now + 50u;
+    servo_test_win_t w = win_at(t, 120, 150);
+    servo_limrun_window(&g.run, &w);
+    servo_limrun_in_t in = { true, false, false, 0.0f };
+    servo_limrun_do_t d;
+    servo_limrun_step(&g.run, t + 199u, &in, &d);
+    CHECK(servo_limrun_running(&g.run));
+    w = win_at(t + 200u, 2999, 2999);
+    w.current = false;
+    servo_limrun_window(&g.run, &w);
+    CHECK(servo_limrun_running(&g.run));
+    servo_limrun_step(&g.run, t + 200u, &in, &d);
+    CHECK_EQ(g.run.test_why, SERVO_TEST_AB_WIN_STALE);
+    CHECK_EQ(g.run.end_ms, t + 200u);
+}
+
 /* --- the clock --------------------------------------------------------------- */
 
 /* The same run from tick 0 and from 60 s before the wrap: the same values,
@@ -1257,6 +1421,9 @@ int main(void)
     RUN(above_1_a_for_400_ms_ends_the_run);
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
     RUN(no_window_for_200_ms_ends_the_run);
+    RUN(a_window_without_the_rail_voltage_ends_a_search);
+    RUN(a_window_without_the_rail_voltage_at_the_edges);
+    RUN(a_window_without_a_current_is_not_counted);
     RUN(a_run_across_the_tick_wrap_ends_as_at_tick_0);
     RUN(the_report_holds_the_run);
     RUN(a_start_with_its_centre_outside_min_and_max_is_refused);

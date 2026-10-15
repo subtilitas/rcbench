@@ -1983,6 +1983,7 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_WHY_SMALLEST]   = "läuft beim kleinsten Winkel an",
     [SERVO_STR_L_WHY_CAP]        = "Grenze von 24 Werten erreicht",
     [SERVO_STR_L_WHY_STILL]      = "ein Ende läuft weiterhin an",
+    [SERVO_STR_L_WHY_NO_VOLTAGE] = "kein Spannungswert im Fenster",
     [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO-ENDLAGEN-BERICHT",
     [SERVO_STR_L_R_MODE_SEARCH]  = "Modus:           nur Suche, nichts ins "
                                    "Servo geschrieben",

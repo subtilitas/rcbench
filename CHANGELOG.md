@@ -59,7 +59,9 @@ history is in git.
   the servo rail's meter; the line under the button names the output it
   drives and why it cannot start. The search's protections are active: 3.0
   A at every 1 ms sample, above 1.0 A for 400 ms, no window for 200 ms, 40 s
-  a search.
+  a search, and a search's window without the rail voltage (`no rail
+  voltage in a window`). A window without a current reading is not counted
+  as a window.
 - SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
   on the programming port until neither end binds, 5 % (at least 2) below
   the last free value, at most 24 values written a run. The register for
