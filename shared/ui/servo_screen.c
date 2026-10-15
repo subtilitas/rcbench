@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "bus_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "log_name.h"
@@ -133,7 +134,7 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
 #define OV_H      (H - 2 * PAD)
 #define OV_TAB_Y  (OV_Y + 8)
 #define OV_TAB_H  26
-#define OV_TAB_W  320
+#define OV_TAB_W  368
 #define OV_ROW0   (OV_Y + 48)
 #define OV_PITCH  42
 #define OV_ROW_H  34
@@ -188,9 +189,10 @@ static const servo_type_t k_types[] = {
 #define TYPE_COUNT ((int)(sizeof(k_types) / sizeof(k_types[0])))
 
 /* The overlay's pages. */
-enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_COUNT };
+enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_BUS, PG_COUNT };
 static const ui_text_id_t k_pages[PG_COUNT] = {
     TX_SV_PG_OUTPUT, TX_SV_PG_TEST, TX_SV_PG_LIMITS, TX_SV_PG_DUT,
+    TX_SV_PG_BUS,
 };
 
 /* What a settings row edits. */
@@ -387,8 +389,10 @@ static struct {
     gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
     bool       kst_shown;        /* the programmer had the left card    */
     bool       kst_held;         /* and the port: ARM takes no press    */
+    bool       bus_held;         /* the BUS page holds the port: likewise */
     bool       sup_held;         /* the port holds the supply: SET is dim */
     uint32_t   drawn_kst[2], drawn_kst_hold[2];
+    uint32_t   drawn_bus[2], drawn_bus_hold[2];  /* the BUS page */
     ui_slider_t speed;
 
     /* The servo rail's live power, from its meter (rail_now()): the line
@@ -2281,8 +2285,8 @@ const char *servo_screen_commanded_text(void)
 {
     static char text[16];
 
-    if (kst_panel_holds_port()) {
-        /* The programmer holds the port: no pulse is on it. */
+    if (kst_panel_holds_port() || bus_panel_holds_port()) {
+        /* The programmer or the bus holds the port: no pulse is on it. */
         return "---";
     }
     snprintf(text, sizeof(text), "%u us",
@@ -2451,6 +2455,7 @@ static void reset(void)
     s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - SETB_W),
                                   12, SETB_W, 24 };
     kst_panel_init(overlay_area());
+    bus_panel_init(overlay_area());
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
     ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
@@ -3311,11 +3316,13 @@ void servo_screen_set_bench_armed(bool armed)
     s.bench_armed = armed;
 }
 
-/* ARM takes no press while the programmer holds the port: programming and
- * an armed bench are exclusive.  DISARM is always taken. */
+/* ARM takes no press while the programmer or the BUS page holds the port:
+ * programming, the bus and an armed bench are exclusive.  DISARM is always
+ * taken. */
 static bool arm_locked(void)
 {
-    return kst_panel_holds_port() && !s.gate.armed;
+    return (kst_panel_holds_port() || bus_panel_holds_port())
+           && !s.gate.armed;
 }
 
 /*
@@ -3344,7 +3351,7 @@ static bool target_locked(const ov_row_t *r)
         }
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
-           || kst_panel_holds_port();
+           || kst_panel_holds_port() || bus_panel_holds_port();
 }
 
 /* A settings row tapped: the editor its kind takes. */
@@ -3606,6 +3613,10 @@ static void ov_down(const touch_event_t *evt)
         }
         return;
     }
+    if (s.tabs.selected == PG_BUS && bus_panel_editor() != 0) {
+        bus_panel_event(evt);
+        return;
+    }
     if (gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
                                         OV_TAB_W, OV_TAB_H }, x, y)) {
         ov_take(evt, OP_TAB, -1);
@@ -3614,6 +3625,10 @@ static void ov_down(const touch_event_t *evt)
     }
     if (gfx_rect_contains(close_rect(), x, y)) {
         ov_take(evt, OP_CLOSE, -1);
+        return;
+    }
+    if (s.tabs.selected == PG_BUS) {
+        bus_panel_event(evt);
         return;
     }
     if (s.tabs.selected == PG_TEST
@@ -3984,10 +3999,16 @@ static void event_body(const touch_event_t *evt)
     kst_panel_bench_armed(bench_arming());
     const int px = evt->point.x, py = evt->point.y;
 
-    /* The programmer's own press first, then the overlay's. */
+    /* The programmer's own press first, the BUS page's, then the
+     * overlay's. */
     if (kst_panel_has_press(evt->point.id)
         && evt->type != TOUCH_EVENT_DOWN) {
         kst_panel_event(evt);
+        return;
+    }
+    if (bus_panel_has_press(evt->point.id)
+        && evt->type != TOUCH_EVENT_DOWN) {
+        bus_panel_event(evt);
         return;
     }
     /* The overlay's own press: its moves and its release are its. */
@@ -4964,6 +4985,9 @@ static void draw_save_line(gfx_canvas_t *c)
         TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
         TX_SUP_SETUP_NOT_SAVED,
     };
+    if (s.tabs.selected == PG_BUS) {
+        return;                 /* the BUS page's lines are there */
+    }
     const gfx_rect_t r = save_line_rect();
     gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
     const uint8_t st = save_state();
@@ -5258,6 +5282,11 @@ static void draw_page(gfx_canvas_t *c)
                   pressed, !faint);
     }
 
+    if (s.tabs.selected == PG_BUS) {
+        /* The page draws its rows and lines; the save line has no room. */
+        bus_panel_render(c);
+        return;
+    }
     const int nx = OV_X + 10;
     if (s.tabs.selected == PG_OUTPUT) {
         char l1[96], l2[96];
@@ -5478,6 +5507,10 @@ static void draw_overlay(gfx_canvas_t *c)
         draw_choice(c);
         return;
     }
+    if (s.tabs.selected == PG_BUS && bus_panel_editor() != 0) {
+        bus_panel_render(c);
+        return;
+    }
     draw_page(c);
 }
 
@@ -5550,6 +5583,13 @@ static void tick_body(float dt_s)
     kst_panel_set_hv(s.test_hv);
     kst_panel_bench_armed(bench_arming());
     kst_panel_tick(dt_s);
+    /* The BUS page holds the bus open while it is shown, and its hold. */
+    bus_panel_show(s.ov_open && s.tabs.selected == PG_BUS);
+    bus_panel_tick(dt_s);
+    if (bus_panel_holds_port() != s.bus_held) {
+        s.bus_held = bus_panel_holds_port();
+        ++s.arm_rev;
+    }
     if (kst_panel_holds_port() && !kst_panel_is_open()) {
         kst_panel_open();
     }
@@ -5855,6 +5895,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         s.drawn_kst[buf]   = kst_panel_revision();
         s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+        s.drawn_bus[buf]   = bus_panel_revision();
+        s.drawn_bus_hold[buf] = bus_panel_hold_revision();
         if (s.ov_open) {
             draw_overlay(c);
         } else if (kst_panel_is_open()) {
@@ -5912,6 +5954,19 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (page_shown() && s.drawn_save[buf] != save_state()) {
         s.drawn_save[buf] = save_state();
         clipped(c, save_line_rect(), draw_save_line);
+    }
+    if (s.ov_open && s.tabs.selected == PG_BUS) {
+        /* The BUS page, when it changed, with the overlay it is on: an
+         * editor that opens or closes covers the tabs too.  Of a hold only
+         * its button. */
+        if (s.drawn_bus[buf] != bus_panel_revision()) {
+            s.drawn_bus[buf] = bus_panel_revision();
+            s.drawn_bus_hold[buf] = bus_panel_hold_revision();
+            clipped(c, overlay_area(), draw_overlay);
+        } else if (s.drawn_bus_hold[buf] != bus_panel_hold_revision()) {
+            s.drawn_bus_hold[buf] = bus_panel_hold_revision();
+            clipped(c, bus_panel_apply_rect(), bus_panel_render);
+        }
     }
     if (s.ov_open) {
         return;
@@ -5998,6 +6053,9 @@ static void leave(void)
     /* The programmer's presses and pages go; the port stays as it is, and
      * the screen shows it again while it holds the port. */
     kst_panel_leave();
+    /* The BUS page goes, and with it the bus: torque off, the pin back to
+     * PWM. */
+    bus_panel_leave();
     /* And a supply this screen switched on goes off.  While the port holds
      * it, the OFF waits for the port to let go: an OFF now would end the
      * session and cut a write on the wire. */
@@ -6071,6 +6129,7 @@ static void cancel(void)
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
     kst_panel_cancel();
+    bus_panel_cancel();
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
     ui_tabs_cancel(&s.tabs);

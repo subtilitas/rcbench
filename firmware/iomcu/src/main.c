@@ -27,6 +27,8 @@
 #include "bench_state.h"
 #include "can_selftest.h"
 #include "heartbeat.h"
+#include "bus_port.h"
+#include "ft_line.h"
 #include "kst_line.h"
 #include "kst_port.h"
 #include "prog_port.h"
@@ -134,6 +136,14 @@ static kst_line_t    s_kst_line;
 /* The bank was asked to drive on the last pass: its falling edge stops a
  * session. */
 static bool          s_kst_armed;
+/*
+ * The BUS page: a serial bus servo protocol on a programming port
+ * (shared/outputs/bus_port.h), Feetech SCS and STS, and the line driver the
+ * port's pin is handed to (protocols/feetech/rp2350).  Not kept: a restart
+ * finds the port in PWM with the bus closed.
+ */
+static bus_port_t    s_bus;
+static ft_line_t     s_ft_line;
 static link_dev_t    s_dev;
 
 /*
@@ -324,7 +334,8 @@ static uint8_t bound_slots(void)
 static uint8_t ports_pulsing(void)
 {
     return (uint8_t)(prog_port_pwm(&s_prog) & outputs_hw_ports_bound()
-                     & ~kst_port_quiet_mask(&s_kst));
+                     & ~kst_port_quiet_mask(&s_kst)
+                     & ~bus_port_quiet_mask(&s_bus));
 }
 
 /*
@@ -360,15 +371,16 @@ static void slots_rerate(void)
  * The programming ports' pins bound as the PROG page holds them: the TARGET
  * port at the SERVO rate while it names one, every other port at
  * PROG_PORT_RATE_HZ (prog_port_port_hz()).  Never the pin the wire driver
- * holds: it is the driver's until the KST port gives it back, and the page
- * keeps the port's pulse switch and target meanwhile.  The pins the wire
- * driver holds, as a mask of ports.
+ * holds: it is the driver's until the KST port or the BUS page gives it
+ * back, and the page keeps the port's pulse switch and target meanwhile.
+ * The pins the wire drivers hold, as a mask of ports.
  */
 static uint8_t ports_bind(void)
 {
     uint8_t pin[LINK_PG_PORTS_MAX];
     uint16_t hz[LINK_PG_PORTS_MAX];
-    const uint8_t wire = kst_port_pin_mask(&s_kst);
+    const uint8_t wire = (uint8_t)(kst_port_pin_mask(&s_kst)
+                                   | bus_port_pin_mask(&s_bus));
     for (uint8_t i = 0; i < LINK_PG_PORTS_MAX; ++i) {
         pin[i] = ((wire & (1u << i)) != 0u) ? (uint8_t)PROG_PORT_NO_PIN
                                             : prog_port_pin(&s_prog, i);
@@ -448,7 +460,8 @@ static uint8_t kst_hw_pin(void *ctx, uint8_t port)
 {
     (void)ctx;
     if (port >= LINK_PG_PORTS_MAX
-        || (outputs_hw_ports_bound() & (1u << port)) == 0u) {
+        || (outputs_hw_ports_bound() & (1u << port)) == 0u
+        || (bus_port_quiet_mask(&s_bus) & (1u << port)) != 0u) {
         return PROG_PORT_NO_PIN;
     }
     return prog_port_pin(&s_prog, port);
@@ -509,6 +522,72 @@ static uint8_t kst_write(void *ctx, uint8_t off, uint8_t n,
     supply_page_hold(&s_supply, kst_port_state(&s_kst) != LINK_KST_PWM);
     /* And its pulses end in this frame: a capture armed on the port behind
      * the command is judged against the port as it is. */
+    outputs_hw_ports_drive(ports_pulsing());
+    sense_page_ports(&s_sense, ports_pulsing());
+    return nack;
+}
+
+/* ----------------------------------------------------------------- BUS */
+
+/*
+ * The BUS page's hardware.  bus_port.c decides; these do what it says.  The
+ * servo's supply is the user's: the page switches nothing.
+ */
+
+static uint8_t bus_hw_pin(void *ctx, uint8_t port)
+{
+    (void)ctx;
+    if (port >= LINK_PG_PORTS_MAX
+        || (outputs_hw_ports_bound() & (1u << port)) == 0u) {
+        return PROG_PORT_NO_PIN;
+    }
+    return prog_port_pin(&s_prog, port);
+}
+
+/* The KST port is out of PWM on the port: its pin is not the bus's. */
+static bool bus_hw_held(void *ctx, uint8_t port)
+{
+    (void)ctx;
+    return (kst_port_quiet_mask(&s_kst) & (1u << port)) != 0u;
+}
+
+/* The port's pin from the generator to the line driver.  The port says it
+ * holds the pin, so ports_apply() releases it and leaves it unbound; the
+ * open leaves the pad an input with its pull-up. */
+static bool bus_hw_take(void *ctx, uint8_t port, uint8_t pin, uint32_t baud)
+{
+    (void)ctx;
+    (void)port;
+    ports_apply();
+    return ft_line_open(&s_ft_line, pin, baud) == FT_LINE_OK;
+}
+
+static void bus_hw_give(void *ctx)
+{
+    (void)ctx;
+    ft_line_close(&s_ft_line);
+    ports_apply();
+}
+
+static void bus_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    bus_port_read(&s_bus, off, n, out);
+}
+
+static void bus_ids_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
+{
+    (void)ctx;
+    bus_port_read_ids(&s_bus, off, n, out);
+}
+
+static uint8_t bus_write(void *ctx, uint8_t off, uint8_t n,
+                         const uint16_t *in)
+{
+    (void)ctx;
+    const uint8_t nack = bus_port_write(&s_bus, off, n, in);
+
+    /* An OPEN ends the port's pulses in this frame. */
     outputs_hw_ports_drive(ports_pulsing());
     sense_page_ports(&s_sense, ports_pulsing());
     return nack;
@@ -613,7 +692,8 @@ static void prog_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  * and the ones the supply, the sensor bus and the phase tap hold, then
  * reserved against all of them and bound.  A pin the generator cannot bind
  * is refused with the pins as they were.  No pin moves while the bank is
- * armed or asked to arm, or while the KST port is out of PWM.
+ * armed or asked to arm, or while the KST port or the BUS page holds a
+ * port out of PWM.
  *
  * The pins are bound, at the rates the write leaves the ports at, before
  * the SERVO page follows a TARGET change: a refused write leaves the SERVO
@@ -632,7 +712,9 @@ static uint8_t prog_write(void *ctx, uint8_t off, uint8_t n,
         &s_prog, off, n, in, &s_outputs,
         supply_page_pins(&s_supply) | sense_page_held(&s_sense)
             | tone_page_pins(&s_tone),
-        bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM, s_now_ms);
+        bank_armed(s) || kst_port_state(&s_kst) != LINK_KST_PWM
+            || bus_port_state(&s_bus) != LINK_BUS_CLOSED,
+        s_now_ms);
     if (nack != 0u) {
         return nack;
     }
@@ -1529,6 +1611,8 @@ static const link_page_t k_pages[] = {
     { LINK_PAGE_SERVO_WIN, LINK_SW_COUNT,  servo_win_read, NULL },
     { LINK_PAGE_KST,       LINK_KS_COUNT,  kst_read,       kst_write },
     { LINK_PAGE_PROG,      LINK_PG_REGS,   prog_read,      prog_write },
+    { LINK_PAGE_BUS,       LINK_BS_COUNT,  bus_read,       bus_write },
+    { LINK_PAGE_BUS_IDS,   LINK_BI_COUNT,  bus_ids_read,   NULL },
     { LINK_PAGE_UPDATE_CTL,  LINK_UPD_COUNT,      update_hw_ctl_read,
       update_hw_ctl_write },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, update_hw_data_read,
@@ -1969,14 +2053,16 @@ static void outputs_off(void)
  * update alike.  The bank driving: a window stops this core and steps no
  * output.  The supply asked on or perhaps on: its UART replies would overrun
  * the 8-byte FIFO in a 19 ms window, and an OFF asked over the link would
- * wait for it.  A KST session: a flash write stalls the pass that steps it.
+ * wait for it.  A KST session or an open bus: a flash write stalls the pass
+ * that steps it.
  */
 static bool flash_busy(void)
 {
     return outputs_driving(&s_outputs)
            || s_supply.regs[LINK_SP_OUTPUT] != 0u
            || (s_pd_open && pdmini_may_be_on(&s_pd))
-           || kst_port_state(&s_kst) != LINK_KST_PWM;
+           || kst_port_state(&s_kst) != LINK_KST_PWM
+           || bus_port_state(&s_bus) != LINK_BUS_CLOSED;
 }
 
 int main(void)
@@ -2108,6 +2194,17 @@ int main(void)
         .driver     = kst_line_driver(&s_kst_line),
     };
     (void)kst_port_init(&s_kst, &kst_hw);
+    ft_line_init(&s_ft_line);
+    const bus_port_hw_t bus_hw = {
+        .ctx    = NULL,
+        .ports  = IOMCU_PROG_PORTS,
+        .pin    = bus_hw_pin,
+        .held   = bus_hw_held,
+        .take   = bus_hw_take,
+        .give   = bus_hw_give,
+        .driver = ft_line_driver(&s_ft_line),
+    };
+    (void)bus_port_init(&s_bus, &bus_hw);
     hw_apply();
     /*
      * The PD mini's wiring, as last written, driven with the output off: a
@@ -2332,6 +2429,7 @@ int main(void)
          * control page refuses the ARM, and this holds the bank down for
          * an ARM written before the session began. */
         const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u
+                             && bus_port_quiet_mask(&s_bus) == 0u
                              && !update_hw_holds_arm();
         /* Only the roles ARM names: an arm for the throttle leaves the
          * servos and the programming ports without a pulse, and an arm for
@@ -2340,6 +2438,7 @@ int main(void)
                           arm_now ? outputs_arm_roles_of(gate.roles) : 0u,
                           now);
         kst_port_bench_armed(&s_kst, arm_now);
+        bus_port_bench_armed(&s_bus, arm_now);
         /*
          * The KST port: a failsafe edge and a disarm stop its session, and
          * no frame starts while the heartbeat or the link is not trusted.
@@ -2349,6 +2448,11 @@ int main(void)
         kst_port_step(&s_kst, safety_gate_supply_ok(&s_beat, &s_dev),
                       gate.off || (s_kst_armed && !arm_now), now);
         s_kst_armed = arm_now;
+        /* The BUS page: a failsafe edge closes the bus with torque off,
+         * and no command is taken while the heartbeat or the link is not
+         * trusted.  The microsecond clock: the session's reply windows. */
+        bus_port_step(&s_bus, safety_gate_supply_ok(&s_beat, &s_dev),
+                      gate.off, time_us_32());
         outputs_hw_ports_drive(ports_pulsing());
         sense_page_ports(&s_sense, ports_pulsing());
         /* And the SUPPLY page told that a port commands the module. */

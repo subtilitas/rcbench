@@ -70,6 +70,15 @@ SOURCES = [
     # what the views drive it with: the link module, the coprocessor's
     # port and the core.
     "shared/ui/kst_panel.c",
+    # The BUS page on SERVO, and under it what the views drive it with:
+    # the link module, the coprocessor's page and the Feetech core.
+    "shared/ui/bus_panel.c",
+    "shared/bench/bus_link.c",
+    "shared/bench/bus_proto.c",
+    "shared/outputs/bus_port.c",
+    "protocols/feetech/feetech_wire.c",
+    "protocols/feetech/feetech_reg.c",
+    "protocols/feetech/feetech_bus.c",
     "shared/bench/kst_prog.c",
     "shared/bench/kst_card.c",
     "shared/bench/prog_link.c",
@@ -251,6 +260,18 @@ SCREENS = {
     "servo-kst-other": ("servo-kst-other.png", "servo", "dark"),
     "servo-kst-swapped": ("servo-kst-swapped.png", "servo", "dark"),
     "servo-paused":   ("servo-paused.png",   "servo", "dark"),
+    # The BUS page against two simulated Feetech STS servos: closed, the
+    # series list, a scan, one servo watched with two error flags, the
+    # EEPROM list, an ID change onto an ID the scan found, a write done,
+    # and RESTORE of two writes.
+    "servo-bus": ("servo-bus.png", "servo", "dark"),
+    "servo-bus-series": ("servo-bus-series.png", "servo", "dark"),
+    "servo-bus-scan": ("servo-bus-scan.png", "servo", "dark"),
+    "servo-bus-live": ("servo-bus-live.png", "servo", "dark"),
+    "servo-bus-eeprom": ("servo-bus-eeprom.png", "servo", "dark"),
+    "servo-bus-warning": ("servo-bus-warning.png", "servo", "dark"),
+    "servo-bus-written": ("servo-bus-written.png", "servo", "dark"),
+    "servo-bus-restore": ("servo-bus-restore.png", "servo", "dark"),
     "analyser":   ("analyser.png",   "analyser",   "dark"),
     "logs":       ("logs.png",       "logs",       "dark"),
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
@@ -409,6 +430,7 @@ INCLUDES = [
     "protocols/sbus/include",
     "protocols/pdmini/include",
     "protocols/kst/include",
+    "protocols/feetech/include",
 ]
 
 

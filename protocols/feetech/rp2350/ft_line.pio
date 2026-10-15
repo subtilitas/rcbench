@@ -1,0 +1,77 @@
+;
+; One Feetech bus transaction on one pin: a frame out as 8N1 bytes, the pin
+; released after the last stop bit, 8N1 bytes in until the driver restarts
+; the state machine.
+;
+; Implements the serial bus protocol of Feetech SCS and STS servos.
+; Feetech is a name or trademark of its owner; it is used here only to say
+; which servos this module works with (README.md, "Trademarks").
+;
+; The pin is the state machine's OUT, SET, IN and JMP pin.  The OUT shift
+; register shifts right with no autopull; the IN shift register shifts
+; right with autopush at 9 bits.  A bit is 8 cycles; the clock divider makes
+; that one bit time (feetech_pio.h, protocols/feetech/include).  The words
+; come from the transmit FIFO: the count of bytes less 1, then one word a
+; byte.  Between transactions the driver restarts the machine at `idle`,
+; where it stalls on the first `pull` with the pin an input.
+;
+; Transmit.  The pin drives high 10 cycles before the first start bit.  A
+; byte is a start bit of 8 cycles, 8 data bits of 8 cycles each from bit 0,
+; and a stop bit of 8 cycles; between two bytes the stop bit is 10 cycles.
+; The pin is released at the end of the last stop bit.
+;
+; Receive.  A falling edge starts a byte.  Times below are from the edge
+; as the input synchroniser hands it on, which is up to 1 cycle after the
+; edge itself.  Data bit 0 is sampled 11 cycles after the edge, 3/8 into
+; the bit; 7 more samples follow 8 cycles apart, and the stop bit is
+; tested at 75 cycles.  A word is pushed with the byte in bits 23 to 30
+; and the stop bit in bit 31.  A stop bit high goes straight back to the
+; search for the next falling edge, which looks from 77 cycles on: a servo
+; whose bit is 3 % short ends its stop bit at 77.6 cycles, so the edge is
+; found late by less than a cycle and the lag does not grow from byte to
+; byte.  A stop bit low (a framing error) is followed by a wait for the
+; line high before the search.  Y is all ones after the bit loop, so
+; `in y, 1` shifts in a 1.
+;
+; The pin never drives outside the transmit part: `set pindirs, 1` is its
+; only instruction that turns the output on.
+;
+; test/host/test_feetech_pio.c assembles this file, runs the words in a
+; model of the state machine and holds them to fixtures/ft_line_words.txt,
+; which a firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program ft_line
+
+idle:
+    set pindirs, 0          ; an input; the pull-up holds the line high
+    pull block              ; count
+    out x, 32
+    set pins, 1
+    set pindirs, 1 [7]      ; drive high
+byte:
+    pull block
+    set y, 7
+    set pins, 0 [7]         ; start bit
+bit:
+    out pins, 1
+    jmp y--, bit [6]
+    set pins, 1             ; stop bit
+    jmp x--, byte [6]
+    set pindirs, 0          ; release after the last stop bit
+.wrap_target
+rxstart:
+    wait 0 pin 0            ; start bit
+    set y, 7 [9]
+rxbit:
+    in pins, 1
+    jmp y-- rxbit [6]
+    jmp pin good            ; the stop bit
+    in null, 1              ; low: bit 31 clear; the ninth bit pushes
+    wait 1 pin 0
+    jmp rxstart
+good:
+    in y, 1                 ; high: bit 31 set; the ninth bit pushes
+.wrap

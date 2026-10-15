@@ -999,6 +999,48 @@ TEST_CASE(kst_extends_the_map_without_moving_it)
  * model's maximum whatever the build has.  SUPPLY and SERVO_SENSE each
  * take one bit that was reserved.
  */
+/*
+ * 4.23 adds the BUS and BUS_IDS pages after PROG and moves nothing: a status
+ * read of 29 registers, the found IDs in 16 on the second page, and a
+ * command of four registers with ten staged ones behind it.
+ */
+TEST_CASE(bus_extends_the_map_without_moving_it)
+{
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_BUS);
+    CHECK_EQ(LINK_MINOR_BUS, 23u);
+    CHECK(LINK_MINOR_BUS > LINK_MINOR_UPDATE);
+    CHECK_EQ(LINK_PAGE_PROG, 0x33);
+    CHECK_EQ(LINK_PAGE_BUS, 0x34);
+    CHECK_EQ(LINK_BS_STATE, 0);
+    CHECK_EQ(LINK_BS_SEQ, 1);
+    CHECK_EQ(LINK_BS_LIVE, 10);
+    CHECK_EQ(LINK_BS_DATA, 20);
+    CHECK_EQ(LINK_BS_PIN, 28);
+    CHECK_EQ(LINK_BS_STATUS_REGS, 29);
+    CHECK_EQ(LINK_BS_COUNT, 29);
+    CHECK(LINK_BS_COUNT <= LINK_MAX_REGS);
+    /* The found IDs on a page of their own: one bit per ID 0 to 253, and
+     * two more that stay 0. */
+    CHECK_EQ(LINK_PAGE_BUS_IDS, 0x35);
+    CHECK_EQ(LINK_BI_IDS, 0);
+    CHECK_EQ(LINK_BI_COUNT, 16);
+    CHECK(LINK_BI_COUNT <= LINK_MAX_REGS);
+    CHECK_EQ(LINK_BS_W_CMD, 0);
+    CHECK_EQ(LINK_BS_W_N, 4);
+    CHECK_EQ(LINK_BS_W_DATA, 6);
+    CHECK_EQ(LINK_BS_W_COUNT, 14);
+    CHECK_EQ(LINK_BS_W_N + LINK_BS_W_STAGED, LINK_BS_W_COUNT);
+    CHECK_EQ(LINK_BS_BYTE_REGS * 2u, LINK_BS_BYTES);
+    CHECK_EQ(LINK_BUS_WRITE_KEY, 0x57A5u);
+    CHECK_EQ(LINK_BUS_OP_BAUD, 10);
+    CHECK(LINK_BUS_OP_COUNT <= 16);   /* four bits of LINK_BS_W_CMD */
+    /* The flags sit above the state's two bits and do not overlap. */
+    CHECK_EQ(LINK_BS_F_BUSY | LINK_BS_F_WATCH | LINK_BS_F_UNLOCKED
+             | LINK_BS_F_SAFE, 0x3Cu);
+    CHECK_EQ(LINK_BS_W_CMD_OF(LINK_BUS_OP_SCAN, 2u, 0u, true),
+             (uint16_t)(3u | 0x10u | (2u << 8)));
+}
+
 TEST_CASE(prog_extends_the_map_without_moving_it)
 {
     CHECK(LINK_PROTOCOL_MINOR >= 13u);
@@ -1571,7 +1613,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 22u);
+    CHECK(LINK_PROTOCOL_MINOR >= LINK_MINOR_UPDATE);
     CHECK_EQ(LINK_MINOR_UPDATE, 22u);
     CHECK(LINK_MINOR_UPDATE > LINK_MINOR_REFUSED);
 
@@ -1645,6 +1687,7 @@ int main(void)
     RUN(servo_win_is_served_read_only);
     RUN(an_older_coprocessor_has_no_servo_win_page_and_says_so);
     RUN(kst_extends_the_map_without_moving_it);
+    RUN(bus_extends_the_map_without_moving_it);
     RUN(prog_extends_the_map_without_moving_it);
     RUN(the_kst_staged_check_tells_a_change_a_swap_and_a_length);
     RUN(a_4_11_coprocessor_has_no_kst_page_and_says_so);

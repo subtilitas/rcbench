@@ -328,6 +328,9 @@ SERVO_REPORT_C = REPO / "shared" / "servo" / "servo_report.c"
 # link page.
 ENGLISH_QUOTES = {
     ("Link-de.md", "TARGET"),
+    ("Link-de.md", "RESULT"),
+    ("Link-de.md", "RANGE"),
+    ("Link-de.md", "WATCH"),
     ("DShot-de.md", "TARGET"),
     ("Servo-de.md", "STEP"),
     ("Servo-de.md", "SET"),

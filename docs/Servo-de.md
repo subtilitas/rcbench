@@ -2,7 +2,8 @@
 
 <sub>[English](Servo.md) · **Deutsch**</sub>
 
-Drei Verfahren am Servo. Die ersten beiden messen ein Servo im eingebauten
+Drei Verfahren am Servo, und die [BUS-Seite](#die-bus-seite) für serielle
+Busservos. Die ersten beiden messen ein Servo im eingebauten
 Zustand; beide brauchen einen Stromsensor am Servoausgang, der nicht bestückt
 ist, und beide laufen gegen ein modelliertes Servo. Ihre Vorgabewerte stammen
 aus `servo_limit_defaults()` und `servo_sync_defaults()` in `shared/servo/`.
@@ -804,6 +805,128 @@ Ein Tippen auf PAUSIERT setzt den Sweep ab der Phase fort, an der er
 angehalten wurde, bei einem Koprozessor mit Protokoll 4.6; ein älterer
 startet die Kurve von vorn. Ein angehaltener Sweep ist der Moment, TEMPO zu
 erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
+
+## Die BUS-Seite
+
+BUS, die fünfte Seite der Einstellungen von SERVO neben AUSGANG, TEST,
+GRENZEN und PRÜFLING, steuert serielle Busservos am Programmierport des
+Koprozessors: Feetech-Servos der Serien SCS und STS an einer
+TTL-Signalleitung (TTL: Transistor-Transistor-Logik), Halbduplex, 8N1, mit
+einer von 8 Raten von 38 400 bis 1 000 000 Baud. Der Port ist ab Werk GP13
+an Pad 17, derselbe Pin wie für den KST-Programmierer; der Pin wird auf
+OUTPUTS gesetzt und je Prüfstand gespeichert. Die Seite nennt den Pin, den
+sie treibt, in der ersten Zeile unter den Reihen:
+`Geschlossen. ÖFFNEN nimmt PROG-PORT GP13 aus PWM.`, bei offenem Bus
+`PROG-PORT GP13: FEETECH mit 1000000 Baud.` Die Link-Page des Koprozessors
+ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
+[protocols/feetech](../protocols/feetech/README.md).
+
+![Die BUS-Seite, geschlossen](img/de/servo-bus.png)
+
+| Reihe | Werte | Was sie tut |
+| --- | --- | --- |
+| PROTOKOLL | FEETECH | das Protokoll; die Liste hält die Protokolle des Builds. Nur bei geschlossenem Bus |
+| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: die Leitung wechselt auf sie, die Servos behalten ihre |
+| SERIE | SCS, STS/SMS | Registertabelle und Byte-Reihenfolge: SCS Big-Endian, Ziel 0 bis 1023; STS und SMS Little-Endian, Ziel 0 bis 4095. Je ID, für die Sitzung; beim Start STS/SMS |
+| BUS | ÖFFNEN, SCHLIESSEN | nimmt den Pin des Ports aus PWM, oder gibt ihn mit Drehmoment aus zurück |
+| SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
+| GEFUNDEN n | SCAN, STOP | ein PING an jede ID des Bereichs; STOP, solange er läuft |
+| ID | die gefundenen IDs, ANDERE ID | das Servo, das die Seite steuert und beobachtet; ANDERE ID öffnet das Tastenfeld, 0 bis 253 |
+| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40) |
+| TEMPO | 0 bis 3400 bei STS, 0 bis 1000 bei SCS, beim Start 1000 | die Geschwindigkeit des Ziels, mit jedem Ziel geschickt |
+| BESCHL. | 0 bis 255, beim Start 0 | die Beschleunigung des Ziels, mit jedem Ziel geschickt; nur STS, bei SCS gedimmt |
+| EEPROM | ÄNDERN | die Liste der EEPROM-Schreibvorgänge unten |
+| POSITION | der Schieber | die Zielposition, geschrieben, während der Schieber sich bewegt, und beim Loslassen |
+
+![Die Liste der Serien](img/de/servo-bus-series.png)
+
+PING trennt SCS und STS nicht: beide antworten gleich. SERIE ist deshalb
+eine Einstellung je Servo, und ein Ziel oder ein Schreiben in der falschen
+Serie erreicht das Servo in der falschen Byte-Reihenfolge. SMS-Servos nutzen
+die STS-Tabelle an einem RS-485-Paar (differenzielle serielle Leitung), das
+einen Transceiver braucht, den der Prüfstand nicht hat: SMS an RS-485 wird
+nicht unterstützt.
+
+Unter den Reihen sagen vier Zeilen, was der Bus tut: Pin und Rate, der Scan
+oder die Messwerte des beobachteten Servos, seine Fehlerflags und wie das
+letzte Kommando endete. Ein Scan liest
+`SCAN 1 bis 20: 2 gefunden, 0 nicht dekodiert`; eine ID, die mit einem
+Frame geantwortet hat, der sich nicht dekodieren ließ, wird gezählt, nicht
+aufgeführt.
+
+![Ein Scan der IDs 1 bis 20](img/de/servo-bus-scan.png)
+
+Mit gewählter ID liest die Seite alle 50 ms den Live-Block des Servos:
+aktuelle Position, Last in 0,1 % (die unteren 10 Bit des Registers,
+höchstens 100,0 %), Spannung in 0,1 V, Temperatur in Grad Celsius und bei
+STS den aktuellen Strom mit 6,5 mA je Zählwert. Die Fehlerflags sind die des
+Statusbytes: SPANNUNG (Bit 0), SENSOR (Bit 1), TEMPERATUR (Bit 2), STROM
+(Bit 3) und ÜBERLAST (Bit 5), in der Warnfarbe, solange eines gesetzt ist.
+Das Vorzeichen der Last und die Skala des Stroms sind nicht gemessen.
+
+![Ein beobachtetes Servo mit zwei Fehlerflags](img/de/servo-bus-live.png)
+
+**EEPROM-Schreiben.** ÄNDERN listet ID, BAUD, MIN. WINKEL, MAX. WINKEL,
+MODUS (STS: POSITION, SPEED, PWM, STEP) und SPERRE. Eine Wahl liest zuerst
+den Wert des Servos und öffnet dann das Tastenfeld oder eine Liste darauf.
+Ein neuer Wert öffnet die Warnung `EEPROM SCHREIBEN`: die ID, das Register,
+alter und neuer Wert, und dass das Servo den Wert nach dem Ausschalten
+behält. HALTEN ZUM SCHREIBEN übernimmt ihn nach 2 s Halten; ABBRECHEN, ein
+Finger, der abrutscht, und das Verlassen der Seite schreiben nichts. Das
+Schreiben entsperrt das EEPROM des Servos, schreibt, sperrt es und liest
+den Wert zurück: `Geschrieben und zurückgelesen.` oder
+`Zurückgelesen weicht vom Geschriebenen ab.` Einer neuen ID oder Rate wird
+gefolgt: Sperre und Zurücklesen gehen an die neue ID mit der neuen Rate, und
+die Seite steuert die neue ID. Die Warnung fügt eine Zeile an, wenn die neue
+ID auch auf den letzten Scan geantwortet hat: zwei Servos auf einer ID.
+SPERRE 0 lässt das EEPROM für jedes Schreiben offen, und die Warnung sagt
+es.
+
+![Die EEPROM-Liste](img/de/servo-bus-eeprom.png)
+![Die Warnung zu einem ID-Wechsel](img/de/servo-bus-warning.png)
+![Ein Schreiben fertig](img/de/servo-bus-written.png)
+
+**Zurückspielen.** Jedes EEPROM-Schreiben behält den alten Wert, bis zu 8,
+bis zu einem Neustart des Panels. `ZURÜCKSPIELEN n` in der EEPROM-Liste
+schreibt sie zurück, das neueste zuerst, hinter einem eigenen Halten von
+2 s. Mit 8 behaltenen wird ein neuntes Schreiben mit
+`8 Änderungen gespeichert: erst zurückspielen.` abgewiesen. Ein Schreiben,
+das STOP beendet hat, behält seinen alten Wert zum Zurückspielen, weil es
+angekommen sein kann; ein ID-Wechsel, den STOP beendet hat, wird nicht
+behalten, weil das Servo auf beiden IDs antworten kann.
+
+![Zurückspielen zweier Schreibvorgänge](img/de/servo-bus-restore.png)
+
+RAM-Register (RAM: Random-Access Memory) -- Drehmoment, Ziel, Tempo und
+Beschleunigung -- werden ohne Halten geschrieben. Ein WRITE erreicht nie
+das Sperrflag oder den EEPROM-Bereich; der Koprozessor weist es ab.
+
+**Sicherheit.** Der Bus läuft nur auf einem Prüfstand in SAFE, wie das
+KST-Programmieren. ÖFFNEN wird abgewiesen, solange der Prüfstand ARMED ist
+oder ARMED angefordert ist, und ARM wird abgewiesen, solange der Bus den
+Port hält, mit `kein ARM: die BUS-Seite hält den PROG-PORT`; ARM ist
+gesperrt gezeichnet und PULSBREITE liest `---`. Der Bus ist nur offen,
+solange die Seite gezeigt wird: eine andere Seite, SCHLIESSEN am Overlay und
+das Verlassen von SERVO schließen ihn, mit Drehmoment aus an jedes Servo,
+dem Sperrflag wieder gesetzt, wo ein Schreiben es offen gelassen hat, und
+dem Pin zurück auf PWM. STOP beendet einen Scan, ein Schreiben oder ein
+Zurückspielen, schickt Drehmoment aus an die Broadcast-ID und lässt den Bus
+offen; ein noch nicht geschicktes Kommando wird verworfen. Ein verlorener
+Heartbeat, ein stiller Link oder ein Schalten auf SAFE schließt den Bus im
+Koprozessor. Die Versorgung des Servos schaltet die Seite nicht: SUPPLY
+stellt sie ein, oder eine andere Quelle speist das Servo.
+
+Aktuelle Einschränkungen:
+
+- Noch kein Feetech-Servo war am Prüfstand. Die 20 offenen Punkte, vom
+  Ruhepegel der Leitung bis zur Bedeutung von Zielgeschwindigkeit 0, stehen
+  in [der README des Moduls](../protocols/feetech/README.md#what-is-measured-and-what-is-not).
+- SMS-Servos an RS-485 werden nicht unterstützt.
+- Ein Scan trennt SCS und STS nicht; SERIE wird je ID von Hand gesetzt.
+- Zwei Servos auf einer ID antworten beide; ein Scan liest eine ID, und die
+  Frames können kollidieren. Was ein Scan dann liest, ist nicht gemessen.
+- Die zum Zurückspielen behaltenen Werte gehen bei einem Neustart des Panels
+  verloren.
 
 ## Voraussetzungen
 

@@ -784,6 +784,19 @@ servo follows PWM while in programming mode is not measured.
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
 
+### Bus servos
+
+BUS, the fifth page of the settings, drives Feetech SCS and STS bus servos
+on the same programming port: open the bus, scan an ID range, pick an ID,
+move it with the POSITION slider and read its position, load, voltage,
+temperature, current and error flags. EEPROM writes go through a warning
+held 2 s, and RESTORE writes the old values back. The page names the pin
+it drives in its first line. The bus is open only while the page is shown,
+and the bench takes no ARM while it is: ARM is drawn disabled and COMMANDED
+reads `---`. [Servo](Servo.md#the-bus-page) describes it.
+
+![The BUS page with one servo watched](img/servo-bus-live.png)
+
 ### Settings
 
 SETTINGS, at the top of the right card, opens the servo's settings over the

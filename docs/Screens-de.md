@@ -869,6 +869,21 @@ folgt, ist nicht gemessen.
 [Servo-Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt ihn.
 
+### Busservos
+
+BUS, die fünfte Seite der Einstellungen, steuert Feetech-Busservos der
+Serien SCS und STS am selben Programmierport: Bus öffnen, einen ID-Bereich
+scannen, eine ID wählen, sie mit dem Schieber POSITION bewegen und ihre
+Position, Last, Spannung, Temperatur, ihren Strom und ihre Fehlerflags
+lesen. EEPROM-Schreibvorgänge gehen über eine Warnung, die 2 s gehalten
+wird, und ZURÜCKSPIELEN schreibt die alten Werte zurück. Die Seite nennt den
+Pin, den sie treibt, in ihrer ersten Zeile. Der Bus ist nur offen, solange
+die Seite gezeigt wird, und der Prüfstand nimmt so lange kein ARM: ARM ist
+gesperrt gezeichnet und PULSBREITE zeigt `---`.
+[Servo](Servo-de.md#die-bus-seite) beschreibt sie.
+
+![Die BUS-Seite mit einem beobachteten Servo](img/de/servo-bus-live.png)
+
 ### Einstellungen
 
 OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über

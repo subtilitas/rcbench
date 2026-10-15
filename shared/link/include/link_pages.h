@@ -56,6 +56,8 @@ typedef enum {
     LINK_PAGE_SERVO_WIN = 0x31, /**< the servo rail's last CH1 windows, read-only */
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
     LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
+    LINK_PAGE_BUS       = 0x34, /**< a serial bus servo protocol on a programming port */
+    LINK_PAGE_BUS_IDS   = 0x35, /**< the IDs the bus's last scan found, read-only */
     /* Frozen: the same numbers, layout and meaning under every major. */
     LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the coprocessor's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
@@ -101,7 +103,10 @@ typedef enum {
  * an older coprocessor for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
  * UPDATE_CTL and UPDATE_DATA take a new coprocessor image over the link;
  * an older coprocessor refuses both with LINK_NACK_BAD_PAGE, which the panel
- * answers by saying a USB (Universal Serial Bus) load is needed.  A
+ * answers by saying a USB (Universal Serial Bus) load is needed.  From 4.23
+ * the BUS page carries a serial bus servo protocol on a programming port;
+ * the panel sends nothing to it on an older coprocessor and its SERVO
+ * screen's BUS page says the coprocessor has none.  A
  * coprocessor never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -114,7 +119,7 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-#define LINK_PROTOCOL_MINOR 22u
+#define LINK_PROTOCOL_MINOR 23u
 
 /** The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -176,6 +181,9 @@ typedef enum {
  *  refuses both with LINK_NACK_BAD_PAGE; it takes a new image over USB
  *  only. */
 #define LINK_MINOR_UPDATE 22u
+/** The first minor that serves BUS.  An older minor refuses it with
+ *  LINK_NACK_BAD_PAGE. */
+#define LINK_MINOR_BUS 23u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1591,9 +1599,9 @@ static inline uint16_t link_kst_crc(const uint16_t *regs, unsigned n)
     uint16_t crc = 0xFFFFu;
 
     for (unsigned i = 0; i < n; ++i) {
-        const uint8_t b[2] = { (uint8_t)(regs[i] & 0xFFu),
-                               (uint8_t)(regs[i] >> 8) };
-        crc = link_crc(crc, b, sizeof(b));
+        const uint8_t pair[2] = { (uint8_t)(regs[i] & 0xFFu),
+                                  (uint8_t)(regs[i] >> 8) };
+        crc = link_crc(crc, pair, sizeof(pair));
     }
     return crc;
 }
@@ -1740,6 +1748,185 @@ enum {
     ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
 #define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
 #define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
+
+/* --------------------------------------------------------------------- BUS */
+/*
+ * The BUS page (0x34, since 4.23): a serial bus servo protocol on a
+ * programming port.  One programming port (the PROG page) at a time leaves
+ * PWM (pulse-width modulation) and carries the bus: half duplex on the
+ * port's pin.  The session runs at the coprocessor; the panel writes one
+ * operation at a time and reads the state, the result, the IDs a scan
+ * found (on the BUS_IDS page), the bytes a read gave and the live block of
+ * the servo it watches.  shared/outputs/bus_port.h holds the rules.  Protocol 0 is Feetech SCS
+ * and STS (protocols/feetech); every other protocol number is refused.
+ *
+ * A read and a write of the page see different registers.  A read gives
+ * LINK_BS_*.  A write takes LINK_BS_W_*: the command in registers 0 to 3,
+ * which is one CAN frame and taken whole or not at all, and the staged
+ * registers 4 to 13, written in any windows before the command that names
+ * their CRC (cyclic redundancy check).  Nothing is kept in flash.
+ */
+enum {
+    LINK_BS_STATE = 0,   /**< bits 0-1 link_bus_state_t, bits 2-7 the
+                              LINK_BS_F_* flags, bits 8-11 the port,
+                              bits 12-15 the protocol */
+    LINK_BS_SEQ   = 1,   /**< the SEQ of the last command taken; 0 at
+                              start */
+    LINK_BS_OP    = 2,   /**< low byte the last operation started
+                              (link_bus_op_t), high byte the baud index
+                              in force */
+    LINK_BS_RESULT = 3,  /**< low byte the result of that operation
+                              (feetech_res_t: 0 done, 1 while it runs),
+                              high byte why the last command taken started
+                              nothing (link_bus_refusal_t; 0: it started) */
+    LINK_BS_REPLY = 4,   /**< low byte the error byte of the last good
+                              reply, high byte its ID, 0xFF none */
+    LINK_BS_SCAN  = 5,   /**< low byte the ID the scan asks next, high byte
+                              the IDs found */
+    LINK_BS_RANGE = 6,   /**< low byte the first ID of the last scan, high
+                              byte the last */
+    LINK_BS_WATCH = 7,   /**< low byte the ID watched, 0xFF none; high byte
+                              the result of its last read */
+    LINK_BS_WATCH_OK = 8,  /**< reads of the watched servo that decoded,
+                                wrapping */
+    LINK_BS_WATCH_BAD = 9, /**< and that did not, wrapping */
+    LINK_BS_LIVE  = 10,  /**< 8 registers: the live block of the watched
+                              servo, byte 2 k in the low byte of register
+                              10 + k, 2 k + 1 in the high byte; as the
+                              servo sent it */
+    LINK_BS_COUNTS = 18, /**< low byte the bytes of LINK_BS_LIVE, high byte
+                              the bytes of LINK_BS_DATA */
+    LINK_BS_AT    = 19,  /**< low byte the address of the last read or
+                              EEPROM write, high byte the IDs whose scan
+                              answer did not decode */
+    LINK_BS_DATA  = 20,  /**< 8 registers: the bytes the last read gave, or
+                              an EEPROM write read back, packed as
+                              LINK_BS_LIVE */
+    LINK_BS_PIN   = 28,  /**< the coprocessor GPIO the bus drives, or
+                              LINK_PG_PIN_NONE while it is closed */
+    LINK_BS_COUNT = 29,
+    LINK_BS_STATUS_REGS = LINK_BS_COUNT, /**< registers 0 to 28: one read */
+};
+
+/*
+ * The BUS_IDS page (0x35, since 4.23), read-only: the IDs the BUS page's
+ * last scan found.  Bit n of register k: ID 16 k + n answered.  The bits of
+ * IDs 254 and 255 are always 0.
+ */
+enum {
+    LINK_BI_IDS   = 0,   /**< 16 registers */
+    LINK_BI_COUNT = 16,
+};
+
+/** What a write of the page takes. */
+enum {
+    LINK_BS_W_CMD = 0,   /**< bits 0-3 link_bus_op_t, bit 4 the series
+                              (0 SCS, 1 STS), bits 8-11 the programming
+                              port, bits 12-15 the protocol */
+    LINK_BS_W_SEQ = 1,   /**< LINK_BS_SEQ + 1 modulo 65536 */
+    LINK_BS_W_ARG = 2,   /**< OPEN and BAUD: the baud index; SCAN: low byte
+                              the first ID, high byte the last; READ,
+                              WRITE, EEPROM: low byte the ID, high byte
+                              the address; WATCH: the ID, 0xFF none */
+    LINK_BS_W_AUX = 3,   /**< READ: the bytes, 1 to 16; WRITE and EEPROM:
+                              link_kst_crc() of registers 4 to 13; else
+                              0 */
+    LINK_BS_W_N   = 4,   /**< staged: the bytes of a WRITE or an EEPROM
+                              write, 1 to 16 */
+    LINK_BS_W_KEY = 5,   /**< staged: LINK_BUS_WRITE_KEY for an EEPROM
+                              write, else 0 */
+    LINK_BS_W_DATA = 6,  /**< staged: 8 registers, the bytes packed as
+                              LINK_BS_LIVE */
+    LINK_BS_W_COUNT = 14,
+};
+
+/** Registers of the command, from LINK_BS_W_CMD: one frame. */
+#define LINK_BS_W_CMD_FRAME 4u
+/** The staged registers the CRC covers, from LINK_BS_W_N. */
+#define LINK_BS_W_STAGED 10u
+/** Bytes a read or a write carries, and the live block's room. */
+#define LINK_BS_BYTES 16u
+/** The page registers that hold LINK_BS_BYTES bytes. */
+#define LINK_BS_BYTE_REGS 8u
+
+/** LINK_BS_W_KEY of an EEPROM write.  The panel sends it only after the
+ *  2 s hold on the write's warning. */
+#define LINK_BUS_WRITE_KEY 0x57A5u
+
+/** The protocols. */
+#define LINK_BUS_PROTO_FEETECH 0u
+
+#define LINK_BS_STATE_OF(r)  ((uint8_t)((r) & 0x3u))
+#define LINK_BS_PORT_OF(r)   ((uint8_t)(((r) >> 8) & 0xFu))
+#define LINK_BS_PROTO_OF(r)  ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_BS_W_CMD_STS    0x0010u
+#define LINK_BS_W_CMD_OF(op, port, proto, sts) \
+    ((uint16_t)((unsigned)(op) | ((sts) ? LINK_BS_W_CMD_STS : 0u) \
+                | (((unsigned)(port) & 0xFu) << 8) \
+                | (((unsigned)(proto) & 0xFu) << 12)))
+
+/** Where the bus is. */
+typedef enum {
+    LINK_BUS_CLOSED = 0,   /**< the port's pin is the PWM generator's */
+    LINK_BUS_OPENING = 1,  /**< PWM renders no pulse on the port; the
+                                running one ends */
+    LINK_BUS_OPEN = 2,     /**< the pin carries the bus and no PWM */
+    LINK_BUS_CLOSING = 3,  /**< torque off and the lock are sent; the pin
+                                goes back to the PWM generator */
+} link_bus_state_t;
+
+enum {
+    LINK_BS_F_BUSY     = 0x0004u, /**< an operation or a stop runs */
+    LINK_BS_F_WATCH    = 0x0008u, /**< a servo is watched */
+    LINK_BS_F_UNLOCKED = 0x0010u, /**< a servo's lock flag is 0 by this
+                                       session and its lock is owed */
+    LINK_BS_F_SAFE     = 0x0020u, /**< the heartbeat is trusted and the
+                                       link is not silent */
+};
+
+/** The operations of a command. */
+typedef enum {
+    LINK_BUS_OP_NONE = 0,     /**< never written; LINK_BS_OP at start */
+    LINK_BUS_OP_OPEN = 1,     /**< take the port's pin out of PWM at the
+                                   baud index */
+    LINK_BUS_OP_CLOSE = 2,    /**< stop, then give the pin back */
+    LINK_BUS_OP_SCAN = 3,     /**< PING every ID of a range */
+    LINK_BUS_OP_READ = 4,     /**< 1 to 16 bytes from one servo */
+    LINK_BUS_OP_WRITE = 5,    /**< 1 to 16 bytes to the RAM of one servo,
+                                   the lock flag excepted */
+    LINK_BUS_OP_EEPROM = 6,   /**< an EEPROM write: unlock, write, lock,
+                                   read back; needs the key */
+    LINK_BUS_OP_WATCH = 7,    /**< read one servo's live block every 50 ms
+                                   between operations */
+    LINK_BUS_OP_TORQUE_OFF = 8, /**< torque off to every servo */
+    LINK_BUS_OP_STOP = 9,     /**< end the operation and the watch, torque
+                                   off to every servo, the lock owed */
+    LINK_BUS_OP_BAUD = 10,    /**< the line to another baud index */
+    LINK_BUS_OP_COUNT
+} link_bus_op_t;
+
+/** Why a command that was taken did nothing: the high byte of
+ *  LINK_BS_RESULT. */
+typedef enum {
+    LINK_BUS_REF_NONE = 0,
+    LINK_BUS_REF_BUSY = 1,     /**< an operation runs, or the bus opens or
+                                    closes */
+    LINK_BUS_REF_PORT = 2,     /**< no such programming port, or not the
+                                    port that is open */
+    LINK_BUS_REF_PROTOCOL = 3, /**< a protocol this build does not have */
+    LINK_BUS_REF_UNSAFE = 4,   /**< heartbeat not trusted or link silent */
+    LINK_BUS_REF_ARMED = 5,    /**< an OPEN while the bank is armed */
+    LINK_BUS_REF_NOT_OPEN = 6, /**< the bus is closed */
+    LINK_BUS_REF_NO_PIN = 7,   /**< the port has no bound pin, or the KST
+                                    page holds it */
+    LINK_BUS_REF_NO_KEY = 8,   /**< an EEPROM write without the key */
+    LINK_BUS_REF_RANGE = 9,    /**< an ID, address, count or baud index the
+                                    protocol does not take */
+    LINK_BUS_REF_EEPROM = 10,  /**< a WRITE to the EEPROM area or the lock
+                                    flag, or an EEPROM write outside it */
+    LINK_BUS_REF_STAGED = 11,  /**< the staged registers do not have the
+                                    CRC the command names */
+} link_bus_refusal_t;
 
 /* ----------------------------------------------------------------- control */
 /*

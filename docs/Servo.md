@@ -2,7 +2,8 @@
 
 <sub>**English** · [Deutsch](Servo-de.md)</sub>
 
-Three procedures on a servo. The first two measure a servo as installed;
+Three procedures on a servo, and the [BUS page](#the-bus-page) for serial
+bus servos. The first two measure a servo as installed;
 both need a current sensor on the servo output, which is not fitted, and both
 run against a modelled servo. Their defaults are from `servo_limit_defaults()`
 and `servo_sync_defaults()` in `shared/servo/`. The third, the
@@ -820,6 +821,115 @@ PAUSED carries the sweep on from the phase it was paused at, on a
 coprocessor speaking protocol 4.6; an older one starts the curve over. A
 paused sweep is the moment to raise SPEED: the pause stays, and the resume
 runs at the new rate.
+
+## The BUS page
+
+BUS, the fifth page of SERVO's settings beside OUTPUT, TEST, LIMITS and DUT,
+drives serial bus servos on the coprocessor's programming port: Feetech SCS
+and STS servos on one TTL (transistor-transistor logic) signal wire, half
+duplex, 8N1, at one of 8 rates from 38,400 to 1,000,000 baud. The port is
+GP13 on pad 17 by default, the pin the KST programmer uses; the pin is set
+on OUTPUTS and stored per bench. The page names the pin it drives in its
+first line under the rows: `Closed. OPEN takes PROG PORT GP13 from PWM.`,
+then `PROG PORT GP13: FEETECH at 1000000 baud.` while the bus is open. The
+coprocessor's link page is [the bus page](Link.md#the-bus-page); the
+protocol core is [protocols/feetech](../protocols/feetech/README.md).
+
+![The BUS page, closed](img/servo-bus.png)
+
+| Row | Values | What it does |
+| --- | --- | --- |
+| PROTOCOL | FEETECH | the protocol; the list holds the protocols of the build. Set while the bus is closed |
+| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: the line moves to it, the servos keep theirs |
+| SERIES | SCS, STS/SMS | the register table and byte order: SCS big-endian, goal 0 to 1023; STS and SMS little-endian, goal 0 to 4095. Per ID, for the session; STS/SMS at start |
+| BUS | OPEN, CLOSE | takes the port's pin out of PWM, or gives it back with torque off |
+| SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
+| FOUND n | SCAN, STOP | a PING to every ID of the range; STOP while it runs |
+| ID | the IDs found, OTHER ID | the servo the page drives and watches; OTHER ID opens the keypad, 0 to 253 |
+| TORQUE | ON, OFF | writes torque enable (register 40) |
+| SPEED | 0 to 3400 on STS, 0 to 1000 on SCS, 1000 at start | the goal's speed, sent with every goal |
+| ACC | 0 to 255, 0 at start | the goal's acceleration, sent with every goal; STS only, dimmed on SCS |
+| EEPROM | CHANGE | the list of EEPROM writes below |
+| POSITION | the slider | the goal position, written while the slider moves and on its release |
+
+![The series list](img/servo-bus-series.png)
+
+PING does not tell SCS from STS: both answer it alike. SERIES is therefore a
+setting per servo, and a goal or a write in the wrong series reaches the
+servo in the wrong byte order. SMS servos use the STS table on an RS-485
+(differential serial line) pair, which needs a transceiver the bench does
+not have: SMS on RS-485 is not supported.
+
+Under the rows four lines say what the bus does: the pin and the rate, the
+scan or the watched servo's readings, its error flags, and how the last
+command ended. A scan reads `SCAN 1 to 20: 2 found, 0 not decoded`; an ID
+answered with a frame that did not decode is counted, not listed.
+
+![A scan of IDs 1 to 20](img/servo-bus-scan.png)
+
+With an ID chosen the page reads the servo's live block every 50 ms:
+present position, load in 0.1 % (the low 10 bits of the register, at most
+100.0 %), voltage in 0.1 V, temperature in degrees Celsius and, on STS, the
+present current at 6.5 mA a count. The error flags are the status byte's
+VOLTAGE (bit 0), SENSOR (bit 1), TEMPERATURE (bit 2), CURRENT (bit 3) and
+OVERLOAD (bit 5), in the warning colour while one is set. The sign of the
+load and the current's scale are not measured.
+
+![One servo watched, with two error flags](img/servo-bus-live.png)
+
+**EEPROM writes.** CHANGE lists ID, BAUD, MIN ANGLE, MAX ANGLE, MODE (STS:
+POSITION, SPEED, PWM, STEP) and LOCK. A pick reads the servo's value first,
+then opens the keypad or a list on it. A new value opens the warning
+`EEPROM WRITE`: the ID, the register, the old and the new value, and that
+the servo keeps the value after power-off. HOLD TO WRITE applies it after
+2 s held; CANCEL, a finger that slides off and leaving the page write
+nothing. The write unlocks the servo's EEPROM, writes, locks it and reads
+the value back: `Written and read back.`, or `Read-back differs from the
+write.` A new ID or rate is followed: the lock and the read-back go to the
+new ID at the new rate, and the page drives the new ID. The warning adds a
+line when the new ID answered the last scan too: two servos on one ID. LOCK 0
+leaves the EEPROM open to every write, and the warning says so.
+
+![The EEPROM list](img/servo-bus-eeprom.png)
+![The warning of an ID change](img/servo-bus-warning.png)
+![A write done](img/servo-bus-written.png)
+
+**RESTORE.** Each EEPROM write keeps the old value, up to 8, until a
+restart of the panel. `RESTORE n` in the EEPROM list writes them back,
+newest first, behind its own 2 s hold. With 8 kept a ninth write is refused
+with `8 changes kept: RESTORE first.` A write that STOP ended keeps its old
+value for RESTORE, because it may have landed; an ID change that STOP ended
+is not kept, because the servo may answer on either ID.
+
+![RESTORE of two writes](img/servo-bus-restore.png)
+
+RAM (random-access memory) registers -- torque, goal, speed and acceleration
+-- are written without a hold. A WRITE never reaches the lock flag or the
+EEPROM area; the coprocessor refuses it.
+
+**Safety.** The bus runs on a SAFE bench only, as KST programming does. OPEN
+is refused while the bench is ARMED or asked to arm, and ARM is refused
+while the bus holds the port, with `no arm: the BUS page holds the
+programming port`; ARM is drawn disabled and COMMANDED reads `---`. The bus
+is open only while the page is shown: another page, CLOSE on the overlay
+and leaving SERVO close it, with torque off to every servo, the lock flag
+set again where a write left it open, and the pin back to PWM. STOP ends a
+scan, a write or a restore, sends torque off to the broadcast ID and leaves
+the bus open; a command not yet sent is dropped. A heartbeat lost, a silent
+link or a switch to SAFE closes the bus at the coprocessor. The servo's
+supply is not switched by the page: SUPPLY sets it, or another source feeds
+the servo.
+
+Current limitations:
+
+- No Feetech servo has been on the bench. The 20 open items, from the
+  line's idle level to the meaning of goal speed 0, are listed in
+  [the module's README](../protocols/feetech/README.md#what-is-measured-and-what-is-not).
+- SMS servos on RS-485 are not supported.
+- A scan cannot tell SCS from STS; SERIES is set by hand per ID.
+- Two servos on one ID both answer; a scan reads one ID, and the frames may
+  collide. What a scan reads then is not measured.
+- Kept values for RESTORE are lost at a restart of the panel.
 
 ## Prerequisites
 

@@ -55,6 +55,8 @@
 #include "art_store.h"
 #include "heartbeat.h"
 #include "bind_link.h"
+#include "bus_link.h"
+#include "bus_panel.h"
 #include "kst_link.h"
 #include "prog_link.h"
 #include "kst_panel.h"
@@ -567,6 +569,9 @@ static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
  * s_cmd_q drops its oldest entry when it is full. */
 #define KST_Q_LEN 4
 static QueueHandle_t     s_kst_q;     /**< app_main -> control task */
+/* The BUS page's commands (bus_link_cmd_t): one at a time, so 4 is room. */
+#define BUS_Q_LEN 4
+static QueueHandle_t     s_bus_q;     /**< app_main -> control task */
 /*
  * One entry per bench sample, not a count of them.  A counter would lose the
  * samples a stalled renderer did not come back for, and the plot's time axis
@@ -663,6 +668,8 @@ static struct {
     uint32_t      servo_win_lost;
     /* What the servo programmer's model is fed; see kst_publish(). */
     kst_prog_feed_t kst;
+    /* What the SERVO screen's BUS page is fed; see bus_publish(). */
+    bus_panel_feed_t bus;
     /* The coprocessor's update; see cu_service(). */
     cu_snap_t     cu;
 } s_snap;
@@ -3976,6 +3983,20 @@ static tone_link_t    s_tone_link;
  */
 static kst_link_t         s_kst_link;
 /*
+ * The BUS page, serial bus servos on a programming port (4.23); see
+ * bus_link_service().  Control task only.  The SERVO screen's BUS page runs
+ * in the render loop, hands its commands over through s_bus_q and reads
+ * the page in the snapshot.  A command the link cannot take yet waits in
+ * s_bus_pending.
+ */
+static bus_link_t         s_bus_link;
+static bus_link_cmd_t     s_bus_pending;
+static bool               s_bus_pending_due;
+static uint32_t           s_bus_stops;    /* stops a STOP was sent for */
+/* Whether the bus holds a programming port, or an OPEN is on its way: the
+ * bench takes no arm then.  Read with s_kst_taken. */
+static bool               s_bus_taken;
+/*
  * The programming ports' page, PROG (4.13); see prog_link_service().
  * Control task only.  What the SERVO screen wants of it crosses as two
  * levels the render loop stores every frame, and the pin of port 0 goes
@@ -4028,6 +4049,7 @@ static __attribute__((noinline)) void kst_port_look(void)
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
     s_kst_taken = kst_prog_port_taken(&rd);
+    s_bus_taken = bus_link_holds(&s_bus_link);
 }
 
 /* The PROG page is not written and the tester commands no port while the
@@ -4037,7 +4059,8 @@ static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd));
+    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd)
+                                     || bus_link_holds(&s_bus_link));
 }
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
@@ -4482,6 +4505,7 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     servo_source_init(&s_servo_source);
     tone_link_init(&s_tone_link);
     kst_link_init(&s_kst_link);
+    bus_link_init(&s_bus_link);
     prog_link_init(&s_prog_link);
     s_supply_ms      = now_ms();
     s_supply_step_ms = now_ms();
@@ -4682,11 +4706,12 @@ static void service_arming(bool link_up)
     case ARMING_ACT_ARM: {
         link_msg_t ack = { 0 };
         const uint32_t quiet = s_unanswered;
-        if (s_kst_taken) {
+        if (s_kst_taken || s_bus_taken) {
             /* Asked for before the port was taken: the arm is given up
              * with nothing written. */
             arming_refused(&s_arm);
-            control_alert(TR(ALERT_ARM_PROG));
+            control_alert(s_kst_taken ? TR(ALERT_ARM_PROG)
+                                      : TR(ALERT_ARM_BUS));
             break;
         }
         /*
@@ -6026,10 +6051,11 @@ static void drain_commands(bool link_up, bench_state_t *bench)
                            && pc.motor.kind == MOTOR_CMD_ARM)
                           || (pc.kind == PANEL_CMD_SERVO
                               && pc.servo.kind == SERVO_CMD_ARM);
-        if (arms && s_kst_taken) {
-            /* Programming a servo and an armed bench are exclusive,
-             * whichever screen asks. */
-            control_alert(TR(ALERT_ARM_PROG));
+        if (arms && (s_kst_taken || s_bus_taken)) {
+            /* Programming a servo, the bus and an armed bench are
+             * exclusive, whichever screen asks. */
+            control_alert(s_kst_taken ? TR(ALERT_ARM_PROG)
+                                      : TR(ALERT_ARM_BUS));
             continue;
         }
         if (arms) {
@@ -6851,6 +6877,83 @@ static __attribute__((noinline)) void kst_commands(void)
 }
 
 /*
+ * The BUS page's commands, every pass.  One waits while the link carries
+ * another; one with no page to go to is dropped, and the screen says the
+ * link is down.  Every stop this end latches ends the bus's operation:
+ * bus_link_stop() drops a command not sent yet and sends STOP to a bus the
+ * page last read open or opening, which ends the operation and the watch
+ * and sends torque off to every servo.  After the commands, so a command
+ * queued before the stop is dropped by it.
+ */
+static __attribute__((noinline)) void bus_commands(void)
+{
+    for (;;) {
+        if (s_bus_pending_due) {
+            if (bus_link_send(&s_bus_link, &s_bus_pending)
+                || !bus_link_has_page(&s_bus_link)) {
+                s_bus_pending_due = false;
+            } else {
+                break;          /* the link carries another */
+            }
+        }
+        if (xQueueReceive(s_bus_q, &s_bus_pending, 0) != pdTRUE) {
+            break;
+        }
+        s_bus_pending_due = true;
+    }
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_bus_stops) {
+        s_bus_stops = stops;
+        s_bus_pending_due = false;
+        bus_link_stop(&s_bus_link);
+    }
+    prog_hold_look();
+}
+
+/*
+ * The BUS page: status read every BUS_LINK_POLL_MS (50 ms) while the bus is
+ * not closed and every BUS_LINK_IDLE_MS (500 ms) otherwise, a command's
+ * staged registers and frame written, the found IDs read from BUS_IDS
+ * (bus_link.h).  From poll_bench(), at most 4 exchanges a pass; a
+ * coprocessor older than 4.23 is sent nothing.
+ */
+static __attribute__((noinline)) void bus_link_service(void)
+{
+    for (int k = 0; k < 4; ++k) {
+        bus_link_xfer_t x;
+        if (!bus_link_next(&s_bus_link, now_ms(), &x)) {
+            break;
+        }
+        link_msg_t reply = { 0 };
+        const bool answered =
+            x.write ? write_regs(&s_host, x.page, x.off, x.n, x.regs, &reply)
+                    : read_regs(&s_host, x.page, x.off, x.n, &reply);
+        int result = BUS_LINK_NO_ANSWER;
+        if (answered) {
+            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
+                                                : BUS_LINK_ACK;
+        }
+        bus_link_done(&s_bus_link, result,
+                      (answered && reply.op == LINK_OP_DATA) ? reply.regs
+                                                             : NULL);
+        if (result == BUS_LINK_NO_ANSWER) {
+            break;
+        }
+    }
+}
+
+/* What the BUS page is fed, as it stands.  Under the snapshot's lock. */
+static __attribute__((noinline)) void bus_publish(bus_panel_feed_t *f)
+{
+    bus_link_readout(&s_bus_link, &f->rd);
+    f->now_ms = now_ms();
+    f->armed  = outputs_armed(&s_out);
+    f->stops  = arming_stop_count(&s_arm);
+    f->port   = 0u;
+    f->pin    = prog_link_pin(&s_prog_link, 0u);
+}
+
+/*
  * The programmer's page: status read every KST_LINK_POLL_MS (50 ms) while
  * an operation runs and every KST_LINK_IDLE_MS (500 ms) otherwise, a
  * request's staged registers and command written, the results and the
@@ -7074,6 +7177,9 @@ static bool poll_bench(bench_state_t *bench)
         /* And the servo programmer's: the coprocessor decides what it
          * starts, armed or not. */
         kst_link_service();
+        /* And the BUS page's: the coprocessor refuses an OPEN on an armed
+         * bank. */
+        bus_link_service();
         /* And the programming ports': the SERVO screen's target and the
          * port's pulse switch. */
         prog_link_service();
@@ -7404,6 +7510,8 @@ static void link_came_up(const link_msg_t *reply)
     tone_link_alerts();
     /* And the servo programmer's page (4.12). */
     kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
+    /* And the BUS page (4.23). */
+    bus_link_came_up(&s_bus_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     /* And the programming ports' (4.13): not known until it is read. */
     prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
     prog_drive_publish();
@@ -7603,6 +7711,8 @@ static bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* An operation under way ends unanswered; the programmer
              * says what that means for the servo. */
             kst_link_lost(&s_kst_link);
+            /* And a bus command on its way; the BUS page says so. */
+            bus_link_lost(&s_bus_link);
             /* And no port is the target or names a pin, and the SERVO
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
@@ -7800,6 +7910,7 @@ static void publish_snapshot(const bench_state_t *bench, bool link_up,
                              &s_snap.servo_source_dropped_at);
     s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
     kst_publish(&s_snap.kst);
+    bus_publish(&s_snap.bus);
     snap_unlock();
 
     /* One queue entry per sample, so none of the plot's time base is lost to
@@ -8239,6 +8350,7 @@ static void control_task(void *arg)
 
         drain_commands(link_up, &bench);
         kst_commands();
+        bus_commands();
         (void)outputs_keepalive(&s_out, PANEL_CH_THROTTLE, now_ms());
         servo_service(link_up);
 
@@ -8363,6 +8475,27 @@ static void kst_ui_service(void)
         s_kst_file_len = len;
         atomic_fetch_add(&s_kst_file_sent, 1u);
         file_out = true;
+    }
+}
+
+/*
+ * The BUS page, once a frame: what the control task last published, and
+ * the command it decided on.  A command stays with the page while the
+ * queue has no room.
+ */
+static void bus_ui_service(void)
+{
+    static bus_panel_feed_t feed;
+
+    snap_lock();
+    feed = s_snap.bus;
+    snap_unlock();
+    bus_panel_feed(&feed);
+    bus_link_cmd_t cmd;
+    if (uxQueueSpacesAvailable(s_bus_q) > 0u && bus_panel_take(&cmd)) {
+        if (xQueueSend(s_bus_q, &cmd, 0) != pdTRUE) {
+            ESP_LOGW(TAG, "BUS page: a command was lost");
+        }
     }
 }
 
@@ -9088,6 +9221,7 @@ void app_main(void)
     s_touch_q   = xQueueCreate(TOUCH_Q_LEN, sizeof(touch_item_t));
     s_cmd_q     = xQueueCreate(CMD_Q_LEN, sizeof(panel_cmd_t));
     s_kst_q     = xQueueCreate(KST_Q_LEN, sizeof(kst_prog_cmd_t));
+    s_bus_q     = xQueueCreate(BUS_Q_LEN, sizeof(bus_link_cmd_t));
     kst_prog_gate_init(&s_kst_gate);
     kst_panel_gate(&s_kst_gate);
     s_sample_q  = xQueueCreate(SAMPLE_Q_LEN, sizeof(bench_state_t));
@@ -9105,6 +9239,7 @@ void app_main(void)
      * "--" until the control task has published one. */
     s_snap.mcu_temp_c = NAN;
     ESP_ERROR_CHECK((s_touch_q != NULL && s_cmd_q != NULL && s_kst_q != NULL
+                     && s_bus_q != NULL
                      && s_sample_q != NULL && s_supply_q != NULL
                      && s_enc_q != NULL && s_win_q != NULL
                      && s_log_q != NULL && s_test_q != NULL
@@ -9234,8 +9369,9 @@ void app_main(void)
         snap_lock();
         programmer_screen_tone(&s_snap.tone);
         snap_unlock();
-        /* And the servo programmer on SERVO. */
+        /* And the servo programmer on SERVO, and its BUS page. */
         kst_ui_service();
+        bus_ui_service();
 
         /* The slider follows the bench: a disarm returns the command to
          * zero, so the control the operator picks up next is at zero too. */

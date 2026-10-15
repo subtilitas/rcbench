@@ -334,7 +334,7 @@ SOURCE_SUFFIXES = (".c", ".h", ".pio")
 # section whose heading has "Trademark" in it.
 BRANDS = ("Futaba", "S.BUS", "KST", "Chaservo", "Hitec", "YGE", "OpenYGE",
           "WeAct", "DShot", "Hobbywing", "Spektrum", "Graupner", "Jeti",
-          "FrSky", "FlySky")
+          "FrSky", "FlySky", "Feetech")
 # A brand is found in any case, with a version suffix (DShot300, S.BUS2),
 # inside an identifier, file name, path or address (kst_session_t,
 # hitec_x.c, www.futaba.com, 2kst), and not next to a letter: KSTART is no
@@ -364,6 +364,27 @@ ASSERTED = {
     "dshot": {
         "firmware/iomcu/src/outputs_hw.c": (
             "OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS",
+        ),
+    },
+    "feetech": {
+        "shared/outputs/bus_port.c": (
+            "FEETECH_RES_OK == 0 && FEETECH_RES_BUSY == 1 "
+            "&& FEETECH_RES_NO_REPLY == 2 && FEETECH_RES_TRUNCATED == 3 "
+            "&& FEETECH_RES_CHECKSUM == 4 && FEETECH_RES_WRONG_ID == 5 "
+            "&& FEETECH_RES_LENGTH == 6 && FEETECH_RES_NOISE == 7 "
+            "&& FEETECH_RES_FRAMING == 8 && FEETECH_RES_VERIFY == 9 "
+            "&& FEETECH_RES_DRIVER == 10 && FEETECH_RES_ABORTED == 11 "
+            "&& FEETECH_RES_ARG == 12",
+            "FEETECH_DATA_MAX == LINK_BS_BYTES "
+            "&& FEETECH_LIVE_STS <= LINK_BS_BYTES "
+            "&& 2u * LINK_BS_BYTE_REGS == LINK_BS_BYTES",
+        ),
+        "shared/bench/bus_proto.c": (
+            "FEETECH_SCS == 0 && FEETECH_STS == 1",
+            "(int)BUS_R_COUNT == (int)FEETECH_R_COUNT "
+            "&& (int)BUS_R_SPEED == (int)FEETECH_R_SPEED "
+            "&& (int)BUS_R_GOAL == (int)FEETECH_R_GOAL "
+            "&& (int)BUS_R_ID == (int)FEETECH_R_ID",
         ),
     },
     "kst": {

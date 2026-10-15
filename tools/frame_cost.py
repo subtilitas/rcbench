@@ -76,6 +76,13 @@ SOURCES = [
     "protocols/kst/kst_reg.c",
     "protocols/kst/kst_limits.c",
     "protocols/kst/kst_plan.c",
+    # The BUS page SERVO opens, its link module and the Feetech core its
+    # protocol table reads.
+    "shared/ui/bus_panel.c",
+    "shared/bench/bus_link.c",
+    "shared/bench/bus_proto.c",
+    "protocols/feetech/feetech_wire.c",
+    "protocols/feetech/feetech_reg.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
@@ -136,6 +143,7 @@ INCLUDES = [
     "protocols/sbus/include",
     "protocols/pdmini/include",
     "protocols/kst/include",
+    "protocols/feetech/include",
 ]
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",

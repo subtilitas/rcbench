@@ -76,7 +76,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
 Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.22. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.23. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -131,6 +131,9 @@ UPDATE_DATA ein neues Koprozessor-Image über den Link an; ein älterer
 Koprozessor lehnt beide mit BAD_PAGE ab, und das Panel sagt dann, dass ein
 USB-Laden (Universal Serial Bus) nötig ist
 ([Firmware-Update über den Link](#firmware-update-über-den-link)).
+Ab 4.23 tragen BUS und BUS_IDS ein Protokoll für serielle Busservos auf
+einem Programmierport; einem älteren Koprozessor schickt das Panel dorthin
+nichts ([Die Bus-Page](#die-bus-page)).
 Der Koprozessor liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
@@ -1251,6 +1254,162 @@ Wartezeit und eines, das in der Wartezeit abgebrochen wird,
 verlorene Antworten, eine veraltete `SEQ`, einen Neustart des Koprozessors
 und einen 4.14-, einen 4.13-, einen 4.12- und einen 4.11-Koprozessor.
 
+### Die Bus-Page
+
+BUS (0x34) und BUS_IDS (0x35) sind neu in 4.23. Keine Page und kein
+Register verschiebt sich. BUS fährt ein Protokoll für serielle Busservos
+auf einem Programmierport: Halbduplex auf dem Pin des Ports, ein Master,
+die Servos über ihre ID (Identifier) angesprochen. Die Session läuft im
+Koprozessor; das Panel schickt eine Operation nach der anderen und liest
+Zustand, Ergebnis, die Bytes eines Lesens und den Live-Block eines
+beobachteten Servos zurück. BUS_IDS hält die IDs, die der letzte Scan
+gefunden hat. Protokoll 0 ist Feetech SCS und STS
+([protocols/feetech](../protocols/feetech/README.md)); jede andere
+Protokollnummer wird abgewiesen. Nichts wird gehalten: Nach einem Neustart
+des Koprozessors ist der Bus geschlossen und der Port in PWM.
+`shared/outputs/bus_port.c` hält die Regeln.
+
+Ein Programmierport trägt PWM oder den Bus, nie beides, und der Bus und die
+Servo-Programmier-Page (`KST`, 0x32) halten nie denselben Pin: OPEN wird
+mit NO_PIN abgewiesen, solange die KST-Page den Port aus PWM hat, und die
+KST-Page findet auf einem Port, den der Bus hält, keinen Pin.
+
+| Zustand | Wert | Was der Pin tut |
+| --- | ---: | --- |
+| CLOSED | 0 | er gehört dem PWM-Generator |
+| OPENING | 1 | der Port gibt 50 ms (`BUS_PORT_STOP_MS`) keinen Puls aus, ein laufender Puls endet also; dann nimmt der Leitungstreiber den Pin mit dem Baud-Index des Kommandos |
+| OPEN | 2 | der Bus: getrieben, während ein Frame hinausgeht, zwischen den Frames ein Eingang mit Pull-up |
+| CLOSING | 3 | ein Frame auf der Leitung wird fertig, dann geht Drehmoment aus (Register 40 := 0) an die Broadcast-ID und das Sperrflag 1 an ein Servo, das ein EEPROM-Schreiben (EEPROM: elektrisch löschbarer programmierbarer Festwertspeicher) auf 0 gelassen hat; dann geht der Pin an den Generator zurück |
+
+Busverkehr läuft nur auf einem Prüfstand in SAFE, wie das
+KST-Programmieren. OPEN wird mit ARMED abgewiesen, solange die Bank ARMED
+ist, und das Panel schickt keines, solange der Prüfstand ARMED ist oder
+ARMED angefordert ist. Der Koprozessor hält die Bank in SAFE, solange der
+Bus nicht CLOSED ist, und das Panel weist ARM so lange mit
+`kein ARM: die BUS-Seite hält den PROG-PORT` ab. Ein Stopp -- Heartbeat verloren, Link
+still oder die Bank auf SAFE geschaltet -- schließt den Bus. Solange der
+Heartbeat nicht vertraut ist oder der Link still ist, wird jedes Kommando
+mit UNSAFE abgewiesen; die Frames des Schließens gehen trotzdem hinaus. Die
+Operation STOP, die das Panel für seine STOP-Taste schickt, beendet die
+Operation und die Beobachtung und schickt Drehmoment aus an die
+Broadcast-ID; der Bus bleibt offen. Die Versorgung des Servos wird hier
+nicht geschaltet.
+
+Ein Lesen der Page gibt 29 Register:
+
+| Register | Name | Hält |
+| ---: | --- | --- |
+| 0 | `STATE` | Bits 0-1 der Zustand, Bit 2 eine Operation oder ein Stopp läuft, Bit 3 ein Servo wird beobachtet, Bit 4 das Sperrflag eines Servos ist durch diese Session 0, Bit 5 der Heartbeat ist vertraut und der Link nicht still, Bits 8-11 der Port, Bits 12-15 das Protokoll |
+| 1 | `SEQ` | die `SEQ` des zuletzt angenommenen Kommandos; 0 beim Start |
+| 2 | `OP` | niederwertiges Byte die zuletzt gestartete Operation, höherwertiges Byte der geltende Baud-Index |
+| 3 | `RESULT` | niederwertiges Byte das Ergebnis dieser Operation (0 fertig, 1 solange sie läuft, sonst die Ergebniscodes des Moduls), höherwertiges Byte, warum das zuletzt angenommene Kommando nichts gestartet hat (0: es hat gestartet) |
+| 4 | `REPLY` | niederwertiges Byte das Fehlerbyte der letzten guten Antwort, höherwertiges Byte ihre ID, 0xFF keine |
+| 5 | `SCAN` | niederwertiges Byte die ID, die der Scan als nächste fragt, höherwertiges Byte die gefundenen IDs |
+| 6 | `RANGE` | niederwertiges Byte die erste ID des letzten Scans, höherwertiges Byte die letzte |
+| 7 | `WATCH` | niederwertiges Byte die beobachtete ID, 0xFF keine; höherwertiges Byte das Ergebnis ihres letzten Lesens |
+| 8, 9 | `WATCH_OK`, `WATCH_BAD` | Lesevorgänge des beobachteten Servos, die dekodiert wurden und die nicht, je modulo 65536 |
+| 10 bis 17 | `LIVE` | der Live-Block des beobachteten Servos, wie es ihn geschickt hat, Byte 2 k im niederwertigen Byte von Register 10 + k |
+| 18 | `COUNTS` | niederwertiges Byte die Bytes von `LIVE`, höherwertiges Byte die Bytes von `DATA` |
+| 19 | `AT` | niederwertiges Byte die Adresse des letzten Lesens oder EEPROM-Schreibens, höherwertiges Byte die IDs, deren Scan-Antwort nicht dekodiert wurde |
+| 20 bis 27 | `DATA` | die Bytes des letzten Lesens oder eines zurückgelesenen EEPROM-Schreibens, gepackt wie `LIVE` |
+| 28 | `PIN` | der GPIO (General-Purpose Input/Output) des Koprozessors, den der Bus treibt, 0xFFFF solange er geschlossen ist |
+
+BUS_IDS ist nur lesbar, 16 Register: Bit n von Register k ist gesetzt,
+wenn ID 16 k + n auf den letzten Scan geantwortet hat. Die Bits der IDs 254
+und 255 lesen 0.
+
+Ein Schreiben nimmt 14 Register. Register 0 bis 3 sind das Kommando: ein
+CAN-Frame, ganz oder gar nicht angenommen. Register 4 bis 13 werden in
+beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
+(Cyclic Redundancy Check) angenommen, die das Kommando nennt
+(`link_kst_crc()` über die 10 Register).
+
+| Register | Name | Hält |
+| ---: | --- | --- |
+| 0 | `CMD` | Bits 0-3 die Operation, Bit 4 die Serie (0 SCS, 1 STS), Bits 8-11 der Programmierport, Bits 12-15 das Protokoll |
+| 1 | `SEQ` | die `SEQ` der Page plus 1, modulo 65536 |
+| 2 | `ARG` | OPEN und BAUD: der Baud-Index; SCAN: niederwertiges Byte die erste ID, höherwertiges Byte die letzte; READ, WRITE und EEPROM: niederwertiges Byte die ID, höherwertiges Byte die Adresse; WATCH: die ID, 0xFF keine |
+| 3 | `AUX` | READ: die Bytes, 1 bis 16; WRITE und EEPROM: die CRC der Register 4 bis 13; sonst 0 |
+| 4 | `N` | bereitgestellt: die Bytes eines WRITE oder EEPROM-Schreibens, 1 bis 16 |
+| 5 | `KEY` | bereitgestellt: 0x57A5 (`LINK_BUS_WRITE_KEY`) für ein EEPROM-Schreiben, sonst 0 |
+| 6 bis 13 | `DATA` | bereitgestellt: die Bytes, gepackt wie `LIVE` |
+
+| Operation | Wert | Was sie tut |
+| --- | ---: | --- |
+| OPEN | 1 | nimmt den Pin des Ports mit dem Baud-Index aus PWM |
+| CLOSE | 2 | stoppt, dann gibt sie den Pin zurück |
+| SCAN | 3 | ein PING an jede ID eines Bereichs, 0 bis 253 |
+| READ | 4 | 1 bis 16 Bytes von einem Servo |
+| WRITE | 5 | 1 bis 16 Bytes in den RAM-Bereich (Random-Access Memory) eines Servos; nie das Sperrflag |
+| EEPROM | 6 | entsperren, schreiben, sperren und zurücklesen; braucht den Schlüssel; der EEPROM-Bereich oder das Sperrflag allein |
+| WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen |
+| TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
+| STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt |
+| BAUD | 10 | die Leitung auf einen anderen Baud-Index; die Servos behalten ihren |
+
+`SEQ` ist die der Page plus 1; der eben angenommene Frame, noch einmal
+geschickt, wird bestätigt und tut nichts; jede andere `SEQ` wird mit
+BAD_VALUE abgewiesen. Ein angenommenes Kommando wird bestätigt, und was aus
+ihm wurde, steht in `RESULT`. Sein höherwertiges Byte nennt ein Kommando,
+das nichts gestartet hat:
+
+| Abweisung | Wert | Wann |
+| --- | ---: | --- |
+| BUSY | 1 | eine Operation läuft, oder der Bus öffnet oder schließt |
+| PORT | 2 | kein solcher Programmierport, oder nicht der offene |
+| PROTOCOL | 3 | ein Protokoll, das dieser Build nicht hat |
+| UNSAFE | 4 | der Heartbeat nicht vertraut oder der Link still |
+| ARMED | 5 | ein OPEN, solange die Bank ARMED ist |
+| NOT_OPEN | 6 | der Bus ist geschlossen |
+| NO_PIN | 7 | der Port hat keinen gebundenen Pin, oder die KST-Page hält ihn |
+| NO_KEY | 8 | ein EEPROM-Schreiben ohne den Schlüssel |
+| RANGE | 9 | eine ID, Adresse, Anzahl oder ein Baud-Index, den das Protokoll nicht nimmt |
+| EEPROM | 10 | ein WRITE in den EEPROM-Bereich oder auf das Sperrflag, oder ein EEPROM-Schreiben außerhalb davon |
+| STAGED | 11 | die bereitgestellten Register haben nicht die CRC, die das Kommando nennt |
+
+Der Koprozessor führt die Session in jedem Durchlauf weiter, mindestens
+einmal je Millisekunde. Antwortfenster und Pausen der Session stehen in
+[der Zeitsteuerung des Moduls](../protocols/feetech/README.md#session-timing).
+
+| Panel | Koprozessor | BUS (0x34), BUS_IDS (0x35) |
+| --- | --- | --- |
+| 4.23 | 4.23 | bedient |
+| 4.23 | 4.22 oder älter | der Koprozessor beantwortet eine Anfrage an 0x34 oder 0x35 mit BAD_PAGE; das Panel liest die Minor beim Link-Aufbau und schickt unter 23 nichts dorthin. Die BUS-Seite sagt `Ohne BUS-Seite: beide Platinen aus einem Release flashen.` |
+| 4.22 oder älter | 4.23 | das Panel liest und schreibt 0x34 nie: der Bus bleibt geschlossen und der Port in PWM |
+
+`shared/bench/bus_link.c` ist die Hälfte des Panels. Ein WRITE oder ein
+EEPROM-Schreiben stellt zuerst die Register 4 bis 13 in 3 Frames zu 4, 4
+und 2 Registern bereit. Das Kommando geht mit der nächsten `SEQ`; ohne
+Antwort wird es unverändert noch einmal geschickt, bis zu 3-mal
+(`BUS_LINK_RETRIES`), und die Page nimmt es einmal an. Ein Kommando, das
+mit BAD_VALUE abgewiesen wird, geht nach einem Lesen der Page noch einmal,
+mit der `SEQ` der Page. Die Page wird gleich nach einem Kommando gelesen,
+alle 50 ms (`BUS_LINK_POLL_MS`), solange der Bus nicht geschlossen ist oder
+eine Operation läuft, und sonst alle 500 ms (`BUS_LINK_IDLE_MS`). BUS_IDS
+wird gelesen, wenn ein Lesen der Page einen Scan mit einer anderen Zahl
+gefundener IDs zeigt, oder einen fertigen Scan, dessen IDs nicht gelesen
+sind. Für STOP verwirft das Modul ein Kommando, dessen Frame nicht
+gegangen ist, und schickt die Operation STOP an einen Bus, den die Page
+zuletzt offen oder öffnend gelesen hat. Der Aufrufer ist die BUS-Seite des
+SERVO-Bildschirms ([Servo](Servo-de.md#die-bus-seite)).
+
+`test_bus_port` fährt die Page gegen das Busmodell: die 50 ms ohne Puls
+beim Öffnen, OPEN für jeden Grund abgewiesen, einen Treiber, der nicht
+öffnet, einen Kommando-Frame ganz und einmal angenommen, bereitgestellte
+Register in beliebigen Fenstern und mit beschädigter CRC, einen Scan, der
+die IDs 0 und 253 findet, und einen bis 254, der abgewiesen wird, ein READ,
+ein WRITE, das auf dem Sperrflag und dem EEPROM-Bereich abgewiesen wird,
+ein EEPROM-Schreiben ohne Schlüssel, BAUD, die Beobachtung, ein STOP
+während eines Scans, ein CLOSE während eines EEPROM-Schreibens, einen
+verlorenen Link und ein Schalten auf SAFE bei offenem Bus, einen Stopp
+beim Öffnen, einen Treiber, der hängt, und einen zweiten Port, der
+abgewiesen wird, solange einer offen ist. `test_bus_link` fährt das Modul
+des Panels dagegen: die Leseintervalle, einen Scan von 0 bis 253, ein WRITE
+in seinen drei bereitgestellten Fenstern und ein Ziel von 16 Bytes in der
+Byte-Reihenfolge des Servos, verlorene Antworten, eine veraltete `SEQ`, ein
+STOP mit einem noch nicht geschickten Kommando, einen verlorenen Link und
+einen 4.22-Koprozessor.
+
 ### Identifier
 
 Ein 29-Bit-Extended-Identifier trägt die ganze Adresse; ein Read ist deshalb
@@ -1325,6 +1484,8 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](#der-programmierport-für-servos-von-kst-und-chaservo) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des Koprozessors gehalten |
+| 0x34 | BUS | lesen, schreiben | ein Protokoll für serielle Busservos auf einem Programmierport (seit 4.23): Feetech SCS und STS als Protokoll 0. Ein Lesen gibt 29 Register: Zustand, `SEQ`, Operation und Baud, Ergebnis und Abweisung, die letzte Antwort, den Scan, das beobachtete Servo und seinen Live-Block, die Bytes des letzten Lesens und den Pin. Ein Schreiben nimmt 14: das Kommando in den Registern 0 bis 3, ein Frame, und die bereitgestellten Bytes eines Schreibens in 4 bis 13. [Die Bus-Page](#die-bus-page) nennt die Regeln. Nichts wird gehalten |
+| 0x35 | BUS_IDS | lesen | die IDs, die der letzte Scan von BUS gefunden hat, ein Bit je ID in 16 Registern (seit 4.23). Jedes Schreiben wird mit READ_ONLY abgewiesen. Nichts wird gehalten |
 | 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des Koprozessors selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 

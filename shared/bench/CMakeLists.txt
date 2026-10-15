@@ -17,6 +17,8 @@ set(SRCS
     servo_source.c
     tone_link.c
     kst_link.c
+    bus_link.c
+    bus_proto.c
     kst_prog.c
     prog_link.c
     knob.c
@@ -28,11 +30,11 @@ set(SRCS
 # no card and builds this directory without it.
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} kst_card.c INCLUDE_DIRS include
-                           REQUIRES link kst logfile)
+                           REQUIRES link kst feetech logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
-    target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst m)
+    target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst rcbench_feetech m)
     if(TARGET rcbench_logfile)
         target_sources(rcbench_bench PRIVATE kst_card.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)

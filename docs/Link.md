@@ -68,7 +68,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 Pages of up to 32 sixteen-bit registers, read and written in windows. The
-coprocessor transmits only in answer to a request. Protocol version 4.22. The
+coprocessor transmits only in answer to a request. Protocol version 4.23. The
 major version is register 0 of page 0. The major moves when a register
 changes meaning or a page is renumbered; the minor moves when a page or a
 register is added at the end, which an older panel can ignore.
@@ -119,7 +119,10 @@ them from 4.21 only ([Refused frames](#refused-frames)). From 4.22
 UPDATE_CTL and UPDATE_DATA take a new coprocessor image over the link; an
 older coprocessor refuses both with BAD_PAGE, and the panel then says a USB
 (Universal Serial Bus) load is needed
-([Firmware update over the link](#firmware-update-over-the-link)). The
+([Firmware update over the link](#firmware-update-over-the-link)). From
+4.23 BUS and BUS_IDS carry a serial bus servo protocol on a programming
+port; the panel sends nothing to them on an older coprocessor
+([The bus page](#the-bus-page)). The
 coprocessor never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -1139,6 +1142,147 @@ against the port: whole sessions, a write from PLANNING to its end, results
 one aborted in the wait, lost answers, a stale `SEQ`, a restart of
 the coprocessor and a 4.14, a 4.13, a 4.12 and a 4.11 coprocessor.
 
+### The bus page
+
+BUS (0x34) and BUS_IDS (0x35) are new in 4.23. No page and no register
+moves. BUS runs a serial bus servo protocol on one programming port: half
+duplex on the port's pin, one master, servos addressed by ID (identifier).
+The session runs at the coprocessor; the panel sends one operation at a
+time and reads back the state, the result, the bytes a read gave and the
+live block of one watched servo. BUS_IDS holds the IDs the last scan found.
+Protocol 0 is Feetech SCS and STS ([protocols/feetech](../protocols/feetech/README.md));
+every other protocol number is refused. Nothing is kept: after a restart of
+the coprocessor the bus is closed and the port is in PWM.
+`shared/outputs/bus_port.c` holds the rules.
+
+A programming port carries PWM or the bus, never both, and the bus and the
+servo programming page (`KST`, 0x32) never hold one pin at once: OPEN is
+refused with NO_PIN while the KST page has the port out of PWM, and the KST
+page finds no pin on a port the bus holds.
+
+| State | Value | What the pin does |
+| --- | ---: | --- |
+| CLOSED | 0 | the PWM generator's |
+| OPENING | 1 | the port renders no pulse for 50 ms (`BUS_PORT_STOP_MS`), so a pulse that runs ends; then the line driver takes the pin at the baud index of the command |
+| OPEN | 2 | the bus: driven while a frame goes out, an input with its pull-up between frames |
+| CLOSING | 3 | a frame on the wire is finished, then torque off (register 40 := 0) goes to the broadcast ID and the lock flag 1 to a servo an EEPROM (electrically erasable programmable read-only memory) write left at 0; then the pin goes back to the generator |
+
+Bus traffic runs on a SAFE bench only, as KST programming does. OPEN is
+refused with ARMED while the bank is ARMED, and the panel sends none while
+the bench is ARMED or asked to arm. The coprocessor holds the bank in SAFE
+while the bus is not CLOSED, and the panel refuses ARM for as long with
+`no arm: the BUS page holds the programming port`. A stop -- the heartbeat lost, the link silent or the bank switched
+to SAFE -- closes the bus. While the heartbeat is not trusted or the link is
+silent every command is refused with UNSAFE; the closing frames go out all
+the same. The operation STOP, which the panel sends for its STOP button,
+ends the operation and the watch and sends torque off to the broadcast ID;
+the bus stays open. The servo's supply is not switched here.
+
+A read of the page gives 29 registers:
+
+| Register | Name | Holds |
+| ---: | --- | --- |
+| 0 | `STATE` | bits 0-1 the state, bit 2 an operation or a stop runs, bit 3 a servo is watched, bit 4 a servo's lock flag is 0 by this session, bit 5 the heartbeat is trusted and the link is not silent, bits 8-11 the port, bits 12-15 the protocol |
+| 1 | `SEQ` | the `SEQ` of the last command taken; 0 at start |
+| 2 | `OP` | low byte the last operation started, high byte the baud index in force |
+| 3 | `RESULT` | low byte that operation's result (0 done, 1 while it runs, the module's result codes otherwise), high byte why the last command taken started nothing (0: it started) |
+| 4 | `REPLY` | low byte the error byte of the last good reply, high byte its ID, 0xFF none |
+| 5 | `SCAN` | low byte the ID the scan asks next, high byte the IDs found |
+| 6 | `RANGE` | low byte the first ID of the last scan, high byte the last |
+| 7 | `WATCH` | low byte the watched ID, 0xFF none; high byte the result of its last read |
+| 8, 9 | `WATCH_OK`, `WATCH_BAD` | reads of the watched servo that decoded and that did not, each modulo 65536 |
+| 10 to 17 | `LIVE` | the watched servo's live block as it sent it, byte 2 k in the low byte of register 10 + k |
+| 18 | `COUNTS` | low byte the bytes of `LIVE`, high byte the bytes of `DATA` |
+| 19 | `AT` | low byte the address of the last read or EEPROM write, high byte the IDs whose scan answer did not decode |
+| 20 to 27 | `DATA` | the bytes the last read gave, or an EEPROM write read back, packed as `LIVE` |
+| 28 | `PIN` | the coprocessor GPIO (general-purpose input/output) the bus drives, 0xFFFF while it is closed |
+
+BUS_IDS is read-only, 16 registers: bit n of register k is set when ID
+16 k + n answered the last scan. The bits of IDs 254 and 255 read 0.
+
+A write takes 14 registers. Registers 0 to 3 are the command: one CAN frame,
+taken whole or not at all. Registers 4 to 13 are staged in any windows
+before the command and taken only with the CRC (cyclic redundancy check) the
+command names (`link_kst_crc()` over the 10 registers).
+
+| Register | Name | Holds |
+| ---: | --- | --- |
+| 0 | `CMD` | bits 0-3 the operation, bit 4 the series (0 SCS, 1 STS), bits 8-11 the programming port, bits 12-15 the protocol |
+| 1 | `SEQ` | the page's `SEQ` plus 1, modulo 65536 |
+| 2 | `ARG` | OPEN and BAUD: the baud index; SCAN: low byte the first ID, high byte the last; READ, WRITE and EEPROM: low byte the ID, high byte the address; WATCH: the ID, 0xFF none |
+| 3 | `AUX` | READ: the bytes, 1 to 16; WRITE and EEPROM: the CRC of registers 4 to 13; else 0 |
+| 4 | `N` | staged: the bytes of a WRITE or an EEPROM write, 1 to 16 |
+| 5 | `KEY` | staged: 0x57A5 (`LINK_BUS_WRITE_KEY`) for an EEPROM write, else 0 |
+| 6 to 13 | `DATA` | staged: the bytes, packed as `LIVE` |
+
+| Operation | Value | What it does |
+| --- | ---: | --- |
+| OPEN | 1 | takes the port's pin out of PWM at the baud index |
+| CLOSE | 2 | stops, then gives the pin back |
+| SCAN | 3 | a PING to every ID of a range, 0 to 253 |
+| READ | 4 | 1 to 16 bytes from one servo |
+| WRITE | 5 | 1 to 16 bytes to a servo's RAM (random-access memory) area; never the lock flag |
+| EEPROM | 6 | unlock, write, lock and read back; needs the key; the EEPROM area or the lock flag alone |
+| WATCH | 7 | reads one servo's live block every 50 ms between operations |
+| TORQUE_OFF | 8 | torque off to every servo |
+| STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed |
+| BAUD | 10 | the line to another baud index; the servos keep theirs |
+
+`SEQ` is the page's plus 1; the frame just taken, sent again, is
+acknowledged and does nothing; any other `SEQ` is refused with BAD_VALUE.
+A command that is taken is acknowledged, and what became of it is in
+`RESULT`. Its high byte names a command that started nothing:
+
+| Refusal | Value | When |
+| --- | ---: | --- |
+| BUSY | 1 | an operation runs, or the bus opens or closes |
+| PORT | 2 | no such programming port, or not the port that is open |
+| PROTOCOL | 3 | a protocol this build does not have |
+| UNSAFE | 4 | the heartbeat not trusted or the link silent |
+| ARMED | 5 | an OPEN while the bank is ARMED |
+| NOT_OPEN | 6 | the bus is closed |
+| NO_PIN | 7 | the port has no bound pin, or the KST page holds it |
+| NO_KEY | 8 | an EEPROM write without the key |
+| RANGE | 9 | an ID, address, count or baud index the protocol does not take |
+| EEPROM | 10 | a WRITE to the EEPROM area or the lock flag, or an EEPROM write outside it |
+| STAGED | 11 | the staged registers do not have the CRC the command names |
+
+The coprocessor steps the session every pass, at least once a millisecond.
+The session's reply window and gaps are in
+[the module's timing](../protocols/feetech/README.md#session-timing).
+
+| Panel | Coprocessor | BUS (0x34), BUS_IDS (0x35) |
+| --- | --- | --- |
+| 4.23 | 4.23 | served |
+| 4.23 | 4.22 or older | the coprocessor answers a request to 0x34 or 0x35 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 23. The BUS page says `Coprocessor without BUS page: flash both from one release.` |
+| 4.22 or older | 4.23 | the panel never reads or writes 0x34: the bus stays closed and the port in PWM |
+
+`shared/bench/bus_link.c` is the panel's half. A WRITE or an EEPROM write
+first stages registers 4 to 13 in 3 frames of 4, 4 and 2 registers. The
+command goes with the next `SEQ`; without an answer it is sent again as it
+was, up to 3 times (`BUS_LINK_RETRIES`), and the page takes it once. A
+command refused with BAD_VALUE is sent once more after a read of the page,
+with the page's `SEQ`. The page is read at once after a command, every
+50 ms (`BUS_LINK_POLL_MS`) while the bus is not closed or an operation runs,
+and every 500 ms (`BUS_LINK_IDLE_MS`) otherwise. BUS_IDS is read when a read
+of the page shows a scan with another count found, or a scan done whose IDs
+were not read. For STOP the module drops a command whose frame has not gone
+and sends the operation STOP to a bus the page last read open or opening.
+The SERVO screen's BUS page is the caller ([Servo](Servo.md#the-bus-page)).
+
+`test_bus_port` runs the page against the bus model: the opening's 50 ms
+without a pulse, OPEN refused for each reason, a driver that does not open,
+a command frame taken whole and once, staged registers in any windows and
+with a damaged CRC, a scan that finds IDs 0 and 253 and one to 254 refused,
+a READ, a WRITE refused on the lock flag and the EEPROM area, an EEPROM
+write without the key, BAUD, the watch, a STOP during a scan, a CLOSE
+during an EEPROM write, a lost link and a switch to SAFE with the bus open,
+a stop while opening, a driver that hangs, and a second port refused while
+one is open. `test_bus_link` runs the panel's module against it: the
+polling intervals, a scan of 0 to 253, a WRITE in its three staged windows
+and a 16-byte goal in the servo's byte order, lost answers, a stale `SEQ`,
+a STOP with a command not yet sent, a lost link, and a 4.22 coprocessor.
+
 ### Identifier
 
 A 29-bit extended identifier carries the whole address, so a read is a frame
@@ -1211,6 +1355,8 @@ Clearing a latched failsafe is such a side effect.
 | 0x31 | SERVO_WIN | read | the last 4 complete 50 ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. A write takes 28: the command in registers 0 to 3, one frame, the staged image, unlock set and start check in 4 to 25, and the supply voltage and current of an ENTER in 26 and 27. [The programming port for KST and Chaservo servos](#the-programming-port-for-kst-and-chaservo-servos) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 24 registers. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints. [The programming ports](#the-programming-ports) has the rules. Pin, slew and endpoints are kept in the coprocessor's flash |
+| 0x34 | BUS | read, write | a serial bus servo protocol on a programming port (since 4.23): Feetech SCS and STS as protocol 0. A read gives 29 registers: state, `SEQ`, operation and baud, result and refusal, the last reply, the scan, the watched servo and its live block, the last read's bytes and the pin. A write takes 14: the command in registers 0 to 3, one frame, and the staged bytes of a write in 4 to 13. [The bus page](#the-bus-page) has the rules. Nothing is kept |
+| 0x35 | BUS_IDS | read | the IDs the last scan of BUS found, one bit an ID in 16 registers (since 4.23). Every write is refused with READ_ONLY. Nothing is kept |
 | 0xF0 | UPDATE_CTL | read, write | the coprocessor's own firmware update (since 4.22; frozen across majors): 32 registers. Version, state, error, slot, slot sectors, next block, image size, then the command in register 8 with up to 3 arguments, and a SHA-256 digest in registers 16 to 31. A write that is not a command is refused with READ_ONLY. [Firmware update over the link](#firmware-update-over-the-link) has the rules. Nothing is kept |
 | 0xF1 | UPDATE_DATA | read, write | the 64 bytes of the block in hand, low byte first in each register (since 4.22; frozen across majors): 32 registers. FINISH takes the expected SHA-256 from registers 0 to 15. Nothing is kept |
 

@@ -47,6 +47,10 @@
 #include "supply.h"
 #include "supply_screen.h"
 #include "kst_rig.h"
+#include "bus_link.h"
+#include "bus_panel.h"
+#include "bus_port.h"
+#include "feetech_sim.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -794,6 +798,249 @@ static void kst_view(const char *view)
     ktap(kst_panel_value_rect(0, 2, 0));            /* RESTORE */
     if (strcmp(v, "-restore") == 0) {
         ktap(kst_panel_choice_rect(0));
+    }
+}
+
+/* --------------------------------------------- the BUS page on SERVO */
+
+/*
+ * The SERVO screen's BUS page against two simulated Feetech STS servos,
+ * IDs 1 and 7, on programming port 0 at GP13: the coprocessor's page
+ * (bus_port.c), the panel's link module (bus_link.c) and the page fed as
+ * the firmware feeds it, a pass a millisecond.
+ */
+static ftsim_bus_t  g_bsim;
+static bus_port_t g_bport;
+static bus_link_t g_blink;
+static uint32_t   g_bus_us, g_bus_ms;
+
+static uint8_t bus_hw_pin(void *ctx, uint8_t port)
+{
+    (void)ctx;
+    return port == 0u ? 13u : 0xFFu;
+}
+
+static bool bus_hw_held(void *ctx, uint8_t port)
+{
+    (void)ctx;
+    (void)port;
+    return false;
+}
+
+static bool bus_hw_take(void *ctx, uint8_t port, uint8_t pin, uint32_t baud)
+{
+    (void)ctx;
+    (void)port;
+    (void)pin;
+    g_bsim.baud = baud;
+    return true;
+}
+
+static void bus_hw_give(void *ctx)
+{
+    (void)ctx;
+}
+
+static void bus_pass(void)
+{
+    bus_panel_feed_t f;
+    bus_link_cmd_t c;
+
+    memset(&f, 0, sizeof(f));
+    bus_link_readout(&g_blink, &f.rd);
+    f.now_ms = g_bus_ms;
+    f.port = 0u;
+    f.pin = 13u;
+    bus_panel_feed(&f);
+    if (bus_panel_take(&c)) {
+        (void)bus_link_send(&g_blink, &c);
+    }
+    for (int k = 0; k < 4; ++k) {
+        bus_link_xfer_t x;
+        uint16_t regs[32];
+
+        if (!bus_link_next(&g_blink, g_bus_ms, &x)) {
+            break;
+        }
+        if (x.write) {
+            const uint8_t nack = bus_port_write(&g_bport, x.off, x.n, x.regs);
+
+            bus_link_done(&g_blink, nack == 0u ? BUS_LINK_ACK : (int)nack,
+                          NULL);
+            continue;
+        }
+        if (x.page == LINK_PAGE_BUS_IDS) {
+            bus_port_read_ids(&g_bport, x.off, x.n, regs);
+        } else {
+            bus_port_read(&g_bport, x.off, x.n, regs);
+        }
+        bus_link_done(&g_blink, BUS_LINK_ACK, regs);
+    }
+    for (int k = 0; k < 10; ++k) {
+        bus_port_step(&g_bport, true, false, g_bus_us);
+        g_bus_us += 100u;
+    }
+    g_bus_ms += 1u;
+}
+
+/* @p ms of passes, the screen ticked every 20. */
+static void bus_run(unsigned ms)
+{
+    for (unsigned i = 0; i < ms; ++i) {
+        bus_pass();
+        if (i % 20u == 0u) {
+            ui_router_tick(0.02f);
+        }
+    }
+    ui_router_tick(0.02f);
+}
+
+static void btap(gfx_rect_t r)
+{
+    if (r.w <= 0 || r.h <= 0) {
+        fprintf(stderr, "render_screen: a BUS tap names no control\n");
+        exit(1);
+    }
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+    ui_router_tick(0.02f);
+}
+
+static void bkey(ui_key_t key)
+{
+    btap(ui_keypad_key_rect(bus_panel_keypad(), key));
+}
+
+/* The entry of the open list that reads @p label. */
+static void bchoose(const char *label)
+{
+    for (int i = 0; bus_panel_choice_label(i) != NULL; ++i) {
+        if (strcmp(bus_panel_choice_label(i), label) == 0) {
+            btap(bus_panel_choice_rect(i));
+            return;
+        }
+    }
+    fprintf(stderr, "render_screen: no BUS entry %s\n", label);
+    exit(1);
+}
+
+/* @p v into the keypad: CLR, its digits, OK. */
+static void bnumber(unsigned v)
+{
+    static const ui_key_t digit[10] = {
+        UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3, UI_KEY_4,
+        UI_KEY_5, UI_KEY_6, UI_KEY_7, UI_KEY_8, UI_KEY_9,
+    };
+    char d[8];
+
+    snprintf(d, sizeof(d), "%u", v);
+    bkey(UI_KEY_CLR);
+    for (const char *p = d; *p != '\0'; ++p) {
+        bkey(digit[*p - '0']);
+    }
+    bkey(UI_KEY_OK);
+}
+
+/* The warning's button held past UI_HOLD_S, the passes running. */
+static void bhold(void)
+{
+    const gfx_rect_t r = bus_panel_apply_rect();
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < 10; ++i) {
+        ui_router_tick(0.25f);
+        bus_run(5);
+    }
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    bus_run(300);
+}
+
+static void bus_view(const char *view)
+{
+    const char *v = view + strlen("servo-bus");
+    bus_port_hw_t hw;
+    ftsim_servo_t *s1;
+
+    ftsim_init(&g_bsim, 1000000u);
+    s1 = ftsim_add(&g_bsim, 1u, FEETECH_STS);
+    (void)ftsim_add(&g_bsim, 7u, FEETECH_STS);
+    /* Servo 1 at 2048, 12.5 % load, 20 counts of current (130 mA), its
+     * voltage and overload bits set. */
+    feetech_put16(FEETECH_STS, &s1->regs[56], 2048u);
+    feetech_put16(FEETECH_STS, &s1->regs[60], 125u);
+    s1->regs[65] = 0x21u;
+    feetech_put16(FEETECH_STS, &s1->regs[69], 20u);
+    memset(&hw, 0, sizeof(hw));
+    hw.ports = 1;
+    hw.pin = bus_hw_pin;
+    hw.held = bus_hw_held;
+    hw.take = bus_hw_take;
+    hw.give = bus_hw_give;
+    hw.driver = ftsim_driver(&g_bsim);
+    g_bus_us = 0u;
+    g_bus_ms = 1000u;
+    (void)bus_port_init(&g_bport, &hw);
+    bus_link_init(&g_blink);
+    bus_link_came_up(&g_blink, LINK_PROTOCOL_MINOR);
+
+    ui_router_goto(SCREEN_SERVO);
+    tap(734, UI_BAND_H + 24);                       /* SETTINGS */
+    tap(347, UI_BAND_H + 27);                       /* BUS */
+    bus_run(20);
+    if (v[0] == '\0') {
+        return;                                     /* closed */
+    }
+    if (strcmp(v, "-series") == 0) {
+        btap(bus_panel_value_rect(1, 0));
+        return;
+    }
+    btap(bus_panel_value_rect(1, 1));               /* OPEN */
+    bus_run(300);
+    btap(bus_panel_value_rect(3, 0));               /* SCAN */
+    bus_run(2000);
+    if (strcmp(v, "-scan") == 0) {
+        return;
+    }
+    btap(bus_panel_value_rect(3, 1));               /* ID */
+    bchoose("1");
+    bus_run(300);
+    btap(bus_panel_value_rect(4, 0));               /* TORQUE */
+    bus_run(300);
+    if (strcmp(v, "-live") == 0) {
+        return;
+    }
+    btap(bus_panel_value_rect(5, 1));               /* EEPROM */
+    if (strcmp(v, "-eeprom") == 0) {
+        return;
+    }
+    if (strcmp(v, "-warning") == 0) {
+        bchoose(TR(BS_ID));
+        bus_run(300);
+        bnumber(7);                                 /* 7 answered too */
+        return;
+    }
+    bchoose(TR(BS_E_MIN));
+    bus_run(300);
+    bnumber(100);
+    bhold();
+    if (strcmp(v, "-written") == 0) {
+        return;
+    }
+    btap(bus_panel_value_rect(5, 1));
+    bchoose(TR(BS_E_MAX));
+    bus_run(300);
+    bnumber(4000);
+    bhold();
+    btap(bus_panel_value_rect(5, 1));
+    {
+        char l[32];
+
+        snprintf(l, sizeof(l), TR(BS_E_RESTORE), 2u);
+        bchoose(l);
     }
 }
 
@@ -2345,6 +2592,8 @@ int main(int argc, char **argv)
         }
         if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
+        } else if (strncmp(view, "servo-bus", 9) == 0) {
+            bus_view(view);
         } else if (strcmp(view, "servo-hv") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
              * warning.  The keypad's keys from a probe opened where the
