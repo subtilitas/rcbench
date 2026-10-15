@@ -15,12 +15,15 @@ from fontTools import subset
 
 src, out = sys.argv[1], sys.argv[2]
 UNICODES = (
-    list(range(0x20, 0x7F)) + list(range(0xA0, 0x100)) + list(range(0x2000, 0x2070))
-    + [0x394, 0x3A9, 0x3BC, 0x3C0, 0x20AC, 0x2190, 0x2191, 0x2192, 0x2193, 0x2194, 0x2212, 0x2248, 0x2260, 0x2264, 0x2265]
+    list(range(0x20, 0x7F)) + list(range(0xA0, 0x100))
+    + list(range(0x2000, 0x2070))
+    + [0x394, 0x3A9, 0x3BC, 0x3C0, 0x20AC, 0x2190, 0x2191, 0x2192, 0x2193,
+       0x2194, 0x2212, 0x2248, 0x2260, 0x2264, 0x2265]
 )
 for name, wght in (('Regular', 400), ('Bold', 700)):
     font = TTFont(src)
-    static = instancer.instantiateVariableFont(font, {'wght': wght, 'opsz': 14}, updateFontNames=True)
+    static = instancer.instantiateVariableFont(
+        font, {'wght': wght, 'opsz': 14}, updateFontNames=True)
     options = subset.Options()
     options.layout_features = []
     options.hinting = False
@@ -35,5 +38,7 @@ for name, wght in (('Regular', 400), ('Bold', 700)):
     path = f'{out}/Inter-{name}-subset.ttf'
     static.save(path)
     check = TTFont(path)
-    print(path, len(check.getBestCmap()), 'characters', sorted(check.keys()))
-    print([(n.nameID, str(n)) for n in check['name'].names if n.nameID in (1, 2, 4, 6)])
+    print(path, len(check.getBestCmap()), 'characters',
+          sorted(check.keys()))
+    print([(n.nameID, str(n)) for n in check['name'].names
+           if n.nameID in (1, 2, 4, 6)])
