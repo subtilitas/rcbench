@@ -731,9 +731,17 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
     }
 }
 
-void servo_limrun_supply_refused(servo_limrun_t *r, uint32_t now_ms)
+void servo_limrun_supply_refused(servo_limrun_t *r, bool output_on,
+                                 uint32_t now_ms)
 {
-    if (servo_limrun_running(r)) {
+    if (!servo_limrun_running(r)) {
+        return;
+    }
+    if (r->sup_online && !output_on) {
+        /* The supply the run started with, its output gone off: as a
+         * reading outside a session reports it. */
+        servo_limrun_abort(r, SERVO_TEST_AB_SUPPLY_OFF, now_ms);
+    } else {
         abort_why(r, SERVO_LIMRUN_WHY_SUPPLY_CHANGED, now_ms);
     }
 }

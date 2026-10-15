@@ -2030,6 +2030,9 @@ TEST_CASE(a_rail_under_3_v_in_any_search_window_ends_the_run)
         if (k < 2) {
             CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
             CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+            /* At the first window: within one window of the search. */
+            CHECK((uint32_t)(g.run.end_ms - g.run.search_ms)
+                  <= SERVO_TEST_WIN_MS);
             CHECK(!g.driven);                   /* no step taken */
             CHECK_EQ(g.offs, 1u);
         } else {

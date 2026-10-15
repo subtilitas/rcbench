@@ -5689,46 +5689,69 @@ TEST_CASE(a_run_on_the_programming_port_needs_the_pd_mini_on)
     }
 }
 
-/* A run that started with no PD mini answering, the rail fed from
- * elsewhere: a PD mini heard first inside the read session, its output
- * off, is not handed the next CONNECT, which would switch it on beside
- * that feed.  The run ends as a changed supply before that session and
- * no supply is asked on. */
+/* One reading of a PD mini that answers, its output on or off. */
+static void lr_pd_reading(bool on)
+{
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+    st.output = on;
+    st.set_v = supply_screen_set_v();
+    st.set_i = supply_screen_set_i();
+    st.v = on ? st.set_v : 0.0f;
+    st.samples = 1u;
+    st.taken_ms = g_rig.ms;
+    st.stamped = true;
+    servo_screen_supply(&st);
+}
+
+/* A PD mini that is not the supply the run started with, or whose output
+ * went off, heard inside the read session with no reading after it: the
+ * next CONNECT is not sent, as it would switch that PD mini on or set it
+ * beside the rail's feed.  No supply is asked after the read session, and
+ * the run ends as a reading outside a session ends it: a PD mini heard
+ * first after the start, its output on or off, as a changed supply; the
+ * run's own PD mini, its output gone off, as `supply output went off`. */
 TEST_CASE(a_pd_mini_heard_first_in_a_session_gets_no_connect)
 {
-    lr_fresh(false);
-    lr_start();
-    CHECK(servo_screen_limit_running());
-    for (int i = 0; i < 200000 && servo_screen_limit_running()
-                    && kst_prog_state(M) != KST_PROG_PROGRAMMING; ++i) {
-        lr_ms(1u);
+    for (int k = 0; k < 3; ++k) {
+        const bool started_with_pd = k == 2;
+        const bool on_in_session   = k == 1;
+
+        lr_fresh(false);
+        if (started_with_pd) {
+            g_rig.rail = true;
+            lr_pd_reading(true);
+            lr_ms(200u);
+        }
+        lr_start();
+        CHECK(servo_screen_limit_running());
+        for (int i = 0; i < 200000 && servo_screen_limit_running()
+                        && kst_prog_state(M) != KST_PROG_PROGRAMMING; ++i) {
+            lr_ms(1u);
+        }
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        lr_pd_reading(on_in_session);
+        for (int i = 0; i < 200000 && servo_screen_limit_running()
+                        && kst_prog_state(M) != KST_PROG_PWM; ++i) {
+            lr_ms(1u);
+        }
+        const unsigned sets = g_rig.sup_sets;
+        CHECK(servo_screen_limit_running());
+        lr_run_out();
+        CHECK(!servo_screen_limit_running());
+        CHECK_EQ(g_rig.sup_sets, sets);
+        if (started_with_pd) {
+            CHECK(strstr(lr.report, "Result:         ABORTED - supply "
+                                    "output went off\n") != NULL);
+        } else {
+            CHECK(!g_rig.sup_on);
+            CHECK(strstr(lr.report, "Result:         ABORTED - supply or "
+                                    "rail voltage changed\n") != NULL);
+        }
+        g_rig.rail = false;
     }
-    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-    {
-        supply_state_t st;
-        memset(&st, 0, sizeof(st));
-        st.online = true;
-        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        st.output = false;
-        st.set_v = supply_screen_set_v();
-        st.set_i = supply_screen_set_i();
-        st.samples = 1u;
-        st.taken_ms = g_rig.ms;
-        st.stamped = true;
-        servo_screen_supply(&st);
-    }
-    for (int i = 0; i < 200000 && servo_screen_limit_running()
-                    && kst_prog_state(M) != KST_PROG_PWM; ++i) {
-        lr_ms(1u);
-    }
-    const unsigned sets = g_rig.sup_sets;
-    CHECK(servo_screen_limit_running());
-    lr_run_out();
-    CHECK(!servo_screen_limit_running());
-    CHECK_EQ(g_rig.sup_sets, sets);
-    CHECK(!g_rig.sup_on);
-    CHECK(strstr(lr.report, "Result:         ABORTED - supply or rail "
-                            "voltage changed\n") != NULL);
 }
 
 /* The bench's own PWM output as the target: SERVO PULSES is not on the

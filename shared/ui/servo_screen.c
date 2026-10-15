@@ -3338,9 +3338,10 @@ static bool lim_apply(const servo_limrun_do_t *d)
     kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
     if (d->connect && lim_pd_answers()
         && (!s.sup.output || !s.lim.sup_online)) {
-        /* A PD mini the run did not start with, or one with its output
-         * off: the session would switch it on beside the rail's feed. */
-        servo_limrun_supply_refused(&s.lim, test_now());
+        /* A PD mini the run did not start with, or one whose output is
+         * off: the session would switch it on beside the rail's feed.
+         * The run ends as a reading outside a session ends it. */
+        servo_limrun_supply_refused(&s.lim, s.sup.output, test_now());
         again = true;
     } else if (d->connect) {
         const bool pd = lim_pd_answers();

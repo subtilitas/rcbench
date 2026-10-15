@@ -461,10 +461,14 @@ void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
                          const uint16_t *pulse_dus, uint32_t now_ms);
 void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms);
 
-/** The caller will not hand the programmer's CONNECT a supply the run did
- *  not start with: the run ends as a changed supply
+/** The caller will not hand the programmer's CONNECT a PD mini that the
+ *  run did not start with, or one whose output is off (@p output_on
+ *  false).  A supply the run started with, its output off, ends the run as
+ *  a reading outside a session does (SERVO_TEST_AB_SUPPLY_OFF); one the run
+ *  did not start with ends it as a changed supply
  *  (SERVO_LIMRUN_WHY_SUPPLY_CHANGED). */
-void servo_limrun_supply_refused(servo_limrun_t *r, uint32_t now_ms);
+void servo_limrun_supply_refused(servo_limrun_t *r, bool output_on,
+                                 uint32_t now_ms);
 
 /** The file the servo's values before the run were saved in, once the
  *  programmer names it: its first write saves it. */
