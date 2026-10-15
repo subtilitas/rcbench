@@ -95,8 +95,9 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 Random-Access Memory) mit 80 MHz, den 64-KB-Datencache mit 64-Byte-Lines, Code
 und Konstanten im Flash statt im PSRAM, die nullinitialisierten Daten, die
 `main/psram_bss.lf` nennt, im PSRAM ([Interner RAM](Performance-de.md#interner-ram)),
-den IRAM-sicheren RGB-LCD-Interrupt
-(IRAM: Instruction Random-Access Memory; LCD: Liquid-Crystal Display), `-O2`
+den RGB-LCD-Interrupt ohne IRAM-Sicherheit
+(IRAM: Instruction Random-Access Memory; LCD: Liquid-Crystal Display), sodass
+ESP-IDF ihn während einer Flash-Operation maskiert, `-O2`
 und die Konsole auf UART0 (UART: Universal Asynchronous Receiver-Transmitter)
 mit USB-Serial-JTAG (die eingebaute serielle und Debug-Bridge des ESP32-S3
 über USB, Universal Serial Bus) als Zweitkonsole. Von dieser Datei ausgehen,
@@ -211,6 +212,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
+| `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
 

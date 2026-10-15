@@ -1910,7 +1910,8 @@ seine Ausgänge im Failsafe hält, wie bei jedem Neustart des Panels.
 PANEL UPDATE nimmt den ganzen Bildschirm, ohne Band und ohne STOP: Nichts
 kann dahinter auf ARMED geschaltet werden. Es schreibt den Slot, der nicht
 läuft, in Stücken von 64 KiB und zeigt die Bytes und den Prozentwert. Das
-Bild kann gestört sein, während der Flash gelöscht wird. Dann wird der Slot
+Bild kann gestört sein, während der Flash gelöscht wird, und sitzt ab dem
+Bild nach jedem Löschen wieder an seinem Platz. Dann wird der Slot
 zurückgelesen und geprüft, er wird der Slot, der startet, und das Panel
 startet neu.
 

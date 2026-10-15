@@ -1740,8 +1740,9 @@ in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
 behind it. It writes the slot that is not running in pieces of 64 KiB and
 shows the bytes and the percentage. The picture can be disturbed while the
-flash is erased. Then the slot is read back and checked, it becomes the one
-that starts, and the panel restarts.
+flash is erased, and is in place again from the frame after each erase.
+Then the slot is read back and checked, it becomes the one that starts, and
+the panel restarts.
 
 ![Written and checked](img/panel-update-done.png)
 
