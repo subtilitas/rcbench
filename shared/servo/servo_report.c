@@ -294,14 +294,23 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_L_WHY_OTHER]      = "servo holds other values",
     [SERVO_STR_L_WHY_MAPPING]    = "LEFT/RIGHT ANGLE side not found",
     [SERVO_STR_L_WHY_SMALLEST]   = "binds at the smallest angle",
-    [SERVO_STR_L_WHY_CAP]        = "write cap of 24 values reached",
+    [SERVO_STR_L_WHY_CAP]        = "write cap of 8 values reached",
     [SERVO_STR_L_WHY_STILL]      = "an end binds after programming",
     [SERVO_STR_L_WHY_NO_VOLTAGE] = "no rail voltage in a window",
+    [SERVO_STR_L_WHY_NO_STOP]    = "no stop after the overset write",
+    [SERVO_STR_L_WHY_BEFORE_NEUTRAL] = "free end not past NEUTRAL",
+    [SERVO_STR_L_WHY_NEUTRAL]    = "NEUTRAL outside LOWER/UPPER",
+    [SERVO_STR_L_WHY_RANGE]      = "servo pulses outside MIN/MAX",
     [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO LIMIT REPORT",
     [SERVO_STR_L_R_MODE_SEARCH]  = "Mode:           search only, nothing "
                                    "written to the servo",
     [SERVO_STR_L_R_MODE_PROGRAM] = "Mode:           search, then LEFT ANGLE "
                                    "and RIGHT ANGLE programmed",
+    [SERVO_STR_L_R_MODE_PULSES]  = "Mode:           search only; PULSE LOWER "
+                                   "and PULSE UPPER set to 1000 and 2000 us "
+                                   "first",
+    [SERVO_STR_L_R_SEARCH]       = "Searched:       from %u us out to %u us "
+                                   "and %u us",
     [SERVO_STR_L_R_OUTPUT]       = "Output:         %s, %u Hz",
     [SERVO_STR_L_R_PULSE]        = "Pulse range:    centre %u us, %u-%u us",
     [SERVO_STR_L_R_METER]        = "Current:        INA3221 CH1, 50 ms "
@@ -332,15 +341,24 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_PROG_FREE]    = "Not run: neither end binds.",
     [SERVO_STR_L_R_PROG_NO_SERVO] = "No servo read: nothing written.",
     [SERVO_STR_L_R_SERVO]        = "Servo:          type %u, REVERSION %s",
+    [SERVO_STR_L_R_PULSES]       = "Servo pulses:   NEUTRAL %.1f us, PULSE "
+                                   "LOWER %.1f us, PULSE UPPER %.1f us",
+    [SERVO_STR_L_R_PULSE_SET]    = "Pulse write:    PULSE LOWER %.1f -> %.1f "
+                                   "us, PULSE UPPER %.1f -> %.1f us",
+    [SERVO_STR_L_R_RANGE]        = "Range:          servo pulses %.1f-%.1f us "
+                                   "outside PULSE MIN/MAX %u-%u us",
     [SERVO_STR_L_R_LEFT]         = "LEFT ANGLE:     ",
     [SERVO_STR_L_R_RIGHT]        = "RIGHT ANGLE:    ",
     [SERVO_STR_L_R_REG]          = "%s%u before, %u after; %s",
-    [SERVO_STR_L_R_REG_BIS]      = "                free at %u, bound at %u",
+    [SERVO_STR_L_R_REG_LIN]      = "                share free %s, bound %s; "
+                                   "overset %s, share %s; final %s",
     [SERVO_STR_L_R_SIDE_LO]      = "limits the low end",
     [SERVO_STR_L_R_SIDE_HI]      = "limits the high end",
     [SERVO_STR_L_R_SIDE_UNKNOWN] = "end it limits not found",
-    [SERVO_STR_L_R_MARGIN]       = "Margin:         %u %% of the free value, "
-                                   "at least %u, below it",
+    [SERVO_STR_L_R_METHOD]       = "Method:         linear in the pulse; "
+                                   "overset +%u %% on the share at the first "
+                                   "bound pulse, then the share its search "
+                                   "found free",
     [SERVO_STR_L_R_WRITES]       = "Writes:         values written %u, writes "
                                    "sent %u, cap %u values; sessions %u",
     [SERVO_STR_L_R_BACKUP]       = "Backup:         %s, the values before "
@@ -350,7 +368,10 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_RESTORE]      = "Restore:        RESTORE on the programming "
                                    "page, from the values before the limit run",
     [SERVO_STR_L_R_UNIT]         = "Unit: the unit of LEFT ANGLE and RIGHT "
-                                   "ANGLE is not known.",
+                                   "ANGLE is not known; the travel is taken "
+                                   "as linear in the pulse from NEUTRAL to "
+                                   "PULSE LOWER and PULSE UPPER, which is "
+                                   "not measured.",
     [SERVO_STR_L_R_BENCH]        = "Bench: the ends found are not applied to "
                                    "PULSE MIN and PULSE MAX.",
 };

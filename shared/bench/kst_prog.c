@@ -1480,9 +1480,12 @@ static const kst_image_t *file_image(const kst_prog_t *p)
          ? &p->f.backup : &p->servo;
 }
 
-/* The fields a limit run writes. */
+/* The fields a limit run writes: the two angles, and PULSE LOWER and
+ * PULSE UPPER where SERVO PULSES sets them. */
 #define RUN_FIELDS (KST_FIELD_BIT(KST_F_LEFT_ANGLE) \
-                    | KST_FIELD_BIT(KST_F_RIGHT_ANGLE))
+                    | KST_FIELD_BIT(KST_F_RIGHT_ANGLE) \
+                    | KST_FIELD_BIT(KST_F_PULSE_LOWER) \
+                    | KST_FIELD_BIT(KST_F_PULSE_UPPER))
 
 bool kst_prog_run_matches(const kst_prog_t *p)
 {

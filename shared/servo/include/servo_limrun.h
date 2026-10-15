@@ -4,51 +4,106 @@
  * programming port, the servo's own travel limits lowered until neither end
  * binds.
  *
- * The search.  From PULSE CENTRE the low side and then the high side, each
- * a servo_limit search out to PULSE MIN or PULSE MAX in force: steps of
- * 10 us, the position bound once its current is above 1.8 times the free
- * current and 0.15 A above it.  A side whose end is measured free is free.
- * The endpoints are reported; the bench's own pulse range is not changed.
+ * The search.  A side is searched from its centre outward, a servo_limit
+ * search in steps of 10 us, the position bound once its current is above
+ * 1.8 times the free current and 0.15 A above it.  A side whose end is
+ * measured free is free.  The endpoints are reported; the bench's own pulse
+ * range is not changed.  Where the search runs depends on the target:
+ *
+ *   - The bench's own PWM output (cfg.read off): from PULSE CENTRE out to
+ *     PULSE MIN and PULSE MAX in force.  Nothing is read or written.
+ *   - A KST or Chaservo servo on the programming port (cfg.read on): a
+ *     read session comes first -- the servo held at PULSE CENTRE, the
+ *     bench switched to SAFE, CONNECT with its read, LEAVE, the bench
+ *     switched to ARMED again -- and the search runs from the servo's
+ *     NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them.
+ *     A read that fails ends the run before any search.  NEUTRAL not
+ *     between PULSE LOWER and PULSE UPPER ends it as FAIL
+ *     (SERVO_LIMRUN_WHY_NEUTRAL); PULSE LOWER to PULSE UPPER not inside the
+ *     bench's PULSE MIN to PULSE MAX ends it as FAIL
+ *     (SERVO_LIMRUN_WHY_RANGE), the bench left SAFE and nothing driven.
+ *
+ * SERVO PULSES (cfg.set_pulses, programming port only).  At 1000-2000 the
+ * read session writes PULSE LOWER 1000.0 us and PULSE UPPER 2000.0 us
+ * before anything is driven, and reads them back; NEUTRAL is not written.
+ * A servo at those values already gets no write.  The search then runs
+ * out to 1000 us and 2000 us.  The pulse write counts toward
+ * SERVO_LIMRUN_WRITES_MAX and RESTORE takes it back with the rest.
  *
  * The programming (cfg.program).  LEFT ANGLE and RIGHT ANGLE are the
  * servo's own travel limits, one register each, in a unit that is not known.
- * Which pulse side each one limits is not stated by the protocol notes, so
- * the run finds it: its first write sets LEFT ANGLE alone to the smallest
- * value the hard rules take (RIGHT ANGLE where LEFT ANGLE holds it
- * already), and the next search of the first bound side says whether that
- * end moved.  It moved when it is free now or its endpoint lies
- * SERVO_LIMRUN_MOVED_US further out; it stayed when its endpoint lies
- * within that of where it was.  An end that stayed is searched once more
- * with the other register at its smallest value too: moved now, that
- * register limits the side; still bound, the servo binds at the smallest
- * values and the run ends as FAIL.  An end that moved inward ends it as
- * FAIL too: nothing about the servo is guessed.  The register found limits
- * that side, the other one the other side.
+ * The run takes the servo as linear: PULSE LOWER and PULSE UPPER are the
+ * input pulses at which it reaches the full travel LEFT ANGLE and RIGHT
+ * ANGLE set, between NEUTRAL and such a pulse its travel is linear in the
+ * pulse, and past it the servo holds that travel.  That is an assumption,
+ * not a measurement.  The share of a side at pulse p is
  *
- * Each bound side is then bisected on its register: between the smallest
- * value the protocol's hard rules take and the value the servo held, a
- * value is written and the side searched again.  The bisection stops when
- * the bound value and the free value are SERVO_LIMRUN_RES_RAW apart or
- * less.  The value programmed is the free value less the margin,
- * SERVO_LIMRUN_MARGIN_PCT of it and at least SERVO_LIMRUN_MARGIN_MIN, never
- * below the smallest value.  A side bound at the smallest value ends the
- * run as FAIL.  A register that limits a side that never bound goes back to
- * the value the servo held.  Last, both ends are searched again: PASS when
- * both are free, FAIL when either binds.
+ *     f = (p - NEUTRAL) / (P_lim - NEUTRAL)
+ *
+ * with P_lim PULSE LOWER on the short-pulse side and PULSE UPPER on the
+ * long one, both as the servo holds them when the search runs.  f is formed
+ * from input pulses only, so REVERSION does not enter it: REVERSION decides
+ * which register limits that side, and the run finds that (below).  A bound
+ * side whose last free pulse is not past NEUTRAL ends the run as FAIL
+ * (SERVO_LIMRUN_WHY_BEFORE_NEUTRAL) before any write.
+ *
+ * Two writes a bound side, v0 the value its register holds at the read:
+ *
+ *   1. The overset: v1 = ceil(v0 x fb x (100 + SERVO_LIMRUN_OVERSET_PCT) /
+ *      100), fb the share at the first search's first bound pulse, at most
+ *      v0 and at least the smallest value the hard rules take.  The first
+ *      bound pulse lies at or past the stop, so the stop stays reachable,
+ *      now close to the pulse limit, and the side is searched again.  Free
+ *      there, the run ends as FAIL (SERVO_LIMRUN_WHY_NO_STOP) with no
+ *      second write: the stop the overset was to keep in reach is not
+ *      found.  An overset search that binds far inside the pulse limit
+ *      still gives the final value below; no further overset follows.
+ *   2. The final value: v2 = floor(v1 x f1), f1 the share at the overset
+ *      search's last free pulse, at least the smallest value.  No margin is
+ *      added: the last free pulse lies a 10 us step short of the bound one.
+ *
+ * Worked: NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, v0 150, the stop at
+ * 1000 us.  The first search is free at 1000 us and bound at 990 us:
+ * fb = 510.2 / 600.2 = 0.850, v1 = ceil(150 x 0.850 x 1.03) = 132.  A
+ * linear servo at 132 is free out to 930 us: f1 = 570.2 / 600.2 = 0.950,
+ * v2 = floor(132 x 0.950) = 125.  At 125 the full travel ends at 1000.2 us.
+ *
+ * The overset is left out, and the first search counts as its search,
+ * where v1 would not lie below v0 (fb above about 0.97) or where the model
+ * moves the stop, estimated at the first search's last free pulse, less
+ * than SERVO_LIMRUN_MOVED_US further out: d0 x (v0 - v1) / v1 under 20 us,
+ * d0 that pulse's distance from NEUTRAL.  A search could not tell that move
+ * from no move.  The final value is then v2 = floor(v0 x f0), f0 the share
+ * at the first search's last free pulse.
+ *
+ * Which pulse side each register limits is not stated by the protocol
+ * notes, so the run finds it on the first bound side's first write: that
+ * value goes to LEFT ANGLE (RIGHT ANGLE where LEFT ANGLE holds the smallest
+ * value already) and the side is searched.  The end moved when it is free
+ * now or its endpoint lies SERVO_LIMRUN_MOVED_US further out; it stayed
+ * when its endpoint lies within that of where it was.  An end that stayed
+ * sends LEFT ANGLE back to its value and the value, worked out again from
+ * RIGHT ANGLE's v0, to RIGHT ANGLE; stayed again, the run ends as FAIL.  An
+ * end that moved inward ends it as FAIL too: nothing about the servo is
+ * guessed.  The register found limits that side, the other one the other
+ * side; a register whose side never bound keeps its value.
+ *
+ * Last, both ends are searched again: PASS when both are free, FAIL when
+ * either binds.  No further write follows a FAIL; RESTORE gives the values
+ * before the run back.
  *
  * Writes.  A value is written in a session of the programmer: the servo
- * held at PULSE CENTRE for SERVO_LIMRUN_RETURN_MS after the search, so a
+ * held at the centre for SERVO_LIMRUN_RETURN_MS after the search, so a
  * session never starts with the servo against an end, the bench switched to
- * SAFE, the port taken (CONNECT reads all registers), the
- * write, the port given back (LEAVE), the bench switched to ARMED again.
- * The run's first session writes nothing: CONNECT, the read, LEAVE, and
- * the first writing session right after it.  A LEAVE this link or supply
- * does not complete ends the run before any value changes.
- * No step of the protocol is known to make a value permanent, and no
- * RAM-only write exists: every write is the register write the programmer
- * reads back.  The run counts register values written and stops at
- * SERVO_LIMRUN_WRITES_MAX: a bisection write that would leave no room for
- * the final values is not sent.
+ * SAFE, the port taken (CONNECT reads all registers), the write, the port
+ * given back (LEAVE), the bench switched to ARMED again.  The read session
+ * writes nothing but the pulses of SERVO PULSES; each angle write has a
+ * session of its own.  A LEAVE this link or supply does not complete ends
+ * the run before any value changes.  No step of the protocol is known to
+ * make a value permanent, and no RAM-only write exists: every write is the
+ * register write the programmer reads back.  The run counts register values
+ * written and stops at SERVO_LIMRUN_WRITES_MAX, the most this flow can
+ * need.
  *
  * Protections, for the whole run, whatever phase it is in:
  *
@@ -100,16 +155,17 @@ extern "C" {
 
 /* ---------------------------------------------------------- the method */
 
-/** Register values a run writes at most, the final values included. */
-#define SERVO_LIMRUN_WRITES_MAX   24u
-/** The final values a bisection write keeps room for: one a register. */
-#define SERVO_LIMRUN_WRITES_KEEP  2u
-/** The bisection ends with the bound and the free value this far apart. */
-#define SERVO_LIMRUN_RES_RAW      2u
-/** The margin below the free value: a share of it, and at least this many
- *  counts. */
-#define SERVO_LIMRUN_MARGIN_PCT   5u
-#define SERVO_LIMRUN_MARGIN_MIN   2u
+/** Register values a run writes at most: PULSE LOWER and PULSE UPPER for
+ *  SERVO PULSES at 1000-2000, two a side, the overset and the final value,
+ *  and two for a first write that went to the register of the other side,
+ *  that value and LEFT ANGLE's own value back. */
+#define SERVO_LIMRUN_WRITES_MAX   8u
+/** The overset write lies this far above the share at the first search's
+ *  first bound pulse: the stop stays in reach, close to the pulse limit. */
+#define SERVO_LIMRUN_OVERSET_PCT  3u
+/** The pulses SERVO PULSES at 1000-2000 writes, 0.1 us. */
+#define SERVO_LIMRUN_STD_LOWER_DUS 10000u
+#define SERVO_LIMRUN_STD_UPPER_DUS 20000u
 /** An endpoint that moves this far out moved; one within it stayed. */
 #define SERVO_LIMRUN_MOVED_US     20u
 /** One search of one side at most: 1000 us of travel, PULSE MIN 500 us to
@@ -150,10 +206,22 @@ extern "C" {
 enum { SERVO_LIMRUN_LO = 0, SERVO_LIMRUN_HI = 1 };
 /** The two registers. */
 enum { SERVO_LIMRUN_LEFT = 0, SERVO_LIMRUN_RIGHT = 1 };
+/** The servo's pulses, in pulse_dus. */
+enum {
+    SERVO_LIMRUN_P_NEUTRAL = 0,
+    SERVO_LIMRUN_P_LOWER = 1,
+    SERVO_LIMRUN_P_UPPER = 2,
+};
 
 typedef struct {
     uint16_t centre_us, min_us, max_us;   /**< PULSE CENTRE, MIN, MAX   */
-    bool     program;     /**< lower LEFT and RIGHT ANGLE after the search */
+    /** A KST or Chaservo servo on the programming port: read first, and
+     *  searched from its NEUTRAL out to its PULSE LOWER and PULSE UPPER. */
+    bool     read;
+    bool     program;     /**< lower LEFT and RIGHT ANGLE after the search;
+                               read only */
+    bool     set_pulses;  /**< PULSE LOWER and PULSE UPPER to 1000 and
+                               2000 us before the search; read only */
 
     /* For the report only. */
     char     dut[24];
@@ -175,6 +243,8 @@ typedef struct {
     uint16_t hi_raw;
     bool     reversion;   /**< REVERSION on                               */
     unsigned type;        /**< the servo's type number, 0 not known       */
+    /** NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us. */
+    uint16_t pulse_dus[3];
     /** The file the values before the run are backed up in; "" for the
      *  panel's memory only. */
     char     backup[16];
@@ -199,6 +269,9 @@ typedef struct {
     bool     connect;     /**< the programmer: CONNECT, which reads       */
     bool     write;       /**< the programmer: these two values           */
     uint16_t angle[2];
+    bool     pulses;      /**< the programmer: PULSE LOWER and PULSE UPPER,
+                               0.1 us                                     */
+    uint16_t pulse_dus[2];
     bool     leave;       /**< the programmer: LEAVE                      */
 } servo_limrun_do_t;
 
@@ -219,7 +292,9 @@ typedef enum {
     SERVO_LIMRUN_PH_WRITE,
     SERVO_LIMRUN_PH_LEAVE,
     SERVO_LIMRUN_PH_ARM,        /**< the bench on its way to ARMED       */
-    SERVO_LIMRUN_PH_PROBE,      /**< a side searched after a write       */
+    SERVO_LIMRUN_PH_PROBE,      /**< a side searched after a write: the
+                                     overset's search, or the first
+                                     write's for the side it limits      */
     SERVO_LIMRUN_PH_CHECK,      /**< both sides searched at the end      */
 } servo_limrun_phase_t;
 
@@ -253,6 +328,12 @@ typedef enum {
     SERVO_LIMRUN_WHY_STILL_BINDS,   /**< an end binds after programming   */
     SERVO_LIMRUN_WHY_NO_VOLTAGE,    /**< a search's window without the rail
                                          voltage                          */
+    SERVO_LIMRUN_WHY_NO_STOP,       /**< free after the overset write     */
+    SERVO_LIMRUN_WHY_BEFORE_NEUTRAL,/**< a free end not past NEUTRAL      */
+    SERVO_LIMRUN_WHY_NEUTRAL,       /**< NEUTRAL not between PULSE LOWER and
+                                         PULSE UPPER                      */
+    SERVO_LIMRUN_WHY_RANGE,         /**< PULSE LOWER to PULSE UPPER not
+                                         inside PULSE MIN to PULSE MAX    */
     SERVO_LIMRUN_WHY_COUNT
 } servo_limrun_why_t;
 
@@ -262,6 +343,7 @@ typedef struct {
     bool     bound;         /**< FOUND: the side binds                     */
     uint16_t limit_us;      /**< the endpoint; the end of the travel if free */
     uint16_t bind_us;       /**< the first bound position                  */
+    uint16_t free_us;       /**< the last free position                    */
     float    baseline_a, knee_a;
     bool     enc;           /**< enc_deg is the angle at the last free one */
     float    enc_deg;
@@ -279,7 +361,9 @@ typedef struct {
     uint32_t start_ms, end_ms, phase_ms;
     bool     safe_asked;    /**< PH_SAFE: SAFE asked, after the return    */
 
-    /* The search under way. */
+    /* The search under way: from ctr_us out to end_us of its side. */
+    uint16_t ctr_us;
+    uint16_t end_us[2];
     servo_limit_t lf;
     uint8_t  side;          /**< the side it searches                    */
     uint32_t search_ms;     /**< the search's start; it walks from
@@ -298,19 +382,25 @@ typedef struct {
     bool     dry;           /**< the read-only first session is under way */
     servo_limrun_servo_t servo;     /**< as the first session read it  */
     uint16_t cur[2];        /**< what the servo holds, register by register */
+    uint16_t pulse_now[3];  /**< its NEUTRAL, PULSE LOWER, PULSE UPPER now */
+    bool     pulse_op;      /**< the write under way is the pulse write   */
+    bool     searched;      /**< the first search has begun              */
     uint16_t want[2];       /**< the write under way                     */
     int8_t   reg_side[2];   /**< the side each register limits, -1 not known */
     bool     need[2];       /**< the side bound in the first search       */
     bool     mapped;
-    uint16_t lo[2], hi[2];  /**< by side: the free floor and the bound value */
-    bool     lo_free[2];
-    bool     settled[2];    /**< the side's final value is known          */
-    uint16_t final_v[2];    /**< by side                                  */
-    uint8_t  probe_side;
-    uint16_t probe_value;   /**< the value of the register probed         */
-    uint8_t  map_reg;       /**< the register the mapping write lowers    */
-    bool     map_both;      /**< the mapping's second write: both lowered */
-    bool     final_plan;    /**< the session under way writes the final values */
+    uint8_t  map_side;      /**< the side whose first write finds it      */
+    uint8_t  map_reg;       /**< the register that write goes to          */
+    uint8_t  map_tries;     /**< registers tried for it                   */
+    /* By side. */
+    uint8_t  stage[2];      /**< servo_limrun.c's stage_t                 */
+    uint16_t v0[2];         /**< the register's value at the read         */
+    uint16_t v1[2];         /**< the overset; 0 where it is left out      */
+    uint16_t v2[2];         /**< the final value, once known              */
+    int32_t  d0_dus[2];     /**< the first search's free end from NEUTRAL */
+    int32_t  db_dus[2];     /**< its first bound pulse from NEUTRAL       */
+    int32_t  d1_dus[2];     /**< the overset search's; 0 not searched     */
+    int8_t   probe_side;    /**< the side the next search looks at, -1 both */
     unsigned writes;        /**< register values written                  */
     unsigned write_ops;     /**< writes sent                              */
     unsigned sessions;
@@ -353,11 +443,14 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
                          uint32_t now_ms);
 
 /** The programmer's answers: the servo read after CONNECT, a write's end
- *  with the values the servo holds, and the port back in PWM. */
+ *  with the values the servo holds (servo_limrun_pulsed() for the pulse
+ *  write: NEUTRAL, PULSE LOWER, PULSE UPPER), and the port back in PWM. */
 void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
                        uint32_t now_ms);
 void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
                           uint32_t now_ms);
+void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
+                         const uint16_t *pulse_dus, uint32_t now_ms);
 void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms);
 
 /** The file the servo's values before the run were saved in, once the
@@ -386,6 +479,9 @@ bool servo_limrun_switching(const servo_limrun_t *r);
 bool servo_limrun_programming(const servo_limrun_t *r);
 /** A value was written and the servo may not hold its own any more. */
 bool servo_limrun_wrote(const servo_limrun_t *r);
+/** The run ended as FAIL or ABORTED with the servo's values changed:
+ *  RESTORE gives back the ones before it. */
+bool servo_limrun_restore(const servo_limrun_t *r);
 /** The values the servo held before the run, valid once read. */
 bool servo_limrun_original(const servo_limrun_t *r, uint16_t *left,
                            uint16_t *right);
@@ -404,8 +500,19 @@ servo_str_t servo_limrun_verdict_str(servo_limrun_verdict_t v);
 servo_str_t servo_limrun_why_str(const servo_limrun_t *r);
 servo_str_t servo_limrun_phase_str(servo_limrun_phase_t ph);
 
-/** The margin for a free value @p v above the smallest value @p lo. */
-uint16_t servo_limrun_final(uint16_t v, uint16_t lo);
+/** The share of travel, 0.1 us of pulse: @p p_us's distance from NEUTRAL
+ *  on @p side, positive outward, and the pulse limit's. */
+int32_t servo_limrun_dist(const servo_limrun_servo_t *sv, uint8_t side,
+                          uint16_t p_us);
+int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side);
+/** The overset for value @p v0 and share @p d / @p span: ceil(v0 x share x
+ *  (100 + SERVO_LIMRUN_OVERSET_PCT) / 100), within @p lo_raw to @p v0. */
+uint16_t servo_limrun_overset(uint16_t v0, int32_t d, int32_t span,
+                              uint16_t lo_raw);
+/** The final value for value @p v and share @p d / @p span: floor(v x
+ *  share), within @p lo_raw to @p v. */
+uint16_t servo_limrun_scaled(uint16_t v, int32_t d, int32_t span,
+                             uint16_t lo_raw);
 
 #ifdef __cplusplus
 }

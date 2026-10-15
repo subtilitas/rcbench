@@ -895,6 +895,9 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_ROW_LIM_MODE]        = "ENDLAGENLAUF",
     [TX_SV_LIM_SEARCH]          = "NUR SUCHE",
     [TX_SV_LIM_PROGRAM]         = "SUCHE+PROG",
+    [TX_SV_ROW_LIM_PULSES]      = "SERVOPULSE",
+    [TX_SV_LIM_PULSES_KEEP]     = "BEHALTEN",
+    [TX_SV_LIM_PULSES_STD]      = "1000-2000",
     [TX_SV_LIM_START]           = "ENDLAGENLAUF STARTEN",
     [TX_SV_LIM_STOP]            = "LAUF BEENDEN",
     [TX_SV_LIM_LINE]            = "AUSGANG %s, STROM INA3221 CH1",
@@ -902,10 +905,11 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIM_INA_SETUP]       = "INA3221 NICHT FÜR DIE SERVOSCHIENE EINGERICHTET",
     [TX_SV_LIM_INA_OFFLINE]     = "INA3221 NICHT ONLINE",
     [TX_SV_LIM_INA_NO_WIN]      = "NOCH KEINE INA3221-FENSTER",
-    [TX_SV_LIM_PWM_OFF]         = "PORT PWM AUS: DER PORT GIBT KEINEN PULS AUS",
+    [TX_SV_LIM_PWM_OFF]         = "PORT-PWM AUS: DER PORT GIBT KEINEN PULS AUS",
     [TX_SV_LIM_RAIL_LOW]        = "SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN",
-    [TX_SV_LIM_REFUSED]         = "MITTE NICHT ZWISCHEN PULSE MIN UND MAX",
+    [TX_SV_LIM_REFUSED]         = "MITTE NICHT ZWISCHEN PULS MIN UND PULS MAX",
     [TX_SV_LIM_SEARCH_NOTE]     = "NUR SUCHE: NICHTS WIRD INS SERVO GESCHRIEBEN",
+    [TX_SV_LIM_PULSES_NOTE]     = "NUR SUCHE: SETZT PULSE LOWER/UPPER, SONST NICHTS",
     [TX_SV_LIM_PROG_NOTE]       = "SENKT LEFT/RIGHT ANGLE EINES KST- ODER CHASERVO-SERVOS",
     [TX_SV_LIM_PROG_PORT]       = "PROGRAMMIEREN: NUR EIN SERVO AM PROG-PORT",
     [TX_SV_LIM_PROG_BUSY]       = "PROGRAMMIEREN: DER PORT IST NICHT IN PWM",
@@ -920,6 +924,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_LIM_ENDS]            = "UNTEN %s  OBEN %s",
     [TX_SV_LIM_SET]             = "LEFT %u>%u  RIGHT %u>%u",
     [TX_SV_LIM_RESTORE]         = "ZURÜCKSPIELEN IN %s",
+    [TX_SV_LIM_RANGE]           = "%u-%u NICHT IN %u-%u us",
     [TX_SV_DUT_NOTE]            = "Der Name steht über jedem Testbericht.",
     [TX_SV_ENC_NOTE_1]          = "AS5600: Winkelsensor an der Hornwelle.",
     [TX_SV_ENC_NOTE_2]          = "ENC-MITTE tippen, wenn der Servo in Neutral steht.",
@@ -1983,14 +1988,23 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_WHY_OTHER]      = "Servo hat andere Werte",
     [SERVO_STR_L_WHY_MAPPING]    = "LEFT/RIGHT ANGLE: Seite unklar",
     [SERVO_STR_L_WHY_SMALLEST]   = "läuft beim kleinsten Winkel an",
-    [SERVO_STR_L_WHY_CAP]        = "Grenze von 24 Werten erreicht",
+    [SERVO_STR_L_WHY_CAP]        = "Grenze von 8 Werten erreicht",
     [SERVO_STR_L_WHY_STILL]      = "ein Ende läuft weiterhin an",
     [SERVO_STR_L_WHY_NO_VOLTAGE] = "kein Spannungswert im Fenster",
+    [SERVO_STR_L_WHY_NO_STOP]    = "kein Anschlag nach dem Vorhalt",
+    [SERVO_STR_L_WHY_BEFORE_NEUTRAL] = "freies Ende vor NEUTRAL",
+    [SERVO_STR_L_WHY_NEUTRAL]    = "NEUTRAL außerhalb LOWER/UPPER",
+    [SERVO_STR_L_WHY_RANGE]      = "Servopulse außerhalb MIN/MAX",
     [SERVO_STR_L_R_TITLE]        = "RCBENCH SERVO-ENDLAGEN-BERICHT",
     [SERVO_STR_L_R_MODE_SEARCH]  = "Modus:           nur Suche, nichts ins "
                                    "Servo geschrieben",
     [SERVO_STR_L_R_MODE_PROGRAM] = "Modus:           Suche, dann LEFT ANGLE "
                                    "und RIGHT ANGLE programmiert",
+    [SERVO_STR_L_R_MODE_PULSES]  = "Modus:           nur Suche; PULSE LOWER "
+                                   "und PULSE UPPER zuerst auf 1000 und "
+                                   "2000 us gesetzt",
+    [SERVO_STR_L_R_SEARCH]       = "Gesucht:         von %u us bis %u us und "
+                                   "%u us",
     [SERVO_STR_L_R_OUTPUT]       = "Ausgang:         %s, %u Hz",
     [SERVO_STR_L_R_PULSE]        = "Pulsbereich:     Centre %u us, %u-%u us",
     [SERVO_STR_L_R_METER]        = "Strom:           INA3221 CH1, Fenster "
@@ -2022,16 +2036,25 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_PROG_FREE]    = "Nicht gelaufen: kein Ende läuft an.",
     [SERVO_STR_L_R_PROG_NO_SERVO] = "Kein Servo gelesen: nichts geschrieben.",
     [SERVO_STR_L_R_SERVO]        = "Servo:           Typ %u, REVERSION %s",
+    [SERVO_STR_L_R_PULSES]       = "Servopulse:      NEUTRAL %.1f us, PULSE "
+                                   "LOWER %.1f us, PULSE UPPER %.1f us",
+    [SERVO_STR_L_R_PULSE_SET]    = "Pulse schreiben: PULSE LOWER %.1f -> %.1f "
+                                   "us, PULSE UPPER %.1f -> %.1f us",
+    [SERVO_STR_L_R_RANGE]        = "Bereich:         Servopulse %.1f-%.1f us "
+                                   "außerhalb PULS MIN/MAX %u-%u us",
     [SERVO_STR_L_R_LEFT]         = "LEFT ANGLE:      ",
     [SERVO_STR_L_R_RIGHT]        = "RIGHT ANGLE:     ",
     [SERVO_STR_L_R_REG]          = "%s%u vorher, %u nachher; %s",
-    [SERVO_STR_L_R_REG_BIS]      = "                 frei bei %u, "
-                                   "angelaufen bei %u",
+    [SERVO_STR_L_R_REG_LIN]      = "                 Anteil frei %s, "
+                                   "angelaufen %s; Vorhalt %s, Anteil %s; "
+                                   "Endwert %s",
     [SERVO_STR_L_R_SIDE_LO]      = "begrenzt das untere Ende",
     [SERVO_STR_L_R_SIDE_HI]      = "begrenzt das obere Ende",
     [SERVO_STR_L_R_SIDE_UNKNOWN] = "begrenztes Ende nicht gefunden",
-    [SERVO_STR_L_R_MARGIN]       = "Abstand:         %u %% des freien Werts, "
-                                   "mindestens %u, darunter",
+    [SERVO_STR_L_R_METHOD]       = "Verfahren:       linear im Puls; Vorhalt "
+                                   "+%u %% auf den Anteil am ersten "
+                                   "angelaufenen Puls, dann der Anteil, den "
+                                   "seine Suche frei fand",
     [SERVO_STR_L_R_WRITES]       = "Schreibvorgänge: Werte geschrieben %u, "
                                    "Schreibvorgänge gesendet %u, Grenze %u "
                                    "Werte; Sitzungen %u",
@@ -2043,9 +2066,12 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
                                    "Programmierseite, aus den Werten vor dem "
                                    "Endlagenlauf",
     [SERVO_STR_L_R_UNIT]         = "Einheit: die Einheit von LEFT ANGLE und "
-                                   "RIGHT ANGLE ist unbekannt.",
+                                   "RIGHT ANGLE ist unbekannt; der Weg gilt "
+                                   "als linear im Puls von NEUTRAL bis PULSE "
+                                   "LOWER und PULSE UPPER, das ist nicht "
+                                   "gemessen.",
     [SERVO_STR_L_R_BENCH]        = "Prüfstand: die gefundenen Enden werden "
-                                   "nicht auf PULSE MIN und PULSE MAX "
+                                   "nicht auf PULS MIN und PULS MAX "
                                    "angewendet.",
 };
 

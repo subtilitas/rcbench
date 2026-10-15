@@ -967,12 +967,18 @@ static void servo_run_view(bool to_the_end, bool ina)
 /*
  * The limit run of LIMITS, on the bench of the host tests (test_kst_panel.c):
  * the simulated KST servo on programming port 1, GP13, behind the servo
- * model, whose travel LEFT ANGLE and RIGHT ANGLE limit at 4 us a count
- * (kst_sim.h sim_travel()); its stops at 1150 and 1880 us; the INA3221's
- * CH1 windows from it every 50 ms; a bench that goes SAFE and ARMED as the
- * screen asks.  One frame of the rig is 1 ms.
+ * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
+ * and RIGHT ANGLE put it at 4 us a count (kst_sim.h sim_horn_us()); its
+ * stops at 1150 and 1880 us; the INA3221's CH1 windows from it every 50
+ * ms; a bench that goes SAFE and ARMED as the screen asks.  One frame of
+ * the rig is 1 ms.  The bench's PULSE MIN and MAX are STANDARD PWM's, 1000
+ * and 2000 us; the servo's PULSE LOWER and UPPER 900 and 2100 us, so every
+ * view but -range runs with SERVO PULSES at 1000-2000.
  *
- *   -ready    LIMITS with SEARCH+PROG chosen, before the hold
+ *   -ready    LIMITS with SEARCH+PROG and SERVO PULSES 1000-2000 chosen,
+ *             before the hold
+ *   -range    SEARCH+PROG with SERVO PULSES at KEEP: FAIL after the read,
+ *             the servo's pulses outside PULSE MIN and MAX
  *   (none)    running, a probe after the third session
  *   -pass     SEARCH+PROG run out: PASS
  *   -found    SEARCH ONLY on the bench's own output, GP2: FOUND
@@ -994,13 +1000,14 @@ static struct {
 static void limrun_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
-        uint16_t lo, hi;
-
         rig_frame();
-        sim_travel(g_rig.sim.reg, 1500u, 0.0f, 4.0f, &lo, &hi);
-        s_lr.sv.cfg.limit_lo_us = s_lr.prog ? lo : 1u;
-        s_lr.sv.cfg.limit_hi_us = s_lr.prog ? hi : 65000u;
-        s_lr.sum += s_lr.out ? servo_sim_step(&s_lr.sv, s_lr.cmd, g_rig.ms)
+        /* On the programming port the horn stands where the servo's
+         * registers put it for the pulse; on GP2 at the pulse. */
+        const uint16_t horn = s_lr.prog
+                                  ? sim_horn_cmd(g_rig.sim.reg, s_lr.cmd,
+                                                 4.0f, false)
+                                  : s_lr.cmd;
+        s_lr.sum += s_lr.out ? servo_sim_step(&s_lr.sv, horn, g_rig.ms)
                              : 0.0f;
         s_lr.n++;
         if ((int32_t)(g_rig.ms - s_lr.win_end) >= 0) {
@@ -1116,6 +1123,9 @@ static void limrun_view(const char *view)
     tap(216, UI_BAND_H + 27);                   /* LIMITS */
     if (s_lr.prog) {
         tap(100, UI_BAND_H + 323);              /* LIMIT RUN: SEARCH+PROG */
+        if (strcmp(v, "-range") != 0) {
+            tap(100, UI_BAND_H + 281);          /* SERVO PULSES: 1000-2000 */
+        }
     }
     limrun_ms(100u);
     if (strcmp(v, "-ready") == 0) {
@@ -1191,6 +1201,11 @@ static void limrun_view(const char *view)
     }
     limrun_ms(1000u);
     servo_screen_test_files(s_lr.prog ? 13 : 12, true);
+    if (strcmp(v, "-range") == 0) {
+        /* The report's run, 13, and the bench SAFE where the run left it. */
+        limrun_ms(20u);
+        return;
+    }
     limrun_ms(20u);
 }
 
@@ -2792,7 +2807,8 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-paused") == 0
                    || (strncmp(view, "servo-limrun", 12) == 0
                        && strcmp(view, "servo-limrun-restore") != 0
-                       && strcmp(view, "servo-limrun-stopped") != 0);
+                       && strcmp(view, "servo-limrun-stopped") != 0
+                       && strcmp(view, "servo-limrun-range") != 0);
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;

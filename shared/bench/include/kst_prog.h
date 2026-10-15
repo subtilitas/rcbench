@@ -831,14 +831,15 @@ void kst_prog_forget(kst_prog_t *p);
 /* --- the limit run ----------------------------------------------------------- */
 
 /*
- * A limit run (servo_limrun.h) programs LEFT ANGLE and RIGHT ANGLE over
- * many sessions: a session per value written, each with its own backup.
- * The run keeps the servo as its first session read it:
+ * A limit run (servo_limrun.h) programs LEFT ANGLE and RIGHT ANGLE, and
+ * PULSE LOWER and PULSE UPPER where its SERVO PULSES setting is 1000-2000,
+ * over many sessions: a session per write.  These four are the run's
+ * fields.  The run keeps the servo as its first session read it:
  *
  *   - RESTORE offers it (KST_PROG_FROM_RUN) while the servo read differs
- *     from it in LEFT ANGLE or RIGHT ANGLE and in no other field: an
- *     ordinary write of those two fields, checked as every write is.
- *   - A later session of the run whose servo differs from it in those two
+ *     from it in the run's fields and in no other: an ordinary write of
+ *     those fields, checked as every write is.
+ *   - A later session of the run whose servo differs from it in the run's
  *     fields at most saves no file before its write: the file of the
  *     first write holds the servo as the run found it.
  *
@@ -861,8 +862,8 @@ const kst_image_t *kst_prog_run_image(const kst_prog_t *p);
 /** The file of that servo; "" for none: no card, or the first write not
  *  ended yet. */
 const char *kst_prog_run_backup(const kst_prog_t *p);
-/** The servo read differs from the run's in LEFT ANGLE and RIGHT ANGLE at
- *  most. */
+/** The servo read differs from the run's in LEFT ANGLE, RIGHT ANGLE,
+ *  PULSE LOWER and PULSE UPPER at most. */
 bool kst_prog_run_matches(const kst_prog_t *p);
 
 /** End the session: the port goes back to PWM and the supply stays as it

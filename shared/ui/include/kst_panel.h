@@ -157,15 +157,20 @@ kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
 /** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
  *  The run's first write holds the servo as read (kst_prog_run_hold()). */
 kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
+/** Write PULSE LOWER and PULSE UPPER, 0.1 us, and nothing else; as
+ *  kst_panel_run_write() otherwise. */
+kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus);
 /** LEAVE. */
 kst_prog_msg_id_t kst_panel_run_leave(void);
 kst_panel_run_t kst_panel_run_poll(void);
 /** The servo as read: its two angles, the values both take by the hard
- *  rules, REVERSION and its type number.  False with none read, or one
+ *  rules, REVERSION, its type number, and NEUTRAL, PULSE LOWER and PULSE
+ *  UPPER in 0.1 us (0 for one not shown).  False with none read, or one
  *  that is not editable (no KST or Chaservo servo, in doubt); the angles
  *  are filled then where a servo was read. */
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
-                         bool *reversion, unsigned *type);
+                         bool *reversion, unsigned *type,
+                         uint16_t pulse_dus[3]);
 /** The file that holds the servo as the run found it; "" for none. */
 const char *kst_panel_run_backup(void);
 /** The run is over: the programming voltage and current go back to the

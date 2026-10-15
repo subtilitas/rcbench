@@ -30,10 +30,16 @@ at least 0.15 A. The search stops at the first such step, backs off 25 µs, and
 reports that pulse width as the endpoint.
 
 On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
-side from PULSE CENTRE out to PULSE MIN, then the high side out to PULSE MAX:
-the distance to that end replaces the 600 µs. The current is INA3221 CH1's
-50 ms windows, so each position takes 250 ms. The servo is held at PULSE
-CENTRE for 1000 ms before each search and after it: the return from an end,
+side first, then the high side. Where depends on the target:
+
+| PWM TARGET | Read first | Search |
+| --- | --- | --- |
+| a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
+| PROG PORT | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
+
+The distance to that end replaces the 600 µs. The current is INA3221 CH1's
+50 ms windows, so each position takes 250 ms. The servo is held at the
+centre for 1000 ms before each search and after it: the return from an end,
 600 µs at 0.67 µs/ms, takes 900 ms, and the baseline is not to see it.
 
 Duration: the host test holds a full search against the modelled servo to under
@@ -42,9 +48,10 @@ Duration: the host test holds a full search against the modelled servo to under
 ### Running it
 
 The LIMITS page of the SERVO screen's settings holds the run. **LIMIT RUN**
-chooses SEARCH ONLY or SEARCH+PROG with a tap. **START LIMIT RUN** starts
-it with a 2 s hold, as START TEST does; a tap or a shorter hold starts
-nothing.
+chooses SEARCH ONLY or SEARCH+PROG with a tap. **SERVO PULSES**, shown with
+PWM TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
+starts at KEEP. **START LIMIT RUN** starts the run with a 2 s hold, as START
+TEST does; a tap or a shorter hold starts nothing.
 
 ![The limit run, ready](img/servo-limrun-ready.png)
 
@@ -79,73 +86,152 @@ PROG PORT, the port in PWM, and, with a PD mini answering, a supply set to
 4.8 V or more. Otherwise the run searches only, the row reads SEARCH ONLY,
 and the third line says why: `PROGRAMMING: ONLY A SERVO ON THE PROG PORT`,
 `PROGRAMMING: THE PORT IS NOT IN PWM` or `PROGRAMMING: SUPPLY SET BELOW 4.8
-V`. Whether the servo is a KST or a Chaservo is known only once the
-programmer reads it: a servo that does not answer as one ends the run as
-FAIL, `no KST or Chaservo servo read`, after its search, with nothing
-written.
+V`.
+
+#### The read first
+
+Every run on PROG PORT, SEARCH ONLY as well, starts with a read session.
+The servo is held at PULSE CENTRE, the run switches the bench to SAFE,
+CONNECT reads every register, LEAVE gives the port back, and the run
+switches the bench to ARMED. Nothing is driven before that.
+
+- A read that fails ends the run before any search: ABORTED, `programming
+  port did not finish`, where CONNECT or its read does not complete; FAIL,
+  `no KST or Chaservo servo read`, where the servo read holds values the
+  hard rules do not take. A servo that is no KST or Chaservo is searched
+  with PWM TARGET on a SERVO PWM pin.
+- NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
+  `NEUTRAL outside LOWER/UPPER`.
+- PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX
+  ends it as FAIL, `servo pulses outside MIN/MAX`. The bench stays SAFE,
+  nothing is driven, and the box and the report name both ranges, for
+  example `900-2100 NOT IN 1000-2000 us`.
+
+A KST servo as delivered holds PULSE LOWER 900.0 µs and PULSE UPPER
+2100.0 µs. The STANDARD PWM type's PULSE MIN and PULSE MAX are 1000 µs and
+2000 µs, so that servo is refused at KEEP. SERVO PULSES at 1000-2000, or a
+PWM type with a range that holds 900 to 2100 µs, lets it run.
+
+SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 µs and PULSE UPPER
+2000.0 µs in the read session, before anything is driven, and reads them
+back. NEUTRAL is not written. A servo that holds those values already gets
+no write. NEUTRAL outside the new range ends the run as FAIL before
+anything is driven, with RESTORE offered. The setting works with SEARCH
+ONLY and with SEARCH+PROG; with SEARCH ONLY the pulses are the only write,
+and the third line says `SEARCH ONLY: SETS PULSE LOWER/UPPER, NOTHING ELSE`.
+
+#### The registers and the model
 
 LEFT ANGLE and RIGHT ANGLE are the servo's own travel limits, one 8-bit
 register each, in a unit that is not known. The smallest value the
 programmer's hard rules take is 1 on a KST: 0 is refused. A value under 50
 is a soft limit; the run's 2 s hold is the consent to it.
 
+The run takes the servo as linear. PULSE LOWER and PULSE UPPER are the
+input pulses at which the servo reaches the full travel that LEFT ANGLE and
+RIGHT ANGLE set. Between NEUTRAL and that pulse the travel is linear in the
+pulse; past it the servo holds full travel. The share of a side at pulse p
+is
+
+```text
+f = (p - NEUTRAL) / (P_lim - NEUTRAL)
+```
+
+with P_lim PULSE LOWER on the low side and PULSE UPPER on the high side, as
+the servo holds them when the search runs. The unit of LEFT ANGLE and RIGHT
+ANGLE is not known, and the linear relation is an assumption, not a
+measurement. A bound side whose last free pulse is not past NEUTRAL ends
+the run as FAIL, `free end not past NEUTRAL`, before any write.
+
+#### Two writes a bound side
+
+v0 is the value the side's register holds at the read.
+
+1. The overset: `v1 = ceil(v0 x fb x 1.03)`, fb the share at the first
+   search's first bound pulse, at most v0 and at least the smallest value.
+   The first bound pulse lies at or past the stop, so at v1 the stop stays
+   reachable and moves close to the pulse limit. The side is searched
+   again. Free there, the run ends as FAIL, `no stop after the overset
+   write`, with no second write and RESTORE offered.
+2. The final value: `v2 = floor(v1 x f1)`, f1 the share at the overset
+   search's last free pulse, at least the smallest value. No margin is
+   added: the last free pulse lies one 10 µs step short of the bound one.
+   An overset search that binds far inside the pulse limit still gives v2
+   this way; no further overset follows.
+
+Worked, on the host's modelled servo: NEUTRAL 1500.2 µs, PULSE LOWER
+900.0 µs, v0 150, the stop at 1000 µs. The first search is free at 1000 µs
+and bound at 990 µs: fb = 510.2 / 600.2 = 0.850, v1 = ceil(150 x 0.850 x
+1.03) = 132. At 132 the search is free out to 930 µs: f1 = 570.2 / 600.2 =
+0.950, v2 = floor(132 x 0.950) = 125. At 125 the full travel ends at
+1000.2 µs.
+
+The overset is left out where v1 would not lie below v0, or where the model
+moves the stop less than 20 µs: d0 x (v0 - v1) / v1 under 20 µs, d0 the
+first search's last free pulse's distance from NEUTRAL. A search could not
+tell that move from none. The first search then counts as the overset's,
+and `v2 = floor(v0 x f0)`, f0 the share at its last free pulse: one write
+for that side.
+
+#### Which register limits which side
+
+The protocol notes do not say which pulse side each register limits, nor
+how REVERSION changes that. The run finds it on the first bound side's
+first write: that value goes to LEFT ANGLE alone (RIGHT ANGLE where LEFT
+ANGLE holds the smallest value already), and the side is searched. The end
+moved when it is free now or its endpoint lies 20 µs further out. An end
+within 20 µs of where it was sends LEFT ANGLE back to its value and the
+value, worked out again from RIGHT ANGLE's v0, to RIGHT ANGLE; moved then,
+RIGHT ANGLE limits that side. An end that stays with both registers tried
+ends the run as FAIL, `LEFT/RIGHT ANGLE side not found`. An end that moved
+inward by 20 µs or more ends it as FAIL too. An end that binds with its
+register at the smallest value ends it as FAIL, `binds at the smallest
+angle`. A register whose side never bound keeps its value.
+
+Last, both ends are searched again: PASS when both are free, FAIL `an end
+binds after programming` when either binds. No further write follows a
+FAIL; RESTORE gives the values before the run back.
+
+#### Sessions
+
 The run writes in sessions of the [programmer](ServoProgrammer.md):
 
-1. The servo goes back to PULSE CENTRE and is held there for 1000 ms.
+1. The servo goes back to the centre and is held there for 1000 ms.
 2. The run switches the bench to SAFE.
 3. CONNECT takes the port and reads every register.
-4. The write: ENABLE WRITE TO SERVO on, LEFT ANGLE and RIGHT ANGLE, the
-   write switch off again. The write is the programmer's ordinary write
-   with every limit check, and reads the values back.
+4. The write: ENABLE WRITE TO SERVO on, the run's fields, the write switch
+   off again. The write is the programmer's ordinary write with every limit
+   check, and reads the values back.
 5. LEAVE gives the port back to PWM.
 6. The run switches the bench to ARMED and searches the side the write
    was for.
 
-The first session writes nothing. It reads the servo and leaves: a LEAVE
+The read session writes nothing but the pulses of SERVO PULSES. A LEAVE
 this link or supply does not complete ends the run before any value
 changes. The first write of the run saves the servo's values to a backup
 file on the card, as the programmer's first write does; the later sessions
 save none. Each later session reads the servo again. Another type,
-REVERSION switched, another range of values the hard rules take, or LEFT
-ANGLE and RIGHT ANGLE other than the run last wrote end the run as ABORTED,
-`servo holds other values`, before it writes again.
-
-The protocol notes do not say which pulse side each register limits, nor
-how REVERSION changes that. The run finds it. Its first write sets LEFT
-ANGLE alone to the smallest value (RIGHT ANGLE where LEFT ANGLE holds the
-smallest value already), and the next search of a bound side says whether
-that end moved: free now, or its endpoint 20 µs further out. An end within
-20 µs of where it was searches once more with the other register at its
-smallest value too; moved then, the other register limits that side. An end
-that still binds with both registers at the smallest value ends the run as
-FAIL, `binds at the smallest angle`. An end that moved inward by 20 µs or
-more ends it as FAIL, `LEFT/RIGHT ANGLE side not found`.
-
-Each bound side is then bisected on its register, between the smallest
-value and the value the servo held. The bisection stops when the bound and
-the free value are 2 apart or less. The value programmed is the free value
-less a margin of 5 % of it, at least 2, never below the smallest value. The
-margin is the search's own: its 25 µs back-off is 5 % of a 500 µs half
-travel. A register that limits a side that never bound gets the value the
-servo held back. Last, both ends are searched again: PASS when both are
-free, FAIL `an end binds after programming` when either binds.
+REVERSION switched, another range of values the hard rules take, other
+pulses, or LEFT ANGLE and RIGHT ANGLE other than the run last wrote end the
+run as ABORTED, `servo holds other values`, before it writes again.
 
 | Constant | Value | Purpose |
 | --- | ---: | --- |
-| `SERVO_LIMRUN_WRITES_MAX` | 24 | register values a run writes at most, the final values included. A bisection write that leaves no room for the final ones is not sent: FAIL `write cap of 24 values reached` |
-| `SERVO_LIMRUN_RES_RAW` | 2 | the bisection's end |
-| `SERVO_LIMRUN_MARGIN_PCT`, `SERVO_LIMRUN_MARGIN_MIN` | 5 %, 2 | the margin below the free value |
-| `SERVO_LIMRUN_MOVED_US` | 20 µs | an end that moved, or stayed |
-| `SERVO_LIMRUN_RETURN_MS` | 1000 ms | at PULSE CENTRE before each search and before each SAFE |
+| `SERVO_LIMRUN_WRITES_MAX` | 8 | register values a run writes at most: PULSE LOWER and PULSE UPPER (2), the overset and the final value on each side (4), and LEFT ANGLE's first write with its value back when RIGHT ANGLE limits that side (2). A session whose values would pass it is not sent: FAIL `write cap of 8 values reached` |
+| `SERVO_LIMRUN_OVERSET_PCT` | 3 % | the overset above the share at the first bound pulse |
+| `SERVO_LIMRUN_STD_LOWER_DUS`, `SERVO_LIMRUN_STD_UPPER_DUS` | 1000.0 µs, 2000.0 µs | what SERVO PULSES at 1000-2000 writes |
+| `SERVO_LIMRUN_MOVED_US` | 20 µs | an end that moved, or stayed; the smallest stop move an overset is written for |
+| `SERVO_LIMRUN_RETURN_MS` | 1000 ms | at the centre before each search and before each SAFE |
 
 Writes: no step of the protocol is known to make a value permanent, and no
 write that changes RAM only is known. Every write is the register write the
 programmer reads back. Whether a KST servo keeps the value in EEPROM
 (electrically erasable programmable read-only memory) at every write, and
-how many writes that memory takes, is not known; the cap keeps a run to 24
-values. A run with both ends bound on the host's modelled servo wrote 15
-values in 14 writes and 15 sessions, 256.7 s, with REVERSION OFF, and 16
-values in 15 writes, 270.3 s, with REVERSION ON.
+how many writes that memory takes, is not known; the cap keeps a run to 8
+values. A run with both ends bound and SERVO PULSES at 1000-2000 on the
+host's modelled servo wrote 6 values in 4 writes and 4 sessions, 85.6 s,
+with REVERSION OFF, and 8 values in 5 writes and 5 sessions, 97.7 s, with
+REVERSION ON.
 
 The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 
@@ -191,9 +277,9 @@ end. A start of the panel clears the run without a report.
 The values last written stay in the servo. A run that wrote and did not
 pass says `RESTORE IN PROGRAM` on its box. RESTORE on the programmer, after
 CONNECT and READ ALL, offers `Values before the limit run`: the servo as the
-run's first session read it, written back as an ordinary write of LEFT ANGLE
-and RIGHT ANGLE. It is offered while the servo read differs from it in those
-two fields and in no other. The hold is in the panel's memory: a start of the
+run's first session read it, written back as an ordinary write of LEFT
+ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
+servo read differs from it in those four fields and in no other. The hold is in the panel's memory: a start of the
 panel forgets it, and the backup file on the card remains. A session after
 the run is the operator's: its first write saves its own backup file.
 
@@ -204,7 +290,8 @@ the run is the operator's: its first write saves its own backup file.
 
 - An endpoint is reported already backed off by 25 µs.
 - "No limit found" (`FREE`) means the search measured the end of its
-  travel, PULSE MIN or PULSE MAX on the bench, without binding.
+  travel without binding: PULSE MIN or PULSE MAX on a SERVO PWM pin, the
+  servo's PULSE LOWER or PULSE UPPER on PROG PORT.
 - A limit close to centre may be a tight spot in the linkage, such as a binding
   bellcrank or a rubbing pushrod, rather than the end of travel.
 
@@ -217,18 +304,21 @@ the run is the operator's: its first write saves its own backup file.
 | ABORTED | a protection, the operator, the link, the meter, the supply or the programmer ended it |
 
 The box on the left card shows the verdict, the reason or the values
-(`LEFT 150>84  RIGHT 150>91`), the ends or the output, and the report's file
+(`LEFT 150>87  RIGHT 150>95`), the ends or the output, and the report's file
 name until CLOSE.
 
 ![A programmed servo](img/servo-limrun-pass.png)
 ![Search only](img/servo-limrun-found.png)
+![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
 
 The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
 the next free number, written whatever the DUT page's REPORT says. During a
 run neither the bench log nor the supply log writes a row. Until the card
 has closed the report it counts as an open log run: Wi-Fi and an update wait
 for it, as for a run's CSV. A run on the host's modelled servo with
-REVERSION OFF:
+REVERSION OFF and SERVO PULSES at 1000-2000; the stops at 1150 µs and
+1880 µs of horn travel lie at 1208 µs and 1817 µs of input pulse once
+PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
 
 ```text
 RCBENCH SERVO LIMIT REPORT
@@ -238,37 +328,42 @@ Firmware:       rcbench 0.19.0
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us
+Searched:       from 1500 us out to 1000 us and 2000 us
 Current:        INA3221 CH1, 50 ms windows, shunt 100.0 mOhm
 Search rule:    10 us steps, settle 120 ms, mean of 80 ms; bound above 1.8 x free and +0.15 A
 Protections:    a sample at 3.0 A, above 1.0 A for 400 ms, no window for 200 ms, 40 s a search
-Duration:       256.7 s
+Duration:       85.6 s
 AS5600:         not fitted, no angles
 
 ENDS (the search before programming)
-Low end:        bound at 1140 us, endpoint 1175 us; free 0.121 A, bound 0.627 A
-High end:       bound at 1890 us, endpoint 1855 us; free 0.121 A, bound 0.627 A
+Low end:        bound at 1200 us, endpoint 1235 us; free 0.120 A, bound 0.627 A
+High end:       bound at 1820 us, endpoint 1785 us; free 0.120 A, bound 0.322 A
 
 PROGRAMMING (LEFT ANGLE and RIGHT ANGLE, unit not known)
 Servo:          type 6, REVERSION OFF
-LEFT ANGLE:     150 before, 84 after; limits the low end
-                free at 88, bound at 90
-RIGHT ANGLE:    150 before, 91 after; limits the high end
-                free at 95, bound at 97
-Margin:         5 % of the free value, at least 2, below it
-Writes:         values written 15, writes sent 14, cap 24 values; sessions 15
+Servo pulses:   NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, PULSE UPPER 2100.0 us
+Pulse write:    PULSE LOWER 900.0 -> 1000.0 us, PULSE UPPER 2100.0 -> 2000.0 us
+LEFT ANGLE:     150 before, 87 after; limits the low end
+                share free 0.580, bound 0.600; overset 93, share 0.940; final 87
+RIGHT ANGLE:    150 before, 95 after; limits the high end
+                share free 0.620, bound 0.640; overset 99, share 0.960; final 95
+Method:         linear in the pulse; overset +3 % on the share at the first bound pulse, then the share its search found free
+Writes:         values written 6, writes sent 4, cap 8 values; sessions 4
 Backup:         KST001, the values before the run
 
 ENDS AFTER PROGRAMMING (both searched again)
 Low end:        free to 1000 us; free 0.120 A
-High end:       free to 2000 us; free 0.121 A
+High end:       free to 2000 us; free 0.120 A
 
-Unit: the unit of LEFT ANGLE and RIGHT ANGLE is not known.
+Unit: the unit of LEFT ANGLE and RIGHT ANGLE is not known; the travel is taken as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER, which is not measured.
 Bench: the ends found are not applied to PULSE MIN and PULSE MAX.
 ```
 
 With the AS5600 fitted, each end has a line with the horn's angle at its
 last free position, `AS5600 +38.5 deg at the last free position`. A run
-that wrote and did not pass has a `Restore:` line.
+that wrote and did not pass has a `Restore:` line. The `Searched:` line
+names the search's centre and ends; a run that ended before its first
+search has none. A run on a SERVO PWM pin has no `Servo pulses:` line.
 
 Not measured: every figure above on a real servo. The unit of LEFT ANGLE
 and RIGHT ANGLE, which register limits which pulse side on a real KST or

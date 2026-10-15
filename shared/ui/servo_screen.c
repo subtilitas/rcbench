@@ -197,7 +197,8 @@ static const ui_text_id_t k_pages[PG_COUNT] = {
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
+       R_LIM_PULSES };
 
 typedef struct {
     uint8_t      page;
@@ -240,6 +241,7 @@ static const ov_row_t k_rows[] = {
     { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
     { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
     { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 6, false },
+    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 5, false },
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
@@ -650,10 +652,15 @@ static struct {
      */
     servo_limrun_t lim;
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
+    bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, for the
+                                  session                                */
     ui_hold_t lim_hold;
     bool      lim_down;
     bool      lim_box;       /**< the left card shows the limit run     */
     bool      lim_seen;      /**< it was running when last looked       */
+    /** The run ended in a session and its LEAVE is on its way: the box,
+     *  not the programmer, stays on the left card. */
+    bool      lim_leaving;
     int       lim_file;      /**< its report's number; 0 not yet, -1 none */
     bool      lim_report;    /**< the card took the report whole       */
     const char *lim_note;    /**< why the last START was refused, or NULL */
@@ -3166,6 +3173,23 @@ static const char *lim_meter_why(void)
     return NULL;
 }
 
+static const char *lim_prog_why(void);
+
+/* The run drives the programming port: a KST or Chaservo servo is read
+ * first and searched within its own pulses. */
+static bool lim_reads(void)
+{
+    return s.drive_target != 0u
+        && s.drive_target != SERVO_SCREEN_TARGET_UNKNOWN
+        && s.drive_target != SERVO_SCREEN_TARGET_NO_LINK;
+}
+
+/* SERVO PULSES is there only for the programming port. */
+static bool row_hidden(const ov_row_t *r)
+{
+    return r->kind == R_LIM_PULSES && !lim_reads();
+}
+
 /* Why a limit run cannot start now, before any hold, or NULL. */
 static const char *lim_blocked(void)
 {
@@ -3195,6 +3219,11 @@ static const char *lim_blocked(void)
     }
     if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
         return TR(SV_LIM_REFUSED);
+    }
+    /* On the programming port every run reads the servo first: the
+     * programmer must be free to. */
+    if (lim_reads()) {
+        return lim_prog_why();
     }
     return NULL;
 }
@@ -3232,7 +3261,9 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->centre_us = s.centre_us;
     c->min_us    = s.min_us;
     c->max_us    = s.max_us;
-    c->program   = lim_programs();
+    c->read       = lim_reads();
+    c->program    = c->read && lim_programs();
+    c->set_pulses = c->read && s.lim_pulses;
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     c->frame_hz = s.frame_hz;
@@ -3282,8 +3313,12 @@ static bool lim_apply(const servo_limrun_do_t *d)
             (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
     } else if (d->write) {
         m = kst_panel_run_write(d->angle[0], d->angle[1]);
+    } else if (d->pulses) {
+        m = kst_panel_run_pulses(d->pulse_dus[0], d->pulse_dus[1]);
     } else if (d->leave) {
         m = kst_panel_run_leave();
+        s.lim_leaving = m == KST_PROG_MSG_NONE
+                        && !servo_limrun_running(&s.lim);
     }
     if (m != KST_PROG_MSG_NONE) {
         servo_limrun_refused(&s.lim, test_now());
@@ -3333,7 +3368,7 @@ static void lim_poll(void)
             break;
         }
         sv.ok = kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
-                                    &sv.reversion, &type_no);
+                                    &sv.reversion, &type_no, sv.pulse_dus);
         sv.type = type_no;
         snprintf(sv.backup, sizeof(sv.backup), "%s", kst_panel_run_backup());
         servo_limrun_connected(&s.lim, &sv, test_now());
@@ -3341,10 +3376,16 @@ static void lim_poll(void)
     case SERVO_LIMRUN_PH_WRITE:
         if (ok) {
             (void)kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
-                                      &sv.reversion, &type_no);
+                                      &sv.reversion, &type_no, sv.pulse_dus);
             servo_limrun_backup(&s.lim, kst_panel_run_backup());
         }
-        servo_limrun_written(&s.lim, ok, ok ? sv.angle : NULL, test_now());
+        if (s.lim.pulse_op) {
+            servo_limrun_pulsed(&s.lim, ok, ok ? sv.pulse_dus : NULL,
+                                test_now());
+        } else {
+            servo_limrun_written(&s.lim, ok, ok ? sv.angle : NULL,
+                                 test_now());
+        }
         break;
     case SERVO_LIMRUN_PH_LEAVE:
         servo_limrun_left(&s.lim, ok, test_now());
@@ -3420,7 +3461,7 @@ static void lim_begin(void)
         return;
     }
     s.lim_changes = s.changes;
-    if (c.program) {
+    if (c.read) {
         kst_panel_run_begin();
     }
     if (s.have_sup) {
@@ -3852,6 +3893,12 @@ static void edit_row(int i)
             s.lim_prog = !s.lim_prog;
         }
         break;
+    case R_LIM_PULSES:
+        /* For a run started after it, on the programming port only. */
+        if (!servo_limrun_running(&s.lim) && lim_reads()) {
+            s.lim_pulses = !s.lim_pulses;
+        }
+        break;
     case R_ENC_CENTRE:
         /* The servo is at its neutral: the live count is the centre. */
         if (enc_shown()) {
@@ -4076,7 +4123,7 @@ static void ov_down(const touch_event_t *evt)
         return;
     }
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page != s.tabs.selected) {
+        if (k_rows[i].page != s.tabs.selected || row_hidden(&k_rows[i])) {
             continue;
         }
         if (k_rows[i].kind == R_TRIM) {
@@ -5082,11 +5129,18 @@ static void draw_lim_box(gfx_canvas_t *c)
             lim_end_text(z, sizeof(z), &r->first[SERVO_LIMRUN_HI]);
             snprintf(l2, sizeof(l2), TR(SV_LIM_ENDS), a, z);
         }
-        if (servo_limrun_wrote(r) && v != SERVO_LIMRUN_PASS) {
+        if (servo_limrun_restore(r)) {
             /* The values last written stay in the servo; the programmer
              * puts back the ones before the run. */
             snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
             col3 = ui_theme_color(UI_C_WARN);
+        } else if (r->why == SERVO_LIMRUN_WHY_RANGE) {
+            /* The servo's pulses and the bench's range, side by side. */
+            snprintf(l3, sizeof(l3), TR(SV_LIM_RANGE),
+                     (unsigned)(r->pulse_now[SERVO_LIMRUN_P_LOWER] / 10u),
+                     (unsigned)((r->pulse_now[SERVO_LIMRUN_P_UPPER] + 9u)
+                                / 10u),
+                     (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
         } else if (v == SERVO_LIMRUN_FOUND || v == SERVO_LIMRUN_FREE) {
             /* The ends are the line above: the output they were found on
              * under them. */
@@ -5596,6 +5650,9 @@ static bool row_unused(const ov_row_t *r)
     if (r->kind == R_LIM_MODE) {
         return servo_limrun_running(&s.lim) || lim_prog_why() != NULL;
     }
+    if (r->kind == R_LIM_PULSES) {
+        return servo_limrun_running(&s.lim);
+    }
     if (r->kind != R_SETTING) {
         return false;
     }
@@ -5626,6 +5683,10 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_LIM_MODE:
         snprintf(buf, n, "%s",
                  lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
+        return;
+    case R_LIM_PULSES:
+        snprintf(buf, n, "%s",
+                 s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
         return;
     case R_ENC_CENTRE:
         snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
@@ -5893,8 +5954,12 @@ static void draw_lim_lines(gfx_canvas_t *c)
                  s.lim_prog ? ui_theme_color(UI_C_WARN)
                             : ui_theme_color(UI_C_TEXT_DIM), 1);
     } else {
+        const bool pulses = running ? s.lim.cfg.set_pulses
+                                    : (lim_reads() && s.lim_pulses);
         gfx_text(c, x, y + 36,
-                 prog ? TR(SV_LIM_PROG_NOTE) : TR(SV_LIM_SEARCH_NOTE),
+                 prog     ? TR(SV_LIM_PROG_NOTE)
+                 : pulses ? TR(SV_LIM_PULSES_NOTE)
+                          : TR(SV_LIM_SEARCH_NOTE),
                  &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 }
@@ -5906,7 +5971,7 @@ static void draw_page(gfx_canvas_t *c)
               s.ov_have && s.ov_pressed == OP_CLOSE, true);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const ov_row_t *r = &k_rows[i];
-        if (r->page != s.tabs.selected) {
+        if (r->page != s.tabs.selected || row_hidden(r)) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
@@ -6239,8 +6304,12 @@ static void tick_body(float dt_s)
     kst_panel_tick(dt_s);
     /* Not while a limit run holds the port: its box stays on the left
      * card, and the run gives the port back itself. */
+    if (s.lim_leaving
+        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
+        s.lim_leaving = false;
+    }
     if (kst_panel_holds_port() && !kst_panel_is_open()
-        && !servo_limrun_running(&s.lim)) {
+        && !servo_limrun_running(&s.lim) && !s.lim_leaving) {
         kst_panel_open();
     }
     if (kst_panel_holds_port() != s.kst_held) {

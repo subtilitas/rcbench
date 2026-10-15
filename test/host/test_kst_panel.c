@@ -5258,12 +5258,16 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 
 /*
  * The limit run on the rig: the servo on programming port 1 behind
- * servo_sim's current model, whose travel LEFT ANGLE and RIGHT ANGLE limit
- * (kst_sim.h sim_travel(), 4 us a count from the centre: the bench image's
- * 150 counts are 600 us, past both stops at 1150 and 1880 us); the
- * INA3221's CH1 windows from it every 50 ms; and a bench that goes SAFE and
- * ARMED as the screen asks, an ARM dropped while the programmer holds the
- * port, as the panel's control task drops it.
+ * servo_sim's current model, the horn where its registers put it for the
+ * pulse (kst_sim.h sim_horn_us(): linear from NEUTRAL to PULSE LOWER and
+ * PULSE UPPER, LEFT ANGLE and RIGHT ANGLE the full travel at 4 us a count;
+ * the bench image's 150 counts are 600 us, past both stops at 1150 and
+ * 1880 us); the INA3221's CH1 windows from it every 50 ms; and a bench
+ * that goes SAFE and ARMED as the screen asks, an ARM dropped while the
+ * programmer holds the port, as the panel's control task drops it.  The
+ * SERVO screen's PULSE MIN and MAX are STANDARD PWM's, 1000 and 2000 us,
+ * the bench image's PULSE LOWER and UPPER 900 and 2100 us: a run with
+ * SERVO PULSES at KEEP is refused after the read, one at 1000-2000 runs.
  */
 #define LR_SETB_X  734
 #define LR_TAB_X   216          /* LIMITS */
@@ -5271,12 +5275,14 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 #define LR_MODE_X  100          /* LIMIT RUN, the left column's row 6 */
 #define LR_START_X 369          /* START LIMIT RUN, the right column's */
 #define LR_ROW6_Y  323
+#define LR_ROW5_Y  281          /* SERVO PULSES, the left column's row 5 */
 
 static struct {
     servo_sim_t sv;
     uint16_t cmd;
     bool armed;
     bool ina;                   /* the windows arrive */
+    bool pin;                   /* the target is the bench's GP2 */
     uint16_t win_no;
     uint32_t win_end;
     float sum;
@@ -5345,14 +5351,13 @@ static void lr_commands(void)
 static void lr_ms(uint32_t ms)
 {
     for (uint32_t k = 0; k < ms; ++k) {
-        uint16_t lo, hi;
         float amps;
 
         rig_frame();
-        sim_travel(g_rig.sim.reg, 1500u, 0.0f, 4.0f, &lo, &hi);
-        lr.sv.cfg.limit_lo_us = lo;
-        lr.sv.cfg.limit_hi_us = hi;
-        amps = servo_sim_step(&lr.sv, lr.cmd, g_rig.ms);
+        amps = servo_sim_step(&lr.sv,
+                              sim_horn_cmd(g_rig.sim.reg, lr.cmd, 4.0f,
+                                           false),
+                              g_rig.ms);
         lr.sum += amps;
         lr.n++;
         if ((int32_t)(g_rig.ms - lr.win_end) >= 0) {
@@ -5364,9 +5369,6 @@ static void lr_ms(uint32_t ms)
                 .taken_ms = g_rig.ms, .stamped = true,
             };
 
-            if (getenv("LRDBG") && servo_screen_limit_running()) {
-                fprintf(stderr, "t %u cmd %u pos %.0f arm %d st %d ma %d lim %u-%u\n", g_rig.ms, lr.cmd, lr.sv.position_us, lr.armed, (int)kst_prog_state(M), ma, lo, hi);
-            }
             lr.win_end += 50u;
             lr.sum = 0.0f;
             lr.n = 0u;
@@ -5376,9 +5378,13 @@ static void lr_ms(uint32_t ms)
         }
         if (g_rig.ms % 20u == 0u) {
             servo_screen_clock(g_rig.ms);
-            servo_screen_set_drive(1u + RIG_PORT, RIG_PIN,
-                                   kst_prog_state(M) == KST_PROG_PWM
-                                       && !kst_panel_holds_port());
+            if (lr.pin) {
+                servo_screen_set_drive(0u, 2u, true);
+            } else {
+                servo_screen_set_drive(1u + RIG_PORT, RIG_PIN,
+                                       kst_prog_state(M) == KST_PROG_PWM
+                                           && !kst_panel_holds_port());
+            }
             lr_commands();
             scr->tick(0.02f);
             servo_screen_service();
@@ -5413,17 +5419,25 @@ static void lr_fresh(bool reversion)
     lr_ms(400u);
 }
 
-/* SETTINGS, LIMITS, LIMIT RUN to SEARCH+PROG, and START LIMIT RUN held
- * for 2.3 s. */
-static void lr_start(void)
+/* SETTINGS, LIMITS, LIMIT RUN to SEARCH+PROG, SERVO PULSES to 1000-2000
+ * where @p pulses, and START LIMIT RUN held for 2.3 s. */
+static void lr_start_with(bool pulses)
 {
     screen_tap(LR_SETB_X, BTN_Y);
     screen_tap(LR_TAB_X, LR_TAB_Y);
     screen_tap(LR_MODE_X, LR_ROW6_Y);
+    if (pulses) {
+        screen_tap(LR_MODE_X, LR_ROW5_Y);
+    }
     ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);
     ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
     lr_ms(20u);
+}
+
+static void lr_start(void)
+{
+    lr_start_with(true);
 }
 
 static void lr_run_out(void)
@@ -5434,15 +5448,16 @@ static void lr_run_out(void)
     lr_ms(2000u);
 }
 
-/* SEARCH+PROG with REVERSION off and on: both ends found bound, LEFT ANGLE
- * and RIGHT ANGLE lowered until neither binds, the servo's own travel
- * inside both stops, the bench back to ARMED after every session, one
- * backup file, PASS in the report with the writes made, and RESTORE
- * offering the servo as the run found it. */
+/* SEARCH+PROG with SERVO PULSES at 1000-2000, REVERSION off and on: PULSE
+ * LOWER and PULSE UPPER at 1000.0 and 2000.0 us, both ends found bound,
+ * LEFT ANGLE and RIGHT ANGLE lowered so neither binds, the servo's full
+ * travel inside both stops, the bench back to ARMED after every session,
+ * one backup file, PASS in the report with the writes made, and RESTORE
+ * putting the servo back as the run found it, 900.0 and 2100.0 us. */
 TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
 {
     for (int rev = 0; rev < 2; ++rev) {
-        uint16_t lo, hi;
+        int32_t d = 0;
 
         lr_fresh(rev != 0);
         lr_start();
@@ -5454,20 +5469,34 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         CHECK(strstr(lr.report, "Writes:") != NULL);
         CHECK_EQ(lr.opens_txt, 1u);
         CHECK_EQ(lr.ends, 1u);
+        CHECK(strstr(lr.report, "Pulse write:    PULSE LOWER 900.0 -> 1000.0 "
+                                "us, PULSE UPPER 2100.0 -> 2000.0 us") != NULL);
         CHECK(servo(KST_F_LEFT_ANGLE) < 150u);
         CHECK(servo(KST_F_RIGHT_ANGLE) < 150u);
-        sim_travel(g_rig.sim.reg, 1500u, 0.0f, 4.0f, &lo, &hi);
-        CHECK(lo > 1150u);
-        CHECK(hi < 1880u);
+        CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER),
+                                &d));
+        CHECK_EQ(d, 10000);
+        CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER),
+                                &d));
+        CHECK_EQ(d, 20000);
+        /* The full travel, at the pulse limits, inside both stops by the
+         * model's resolution: a push of 3.0 us past a stop draws less
+         * than the +0.15 A a bind needs, and the command rounds to 0.5 us
+         * (test_servo_limrun.c, every_stop_position_passes). */
+        CHECK(sim_horn_us(g_rig.sim.reg, 1000u, 4.0f, false) > 1150.0f - 3.5f);
+        CHECK(sim_horn_us(g_rig.sim.reg, 2000u, 4.0f, false) < 1880.0f + 3.5f);
         /* Every other register as it was. */
         {
+            static const kst_field_id_t k_run[] = {
+                KST_F_LEFT_ANGLE, KST_F_RIGHT_ANGLE, KST_F_PULSE_LOWER,
+                KST_F_PULSE_UPPER,
+            };
             kst_image_t was = sim_bench_image(), now = rig_servo();
 
             (void)kst_field_set(&was, KST_F_REVERSION, rev ? 1u : 0u);
-            (void)kst_field_set(&was, KST_F_LEFT_ANGLE,
-                                servo(KST_F_LEFT_ANGLE));
-            (void)kst_field_set(&was, KST_F_RIGHT_ANGLE,
-                                servo(KST_F_RIGHT_ANGLE));
+            for (size_t k = 0; k < 4u; ++k) {
+                (void)kst_field_set(&was, k_run[k], servo(k_run[k]));
+            }
             CHECK(memcmp(was.r, now.r, sizeof(was.r)) == 0);
         }
         CHECK(lr.disarms >= 1u);
@@ -5485,6 +5514,93 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
+        if (!kst_prog_write_enabled(M)) {
+            enable();
+        }
+        tap(val(PG_SERVO, 2, 0));
+        tap(kst_panel_choice_rect(choice(TR(KP_FROM_RUN))));
+        CHECK_EQ(kst_panel_editor(), 3);
+        for (int k = 0; k < 4 && kst_panel_editor() == 3; ++k) {
+            hold(2.1f);
+        }
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
+        {
+            kst_image_t was = sim_bench_image(), now = rig_servo();
+
+            (void)kst_field_set(&was, KST_F_REVERSION, rev ? 1u : 0u);
+            CHECK(memcmp(was.r, now.r, sizeof(was.r)) == 0);
+        }
+        CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER),
+                                &d));
+        CHECK_EQ(d, 9000);
+        CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER),
+                                &d));
+        CHECK_EQ(d, 21000);
+    }
+}
+
+/* SERVO PULSES at KEEP: the bench's PULSE MIN and MAX, 1000 and 2000 us,
+ * do not hold the servo's 900 and 2100 us.  The run reads the servo,
+ * gives the port back and ends as FAIL with the bench SAFE: nothing
+ * driven, nothing written, both ranges in the report. */
+TEST_CASE(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max)
+{
+    lr_fresh(false);
+    lr_start_with(false);
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(!servo_screen_limit_running());
+    CHECK(strstr(lr.report, "Result:         FAIL - servo pulses outside "
+                            "MIN/MAX\n") != NULL);
+    CHECK(strstr(lr.report, "Searched:") == NULL);
+    /* The run's LEAVE gives the port back: the box stays on the left
+     * card, the programmer does not open over it. */
+    CHECK(!kst_panel_holds_port());
+    CHECK(!kst_panel_is_open());
+    CHECK(strstr(lr.report, "Range:          servo pulses 900.0-2100.0 us "
+                            "outside PULSE MIN/MAX 1000-2000 us") != NULL);
+    CHECK_EQ(lr.disarms, 1u);
+    CHECK_EQ(lr.arms, 0u);
+    CHECK(!lr.armed);
+    CHECK_EQ(g_rig.fc.saves, 0u);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    {
+        kst_image_t was = sim_bench_image(), now = rig_servo();
+
+        CHECK(memcmp(was.r, now.r, sizeof(was.r)) == 0);
+    }
+    CHECK_EQ(lr.cmd, 1500u);
+}
+
+/* The bench's own PWM output as the target: SERVO PULSES is not on the
+ * page and a tap where it stands on the programming port changes nothing;
+ * the run searches out to PULSE MIN and PULSE MAX with no session. */
+TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
+{
+    lr_fresh(false);
+    lr.pin = true;
+    servo_screen_set_pins((uint64_t)1u << 2, true);
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    lr_ms(40u);
+    screen_tap(LR_SETB_X, BTN_Y);
+    screen_tap(LR_TAB_X, LR_TAB_Y);
+    screen_tap(LR_MODE_X, LR_ROW5_Y);       /* where SERVO PULSES would be */
+    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
+    lr_ms(2300u);
+    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
+    lr_ms(20u);
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(strstr(lr.report, "search only, nothing") != NULL);
+    CHECK(strstr(lr.report, "Pulse write") == NULL);
+    CHECK(strstr(lr.report, "Searched:       from 1500 us out to 1000 us "
+                            "and 2000 us") != NULL);
+    CHECK_EQ(lr.disarms, 0u);
+    {
+        kst_image_t was = sim_bench_image(), now = rig_servo();
+
+        CHECK(memcmp(was.r, now.r, sizeof(was.r)) == 0);
     }
 }
 
@@ -5767,6 +5883,8 @@ int main(void)
     RUN(a_tap_with_no_card_asks_for_a_look_once);
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
+    RUN(a_limit_run_refuses_a_servo_whose_pulses_lie_outside_min_and_max);
+    RUN(servo_pulses_is_not_offered_for_a_pwm_pin);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
     RUN(a_session_after_a_limit_run_saves_its_own_backup);
     RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);

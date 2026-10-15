@@ -755,7 +755,7 @@ the write switch and a 2 s hold.
 | --- | --- | --- |
 | `Backup of this session, as first read` | every register that differs, by the coprocessor from the image it holds itself; without the limit checks, and the page says so. A register that differs and that no write of the session changed ends the restore before its first write | nothing |
 | `Values before the interrupted write` | the editable fields, as a write with every limit check | the locked fields, register 00 and the pairing value |
-| `Values before the limit run` | LEFT ANGLE and RIGHT ANGLE as the [limit run](#the-limit-run)'s first session read them, as a write with every limit check. Offered while the servo read differs from them in those two fields and in no other | every other field: it is the same as the run found it |
+| `Values before the limit run` | LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER as the [limit run](#the-limit-run)'s first session read them, as a write with every limit check. Offered while the servo read differs from them in those four fields and in no other | every other field: it is the same as the run found it |
 
 A restore from the panel's image is an ordinary write: the coprocessor
 accepts an unchecked restore only of the backup it holds itself, and that
@@ -822,11 +822,14 @@ its first **READ ALL** finds it. A backup file on the card stays there.
 
 ## The limit run
 
-The SERVO screen's limit run, with SEARCH+PROG, drives the programmer
-itself ([Servo procedures](Servo.md#programming-the-servos-travel-limits)).
-Each value it writes is a session: CONNECT with its read, ENABLE WRITE TO
-SERVO on, LEFT ANGLE and RIGHT ANGLE written and read back, the write
-switch off, LEAVE. Whatever the overlay has open closes at each step. A
+The SERVO screen's limit run drives the programmer itself whenever PWM
+TARGET is PROG PORT
+([Servo procedures](Servo.md#programming-the-servos-travel-limits)). Its
+first session reads the servo, with SEARCH ONLY as well: CONNECT with its
+read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE
+LOWER 1000.0 µs and PULSE UPPER 2000.0 µs. With SEARCH+PROG each later
+write is a session: CONNECT with its read, ENABLE WRITE TO SERVO on, LEFT
+ANGLE and RIGHT ANGLE written and read back, the write switch off, LEAVE. Whatever the overlay has open closes at each step. A
 value under 50 passes its soft limit without the page: the run's 2 s start
 hold is the consent. A hard limit refuses a value as it refuses an edit,
 and the run ends. A write refused before it is sent switches ENABLE WRITE
@@ -834,7 +837,7 @@ TO SERVO off again, as the end of a sent write does.
 
 The run's first write saves the backup file, as any first write does. A
 later session of the run whose servo differs from the run's first read in
-LEFT ANGLE and RIGHT ANGLE at most saves no file: the first file holds the
+LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER at most saves no file: the first file holds the
 servo as the run found it. A session after the run has ended is the
 operator's: its first write saves its own backup file, as every session's
 first write does. The run holds that read in the panel's memory
@@ -842,9 +845,10 @@ until the next run's first write or a start of the panel, and RESTORE offers it 
 `Values before the limit run`. While the run holds the port, the screen's
 TARGET row and the run's box name it: `PROG PORT GP13`.
 
-A run that ends inside a session leaves the port in programming mode with
+A run aborted inside a session leaves the port in programming mode with
 the values last written. LEAVE gives it back to PWM; CONNECT and READ ALL
-offer the restore.
+offer the restore. A run that fails inside a session gives the port back
+with LEAVE itself, and the run's box stays on the left card.
 
 ## More
 

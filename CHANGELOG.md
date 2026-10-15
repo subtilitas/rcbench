@@ -66,9 +66,15 @@ history is in git.
   42,806 to 40,174 bytes. How long the check and the download take on a real
   network is not measured.
 - The SERVO screen runs the installed-limit search: START LIMIT RUN on the
-  LIMITS page, a 2 s hold while ARMED. It searches from PULSE CENTRE to
-  PULSE MIN and to PULSE MAX in 10 us steps on INA3221 CH1's 50 ms windows,
-  reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
+  LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
+  PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
+  reads the KST or Chaservo servo first, in a session of the programmer,
+  and searches from the servo's NEUTRAL to its own PULSE LOWER and PULSE
+  UPPER, never past them. A servo whose PULSE LOWER to PULSE UPPER lies
+  outside the bench's PULSE MIN to PULSE MAX ends the run before anything
+  is driven, `servo pulses outside MIN/MAX`, the bench left SAFE and both
+  ranges named. The search runs in 10 us steps on INA3221 CH1's 50 ms
+  windows, reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
   nothing of the bench's own pulse range. It runs only with the INA3221 as
   the servo rail's meter, on a rail of 3.0 V or more in the last window
   (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
@@ -81,16 +87,27 @@ history is in git.
   voltage in a window`). A window without a current reading is not counted
   as a window. The supply's set points and output are held as at the start
   in every phase but the programmer's sessions.
+- SERVO PULSES on the LIMITS page, KEEP or 1000-2000, for a servo on the
+  programming port: 1000-2000 writes the servo's PULSE LOWER and PULSE
+  UPPER to 1000.0 and 2000.0 us in the run's read session, before anything
+  is driven, and reads them back. NEUTRAL is not written. It works with
+  SEARCH ONLY and with SEARCH+PROG.
 - SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
-  on the programming port until neither end binds, 5 % (at least 2) below
-  the last free value, at most 24 values written a run. The register for
-  each side is found from the run's first write. A later session that reads
-  another type, REVERSION or range of values ends the run, `servo holds
-  other values`. A run that ends while it waits for ARMED asks SAFE, so an
+  on the programming port until neither end binds. The run takes the travel
+  as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER; that
+  is not measured. Each bound side gets 2 writes: an overset 3 % above the
+  share of travel at the first search's first bound pulse, which keeps the
+  stop reachable, and the final value from the share the overset's search
+  found free. A side free after the overset ends the run as FAIL, `no stop
+  after the overset write`. At most 8 values are written a run. The
+  register for each side is found from the run's first write. A later
+  session that reads another type, REVERSION, other pulses or another range
+  of values ends the run, `servo holds other values`. A run that ends while it waits for ARMED asks SAFE, so an
   ARM not yet taken does not arm the bench. A run's write refused before it
   is sent switches ENABLE WRITE TO SERVO off again. RESTORE offers `Values
-  before the limit run`; a session after the run saves its own backup file
-  at its first write.
+  before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
+  UPPER as the run found them; a session after the run saves its own backup
+  file at its first write.
 
 ### Changed
 

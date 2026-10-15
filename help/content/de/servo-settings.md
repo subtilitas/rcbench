@@ -83,6 +83,7 @@ Ist HV SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STA
 | HALTESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
 | STELLZEIT | 0 bis 5000 ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
 | ENDLAGENLAUF | NUR SUCHE, SUCHE+PROG | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit PWM-ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0 us |
 
 ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-endlagenlauf) mit einem Halten von 2 s bei ARMED. Die Zeile darunter nennt Ausgang und Messgerät oder den Grund, warum der Lauf nicht starten kann.
 
@@ -122,4 +123,4 @@ Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung. Eine
 
 ## Die Werte behalten
 
-AUSGANG, HV SERVO und ENDLAGENLAUF gelten für die Sitzung. TEST, der Rest von GRENZEN und PRÜFLING werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.
+AUSGANG, HV SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. TEST, der Rest von GRENZEN und PRÜFLING werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.

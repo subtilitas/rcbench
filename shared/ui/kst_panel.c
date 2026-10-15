@@ -392,7 +392,8 @@ static struct {
         uint8_t  op;            /* RUN_OP_* */
         bool     kept;          /* the operator's supply values are kept */
         uint16_t keep_mv, keep_ma;
-        uint16_t want[2];       /* the write's LEFT and RIGHT ANGLE */
+        kst_field_id_t want_id[2]; /* the write's two fields */
+        uint16_t want[2];       /* and their raw values */
         unsigned writes;        /* writes of the run that ended well */
     } run;
 } k;
@@ -2455,7 +2456,9 @@ static bool run_edit(kst_field_id_t id, uint16_t raw)
     return e == KST_PROG_EDIT_OK;
 }
 
-kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
+/* Write two fields, @p a to @p va and @p b to @p vb, and nothing else. */
+static kst_prog_msg_id_t run_write2(kst_field_id_t a, uint16_t va,
+                                    kst_field_id_t b, uint16_t vb)
 {
     kst_prog_t *p = &k.prog;
     kst_prog_msg_id_t m;
@@ -2475,8 +2478,7 @@ kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
      * enable off again, as the write's end does (kst_panel_run_poll()):
      * a session the run gives up holds no enabled write. */
     kst_prog_discard(p);
-    if (!run_edit(KST_F_LEFT_ANGLE, left)
-        || !run_edit(KST_F_RIGHT_ANGLE, right)) {
+    if (!run_edit(a, va) || !run_edit(b, vb)) {
         const kst_prog_msg_id_t why = kst_prog_message(p)->id;
 
         kst_prog_discard(p);
@@ -2490,9 +2492,29 @@ kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
         return m;
     }
     k.run.op = RUN_OP_WRITE;
-    k.run.want[0] = left;
-    k.run.want[1] = right;
+    k.run.want_id[0] = a;
+    k.run.want_id[1] = b;
+    k.run.want[0] = va;
+    k.run.want[1] = vb;
     return KST_PROG_MSG_NONE;
+}
+
+kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
+{
+    return run_write2(KST_F_LEFT_ANGLE, left, KST_F_RIGHT_ANGLE, right);
+}
+
+kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus)
+{
+    uint16_t lo = 0u, hi = 0u;
+
+    if (!kst_field_raw_from_display(KST_F_PULSE_LOWER, (int32_t)lower_dus,
+                                    &lo)
+        || !kst_field_raw_from_display(KST_F_PULSE_UPPER, (int32_t)upper_dus,
+                                       &hi)) {
+        return KST_PROG_MSG_EDIT_LOCKED;
+    }
+    return run_write2(KST_F_PULSE_LOWER, lo, KST_F_PULSE_UPPER, hi);
 }
 
 kst_prog_msg_id_t kst_panel_run_leave(void)
@@ -2532,9 +2554,9 @@ kst_panel_run_t kst_panel_run_poll(void)
         break;
     case RUN_OP_WRITE:
         ok = st == KST_PROG_PROGRAMMING && msg == KST_PROG_MSG_WRITTEN
-             && kst_field_get(kst_prog_servo(p), KST_F_LEFT_ANGLE)
+             && kst_field_get(kst_prog_servo(p), k.run.want_id[0])
                     == k.run.want[0]
-             && kst_field_get(kst_prog_servo(p), KST_F_RIGHT_ANGLE)
+             && kst_field_get(kst_prog_servo(p), k.run.want_id[1])
                     == k.run.want[1];
         (void)kst_prog_enable(p, false);
         if (ok) {
@@ -2554,14 +2576,26 @@ kst_panel_run_t kst_panel_run_poll(void)
 }
 
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
-                         bool *reversion, unsigned *type)
+                         bool *reversion, unsigned *type,
+                         uint16_t pulse_dus[3])
 {
     const kst_prog_t *p = &k.prog;
     const kst_image_t *img = kst_prog_servo(p);
     uint16_t lo2 = 0u, hi2 = 0u;
+    static const kst_field_id_t k_pulse[3] = {
+        KST_F_NEUTRAL, KST_F_PULSE_LOWER, KST_F_PULSE_UPPER,
+    };
 
     if (!kst_prog_have_servo(p)) {
         return false;
+    }
+    for (int i = 0; i < 3; ++i) {
+        int32_t d = 0;
+
+        pulse_dus[i] = (kst_field_display(k_pulse[i],
+                                          kst_field_get(img, k_pulse[i]), &d)
+                        && d > 0 && d <= 0xFFFF)
+                           ? (uint16_t)d : 0u;
     }
     angle[0] = kst_field_get(img, KST_F_LEFT_ANGLE);
     angle[1] = kst_field_get(img, KST_F_RIGHT_ANGLE);

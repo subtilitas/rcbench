@@ -114,8 +114,9 @@ Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläu
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
 1. ENDLAGENLAUF antippen und NUR SUCHE oder SUCHE+PROG wählen.
-2. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
-3. Die Optionen schließen. Der Kasten auf der linken Karte zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
+2. Mit PWM-ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
+3. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
+4. Die Optionen schließen. Der Kasten auf der linken Karte zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
 
 Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG PORT GP13, STROM INA3221 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
 
@@ -128,14 +129,31 @@ Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät d
 | `INA3221 NICHT ONLINE` | kein Link, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-FENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0 V: ein ausgeschalteter Ausgang liest 0 V |
-| `PORT PWM AUS: DER PORT GIBT KEINEN PULS AUS` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
+| `PORT-PWM AUS: DER PORT GIBT KEINEN PULS AUS` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
 | `KEIN SERVO-PWM-PIN`, `PINS NICHT GELESEN` | PWM-ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
-| `MITTE NICHT ZWISCHEN PULSE MIN UND MAX` | der Pulsbereich enthält PULS CENTRE nicht |
+| `MITTE NICHT ZWISCHEN PULS MIN UND PULS MAX` | der Pulsbereich enthält PULS CENTRE nicht |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 
 ### Die Suche
 
-Die Suche geht von PULS CENTRE nach außen bis PULS MIN, dann bis PULS MAX, 10 us je Schritt. Jede Stellung dauert 250 ms: 120 ms Einschwingen, dann das Mittel der nächsten Fenster. Ein Ende läuft an, wenn der Strom über dem 1,8-Fachen des freien Stroms liegt und ihn um mindestens 0,15 A übersteigt. Der Endpunkt wird 25 us vor der Stellung gemeldet, an der das Servo anläuft. PULS MIN und PULS MAX des Prüfstands bleiben unverändert.
+Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10 us je Schritt. Jede Stellung dauert 250 ms: 120 ms Einschwingen, dann das Mittel der nächsten Fenster. Ein Ende läuft an, wenn der Strom über dem 1,8-Fachen des freien Stroms liegt und ihn um mindestens 0,15 A übersteigt. Der Endpunkt wird 25 us vor der Stellung gemeldet, an der das Servo anläuft. PULS MIN und PULS MAX des Prüfstands bleiben unverändert.
+
+| PWM-ZIEL | Suche |
+|---|---|
+| ein SERVO-PWM-Pin | von PULS CENTRE bis PULS MIN und PULS MAX; nichts wird gelesen oder geschrieben |
+| PROG-PORT | zuerst eine Lesesitzung, dann von NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
+
+Die Lesesitzung hält das Servo auf PULS CENTRE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
+
+- das Lesen scheitert (`kein KST- oder Chaservo-Servo` oder `Programmierport ohne Abschluss`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
+- NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER liegt (`NEUTRAL außerhalb LOWER/UPPER`);
+- PULSE LOWER bis PULSE UPPER nicht innerhalb von PULS MIN bis PULS MAX liegt (`Servopulse außerhalb MIN/MAX`). Der Prüfstand bleibt SAFE, und der Kasten nennt beide Bereiche.
+
+![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](view:servo-limrun-range)
+
+Ein KST-Servo im Lieferzustand hält PULSE LOWER 900,0 us und PULSE UPPER 2100,0 us. Der Bereich des PWM-Typs STANDARD ist 1000-2000 us, also wird dieses Servo bei BEHALTEN abgelehnt. SERVOPULSE auf 1000-2000 wählen, oder einen PWM-Typ, dessen Bereich 900 bis 2100 us enthält.
+
+SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0 us und PULSE UPPER 2000,0 us, bevor sich etwas bewegt, und liest sie zurück. NEUTRAL wird nicht geschrieben. Ein Servo, das diese Werte schon hält, bekommt kein Schreiben. Mit NUR SUCHE sind diese beiden Werte das einzige Schreiben.
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
@@ -145,14 +163,23 @@ SUCHE+PROG braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf
 
 Der Lauf schreibt in Sitzungen des [Servo-Programmierers](servo-programmer.md):
 
-1. Das Servo geht für 1000 ms zurück auf PULS CENTRE.
+1. Das Servo geht für 1000 ms zurück in die Mitte.
 2. Der Lauf schaltet den Prüfstand auf SAFE.
 3. VERBINDEN liest das Servo.
-4. Ein Schreiben von LEFT ANGLE und RIGHT ANGLE, mit jeder Grenzprüfung des Programmierers.
+4. Ein Schreiben, mit jeder Grenzprüfung des Programmierers.
 5. VERLASSEN gibt den Port an PWM zurück.
 6. Der Lauf schaltet den Prüfstand auf ARMED und sucht diese Seite erneut.
 
-Die erste Sitzung liest nur. Das erste Schreiben sichert die Werte des Servos in eine Backup-Datei auf der Karte. Der Lauf findet, welches Register welche Seite begrenzt, und halbiert dann jede anlaufende Seite bis auf 2 Zählwerte. Er programmiert den letzten freien Wert minus 5 %, mindestens 2 Zählwerte, nie unter 1. Zuletzt sucht er beide Enden erneut. Ein Lauf schreibt höchstens 24 Werte. Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt. Ein Wert unter 50 ist eine weiche Grenze: Das Halten von 2 s beim Start ist die Zustimmung dazu.
+Das erste Schreiben sichert die Werte des Servos in eine Backup-Datei auf der Karte. Der Lauf nimmt das Servo als linear: PULSE LOWER und PULSE UPPER sind die Pulse, bei denen es den vollen Weg erreicht, den LEFT ANGLE und RIGHT ANGLE setzen. Der Anteil einer Seite beim Puls p ist `(p - NEUTRAL) / (PULSE LOWER oder UPPER - NEUTRAL)`. Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt, und der lineare Zusammenhang ist eine Annahme.
+
+Jede anlaufende Seite bekommt zwei Schreibvorgänge, v0 der Wert, den ihr Register hielt:
+
+1. Der Vorhalt: v0 x der Anteil am ersten angelaufenen Puls x 1,03, aufgerundet. Der Anschlag bleibt erreichbar, nahe an der Pulsgrenze. Der Lauf sucht diese Seite erneut. Ist sie dort frei, endet der Lauf als NICHT BESTANDEN, `kein Anschlag nach dem Vorhalt`.
+2. Der Endwert: der Vorhalt x der Anteil am letzten freien Puls dieser Suche, abgerundet.
+
+Beispiel: NEUTRAL 1500,2 us, PULSE LOWER 900,0 us, v0 150, die erste Suche frei bei 1000 us und angelaufen bei 990 us. Der Vorhalt ist 150 x 0,850 x 1,03 = 132. Bei 132 ist die Suche frei bis 930 us; der Endwert ist 132 x 0,950 = 125.
+
+Nahe der Pulsgrenze, wo der Vorhalt den Anschlag um weniger als 20 us verschöbe, schreibt der Lauf den Endwert sofort: v0 x der Anteil am letzten freien Puls der ersten Suche. Das erste Schreiben der ersten anlaufenden Seite findet auch, welches Register diese Seite begrenzt. Zuletzt sucht der Lauf beide Enden erneut: BESTANDEN, wenn beide frei sind, NICHT BESTANDEN, wenn eines anläuft. Ein Lauf schreibt höchstens 8 Werte: die zwei Pulse, zwei auf jeder Seite und zwei, um das Register zu finden. Ein Wert unter 50 ist eine weiche Grenze: Das Halten von 2 s beim Start ist die Zustimmung dazu.
 
 ### Was einen Endlagenlauf beendet
 
@@ -164,7 +191,7 @@ Jeder dieser Gründe beendet den Lauf als ABGEBROCHEN, mit abgeschaltetem Ausgan
 - ein Messwert ab 3,0 A, ein Messwert am Ende des Bereichs des INA3221 oder Fenstermittel über 1,0 A für 400 ms;
 - eine Suche länger als 40 s, ein Prüfstand, der nicht in 3 s schaltet, oder ein Schritt des Programmierers länger als 150 s;
 - eine Änderung an Sollwerten oder Ausgang des Netzteils außerhalb der Sitzungen des Programmierers; während einer Suche die Schiene mehr als 1,0 V vom ersten Fenster des Laufs entfernt;
-- bei einer späteren Sitzung ein anderes Servo, oder REVERSION oder der Wertebereich geändert (`Servo hat andere Werte`).
+- bei einer späteren Sitzung ein anderes Servo, oder REVERSION, die Pulse oder der Wertebereich geändert (`Servo hat andere Werte`).
 
 Ein Lauf, der endet, während er auf ARMED wartet, schaltet den Prüfstand zudem auf SAFE.
 
@@ -182,19 +209,19 @@ Der Kasten bleibt bis SCHLIESSEN. Er zeigt das Urteil, den Grund oder die Werte 
 |---|---|
 | GEFUNDEN | nur Suche: ein Ende läuft an; die Endpunkte werden gemeldet |
 | FREI | kein Ende läuft an; nichts wird geschrieben |
-| BESTANDEN | programmiert, und beide Enden in der letzten Suche frei: `LEFT 150>84  RIGHT 150>91` |
+| BESTANDEN | programmiert, und beide Enden in der letzten Suche frei: `LEFT 150>87  RIGHT 150>95` |
 | NICHT BESTANDEN | ein Ende läuft weiterhin an, oder das Servo lässt sich nicht programmieren |
 | ABGEBROCHEN | eine Schutzfunktion, der Bediener, der Link, das Messgerät, das Netzteil oder der Programmierer hat ihn beendet |
 
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält die Endpunkte beider Suchen, LEFT ANGLE und RIGHT ANGLE vorher und nachher, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, den Abstand, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
+Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
 
 ## Aktuelle Einschränkungen
 
 - Am Netzteilmodell des Panels sind die Ströme des Tests die Last des Modells, nicht die des Servos.
-- Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt.
+- Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt. Der Endlagenlauf nimmt den Weg als linear im Puls; das ist nicht gemessen.
 - Bis der Bildschirm eine Position sendet, laufen die Pins mit der Rate, die der Koprozessor hält, nach einem Neustart 50 Hz.
 
 ## Verwandte Seiten

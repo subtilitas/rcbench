@@ -10,12 +10,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* What the next session of the programmer is for. */
+/* Where a side stands. */
 typedef enum {
-    PLAN_PROBE = 0,   /* a bisection value, then a search of its side   */
-    PLAN_FINAL,       /* the final values, then both sides searched     */
-    PLAN_FAIL_CAP,    /* no room for a value a side still needs         */
-} plan_t;
+    ST_NONE = 0,      /* not bound in the first search: nothing to write */
+    ST_OVERSET,       /* the overset is to be written                    */
+    ST_OVERSET_SEARCH,/* written; the side's search follows              */
+    ST_FINAL,         /* the final value is to be written                */
+    ST_DONE,          /* the final value is written                      */
+} stage_t;
 
 static bool due(uint32_t now, uint32_t then, uint32_t ms)
 {
@@ -57,6 +59,13 @@ bool servo_limrun_wrote(const servo_limrun_t *r)
     return r != NULL && r->writes > 0u;
 }
 
+bool servo_limrun_restore(const servo_limrun_t *r)
+{
+    return r != NULL && r->state == SERVO_LIMRUN_DONE && r->programmed
+        && (r->verdict == SERVO_LIMRUN_FAIL
+            || r->verdict == SERVO_LIMRUN_ABORTED);
+}
+
 bool servo_limrun_original(const servo_limrun_t *r, uint16_t *left,
                            uint16_t *right)
 {
@@ -72,16 +81,68 @@ bool servo_limrun_original(const servo_limrun_t *r, uint16_t *left,
     return true;
 }
 
-uint16_t servo_limrun_final(uint16_t v, uint16_t lo)
+int32_t servo_limrun_dist(const servo_limrun_servo_t *sv, uint8_t side,
+                          uint16_t p_us)
 {
-    unsigned m = (unsigned)v * SERVO_LIMRUN_MARGIN_PCT / 100u;
-    if (m < SERVO_LIMRUN_MARGIN_MIN) {
-        m = SERVO_LIMRUN_MARGIN_MIN;
+    const int32_t p = (int32_t)p_us * 10;
+    const int32_t n = (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_NEUTRAL];
+    return side == SERVO_LIMRUN_HI ? p - n : n - p;
+}
+
+int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side)
+{
+    const int32_t n = (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_NEUTRAL];
+    return side == SERVO_LIMRUN_HI
+               ? (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_UPPER] - n
+               : n - (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_LOWER];
+}
+
+/* The share's terms from the pulses in force: after SERVO PULSES at
+ * 1000-2000 those written, not those read. */
+static int32_t dist_now(const servo_limrun_t *r, uint8_t side, uint16_t p_us)
+{
+    servo_limrun_servo_t sv;
+    memset(&sv, 0, sizeof(sv));
+    memcpy(sv.pulse_dus, r->pulse_now, sizeof(sv.pulse_dus));
+    return servo_limrun_dist(&sv, side, p_us);
+}
+
+static int32_t span_now(const servo_limrun_t *r, uint8_t side)
+{
+    servo_limrun_servo_t sv;
+    memset(&sv, 0, sizeof(sv));
+    memcpy(sv.pulse_dus, r->pulse_now, sizeof(sv.pulse_dus));
+    return servo_limrun_span(&sv, side);
+}
+
+static uint16_t clamp_raw(uint64_t v, uint16_t lo, uint16_t hi)
+{
+    if (v < lo) {
+        return lo;
     }
-    if ((unsigned)v < (unsigned)lo + m) {
-        return lo < v ? lo : v;
+    return v > hi ? hi : (uint16_t)v;
+}
+
+uint16_t servo_limrun_overset(uint16_t v0, int32_t d, int32_t span,
+                              uint16_t lo_raw)
+{
+    if (d <= 0 || span <= 0) {
+        return lo_raw > v0 ? v0 : lo_raw;
     }
-    return (uint16_t)(v - m);
+    const uint64_t num = (uint64_t)v0 * (uint64_t)d
+                         * (100u + SERVO_LIMRUN_OVERSET_PCT);
+    const uint64_t den = (uint64_t)span * 100u;
+    return clamp_raw((num + den - 1u) / den, lo_raw > v0 ? v0 : lo_raw, v0);
+}
+
+uint16_t servo_limrun_scaled(uint16_t v, int32_t d, int32_t span,
+                             uint16_t lo_raw)
+{
+    if (d <= 0 || span <= 0) {
+        return lo_raw > v ? v : lo_raw;
+    }
+    return clamp_raw((uint64_t)v * (uint64_t)d / (uint64_t)span,
+                     lo_raw > v ? v : lo_raw, v);
 }
 
 /* ------------------------------------------------------------ the end */
@@ -145,17 +206,18 @@ static void begin_search(servo_limrun_t *r, uint8_t side,
                          servo_limrun_phase_t ph, uint32_t now_ms)
 {
     servo_limit_cfg_t c;
-    servo_limit_defaults(&c, r->cfg.centre_us, side == SERVO_LIMRUN_HI);
+    servo_limit_defaults(&c, r->ctr_us, side == SERVO_LIMRUN_HI);
     c.max_travel_us = (side == SERVO_LIMRUN_HI)
-                          ? (uint16_t)(r->cfg.max_us - r->cfg.centre_us)
-                          : (uint16_t)(r->cfg.centre_us - r->cfg.min_us);
+                          ? (uint16_t)(r->end_us[SERVO_LIMRUN_HI] - r->ctr_us)
+                          : (uint16_t)(r->ctr_us - r->end_us[SERVO_LIMRUN_LO]);
     servo_limit_init(&r->lf, &c);
     r->side      = side;
     r->phase     = ph;
     r->phase_ms  = now_ms;
     r->search_ms = now_ms;
-    r->cmd_us    = r->cfg.centre_us;
+    r->cmd_us    = r->ctr_us;
     r->cmd_due   = true;
+    r->searched  = true;
     memset(&r->probe, 0, sizeof(r->probe));
 }
 
@@ -167,6 +229,7 @@ static servo_limrun_side_t side_result(const servo_limrun_t *r,
     s.bound      = r->lf.state == SERVO_LIMIT_FOUND;
     s.limit_us   = r->lf.limit_us;
     s.bind_us    = s.bound ? bind_us : 0u;
+    s.free_us    = r->lf.last_free_us;
     s.baseline_a = r->lf.baseline_a;
     s.knee_a     = r->lf.knee_a;
     return s;
@@ -189,98 +252,118 @@ static unsigned reg_of(const servo_limrun_t *r, uint8_t side)
                ? (unsigned)SERVO_LIMRUN_LEFT : (unsigned)SERVO_LIMRUN_RIGHT;
 }
 
-/* The bisection's next value for @p side: the middle of what is left, or
- * the smallest value itself once nothing between is left untried. */
-static uint16_t candidate(const servo_limrun_t *r, uint8_t side)
-{
-    const uint16_t lo = r->lo[side], hi = r->hi[side];
-    if (hi - lo <= (int)SERVO_LIMRUN_RES_RAW) {
-        return lo;
-    }
-    return (uint16_t)(lo + (hi - lo) / 2u);
-}
-
 static unsigned changes(const servo_limrun_t *r, const uint16_t *want)
 {
     return (unsigned)(want[0] != r->cur[0]) + (unsigned)(want[1] != r->cur[1]);
 }
 
-static void settle_side(servo_limrun_t *r, uint8_t side)
+/* The search centre and ends: the servo's NEUTRAL, PULSE LOWER and PULSE
+ * UPPER once read, rounded inward to whole microseconds so no command
+ * passes a pulse limit; the bench's PULSE CENTRE, MIN and MAX before. */
+static void search_span(servo_limrun_t *r)
 {
-    r->settled[side] = true;
-    r->final_v[side] = servo_limrun_final(r->lo[side], r->servo.lo_raw);
+    if (!r->read_once) {
+        r->ctr_us = r->cfg.centre_us;
+        r->end_us[SERVO_LIMRUN_LO] = r->cfg.min_us;
+        r->end_us[SERVO_LIMRUN_HI] = r->cfg.max_us;
+        return;
+    }
+    r->ctr_us = (uint16_t)((r->pulse_now[SERVO_LIMRUN_P_NEUTRAL] + 5u) / 10u);
+    r->end_us[SERVO_LIMRUN_LO] =
+        (uint16_t)((r->pulse_now[SERVO_LIMRUN_P_LOWER] + 9u) / 10u);
+    r->end_us[SERVO_LIMRUN_HI] =
+        (uint16_t)(r->pulse_now[SERVO_LIMRUN_P_UPPER] / 10u);
 }
 
 /*
- * The next session's values.  Before the mapping is known: the register
- * chosen for it lowered (r->probe_value), the other as it is.  After: each
- * register of a side that never bound back at the servo's own value, each
- * settled side at its final value, and the first side still bisected at
- * its next value.  A bisection value that would leave less than
- * SERVO_LIMRUN_WRITES_KEEP writes ends the bisection: a side with a free
- * value settles on it, and one without fails the run.
+ * A bound side's values worked out for register @p reg: the overset, or,
+ * where it is left out, the final value at once (servo_limrun.h).  False
+ * where the register holds the smallest value already: nothing lowers it.
  */
-static plan_t plan(servo_limrun_t *r, uint16_t *want, uint8_t *side)
+static bool prepare_side(servo_limrun_t *r, uint8_t side, unsigned reg)
+{
+    const uint16_t v0 = r->servo.angle[reg];
+    const uint16_t lo = r->servo.lo_raw;
+    const int32_t  d0 = r->d0_dus[side];
+    const int32_t  span = span_now(r, side);
+    if (v0 <= lo) {
+        return false;
+    }
+    /* The overset from the first bound pulse: at or past the stop, so the
+     * stop the overset moves out stays inside the pulse limit by the 3 %. */
+    const uint16_t v1 = servo_limrun_overset(v0, r->db_dus[side], span, lo);
+    /* The move the model gives the stop, 0.1 us: d0 x (v0 / v1 - 1), the
+     * last free pulse the stop's nearest estimate. */
+    const bool skip = v1 >= v0
+                      || (int64_t)d0 * (int64_t)(v0 - v1)
+                             < (int64_t)SERVO_LIMRUN_MOVED_US * 10
+                                   * (int64_t)v1;
+    r->v0[side] = v0;
+    r->d1_dus[side] = 0;
+    if (skip) {
+        r->v1[side] = 0u;
+        r->v2[side] = servo_limrun_scaled(v0, d0, span, lo);
+        r->stage[side] = ST_FINAL;
+    } else {
+        r->v1[side] = v1;
+        r->v2[side] = 0u;
+        r->stage[side] = ST_OVERSET;
+    }
+    return true;
+}
+
+/* The value the side's stage puts in its register. */
+static uint16_t stage_value(const servo_limrun_t *r, uint8_t side,
+                            unsigned reg)
+{
+    switch (r->stage[side]) {
+    case ST_OVERSET:
+    case ST_OVERSET_SEARCH:
+        return r->v1[side];
+    case ST_FINAL:
+    case ST_DONE:
+        return r->v2[side];
+    default:
+        return r->servo.angle[reg];
+    }
+}
+
+/*
+ * The next session's values and the side searched after it (-1: both
+ * ends, the final check).  Before the mapping is known: the first bound
+ * side's value in the register tried, the other register at its own value.
+ * After: each register at its side's stage.  Pure: called again at the
+ * session's CONNECT it gives the same.
+ */
+static void plan(const servo_limrun_t *r, uint16_t *want, int8_t *search)
 {
     want[0] = r->cur[0];
     want[1] = r->cur[1];
+    *search = -1;
     if (!r->mapped) {
-        /* The mapping: the register tried at its smallest value; the
-         * second try keeps the first one there too. */
-        want[r->map_reg] = r->servo.lo_raw;
-        *side = r->probe_side;
-        return PLAN_PROBE;
-    }
-    for (int g = 0; g < 2; ++g) {
-        const int8_t s = r->reg_side[g];
-        if (s < 0) {
-            continue;
-        }
-        if (!r->need[s]) {
-            want[g] = r->servo.angle[g];
-        } else if (r->settled[s]) {
-            want[g] = r->final_v[s];
-        }
+        const unsigned g = r->map_reg;
+        want[g] = stage_value(r, r->map_side, g);
+        want[1u - g] = r->servo.angle[1u - g];
+        *search = (int8_t)r->map_side;
+        return;
     }
     for (uint8_t s = 0; s < 2u; ++s) {
-        if (!r->need[s] || r->settled[s]) {
-            continue;
+        const unsigned g = reg_of(r, s);
+        want[g] = stage_value(r, s, g);
+        if (r->stage[s] == ST_OVERSET) {
+            *search = (int8_t)s;
         }
-        uint16_t trial[2] = { want[0], want[1] };
-        trial[reg_of(r, s)] = candidate(r, s);
-        if (r->writes + changes(r, trial) + SERVO_LIMRUN_WRITES_KEEP
-            <= SERVO_LIMRUN_WRITES_MAX) {
-            want[0] = trial[0];
-            want[1] = trial[1];
-            *side   = s;
-            return PLAN_PROBE;
-        }
-        /* No room: every side still bisected takes its free value. */
-        for (uint8_t k = 0; k < 2u; ++k) {
-            if (r->need[k] && !r->settled[k]) {
-                if (!r->lo_free[k]) {
-                    return PLAN_FAIL_CAP;
-                }
-                settle_side(r, k);
-                want[reg_of(r, k)] = r->final_v[k];
-            }
-        }
-        break;
     }
-    if (r->writes + changes(r, want) > SERVO_LIMRUN_WRITES_MAX) {
-        return PLAN_FAIL_CAP;
-    }
-    return PLAN_FINAL;
 }
 
-/* A session next: the servo back to PULSE CENTRE first, SAFE asked once it
+/* A session next: the servo back to the centre first, SAFE asked once it
  * had SERVO_LIMRUN_RETURN_MS to get there (servo_limrun_step()). */
 static void go_safe(servo_limrun_t *r, uint32_t now_ms)
 {
     r->phase      = SERVO_LIMRUN_PH_SAFE;
     r->phase_ms   = now_ms;
     r->safe_asked = false;
-    r->cmd_us     = r->cfg.centre_us;
+    r->cmd_us     = r->ctr_us;
     r->cmd_due    = true;
 }
 
@@ -290,102 +373,142 @@ static void begin_check(servo_limrun_t *r, uint32_t now_ms)
     begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_CHECK, now_ms);
 }
 
-/* After a search of the bound side with a register lowered: what that says
- * of the bisection, of the mapping, and what comes next. */
-static void apply(servo_limrun_t *r, uint8_t side, uint16_t value,
-                  bool free_now, uint32_t now_ms)
+/* A session if the plan changes a value, the final check if not. */
+static void next_step(servo_limrun_t *r, uint32_t now_ms)
 {
-    if (free_now) {
-        r->lo[side]      = value;
-        r->lo_free[side] = true;
-    } else if (value <= r->lo[side]) {
-        /* The smallest value the protocol takes, and still bound. */
-        fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
-        return;
-    } else {
-        r->hi[side] = value;
-    }
-    if (r->lo_free[side] && r->hi[side] - r->lo[side]
-                                <= (int)SERVO_LIMRUN_RES_RAW) {
-        settle_side(r, side);
-    }
-}
-
-/* The mapping is known: each side bisects from the smallest value up to
- * the value its register held. */
-static void map_done(servo_limrun_t *r)
-{
-    r->mapped = true;
-    for (uint8_t s = 0; s < 2u; ++s) {
-        r->lo[s] = r->servo.lo_raw;
-        r->hi[s] = r->servo.angle[reg_of(r, s)];
-    }
-}
-
-static void next_after_probe(servo_limrun_t *r, uint32_t now_ms)
-{
-    const servo_limrun_side_t *res = &r->probe;
-    const uint8_t side = r->probe_side;
-
-    if (!r->mapped) {
-        const int32_t out = outward(side, res, &r->first[side]);
-        const bool moved = !res->bound || out >= (int32_t)SERVO_LIMRUN_MOVED_US;
-        const bool inward = res->bound && out <= -(int32_t)SERVO_LIMRUN_MOVED_US;
-        const int  other_reg = 1 - (int)r->map_reg;
-        if (inward) {
-            fail(r, SERVO_LIMRUN_WHY_MAPPING, now_ms);
-            return;
-        }
-        if (!moved) {
-            if (r->map_both || r->cur[other_reg] <= r->servo.lo_raw) {
-                /* Both registers at their smallest value, and the end
-                 * binds where it did. */
-                fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
-                return;
-            }
-            /* The other register to its smallest value as well. */
-            r->map_both = true;
-            r->map_reg  = (uint8_t)other_reg;
-            go_safe(r, now_ms);
-            return;
-        }
-        r->reg_side[r->map_reg] = (int8_t)side;
-        r->reg_side[other_reg]  = (int8_t)(1 - side);
-        map_done(r);
-        apply(r, side, r->servo.lo_raw, !res->bound, now_ms);
-        if (!servo_limrun_running(r)) {
-            return;
-        }
-    } else {
-        apply(r, side, r->probe_value, !res->bound, now_ms);
-        if (!servo_limrun_running(r)) {
-            return;
-        }
-    }
-
     uint16_t want[2];
-    uint8_t s = 0u;
-    const plan_t p = plan(r, want, &s);
-    if (p == PLAN_FAIL_CAP) {
-        fail(r, SERVO_LIMRUN_WHY_WRITE_CAP, now_ms);
-    } else if (p == PLAN_FINAL && changes(r, want) == 0u) {
+    int8_t search = -1;
+    plan(r, want, &search);
+    if (changes(r, want) == 0u) {
         begin_check(r, now_ms);
     } else {
         go_safe(r, now_ms);
     }
 }
 
+/* The first bound side's search after its first write: which register
+ * limits it.  False where the run ended or tries the other register. */
+static bool map_side(servo_limrun_t *r, uint32_t now_ms)
+{
+    const servo_limrun_side_t *res = &r->probe;
+    const uint8_t side = r->map_side;
+    const int32_t out = outward(side, res, &r->first[side]);
+    const bool moved = !res->bound || out >= (int32_t)SERVO_LIMRUN_MOVED_US;
+    const bool inward = res->bound && out <= -(int32_t)SERVO_LIMRUN_MOVED_US;
+    const unsigned other = 1u - r->map_reg;
+    if (inward) {
+        fail(r, SERVO_LIMRUN_WHY_MAPPING, now_ms);
+        return false;
+    }
+    if (!moved) {
+        if (r->map_tries >= 2u) {
+            fail(r, SERVO_LIMRUN_WHY_MAPPING, now_ms);
+        } else if (!prepare_side(r, side, other)) {
+            /* The other register holds the smallest value already. */
+            fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
+        } else {
+            /* That register back to its value, the other one tried. */
+            r->map_reg = (uint8_t)other;
+            ++r->map_tries;
+            go_safe(r, now_ms);
+        }
+        return false;
+    }
+    r->mapped = true;
+    r->reg_side[r->map_reg] = (int8_t)side;
+    r->reg_side[other]      = (int8_t)(1 - side);
+    if (r->need[1 - side] && !prepare_side(r, (uint8_t)(1 - side), other)) {
+        fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
+        return false;
+    }
+    return true;
+}
+
+static void next_after_probe(servo_limrun_t *r, uint32_t now_ms)
+{
+    const servo_limrun_side_t *res = &r->probe;
+    const uint8_t side = r->side;
+
+    if (!r->mapped && !map_side(r, now_ms)) {
+        return;
+    }
+    if (r->stage[side] == ST_OVERSET_SEARCH) {
+        if (!res->bound) {
+            /* The stop the overset was to keep in reach is not there. */
+            fail(r, SERVO_LIMRUN_WHY_NO_STOP, now_ms);
+            return;
+        }
+        const int32_t d1 = dist_now(r, side, res->free_us);
+        if (d1 <= 0) {
+            fail(r, SERVO_LIMRUN_WHY_BEFORE_NEUTRAL, now_ms);
+            return;
+        }
+        r->d1_dus[side] = d1;
+        r->v2[side] = servo_limrun_scaled(r->v1[side], d1,
+                                          span_now(r, side),
+                                          r->servo.lo_raw);
+        r->stage[side] = ST_FINAL;
+    }
+    next_step(r, now_ms);
+}
+
+/* The first search of both sides is over. */
 static void after_first_search(servo_limrun_t *r, uint32_t now_ms)
 {
     r->need[SERVO_LIMRUN_LO] = r->first[SERVO_LIMRUN_LO].bound;
     r->need[SERVO_LIMRUN_HI] = r->first[SERVO_LIMRUN_HI].bound;
     if (!r->need[SERVO_LIMRUN_LO] && !r->need[SERVO_LIMRUN_HI]) {
         finish(r, SERVO_LIMRUN_FREE, SERVO_LIMRUN_WHY_NONE, now_ms);
-    } else if (!r->cfg.program) {
-        finish(r, SERVO_LIMRUN_FOUND, SERVO_LIMRUN_WHY_NONE, now_ms);
-    } else {
-        go_safe(r, now_ms);
+        return;
     }
+    if (!r->cfg.program) {
+        finish(r, SERVO_LIMRUN_FOUND, SERVO_LIMRUN_WHY_NONE, now_ms);
+        return;
+    }
+    for (uint8_t s = 0; s < 2u; ++s) {
+        if (!r->need[s]) {
+            continue;
+        }
+        r->d0_dus[s] = dist_now(r, s, r->first[s].free_us);
+        r->db_dus[s] = dist_now(r, s, r->first[s].bind_us);
+        if (r->d0_dus[s] <= 0) {
+            fail(r, SERVO_LIMRUN_WHY_BEFORE_NEUTRAL, now_ms);
+            return;
+        }
+    }
+    /* The first bound side's first write finds its register: LEFT ANGLE,
+     * or RIGHT ANGLE where LEFT holds the smallest value already. */
+    r->map_side  = r->need[SERVO_LIMRUN_LO] ? SERVO_LIMRUN_LO
+                                            : SERVO_LIMRUN_HI;
+    r->map_tries = 1u;
+    if (prepare_side(r, r->map_side, SERVO_LIMRUN_LEFT)) {
+        r->map_reg = SERVO_LIMRUN_LEFT;
+    } else if (prepare_side(r, r->map_side, SERVO_LIMRUN_RIGHT)) {
+        r->map_reg   = SERVO_LIMRUN_RIGHT;
+        r->map_tries = 2u;          /* LEFT ANGLE cannot be lowered */
+    } else {
+        fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
+        return;
+    }
+    go_safe(r, now_ms);
+}
+
+/* The final check is over: PASS with both ends free.  An end that binds
+ * with its register at the smallest value fails as that. */
+static void after_check(servo_limrun_t *r, uint32_t now_ms)
+{
+    if (!r->after[0].bound && !r->after[1].bound) {
+        finish(r, SERVO_LIMRUN_PASS, SERVO_LIMRUN_WHY_NONE, now_ms);
+        return;
+    }
+    for (uint8_t s = 0; s < 2u; ++s) {
+        if (r->after[s].bound && r->mapped
+            && r->cur[reg_of(r, s)] <= r->servo.lo_raw) {
+            fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
+            return;
+        }
+    }
+    fail(r, SERVO_LIMRUN_WHY_STILL_BINDS, now_ms);
 }
 
 /* The search under way has ended. */
@@ -400,7 +523,7 @@ static void search_done(servo_limrun_t *r, uint16_t bind_us, uint32_t now_ms)
     }
     r->probe = side_result(r, bind_us);
     /* Back to the centre from the end it reached, whatever comes next. */
-    r->cmd_us  = r->cfg.centre_us;
+    r->cmd_us  = r->ctr_us;
     r->cmd_due = true;
     switch (r->phase) {
     case SERVO_LIMRUN_PH_SEARCH:
@@ -418,10 +541,8 @@ static void search_done(servo_limrun_t *r, uint16_t bind_us, uint32_t now_ms)
         r->after[r->side] = r->probe;
         if (r->side == SERVO_LIMRUN_LO) {
             begin_search(r, SERVO_LIMRUN_HI, SERVO_LIMRUN_PH_CHECK, now_ms);
-        } else if (r->after[0].bound || r->after[1].bound) {
-            fail(r, SERVO_LIMRUN_WHY_STILL_BINDS, now_ms);
         } else {
-            finish(r, SERVO_LIMRUN_PASS, SERVO_LIMRUN_WHY_NONE, now_ms);
+            after_check(r, now_ms);
         }
         break;
     default:
@@ -442,7 +563,8 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
                         uint32_t now_ms)
 {
     if (r == NULL || cfg == NULL || servo_limrun_running(r)
-        || !(cfg->min_us < cfg->centre_us && cfg->centre_us < cfg->max_us)) {
+        || !(cfg->min_us < cfg->centre_us && cfg->centre_us < cfg->max_us)
+        || ((cfg->program || cfg->set_pulses) && !cfg->read)) {
         return false;
     }
     memset(r, 0, sizeof(*r));
@@ -452,7 +574,14 @@ bool servo_limrun_start(servo_limrun_t *r, const servo_limrun_cfg_t *cfg,
     r->last_win_ms = now_ms;
     r->reg_side[0] = -1;
     r->reg_side[1] = -1;
-    begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_SEARCH, now_ms);
+    r->probe_side  = -1;
+    search_span(r);
+    if (cfg->read) {
+        /* The servo read first: its pulses are the search's ends. */
+        go_safe(r, now_ms);
+    } else {
+        begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_SEARCH, now_ms);
+    }
     return true;
 }
 
@@ -586,6 +715,74 @@ void servo_limrun_backup(servo_limrun_t *r, const char *name)
     }
 }
 
+static void ask_leave(servo_limrun_t *r, uint32_t now_ms)
+{
+    r->phase    = SERVO_LIMRUN_PH_LEAVE;
+    r->phase_ms = now_ms;
+    r->pend.leave = true;
+}
+
+/* NEUTRAL between PULSE LOWER and PULSE UPPER. */
+static bool pulses_ordered(const uint16_t *p)
+{
+    return p[SERVO_LIMRUN_P_LOWER] < p[SERVO_LIMRUN_P_NEUTRAL]
+        && p[SERVO_LIMRUN_P_NEUTRAL] < p[SERVO_LIMRUN_P_UPPER];
+}
+
+/* The read session's pulses stand: the search's ends, within the bench's
+ * PULSE MIN and PULSE MAX, and the port given back.  The bench stays SAFE
+ * where they are not. */
+static void read_done(servo_limrun_t *r, uint32_t now_ms)
+{
+    const uint16_t *p = r->pulse_now;
+    if (!pulses_ordered(p)) {
+        fail(r, SERVO_LIMRUN_WHY_NEUTRAL, now_ms);
+        return;
+    }
+    if ((uint32_t)p[SERVO_LIMRUN_P_LOWER] < (uint32_t)r->cfg.min_us * 10u
+        || (uint32_t)p[SERVO_LIMRUN_P_UPPER] > (uint32_t)r->cfg.max_us * 10u) {
+        fail(r, SERVO_LIMRUN_WHY_RANGE, now_ms);
+        return;
+    }
+    search_span(r);
+    ask_leave(r, now_ms);
+}
+
+/* The first CONNECT: the servo as it is. */
+static void first_read(servo_limrun_t *r, const servo_limrun_servo_t *sv,
+                       uint32_t now_ms)
+{
+    if (!sv->ok || sv->lo_raw > sv->hi_raw
+        || sv->angle[0] < sv->lo_raw || sv->angle[1] < sv->lo_raw) {
+        /* No servo, or values the hard rules do not take. */
+        fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
+        return;
+    }
+    r->read_once = true;
+    r->servo     = *sv;
+    r->cur[0]    = sv->angle[0];
+    r->cur[1]    = sv->angle[1];
+    memcpy(r->pulse_now, sv->pulse_dus, sizeof(r->pulse_now));
+    if (!pulses_ordered(r->pulse_now)) {
+        fail(r, SERVO_LIMRUN_WHY_NEUTRAL, now_ms);
+        return;
+    }
+    if (r->cfg.set_pulses
+        && (r->pulse_now[SERVO_LIMRUN_P_LOWER] != SERVO_LIMRUN_STD_LOWER_DUS
+            || r->pulse_now[SERVO_LIMRUN_P_UPPER]
+                   != SERVO_LIMRUN_STD_UPPER_DUS)) {
+        /* SERVO PULSES 1000-2000: the pulse write before anything moves. */
+        r->pulse_op = true;
+        r->phase    = SERVO_LIMRUN_PH_WRITE;
+        r->phase_ms = now_ms;
+        r->pend.pulses = true;
+        r->pend.pulse_dus[0] = SERVO_LIMRUN_STD_LOWER_DUS;
+        r->pend.pulse_dus[1] = SERVO_LIMRUN_STD_UPPER_DUS;
+        return;
+    }
+    read_done(r, now_ms);
+}
+
 void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
                        uint32_t now_ms)
 {
@@ -594,79 +791,38 @@ void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
         return;
     }
     ++r->sessions;
-    if (!sv->ok) {
-        if (!r->read_once) {
-            fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
-        } else {
-            abort_why(r, SERVO_LIMRUN_WHY_PROG, now_ms);
-        }
+    if (!r->read_once) {
+        first_read(r, sv, now_ms);
         return;
     }
-    if (!r->read_once) {
-        r->read_once = true;
-        r->servo     = *sv;
-        r->cur[0]    = sv->angle[0];
-        r->cur[1]    = sv->angle[1];
-        /* The register the mapping lowers: LEFT ANGLE, or RIGHT ANGLE
-         * where LEFT is at the smallest value already. */
-        if (sv->lo_raw > sv->hi_raw
-            || sv->angle[0] < sv->lo_raw || sv->angle[1] < sv->lo_raw) {
-            /* Values the hard rules do not take: not one to lower. */
-            fail(r, SERVO_LIMRUN_WHY_NOT_KST, now_ms);
-            return;
-        }
-        if (sv->angle[SERVO_LIMRUN_LEFT] > sv->lo_raw) {
-            r->map_reg = SERVO_LIMRUN_LEFT;
-        } else if (sv->angle[SERVO_LIMRUN_RIGHT] > sv->lo_raw) {
-            r->map_reg = SERVO_LIMRUN_RIGHT;
-            r->map_both = true;     /* LEFT ANGLE is at its smallest */
-        } else {
-            fail(r, SERVO_LIMRUN_WHY_SMALLEST, now_ms);
-            return;
-        }
-        r->probe_value = sv->lo_raw;
-        r->probe_side  = r->need[SERVO_LIMRUN_LO] ? SERVO_LIMRUN_LO
-                                                  : SERVO_LIMRUN_HI;
-        /* The first session reads and gives the port back: a LEAVE that
-         * fails on this link or supply ends the run before a value
-         * changes. */
-        r->dry      = true;
-        r->phase    = SERVO_LIMRUN_PH_LEAVE;
-        r->phase_ms = now_ms;
-        r->pend.leave = true;
+    if (!sv->ok) {
+        abort_why(r, SERVO_LIMRUN_WHY_PROG, now_ms);
         return;
-    } else if (sv->angle[0] != r->cur[0] || sv->angle[1] != r->cur[1]
-               || sv->type != r->servo.type
-               || sv->reversion != r->servo.reversion
-               || sv->lo_raw != r->servo.lo_raw
-               || sv->hi_raw != r->servo.hi_raw) {
+    }
+    if (sv->angle[0] != r->cur[0] || sv->angle[1] != r->cur[1]
+        || sv->type != r->servo.type || sv->reversion != r->servo.reversion
+        || sv->lo_raw != r->servo.lo_raw || sv->hi_raw != r->servo.hi_raw
+        || memcmp(sv->pulse_dus, r->pulse_now, sizeof(r->pulse_now)) != 0) {
         /* Another servo, or one set otherwise: the side each register
          * limits and the values held before the run are not its. */
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
     }
     uint16_t want[2];
-    uint8_t side = 0u;
-    const plan_t p = plan(r, want, &side);
-    if (p == PLAN_FAIL_CAP) {
-        fail(r, SERVO_LIMRUN_WHY_WRITE_CAP, now_ms);
+    int8_t search = -1;
+    plan(r, want, &search);
+    r->probe_side = search;
+    if (changes(r, want) == 0u) {
+        ask_leave(r, now_ms);
         return;
     }
-    r->final_plan = p == PLAN_FINAL;
-    if (p == PLAN_PROBE) {
-        r->probe_side = side;
-        if (r->mapped) {
-            r->probe_value = want[reg_of(r, side)];
-        }
-    }
-    if (changes(r, want) == 0u) {
-        r->phase    = SERVO_LIMRUN_PH_LEAVE;
-        r->phase_ms = now_ms;
-        r->pend.leave = true;
+    if (r->writes + changes(r, want) > SERVO_LIMRUN_WRITES_MAX) {
+        fail(r, SERVO_LIMRUN_WHY_WRITE_CAP, now_ms);
         return;
     }
     r->want[0]  = want[0];
     r->want[1]  = want[1];
+    r->pulse_op = false;
     r->phase    = SERVO_LIMRUN_PH_WRITE;
     r->phase_ms = now_ms;
     r->pend.write    = true;
@@ -674,10 +830,19 @@ void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
     r->pend.angle[1] = want[1];
 }
 
+static void mark_programmed(servo_limrun_t *r)
+{
+    r->programmed = r->cur[0] != r->servo.angle[0]
+                    || r->cur[1] != r->servo.angle[1]
+                    || memcmp(r->pulse_now, r->servo.pulse_dus,
+                              sizeof(r->pulse_now)) != 0;
+}
+
 void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
                           uint32_t now_ms)
 {
-    if (!servo_limrun_running(r) || r->phase != SERVO_LIMRUN_PH_WRITE) {
+    if (!servo_limrun_running(r) || r->phase != SERVO_LIMRUN_PH_WRITE
+        || r->pulse_op) {
         return;
     }
     if (!ok || angle == NULL) {
@@ -689,15 +854,50 @@ void servo_limrun_written(servo_limrun_t *r, bool ok, const uint16_t *angle,
     r->write_ops += 1u;
     r->cur[0] = angle[0];
     r->cur[1] = angle[1];
-    r->programmed = r->cur[0] != r->servo.angle[0]
-                    || r->cur[1] != r->servo.angle[1];
+    mark_programmed(r);
     if (angle[0] != r->want[0] || angle[1] != r->want[1]) {
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
     }
-    r->phase    = SERVO_LIMRUN_PH_LEAVE;
-    r->phase_ms = now_ms;
-    r->pend.leave = true;
+    /* The values are in: each side's stage moves on. */
+    for (uint8_t s = 0; s < 2u; ++s) {
+        if (!r->mapped && s != r->map_side) {
+            continue;
+        }
+        if (r->stage[s] == ST_OVERSET) {
+            r->stage[s] = ST_OVERSET_SEARCH;
+        } else if (r->stage[s] == ST_FINAL) {
+            r->stage[s] = ST_DONE;
+        }
+    }
+    ask_leave(r, now_ms);
+}
+
+void servo_limrun_pulsed(servo_limrun_t *r, bool ok,
+                         const uint16_t *pulse_dus, uint32_t now_ms)
+{
+    if (!servo_limrun_running(r) || r->phase != SERVO_LIMRUN_PH_WRITE
+        || !r->pulse_op) {
+        return;
+    }
+    if (!ok || pulse_dus == NULL) {
+        abort_why(r, SERVO_LIMRUN_WHY_WRITE, now_ms);
+        return;
+    }
+    r->writes += (unsigned)(pulse_dus[SERVO_LIMRUN_P_LOWER]
+                            != r->pulse_now[SERVO_LIMRUN_P_LOWER])
+                 + (unsigned)(pulse_dus[SERVO_LIMRUN_P_UPPER]
+                              != r->pulse_now[SERVO_LIMRUN_P_UPPER]);
+    r->write_ops += 1u;
+    memcpy(r->pulse_now, pulse_dus, sizeof(r->pulse_now));
+    mark_programmed(r);
+    r->pulse_op = false;
+    if (pulse_dus[SERVO_LIMRUN_P_LOWER] != SERVO_LIMRUN_STD_LOWER_DUS
+        || pulse_dus[SERVO_LIMRUN_P_UPPER] != SERVO_LIMRUN_STD_UPPER_DUS) {
+        abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
+        return;
+    }
+    read_done(r, now_ms);
 }
 
 void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms)
@@ -707,14 +907,6 @@ void servo_limrun_left(servo_limrun_t *r, bool ok, uint32_t now_ms)
     }
     if (!ok) {
         abort_why(r, SERVO_LIMRUN_WHY_PROG, now_ms);
-        return;
-    }
-    if (r->dry) {
-        /* The read-only session is over: the first writing one. */
-        r->dry      = false;
-        r->phase    = SERVO_LIMRUN_PH_CONNECT;
-        r->phase_ms = now_ms;
-        r->pend.connect = true;
         return;
     }
     r->phase    = SERVO_LIMRUN_PH_ARM;
@@ -791,11 +983,15 @@ void servo_limrun_step(servo_limrun_t *r, uint32_t now_ms,
             break;
         case SERVO_LIMRUN_PH_ARM:
             if (in->live) {
-                if (r->final_plan) {
+                if (!r->searched) {
+                    /* The read session is over: the first search. */
+                    begin_search(r, SERVO_LIMRUN_LO, SERVO_LIMRUN_PH_SEARCH,
+                                 now_ms);
+                } else if (r->probe_side < 0) {
                     begin_check(r, now_ms);
                 } else {
-                    begin_search(r, r->probe_side, SERVO_LIMRUN_PH_PROBE,
-                                 now_ms);
+                    begin_search(r, (uint8_t)r->probe_side,
+                                 SERVO_LIMRUN_PH_PROBE, now_ms);
                 }
             } else if (due(now_ms, r->phase_ms, SERVO_LIMRUN_BENCH_MS)) {
                 abort_why(r, SERVO_LIMRUN_WHY_BENCH, now_ms);
@@ -956,8 +1152,9 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
         snprintf(c->buf, c->n, LS(R_FIRMWARE), g->firmware);
         return true;
     }
-    if (text_line(c, g->program ? SERVO_STR_L_R_MODE_PROGRAM
-                                : SERVO_STR_L_R_MODE_SEARCH)) {
+    if (text_line(c, g->program      ? SERVO_STR_L_R_MODE_PROGRAM
+                     : g->set_pulses ? SERVO_STR_L_R_MODE_PULSES
+                                     : SERVO_STR_L_R_MODE_SEARCH)) {
         return true;
     }
     if (here(c)) {
@@ -968,6 +1165,14 @@ static bool head_lines(const servo_limrun_t *r, cur_t *c)
     if (here(c)) {
         snprintf(c->buf, c->n, LS(L_R_PULSE), (unsigned)g->centre_us,
                  (unsigned)g->min_us, (unsigned)g->max_us);
+        return true;
+    }
+    if (r->searched && here(c)) {
+        /* Where the searches ran: the servo's own pulses once read.  A run
+         * that ended before its first search has no such line. */
+        snprintf(c->buf, c->n, LS(L_R_SEARCH), (unsigned)r->ctr_us,
+                 (unsigned)r->end_us[SERVO_LIMRUN_LO],
+                 (unsigned)r->end_us[SERVO_LIMRUN_HI]);
         return true;
     }
     if (here(c)) {
@@ -1016,6 +1221,25 @@ static servo_str_t side_word(const servo_limrun_t *r, int g)
     }
 }
 
+/* A share of travel, 0.1 us over 0.1 us, as three decimals; "-" for none. */
+static void share_text(char *buf, size_t n, int32_t d, int32_t span)
+{
+    if (d <= 0 || span <= 0) {
+        snprintf(buf, n, "-");
+    } else {
+        snprintf(buf, n, "%.3f", (double)d / (double)span);
+    }
+}
+
+static void raw_text(char *buf, size_t n, uint16_t v)
+{
+    if (v == 0u) {
+        snprintf(buf, n, "-");
+    } else {
+        snprintf(buf, n, "%u", (unsigned)v);
+    }
+}
+
 static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
 {
     if (here(c)) {
@@ -1026,12 +1250,26 @@ static bool reg_lines(const servo_limrun_t *r, cur_t *c, int g)
         return true;
     }
     const int8_t s = r->reg_side[g];
-    if (s >= 0 && r->need[s] && r->lo_free[s] && here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_REG_BIS), (unsigned)r->lo[s],
-                 (unsigned)r->hi[s]);
+    if (s >= 0 && r->need[s] && here(c)) {
+        const int32_t span = span_now(r, (uint8_t)s);
+        char f0[12], fb[12], v1[8], f1[12], v2[8];
+        share_text(f0, sizeof(f0), r->d0_dus[s], span);
+        share_text(fb, sizeof(fb), r->db_dus[s], span);
+        raw_text(v1, sizeof(v1), r->v1[s]);
+        share_text(f1, sizeof(f1), r->d1_dus[s], span);
+        raw_text(v2, sizeof(v2),
+                 (r->stage[s] == ST_FINAL || r->stage[s] == ST_DONE)
+                     ? r->v2[s] : 0u);
+        snprintf(c->buf, c->n, LS(L_R_REG_LIN), f0, fb, v1, f1, v2);
         return true;
     }
     return false;
+}
+
+/* NEUTRAL, PULSE LOWER and PULSE UPPER, 0.1 us, as microseconds. */
+static double us_of(uint16_t dus)
+{
+    return (double)dus / 10.0;
 }
 
 static bool prog_lines(const servo_limrun_t *r, cur_t *c)
@@ -1039,28 +1277,58 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
     if (blank(c) || text_line(c, SERVO_STR_L_R_PROG_HEAD)) {
         return true;
     }
-    if (!r->cfg.program) {
+    if (!r->cfg.read) {
         return text_line(c, SERVO_STR_L_R_PROG_OFF);
     }
     if (!r->read_once) {
-        return text_line(c, r->verdict == SERVO_LIMRUN_FREE
-                                ? SERVO_STR_L_R_PROG_FREE
-                                : SERVO_STR_L_R_PROG_NO_SERVO);
+        return text_line(c, SERVO_STR_L_R_PROG_NO_SERVO);
     }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(L_R_SERVO), r->servo.type,
                  r->servo.reversion ? LS(R_ON) : LS(R_OFF));
         return true;
     }
-    if (reg_lines(r, c, SERVO_LIMRUN_LEFT)
-        || reg_lines(r, c, SERVO_LIMRUN_RIGHT)) {
+    const uint16_t *p0 = r->servo.pulse_dus;
+    if (here(c)) {
+        snprintf(c->buf, c->n, LS(L_R_PULSES),
+                 us_of(p0[SERVO_LIMRUN_P_NEUTRAL]),
+                 us_of(p0[SERVO_LIMRUN_P_LOWER]),
+                 us_of(p0[SERVO_LIMRUN_P_UPPER]));
         return true;
     }
-    if (here(c)) {
-        snprintf(c->buf, c->n, LS(L_R_MARGIN),
-                 (unsigned)SERVO_LIMRUN_MARGIN_PCT,
-                 (unsigned)SERVO_LIMRUN_MARGIN_MIN);
+    if (r->cfg.set_pulses && here(c)) {
+        snprintf(c->buf, c->n, LS(L_R_PULSE_SET),
+                 us_of(p0[SERVO_LIMRUN_P_LOWER]),
+                 us_of(r->pulse_now[SERVO_LIMRUN_P_LOWER]),
+                 us_of(p0[SERVO_LIMRUN_P_UPPER]),
+                 us_of(r->pulse_now[SERVO_LIMRUN_P_UPPER]));
         return true;
+    }
+    if (r->why == SERVO_LIMRUN_WHY_RANGE && here(c)) {
+        snprintf(c->buf, c->n, LS(L_R_RANGE),
+                 us_of(r->pulse_now[SERVO_LIMRUN_P_LOWER]),
+                 us_of(r->pulse_now[SERVO_LIMRUN_P_UPPER]),
+                 (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
+        return true;
+    }
+    if (!r->cfg.program) {
+        if (text_line(c, SERVO_STR_L_R_PROG_OFF)) {
+            return true;
+        }
+    } else if (r->verdict == SERVO_LIMRUN_FREE) {
+        if (text_line(c, SERVO_STR_L_R_PROG_FREE)) {
+            return true;
+        }
+    } else {
+        if (reg_lines(r, c, SERVO_LIMRUN_LEFT)
+            || reg_lines(r, c, SERVO_LIMRUN_RIGHT)) {
+            return true;
+        }
+        if (here(c)) {
+            snprintf(c->buf, c->n, LS(L_R_METHOD),
+                     (unsigned)SERVO_LIMRUN_OVERSET_PCT);
+            return true;
+        }
     }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(L_R_WRITES), r->writes, r->write_ops,
@@ -1075,9 +1343,11 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         }
         return true;
     }
-    if (r->programmed && r->verdict != SERVO_LIMRUN_PASS
-        && text_line(c, SERVO_STR_L_R_RESTORE)) {
+    if (servo_limrun_restore(r) && text_line(c, SERVO_STR_L_R_RESTORE)) {
         return true;
+    }
+    if (!r->cfg.program || r->verdict == SERVO_LIMRUN_FREE) {
+        return false;
     }
     if (blank(c) || text_line(c, SERVO_STR_L_R_CHECK_HEAD)) {
         return true;
@@ -1143,6 +1413,10 @@ servo_str_t servo_limrun_why_str(const servo_limrun_t *r)
     case SERVO_LIMRUN_WHY_WRITE_CAP:      return SERVO_STR_L_WHY_CAP;
     case SERVO_LIMRUN_WHY_STILL_BINDS:    return SERVO_STR_L_WHY_STILL;
     case SERVO_LIMRUN_WHY_NO_VOLTAGE:     return SERVO_STR_L_WHY_NO_VOLTAGE;
+    case SERVO_LIMRUN_WHY_NO_STOP:        return SERVO_STR_L_WHY_NO_STOP;
+    case SERVO_LIMRUN_WHY_BEFORE_NEUTRAL: return SERVO_STR_L_WHY_BEFORE_NEUTRAL;
+    case SERVO_LIMRUN_WHY_NEUTRAL:        return SERVO_STR_L_WHY_NEUTRAL;
+    case SERVO_LIMRUN_WHY_RANGE:          return SERVO_STR_L_WHY_RANGE;
     default:                              return SERVO_STR_AB_NONE;
     }
 }

@@ -114,8 +114,9 @@ The limit run finds where the installed servo binds at each end of its travel. I
 ![The limit run, ready](view:servo-limrun-ready)
 
 1. Tap LIMIT RUN to choose SEARCH ONLY or SEARCH+PROG.
-2. Hold START LIMIT RUN for 2 s while the bench is ARMED. A tap or a shorter hold starts nothing.
-3. The settings close. The box on the left card shows the phase, the side and the pulse, and the output it drives.
+2. With PWM TARGET on PROG PORT, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
+3. Hold START LIMIT RUN for 2 s while the bench is ARMED. A tap or a shorter hold starts nothing.
+4. The settings close. The box on the left card shows the phase, the side and the pulse, and the output it drives.
 
 The line under the button names the output and the meter, the whole time: `OUTPUT PROG PORT GP13, CURRENT INA3221 CH1`. The TARGET row stays in sight as well.
 
@@ -135,7 +136,24 @@ The run reads only INA3221 CH1. With the PD mini or the model as the servo rail'
 
 ### The search
 
-The search steps from PULSE CENTRE out to PULSE MIN, then out to PULSE MAX, 10 us a step. Each position takes 250 ms: 120 ms to settle, then the mean of the next windows. An end binds when the current exceeds 1.8 times the free current and exceeds it by at least 0.15 A. The endpoint is reported 25 us back from the binding position. The bench's own PULSE MIN and PULSE MAX are not changed.
+The search steps outward from the centre, the low side first, 10 us a step. Each position takes 250 ms: 120 ms to settle, then the mean of the next windows. An end binds when the current exceeds 1.8 times the free current and exceeds it by at least 0.15 A. The endpoint is reported 25 us back from the binding position. The bench's own PULSE MIN and PULSE MAX are not changed.
+
+| PWM TARGET | Search |
+|---|---|
+| a SERVO PWM pin | from PULSE CENTRE out to PULSE MIN and PULSE MAX; nothing is read or written |
+| PROG PORT | a read session first, then from the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
+
+The read session holds the servo at PULSE CENTRE, switches the bench to SAFE, reads the servo with CONNECT, gives the port back with LEAVE and switches the bench to ARMED. Nothing is driven before it. The run ends as FAIL before any search when:
+
+- the read fails (`no KST or Chaservo servo read`, or `programming port did not finish`): search a servo that is no KST or Chaservo on a SERVO PWM pin;
+- NEUTRAL is not between PULSE LOWER and PULSE UPPER (`NEUTRAL outside LOWER/UPPER`);
+- PULSE LOWER to PULSE UPPER is not inside PULSE MIN to PULSE MAX (`servo pulses outside MIN/MAX`). The bench stays SAFE, and the box names both ranges.
+
+![The servo's pulses outside PULSE MIN and PULSE MAX](view:servo-limrun-range)
+
+A KST servo as delivered holds PULSE LOWER 900.0 us and PULSE UPPER 2100.0 us. The STANDARD PWM type's range is 1000-2000 us, so that servo is refused at KEEP. Choose SERVO PULSES 1000-2000, or a PWM type whose range holds 900 to 2100 us.
+
+SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 us and PULSE UPPER 2000.0 us in the read session, before anything moves, and reads them back. NEUTRAL is not written. A servo at those values already gets no write. With SEARCH ONLY these two values are the only write.
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
@@ -145,14 +163,23 @@ SEARCH+PROG needs a KST or Chaservo servo on the programming port: PWM TARGET on
 
 The run writes in sessions of the [servo programmer](servo-programmer.md):
 
-1. The servo goes back to PULSE CENTRE for 1000 ms.
+1. The servo goes back to the centre for 1000 ms.
 2. The run switches the bench to SAFE.
 3. CONNECT reads the servo.
-4. One write of LEFT ANGLE and RIGHT ANGLE, with every limit check of the programmer.
+4. One write, with every limit check of the programmer.
 5. LEAVE gives the port back to PWM.
 6. The run switches the bench to ARMED and searches that side again.
 
-The first session only reads. The first write saves the servo's values to a backup file on the card. The run finds which register limits which side, then bisects each bound side to 2 counts. It programs the last free value less 5 %, at least 2 counts, never below 1. Last, it searches both ends again. A run writes 24 values at most. The unit of LEFT ANGLE and RIGHT ANGLE is not known. A value below 50 is a soft limit: the 2 s start hold is the consent to it.
+The first write saves the servo's values to a backup file on the card. The run takes the servo as linear: PULSE LOWER and PULSE UPPER are the pulses at which it reaches the full travel that LEFT ANGLE and RIGHT ANGLE set. The share of a side at pulse p is `(p - NEUTRAL) / (PULSE LOWER or UPPER - NEUTRAL)`. The unit of LEFT ANGLE and RIGHT ANGLE is not known, and the linear relation is an assumption.
+
+Each bound side gets two writes, v0 the value its register held:
+
+1. The overset: v0 x the share at the first bound pulse x 1.03, rounded up. The stop stays reachable, close to the pulse limit. The run searches that side again. Free there, the run ends as FAIL, `no stop after the overset write`.
+2. The final value: the overset x the share at the last free pulse of that search, rounded down.
+
+Example: NEUTRAL 1500.2 us, PULSE LOWER 900.0 us, v0 150, the first search free at 1000 us and bound at 990 us. The overset is 150 x 0.850 x 1.03 = 132. At 132 the search is free out to 930 us; the final value is 132 x 0.950 = 125.
+
+Near the pulse limit, where the overset would move the stop less than 20 us, the run writes the final value at once: v0 x the share at the first search's last free pulse. The first bound side's first write also finds which register limits that side. Last, the run searches both ends again: PASS when both are free, FAIL when one binds. A run writes 8 values at most: the two pulses, two on each side, and two to find the register. A value below 50 is a soft limit: the 2 s start hold is the consent to it.
 
 ### What ends a limit run
 
@@ -164,7 +191,7 @@ Each of these ends the run as ABORTED, with the output off and the servo release
 - a sample at 3.0 A or more, a sample at the end of the INA3221's range, or window means above 1.0 A for 400 ms;
 - a search longer than 40 s, a bench that does not switch in 3 s, or a programmer step longer than 150 s;
 - a change to the supply's set points or output, outside the programmer's sessions; during a search, the rail more than 1.0 V from the run's first window;
-- at a later session, another servo, or REVERSION or the range of values changed (`servo holds other values`).
+- at a later session, another servo, or REVERSION, the pulses or the range of values changed (`servo holds other values`).
 
 A run that ends while it waits for ARMED also switches the bench to SAFE.
 
@@ -182,19 +209,19 @@ The box stays until CLOSE. It shows the verdict, the reason or the values, and t
 |---|---|
 | FOUND | search only: an end binds; the endpoints are reported |
 | FREE | neither end binds; nothing is written |
-| PASS | programmed, and both ends free in the last search: `LEFT 150>84  RIGHT 150>91` |
+| PASS | programmed, and both ends free in the last search: `LEFT 150>87  RIGHT 150>95` |
 | FAIL | an end still binds, or the servo cannot be programmed |
 | ABORTED | a protection, the operator, the link, the meter, the supply or the programmer ended it |
 
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The report is a `BENCHnnn.TXT` of its own, written whatever REPORT says. It holds the endpoints of both searches, LEFT ANGLE and RIGHT ANGLE before and after, the values written, the writes sent and the sessions, the margin, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
+The report is a `BENCHnnn.TXT` of its own, written whatever REPORT says. It holds where the search ran, the endpoints of both searches, the servo's pulses and the pulse write, LEFT ANGLE and RIGHT ANGLE before and after with the shares, the overset and the final value, the values written, the writes sent and the sessions, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
 
 ## Current limitations
 
 - On the panel's supply model the test's currents are the model's load, not the servo's.
-- The unit of LEFT ANGLE and RIGHT ANGLE is not known.
+- The unit of LEFT ANGLE and RIGHT ANGLE is not known. The limit run takes the travel as linear in the pulse; that is not measured.
 - Until the screen sends a position, the pins run at the rate the coprocessor holds, 50 Hz after a restart.
 
 ## Related pages
