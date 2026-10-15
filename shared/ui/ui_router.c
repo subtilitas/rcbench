@@ -31,7 +31,7 @@
 
 #define PANEL_W 800
 #define PANEL_H 480
-#define ALERT_H 34    /* the alert band, across the bottom */
+#define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
 
 static struct {
     ui_screen_id_t    current;
@@ -327,14 +327,14 @@ static __attribute__((noinline)) void router_hand(touch_event_t evt)
 }
 
 /*
- * Open the bubble of @p chip.  Every contact the screen owns is released at
- * the last point it was handed, flagged TOUCH_FLAG_NO_TAP, as at the band's
- * edge: while the bubble is open no event reaches the screen, and a drag
- * left latched would take a later contact's travel for its own.
+ * Release every contact the screen owns at the last point it was handed,
+ * flagged TOUCH_FLAG_NO_TAP, as at the band's edge: the release ends a press
+ * or a drag and activates nothing.  The contacts are the router's from then
+ * on, so a drag left latched cannot take a later contact's travel for its
+ * own.
  */
-static void help_open(ui_band_chip_t chip)
+static void release_owned(void)
 {
-    s.help = chip;
     for (int i = 0; i < TOUCH_MAX_POINTS; ++i) {
         if (!s.owned[i].live) {
             continue;
@@ -348,6 +348,36 @@ static void help_open(ui_band_chip_t chip)
         up.point.y = s.owned[i].y;
         router_hand(up);
     }
+}
+
+/* Open the bubble of @p chip.  While it is open no event reaches the
+ * screen, so what the screen owns is released first. */
+static void help_open(ui_band_chip_t chip)
+{
+    s.help = chip;
+    release_owned();
+}
+
+/*
+ * The home tag, tapped.  The screen on top goes up a level of its own when
+ * it has one; otherwise a screen SETUP's tiles open goes back to SETUP and
+ * every other to the menu.  A level change inside a screen is a change of
+ * what is on the glass, as a change of screen is: the contacts the screen
+ * owned are released first and are nobody's until they lift.  Not inlined,
+ * so tools/stack_check.py finds the call into back() by name.
+ */
+static __attribute__((noinline)) void router_back(void)
+{
+    const ui_screen_t *scr = screen_for(s.current);
+    if (scr != NULL && scr->back != NULL) {
+        release_owned();
+        if (scr->back()) {
+            ui_router_invalidate();
+            return;
+        }
+    }
+    ui_router_goto(settings_screen_opens(s.current) ? SCREEN_SETUP
+                                                    : SCREEN_OVERVIEW);
 }
 
 /* The slot of contact @p id in the screen's table, or -1 when the screen
@@ -447,7 +477,7 @@ void ui_router_event(const touch_event_t *evt)
                            && touch_event_is_tap_up(evt)) {
                     /* STOP above takes any release over it; the home tag
                      * takes one the finger made. */
-                    ui_router_goto(SCREEN_OVERVIEW);
+                    router_back();
                 }
             }
             return;

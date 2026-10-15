@@ -33,7 +33,8 @@
  *   throttle  `frame` with the throttle control changing every frame, the
  *             drag case
  *   <screen>  one steady frame of analyser, logs, settings, battery,
- *             balance, programmer or picker
+ *             balance, programmer or picker; settings is SETUP's tiles,
+ *             settings-list ESC / BENCH's list
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -51,6 +52,7 @@
 #include "out_bind.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
+#include "settings_screen.h"
 #include "servo_screen.h"
 #include "splash_screen.h"
 #include "supply.h"
@@ -148,6 +150,7 @@ int main(int argc, char **argv)
         { "analyser",   SCREEN_ANALYSER },
         { "logs",       SCREEN_LOGS },
         { "settings",   SCREEN_SETUP },
+        { "settings-list", SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
         { "programmer", SCREEN_PROGRAMMER },
@@ -195,6 +198,20 @@ int main(int argc, char **argv)
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     ui_router_goto(start);
+
+    if (strncmp(mode, "settings-list", 13) == 0) {
+        /* SETUP opens on its tiles: the first, ESC / BENCH, opens its list. */
+        gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+        (void)settings_hub_slot(0, &r);
+        const int16_t x = (int16_t)(r.x + r.w / 2);
+        const int16_t y = (int16_t)(UI_BAND_H + r.y + r.h / 2);
+        const touch_event_t tile[] = {
+            { .type = TOUCH_EVENT_DOWN, .point = { .id = 1, .x = x, .y = y } },
+            { .type = TOUCH_EVENT_UP,   .point = { .id = 1, .x = x, .y = y } },
+        };
+        ui_router_event(&tile[0]);
+        ui_router_event(&tile[1]);
+    }
 
     if (start == SCREEN_WIFI) {
         wifi_view_t v;

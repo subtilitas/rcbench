@@ -213,6 +213,29 @@ gfx_rect_t ui_home_tag_rect(const char *title)
     return gfx_rect_make(UI_TAG_X, UI_TAG_Y, tag_width(title, true), UI_TAG_H);
 }
 
+void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
+             const char *name, const char *line, bool pressed)
+{
+    gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, 8,
+                        pressed ? UI_PANEL_HI : UI_PANEL);
+    gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8, UI_EDGE);
+
+    if (icon != NULL) {
+        /* Centred over the name and the line, its box's top at icon_dy. */
+        icon(c, r.x + r.w / 2, r.y + icon_dy + UI_TILE_ICON / 2, UI_TILE_ICON,
+             UI_ACCENT);
+    }
+
+    /* Clipped to the tile: centring a string wider than its tile puts the
+     * overhang on the neighbour. */
+    const gfx_rect_t nr = { r.x, (int16_t)(r.y + icon_dy + 40), r.w, 22 };
+    gfx_text_in(c, nr, name ? name : "", &gfx_font_8x16, UI_TEXT, 1,
+                GFX_ALIGN_CENTER);
+    const gfx_rect_t lr = { r.x, (int16_t)(r.y + icon_dy + 64), r.w, 20 };
+    gfx_text_in(c, lr, line ? line : "", &gfx_font_8x16, UI_TEXT_DIM, 1,
+                GFX_ALIGN_CENTER);
+}
+
 void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed)
 {
     gfx_rect_t r = ui_home_tag_rect(title);

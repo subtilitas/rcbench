@@ -6,7 +6,7 @@ order: 1
 
 # Menü
 
-Das Menü ist der Startbildschirm des Panels. Es öffnet nach dem Splash und hat eine Kachel je Prüfstandsbildschirm. Ein Tipp auf eine Kachel öffnet ihren Bildschirm. Das Home-Tag oben links auf jedem anderen Bildschirm führt hierher zurück.
+Das Menü ist der Startbildschirm des Panels. Es öffnet nach dem Splash und hat eine Kachel je Prüfstandsbildschirm. Ein Tipp auf eine Kachel öffnet ihren Bildschirm. Das Home-Tag oben links auf jedem anderen Bildschirm führt eine Ebene zurück: von einem Bildschirm, den das Menü öffnet, hierher, von einer Liste oder einem Bildschirm, den die Kacheln von SETUP öffnen, zu den Kacheln.
 
 ## Die Kacheln
 

@@ -58,7 +58,7 @@ Band sind die oberen 48 px des Panels.
   Ein Finger, der vom Bildschirm auf STOP rutscht, stoppt nichts.
 - Ein zweiter Finger auf STOP, auf dem Home-Tag oder auf dem Alert-Band wird
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
-  noch auf dem Glas liegt, auf der Übersicht nichts.
+  noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
 ### Hilfe zu den Chips
 
@@ -1964,15 +1964,48 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 
 ## Setup
 
+Die SETUP-Kachel des Menüs öffnet eine Seite mit Kacheln, 3 mal 3, im Stil
+des Menüs. Jede Kachel ist 256 x 108 px groß, ihr Symbol mittig über ihrem
+Namen.
+
 ![Setup](img/de/setup.png)
 
-Die Einstellungen liegen hinter der SETUP-Kachel, in beiden Designs:
+- Drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Jede Kachel
+  nennt die Zahl ihrer Einstellungen. Ein Tippen öffnet die Liste der
+  Kategorie.
+- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pin auswählen](#pin-auswählen)) und UPDATES ([Updates](#updates)).
+- Drei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+  fasst 9, und der Build scheitert am zehnten.
+- SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
+  ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
+  einer beliebigen Kategorie zeigt sich auch hier:
+
+![Die Kacheln mit einem ungespeicherten Wert](img/de/setup-hub-dirty.png)
+
+Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die linke Spalte trägt die drei Kategorien, darunter drei Tasten zu eigenen
-Bildschirmen: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-([Pin auswählen](#pin-auswählen)) und UPDATES ([Updates](#updates)).
+Die Liste einer Kategorie reicht über die Breite des Panels, 776 px, und
+zeigt 348 px davon, 6 Zeilen, über einer Leiste mit drei Spalten: dem Namen
+der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei
+y 442 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
+Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
+ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
+
+![ESC / PRÜFSTAND](img/de/setup-esc.png)
+
+Das Home-Tag führt eine Ebene nach der anderen zurück:
+
+| Von | Das Home-Tag führt zu |
+| --- | --- |
+| der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
+| den Kacheln | dem Menü |
+| OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
+
+Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
+schreibt nichts, von den Kacheln wie von einer Liste.
 
 Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
@@ -2306,8 +2339,10 @@ wie bei den Strommonitoren:
 ### Werte behalten
 
 Ein geänderter Wert wirkt sofort und wird erst in den Flash geschrieben, wenn
-SPEICHERN gedrückt wird. Die Taste unter KATEGORIE ZURÜCKSETZEN nennt einen von drei
-Zuständen:
+SPEICHERN gedrückt wird. SPEICHERN, neben KATEGORIE ZURÜCKSETZEN auf einer
+Liste und allein auf den Kacheln, nennt einen von vier Zuständen der Werte.
+Die Werte sind ein Satz: Der Zustand ist auf den Kacheln und auf jeder Liste
+derselbe.
 
 | Beschriftung | Bedeutung |
 | --- | --- |
@@ -2485,8 +2520,8 @@ Link, und LOGS gehört der SD-Karte.
 ## Updates
 
 UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist,
-und installiert es. Der Bildschirm öffnet über die Taste UPDATES auf dem
-Setup-Bildschirm. Eine Erinnerung beim Start stellt dieselbe Frage einmal
+und installiert es. Der Bildschirm öffnet über die Kachel UPDATES auf
+SETUP, und sein Home-Tag führt dorthin zurück. Eine Erinnerung beim Start stellt dieselbe Frage einmal
 pro Start des Panels.
 
 ![UPDATES](img/de/updates.png)
@@ -2494,7 +2529,7 @@ pro Start des Panels.
 | Bedienelement | Wirkung |
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
-| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf dem Setup-Bildschirm, wie jede Einstellung. Ab Werk an. |
+| `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
 | `2 s HALTEN: DOWNLOAD & INSTALL` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
@@ -2651,7 +2686,8 @@ Aktuelle Einschränkungen:
 
 ## Outputs
 
-Hinter der OUTPUTS-Taste auf dem Setup-Bildschirm. Die Protokolle, die an die
+Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
+Die Protokolle, die an die
 Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt.
 
 ![Outputs](img/de/outputs.png)
@@ -2852,7 +2888,8 @@ hinterlassen hat.
 
 ### Pin auswählen
 
-Hinter der Taste PICK A PIN auf dem Setup-Bildschirm, und dieselbe Bindung,
+Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
+Dieselbe Bindung,
 die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
 gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.
 

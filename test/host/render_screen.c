@@ -316,6 +316,14 @@ static void tap(int x, int y)
     ui_router_event(&e);
 }
 
+/* A tap on SETUP's tile @p index, the categories' first in their order. */
+static void setup_tile(int index)
+{
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    (void)settings_hub_slot(index, &r);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
 /* A finger drawn from @p y0 to @p y1 at @p x, in steps a controller would
  * report. */
 static void drag(int x, int y0, int y1)
@@ -2300,7 +2308,8 @@ int main(int argc, char **argv)
      * grey and inert otherwise, so the shot that shows it needs a value
      * changed first.
      */
-    if (id == SCREEN_SETUP && strcmp(view, "setup-dirty") == 0) {
+    if (id == SCREEN_SETUP && (strcmp(view, "setup-dirty") == 0
+                               || strcmp(view, "setup-hub-dirty") == 0)) {
         settings_set(SET_PACK_CELLS, 4.0f);
     }
 
@@ -2813,13 +2822,16 @@ int main(int argc, char **argv)
     if (strcmp(view, "overview-alert") == 0) {
         ui_router_set_alert(TR(ALERT_COPRO_DISARMED));
     }
-    /* SETUP's APPLICATION category: the language, the theme, the knob. */
-    if (strcmp(view, "setup-application") == 0) {
-        tap(120, UI_BAND_H + 16 + 1 * 72 + 32);        /* APPLICATION */
-    }
-
     if (strcmp(view, "motor-table") == 0) {
         tap(6 + 93, UI_BAND_H + 11);                    /* TABLE */
+    }
+    /* SETUP opens on its tiles; ESC / BENCH's list is the first tile's. */
+    if (strcmp(view, "setup-esc") == 0 || strcmp(view, "setup-dirty") == 0) {
+        setup_tile(SET_CAT_ESC);
+    }
+    /* SETUP's APPLICATION category: the language, the theme, the knob. */
+    if (strcmp(view, "setup-application") == 0) {
+        setup_tile(SET_CAT_APP);
     }
     /*
      * SETUP's INTERFACES, the current monitors' rows at the top, and the
@@ -2829,7 +2841,7 @@ int main(int argc, char **argv)
         || strcmp(view, "setup-sensors") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0) {
-        tap(120, UI_BAND_H + 16 + 2 * 62 + 28);        /* INTERFACES */
+        setup_tile(SET_CAT_IFACE);
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows, and the INA3221 the page
              * leaves off for them. */
@@ -2840,13 +2852,14 @@ int main(int argc, char **argv)
             || strcmp(view, "setup-unheld") == 0) {
             /* Four rows of 58 px, and the 8 px the finger travels before
              * the screen takes it for a scroll. */
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
         } else if (strcmp(view, "setup-tap") == 0) {
             /* Past the ten rows of the current monitors and their bus:
-             * two drags, as one longer than the list is high leaves the
+             * three drags, as one longer than the list is high leaves the
              * screen. */
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (6 * 58 + 8));
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
         }
     }
 

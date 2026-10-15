@@ -308,7 +308,9 @@ UI_TEXT(BAL_NOTE_3,                 0, "An index pulse halves that.")
 
 /* --------------------------------------------------------------- SETUP */
 UI_TEXT(SET_COUNT,                  0, "%d SETTINGS")
-UI_TEXT(SET_PINS_CAPTION,           0, "PINS: A LIST OR THE BOARD")
+UI_TEXT(SET_HUB_OUTPUTS,            0, "PROTOCOLS AND PINS")
+UI_TEXT(SET_HUB_PICKER,             0, "ON THE BOARD DRAWING")
+UI_TEXT(SET_HUB_UPDATES,            0, "RELEASES ON GITHUB")
 UI_TEXT(SET_RESET,                  0, "RESET CATEGORY")
 UI_TEXT(SET_SAVED,                  0, "SAVED")
 UI_TEXT(SET_WHEN_IDLE,             24, "WHEN IDLE")
@@ -1414,7 +1416,6 @@ UI_TEXT(UP_FAILED_2,                 0, "The running firmware stays; nothing cha
 UI_TEXT(UP_CLOSE,                    0, "CLOSE")
 
 /* ------------------------------------- UPDATES, the reminder, the download */
-UI_TEXT(UPD_DOOR,                     0, "UPDATES")
 UI_TEXT(UPD_CHECK,                    0, "CHECK FOR UPDATES")
 UI_TEXT(UPD_REMIND_ON,                0, "REMINDER AT START: ON")
 UI_TEXT(UPD_REMIND_OFF,               0, "REMINDER AT START: OFF")

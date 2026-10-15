@@ -1,9 +1,14 @@
 /*
- * The settings screen: one renderer over the whole schema.
+ * The settings screen: a hub of tiles, and one renderer over the whole
+ * schema.
  *
- * It walks the categories and rows shared/settings declares and draws each
- * row by its type: a stepper for a number, a toggle for a bool, a choice for
- * an enum.  A new setting is a schema row; nothing here changes.
+ * SETUP opens on a grid of tiles, the menu's kind: one per category, and
+ * one per screen of its own that SETUP reaches (OUTPUTS, PICK A PIN,
+ * UPDATES).  A category's tile opens its list across the screen's width.
+ * The list walks the rows shared/settings declares and draws each row by
+ * its type: a stepper for a number, a toggle for a bool, a choice for an
+ * enum.  A new setting is a schema row, and a new tile is a line of
+ * k_tiles; nothing else here changes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -16,6 +21,7 @@
 #include "sense_link.h"
 #include "settings.h"
 #include "tone_link.h"
+#include "ui_icons.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -24,20 +30,35 @@
 #define SCREEN_H (480 - UI_BAND_H)
 #define MAX_FBS  3
 
-#define CAT_X    16
-#define CAT_W    208
 /*
  * Coordinates are in the 432 px body the router hands this screen; the band
  * and the home tag are above it.
+ *
+ * The hub: three columns by three rows of 256 x 108 px tiles with 8 px
+ * margins, and under them the strip that holds SAVE.  The list has the same
+ * strip, so SAVE stays where it is between the two.  The strip ends 4 px
+ * above the router's alert band, which covers the bottom UI_ALERT_H px of
+ * the body: nothing that acts sits under it.
  */
-#define CAT_Y    16
-#define CAT_H    56
-#define CAT_GAP  6
+#define HUB_COLS 3
+#define HUB_ROWS 3
+#define HUB_M    8
+#define HUB_TW   ((SCREEN_W - (HUB_COLS + 1) * HUB_M) / HUB_COLS)
+#define HUB_TH   108
+/* The icon's top in a tile.  Icon, name and line take 76 px from it, which
+ * leaves 16 px under the line. */
+#define HUB_ICON_DY 16
 
-#define LIST_X   236
-#define LIST_W   548
-#define LIST_Y   16
-#define LIST_H   402
+/* The strip under the grid and under the list: three columns, the hub's. */
+#define STRIP_H  34
+#define STRIP_Y  (SCREEN_H - UI_ALERT_H - 4 - STRIP_H)
+
+/* The list: the body's width less the margins and the scroll bar, from
+ * under the band to the strip. */
+#define LIST_X   8
+#define LIST_W   776
+#define LIST_Y   6
+#define LIST_H   (STRIP_Y - 6 - LIST_Y)
 #define ROW_H    54
 #define ROW_GAP  4
 #define ROW_PITCH (ROW_H + ROW_GAP)
@@ -48,25 +69,6 @@
 #define MINUS_X  (PLUS_X - 8 - 110 - 8 - BTN_W)
 #define VALUE_R  (PLUS_X - 8)
 
-#define RESET_Y  350
-#define RESET_H  36
-
-/*
- * SAVE, under it.
- *
- * The values used to be written whenever the screen was left, and the only
- * sign of it was the word SAVED sitting under a button in the same column --
- * which reads as a button that does nothing, and was reported as one.
- *
- * Pressing this does not write anything. A save is a flash write, and on
- * this board a flash write disables the cache and stalls both cores: the
- * task that beats the safety line does not run for its duration. So the
- * press says the operator wants the values kept and the application takes it
- * when the bench can afford to stop, which is the same split the
- * coprocessor's own store makes.
- */
-#define SAVE_Y   (RESET_Y + RESET_H + 6)
-#define SAVE_H   36
 #define MAX_ROWS 32
 
 /*
@@ -92,10 +94,55 @@
 /* A press that moves further than this is a scroll, not a tap. */
 #define DRAG_SLOP 8
 
-enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_OUTPUTS, HIT_PICKER, HIT_UPDATES, HIT_SAVE };
+enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
+       HIT_SAVE };
+
+/*
+ * The hub's tiles, in their order on the grid, row by row.  A category's
+ * tile names the category and counts its settings; a screen's tile names
+ * the screen by its title, English always, as the menu does.  The home tag
+ * of a screen a tile opens leads back here (settings_screen_opens()).
+ *
+ * Nine fit the grid.  A tenth needs a second page, through ui_tabs in the
+ * strip's free columns, which is not built: the build stops at a tenth
+ * entry (the assertion under the table), and so does test_settings.
+ */
+typedef struct {
+    ui_icon_fn     icon;
+    int8_t         cat;      /**< the category its list shows, or -1      */
+    ui_screen_id_t screen;   /**< else the screen it opens                */
+    ui_text_id_t   line;     /**< the line under the name                 */
+} hub_tile_t;
+
+#define HUB_CATEGORY(cat_, icon_) \
+    { (icon_), (int8_t)(cat_), SCREEN_SETUP, TX_SET_COUNT }
+#define HUB_SCREEN(screen_, line_, icon_) \
+    { (icon_), -1, (screen_), (line_) }
+
+static const hub_tile_t k_tiles[] = {
+    HUB_CATEGORY(SET_CAT_ESC,   ui_icon_motor),
+    HUB_CATEGORY(SET_CAT_APP,   ui_icon_sliders),
+    HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
+    HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
+    HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
+    HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
+};
+
+#define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
+
+_Static_assert(TILE_COUNT <= SETTINGS_HUB_SLOTS,
+               "a tenth SETUP tile needs the hub's second page");
+_Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
+               "the hub's slots are its grid");
+_Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
+               "the grid ends above the strip");
+_Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
+_Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
+               "the strip ends above the alert band");
 
 static struct {
+    /* The list of cat is open; the hub shows while this is false. */
+    bool     list;
     setting_cat_t cat;
     int      scroll;
     int      scroll_max;
@@ -106,7 +153,7 @@ static struct {
     uint8_t  press_id;
 
     int      hit_kind;
-    int      hit_index;      /* category index, or row index */
+    int      hit_index;      /* tile index, or row index */
     bool     dragging;
     int      press_x, press_y;
     int      last_y;
@@ -115,6 +162,7 @@ static struct {
     bool     repeating;
 
     bool     chrome_valid[MAX_FBS];
+    bool     drawn_list;
     setting_cat_t drawn_cat;
 
     /*
@@ -193,6 +241,80 @@ bool settings_screen_unheld(setting_id_t id)
 
 /* ---------------------------------------------------------------- geometry */
 
+bool settings_hub_slot(int index, gfx_rect_t *out)
+{
+    if (index < 0 || index >= SETTINGS_HUB_SLOTS) {
+        return false;
+    }
+    if (out != NULL) {
+        const int col = index % HUB_COLS;
+        const int row = index / HUB_COLS;
+        *out = gfx_rect_make(HUB_M + col * (HUB_TW + HUB_M),
+                             HUB_M + row * (HUB_TH + HUB_M), HUB_TW, HUB_TH);
+    }
+    return true;
+}
+
+int settings_hub_tiles(void)
+{
+    return TILE_COUNT;
+}
+
+bool settings_screen_opens(ui_screen_id_t id)
+{
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        if (k_tiles[i].cat < 0 && k_tiles[i].screen == id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int settings_screen_category(void)
+{
+    return s.list ? (int)s.cat : -1;
+}
+
+static gfx_rect_t tile_rect(int i)
+{
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    (void)settings_hub_slot(i, &r);
+    return r;
+}
+
+static int tile_at(int x, int y)
+{
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        if (gfx_rect_contains(tile_rect(i), x, y)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* A column of the strip, under the hub's column @p col. */
+static gfx_rect_t strip_rect(int col)
+{
+    return gfx_rect_make(HUB_M + col * (HUB_TW + HUB_M), STRIP_Y, HUB_TW,
+                         STRIP_H);
+}
+
+static gfx_rect_t reset_rect(void)
+{
+    return strip_rect(1);
+}
+
+static gfx_rect_t save_rect(void)
+{
+    return strip_rect(2);
+}
+
+/* The one condition the press, the highlight and the render all read. */
+static bool save_offered(void)
+{
+    return settings_dirty() && !settings_save_asked();
+}
+
 static int row_count(void)
 {
     return settings_in_category(s.cat, NULL, 0);
@@ -208,73 +330,6 @@ static void clamp_scroll(void)
     s.scroll_max = (content > LIST_H) ? (content - LIST_H) : 0;
     if (s.scroll < 0) { s.scroll = 0; }
     if (s.scroll > s.scroll_max) { s.scroll = s.scroll_max; }
-}
-
-static gfx_rect_t cat_rect(int i)
-{
-    return gfx_rect_make(CAT_X, CAT_Y + i * (CAT_H + CAT_GAP), CAT_W, CAT_H);
-}
-
-static gfx_rect_t reset_rect(void)
-{
-    return gfx_rect_make(CAT_X, RESET_Y, CAT_W, RESET_H);
-}
-
-static gfx_rect_t save_rect(void)
-{
-    return gfx_rect_make(CAT_X, SAVE_Y, CAT_W, SAVE_H);
-}
-
-/* The one condition the press, the highlight and the render all read. */
-static bool save_offered(void)
-{
-    return settings_dirty() && !settings_save_asked();
-}
-
-/*
- * The way to the outputs screen.
- *
- * Binding a protocol to pins is a set of pins, and a setting is one number,
- * so it cannot be a row in the table beside the others; it is a screen, and
- * this is the door to it.
- */
-/*
- * Three doors and one caption, in the 146 pixels between the categories and
- * RESET.  RESET cannot move down: SAVE sits under it and reaches to 12 px
- * from the bottom of the screen, so the doors move up instead.
- */
-#define OUTPUTS_Y 204
-#define DOOR_H    36
-#define DOOR_GAP  4
-static gfx_rect_t outputs_rect(void)
-{
-    return gfx_rect_make(CAT_X, OUTPUTS_Y, CAT_W, DOOR_H);
-}
-
-/*
- * And the same binding seen as the board itself.  Two doors rather than a
- * mode on one screen: the list answers "which GPIO is bound" and the picture
- * answers "where do I put the lead", and an operator arrives already knowing
- * which of those they want.
- */
-#define PICKER_Y (OUTPUTS_Y + DOOR_H + DOOR_GAP)
-static gfx_rect_t picker_rect(void)
-{
-    return gfx_rect_make(CAT_X, PICKER_Y, CAT_W, DOOR_H);
-}
-
-/* The caption under the two pin doors, in the label face's 16 px. */
-#define CAPTION_Y (PICKER_Y + DOOR_H + 6)
-
-/*
- * The panel's own updates: the check for a newer release on GitHub, its
- * start-up reminder, the download.  A screen rather than a category: a
- * check is a button and its answer, not a number.
- */
-#define UPDATES_Y (CAPTION_Y + 16 + 6)
-static gfx_rect_t updates_rect(void)
-{
-    return gfx_rect_make(CAT_X, UPDATES_Y, CAT_W, DOOR_H);
 }
 
 /** Screen-space rect of a row, or an empty rect when it is scrolled away. */
@@ -336,20 +391,31 @@ static void step_row(int index, int steps)
     settings_screen_invalidate();
 }
 
+/* No press in progress, and no repeat running for one. */
+static void drop_press(void)
+{
+    s.have_press = false;
+    s.hit_kind  = HIT_NONE;
+    s.hit_index = -1;
+    s.dragging  = false;
+    s.held_for  = 0.0f;
+    s.repeating = false;
+}
+
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     s.cat = SET_CAT_ESC;
+    s.hit_index = -1;
     clamp_scroll();
 }
 
 static void enter(void)
 {
-    s.have_press = false;
-    s.hit_kind = HIT_NONE;
-    s.dragging = false;
-    s.repeating = false;
-    s.held_for = 0.0f;
+    /* SETUP opens on its tiles, from the menu and from a screen a tile
+     * opened alike.  The list keeps its category and its scroll. */
+    s.list = false;
+    drop_press();
     clamp_scroll();
     settings_screen_invalidate();
 }
@@ -357,12 +423,22 @@ static void enter(void)
 static void leave(void)
 {
     /*
-     * Nothing is written here any more.  Leaving the screen used to save,
-     * which meant a flash write at a moment nobody chose and no way to ask
-     * for one; the SAVE button asks, and the application takes it when the
-     * bench is idle.  A request outlives this screen on purpose: the
-     * operator has said what they want kept.
+     * Nothing is written here.  The SAVE button asks, and the application
+     * takes it when the bench is idle.  A request outlives this screen on
+     * purpose: the operator has said what they want kept.
      */
+}
+
+/* The home tag on a list goes back to the tiles; on the tiles it leaves. */
+static bool back(void)
+{
+    drop_press();
+    if (!s.list) {
+        return false;
+    }
+    s.list = false;
+    settings_screen_invalidate();
+    return true;
 }
 
 static void tick(float dt_s)
@@ -398,6 +474,101 @@ static void tick(float dt_s)
     }
 }
 
+/* A tap on tile @p index: a category's list, or a screen of its own. */
+static void open_tile(int index)
+{
+    const hub_tile_t *t = &k_tiles[index];
+    if (t->cat < 0) {
+        ui_router_goto(t->screen);
+        return;
+    }
+    if (s.cat != (setting_cat_t)t->cat) {
+        s.cat = (setting_cat_t)t->cat;
+        s.scroll = 0;
+    }
+    s.list = true;
+    clamp_scroll();
+    settings_screen_invalidate();
+}
+
+/* The DOWN of the contact that holds the screen: what it presses. */
+static void press(const touch_event_t *evt, int x, int y)
+{
+    if (!s.list) {
+        const int tile = tile_at(x, y);
+        if (tile >= 0) {
+            s.hit_kind = HIT_TILE;
+            s.hit_index = tile;
+            settings_screen_invalidate();
+            return;
+        }
+    } else if (gfx_rect_contains(reset_rect(), x, y)) {
+        s.hit_kind = HIT_RESET;
+        settings_screen_invalidate();
+        return;
+    }
+    /*
+     * Only while it is offered.  With nothing to write, a button that
+     * presses says a save happened; with a write already asked for, it
+     * lights a button the render draws as inert.
+     */
+    if (save_offered() && gfx_rect_contains(save_rect(), x, y)) {
+        s.hit_kind = HIT_SAVE;
+        settings_screen_invalidate();
+        return;
+    }
+
+    const int row = s.list ? row_at(x, y) : -1;
+    if (row >= 0) {
+        /* A key is armed here and steps nothing: its release steps it, or
+         * the repeat while it is held.  A DOWN the tracker made for a jump
+         * arms none: a flick up the list arrives as one, and its lift on a
+         * key in the next report would be a tap. */
+        const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
+        s.hit_index = row;
+        s.hit_kind = jump                          ? HIT_LIST
+                     : on_key(HIT_MINUS, row, x, y) ? HIT_MINUS
+                     : on_key(HIT_PLUS, row, x, y)  ? HIT_PLUS
+                                                    : HIT_LIST;
+        if (s.hit_kind != HIT_LIST) {
+            settings_screen_invalidate();   /* the key draws pressed */
+        }
+        return;
+    }
+    s.hit_kind = HIT_NONE;
+}
+
+/* The UP of a tap the finger made: what it activates. */
+static void release(int kind, int index, bool repeated, int x, int y)
+{
+    if (kind == HIT_MINUS || kind == HIT_PLUS) {
+        /* One step for a tap.  A key that has repeated has stepped on the
+         * timer and its release adds none.  A MOVE has given the key up
+         * past the slop or outside it; the release is asked again because
+         * it can be the first event to carry the point. */
+        int dx = x - s.press_x, dy = y - s.press_y;
+        if (dx < 0) { dx = -dx; }
+        if (dy < 0) { dy = -dy; }
+        if (!repeated && dx <= DRAG_SLOP && dy <= DRAG_SLOP
+            && on_key(kind, index, x, y)) {
+            step_row(index, (kind == HIT_PLUS) ? 1 : -1);
+        }
+    } else if (kind == HIT_TILE && !s.list
+               && gfx_rect_contains(tile_rect(index), x, y)) {
+        open_tile(index);
+    } else if (kind == HIT_RESET && s.list
+               && gfx_rect_contains(reset_rect(), x, y)) {
+        settings_reset(s.cat);
+        settings_apply_ui();
+    } else if (kind == HIT_SAVE && save_offered()
+               && gfx_rect_contains(save_rect(), x, y)) {
+        /* Asked for, not written.  The application decides when the bench
+         * can afford to stop for it. */
+        settings_request_save();
+        settings_screen_invalidate();
+    }
+}
+
 static void event(const touch_event_t *evt)
 {
     int x = evt->point.x;
@@ -414,7 +585,7 @@ static void event(const touch_event_t *evt)
     }
 
     switch (evt->type) {
-    case TOUCH_EVENT_DOWN: {
+    case TOUCH_EVENT_DOWN:
         s.have_press = true;
         s.press_id = evt->point.id;
         s.press_x = x;
@@ -423,66 +594,8 @@ static void event(const touch_event_t *evt)
         s.dragging = false;
         s.repeating = false;
         s.held_for = 0.0f;
-
-        for (int i = 0; i < SET_CAT_SETUP_COUNT; ++i) {
-            if (gfx_rect_contains(cat_rect(i), x, y)) {
-                s.hit_kind = HIT_CAT;
-                s.hit_index = i;
-                settings_screen_invalidate();
-                return;
-            }
-        }
-        if (gfx_rect_contains(reset_rect(), x, y)) {
-            s.hit_kind = HIT_RESET;
-            settings_screen_invalidate();
-            return;
-        }
-        if (gfx_rect_contains(outputs_rect(), x, y)) {
-            s.hit_kind = HIT_OUTPUTS;
-            settings_screen_invalidate();
-            return;
-        }
-        if (gfx_rect_contains(picker_rect(), x, y)) {
-            s.hit_kind = HIT_PICKER;
-            settings_screen_invalidate();
-            return;
-        }
-        if (gfx_rect_contains(updates_rect(), x, y)) {
-            s.hit_kind = HIT_UPDATES;
-            settings_screen_invalidate();
-            return;
-        }
-        /*
-         * Only while it is offered.  With nothing to write, a button that
-         * presses says a save happened; with a write already asked for,
-         * it lights a button the render draws as inert.
-         */
-        if (save_offered() && gfx_rect_contains(save_rect(), x, y)) {
-            s.hit_kind = HIT_SAVE;
-            settings_screen_invalidate();
-            return;
-        }
-
-        int row = row_at(x, y);
-        if (row >= 0) {
-            /* A key is armed here and steps nothing: its release steps
-             * it, or the repeat while it is held.  A DOWN the tracker made
-             * for a jump arms none: a flick up the list arrives as one, and
-             * its lift on a key in the next report would be a tap. */
-            const bool jump = (evt->flags & TOUCH_FLAG_JUMP) != 0u;
-            s.hit_index = row;
-            s.hit_kind = jump                          ? HIT_LIST
-                         : on_key(HIT_MINUS, row, x, y) ? HIT_MINUS
-                         : on_key(HIT_PLUS, row, x, y)  ? HIT_PLUS
-                                                        : HIT_LIST;
-            if (s.hit_kind != HIT_LIST) {
-                settings_screen_invalidate();   /* the key draws pressed */
-            }
-            return;
-        }
-        s.hit_kind = HIT_NONE;
+        press(evt, x, y);
         break;
-    }
 
     case TOUCH_EVENT_MOVE: {
         int dy = y - s.last_y;
@@ -519,140 +632,42 @@ static void event(const touch_event_t *evt)
         break;
     }
 
-    case TOUCH_EVENT_UP: {
-        int kind = s.hit_kind;
-        int index = s.hit_index;
-        bool dragged = s.dragging;
-        bool repeated = s.repeating;
-        s.have_press = false;
-        s.hit_kind = HIT_NONE;
-        s.dragging = false;
-        s.held_for = 0.0f;
-        s.repeating = false;
-        settings_screen_invalidate();
-
+    case TOUCH_EVENT_UP:
         /* A contact that scrolled activates nothing, and neither does a
-         * release the finger did not make: it ends the press. */
-        if (dragged || !touch_event_is_tap_up(evt)) {
-            break;
-        }
-        if (kind == HIT_MINUS || kind == HIT_PLUS) {
-            /* One step for a tap.  A key that has repeated has stepped on
-             * the timer and its release adds none.  A MOVE has given the
-             * key up past the slop or outside it; the release is asked
-             * again because it can be the first event to carry the
-             * point. */
-            int dx = x - s.press_x, dy = y - s.press_y;
-            if (dx < 0) { dx = -dx; }
-            if (dy < 0) { dy = -dy; }
-            if (!repeated && dx <= DRAG_SLOP && dy <= DRAG_SLOP
-                && on_key(kind, index, x, y)) {
-                step_row(index, (kind == HIT_PLUS) ? 1 : -1);
-            }
-            break;
-        }
-        if (kind == HIT_CAT && gfx_rect_contains(cat_rect(index), x, y)) {
-            /* HIT_CAT is only ever produced for a category index, and
-             * cat_rect() would not have matched otherwise; the analyser cannot
-             * see that the two are the same enumeration. */
-            /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
-            if (s.cat != (setting_cat_t)index) {
-                /* NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange) */
-                s.cat = (setting_cat_t)index;
-                s.scroll = 0;
-                clamp_scroll();
-            }
-        } else if (kind == HIT_RESET && gfx_rect_contains(reset_rect(), x, y)) {
-            settings_reset(s.cat);
-            settings_apply_ui();
-        } else if (kind == HIT_OUTPUTS
-                   && gfx_rect_contains(outputs_rect(), x, y)) {
-            ui_router_goto(SCREEN_OUTPUTS);
-        } else if (kind == HIT_PICKER
-                   && gfx_rect_contains(picker_rect(), x, y)) {
-            ui_router_goto(SCREEN_PICKER);
-        } else if (kind == HIT_UPDATES
-                   && gfx_rect_contains(updates_rect(), x, y)) {
-            ui_router_goto(SCREEN_UPDATES);
-        } else if (kind == HIT_SAVE && save_offered()
-                   && gfx_rect_contains(save_rect(), x, y)) {
-            /* Asked for, not written.  The application decides when the
-             * bench can afford to stop for it. */
-            settings_request_save();
+         * release the finger did not make: it ends the press.  The press
+         * is dropped before it acts, so what it opens starts clean. */
+        if (!s.dragging && touch_event_is_tap_up(evt)) {
+            const int kind = s.hit_kind;
+            const int index = s.hit_index;
+            const bool repeated = s.repeating;
+            drop_press();
+            settings_screen_invalidate();
+            release(kind, index, repeated, x, y);
+        } else {
+            drop_press();
             settings_screen_invalidate();
         }
         break;
-    }
     }
 }
 
 /* ------------------------------------------------------------------ render */
 
-static void draw_categories(gfx_canvas_t *c)
+/*
+ * Four states, and the label is the whole of the feedback: nothing to write
+ * (SAVED), something to write (SAVE), something asked for and waiting for a
+ * moment to write it in (WHEN IDLE), and an attempt the store refused (NOT
+ * SAVED).  WHEN IDLE is seen only while the bench is armed or a transfer is
+ * running; disarmed, the write is taken on the next frame.  SAVE takes the
+ * accent rather than the warning colour: RESET CATEGORY sits beside it and
+ * two amber buttons in a row read as one control.  NOT SAVED takes the
+ * danger colour, because the values on this screen are not the values the
+ * next boot will load and nothing else on the panel says so.  The same
+ * button on the tiles and on a list: the values are one set, not one per
+ * category.
+ */
+static void draw_save(gfx_canvas_t *c)
 {
-    for (int i = 0; i < SET_CAT_SETUP_COUNT; ++i) {
-        gfx_rect_t r = cat_rect(i);
-        bool active = (s.cat == (setting_cat_t)i);
-        bool pressed = (s.hit_kind == HIT_CAT && s.hit_index == i);
-
-        gfx_color_t fill = active ? UI_ACCENT
-                                  : (pressed ? UI_PANEL_HI : UI_PANEL);
-        gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, fill);
-        if (!active) {
-            gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 10, 0, 10, 0, UI_EDGE);
-        }
-
-        /* In the heading face where it fits the button, as the values in
-         * the rows do; a longer name in the label face. */
-        const char *name = ui_setting_category((setting_cat_t)i);
-        const bool big = gfx_text_width(UI_FONT_HEAD, name, 1) <= r.w - 28;
-        gfx_text(c, r.x + 14, r.y + (big ? 6 : 12), name,
-                 big ? UI_FONT_HEAD : UI_FONT_LABEL,
-                 active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
-
-        char buf[40];
-        snprintf(buf, sizeof(buf), TR(SET_COUNT),
-                 settings_in_category((setting_cat_t)i, NULL, 0));
-        gfx_text(c, r.x + 14, r.y + 36, buf, UI_FONT_LABEL,
-                 active ? UI_TEXT_ON_LIGHT : UI_TEXT_FAINT, 1);
-    }
-
-    gfx_rect_t orr = outputs_rect();
-    ui_button(c, orr, "OUTPUTS", UI_ACCENT, s.hit_kind == HIT_OUTPUTS, true);
-    gfx_text(c, orr.x + orr.w - 22, orr.y + 4, ">", UI_FONT_HEAD,
-             UI_TEXT_ON_LIGHT, 1);
-    gfx_rect_t pkr = picker_rect();
-    ui_button(c, pkr, "PICK A PIN", UI_ACCENT, s.hit_kind == HIT_PICKER, true);
-    gfx_text(c, pkr.x + pkr.w - 22, pkr.y + 4, ">", UI_FONT_HEAD,
-             UI_TEXT_ON_LIGHT, 1);
-
-    /* One caption for both: they are two views of the same binding. */
-    gfx_text(c, CAT_X, CAPTION_Y, TR(SET_PINS_CAPTION),
-             UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-
-    /* Not a pin door: the panel's own colour, the caption above kept to
-     * the two it names. */
-    gfx_rect_t upr = updates_rect();
-    ui_button(c, upr, TR(UPD_DOOR), UI_PANEL_HI, s.hit_kind == HIT_UPDATES,
-              true);
-    gfx_text(c, upr.x + upr.w - 22, upr.y + 4, ">", UI_FONT_HEAD, UI_TEXT,
-             1);
-
-    gfx_rect_t rr = reset_rect();
-    ui_button(c, rr, TR(SET_RESET), UI_WARN, s.hit_kind == HIT_RESET, true);
-
-    /*
-     * Four states, and the label is the whole of the feedback: nothing to
-     * write (SAVED), something to write (SAVE), something asked for and
-     * waiting for a moment to write it in (WHEN IDLE), and an attempt the
-     * store refused (NOT SAVED).  WHEN IDLE is seen only while the bench is
-     * armed or a transfer is running; disarmed, the write is taken on the
-     * next frame.  SAVE takes the accent rather than the warning colour:
-     * RESET CATEGORY sits directly above it and two amber buttons in a
-     * column read as one control.  NOT SAVED takes the danger colour,
-     * because the values on this screen are not the values the next boot
-     * will load and nothing else on the panel says so.
-     */
     const bool dirty  = settings_dirty();
     const bool asked  = settings_save_asked();
     const bool failed = settings_save_failed();
@@ -662,11 +677,28 @@ static void draw_categories(gfx_canvas_t *c)
     const char *label = !dirty ? TR(SET_SAVED)
                         : asked ? TR(SET_WHEN_IDLE)
                         : failed ? TR(SET_NOT_SAVED) : TR(SET_SAVE);
-    gfx_rect_t sv = save_rect();
-    ui_button(c, sv, label,
+    ui_button(c, save_rect(), label,
               dirty ? (asked ? UI_WARN : failed ? UI_DANGER : UI_ACCENT)
                     : UI_PANEL_HI,
               s.hit_kind == HIT_SAVE, save_offered());
+}
+
+static void draw_hub(gfx_canvas_t *c)
+{
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        const hub_tile_t *t = &k_tiles[i];
+        const bool down = (s.hit_kind == HIT_TILE && s.hit_index == i);
+        if (t->cat < 0) {
+            ui_tile(c, tile_rect(i), HUB_ICON_DY, t->icon,
+                    ui_router_title(t->screen), ui_tr(t->line), down);
+            continue;
+        }
+        char count[40];
+        snprintf(count, sizeof(count), TR(SET_COUNT),
+                 settings_in_category((setting_cat_t)t->cat, NULL, 0));
+        ui_tile(c, tile_rect(i), HUB_ICON_DY, t->icon,
+                ui_setting_category((setting_cat_t)t->cat), count, down);
+    }
 }
 
 static void draw_row(gfx_canvas_t *c, int index)
@@ -739,21 +771,10 @@ static void draw_row(gfx_canvas_t *c, int index)
               UI_EDGE_HI, plus_down, true);
 }
 
-static void render(gfx_canvas_t *c, int buffer_index)
+static void draw_list(gfx_canvas_t *c)
 {
-    bool stale = true;
-    if (buffer_index >= 0 && buffer_index < MAX_FBS) {
-        stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat;
-    }
-    if (!stale) {
-        return;
-    }
-
-    gfx_clear(c, UI_BG);
-    draw_categories(c);
-
     /* The list is clipped rather than masked, so a part-scrolled row is cut
-     * cleanly at the pane edge instead of drawing over the categories. */
+     * cleanly at the pane edge instead of drawing over the strip. */
     gfx_rect_t saved = gfx_clip_get(c);
     gfx_clip_set(c, gfx_rect_make(LIST_X, LIST_Y, LIST_W, LIST_H));
     int n = row_count();
@@ -772,9 +793,42 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_fill_rect(c, LIST_X + LIST_W + 4, knob_y, 3, knob_h, UI_ACCENT);
     }
 
+    /* Which category is open, under the first column: in the heading face
+     * where it fits, as the rows' labels, a longer name in the label face. */
+    const gfx_rect_t nr = strip_rect(0);
+    const char *name = ui_setting_category(s.cat);
+    const bool big = gfx_text_width(UI_FONT_HEAD, name, 1) <= nr.w - 16;
+    const gfx_font_t *nf = big ? UI_FONT_HEAD : UI_FONT_LABEL;
+    gfx_text(c, LIST_X + 16, nr.y + (nr.h - gfx_text_height(nf, 1)) / 2,
+             name, nf, UI_TEXT, 1);
+
+    ui_button(c, reset_rect(), TR(SET_RESET), UI_WARN,
+              s.hit_kind == HIT_RESET, true);
+}
+
+static void render(gfx_canvas_t *c, int buffer_index)
+{
+    bool stale = true;
+    if (buffer_index >= 0 && buffer_index < MAX_FBS) {
+        stale = !s.chrome_valid[buffer_index] || s.drawn_cat != s.cat
+                || s.drawn_list != s.list;
+    }
+    if (!stale) {
+        return;
+    }
+
+    gfx_clear(c, UI_BG);
+    if (s.list) {
+        draw_list(c);
+    } else {
+        draw_hub(c);
+    }
+    draw_save(c);
+
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
         s.drawn_cat = s.cat;
+        s.drawn_list = s.list;
     }
 }
 
@@ -788,12 +842,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
  */
 static void cancel(void)
 {
-    s.have_press = false;
-    s.hit_kind  = HIT_NONE;
-    s.hit_index = -1;
-    s.dragging  = false;
-    s.held_for  = 0.0f;
-    s.repeating = false;
+    drop_press();
     settings_screen_invalidate();
 }
 
@@ -806,6 +855,7 @@ static const ui_screen_t s_screen = {
     .event = event,
     .cancel = cancel,
     .render = render,
+    .back = back,
 };
 
 const ui_screen_t *settings_screen(void)

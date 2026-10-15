@@ -34,10 +34,9 @@ typedef enum {
 } setting_cat_t;
 
 /**
- * The categories SETUP lists.  SET_CAT_SUPPLY, SET_CAT_SERVO and
- * SET_CAT_STICK are edited on their own screens, beside what they set,
- * SET_CAT_UPDATE on the UPDATES screen SETUP opens, and SETUP has no room
- * for a fourth category button.
+ * The categories SETUP opens from its tiles.  SET_CAT_SUPPLY, SET_CAT_SERVO
+ * and SET_CAT_STICK are edited on their own screens, beside what they set,
+ * and SET_CAT_UPDATE on the UPDATES screen a SETUP tile opens.
  */
 #define SET_CAT_SETUP_COUNT SET_CAT_SUPPLY
 
