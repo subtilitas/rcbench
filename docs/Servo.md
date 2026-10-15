@@ -338,7 +338,7 @@ PULSE LOWER and PULSE UPPER are 1000.0 µs and 2000.0 µs:
 RCBENCH SERVO LIMIT REPORT
 Result:         PASS
 Device:         SERVO
-Firmware:       rcbench 0.19.0
+Firmware:       rcbench 0.20.0
 Mode:           search, then LEFT ANGLE and RIGHT ANGLE programmed
 Output:         PROG PORT GP13, 50 Hz
 Pulse range:    centre 1500 us, 1000-2000 us

@@ -373,7 +373,7 @@ sind:
 RCBENCH SERVO-ENDLAGEN-BERICHT
 Ergebnis:        BESTANDEN
 Prüfling:        SERVO
-Firmware:        rcbench 0.19.0
+Firmware:        rcbench 0.20.0
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT GP13, 50 Hz
 Pulsbereich:     Centre 1500 us, 1000-2000 us

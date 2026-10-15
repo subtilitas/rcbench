@@ -6,6 +6,79 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- The SERVO screen runs the installed-limit search: START LIMIT RUN on the
+  LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
+  PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
+  reads the KST or Chaservo servo first, in a session of the programmer,
+  and searches from the servo's NEUTRAL to its own PULSE LOWER and PULSE
+  UPPER, never past them. A servo whose PULSE LOWER to PULSE UPPER lies
+  outside the bench's PULSE MIN to PULSE MAX ends the run before anything
+  is driven, `servo pulses outside MIN/MAX`, the bench left SAFE and both
+  ranges named. The search runs in 10 us steps on INA3221 CH1's 50 ms
+  windows, reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
+  nothing of the bench's own pulse range. It runs only with the INA3221 as
+  the servo rail's meter, on a rail of 3.0 V or more in the last window
+  (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
+  with an output bound as SERVO PWM; the line under the button names the
+  output it drives and why it cannot start. The search and its protections
+  read the current's magnitude, so a shunt fitted the other way round finds
+  the same ends. The protections are active: 3.0
+  A at every 1 ms sample, above 1.0 A for 400 ms, no window for 200 ms, 40 s
+  a search, and a search's window without the rail voltage (`no rail
+  voltage in a window`). A window without a current reading is not counted
+  as a window. The supply's set points and output are held as at the start
+  in every phase but the programmer's sessions.
+- SERVO PULSES on the LIMITS page, KEEP or 1000-2000, for a servo on the
+  programming port: 1000-2000 writes the servo's PULSE LOWER and PULSE
+  UPPER to 1000.0 and 2000.0 us in the run's read session, before anything
+  is driven, and reads them back. NEUTRAL is not written. It works with
+  SEARCH ONLY and with SEARCH+PROG.
+- SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
+  on the programming port until neither end binds. The run takes the travel
+  as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER; that
+  is not measured. Each bound side gets 2 writes: an overset 3 % above the
+  share of travel at the first search's first bound pulse, which keeps the
+  stop reachable, and the final value from the share the overset's search
+  found free. A side free after the overset ends the run as FAIL, `no stop
+  after the overset write`. At most 8 values are written a run. The
+  register for each side is found from the run's first write. A later
+  session that reads another type, REVERSION, other pulses or another range
+  of values ends the run, `servo holds other values`. A run that ends while it waits for ARMED asks SAFE, so an
+  ARM not yet taken does not arm the bench. A run's write refused before it
+  is sent switches ENABLE WRITE TO SERVO off again. A write that fails once
+  sent counts as written, so the box and the report offer RESTORE; a run
+  that sent no write reports no backup. During a run the supply log writes
+  no row and its time runs on. A run that fails inside a session ends the
+  programmer's part of it once its LEAVE is over. A current reading of
+  -32768 mA counts as 32768 mA in the protections. Without a PD mini a run
+  on PROG PORT needs 4.8 V or more on the servo rail in the INA3221's last
+  window, `PROGRAMMING: SERVO RAIL BELOW 4.8 V`. From a servo run's start,
+  and from an automatic test's OPEN on, to the close of its file, Wi-Fi
+  and an update wait. The FOUND and FREE boxes name the output the run
+  started on. A PD mini that answers with its output off at a run's start
+  stays off: switched on outside a session it ends the run, `supply or rail
+  voltage changed`, and a run on PROG PORT does not start,
+  `PROGRAMMING: PD MINI OUTPUT OFF`. A run's `Backup:` line names the file
+  its own first write saved, also when that write is sent and lost. No
+  automatic test or limit run starts until the card has taken the last
+  run's file open and close. RESTORE offers `Values
+  before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
+  UPPER as the run found them; a session after the run saves its own backup
+  file at its first write.
+
+### Changed
+
+- The automatic servo test on the INA3221 ends ABORTED after 200 ms without
+  a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
+  run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
+- A servo run's `BENCHnnn.TXT` report counts as an open log run until the
+  card has closed it, as its CSV does: Wi-Fi and an update wait for it, and
+  the log viewer neither lists nor opens it while it is written.
+- The SERVO settings' line that says the setup is not saved spans the
+  card: the German text is 296 px wide.
+
 ## 0.20.0 - 2026-10-15
 
 A bench on 0.19.0 loads the panel over USB (Universal Serial Bus) once more,
@@ -92,65 +165,6 @@ apart from the version. The time of the update over CAN is not measured.
   image grows by 127,856 bytes, and the free static internal RAM goes from
   42,806 to 40,174 bytes. How long the check and the download take on a real
   network is not measured.
-- The SERVO screen runs the installed-limit search: START LIMIT RUN on the
-  LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
-  PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
-  reads the KST or Chaservo servo first, in a session of the programmer,
-  and searches from the servo's NEUTRAL to its own PULSE LOWER and PULSE
-  UPPER, never past them. A servo whose PULSE LOWER to PULSE UPPER lies
-  outside the bench's PULSE MIN to PULSE MAX ends the run before anything
-  is driven, `servo pulses outside MIN/MAX`, the bench left SAFE and both
-  ranges named. The search runs in 10 us steps on INA3221 CH1's 50 ms
-  windows, reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
-  nothing of the bench's own pulse range. It runs only with the INA3221 as
-  the servo rail's meter, on a rail of 3.0 V or more in the last window
-  (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
-  with an output bound as SERVO PWM; the line under the button names the
-  output it drives and why it cannot start. The search and its protections
-  read the current's magnitude, so a shunt fitted the other way round finds
-  the same ends. The protections are active: 3.0
-  A at every 1 ms sample, above 1.0 A for 400 ms, no window for 200 ms, 40 s
-  a search, and a search's window without the rail voltage (`no rail
-  voltage in a window`). A window without a current reading is not counted
-  as a window. The supply's set points and output are held as at the start
-  in every phase but the programmer's sessions.
-- SERVO PULSES on the LIMITS page, KEEP or 1000-2000, for a servo on the
-  programming port: 1000-2000 writes the servo's PULSE LOWER and PULSE
-  UPPER to 1000.0 and 2000.0 us in the run's read session, before anything
-  is driven, and reads them back. NEUTRAL is not written. It works with
-  SEARCH ONLY and with SEARCH+PROG.
-- SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
-  on the programming port until neither end binds. The run takes the travel
-  as linear in the pulse from NEUTRAL to PULSE LOWER and PULSE UPPER; that
-  is not measured. Each bound side gets 2 writes: an overset 3 % above the
-  share of travel at the first search's first bound pulse, which keeps the
-  stop reachable, and the final value from the share the overset's search
-  found free. A side free after the overset ends the run as FAIL, `no stop
-  after the overset write`. At most 8 values are written a run. The
-  register for each side is found from the run's first write. A later
-  session that reads another type, REVERSION, other pulses or another range
-  of values ends the run, `servo holds other values`. A run that ends while it waits for ARMED asks SAFE, so an
-  ARM not yet taken does not arm the bench. A run's write refused before it
-  is sent switches ENABLE WRITE TO SERVO off again. A write that fails once
-  sent counts as written, so the box and the report offer RESTORE; a run
-  that sent no write reports no backup. During a run the supply log writes
-  no row and its time runs on. A run that fails inside a session ends the
-  programmer's part of it once its LEAVE is over. A current reading of
-  -32768 mA counts as 32768 mA in the protections. Without a PD mini a run
-  on PROG PORT needs 4.8 V or more on the servo rail in the INA3221's last
-  window, `PROGRAMMING: SERVO RAIL BELOW 4.8 V`. From a servo run's start,
-  and from an automatic test's OPEN on, to the close of its file, Wi-Fi
-  and an update wait. The FOUND and FREE boxes name the output the run
-  started on. A PD mini that answers with its output off at a run's start
-  stays off: switched on outside a session it ends the run, `supply or rail
-  voltage changed`, and a run on PROG PORT does not start,
-  `PROGRAMMING: PD MINI OUTPUT OFF`. A run's `Backup:` line names the file
-  its own first write saved, also when that write is sent and lost. No
-  automatic test or limit run starts until the card has taken the last
-  run's file open and close. RESTORE offers `Values
-  before the limit run`, LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE
-  UPPER as the run found them; a session after the run saves its own backup
-  file at its first write.
 - A radio start that fails logs the step, the error's name and the free
   internal heap with its largest block. The panel logs the free internal
   heap, its largest block and the free PSRAM once at start-up.
@@ -166,14 +180,6 @@ apart from the version. The time of the update over CAN is not measured.
 
 ### Changed
 
-- The automatic servo test on the INA3221 ends ABORTED after 200 ms without
-  a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
-  run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
-- A servo run's `BENCHnnn.TXT` report counts as an open log run until the
-  card has closed it, as its CSV does: Wi-Fi and an update wait for it, and
-  the log viewer neither lists nor opens it while it is written.
-- The SERVO settings' line that says the setup is not saved spans the
-  card: the German text is 296 px wide.
 - SETUP opens on a page of 3 by 3 tiles in the menu's style: ESC / BENCH,
   APPLICATION and INTERFACES with their number of settings, and OUTPUTS,
   PICK A PIN and UPDATES with a line each; 3 slots are free. A category's
@@ -212,8 +218,8 @@ apart from the version. The time of the update over CAN is not measured.
   The zero-initialised data of 15 screen, card and page objects, 161,340
   bytes, and that of lwIP (lightweight IP stack) and the Wi-Fi driver's
   libraries, 13,742 bytes, move to PSRAM. The internal heap at start goes
-  from 126,768 to 299,312 bytes, and the heap left with the largest Wi-Fi
-  mode up from an estimated -81,168 to 91,376 bytes. The free heap on a
+  from 126,768 to 299,320 bytes, and the heap left with the largest Wi-Fi
+  mode up from an estimated -81,168 to 91,384 bytes. The free heap on a
   panel and the frame rate with the screens' state in PSRAM are not
   measured.
 
