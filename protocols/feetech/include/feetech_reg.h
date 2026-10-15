@@ -156,7 +156,8 @@ typedef struct {
     uint8_t  status;       /**< FEETECH_ERR_* bits                       */
     uint8_t  moving;       /**< 1 while the servo moves                  */
     bool     has_current;  /**< STS                                      */
-    uint16_t current_raw;  /**< counts of 6.5 mA                         */
+    uint16_t current_raw;  /**< counts of 6.5 mA, 0 to 32767: bit 15,
+                                taken as the direction, is dropped    */
 } feetech_live_t;
 
 /** Decode @p n bytes read from FEETECH_REG_PRESENT.  False, with @p out

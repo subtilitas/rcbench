@@ -102,15 +102,17 @@ bool feetech_sync_write(feetech_frame_t *out, uint8_t addr, uint8_t len,
                         const uint8_t *blocks, unsigned n_ids)
 {
     uint8_t p[FEETECH_PARAMS_MAX];
-    const unsigned body = ((unsigned)len + 1u) * n_ids;
+    unsigned body;
 
     if (out != NULL) {
         out->n = 0;
     }
+    /* The count is bounded before the product, which cannot wrap then. */
     if (len == 0u || n_ids == 0u || blocks == NULL
-        || body + 2u > FEETECH_PARAMS_MAX) {
+        || n_ids > (FEETECH_PARAMS_MAX - 2u) / ((unsigned)len + 1u)) {
         return false;
     }
+    body = ((unsigned)len + 1u) * n_ids;
     p[0] = addr;
     p[1] = len;
     memcpy(&p[2], blocks, body);

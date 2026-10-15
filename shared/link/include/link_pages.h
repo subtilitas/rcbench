@@ -1928,6 +1928,8 @@ typedef enum {
                                     flag, or an EEPROM write outside it */
     LINK_BUS_REF_STAGED = 11,  /**< the staged registers do not have the
                                     CRC the command names */
+    LINK_BUS_REF_LOCK = 12,    /**< a BAUD while a lock is owed
+                                    (LINK_BS_F_UNLOCKED); STOP sends it */
 } link_bus_refusal_t;
 
 /* ----------------------------------------------------------------- control */

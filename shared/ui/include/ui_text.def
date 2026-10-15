@@ -1402,6 +1402,7 @@ UI_TEXT(BS_R_NO_KEY,               58, "Refused: EEPROM write without the hold."
 UI_TEXT(BS_R_RANGE,                58, "Refused: value out of range.")
 UI_TEXT(BS_R_EEPROM,               58, "Refused: EEPROM area, change it through EEPROM.")
 UI_TEXT(BS_R_STAGED,               58, "Refused: data damaged on the link.")
+UI_TEXT(BS_R_LOCK,                 58, "Refused: a lock is owed, STOP sends it.")
 UI_TEXT(BS_A_NO_ANSWER,            58, "The coprocessor did not answer.")
 UI_TEXT(BS_A_NACK,                 58, "The coprocessor refused the frame (%u).")
 UI_TEXT(BS_A_DROPPED,              58, "STOP: the command was not sent.")

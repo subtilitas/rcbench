@@ -217,8 +217,10 @@ bool feetech_bus_init(feetech_bus_t *b, const feetech_driver_t *d,
                       uint32_t baud);
 
 /** The line to another rate: FEETECH_RES_BUSY while an operation or a
- *  stop runs or a transaction is on the wire, FEETECH_RES_ARG for 0, FEETECH_RES_DRIVER when the driver
- *  refuses it (the rate stays). */
+ *  stop runs, a transaction is on the wire or a lock is owed (the lock
+ *  goes at the rate its servo answers at: feetech_bus_stop() sends it),
+ *  FEETECH_RES_ARG for 0, FEETECH_RES_DRIVER when the driver refuses it
+ *  (the rate stays). */
 feetech_res_t feetech_bus_set_baud(feetech_bus_t *b, uint32_t baud);
 
 /** Start a scan of @p from to @p to.  FEETECH_RES_ARG for @p to above

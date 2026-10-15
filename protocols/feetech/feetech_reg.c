@@ -143,8 +143,10 @@ bool feetech_live(feetech_series_t series, const uint8_t *bytes, unsigned n,
     out->moving = bytes[10];
     if (series == FEETECH_STS) {
         out->has_current = true;
-        out->current_raw = feetech_get16(
-            series, &bytes[FEETECH_REG_CURRENT - FEETECH_REG_PRESENT]);
+        /* Bit 15 taken as the direction, as in present speed: dropped. */
+        out->current_raw = (uint16_t)(feetech_get16(
+            series, &bytes[FEETECH_REG_CURRENT - FEETECH_REG_PRESENT])
+                                      & 0x7FFFu);
     }
     return true;
 }

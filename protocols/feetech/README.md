@@ -219,8 +219,10 @@ servo on a bench:
    tolerates; neither is published.
 10. Whether an STS3215 and an SMS servo answer a 15-byte READ from
     address 56.
-11. The sign of the present load, and the scale of the present current
-    (6.5 mA a count, from one third-party source) against a meter.
+11. The sign of the present load and of the present current, and the
+    scale of the present current (6.5 mA a count, from one third-party
+    source) against a meter. The module takes bit 15 of the current as a
+    direction bit, as in present speed, and drops it.
 12. Whether SYNC READ (0x82) works on the STS3215, and on which firmware.
     The core does not send it.
 13. Whether instructions 0x08 (reboot), 0x09 (backup) and 0x0B (calibrate)

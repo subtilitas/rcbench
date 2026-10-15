@@ -1251,6 +1251,7 @@ A command that is taken is acknowledged, and what became of it is in
 | RANGE | 9 | an ID, address, count or baud index the protocol does not take |
 | EEPROM | 10 | a WRITE to the EEPROM area or the lock flag, or an EEPROM write outside it |
 | STAGED | 11 | the staged registers do not have the CRC the command names |
+| LOCK | 12 | a BAUD while a lock is owed (`STATE` bit 4): the lock goes at the rate its servo answers at, and STOP sends it |
 
 The coprocessor steps the session every pass, at least once a millisecond.
 The session's reply window and gaps are in

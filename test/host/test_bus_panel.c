@@ -1092,6 +1092,19 @@ TEST_CASE(a_baud_change_that_fails_keeps_the_rate_of_the_next_open)
     tap_row(1, 1);
     run(300);
     CHECK_STR_EQ(bus_panel_button(0, 1), "115200");
+    /* A lock owed: BAUD is refused and named. */
+    open_bus();
+    g_port.bus.unlocked = 1;
+    g_port.bus.unlocked_id = 1;
+    g_port.bus.unlocked_series = FEETECH_STS;
+    tap_row(0, 1);
+    CHECK(choose("1000000"));
+    run(500);
+    CHECK(page_says(3, "Refused: a lock is owed, STOP sends it."));
+    CHECK_EQ(sim.baud, 115200u);
+    tap_row(1, 1);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(0, 1), "115200");
 }
 
 TEST_CASE(restore_moves_the_line_to_each_servos_rate)

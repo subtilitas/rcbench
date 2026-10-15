@@ -318,6 +318,9 @@ static link_bus_refusal_t dispatch(bus_port_t *p, link_bus_op_t op,
         if (arg >= FEETECH_BAUD_COUNT) {
             return LINK_BUS_REF_RANGE;
         }
+        if (p->bus.unlocked != 0u) {
+            return LINK_BUS_REF_LOCK;   /* the lock goes at this rate */
+        }
         /* The servos keep their rate: torque off goes to them at the old
          * one first, and the line moves once it is out. */
         started(p, op, feetech_bus_torque_off(&p->bus));

@@ -354,6 +354,12 @@ TEST_CASE(the_builders_refuse_what_the_wire_cannot_carry)
     CHECK(!feetech_sync_write(&f, 0x2A, 0, blocks, 1));
     CHECK(!feetech_sync_write(&f, 0x2A, 6, blocks, 0));
     CHECK(!feetech_sync_write(&f, 0x2A, 6, NULL, 1));
+    /* A count whose product wraps an unsigned: refused before it. */
+    CHECK(!feetech_sync_write(&f, 0x2A, 2, blocks, 0x55555555u));
+    CHECK(!feetech_sync_write(&f, 0x2A, 255, blocks, 0x01000000u));
+    CHECK(!feetech_sync_write(&f, 0x2A, 1, blocks, 0x80000000u));
+    CHECK(!feetech_sync_write(&f, 0x2A, 1, blocks, 0xFFFFFFFFu));
+    CHECK_EQ(f.n, 0u);
 }
 
 TEST_CASE(wire_time_is_ten_bits_a_byte_rounded_up)

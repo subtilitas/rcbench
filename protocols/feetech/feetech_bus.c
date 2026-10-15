@@ -59,7 +59,8 @@ bool feetech_bus_found(const feetech_bus_t *b, uint8_t id)
 
 feetech_res_t feetech_bus_set_baud(feetech_bus_t *b, uint32_t baud)
 {
-    if (feetech_bus_busy(b) || b->flight != FL_NONE) {
+    /* An owed lock goes at the rate its servo answers at. */
+    if (feetech_bus_busy(b) || b->flight != FL_NONE || b->unlocked != 0u) {
         return FEETECH_RES_BUSY;
     }
     if (baud == 0u) {
@@ -517,6 +518,14 @@ static void op_next(feetech_bus_t *b, uint32_t now)
         return;
     }
     if (!ok) {
+        /* Refused after the unlock went: the lock next, and the write ends
+         * with DRIVER.  A lock refused stays owed (STOP sends it). */
+        if (b->op == FEETECH_OP_WRITE_EE && b->step != EE_LOCK
+            && b->step != EE_RELOCK && b->unlocked != 0u
+            && b->unlocked_id == b->id) {
+            ee_failed(b, FEETECH_RES_DRIVER);
+            return;
+        }
         end_op(b, FEETECH_RES_DRIVER);
     }
 }

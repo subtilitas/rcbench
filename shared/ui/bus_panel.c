@@ -380,7 +380,7 @@ static const char *refusal_text(uint8_t r)
     static const int16_t k[] = {
         -1, TX_BS_R_BUSY, TX_BS_R_PORT, TX_BS_R_PROTOCOL, TX_BS_R_UNSAFE,
         TX_BS_R_ARMED, TX_BS_R_NOT_OPEN, TX_BS_R_NO_PIN, TX_BS_R_NO_KEY,
-        TX_BS_R_RANGE, TX_BS_R_EEPROM, TX_BS_R_STAGED,
+        TX_BS_R_RANGE, TX_BS_R_EEPROM, TX_BS_R_STAGED, TX_BS_R_LOCK,
     };
 
     if (r >= sizeof(k) / sizeof(k[0]) || k[r] < 0) {

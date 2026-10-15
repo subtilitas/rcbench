@@ -612,6 +612,25 @@ TEST_CASE(a_baud_write_moves_the_page_with_the_line)
     CHECK_EQ(g_port.baud_due, 0);
     CHECK_EQ(sim.baud, 38400u);
     sim.refuse_start = false;
+    /* A lock owed: BAUD refused with nothing sent, until STOP sent it. */
+    g_port.bus.unlocked = 1;
+    g_port.bus.unlocked_id = 1;
+    g_port.bus.unlocked_series = FEETECH_STS;
+    run(10);
+    CHECK(reg(LINK_BS_STATE) & LINK_BS_F_UNLOCKED);
+    sim.n_log = 0;
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_LOCK);
+    run(100);
+    CHECK_EQ(sim.n_log, 0u);
+    CHECK_EQ(sim.baud, 38400u);
+    CHECK_EQ(cmd(LINK_BUS_OP_STOP, STS, 0, 0), 0);
+    run(100);
+    CHECK_EQ(g_port.bus.unlocked, 0);
+    CHECK_EQ(cmd(LINK_BUS_OP_BAUD, STS, 0, 0), 0);
+    CHECK_EQ(refusal(), LINK_BUS_REF_NONE);
+    run(100);
+    CHECK_EQ(sim.baud, 1000000u);
 }
 
 /* Passes until a watch read is on the wire. */

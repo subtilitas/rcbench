@@ -1404,6 +1404,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_BS_R_RANGE]                = "Abgelehnt: Wert außerhalb des Bereichs.",
     [TX_BS_R_EEPROM]               = "Abgelehnt: EEPROM-Bereich, über EEPROM ändern.",
     [TX_BS_R_STAGED]               = "Abgelehnt: Daten auf dem Link beschädigt.",
+    [TX_BS_R_LOCK]                 = "Abgelehnt: eine Sperre steht aus, STOP schickt sie.",
     [TX_BS_A_NO_ANSWER]            = "Der Koprozessor antwortet nicht.",
     [TX_BS_A_NACK]                 = "Der Koprozessor lehnt den Frame ab (%u).",
     [TX_BS_A_DROPPED]              = "STOP: Befehl nicht gesendet.",

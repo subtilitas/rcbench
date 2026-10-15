@@ -826,7 +826,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | Reihe | Werte | Was sie tut |
 | --- | --- | --- |
 | PROTOKOLL | FEETECH | das Protokoll; die Liste hält die Protokolle des Builds. Nur bei geschlossenem Bus |
-| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: Drehmoment aus an jedes Servo mit der alten Rate, dann wechselt die Leitung auf sie; die Servos behalten ihre. Ein Wechsel, der scheitert, lässt die Leitung und das nächste ÖFFNEN auf der alten Rate |
+| BAUD | 1 000 000, 500 000, 250 000, 128 000, 115 200, 76 800, 57 600 oder 38 400 | die Rate des Masters. Geschlossen: die Rate, mit der ÖFFNEN öffnet. Offen: Drehmoment aus an jedes Servo mit der alten Rate, dann wechselt die Leitung auf sie; die Servos behalten ihre. Ein Wechsel, der scheitert, lässt die Leitung und das nächste ÖFFNEN auf der alten Rate. Abgewiesen, solange eine Sperre aussteht, weil die Sperre mit der Rate ihres Servos geht: `Abgelehnt: eine Sperre steht aus, STOP schickt sie.` |
 | SERIE | SCS, STS/SMS | Registertabelle und Byte-Reihenfolge: SCS Big-Endian, Ziel 0 bis 1023; STS und SMS Little-Endian, Ziel 0 bis 4095. Je ID, für die Sitzung; beim Start STS/SMS |
 | BUS | ÖFFNEN, SCHLIESSEN | nimmt den Pin des Ports aus PWM, oder gibt ihn mit Drehmoment aus zurück |
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
@@ -859,11 +859,13 @@ aufgeführt.
 Mit gewählter ID liest die Seite alle 50 ms den Live-Block des Servos:
 aktuelle Position, Last in 0,1 % (die unteren 10 Bit des Registers,
 höchstens 100,0 %), Spannung in 0,1 V, Temperatur in Grad Celsius und bei
-STS den aktuellen Strom mit 6,5 mA je Zählwert. Die Fehlerflags sind die des
+STS den aktuellen Strom mit 6,5 mA je Zählwert (die unteren 15 Bit des
+Registers). Die Fehlerflags sind die des
 Statusbytes: SPANNUNG (Bit 0), SENSOR (Bit 1), TEMPERATUR (Bit 2), STROM
 (Bit 3) und ÜBERLAST (Bit 5), in der Warnfarbe, solange eines gesetzt ist.
 Ein Lesen, das scheitert, zeigt `ID 1: kein Messwert`, bis eines gelingt.
-Das Vorzeichen der Last und die Skala des Stroms sind nicht gemessen.
+Das Vorzeichen von Last und Strom und die Skala des Stroms sind nicht
+gemessen.
 
 ![Ein beobachtetes Servo mit zwei Fehlerflags](img/de/servo-bus-live.png)
 

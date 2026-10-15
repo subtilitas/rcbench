@@ -128,6 +128,15 @@ TEST_CASE(the_live_block_decodes_in_each_byte_order)
     CHECK_EQ(feetech_current_ma(200), 1300u);
     CHECK_EQ(feetech_current_ma(1), 7u);   /* 6.5 rounds up */
     CHECK_EQ(feetech_current_ma(0), 0u);
+    /* Bit 15 is the direction: 0x8001 is one count, not 32769. */
+    feetech_put16(FEETECH_STS, &sts[13], 0x8001u);
+    CHECK(feetech_live(FEETECH_STS, sts, sizeof(sts), &l));
+    CHECK_EQ(l.current_raw, 1);
+    CHECK_EQ(feetech_current_ma(l.current_raw), 7u);
+    feetech_put16(FEETECH_STS, &sts[13], 0xFFFFu);
+    CHECK(feetech_live(FEETECH_STS, sts, sizeof(sts), &l));
+    CHECK_EQ(l.current_raw, 0x7FFF);
+    CHECK_EQ(feetech_current_ma(l.current_raw), 212986u);
 
     feetech_put16(FEETECH_SCS, &scs[0], 1023);
     scs[6] = 60;

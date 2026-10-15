@@ -840,7 +840,7 @@ protocol core is [protocols/feetech](../protocols/feetech/README.md).
 | Row | Values | What it does |
 | --- | --- | --- |
 | PROTOCOL | FEETECH | the protocol; the list holds the protocols of the build. Set while the bus is closed |
-| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: torque off to every servo at the old rate, then the line moves to it; the servos keep theirs. A move that fails leaves the line, and the next OPEN, at the old rate |
+| BAUD | 1,000,000, 500,000, 250,000, 128,000, 115,200, 76,800, 57,600 or 38,400 | the master's rate. Closed: the rate OPEN uses. Open: torque off to every servo at the old rate, then the line moves to it; the servos keep theirs. A move that fails leaves the line, and the next OPEN, at the old rate. Refused while a lock is owed, since the lock goes at its servo's rate: `Refused: a lock is owed, STOP sends it.` |
 | SERIES | SCS, STS/SMS | the register table and byte order: SCS big-endian, goal 0 to 1023; STS and SMS little-endian, goal 0 to 4095. Per ID, for the session; STS/SMS at start |
 | BUS | OPEN, CLOSE | takes the port's pin out of PWM, or gives it back with torque off |
 | SCAN FROM, SCAN TO | 0 to 253, 1 and 20 at start | the IDs SCAN pings |
@@ -870,11 +870,11 @@ answered with a frame that did not decode is counted, not listed.
 With an ID chosen the page reads the servo's live block every 50 ms:
 present position, load in 0.1 % (the low 10 bits of the register, at most
 100.0 %), voltage in 0.1 V, temperature in degrees Celsius and, on STS, the
-present current at 6.5 mA a count. The error flags are the status byte's
+present current at 6.5 mA a count (the low 15 bits of the register). The error flags are the status byte's
 VOLTAGE (bit 0), SENSOR (bit 1), TEMPERATURE (bit 2), CURRENT (bit 3) and
 OVERLOAD (bit 5), in the warning colour while one is set. A read that
 fails shows `ID 1: no reading` until one succeeds. The sign of the load and
-the current's scale are not measured.
+of the current, and the current's scale, are not measured.
 
 ![One servo watched, with two error flags](img/servo-bus-live.png)
 

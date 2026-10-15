@@ -669,6 +669,49 @@ TEST_CASE(a_failed_unlock_or_write_still_sends_the_lock)
     CHECK_EQ(bus.unlocked_id, 1);
 }
 
+TEST_CASE(a_step_the_driver_refuses_after_the_unlock_still_locks)
+{
+    const uint8_t mode1 = 1;
+    ftsim_servo_t *v;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    (void)feetech_bus_step(&bus, now);     /* the unlock out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* its reply in */
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    sim.refuse_n = 1;                      /* the write's start */
+    CHECK_EQ(run(100), FEETECH_RES_DRIVER);
+    CHECK_EQ(sim.n_log, 2u);
+    CHECK(ftsim_is_write1(&sim.log[1], 1, FEETECH_REG_LOCK_STS, 1));
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(v->regs[FEETECH_REG_MODE], 0);
+    CHECK_EQ(bus.unlocked, 0);
+    /* The lock refused as well: it stays owed, the rate stays where the
+     * servo answers, and STOP sends it. */
+    sim.n_log = 0;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MODE,
+                                  &mode1, 1), FEETECH_RES_OK);
+    (void)feetech_bus_step(&bus, now);
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);
+    sim.refuse_n = 2;                      /* the write's and the lock's */
+    CHECK_EQ(run(100), FEETECH_RES_DRIVER);
+    CHECK_EQ(sim.n_log, 1u);
+    CHECK_EQ(bus.unlocked, 1);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 0);
+    CHECK_EQ(feetech_bus_set_baud(&bus, 115200u), FEETECH_RES_BUSY);
+    CHECK_EQ(sim.baud, 1000000u);
+    feetech_bus_stop(&bus);
+    (void)run(100);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(feetech_bus_set_baud(&bus, 115200u), FEETECH_RES_OK);
+    CHECK_EQ(sim.baud, 115200u);
+}
+
 /* ----------------------------------------------------------------- STOP */
 
 TEST_CASE(stop_during_a_scan_ends_it_and_sends_torque_off)
@@ -1032,6 +1075,7 @@ int main(void)
     RUN(a_lock_owed_to_one_servo_goes_before_a_write_to_another);
     RUN(a_servo_that_keeps_nothing_fails_the_read_back);
     RUN(a_failed_unlock_or_write_still_sends_the_lock);
+    RUN(a_step_the_driver_refuses_after_the_unlock_still_locks);
     RUN(stop_during_a_scan_ends_it_and_sends_torque_off);
     RUN(stop_after_the_unlock_relocks_the_servo);
     RUN(stop_while_an_id_write_is_on_the_wire_locks_the_new_id);

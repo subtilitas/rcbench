@@ -1372,6 +1372,7 @@ das nichts gestartet hat:
 | RANGE | 9 | eine ID, Adresse, Anzahl oder ein Baud-Index, den das Protokoll nicht nimmt |
 | EEPROM | 10 | ein WRITE in den EEPROM-Bereich oder auf das Sperrflag, oder ein EEPROM-Schreiben außerhalb davon |
 | STAGED | 11 | die bereitgestellten Register haben nicht die CRC, die das Kommando nennt |
+| LOCK | 12 | ein BAUD, solange eine Sperre aussteht (`STATE` Bit 4): die Sperre geht mit der Rate, mit der ihr Servo antwortet, und STOP schickt sie |
 
 Der Koprozessor führt die Session in jedem Durchlauf weiter, mindestens
 einmal je Millisekunde. Antwortfenster und Pausen der Session stehen in
