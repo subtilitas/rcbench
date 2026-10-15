@@ -205,7 +205,7 @@ target_link_libraries(my_app PRIVATE rcbench_feetech rcbench_feetech_rp2350)
 
 Nothing of this module is measured on a servo. The frames are held to the
 23 examples of the manual, the instruction generator workbook and a
-third-party table (`test/host/test_feetech_wire.c`). These 20 items need a
+third-party table (`test/host/test_feetech_wire.c`). These 21 items need a
 servo on a bench:
 
 1. The idle level of the signal line with the servo powered and no master
@@ -246,6 +246,9 @@ servo on a bench:
     and discards it. The read-back after every EEPROM write catches it.
 20. The PIO receiver's resynchronisation after a framing error on a real
     line; the host model covers one framing error.
+21. Whether a servo at response level 0 (register 8) answers READ, as the
+    manual states. The BUS page reads torque enable back after an
+    unanswered TORQUE ON on that statement.
 
 ## Trademarks
 

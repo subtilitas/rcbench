@@ -20,7 +20,7 @@ history is in git.
   rate first. A torque on without an answer is read back from the servo,
   and torque off goes to every servo when the read is not answered
   either. The bus runs on a SAFE bench only; STOP sends torque off. The
-  page's state takes 3,328 bytes of internal RAM. SMS servos on RS-485 are
+  page's state takes 3,336 bytes of internal RAM. SMS servos on RS-485 are
   not supported. The protocol core and its RP2350 pin driver are the module
   `protocols/feetech`.
 - Link protocol 4.23: the BUS (0x34) and BUS_IDS (0x35) pages.
