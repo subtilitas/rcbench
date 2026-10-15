@@ -551,7 +551,8 @@ page gives at most 2.9 pt for the widest picture. The swap is 1 line in
 ## Workflow
 
 `.github/workflows/pages.yml` runs on a pull request and on a push to `main`
-that touch `configurator/` or the workflow file.
+that touch `configurator/`, the workflow file, or the panel's web help
+(`help/`, `docs/img/`, `tools/help_site.py`).
 
 | Job | Does |
 |---|---|
@@ -559,7 +560,8 @@ that touch `configurator/` or the workflow file.
 | `build` | Fails when `src/stub` exists or `src/core.ts` does not import `../core/index.ts`. Type check, unit tests, drawings check, build, size check. Keeps `dist/` as artifact `configurator-dist` and 2 files of the PDF export as artifact `configurator-pdf-samples`, each for 14 days. |
 | `smoke` | Playwright against the artifact of `build`: `e2e/smoke.spec.ts`, `e2e/select.spec.ts`, `e2e/export.spec.ts`, `e2e/diagram.spec.ts`. Keeps the screenshots of the wiring picture as artifact `configurator-diagram-shots` for 14 days. A failed test leaves its trace and screenshot as an artifact for 14 days. |
 | `matrix` | Playwright against the artifact of `build` in 8 cells and on the hash corpus, in 4 shards. No retry. A failed test leaves its trace and screenshot as an artifact for 14 days. |
-| `deploy` | Publishes the artifact to GitHub Pages. Runs on a push to `main` only, after the other jobs pass. |
+| `help` | Builds the panel's web help with `tools/help_site.py`, which runs every check of the help first. Keeps it as artifact `help-site` for 14 days. |
+| `deploy` | Publishes the artifact to GitHub Pages, with `help-site` in its `help/` folder. Runs on a push to `main` only, after the other jobs pass. The size budget covers the configurator's files only. |
 
 The `deploy` job needs the repository setting "Pages source: GitHub Actions".
 

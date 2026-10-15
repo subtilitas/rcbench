@@ -28,7 +28,7 @@ import { STRINGS } from '../../src/i18n.ts';
 import { optionsOf } from '../../src/names.ts';
 import { chooser } from '../../src/view/chooser.ts';
 import type { View } from '../../src/view/chooser.ts';
-import { NOTICE_URL, result, summary } from '../../src/view/result.ts';
+import { HELP_URL, NOTICE_URL, result, summary } from '../../src/view/result.ts';
 import { SEARCH } from '../../src/view/buy.ts';
 
 const SPACE = spaceOf(CATALOGUE);
@@ -184,6 +184,8 @@ function problemsOf(v: View, ownOpen: boolean): string[] {
       if (value === undefined || value.startsWith('#')) continue;
       // The link to the trademark notice leaves the page when the visitor follows it. The page loads nothing from it.
       if (key === 'href' && tag.name === 'a' && value === NOTICE_URL && tag.attrs.get('rel') === 'noopener noreferrer') continue;
+      // The panel's web help: a page of the same site, in the footer.
+      if (key === 'href' && tag.name === 'a' && Object.values(HELP_URL).includes(value as never)) continue;
       // A maker page or a web search of the parts list: a new tab, no opener, 1 query parameter and no fragment.
       if (key === 'href' && tag.name === 'a' && (PAGES.has(unescape(value)) || (unescape(value).startsWith(SEARCH) && /^[^&#]+$/.test(unescape(value).slice(SEARCH.length))))) {
         if (tag.attrs.get('target') !== '_blank' || tag.attrs.get('rel') !== 'noopener noreferrer') out.push(`<a href="${value}"> opens without target="_blank" rel="noopener noreferrer"`);
