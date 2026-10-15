@@ -1050,6 +1050,248 @@ TEST_CASE(a_link_lost_before_a_command_went_keeps_nothing)
     CHECK_EQ(bus_panel_backups(), 0u);
 }
 
+/* A READ of @p addr is in the frames logged. */
+static bool logged_read(uint8_t addr)
+{
+    for (unsigned i = 0; i < sim.n_log; ++i) {
+        if (sim.log[i].bytes[4] == FEETECH_READ
+            && sim.log[i].bytes[5] == addr) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* A broadcast torque off is in the frames logged. */
+static bool logged_torque_off(void)
+{
+    for (unsigned i = 0; i < sim.n_log; ++i) {
+        if (ftsim_is_write1(&sim.log[i], FEETECH_ID_BROADCAST,
+                            FEETECH_REG_TORQUE, 0u)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/* A servo picked on an open bus, its torque tapped on. */
+static ftsim_servo_t *torque_tapped(void)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    sim.n_log = 0;
+    tap_row(4, 0);
+    return v;
+}
+
+TEST_CASE(an_unanswered_torque_on_shows_what_the_register_says)
+{
+    ftsim_servo_t *v;
+
+    /* Response level 0: the write is taken, the read says on. */
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    v->quiet_writes = true;
+    open_bus();
+    scan();
+    pick_id(1);
+    sim.n_log = 0;
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+    CHECK(logged_read(FEETECH_REG_TORQUE));
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    CHECK(!logged_torque_off());
+    /* The next tap sends off. */
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+
+    /* A write that never arrived: the read says off. */
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    v->deaf_writes = true;
+    open_bus();
+    scan();
+    pick_id(1);
+    sim.n_log = 0;
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK(logged_read(FEETECH_REG_TORQUE));
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+}
+
+TEST_CASE(an_unanswered_torque_on_and_read_send_torque_off_to_all)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    v->quiet_writes = true;
+    open_bus();
+    scan();
+    pick_id(1);
+    sim.n_log = 0;
+    sim.drop_read = FEETECH_REG_TORQUE + 1u;
+    tap_row(4, 0);
+    run(300);
+    CHECK(logged_read(FEETECH_REG_TORQUE));
+    CHECK(logged_torque_off());
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    CHECK(page_says(3, "No reply."));
+}
+
+TEST_CASE(stop_or_a_link_drop_during_the_torque_read_back_ends_off)
+{
+    ftsim_servo_t *v;
+
+    /* STOP while the read is on its way. */
+    v = torque_tapped();
+    v->quiet_writes = true;
+    for (int i = 0; i < 500 && !logged_read(FEETECH_REG_TORQUE); ++i) {
+        pass();
+    }
+    CHECK(logged_read(FEETECH_REG_TORQUE));
+    g_stops++;
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    CHECK(page_says(3, "STOP"));
+
+    /* The link drops instead: torque off to all once it is back. */
+    v = torque_tapped();
+    v->quiet_writes = true;
+    for (int i = 0; i < 500 && !logged_read(FEETECH_REG_TORQUE); ++i) {
+        pass();
+    }
+    CHECK(logged_read(FEETECH_REG_TORQUE));
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    sim.n_log = 0;
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK(logged_torque_off());
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+}
+
+TEST_CASE(an_eeprom_baud_write_clears_the_torque_marks)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    tap_row(4, 0);
+    run(300);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "ON");
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    hold_apply();
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 0);
+    CHECK_STR_EQ(bus_panel_button(4, 0), "OFF");
+    /* One tap turns it on again. */
+    tap_row(4, 0);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_TORQUE], 1);
+}
+
+/* RESTORE 1 behind its hold, run to the end. */
+static void restore_one(void)
+{
+    tap_row(5, 1);
+    CHECK(choose("RESTORE 1"));
+    hold(2.2f);
+    run(1000);
+}
+
+TEST_CASE(a_baud_write_cut_by_a_link_drop_restores_at_either_rate)
+{
+    ftsim_servo_t *v;
+
+    /* The write went and landed: the servo is at 115200 baud. */
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    hold_apply();
+    pass();                             /* the command is handed over */
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK_EQ(bus_panel_backups(), 1u);
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    restore_one();
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(bus_panel_backups(), 0u);
+
+    /* The write went and the driver started nothing: the servo stays at
+     * 1000000 baud, where the read finds it first. */
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    hold_apply();
+    sim.refuse_start = true;
+    pass();
+    sim.refuse_start = false;
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK_EQ(bus_panel_backups(), 1u);
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    sim.n_log = 0;
+    restore_one();
+    CHECK(logged_read(FEETECH_REG_BAUD));
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(bus_panel_backups(), 0u);
+}
+
+TEST_CASE(a_baud_write_cut_by_stop_restores_at_either_rate)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    hold_apply();
+    pass();                             /* the command is taken */
+    g_stops++;
+    run(500);
+    CHECK(page_says(3, "STOP"));
+    CHECK_EQ(bus_panel_backups(), 1u);
+    restore_one();
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(bus_panel_backups(), 0u);
+}
+
 TEST_CASE(a_coprocessor_without_the_page_is_named_and_sent_nothing)
 {
     fresh_minor(LINK_MINOR_BUS - 1u);
@@ -1457,6 +1699,12 @@ int main(void)
     RUN(leaving_during_an_eeprom_write_keeps_its_old_value);
     RUN(a_link_lost_after_an_eeprom_write_went_keeps_it_uncertain);
     RUN(a_link_lost_before_a_command_went_keeps_nothing);
+    RUN(an_unanswered_torque_on_shows_what_the_register_says);
+    RUN(an_unanswered_torque_on_and_read_send_torque_off_to_all);
+    RUN(stop_or_a_link_drop_during_the_torque_read_back_ends_off);
+    RUN(an_eeprom_baud_write_clears_the_torque_marks);
+    RUN(a_baud_write_cut_by_a_link_drop_restores_at_either_rate);
+    RUN(a_baud_write_cut_by_stop_restores_at_either_rate);
     RUN(a_coprocessor_without_the_page_is_named_and_sent_nothing);
     RUN(a_link_down_is_named);
     RUN(a_command_the_control_task_never_takes_times_out_after_3_s);

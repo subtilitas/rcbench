@@ -832,7 +832,7 @@ ist [die Bus-Page](Link-de.md#die-bus-page); der Protokollkern ist
 | SCAN VON, SCAN BIS | 0 bis 253, beim Start 1 und 20 | die IDs, die SCAN anpingt |
 | GEFUNDEN n | SCAN, STOP | ein PING an jede ID des Bereichs; STOP, solange er läuft |
 | ID | die gefundenen IDs, ANDERE ID | das Servo, das die Seite steuert und beobachtet; ANDERE ID öffnet das Tastenfeld, 0 bis 253 |
-| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40); je ID gehalten, ein wieder gewähltes Servo zeigt, was ihm geschickt wurde; STOP und SCHLIESSEN setzen jede ID auf AUS, weil sie Drehmoment aus schicken |
+| DREHMOMENT | EIN, AUS | schreibt Torque Enable (Register 40); je ID gehalten, ein wieder gewähltes Servo zeigt, was ihm geschickt wurde; STOP, SCHLIESSEN und ein Schreiben der Baudrate über BAUD oder das EEPROM setzen jede ID auf AUS, weil sie Drehmoment aus schicken. Ein EIN ohne Antwort (ein Servo mit Antwortstufe 0 beantwortet kein Schreiben) wird aus Register 40 zurückgelesen und zeigt, was das Servo sagt; bleibt auch das Lesen ohne Antwort, oder schneiden STOP oder ein verlorener Link es ab, geht Drehmoment aus an jedes Servo, und die Zeile zeigt AUS |
 | TEMPO | 0 bis 3400 bei STS, 0 bis 1000 bei SCS, beim Start 1000 | die Geschwindigkeit des Ziels, mit jedem Ziel geschickt |
 | BESCHL. | 0 bis 255, beim Start 0 | die Beschleunigung des Ziels, mit jedem Ziel geschickt; nur STS, bei SCS gedimmt |
 | EEPROM | ÄNDERN | die Liste der EEPROM-Schreibvorgänge unten |
@@ -920,8 +920,11 @@ verloren ging, behält seinen alten Wert zum Zurückspielen, weil es
 angekommen sein kann; ein solcher ID-Wechsel wird nicht behalten, weil das
 Servo auf beiden IDs antworten kann. Jeder behaltene Wert trägt die Rate,
 mit der sein Servo antwortet; bei einem nicht zurückgelesenen Schreiben von
-BAUD ist das die Rate, auf der die Leitung danach steht: die neue, wenn die
-Sperre dort beantwortet wurde, sonst die alte. Vor einem Eintrag mit einer anderen Rate
+BAUD ist das die Rate, auf der die Leitung danach zuletzt gelesen wurde, und
+die andere Rate wird mit behalten. Bevor ZURÜCKSPIELEN so einen Eintrag
+zurückschreibt, liest es das Register mit der ersten Rate; antwortet nichts,
+wechselt es die Leitung auf die andere Rate und schreibt dort. Das nächste
+ÖFFNEN nimmt die Rate, die die Seite zuletzt gelesen hat. Vor einem Eintrag mit einer anderen Rate
 wechselt ZURÜCKSPIELEN die Leitung dorthin, mit Drehmoment aus an jedes
 Servo, wie BAUD es schickt, und seine Warnung sagt das. Die Leitung bleibt
 auf der Rate des zuletzt zurückgespielten Eintrags.

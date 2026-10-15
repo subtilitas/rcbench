@@ -35,6 +35,10 @@ typedef struct {
     bool     present;
     uint8_t  series;
     uint8_t  regs[256];
+    bool     quiet_writes;     /* response level 0: a WRITE is taken and
+                                  not answered */
+    bool     deaf_writes;      /* a WRITE to its ID is neither taken nor
+                                  answered */
 } ftsim_servo_t;
 
 typedef struct {
@@ -130,6 +134,13 @@ static inline void ftsim_answer(ftsim_bus_t *s, int idx, const uint8_t *f,
         memcpy(params, &v->regs[p[0]], n_params);
     } else if (ins == FEETECH_WRITE && np >= 2u) {
         const uint8_t addr = p[0];
+
+        if (v->deaf_writes && id != FEETECH_ID_BROADCAST) {
+            return;
+        }
+        if (v->quiet_writes) {
+            reply = false;
+        }
 
         for (unsigned i = 1; i < np; ++i) {
             const unsigned a = (unsigned)addr + i - 1u;

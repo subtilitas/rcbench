@@ -60,6 +60,7 @@ status       FF FF ID LEN ERR   P1 .. Pn CHK
 | LEN | n + 2 |
 | CHK | NOT of the low byte of ID + LEN + INSTR (or ERR) + P1 .. Pn |
 | IDs | 0 to 253 one servo; 254 (0xFE) every servo, no reply except to PING |
+| Response level, register 8 | 1, the factory setting: every instruction is answered. 0: only READ and PING are answered |
 | Baud rates, register 6 index 0 to 7 | 1,000,000; 500,000; 250,000; 128,000; 115,200; 76,800; 57,600; 38,400 |
 | Factory setting | ID 1, index 0 (1,000,000 baud) |
 | Two-byte values | STS: low byte at the lower address. SCS: high byte at the lower address |

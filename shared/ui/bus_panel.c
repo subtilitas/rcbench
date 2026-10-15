@@ -60,7 +60,8 @@ static const row_t k_rows[] = {
 /* What a command was for. */
 enum {
     U_NONE = 0, U_OPEN, U_CLOSE, U_BAUD, U_SCAN, U_STOP, U_WATCH, U_TORQUE,
-    U_GOAL, U_EE_READ, U_EE_WRITE, U_RESTORE, U_CHECK
+    U_GOAL, U_EE_READ, U_EE_WRITE, U_RESTORE, U_CHECK, U_TQ_READ, U_TQ_OFF,
+    U_PROBE
 };
 
 /* What a servo does with a goal position, as the page last read it. */
@@ -80,11 +81,20 @@ enum {
 /* The EEPROM list's entries, past the roles: RESTORE. */
 #define E_RESTORE 100
 
+/* No second rate. */
+#define NO_ALT 0xFFu
+
+/* The result of a frame no servo answered (feetech_res_t). */
+#define RES_NO_REPLY 2u
+
 typedef struct {
     uint8_t id, series, addr, n;
     uint8_t old[2];
     uint8_t role;
-    uint8_t baud;               /* the rate the servo answers at */
+    uint8_t baud;               /* the rate the servo answers at, as far as
+                                   the page knows: tried first */
+    uint8_t alt;                /* a baud write not read back: the other
+                                   rate it may answer at, or NO_ALT */
 } backup_t;
 
 static struct {
@@ -105,6 +115,9 @@ static struct {
     uint8_t  chk_series, chk_n;
     int      torque_id;         /* the TORQUE command's ID */
     bool     torque_want;       /* and the state it sends */
+    bool     tq_read_due;       /* a torque on went unanswered: read the
+                                   register back */
+    bool     tq_off_due;        /* nor did the read: torque off to all */
     uint16_t speed;
     uint8_t  acc;
     bool     goal_due;
@@ -514,6 +527,13 @@ static void restore_next(void)
         send(U_BAUD, LINK_BUS_OP_BAUD, k->baud, 0u);
         return;
     }
+    /* A rate not certain: a read finds out whether the servo answers here
+     * before the write, which owes a lock to a servo it unlocks. */
+    if (k->alt != NO_ALT) {
+        send(U_PROBE, LINK_BUS_OP_READ,
+             (uint16_t)((unsigned)k->id | ((unsigned)k->addr << 8)), k->n);
+        return;
+    }
     send_bytes(U_RESTORE, LINK_BUS_OP_EEPROM, k->id, k->addr, k->old, k->n,
                true);
     b.out.sts = k->series != 0u;
@@ -616,7 +636,7 @@ static void warn_restore(void)
         fmt_reg(k->role, old, v, sizeof(v));
         snprintf(warn_line(), BUS_PANEL_LINE, TR(BS_W_R_LINE),
                  (unsigned)k->id, role_name(k->role), v);
-        moves = moves || k->baud != baud_now();
+        moves = moves || k->baud != baud_now() || k->alt != NO_ALT;
     }
     snprintf(warn_line(), BUS_PANEL_LINE, TR(BS_W_R_ORDER), b.bk_n);
     if (moves) {
@@ -741,12 +761,21 @@ static void push_backup(bool landed)
      * not read back left the line where the coprocessor found the servo:
      * at the new rate when the lock answered there, else back at the old
      * one; the page's last read names it. */
+    k->alt = NO_ALT;
     if (b.ee_role != BUS_R_BAUD) {
         k->baud = b.ee_baud;
     } else if (landed && b.ee_new < proto()->baud_count) {
         k->baud = (uint8_t)b.ee_new;
     } else {
+        /* Not read back: the servo may answer at either rate.  The one the
+         * page last read the line at goes first, the other is kept. */
+        const uint8_t other = baud_now() == b.ee_baud ? (uint8_t)b.ee_new
+                                                      : b.ee_baud;
+
         k->baud = baud_now();
+        if (other != k->baud && other < proto()->baud_count) {
+            k->alt = other;
+        }
     }
     if (b.ee_n == 2u) {
         proto()->put16(b.ee_series, k->old, b.ee_old);
@@ -815,8 +844,10 @@ static void done(uint8_t result)
             b.id = b.ee_new;
         } else if (b.ee_role == BUS_R_BAUD
                    && b.ee_new < proto()->baud_count) {
-            /* The coprocessor followed the servo; the next OPEN does too. */
+            /* The coprocessor followed the servo; the next OPEN does too.
+             * The write sent torque off to every servo first. */
             b.baud = (uint8_t)b.ee_new;
+            memset(b.torque_on, 0, sizeof(b.torque_on));
         }
         say(false, TR(BS_M_WRITTEN));
         return;
@@ -886,8 +917,50 @@ static void done(uint8_t result)
     case U_TORQUE:
         if (ok) {
             torque_put(b.torque_id, b.torque_want);
+        } else if (b.torque_want && result == RES_NO_REPLY) {
+            /* A servo whose response level is 0 takes a write without an
+             * answer and still answers a read: the register says. */
+            b.tq_read_due = true;
         }
         say(!ok, result_text(result));
+        return;
+    case U_TQ_READ: {
+        uint8_t v = 0;
+
+        if (ok && read_bytes(&v, 1u) == 1u) {
+            torque_put(b.torque_id, v != 0u);
+            return;
+        }
+        /* Nothing says the torque is off: off to every servo. */
+        torque_put(b.torque_id, false);
+        b.tq_off_due = true;
+        say(true, ok ? TR(BS_M_LENGTH) : result_text(result));
+        return;
+    }
+    case U_TQ_OFF:
+        memset(b.torque_on, 0, sizeof(b.torque_on));
+        if (!ok) {
+            say(true, result_text(result));
+        }
+        return;
+    case U_PROBE:
+        if (b.bk_n == 0u) {
+            b.restoring = false;
+            return;
+        }
+        {
+            backup_t *k = &b.bk[b.bk_n - 1u];
+
+            if (ok) {
+                k->alt = NO_ALT;        /* it answers here */
+            } else if (result == RES_NO_REPLY && k->alt != NO_ALT) {
+                k->baud = k->alt;       /* the other rate next */
+                k->alt = NO_ALT;
+            } else {
+                b.restoring = false;
+                say(true, result_text(result));
+            }
+        }
         return;
     default:
         /* A scan: the line under the rows has what it found. */
@@ -901,8 +974,12 @@ static void done(uint8_t result)
 /* The command started nothing, or never reached the page. */
 static void failed(const char *why)
 {
-    if (b.use == U_RESTORE || b.use == U_BAUD) {
+    if (b.use == U_RESTORE || b.use == U_BAUD || b.use == U_PROBE) {
         b.restoring = false;
+    }
+    if (b.use == U_TQ_READ) {
+        torque_put(b.torque_id, false);
+        b.tq_off_due = true;
     }
     if (b.use == U_CHECK) {
         b.goal_due = false;
@@ -1011,6 +1088,24 @@ static void reconcile(void)
         return;
     }
     b.baud = baud_now();        /* the line's rate, for the next OPEN */
+    if (b.tq_off_due) {
+        b.tq_off_due = false;
+        b.tq_read_due = false;
+        memset(b.torque_on, 0, sizeof(b.torque_on));
+        send(U_TQ_OFF, LINK_BUS_OP_TORQUE_OFF, 0u, 0u);
+        return;
+    }
+    if (b.tq_read_due) {
+        bus_reg_t reg;
+
+        b.tq_read_due = false;
+        if (reg_of(BUS_R_TORQUE, &reg) && b.torque_id >= 0) {
+            send(U_TQ_READ, LINK_BUS_OP_READ,
+                 (uint16_t)((unsigned)b.torque_id
+                            | ((unsigned)reg.addr << 8)), 1u);
+            return;
+        }
+    }
     if (b.restoring) {
         if (b.bk_n == 0u) {
             b.restoring = false;
@@ -1762,6 +1857,8 @@ void bus_panel_feed(const bus_panel_feed_t *f)
                       || bus_state() == LINK_BUS_CLOSING)) {
         memset(b.torque_on, 0, sizeof(b.torque_on));  /* closing sends
                                                          torque off */
+        b.tq_read_due = false;
+        b.tq_off_due = false;
         ctl_forget();
     }
     if (f->stops != b.stops_seen) {
@@ -1789,6 +1886,8 @@ void bus_panel_feed(const bus_panel_feed_t *f)
         b.goal_due = false;
         b.out_due = false;
         b.waiting = false;
+        b.tq_read_due = false;
+        b.tq_off_due = false;
         memset(b.torque_on, 0, sizeof(b.torque_on));  /* the stop sent
                                                          torque off */
         if (was || bus_state() != LINK_BUS_CLOSED) {

@@ -23,7 +23,9 @@ history is in git.
   read-only memory) writes of ID, baud, angle limits, mode and lock flag
   need a 2 s hold, and RESTORE writes up to 8 old values back, each at its
   servo's rate; a baud write sends torque off to every servo at the old
-  rate first. The bus runs on a SAFE bench only; STOP sends torque
+  rate first. A torque on without an answer is read back from the servo,
+  and torque off goes to every servo when the read is not answered
+  either. The bus runs on a SAFE bench only; STOP sends torque
   off. The page's state takes 3,328 bytes of internal RAM. SMS servos on RS-485 are not supported. The protocol core and its
   RP2350 pin driver are the module `protocols/feetech`.
 - Link protocol 4.23: the BUS (0x34) and BUS_IDS (0x35) pages.
