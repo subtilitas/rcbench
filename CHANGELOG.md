@@ -26,7 +26,7 @@ history is in git.
   screen the panel opens by itself pass without it. After a refused save,
   DISCARD also asks for a write of the values put back. The copy of the
   stored values takes 400 bytes of internal RAM; the heap left with the
-  largest Wi-Fi mode up is 91,240 bytes.
+  largest Wi-Fi mode up is 91,232 bytes.
 
 ### Changed
 
