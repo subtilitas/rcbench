@@ -6,7 +6,7 @@ order: 52
 
 # Panel-Update
 
-PANEL UPDATE schreibt ein neues Firmware-Image des Panels in dessen Flash. Der Bildschirm öffnet nach dem Halten von 2 s auf INSTALL unter [Dateien und Update](wifi.md) und belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm lässt sich nichts auf ARMED schalten.
+PANEL UPDATE schreibt ein neues Firmware-Image des Panels in dessen Flash. Der Bildschirm öffnet nach dem Halten von 2 s auf INSTALL unter [Dateien und Update](wifi.md) oder wenn ein Download unter [Updates](updates.md) seine Prüfungen bestanden hat, und er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm lässt sich nichts auf ARMED schalten.
 
 ## Schreiben
 
@@ -28,7 +28,7 @@ Der erste Start eines neuen Builds ist ein Probestart. Der Build wird behalten, 
 
 ![Das Schreiben schlug fehl](view:panel-update-failed)
 
-Ein Schreiben, das fehlschlägt, ändert nichts an dem, was startet: Die laufende Firmware bleibt. SCHLIESSEN führt zurück zu [LOGS](logs.md).
+Ein Schreiben, das fehlschlägt, ändert nichts an dem, was startet: Die laufende Firmware bleibt. SCHLIESSEN führt nach einem Upload zurück zu [LOGS](logs.md), nach einem Download zu [Updates](updates.md) oder zum Menü.
 
 ## Aktuelle Einschränkungen
 

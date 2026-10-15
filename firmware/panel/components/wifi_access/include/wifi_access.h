@@ -14,6 +14,12 @@
  * memory) until the operator installs or drops it; the page never starts a
  * write.
  *
+ * The same radio carries the panel's own requests to GitHub (wa_fetch.h):
+ * the release check and the download of a release's image, each on the
+ * kept home network, in WA_MODE_FETCH, without page or name.  A download
+ * leaves its image staged where an upload leaves one, for the same
+ * installer.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -21,11 +27,13 @@
 #define RCBENCH_WIFI_ACCESS_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "esp_err.h"
 #include "fw_image.h"
 #include "fw_upload.h"
+#include "wa_fetch.h"
 #include "wa_session.h"
 
 #ifdef __cplusplus
@@ -104,6 +112,32 @@ bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
                       fw_image_info_t *info);
 /** After a write that failed: the image is dropped. */
 void wifi_access_release(void);
+
+/**
+ * Start @p job (wa_fetch_start()) for release @p want (DOWNLOAD only)
+ * unless @p gate says why not.  WA_GOT_NONE: the radio comes up in
+ * WA_MODE_FETCH and the job runs; otherwise it has ended at once.  A
+ * DOWNLOAD drops an image the page left staged first; while one is taken,
+ * or the last job's task has not ended yet, it is BLOCKED for BUSY.
+ * Refused on a session another screen runs: the caller starts no job
+ * while FILES & UPDATE is open.
+ */
+wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
+                                 wa_why_t gate);
+
+/**
+ * Once a frame, after wifi_access_tick(): @p abort as wa_fetch_tick()
+ * takes it.  Moves the job on, ends it, switches the radio off when it has
+ * ended, and starts the task that talks to GitHub once joined.
+ */
+void wifi_access_fetch_tick(wa_why_t abort);
+
+/** The job, as a copy. */
+void wifi_access_fetch_get(wa_fetch_t *out);
+
+/** Whether a home network is kept, and its name into @p ssid of @p n
+ *  bytes (empty for none). */
+bool wifi_access_home(char *ssid, size_t n);
 
 #ifdef __cplusplus
 }

@@ -12,10 +12,11 @@
  *   HOME NETWORK  the network whose name and password the operator typed on
  *                 the panel and the panel keeps
  *
- * The radio runs only while the Wi-Fi screen asks for it.  It is off at
- * every start of the panel, and it goes off on its own: on ARM, on STOP, on
- * the supply coming on, on a log run opening, after WA_IDLE_MS without a
- * request, and after WA_GUESS_MAX wrong access codes.
+ * The radio runs only while the Wi-Fi screen asks for it, or while the
+ * panel asks GitHub for a release (WA_MODE_FETCH, wa_fetch.h).  It is off
+ * at every start of the panel, and it goes off on its own: on ARM, on STOP,
+ * on the supply coming on, on a log run opening, after WA_IDLE_MS without
+ * a request, and after WA_GUESS_MAX wrong access codes.
  *
  * The access code: WA_SECRET_LEN characters shown on the panel, made fresh
  * at every start, which the page asks for before it lists a file or takes an
@@ -217,6 +218,9 @@ typedef enum {
     WA_MODE_AP = 0,
     WA_MODE_JOIN,
     WA_MODE_SCAN,      /**< a scan for the home network list, no page */
+    /** The home network for the panel's own requests to GitHub
+     *  (wa_fetch.h): no page, no name, no access code asked. */
+    WA_MODE_FETCH,
 } wa_mode_t;
 
 typedef enum {
@@ -290,7 +294,8 @@ void wa_close(wa_t *w, wa_off_t why);
 /** Whether the platform's radio should be running. */
 bool wa_radio(const wa_t *w);
 
-/** Whether the page is being served: the access point up or joined. */
+/** Whether the page is being served: the access point up or joined, not
+ *  for WA_MODE_FETCH. */
 bool wa_serving(const wa_t *w);
 
 /* What the platform's radio reports. */

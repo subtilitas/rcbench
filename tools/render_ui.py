@@ -94,6 +94,7 @@ SOURCES = [
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
+    "shared/ui/upd_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
@@ -409,6 +410,19 @@ SCREENS = {
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
+    # SETUP > UPDATES: nothing asked yet; a check asking GitHub; a newer
+    # release found, with the download's hold; up to date; no answer in
+    # time.  The reminder a start-up check opens on OVERVIEW.  The download
+    # under way, and stopped by a SHA-256 that differs.
+    "updates": ("updates.png", "updates", "dark"),
+    "updates-checking": ("updates-checking.png", "updates", "dark"),
+    "updates-newer": ("updates-newer.png", "updates", "dark"),
+    "updates-current": ("updates-current.png", "updates", "dark"),
+    "updates-failed": ("updates-failed.png", "updates", "dark"),
+    "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
+    "panel-download": ("panel-download.png", "panel-update", "dark"),
+    "panel-download-failed": ("panel-download-failed.png", "panel-update",
+                              "dark"),
 }
 INCLUDES = [
     "shared/gfx/include",
@@ -468,7 +482,8 @@ MIN_SHAPE = 8
 # Views the fit check draws and no page shows: the band's other bubbles,
 # so every string of every bubble is measured where it is drawn, and the
 # Wi-Fi screen's failure lines and its install question held by the
-# coprocessor's update.  The same
+# coprocessor's update, and UPDATES joining, refused, without a home
+# network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
     "band-fault-all":   (None, "overview", "dark"),
@@ -483,6 +498,11 @@ FIT_ONLY = {
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-save-failed": (None, "wifi", "dark"),
     "wifi-coproc":      (None, "wifi", "dark"),
+    "updates-joining":  (None, "updates", "dark"),
+    "updates-unexpected": (None, "updates", "dark"),
+    "updates-nonet":    (None, "updates", "dark"),
+    "updates-blocked":  (None, "updates", "dark"),
+    "upd-remind-blocked": (None, "upd-remind", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

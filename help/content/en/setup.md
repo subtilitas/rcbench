@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION and INTERFACES. It opens from the SETUP tile on the [menu](overview.md); the band names it SETTINGS. The left column picks the category and holds OUTPUTS, PICK A PIN, RESET CATEGORY and the save button. The list of the category takes the right.
+SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION and INTERFACES. It opens from the SETUP tile on the [menu](overview.md); the band names it SETTINGS. The left column picks the category and holds OUTPUTS, PICK A PIN, UPDATES, RESET CATEGORY and the save button. The list of the category takes the right.
 
 ## Changing a value
 
@@ -25,6 +25,7 @@ A changed value is in force at once. RESET CATEGORY sets every value of the open
 |---|---|
 | OUTPUTS | opens [Outputs](outputs.md): the role of each coprocessor pin, as a list |
 | PICK A PIN | opens the [pin picker](picker.md): the same, on a drawing of the board |
+| UPDATES | opens [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | RESET CATEGORY | the open category's defaults, at once |
 | SAVED, SAVE, WHEN IDLE, NOT SAVED | the save button; see below |
 
@@ -97,4 +98,5 @@ INTERFACES holds the current monitors, the output encoder, the phase tap, the vi
 
 - [Interfaces](setup-interfaces.md)
 - [Outputs](outputs.md) and [Pin picker](picker.md)
+- [Updates](updates.md)
 - [Supply](supply.md) and [Servo settings](servo-settings.md): the settings kept on their own screens.

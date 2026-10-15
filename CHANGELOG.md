@@ -29,6 +29,43 @@ history is in git.
   Graphics) file in the page's language, an English and a German page whose
   headings or screenshots differ, a link to a missing page or heading, and
   Markdown outside the subset.
+- SETUP has an UPDATES key (German `UPDATES`) under PICK A PIN, which
+  opens the UPDATES screen. CHECK FOR UPDATES joins the home network kept
+  on FILES & UPDATE, sends one HTTPS (hypertext transfer protocol over
+  transport layer security) request to
+  `https://github.com/subtilitas/rcbench/releases/latest`, reads the newest
+  release's tag from the redirect's `Location` header and
+  switches the radio off again, within 30 s for the join, the address and
+  the request. The card then says `Version 0.20.0 is available.`,
+  `Up to date: this panel runs 0.19.0.` or why the check failed. The tag is
+  read strictly: `v`, then MAJOR.MINOR.PATCH, digits only, each 0 to 65535
+  in at most 5 digits without a leading zero.
+- REMINDER AT START (setting `upd_remind`, on by default) runs the same
+  check once after each start, at the first moment the bench is SAFE with
+  the supply output off, no log run open, FILES & UPDATE closed and no
+  coprocessor update offered or running, and within 10 min of the start.
+  When it finds a newer release, a reminder opens on the menu with IGNORE
+  NOW (until the next start), NEVER REMIND ME (switches the setting off and
+  saves it) and HOLD 2 s: DOWNLOAD & INSTALL. It waits while the bench is
+  ARMED, the supply output is on, or the coprocessor's update question or
+  progress is up.
+- HOLD 2 s: DOWNLOAD & INSTALL, on UPDATES and on the reminder, downloads
+  `SHA256SUMS` and `rcbench-panel-vX.Y.Z.bin` of the release found over
+  HTTPS into PSRAM (pseudo-static random-access memory), following at most
+  3 redirects and only to `github.com`, `release-assets.githubusercontent.com`
+  and `objects.githubusercontent.com`. The image's SHA-256 must equal its
+  `SHA256SUMS` line and the image passes every check an uploaded one does;
+  then the install runs as INSTALL runs it. The download takes 180 s at
+  most from the hold, ends on CANCEL, STOP, ARMED, the supply output, a log
+  run or a board drawing being fetched, and writes nothing before every
+  check has passed. A download and the coprocessor's update exclude each
+  other as an install and the update do.
+- The panel checks HTTPS servers against ESP-IDF's (Espressif
+  Internet-of-Things Development Framework) bundle of common certificate
+  authorities (16,984 bytes), with mbedTLS's memory in PSRAM. The panel
+  image grows by 127,856 bytes, and the free static internal RAM goes from
+  42,806 to 40,174 bytes. How long the check and the download take on a real
+  network is not measured.
 
 ### Changed
 

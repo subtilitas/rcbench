@@ -275,17 +275,19 @@ TEST_CASE(a_second_contact_cannot_steal_the_release)
 }
 
 /*
- * The two doors on the Setup screen. They are the only way to either
- * outputs view, so a tile that stopped navigating would leave a screen
- * nobody can reach -- and the geometry here is what says the second door
- * did not land on top of RESET CATEGORY.
+ * The three doors on the Setup screen. They are the only way to either
+ * outputs view and to UPDATES, so a tile that stopped navigating would leave
+ * a screen nobody can reach -- and the geometry here is what says the last
+ * door did not land on top of RESET CATEGORY.
  */
 TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
 {
-    /* Matching settings_screen.c: two doors of 42 in the left column. */
+    /* Matching settings_screen.c: three doors of 36 in the left column,
+     * the pins' caption between the second and the third. */
     const int door_x = 16 + 208 / 2;
-    const int outputs_y = UI_BAND_H + 248 + 42 / 2;
-    const int picker_y  = UI_BAND_H + 248 + 42 + 4 + 42 / 2;
+    const int outputs_y = UI_BAND_H + 204 + 36 / 2;
+    const int picker_y  = UI_BAND_H + 204 + 36 + 4 + 36 / 2;
+    const int updates_y = UI_BAND_H + 308 + 36 / 2;
 
     fresh();
     ui_router_goto(SCREEN_SETUP);
@@ -295,6 +297,19 @@ TEST_CASE(the_setup_screen_opens_both_views_of_the_outputs)
     ui_router_goto(SCREEN_SETUP);
     tap(door_x, picker_y);
     CHECK_EQ(ui_router_current(), SCREEN_PICKER);
+
+    ui_router_goto(SCREEN_SETUP);
+    tap(door_x, updates_y);
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+
+    /* Its lowest row is still the door, and the row under it RESET's
+     * margin: 6 px between the two. */
+    ui_router_goto(SCREEN_SETUP);
+    tap(door_x, UI_BAND_H + 308 + 35);
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    ui_router_goto(SCREEN_SETUP);
+    tap(door_x, UI_BAND_H + 308 + 36 + 2);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
     /* And a press that slides off a door is not a tap on it. */
     ui_router_goto(SCREEN_SETUP);

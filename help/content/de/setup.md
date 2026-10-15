@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md); das Band nennt ihn SETTINGS. Die linke Spalte wählt die Kategorie und trägt OUTPUTS, PICK A PIN, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Liste der Kategorie belegt die rechte.
+SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md); das Band nennt ihn SETTINGS. Die linke Spalte wählt die Kategorie und trägt OUTPUTS, PICK A PIN, UPDATES, KATEGORIE ZURÜCKSETZEN und die Speichertaste. Die Liste der Kategorie belegt die rechte.
 
 ## Einen Wert ändern
 
@@ -25,6 +25,7 @@ Ein geänderter Wert gilt sofort. KATEGORIE ZURÜCKSETZEN setzt jeden Wert der o
 |---|---|
 | OUTPUTS | öffnet [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
 | PICK A PIN | öffnet die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
+| UPDATES | öffnet [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 | KATEGORIE ZURÜCKSETZEN | die Vorgaben der offenen Kategorie, sofort |
 | GESPEICHERT, SPEICHERN, BEI STILLSTAND, NICHT GESPEICHERT | die Speichertaste; siehe unten |
 
@@ -97,4 +98,5 @@ ANSCHLÜSSE hält die Strommonitore, den Winkelsensor, den Phasenabgriff, den Vi
 
 - [Anschlüsse](setup-interfaces.md)
 - [Ausgänge](outputs.md) und [Pin-Auswahl](picker.md)
+- [Updates](updates.md)
 - [Netzteil](supply.md) und [Servo-Optionen](servo-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

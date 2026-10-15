@@ -90,6 +90,7 @@ SOURCES = [
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
+    "shared/ui/upd_screen.c",
     # The ESC profiles and the stick programmer the PROGRAMMER screen's
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",

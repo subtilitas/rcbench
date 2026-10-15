@@ -6,7 +6,7 @@ order: 52
 
 # Panel update
 
-PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens after the 2 s hold on INSTALL on [Files and update](wifi.md), and it takes the whole screen: no band and no STOP. Nothing can be switched to ARMED behind it.
+PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens after the 2 s hold on INSTALL on [Files and update](wifi.md), or when a download from [Updates](updates.md) has passed its checks, and it takes the whole screen: no band and no STOP. Nothing can be switched to ARMED behind it.
 
 ## Writing
 
@@ -28,7 +28,7 @@ The first start of a new build is a trial. The build is kept once the display an
 
 ![The write failed](view:panel-update-failed)
 
-A write that fails changes nothing that starts: the running firmware stays. CLOSE goes back to [LOGS](logs.md).
+A write that fails changes nothing that starts: the running firmware stays. CLOSE goes back to [LOGS](logs.md) after an upload, and to [Updates](updates.md) or the menu after a download.
 
 ## Current limitations
 

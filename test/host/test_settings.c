@@ -32,8 +32,8 @@
  * with it, and the test names say what they aim at. */
 #define CAT_X    16
 #define CAT_Y    (16 + UI_BAND_H)
-#define CAT_H    64
-#define CAT_GAP  8
+#define CAT_H    56
+#define CAT_GAP  6
 #define LIST_X   236
 #define LIST_Y   (16 + UI_BAND_H)
 #define ROW_PITCH 58
@@ -1119,9 +1119,9 @@ TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
  * somewhere else would be taken for this one.
  */
 /* Panel coordinates, like the other constants here: the screen's own
- * OUTPUTS_Y is 232 and the band sits above it. */
-#define OUTPUTS_Y (232 + UI_BAND_H)
-#define DOOR_H    42
+ * OUTPUTS_Y is 204 and the band sits above it. */
+#define OUTPUTS_Y (204 + UI_BAND_H)
+#define DOOR_H    36
 
 TEST_CASE(a_cancelled_hit_presses_nothing)
 {

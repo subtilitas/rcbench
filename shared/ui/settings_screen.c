@@ -31,8 +31,8 @@
  * and the home tag are above it.
  */
 #define CAT_Y    16
-#define CAT_H    64
-#define CAT_GAP  8
+#define CAT_H    56
+#define CAT_GAP  6
 
 #define LIST_X   236
 #define LIST_W   548
@@ -93,7 +93,7 @@
 #define DRAG_SLOP 8
 
 enum { HIT_NONE = 0, HIT_CAT, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
-       HIT_OUTPUTS, HIT_PICKER, HIT_SAVE };
+       HIT_OUTPUTS, HIT_PICKER, HIT_UPDATES, HIT_SAVE };
 
 static struct {
     setting_cat_t cat;
@@ -239,12 +239,12 @@ static bool save_offered(void)
  * this is the door to it.
  */
 /*
- * Two doors and one caption, in the 118 pixels between the categories and
+ * Three doors and one caption, in the 146 pixels between the categories and
  * RESET.  RESET cannot move down: SAVE sits under it and reaches to 12 px
  * from the bottom of the screen, so the doors move up instead.
  */
-#define OUTPUTS_Y 232
-#define DOOR_H    42
+#define OUTPUTS_Y 204
+#define DOOR_H    36
 #define DOOR_GAP  4
 static gfx_rect_t outputs_rect(void)
 {
@@ -261,6 +261,20 @@ static gfx_rect_t outputs_rect(void)
 static gfx_rect_t picker_rect(void)
 {
     return gfx_rect_make(CAT_X, PICKER_Y, CAT_W, DOOR_H);
+}
+
+/* The caption under the two pin doors, in the label face's 16 px. */
+#define CAPTION_Y (PICKER_Y + DOOR_H + 6)
+
+/*
+ * The panel's own updates: the check for a newer release on GitHub, its
+ * start-up reminder, the download.  A screen rather than a category: a
+ * check is a button and its answer, not a number.
+ */
+#define UPDATES_Y (CAPTION_Y + 16 + 6)
+static gfx_rect_t updates_rect(void)
+{
+    return gfx_rect_make(CAT_X, UPDATES_Y, CAT_W, DOOR_H);
 }
 
 /** Screen-space rect of a row, or an empty rect when it is scrolled away. */
@@ -433,6 +447,11 @@ static void event(const touch_event_t *evt)
             settings_screen_invalidate();
             return;
         }
+        if (gfx_rect_contains(updates_rect(), x, y)) {
+            s.hit_kind = HIT_UPDATES;
+            settings_screen_invalidate();
+            return;
+        }
         /*
          * Only while it is offered.  With nothing to write, a button that
          * presses says a save happened; with a write already asked for,
@@ -552,6 +571,9 @@ static void event(const touch_event_t *evt)
         } else if (kind == HIT_PICKER
                    && gfx_rect_contains(picker_rect(), x, y)) {
             ui_router_goto(SCREEN_PICKER);
+        } else if (kind == HIT_UPDATES
+                   && gfx_rect_contains(updates_rect(), x, y)) {
+            ui_router_goto(SCREEN_UPDATES);
         } else if (kind == HIT_SAVE && save_offered()
                    && gfx_rect_contains(save_rect(), x, y)) {
             /* Asked for, not written.  The application decides when the
@@ -584,29 +606,37 @@ static void draw_categories(gfx_canvas_t *c)
          * the rows do; a longer name in the label face. */
         const char *name = ui_setting_category((setting_cat_t)i);
         const bool big = gfx_text_width(UI_FONT_HEAD, name, 1) <= r.w - 28;
-        gfx_text(c, r.x + 14, r.y + (big ? 10 : 16), name,
+        gfx_text(c, r.x + 14, r.y + (big ? 6 : 12), name,
                  big ? UI_FONT_HEAD : UI_FONT_LABEL,
                  active ? UI_TEXT_ON_LIGHT : UI_TEXT, 1);
 
         char buf[40];
         snprintf(buf, sizeof(buf), TR(SET_COUNT),
                  settings_in_category((setting_cat_t)i, NULL, 0));
-        gfx_text(c, r.x + 14, r.y + 40, buf, UI_FONT_LABEL,
+        gfx_text(c, r.x + 14, r.y + 36, buf, UI_FONT_LABEL,
                  active ? UI_TEXT_ON_LIGHT : UI_TEXT_FAINT, 1);
     }
 
     gfx_rect_t orr = outputs_rect();
     ui_button(c, orr, "OUTPUTS", UI_ACCENT, s.hit_kind == HIT_OUTPUTS, true);
-    gfx_text(c, orr.x + orr.w - 22, orr.y + 11, ">", UI_FONT_HEAD,
+    gfx_text(c, orr.x + orr.w - 22, orr.y + 4, ">", UI_FONT_HEAD,
              UI_TEXT_ON_LIGHT, 1);
     gfx_rect_t pkr = picker_rect();
     ui_button(c, pkr, "PICK A PIN", UI_ACCENT, s.hit_kind == HIT_PICKER, true);
-    gfx_text(c, pkr.x + pkr.w - 22, pkr.y + 11, ">", UI_FONT_HEAD,
+    gfx_text(c, pkr.x + pkr.w - 22, pkr.y + 4, ">", UI_FONT_HEAD,
              UI_TEXT_ON_LIGHT, 1);
 
     /* One caption for both: they are two views of the same binding. */
-    gfx_text(c, CAT_X, PICKER_Y + DOOR_H + 6, TR(SET_PINS_CAPTION),
+    gfx_text(c, CAT_X, CAPTION_Y, TR(SET_PINS_CAPTION),
              UI_FONT_LABEL, UI_TEXT_FAINT, 1);
+
+    /* Not a pin door: the panel's own colour, the caption above kept to
+     * the two it names. */
+    gfx_rect_t upr = updates_rect();
+    ui_button(c, upr, TR(UPD_DOOR), UI_PANEL_HI, s.hit_kind == HIT_UPDATES,
+              true);
+    gfx_text(c, upr.x + upr.w - 22, upr.y + 4, ">", UI_FONT_HEAD, UI_TEXT,
+             1);
 
     gfx_rect_t rr = reset_rect();
     ui_button(c, rr, TR(SET_RESET), UI_WARN, s.hit_kind == HIT_RESET, true);

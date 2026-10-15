@@ -200,19 +200,23 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 008 | 2 160 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 672 | 2 496 |
 | `control` | `control_task` | 6 144 | 4 288 | 832 |
 | `runlog` | `log_task` | 4 352 | 2 976 | 352 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
-| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 344 | 752 |
+| `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 808 | 1 264 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 2 400 | 4 768 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der WLAN-Treiber, der TCP/IP-Stack (Transmission Control
 Protocol, Internet Protocol) und die Event-Loop in eigenen Tasks. ESP-IDF
 legt sie an, deshalb stehen sie nicht in der Tabelle: Ihre Tiefe ist nicht
-gemessen.
+gemessen. Die Tiefe von `wifi_get` lässt den TLS-Handshake (Transport Layer
+Security) und jedes Lesen darunter aus: esp_http_client erreicht seinen
+Transport über einen Funktionszeiger. Sein Stack ist der des Servers der
+Seite, der nie neben ihm läuft; die Tiefe des Handshakes ist nicht gemessen.
 
 Gemessen mit ESP-IDF v5.4 bei -O2. Von der Marge gehen 528 Bytes außerhalb
 der Frames auf: 320 für den gesicherten Zustand von FPU (Floating-Point Unit)

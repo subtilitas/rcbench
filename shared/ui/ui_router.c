@@ -7,6 +7,7 @@
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "supply_screen.h"
+#include "upd_screen.h"
 #include "wifi_screen.h"
 #include "ui_screen.h"
 
@@ -111,6 +112,8 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
     case SCREEN_WIFI:     return wifi_screen();
     case SCREEN_UPDATE:   return update_screen();
     case SCREEN_COPROC_UPDATE: return coproc_update_screen();
+    case SCREEN_UPDATES:  return upd_screen();
+    case SCREEN_UPD_REMIND: return upd_remind_screen();
     default:              return overview_screen();
     }
 }
@@ -187,6 +190,7 @@ void ui_router_invalidate(void)
     supply_invalidate();
     wifi_screen_invalidate();
     update_screen_invalidate();
+    upd_screen_invalidate();
 }
 
 static void clear_alert(void)
