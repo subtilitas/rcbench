@@ -348,6 +348,11 @@ float display_fps(void)
     return s_disp.fps;
 }
 
+uint32_t display_restarts(void)
+{
+    return rcbench_lcd_rgb_restarts;
+}
+
 esp_err_t display_set_pclk(uint32_t hz)
 {
     ESP_RETURN_ON_FALSE(s_disp.initialised, ESP_ERR_INVALID_STATE, TAG,

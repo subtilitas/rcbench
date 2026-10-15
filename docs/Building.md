@@ -94,8 +94,9 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 random-access memory) at 80 MHz, the 64 KB data cache with 64-byte lines, code
 and constants in flash rather than PSRAM, the zero-initialised data that
 `main/psram_bss.lf` names in PSRAM ([Internal RAM](Performance.md#internal-ram)),
-the IRAM-safe RGB LCD
-(liquid-crystal display) interrupt, `-O2`, and the console on UART0 with USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus)
+the RGB LCD (liquid-crystal display) interrupt not IRAM-safe (IRAM:
+instruction random-access memory), so ESP-IDF masks it during a flash
+operation, `-O2`, and the console on UART0 with USB-Serial-JTAG (the ESP32-S3's built-in USB (Universal Serial Bus)
 serial and debug bridge) as secondary. Start from it rather than from
 `menuconfig`.
 
@@ -210,6 +211,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/ioboard-pinmap-draft.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | generate the checked-in board drawings and ESC profile tables from their JSON sources (the board drawing from the configurator's `configurator/drawings/panel.json`); `--check` fails if the committed tables differ |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
+| `tools/patch_rgb_driver.py` | runs in the panel's configure step: writes a copy of ESP-IDF's RGB panel driver (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) into the build directory in which every restart of the scan is the clean start of boot, and fails the build when one of its 3 patches does not match the driver exactly once ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest cases for the tools above: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |
 

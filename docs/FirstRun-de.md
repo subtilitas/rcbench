@@ -373,7 +373,12 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
   einer pro Flash-Operation, 4 für diese Zeichnung (2 Sektoren von 4 kB
   löschen, die Nutzdaten, der Kopf). Eine Flash-Operation schließt den
   Cache, durch den das Nachladen des Bounce-Buffers PSRAM liest, also steht
-  das Panel für die Dauer jeder einzelnen. Settings-Speichern tut dasselbe.
+  das Panel für die Dauer jeder einzelnen. Eine Operation, die das Nachladen
+  länger als 512 us aufhält, startet die Ausgabe beim ersten
+  VBlank-Interrupt (Vertical Blanking Interval) nach ihrem Ende neu, der
+  mitten im Bild liegen kann, und die Konsole gibt
+  `display: scan restarted` aus; das erste ganze Bild danach sitzt an
+  seinem Platz. Settings-Speichern tut dasselbe.
 - **Das Schreiben wartet auf SAFE.** Es nimmt einen Schritt pro
   5-ms-Durchlauf der Control-Task, und nur solange der Prüfstand SAFE ist und
   das Netzteil aus. In ARMED oder mit eingeschaltetem Netzteil erscheint

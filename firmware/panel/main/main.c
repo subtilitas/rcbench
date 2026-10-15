@@ -1861,8 +1861,11 @@ static bool bring_up(void)
      * quiet while the RGB (red, green, blue) panel scans: the panel's
      * interrupt handler copies the framebuffer out of PSRAM (pseudo-static
      * random-access memory) through the external memory cache, and a flash
-     * operation closes that cache.  The handler then faults on PSRAM and the
-     * core panics with `Cache disabled but cached memory region accessed`.
+     * operation closes that cache.  ESP-IDF masks the handler for the length
+     * of the operation (CONFIG_LCD_RGB_ISR_IRAM_SAFE is off), so the picture
+     * stalls, and past 512 us the scan restarts at the first VBlank
+     * (vertical blanking interval) interrupt after the operation ends,
+     * which can be mid-frame (display.h).
      */
     const settings_store_t *store = settings_nvs_store();
     settings_set_store(store);
@@ -10047,6 +10050,18 @@ void app_main(void)
         ui_router_render(c, display_back_index());
         const uint32_t draw_us = (uint32_t)(esp_timer_get_time() - draw_start);
         display_flip();   /* blocks until the swap has taken effect */
+
+        /* A restart of the scan, as it happens: the line before it in the
+         * log says what held the refill interrupt off (display.h). */
+        {
+            static uint32_t seen_restarts;
+            const uint32_t restarts = display_restarts();
+            if (restarts != seen_restarts) {
+                seen_restarts = restarts;
+                ESP_LOGW(TAG, "display: scan restarted, %u since start",
+                         (unsigned)restarts);
+            }
+        }
 
         /*
          * DRAW is the paint time of the frame; WAIT is how long the flip

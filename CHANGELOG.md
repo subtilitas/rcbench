@@ -89,7 +89,7 @@ history is in git.
   screen the panel opens by itself pass without it. After a refused save,
   DISCARD also asks for a write of the values put back. The copy of the
   stored values takes 400 bytes of internal RAM; the heap left with the
-  largest Wi-Fi mode up is 90,976 bytes.
+  largest Wi-Fi mode up is 91,224 bytes.
 
 ### Changed
 
@@ -123,6 +123,20 @@ history is in git.
   drop was auth-class, and as `network not found` after any other drop or
   none. The GitHub check, the download and JOIN HOME NETWORK count alike.
   Every drop goes to the serial log as one line with its reason number.
+- The panel's picture can sit 17 px to the left, with the tail of each
+  line wrapped one line down, until the panel restarts. It happens after a
+  frame whose bounce-buffer refill interrupt is held off for more than
+  512 us, which a main-flash operation on a scanning panel does for its
+  whole length: a settings save, the board drawing's keep, a panel update.
+  ESP-IDF v5.4 and v5.5 restart the scan at the first VBlank (vertical
+  blanking interval) interrupt after the operation ends, which can be
+  mid-frame, through a DMA (direct memory access) link that skips 17 px of
+  an LCD (liquid crystal display) FIFO (first-in, first-out buffer) they
+  have just emptied. The panel links a copy of that driver, written at
+  configure time by `tools/patch_rgb_driver.py`, in which every restart is
+  the clean start of boot: the first whole frame after a restart is in
+  place. The console logs each restart as
+  `display: scan restarted, N since start`.
 
 ## 0.20.0 - 2026-10-15
 
