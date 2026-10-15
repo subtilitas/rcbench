@@ -6,6 +6,33 @@ history is in git.
 
 ## Unreleased
 
+## 0.20.0 - 2026-10-15
+
+A bench on 0.19.0 loads the panel over USB (Universal Serial Bus) once more,
+and only the panel. A 0.19.0 panel takes no image over Wi-Fi: ACCESS POINT
+stops with `Wi-Fi did not start.` as it is pressed, and by the estimate of
+internal RAM (random-access memory) JOIN HOME NETWORK stops the same way.
+The panel takes the parts from `rcbench-panel-v0.20.0.zip` with
+`esptool.py --chip esp32s3 -p PORT write_flash @flash_args`, which keeps the
+settings in NVS (non-volatile storage) at 0x9000, or
+`rcbench-panel-merged.bin` at 0x0, which erases them; a browser flasher such
+as the ESP Web Tool writes the merged image. Both writes end with the
+application, about 2.1 MB from 0x0, and keep the stored board drawing at
+0x7E0000. The coprocessor needs no USB load: at link-up the 0.20.0 panel
+finds another build on it by SHA-256 (Secure Hash Algorithm), and the menu
+offers the update over CAN (Controller Area Network) from the image the
+panel carries, behind a 2 s hold of START, while the bench is SAFE with the
+supply output off. The update writes the slot the coprocessor does not run
+from, and its bindings stay in the store. For a coprocessor that missed the
+USB load of 0.19.0 the band says `coprocessor takes no update over CAN --
+load it once over USB`, and it takes `rcbench-iomcu-install.uf2` from
+`rcbench-iomcu-v0.20.0.zip`. A new bench and a bench on 0.18.0 or older load
+both boards over USB, as for 0.19.0. The steps are in [First run,
+§1](docs/FirstRun.md#1-flash-both-boards). From 0.20.0 on, the panel
+installs a release over Wi-Fi or downloads it from GitHub on UPDATES. The
+link protocol stays 4.22; the coprocessor's sources are those of 0.19.0
+apart from the version. The time of the update over CAN is not measured.
+
 ### Added
 
 - The home tag that leaves SETUP for the menu with values unsaved opens a
@@ -83,6 +110,10 @@ history is in git.
   buffers and three allowances, and fails under 32,768 bytes. CI runs it
   after both panel builds; on ESP-IDF v5.4 it holds the table in
   [Performance](docs/Performance.md#internal-ram).
+- First run §1 names what a bench loads over USB by the release it runs,
+  and gives the panel-only load of a 0.19.0 bench in four steps, with what
+  each panel flash keeps and the coprocessor's update over CAN that
+  follows.
 
 ### Changed
 
@@ -99,10 +130,19 @@ history is in git.
   tiles to the menu. SAVE shows on the tiles as on every list. The texts
   `PINS: A LIST OR THE BOARD` and the UPDATES key are gone; the tiles add
   `PROTOCOLS AND PINS`, `ON THE BOARD DRAWING` and `RELEASES ON GITHUB`.
-- Every menu tile's icon is centred over the tile's name. MOTOR & ESC,
-  SERVO, ANALYSER, LOGS, SETUP and PROGRAMMER drew theirs 15 px right of
-  the name; SUPPLY, BATTERY and BALANCE drew theirs 15 px higher than the
-  others. Every icon takes the centre of its box.
+- Every menu tile's icon takes the centre of its box, over the tile's
+  name. On 0.19.0 the icons of MOTOR & ESC, SERVO, ANALYSER, LOGS, SETUP
+  and PROGRAMMER sit 15 px right of the name, and those of SUPPLY, BATTERY
+  and BALANCE 15 px higher than the others.
+- Screens describes the menu's MODELLED mark per tile, in English and
+  German. The mark follows the capability bits the coprocessor reports and
+  the sensors enabled on SETUP under INTERFACES; it does not classify each
+  value. MOTOR & ESC goes without it when the coprocessor drives ESCs (electronic speed controllers) and
+  holds an INA228 set-up enabled on SETUP, SERVO when it drives servo PWM
+  (pulse-width modulation) outputs, SUPPLY when the PD mini is enabled.
+  ANALYSER, BATTERY, BALANCE and PROGRAMMER carry it in this release; LOGS
+  and SETUP never do. With no coprocessor answering, MOTOR & ESC and SERVO
+  carry it too.
 - The bench configurator describes release 0.19.0. Every repository source
   of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
   line of that tag, in `STATUS.md`, `docs/Building.md` and
