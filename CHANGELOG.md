@@ -112,6 +112,22 @@ history is in git.
 
 ### Fixed
 
+- Upload on the English page of the browser access works. The script of
+  the page wrote the texts `The file is larger than the panel's slot.` and
+  `The upload broke off.` inside single quotes unescaped; the apostrophe
+  of the first text ended the string, the script did not parse, the form had
+  no handler, and the browser sent the form itself: it went to `/?` and
+  the file was dropped. The German page was not affected. The writer
+  `wa_out_js()` escapes backslash, `'`, `"`, `<` (as `\x3c`), control
+  characters, and U+2028 and U+2029 in every text inside the script. The
+  file input is `required`, so Upload with no file chosen shows the
+  browser's own message. An answer other than HTTP 200 with an empty body
+  (403 stale cookie, 503 access closed) shows `The panel did not take the
+  upload: HTTP 403.` (German: `Das Panel hat den Upload nicht angenommen:
+  HTTP 403.`) and the progress bar ends on every answer and on a broken
+  connection. `test/host/check_wa_page.py` hands every script of both pages
+  to `node --check`; the CI host job runs it.
+
 - The start-up check of 0.20.0 can end with `Join failed: password
   refused.` on a correct password, and JOIN HOME NETWORK pressed after it
   joins. One auth-class drop of the station ended a join: ESP-IDF reports

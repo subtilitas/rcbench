@@ -19,7 +19,7 @@ image.
 | GND | the bench's star point | short wire; the one second ground path the bench accepts (`testbench/WIRING.md`, section 5) |
 | GP6 | not connected | reserved for the GT911 INT line; an input, never driven |
 | GP7 | not connected | reserved for a panel reset sense; an input |
-| GP16 | on-board WS2812 LED | status, see below |
+| GP16 | on-board WS2812 LED, bytes in RGB order | status, see below |
 | 3V3 | not connected | the Zero runs from its own USB port; the bus has its pull-ups on the panel |
 
 The connector is the panel's 4-pin PH2.0 I2C connector, pinned out in

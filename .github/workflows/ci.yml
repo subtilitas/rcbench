@@ -51,6 +51,12 @@ jobs:
             cmake ninja-build gcc fonts-dejavu-core valgrind
           python3 -m pip install pillow==12.3.0
 
+      # test/host/check_wa_page.py hands the script of the browser page to
+      # node and is skipped, not failed, when node is missing.  The runner
+      # image carries node; this step fails the job if that changes.
+      - name: Node for the page script check
+        run: node --version
+
       - name: Unit tests
         run: |
           cmake -S test/host -B test/host/build -DCMAKE_BUILD_TYPE=Debug

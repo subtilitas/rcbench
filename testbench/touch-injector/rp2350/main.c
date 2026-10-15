@@ -7,7 +7,7 @@
  *   GP5   SCL, as GP4
  *   GP6   GT911 INT, reserved: an input, never driven
  *   GP7   panel RESET sense, reserved: an input
- *   GP16  WS2812 status LED
+ *   GP16  WS2812 status LED, bytes in RGB order
  *
  * After every reset GP4 to GP7 are inputs with their pulls off and the I2C
  * block is not attached: the injector acknowledges nothing until the host
@@ -203,13 +203,15 @@ static void led_init(void)
 
 static void led_rgb(uint8_t r, uint8_t g, uint8_t b)
 {
+    /* The RP2350-Zero's LED takes its bytes red, green, blue: GRB order
+     * shows the dim green of a polled target as red. */
     static uint32_t shown = 0xFFFFFFFFu;
-    const uint32_t grb = ((uint32_t)g << 16) | ((uint32_t)r << 8) | b;
-    if (grb == shown || pio_sm_is_tx_fifo_full(s_pio, s_sm)) {
+    const uint32_t rgb = ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+    if (rgb == shown || pio_sm_is_tx_fifo_full(s_pio, s_sm)) {
         return;
     }
-    shown = grb;
-    pio_sm_put(s_pio, s_sm, grb << 8u);
+    shown = rgb;
+    pio_sm_put(s_pio, s_sm, rgb << 8u);
 }
 
 static void led_show(inj_led_t led, uint32_t now_ms)

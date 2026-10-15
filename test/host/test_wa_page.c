@@ -6,12 +6,17 @@
  * back to the file it names, a name that breaks the HTML (hypertext markup
  * language), a ZIP size on the page that differs from the archive sent, a
  * card missing that takes the upload with it, and a browser gone part way
- * that leaves a folder handle open.
+ * that leaves a folder handle open, and a text with an apostrophe that
+ * ends a string of the page's script and leaves the Upload button without
+ * its handler.
  *
  * SPDX-License-Identifier: MIT
  */
+#include <errno.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "greatest.h"
 
@@ -19,6 +24,12 @@
 #include "wa_fakefs.h"
 #include "wa_page.h"
 #include "wa_zip.h"
+
+/* Where the pages are written for check_wa_page.py, which hands each
+ * script to node. */
+#ifndef PAGE_OUT_DIR
+#define PAGE_OUT_DIR "wa_page_out"
+#endif
 
 typedef struct {
     char  *buf;
@@ -239,6 +250,134 @@ TEST_CASE(a_long_listing_streams_and_stops_when_the_browser_goes)
     fake_free(&fs);
 }
 
+/* The body of the page's one script, copied into g_js; false when the
+ * page has none.  The end is the first "</script>", as a browser reads
+ * it. */
+static char g_js[8192];
+
+static bool script_of(const char *html)
+{
+    const char *b = strstr(html, "<script>");
+    if (b == NULL) {
+        return false;
+    }
+    b += strlen("<script>");
+    const char *e = strstr(b, "</script>");
+    CHECK(e != NULL);
+    if (e == NULL || (size_t)(e - b) >= sizeof(g_js)) {
+        return false;
+    }
+    memcpy(g_js, b, (size_t)(e - b));
+    g_js[e - b] = '\0';
+    return true;
+}
+
+/* Walks @p js as JavaScript reads quotes: a string opens at ' or " and
+ * ends at the same quote, a backslash takes the next byte, and a string
+ * does not run over a line.  Returns the number of strings, or -1 for one
+ * that is open at the end or at a line break. */
+static int strings_in(const char *js, size_t n)
+{
+    int count = 0;
+    char q = '\0';
+    for (size_t i = 0; i < n; ++i) {
+        const char c = js[i];
+        if (q == '\0') {
+            if (c == '\'' || c == '"') {
+                q = c;
+                ++count;
+            }
+        } else if (c == '\\') {
+            ++i;
+        } else if (c == q) {
+            q = '\0';
+        } else if (c == '\n' || c == '\r') {
+            return -1;
+        }
+    }
+    return q == '\0' ? count : -1;
+}
+
+TEST_CASE(texts_in_the_upload_script_are_escaped_in_both_languages)
+{
+    fake_fs_t fs;
+    fake_init(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    int count[2] = { 0, 0 };
+    for (int de = 0; de < 2; ++de) {
+        begin(-1);
+        wa_page_main(&g_o, de != 0 ? &k_de : &k_en, &w);
+        CHECK(wa_out_flush(&g_o));
+        CHECK(script_of(g_p.buf));
+        /* Every string closes where the script means it to. */
+        count[de] = strings_in(g_js, strlen(g_js));
+        CHECK(count[de] > 0);
+    }
+    /* The texts add no string of their own. */
+    CHECK_EQ(count[0], count[1]);
+
+    begin(-1);
+    wa_page_main(&g_o, &k_en, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(script_of(g_p.buf));
+    CHECK(strstr(g_js, "r.textContent='The file is larger than the panel"
+                       "\\'s slot.';return;}") != NULL);
+    CHECK(strstr(g_js, "r.textContent='The upload broke off.';};") != NULL);
+    CHECK(strstr(g_js, "panel's") == NULL);
+    /* No file chosen: the browser says so; the guard stays as well. */
+    CHECK(strstr(g_p.buf, "type=\"file\" id=\"i\" accept=\".bin\" required>")
+          != NULL);
+    CHECK(strstr(g_js, "if(!f)return;") != NULL);
+    /* A refusal without a body (403, 503) says so with its status and
+     * ends the progress bar; so does a broken connection. */
+    CHECK(strstr(g_js, "if(t===''&&x.status!==200)t='The panel did not take "
+                       "the upload: HTTP '+x.status+'.';r.textContent=t;};")
+          != NULL);
+    CHECK(strstr(g_js, "x.onload=function(){var t=x.responseText;"
+                       "p.hidden=true;p.value=0;") != NULL);
+    CHECK(strstr(g_js, "x.onerror=function(){p.hidden=true;p.value=0;") != NULL);
+
+    /* Without an apostrophe a text passes unchanged, umlaut included. */
+    begin(-1);
+    wa_page_main(&g_o, &k_de, &w);
+    CHECK(wa_out_flush(&g_o));
+    CHECK(script_of(g_p.buf));
+    CHECK(strstr(g_js, "r.textContent='Die Datei ist gr\xc3\xb6\xc3\x9f"
+                       "er als der Slot des Panels.';return;}") != NULL);
+    CHECK(strstr(g_js, "r.textContent='Der Upload brach ab.';};") != NULL);
+    CHECK(strstr(g_js, "t='Das Panel hat den Upload nicht angenommen: HTTP "
+                       "'+x.status+'.';") != NULL);
+    CHECK(strstr(g_p.buf, "accept=\".bin\" required>") != NULL);
+    fake_free(&fs);
+}
+
+/* Both pages go to PAGE_OUT_DIR for check_wa_page.py. */
+TEST_CASE(the_pages_are_written_for_the_script_check)
+{
+    if (mkdir(PAGE_OUT_DIR, 0755) != 0 && errno != EEXIST) {
+        CHECK(false);
+        return;
+    }
+    fake_fs_t fs;
+    fake_init(&fs);
+    const wa_fs_t w = fake_wa(&fs);
+    for (int de = 0; de < 2; ++de) {
+        begin(-1);
+        wa_page_main(&g_o, de != 0 ? &k_de : &k_en, &w);
+        CHECK(wa_out_flush(&g_o));
+        char path[512];
+        snprintf(path, sizeof(path), "%s/page_%s.html", PAGE_OUT_DIR,
+                 de != 0 ? "de" : "en");
+        FILE *f = fopen(path, "wb");
+        CHECK(f != NULL);
+        if (f != NULL) {
+            CHECK_EQ(fwrite(g_p.buf, 1u, g_p.len, f), g_p.len);
+            fclose(f);
+        }
+    }
+    fake_free(&fs);
+}
+
 TEST_CASE(every_upload_answer_has_its_own_text_in_both_languages)
 {
     const fw_err_t errs[] = { FW_ERR_EMPTY, FW_ERR_SHORT, FW_ERR_TOO_BIG,
@@ -281,6 +420,8 @@ int main(void)
     RUN(without_a_card_the_page_says_so_and_still_takes_an_upload);
     RUN(an_empty_card_and_names_left_out_are_said);
     RUN(a_long_listing_streams_and_stops_when_the_browser_goes);
+    RUN(texts_in_the_upload_script_are_escaped_in_both_languages);
+    RUN(the_pages_are_written_for_the_script_check);
     RUN(every_upload_answer_has_its_own_text_in_both_languages);
     return test_summary("wa_page");
 }

@@ -247,6 +247,38 @@ TEST_CASE(names_are_escaped_for_html_and_for_links)
     CHECK_STR_EQ(g_s.buf, "0 18446744073709551615");
 }
 
+TEST_CASE(texts_are_escaped_for_a_javascript_string)
+{
+    out_begin(-1);
+    wa_out_js(&g_o, "panel's \"q\" a\\b </script> <!-- ok");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "panel\\'s \\\"q\\\" a\\\\b \\x3c/script> "
+                          "\\x3c!-- ok");
+    /* Control characters are escapes, so no string runs over a line. */
+    out_begin(-1);
+    wa_out_js(&g_o, "a\nb\r\tc\x01\x1f\x7f");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "a\\x0ab\\x0d\\x09c\\x01\\x1f\\x7f");
+    /* UTF-8 passes byte for byte. */
+    out_begin(-1);
+    wa_out_js(&g_o, "gr\xc3\xb6\xc3\x9f" "er \xc3\xa4\xc3\xb6 \xe2\x82\xac");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "gr\xc3\xb6\xc3\x9f" "er \xc3\xa4\xc3\xb6 \xe2\x82\xac");
+    /* U+2028 and U+2029 end a line in older engines: escapes.  The code
+     * points around them, and a lone E2 80, pass unchanged. */
+    out_begin(-1);
+    wa_out_js(&g_o, "a\xe2\x80\xa8" "b\xe2\x80\xa9" "c\xe2\x80\xa7\xe2\x80\xb0"
+                    "\xe2\x80");
+    CHECK(wa_out_flush(&g_o));
+    CHECK_STR_EQ(g_s.buf, "a\\u2028b\\u2029c\xe2\x80\xa7\xe2\x80\xb0\xe2\x80");
+    /* An empty text and no text write nothing. */
+    out_begin(-1);
+    wa_out_js(&g_o, "");
+    wa_out_js(&g_o, NULL);
+    CHECK(wa_out_flush(&g_o));
+    CHECK_EQ(g_s.len, 0u);
+}
+
 TEST_CASE(output_goes_in_pieces_and_stops_when_refused)
 {
     out_begin(-1);
@@ -375,6 +407,7 @@ int main(void)
     RUN(a_name_is_at_most_255_utf16_units);
     RUN(a_path_is_at_most_384_bytes);
     RUN(names_are_escaped_for_html_and_for_links);
+    RUN(texts_are_escaped_for_a_javascript_string);
     RUN(output_goes_in_pieces_and_stops_when_refused);
     RUN(a_form_field_is_read_whole_or_not_at_all);
     RUN(a_cookie_is_read_by_its_whole_name);
