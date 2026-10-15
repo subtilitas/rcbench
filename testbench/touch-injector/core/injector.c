@@ -25,6 +25,9 @@ static void reply(injector_t *in, const char *fmt, ...)
     const unsigned slot = (in->r_head + in->r_count) % INJ_REPLIES;
     va_list ap;
     va_start(ap, fmt);
+    /* The analyser cannot follow va_start through this wrapper and reports the
+     * list as uninitialised; it is initialised on the line above. */
+    /* NOLINTNEXTLINE(clang-analyzer-valist.Uninitialized) */
     (void)vsnprintf(in->replies[slot], INJ_REPLY_LEN, fmt, ap);
     va_end(ap);
     ++in->r_count;
@@ -344,10 +347,8 @@ void injector_input(injector_t *in, const char *bytes, size_t n,
             }
             in->len = 0;
             in->overflow = false;
-        } else if (ch == '\r') {
-            continue;
-        } else if (in->overflow) {
-            continue;
+        } else if (ch == '\r' || in->overflow) {
+            continue;   /* CR of a CRLF, or the rest of a line too long */
         } else if (in->len < INJ_LINE_MAX) {
             in->line[in->len++] = ch;
         } else {

@@ -124,6 +124,7 @@ TEST_CASE(three_failed_reads_drop_the_injected_contacts)
     CHECK(!touch_merge_inject_failed(&m, 10));
     CHECK(touch_merge_inject_due(&m, 20));
     CHECK(!touch_merge_inject_failed(&m, 20));
+    CHECK(touch_merge_inject_due(&m, 20));   /* two failures: still every poll */
     CHECK_EQ(m.inject_n, 1);
     CHECK(touch_merge_inject_failed(&m, 30));   /* the third */
     CHECK_EQ(m.inject_n, 0);
@@ -161,6 +162,45 @@ TEST_CASE(touch_is_as_old_as_the_older_source)
     CHECK_EQ(touch_merge_age(5, 600), 600);
     CHECK_EQ(touch_merge_age(700, 3), 700);
     CHECK_EQ(touch_merge_age(UINT32_MAX, 0), UINT32_MAX);
+}
+
+/* A frame shorter than the glass's set holds the first glass points and
+ * writes nothing past its end. */
+TEST_CASE(a_short_frame_writes_nothing_past_its_end)
+{
+    touch_merge_t m;
+    touch_merge_reset(&m);
+    const touch_point_t g[2] = { pt(0, 10, 10), pt(1, 20, 20) };
+    touch_merge_glass(&m, g, 2);
+    touch_point_t f[3];
+    f[1] = pt(9, 999, 999);
+    CHECK_EQ(touch_merge_frame(&m, f, 1), 1);
+    CHECK_EQ(f[0].x, 10);
+    CHECK_EQ(f[1].x, 999);
+    CHECK_EQ(touch_merge_frame(&m, f, 0), 0);
+    CHECK_EQ(touch_merge_frame(&m, f, -1), 0);
+}
+
+/* A count past TOUCH_MAX_POINTS keeps the first five; a negative one is
+ * none. */
+TEST_CASE(counts_are_clamped_to_the_frame)
+{
+    touch_merge_t m;
+    touch_merge_reset(&m);
+    touch_point_t six[TOUCH_MAX_POINTS + 1];
+    for (int k = 0; k <= TOUCH_MAX_POINTS; ++k) {
+        six[k] = pt((uint8_t)k, 10 * k, 10);
+    }
+    touch_merge_glass(&m, six, TOUCH_MAX_POINTS + 1);
+    CHECK_EQ(m.glass_n, TOUCH_MAX_POINTS);
+    (void)touch_merge_inject(&m, six, TOUCH_MAX_POINTS + 1, true, 0);
+    CHECK_EQ(m.inject_n, TOUCH_MAX_POINTS);
+    touch_merge_glass(&m, six, TOUCH_MAX_POINTS);
+    CHECK_EQ(m.glass_n, TOUCH_MAX_POINTS);
+    touch_merge_glass(&m, six, -1);
+    CHECK_EQ(m.glass_n, 0);
+    CHECK(touch_merge_inject(&m, six, -1, true, 10));
+    CHECK_EQ(m.inject_n, 0);
 }
 
 TEST_CASE(null_merges_are_harmless)
@@ -349,6 +389,8 @@ int main(void)
     RUN(three_failed_reads_drop_the_injected_contacts);
     RUN(the_retry_timer_survives_the_clock_wrap);
     RUN(touch_is_as_old_as_the_older_source);
+    RUN(a_short_frame_writes_nothing_past_its_end);
+    RUN(counts_are_clamped_to_the_frame);
     RUN(null_merges_are_harmless);
     RUN(stop_on_the_glass_wins_over_an_injected_hold);
     RUN(stop_on_the_glass_wins_over_five_injected_contacts);
