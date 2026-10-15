@@ -89,8 +89,10 @@ None of these times is measured on a servo.
 
 `feetech_bus_write_ee()` writes the lock flag 0, the bytes, the lock flag
 1, then reads the bytes back and compares them (`FEETECH_RES_VERIFY` on a
-difference). A write that moves the servo's ID (register 5) or rate
-(register 6) is followed: the lock and the read go to the new ID at the new
+difference). A write that moves the rate (register 6) first sends torque
+off (register 40 := 0) to the broadcast ID at the old rate: every other
+servo stays at that rate, where no later frame of the session reaches it.
+A write that moves the servo's ID (register 5) or rate is followed: the lock and the read go to the new ID at the new
 rate. When neither that write nor the lock after it is answered, the write
 counts as lost: the line goes back to the old rate, the lock goes to the
 old ID, and the operation ends with the write's result. A servo that took

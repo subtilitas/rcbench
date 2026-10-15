@@ -635,6 +635,38 @@ TEST_CASE(an_eeprom_baud_write_moves_the_next_open)
     CHECK_STR_EQ(bus_panel_button(0, 1), "1000000");
 }
 
+TEST_CASE(a_baud_write_locked_and_not_read_back_restores_at_the_new_rate)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("BAUD");
+    CHECK(choose("115200"));
+    CHECK_EQ(bus_panel_editor(), 3);
+    /* The write and its lock are answered at 115200 baud; the read back
+     * is not. */
+    sim.drop_read = FEETECH_REG_BAUD + 1u;
+    hold(2.2f);
+    run(300);
+    CHECK_EQ(sim.drop_read, 0u);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
+    CHECK_EQ(sim.baud, 115200u);
+    CHECK_EQ(bus_panel_backups(), 1u);
+    /* RESTORE goes at the rate the line is on, and reaches the servo. */
+    tap_row(5, 1);
+    CHECK(choose("RESTORE 1"));
+    hold(2.2f);
+    run(1000);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 0);
+    CHECK_EQ(sim.baud, 1000000u);
+    CHECK_EQ(bus_panel_backups(), 0u);
+}
+
 TEST_CASE(an_scs_servo_takes_its_goal_big_endian_and_has_no_acc)
 {
     ftsim_servo_t *v;
@@ -965,6 +997,57 @@ TEST_CASE(leaving_during_an_eeprom_write_keeps_its_old_value)
     if (v->regs[FEETECH_REG_MIN_ANGLE] == 50) {
         CHECK_EQ(bus_panel_backups(), 1u);
     }
+}
+
+static void slide_to_end(void);
+
+TEST_CASE(a_link_lost_after_an_eeprom_write_went_keeps_it_uncertain)
+{
+    ftsim_servo_t *v;
+
+    fresh();
+    v = ftsim_add(&sim, 1u, FEETECH_STS);
+    v->regs[FEETECH_REG_MODE] = 1u;             /* constant speed */
+    open_bus();
+    scan();
+    pick_id(1);
+    slide_to_end();
+    run(300);
+    CHECK(page_says(3, "Not in POSITION mode: no goal sent."));
+    /* MODE to POSITION goes to the control task; the link drops before
+     * its answer. */
+    eeprom_item("MODE");
+    CHECK(choose("POSITION"));
+    hold_apply();
+    CHECK_EQ(bus_panel_editor(), 0);
+    pass();                             /* the command is handed over */
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK(page_says(3, "Link down: the command is lost."));
+    /* The old mode is kept for RESTORE, and the mode is read again. */
+    CHECK_EQ(bus_panel_backups(), 1u);
+    bus_link_came_up(&g_link, BUS_LINK_MINOR);
+    run(300);
+    CHECK_EQ(page_state(), LINK_BUS_OPEN);
+    slide_to_end();
+    run(300);
+    CHECK_EQ(v->regs[FEETECH_REG_MODE], 0);
+    CHECK_EQ(feetech_get16(FEETECH_STS, &v->regs[FEETECH_REG_GOAL]), 4095u);
+}
+
+TEST_CASE(a_link_lost_before_a_command_went_keeps_nothing)
+{
+    fresh();
+    (void)ftsim_add(&sim, 1u, FEETECH_STS);
+    open_bus();
+    scan();
+    pick_id(1);
+    eeprom_item("MIN ANGLE");
+    enter(50);
+    hold_apply();
+    bus_link_lost(&g_link);
+    run(5);
+    CHECK_EQ(bus_panel_backups(), 0u);
 }
 
 TEST_CASE(a_coprocessor_without_the_page_is_named_and_sent_nothing)
@@ -1358,6 +1441,7 @@ int main(void)
     RUN(a_failed_eeprom_write_keeps_the_old_value_but_for_an_id);
     RUN(a_servo_that_stops_answering_shows_no_reading);
     RUN(an_eeprom_baud_write_moves_the_next_open);
+    RUN(a_baud_write_locked_and_not_read_back_restores_at_the_new_rate);
     RUN(an_scs_servo_takes_its_goal_big_endian_and_has_no_acc);
     RUN(an_eeprom_write_waits_for_the_2_s_hold_and_keeps_the_old_value);
     RUN(cancel_on_the_warning_writes_nothing);
@@ -1371,6 +1455,8 @@ int main(void)
     RUN(leaving_during_a_scan_closes_the_bus);
     RUN(leaving_drops_a_command_not_sent_and_closes_next);
     RUN(leaving_during_an_eeprom_write_keeps_its_old_value);
+    RUN(a_link_lost_after_an_eeprom_write_went_keeps_it_uncertain);
+    RUN(a_link_lost_before_a_command_went_keeps_nothing);
     RUN(a_coprocessor_without_the_page_is_named_and_sent_nothing);
     RUN(a_link_down_is_named);
     RUN(a_command_the_control_task_never_takes_times_out_after_3_s);

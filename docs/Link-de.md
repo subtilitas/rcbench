@@ -1347,7 +1347,7 @@ beliebigen Fenstern vor dem Kommando bereitgestellt und nur mit der CRC
 | SCAN | 3 | ein PING an jede ID eines Bereichs, 0 bis 253 |
 | READ | 4 | 1 bis 16 Bytes von einem Servo |
 | WRITE | 5 | 1 bis 16 Bytes in den RAM-Bereich (Random-Access Memory) eines Servos; nie das Sperrflag |
-| EEPROM | 6 | entsperren, schreiben, sperren und zurücklesen; braucht den Schlüssel; der EEPROM-Bereich oder das Sperrflag allein |
+| EEPROM | 6 | entsperren, schreiben, sperren und zurücklesen; braucht den Schlüssel; der EEPROM-Bereich oder das Sperrflag allein. Ein Schreiben der Rate (Register 6) schickt zuerst Drehmoment aus an jedes Servo mit der alten Rate |
 | WATCH | 7 | liest den Live-Block eines Servos alle 50 ms zwischen den Operationen; fertig, sobald angenommen, `RESULT` 0 |
 | TORQUE_OFF | 8 | Drehmoment aus an jedes Servo |
 | STOP | 9 | beendet Operation und Beobachtung, Drehmoment aus an jedes Servo, die Sperre nachgeholt. Eine Sperre, auf die ihr Servo nicht antwortet, steht weiter aus, und `RESULT` nennt, was zurückkam (NO_REPLY, wenn nichts kam) |

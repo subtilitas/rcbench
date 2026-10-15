@@ -898,8 +898,10 @@ the servo keeps the value after power-off. HOLD TO WRITE applies it after
 2 s held; CANCEL, a finger that slides off and leaving the page write
 nothing. The write unlocks the servo's EEPROM, writes, locks it and reads
 the value back: `Written and read back.`, or `Read-back differs from the
-write.` A new ID or rate is followed: the lock and the read-back go to the
-new ID at the new rate, the page drives the new ID, and a new rate is the
+write.` A write of BAUD, from CHANGE or from RESTORE, first sends torque
+off to every servo at the old rate: the other servos stay at that rate,
+where no later frame reaches them. A new ID or rate is followed: the lock
+and the read-back go to the new ID at the new rate, the page drives the new ID, and a new rate is the
 one the next OPEN uses. When neither the write nor that lock is answered,
 the write counts as lost: the lock goes to the old ID at the old rate and
 the page stays on them. The warning adds a
@@ -920,7 +922,8 @@ with `8 changes kept: RESTORE first.` A write that STOP ended, that failed
 after it went, or whose answer was lost keeps its old value for RESTORE,
 because it may have landed; such an ID change is not kept, because the
 servo may answer on either ID. Each kept value carries the rate its servo
-answers at. Before an entry at another rate, RESTORE moves the line there,
+answers at; for a BAUD write not read back, that is the rate the line is on
+after it: the new one when the lock was answered there, else the old one. Before an entry at another rate, RESTORE moves the line there,
 with torque off to every servo as BAUD sends it, and its warning says so.
 The line stays at the rate of the last entry written back.
 

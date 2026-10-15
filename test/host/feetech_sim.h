@@ -50,6 +50,8 @@ typedef struct {
     unsigned truncate;         /* the next reply loses this many bytes */
     bool     wrong_id;         /* the next reply */
     bool     drop;             /* the next reply */
+    unsigned drop_read;        /* the reply of the next READ from address
+                                  drop_read - 1; 0 none */
     bool     deaf;             /* the next frame reaches no servo */
     bool     stuck_lock;       /* writes of the lock flag are answered and
                                   not kept */
@@ -228,6 +230,11 @@ static inline bool ftsim_start(void *ctx, const uint8_t *tx, unsigned n_tx,
                 || tx[2] == v->regs[FEETECH_REG_ID])) {
             ftsim_answer(s, (int)i, tx, out, &n_out, &any);
         }
+    }
+    if (s->drop_read != 0u && tx[4] == FEETECH_READ
+        && tx[5] + 1u == s->drop_read) {
+        s->drop_read = 0;
+        s->drop = true;
     }
     if (!any || s->drop) {
         s->drop = false;

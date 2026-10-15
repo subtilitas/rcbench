@@ -1227,7 +1227,7 @@ command names (`link_kst_crc()` over the 10 registers).
 | SCAN | 3 | a PING to every ID of a range, 0 to 253 |
 | READ | 4 | 1 to 16 bytes from one servo |
 | WRITE | 5 | 1 to 16 bytes to a servo's RAM (random-access memory) area; never the lock flag |
-| EEPROM | 6 | unlock, write, lock and read back; needs the key; the EEPROM area or the lock flag alone |
+| EEPROM | 6 | unlock, write, lock and read back; needs the key; the EEPROM area or the lock flag alone. A write of the rate (register 6) sends torque off to every servo at the old rate first |
 | WATCH | 7 | reads one servo's live block every 50 ms between operations; done when taken, `RESULT` 0 |
 | TORQUE_OFF | 8 | torque off to every servo |
 | STOP | 9 | ends the operation and the watch, torque off to every servo, the lock owed. A lock its servo does not answer stays owed, and `RESULT` names what came back (NO_REPLY when nothing did) |

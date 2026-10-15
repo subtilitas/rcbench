@@ -22,8 +22,9 @@ history is in git.
   and error flags every 50 ms. EEPROM (electrically erasable programmable
   read-only memory) writes of ID, baud, angle limits, mode and lock flag
   need a 2 s hold, and RESTORE writes up to 8 old values back, each at its
-  servo's rate. The bus runs on a SAFE bench only; STOP sends torque
-  off. SMS servos on RS-485 are not supported. The protocol core and its
+  servo's rate; a baud write sends torque off to every servo at the old
+  rate first. The bus runs on a SAFE bench only; STOP sends torque
+  off. The page's state takes 3,328 bytes of internal RAM. SMS servos on RS-485 are not supported. The protocol core and its
   RP2350 pin driver are the module `protocols/feetech`.
 - Link protocol 4.23: the BUS (0x34) and BUS_IDS (0x35) pages.
 - Web help for the panel at

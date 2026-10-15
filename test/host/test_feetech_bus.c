@@ -358,8 +358,11 @@ TEST_CASE(a_new_id_and_a_new_rate_are_followed)
     CHECK_EQ(run(100), FEETECH_RES_OK);
     CHECK_EQ(bus.baud, 115200u);
     CHECK_EQ(sim.baud, 115200u);
-    CHECK_EQ(sim.log_baud[5], 1000000u);   /* the write */
-    CHECK_EQ(sim.log_baud[6], 115200u);    /* the lock */
+    CHECK(ftsim_is_write1(&sim.log[4], FEETECH_ID_BROADCAST,
+                          FEETECH_REG_TORQUE, 0));
+    CHECK_EQ(sim.log_baud[4], 1000000u);   /* torque off, the old rate */
+    CHECK_EQ(sim.log_baud[6], 1000000u);   /* the write */
+    CHECK_EQ(sim.log_baud[7], 115200u);    /* the lock */
     CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
     /* An ID or a rate a servo does not take is refused. */
     {
@@ -373,6 +376,15 @@ TEST_CASE(a_new_id_and_a_new_rate_are_followed)
     }
 }
 
+/* Step until the torque off a rate write starts with is done. */
+static void past_the_torque_off(void)
+{
+    (void)feetech_bus_step(&bus, now);     /* torque off out */
+    now += 200u;
+    (void)feetech_bus_step(&bus, now);     /* done: no answer */
+    now += 200u;
+}
+
 /* Step until the unlock's reply is in and the write is next. */
 static void past_the_unlock(void)
 {
@@ -380,6 +392,52 @@ static void past_the_unlock(void)
     now += 200u;
     (void)feetech_bus_step(&bus, now);     /* its reply in */
     now += 200u;
+}
+
+TEST_CASE(a_rate_write_sends_torque_off_at_the_old_rate_first)
+{
+    const uint8_t baud4 = 4;
+    const uint8_t limit = 50;
+    ftsim_servo_t *v;
+    ftsim_servo_t *w;
+
+    setup(0);
+    v = ftsim_add(&sim, 1, FEETECH_STS);
+    w = ftsim_add(&sim, 2, FEETECH_STS);
+    w->regs[FEETECH_REG_TORQUE] = 1;       /* another servo, driving */
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
+                                  &baud4, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(bus.baud, 115200u);
+    CHECK_EQ(v->regs[FEETECH_REG_BAUD], 4);
+    /* Torque off to all at 1000000 baud before the unlock: servo 2 stays
+     * at the old rate and no longer drives. */
+    CHECK(ftsim_is_write1(&sim.log[0], FEETECH_ID_BROADCAST,
+                          FEETECH_REG_TORQUE, 0));
+    CHECK_EQ(sim.log_baud[0], 1000000u);
+    CHECK(ftsim_is_write1(&sim.log[1], 1, FEETECH_REG_LOCK_STS, 0));
+    CHECK_EQ(w->regs[FEETECH_REG_TORQUE], 0);
+    /* A write that keeps the rate sends none. */
+    sim.n_log = 0;
+    CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_MIN_ANGLE,
+                                  &limit, 1), FEETECH_RES_OK);
+    CHECK_EQ(run(100), FEETECH_RES_OK);
+    CHECK_EQ(sim.n_log, 4u);
+    CHECK(ftsim_is_write1(&sim.log[0], 1, FEETECH_REG_LOCK_STS, 0));
+    /* A torque off the driver does not start ends the write before the
+     * unlock: DRIVER, nothing owed. */
+    sim.n_log = 0;
+    sim.refuse_start = true;
+    {
+        const uint8_t baud0 = 0;
+
+        CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
+                                      &baud0, 1), FEETECH_RES_OK);
+    }
+    CHECK_EQ(run(100), FEETECH_RES_DRIVER);
+    CHECK_EQ(sim.n_log, 0u);
+    CHECK_EQ(bus.unlocked, 0);
+    CHECK_EQ(bus.baud, 115200u);
 }
 
 TEST_CASE(an_id_write_that_never_arrived_is_locked_at_the_old_id)
@@ -415,12 +473,13 @@ TEST_CASE(a_rate_write_that_never_arrived_puts_the_line_back)
     v = ftsim_add(&sim, 1, FEETECH_STS);
     CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
                                   &baud4, 1), FEETECH_RES_OK);
+    past_the_torque_off();
     past_the_unlock();
     sim.deaf = true;
     CHECK_EQ(run(100), FEETECH_RES_NO_REPLY);
-    CHECK_EQ(sim.n_log, 4u);
-    CHECK_EQ(sim.log_baud[2], 115200u);   /* the lock where it would be */
-    CHECK_EQ(sim.log_baud[3], 1000000u);  /* and where it is */
+    CHECK_EQ(sim.n_log, 5u);
+    CHECK_EQ(sim.log_baud[3], 115200u);   /* the lock where it would be */
+    CHECK_EQ(sim.log_baud[4], 1000000u);  /* and where it is */
     CHECK_EQ(bus.baud, 1000000u);
     CHECK_EQ(sim.baud, 1000000u);
     CHECK_EQ(v->regs[FEETECH_REG_BAUD], FEETECH_BAUD_DEFAULT);
@@ -430,6 +489,7 @@ TEST_CASE(a_rate_write_that_never_arrived_puts_the_line_back)
     CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
                                   &baud4, 1), FEETECH_RES_OK);
     now += 200u;
+    past_the_torque_off();
     past_the_unlock();
     sim.deaf = true;
     for (unsigned i = 0; i < 20u && bus.baud != 115200u; ++i) {
@@ -803,6 +863,7 @@ TEST_CASE(stop_while_a_rate_write_is_on_the_wire_follows_the_rate)
     v = ftsim_add(&sim, 1, FEETECH_STS);
     CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
                                   &baud7, 1), FEETECH_RES_OK);
+    past_the_torque_off();
     (void)feetech_bus_step(&bus, now);
     now += 200u;
     (void)feetech_bus_step(&bus, now);
@@ -813,14 +874,14 @@ TEST_CASE(stop_while_a_rate_write_is_on_the_wire_follows_the_rate)
     CHECK_EQ(run(100), FEETECH_RES_ABORTED);
     CHECK_EQ(bus.baud, 38400u);
     /* Torque off at the old rate and the new one, then the lock. */
-    CHECK_EQ(sim.n_log, 5u);
-    CHECK(ftsim_is_write1(&sim.log[2], FEETECH_ID_BROADCAST,
-                        FEETECH_REG_TORQUE, 0));
-    CHECK_EQ(sim.log_baud[2], 1000000u);
+    CHECK_EQ(sim.n_log, 6u);
     CHECK(ftsim_is_write1(&sim.log[3], FEETECH_ID_BROADCAST,
                         FEETECH_REG_TORQUE, 0));
-    CHECK_EQ(sim.log_baud[3], 38400u);
-    CHECK(ftsim_is_write1(&sim.log[4], 1, FEETECH_REG_LOCK_STS, 1));
+    CHECK_EQ(sim.log_baud[3], 1000000u);
+    CHECK(ftsim_is_write1(&sim.log[4], FEETECH_ID_BROADCAST,
+                        FEETECH_REG_TORQUE, 0));
+    CHECK_EQ(sim.log_baud[4], 38400u);
+    CHECK(ftsim_is_write1(&sim.log[5], 1, FEETECH_REG_LOCK_STS, 1));
     CHECK_EQ(v->regs[FEETECH_REG_LOCK_STS], 1);
 }
 
@@ -936,6 +997,7 @@ TEST_CASE(a_rate_the_stop_cannot_follow_says_driver)
     ftsim_add(&sim, 1, FEETECH_STS);
     CHECK_EQ(feetech_bus_write_ee(&bus, FEETECH_STS, 1, FEETECH_REG_BAUD,
                                   &baud7, 1), FEETECH_RES_OK);
+    past_the_torque_off();
     (void)feetech_bus_step(&bus, now);
     now += 200u;
     (void)feetech_bus_step(&bus, now);
@@ -1100,6 +1162,7 @@ int main(void)
     RUN(an_eeprom_write_unlocks_writes_locks_and_reads_back);
     RUN(an_scs_eeprom_write_puts_the_high_byte_first_and_uses_lock_48);
     RUN(a_new_id_and_a_new_rate_are_followed);
+    RUN(a_rate_write_sends_torque_off_at_the_old_rate_first);
     RUN(an_id_write_that_never_arrived_is_locked_at_the_old_id);
     RUN(a_rate_write_that_never_arrived_puts_the_line_back);
     RUN(an_id_write_answered_only_by_its_lock_moved);

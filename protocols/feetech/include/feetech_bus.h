@@ -18,8 +18,10 @@
  *               answer a WRITE: FEETECH_RES_NO_REPLY.
  *   WRITE_EE    a write kept over a power cycle: the lock flag to 0, the
  *               write, the lock flag to 1, a read of the bytes written.
- *               A write that moves the servo's ID or baud rate is
- *               followed: the lock and the read go to the new ID at the
+ *               A write that moves the baud rate starts with the torque
+ *               switch 0 to the broadcast ID at the old rate, so no servo
+ *               left there keeps driving.  A write that moves the servo's
+ *               ID or baud rate is followed: the lock and the read go to the new ID at the
  *               new rate.  When neither the write nor that lock is
  *               answered, the write counts as lost: the line goes back to
  *               the old rate, the lock to the old ID, and the operation

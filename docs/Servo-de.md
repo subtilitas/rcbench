@@ -891,8 +891,10 @@ behält. HALTEN ZUM SCHREIBEN übernimmt ihn nach 2 s Halten; ABBRECHEN, ein
 Finger, der abrutscht, und das Verlassen der Seite schreiben nichts. Das
 Schreiben entsperrt das EEPROM des Servos, schreibt, sperrt es und liest
 den Wert zurück: `Geschrieben und zurückgelesen.` oder
-`Zurückgelesen weicht vom Geschriebenen ab.` Einer neuen ID oder Rate wird
-gefolgt: Sperre und Zurücklesen gehen an die neue ID mit der neuen Rate, die
+`Zurückgelesen weicht vom Geschriebenen ab.` Ein Schreiben von BAUD, aus
+ÄNDERN oder aus ZURÜCKSPIELEN, schickt zuerst Drehmoment aus an jedes Servo
+mit der alten Rate: die anderen Servos bleiben bei dieser Rate, wo sie kein
+späterer Frame erreicht. Einer neuen ID oder Rate wird gefolgt: Sperre und Zurücklesen gehen an die neue ID mit der neuen Rate, die
 Seite steuert die neue ID, und eine neue Rate ist die, mit der das nächste
 ÖFFNEN öffnet. Wird weder das Schreiben noch diese Sperre beantwortet, gilt das
 Schreiben als verloren: die Sperre geht an die alte ID mit der alten Rate,
@@ -917,7 +919,9 @@ das STOP beendet hat, das nach dem Absenden scheiterte oder dessen Antwort
 verloren ging, behält seinen alten Wert zum Zurückspielen, weil es
 angekommen sein kann; ein solcher ID-Wechsel wird nicht behalten, weil das
 Servo auf beiden IDs antworten kann. Jeder behaltene Wert trägt die Rate,
-mit der sein Servo antwortet. Vor einem Eintrag mit einer anderen Rate
+mit der sein Servo antwortet; bei einem nicht zurückgelesenen Schreiben von
+BAUD ist das die Rate, auf der die Leitung danach steht: die neue, wenn die
+Sperre dort beantwortet wurde, sonst die alte. Vor einem Eintrag mit einer anderen Rate
 wechselt ZURÜCKSPIELEN die Leitung dorthin, mit Drehmoment aus an jedes
 Servo, wie BAUD es schickt, und seine Warnung sagt das. Die Leitung bleibt
 auf der Rate des zuletzt zurückgespielten Eintrags.

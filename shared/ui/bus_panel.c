@@ -737,11 +737,17 @@ static void push_backup(bool landed)
     k->addr = b.ee_addr;
     k->n = b.ee_n;
     k->role = b.ee_role;
-    /* A baud write read back moved the servo and the line with it. */
-    k->baud = landed && b.ee_role == BUS_R_BAUD
-                      && b.ee_new < proto()->baud_count
-                  ? (uint8_t)b.ee_new
-                  : b.ee_baud;
+    /* A baud write read back moved the servo and the line with it.  One
+     * not read back left the line where the coprocessor found the servo:
+     * at the new rate when the lock answered there, else back at the old
+     * one; the page's last read names it. */
+    if (b.ee_role != BUS_R_BAUD) {
+        k->baud = b.ee_baud;
+    } else if (landed && b.ee_new < proto()->baud_count) {
+        k->baud = (uint8_t)b.ee_new;
+    } else {
+        k->baud = baud_now();
+    }
     if (b.ee_n == 2u) {
         proto()->put16(b.ee_series, k->old, b.ee_old);
     } else {
@@ -910,6 +916,15 @@ static void watch_answer(void)
     const bus_link_readout_t *r = &b.f.rd;
 
     if (!b.f.rd.up || !b.f.rd.page) {
+        /* A command handed to the control task may have reached the
+         * servo: an EEPROM write keeps its old value for RESTORE, and the
+         * mode it may have changed is read again. */
+        if (!b.out_due) {
+            keep_uncertain();
+            if (b.use == U_EE_WRITE) {
+                ee_forget();
+            }
+        }
         b.out_due = false;
         failed(TR(BS_A_DOWN));
         return;

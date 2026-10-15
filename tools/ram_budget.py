@@ -77,6 +77,7 @@ SIZEOF = {
     "touch_item_t": 24,
     "panel_cmd_t": 108,
     "kst_prog_cmd_t": 72,
+    "bus_link_cmd_t": 36,
     "bench_state_t": 92,
     "supply_item_t": 84,
     "servo_test_enc_t": 16,
