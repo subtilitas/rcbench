@@ -42,6 +42,13 @@
 #define PIN_RST     7u
 #define PIN_LED     16u
 
+/* pico-sdk 2.3.0 sends a USB string descriptor of at most 19 characters
+ * (USBD_DESC_STR_MAX 20 in stdio_usb_descriptors.c) and cuts the rest; the
+ * Pi's by-id port name is made of the product string. */
+#define USB_STR_MAX 20u
+_Static_assert(sizeof(USBD_PRODUCT) <= USB_STR_MAX,
+               "USBD_PRODUCT is cut to 19 characters on the bus");
+
 #define WATCHDOG_MS 200u
 #define WIRING_US   500000u
 /* Level changes the listening window keeps: 128 KiB of RAM.  The panel's

@@ -40,8 +40,10 @@ pico_generate_pio_header(rcbench-touch-injector
 
 target_compile_definitions(rcbench-touch-injector PRIVATE
     # The name the Pi finds the port by:
-    # /dev/serial/by-id/usb-Raspberry_Pi_rcbench_touch_injector_<serial>-if00
-    USBD_PRODUCT="rcbench touch injector"
+    # /dev/serial/by-id/usb-Raspberry_Pi_rcbench_injector_<serial>-if00
+    # At most 19 characters: pico-sdk cuts longer strings (rp2350/main.c
+    # asserts it).
+    USBD_PRODUCT="rcbench injector"
     # A host that stops reading costs a write at most 10 ms, under the
     # 200 ms watchdog.
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=10000

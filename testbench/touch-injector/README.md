@@ -71,8 +71,12 @@ picotool load -f -x build/rcbench-touch-injector.uf2
 after loading. The port appears as:
 
 ```text
-/dev/serial/by-id/usb-Raspberry_Pi_rcbench_touch_injector_<serial>-if00
+/dev/serial/by-id/usb-Raspberry_Pi_rcbench_injector_<serial>-if00
 ```
+
+The name comes from the USB product string `rcbench injector`. pico-sdk
+2.3.0 sends at most 19 characters of it; `rp2350/main.c` fails the build on
+a longer one.
 
 ## States
 
