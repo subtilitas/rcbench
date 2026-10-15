@@ -71,23 +71,36 @@ history is in git.
   PULSE MIN and to PULSE MAX in 10 us steps on INA3221 CH1's 50 ms windows,
   reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
   nothing of the bench's own pulse range. It runs only with the INA3221 as
-  the servo rail's meter; the line under the button names the output it
-  drives and why it cannot start. The search's protections are active: 3.0
+  the servo rail's meter, on a rail of 3.0 V or more in the last window
+  (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
+  with an output bound as SERVO PWM; the line under the button names the
+  output it drives and why it cannot start. The search and its protections
+  read the current's magnitude, so a shunt fitted the other way round finds
+  the same ends. The protections are active: 3.0
   A at every 1 ms sample, above 1.0 A for 400 ms, no window for 200 ms, 40 s
   a search, and a search's window without the rail voltage (`no rail
   voltage in a window`). A window without a current reading is not counted
-  as a window.
+  as a window. The supply's set points and output are held as at the start
+  in every phase but the programmer's sessions.
 - SEARCH+PROG lowers LEFT ANGLE and RIGHT ANGLE of a KST or Chaservo servo
   on the programming port until neither end binds, 5 % (at least 2) below
   the last free value, at most 24 values written a run. The register for
-  each side is found from the run's first write. RESTORE offers `Values
-  before the limit run`.
+  each side is found from the run's first write. A later session that reads
+  another type, REVERSION or range of values ends the run, `servo holds
+  other values`. A run that ends while it waits for ARMED asks SAFE, so an
+  ARM not yet taken does not arm the bench. A run's write refused before it
+  is sent switches ENABLE WRITE TO SERVO off again. RESTORE offers `Values
+  before the limit run`; a session after the run saves its own backup file
+  at its first write.
 
 ### Changed
 
 - The automatic servo test on the INA3221 ends ABORTED after 200 ms without
   a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
   run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
+- A servo run's `BENCHnnn.TXT` report counts as an open log run until the
+  card has closed it, as its CSV does: Wi-Fi and an update wait for it, and
+  the log viewer neither lists nor opens it while it is written.
 - The SERVO settings' line that says the setup is not saved spans the
   card: the German text is 296 px wide.
 - The bench configurator describes release 0.19.0. Every repository source

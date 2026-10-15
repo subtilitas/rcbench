@@ -900,12 +900,16 @@ zurückgelesen, der Schreibschalter aus, VERLASSEN. Was das Overlay offen
 hat, schließt sich bei jedem Schritt. Ein Wert unter 50 passiert seine
 weiche Grenze ohne die Seite: das Halten von 2 s beim Start des Laufs ist
 die Zustimmung. Eine harte Grenze lehnt einen Wert ab wie eine Änderung,
-und der Lauf endet.
+und der Lauf endet. Ein Schreiben, das vor dem Senden abgelehnt wird,
+schaltet SCHREIBEN AUF SERVO FREIGEBEN wieder aus, wie das Ende eines
+gesendeten Schreibens.
 
 Das erste Schreiben des Laufs sichert die Backup-Datei, wie jedes erste
 Schreiben. Eine spätere Sitzung des Laufs, deren Servo sich vom ersten Lesen
 des Laufs höchstens in LEFT ANGLE und RIGHT ANGLE unterscheidet, sichert
-keine Datei: die erste Datei hält das Servo, wie der Lauf es vorfand. Der
+keine Datei: die erste Datei hält das Servo, wie der Lauf es vorfand. Eine
+Sitzung nach dem Ende des Laufs gehört dem Bediener: ihr erstes Schreiben
+sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Der
 Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des nächsten Laufs oder
 einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem
 Endlagenlauf` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL

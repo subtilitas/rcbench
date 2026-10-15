@@ -829,12 +829,15 @@ SERVO on, LEFT ANGLE and RIGHT ANGLE written and read back, the write
 switch off, LEAVE. Whatever the overlay has open closes at each step. A
 value under 50 passes its soft limit without the page: the run's 2 s start
 hold is the consent. A hard limit refuses a value as it refuses an edit,
-and the run ends.
+and the run ends. A write refused before it is sent switches ENABLE WRITE
+TO SERVO off again, as the end of a sent write does.
 
 The run's first write saves the backup file, as any first write does. A
 later session of the run whose servo differs from the run's first read in
 LEFT ANGLE and RIGHT ANGLE at most saves no file: the first file holds the
-servo as the run found it. The run holds that read in the panel's memory
+servo as the run found it. A session after the run has ended is the
+operator's: its first write saves its own backup file, as every session's
+first write does. The run holds that read in the panel's memory
 until the next run's first write or a start of the panel, and RESTORE offers it as
 `Values before the limit run`. While the run holds the port, the screen's
 TARGET row and the run's box name it: `PROG PORT GP13`.

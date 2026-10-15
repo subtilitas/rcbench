@@ -3091,6 +3091,11 @@ bool servo_screen_limit_running(void)
     return servo_limrun_running(&s.lim);
 }
 
+int servo_screen_limit_phase(void)
+{
+    return (int)s.lim.phase;
+}
+
 /* The automatic test's outbox first, then the limit run's: one of the two
  * runs at a time, and each drained before the other starts. */
 servo_test_out_t servo_screen_test_peek(const char **text)
@@ -3175,8 +3180,18 @@ static const char *lim_blocked(void)
     if (meter != NULL) {
         return meter;
     }
+    /* A powered rail: the window's voltage read, and at least
+     * SERVO_LIMRUN_RAIL_MIN_MV. */
+    if (!s.win.voltage || s.win.mean_mv < SERVO_LIMRUN_RAIL_MIN_MV) {
+        return TR(SV_LIM_RAIL_LOW);
+    }
     if (s.drive_target != 0u && !s.drive_pwm) {
         return TR(SV_LIM_PWM_OFF);
+    }
+    /* The bench's own outputs: a SERVO PWM output bound to carry the
+     * pulse, as the TARGET row names it. */
+    if (s.drive_target == 0u && (!s.pins_known || s.pins == 0u)) {
+        return s.pins_known ? TR(SV_TARGET_NONE) : TR(SV_TARGET_UNREAD);
     }
     if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
         return TR(SV_LIM_REFUSED);

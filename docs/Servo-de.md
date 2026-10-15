@@ -74,7 +74,9 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | `INA3221 NICHT FÜR DIE SERVOSCHIENE EINGERICHTET` | INA3221 oder sein CH1 in SETUP aus, ein Koprozessor älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ONLINE` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-FENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000 ms gehalten, oder kein Fenster mit Strom in den letzten 200 ms |
+| `SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0 V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0 V liegen unter den 4,8 V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
 | `PORT PWM AUS: DER PORT GIBT KEINEN PULS AUS` | PWM-ZIEL auf PROG-PORT mit PORT-PWM aus |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT GELESEN` | PWM-ZIEL auf den Ausgängen des Prüfstands, ohne einen als SERVO PWM gebundenen Ausgang, oder die Bindung noch nicht gelesen: die Worte der Zeile ZIEL |
 | `MITTE NICHT ZWISCHEN PULSE MIN UND MAX` | PULSE CENTRE liegt nicht zwischen PULSE MIN und PULSE MAX |
 
 ### Die Weggrenzen des Servos programmieren
@@ -112,7 +114,11 @@ Port: ein VERLASSEN, das dieser Link oder diese Versorgung nicht
 abschließt, beendet den Lauf, bevor sich ein Wert ändert. Das erste
 Schreiben des Laufs sichert die Werte des Servos in eine Datei auf der
 Karte, wie das erste Schreiben des Programmierers; die späteren Sitzungen
-sichern nicht.
+sichern nicht. Jede spätere Sitzung liest das Servo erneut. Ein anderer Typ,
+umgeschaltete REVERSION, ein anderer Bereich der Werte, die die harten
+Regeln annehmen, oder LEFT ANGLE und RIGHT ANGLE anders, als der Lauf sie
+zuletzt schrieb, beenden den Lauf als ABGEBROCHEN, `Servo hat andere
+Werte`, bevor er wieder schreibt.
 
 Die Protokollnotizen sagen nicht, welche Pulsseite jedes Register begrenzt,
 und nicht, wie REVERSION das ändert. Der Lauf findet es. Sein erstes
@@ -170,11 +176,14 @@ Prüfstands angewendet.
 | Eine Suche | 40 s | Abbruch: 1000 µs Weg sind 100 Stellungen zu 250 ms, 25 s |
 | Ein Schritt des Programmierers | 150 s | Abbruch: VERBINDEN mit seinem Lesen, ein Schreiben oder VERLASSEN |
 | Das Umschalten des Prüfstands | 3 s | Abbruch, wenn SAFE oder ARMED 3 s nach der Anforderung nicht steht |
-| Das Netzteil während einer Suche | Sollwerte und Ausgang wie beim Start, die Schienenspannung innerhalb 1,0 V des ersten Fensters | Abbruch |
+| Das Netzteil | Sollwerte und Ausgang wie beim Start, in jeder Phase außer den Sitzungen des Programmierers (VERBINDEN bis VERLASSEN), denen das Netzteil gehört; während einer Suche zudem die Schienenspannung innerhalb 1,0 V des ersten Fensters | Abbruch |
 | Die Schienenspannung im Fenster einer Suche | in jedem Fenster einer Suche vorhanden | Abbruch `kein Spannungswert im Fenster`, bevor das Fenster die Suche bewegt; Bezug des 1,0-V-Bands ist das erste Fenster des Laufs, das die Spannung enthält |
 | Schrittweite | 10 µs | ein Schritt kann das Horn nicht von frei bis hart an den Anschlag bewegen |
 
-Sie gelten in jeder Phase. Der Lauf folgt den Regeln für ARMED des
+Sie gelten in jeder Phase. Die Suche und die Schutzmechanismen lesen den
+Betrag des Stroms: ein verkehrt herum eingebauter Shunt liest ein
+anlaufendes Servo als stärker negativen Strom, und der Lauf findet es wie
+mit richtig eingebautem Shunt. Der Lauf folgt den Regeln für ARMED des
 SERVO-Bildschirms und des Programmierports: sein ARM wird abgelehnt,
 solange der Port gehalten wird, eine STOP-Sperre oder verlorene
 Touch-Ereignisse halten den Prüfstand SAFE, und ein ARM, das nicht ankommt,
@@ -193,8 +202,11 @@ und ein Netzteil, das nicht mehr antwortet, auslöst, ausschaltet oder
 dessen Sollwerte sich ändern: die Gründe des automatischen Tests, in
 [Was einen Lauf beendet](#was-einen-lauf-beendet). SAFE und ARM des Laufs
 selbst beenden nichts. Jeder Grund beendet den Lauf als ABGEBROCHEN, mit
-ausgeschaltetem Ausgang und freigegebenem Servo. Ein Start des Panels
-löscht den Lauf ohne Bericht.
+ausgeschaltetem Ausgang und freigegebenem Servo. Ein Lauf, der endet,
+während er auf ARMED wartet, fordert zudem SAFE an: ein ARM, das er
+anforderte und das der Prüfstand noch nicht übernommen hat, schaltet den
+Prüfstand nach dem Ende nicht auf ARMED. Ein Start des Panels löscht den
+Lauf ohne Bericht.
 
 Die zuletzt geschriebenen Werte bleiben im Servo. Ein Lauf, der schrieb und
 nicht bestand, zeigt in seinem Feld `ZURÜCKSPIELEN IN PROGRAMM.`.
@@ -204,7 +216,8 @@ zurückgeschrieben als gewöhnliches Schreiben von LEFT ANGLE und RIGHT ANGLE.
 Das Angebot steht, solange das gelesene Servo sich darin in diesen beiden
 Feldern und in keinem anderen unterscheidet. Es liegt im Speicher des
 Panels: ein Start des Panels vergisst es, die Sicherungsdatei auf der Karte
-bleibt.
+bleibt. Eine Sitzung nach dem Lauf gehört dem Bediener: ihr erstes
+Schreiben sichert eine eigene Sicherungsdatei.
 
 ![Ein Lauf, nach einem Schreiben beendet](img/de/servo-limrun-stopped.png)
 ![ZURÜCKSPIELEN nach einem Endlagenlauf](img/de/servo-limrun-restore.png)
@@ -237,7 +250,9 @@ und den Dateinamen des Berichts.
 Der Bericht ist eine eigene `BENCHnnn.TXT` ohne CSV-Datei daneben, unter
 der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
 der Seite PRÜFLING sagt. Während eines Laufs schreiben weder das
-Prüfstandslog noch das Netzteillog eine Zeile. Ein Lauf am modellierten
+Prüfstandslog noch das Netzteillog eine Zeile. Bis die Karte den Bericht
+geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
+darauf, wie auf die CSV eines Laufs. Ein Lauf am modellierten
 Servo des Hosts mit REVERSION AUS:
 
 ```text
@@ -847,7 +862,10 @@ wieder, wenn der Lauf endet. Eine Nummer, die nur ein
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `OHNE DATEI`. Zeilen, für
-die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht.
+die die Warteschlange zur Karte keinen Platz hatte, zählt der Bericht. Bis
+die Karte die CSV eines Laufs und seinen Bericht geschlossen hat, gilt der
+Lauf als offener Log-Lauf: WLAN und ein Update warten darauf, und die
+Log-Ansicht listet und öffnet die Datei, die noch geschrieben wird, nicht.
 
 Die CSV, mit Semikolon getrennt und Dezimalpunkt, wie jedes Log des
 Prüfstands:

@@ -72,6 +72,8 @@ typedef struct {
     bool not_kst, prog_silent, leave_fails;
     unsigned leave_fail_at;      /* this LEAVE (1-based) does not end well */
     uint32_t prog_ms;
+    unsigned change_at;          /* this CONNECT (1-based) reads ...      */
+    int change_kind;             /* ... another type, REVERSION or range  */
 
     /* the meter */
     bool windows;
@@ -86,6 +88,7 @@ typedef struct {
     bool no_volt;                /* windows without the rail voltage      */
     bool no_cur;                 /* windows without a current reading     */
     bool enc;
+    bool neg;                    /* the shunt fitted the other way round  */
 
     /* the supply */
     servo_test_reading_t sup;
@@ -218,6 +221,14 @@ static void programmer(void)
         sv.type = 0x0815u;
         snprintf(sv.backup, sizeof(sv.backup), "%s", "KST00001.KST");
         ++g.connects;
+        if (g.connects == g.change_at) {
+            switch (g.change_kind) {
+            case 0: sv.type = 0x0816u; break;
+            case 1: sv.reversion = !sv.reversion; break;
+            case 2: sv.lo_raw = LO_RAW + 1u; break;
+            default: sv.hi_raw = HI_RAW - 1u; break;
+            }
+        }
         servo_limrun_connected(&g.run, &sv, g.now);
     } else if (op == OP_WRITE) {
         ++g.write_ops;
@@ -294,6 +305,11 @@ static void meter(void)
         w.mean_ma  = (int16_t)lroundf(g.sum / (float)g.n);
         w.max_ma   = g.mx;
         w.min_ma   = g.mn;
+        if (g.neg) {
+            w.mean_ma = (int16_t)-w.mean_ma;
+            w.max_ma  = (int16_t)-g.mn;
+            w.min_ma  = (int16_t)-g.mx;
+        }
         w.mean_mv  = g.rail_mv;
         w.min_mv   = g.rail_mv;
         w.taken_ms = g.now;
@@ -389,6 +405,14 @@ static void run_for(uint32_t ms)
     }
     for (int k = 0; k < 20; ++k) {
         tick();             /* the outbox drains */
+    }
+}
+
+/* @p ms of the rig, whether the run goes on or not. */
+static void idle_for(uint32_t ms)
+{
+    for (uint32_t k = 0; k < ms; ++k) {
+        tick();
     }
 }
 
@@ -583,6 +607,28 @@ TEST_CASE(a_servo_that_never_binds_is_not_programmed)
 }
 
 /* Search only: the endpoints, nothing programmed, the bench never switched. */
+/* The INA3221's shunt fitted the other way round: the windows read
+ * negative, a bound servo more negative.  The search reads the magnitude,
+ * as the protections do, and finds both ends; the run programs them. */
+TEST_CASE(a_reversed_shunt_finds_the_bound_ends)
+{
+    for (int prog = 0; prog < 2; ++prog) {
+        rig_init(0u, false);
+        g.neg = true;
+        g.cfg.program = prog != 0;
+        CHECK(start());
+        run_for(RUN_MS);
+        CHECK_EQ(g.run.verdict, prog ? SERVO_LIMRUN_PASS : SERVO_LIMRUN_FOUND);
+        CHECK(g.run.first[SERVO_LIMRUN_LO].bound);
+        CHECK(g.run.first[SERVO_LIMRUN_HI].bound);
+        CHECK(g.run.first[SERVO_LIMRUN_LO].baseline_a > 0.0f);
+        if (prog) {
+            CHECK(lo_edge(reg_get(KST_F_LEFT_ANGLE)) > 1150.0f);
+            CHECK(hi_edge(reg_get(KST_F_RIGHT_ANGLE)) < 1880.0f);
+        }
+    }
+}
+
 TEST_CASE(search_only_reports_the_endpoints)
 {
     rig_init(0u, false);
@@ -678,6 +724,26 @@ TEST_CASE(other_values_at_a_later_connect_abort)
     reg_set(KST_F_RIGHT_ANGLE, 120u);
     run_for(RUN_MS);
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_OTHER_VALUES);
+}
+
+/* A later session reads the same two values from another servo, or from
+ * one set otherwise: another type, REVERSION switched, another range.  The
+ * run ends before it writes again, and RESTORE is offered. */
+TEST_CASE(another_servo_at_a_later_connect_aborts)
+{
+    for (int k = 0; k < 4; ++k) {
+        rig_init(0u, false);
+        g.change_at = 3u;          /* the second writing session */
+        g.change_kind = k;
+        CHECK(start());
+        run_for(RUN_MS);
+        CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_OTHER_VALUES);
+        CHECK_EQ(g.connects, 3u);
+        CHECK_EQ(g.write_ops, 1u);
+        CHECK_EQ(g.offs, 1u);
+        CHECK(strstr(g.report, "RESTORE") != NULL);
+    }
 }
 
 TEST_CASE(no_kst_servo_read_fails_before_a_write)
@@ -1049,6 +1115,96 @@ TEST_CASE(a_changed_supply_ends_a_search_but_not_a_session)
     CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
 }
 
+/* Outside the programmer's sessions the supply stays the run's: in SAFE
+ * before a session and while the bench goes back to ARMED, a supply that
+ * goes, trips, switches off or changes its set point ends the run with the
+ * output off.  Aborted while it waits for ARMED, it asks SAFE, so an ARM
+ * not yet taken does not arm the bench after the end. */
+TEST_CASE(the_supply_is_watched_in_safe_and_on_the_way_to_armed)
+{
+    static const servo_limrun_phase_t k_ph[] = {
+        SERVO_LIMRUN_PH_SAFE, SERVO_LIMRUN_PH_ARM,
+    };
+    for (size_t p = 0; p < 2u; ++p) {
+        for (int k = 0; k < 5; ++k) {
+            CHECK(to_phase(k_ph[p]));
+            /* The bench takes its time: the phase lasts past a reading. */
+            g.bench_ms = 2000u;
+            const unsigned disarms = g.disarms;
+            if (k == 0) {
+                g.sup.output = false;
+            } else if (k == 1) {
+                g.sup.trip = 1u;
+            } else if (k == 2) {
+                g.sup.online = false;
+            } else if (k == 3) {
+                g.sup.set_v = 7.4f;
+            } else {
+                g.sup.set_i = 2.0f;
+            }
+            run_for(300u);
+            CHECK_EQ(g.run.verdict, SERVO_LIMRUN_ABORTED);
+            if (k < 3) {
+                CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_TEST);
+                CHECK_EQ(g.run.test_why, k == 0 ? SERVO_TEST_AB_SUPPLY_OFF
+                                       : k == 1 ? SERVO_TEST_AB_TRIPPED
+                                                : SERVO_TEST_AB_SUPPLY_LOST);
+            } else {
+                CHECK_EQ(g.run.why, SERVO_LIMRUN_WHY_SUPPLY_CHANGED);
+            }
+            CHECK_EQ(g.offs, 1u);
+            CHECK_EQ(g.releases, 1u);
+            CHECK(servo_limrun_wrote(&g.run));
+            CHECK(strstr(g.report, "RESTORE") != NULL);
+            if (k_ph[p] == SERVO_LIMRUN_PH_ARM) {
+                /* The bench ends SAFE, with the ARM asked before. */
+                CHECK_EQ(g.disarms, disarms + 1u);
+                idle_for(2100u);
+                CHECK(!g.live);
+                CHECK(g.safe);
+            } else {
+                /* Before SAFE is asked, as in a search: no SAFE asked. */
+                CHECK_EQ(g.disarms, disarms);
+            }
+        }
+    }
+}
+
+/* The run aborted in the step after its ARM was asked, before the bench
+ * took it: SAFE is asked behind it and the bench ends SAFE. */
+TEST_CASE(an_abort_behind_the_arm_leaves_the_bench_safe)
+{
+    static const servo_test_abort_t k_why[] = {
+        SERVO_TEST_AB_STOP, SERVO_TEST_AB_LINK, SERVO_TEST_AB_INA_METER,
+        SERVO_TEST_AB_LEFT,
+    };
+    for (size_t w = 0; w < sizeof(k_why) / sizeof(k_why[0]); ++w) {
+        CHECK(to_phase(SERVO_LIMRUN_PH_ARM));
+        CHECK_EQ(g.bench_to, 1);
+        const unsigned arms = g.arms;
+        servo_limrun_abort(&g.run, k_why[w], g.now);
+        servo_limrun_do_t d;
+        servo_limrun_in_t in;
+        memset(&in, 0, sizeof(in));
+        servo_limrun_step(&g.run, g.now, &in, &d);
+        CHECK(d.disarm);
+        CHECK(!d.arm);
+        CHECK(d.off);
+        CHECK(d.release);
+        take(&d);
+        idle_for(500u);
+        CHECK_EQ(g.arms, arms);
+        CHECK(!g.live);
+        CHECK(g.safe);
+    }
+    /* Aborted in a search, ARMED stays: SAFE is the operator's there. */
+    CHECK(to_phase(SERVO_LIMRUN_PH_PROBE));
+    const unsigned disarms = g.disarms;
+    servo_limrun_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
+    run_for(100u);
+    CHECK_EQ(g.disarms, disarms);
+}
+
 /* --- the meter's silence ------------------------------------------------------ */
 
 /* The last window at t: the run goes on at t + 199 ms and ends at t + 200
@@ -1406,11 +1562,13 @@ int main(void)
     RUN(a_servo_bound_at_the_smallest_value_fails_clearly);
     RUN(registers_at_the_smallest_value_already);
     RUN(a_servo_that_never_binds_is_not_programmed);
+    RUN(a_reversed_shunt_finds_the_bound_ends);
     RUN(search_only_reports_the_endpoints);
     RUN(the_write_cap_settles_or_fails_and_is_never_passed);
     RUN(a_refused_write_aborts_and_offers_restore);
     RUN(a_write_lost_on_the_line_aborts);
     RUN(other_values_at_a_later_connect_abort);
+    RUN(another_servo_at_a_later_connect_aborts);
     RUN(no_kst_servo_read_fails_before_a_write);
     RUN(a_failed_leave_aborts);
     RUN(a_step_the_programmer_refuses_aborts);
@@ -1420,6 +1578,8 @@ int main(void)
     RUN(a_sample_at_3_a_ends_the_run_in_every_phase);
     RUN(above_1_a_for_400_ms_ends_the_run);
     RUN(a_changed_supply_ends_a_search_but_not_a_session);
+    RUN(the_supply_is_watched_in_safe_and_on_the_way_to_armed);
+    RUN(an_abort_behind_the_arm_leaves_the_bench_safe);
     RUN(no_window_for_200_ms_ends_the_run);
     RUN(a_window_without_the_rail_voltage_ends_a_search);
     RUN(a_window_without_the_rail_voltage_at_the_edges);

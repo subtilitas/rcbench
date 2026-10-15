@@ -1095,6 +1095,8 @@ static void limrun_view(const char *view)
         settings_set(SET_SERVO_TARGET, 1.0f);
         servo_screen_set_drive(1u, 13u, true);
     }
+    /* The binding read: one SERVO PWM output on GP2. */
+    servo_screen_set_pins((uint64_t)1u << 2, true);
     servo_screen_source(SERVO_SOURCE_PDMINI, 1u);
     servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     servo_screen_set_armed(true);

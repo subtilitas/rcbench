@@ -579,6 +579,8 @@ bool servo_screen_testing(void);
 
 /** Whether a limit run (servo_limrun.h) is under way, for the tests. */
 bool servo_screen_limit_running(void);
+/** The limit run's phase (servo_limrun_phase_t), for the tests. */
+int servo_screen_limit_phase(void);
 
 /**
  * The run's next item for the card, without taking it (servo_test_peek()),

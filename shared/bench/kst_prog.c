@@ -1494,10 +1494,11 @@ bool kst_prog_save_first(const kst_prog_t *p)
 {
     /* A record held says the servo may be half written: its image is no
      * backup, and the record holds the servo as found.  A limit run's
-     * later session has the file of its first write. */
+     * later session has the file of its first write; a session after the
+     * run saves its own. */
     return p->have_servo && !p->backed_up && !p->journal
         && !kst_prog_in_doubt(p)
-        && !(p->run_written && kst_prog_run_matches(p));
+        && !(p->run_own && p->run_written && kst_prog_run_matches(p));
 }
 
 bool kst_prog_save_none(const kst_prog_t *p)
@@ -2295,6 +2296,7 @@ bool kst_prog_run_hold(kst_prog_t *p)
         return false;
     }
     p->run_hold = true;
+    p->run_own = true;
     p->run_written = false;
     p->run_img = p->servo;
     p->run_backup[0] = '\0';
@@ -2314,9 +2316,15 @@ void kst_prog_run_written(kst_prog_t *p)
     }
 }
 
+void kst_prog_run_close(kst_prog_t *p)
+{
+    p->run_own = false;
+}
+
 void kst_prog_run_drop(kst_prog_t *p)
 {
     p->run_hold = false;
+    p->run_own = false;
     p->run_written = false;
     p->run_backup[0] = '\0';
 }

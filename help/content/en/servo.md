@@ -127,7 +127,9 @@ The run reads only INA3221 CH1. With the PD mini or the model as the servo rail'
 | `INA3221 NOT SET UP AS THE SERVO RAIL'S METER` | the INA3221 or its CH1 is off on SETUP, INTERFACES |
 | `INA3221 NOT ONLINE` | no link, or the INA3221 does not answer |
 | `NO INA3221 WINDOWS YET` | the INA3221 is not the meter yet |
+| `SERVO RAIL UNDER 3.0 V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0 V: an output that is off reads 0 V |
 | `PORT PWM OFF: THE PORT RENDERS NO PULSE` | PWM TARGET is PROG PORT with PORT PWM off |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
 | `CENTRE NOT BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
 | `LAST REPORT STILL WRITING` | a test or a run is under way, or its report is still going to the card |
 
@@ -161,11 +163,14 @@ Each of these ends the run as ABORTED, with the output off and the servo release
 - during a search, a window without the rail voltage (`no rail voltage in a window`);
 - a sample at 3.0 A or more, a sample at the end of the INA3221's range, or window means above 1.0 A for 400 ms;
 - a search longer than 40 s, a bench that does not switch in 3 s, or a programmer step longer than 150 s;
-- during a search, a change to the supply's set points or output, or the rail more than 1.0 V from the run's first window.
+- a change to the supply's set points or output, outside the programmer's sessions; during a search, the rail more than 1.0 V from the run's first window;
+- at a later session, another servo, or REVERSION or the range of values changed (`servo holds other values`).
+
+A run that ends while it waits for ARMED also switches the bench to SAFE.
 
 ![A run stopped after a write](view:servo-limrun-stopped)
 
-After a write the servo keeps the values last written. The box then reads `RESTORE IN PROGRAM.`. On the programmer, CONNECT and READ ALL, then RESTORE offers `Values before the limit run`.
+After a write the servo keeps the values last written. The box then reads `RESTORE IN PROGRAM.`. On the programmer, CONNECT and READ ALL, then RESTORE offers `Values before the limit run`. A session after the run saves its own backup file at its first write.
 
 ![RESTORE after a limit run](view:servo-limrun-restore)
 
@@ -184,7 +189,7 @@ The box stays until CLOSE. It shows the verdict, the reason or the values, and t
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The report is a `BENCHnnn.TXT` of its own, written whatever REPORT says. It holds the endpoints of both searches, LEFT ANGLE and RIGHT ANGLE before and after, the values written, the writes sent and the sessions, the margin, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason.
+The report is a `BENCHnnn.TXT` of its own, written whatever REPORT says. It holds the endpoints of both searches, LEFT ANGLE and RIGHT ANGLE before and after, the values written, the writes sent and the sessions, the margin, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
 
 ## Current limitations
 

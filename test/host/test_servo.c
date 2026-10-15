@@ -15,6 +15,7 @@
 #include "touch_feed.h"
 
 #include "kst_panel.h"
+#include "servo_limrun.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "servo_sweep.h"
@@ -4555,6 +4556,10 @@ static struct {
     /* The INA3221's CH1 windows: one every 50 ms with the servo's current,
      * under the meter last named (meter()), while ina is set. */
     bool     ina;
+    bool     rail_set;          /* the windows' rail at rail_mv, not the
+                                   supply's set point                    */
+    unsigned rail_mv;
+    bool     no_volt;           /* windows without the rail voltage      */
     uint32_t win_next;
     uint16_t win_number;
     unsigned wins;
@@ -4664,10 +4669,12 @@ static void bench_frames(uint32_t ms)
         if (bench.ina && (int32_t)(bench.now - bench.win_next) >= 0) {
             bench.win_next += 50u;
             const int ma = (int)lroundf(amps * 1000.0f);
-            const unsigned mv = bench.out
-                ? (unsigned)lroundf(supply_screen_set_v() * 1000.0f) : 0u;
+            const unsigned mv = bench.rail_set ? bench.rail_mv
+                : bench.out ? (unsigned)lroundf(supply_screen_set_v() * 1000.0f)
+                            : 0u;
             const sense_link_win_t w = {
-                .number = ++bench.win_number, .current = true, .voltage = true,
+                .number = ++bench.win_number, .current = true,
+                .voltage = !bench.no_volt,
                 .mean_ma = (int16_t)ma, .max_ma = (int16_t)ma,
                 .min_ma = (int16_t)ma, .mean_mv = (uint16_t)mv,
                 .min_mv = (uint16_t)mv, .taken_ms = bench.now, .stamped = true,
@@ -8760,6 +8767,8 @@ static void lim_bench(void)
     servo_sim_init(&bench.sv, &sc);
     bench.sv.position_us = 1500.0f;
     bench.out = true;
+    /* The binding read: one SERVO PWM output on GP2. */
+    servo_screen_set_pins(PIN(2), true);
     bench_frames(200u);
 }
 
@@ -8871,6 +8880,72 @@ TEST_CASE(a_limit_run_starts_only_armed_on_the_ina3221)
         CHECK(!servo_screen_testing());
         servo_screen_set_armed(false);
         CHECK(!servo_screen_limit_running());
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* A limit run starts on a powered servo rail only: the last INA3221
+ * window's voltage read and at least SERVO_LIMRUN_RAIL_MIN_MV, 3.0 V.  An
+ * output that is off reads 0 V.  On the bench's own outputs a SERVO PWM
+ * output is bound too, as the TARGET row names it. */
+TEST_CASE(a_limit_run_needs_a_powered_rail_and_a_bound_output)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int k = 0; k < 4; ++k) {
+            lim_bench();
+            if (k == 0) {               /* 1 mV under the threshold */
+                bench.rail_set = true;
+                bench.rail_mv = SERVO_LIMRUN_RAIL_MIN_MV - 1u;
+            } else if (k == 1) {        /* the output off: 0 V */
+                bench.out = false;
+            } else if (k == 2) {        /* no voltage in the window */
+                bench.no_volt = true;
+            } else {                    /* 0 V from another source */
+                bench.rail_set = true;
+                bench.rail_mv = 0u;
+            }
+            bench_frames(200u);
+            lim_page();
+            CHECK(lim_line_reads(1, TR(SV_LIM_RAIL_LOW), UI_C_WARN));
+            close_settings();
+            lim_hold(2.3f);
+            CHECK(!servo_screen_limit_running());
+            close_settings();
+        }
+        /* At the threshold: ready, and the hold starts it. */
+        lim_bench();
+        bench.rail_set = true;
+        bench.rail_mv = SERVO_LIMRUN_RAIL_MIN_MV;
+        bench_frames(200u);
+        lim_page();
+        CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        close_settings();
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        servo_screen_set_armed(false);
+        CHECK(!servo_screen_limit_running());
+        /* No SERVO PWM output bound, and the binding not read. */
+        for (int k = 0; k < 2; ++k) {
+            lim_bench();
+            servo_screen_set_pins(0u, k == 0);
+            bench_frames(100u);
+            lim_page();
+            CHECK(lim_line_reads(1, k == 0 ? TR(SV_TARGET_NONE)
+                                           : TR(SV_TARGET_UNREAD),
+                                 UI_C_WARN));
+            close_settings();
+            lim_hold(2.3f);
+            CHECK(!servo_screen_limit_running());
+            close_settings();
+        }
+        /* A binding that names a pin, and the run starts. */
+        lim_bench();
+        servo_screen_set_pins(PIN(5), true);
+        bench_frames(100u);
+        lim_hold(2.3f);
+        CHECK(servo_screen_limit_running());
+        servo_screen_set_armed(false);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -9241,6 +9316,7 @@ int main(void)
     RUN(a_stall_at_out_of_reach_is_said_under_start_test);
     RUN(a_runs_start_and_end_are_told_where_they_happen);
     RUN(a_limit_run_starts_only_armed_on_the_ina3221);
+    RUN(a_limit_run_needs_a_powered_rail_and_a_bound_output);
     RUN(programming_is_not_offered_off_the_programming_port);
     RUN(a_search_only_limit_run_finds_both_ends_and_reports_them);
     RUN(every_abort_source_ends_a_limit_run_with_the_output_off);

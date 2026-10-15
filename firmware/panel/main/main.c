@@ -1569,14 +1569,24 @@ static atomic_uint s_log_open_run;
  */
 static atomic_uint s_test_open_run;
 
+/*
+ * A servo run's report, BENCHnnn.TXT, from its open to its close, as a run
+ * number, or 0: the automatic test's after its CSV, and the limit run's,
+ * which has no CSV.  An open report is an open run (run_open_now()).
+ */
+static atomic_uint s_test_open_txt;
+
 /* Whether @p name is a file the logger is still writing. */
 static bool card_busy(const char *name)
 {
     const int n = log_run_number(name);
+    const int r = log_report_number(name);
     const unsigned open_run  = atomic_load(&s_log_open_run);
     const unsigned open_test = atomic_load(&s_test_open_run);
-    return n > 0 && ((open_run != 0u && n == (int)open_run)
-                     || (open_test != 0u && n == (int)open_test));
+    const unsigned open_txt  = atomic_load(&s_test_open_txt);
+    return (n > 0 && ((open_run != 0u && n == (int)open_run)
+                      || (open_test != 0u && n == (int)open_test)))
+        || (r > 0 && open_txt != 0u && r == (int)open_txt);
 }
 
 /*
@@ -2565,7 +2575,9 @@ static void test_close(void)
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
     s_test_fp = NULL;
-    if (!s_test_txt) {
+    if (s_test_txt) {
+        atomic_store(&s_test_open_txt, 0u);
+    } else {
         atomic_store(&s_test_open_run, 0u);
     }
 }
@@ -2591,6 +2603,7 @@ static void test_open(bool txt)
             }
             if (txt) {
                 test_path(i, true, path, sizeof(path));
+                atomic_store(&s_test_open_txt, (unsigned)i);
             } else {
                 atomic_store(&s_test_open_run, (unsigned)i);
             }
@@ -2602,6 +2615,7 @@ static void test_open(bool txt)
                 ESP_LOGI(TAG, "servo test to %s", path);
             } else {
                 atomic_store(&s_test_open_run, 0u);
+                atomic_store(&s_test_open_txt, 0u);
                 if (++refused >= LOG_OPEN_TRIES) {
                     break;
                 }
@@ -2641,7 +2655,9 @@ static void test_write(const test_line_t *l)
         return;                         /* not recorded */
     }
     if (l->kind == SERVO_TEST_OUT_TXT && !s_test_txt) {
-        /* The report follows the CSV: one file open at a time. */
+        /* The report follows the CSV: one file open at a time.  Its marker
+         * is set before the CSV's goes, so the run stays open between. */
+        atomic_store(&s_test_open_txt, (unsigned)s_test_num);
         test_close();
         char path[64];
         test_path(s_test_num, true, path, sizeof(path));
@@ -2650,6 +2666,7 @@ static void test_write(const test_line_t *l)
         if (s_test_fp == NULL) {
             s_test_failed  = true;
             s_test_txt_bad = true;
+            atomic_store(&s_test_open_txt, 0u);
         }
     }
     if (s_test_fp == NULL) {
@@ -8785,12 +8802,14 @@ static void outputs_apply(const outbind_t *b)
 
 /* ------------------------------------------------- Wi-Fi and the update */
 
-/* Whether a run's log, or a servo test's, is open or about to be. */
+/* Whether a run's log, or a servo run's CSV or report, is open or about
+ * to be. */
 static bool run_open_now(void)
 {
     return atomic_load(&s_log_run_now) != 0u
            || atomic_load(&s_log_open_run) != 0u
-           || atomic_load(&s_test_open_run) != 0u;
+           || atomic_load(&s_test_open_run) != 0u
+           || atomic_load(&s_test_open_txt) != 0u;
 }
 
 /* Whether flash may be written now, and if not why: see fw_gate(). */

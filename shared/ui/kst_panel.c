@@ -2471,17 +2471,22 @@ kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right)
     if (m != KST_PROG_MSG_NONE) {
         return m;
     }
+    /* From here every way out but the write on its way switches write
+     * enable off again, as the write's end does (kst_panel_run_poll()):
+     * a session the run gives up holds no enabled write. */
     kst_prog_discard(p);
     if (!run_edit(KST_F_LEFT_ANGLE, left)
         || !run_edit(KST_F_RIGHT_ANGLE, right)) {
         const kst_prog_msg_id_t why = kst_prog_message(p)->id;
 
         kst_prog_discard(p);
+        (void)kst_prog_enable(p, false);
         return why != KST_PROG_MSG_NONE ? why : KST_PROG_MSG_EDIT_LOCKED;
     }
     m = kst_prog_write(p);
     if (m != KST_PROG_MSG_NONE) {
         kst_prog_discard(p);
+        (void)kst_prog_enable(p, false);
         return m;
     }
     k.run.op = RUN_OP_WRITE;
@@ -2597,6 +2602,7 @@ void kst_panel_run_end(void)
     kst_prog_t *p = &k.prog;
 
     k.run.op = RUN_OP_NONE;
+    kst_prog_run_close(p);
     if (k.run.kept) {
         k.run.kept = false;
         kst_prog_supply_set(p, k.run.keep_mv, k.run.keep_ma);

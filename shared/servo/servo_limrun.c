@@ -91,7 +91,9 @@ uint16_t servo_limrun_final(uint16_t v, uint16_t lo)
  * supply's output off.  A run that ends between CONNECT and LEAVE with
  * nothing running gives the port back, unless it was aborted: the
  * programmer then holds the port for RESTORE, and a STOP or the supply
- * switched off ends its session by itself.
+ * switched off ends its session by itself.  Aborted while it waits for
+ * ARMED, it asks SAFE: the ARM it asked may not be taken yet, and a
+ * release does not replace one (servo_screen.c, post()).
  */
 static void finish(servo_limrun_t *r, servo_limrun_verdict_t v,
                    servo_limrun_why_t why, uint32_t now_ms)
@@ -109,6 +111,7 @@ static void finish(servo_limrun_t *r, servo_limrun_verdict_t v,
     r->pend.release = true;
     if (v == SERVO_LIMRUN_ABORTED) {
         r->pend.off = true;
+        r->pend.disarm = r->phase == SERVO_LIMRUN_PH_ARM;
     } else if (in_session) {
         r->pend.leave = true;
     }
@@ -522,7 +525,10 @@ void servo_limrun_window(servo_limrun_t *r, const servo_test_win_t *w)
     }
     const uint16_t before = r->lf.cmd_us;
     const uint16_t free_before = r->lf.last_free_us;
-    const uint16_t cmd = servo_limit_step(&r->lf, (float)w->mean_ma / 1000.0f,
+    /* The magnitude, as the protections read it: a shunt fitted the other
+     * way round reads a bound servo as a more negative current. */
+    const uint16_t cmd = servo_limit_step(&r->lf,
+                                          (float)mag(w->mean_ma) / 1000.0f,
                                           at);
     if (r->enc_valid && r->lf.last_free_us != free_before) {
         /* The angle at the furthest free position so far: the servo is
@@ -545,8 +551,10 @@ void servo_limrun_supply(servo_limrun_t *r, const servo_test_reading_t *s,
     if (!servo_limrun_running(r) || s == NULL) {
         return;
     }
-    if (!searching(r)) {
-        /* The programmer's session: the supply is its (servo_limrun.h). */
+    if (servo_limrun_programming(r)) {
+        /* The programmer's session, CONNECT to LEAVE: the supply is its
+         * (servo_limrun.h).  Before and after it, in SAFE and on the way
+         * back to ARMED, the supply is the run's again. */
         return;
     }
     if (!r->sup_watch) {
@@ -627,7 +635,13 @@ void servo_limrun_connected(servo_limrun_t *r, const servo_limrun_servo_t *sv,
         r->phase_ms = now_ms;
         r->pend.leave = true;
         return;
-    } else if (sv->angle[0] != r->cur[0] || sv->angle[1] != r->cur[1]) {
+    } else if (sv->angle[0] != r->cur[0] || sv->angle[1] != r->cur[1]
+               || sv->type != r->servo.type
+               || sv->reversion != r->servo.reversion
+               || sv->lo_raw != r->servo.lo_raw
+               || sv->hi_raw != r->servo.hi_raw) {
+        /* Another servo, or one set otherwise: the side each register
+         * limits and the values held before the run are not its. */
         abort_why(r, SERVO_LIMRUN_WHY_OTHER_VALUES, now_ms);
         return;
     }

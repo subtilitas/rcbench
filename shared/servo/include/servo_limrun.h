@@ -60,21 +60,23 @@
  *   - each search has its own cap, SERVO_LIMRUN_SEARCH_MS;
  *   - the search's own protections stay (servo_limit.h).
  *
- * While a search drives the servo, the supply is also held to what it was
- * at the start: its set points, its output, and the rail voltage within
- * SERVO_LIMRUN_RAIL_DV_MV of the run's first window.  A search's window
- * without the rail voltage ends the run (SERVO_LIMRUN_WHY_NO_VOLTAGE), so
- * that reference is a window's and no window escapes the band.  A window
- * without a current reading is not counted at all: the meter's silence
- * runs on through it.  Between searches the programmer owns the port
- * and the supply's session (kst_prog.h), and a change then is its.
+ * The supply is also held to what it was at the start, its set points and
+ * its output, in every phase but the programmer's sessions (CONNECT to
+ * LEAVE): those own the port and the supply (kst_prog.h), and a change
+ * then is theirs.  While a search drives the servo the rail voltage stays
+ * within SERVO_LIMRUN_RAIL_DV_MV of the run's first window.  A search's
+ * window without the rail voltage ends the run
+ * (SERVO_LIMRUN_WHY_NO_VOLTAGE), so that reference is a window's and no
+ * window escapes the band.  A window without a current reading is not
+ * counted at all: the meter's silence runs on through it.
  *
  * The caller ends the run (servo_limrun_abort()) for STOP, SAFE, link loss,
  * leaving the screen, the operator taking the servo, changed settings, lost
  * touch events, the INA3221 no longer the meter, and a supply that stops
  * answering, trips, switches off or has its set points changed.  An ended
  * run asks the output off and lets the servo go (servo_limrun_do_t.off and
- * release); the values last written stay in the servo.
+ * release), and asks SAFE where it waited for ARMED; the values last
+ * written stay in the servo.
  *
  * Pure: fed windows, the programmer's results and the clock, it moves
  * nothing itself.  Its report leaves through an outbox
@@ -134,6 +136,13 @@ extern "C" {
 /** The rail voltage, a window's mean, this far from the first window's
  *  ends the run as a changed supply. */
 #define SERVO_LIMRUN_RAIL_DV_MV   1000
+/** The servo rail a run starts on at least, the last INA3221 window's
+ *  mean (the screen's START check): an output that is off reads 0 V, and a
+ *  search there finds two free ends on a servo that never moved.  3.0 V
+ *  lies under the 4.8 V servos are commonly specified from, so a single
+ *  lithium cell's rail, 3.0 V to 4.2 V, still starts.  The voltage a given
+ *  servo stops moving at is not measured. */
+#define SERVO_LIMRUN_RAIL_MIN_MV  3000
 
 /* ------------------------------------------------------ what it is told */
 

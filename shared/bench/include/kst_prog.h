@@ -583,6 +583,8 @@ typedef struct {
     /* The limit run (servo_limrun.h): the servo as its first session read
      * it, kept across its sessions and after it, until the next run. */
     bool run_hold;
+    bool run_own;             /**< the run is under way: its sessions
+                                   take the file of its first write  */
     bool run_written;         /**< the run's first write ended well */
     kst_image_t run_img;
     char run_backup[KST_PROG_NAME_MAX];  /**< the file of run_img; "" none */
@@ -849,6 +851,9 @@ bool kst_prog_run_hold(kst_prog_t *p);
 /** The run's first write ended well: the file it saved, if any, holds the
  *  servo as held. */
 void kst_prog_run_written(kst_prog_t *p);
+/** The run is over: the servo stays held for RESTORE, and a later
+ *  session's first write saves its own file again. */
+void kst_prog_run_close(kst_prog_t *p);
 /** Nothing held. */
 void kst_prog_run_drop(kst_prog_t *p);
 /** The servo the run held, or NULL. */

@@ -67,7 +67,9 @@ and the line under it says why.
 | `INA3221 NOT SET UP AS THE SERVO RAIL'S METER` | INA3221 or its CH1 off in SETUP, a coprocessor older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 NOT ONLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
+| `SERVO RAIL UNDER 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
 | `PORT PWM OFF: THE PORT RENDERS NO PULSE` | PWM TARGET on PROG PORT with PORT PWM off |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
 | `CENTRE NOT BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
@@ -103,7 +105,10 @@ The first session writes nothing. It reads the servo and leaves: a LEAVE
 this link or supply does not complete ends the run before any value
 changes. The first write of the run saves the servo's values to a backup
 file on the card, as the programmer's first write does; the later sessions
-save none.
+save none. Each later session reads the servo again. Another type,
+REVERSION switched, another range of values the hard rules take, or LEFT
+ANGLE and RIGHT ANGLE other than the run last wrote end the run as ABORTED,
+`servo holds other values`, before it writes again.
 
 The protocol notes do not say which pulse side each register limits, nor
 how REVERSION changes that. The run finds it. Its first write sets LEFT
@@ -155,11 +160,14 @@ The ends found are not applied to the bench's own PULSE MIN and PULSE MAX.
 | One search | 40 s | abort: 1000 µs of travel is 100 positions of 250 ms, 25 s |
 | One programmer step | 150 s | abort: CONNECT with its read, a write or LEAVE |
 | The bench switching | 3 s | abort when SAFE or ARMED is not in place 3 s after the run asked |
-| The supply during a search | set points and output as at the start, the rail within 1.0 V of the first window | abort |
+| The supply | set points and output as at the start, in every phase but the programmer's sessions (CONNECT to LEAVE), which own the supply; during a search also the rail within 1.0 V of the first window | abort |
 | The rail voltage in a search's window | present in every window of a search | abort `no rail voltage in a window`, before the window moves the search; the 1.0 V band's reference is the run's first window, which holds the rail |
 | Step size | 10 µs | one step cannot move the horn from free to hard against the stop |
 
-These hold in every phase. The run follows the arming rules of the SERVO
+These hold in every phase. The search and the protections read the
+current's magnitude: a shunt fitted the other way round reads a bound servo
+as a more negative current, and the run finds it as it does with the shunt
+the right way round. The run follows the arming rules of the SERVO
 screen and the programming port: its ARM is refused while the port is
 held, a STOP latch or lost touch events keep the bench SAFE, and an ARM
 that does not land ends the run.
@@ -176,7 +184,9 @@ meter, and a supply that stops answering, trips, switches off or has its set
 points changed: the reasons of the automatic test, in
 [What ends a run](#what-ends-a-run). The run's own SAFE and ARM end
 nothing. Each ends the run as ABORTED with the output off and the servo
-released. A start of the panel clears the run without a report.
+released. A run that ends while it waits for ARMED also asks SAFE: an ARM
+it asked that the bench has not taken yet does not arm the bench after the
+end. A start of the panel clears the run without a report.
 
 The values last written stay in the servo. A run that wrote and did not
 pass says `RESTORE IN PROGRAM` on its box. RESTORE on the programmer, after
@@ -184,7 +194,8 @@ CONNECT and READ ALL, offers `Values before the limit run`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT ANGLE
 and RIGHT ANGLE. It is offered while the servo read differs from it in those
 two fields and in no other. The hold is in the panel's memory: a start of the
-panel forgets it, and the backup file on the card remains.
+panel forgets it, and the backup file on the card remains. A session after
+the run is the operator's: its first write saves its own backup file.
 
 ![A run stopped after a write](img/servo-limrun-stopped.png)
 ![RESTORE after a limit run](img/servo-limrun-restore.png)
@@ -214,7 +225,9 @@ name until CLOSE.
 
 The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
 the next free number, written whatever the DUT page's REPORT says. During a
-run neither the bench log nor the supply log writes a row. A run on the host's modelled servo with
+run neither the bench log nor the supply log writes a row. Until the card
+has closed the report it counts as an open log run: Wi-Fi and an update wait
+for it, as for a run's CSV. A run on the host's modelled servo with
 REVERSION OFF:
 
 ```text
@@ -785,7 +798,10 @@ run ends. A number carried by a
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to
-the card had no room for are counted in the report.
+the card had no room for are counted in the report. Until the card has
+closed a run's CSV and its report, the run counts as an open log run: Wi-Fi
+and an update wait for it, and the log viewer neither lists nor opens the
+file still being written.
 
 The CSV, semicolon-separated with a decimal point, as every log the bench
 writes:

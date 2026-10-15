@@ -127,7 +127,9 @@ Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät d
 | `INA3221 NICHT FÜR DIE SERVOSCHIENE EINGERICHTET` | der INA3221 oder sein CH1 ist unter SETUP, ANSCHLÜSSE aus |
 | `INA3221 NICHT ONLINE` | kein Link, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-FENSTER` | der INA3221 ist noch nicht das Messgerät |
+| `SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0 V: ein ausgeschalteter Ausgang liest 0 V |
 | `PORT PWM AUS: DER PORT GIBT KEINEN PULS AUS` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT GELESEN` | PWM-ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
 | `MITTE NICHT ZWISCHEN PULSE MIN UND MAX` | der Pulsbereich enthält PULS CENTRE nicht |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 
@@ -161,11 +163,14 @@ Jeder dieser Gründe beendet den Lauf als ABGEBROCHEN, mit abgeschaltetem Ausgan
 - während einer Suche ein Fenster ohne Schienenspannung (`kein Spannungswert im Fenster`);
 - ein Messwert ab 3,0 A, ein Messwert am Ende des Bereichs des INA3221 oder Fenstermittel über 1,0 A für 400 ms;
 - eine Suche länger als 40 s, ein Prüfstand, der nicht in 3 s schaltet, oder ein Schritt des Programmierers länger als 150 s;
-- während einer Suche eine Änderung an Sollwerten oder Ausgang des Netzteils oder die Schiene mehr als 1,0 V vom ersten Fenster des Laufs entfernt.
+- eine Änderung an Sollwerten oder Ausgang des Netzteils außerhalb der Sitzungen des Programmierers; während einer Suche die Schiene mehr als 1,0 V vom ersten Fenster des Laufs entfernt;
+- bei einer späteren Sitzung ein anderes Servo, oder REVERSION oder der Wertebereich geändert (`Servo hat andere Werte`).
+
+Ein Lauf, der endet, während er auf ARMED wartet, schaltet den Prüfstand zudem auf SAFE.
 
 ![Ein nach einem Schreiben beendeter Lauf](view:servo-limrun-stopped)
 
-Nach einem Schreiben behält das Servo die zuletzt geschriebenen Werte. Der Kasten zeigt dann `ZURÜCKSPIELEN IN PROGRAMM.`. Im Programmierer bietet ZURÜCKSPIELEN nach VERBINDEN und ALLES LESEN `Werte vor dem Endlagenlauf` an.
+Nach einem Schreiben behält das Servo die zuletzt geschriebenen Werte. Der Kasten zeigt dann `ZURÜCKSPIELEN IN PROGRAMM.`. Im Programmierer bietet ZURÜCKSPIELEN nach VERBINDEN und ALLES LESEN `Werte vor dem Endlagenlauf` an. Eine Sitzung nach dem Lauf sichert bei ihrem ersten Schreiben eine eigene Backup-Datei.
 
 ![ZURÜCKSPIELEN nach einem Endlagenlauf](view:servo-limrun-restore)
 
@@ -184,7 +189,7 @@ Der Kasten bleibt bis SCHLIESSEN. Er zeigt das Urteil, den Grund oder die Werte 
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält die Endpunkte beider Suchen, LEFT ANGLE und RIGHT ANGLE vorher und nachher, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, den Abstand, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund.
+Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält die Endpunkte beider Suchen, LEFT ANGLE und RIGHT ANGLE vorher und nachher, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, den Abstand, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
 
 ## Aktuelle Einschränkungen
 

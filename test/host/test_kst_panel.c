@@ -5536,6 +5536,121 @@ TEST_CASE(a_limit_run_ended_in_a_session_offers_restore)
     }
 }
 
+/* After a limit run that passed, an ordinary session is the operator's: its
+ * first write saves the servo as that session found it, as every session's
+ * first write does, also to a field the run never wrote.  RESTORE still
+ * offers the servo as the run found it until then. */
+TEST_CASE(a_session_after_a_limit_run_saves_its_own_backup)
+{
+    uint16_t left, right;
+
+    lr_fresh(false);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    lr_run_out();
+    CHECK(strstr(lr.report, "PASS") != NULL);
+    CHECK_EQ(g_rig.fc.saves, 1u);
+    left = servo(KST_F_LEFT_ANGLE);
+    right = servo(KST_F_RIGHT_ANGLE);
+    CHECK(left < 150u && right < 150u);
+    lr.armed = false;
+    lr_ms(40u);
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(kst_panel_is_open());
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
+    CHECK(kst_prog_save_first(M));
+    enable();
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    tap(val(PG_SERVO, 4, 0));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(warns(TR(KP_WRITE_BACKUP)));
+    hold(2.1f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_rig.fc.saves, 2u);
+    /* The file holds the servo as this session found it: the run's
+     * values. */
+    {
+        kst_image_t was = rig_servo();
+
+        (void)kst_field_set(&was, KST_F_BOOST,
+                            (uint16_t)(servo(KST_F_BOOST) + 1u));
+        CHECK(memcmp(g_rig.fc.file[1].img.r, was.r, sizeof(was.r)) == 0);
+        CHECK_EQ(kst_field_get(&g_rig.fc.file[1].img, KST_F_LEFT_ANGLE),
+                 left);
+        CHECK_EQ(kst_field_get(&g_rig.fc.file[1].img, KST_F_RIGHT_ANGLE),
+                 right);
+    }
+}
+
+/* A run's write that is refused before it is sent -- a value the model does
+ * not take, or nothing to write -- leaves write enable off: the session the
+ * run gives up holds no enabled write for the next edit. */
+TEST_CASE(a_run_write_refused_before_it_is_sent_switches_write_enable_off)
+{
+    uint16_t lo = 0u, hi = 0u;
+
+    lr_fresh(false);
+    lr.armed = false;
+    lr_ms(40u);
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(kst_panel_is_open());
+    tap(val(PG_SERVO, 0, 0));
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_range(M, KST_F_LEFT_ANGLE, &lo, &hi));
+    kst_panel_run_begin();
+    /* Past the hard rules: the model refuses the edit. */
+    CHECK(kst_panel_run_write((uint16_t)(hi + 1u), servo(KST_F_RIGHT_ANGLE))
+          != KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_write_enabled(M));
+    CHECK_EQ(kst_prog_changes(M), 0);
+    /* The servo's own values: nothing to write. */
+    CHECK(kst_panel_run_write(servo(KST_F_LEFT_ANGLE),
+                              servo(KST_F_RIGHT_ANGLE))
+          != KST_PROG_MSG_NONE);
+    CHECK(!kst_prog_write_enabled(M));
+    CHECK_EQ(kst_panel_run_poll(), KST_PANEL_RUN_NONE);
+    kst_panel_run_end();
+}
+
+/* The run aborted in the frame its ARM was asked, before the panel took
+ * it: the command waiting is SAFE, and the bench is not armed after the
+ * end. */
+TEST_CASE(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe)
+{
+    bool seen = false;
+
+    lr_fresh(false);
+    lr_start();
+    CHECK(servo_screen_limit_running());
+    for (int i = 0; i < 4000000 && servo_screen_limit_running(); ++i) {
+        lr_ms(1u);
+        if (g_rig.ms % 20u == 0u && servo_screen_limit_running()
+            && servo_screen_limit_phase() == SERVO_LIMRUN_PH_ARM
+            && !lr.armed) {
+            seen = true;
+            break;
+        }
+    }
+    CHECK(seen);
+    {
+        const unsigned arms = lr.arms;
+
+        /* The meter changes under it in that frame. */
+        lr.ina = false;
+        servo_screen_source(SERVO_SOURCE_PDMINI, 3u);
+        CHECK(!servo_screen_limit_running());
+        lr_ms(2000u);
+        CHECK_EQ(lr.arms, arms);
+        CHECK(!lr.armed);
+        CHECK(strstr(lr.report, "ABORTED") != NULL);
+    }
+}
+
 int main(void)
 {
     RUN(without_a_link_nothing_on_the_servo_tab_takes_a_tap);
@@ -5653,5 +5768,8 @@ int main(void)
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);
     RUN(a_limit_run_ended_in_a_session_offers_restore);
+    RUN(a_session_after_a_limit_run_saves_its_own_backup);
+    RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);
+    RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
     return test_summary("kst_panel");
 }
