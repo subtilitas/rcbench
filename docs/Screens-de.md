@@ -1937,7 +1937,8 @@ USB, um das Layout mit zwei Anwendungs-Slots zu bekommen:
 ## Setup
 
 Die SETUP-Kachel des Menüs öffnet eine Seite mit Kacheln, 3 mal 3, im Stil
-des Menüs. Jede Kachel ist 256 x 120 px groß.
+des Menüs. Jede Kachel ist 256 x 108 px groß, ihr Symbol mittig über ihrem
+Namen.
 
 ![Setup](img/de/setup.png)
 
@@ -1958,9 +1959,12 @@ Dieselbe Seite im hellen Design:
 
 ![Setup im hellen Design](img/de/setup-light.png)
 
-Die Liste einer Kategorie reicht über die Breite des Panels, 776 px, über
-einer Leiste mit drei Spalten: dem Namen der Kategorie, KATEGORIE
-ZURÜCKSETZEN und SPEICHERN.
+Die Liste einer Kategorie reicht über die Breite des Panels, 776 px, und
+zeigt 348 px davon, 6 Zeilen, über einer Leiste mit drei Spalten: dem Namen
+der Kategorie, KATEGORIE ZURÜCKSETZEN und SPEICHERN. Die Leiste endet bei
+y 442 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
+Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
+ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
 
 ![ESC / PRÜFSTAND](img/de/setup-esc.png)
 

@@ -3,6 +3,8 @@
  *
  * Each icon is a few rings, capsules and strokes scaled to the requested
  * size.  A drawn icon is sharp at any size and needs no image data in flash.
+ * Every icon is drawn centred on the point it is given, inside a box of
+ * size x size px around it.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,10 +23,11 @@ static void ring(gfx_canvas_t *c, int cx, int cy, int outer, int thick,
     }
 }
 
-void ui_icon_motor(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_motor(gfx_canvas_t *c, int x, int y, int size,
+                   gfx_color_t color)
 {
-    int cx = x + size / 2;
-    int cy = y + size / 2;
+    int cx = x;
+    int cy = y;
     int r  = size / 2 - 2;
 
     ring(c, cx, cy, r, 2, color);
@@ -38,12 +41,14 @@ void ui_icon_motor(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     gfx_fill_circle(c, cx, cy, size / 7, color);
 }
 
-void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size,
+                   gfx_color_t color)
 {
-    int cx = x + size / 2;
+    const int top = y - size / 2;
+    int cx = x;
     int bw = size * 5 / 9;
     int bh = size * 4 / 9;
-    int by = y + size - bh - 1;
+    int by = top + size - bh - 1;
     int ear = size / 7;
 
     /* The case is an outline, so the shaft and horn on top stay separate
@@ -71,13 +76,16 @@ void ui_icon_servo(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     }
 }
 
-void ui_icon_chart(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_chart(gfx_canvas_t *c, int x, int y, int size,
+                   gfx_color_t color)
 {
+    const int left = x - size / 2;
+    const int top  = y - size / 2;
     int pad = size / 8;
-    int x0 = x + pad;
-    int y1 = y + size - pad;
+    int x0 = left + pad;
+    int y1 = top + size - pad;
 
-    gfx_fill_rect(c, x0, y + pad, 3, size - 2 * pad, color);
+    gfx_fill_rect(c, x0, top + pad, 3, size - 2 * pad, color);
     gfx_fill_rect(c, x0, y1 - 2, size - 2 * pad, 3, color);
 
     static const int pts[6] = { 70, 40, 55, 20, 35, 8 };
@@ -92,14 +100,17 @@ void ui_icon_chart(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     }
 }
 
-void ui_icon_record(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_record(gfx_canvas_t *c, int x, int y, int size,
+                    gfx_color_t color)
 {
-    int cx = x + size / 2;
+    const int left = x - size / 2;
+    const int top  = y - size / 2;
+    int cx = x;
     int pad = size / 8;
 
     /* An arrow going down into a tray: capture, then storage. */
-    int shaft_top = y + pad;
-    int head_y = y + size / 2 + size / 12;
+    int shaft_top = top + pad;
+    int head_y = top + size / 2 + size / 12;
     gfx_fill_rect(c, cx - size / 12, shaft_top, size / 6, head_y - shaft_top - size / 6,
                   color);
     for (int i = 0; i <= size / 4; ++i) {
@@ -107,41 +118,47 @@ void ui_icon_record(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
         gfx_hline(c, cx - w / 2, head_y - size / 6 + i, w, color);
     }
 
-    int tray_y = y + size - pad - size / 5;
-    gfx_fill_rect(c, x + pad, tray_y + size / 5 - 3, size - 2 * pad, 3, color);
-    gfx_fill_rect(c, x + pad, tray_y, 3, size / 5, color);
-    gfx_fill_rect(c, x + size - pad - 3, tray_y, 3, size / 5, color);
+    int tray_y = top + size - pad - size / 5;
+    gfx_fill_rect(c, left + pad, tray_y + size / 5 - 3, size - 2 * pad, 3, color);
+    gfx_fill_rect(c, left + pad, tray_y, 3, size / 5, color);
+    gfx_fill_rect(c, left + size - pad - 3, tray_y, 3, size / 5, color);
 }
 
-void ui_icon_chip(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_chip(gfx_canvas_t *c, int x, int y, int size,
+                  gfx_color_t color)
 {
+    const int left = x - size / 2;
+    const int top  = y - size / 2;
     int pad = size / 5;
     int bw = size - 2 * pad;
 
-    gfx_draw_chamfer_rect(c, x + pad, y + pad, bw, bw, 5, color);
-    gfx_draw_chamfer_rect(c, x + pad + 1, y + pad + 1, bw - 2, bw - 2, 4, color);
-    gfx_fill_circle(c, x + pad + 8, y + pad + 8, 2, color);
+    gfx_draw_chamfer_rect(c, left + pad, top + pad, bw, bw, 5, color);
+    gfx_draw_chamfer_rect(c, left + pad + 1, top + pad + 1, bw - 2, bw - 2, 4, color);
+    gfx_fill_circle(c, left + pad + 8, top + pad + 8, 2, color);
 
     for (int i = 0; i < 3; ++i) {
-        int py = y + pad + bw / 4 + i * bw / 4 - 1;
-        gfx_fill_rect(c, x + pad - pad + 2, py, pad - 2, 3, color);
-        gfx_fill_rect(c, x + pad + bw, py, pad - 2, 3, color);
-        int px = x + pad + bw / 4 + i * bw / 4 - 1;
-        gfx_fill_rect(c, px, y + pad - pad + 2, 3, pad - 2, color);
-        gfx_fill_rect(c, px, y + pad + bw, 3, pad - 2, color);
+        int py = top + pad + bw / 4 + i * bw / 4 - 1;
+        gfx_fill_rect(c, left + pad - pad + 2, py, pad - 2, 3, color);
+        gfx_fill_rect(c, left + pad + bw, py, pad - 2, 3, color);
+        int px = left + pad + bw / 4 + i * bw / 4 - 1;
+        gfx_fill_rect(c, px, top + pad - pad + 2, 3, pad - 2, color);
+        gfx_fill_rect(c, px, top + pad + bw, 3, pad - 2, color);
     }
 }
 
-void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size,
+                     gfx_color_t color)
 {
+    const int left = x - size / 2;
+    const int top  = y - size / 2;
     static const int knob_pct[3] = { 30, 68, 46 };
     int pad = size / 8;
     int w = size - 2 * pad;
 
     for (int i = 0; i < 3; ++i) {
-        int ly = y + pad + (size - 2 * pad) * i / 2;
-        gfx_fill_rect(c, x + pad, ly - 1, w, 3, color);
-        int kx = x + pad + w * knob_pct[i] / 100;
+        int ly = top + pad + (size - 2 * pad) * i / 2;
+        gfx_fill_rect(c, left + pad, ly - 1, w, 3, color);
+        int kx = left + pad + w * knob_pct[i] / 100;
         gfx_fill_chamfer_rect(c, kx - size / 14, ly - size / 10,
                               size / 7, size / 5, 3, color);
     }
@@ -172,7 +189,7 @@ void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
  */
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 {
-    const int r = size / 2;
+    const int r = (size - 1) / 2;          /* 2r + 1 px across, in the box */
     gfx_draw_circle(c, x, y, r, color);
     gfx_draw_circle(c, x, y, r / 4, color);
     /* The heavy spot, up and to the right. */
@@ -203,14 +220,17 @@ void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 /*
  * Three rows of a list, each a pin and its line: the bindings by GPIO.
  */
-void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_list(gfx_canvas_t *c, int x, int y, int size,
+                  gfx_color_t color)
 {
+    const int left = x - size / 2;
+    const int top  = y - size / 2;
     const int pad = size / 8;
     const int dot = size / 6;
     for (int i = 0; i < 3; ++i) {
-        const int ly = y + pad + (size - 2 * pad) * i / 2;
-        gfx_fill_rect(c, x + pad, ly - dot / 2, dot, dot, color);
-        gfx_fill_rect(c, x + pad + dot + size / 8, ly - 1,
+        const int ly = top + pad + (size - 2 * pad) * i / 2;
+        gfx_fill_rect(c, left + pad, ly - dot / 2, dot, dot, color);
+        gfx_fill_rect(c, left + pad + dot + size / 8, ly - 1,
                       size - 2 * pad - dot - size / 8, 3, color);
     }
 }
@@ -219,17 +239,19 @@ void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
  * A board seen from above: its outline and a row of pads along each long
  * edge, one of them taken.
  */
-void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+void ui_icon_board(gfx_canvas_t *c, int x, int y, int size,
+                   gfx_color_t color)
 {
+    const int left = x - size / 2;
     const int pad = size / 8;
     const int bw = size - 2 * pad;
     const int bh = (size * 3) / 5;
-    const int top = y + (size - bh) / 2;
-    gfx_draw_round_rect(c, x + pad, top, bw, bh, 3, color);
+    const int top = y - bh / 2;
+    gfx_draw_round_rect(c, left + pad, top, bw, bh, 3, color);
     for (int i = 0; i < 4; ++i) {
-        const int px = x + pad + bw * (2 * i + 1) / 8;
+        const int px = left + pad + bw * (2 * i + 1) / 8;
         gfx_draw_circle(c, px, top + 5, 2, color);
         gfx_draw_circle(c, px, top + bh - 6, 2, color);
     }
-    gfx_fill_circle(c, x + pad + bw * 5 / 8, top + 5, 2, color);
+    gfx_fill_circle(c, left + pad + bw * 5 / 8, top + 5, 2, color);
 }

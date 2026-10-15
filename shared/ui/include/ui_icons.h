@@ -16,6 +16,7 @@
 extern "C" {
 #endif
 
+/* An icon centred on (x, y), inside a box of size x size px around it. */
 typedef void (*ui_icon_fn)(gfx_canvas_t *c, int x, int y, int size,
                            gfx_color_t color);
 
@@ -28,7 +29,6 @@ void ui_icon_sliders(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 void ui_icon_battery(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
-/* Drawn from the top-left corner of the size box, as the motor is: */
 void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 

@@ -31,7 +31,7 @@
 
 #define PANEL_W 800
 #define PANEL_H 480
-#define ALERT_H 34    /* the alert band, across the bottom */
+#define ALERT_H UI_ALERT_H    /* the alert band, across the bottom */
 
 static struct {
     ui_screen_id_t    current;

@@ -2540,13 +2540,14 @@ int main(int argc, char **argv)
             || strcmp(view, "setup-unheld") == 0) {
             /* Four rows of 58 px, and the 8 px the finger travels before
              * the screen takes it for a scroll. */
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
         } else if (strcmp(view, "setup-tap") == 0) {
             /* Past the ten rows of the current monitors and their bus:
-             * two drags, as one longer than the list is high leaves the
+             * three drags, as one longer than the list is high leaves the
              * screen. */
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (6 * 58 + 8));
-            drag(300, UI_BAND_H + 380, UI_BAND_H + 380 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
         }
     }
 

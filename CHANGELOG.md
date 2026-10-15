@@ -56,12 +56,17 @@ history is in git.
 - SETUP opens on a page of 3 by 3 tiles in the menu's style: ESC / BENCH,
   APPLICATION and INTERFACES with their number of settings, and OUTPUTS,
   PICK A PIN and UPDATES with a line each; 3 slots are free. A category's
-  list spans 776 px of the panel's 800, over a strip with the category's
-  name, RESET CATEGORY and SAVE. The home tag climbs one level: from a list
+  list spans 776 px of the panel's 800 and shows 6 rows, over a strip with
+  the category's name, RESET CATEGORY and SAVE that ends 4 px above the
+  alert band. The home tag climbs one level: from a list
   to the tiles, from OUTPUTS, PICK A PIN and UPDATES to the tiles, from the
   tiles to the menu. SAVE shows on the tiles as on every list. The texts
   `PINS: A LIST OR THE BOARD` and the UPDATES key are gone; the tiles add
   `PROTOCOLS AND PINS`, `ON THE BOARD DRAWING` and `RELEASES ON GITHUB`.
+- Every menu tile's icon is centred over the tile's name. MOTOR & ESC,
+  SERVO, ANALYSER, LOGS, SETUP and PROGRAMMER drew theirs 15 px right of
+  the name; SUPPLY, BATTERY and BALANCE drew theirs 15 px higher than the
+  others. Every icon takes the centre of its box.
 - The bench configurator describes release 0.19.0. Every repository source
   of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
   line of that tag, in `STATUS.md`, `docs/Building.md` and

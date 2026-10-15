@@ -1764,7 +1764,7 @@ reach the layout with two application slots: [First run, §1](FirstRun.md#1-flas
 ## Setup
 
 The SETUP tile of the menu opens a page of tiles, 3 by 3, in the menu's
-style. Each tile is 256 x 120 px.
+style. Each tile is 256 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
@@ -1784,8 +1784,11 @@ The same page in the light theme:
 
 ![Setup in the light theme](img/setup-light.png)
 
-A category's list spans the panel's width, 776 px, over a strip of three
-columns: the category's name, RESET CATEGORY and SAVE.
+A category's list spans the panel's width, 776 px, and shows 348 px of it,
+6 rows, over a strip of three columns: the category's name, RESET CATEGORY
+and SAVE. The strip ends at panel y 442, 4 px above the alert band
+([The alert band](#the-alert-band)), so an alert never covers a key, a row,
+RESET CATEGORY or SAVE, on the tiles or on a list.
 
 ![ESC / BENCH](img/setup-esc.png)
 

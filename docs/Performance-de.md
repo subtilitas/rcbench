@@ -52,8 +52,8 @@ settings-sim        2,395      299 KiB      7.9      39.0
 battery-sim        2,384      298 KiB      7.8      39.0
 analyser-chrome       39,240     4905 KiB    128.8       6.5
 logs-chrome       16,179     2022 KiB     53.1      13.0
-settings-chrome       19,526     2441 KiB     64.1      13.0
-settings-list-chrome       25,106     3138 KiB     82.4       9.8
+settings-chrome       18,710     2339 KiB     61.4      13.0
+settings-list-chrome       23,868     2984 KiB     78.3       9.8
 battery-chrome       36,994     4624 KiB    121.4       7.8
 balance-chrome       40,811     5101 KiB    133.9       6.5
 programmer-chrome       29,257     3657 KiB     96.0       9.8

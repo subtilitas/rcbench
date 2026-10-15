@@ -96,6 +96,14 @@ typedef struct {
 /** The band the router owns, in panel coordinates. */
 #define UI_BAND_H 48
 
+/**
+ * The alert band the router draws across the bottom of the 480 px panel
+ * while an alert shows: its height, and its top in panel coordinates.  It
+ * takes the touches under it, so a screen puts nothing that acts there.
+ */
+#define UI_ALERT_H 34
+#define UI_ALERT_Y (480 - UI_ALERT_H)
+
 void ui_router_init(void);
 
 /** Switch screens.  Calls leave() on the old and enter() on the new. */

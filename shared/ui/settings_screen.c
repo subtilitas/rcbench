@@ -34,29 +34,31 @@
  * Coordinates are in the 432 px body the router hands this screen; the band
  * and the home tag are above it.
  *
- * The hub: three columns by three rows of 256 x 120 px tiles with 8 px
+ * The hub: three columns by three rows of 256 x 108 px tiles with 8 px
  * margins, and under them the strip that holds SAVE.  The list has the same
- * strip, so SAVE stays where it is between the two.
+ * strip, so SAVE stays where it is between the two.  The strip ends 4 px
+ * above the router's alert band, which covers the bottom UI_ALERT_H px of
+ * the body: nothing that acts sits under it.
  */
 #define HUB_COLS 3
 #define HUB_ROWS 3
 #define HUB_M    8
 #define HUB_TW   ((SCREEN_W - (HUB_COLS + 1) * HUB_M) / HUB_COLS)
-#define HUB_TH   120
+#define HUB_TH   108
 /* The icon's top in a tile.  Icon, name and line take 76 px from it, which
- * leaves 30 px under the line. */
-#define HUB_ICON_DY 14
+ * leaves 16 px under the line. */
+#define HUB_ICON_DY 16
 
 /* The strip under the grid and under the list: three columns, the hub's. */
-#define STRIP_Y  394
 #define STRIP_H  34
+#define STRIP_Y  (SCREEN_H - UI_ALERT_H - 4 - STRIP_H)
 
 /* The list: the body's width less the margins and the scroll bar, from
  * under the band to the strip. */
 #define LIST_X   8
 #define LIST_W   776
 #define LIST_Y   6
-#define LIST_H   384
+#define LIST_H   (STRIP_Y - 6 - LIST_Y)
 #define ROW_H    54
 #define ROW_GAP  4
 #define ROW_PITCH (ROW_H + ROW_GAP)
@@ -135,7 +137,8 @@ _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
 _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
                "the grid ends above the strip");
 _Static_assert(LIST_Y + LIST_H <= STRIP_Y, "the list ends above the strip");
-_Static_assert(STRIP_Y + STRIP_H <= SCREEN_H, "the strip is in the body");
+_Static_assert(STRIP_Y + STRIP_H <= SCREEN_H - UI_ALERT_H,
+               "the strip ends above the alert band");
 
 static struct {
     /* The list of cat is open; the hub shows while this is false. */

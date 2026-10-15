@@ -45,7 +45,7 @@ bool settings_screen_unheld(setting_id_t id);
 
 /**
  * How far the open category's list is scrolled, in px from its top; 0 to
- * @p max, which is 0 for a list that fits its 384 px.  @p max may be NULL.
+ * @p max, which is 0 for a list that fits its 348 px.  @p max may be NULL.
  */
 int settings_screen_scroll(int *max);
 

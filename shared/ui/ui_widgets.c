@@ -221,7 +221,9 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
     gfx_draw_round_rect(c, r.x, r.y, r.w, r.h, 8, UI_EDGE);
 
     if (icon != NULL) {
-        icon(c, r.x + r.w / 2, r.y + icon_dy, 30, UI_ACCENT);
+        /* Centred over the name and the line, its box's top at icon_dy. */
+        icon(c, r.x + r.w / 2, r.y + icon_dy + UI_TILE_ICON / 2, UI_TILE_ICON,
+             UI_ACCENT);
     }
 
     /* Clipped to the tile: centring a string wider than its tile puts the

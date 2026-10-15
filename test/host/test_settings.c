@@ -20,6 +20,7 @@
 #include "settings_screen.h"
 #include "tone_link.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_widgets.h"
 #include <stdlib.h>
 #include "ui_theme.h"
@@ -33,7 +34,7 @@
  * from settings_hub_slot(). */
 #define LIST_X   8
 #define LIST_Y   (6 + UI_BAND_H)
-#define LIST_H   384
+#define LIST_H   348
 #define ROW_PITCH 58
 #define ROW_H    54
 #define PLUS_X   726
@@ -41,7 +42,7 @@
 #define BTN_W    44
 /* The strip under the list and the tiles: RESET CATEGORY under the
  * second column, SAVE under the third. */
-#define STRIP_Y  (394 + UI_BAND_H)
+#define STRIP_Y  (360 + UI_BAND_H)
 #define STRIP_H  34
 #define RESET_X  272
 #define RESET_Y  STRIP_Y
@@ -1395,6 +1396,10 @@ TEST_CASE(the_encoder_settings_start_off_with_a_12_bit_centre)
 #define XL       400
 #define XM       (MINUS_X + BTN_W / 2)
 #define XP       (PLUS_X + BTN_W / 2)
+/* The key the gesture tests press: INA228 max current, a number of
+ * 0.1 A steps on row 3 of INTERFACES, in view with the list at its
+ * top. */
+#define KEY_ID   SET_INA228_MAX_A
 
 static float s_before[SETTING_COUNT];
 
@@ -1521,7 +1526,7 @@ TEST_CASE(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value)
                                 PLUS_X, XP, PLUS_X + BTN_W - 1 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 6, &unscrolled, &total);
-    CHECK_EQ(total, 3 * 6 * 7 * 14 * 2);
+    CHECK_EQ(total, 3 * 6 * 7 * 12 * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -1534,7 +1539,7 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
                                 PLUS_X + BTN_W, 783 };
     int unscrolled = 0, total = 0;
     const int bad = swipe_matrix(cols, 9, &unscrolled, &total);
-    CHECK_EQ(total, 3 * 9 * 7 * 14 * 2);
+    CHECK_EQ(total, 3 * 9 * 7 * 12 * 2);
     CHECK_EQ(bad, 0);
     CHECK_EQ(unscrolled, 0);
 }
@@ -1546,9 +1551,9 @@ TEST_CASE(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins)
     gesture_screen(SET_CAT_IFACE);
     CHECK_EQ(row_of(SET_INA3221_MOHM), 6);
     CHECK_EQ(row_of(SET_SENSE_SDA), 8);
-    swipe(XM, LIST_Y + 376, XM, LIST_Y + 252, 4);
+    swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 116);
-    swipe(XM, LIST_Y + 376, XM, LIST_Y + 252, 4);
+    swipe(XM, LIST_Y + LIST_H - 8, XM, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 232);
     CHECK_NEAR(settings_get(SET_INA3221_MOHM), 100.0f, 1e-4);
     CHECK_EQ(settings_get_int(SET_SENSE_SDA), 16);
@@ -1604,18 +1609,18 @@ TEST_CASE(a_tap_steps_each_kind_of_key_once)
 TEST_CASE(a_held_key_repeats_five_times_in_one_second_and_38_in_three)
 {
     gesture_screen(SET_CAT_IFACE);
-    const int y = row_y(row_of(SET_INA3221_MOHM));
+    const int y = row_y(row_of(KEY_ID));
     finger(FEED_LONE, XM, y);                 /* its tick: 0.01 s held */
     idle(0.43f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), 0);
+    CHECK_EQ(steps_off(KEY_ID), 0);
     idle(0.56f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+    CHECK_EQ(steps_off(KEY_ID), -5);
     idle(2.00f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -38);
+    CHECK_EQ(steps_off(KEY_ID), -38);
     lift(FEED_LONE);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -38);  /* the release adds none */
+    CHECK_EQ(steps_off(KEY_ID), -38);  /* the release adds none */
     idle(1.0f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -38);
+    CHECK_EQ(steps_off(KEY_ID), -38);
     CHECK_EQ(changed(), 1);
 }
 
@@ -1627,28 +1632,28 @@ TEST_CASE(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key)
 {
     gesture_screen(SET_CAT_IFACE);
     feed_tick_per_report(0.0f);
-    const int y = row_y(row_of(SET_INA3221_MOHM));
+    const int y = row_y(row_of(KEY_ID));
     finger(FEED_LONE, XP, y);
 
     /* Before the delay: 1 s in one frame is 0.25 s of hold, no step. */
     ui_router_tick(1.0f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), 0);
+    CHECK_EQ(steps_off(KEY_ID), 0);
 
     /* The slow rate: 0.25 s held, then 0.2 s more, then a 1 s stall. */
     ui_router_tick(0.2f);
     ui_router_tick(0.2f);
-    int before = steps_off(SET_INA3221_MOHM);
+    int before = steps_off(KEY_ID);
     ui_router_tick(1.0f);
-    int stall = steps_off(SET_INA3221_MOHM) - before;
+    int stall = steps_off(KEY_ID) - before;
     CHECK(stall >= 1 && stall <= 2);            /* 0.25 s at 8 Hz */
 
     /* The fast rate, from 2.25 s held. */
     for (int i = 0; i < 20; ++i) {
         ui_router_tick(0.1f);
     }
-    before = steps_off(SET_INA3221_MOHM);
+    before = steps_off(KEY_ID);
     ui_router_tick(1.0f);
-    stall = steps_off(SET_INA3221_MOHM) - before;
+    stall = steps_off(KEY_ID) - before;
     CHECK(stall >= 1 && stall <= 8);            /* 0.25 s at 30 Hz */
     lift(FEED_LONE);
 }
@@ -1665,29 +1670,29 @@ TEST_CASE(the_repeat_starts_at_450_ms)
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         gesture_screen(SET_CAT_IFACE);
         feed_tick_per_report(0.0f);
-        const int y = row_y(row_of(SET_INA3221_MOHM));
+        const int y = row_y(row_of(KEY_ID));
         finger(FEED_LONE, XP, y);
         ui_router_tick(0.2f);
         ui_router_tick(k[i].held - 0.2f);
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), k[i].while_down);
+        CHECK_EQ(steps_off(KEY_ID), k[i].while_down);
         lift(FEED_LONE);
         /* One step either way: the tap's, or the repeat's first. */
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), 1);
+        CHECK_EQ(steps_off(KEY_ID), 1);
     }
     /* In 10 ms frames: 44 are short of it and 46 are past it. */
     for (int frames = 44; frames <= 46; frames += 2) {
         gesture_screen(SET_CAT_IFACE);
         feed_tick_per_report(0.0f);
-        finger(FEED_LONE, XP, row_y(row_of(SET_INA3221_MOHM)));
+        finger(FEED_LONE, XP, row_y(row_of(KEY_ID)));
         for (int f = 0; f < frames; ++f) {
             ui_router_tick(REPORT_S);
         }
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), (frames == 44) ? 0 : 1);
+        CHECK_EQ(steps_off(KEY_ID), (frames == 44) ? 0 : 1);
         /* A swipe from here leaves what the hold has stepped and adds
          * nothing. */
-        glide(FEED_LONE, XP, row_y(row_of(SET_INA3221_MOHM)) - 100, 9);
+        glide(FEED_LONE, XP, row_y(row_of(KEY_ID)) - 100, 9);
         lift(FEED_LONE);
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), (frames == 44) ? 0 : 1);
+        CHECK_EQ(steps_off(KEY_ID), (frames == 44) ? 0 : 1);
     }
 }
 
@@ -1697,24 +1702,24 @@ TEST_CASE(a_hold_that_turns_into_a_swipe_stops_repeating_at_the_slop)
 {
     for (int dir = -1; dir <= 1; dir += 2) {
         gesture_screen(SET_CAT_IFACE);
-        const int y = row_y(row_of(SET_INA3221_MOHM));
+        const int y = row_y(row_of(KEY_ID));
         finger(FEED_LONE, XM, y);
         idle(0.99f);
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+        CHECK_EQ(steps_off(KEY_ID), -5);
         feed_tick_per_report(0.0f);
         glide(FEED_LONE, XM, y + dir * 8, 1);
         idle(0.50f);                          /* 1.50 s held: 4 more */
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), -9);
+        CHECK_EQ(steps_off(KEY_ID), -9);
         CHECK_EQ(settings_screen_scroll(NULL), 0);
         glide(FEED_LONE, XM, y + dir * 9, 1);
         idle(1.00f);
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), -9);
+        CHECK_EQ(steps_off(KEY_ID), -9);
         /* Up the glass scrolls the list on; down, it is at its top. */
         CHECK_EQ(settings_screen_scroll(NULL), (dir < 0) ? 1 : 0);
         glide(FEED_LONE, XM, y + dir * 20, 1);
         lift(FEED_LONE);
         idle(1.00f);
-        CHECK_EQ(steps_off(SET_INA3221_MOHM), -9);
+        CHECK_EQ(steps_off(KEY_ID), -9);
         CHECK_EQ(changed(), 1);
     }
 }
@@ -1732,13 +1737,13 @@ TEST_CASE(a_tap_may_move_8_px_and_not_9)
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         for (int stride = 1; stride <= 9; stride += 8) {
             gesture_screen(SET_CAT_IFACE);
-            const int y = row_y(row_of(SET_INA3221_MOHM));
+            const int y = row_y(row_of(KEY_ID));
             finger(FEED_LONE, XP, y);
             /* Px by px, and in one report. */
             glide(FEED_LONE, XP + k[i].dx, y + k[i].dy, stride);
             lift(FEED_LONE);
             idle(0.5f);
-            CHECK_EQ(steps_off(SET_INA3221_MOHM), k[i].steps);
+            CHECK_EQ(steps_off(KEY_ID), k[i].steps);
             CHECK_EQ(changed(), k[i].steps);
         }
     }
@@ -1749,7 +1754,7 @@ TEST_CASE(a_tap_may_move_8_px_and_not_9)
 TEST_CASE(a_press_that_slides_off_a_key_sideways_steps_nothing)
 {
     gesture_screen(SET_CAT_IFACE);
-    const int y = row_y(row_of(SET_INA3221_MOHM));
+    const int y = row_y(row_of(KEY_ID));
 
     /* 300 px left onto the label, and held there. */
     finger(FEED_LONE, XM, y);
@@ -1818,7 +1823,7 @@ TEST_CASE(the_gap_between_two_rows_is_no_key)
 TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
 {
     gesture_screen(SET_CAT_IFACE);
-    const int y = row_y(row_of(SET_INA3221_MOHM));
+    const int y = row_y(row_of(KEY_ID));
 
     /* The first scrolls on the label; the second rests 2 s on a key. */
     finger(0, XL, LIST_Y + 300);
@@ -1852,20 +1857,20 @@ TEST_CASE(a_second_finger_does_nothing_on_the_setup_screen)
     gesture_screen(SET_CAT_IFACE);
     finger(0, XM, y);
     idle(0.99f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+    CHECK_EQ(steps_off(KEY_ID), -5);
     feed_tick_per_report(0.0f);
     finger(1, XP, row_y(1));
     lift(1);
     finger(1, XL, row_y(2));
     lift(1);
     idle(0.50f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -9);
+    CHECK_EQ(steps_off(KEY_ID), -9);
     lift(0);
     CHECK_EQ(changed(), 1);
 
     /* With the glass clear the next tap is taken, whichever id it has. */
     feed_tap(3, XP, y);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -8);
+    CHECK_EQ(steps_off(KEY_ID), -8);
 }
 
 /* A contact the controller leaves out of one report arrives as an UP and a
@@ -1874,7 +1879,7 @@ TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
 {
     /* On the label, and it returns on a key column. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XL, LIST_Y + 376);
+    finger(FEED_LONE, XL, LIST_Y + LIST_H - 8);
     glide(FEED_LONE, XL, LIST_Y + 330, 9);
     lift(FEED_LONE);
     finger(FEED_LONE, XM, LIST_Y + 290);
@@ -1885,7 +1890,7 @@ TEST_CASE(a_contact_that_drops_out_of_a_swipe_changes_no_value)
 
     /* On a key column from the start. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM, LIST_Y + 376);
+    finger(FEED_LONE, XM, LIST_Y + LIST_H - 8);
     glide(FEED_LONE, XM, LIST_Y + 330, 9);
     lift(FEED_LONE);
     finger(FEED_LONE, XM, LIST_Y + 321);
@@ -1902,9 +1907,9 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 {
     /* Down a key column, 140 px a report, lifted on the column. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM, LIST_Y + 376);
-    finger(FEED_LONE, XM, LIST_Y + 236);
-    finger(FEED_LONE, XM, LIST_Y + 96);
+    finger(FEED_LONE, XM, LIST_Y + 340);
+    finger(FEED_LONE, XM, LIST_Y + 200);
+    finger(FEED_LONE, XM, LIST_Y + 60);
     lift(FEED_LONE);
     idle(0.5f);
     CHECK_EQ(feed_downs, 5);         /* the home tag's tap, the tile's, 3 */
@@ -1912,8 +1917,8 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 
     /* From the label onto a key in one report, then a swipe. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM - 70, LIST_Y + 376);
-    finger(FEED_LONE, XM, LIST_Y + 296);
+    finger(FEED_LONE, XM - 70, LIST_Y + 340);
+    finger(FEED_LONE, XM, LIST_Y + 260);
     glide(FEED_LONE, XM, LIST_Y + 150, 9);
     lift(FEED_LONE);
     idle(0.5f);
@@ -1922,21 +1927,21 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
     /* From the label onto a key in one report, lifted in the next: a DOWN
      * and an UP in one place, which is a tap but for the DOWN's flag. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XL, LIST_Y + 376);
+    finger(FEED_LONE, XL, LIST_Y + LIST_H - 8);
     finger(FEED_LONE, XM, LIST_Y + 236);
     lift(FEED_LONE);
     idle(0.5f);
     CHECK_EQ(changed(), 0);
     /* It rests there instead: no repeat either. */
-    finger(FEED_LONE, XL, LIST_Y + 376);
+    finger(FEED_LONE, XL, LIST_Y + LIST_H - 8);
     finger(FEED_LONE, XM, LIST_Y + 236);
     idle(2.0f);
     lift(FEED_LONE);
     CHECK_EQ(changed(), 0);
 
     /* The tap after it is a tap. */
-    feed_tap(FEED_LONE, XM, row_y(row_of(SET_INA3221_MOHM)));
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -1);
+    feed_tap(FEED_LONE, XM, row_y(row_of(KEY_ID)));
+    CHECK_EQ(steps_off(KEY_ID), -1);
 }
 
 /* A jump's DOWN is a press on every control that is not a key of the
@@ -2049,13 +2054,13 @@ TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
 TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
 {
     gesture_screen(SET_CAT_IFACE);
-    swipe(PLUS_X + BTN_W - 1, LIST_Y + 376, PLUS_X + BTN_W - 1,
-          LIST_Y + 176, 9);
+    swipe(PLUS_X + BTN_W - 1, LIST_Y + LIST_H - 8, PLUS_X + BTN_W - 1,
+          LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 200);
 
     gesture_screen(SET_CAT_IFACE);
-    swipe(789, LIST_Y + 376, 789, LIST_Y + 176, 9);
+    swipe(789, LIST_Y + LIST_H - 8, 789, LIST_Y + LIST_H - 208, 9);
     CHECK_EQ(changed(), 0);
     CHECK_EQ(settings_screen_scroll(NULL), 0);
 }
@@ -2065,17 +2070,17 @@ TEST_CASE(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar)
 TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
 {
     gesture_screen(SET_CAT_IFACE);
-    const int y = row_y(row_of(SET_INA3221_MOHM));
+    const int y = row_y(row_of(KEY_ID));
     finger(0, XM, y);
     idle(0.99f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+    CHECK_EQ(steps_off(KEY_ID), -5);
     ui_router_cancel_gestures();
     idle(2.0f);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+    CHECK_EQ(steps_off(KEY_ID), -5);
     lift(0);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -5);
+    CHECK_EQ(steps_off(KEY_ID), -5);
     feed_tap(1, XM, y);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -6);
+    CHECK_EQ(steps_off(KEY_ID), -6);
 
     /* Left under the finger and entered again: on the tiles, and the
      * category's tile opens the list where it was. */
@@ -2086,9 +2091,9 @@ TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
     lift(0);
     CHECK_EQ(settings_screen_category(), -1);
     feed_tap(1, tile_x(SET_CAT_IFACE), tile_y(SET_CAT_IFACE));
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -6);
+    CHECK_EQ(steps_off(KEY_ID), -6);
     feed_tap(1, XM, y);
-    CHECK_EQ(steps_off(SET_INA3221_MOHM), -7);
+    CHECK_EQ(steps_off(KEY_ID), -7);
 }
 
 /* ------------------------------------------------ the sensor bus's pins */
@@ -2344,8 +2349,8 @@ TEST_CASE(the_scl_key_is_saved_with_the_derived_pin)
 static void pins_screen(void)
 {
     gesture_screen(SET_CAT_IFACE);
-    swipe(XL, LIST_Y + 376, XL, LIST_Y + 252, 4);
-    swipe(XL, LIST_Y + 376, XL, LIST_Y + 252, 4);
+    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
+    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
     CHECK_EQ(settings_screen_scroll(NULL), 232);
     snap();
 }
@@ -2862,6 +2867,145 @@ TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
     settings_set_store(NULL);
 }
 
+/*
+ * Where ink is in rows y0 to y1 - 1 of @p r, inside its edge: the leftmost
+ * and the rightmost column, and the first and the last row.  False when
+ * nothing is drawn there.
+ */
+typedef struct { int left, right, top, bottom; } ink_t;
+
+static bool ink(gfx_rect_t r, int y0, int y1, gfx_color_t bg, ink_t *out)
+{
+    *out = (ink_t){ W, -1, -1, -1 };
+    for (int y = y0; y < y1; ++y) {
+        for (int x = r.x + 3; x < r.x + r.w - 3; ++x) {
+            if (gfx_pixel_get(&s_c, x, y) == bg) {
+                continue;
+            }
+            out->left = (x < out->left) ? x : out->left;
+            out->right = (x > out->right) ? x : out->right;
+            out->top = (out->top < 0) ? y : out->top;
+            out->bottom = y;
+        }
+    }
+    return out->right >= 0;
+}
+
+/*
+ * A tile's icon sits over its name.  The icon's drawn ink, from its
+ * leftmost to its rightmost pixel, is centred on the name's line of text,
+ * which ui_tile() centres in the tile, to 1 px; the name's own ink lies in
+ * that line (its glyphs leave up to 2 px of their 8 px cells blank, so the
+ * ink of "MOTOR & ESC" is centred 1.5 px left of its line).  The icon's ink
+ * stays in its 30 px box, clear of the name under it.  @p r and @p icon_dy
+ * are in canvas coordinates, on a tile already drawn.
+ */
+static void icon_over_name(gfx_rect_t r, int icon_dy, const char *name,
+                           const char *what)
+{
+    const gfx_color_t bg = gfx_pixel_get(&s_c, r.x + r.w / 2, r.y + 2);
+    ink_t icon, label;
+    /* Every row from under the edge to the name's top. */
+    if (!ink(r, r.y + 3, r.y + icon_dy + 40, bg, &icon)
+        || !ink(r, r.y + icon_dy + 40, r.y + icon_dy + 62, bg, &label)) {
+        T_FAIL("%s: no icon or no name drawn", what);
+        return;
+    }
+    const int tw = gfx_text_width(&gfx_font_8x16, name, 1);
+    const int line_x = r.x + (r.w - tw) / 2;
+    if (abs((icon.left + icon.right + 1) - (2 * line_x + tw)) > 2) {
+        T_FAIL("%s: icon centred at %.1f, its name's line at %.1f", what,
+               (icon.left + icon.right + 1) / 2.0, line_x + tw / 2.0);
+    }
+    if (label.left < line_x || label.right >= line_x + tw) {
+        T_FAIL("%s: name inked at %d to %d, its line %d to %d", what,
+               label.left, label.right, line_x, line_x + tw - 1);
+    }
+    if (icon.top < r.y + icon_dy
+        || icon.bottom >= r.y + icon_dy + UI_TILE_ICON) {
+        T_FAIL("%s: icon rows %d to %d, box %d to %d", what, icon.top,
+               icon.bottom, r.y + icon_dy, r.y + icon_dy + UI_TILE_ICON - 1);
+    }
+}
+
+/* Every icon a tile draws, the menu's and SETUP's, in the tiles' sizes. */
+TEST_CASE(every_tile_icon_is_centred_over_its_name)
+{
+    fresh_hub();
+    static const struct { ui_icon_fn icon; const char *name; } menu[] = {
+        { ui_icon_motor, "MOTOR & ESC" }, { ui_icon_servo, "SERVO" },
+        { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "ANALYSER" },
+        { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
+        { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
+        { ui_icon_chip, "PROGRAMMER" },   { ui_icon_list, "OUTPUTS" },
+        { ui_icon_board, "PICK A PIN" },
+    };
+    /* The menu's tile: 150 x 202 px, the icon 64 px down. */
+    for (size_t i = 0; i < sizeof(menu) / sizeof(menu[0]); ++i) {
+        const gfx_rect_t r = gfx_rect_make(8, 8, 150, 202);
+        memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+        ui_tile(&s_c, r, 64, menu[i].icon, menu[i].name, "", false);
+        icon_over_name(r, 64, menu[i].name, menu[i].name);
+    }
+    /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
+     * PICK A PIN and UPDATES.  The icon's box starts 16 px down. */
+    static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
+                                              SCREEN_UPDATES };
+    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 3);
+    ui_router_render(&s_c, 0);
+    for (int i = 0; i < settings_hub_tiles(); ++i) {
+        gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+        CHECK(settings_hub_slot(i, &r));
+        r.y = (int16_t)(r.y + UI_BAND_H);
+        const char *name = (i < SET_CAT_SETUP_COUNT)
+            ? ui_setting_category((setting_cat_t)i)
+            : ui_router_title(screens[i - SET_CAT_SETUP_COUNT]);
+        icon_over_name(r, 16, name, name);
+    }
+}
+
+/*
+ * The router's alert band covers the bottom UI_ALERT_H px of the panel
+ * while an alert shows, and takes the touches there.  Nothing of SETUP
+ * that acts is under it: no tile, no row, no RESET CATEGORY, no SAVE.  A
+ * tap on every 4th px of the band's rectangle, with no alert showing, on
+ * the tiles and on each list, with a value unsaved, does nothing.
+ */
+TEST_CASE(nothing_of_setup_that_acts_is_under_the_alert_band)
+{
+    for (int i = 0; i < SETTINGS_HUB_SLOTS; ++i) {
+        gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+        CHECK(settings_hub_slot(i, &r));
+        CHECK(UI_BAND_H + r.y + r.h <= UI_ALERT_Y);
+    }
+    for (int view = -1; view < SET_CAT_SETUP_COUNT; ++view) {
+        fresh_hub();
+        settings_set_store(&s_mem_store);
+        if (view >= 0) {
+            open_category((setting_cat_t)view);
+            /* A value unsaved in this category, for RESET to take back. */
+            tap(XP, row_y(0));
+        } else {
+            settings_set(SET_PACK_CELLS, 4.0f);
+        }
+        CHECK(settings_dirty());
+        snap();
+        const int scroll = settings_screen_scroll(NULL);
+        for (int y = UI_ALERT_Y; y < H; y += 4) {
+            for (int x = 0; x < W; x += 4) {
+                tap(x, y);
+            }
+        }
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), view);
+        CHECK_EQ(settings_screen_scroll(NULL), scroll);
+        CHECK_EQ(changed(), 0);
+        CHECK(!settings_save_asked());
+        settings_cancel_save();
+        settings_set_store(NULL);
+    }
+}
+
 int main(void)
 {
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
@@ -2940,5 +3084,7 @@ int main(void)
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);
     RUN(the_tiles_show_and_save_what_a_list_left_unsaved);
+    RUN(every_tile_icon_is_centred_over_its_name);
+    RUN(nothing_of_setup_that_acts_is_under_the_alert_band);
     return test_summary("settings");
 }

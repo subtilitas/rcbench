@@ -2493,7 +2493,7 @@ static void bubble_in_bounds(const ui_bench_status_t *st)
         const bool apart = r.y >= stop.y + stop.h || r.x >= stop.x + stop.w
                            || r.x + r.w <= stop.x || r.y + r.h <= stop.y;
         if (!apart || r.x < 0 || r.x + r.w > W || r.y < UI_BAND_H
-            || r.y + r.h > H - 34) {
+            || r.y + r.h > UI_ALERT_Y) {
             T_FAIL("chip %d, faults %04X, language %d: bubble %d,%d %dx%d",
                    chip, (unsigned)st->faults, (int)ui_text_language(),
                    r.x, r.y, r.w, r.h);
