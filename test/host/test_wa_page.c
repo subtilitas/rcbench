@@ -28,6 +28,10 @@ typedef struct {
     int    refuse_after;
 } page_t;
 
+/* Far above any page here: a writer that never stops fails the case
+ * rather than taking the machine's memory. */
+#define SINK_CAP (64u * 1024u * 1024u)
+
 static bool sink(void *ctx, const void *data, size_t n)
 {
     page_t *p = ctx;
@@ -35,6 +39,10 @@ static bool sink(void *ctx, const void *data, size_t n)
         return false;
     }
     ++p->pieces;
+    CHECK(p->len + n <= SINK_CAP);
+    if (p->len + n > SINK_CAP) {
+        return false;
+    }
     if (p->len + n + 1u > p->cap) {
         p->cap = (p->len + n + 1u) * 2u;
         REQUIRE_REALLOC(p->buf, p->cap);

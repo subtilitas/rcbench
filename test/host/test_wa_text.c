@@ -185,6 +185,10 @@ typedef struct {
     int     refuse_after;   /* -1: never */
 } sink_t;
 
+/* Far above any output here: a writer that never stops fails the case
+ * rather than taking the machine's memory. */
+#define SINK_CAP (64u * 1024u * 1024u)
+
 static bool sink(void *ctx, const void *data, size_t n)
 {
     sink_t *s = ctx;
@@ -193,6 +197,10 @@ static bool sink(void *ctx, const void *data, size_t n)
     }
     ++s->calls;
     CHECK(n <= WA_OUT_BUF);
+    CHECK(s->len + n <= SINK_CAP);
+    if (s->len + n > SINK_CAP) {
+        return false;
+    }
     if (s->len + n + 1u > s->cap) {
         s->cap = (s->len + n + 1u) * 2u;
         REQUIRE_REALLOC(s->buf, s->cap);
