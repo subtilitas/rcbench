@@ -145,6 +145,21 @@ def test_an_escaped_parenthesis_in_a_link_target(tree):
     assert "</a> after" in html
 
 
+def test_a_heading_link_with_an_escaped_bracket_gets_its_label_anchor(tree):
+    html = ok(tree, "## [A\\]B](https://example.com)\n\n[x](#a-b)\n")
+    assert '<h2 id="a-b">' in html
+
+
+def test_an_underscore_in_a_link_target_is_no_emphasis(tree):
+    html = ok(tree, "[x](https://example.com/_private_)\n")
+    assert 'href="https://example.com/_private_"' in html
+
+
+def test_a_cell_ending_in_a_literal_backslash(tree):
+    html = ok(tree, "| Path |\n|---|\n| C:\\\\|\n")
+    assert "C:\\</td>" in html
+
+
 def test_a_heading_without_an_anchor_fails(tree):
     fails(tree, "## ???\n", "no letter or digit for its anchor")
 
@@ -552,7 +567,8 @@ def test_the_site(tree):
     hs.write(out, pages, VIEWS, tree / "img")
     files = sorted(str(p.relative_to(out)) for p in out.rglob("*")
                    if p.is_file())
-    assert files == ["de/index.html", "de/motor.html", "de/servo.html",
+    assert files == [".help-site", "de/index.html", "de/motor.html",
+                     "de/servo.html",
                      "img/de/motor.png", "img/de/servo.png", "img/motor.png",
                      "img/servo.png", "index.html", "motor.html",
                      "servo.html", "style.css"]
@@ -606,10 +622,52 @@ def test_a_rebuild_empties_the_folder_first(tree):
     full(tree)
     pages, _ = run(tree)
     out = tree / "out"
-    out.mkdir()
+    hs.write(out, pages, VIEWS, tree / "img")
     (out / "stale.html").write_text("x")
     hs.write(out, pages, VIEWS, tree / "img")
     assert not (out / "stale.html").exists()
+
+
+def test_a_folder_the_tool_did_not_write_is_kept(tree):
+    full(tree)
+    pages, _ = run(tree)
+    out = tree / "mine"
+    out.mkdir()
+    (out / "work.txt").write_text("x")
+    with pytest.raises(SystemExit, match="not written by this tool"):
+        hs.write(out, pages, VIEWS, tree / "img")
+    assert (out / "work.txt").exists()
+
+
+@pytest.mark.parametrize("out", [hs.REPO, hs.REPO / "help", hs.CONTENT,
+                                 hs.REPO / "docs", hs.REPO.parent])
+def test_an_output_folder_holding_sources_is_refused(tree, out):
+    full(tree)
+    pages, _ = run(tree)
+    with pytest.raises(SystemExit, match="choose an output folder"):
+        hs.write(out, pages, VIEWS, tree / "img")
+    assert hs.CONTENT.exists()
+
+
+def test_a_preview_navigates_only_to_files_it_writes(tmp_path):
+    out = tmp_path / "out"
+    assert hs.main(["--page", str(hs.CONTENT / "en" / "servo.md"),
+                    "--out", str(out)]) == 0
+    written = {p.relative_to(out).as_posix() for p in out.rglob("*.html")}
+    assert {"index.html", "servo.html", "de/index.html",
+            "de/servo.html"} <= written
+    for page in out.rglob("*.html"):
+        text = page.read_text()
+        # The header's home and language switch and the list of pages;
+        # links inside the text go to pages a preview does not render.
+        nav = re.findall(r'class="(?:home|switch)" href="([^"]+)"', text)
+        for block in re.findall(r'<nav class="pages".*?</nav>|'
+                                r'<ol class="index">.*?</ol>', text, re.S):
+            nav += re.findall(r'<li><a href="([^"]+)"', block)
+        assert nav
+        for href in nav:
+            target = (page.parent / href).resolve()
+            assert target.exists(), (page, href)
 
 
 def test_check_writes_nothing(tmp_path, monkeypatch):

@@ -15,7 +15,13 @@ python3 tools/help_site.py --page FILE --out DIR   # one page, for a preview
 
 `--page` renders one file with the checks of that file alone: syntax, views
 and images. The checks across pages (the screen list, the two languages,
-links between pages) run with a full build and with `--check`.
+links between pages) run with a full build and with `--check`. A preview
+also writes the page's counterpart in the other language when it exists,
+and the index of each language, so the header's links land.
+
+A build empties its output folder first. It refuses a folder that holds
+the repository or a source of the help, and an existing folder that is not
+empty and has no `.help-site` file, which marks a folder the tool wrote.
 
 ## Files
 

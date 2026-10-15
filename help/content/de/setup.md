@@ -77,8 +77,6 @@ Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den 
 | Drehknopf | EIN, AUS | AUS | ein AS5600 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 
-Die Hilfezeilen von Helligkeit und Dimmen nach passen auf Deutsch in ihre Zeile; auf Englisch sind sie am rechten Rand abgeschnitten.
-
 ![SETUP im hellen Design](view:setup-light)
 
 ### Der Drehknopf

@@ -196,7 +196,8 @@ def slugify(text: str) -> str:
 
 def plain(text: str) -> str:
     """Inline Markdown as text: the marks dropped, link targets dropped."""
-    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"\[((?:\\.|[^\]\\])*)\]"
+                  r"\((?:\\.|[^()\\]|\([^()]*\))*\)", r"\1", text)
     text = re.sub(r"\\(.)", r"\1", text)
     return text.replace("**", "").replace("`", "")
 
@@ -213,6 +214,10 @@ class Inline:
 
     def render(self, text: str, line: int, in_link: bool = False) -> str:
         outside_code = re.sub(r"`[^`]*`", "", text)
+        # A link target is an address, not text: an underscore in it is
+        # no emphasis.
+        outside_code = re.sub(r"\]\((?:\\.|[^()\\]|\([^()]*\))*\)", "]",
+                              outside_code)
         m = UNDERSCORE_EMPHASIS.search(outside_code)
         if m:
             self.fail(line, f"_ emphasis is outside the format: "
@@ -615,8 +620,10 @@ class Renderer:
             if not line.startswith("|"):
                 self.fail(num + k, "a table row starts with |")
                 return
-            if len(line) < 2 or not line.endswith("|") \
-                    or line.endswith("\\|"):
+            # The last | is escaped when an odd run of backslashes stands
+            # before it; an even run is literal backslashes.
+            run = len(line[:-1]) - len(line[:-1].rstrip("\\"))
+            if len(line) < 2 or not line.endswith("|") or run % 2 == 1:
                 self.fail(num + k, "a table row ends with | (unclosed "
                                    "table row)")
                 return
@@ -880,7 +887,9 @@ def sorted_pages(pages: dict[str, Page]) -> list[Page]:
 
 
 def render_page(page: Page, siblings: dict[str, Page],
-                site: pathlib.Path = SITE) -> str:
+                site: pathlib.Path = SITE, counterpart: bool = True) -> str:
+    """One page.  Without a counterpart in the other language (a preview
+    of one file) the language switch goes to the other language's index."""
     lang = page.lang
     other = "de" if lang == "en" else "en"
     words = CHROME[lang]
@@ -904,7 +913,8 @@ def render_page(page: Page, siblings: dict[str, Page],
         root=root,
         home="index.html",
         name=html.escape(words["name"]),
-        switch_href=f"{root}{other_dir}{page.id}.html",
+        switch_href=f"{root}{other_dir}"
+                    + (f"{page.id}.html" if counterpart else "index.html"),
         switch=html.escape(words["switch"]),
         nav=nav,
         body=body,
@@ -947,27 +957,54 @@ def render_index(lang: str, pages: dict[str, Page],
     )
 
 
+SENTINEL = ".help-site"
+
+
+def refuse_out(out: pathlib.Path) -> None:
+    """Raises SystemExit when @p out may not be emptied: the repository,
+    a folder that holds it or a source of the help, or a folder with
+    content this tool did not write."""
+    o = out.resolve()
+    for source in (REPO, CONTENT, SITE, IMG):
+        if source == o or source.is_relative_to(o):
+            sys.exit(f"{out}: holds {source}; choose an output folder of "
+                     "its own")
+    if o.exists() and (not o.is_dir() or (any(o.iterdir())
+                                         and not (o / SENTINEL).exists())):
+        sys.exit(f"{out}: exists and was not written by this tool; choose "
+                 "a new or empty folder")
+
+
 def write(out: pathlib.Path, pages: dict[str, dict[str, Page]],
           views: dict[str, str], img_root: pathlib.Path = IMG,
           site: pathlib.Path = SITE, index: bool = True) -> int:
     """Writes the site into @p out, which is emptied first.  Returns the
-    number of files written."""
+    number of files written.  @p out is refused when it holds the
+    repository or a source folder of the help, or when it exists, is not
+    empty and was not written by this tool (no SENTINEL file)."""
+    refuse_out(out)
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    (out / SENTINEL).write_text("written by tools/help_site.py; the next "
+                                "build empties this folder\n",
+                                encoding="utf-8")
     count = 0
     shutil.copyfile(site / "help.css", out / "style.css")
     count += 1
     for lang in LANGS:
         folder = out / LANG_DIR[lang]
         folder.mkdir(parents=True, exist_ok=True)
-        if index and pages[lang]:
+        if index:
             (folder / "index.html").write_text(
                 render_index(lang, pages[lang], site), encoding="utf-8")
             count += 1
         for page in pages[lang].values():
+            other = "de" if lang == "en" else "en"
             (folder / f"{page.id}.html").write_text(
-                render_page(page, pages[lang], site), encoding="utf-8")
+                render_page(page, pages[lang], site,
+                            counterpart=page.id in pages[other]),
+                encoding="utf-8")
             count += 1
             for name, _ in page.views:
                 filename = views[name]
@@ -1015,8 +1052,15 @@ def main(argv=None) -> int:
             return 1
         pages = {lg: {} for lg in LANGS}
         pages[lang][page.id] = page
+        other = "de" if lang == "en" else "en"
+        twin = path.parent.parent / other / path.name
+        if twin.exists():
+            twin_problems = Problems()
+            twin_page = parse(twin, other, twin_problems, views)
+            if not twin_problems:
+                pages[other][twin_page.id] = twin_page
         if not args.check:
-            n = write(args.out, pages, views, index=False)
+            n = write(args.out, pages, views)
             print(f"wrote {n} files to {args.out}")
         return 0
 

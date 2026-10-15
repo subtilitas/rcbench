@@ -30,7 +30,7 @@ Ein Tipp öffnet eine Kachel, wenn der Finger auf derselben Kachel abhebt, auf d
 
 ## Die Marke SIMULIERT
 
-Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Hardware nicht eingebaut ist. Jeder Wert darauf ist simuliert, und der Bildschirm sagt es. Eine Kachel ohne Marke zeigt gemessene Werte.
+Die Marke SIMULIERT auf einer Kachel sagt, dass der Koprozessor für diesen Bildschirm keine Fähigkeit meldet oder dass sein Sensor nicht aktiviert ist. Sie ordnet nicht jeden Wert auf dem Bildschirm ein: ANALYSER und BATTERY tragen die Marke und zeigen gar keine Werte, und SERVO ohne Marke zeigt das Versorgungsmodell des Panels als Messung der Servoschiene, wenn weder ein PD mini noch ein INA3221 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 
 Die Marke folgt den Fähigkeits-Bits, die der Koprozessor beim Link-Aufbau meldet:
 

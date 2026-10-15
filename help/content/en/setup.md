@@ -77,8 +77,6 @@ Idle pulse and Full pulse go to the coprocessor at link-up and on every change. 
 | Rotary knob | ON, OFF | OFF | an AS5600 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720 deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 
-The help lines of Brightness and Dim after are cut at the right edge of the row in English.
-
 ![SETUP in the light theme](view:setup-light)
 
 ### The rotary knob

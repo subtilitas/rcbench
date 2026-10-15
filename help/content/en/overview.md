@@ -30,7 +30,7 @@ A tap opens a tile when the finger lifts on the same tile it pressed. A press th
 
 ## The MODELLED mark
 
-A tile marked MODELLED opens a screen whose hardware is not fitted. Every value on it is simulated and the screen says so. A tile without the mark shows measured readings.
+The MODELLED mark on a tile says that the coprocessor reports no capability for that screen, or that its sensor is not enabled. It does not classify each value on the screen: ANALYSER and BATTERY carry the mark and show no values at all, and SERVO without the mark shows the panel's supply model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each screen names the source of its readings itself.
 
 The mark follows the capability bits the coprocessor reports at link-up:
 
