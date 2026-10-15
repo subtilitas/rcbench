@@ -177,6 +177,7 @@ jobs:
       - name: Every screen still idles on a cached frame
         run: python3 tools/frame_cost.py analyser logs settings battery balance
              programmer picker wifi --max-lines 1200
+             && python3 tools/frame_cost.py settings-list --max-lines 1200
 
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
@@ -187,7 +188,8 @@ jobs:
       - name: A full repaint of every screen stays bounded
         run: python3 tools/frame_cost.py analyser-chrome balance-chrome
              battery-chrome programmer-chrome logs-chrome settings-chrome
-             picker-chrome supply-chrome wifi-chrome --max-lines 45000
+             settings-list-chrome picker-chrome supply-chrome wifi-chrome
+             --max-lines 45000
 
       # A key typed on the Wi-Fi keyboard repaints the whole FILES & UPDATE
       # screen, about 22,200 fills; 24,000 catches a key that repaints more.

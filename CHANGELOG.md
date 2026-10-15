@@ -14,8 +14,7 @@ history is in git.
   Network) from the panel. Neither needs a part beyond the panel and the
   coprocessor; the panel update needs no microSD card. The base setup runs
   12 functions.
-- SETUP has an UPDATES key (German `UPDATES`) under PICK A PIN, which
-  opens the UPDATES screen. CHECK FOR UPDATES joins the home network kept
+- SETUP has an UPDATES tile, which opens the UPDATES screen. CHECK FOR UPDATES joins the home network kept
   on FILES & UPDATE, sends one HTTPS (hypertext transfer protocol over
   transport layer security) request to
   `https://github.com/subtilitas/rcbench/releases/latest`, reads the newest
@@ -54,6 +53,15 @@ history is in git.
 
 ### Changed
 
+- SETUP opens on a page of 3 by 3 tiles in the menu's style: ESC / BENCH,
+  APPLICATION and INTERFACES with their number of settings, and OUTPUTS,
+  PICK A PIN and UPDATES with a line each; 3 slots are free. A category's
+  list spans 776 px of the panel's 800, over a strip with the category's
+  name, RESET CATEGORY and SAVE. The home tag climbs one level: from a list
+  to the tiles, from OUTPUTS, PICK A PIN and UPDATES to the tiles, from the
+  tiles to the menu. SAVE shows on the tiles as on every list. The texts
+  `PINS: A LIST OR THE BOARD` and the UPDATES key are gone; the tiles add
+  `PROTOCOLS AND PINS`, `ON THE BOARD DRAWING` and `RELEASES ON GITHUB`.
 - The bench configurator describes release 0.19.0. Every repository source
   of its data is a file and line at the tag `v0.19.0`; 23 sources carry the
   line of that tag, in `STATUS.md`, `docs/Building.md` and

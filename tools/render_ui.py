@@ -304,7 +304,11 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
+    # SETUP's tiles, clean and with a value unsaved; ESC / BENCH's list
+    # across the screen, clean and with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
+    "setup-hub-dirty": ("setup-hub-dirty.png", "setup", "dark"),
+    "setup-esc":  ("setup-esc.png",  "setup",      "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # INTERFACES with both current monitors enabled, at the top of the list
     # and drawn on to the INA3221's rows and the bus's pins.
@@ -499,7 +503,7 @@ OVERLAY_VIEWS = {"outputs-protocol", "picker-protocol"} | {
 # for word as --fit prints them; none today.  Each is a defect of the
 # screen, listed here so the check holds every other string; none is a
 # decision that the overflow is wanted.  An entry that --fit no longer
-# finds fails, so the list cannot outlive its defects.  SETUP shows 36
+# finds fails, so the list cannot outlive its defects.  SETUP shows 65
 # cells of a help line.
 KNOWN_OVERFLOWS = set()
 

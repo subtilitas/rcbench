@@ -297,6 +297,14 @@ static void tap(int x, int y)
     ui_router_event(&e);
 }
 
+/* A tap on SETUP's tile @p index, the categories' first in their order. */
+static void setup_tile(int index)
+{
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    (void)settings_hub_slot(index, &r);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
 /* A finger drawn from @p y0 to @p y1 at @p x, in steps a controller would
  * report. */
 static void drag(int x, int y0, int y1)
@@ -2009,7 +2017,8 @@ int main(int argc, char **argv)
      * grey and inert otherwise, so the shot that shows it needs a value
      * changed first.
      */
-    if (id == SCREEN_SETUP && strcmp(view, "setup-dirty") == 0) {
+    if (id == SCREEN_SETUP && (strcmp(view, "setup-dirty") == 0
+                               || strcmp(view, "setup-hub-dirty") == 0)) {
         settings_set(SET_PACK_CELLS, 4.0f);
     }
 
@@ -2512,11 +2521,15 @@ int main(int argc, char **argv)
      * SETUP's INTERFACES, the current monitors' rows at the top, and the
      * same list drawn on by four rows to the INA3221's and the bus's pins.
      */
+    /* SETUP opens on its tiles; ESC / BENCH's list is the first tile's. */
+    if (strcmp(view, "setup-esc") == 0 || strcmp(view, "setup-dirty") == 0) {
+        setup_tile(SET_CAT_ESC);
+    }
     if (strcmp(view, "setup-interfaces") == 0
         || strcmp(view, "setup-sensors") == 0
         || strcmp(view, "setup-unheld") == 0
         || strcmp(view, "setup-tap") == 0) {
-        tap(120, UI_BAND_H + 16 + 2 * 62 + 28);        /* INTERFACES */
+        setup_tile(SET_CAT_IFACE);
         if (strcmp(view, "setup-unheld") == 0) {
             /* The pins refused: their two rows, and the INA3221 the page
              * leaves off for them. */

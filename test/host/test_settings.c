@@ -29,22 +29,26 @@
 #define H 480
 
 /* Geometry mirrored from settings_screen.c; if the layout moves these move
- * with it, and the test names say what they aim at. */
-#define CAT_X    16
-#define CAT_Y    (16 + UI_BAND_H)
-#define CAT_H    56
-#define CAT_GAP  6
-#define LIST_X   236
-#define LIST_Y   (16 + UI_BAND_H)
+ * with it, and the test names say what they aim at.  The hub's tiles come
+ * from settings_hub_slot(). */
+#define LIST_X   8
+#define LIST_Y   (6 + UI_BAND_H)
+#define LIST_H   384
 #define ROW_PITCH 58
 #define ROW_H    54
 #define PLUS_X   726
 #define MINUS_X  556
 #define BTN_W    44
-#define RESET_Y  (350 + UI_BAND_H)
-#define RESET_H  36
-#define SAVE_Y   (RESET_Y + RESET_H + 6)
-#define SAVE_H   36
+/* The strip under the list and the tiles: RESET CATEGORY under the
+ * second column, SAVE under the third. */
+#define STRIP_Y  (394 + UI_BAND_H)
+#define STRIP_H  34
+#define RESET_X  272
+#define RESET_Y  STRIP_Y
+#define RESET_H  STRIP_H
+#define SAVE_X   536
+#define SAVE_Y   STRIP_Y
+#define SAVE_H   STRIP_H
 
 static gfx_color_t *s_fb;
 static gfx_canvas_t s_c;
@@ -743,7 +747,54 @@ TEST_CASE(brightness_and_contrast_are_clamped_and_monotonic)
     CHECK_EQ(ui_theme_get(), UI_THEME_DARK);
 }
 
-static void fresh_screen(void)
+/* The middle of the hub's tile @p index, in panel coordinates. */
+static int tile_x(int index)
+{
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    (void)settings_hub_slot(index, &r);
+    return r.x + r.w / 2;
+}
+
+static int tile_y(int index)
+{
+    gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
+    (void)settings_hub_slot(index, &r);
+    return UI_BAND_H + r.y + r.h / 2;
+}
+
+/* The middle of the home tag, in panel coordinates. */
+static int home_x(void)
+{
+    const gfx_rect_t r = ui_home_tag_rect(ui_router_title(SCREEN_SETUP));
+    return r.x + r.w / 2;
+}
+
+static int home_y(void)
+{
+    const gfx_rect_t r = ui_home_tag_rect(ui_router_title(SCREEN_SETUP));
+    return r.y + r.h / 2;
+}
+
+static void tap(int x, int y);
+
+/* SETUP's tiles: the home tag from a list, nothing from the tiles. */
+static void to_hub(void)
+{
+    if (settings_screen_category() >= 0) {
+        tap(home_x(), home_y());
+    }
+}
+
+/* The list of @p cat, opened by its tile as the panel does.  The tiles
+ * start with the categories, in their order. */
+static void open_category(setting_cat_t cat)
+{
+    to_hub();
+    tap(tile_x((int)cat), tile_y((int)cat));
+}
+
+/* SETUP on its tiles, the model at its defaults. */
+static void fresh_hub(void)
 {
     if (!s_fb) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));
@@ -756,6 +807,13 @@ static void fresh_screen(void)
      * screen. */
     ui_router_init();
     ui_router_goto(SCREEN_SETUP);
+}
+
+/* SETUP on ESC / BENCH's list, opened from its tile. */
+static void fresh_screen(void)
+{
+    fresh_hub();
+    open_category(SET_CAT_ESC);
 }
 
 static void tap(int x, int y)
@@ -780,8 +838,9 @@ TEST_CASE(screen_switches_category_and_renders)
     ui_router_render(&s_c, 0);
     CHECK(gfx_pixel_get(&s_c, 400, 100) != 0);
 
-    for (int i = 0; i < SET_CAT_COUNT; ++i) {
-        tap(CAT_X + 100, CAT_Y + i * (CAT_H + CAT_GAP) + CAT_H / 2);
+    for (int i = 0; i < SET_CAT_SETUP_COUNT; ++i) {
+        open_category((setting_cat_t)i);
+        CHECK_EQ(settings_screen_category(), i);
         ui_router_render(&s_c, 0);
         CHECK(gfx_pixel_get(&s_c, 400, 100) != 0);
     }
@@ -848,7 +907,7 @@ TEST_CASE(the_poles_key_notifies_once_per_press)
 TEST_CASE(changing_the_theme_from_the_screen_takes_effect)
 {
     fresh_screen();
-    tap(CAT_X + 100, CAT_Y + 1 * (CAT_H + CAT_GAP) + CAT_H / 2);   /* APPLICATION */
+    open_category(SET_CAT_APP);
 
     setting_id_t ids[64];
     int n = settings_in_category(SET_CAT_APP, ids, 64);
@@ -950,7 +1009,7 @@ TEST_CASE(reset_button_restores_the_open_category)
     settings_set(ids[0], settings_def(ids[0])->max);
     settings_set(SET_BRIGHTNESS, 50);
 
-    tap(CAT_X + 100, RESET_Y + 20);
+    tap(RESET_X + 100, RESET_Y + RESET_H / 2);
     CHECK_EQ(settings_get_int(ids[0]), (long)settings_def(ids[0])->def);
     CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 50);   /* other category kept */
 }
@@ -994,7 +1053,7 @@ TEST_CASE(the_save_button_asks_and_the_application_decides_when)
     CHECK(settings_dirty());
     CHECK(!settings_save_asked());
 
-    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
     CHECK(settings_save_asked());
     CHECK_EQ(s_save_calls, 0);        /* asked, and nothing written */
     CHECK(settings_dirty());
@@ -1028,7 +1087,7 @@ TEST_CASE(the_request_outlives_the_screen)
     setting_id_t ids[64];
     settings_in_category(SET_CAT_ESC, ids, 64);
     tap(PLUS_X + BTN_W / 2, row_y(0));
-    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
     CHECK(settings_save_asked());
 
     ui_router_goto(SCREEN_OVERVIEW);
@@ -1046,7 +1105,7 @@ static unsigned save_face(void)
     ui_router_render(&s_c, 0);
     unsigned long sum = 0;
     for (int y = SAVE_Y + 6; y < SAVE_Y + SAVE_H - 6; ++y) {
-        for (int x = CAT_X + 6; x < CAT_X + 200; ++x) {
+        for (int x = SAVE_X + 6; x < SAVE_X + 200; ++x) {
             sum += (unsigned long)s_fb[y * W + x];
         }
     }
@@ -1071,7 +1130,7 @@ TEST_CASE(a_press_while_the_save_is_pending_changes_nothing)
     /* Offered: holding it down changes the face. */
     const unsigned offered = save_face();
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = CAT_X + 100,
+                        .point = { .id = 1, .x = SAVE_X + 100,
                                    .y = (int16_t)(SAVE_Y + SAVE_H / 2),
                                    .strength = 40 } };
     ui_router_event(&e);
@@ -1101,7 +1160,7 @@ TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
     s_save_calls = 0;
     CHECK(!settings_dirty());
 
-    tap(CAT_X + 100, SAVE_Y + SAVE_H / 2);
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
     CHECK(!settings_save_asked());
     CHECK(!settings_save_tick(true));
     CHECK_EQ(s_save_calls, 0);
@@ -1118,20 +1177,17 @@ TEST_CASE(asking_with_nothing_to_write_asks_for_nothing)
  * running: the GT911 reuses track ids, and a later contact that began
  * somewhere else would be taken for this one.
  */
-/* Panel coordinates, like the other constants here: the screen's own
- * OUTPUTS_Y is 204 and the band sits above it. */
-#define OUTPUTS_Y (204 + UI_BAND_H)
-#define DOOR_H    36
-
 TEST_CASE(a_cancelled_hit_presses_nothing)
 {
-    fresh_screen();
+    fresh_hub();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-    /* Press the door to the outputs screen, then the events stop arriving. */
-    const int dy = OUTPUTS_Y + DOOR_H / 2;
+    /* Press the tile of the outputs screen, the fourth, then the events
+     * stop arriving. */
+    const int dx = tile_x(3);
+    const int dy = tile_y(3);
     touch_event_t d = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = CAT_X + 100,
+                        .point = { .id = 1, .x = (int16_t)dx,
                                    .y = (int16_t)dy } };
     ui_router_event(&d);
 
@@ -1144,7 +1200,7 @@ TEST_CASE(a_cancelled_hit_presses_nothing)
      * screen, where the release applies a binding change.
      */
     touch_event_t u = { .type = TOUCH_EVENT_UP,
-                        .point = { .id = 1, .x = CAT_X + 100,
+                        .point = { .id = 1, .x = (int16_t)dx,
                                    .y = (int16_t)dy } };
     ui_router_event(&u);
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
@@ -1375,8 +1431,8 @@ static void gesture_screen(setting_cat_t cat)
     feed_reset();
     feed_tick_per_report(REPORT_S);
     if (cat != SET_CAT_ESC) {
-        feed_tap(FEED_LONE, CAT_X + 100,
-                 CAT_Y + (int)cat * (CAT_H + CAT_GAP) + CAT_H / 2);
+        feed_tap(FEED_LONE, home_x(), home_y());
+        feed_tap(FEED_LONE, tile_x((int)cat), tile_y((int)cat));
     }
     snap();
 }
@@ -1427,7 +1483,7 @@ static int swipe_matrix(const int *cols, int ncols, int *unscrolled,
         for (int c = 0; c < ncols; ++c) {
             for (size_t sp = 0; sp < sizeof(speeds) / sizeof(speeds[0]);
                  ++sp) {
-                for (int y0 = LIST_Y + 4; y0 < LIST_Y + 400; y0 += 29) {
+                for (int y0 = LIST_Y + 4; y0 < LIST_Y + LIST_H; y0 += 29) {
                     for (int dir = -1; dir <= 1; dir += 2) {
                         gesture_screen((setting_cat_t)cat);
                         if (dir > 0) {
@@ -1473,7 +1529,7 @@ TEST_CASE(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value)
 /* The same beside the columns, one px outside each edge among them. */
 TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
 {
-    static const int cols[] = { 240, XL, MINUS_X - 11, MINUS_X - 1,
+    static const int cols[] = { LIST_X + 4, XL, MINUS_X - 11, MINUS_X - 1,
                                 MINUS_X + BTN_W, 660, PLUS_X - 1,
                                 PLUS_X + BTN_W, 783 };
     int unscrolled = 0, total = 0;
@@ -1851,7 +1907,7 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
     finger(FEED_LONE, XM, LIST_Y + 96);
     lift(FEED_LONE);
     idle(0.5f);
-    CHECK_EQ(feed_downs, 4);                  /* the category's tap, and 3 */
+    CHECK_EQ(feed_downs, 5);         /* the home tag's tap, the tile's, 3 */
     CHECK_EQ(changed(), 0);
 
     /* From the label onto a key in one report, then a swipe. */
@@ -1884,17 +1940,18 @@ TEST_CASE(a_flick_the_tracker_splits_changes_no_value)
 }
 
 /* A jump's DOWN is a press on every control that is not a key of the
- * scrolling list: a category pressed right after a touch elsewhere whose
- * release frame went missing is still chosen. */
+ * scrolling list: a category's tile pressed right after a touch elsewhere
+ * whose release frame went missing is still opened. */
 TEST_CASE(a_category_takes_the_press_the_tracker_made_for_a_jump)
 {
     gesture_screen(SET_CAT_ESC);
+    feed_tap(FEED_LONE, home_x(), home_y());
     setting_id_t app[64];
     settings_in_category(SET_CAT_APP, app, 64);
-    finger(FEED_LONE, XL, LIST_Y + 300);
-    finger(FEED_LONE, CAT_X + 100,
-           CAT_Y + (int)SET_CAT_APP * (CAT_H + CAT_GAP) + CAT_H / 2);
+    finger(FEED_LONE, tile_x(SET_CAT_ESC), tile_y(SET_CAT_ESC) + 200);
+    finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
     lift(FEED_LONE);
+    CHECK_EQ(settings_screen_category(), SET_CAT_APP);
     snap();
     feed_tap(FEED_LONE, XP, row_y(0));
     CHECK(settings_get(app[0]) != s_before[app[0]]);
@@ -1956,32 +2013,35 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
     CHECK_EQ(changed(), 1);
 }
 
-/* The same release on the buttons of the left column: a category, RESET
- * CATEGORY and the doors act on a release the finger made. */
+/* The same release on the tiles and on the strip's buttons: a tile and
+ * RESET CATEGORY act on a release the finger made. */
 TEST_CASE(a_button_carried_into_the_band_is_not_pressed)
 {
     gesture_screen(SET_CAT_ESC);
     setting_id_t esc[64];
     settings_in_category(SET_CAT_ESC, esc, 64);
 
-    /* The second category, 101 px under the band's edge, in one report. */
-    finger(FEED_LONE, CAT_X + 100, CAT_Y + CAT_H + CAT_GAP + 5);
-    finger(FEED_LONE, CAT_X + 100, UI_BAND_H - 8);
+    /* The second category's tile, into the band in one report. */
+    feed_tap(FEED_LONE, home_x(), home_y());
+    finger(FEED_LONE, tile_x(SET_CAT_APP), tile_y(SET_CAT_APP));
+    finger(FEED_LONE, tile_x(SET_CAT_APP), UI_BAND_H - 8);
     lift(FEED_LONE);
+    CHECK_EQ(settings_screen_category(), -1);
+    feed_tap(FEED_LONE, tile_x(SET_CAT_ESC), tile_y(SET_CAT_ESC));
     feed_tap(FEED_LONE, XP, row_y(0));
     CHECK(settings_get(esc[0]) != s_before[esc[0]]);  /* ESC still open */
     CHECK_EQ(changed(), 1);
 
     /* The tracker's own release, of a jump: RESET CATEGORY pressed, the
      * contact next reported 300 px away. */
-    finger(FEED_LONE, CAT_X + 100, RESET_Y + RESET_H / 2);
+    finger(FEED_LONE, RESET_X + 100, RESET_Y + RESET_H / 2);
     finger(FEED_LONE, XL, RESET_Y - 200);
     lift(FEED_LONE);
     CHECK_EQ(changed(), 1);                   /* not reset */
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
     /* And a tap on it resets. */
-    feed_tap(FEED_LONE, CAT_X + 100, RESET_Y + RESET_H / 2);
+    feed_tap(FEED_LONE, RESET_X + 100, RESET_Y + RESET_H / 2);
     CHECK_EQ(changed(), 0);
 }
 
@@ -2017,12 +2077,15 @@ TEST_CASE(a_key_press_that_loses_its_release_stops_and_holds_nothing)
     feed_tap(1, XM, y);
     CHECK_EQ(steps_off(SET_INA3221_MOHM), -6);
 
-    /* Left under the finger and entered again. */
+    /* Left under the finger and entered again: on the tiles, and the
+     * category's tile opens the list where it was. */
     finger(0, XM, y);
     ui_router_goto(SCREEN_OVERVIEW);
     ui_router_goto(SCREEN_SETUP);
     idle(2.0f);
     lift(0);
+    CHECK_EQ(settings_screen_category(), -1);
+    feed_tap(1, tile_x(SET_CAT_IFACE), tile_y(SET_CAT_IFACE));
     CHECK_EQ(steps_off(SET_INA3221_MOHM), -6);
     feed_tap(1, XM, y);
     CHECK_EQ(steps_off(SET_INA3221_MOHM), -7);
@@ -2647,13 +2710,13 @@ TEST_CASE(setup_changes_no_held_setting)
         CHECK(beside > (unsigned)BTN_W);
         /* A drag from where a key would be scrolls the list. */
         const int from = settings_screen_scroll(NULL);
-        swipe(XM, y + 20, XM, y + 20 - 60, 4);
-        CHECK_EQ(settings_screen_scroll(NULL), from + 52);
-        swipe(XL, y + 20, XL, y + 20 + 60, 4);
+        swipe(XM, y + 20, XM, y + 20 - 40, 4);
+        CHECK_EQ(settings_screen_scroll(NULL), from + 32);
+        swipe(XL, y + 20, XL, y + 20 + 40, 4);
         CHECK_EQ(settings_screen_scroll(NULL), from);
         CHECK_EQ(changed(), 0);
         /* RESET CATEGORY: the other row goes to its default. */
-        feed_tap(FEED_LONE, CAT_X + 100, RESET_Y + RESET_H / 2);
+        feed_tap(FEED_LONE, RESET_X + 100, RESET_Y + RESET_H / 2);
         CHECK_EQ(changed(), 1);
         CHECK(settings_get(other) == settings_def(other)->def);
         CHECK(settings_get(s_row_held) != settings_def(s_row_held)->def);
@@ -2665,6 +2728,138 @@ TEST_CASE(setup_changes_no_held_setting)
         CHECK(settings_get(s_row_held) != s_before[s_row_held]);
         settings_set_hold(NULL);
     }
+}
+
+/* ------------------------------------------------------------------- hub */
+
+/*
+ * The hub is one page of three by three tiles.  The tile table fills them
+ * in order; a tenth entry has no slot, and the build stops at it
+ * (_Static_assert in settings_screen.c) as this test does.
+ */
+TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
+{
+    CHECK_EQ(SETTINGS_HUB_SLOTS, 9);
+    CHECK(settings_hub_tiles() >= SET_CAT_SETUP_COUNT + 3);
+    CHECK(settings_hub_tiles() <= SETTINGS_HUB_SLOTS);
+    gfx_rect_t r[SETTINGS_HUB_SLOTS];
+    for (int i = 0; i < SETTINGS_HUB_SLOTS; ++i) {
+        CHECK(settings_hub_slot(i, &r[i]));
+        CHECK(settings_hub_slot(i, NULL));
+        /* Inside the body, above the SAVE strip. */
+        CHECK(r[i].x >= 0 && r[i].x + r[i].w <= W);
+        CHECK(r[i].y >= 0 && UI_BAND_H + r[i].y + r[i].h <= STRIP_Y);
+        CHECK(r[i].w >= 200 && r[i].h >= 100);
+        for (int j = 0; j < i; ++j) {
+            const bool apart = r[i].x >= r[j].x + r[j].w ||
+                               r[j].x >= r[i].x + r[i].w ||
+                               r[i].y >= r[j].y + r[j].h ||
+                               r[j].y >= r[i].y + r[i].h;
+            if (!apart) {
+                T_FAIL("slots %d and %d overlap", j, i);
+            }
+        }
+    }
+    gfx_rect_t untouched = gfx_rect_make(1, 2, 3, 4);
+    CHECK(!settings_hub_slot(SETTINGS_HUB_SLOTS, &untouched));
+    CHECK(!settings_hub_slot(-1, &untouched));
+    CHECK_EQ(untouched.x, 1);
+    CHECK_EQ(untouched.h, 4);
+}
+
+TEST_CASE(each_category_tile_opens_its_list_and_the_home_tag_returns)
+{
+    for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
+        fresh_hub();
+        CHECK_EQ(settings_screen_category(), -1);
+        tap(tile_x(c), tile_y(c));
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), c);
+        CHECK_EQ(settings_screen_scroll(NULL), 0);
+        tap(home_x(), home_y());
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+    }
+    /* From the tiles, the home tag leaves SETUP. */
+    tap(home_x(), home_y());
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+TEST_CASE(a_free_slot_opens_nothing)
+{
+    fresh_hub();
+    for (int i = settings_hub_tiles(); i < SETTINGS_HUB_SLOTS; ++i) {
+        tap(tile_x(i), tile_y(i));
+        CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+        CHECK_EQ(settings_screen_category(), -1);
+    }
+    /* Nor does the place of RESET CATEGORY, which the tiles do not show. */
+    settings_set(SET_PACK_CELLS, 4.0f);
+    tap(RESET_X + 100, RESET_Y + RESET_H / 2);
+    CHECK_EQ(settings_get_int(SET_PACK_CELLS), 4);
+    CHECK_EQ(settings_screen_category(), -1);
+}
+
+TEST_CASE(entering_setup_shows_the_tiles_and_the_list_keeps_its_place)
+{
+    fresh_hub();
+    open_category(SET_CAT_IFACE);
+    finger(FEED_LONE, XL, LIST_Y + 300);
+    glide(FEED_LONE, XL, LIST_Y + 200, 10);
+    lift(FEED_LONE);
+    const int scrolled = settings_screen_scroll(NULL);
+    CHECK(scrolled > 0);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_SETUP);
+    CHECK_EQ(settings_screen_category(), -1);
+    open_category(SET_CAT_IFACE);
+    CHECK_EQ(settings_screen_scroll(NULL), scrolled);
+}
+
+/*
+ * Unsaved values are one state for the whole screen: the tiles show the
+ * same SAVE button the lists do, in the same colours, and it asks for the
+ * same save.
+ */
+TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
+{
+    fresh_hub();
+    settings_set_store(&s_mem_store);
+    s_save_calls = 0;
+    const unsigned clean = save_face();
+
+    open_category(SET_CAT_ESC);
+    const unsigned list_clean = save_face();
+    CHECK_EQ(list_clean, clean);
+    tap(XP, row_y(0));
+    CHECK(settings_dirty());
+    const unsigned list_dirty = save_face();
+    CHECK(list_dirty != clean);
+
+    to_hub();
+    CHECK_EQ(settings_screen_category(), -1);
+    CHECK(settings_dirty());
+    CHECK_EQ(save_face(), list_dirty);
+
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
+    CHECK(settings_save_asked());
+    CHECK_EQ(s_save_calls, 0);
+    CHECK(settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 1);
+    CHECK(!settings_dirty());
+    CHECK_EQ(save_face(), clean);
+
+    /* A save asked for on the tiles outlives the screen as well. */
+    open_category(SET_CAT_APP);
+    tap(XP, row_y(0));
+    to_hub();
+    tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
+    tap(home_x(), home_y());
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    CHECK(settings_save_asked());
+    CHECK(settings_save_tick(true));
+    CHECK_EQ(s_save_calls, 2);
+    settings_set_store(NULL);
 }
 
 int main(void)
@@ -2740,5 +2935,10 @@ int main(void)
     RUN(a_button_carried_into_the_band_is_not_pressed);
     RUN(a_drag_at_the_edge_of_the_plus_column_and_on_the_scroll_bar);
     RUN(a_key_press_that_loses_its_release_stops_and_holds_nothing);
+    RUN(the_hub_has_nine_slots_and_no_tenth);
+    RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
+    RUN(a_free_slot_opens_nothing);
+    RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);
+    RUN(the_tiles_show_and_save_what_a_list_left_unsaved);
     return test_summary("settings");
 }

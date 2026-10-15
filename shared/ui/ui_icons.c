@@ -199,3 +199,37 @@ void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
     gfx_fill_circle(c, left + (w * 13) / 16, y + h / 6, 2, color);
     gfx_fill_rect(c, left + (w * 9) / 16, y - h / 4, w / 3, 2, color);
 }
+
+/*
+ * Three rows of a list, each a pin and its line: the bindings by GPIO.
+ */
+void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+{
+    const int pad = size / 8;
+    const int dot = size / 6;
+    for (int i = 0; i < 3; ++i) {
+        const int ly = y + pad + (size - 2 * pad) * i / 2;
+        gfx_fill_rect(c, x + pad, ly - dot / 2, dot, dot, color);
+        gfx_fill_rect(c, x + pad + dot + size / 8, ly - 1,
+                      size - 2 * pad - dot - size / 8, 3, color);
+    }
+}
+
+/*
+ * A board seen from above: its outline and a row of pads along each long
+ * edge, one of them taken.
+ */
+void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
+{
+    const int pad = size / 8;
+    const int bw = size - 2 * pad;
+    const int bh = (size * 3) / 5;
+    const int top = y + (size - bh) / 2;
+    gfx_draw_round_rect(c, x + pad, top, bw, bh, 3, color);
+    for (int i = 0; i < 4; ++i) {
+        const int px = x + pad + bw * (2 * i + 1) / 8;
+        gfx_draw_circle(c, px, top + 5, 2, color);
+        gfx_draw_circle(c, px, top + bh - 6, 2, color);
+    }
+    gfx_fill_circle(c, x + pad + bw * 5 / 8, top + 5, 2, color);
+}
