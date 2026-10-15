@@ -16,16 +16,20 @@ history is in git.
   SAVE asks for the write and opens the menu. A save asked (`WHEN IDLE`)
   opens no warning; a refused one does. STOP, the tool tiles and every
   screen the panel opens by itself pass without it. After a refused save,
-  DISCARD also asks for a write of the values put back. The copy of the stored
-  values takes 400 bytes of internal RAM; the heap left with the largest
-  Wi-Fi mode up is 90,984 bytes.
+  DISCARD also asks for a write of the values put back. The copy of the
+  stored values takes 400 bytes of internal RAM; the heap left with the
+  largest Wi-Fi mode up is 90,984 bytes.
 
 ### Changed
 
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
-  refused save the label stays `NOT SAVED` or `SAVE` until
-  a save succeeds.
+  refused save the label stays `NOT SAVED` or `SAVE` until a save
+  succeeds.
+- The bench configurator describes release 0.20.0. Every repository source
+  of its data is a file and line at the tag `v0.20.0`; 24 sources carry the
+  line of that tag, in `STATUS.md`, `docs/Building.md` and
+  `docs/FirstRun.md`. Release 0.20.0 adds no bench function.
 
 ## 0.20.0 - 2026-10-15
 
