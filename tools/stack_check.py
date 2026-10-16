@@ -152,13 +152,18 @@ SCREEN_CALLS = {
 }
 
 # The link_port_t callbacks shared/link calls: the functions the panel puts
-# in its two ports.  A request to the coprocessor waits in exchange(), which
-# runs the safety loop, so this is the control task's deepest chain and it
-# is followed by name.  A function listed here that makes no indirect call,
-# or a callback that is not one function in the ELF, fails the check.
+# in its two ports, k_port and the coprocessor update's k_cu_port, whose
+# exchange, cu_port_exchange(), asks for the bus back and then calls
+# exchange().  A request to the coprocessor waits in exchange(), which runs
+# the safety loop, so this is the control task's deepest chain and it is
+# followed by name.  A function listed here that makes no indirect call, or
+# a callback that is not one function in the ELF, fails the check.
+# test/tools/test_stack_check.py holds the table to every link_port_t in
+# firmware/panel.
 PORT_CALLS = {
-    "link_write_acked": ("port_exchange", "port_now", "port_between"),
-    "link_read_window": ("port_exchange", "port_now"),
+    "link_write_acked": ("port_exchange", "cu_port_exchange", "port_now",
+                         "port_between"),
+    "link_read_window": ("port_exchange", "cu_port_exchange", "port_now"),
 }
 
 # The art_flash_t callbacks shared/artwork calls: the panel's one flash, in

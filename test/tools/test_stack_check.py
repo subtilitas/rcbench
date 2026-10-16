@@ -4,6 +4,8 @@ the build trees it does not read.
 SPDX-License-Identifier: MIT
 """
 
+import re
+
 import pytest
 
 import stack_check as sc
@@ -56,7 +58,6 @@ def test_a_task_the_table_lacks_and_one_it_invents_fail():
 
 
 def test_both_pages_carry_the_task_table_and_the_count():
-    import re
     for page, header, sentence in sc.PERFORMANCE:
         text = page.read_text(encoding="utf-8")
         assert sc.doc_rows(text, header), page.name
@@ -72,3 +73,59 @@ def test_both_pages_carry_the_task_table_and_the_count():
 ])
 def test_build_trees_are_not_read_as_source(rel, inside):
     assert sc.in_build_dir(sc.Path(rel)) is inside
+
+
+LINK = sc.ROOT / "shared" / "link"
+
+
+def port_fields():
+    """The link_port_t fields in order, as link_port.h declares them."""
+    text = (LINK / "include" / "link_port.h").read_text(encoding="utf-8")
+    body = re.search(r"typedef struct \{(.*?)\} link_port_t;", text,
+                     re.S).group(1)
+    body = re.sub(r"/\*.*?\*/", "", body, flags=re.S)
+    return [a or b for a, b in
+            re.findall(r"\(\s*\*\s*(\w+)\s*\)|\b(\w+)\s*;", body)]
+
+
+def panel_ports():
+    """{field: {function}} over every link_port_t firmware/panel defines."""
+    fields = port_fields()
+    found = {f: set() for f in fields}
+    for src in sorted(sc.PANEL_DIR.rglob("*.c")):
+        if sc.in_build_dir(src.relative_to(sc.PANEL_DIR)):
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in re.finditer(r"\blink_port_t\s+\w+\s*=\s*\{([^}]*)\}",
+                             text):
+            values = [v.strip() for v in m.group(1).split(",")
+                      if v.strip()]
+            for field, value in zip(fields, values, strict=True):
+                if value != "NULL":
+                    found[field].add(value)
+    return found
+
+
+def port_callers():
+    """{function: {field}}: the link_port_t callbacks each function in
+    shared/link/link_port.c calls."""
+    text = (LINK / "link_port.c").read_text(encoding="utf-8")
+    out = {}
+    for m in re.finditer(r"^\w[^\n(]*?\b(\w+)\([^)]*\)\s*\{(.*?)^\}", text,
+                         re.S | re.M):
+        calls = set(re.findall(r"\bport->(\w+)\(", m.group(2)))
+        if calls:
+            out[m.group(1)] = calls
+    return out
+
+
+def test_port_calls_name_every_callback_of_every_panel_port():
+    """A port's callback that PORT_CALLS leaves out is a call the graph
+    does not follow, and the check would not say so: the caller's indirect
+    calls count as followed."""
+    ports, callers = panel_ports(), port_callers()
+    assert ports["exchange"] and callers
+    assert set(sc.PORT_CALLS) == set(callers)
+    for caller, fields in callers.items():
+        want = set().union(*(ports[f] for f in fields))
+        assert set(sc.PORT_CALLS[caller]) == want, caller
