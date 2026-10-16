@@ -6,6 +6,7 @@
  */
 #include "kst_panel.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -342,6 +343,7 @@ static struct {
     gfx_rect_t area;
     bool       open;
     uint8_t    note_page;      /* the notes' page shown, when they take more */
+    uint32_t   note_sig;       /* the notes' places and rows the page is of */
     ui_tabs_t  tabs;
     bool       hv;             /* HV SERVO: above KST_PANEL_STD_MV may be set */
     bool       loaded;         /* the options were read from the settings   */
@@ -577,7 +579,10 @@ static int text_cells(void)
  * longer than the line is cut. */
 static size_t row_len(const char *s)
 {
-    const size_t fit = gfx_text_prefix(s, text_cells());
+    /* At least one cell: an area narrower than one, as before
+     * kst_panel_init(), still ends every row. */
+    const int cells = text_cells();
+    const size_t fit = gfx_text_prefix(s, cells > 0 ? cells : 1);
     size_t cut = fit;
 
     if (s[fit] == '\0' || s[fit] == ' ') {
@@ -2103,6 +2108,7 @@ void kst_panel_close(void)
     if (!kst_panel_holds_port()) {
         close_editors();
         k.open = false;
+        k.note_page = 0;
     } else if (programming() && !k.warn.open) {
         close_editors();
         warn_leave();
@@ -2271,6 +2277,7 @@ void kst_panel_leave(void)
     kst_panel_cancel();
     close_editors();
     k.open = false;
+    k.note_page = 0;
 }
 
 void kst_panel_tick(float dt_s)
@@ -2361,6 +2368,7 @@ void kst_panel_open(void)
 {
     if (!k.open) {
         k.open = true;
+        k.note_page = 0;
         /* The settings may have gone back to their defaults. */
         options_fresh();
         k.card_look = k.card_look || (k.prog.fed && !k.prog.f.card);
@@ -2802,6 +2810,7 @@ typedef struct {
     const char *s;
     int         slot;
     gfx_color_t color;
+    bool        standing;   /* stays on the first page, whole */
 } note_t;
 
 #define NOTES_MAX 5
@@ -3009,6 +3018,7 @@ static int notes_standing(note_t *n, int i)
     for (int j = 0; j < lines; ++j) {
         i = note(n, i, 2 + j, st[j],
                  ui_theme_color(warn ? UI_C_WARN : UI_C_DANGER));
+        n[i - 1].standing = true;
     }
     return i;
 }
@@ -3084,14 +3094,17 @@ static int page_notes(note_t *n)
     return i;
 }
 
-int kst_panel_pack_notes(const int *rows, int count, int room, int *page)
+int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
+                         int room, int *page)
 {
     int need = 0;
+    int held = 0;
     int pages = 1;
-    int used = 0;
+    int used;
 
     for (int i = 0; i < count; ++i) {
         need += rows[i];
+        held += standing[i] ? rows[i] : 0;
     }
     if (need <= room) {
         for (int i = 0; i < count; ++i) {
@@ -3099,8 +3112,21 @@ int kst_panel_pack_notes(const int *rows, int count, int room, int *page)
         }
         return 1;
     }
+    /* The standing notes take the first page before any other.  With no
+     * row left beside them for the page count, the other notes wait. */
+    if (held > 0 && held > room - 1) {
+        for (int i = 0; i < count; ++i) {
+            page[i] = standing[i] ? 0 : -1;
+        }
+        return 1;
+    }
     /* A page keeps its last row for the page count. */
+    used = held;
     for (int i = 0; i < count; ++i) {
+        if (standing[i]) {
+            page[i] = 0;
+            continue;
+        }
         if (used > 0 && used + rows[i] > room - 1) {
             ++pages;
             used = 0;
@@ -3115,10 +3141,11 @@ int kst_panel_pack_notes(const int *rows, int count, int room, int *page)
 static char s_msg[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
 
 /* Where the notes go: their rows from the first note's place to the
- * message, and the page each takes. */
+ * message, the page each takes, and where the shown page puts each line. */
 typedef struct {
     note_t n[NOTES_MAX];
     int    count;
+    int    rows[NOTES_MAX];
     int    lines;            /* the message's lines in s_msg */
     int    msg_rows;
     int    top;              /* the first note's place */
@@ -3126,11 +3153,21 @@ typedef struct {
     int    room;             /* rows for the notes above the message */
     int    page[NOTES_MAX];
     int    pages;
+    int    on;               /* the page shown */
+    int    y[NOTES_MAX];     /* each note's first row; -1 off the page */
+    int    count_y;          /* the page count's row; -1 for none */
+    int    msg_y;
+    int    msg_shown;        /* the message's lines that are drawn */
 } notes_plan_t;
+
+/* Static: the notes are planned on the UI task's deepest path.  One plan
+ * serves the draw and every query; none of them calls another. */
+static notes_plan_t s_plan;
 
 static void plan_notes(notes_plan_t *p)
 {
-    int rows[NOTES_MAX];
+    bool held[NOTES_MAX] = { false };
+    uint32_t sig = 2166136261u;
 
     p->count = page_notes(p->n);
     p->lines = message_shown(s_msg);
@@ -3143,11 +3180,123 @@ static void plan_notes(notes_plan_t *p)
     for (int i = 0; i < p->count; ++i) {
         const int at = k.area.y + NOTE_Y + p->n[i].slot * LINE_H;
 
-        rows[i] = kst_panel_text_rows(p->n[i].s);
+        p->rows[i] = kst_panel_text_rows(p->n[i].s);
+        held[i] = p->n[i].standing;
         p->top = at < p->top ? at : p->top;
+        sig = (sig ^ (uint32_t)(p->n[i].slot + 8)) * 16777619u;
+        sig = (sig ^ (uint32_t)p->rows[i]) * 16777619u;
     }
     p->room = (p->bottom - p->top) / LINE_H - p->msg_rows;
-    p->pages = kst_panel_pack_notes(rows, p->count, p->room, p->page);
+    p->pages = kst_panel_pack_notes(p->rows, held, p->count, p->room,
+                                    p->page);
+    /* Another set of notes starts on its first page. */
+    sig = (sig ^ (uint32_t)p->count) * 16777619u;
+    sig = (sig ^ (uint32_t)p->msg_rows) * 16777619u;
+    sig = (sig ^ (uint32_t)k.tabs.selected) * 16777619u;
+    if (sig != k.note_sig) {
+        k.note_sig = sig;
+        k.note_page = 0;
+    }
+}
+
+/*
+ * The page's notes from the top, each at its place or under the one above,
+ * and the last message from the area's last row up: three rows for one
+ * that takes fewer.  Notes that need more rows than there are above the
+ * message take pages: the standing notes are on the first, whole, the
+ * other notes page after them, the area's last notes row counts the pages,
+ * and a tap on the notes shows the next.  The message is shown whole
+ * unless the standing notes alone fill the rows above it: its last lines
+ * that would leave the area are left out.
+ */
+static void layout_notes(notes_plan_t *p)
+{
+    int y = k.area.y;
+
+    plan_notes(p);
+    p->on = k.note_page < p->pages ? k.note_page : 0;
+    p->count_y = -1;
+    if (p->pages == 1) {
+        int need = 0;
+
+        for (int i = 0; i < p->count; ++i) {
+            need += p->page[i] == 0 ? p->rows[i] : 0;
+        }
+        for (int i = 0; i < p->count; ++i) {
+            const int at = k.area.y + NOTE_Y + p->n[i].slot * LINE_H;
+            const int last = p->bottom - (p->msg_rows + need) * LINE_H;
+
+            p->y[i] = -1;
+            if (p->page[i] != 0) {
+                continue;
+            }
+            if (y < (at < last ? at : last)) {
+                y = at < last ? at : last;
+            }
+            need -= p->rows[i];
+            p->y[i] = y;
+            y += p->rows[i] * LINE_H;
+        }
+    } else {
+        y = p->top;
+        for (int i = 0; i < p->count; ++i) {
+            p->y[i] = -1;
+            if (p->page[i] == p->on) {
+                p->y[i] = y;
+                y += p->rows[i] * LINE_H;
+            }
+        }
+        p->count_y = p->top + (p->room - 1) * LINE_H;
+        y = p->count_y + LINE_H;
+    }
+    {
+        const int at = p->bottom - (p->msg_rows > KST_PANEL_MSG_LINES
+                                        ? p->msg_rows : KST_PANEL_MSG_LINES)
+                                   * LINE_H;
+
+        y = y > at ? y : at;
+    }
+    p->msg_y = y;
+    p->msg_shown = 0;
+    while (p->msg_shown < p->lines) {
+        const int rows = kst_panel_text_rows(s_msg[p->msg_shown]);
+
+        if (y + rows * LINE_H > p->bottom) {
+            break;
+        }
+        y += rows * LINE_H;
+        ++p->msg_shown;
+    }
+}
+
+static void draw_notes(gfx_canvas_t *c)
+{
+    notes_plan_t *p = &s_plan;
+    const kst_prog_msg_t *m = kst_prog_message(&k.prog);
+    int y;
+
+    layout_notes(p);
+    for (int i = 0; i < p->count; ++i) {
+        if (p->y[i] >= 0) {
+            (void)text_rows(c, k.area.x + 10, p->y[i], p->n[i].s,
+                            p->n[i].color);
+        }
+    }
+    if (p->count_y >= 0) {
+        char count[12];
+
+        /* At most NOTES_MAX pages: the bytes keep the count's width. */
+        snprintf(count, sizeof(count), "%u/%u", (unsigned)(uint8_t)(p->on + 1),
+                 (unsigned)(uint8_t)p->pages);
+        gfx_text_in(c, gfx_rect_make(k.area.x + 10, p->count_y,
+                                     k.area.w - 20, LINE_H),
+                    count, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT),
+                    1, GFX_ALIGN_RIGHT);
+    }
+    y = p->msg_y;
+    for (int i = 0; i < p->msg_shown; ++i) {
+        y = text_rows(c, k.area.x + 10, y, s_msg[i], level_color(m->level));
+    }
 }
 
 static gfx_rect_t notes_rect(const notes_plan_t *p)
@@ -3156,90 +3305,73 @@ static gfx_rect_t notes_rect(const notes_plan_t *p)
                          (int16_t)(p->room * LINE_H) };
 }
 
-/*
- * The page's notes from the top, each at its place or under the one above,
- * and the last message from the area's last row up: three rows for one
- * that takes fewer.  Notes that need more rows than there are above the
- * message take pages: the area's last notes row counts them, and a tap on
- * the notes shows the next.  The message is always shown whole.
- */
-static void draw_notes(gfx_canvas_t *c)
-{
-    /* Static: this frame lies on the UI task's deepest path. */
-    static notes_plan_t p;
-    const kst_prog_msg_t *m = kst_prog_message(&k.prog);
-    int y = k.area.y;
-
-    plan_notes(&p);
-    if (p.pages == 1) {
-        int need = 0;
-
-        for (int i = 0; i < p.count; ++i) {
-            need += kst_panel_text_rows(p.n[i].s);
-        }
-        for (int i = 0; i < p.count; ++i) {
-            const int at = k.area.y + NOTE_Y + p.n[i].slot * LINE_H;
-            const int last = p.bottom - (p.msg_rows + need) * LINE_H;
-
-            if (y < (at < last ? at : last)) {
-                y = at < last ? at : last;
-            }
-            need -= kst_panel_text_rows(p.n[i].s);
-            y = text_rows(c, k.area.x + 10, y, p.n[i].s, p.n[i].color);
-        }
-    } else {
-        const int on = k.note_page < p.pages ? k.note_page : 0;
-        const int count_y = p.top + (p.room - 1) * LINE_H;
-        char count[12];
-
-        y = p.top;
-        for (int i = 0; i < p.count; ++i) {
-            if (p.page[i] == on) {
-                y = text_rows(c, k.area.x + 10, y, p.n[i].s, p.n[i].color);
-            }
-        }
-        snprintf(count, sizeof(count), "%d/%d", on + 1, p.pages);
-        gfx_text_in(c, gfx_rect_make(k.area.x + 10, count_y,
-                                     k.area.w - 20, LINE_H),
-                    count, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT),
-                    1, GFX_ALIGN_RIGHT);
-        y = count_y + LINE_H;
-    }
-    {
-        const int at = p.bottom - (p.msg_rows > KST_PANEL_MSG_LINES
-                                       ? p.msg_rows : KST_PANEL_MSG_LINES)
-                                  * LINE_H;
-
-        y = y > at ? y : at;
-    }
-    for (int i = 0; i < p.lines; ++i) {
-        y = text_rows(c, k.area.x + 10, y, s_msg[i], level_color(m->level));
-    }
-}
-
 /* Whether (x, y) is on notes that take more than one page. */
 static bool notes_paged_at(int x, int y)
 {
-    static notes_plan_t p;
-
-    plan_notes(&p);
-    return p.pages > 1 && gfx_rect_contains(notes_rect(&p), x, y);
+    plan_notes(&s_plan);
+    return s_plan.pages > 1 && gfx_rect_contains(notes_rect(&s_plan), x, y);
 }
 
 gfx_rect_t kst_panel_notes_rect(void)
 {
-    static notes_plan_t p;
-
-    plan_notes(&p);
-    return p.pages > 1 ? notes_rect(&p) : (gfx_rect_t){ 0, 0, 0, 0 };
+    plan_notes(&s_plan);
+    return s_plan.pages > 1 ? notes_rect(&s_plan)
+                            : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 int kst_panel_note_pages(void)
 {
-    static notes_plan_t p;
+    plan_notes(&s_plan);
+    return s_plan.pages;
+}
 
-    plan_notes(&p);
-    return p.pages;
+int kst_panel_note_page(void)
+{
+    layout_notes(&s_plan);
+    return s_plan.on;
+}
+
+const char *kst_panel_shown_note(int i)
+{
+    layout_notes(&s_plan);
+    for (int j = 0; j < s_plan.count; ++j) {
+        if (s_plan.y[j] >= 0 && i-- == 0) {
+            return s_plan.n[j].s;
+        }
+    }
+    return NULL;
+}
+
+int kst_panel_shown_message_lines(void)
+{
+    layout_notes(&s_plan);
+    return s_plan.msg_shown;
+}
+
+gfx_rect_t kst_panel_notes_drawn(void)
+{
+    int top = INT_MAX;
+    int y;
+
+    layout_notes(&s_plan);
+    y = s_plan.msg_y;
+    if (s_plan.msg_shown > 0) {
+        top = s_plan.msg_y;
+    }
+    for (int i = 0; i < s_plan.msg_shown; ++i) {
+        y += kst_panel_text_rows(s_msg[i]) * LINE_H;
+    }
+    for (int i = 0; i < s_plan.count; ++i) {
+        const int end = s_plan.y[i] + s_plan.rows[i] * LINE_H;
+
+        if (s_plan.y[i] >= 0) {
+            top = s_plan.y[i] < top ? s_plan.y[i] : top;
+            y = end > y ? end : y;
+        }
+    }
+    return top == INT_MAX ? (gfx_rect_t){ 0, 0, 0, 0 }
+                          : (gfx_rect_t){ k.area.x, (int16_t)top, k.area.w,
+                                          (int16_t)(y - top) };
 }
 
 static void act_value(const row_t *r, char *out, size_t n)

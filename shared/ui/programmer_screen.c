@@ -1323,9 +1323,11 @@ static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
 }
 
 /* The bytes of the next line of @p at that fit @p cells: up to the last
- * space in it, or the whole width where no space falls after its start. */
+ * space in it, or the whole width where no space falls after its start.
+ * A line holds one cell at least, so every line ends. */
 static size_t sp_line_len(const char *at, int cells)
 {
+    cells = (cells > 0) ? cells : 1;
     if (gfx_text_cells(at) <= cells) {
         return strlen(at);
     }

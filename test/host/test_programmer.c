@@ -4074,9 +4074,20 @@ TEST_CASE(every_two_line_string_breaks_into_two_lines)
     }
 }
 
+/* A line of no cells, or fewer, still holds one: every text ends. */
+TEST_CASE(a_wrap_into_no_cells_still_ends)
+{
+    CHECK_EQ(programmer_screen_wrap_lines("abc", 0), 3);
+    CHECK_EQ(programmer_screen_wrap_lines("abc", -4), 3);
+    CHECK_EQ(programmer_screen_wrap_lines("a b", 0), 2);
+    CHECK_EQ(programmer_screen_wrap_lines("", 0), 0);
+    CHECK_EQ(programmer_screen_wrap_lines("abc", 1), 3);
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
+    RUN(a_wrap_into_no_cells_still_ends);
     RUN(a_class_shows_only_its_own_protocols);
     RUN(stepping_back_up_drops_the_connection);
     RUN(back_climbs_one_level_at_a_time);

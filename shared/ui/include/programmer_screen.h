@@ -176,6 +176,6 @@ const char *programmer_screen_why_text(const char *why);
 
 /**
  * The lines @p text takes broken as the screen breaks it, in lines of
- * @p cells; for tests.
+ * @p cells, one cell at least; for tests.
  */
 int programmer_screen_wrap_lines(const char *text, int cells);
