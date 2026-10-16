@@ -20,12 +20,24 @@ static inline bool canvas_ok(const gfx_canvas_t *c)
 }
 
 /*
- * Copies of the bodies of gfx_pixel(), gfx_pixel_get(), gfx_hline() and
- * gfx_clip_intersect() in gfx.c, for gfx_text.c.  Beside them in gfx.c the
- * compiler inlined them into the glyph loop; across files it cannot, so the
- * text code takes these.  Each must match its public twin line for line.
+ * The bodies of gfx_pixel(), gfx_pixel_get(), gfx_hline() and
+ * gfx_clip_intersect().  The public functions in gfx.c are one-line wrappers
+ * around these, and gfx_text.c calls these directly, so that the glyph loop
+ * has them inline: across files the compiler cannot inline the public
+ * functions.
+ *
+ * gfx.c defines GFX_INL_FORCE before including this header.  The wrappers
+ * then compile to the body itself, and the callers in gfx.c inline or call
+ * them as they did when the bodies were the public functions.  gfx_text.c
+ * leaves the macro undefined; the plain static inline gives it the smaller
+ * glyph loop.
  */
-static inline void gfx_pixel_inl(gfx_canvas_t *c, int x, int y,
+#ifdef GFX_INL_FORCE
+#define GFX_INL static inline __attribute__((always_inline))
+#else
+#define GFX_INL static inline
+#endif
+GFX_INL void gfx_pixel_inl(gfx_canvas_t *c, int x, int y,
                                  gfx_color_t color)
 {
     if (!canvas_ok(c) || !gfx_rect_contains(c->clip, x, y)) {
@@ -34,7 +46,7 @@ static inline void gfx_pixel_inl(gfx_canvas_t *c, int x, int y,
     c->pixels[(ptrdiff_t)y * c->stride + x] = color;
 }
 
-static inline gfx_color_t gfx_pixel_get_inl(const gfx_canvas_t *c, int x, int y)
+GFX_INL gfx_color_t gfx_pixel_get_inl(const gfx_canvas_t *c, int x, int y)
 {
     if (!c || !c->pixels || x < 0 || y < 0 || x >= c->width || y >= c->height) {
         return 0;
@@ -42,7 +54,7 @@ static inline gfx_color_t gfx_pixel_get_inl(const gfx_canvas_t *c, int x, int y)
     return c->pixels[(ptrdiff_t)y * c->stride + x];
 }
 
-static inline void gfx_hline_inl(gfx_canvas_t *c, int x, int y, int w,
+GFX_INL void gfx_hline_inl(gfx_canvas_t *c, int x, int y, int w,
                                  gfx_color_t color)
 {
     if (w == INT_MIN) {
@@ -55,7 +67,7 @@ static inline void gfx_hline_inl(gfx_canvas_t *c, int x, int y, int w,
     gfx_fill_rect(c, x, y, w, 1, color);
 }
 
-static inline bool gfx_clip_intersect_inl(gfx_canvas_t *c, gfx_rect_t r)
+GFX_INL bool gfx_clip_intersect_inl(gfx_canvas_t *c, gfx_rect_t r)
 {
     if (!c) {
         return false;

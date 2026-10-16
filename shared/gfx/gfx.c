@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+#define GFX_INL_FORCE   /* gfx_int.h: force the primitives inline (see there) */
 #include "gfx_int.h"
 
 #include <limits.h>
@@ -153,28 +154,19 @@ bool gfx_clip_set(gfx_canvas_t *c, gfx_rect_t r)
 
 bool gfx_clip_intersect(gfx_canvas_t *c, gfx_rect_t r)
 {
-    if (!c) {
-        return false;
-    }
-    return gfx_rect_intersect(r, c->clip, &c->clip);
+    return gfx_clip_intersect_inl(c, r);
 }
 
 /* -------------------------------------------------------------- primitives */
 
 void gfx_pixel(gfx_canvas_t *c, int x, int y, gfx_color_t color)
 {
-    if (!canvas_ok(c) || !gfx_rect_contains(c->clip, x, y)) {
-        return;
-    }
-    c->pixels[(ptrdiff_t)y * c->stride + x] = color;
+    gfx_pixel_inl(c, x, y, color);
 }
 
 gfx_color_t gfx_pixel_get(const gfx_canvas_t *c, int x, int y)
 {
-    if (!c || !c->pixels || x < 0 || y < 0 || x >= c->width || y >= c->height) {
-        return 0;
-    }
-    return c->pixels[(ptrdiff_t)y * c->stride + x];
+    return gfx_pixel_get_inl(c, x, y);
 }
 
 void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color)
@@ -211,14 +203,7 @@ void gfx_clear(gfx_canvas_t *c, gfx_color_t color)
 
 void gfx_hline(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color)
 {
-    if (w == INT_MIN) {
-        return;             /* -INT_MIN is undefined, and no line is this long */
-    }
-    if (w < 0) {
-        x += w + 1;
-        w = -w;
-    }
-    gfx_fill_rect(c, x, y, w, 1, color);
+    gfx_hline_inl(c, x, y, w, color);
 }
 
 void gfx_vline(gfx_canvas_t *c, int x, int y, int h, gfx_color_t color)
