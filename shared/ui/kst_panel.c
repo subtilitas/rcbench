@@ -3188,17 +3188,17 @@ static void draw_notes(gfx_canvas_t *c)
             y = text_rows(c, k.area.x + 10, y, p.n[i].s, p.n[i].color);
         }
     } else {
-        const int shown = k.note_page < p.pages ? k.note_page : 0;
+        const int on = k.note_page < p.pages ? k.note_page : 0;
         const int count_y = p.top + (p.room - 1) * LINE_H;
         char count[12];
 
         y = p.top;
         for (int i = 0; i < p.count; ++i) {
-            if (p.page[i] == shown) {
+            if (p.page[i] == on) {
                 y = text_rows(c, k.area.x + 10, y, p.n[i].s, p.n[i].color);
             }
         }
-        snprintf(count, sizeof(count), "%d/%d", shown + 1, p.pages);
+        snprintf(count, sizeof(count), "%d/%d", on + 1, p.pages);
         gfx_text_in(c, gfx_rect_make(k.area.x + 10, count_y,
                                      k.area.w - 20, LINE_H),
                     count, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT),
