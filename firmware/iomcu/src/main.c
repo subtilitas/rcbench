@@ -1802,26 +1802,6 @@ static void can_report(uint32_t now)
 static bench_state_t s_bench;
 
 /*
- * How stale a speed may be before it stops being reported.
- *
- * Frames go out at a kilohertz, so a reply older than this is not a slow
- * update but an ESC that has stopped answering -- unplugged, or one that
- * never did bidirectional DShot.  A held-over speed on a stopped motor is
- * exactly the plausible wrong number this bench exists to avoid.
- */
-#define RPM_STALE_MS  200u
-
-/*
- * How old an extended-telemetry reading may be before the field goes empty.
- *
- * Longer than RPM_STALE_MS because the rates are not the same: an ESC answers
- * every frame with a period and interleaves temperature, voltage and current
- * between them a few times a second.  Holding those to the speed's window
- * would blank fields that are arriving exactly as the protocol sends them.
- */
-#define EDT_STALE_MS  2000u
-
-/*
  * The peaks belong to a run, and a run starts when the bank arms.
  *
  * They are kept on this end because it has the fast samples and the panel
@@ -1834,59 +1814,26 @@ static bool s_was_driving;
 static void sample(void)
 {
     /*
-     * The live readings and their valid bits are rebuilt every sample; the
-     * peaks are not, because a peak that is recomputed from one sample is
-     * the current reading wearing a different name.
+     * The ESC's telemetry as the driver holds it, and
+     * bench_state_from_telem() for what is reported of it: the live
+     * readings, their valid bits and the staleness rules, host-tested.
+     * The speed is asked for only with the poles set.
      */
-    s_bench.voltage     = 0.0f;
-    s_bench.current     = 0.0f;
-    s_bench.power       = 0.0f;
-    s_bench.rpm         = 0.0f;
-    s_bench.temp_esc    = 0.0f;
-    s_bench.temp_motor  = 0.0f;
-    s_bench.flags       = 0u;
-
-    uint32_t erpm = 0u;
-    uint32_t age  = 0u;
-    const uint16_t poles = s_state.control[LINK_CT_MOTOR_POLES];
-    if (poles != 0u && outputs_hw_erpm(&erpm, &age) && age <= RPM_STALE_MS) {
-        /* Pole pairs, not poles: one electrical revolution per pair. */
-        s_bench.rpm = (float)dshot_rpm(erpm, (uint8_t)(poles / 2u));
-        s_bench.flags |= (uint16_t)LINK_BN_RPM_OK;
-    }
-
-    /*
-     * What the ESC says about itself, when it does extended telemetry.  The
-     * units belong to the frame type and are the module's (dshot_edt_*()).
-     *
-     * There is no other source for any of these on this board.  An ESC that
-     * was not asked, or that does not know the command, leaves them empty and
-     * the flags clear, which is what the panel draws as a blank field rather
-     * than as a zero.
-     */
-    uint16_t edt = 0u;
-    if (outputs_hw_edt(DSHOT_TELEM_VOLTAGE, &edt, &age) && age <= EDT_STALE_MS) {
-        s_bench.voltage = (float)dshot_edt_millivolts(edt) / 1000.0f;
-        s_bench.flags |= (uint16_t)LINK_BN_VOLTAGE_OK;
-    }
-    if (outputs_hw_edt(DSHOT_TELEM_CURRENT, &edt, &age) && age <= EDT_STALE_MS) {
-        s_bench.current = (float)dshot_edt_amps(edt);
-        s_bench.flags |= (uint16_t)LINK_BN_CURRENT_OK;
-    }
-    if (outputs_hw_edt(DSHOT_TELEM_TEMPERATURE, &edt, &age)
-        && age <= EDT_STALE_MS) {
-        /* The ESC's own, and only that.  LINK_BN_TEMP_MOT_OK stays clear:
-         * an ESC knows nothing about the motor it drives, and temp_motor has
-         * no source on this board at all. */
-        s_bench.temp_esc = (float)dshot_edt_celsius(edt);
-        s_bench.flags |= (uint16_t)LINK_BN_TEMP_OK;
-    }
-    /* Power is the product and not a reading, so it is only as good as both
-     * halves: one of them missing leaves it empty rather than zero. */
-    if ((s_bench.flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u
-        && (s_bench.flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
-        s_bench.power = s_bench.voltage * s_bench.current;
-    }
+    bench_telem_t telem;
+    memset(&telem, 0, sizeof(telem));
+    telem.poles = s_state.control[LINK_CT_MOTOR_POLES];
+    telem.erpm_ok = telem.poles != 0u
+                    && outputs_hw_erpm(&telem.erpm, &telem.erpm_age_ms);
+    telem.voltage.ok = outputs_hw_edt(DSHOT_TELEM_VOLTAGE,
+                                      &telem.voltage.count,
+                                      &telem.voltage.age_ms);
+    telem.current.ok = outputs_hw_edt(DSHOT_TELEM_CURRENT,
+                                      &telem.current.count,
+                                      &telem.current.age_ms);
+    telem.temperature.ok = outputs_hw_edt(DSHOT_TELEM_TEMPERATURE,
+                                          &telem.temperature.count,
+                                          &telem.temperature.age_ms);
+    bench_state_from_telem(&s_bench, &telem);
     /* The ESC's own voltage and current go to SENSE as well, where they
      * stay while BENCH carries the INA228's. */
     sense_page_esc(&s_sense,

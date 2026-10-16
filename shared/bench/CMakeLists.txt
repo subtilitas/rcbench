@@ -5,7 +5,8 @@
 #
 # bench_state is the seam of the two-processor split: the screens see it and
 # never a register, so one screen renders measured and modelled numbers
-# without knowing which it has.
+# without knowing which it has.  The coprocessor fills it from the ESC's
+# DShot telemetry in the units of protocols/dshot (bench_state_from_telem()).
 set(SRCS
     bench_state.c
     telemetry_sim.c
@@ -28,11 +29,12 @@ set(SRCS
 # no card and builds this directory without it.
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} kst_card.c INCLUDE_DIRS include
-                           REQUIRES link kst logfile)
+                           REQUIRES link kst dshot logfile)
 else()
     add_library(rcbench_bench STATIC ${SRCS})
     target_include_directories(rcbench_bench PUBLIC include)
-    target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst m)
+    target_link_libraries(rcbench_bench PUBLIC rcbench_link rcbench_kst
+                          rcbench_dshot m)
     if(TARGET rcbench_logfile)
         target_sources(rcbench_bench PRIVATE kst_card.c)
         target_link_libraries(rcbench_bench PUBLIC rcbench_logfile)
