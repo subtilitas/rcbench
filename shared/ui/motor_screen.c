@@ -1222,7 +1222,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                  tag_text(tag, tag_buf, sizeof(tag_buf)),
                  ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                 "THROTTLE", ui_theme_color(UI_C_ACCENT));
+                 TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;

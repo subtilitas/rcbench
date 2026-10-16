@@ -1,13 +1,14 @@
 /*
  * The interface in German.
  *
- * Entries by ID from ui_text.def; one missing shows the English.  The
- * register is an instrument's: short, a noun where a label will do, the
- * imperative where an instruction is needed, no "Sie".  The terms the field
+ * Entries by ID from ui_text.def; one missing shows the English.  A label
+ * is a noun where a noun will do.  An instruction speaks to the operator in
+ * the du-imperative (Prüfe, Tippe, Halte); no "Sie".  The terms the field
  * uses in English stay English and are not in this table: ARM, DISARM,
  * STOP, the screen titles, protocol and mode names, units, Sweep, Hold,
- * Frame Rate, Throttle, Endpoint, CSV.  One German word per concept across
- * every screen: docs/Language.md holds the glossary.
+ * Endpoint, CSV.  Throttle is Gas, Frame Rate is Pulsrate, the link is the
+ * Verbindung.  One German word per concept across every screen:
+ * docs/Language.md holds the glossary.
  *
  * An uppercase label writes the sharp s as SS (SCHLIESSEN for schließen);
  * mixed-case text writes ß.  UTF-8 throughout.
@@ -361,6 +362,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_MO_TAG_HELD]            = "LETZTE TELEMETRIE",
     [TX_MO_TAG_IDLE]            = "TELEMETRIE INAKTIV",
     [TX_MO_CONTROL]             = "STEUERUNG",
+    [TX_MO_THROTTLE]            = "GAS",
     [TX_MO_NO_RUN]              = "Noch kein Lauf aufgezeichnet.",
     [TX_MO_HINT]                = "BALKEN ZIEHEN. AN DEN ENDEN TIPPEN, UM EINEN PUNKT ZU ÄNDERN.",
     [TX_MO_TARGET]              = "ZIEL: %s",
@@ -1608,8 +1610,8 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_PACK_MOHM]           = "Ganzer Akku, für das Einbruchmodell",
     [SET_MOTOR_POLES]         = "eRPM geteilt durch Pole/2 ergibt RPM",
     [SET_MOTOR_KV]            = "Wenn der ESC keinen meldet; 0 = leer",
-    [SET_OUT_MIN_US]          = "Breite bei 0 % Throttle",
-    [SET_OUT_MAX_US]          = "Breite bei 100 % Throttle",
+    [SET_OUT_MIN_US]          = "Breite bei 0 % Gas",
+    [SET_OUT_MAX_US]          = "Breite bei 100 % Gas",
     [SET_OUT_RAMP]            = "Anstieg des simulierten Prüfstands",
     [SET_THEME]               = "",
     [SET_BRIGHTNESS]          = "Skaliert die Palette; s. Beleuchtung",
@@ -1809,9 +1811,9 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_R_ROWS]           = "Logzeilen:       %lu geschrieben, %lu an "
                                    "eine volle Warteschlange verloren",
     [SERVO_STR_R_SETTINGS]       = "AKTIVE EINSTELLUNGEN",
-    [SERVO_STR_R_TYPE]           = "Typ:             %s, Centre %u us, %u-%u "
-                                   "us, Trim %+d us, Reverse %s",
-    [SERVO_STR_R_RATE]           = "Frame Rate:      %u Hz",
+    [SERVO_STR_R_TYPE]           = "Typ:             %s, Mitte %u us, %u-%u "
+                                   "us, Trimmung %+d us, Umkehren %s",
+    [SERVO_STR_R_RATE]           = "Pulsrate:        %u Hz",
     [SERVO_STR_R_DANGER]         = "Kann zerstören:  %s",
     [SERVO_STR_R_DANGER_NONE]    = "keine aktiv",
     [SERVO_STR_R_HV]             = "HV Servo:        %s",

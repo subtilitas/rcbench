@@ -172,8 +172,9 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | acknowledge, confirm | bestätigen |
 | SILENT (das Urteil des ANALYSER) | KEIN SIGNAL |
 
-Der Ton ist der eines Messgeräts: ein Substantiv, wo eine Beschriftung
-reicht, der Imperativ, wo eine Anweisung nötig ist, kein "Sie". Eine
+Eine Beschriftung ist ein Substantiv, wo ein Substantiv reicht. Eine
+Anweisung spricht den Bediener im Imperativ mit du an (Prüfe, Tippe, Halte);
+kein "Sie". Eine
 Beschriftung in Großbuchstaben schreibt ß als SS (SCHLIESSEN, GRÖSSE); Text
 in gemischter Schreibung schreibt ß. Das große ẞ (U+1E9E) ist nicht in den
 Fonts.
@@ -223,7 +224,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 226 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 242 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 

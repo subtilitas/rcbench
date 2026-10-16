@@ -169,8 +169,8 @@ One German word per English concept, on every screen and in the report.
 | acknowledge, confirm | bestätigen |
 | SILENT (the ANALYSER's verdict) | KEIN SIGNAL |
 
-The register is an instrument's: a noun where a label will do, the
-imperative where an instruction is needed, no "Sie". An uppercase label
+A label is a noun where a noun will do. An instruction speaks to the
+operator in the du-imperative (Prüfe, Tippe, Halte); no "Sie". An uppercase label
 writes ß as SS (SCHLIESSEN, GRÖSSE); mixed-case text writes ß. The capital
 ẞ (U+1E9E) is not in the fonts.
 
@@ -216,7 +216,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 226 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 242 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
