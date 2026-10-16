@@ -2655,6 +2655,9 @@ TEST_CASE(the_inject_bubble_explains_the_injector)
             REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_MODE, &r));
             CHECK_EQ(r.h, title_only);
         }
+        /* Each paragraph whole in the bubble's 640-byte buffer. */
+        CHECK(strlen(ui_tr(TX_BH_MODE_INJECT)) < 640u);
+        CHECK(strlen(ui_tr(TX_BH_MODE_INJECT_LOST)) < 640u);
     }
     ui_text_set_language(UI_LANG_EN);
     CHECK_STR_EQ(ui_band_mode_inject(), "INJECT");

@@ -4,8 +4,11 @@
 # real one (not wired in).  The automatic test (servo_test) is stepped by the
 # panel against the supply SUPPLY drives; its move rules (servo_move) also
 # judge the coprocessor's 1 kHz move capture (shared/sense/sense_sched.c).
+# The limit run (servo_limrun) is stepped by the panel too: the limit search
+# against the INA3221's windows, then the servo's own LEFT and RIGHT ANGLE
+# through the programmer.
 set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
-         servo_test.c servo_report.c)
+         servo_test.c servo_report.c servo_limrun.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

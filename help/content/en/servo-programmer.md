@@ -94,7 +94,7 @@ A tap that would break a hard limit changes nothing and names the limit.
 
 ![CHECK THIS CHANGE](view:servo-kst-soft)
 
-A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD TO APPLY takes it after 2 s; CANCEL leaves the draft as it was.
+A value inside the hard limits that breaks a soft limit opens CHECK THIS CHANGE, with the servo's value, the new value and one line per limit. HOLD TO APPLY takes it after 2 s; CANCEL leaves the draft as it was. A [limit run](servo.md#the-limit-run) asks nothing here: its 2 s start hold is the consent to a LEFT ANGLE or RIGHT ANGLE below 50.
 
 ![The LOCKED tab](view:servo-kst-locked)
 
@@ -135,7 +135,7 @@ A tap on a file loads it into the draft. Nothing reaches the servo before the wr
 ![The restore list](view:servo-kst-restore-list)
 ![A restore of the session's backup](view:servo-kst-restore)
 
-RESTORE writes back the session's backup, the servo as first read after CONNECT, or the values before an interrupted write. Every restore needs the write switch and a 2 s hold.
+RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Values before the limit run`. Every restore needs the write switch and a 2 s hold.
 
 ![MORE in programming mode](view:servo-kst-more)
 

@@ -15,8 +15,11 @@
  *   - A level that lasts less than INJ_LINE_GLITCH samples is a glitch and
  *     is dropped before any rule is applied.
  *
- * Verdict: at least INJ_LINE_MIN_TX transactions, of which at least
- * INJ_LINE_MIN_AGREE_PCT percent name the same line.
+ * Verdict: at least INJ_LINE_MIN_TX transactions that name a line, and at
+ * least half of all transactions; of those that name a line, at least
+ * INJ_LINE_MIN_AGREE_PCT percent name the same one.  A transaction that
+ * names no line, such as a poll of an absent address, is left out of the
+ * agreement.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -57,11 +60,12 @@ typedef enum {
 typedef struct {
     inj_wiring_t verdict;
     uint32_t     tx;          /* transactions seen whole              */
-    uint32_t     agree_pct;   /* share naming the majority line, %    */
+    uint32_t     agree_pct;   /* majority share of the named, %       */
     uint32_t     edges4;      /* level changes on GP4, after glitches */
     uint32_t     edges5;
     uint8_t      end_state;   /* the lines at the end of the window   */
     uint32_t     rate_ksps;   /* sample rate, ksample/s (as given)    */
+    uint32_t     named;       /* transactions that name a line        */
 } inj_line_result_t;
 
 /**

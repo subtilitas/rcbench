@@ -611,6 +611,12 @@ reads it every poll after the glass and merges the two
   goes silent ages the touch reading as a silent glass does, and an armed
   bench goes SAFE at most 700 ms after its last answer: 200 ms until touch
   reads as lost, then `ARMING_TOUCH_DEAD_MS` (500 ms).
+- 1000 ms after its last answer the injector is detached. Its age no longer
+  counts, the glass alone decides, and the heartbeat comes back. The bench
+  stays SAFE until somebody arms it again.
+- A detached injector has its product ID read once every 1000 ms. The first
+  answer re-attaches it, with no contacts down and its age counted again
+  from that answer.
 
 A release image is built without the option. It compiles none of this and
 never addresses 0x14 a second time; CI (continuous integration) checks that

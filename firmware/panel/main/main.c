@@ -1569,14 +1569,24 @@ static atomic_uint s_log_open_run;
  */
 static atomic_uint s_test_open_run;
 
+/*
+ * A servo run's report, BENCHnnn.TXT, from its open to its close, as a run
+ * number, or 0: the automatic test's after its CSV, and the limit run's,
+ * which has no CSV.  An open report is an open run (run_open_now()).
+ */
+static atomic_uint s_test_open_txt;
+
 /* Whether @p name is a file the logger is still writing. */
 static bool card_busy(const char *name)
 {
     const int n = log_run_number(name);
+    const int r = log_report_number(name);
     const unsigned open_run  = atomic_load(&s_log_open_run);
     const unsigned open_test = atomic_load(&s_test_open_run);
-    return n > 0 && ((open_run != 0u && n == (int)open_run)
-                     || (open_test != 0u && n == (int)open_test));
+    const unsigned open_txt  = atomic_load(&s_test_open_txt);
+    return (n > 0 && ((open_run != 0u && n == (int)open_run)
+                      || (open_test != 0u && n == (int)open_test)))
+        || (r > 0 && open_txt != 0u && r == (int)open_txt);
 }
 
 /*
@@ -2501,7 +2511,8 @@ static void log_close(void)
 
 /*
  * The automatic servo test's files: its CSV as BENCHnnn.CSV under the next
- * run number, and its report as BENCHnnn.TXT under the same number.  The
+ * run number, and its report as BENCHnnn.TXT under the same number.  A limit
+ * run writes its report alone, as BENCHnnn.TXT under the next number.  The
  * render loop hands the lines over through s_test_q (servo_screen_test_peek())
  * and this task writes them.  The armed bench's own log writes no row while
  * a test runs (log_cadence_bench_run()), so a test is one CSV.  One test
@@ -2514,7 +2525,8 @@ typedef struct {
 
 #define TEST_Q_LEN 24
 static QueueHandle_t s_test_q;           /**< render loop -> logger */
-/* An automatic servo test is running, for the control task's bench log:
+/* An automatic servo test or a limit run is running, for the control
+ * task's bench and supply logs:
  * stored by the SERVO screen in the call that starts or ends a run
  * (servo_screen_on_testing()), so a row is neither written into a run nor
  * left out after it by a frame's length. */
@@ -2528,6 +2540,10 @@ static void servo_testing_told(bool running)
  * number in s_test_file (-1: not recorded). */
 static atomic_uint s_test_opens_sent;
 static atomic_uint s_test_opens_done;
+/* ENDs the render loop queued, and those this task has taken: a run's
+ * file is closed and s_test_report set for it once they match. */
+static unsigned    s_test_ends_sent;
+static atomic_uint s_test_ends_done;
 static atomic_int  s_test_file;
 /* Whether the last run's report reached the card whole; set at its END. */
 static atomic_bool s_test_report;
@@ -2566,13 +2582,17 @@ static void test_close(void)
         s_test_txt_bad = s_test_txt_bad || s_test_txt;
     }
     s_test_fp = NULL;
-    if (!s_test_txt) {
+    if (s_test_txt) {
+        atomic_store(&s_test_open_txt, 0u);
+    } else {
         atomic_store(&s_test_open_run, 0u);
     }
 }
 
-/* A run's OPEN: the next run number, as log_open() takes one. */
-static void test_open(void)
+/* A run's OPEN: the next run number, as log_open() takes one.  With @p txt
+ * the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit run): its
+ * BENCHnnn.TXT is opened under the number, and no CSV. */
+static void test_open(bool txt)
 {
     test_close();
     s_test_num    = -1;
@@ -2588,7 +2608,13 @@ static void test_open(void)
             if (!log_number_free(i, path, sizeof(path))) {
                 continue;
             }
-            atomic_store(&s_test_open_run, (unsigned)i);
+            if (txt) {
+                test_path(i, true, path, sizeof(path));
+                atomic_store(&s_test_open_txt, (unsigned)i);
+            } else {
+                atomic_store(&s_test_open_run, (unsigned)i);
+            }
+            s_test_txt = txt;
             s_test_fp = fopen(path, "w");
             if (s_test_fp != NULL) {
                 s_log_next = i + 1;
@@ -2596,6 +2622,7 @@ static void test_open(void)
                 ESP_LOGI(TAG, "servo test to %s", path);
             } else {
                 atomic_store(&s_test_open_run, 0u);
+                atomic_store(&s_test_open_txt, 0u);
                 if (++refused >= LOG_OPEN_TRIES) {
                     break;
                 }
@@ -2614,8 +2641,9 @@ static void test_open(void)
 
 static void test_write(const test_line_t *l)
 {
-    if (l->kind == SERVO_TEST_OUT_OPEN) {
-        test_open();
+    if (l->kind == SERVO_TEST_OUT_OPEN
+        || l->kind == SERVO_TEST_OUT_OPEN_TXT) {
+        test_open(l->kind == SERVO_TEST_OUT_OPEN_TXT);
         return;
     }
     if (l->kind == SERVO_TEST_OUT_END) {
@@ -2628,13 +2656,16 @@ static void test_write(const test_line_t *l)
             control_alert(TR(ALERT_CARD_SERVO_SHORT));
         }
         s_test_num = -1;
+        atomic_fetch_add(&s_test_ends_done, 1u);
         return;
     }
     if (s_test_num <= 0) {
         return;                         /* not recorded */
     }
     if (l->kind == SERVO_TEST_OUT_TXT && !s_test_txt) {
-        /* The report follows the CSV: one file open at a time. */
+        /* The report follows the CSV: one file open at a time.  Its marker
+         * is set before the CSV's goes, so the run stays open between. */
+        atomic_store(&s_test_open_txt, (unsigned)s_test_num);
         test_close();
         char path[64];
         test_path(s_test_num, true, path, sizeof(path));
@@ -2643,6 +2674,7 @@ static void test_write(const test_line_t *l)
         if (s_test_fp == NULL) {
             s_test_failed  = true;
             s_test_txt_bad = true;
+            atomic_store(&s_test_open_txt, 0u);
         }
     }
     if (s_test_fp == NULL) {
@@ -4103,11 +4135,16 @@ static void supply_log_tail(void)
     }
     supply_count_totals(&s_supply, dt);
     s_supply_ms = t;
+    /* No row while a servo run is under way: a limit run switches the bench
+     * to SAFE for each write, and its report is the record.  The log's clock
+     * runs on through it, as the totals do. */
     if (s_log_kind == LOG_RUN_SUPPLY) {
         s_log_t += dt;
-        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-        row.u.supply = s_supply;
-        log_post(&row);
+        if (!atomic_load(&s_servo_testing)) {
+            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+            row.u.supply = s_supply;
+            log_post(&row);
+        }
     }
 }
 
@@ -6251,12 +6288,16 @@ static void supply_pump(void)
     supply_step(step_s);
 
     /* Not after a trip or a lost supply in this step: the switch-off wrote
-     * the run's last row already, and the run ends at the next edge. */
+     * the run's last row already, and the run ends at the next edge.  No
+     * row while a servo run is under way, and the log's clock runs on
+     * through it, as the totals do. */
     if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
         s_log_t += step_s;
-        log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-        row.u.supply = s_supply;
-        log_post(&row);
+        if (!atomic_load(&s_servo_testing)) {
+            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
+            row.u.supply = s_supply;
+            log_post(&row);
+        }
     }
 
     snap_lock();
@@ -8505,22 +8546,35 @@ static void test_lines_service(void)
         test_line_t l;
         l.kind = (uint8_t)k;
         snprintf(l.text, sizeof(l.text), "%s", text);
+        const bool open = k == SERVO_TEST_OUT_OPEN
+                          || k == SERVO_TEST_OUT_OPEN_TXT;
         if (xQueueSend(s_test_q, &l, 0) != pdTRUE) {
-            open_waits = (k == SERVO_TEST_OUT_OPEN);
+            open_waits = open;
             break;
         }
-        if (k == SERVO_TEST_OUT_OPEN) {
+        if (open) {
             atomic_fetch_add(&s_test_opens_sent, 1u);
+        }
+        if (k == SERVO_TEST_OUT_END) {
+            ++s_test_ends_sent;
         }
         servo_screen_test_pop();
     }
-    /* Not the last run's number for a run whose OPEN still waits. */
+    /* Not the last run's number for a run whose OPEN still waits.  The
+     * counts are read before the number and the report state, which the
+     * logger stores before it counts. */
     const unsigned sent = atomic_load(&s_test_opens_sent);
-    if (sent != 0u && !open_waits
-        && atomic_load(&s_test_opens_done) == sent) {
+    const unsigned done = atomic_load(&s_test_opens_done);
+    const unsigned ends = atomic_load(&s_test_ends_done);
+    if (sent != 0u && !open_waits && done == sent) {
         servo_screen_test_files(atomic_load(&s_test_file),
                                 atomic_load(&s_test_report));
     }
+    /* No run starts until the logger has taken the last run's OPEN and
+     * END, and the screen has their answer: one number and one report
+     * state in flight at a time, each the run's that sent it. */
+    servo_screen_test_logger_busy(open_waits || done != sent
+                                  || ends != s_test_ends_sent);
 }
 
 /*
@@ -8773,12 +8827,18 @@ static void outputs_apply(const outbind_t *b)
 
 /* ------------------------------------------------- Wi-Fi and the update */
 
-/* Whether a run's log, or a servo test's, is open or about to be. */
+/* Whether a run's log, or a servo run's CSV or report, is open or about
+ * to be: a servo run under way, an OPEN queued for the logger and not yet
+ * answered, and the file from its open to its close, without a gap. */
 static bool run_open_now(void)
 {
     return atomic_load(&s_log_run_now) != 0u
            || atomic_load(&s_log_open_run) != 0u
-           || atomic_load(&s_test_open_run) != 0u;
+           || atomic_load(&s_test_open_run) != 0u
+           || atomic_load(&s_test_open_txt) != 0u
+           || atomic_load(&s_servo_testing)
+           || atomic_load(&s_test_opens_sent)
+                  != atomic_load(&s_test_opens_done);
 }
 
 /* Whether flash may be written now, and if not why: see fw_gate(). */

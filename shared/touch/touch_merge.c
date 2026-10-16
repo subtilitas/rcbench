@@ -27,6 +27,60 @@ void touch_merge_reset(touch_merge_t *m)
     }
 }
 
+void touch_merge_attach(touch_merge_t *m, uint32_t now_ms)
+{
+    if (m == NULL) {
+        return;
+    }
+    touch_merge_reset(m);
+    m->ok_ms = now_ms;
+    m->last_try_ms = now_ms;
+}
+
+bool touch_merge_attached(const touch_merge_t *m)
+{
+    return m != NULL && !m->detached;
+}
+
+bool touch_merge_expire(touch_merge_t *m, uint32_t now_ms)
+{
+    if (m == NULL || m->detached
+        || (uint32_t)(now_ms - m->ok_ms) < TOUCH_MERGE_DETACH_MS) {
+        return false;
+    }
+    /* The tracker sends an UP for each contact dropped here, and nothing
+     * the injector reported before the detach comes back after it. */
+    m->detached = true;
+    m->inject_n = 0;
+    m->fails = 0;
+    m->last_try_ms = now_ms;
+    return true;
+}
+
+bool touch_merge_probe_due(const touch_merge_t *m, uint32_t now_ms)
+{
+    return m != NULL && m->detached
+           && (uint32_t)(now_ms - m->last_try_ms) >= TOUCH_MERGE_PROBE_MS;
+}
+
+bool touch_merge_probe(touch_merge_t *m, bool answered, uint32_t now_ms)
+{
+    if (m == NULL || !m->detached) {
+        return false;
+    }
+    m->last_try_ms = now_ms;
+    if (!answered) {
+        return false;
+    }
+    /* Back with no contacts: the first report read after this is the
+     * injector's whole set. */
+    m->detached = false;
+    m->inject_n = 0;
+    m->fails = 0;
+    m->ok_ms = now_ms;
+    return true;
+}
+
 void touch_merge_glass(touch_merge_t *m, const touch_point_t *pts, int n)
 {
     if (m == NULL) {
@@ -41,7 +95,7 @@ void touch_merge_glass(touch_merge_t *m, const touch_point_t *pts, int n)
 
 bool touch_merge_inject_due(const touch_merge_t *m, uint32_t now_ms)
 {
-    if (m == NULL) {
+    if (m == NULL || m->detached) {
         return false;
     }
     if (m->fails < TOUCH_MERGE_FAIL_DROP) {
@@ -53,11 +107,12 @@ bool touch_merge_inject_due(const touch_merge_t *m, uint32_t now_ms)
 bool touch_merge_inject(touch_merge_t *m, const touch_point_t *pts, int n,
                         bool fresh, uint32_t now_ms)
 {
-    if (m == NULL) {
+    if (m == NULL || m->detached) {
         return false;
     }
     m->fails = 0;
     m->last_try_ms = now_ms;
+    m->ok_ms = now_ms;
     if (!fresh) {
         return false;
     }
@@ -77,7 +132,7 @@ bool touch_merge_inject(touch_merge_t *m, const touch_point_t *pts, int n,
 
 bool touch_merge_inject_failed(touch_merge_t *m, uint32_t now_ms)
 {
-    if (m == NULL) {
+    if (m == NULL || m->detached) {
         return false;
     }
     m->last_try_ms = now_ms;

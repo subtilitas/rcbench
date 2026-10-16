@@ -145,6 +145,7 @@ TEST_CASE(polls_at_400khz_name_gp5_as_scl)
     const inj_line_result_t r = classify(10000);
     CHECK_EQ(r.verdict, INJ_WIRING_OK);
     CHECK_EQ(r.tx, 50);
+    CHECK_EQ(r.named, 50);
     CHECK_EQ(r.agree_pct, 100);
     CHECK_EQ(r.rate_ksps, 10000);
     CHECK_EQ(r.end_state, INJ_LINE_GP4 | INJ_LINE_GP5);
@@ -219,6 +220,7 @@ TEST_CASE(a_two_sample_spike_is_a_level)
     }
     const inj_line_result_t r = classify(10000);
     CHECK_EQ(r.tx, 60);
+    CHECK_EQ(r.named, 60);
     CHECK_EQ(r.agree_pct, 50);
     CHECK_EQ(r.verdict, INJ_WIRING_NOISE);
 }
@@ -332,7 +334,7 @@ TEST_CASE(an_idle_span_at_the_window_end_closes_the_last_poll)
 }
 
 /* Both lines falling on one sample name no line, and neither does both
- * rising on one: such a transaction counts against agreement. */
+ * rising on one: such a transaction is left out of the agreement. */
 TEST_CASE(simultaneous_edges_name_no_line)
 {
     gen_reset(10000, 400000);
@@ -347,8 +349,123 @@ TEST_CASE(simultaneous_edges_name_no_line)
     wait(500);
     inj_line_result_t r = classify(10000);
     CHECK_EQ(r.tx, 21);
-    CHECK_EQ(r.agree_pct, 95);   /* 20 of 21, rounded down */
+    CHECK_EQ(r.named, 20);
+    CHECK_EQ(r.agree_pct, 100);   /* 20 of the 20 that name a line */
     CHECK_EQ(r.verdict, INJ_WIRING_OK);
+}
+
+/*
+ * The panel polling 0x14 with nothing there, as seen on the bench: the
+ * address byte goes unacknowledged, both lines are high after the ninth
+ * clock, and 15 us later the master sends a bare STOP, SDA down and up with
+ * SCL high.  The address part names no line (START on SDA, SCL rises
+ * last); the bare STOP names SDA.
+ */
+static void absent_poll(uint32_t gap_samples)
+{
+    g.swap = false;
+    start(g.h);
+    const uint8_t addr = 0x14 << 1;
+    for (int i = 7; i >= 0; --i) {
+        bit((uint8_t)((addr >> i) & 1u));
+    }
+    /* Ninth clock: nobody pulls SDA low, and SCL stays high after it. */
+    lvl(1, 0);
+    wait(g.h / 2u);
+    lvl(1, 1);
+    wait(150);   /* 15 us at 10 Msps */
+    /* The bare STOP. */
+    lvl(0, 1);
+    wait(g.h);
+    lvl(1, 1);
+    wait(gap_samples);
+}
+
+/* 45 reads of the glass and 5 polls of an absent 0x14 in one window. */
+TEST_CASE(polls_of_an_absent_injector_do_not_spoil_the_verdict)
+{
+    gen_reset(10000, 400000);
+    wait(200);
+    for (int i = 0; i < 50; ++i) {
+        if (i % 10 == 4) {
+            absent_poll(500);
+        } else {
+            transaction(false, 500);
+        }
+    }
+    const inj_line_result_t r = classify(10000);
+    CHECK_EQ(r.tx, 55);
+    CHECK_EQ(r.named, 50);
+    CHECK_EQ(r.agree_pct, 100);
+    CHECK_EQ(r.verdict, INJ_WIRING_OK);
+}
+
+/* SDA and SCL shorted together: every edge is on both lines at once, no
+ * transaction names a line, and there is no verdict. */
+TEST_CASE(shorted_lines_give_no_verdict)
+{
+    gen_reset(10000, 400000);
+    wait(200);
+    for (int i = 0; i < 50; ++i) {
+        lvl(0, 0);
+        wait(50);
+        lvl(1, 1);
+        wait(50);
+        lvl(0, 0);
+        wait(50);
+        lvl(1, 1);
+        wait(500);
+    }
+    const inj_line_result_t r = classify(10000);
+    CHECK_EQ(r.tx, 50);
+    CHECK_EQ(r.named, 0);
+    CHECK_EQ(r.agree_pct, 0);
+    CHECK_EQ(r.verdict, INJ_WIRING_NOISE);
+}
+
+/* Named transactions must be at least half of all: 20 named among 41 is
+ * refused although all 20 agree, 21 among 41 passes.  A bus where most
+ * transactions name no line is not read as wired. */
+TEST_CASE(named_transactions_must_be_half_of_all)
+{
+    for (int named = 20; named <= 21; ++named) {
+        gen_reset(10000, 400000);
+        wait(200);
+        for (int i = 0; i < 41; ++i) {
+            if (i < named) {
+                transaction(false, 500);
+            } else {
+                lvl(0, 0);
+                wait(50);
+                lvl(1, 1);
+                wait(500);
+            }
+        }
+        const inj_line_result_t r = classify(10000);
+        CHECK_EQ(r.tx, 41);
+        CHECK_EQ(r.named, (uint32_t)named);
+        CHECK_EQ(r.agree_pct, 100);
+        CHECK_EQ(r.verdict, named == 20 ? INJ_WIRING_NOISE : INJ_WIRING_OK);
+    }
+}
+
+/* Twenty named are the floor, whatever the count of all: 19 named and 1
+ * unnamed is refused. */
+TEST_CASE(nineteen_named_give_no_verdict)
+{
+    gen_reset(10000, 400000);
+    wait(200);
+    for (int i = 0; i < 19; ++i) {
+        transaction(false, 500);
+    }
+    lvl(0, 0);
+    wait(50);
+    lvl(1, 1);
+    wait(500);
+    const inj_line_result_t r = classify(10000);
+    CHECK_EQ(r.tx, 20);
+    CHECK_EQ(r.named, 19);
+    CHECK_EQ(r.verdict, INJ_WIRING_NOISE);
 }
 
 /* A gap under 10 us between two polls is not idle: the two are one. */
@@ -390,6 +507,10 @@ int main(void)
     RUN(transactions_cut_by_the_window_are_not_counted);
     RUN(an_idle_span_at_the_window_end_closes_the_last_poll);
     RUN(simultaneous_edges_name_no_line);
+    RUN(polls_of_an_absent_injector_do_not_spoil_the_verdict);
+    RUN(shorted_lines_give_no_verdict);
+    RUN(named_transactions_must_be_half_of_all);
+    RUN(nineteen_named_give_no_verdict);
     RUN(a_short_gap_joins_two_polls);
     RUN(verdicts_have_names);
     return test_summary("inj_line_id");

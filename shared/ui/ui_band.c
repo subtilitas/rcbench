@@ -280,6 +280,7 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
         } else if (st->mode != NULL
                    && strcmp(st->mode, ui_band_mode_inject()) == 0) {
             ids[n++] = TX_BH_MODE_INJECT;
+            ids[n++] = TX_BH_MODE_INJECT_LOST;
         }
         break;
     case UI_BAND_CHIP_ARMED:

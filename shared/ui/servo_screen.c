@@ -26,10 +26,12 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "kst_port.h"
 #include "link_pages.h"
 #include "log_name.h"
 #include "outputs.h"
 #include "rcbench_version.h"
+#include "servo_limrun.h"
 #include "servo_sweep.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -195,7 +197,8 @@ static const ui_text_id_t k_pages[PG_COUNT] = {
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE };
+       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
+       R_LIM_PULSES };
 
 typedef struct {
     uint8_t      page;
@@ -237,6 +240,8 @@ static const ov_row_t k_rows[] = {
     { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 0, false },
     { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
     { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
+    { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 6, false },
+    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 5, false },
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
@@ -270,7 +275,7 @@ static const uint8_t k_line_w[2][PS_COUNT] = {
 enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
        OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
        OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM };
+       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM, OP_LIM_START };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -637,6 +642,40 @@ static struct {
     float     test_v0, test_i0;  /**< before the run                     */
     float     test_v1, test_i1;  /**< as the run left them               */
     uint32_t  test_sig;      /**< what the box last showed              */
+
+    /*
+     * The limit run (servo_limrun.h): the limit search on the INA3221's
+     * windows, and with LIMIT RUN at SEARCH+PROG, LEFT ANGLE and RIGHT
+     * ANGLE of a KST or Chaservo servo on the programming port lowered.
+     * Its START is the LIMITS page's, held 2 s; its box is the test's
+     * place on the left card.  One of the two runs at a time.
+     */
+    servo_limrun_t lim;
+    bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
+    bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, for the
+                                  session                                */
+    ui_hold_t lim_hold;
+    bool      lim_down;
+    bool      lim_box;       /**< the left card shows the limit run     */
+    bool      lim_seen;      /**< it was running when last looked       */
+    /** The run ended in a session and its LEAVE is on its way: the box,
+     *  not the programmer, stays on the left card, and the programmer's
+     *  run ends once the LEAVE has (lim_end_due). */
+    bool      lim_leaving;
+    bool      lim_end_due;
+    int       lim_file;      /**< its report's number; 0 not yet, -1 none */
+    bool      lim_report;    /**< the card took the report whole       */
+    const char *lim_note;    /**< why the last START was refused, or NULL */
+    uint32_t  lim_changes;   /**< the meter's change count at the start */
+    uint32_t  lim_sig;
+    /* The outbox the logger last peeked, and whose files' number comes
+     * back (servo_screen_test_files()). */
+    bool      peek_lim;
+    servo_test_out_t peek_kind;
+    bool      files_lim;
+    /* The logger has an OPEN or an END of the last run not answered yet
+     * (servo_screen_test_logger_busy()). */
+    bool      logger_busy;
 
     uint32_t ctrl_rev;
     uint8_t  drive_target; /* 0 the outputs, 1 + n programming port n */
@@ -1546,6 +1585,9 @@ void servo_screen_set_sweep(bool able)
 static void test_end_now(servo_test_abort_t why);
 static void test_tell(void);
 static void ask_disarm(void);
+static void lim_end_now(servo_test_abort_t why);
+static bool bench_arming(void);
+static void lim_meter_follow(servo_source_id_t id, uint32_t changes);
 
 static void reissue(void)
 {
@@ -1785,9 +1827,12 @@ void servo_screen_cancel_arm(void)
      * to. */
     value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_STOP);
     test_end_now(SERVO_TEST_AB_STOP);
-    if (s.test_down || s.test_hold.held_s > 0.0f) {
+    if (s.test_down || s.test_hold.held_s > 0.0f
+        || s.lim_down || s.lim_hold.held_s > 0.0f) {
         ui_hold_reset(&s.test_hold);
         s.test_down = false;
+        ui_hold_reset(&s.lim_hold);
+        s.lim_down = false;
         ++s.test_rev;
     }
     if (s.pending.kind == SERVO_CMD_ARM) {
@@ -1817,7 +1862,8 @@ void servo_screen_cancel_arm(void)
      * is let go of: its release must not apply a set point after the stop. */
     if (s.ov_have && (s.ov_pressed == OP_ASK_APPLY
                       || s.ov_pressed == OP_WARN_APPLY
-                      || s.ov_pressed == OP_TEST_START)) {
+                      || s.ov_pressed == OP_TEST_START
+                      || s.ov_pressed == OP_LIM_START)) {
         s.ov_have    = false;           /* the press is over, as ov_let_go() */
         s.ov_pressed = OP_NONE;
         ++s.ctrl_rev;
@@ -2087,6 +2133,7 @@ static void supply_sample(const supply_state_t *st, bool in_force)
     const servo_test_reading_t r = test_reading_of(st);
     servo_test_reading(&s.test, &r,
                        s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+    servo_limrun_supply(&s.lim, &r, test_now());
     test_tell();
     /* The line, the plot and the CURRENT row are the supply's while it is
      * the rail's meter; with the INA3221 as the meter they are fed by its
@@ -2166,6 +2213,7 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
         return false;
     }
     test_meter_follow(id, changes);
+    lim_meter_follow(id, changes);
     s.have_changes = true;
     s.changes      = changes;
     /* More than one change ahead: changes went by unseen, and another meter
@@ -2246,8 +2294,8 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
     if (s.source != SERVO_SOURCE_INA3221) {
         return;
     }
-    if (s.test_on_ina) {
-        /* The run's reading, stamped where the panel had it. */
+    {
+        /* The runs' reading, stamped where the panel had it. */
         const servo_test_win_t tw = {
             .number   = w->number,
             .current  = w->current,
@@ -2260,8 +2308,12 @@ void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
             .min_mv   = w->min_mv,
             .taken_ms = w->stamped ? w->taken_ms : test_now(),
         };
-        servo_test_window(&s.test, &tw,
-                          s.have_feedback ? deg_to_us(s.measured_deg) : 0u);
+        if (s.test_on_ina) {
+            servo_test_window(&s.test, &tw,
+                              s.have_feedback ? deg_to_us(s.measured_deg)
+                                              : 0u);
+        }
+        servo_limrun_window(&s.lim, &tw);
         test_tell();
     }
     rail_plot();
@@ -2403,9 +2455,13 @@ static gfx_rect_t sup_val_rect(int k)
 }
 
 static uint32_t test_signature(void);
+static uint32_t lim_signature(void);
 
 static void reset(void)
 {
+    if (s.lim_end_due) {
+        kst_panel_run_end();
+    }
     memset(&s, 0, sizeof(s));
     s.drive_pin   = SERVO_SCREEN_NO_PIN;
     servo_test_init(&s.test);
@@ -2451,6 +2507,8 @@ static void reset(void)
     s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - SETB_W),
                                   12, SETB_W, 24 };
     kst_panel_init(overlay_area());
+    servo_limrun_init(&s.lim);
+    s.lim_sig = lim_signature();
 
     ui_plot_init(&s.power, k_power, PS_COUNT, (float)RC_W / SAMPLE_HZ);
     ui_tabs_init_text(&s.tabs, k_pages, PG_COUNT,
@@ -2804,7 +2862,8 @@ static bool s_testing_last;
 
 static void test_tell(void)
 {
-    const bool running = servo_test_running(&s.test);
+    const bool running = servo_test_running(&s.test)
+                         || servo_limrun_running(&s.lim);
     if (running != s_testing_last) {
         s_testing_last = running;
         if (s_testing_told != NULL) {
@@ -2908,6 +2967,7 @@ static void test_restore_service(void)
  * go -- before whatever ended it acts. */
 static void test_end_now(servo_test_abort_t why)
 {
+    lim_end_now(why);
     if (!servo_test_running(&s.test)) {
         return;
     }
@@ -2937,7 +2997,8 @@ static int test_blocked(void)
     if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
     }
-    if (!servo_test_drained(&s.test)) {
+    if (!servo_test_drained(&s.test) || servo_limrun_running(&s.lim)
+        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
         return SERVO_STR_START_BUSY;
     }
     /* What the engine would refuse, said live: a refusal stays on the
@@ -3013,6 +3074,7 @@ static void test_begin(void)
     s.test_file    = 0;
     s.test_report  = false;
     s.test_box     = true;
+    s.lim_box      = false;
     s.ov_open      = false;
     s.kp_alone     = false;
     close_panels();
@@ -3039,24 +3101,494 @@ static void ask_hv_test(void)
 
 bool servo_screen_testing(void) { return servo_test_running(&s.test); }
 
-servo_test_out_t servo_screen_test_peek(const char **text)
+bool servo_screen_limit_running(void)
 {
-    return servo_test_peek(&s.test, text);
+    return servo_limrun_running(&s.lim);
 }
 
-void servo_screen_test_pop(void) { servo_test_pop(&s.test); }
+int servo_screen_limit_phase(void)
+{
+    return (int)s.lim.phase;
+}
+
+/* The automatic test's outbox first, then the limit run's: one of the two
+ * runs at a time, and each drained before the other starts. */
+servo_test_out_t servo_screen_test_peek(const char **text)
+{
+    servo_test_out_t k = servo_test_peek(&s.test, text);
+    s.peek_lim = false;
+    if (k == SERVO_TEST_OUT_NONE) {
+        k = servo_limrun_peek(&s.lim, text);
+        s.peek_lim = k != SERVO_TEST_OUT_NONE;
+    }
+    s.peek_kind = k;
+    return k;
+}
+
+void servo_screen_test_pop(void)
+{
+    if (s.peek_kind == SERVO_TEST_OUT_OPEN
+        || s.peek_kind == SERVO_TEST_OUT_OPEN_TXT) {
+        s.files_lim = s.peek_lim;
+    }
+    if (s.peek_lim) {
+        servo_limrun_pop(&s.lim);
+    } else {
+        servo_test_pop(&s.test);
+    }
+    s.peek_kind = SERVO_TEST_OUT_NONE;
+    s.peek_lim  = false;
+}
 
 void servo_screen_test_files(int number, bool report)
 {
-    if (number != s.test_file || report != s.test_report) {
-        s.test_file   = number;
-        s.test_report = report;
+    int *file = s.files_lim ? &s.lim_file : &s.test_file;
+    bool *whole = s.files_lim ? &s.lim_report : &s.test_report;
+    if (number != *file || report != *whole) {
+        *file  = number;
+        *whole = report;
         ++s.ctrl_rev;
+    }
+}
+
+void servo_screen_test_logger_busy(bool busy)
+{
+    if (busy != s.logger_busy) {
+        s.logger_busy = busy;
+        ++s.ctrl_rev;
+    }
+}
+
+/* ------------------------------------------------------------ limit run */
+
+/* A PD mini answers on the servo rail: the programmer's CONNECT asks it
+ * for its set point as it stands. */
+static bool lim_pd_answers(void)
+{
+    return s.have_sup && s.sup.online && !supply_screen_model();
+}
+
+/* Why the INA3221 is not the meter a run may start on, or NULL.  The limit
+ * run reads the INA3221 and nothing else: the PD mini's readings and the
+ * model are refused. */
+static const char *lim_meter_why(void)
+{
+    if (!settings_get_bool(SET_INA3221_EN) || s.src_why == SERVO_SOURCE_WHY_OFF
+        || s.src_why == SERVO_SOURCE_WHY_OLD
+        || s.src_why == SERVO_SOURCE_WHY_NOT_HELD) {
+        return TR(SV_LIM_INA_SETUP);
+    }
+    if (!s.link_up || s.src_why == SERVO_SOURCE_WHY_NO_LINK
+        || s.src_why == SERVO_SOURCE_WHY_SILENT
+        || s.src_why == SERVO_SOURCE_WHY_RESET) {
+        return TR(SV_LIM_INA_OFFLINE);
+    }
+    if (s.source != SERVO_SOURCE_INA3221 || !s.have_win) {
+        return TR(SV_LIM_INA_NO_WIN);
+    }
+    return NULL;
+}
+
+static const char *lim_prog_why(void);
+
+/* The run drives the programming port: a KST or Chaservo servo is read
+ * first and searched within its own pulses. */
+static bool lim_reads(void)
+{
+    return s.drive_target != 0u
+        && s.drive_target != SERVO_SCREEN_TARGET_UNKNOWN
+        && s.drive_target != SERVO_SCREEN_TARGET_NO_LINK;
+}
+
+/* SERVO PULSES is there only for the programming port. */
+static bool row_hidden(const ov_row_t *r)
+{
+    return r->kind == R_LIM_PULSES && !lim_reads();
+}
+
+/* Why a limit run cannot start now, before any hold, or NULL. */
+static const char *lim_blocked(void)
+{
+    if (!value_live()) {
+        return ui_servo_str(SERVO_STR_START_NOT_ARMED);
+    }
+    if (servo_test_running(&s.test) || !servo_test_drained(&s.test)
+        || !servo_limrun_drained(&s.lim) || s.logger_busy) {
+        return ui_servo_str(SERVO_STR_START_BUSY);
+    }
+    const char *meter = lim_meter_why();
+    if (meter != NULL) {
+        return meter;
+    }
+    /* A powered rail: the window's voltage read, and at least
+     * SERVO_LIMRUN_RAIL_MIN_MV. */
+    if (!s.win.voltage || s.win.mean_mv < SERVO_LIMRUN_RAIL_MIN_MV) {
+        return TR(SV_LIM_RAIL_LOW);
+    }
+    if (s.drive_target != 0u && !s.drive_pwm) {
+        return TR(SV_LIM_PWM_OFF);
+    }
+    /* The bench's own outputs: a SERVO PWM output bound to carry the
+     * pulse, as the TARGET row names it. */
+    if (s.drive_target == 0u && (!s.pins_known || s.pins == 0u)) {
+        return s.pins_known ? TR(SV_TARGET_NONE) : TR(SV_TARGET_UNREAD);
+    }
+    if (!(s.min_us < s.centre_us && s.centre_us < s.max_us)) {
+        return TR(SV_LIM_REFUSED);
+    }
+    /* On the programming port every run reads the servo first: the
+     * programmer must be free to. */
+    if (lim_reads()) {
+        return lim_prog_why();
+    }
+    return NULL;
+}
+
+/* Why the programming is not offered, or NULL: only a servo on the
+ * programming port, with the port in PWM, and a PD mini on and set where a
+ * session can run, or without one a servo rail read at 4.8 V or more. */
+static const char *lim_prog_why(void)
+{
+    if (s.drive_target == 0u || s.drive_target == SERVO_SCREEN_TARGET_UNKNOWN
+        || s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
+        return TR(SV_LIM_PROG_PORT);
+    }
+    if (!servo_limrun_running(&s.lim)
+        && (kst_panel_holds_port() || !kst_panel_run_ready())) {
+        return TR(SV_LIM_PROG_BUSY);
+    }
+    /* A PD mini that answers with its output off, on a rail fed from
+     * elsewhere: the read session's ENTER would switch it on beside that
+     * supply, and the run ends on an output switched on. */
+    if (!servo_limrun_running(&s.lim) && lim_pd_answers() && !s.sup.output) {
+        return TR(SV_LIM_PROG_PD_OFF);
+    }
+    if (lim_pd_answers()
+        && supply_screen_set_v() * 1000.0f
+               < (float)KST_PORT_SUPPLY_MIN_MV - 0.5f) {
+        return TR(SV_LIM_PROG_LOW);
+    }
+    /* No PD mini to set: an external supply, or the model.  The servo
+     * rail as the INA3221's last window read it holds the same 4.8 V the
+     * coprocessor asks of a PD mini, which it cannot check here.  At the
+     * start only: the rail is the run's to watch after it. */
+    if (!servo_limrun_running(&s.lim) && !lim_pd_answers()
+        && (!s.win.voltage || s.win.mean_mv < KST_PORT_SUPPLY_MIN_MV)) {
+        return TR(SV_LIM_PROG_RAIL);
+    }
+    return NULL;
+}
+
+/* SEARCH+PROG chosen and offered. */
+static bool lim_programs(void)
+{
+    return s.lim_prog && lim_prog_why() == NULL;
+}
+
+static void lim_cfg(servo_limrun_cfg_t *c)
+{
+    memset(c, 0, sizeof(*c));
+    c->centre_us = s.centre_us;
+    c->min_us    = s.min_us;
+    c->max_us    = s.max_us;
+    c->read       = lim_reads();
+    c->program    = c->read && lim_programs();
+    c->set_pulses = c->read && s.lim_pulses;
+    snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
+    snprintf(c->type, sizeof(c->type), "%s", type()->name);
+    c->frame_hz = s.frame_hz;
+    (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
+                            s.drive_pin, s.drive_pwm, s.pins, s.pins_known);
+    c->shunt_dmohm =
+        (uint16_t)lroundf(settings_get(SET_INA3221_MOHM) * 10.0f);
+    c->enc_on = settings_get_bool(SET_ENC_EN) && s.enc_held;
+    snprintf(c->firmware, sizeof(c->firmware), "%s", RCBENCH_VERSION_STRING);
+    c->text = ui_servo_table();
+}
+
+/* What the run asked for, done the way a finger does it here.  False when
+ * the programmer refused a step: the run has ended and asks again. */
+static bool lim_apply(const servo_limrun_do_t *d)
+{
+    bool again = false;
+    if (d->command && value_live()) {
+        s.commanded_deg = us_to_deg(d->cmd_us);
+        post(SERVO_CMD_POSITION, d->cmd_us);
+        /* A step: the servo's own travel, not SPEED's. */
+        s.pending.slew_per_s = 0u;
+        ++s.ctrl_rev;
+    }
+    if (d->off) {
+        supply_screen_ask_off();
+    }
+    if (d->release) {
+        release();
+    }
+    if (d->disarm) {
+        /* The run's own SAFE, as DISARM does it: not the operator's, so
+         * the run goes on (lim_end_now()). */
+        value_edge(ui_value_ask_leave(&s.gate), SERVO_TEST_AB_DISARMED);
+        post(SERVO_CMD_DISARM, 0);
+        ++s.arm_rev;
+    }
+    if (d->arm) {
+        post(SERVO_CMD_ARM, 0);
+        ++s.arm_rev;
+    }
+    kst_prog_msg_id_t m = KST_PROG_MSG_NONE;
+    if (d->connect && lim_pd_answers()
+        && (!s.sup.output || !s.lim.sup_online)) {
+        /* A PD mini the run did not start with, or one whose output is
+         * off: the session would switch it on beside the rail's feed.
+         * The run ends as a reading outside a session ends it. */
+        servo_limrun_supply_refused(&s.lim, s.sup.output, test_now());
+        again = true;
+    } else if (d->connect) {
+        const bool pd = lim_pd_answers();
+        m = kst_panel_run_connect(
+            pd, (uint16_t)lroundf(supply_screen_set_v() * 1000.0f),
+            (uint16_t)lroundf(supply_screen_set_i() * 1000.0f));
+    } else if (d->write) {
+        m = kst_panel_run_write(d->angle[0], d->angle[1]);
+    } else if (d->pulses) {
+        m = kst_panel_run_pulses(d->pulse_dus[0], d->pulse_dus[1]);
+    } else if (d->leave) {
+        m = kst_panel_run_leave();
+        s.lim_leaving = m == KST_PROG_MSG_NONE
+                        && !servo_limrun_running(&s.lim);
+    }
+    if (m != KST_PROG_MSG_NONE) {
+        servo_limrun_refused(&s.lim, test_now());
+        again = true;
+    }
+    return !again;
+}
+
+/* The run's step against the clock, and what it asks done: twice where a
+ * refusal ended it in the first. */
+static void lim_step(void)
+{
+    for (int k = 0; k < 2; ++k) {
+        const servo_limrun_in_t in = {
+            .live      = value_live(),
+            .safe      = !bench_arming() && !s.gate.armed,
+            .enc_valid = enc_shown() && s.enc_held,
+            .enc_deg   = enc_deg_now(),
+        };
+        servo_limrun_do_t d;
+        servo_limrun_step(&s.lim, test_now(), &in, &d);
+        test_tell();
+        if (lim_apply(&d)) {
+            break;
+        }
+    }
+}
+
+/* The programmer's answer to the step under way. */
+static void lim_poll(void)
+{
+    if (!servo_limrun_programming(&s.lim)) {
+        return;
+    }
+    const kst_panel_run_t r = kst_panel_run_poll();
+    if (r == KST_PANEL_RUN_NONE || r == KST_PANEL_RUN_BUSY) {
+        return;
+    }
+    const bool ok = r == KST_PANEL_RUN_OK;
+    servo_limrun_servo_t sv;
+    memset(&sv, 0, sizeof(sv));
+    unsigned type_no = 0u;
+    switch (s.lim.phase) {
+    case SERVO_LIMRUN_PH_CONNECT:
+        if (!ok) {
+            servo_limrun_refused(&s.lim, test_now());
+            break;
+        }
+        sv.ok = kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
+                                    &sv.reversion, &type_no, sv.pulse_dus);
+        sv.type = type_no;
+        /* No backup at a CONNECT: the programmer's is an earlier run's
+         * until this run's first write (servo_limrun_backup()). */
+        servo_limrun_connected(&s.lim, &sv, test_now());
+        break;
+    case SERVO_LIMRUN_PH_WRITE:
+        if (ok) {
+            (void)kst_panel_run_servo(sv.angle, &sv.lo_raw, &sv.hi_raw,
+                                      &sv.reversion, &type_no, sv.pulse_dus);
+        }
+        /* The file saved before the run's first write, sent whether it
+         * ended well or not. */
+        servo_limrun_backup(&s.lim, kst_panel_run_backup());
+        if (s.lim.pulse_op) {
+            servo_limrun_pulsed(&s.lim, ok, ok ? sv.pulse_dus : NULL,
+                                test_now());
+        } else {
+            servo_limrun_written(&s.lim, ok, ok ? sv.angle : NULL,
+                                 test_now());
+        }
+        break;
+    case SERVO_LIMRUN_PH_LEAVE:
+        servo_limrun_left(&s.lim, ok, test_now());
+        break;
+    default:
+        break;
+    }
+    ++s.ctrl_rev;
+}
+
+/* A run that was running is over: the programmer's own supply values come
+ * back, and the box says how it ended. */
+static void lim_ended(void)
+{
+    if (!s.lim_seen || servo_limrun_running(&s.lim)) {
+        return;
+    }
+    s.lim_seen = false;
+    /* A LEAVE on its way is the run's to the end: the programmer's run, and
+     * the supply values it keeps, end when the port is back. */
+    if (s.lim_leaving) {
+        s.lim_end_due = true;
+    } else {
+        kst_panel_run_end();
+    }
+    test_tell();
+    ++s.test_rev;
+    ++s.ctrl_rev;
+}
+
+/* The ended run's LEAVE: over once the port has left LEAVING, back in PWM
+ * or, refused, still in programming.  Whichever screen is up. */
+static void lim_leave_follow(void)
+{
+    if (s.lim_leaving
+        && kst_prog_state(kst_panel_model()) != KST_PROG_LEAVING) {
+        s.lim_leaving = false;
+    }
+    if (s.lim_end_due && !s.lim_leaving) {
+        s.lim_end_due = false;
+        kst_panel_run_end();
+    }
+}
+
+/* End the run now and do what that asks -- the output off, the servo let
+ * go -- before whatever ended it acts.  A disarm while the run switches the
+ * bench or holds the programmer is the run's own and ends nothing. */
+static void lim_end_now(servo_test_abort_t why)
+{
+    if (!servo_limrun_running(&s.lim)) {
+        return;
+    }
+    if (why == SERVO_TEST_AB_DISARMED && servo_limrun_switching(&s.lim)) {
+        return;
+    }
+    servo_limrun_abort(&s.lim, why, test_now());
+    lim_step();
+    lim_ended();
+}
+
+/* The meter changed under the run: it reads the INA3221 decided at its
+ * start and nothing else. */
+static void lim_meter_follow(servo_source_id_t id, uint32_t changes)
+{
+    if (!servo_limrun_running(&s.lim)
+        || (id == SERVO_SOURCE_INA3221 && changes == s.lim_changes)) {
+        return;
+    }
+    servo_test_abort_t why = SERVO_TEST_AB_INA_METER;
+    if (s.have_drop && (int32_t)(s.drop_at - s.lim_changes) > 0) {
+        why = test_abort_of(s.drop_why);
+    }
+    lim_end_now(why);
+}
+
+/* START LIMIT RUN's hold completed: the run starts and the settings close
+ * so the left card shows it. */
+static void lim_begin(void)
+{
+    ui_hold_reset(&s.lim_hold);
+    s.lim_down = false;
+    ++s.test_rev;
+    s.lim_note = NULL;
+    if (lim_blocked() != NULL) {
+        ++s.ctrl_rev;
+        return;
+    }
+    servo_limrun_cfg_t c;
+    lim_cfg(&c);
+    if (!servo_limrun_start(&s.lim, &c, test_now())) {
+        s.lim_note = TR(SV_LIM_REFUSED);
+        ++s.ctrl_rev;
+        return;
+    }
+    s.lim_changes = s.changes;
+    if (c.read) {
+        kst_panel_run_begin();
+    }
+    {
+        /* The supply as the run starts: with none read yet, one that does
+         * not answer, so a PD mini that comes with its output on ends the
+         * run. */
+        servo_test_reading_t r;
+        memset(&r, 0, sizeof(r));
+        if (s.have_sup) {
+            r = test_reading_of(&s.sup);
+        }
+        servo_limrun_supply(&s.lim, &r, test_now());
+    }
+    test_tell();
+    stop_sweep();
+    s.lim_seen   = true;
+    s.lim_file   = 0;
+    s.lim_report = false;
+    s.lim_box    = true;
+    s.test_box   = false;
+    s.ov_open    = false;
+    s.kp_alone   = false;
+    close_panels();
+    if (kst_panel_is_open() && !kst_panel_holds_port()) {
+        kst_panel_close();
+    }
+    servo_invalidate();
+    ++s.ctrl_rev;
+}
+
+/* The run every frame: the programmer's answers, its timers, and what the
+ * box shows. */
+static uint32_t lim_signature(void)
+{
+    const servo_limrun_t *r = &s.lim;
+    const uint32_t f[] = {
+        (uint32_t)r->state, (uint32_t)r->phase, (uint32_t)r->side,
+        (uint32_t)r->cmd_us, (uint32_t)r->writes, (uint32_t)(s.lim_file + 2),
+        s.lim_report ? 1u : 0u, (uint32_t)(uintptr_t)lim_blocked(),
+        (uint32_t)(uintptr_t)lim_prog_why(), (uint32_t)(uintptr_t)s.lim_note,
+    };
+    uint32_t h = 2166136261u;
+    for (size_t k = 0; k < sizeof(f) / sizeof(f[0]); ++k) {
+        h = (h ^ f[k]) * 16777619u;
+    }
+    return h;
+}
+
+static void lim_tick(void)
+{
+    lim_poll();
+    lim_step();
+    lim_ended();
+    /* The box and the LIMITS page, where they show. */
+    const uint32_t sig = lim_signature();
+    if (sig != s.lim_sig) {
+        s.lim_sig = sig;
+        ++s.test_rev;
+        if (s.lim_box || (s.ov_open && s.tabs.selected == PG_LIMITS)) {
+            ++s.ctrl_rev;
+        }
     }
 }
 
 void servo_screen_service(void)
 {
+    lim_leave_follow();
     test_ended();
     test_restore_service();
 }
@@ -3315,7 +3847,8 @@ void servo_screen_set_bench_armed(bool armed)
  * an armed bench are exclusive.  DISARM is always taken. */
 static bool arm_locked(void)
 {
-    return kst_panel_holds_port() && !s.gate.armed;
+    return (kst_panel_holds_port() || servo_limrun_running(&s.lim))
+           && !s.gate.armed;
 }
 
 /*
@@ -3340,11 +3873,12 @@ static bool target_locked(const ov_row_t *r)
         }
         if (settings_get_bool(SET_SERVO_PORT_PWM)) {
             /* Off is taken, armed or not, outside a run. */
-            return s.sweeping || servo_test_running(&s.test);
+            return s.sweeping || servo_test_running(&s.test)
+                   || servo_limrun_running(&s.lim);
         }
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
-           || kst_panel_holds_port();
+           || servo_limrun_running(&s.lim) || kst_panel_holds_port();
 }
 
 /* A settings row tapped: the editor its kind takes. */
@@ -3420,6 +3954,18 @@ static void edit_row(int i)
     case R_HV:
         /* For a run started after it; one under way keeps its steps. */
         s.test_hv = !s.test_hv;
+        break;
+    case R_LIM_MODE:
+        /* For a run started after it, and only where it is offered. */
+        if (!servo_limrun_running(&s.lim) && lim_prog_why() == NULL) {
+            s.lim_prog = !s.lim_prog;
+        }
+        break;
+    case R_LIM_PULSES:
+        /* For a run started after it, on the programming port only. */
+        if (!servo_limrun_running(&s.lim) && lim_reads()) {
+            s.lim_pulses = !s.lim_pulses;
+        }
         break;
     case R_ENC_CENTRE:
         /* The servo is at its neutral: the live count is the centre. */
@@ -3631,8 +4177,21 @@ static void ov_down(const touch_event_t *evt)
         ++s.test_rev;
         return;
     }
+    if (s.tabs.selected == PG_LIMITS
+        && gfx_rect_contains(test_start_rect(), x, y)) {
+        ov_take(evt, OP_LIM_START, -1);
+        /* A hold, unless the run is under way (a tap stops it) or it
+         * cannot run now (a tap says why). */
+        s.lim_note = NULL;
+        if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
+            s.lim_down = true;
+            ui_hold_begin(&s.lim_hold);
+        }
+        ++s.test_rev;
+        return;
+    }
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page != s.tabs.selected) {
+        if (k_rows[i].page != s.tabs.selected || row_hidden(&k_rows[i])) {
             continue;
         }
         if (k_rows[i].kind == R_TRIM) {
@@ -3734,6 +4293,25 @@ static void ov_rest(const touch_event_t *evt)
         ++s.test_rev;
         ov_let_go();
         return;
+    case OP_LIM_START:
+        if (!s.lim_down) {
+            break;                      /* a tap: the release acts */
+        }
+        if (!up) {
+            /* A finger that leaves START LIMIT RUN abandons the hold. */
+            if (!gfx_rect_contains(test_start_rect(), x, y)
+                && ui_hold_leave(&s.lim_hold)) {
+                s.lim_down = false;
+                ++s.test_rev;
+                ov_let_go();
+            }
+            return;
+        }
+        (void)ui_hold_end(&s.lim_hold);
+        s.lim_down = false;
+        ++s.test_rev;
+        ov_let_go();
+        return;
     case OP_WARN_APPLY:
         if (!up) {
             /* A finger that leaves APPLY abandons the hold, as on ARM. */
@@ -3760,7 +4338,8 @@ static void ov_rest(const touch_event_t *evt)
     /* A release the finger did not make activates nothing, except the tap
      * that stops a run. */
     if (!touch_event_is_tap_up(evt)
-        && !(was == OP_TEST_START && servo_test_running(&s.test))) {
+        && !(was == OP_TEST_START && servo_test_running(&s.test))
+        && !(was == OP_LIM_START && servo_limrun_running(&s.lim))) {
         ++s.ctrl_rev;
         return;
     }
@@ -3825,6 +4404,13 @@ static void ov_rest(const touch_event_t *evt)
             test_end_now(SERVO_TEST_AB_OPERATOR);
         } else if (test_blocked() == 0 && test_needs_hv()) {
             ask_hv_test();
+        }
+        ++s.test_rev;
+        break;
+    case OP_LIM_START:
+        if (gfx_rect_contains(test_start_rect(), x, y)
+            && servo_limrun_running(&s.lim)) {
+            lim_end_now(SERVO_TEST_AB_OPERATOR);
         }
         ++s.test_rev;
         break;
@@ -4077,6 +4663,19 @@ static void event_body(const touch_event_t *evt)
                 }
                 return;
             }
+        }
+        if (s.lim_box && !s.ov_open && !kst_panel_is_open()
+            && gfx_rect_contains(test_btn_rect(), px, py)) {
+            /* STOP RUN ends the limit run on the press; CLOSE puts the
+             * result away. */
+            if (servo_limrun_running(&s.lim)) {
+                lim_end_now(SERVO_TEST_AB_OPERATOR);
+            } else {
+                s.lim_box = false;
+            }
+            servo_invalidate();
+            ++s.ctrl_rev;
+            return;
         }
         if (s.test_box && !s.ov_open && !kst_panel_is_open()
             && gfx_rect_contains(test_btn_rect(), px, py)) {
@@ -4507,6 +5106,140 @@ static void draw_test_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+/* The limit run's report, as the box and the LIMITS page name it. */
+static void lim_file_name(char *b, size_t n)
+{
+    if (s.lim_file > 0) {
+        log_report_name(b, n, s.lim_file);
+    } else {
+        snprintf(b, n, "%s", (s.lim_file < 0) ? TR(SV_NOT_RECORDED)
+                                               : TR(SV_WRITING));
+    }
+}
+
+/* An end as the box gives it: its endpoint, or FREE. */
+static void lim_end_text(char *b, size_t n, const servo_limrun_side_t *e)
+{
+    if (!e->done) {
+        snprintf(b, n, "-");
+    } else if (e->bound) {
+        snprintf(b, n, "%u us", (unsigned)e->limit_us);
+    } else {
+        snprintf(b, n, "%s", ui_servo_str(SERVO_STR_L_FREE));
+    }
+}
+
+/*
+ * The limit run on the left card, in the automatic test's place: while it
+ * runs, the values written, the phase with the end and the pulse, and the
+ * output it drives; after it, the verdict, the ends or the values, and the
+ * report.  Its button is STOP RUN while it runs and CLOSE after.
+ */
+static void draw_lim_box(gfx_canvas_t *c)
+{
+    const gfx_rect_t b = test_box_rect();
+    const servo_limrun_t *r = &s.lim;
+    const bool running = servo_limrun_running(r);
+    gfx_fill_round_rect(c, b.x, b.y, b.w, b.h, 6,
+                        ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_draw_round_rect(c, b.x, b.y, b.w, b.h, 6, ui_theme_color(UI_C_EDGE));
+    char l1[64], l2[64], l3[64];
+    gfx_color_t head = ui_theme_color(UI_C_ACCENT);
+    gfx_color_t col3 = ui_theme_color(UI_C_TEXT_DIM);
+    const char *right = "INA3221";
+    char f[LOG_RUN_NAME_MAX + 4];
+    if (running) {
+        if (r->cfg.program) {
+            snprintf(l1, sizeof(l1), TR(SV_LIM_TITLE_PROG), r->writes,
+                     (unsigned)SERVO_LIMRUN_WRITES_MAX);
+        } else {
+            snprintf(l1, sizeof(l1), "%s", TR(SV_LIM_TITLE));
+        }
+        const char *ph = ui_servo_str(servo_limrun_phase_str(r->phase));
+        if (r->phase == SERVO_LIMRUN_PH_SEARCH
+            || r->phase == SERVO_LIMRUN_PH_PROBE
+            || r->phase == SERVO_LIMRUN_PH_CHECK) {
+            snprintf(l2, sizeof(l2), TR(SV_LIM_AT), ph,
+                     r->side == SERVO_LIMRUN_LO ? TR(SV_LIM_LOW)
+                                                : TR(SV_LIM_HIGH),
+                     (unsigned)r->cmd_us);
+        } else if (r->read_once) {
+            snprintf(l2, sizeof(l2), TR(SV_LIM_VALUES), ph,
+                     (unsigned)r->cur[SERVO_LIMRUN_LEFT],
+                     (unsigned)r->cur[SERVO_LIMRUN_RIGHT]);
+        } else {
+            snprintf(l2, sizeof(l2), "%s", ph);
+        }
+        /* What it drives, in sight the whole run. */
+        (void)servo_target_line(l3, sizeof(l3), s.drive_target, s.drive_pin,
+                                s.drive_pwm, s.pins, s.pins_known);
+    } else {
+        const servo_limrun_verdict_t v = r->verdict;
+        head = (v == SERVO_LIMRUN_PASS || v == SERVO_LIMRUN_FREE)
+                   ? ui_theme_color(UI_C_OK)
+               : (v == SERVO_LIMRUN_FAIL) ? ui_theme_color(UI_C_DANGER)
+               : (v == SERVO_LIMRUN_ABORTED) ? ui_theme_color(UI_C_WARN)
+                                             : ui_theme_color(UI_C_ACCENT);
+        snprintf(l1, sizeof(l1), TR(SV_LIM_VERDICT),
+                 ui_servo_str(servo_limrun_verdict_str(v)));
+        uint16_t lo = 0u, hi = 0u;
+        if (v == SERVO_LIMRUN_FAIL || v == SERVO_LIMRUN_ABORTED) {
+            snprintf(l2, sizeof(l2), "%s",
+                     ui_servo_str(servo_limrun_why_str(r)));
+        } else if (v == SERVO_LIMRUN_PASS
+                   && servo_limrun_original(r, &lo, &hi)) {
+            snprintf(l2, sizeof(l2), TR(SV_LIM_SET), (unsigned)lo,
+                     (unsigned)r->cur[SERVO_LIMRUN_LEFT], (unsigned)hi,
+                     (unsigned)r->cur[SERVO_LIMRUN_RIGHT]);
+        } else {
+            char a[24], z[24];
+            lim_end_text(a, sizeof(a), &r->first[SERVO_LIMRUN_LO]);
+            lim_end_text(z, sizeof(z), &r->first[SERVO_LIMRUN_HI]);
+            snprintf(l2, sizeof(l2), TR(SV_LIM_ENDS), a, z);
+        }
+        if (servo_limrun_restore(r)) {
+            /* The values last written stay in the servo; the programmer
+             * puts back the ones before the run. */
+            snprintf(l3, sizeof(l3), TR(SV_LIM_RESTORE), TR(KP_PROGRAM));
+            col3 = ui_theme_color(UI_C_WARN);
+        } else if (r->why == SERVO_LIMRUN_WHY_RANGE) {
+            /* The servo's pulses and the bench's range, side by side. */
+            snprintf(l3, sizeof(l3), TR(SV_LIM_RANGE),
+                     (unsigned)(r->pulse_now[SERVO_LIMRUN_P_LOWER] / 10u),
+                     (unsigned)((r->pulse_now[SERVO_LIMRUN_P_UPPER] + 9u)
+                                / 10u),
+                     (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us);
+        } else if (v == SERVO_LIMRUN_FOUND || v == SERVO_LIMRUN_FREE) {
+            /* The ends are the line above: the output they were found on
+             * under them, as the run named it at its start -- not the
+             * target now, which may have changed since. */
+            snprintf(l3, sizeof(l3), "%s", r->cfg.output);
+        } else {
+            char a[24], z[24];
+            lim_end_text(a, sizeof(a), r->after[0].done ? &r->after[0]
+                                                        : &r->first[0]);
+            lim_end_text(z, sizeof(z), r->after[1].done ? &r->after[1]
+                                                        : &r->first[1]);
+            snprintf(l3, sizeof(l3), TR(SV_LIM_ENDS), a, z);
+        }
+        lim_file_name(f, sizeof(f));
+        right = f;
+    }
+    gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
+    gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT), 1);
+    gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16, col3, 1);
+    ui_button(c, test_btn_rect(), running ? TR(SV_LIM_STOP) : TR(SUP_CLOSE),
+              running ? ui_theme_color(UI_C_DANGER)
+                      : ui_theme_color(UI_C_PANEL_HI), false, true);
+    /* The meter it reads beside the button while it runs; the report
+     * after. */
+    const gfx_rect_t btn = test_btn_rect();
+    const int mw = gfx_text_width(&gfx_font_8x16, right, 1);
+    gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, right, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+}
+
 /* Characters the TARGET row's value holds: 188 px of the 8x16 face. */
 #define TARGET_CELLS 23u
 
@@ -4599,6 +5332,8 @@ static void draw_left(gfx_canvas_t *c)
     }
     if (s.test_box) {
         draw_test_box(c);
+    } else if (s.lim_box) {
+        draw_lim_box(c);
     }
 }
 
@@ -4952,10 +5687,11 @@ static uint8_t save_state(void)
     return settings_dirty() ? 3u : 0u;
 }
 
+/* Across the card: the German "not saved" line is 296 px. */
 static gfx_rect_t save_line_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
-                         (int16_t)(OV_W / 2), 18 };
+                         (int16_t)(OV_W - 20), 18 };
 }
 
 static void draw_save_line(gfx_canvas_t *c)
@@ -4977,6 +5713,12 @@ static bool row_unused(const ov_row_t *r)
 {
     if (r->kind == R_ENC_CENTRE) {
         return !settings_get_bool(SET_ENC_EN);
+    }
+    if (r->kind == R_LIM_MODE) {
+        return servo_limrun_running(&s.lim) || lim_prog_why() != NULL;
+    }
+    if (r->kind == R_LIM_PULSES) {
+        return servo_limrun_running(&s.lim);
     }
     if (r->kind != R_SETTING) {
         return false;
@@ -5005,6 +5747,14 @@ static void row_value(const ov_row_t *r, char *buf, size_t n)
     case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
                     return;
     case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
+    case R_LIM_MODE:
+        snprintf(buf, n, "%s",
+                 lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
+        return;
+    case R_LIM_PULSES:
+        snprintf(buf, n, "%s",
+                 s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
+        return;
     case R_ENC_CENTRE:
         snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
         return;
@@ -5214,6 +5964,73 @@ static void draw_test_lines(gfx_canvas_t *c)
     }
 }
 
+/* START LIMIT RUN, on the LIMITS page where START TEST is on TEST. */
+static void draw_lim_start(gfx_canvas_t *c)
+{
+    const bool running = servo_limrun_running(&s.lim);
+    gfx_color_t fill = ui_theme_color(UI_C_OK);
+    if (running) {
+        fill = ui_theme_color(UI_C_DANGER);
+    } else if (s.lim_hold.held_s > 0.0f) {
+        fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
+                            s.lim_hold.held_s);
+    }
+    ui_button(c, test_start_rect(),
+              running ? TR(SV_LIM_STOP) : TR(SV_LIM_START), fill,
+              s.ov_have && s.ov_pressed == OP_LIM_START,
+              running || lim_blocked() == NULL);
+}
+
+/* Under it, across the card: what the run drives and reads, what it does
+ * or why it cannot, and whether it programs. */
+static void draw_lim_lines(gfx_canvas_t *c)
+{
+    const int x = OV_X + 10;
+    const int y = OV_ROW0 + 7 * OV_PITCH + 2;
+    char out[32], line[96];
+    (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
+                            s.drive_pwm, s.pins, s.pins_known);
+    snprintf(line, sizeof(line), TR(SV_LIM_LINE), out);
+    gfx_text(c, x, y, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
+    const bool running = servo_limrun_running(&s.lim);
+    const char *blocked = running ? NULL : lim_blocked();
+    if (blocked != NULL || s.lim_note != NULL) {
+        snprintf(line, sizeof(line), "%s",
+                 blocked != NULL ? blocked : s.lim_note);
+        col = ui_theme_color(UI_C_WARN);
+    } else if (running) {
+        snprintf(line, sizeof(line), TR(SV_LIM_RUNNING),
+                 ui_servo_str(servo_limrun_phase_str(s.lim.phase)));
+    } else if (s.lim.state == SERVO_LIMRUN_DONE) {
+        char f[LOG_RUN_NAME_MAX + 4];
+        lim_file_name(f, sizeof(f));
+        snprintf(line, sizeof(line), TR(SV_LAST),
+                 ui_servo_str(servo_limrun_verdict_str(s.lim.verdict)), f);
+    } else {
+        snprintf(line, sizeof(line), "%s", TR(SV_HOLD_START));
+    }
+    gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
+
+    const char *why = lim_prog_why();
+    const bool prog = running ? s.lim.cfg.program : lim_programs();
+    if (why != NULL && !running) {
+        /* Why SEARCH+PROG is not offered: the run searches only. */
+        gfx_text(c, x, y + 36, why, &gfx_font_8x16,
+                 s.lim_prog ? ui_theme_color(UI_C_WARN)
+                            : ui_theme_color(UI_C_TEXT_DIM), 1);
+    } else {
+        const bool pulses = running ? s.lim.cfg.set_pulses
+                                    : (lim_reads() && s.lim_pulses);
+        gfx_text(c, x, y + 36,
+                 prog     ? TR(SV_LIM_PROG_NOTE)
+                 : pulses ? TR(SV_LIM_PULSES_NOTE)
+                          : TR(SV_LIM_SEARCH_NOTE),
+                 &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    }
+}
+
 static void draw_page(gfx_canvas_t *c)
 {
     ui_tabs_render(&s.tabs, c);
@@ -5221,7 +6038,7 @@ static void draw_page(gfx_canvas_t *c)
               s.ov_have && s.ov_pressed == OP_CLOSE, true);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const ov_row_t *r = &k_rows[i];
-        if (r->page != s.tabs.selected) {
+        if (r->page != s.tabs.selected || row_hidden(r)) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
@@ -5277,6 +6094,8 @@ static void draw_page(gfx_canvas_t *c)
             TR(SV_LIMITS_4),
         };
         draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
+        draw_lim_start(c);
+        draw_lim_lines(c);
     } else {
         const char *const lines[] = {
             TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
@@ -5550,7 +6369,11 @@ static void tick_body(float dt_s)
     kst_panel_set_hv(s.test_hv);
     kst_panel_bench_armed(bench_arming());
     kst_panel_tick(dt_s);
-    if (kst_panel_holds_port() && !kst_panel_is_open()) {
+    /* Not while a limit run holds the port: its box stays on the left
+     * card, and the run gives the port back itself. */
+    lim_leave_follow();
+    if (kst_panel_holds_port() && !kst_panel_is_open()
+        && !servo_limrun_running(&s.lim) && !s.lim_leaving) {
         kst_panel_open();
     }
     if (kst_panel_holds_port() != s.kst_held) {
@@ -5754,6 +6577,17 @@ static void tick_body(float dt_s)
     }
     test_tick();
 
+    /* START LIMIT RUN's hold, then the run. */
+    if (s.lim_down) {
+        ++s.test_rev;
+        if (ui_hold_tick(&s.lim_hold, dt_s)) {
+            s.lim_down = false;
+            ov_let_go();
+            lim_begin();
+        }
+    }
+    lim_tick();
+
     if (s.driving) {
         s.pulse += dt_s * 3.6f;         /* a little under two seconds a cycle */
         if (s.pulse > 6.28318f) {
@@ -5909,6 +6743,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_test[buf] = s.test_rev;
         clipped(c, test_start_rect(), draw_test_start);
     }
+    if (page_shown() && s.tabs.selected == PG_LIMITS
+        && s.drawn_test[buf] != s.test_rev) {
+        s.drawn_test[buf] = s.test_rev;
+        clipped(c, test_start_rect(), draw_lim_start);
+    }
     if (page_shown() && s.drawn_save[buf] != save_state()) {
         s.drawn_save[buf] = save_state();
         clipped(c, save_line_rect(), draw_save_line);
@@ -5968,6 +6807,8 @@ static void leave(void)
     test_end_now(SERVO_TEST_AB_LEFT);
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
+    ui_hold_reset(&s.lim_hold);
+    s.lim_down = false;
     post(SERVO_CMD_DISARM, 0);
     /* The button reads ARM when the screen comes back; a DISARM asked of an
      * armed bench stands until the bench answers it. */
@@ -6049,6 +6890,8 @@ static void cancel(void)
     test_end_now(SERVO_TEST_AB_TOUCH);
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
+    ui_hold_reset(&s.lim_hold);
+    s.lim_down = false;
     ++s.test_rev;
     ui_slider_release(&s.speed);
     ui_hold_reset(&s.arm);

@@ -121,6 +121,63 @@ static inline kst_image_t sim_bench_image(void)
     return img;
 }
 
+/* --- the travel the registers give ------------------------------------------- */
+
+/*
+ * Where a programmable servo's horn goes for pulse @p cmd_us, as the pulse
+ * width a servo model (servo_sim.h) is commanded: the model the limit run
+ * takes (servo_limrun.h).  NEUTRAL holds the horn at the centre; PULSE
+ * LOWER and PULSE UPPER are the pulses of full travel, LEFT ANGLE or RIGHT
+ * ANGLE at @p us_per_count each count; between, the travel is the share of
+ * the way to that pulse (@p square: that share squared); past it the horn
+ * holds full travel.  With REVERSION off LEFT ANGLE limits the short
+ * pulses, with it on the long ones; the horn's direction is not turned, so
+ * the stops stay where they are.  A real servo's unit, side and shape are
+ * not known (docs/ServoProgrammer.md).
+ */
+static inline float sim_horn_us(const uint8_t *reg, uint16_t cmd_us,
+                                float us_per_count, bool square)
+{
+    kst_image_t img;
+    int32_t n = 0, lo = 0, hi = 0;
+    float neutral, d, span, share;
+    bool low, rev;
+    unsigned angle;
+
+    memcpy(img.r, reg, sizeof(img.r));
+    (void)kst_field_display(KST_F_NEUTRAL,
+                            kst_field_get(&img, KST_F_NEUTRAL), &n);
+    (void)kst_field_display(KST_F_PULSE_LOWER,
+                            kst_field_get(&img, KST_F_PULSE_LOWER), &lo);
+    (void)kst_field_display(KST_F_PULSE_UPPER,
+                            kst_field_get(&img, KST_F_PULSE_UPPER), &hi);
+    neutral = (float)n / 10.0f;
+    low = (float)cmd_us < neutral;
+    rev = kst_field_get(&img, KST_F_REVERSION) != 0u;
+    angle = kst_field_get(&img, (low != rev) ? KST_F_LEFT_ANGLE
+                                             : KST_F_RIGHT_ANGLE);
+    d = low ? neutral - (float)cmd_us : (float)cmd_us - neutral;
+    span = low ? neutral - (float)lo / 10.0f : (float)hi / 10.0f - neutral;
+    share = span > 0.0f ? d / span : 0.0f;
+    if (share > 1.0f) {
+        share = 1.0f;
+    }
+    if (square) {
+        share *= share;
+    }
+    d = us_per_count * (float)angle * share;
+    return low ? neutral - d : neutral + d;
+}
+
+/* sim_horn_us() as the whole microsecond a servo model is commanded. */
+static inline uint16_t sim_horn_cmd(const uint8_t *reg, uint16_t cmd_us,
+                                    float us_per_count, bool square)
+{
+    const float h = sim_horn_us(reg, cmd_us, us_per_count, square);
+
+    return (uint16_t)(h < 1.0f ? 1.0f : h > 65000.0f ? 65000.0f : h + 0.5f);
+}
+
 /* --- fault script ------------------------------------------------------------ */
 
 typedef enum {
