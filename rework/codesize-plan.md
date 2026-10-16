@@ -44,18 +44,18 @@ today. The smallest headroom through one of their files is 656 bytes
 
 ## Status
 
-The owner took every fork recommendation (F1 to F25). Open PRs, each on
-its own branch from main edd813d6, CI green on every job including both
-firmware images and both `stack_check --check-doc` steps unless noted:
+The owner took every fork recommendation (F1 to F25). Waves 0 and 1 are
+merged into main, one at a time, each with green CI on a head that
+contained current main:
 
-| Row | PR | Branch | State |
-| --- | --- | --- | --- |
-| 0a | #416 | `codesize/0a-doc-citations` | open, green |
-| 0b | #417 | `codesize/0b-stack-elf` | open, green |
-| 0b (`PORT_CALLS`) | #418 | `codesize/0b-port-calls` (on #417) | open, green; no measured depth changed |
-| 1 | #420 | `codesize/1-arm-flash-gates` | open, green; core 0 depth 1,716 to 1,708 bytes |
-| 2 | #419 | `codesize/2-arming-step` | open, green; no measured depth changed |
-| 3 | #421 | `codesize/3-bench-telem` | open, green; core 0 depth 1,716 to 1,708 bytes |
+| Row | PR | Merge commit |
+| --- | --- | --- |
+| 0a | #416 | d869c5b0 |
+| 0b | #417 | dcb6f9a3 |
+| 0b (`PORT_CALLS`) | #418 | d13c7fa2 |
+| 2 | #419 | b7816fe6 |
+| 1 | #420 | eb8a9323 |
+| 3 | #421 | 453cf334 |
 
 Measured against the rows above:
 
@@ -63,17 +63,17 @@ Measured against the rows above:
   `ui_text.def` citations in `IOBoard.md` describe text that is not in the
   tree (OneShot/MultiShot, KISS telemetry, signal-only mode, socket
   ceilings); they wait for the owner to reword or delete them.
+- 0b: `PORT_CALLS` follows `cu_port_exchange`; no measured depth changed.
 - 2: the ARM branch holds about 15 lines of decisions; the rest is I/O.
   Only the decisions move (`arming_handshake_step()`), +39/-18 in `main.c`.
+  `control_task` stays at 4,288 of 5,120 bytes.
+- 1 and 3: core 0's deepest chain goes from 1,716 to 1,700 bytes (1,612
+  spare below the margin); each PR alone measured 1,708.
 - 3: +340/-88 over 13 files; `shared/bench` depends on `protocols/dshot`.
-- #421 and #416 both rewrite 4 rows of `IOBoard.md`; the second to merge
-  keeps #421's rows.
-- #420 and #421 each measure core 0 at 1,708 bytes on their own. The depth
-  with both merged is not measured; the second to merge takes CI's figure.
-- The configurator smoke test (`e2e/smoke.spec.ts:233`, 360 px) failed
-  once on #421 and passed on its re-run; #421 changes no configurator file.
 - The host suite counts 127 tests in a build configured by `coverage.py`:
   `esc_parity` is not registered with coverage on.
+
+Next: wave 2 (PRs 4 to 8, 13 to 15, 17, 29), which may run in parallel.
 
 ## Rules for every PR of the plan
 
