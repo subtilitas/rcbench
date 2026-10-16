@@ -57,6 +57,7 @@ END = "<!-- coverage:end -->"
 # STATUS.md table.
 TRACKED = [
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/touch/touch_map.c",
     "shared/touch/touch_merge.c",
