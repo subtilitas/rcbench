@@ -54,9 +54,7 @@ bool servo_limrun_wrote(const servo_limrun_t *r)
 
 bool servo_limrun_restore(const servo_limrun_t *r)
 {
-    return r != NULL && r->state == SERVO_LIMRUN_DONE && r->programmed
-        && (r->verdict == SERVO_LIMRUN_FAIL
-            || r->verdict == SERVO_LIMRUN_ABORTED);
+    return limrun_restore(r);
 }
 
 bool servo_limrun_original(const servo_limrun_t *r, uint16_t *left,
@@ -84,10 +82,7 @@ int32_t servo_limrun_dist(const servo_limrun_servo_t *sv, uint8_t side,
 
 int32_t servo_limrun_span(const servo_limrun_servo_t *sv, uint8_t side)
 {
-    const int32_t n = (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_NEUTRAL];
-    return side == SERVO_LIMRUN_HI
-               ? (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_UPPER] - n
-               : n - (int32_t)sv->pulse_dus[SERVO_LIMRUN_P_LOWER];
+    return limrun_span(sv, side);
 }
 
 /* The share's terms from the pulses in force: after SERVO PULSES at

@@ -342,7 +342,7 @@ static bool prog_lines(const servo_limrun_t *r, cur_t *c)
         }
         return true;
     }
-    if (servo_limrun_restore(r) && text_line(c, SERVO_STR_L_R_RESTORE)) {
+    if (limrun_restore(r) && text_line(c, SERVO_STR_L_R_RESTORE)) {
         return true;
     }
     if (!r->cfg.program || r->verdict == SERVO_LIMRUN_FREE) {
