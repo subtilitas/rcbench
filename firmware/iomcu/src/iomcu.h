@@ -3,18 +3,18 @@
  * into.  Private to firmware/iomcu/src: nothing under shared/ or protocols/
  * includes it.
  *
- * main.c       boot, the main loop, the console report and the page
- *              table; defines most of the state declared below
- * iomcu_pages.c   IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
- *              OUTPUTS, SERVO and PROG, and the glue that binds the outputs
- * iomcu_kst.c  the KST page and the port's hardware
- * iomcu_sense.c   SUPPLY, SENSE, SERVO_SENSE and SERVO_WIN
- * iomcu_tone.c the TONE page and the phase tap's capture
- * iomcu_bind.c BIND, BIND_CFG, BIND_OUT and the board's own pages
- * iomcu_can.c  the heartbeat's input and the CAN bus
+ * main.c         boot, the main loop, the console report and the page
+ *                table; defines most of the state declared below
+ * iomcu_pages.c  IDENTITY, STATUS, CONTROL, BENCH, CHANNELS, CHAN_CFG,
+ *                OUTPUTS, SERVO and PROG, and the glue that binds the outputs
+ * iomcu_kst.c    the KST page and the port's hardware
+ * iomcu_sense.c  SUPPLY, SENSE, SERVO_SENSE and SERVO_WIN
+ * iomcu_tone.c   the TONE page and the phase tap's capture
+ * iomcu_bind.c   BIND, BIND_CFG, BIND_OUT and the board's own pages
+ * iomcu_can.c    the heartbeat's input and the CAN bus
  *
- * The helpers at the end are `static inline` because the main loop and the
- * page handlers inlined them when they lived in one file.
+ * The helpers at the end are `static inline`, so the main loop and each
+ * page handler that calls one carry their own inlined copy.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -99,8 +99,8 @@ extern uint16_t      s_run_gen;
 extern bool          s_edge_set;
 extern uint16_t      s_edge_gen;
 extern uint64_t      s_edge_us;
-/* What the board and this file hold, before the supply and the sensor bus
- * take their pins. */
+/* What the board and this application hold, before the supply and the
+ * sensor bus take their pins. */
 extern uint64_t      s_base_reserved;
 /*
  * The PROG page: the programming ports, outputs of their own kind with

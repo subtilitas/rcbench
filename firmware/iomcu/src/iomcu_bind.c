@@ -21,7 +21,7 @@
  * hold a CHAN_CFG and an OUTPUTS page that are not in force, and a write of
  * BIND's COMMIT that names their CRC (cyclic redundancy check) puts both in
  * force or neither.  shared/outputs/out_stage.c decides; this is the glue
- * to the two pages' own rules above.  Not kept in flash: it starts as the
+ * to the two pages' own rules in iomcu_pages.c.  Not kept in flash: it starts as the
  * pages in force at boot.
  */
 out_stage_t s_stage;
@@ -112,9 +112,9 @@ uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
  * RAM to save a loop that runs once.
  *
  * Saying a pin is free here does not make it free.  outputs_reserve_pins()
- * has already been given the union of this catalogue and the pins this file
- * assigns, and refuses the rest whatever the page says -- so a catalogue
- * that is wrong costs a pin rather than the safety line.
+ * has already been given the union of this catalogue and the pins this
+ * application assigns, and refuses the rest whatever the page says -- so a
+ * catalogue that is wrong costs a pin rather than the safety line.
  */
 void catalogue_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
