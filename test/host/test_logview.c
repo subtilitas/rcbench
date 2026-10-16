@@ -19,6 +19,7 @@
 #include "log_select.h"
 #include "log_viewer_screen.h"
 #include "settings.h"
+#include "ui_screen.h"
 #include "ui_theme.h"
 #include "touch_feed.h"
 
@@ -269,26 +270,28 @@ static void draw(void)
 /* Geometry mirrored from the screen; if it moves, these move with it.  Panel
  * coordinates: the band is UI_BAND_H rows tall and the screen starts below. */
 #define BR_ROW_Y(i) (36 + 30 + (i) * 44 + 18)
+/* BR_ROWS: the file rows the list shows at once. */
+#define BR_ROWS_SEEN 6
 #define IM_ROW_Y(i) (36 + 30 + (i) * 36 + 14)
-#define IM_BTN_CY   (368 + 23)
+#define IM_BTN_CY   (352 + 21)
 #define SEP_X       110
 #define NUM_X       308
 #define BACK_X      500
 #define PLOT_X      690
-#define FOOT_CY     411
+#define FOOT_CY     373
 #define OPEN_X      724
 #define DELETE_X    596
 #define RESCAN_X    76
 /* The plot view: a point inside the plot, and the > button's centre. */
 #define PV_TAP_X    400
 #define NEXT_X      324
-#define FOOT_PLOT_CY (390 + 21)
+#define FOOT_PLOT_CY (352 + 21)
 /* The plot area: left edge, width in columns, the row a constant trace runs
  * along (the middle grid line) and the bottom row. */
 #define PV_X0       24
 #define PV_COLS     752
 #define PV_TOP_Y    76
-#define PV_BOTTOM_Y (76 + 275)
+#define PV_BOTTOM_Y (76 + 241)
 /* The DELETE question's two buttons. */
 #define DQ_CY       282
 #define DQ_CANCEL_X 264
@@ -399,13 +402,13 @@ TEST_CASE(a_file_that_proves_both_conventions_is_flagged)
 TEST_CASE(a_ragged_file_is_flagged_without_a_convention_conflict)
 {
     fresh();
-    /* Eight files, seven visible rows: scroll to the bottom first, so the last
+    /* Eight files, six visible rows: scroll to the bottom first, so the last
      * file lands on the last visible row.  Pins: a row reached by scrolling
      * accepts a touch. */
     send(TOUCH_EVENT_DOWN, 400, BR_ROW_Y(4));
     send(TOUCH_EVENT_MOVE, 400, BR_ROW_Y(4) - 400);
     send(TOUCH_EVENT_UP, 400, BR_ROW_Y(4) - 400);
-    open_file(6);
+    open_file(BR_ROWS_SEEN - 1);
     draw();
     const log_analysis_t *a = log_viewer_analysis();
     if (a == NULL) {
@@ -1241,10 +1244,10 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
     }
     draw();
 
-    /* The top row is now seven from the end of what was written, and the last
+    /* The top row is now six from the end of what was written, and the last
      * run written is the newest one on the card. */
     char want[LOG_RUN_NAME_MAX];
-    log_run_name(want, sizeof(want), g_card_runs - 7 + 1);
+    log_run_name(want, sizeof(want), g_card_runs - BR_ROWS_SEEN + 1);
     tap(400, BR_ROW_Y(0));
     tap(400, BR_ROW_Y(0));
     CHECK_STR_EQ(log_viewer_open_name(), want);
@@ -1696,7 +1699,7 @@ static void two_up(int x0, int x1)
 TEST_CASE(re_reading_the_card_selects_the_newest_run)
 {
     fresh();
-    g_card_runs = 30;          /* more than seven rows: the newest scrolls in */
+    g_card_runs = 30;          /* more than six rows: the newest scrolls in */
     log_viewer_refresh();
     tap(OPEN_X, FOOT_CY);
     draw();
@@ -2342,6 +2345,59 @@ TEST_CASE(a_press_left_behind_holds_nothing_on_the_way_back_in)
     CHECK_EQ(log_viewer_view(), LOG_VIEW_IMPORT);
 }
 
+/*
+ * The router's alert band covers the bottom UI_ALERT_H px of the panel
+ * while an alert shows, and takes the touches there.  Nothing of the log
+ * viewer that acts lies under it: with no alert showing, on each view and
+ * on the DELETE question, a tap changes nothing and goes nowhere on every
+ * 8th px of the band's top row, middle row and bottom row (body y 398, 415
+ * and 431).  A control that reaches into the band from above crosses the
+ * top row; one inside it at least 8 px wide and 17 px high crosses a row
+ * and a column of the grid.  1,500 taps, each followed by a full frame:
+ * a finer grid pushes gfx.c's fill loop past the 2^32 hits gcovr accepts.
+ */
+static void at_nocard(void)
+{
+    fresh();
+    g_no_card = true;
+    log_viewer_refresh();
+}
+
+TEST_CASE(nothing_that_acts_is_under_the_alert_band)
+{
+    static const struct {
+        const char *name;
+        void (*page)(void);
+    } pages[] = {
+        { "file list", at_list },     { "no card", at_nocard },
+        { "import", at_import },      { "plot", at_plot },
+        { "question", at_question },
+    };
+    ui_router_init();
+    for (size_t i = 0; i < sizeof(pages) / sizeof(pages[0]); ++i) {
+        pages[i].page();
+        const uint32_t was = look();
+        const uint32_t nav = ui_router_navigations();
+        const int top = UI_ALERT_Y - UI_BAND_H;
+        const int rows[] = { top, top + UI_ALERT_H / 2, top + UI_ALERT_H - 1 };
+        int acted_at = -1;
+        for (size_t r = 0; r < sizeof(rows) / sizeof(rows[0]) && acted_at < 0;
+             ++r) {
+            const int y = rows[r];
+            for (int x = 0; x < W; x += 8) {
+                tap(x, y);
+                if (ui_router_navigations() != nav || look() != was) {
+                    acted_at = y;
+                    break;
+                }
+            }
+        }
+        if (acted_at >= 0) {
+            T_FAIL("%s: a tap at body y %d acted", pages[i].name, acted_at);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(every_view_draws_something);
@@ -2406,5 +2462,6 @@ int main(void)
     RUN(a_button_or_a_row_acts_on_a_tap_and_on_nothing_less);
     RUN(a_second_finger_presses_nothing_on_the_list_views);
     RUN(a_press_left_behind_holds_nothing_on_the_way_back_in);
+    RUN(nothing_that_acts_is_under_the_alert_band);
     return test_summary("logview");
 }

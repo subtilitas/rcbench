@@ -500,9 +500,15 @@ jobs:
       - name: The injector code is in the injector build only
         if: matrix.idf == 'v5.4'
         run: |
-          grep -aq touch_inject_attach \
-            firmware/panel/build-inject/rcbench-panel.elf
-          if grep -aq -e touch_inject_ -e touch_merge_ \
+          # The injector's code, INJECT's mode name and one literal of its
+          # bubble text (shared/ui/include/ui_text.def).
+          for s in touch_inject_attach ui_band_mode_inject \
+              "touch injector at I2C address 0x14"; do
+            grep -aqF "$s" firmware/panel/build-inject/rcbench-panel.elf
+          done
+          if grep -aqF -e touch_inject_ -e touch_merge_ \
+              -e ui_band_mode_inject \
+              -e "touch injector at I2C address 0x14" \
               firmware/panel/build/rcbench-panel.elf; then
             echo "::error::the released image holds touch injector code"
             exit 1

@@ -118,6 +118,18 @@ history is in git.
 
 ### Fixed
 
+- The LOG VIEWER's footer buttons are reachable while an alert shows. They
+  sat at body y 392 to 433 on the file list and 390 to 431 on the plot,
+  under the alert band (body y 398 to 431), which takes the touches there;
+  the import view's ran 16 px into it. Every footer sits at body y 352 to
+  393, 4 px above the band. The file list shows 6 rows instead of 7, and the
+  plot is 242 px high instead of 276.
+- The INJECT mode chip of a panel built with `RCBENCH_TOUCH_INJECTOR=ON`
+  opens a bubble with two paragraphs: where touch comes from, the I2C
+  address 0x14, how old touch counts, and what a silent injector does
+  through the 200 ms, 500 ms and 1000 ms steps to the detach and the probe
+  that re-attaches it. It showed the title alone. The released image holds
+  neither the mode name nor the text.
 - Upload on the English page of the browser access works. The script of
   the page wrote the texts `The file is larger than the panel's slot.` and
   `The upload broke off.` inside single quotes unescaped; the apostrophe

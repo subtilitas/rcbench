@@ -43,8 +43,18 @@ set(SRCS
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc)
+    # INJECT's mode name and bubble text, in the touch injector's bench build
+    # only (idf.py -D RCBENCH_TOUCH_INJECTOR=ON build).  PUBLIC, as the
+    # include path is: the define changes ui_text.def's IDs, and every file
+    # that includes ui_text.h has to see the same set.
+    if(RCBENCH_TOUCH_INJECTOR)
+        target_compile_definitions(${COMPONENT_LIB} PUBLIC RCBENCH_TOUCH_INJECTOR=1)
+    endif()
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
+    # The host suite tests INJECT's bubble, so it builds with the injector's
+    # texts; PUBLIC for the reason above.
+    target_compile_definitions(rcbench_ui PUBLIC RCBENCH_TOUCH_INJECTOR=1)
     target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo)
 endif()
