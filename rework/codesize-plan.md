@@ -53,9 +53,9 @@ firmware images and both `stack_check --check-doc` steps unless noted:
 | 0a | #416 | `codesize/0a-doc-citations` | open, green |
 | 0b | #417 | `codesize/0b-stack-elf` | open, green |
 | 0b (`PORT_CALLS`) | #418 | `codesize/0b-port-calls` (on #417) | open, green; no measured depth changed |
-| 1 | #420 | `codesize/1-arm-flash-gates` | open, CI pending |
+| 1 | #420 | `codesize/1-arm-flash-gates` | open, green; core 0 depth 1,716 to 1,708 bytes |
 | 2 | #419 | `codesize/2-arming-step` | open, green; no measured depth changed |
-| 3 | #421 | `codesize/3-bench-telem` | open, CI pending |
+| 3 | #421 | `codesize/3-bench-telem` | open, green; core 0 depth 1,716 to 1,708 bytes |
 
 Measured against the rows above:
 
@@ -68,6 +68,10 @@ Measured against the rows above:
 - 3: +340/-88 over 13 files; `shared/bench` depends on `protocols/dshot`.
 - #421 and #416 both rewrite 4 rows of `IOBoard.md`; the second to merge
   keeps #421's rows.
+- #420 and #421 each measure core 0 at 1,708 bytes on their own. The depth
+  with both merged is not measured; the second to merge takes CI's figure.
+- The configurator smoke test (`e2e/smoke.spec.ts:233`, 360 px) failed
+  once on #421 and passed on its re-run; #421 changes no configurator file.
 - The host suite counts 127 tests in a build configured by `coverage.py`:
   `esc_parity` is not registered with coverage on.
 
