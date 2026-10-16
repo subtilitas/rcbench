@@ -2,8 +2,8 @@
  * What servo_limrun.c and servo_limrun_report.c share and nothing else
  * reads: where a side stands, a side's span, and whether RESTORE is
  * offered.  The two predicates are inline here so that the report, in its
- * own file, inlines them as it did in servo_limrun.c; the public
- * servo_limrun_span() and servo_limrun_restore() wrap them.
+ * own file, inlines them; the public servo_limrun_span() and
+ * servo_limrun_restore() wrap them.
  *
  * SPDX-License-Identifier: MIT
  */
