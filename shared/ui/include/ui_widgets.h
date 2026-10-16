@@ -40,6 +40,16 @@ bool ui_is_light(gfx_color_t c);
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
 
 /**
+ * @p t broken at spaces into lines as wide as @p first, each drawn left
+ * aligned in a box of @p first's size, @p pitch px under the one before.
+ * A word wider than a line is cut where the line ends.  Draws when @p c is
+ * not NULL and returns the number of lines either way, 0 for an empty
+ * @p t, so a caller measures with the code that draws.
+ */
+int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
+                 const gfx_font_t *f, gfx_color_t col);
+
+/**
  * A tile of a grid that opens what it names: the menu's, and SETUP's.
  *
  * A rounded surface, @p icon in a UI_TILE_ICON px box whose top is
@@ -47,7 +57,8 @@ void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
  * @p name 40 px under the box's top in the text colour and @p line 24 px
  * under the name in the dim one, both centred and clipped to the tile.
  * @p pressed lightens the surface.  The 30 px icon, the 22 px name and the
- * 20 px line take 76 px from @p icon_dy.
+ * 20 px line take 76 px from @p icon_dy.  A line wider than the tile breaks
+ * at a space onto a second row 18 px lower when the tile is tall enough.
  */
 #define UI_TILE_ICON 30
 void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
