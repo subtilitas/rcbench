@@ -4,7 +4,8 @@
 
 Diese Seite ist ein Abschnitt von [Der Link](Link-de.md), der die Verkabelung, das
 Frame-Format, die Page Map und die übrigen Pages enthält. Pins heißen nach ihrer
-GPIO-Nummer (General-Purpose Input/Output).
+GPIO-Nummer (General-Purpose Input/Output). PWM steht für
+Pulsweitenmodulation.
 
 Die Servo-Programmier-Page (`KST`, 0x32) ist neu in 4.12 und nennt seit 4.13
 einen Programmierport. Die

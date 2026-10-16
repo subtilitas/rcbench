@@ -4,7 +4,7 @@
 
 This page is a section of [The link](Link.md), which holds the wiring, the frame
 format, the page map and the other pages. Pins are named by GPIO (general-purpose
-input/output) number.
+input/output) number. PWM is pulse-width modulation.
 
 The servo programming page (`KST`, 0x32) is new in 4.12 and names a
 programming port since 4.13. The page
