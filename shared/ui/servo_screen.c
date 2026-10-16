@@ -97,6 +97,8 @@
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
 #define SETB_W    96
+/* PROGRAM: 13 cells of its label; 14 px clear of the SERVO beside it. */
+#define PROGB_W   112
 /* The CURRENT row, whose value is repainted by itself. */
 #define CUR_Y     92
 #define TAG_Y     118
@@ -2504,8 +2506,8 @@ static void reset(void)
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
                                   12, SETB_W, 24 };
-    s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - SETB_W),
-                                  12, SETB_W, 24 };
+    s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - PROGB_W),
+                                  12, PROGB_W, 24 };
     kst_panel_init(overlay_area());
     servo_limrun_init(&s.lim);
     s.lim_sig = lim_signature();

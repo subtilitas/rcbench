@@ -188,6 +188,10 @@ kst_prog_t *kst_panel_model(void);
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE]);
 
+/** The rows of 8 x 16 cells a line of a message, a note or a warning page
+ *  takes, wrapped at a space to the overlay's width less 10 px a side. */
+int kst_panel_text_rows(const char *s);
+
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
