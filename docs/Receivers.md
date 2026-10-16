@@ -20,7 +20,7 @@ parts are needed.
 No firmware image feeds the analyser: the S.BUS decoder is linked into the
 panel image and the host tests, no byte source exists on either board, and
 nothing calls `analyser_screen_push()` or `analyser_screen_silent()`. The
-screen therefore shows SILENT. The states below are what the screen draws
+screen therefore shows NO SIGNAL. The states below are what the screen draws
 when it is fed, as the host tests exercise it.
 
 The analyser shows sixteen channels with history, the two digital channels, the
@@ -32,7 +32,7 @@ shows one of:
 | LIVE | frames arriving, transmitter received | values are valid |
 | FRAME LOST | this frame did not arrive intact | occasional at range; frequent on the bench indicates wiring or decoder |
 | FAILSAFE | the receiver has lost the transmitter and is sending its failsafe values | treat as stop; the values are well-formed and meaningless |
-| SILENT | nothing on the wire | receiver power, wiring, pin |
+| NO SIGNAL | nothing on the wire | receiver power, wiring, pin |
 
 A receiver in failsafe sends sixteen plausible, smoothly moving channel values.
 To check a receiver's failsafe behaviour, switch the transmitter off and watch

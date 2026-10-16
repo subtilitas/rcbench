@@ -67,6 +67,8 @@ code {
   background: var(--code-bg);
   border-radius: 3px;
   padding: 0.05em 0.3em;
+  /* A quote of the panel keeps its spaces: PLOT  4/4 has two. */
+  white-space: pre-wrap;
 }
 
 ul, ol { padding-left: 1.4rem; }

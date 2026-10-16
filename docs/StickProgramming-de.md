@@ -37,16 +37,12 @@ Was sie nicht weiß:
 3. Die Signalleitung des ESCs an einen Pin legen, der auf dem Bildschirm
    OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR. START wird
-   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`kein
-   Throttle-Pin gebunden: einen auf OUTPUTS binden`) und solange das Panel
-   die Bindung nicht vom Koprozessor gelesen hat (`Ausgangsbindung nicht
-   gelesen: kein Throttle-Pin bekannt`).
+   abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.`) und solange das Panel
+   die Bindung nicht vom Koprozessor gelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
    Das Netzteil ist der PD mini: ist der PD mini auf SETUP abgeschaltet,
    tritt das Netzteilmodell des Panels an seine Stelle und schaltet nichts,
-   und START wird abgelehnt mit `Netzteil simuliert: START braucht einen PD
-   mini`. Ein Grund, der entsteht, während die Warnung KEIN PROPELLER,
-   MOTOR GESICHERT? offen ist, schließt sie, und die Zeile neben START
+   und START wird abgelehnt mit `Netzteil ist simuliert. START benötigt einen PD mini.`. Ein Grund, der entsteht, während die Warnung PROPELLER AB? MOTOR GESICHERT? offen ist, schließt sie, und die Zeile neben START
    nennt den Grund.
 5. Den Ausgang des Netzteils ausschalten. Ein Lauf, der ihn an oder auf dem
    Weg findet, wird abgelehnt, ebenso einer, dessen Netzteil spannungsführend
@@ -56,11 +52,10 @@ Was sie nicht weiß:
    aus ist: einen Messwert, nicht älter als 1000 ms (`ESC_STICK_STALE_MS`),
    in dem das Netzteil selbst seinen Ausgang aus meldet, mit dem Strom
    200 ms lang bei höchstens 20 mA. Kein Messwert, ein älterer oder ein
-   Netzteil, das nicht antwortet, lehnt START ab mit `kein frischer
-   Messwert meldet das Netzteil aus`. Ein Lauf setzt den Prüfstand unter
+   Netzteil, das nicht antwortet, lehnt START ab mit `Kein aktueller Messwert bestätigt, dass das Netzteil aus ist.`. Ein Lauf setzt den Prüfstand unter
    ARM: solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port
    hält, wird START abgelehnt mit
-   `Servo-Programmierer hält einen Port: erst VERLASSEN.`
+   `Servoprogrammierung belegt einen Port. Zuerst auf SERVO auf VERLASSEN tippen.`
 
 ## Auf dem Bildschirm
 
@@ -73,14 +68,14 @@ Die Liste hat zwei Ebenen.
 - **Hersteller.** Eine Zeile je Hersteller, alphabetisch ohne Rücksicht
   auf Groß- und Kleinschreibung: sein Name, wie viele seiner Modelle laufen
   von allen, die er führt (`10 VON 82 AUSFÜHRBAR`), und das rote Schild
-  HAND, wo ein Modell [Handgriffe](#handgriffe) hat. Ein Hersteller, von
+  MANUELL, wo ein Modell [Handgriffe](#handgriffe) hat. Ein Hersteller, von
   dem kein Modell läuft, ist dunkel gezeichnet. Ein Tippen öffnet seine
   Modelle.
 - **Modelle.** Eine Zeile je Modell dieses Herstellers, nach Strom, dann
   nach höchster Eingangsspannung, dann nach Name; ein Modell ohne Angabe
   von Strom oder Spannung kommt in diesem Schlüssel zuletzt. Eine Zeile
   zeigt das Modell, seinen Strom und seine Spannung, seine Familie, das
-  Schild HAND und was das Profil seiner Familie ist (Punkte, ein- oder
+  Schild MANUELL und was das Profil seiner Familie ist (Punkte, ein- oder
   zweistufig, KARTE für ein Profil von der SD-Karte (Secure Digital)) oder
   warum es nicht läuft. Der Pfad lautet `ESC STICK > Kontronik`. ZURÜCK
   führt zu den Herstellern auf der Seite, die es verließ.
@@ -107,7 +102,7 @@ ausführbar` für die Modelle eines Herstellers.
 
 ![Die Hersteller](img/de/programmer-stick.png)
 
-![Die Modelle von Kontronik mit dem Schild HAND](img/de/programmer-stick-hand-list.png)
+![Die Modelle von Kontronik mit dem Schild MANUELL](img/de/programmer-stick-hand-list.png)
 
 ### Suche
 
@@ -135,7 +130,7 @@ sobald sich die Suche ändert.
 - Eine leere Suche zeigt jeden Hersteller und jedes Modell. Die Suche
   fasst bis zu 16 Zeichen und gilt auf beiden Ebenen.
 - Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller, 1 ausführbar`.
-  Ohne Treffer sagt die Liste `Kein Profil passt zur Suche.`
+  Ohne Treffer sagt die Liste `Keine passenden Profile gefunden.`
 
 OK schließt die Tastatur und behält die Suche, ABBRECHEN geht zur Suche
 zurück, mit der die Tastatur geöffnet wurde, und CLR, dann OK leert sie.
@@ -161,11 +156,10 @@ Die Seite eines Profils listet seine Menüpunkte. Jeder steht anfangs auf
 BEHALTEN und bleibt dann, wie er ist; die Stepper gehen durch die Werte des
 Punkts und halten an beiden Enden an. Punkte mit dem Schlüssel `reset` oder
 `exit` sind Aktionen, keine Einstellungen: der ESC handelt auf die
-Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION,
-NICHT SETZBAR und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
+Auswahlbewegung und gibt keine Werte aus, deshalb zeigen ihre Zeilen AKTION, KEINE EINSTELLUNG und bieten nichts an. Ein Punkt mit einem einzigen Wert -- die
 einzige Einstellung, die es gibt, oder eine Regel, die als Wert geschrieben
 ist, wie die Zellenzahl von `hobbywing-flyfun-hv-9item`, "N Pieptöne = N
-Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt NICHTS ZU WÄHLEN. Die Zeile unter der Liste nennt die
+Zellen" -- bietet nichts zur Wahl; seine Zeile zeigt KEINE AUSWAHL. Die Zeile unter der Liste nennt die
 Werte des gewählten Punkts und den Standardwert. START erscheint, sobald ein
 Wert gewählt ist und der Lauf starten kann; kann er es nicht, sagt die Zeile
 neben START, warum.
@@ -177,7 +171,7 @@ Nummer und Werte teilen -- Jetis Cutoff mode an sechs kleinen 3P-Modellen
 und Switching frequency an den übrigen, beide Punkt 3 --, und der ESC gibt
 nur den aus, den er hat; eine Änderung am anderen würde diesen speichern.
 START lehnt als letzte Prüfung eine Änderung an einem Punkt ab, den das
-Modell nicht hat (`3 Cutoff mode gibt es an diesem Modell nicht`). Eine
+Modell nicht hat (`3 Cutoff mode ist bei diesem Modell nicht verfügbar.`). Eine
 Seite ohne gewähltes Modell, die nur ein Kartenprofil ohne Modelle öffnet,
 listet die Punkte, die jedes Modell hat.
 
@@ -203,11 +197,11 @@ Einstieg.
   macht seine Änderungen in der Reihenfolge, in der der ESC sie ausgibt;
   alle Änderungen eines Laufs teilen sich deshalb ein Einschalten. Ein Lauf,
   dessen Änderungen verschiedene Stellungen brauchen, wird abgelehnt, mit
-  `Änderungen brauchen verschiedene Einschaltstellungen`, und einer, dessen
+  `Änderungen brauchen unterschiedliche Einschaltstellungen`, und einer, dessen
   Änderungen verschiedene Einstiegszeiten brauchen -- was der Lauf wartet:
   das `entry_hold_ms` des Werts oder das des Einstiegs, und nicht kürzer
   als das längste Halten `at_power_up` --, mit
-  `Änderungen brauchen verschiedene Einstiegszeiten`; keiner wird
+  `Änderungen brauchen unterschiedliche Einstiegszeiten`; keiner wird
   umsortiert. Kein Profil im Satz hat eine solche Mischung.
 - Wo das Profil keine Ruhestellung nennt, ruht der Knüppel in der
   Einschaltstellung, und die Auswahlbewegung muss sich von ihr
@@ -217,8 +211,7 @@ Die Warnung und die Karte des Laufs zeigen EINSCHALTEN BEI und die
 Stellung, wenn sie nicht MIN ist; die Warnung jede Stellung, die die
 Einschaltungen des Laufs nehmen.
 
-START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel KEIN
-PROPELLER, MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
+START öffnet eine Warnung über den ganzen Bildschirm mit dem Titel PROPELLER AB? MOTOR GESICHERT?. Sie sagt, was der Lauf tut: er versorgt den
 ESC aus dem Netzteil und fährt Throttle auf MAX und zurück, um durch das
 Programmiermenü zu schalten. In seltenen Fällen kann ein Motor anlaufen und
 drehen, deshalb muss ein angeschlossener Motor fest montiert sein und darf
@@ -353,10 +346,9 @@ BESTÄTIGT. Dieses Ende, und jedes andere ab der Auswahl des Werts --
 während der ESC speichert (SPEICHERN) oder während der Schritt gefragt
 ist --, schaltet das Netzteil während des Speicherns oder der Bestätigung
 aus, und das Ergebnis sagt, dass der Modus womöglich nicht gespeichert
-ist, und markiert die Änderung UNSICHER statt AUSGEFÜHRT: die Zählung der
+ist, und markiert die Änderung UNKLAR statt AUSGEFÜHRT: die Zählung der
 ausgeführten Auswahlen lässt sie aus, und liegt sie hinter der vierten
-Änderung, zählt die letzte Zeile sie (`UND 2 WEITERE, 1 DAVON
-AUSGEFÜHRT, 1 UNSICHER`). Dasselbe gilt
+Änderung, zählt die letzte Zeile sie (`UND 2 WEITERE, 1 AUSGEFÜHRT, 1 UNKLAR`). Dasselbe gilt
 für jedes Profil, dessen Wert durch Bewegungen nach der Auswahl
 gespeichert wird (`scheme.store`, `after_select`), mit oder ohne einen
 solchen Schritt, bis die letzte dieser Bewegungen gemacht ist.
@@ -413,8 +405,7 @@ mit dem Knüppel dort, wo das Einschalten ihn ließ:
   ERLEDIGT zu warten, verlöre die Gruppen, die die Handlung startet.
   Generator und Kartenleser lehnen eine solche Datei ab
   (`manual[0].starts_menu: the menu rests elsewhere (scheme.listen)`), und
-  der Ablauf lehnt ein anders gebautes Profil als `Menüstart, Ruhe
-  anderswo` ab.
+  der Ablauf lehnt ein anders gebautes Profil als `Menü startet außerhalb der Ruhestellung` ab.
 
 Um einen Schritt an einem versorgten ESC wird nur mit dem Knüppel in der
 Motor-Aus-Stellung gebeten: MIN, oder MID, wo das `entry_throttle` eines
@@ -497,17 +488,17 @@ gezeichnet.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand ARMED meldet; nach 3000 ms: NOCH SAFE |
+| FREIGABE | MIN | aus, angefordert aus | wenn der Prüfstand ARMED meldet; nach 3000 ms: WEITERHIN SAFE |
 | SIGNAL | MIN, dann Einschaltstellung | aus | der Knüppel bleibt auf MIN, bis das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet (sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA), geht dann in die Einschaltstellung und bleibt dort 1000 ms, damit der ESC das Signal beim Start sieht; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE |
 | HANDGRIFF | Einschaltstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
-| EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: AUSGANG NICHT GEMELDET |
-| EINSTIEG | Einstiegsstellung | an | EINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
-| HANDGRIFF, VERSORGT | Einschaltstellung | an | nach EINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
-| WARTEN AUF DEN ESC | wo es speicherte | an | nach SPEICHERN mit einem fälligen Schritt `before_power_off`: ERLEDIGT, dann der nächste solche Schritt oder das Netzteil aus (AUS UND EIN oder AUSSCHALTEN); kein ERLEDIGT in 60 s: NICHT BESTÄTIGT, und das Ergebnis sagt, dass der ESC gesperrt sein kann |
+| EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: EINSCHALTEN NICHT BESTÄTIGT |
+| MENÜEINSTIEG | Einstiegsstellung | an | MENÜEINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
+| HANDGRIFF, SPANNUNG AN | Einschaltstellung | an | nach MENÜEINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
+| WARTEN AUF DEN ESC | wo es speicherte | an | nach SPEICHERN mit einem fälligen Schritt `before_power_off`: ERLEDIGT, dann der nächste solche Schritt oder das Netzteil aus (AUS- UND EINSCHALTEN oder AUSSCHALTEN); kein ERLEDIGT in 60 s: NICHT BESTÄTIGT, und das Ergebnis sagt, dass der ESC gesperrt sein kann |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |
 | SPEICHERN | die Wertbewegung, dann die Speicherbewegung, dann die eigenen Bewegungen des Werts (`after_select`) | an | nach SPEICHERN, und nach SPEICHERN noch einmal für jede Bewegung: die Speicherbewegung des Profils, dann jede des Werts |
-| AUS UND EIN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
+| AUS- UND EINSCHALTEN | wo es speicherte, dann Einstiegsstellung | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten, dann AUSSCHALTZEIT (mindestens 1000 ms) in der Einstiegsstellung, dann wieder EINSCHALTEN; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE; das nächste Einschalten oder ein Schritt davor braucht einen Messwert, nicht älter als 1000 ms |
 | AUSSCHALTEN | wo es speicherte | aus | das Netzteil meldet den Ausgang aus und den Strom 200 ms unten; nicht innerhalb von 3000 ms: NETZTEIL BLEIBT EIN |
 | FERTIG | MIN | aus | auf SAFE geschaltet |
 | ABGEBROCHEN | MIN | aus | auf SAFE geschaltet, alles in einem Schritt |
@@ -549,7 +540,7 @@ Schalten auf ARMED.
 
 ## Wie die Pieptöne gezählt werden
 
-- **Grundwert.** Während EINSTIEG, ab 500 ms nach dem Einschalten, ist der
+- **Grundwert.** Während MENÜEINSTIEG, ab 500 ms nach dem Einschalten, ist der
   Grundwert der niedrigste gelesene Strom. Ein Piepton kann ihn nicht
   anheben. Während das Menü gezählt wird, folgt der Grundwert ruhigen
   Messwerten um 1/16 des Unterschieds je Messwert.
@@ -611,7 +602,7 @@ Einstellungen. Kein Wert hier ist gemessen.
 
 Ein Lauf wird abgelehnt, nicht angepasst, wenn die Einstellungen sich
 widersprechen: LANG höchstens PIEPTON MIN, LANG MAX höchstens LANG, GRUPPENPAUSE
-höchstens PAUSE MIN, SCHWELLE höchstens HYSTERESE, EINSTIEG höchstens 500 ms,
+höchstens PAUSE MIN, SCHWELLE höchstens HYSTERESE, MENÜEINSTIEG höchstens 500 ms,
 oder GRUPPENPAUSE plus das Kürzere von PIEPTON MIN und PAUSE MIN mindestens das
 `within_ms` des Profils für seine Auswahl- oder Wertbewegung.
 
@@ -634,9 +625,9 @@ auf ARMED schaltet:
 
 | Sollwert | Abgelehnt, wenn | Die Zeile sagt | RUN sagt |
 | --- | --- | --- | --- |
-| SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0 V, ESC bis 8.4 V` | `SPANNUNG 20.0 V liegt über den 8.4 V des ESC` |
-| SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9 V, ESC ab 12.0 V` | `SPANNUNG 11.9 V liegt unter den 12.0 V des ESC` |
-| STROMBEGRENZUNG | über dem `current_a` des Modells, wo genannt | `2.0 A, ESC bis 1 A` | `STROMBEGRENZUNG 2.0 A liegt über den 1 A des ESC` |
+| SPANNUNG, oder die der Zellenzahl | über dem `v_max_mv` des Modells | `20.0 V; ESC höchstens 8.4 V` | `SPANNUNG 20.0 V liegt über der ESC-Grenze von 8.4 V.` |
+| SPANNUNG, oder die der Zellenzahl | unter dem `v_min_mv` des Modells, wo genannt | `11.9 V; ESC mindestens 12.0 V` | `SPANNUNG 11.9 V liegt unter der ESC-Untergrenze von 12.0 V.` |
+| STROMBEGRENZUNG | über dem `current_a` des Modells, wo genannt | `2.0 A; ESC höchstens 1 A` | `STROMBEGRENZUNG 2.0 A liegt über der ESC-Grenze von 1 A.` |
 
 Ein Modell, das kein `v_max_mv` nennt, läuft, mit einer Warnung an Stelle
 der Zusammenfassung seiner Zeile und als Hinweis neben START, in der
@@ -644,8 +635,8 @@ Warnfarbe:
 
 | Sollwert | Die Zeile sagt | Der Hinweis sagt |
 | --- | --- | --- |
-| SPANNUNG von Hand | `ESC-Grenze unbekannt` | `SPANNUNG 7.4 V: ESC-Grenze unbekannt, prüfen` |
-| SPANNUNG 0, das Modell nennt keine Zellenzahl: die niedrigste der Familie steht dafür | `ESC-Grenze unbekannt` | `7.6 V nach Zellenzahl der Familie: Grenze unbekannt` |
+| SPANNUNG von Hand | `Zulässige ESC-Spannung unbekannt.` | `SPANNUNG 7.4 V: Zulässige ESC-Spannung unbekannt. Bitte prüfen.` |
+| SPANNUNG 0, das Modell nennt keine Zellenzahl: die niedrigste der Familie steht dafür | `Zulässige ESC-Spannung unbekannt.` | `7.6 V aus der kleinsten Zellenzahl dieser Baureihe. Grenze dieses ESC unbekannt.` |
 
 SPANNUNG 0 an einem Modell, das seine Zellenzahl, aber kein `v_max_mv`
 nennt, läuft mit dieser Zellenzahl ohne Warnung: der eigenen Angabe der
@@ -689,24 +680,24 @@ ruhte.
 
 | Die Zeile sagt | Warum |
 | --- | --- |
-| braucht eine Person am ESC | `automatable` ist `assisted`, und das Profil nennt keinen Handgriff, nach dem der Lauf fragen könnte: ein Mensch liest eine LED oder steckt eine JetiBox an |
+| Handgriff am ESC erforderlich | `automatable` ist `assisted`, und das Profil nennt keinen Handgriff, nach dem der Lauf fragen könnte: ein Mensch liest eine LED oder steckt eine JetiBox an |
 | Handgriff | ein Handgriff während des Menüs, oder einer an einem versorgten ESC mit dem Einstieg auf MID oder MAX |
-| kein nutzbares Verfahren | `automatable` ist `none` |
-| Einstieg nach Einschalten | `scheme.entry.when` ist `after_power_on` |
+| kein nutzbarer Programmierablauf | `automatable` ist `none` |
+| Menüeinstieg erst nach dem Einschalten | `scheme.entry.when` ist `after_power_on` |
 | Melodie-Menü, Ja/Nein-Menü, Stickpositions-Menü, Menü eigener Art | `scheme.type` |
 | Pieptöne nach Tonhöhe getrennt | `scheme.announce.encoding` ist `melody` oder `yes_no` |
-| Punkt und Wert: 1 Bewegung | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |
-| 2 Bewegungen, ohne Werttöne | `value_select` ohne `item_then_value` |
-| viele Änderungen, einstufig | einstufig mit `"changes_per_entry": "many"` |
-| Punkte gezählt, einstufig | einstufig, `item` angesagt, mehrere Punkte |
-| Werte wiederholen sich | einstufig, eine Wertnummer in zwei Punkten |
-| Auswahl = Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
-| Wertbewegung = Auswahl | zweistufig, `value_select` gleich `select` |
-| Ruhe ohne Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die Profile für YGE-ESCs. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
-| Speichern, zweistufig | zweistufig mit `scheme.store` |
-| Speichern = Auswahl | einstufig, `scheme.store` gleich `select` |
-| Menüstart, Ruhe anderswo | ein Schritt mit `starts_menu`, und das Menü ruht abseits der Einschaltstellung: `scheme.listen` abseits des Einstiegs, oder ein Wert, der abseits davon eingeschaltet wird |
-| 22.8 V, Obergrenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
+| Punkt und Wert nutzen 1 Bewegung | `item_then_value` ohne `value_select`: welche Gruppe die Bewegung beantwortet, steht nicht fest |
+| 2 Bewegungen, aber keine Wert-Pieptöne | `value_select` ohne `item_then_value` |
+| mehrere Änderungen in einem einstufigen Menü | einstufig mit `"changes_per_entry": "many"` |
+| gezählte Punkte in einem einstufigen Menü | einstufig, `item` angesagt, mehrere Punkte |
+| Werte wiederholen sich bei mehreren Menüpunkten | einstufig, eine Wertnummer in zwei Punkten |
+| Auswahlstellung entspricht der Ruhestellung | die Auswahlbewegung ist die Ruhestellung: keine Bewegung zu machen |
+| Wert und Auswahl nutzen dieselbe Bewegung | zweistufig, `value_select` gleich `select` |
+| Ruhebewegung festgelegt, aber keine Einstiegszeit | `scheme.listen` weicht von der Einschaltstellung ab und keine Zeit ist genannt: `hold_ms` ist null, der Wert hat kein `entry_hold_ms` und kein Schritt `at_power_up` hat ein `hold_ms`: die Profile für YGE-ESCs. Ein Profil, dessen Werte ein eigenes `entry_hold_ms` nennen, wird je Änderung beurteilt: eine ohne Zeit wird abgelehnt, die anderen laufen |
+| Speicherbewegung bei zweistufigem Menü | zweistufig mit `scheme.store` |
+| Speichern und Auswahl nutzen dieselbe Bewegung | einstufig, `scheme.store` gleich `select` |
+| Menü startet außerhalb der Ruhestellung | ein Schritt mit `starts_menu`, und das Menü ruht abseits der Einschaltstellung: `scheme.listen` abseits des Einstiegs, oder ein Wert, der abseits davon eingeschaltet wird |
+| benötigt 22.8 V; Grenze 21.0 V | die Spannung (SPANNUNG, oder die Zellenzahl des Profils) liegt über der Grenze von SUPPLY |
 
 Ein auf der SD-Karte korrigiertes Profil steht mit seiner Korrektur in der
 Liste.
@@ -719,15 +710,15 @@ Liste.
 | STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
 | PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Schalten auf ARMED, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
 | SAFE | der Prüfstand wurde auf SAFE geschaltet | an |
-| LINK VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
+| VERBINDUNG VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
 | NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
 | KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert | an |
 | MESSRATE | 3 späte Messwerte hintereinander | an |
-| NOCH SAFE | nicht ARMED innerhalb von 3000 ms | an |
-| AUSGANG NICHT GEMELDET | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
+| WEITERHIN SAFE | nicht ARMED innerhalb von 3000 ms | an |
+| EINSCHALTEN NICHT BESTÄTIGT | der Ausgang nicht innerhalb von 3000 ms als an gemeldet | an |
 | NETZTEIL BLEIBT EIN | das Netzteil meldet den Ausgang nicht innerhalb von 3000 ms nach der Anforderung des Laufs aus, mit dem Strom unten -- beim Start, vor einem Einschalten oder am Ende --, oder ein Messwert mit Ausgang an oder Strom oben, während nach einem Schritt an einem stromlosen ESC gefragt wird | an |
-| TOUCH VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht ARMED war | an |
+| TOUCH-SIGNAL VERLOREN | Touch-Ereignisse verloren, solange das ARM des Laufs noch nicht genommen oder der Prüfstand noch nicht ARMED war | an |
 | KEINE PIEPTÖNE | STILLE lang kein Piepton | an |
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
 | ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert | an |
@@ -738,7 +729,7 @@ Liste.
 Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in
 `shared/esc/esc_stick_read.c`, ein Fall je Grund. `tools/check_docs.py` liest
 diese Funktion und schlägt fehl, wenn diese Tabelle oder ihr englisches
-Gegenstück etwas anderes sagt. TOUCH VERLOREN ist an: Ereignisse gingen
+Gegenstück etwas anderes sagt. TOUCH-SIGNAL VERLOREN ist an: Ereignisse gingen
 verloren, sie wurden nicht gewählt.
 
 STOP und PRÜFSTAND GESTOPPT kommen aus zwei Zählern, die das Panel führt:

@@ -55,7 +55,7 @@ the release it runs:
 The USB load of a new bench, or of one on 0.18.0 and older, puts the
 coprocessor's partition table and the panel's two application slots in
 place, and neither comes over the link. A 0.19.0 panel takes no image over
-Wi-Fi: ACCESS POINT stops with `Wi-Fi did not start.` as it is pressed, and
+Wi-Fi: ACCESS POINT stops with `Wi-Fi could not start.` as it is pressed, and
 by the estimate of internal RAM (random-access memory) in
 [Performance](Performance.md#internal-ram) JOIN HOME NETWORK stops the same
 way. From 0.20.0 on, the panel installs a release over Wi-Fi ([Screens:
@@ -119,8 +119,7 @@ monitors' set-up, with the exception for an RP2350 of stepping A2 stated
 [below](#the-coprocessors-partition-table).
 
 The panel can go first. A panel of 0.19.0 or later linked to a coprocessor
-without the partition table shows `coprocessor takes no update over CAN --
-load it once over USB` until step 2 is done; the link runs meanwhile.
+without the partition table shows `Coprocessor cannot update over CAN. Install firmware once via USB.` until step 2 is done; the link runs meanwhile.
 
 ### From 0.19.0
 
@@ -137,14 +136,13 @@ protocol stays 4.22, so the two boards link before and after the update.
    `esptool.py` or the browser flasher, to start from the default settings.
 3. Power both boards with the link wired. At link-up the panel compares the
    coprocessor's running image with the image it carries by SHA-256, finds
-   another build, and the band says `coprocessor runs another build -- the
-   menu offers its update`.
+   another build, and the band says `Coprocessor runs a different build. An update is available in the menu.`.
 4. **Coprocessor.** The question opens on the menu while the bench is SAFE,
    the supply's output is off and the panel's Wi-Fi radio is off. It names
    0.19.0 on the coprocessor and 0.20.0 in the panel. Hold START for 2 s.
    The progress fills the screen ([Screens: Coprocessor
    update](Screens.md#coprocessor-update)), and back on the menu the band
-   says `coprocessor updated to 0.20.0`.
+   says `Coprocessor updated to 0.20.0.`.
 
 | What | Parts (`@flash_args`) | Merged image at 0x0 |
 | --- | --- | --- |
@@ -163,8 +161,7 @@ store at 0x3FE000, and the update writes neither. CANCEL on the
 question leaves the coprocessor on 0.19.0; the panel asks again after its
 next start. Power lost during the update leaves the old image running, and
 the next link-up offers the update again. A coprocessor that missed the USB
-load of 0.19.0 has no partition table: the band says `coprocessor takes no
-update over CAN -- load it once over USB`, and it takes
+load of 0.19.0 has no partition table: the band says `Coprocessor cannot update over CAN. Install firmware once via USB.`, and it takes
 [step 2](#from-the-release-assets). The time of the update over CAN is not
 measured.
 
@@ -748,8 +745,8 @@ pressed, with no Enter.
    Close PuTTY; this log is `noise.log`.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
    centre, supply on at 4.80 V. Press `t` and wait for the `$Z` line.
-6. Moves, in the same log: on the SERVO screen's TEST page set LENGTH BY
-   to MOVEMENTS, MOVEMENTS 20, DWELL 1000 ms, STEP 4.8 V on and every
+6. Moves, in the same log: on the SERVO screen's TEST page set TEST LENGTH BY
+   to MOVEMENTS, MOVEMENTS 20, DWELL TIME 1000 ms, STEP 4.8 V on and every
    other step and BROWN-OUT off. START TEST. The trace runs from the first
    move to 4 s after the last; wait for its `$Z` line, then close PuTTY.
 7. Repeat steps 5 and 6 at 6.00 V with STEP 6.0 V, and both for each

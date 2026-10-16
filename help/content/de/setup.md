@@ -19,7 +19,7 @@ SETUP hält die Einstellungen des Panels in drei Kategorien: ESC / PRÜFSTAND, A
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
-| UPDATES | `RELEASES AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
+| UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
 
 Drei Plätze bleiben frei. Die Speichertaste steht unten rechts, wie auf jeder Liste. Eine ungespeicherte Änderung in einer beliebigen Kategorie zeigt sich auf ihr:
 
@@ -83,10 +83,10 @@ Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICH
 | SPEICHERN | fordert das Schreiben an wie die Speichertaste und öffnet dann das Menü |
 
 - VERWERFEN schickt einen Pin oder einen Port sofort zurück an den Koprozessor. Eine zurückgestellte Verdrahtung des PD mini schaltet den Netzteilausgang ab, wie eine Änderung von Hand.
-- Bei ARMED ist VERWERFEN abgeblendet und tut nichts; die Zeile `VERWERFEN wartet auf SAFE.` sagt das. BLEIBEN und SPEICHERN wirken.
+- Bei ARMED ist VERWERFEN abgeblendet und tut nichts; die Zeile `VERWERFEN wartet, bis der Prüfstand SAFE ist.` sagt das. BLEIBEN und SPEICHERN wirken.
 - PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der Servo-Programmierer den Servo-Port hält; sie bleiben ungespeichert.
 - Bei mehr als 10 Änderungen zeigen sich 9 Zeilen, und die letzte Zeile lautet bei 12 `und 3 weitere`.
-- Nach einem abgelehnten Speichern steht unter der Liste die Zeile `Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.` VERWERFEN fordert dann zusätzlich das Schreiben der zurückgestellten Werte an, denn der Flash kann einen Teil des abgelehnten Schreibens halten.
+- Nach einem abgelehnten Speichern steht unter der Liste die Zeile `Speichern fehlgeschlagen. Tippe erneut auf SPEICHERN.` VERWERFEN fordert dann zusätzlich das Schreiben der zurückgestellten Werte an, denn der Flash kann einen Teil des abgelehnten Schreibens halten.
 
 ![Zwölf ungespeicherte Werte](view:setup-leave-many)
 

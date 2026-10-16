@@ -33,6 +33,13 @@ typedef enum {
     SPLASH_FAIL,   /**< the bench will not arm                             */
 } splash_result_t;
 
+/**
+ * Bytes a step's detail keeps, terminator included.  The detail is drawn
+ * from x 360 to the panel's edge, 55 cells; a German letter takes two
+ * bytes, so the CAN self-test's longest verdict (48 bytes) fits whole.
+ */
+#define SPLASH_DETAIL_MAX 64
+
 void splash_screen_set(splash_step_t step, splash_result_t result,
                        const char *detail);
 /** True once every step has answered and the hold has expired. */

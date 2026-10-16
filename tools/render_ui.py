@@ -539,6 +539,31 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
+    # The bus fault's other two verdicts and its other four controller
+    # states, so every meaning and check is measured where it wraps.
+    "busfault-lossy":   (None, "busfault", "dark"),
+    "busfault-dropped": (None, "busfault", "dark"),
+    "busfault-lost-rejoin":  (None, "busfault", "dark"),
+    "busfault-lost-stopped": (None, "busfault", "dark"),
+    "busfault-lost-running": (None, "busfault", "dark"),
+    "busfault-lost-unknown": (None, "busfault", "dark"),
+    # BATTERY's two other verdicts, whose reasons wrap in the right card.
+    "battery-healthy":  (None, "battery", "dark"),
+    "battery-replace":  (None, "battery", "dark"),
+    # SUPPLY's MODE card after either trip, its line wrapped in the card.
+    "supply-trip-i":    (None, "supply", "dark"),
+    "supply-trip-v":    (None, "supply", "dark"),
+    # The SERVO PROGRAMMER's notes turned to their second page, where they
+    # take more rows than there are above the message.
+    "servo-kst-file-locked-p2": (None, "servo", "dark"),
+    "servo-kst-journal-p2": (None, "servo", "dark"),
+    # The analyser on a frame the receiver flags as lost.
+    "analyser-lost":    (None, "analyser", "dark"),
+    # The SERVO screen's OUTPUT page with the frame rate refused and with a
+    # coprocessor that cannot set it; the HV warning with the output on.
+    "servo-rate-refused": (None, "servo", "dark"),
+    "servo-rate-unsupported": (None, "servo", "dark"),
+    "servo-hv-live":    (None, "servo", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

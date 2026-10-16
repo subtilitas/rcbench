@@ -6,13 +6,13 @@ order: 30
 
 # Netzteil
 
-SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der Koprozessor über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZEN ZURÜCKSETZEN die rechte.
+SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der Koprozessor über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
 
 ## Das Netzteilmodell
 
-![SUPPLY mit abgeschaltetem PD mini: NETZTEIL SIMULIERT](view:supply)
+![SUPPLY mit abgeschaltetem PD mini: SIMULIERTES NETZTEIL](view:supply)
 
-Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `NETZTEIL SIMULIERT`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6 Ohm mit einem Stromstoß von 1,4 A für 0,6 s alle 3 s, hinter einem Quellwiderstand von 0,05 Ohm. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
+Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Modell eines Netzteils. Der Kopf lautet `SIMULIERTES NETZTEIL`, und die Kachel im Menü trägt die Marke SIMULIERT. Das Modell ist eine Last von 6 Ohm mit einem Stromstoß von 1,4 A für 0,6 s alle 3 s, hinter einem Quellwiderstand von 0,05 Ohm. Seine Messwerte sind nicht gemessen, und nichts am Prüfstand wird versorgt.
 
 ## Der PD mini
 
@@ -25,7 +25,7 @@ Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des Koproze
 | `ONLINE 38400` | das Modul antwortet; die Zahl ist die verwendete Baudrate |
 | `ANTWORTET NICHT` | kein Koprozessor mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500 ms; ein eingeschalteter Ausgang wird abgeschaltet |
 
-Vor dem ersten Einschalten zeigt die Grafik `Ausgang noch nicht eingeschaltet`, und die Karten zeigen Striche, bis ein Messwert ankommt.
+Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschaltet.`, und die Karten zeigen Striche, bis ein Messwert ankommt.
 
 ## Die Messwerte
 
@@ -34,7 +34,7 @@ Vor dem ersten Einschalten zeigt die Grafik `Ausgang noch nicht eingeschaltet`, 
 | SPANN. | die Ausgangsspannung; den Sollwert in Klammern; die niedrigste Spannung des Laufs darunter |
 | STROM | den Ausgangsstrom; die Strombegrenzung in Klammern; die Spitze des Laufs darunter |
 | LEIST. | die Ausgangsleistung und die Spitze des Laufs |
-| MODUS | CV (Constant Voltage) an der eingestellten Spannung, CC (Constant Current) an der Strombegrenzung, ABSCH. nach einer Abschaltung; CC steht in der Warnfarbe |
+| MODUS | CV (Constant Voltage) an der eingestellten Spannung, CC (Constant Current) an der Strombegrenzung, ABGESCHALTET nach einer Abschaltung; CC steht in der Warnfarbe |
 
 Die Grafik zeigt Spannung, Strom und Leistung über die letzten 27 s, jeden Sollwert als gestrichelte Linie. TABELLE listet dieselben Werte. Der Wert in Klammern ist der Sollwert, den das Netzteil meldet; solange es nicht antwortet, der, den der Bildschirm hält.
 
@@ -90,20 +90,20 @@ OPTIONEN, rechts im Streifen, öffnet die Optionen über der linken Spalte. Ein 
 | ÜBERSTROM | 0 bis 5 A | AUS | Ausgang aus, sobald der Strom ABSCHALTZEIT lang darüber liegt |
 | ÜBERSPANNUNG | 0 bis 21 V | AUS | Ausgang aus, sobald die Spannung ABSCHALTZEIT lang darüber liegt |
 | ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einer Schwelle liegen muss, bevor sie auslöst |
-| SLIDER, SCHRITTE | EIN, AUS | EIN | Rückfrage, bevor der Schieberegler einen eingeschalteten Ausgang ändert |
+| REGLER UND SCHRITTE | EIN, AUS | EIN | Rückfrage, bevor der Schieberegler einen eingeschalteten Ausgang ändert |
 | TASTENFELD | EIN, AUS | EIN | Rückfrage, bevor das Tastenfeld einen eingeschalteten Ausgang ändert |
 
 - Eine Schwelle von 0 ist aus.
 - Eine Überstromschwelle auf oder über der STROMBEGRENZUNG löst nicht aus: Das Netzteil hält die Grenze in CC.
 - Eine Obergrenze, die unter einen Sollwert gesenkt wird, zieht den Sollwert mit.
 
-Die Optionen werden im NVS (nichtflüchtiger Speicher) gehalten. Sie werden im nächsten Frame geschrieben, wenn der Prüfstand SAFE und der Ausgang aus ist. Die untere Zeile lautet `GESPEICHERT`, `SPEICHERN WARTET`, `NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
+Die Optionen werden im NVS (nichtflüchtiger Speicher) gehalten. Sie werden im nächsten Frame geschrieben, wenn der Prüfstand SAFE und der Ausgang aus ist. Die untere Zeile lautet `GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT` oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
 
 Mit dem PD mini als Netzteil bieten die OPTIONEN zusätzlich PD MINI ZURÜCKSETZEN. Es schaltet den Ausgang ab und startet das Modul neu, für ein Modul, das ERR zeigt. Ob ein Neustart jedes ERR löscht, ist nicht gemessen.
 
 ## Das Log eines Laufs
 
-Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh unter AUSGANG EIN zählen den Lauf. SPITZEN ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
+Ein Lauf ist ein Einschalten des Ausgangs. Die Grafik leert sich, wenn der Ausgang einschaltet, und hält den Lauf, wenn er ausgeht. Die mAh und Wh unter AUSGANG EIN zählen den Lauf. SPITZENWERTE ZURÜCKSETZEN startet die niedrigsten und höchsten Werte neu ab dem aktuellen Messwert.
 
 Jeder Lauf wird in eine eigene `BENCHnnn.CSV` auf der SD-Karte (Secure Digital) geschrieben, eine Zeile alle 50 ms, mit Sollwert, Spannung, Grenze, Strom, Leistung, Modus, Ladung, Energie und Quelle, `measured` oder `model`. [Logs](logs.md) öffnet sie.
 

@@ -400,11 +400,11 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     g_v.got = UPD_GOT_TIMEOUT;
     g_v.budget_s = 30u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "No answer within 30 s.");
+    CHECK_STR_EQ(a, "No response within 30 s.");
     g_v.got = UPD_GOT_REFUSED;
     g_v.status = 503;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "GitHub refused: HTTP 503.");
+    CHECK_STR_EQ(a, "GitHub rejected the request: HTTP 503.");
     g_v.got = UPD_GOT_SUMS;
     g_v.rel = UPD_REL_STATUS;
     g_v.status = 404;
@@ -417,17 +417,17 @@ TEST_CASE(every_result_has_a_text_in_both_languages)
     g_v.got = UPD_GOT_CURRENT;
     snprintf(g_v.found, sizeof(g_v.found), "%s", "0.19.0");
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "Up to date: this panel runs 0.19.0.");
-    CHECK_STR_EQ(b, "Newest release on GitHub: 0.19.0.");
+    CHECK_STR_EQ(a, "Up to date. Panel version: 0.19.0.");
+    CHECK_STR_EQ(b, "Latest release on GitHub: 0.19.0.");
     /* A check's VERSION is the tag's text; a download's the image's. */
     g_v.got = UPD_GOT_UNEXPECTED;
     g_v.rel = UPD_REL_VERSION;
     g_v.job = UPD_JOB_CHECK;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(b, "The version text is out of form.");
+    CHECK_STR_EQ(b, "The version text has an invalid format.");
     g_v.job = UPD_JOB_DOWNLOAD;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(b, "The image names another version.");
+    CHECK_STR_EQ(b, "The firmware file specifies a different version.");
 }
 
 TEST_CASE(a_running_job_says_its_step_and_the_time_left)
@@ -438,12 +438,12 @@ TEST_CASE(a_running_job_says_its_step_and_the_time_left)
     g_v.phase = UPD_PH_JOINING;
     g_v.left_s = 29u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "Joining workshop");
+    CHECK_STR_EQ(a, "Connecting to workshop");
     CHECK_STR_EQ(b, "29 s left");
     g_v.phase = UPD_PH_ASKING;
     g_v.left_s = 0u;
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
-    CHECK_STR_EQ(a, "Asking GitHub");
+    CHECK_STR_EQ(a, "Checking GitHub.");
     CHECK_STR_EQ(b, "0 s left");
     /* None ran: nothing to say. */
     base_view();
@@ -877,6 +877,49 @@ TEST_CASE(both_screens_carry_the_band_and_the_home_tag)
     CHECK(!ui_router_stop_live());
 }
 
+/*
+ * The card of UPDATES and of FILES & UPDATE breaks a text into lines of
+ * its 352 px, 44 cells.  A text no view draws declares 88 cells in
+ * ui_text.def, two of those lines, or fewer where another screen draws it
+ * on one line; here each is held to the two lines as the card breaks it.
+ */
+TEST_CASE(every_card_text_takes_two_lines_at_most)
+{
+    static const ui_text_id_t k_card[] = {
+        TX_WF_UNAVAIL_1, TX_WF_UNAVAIL_2, TX_WF_SAVE_FAILED_1,
+        TX_WF_SAVE_FAILED_2, TX_WF_OPEN_1, TX_WF_OPEN_2, TX_WF_OFF_ARMED,
+        TX_WF_OFF_SUPPLY, TX_WF_OFF_RUN, TX_WF_OFF_STOP, TX_WF_OFF_IDLE,
+        TX_WF_OFF_GUESSES, TX_WF_OFF_FAILED, TX_WF_JOIN_PASSWORD,
+        TX_WF_JOIN_NOT_FOUND, TX_WF_JOIN_NO_ADDRESS, TX_WF_JOIN_LOST,
+        TX_WF_TRY_AP, TX_WF_NEEDS_1, TX_WF_NEEDS_2, TX_UPD_STAGED,
+        TX_UPD_WAIT_COPROC, TX_UPD_WAIT_DRAWING, TX_UPD_WAIT_BUSY,
+        TX_UPD_STOP_FILES, TX_UPD_STOP_CANCEL, TX_UPD_STOP_COPROC,
+        TX_UPD_STOP_INSTALL, TX_UPD_STOP_DRAWING, TX_UPD_FAIL_CONNECT,
+        TX_UPD_FAIL_REFUSED, TX_UPD_FAIL_UNEXPECTED, TX_UPD_FAIL_SUMS,
+        TX_UPD_FAIL_IMAGE, TX_UPD_FAIL_MEMORY, TX_UPD_REL_MISSING,
+        TX_UPD_REL_LONG, TX_UPD_REL_CHAR, TX_UPD_REL_PLACE,
+        TX_UPD_REL_VERSION, TX_UPD_REL_IMG_VERSION, TX_UPD_REL_STATUS,
+        TX_UPD_REL_HOPS, TX_UPD_REL_HOST, TX_UPD_REL_NO_LENGTH,
+        TX_UPD_REL_EMPTY, TX_UPD_REL_TOO_BIG, TX_UPD_REL_SHORT,
+        TX_UPD_REL_OVERRUN, TX_UPD_REL_SUMS_BAD, TX_UPD_REL_SUMS_NONE,
+        TX_UPD_REL_SUMS_TWICE, TX_UPD_DL_SUMS, TX_UPD_DL_CHECKING,
+    };
+    const gfx_rect_t line = gfx_rect_make(416, 0, 352, 18);
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i) {
+            const char *t = ui_tr(k_card[i]);
+            const int n = ui_text_wrap(NULL, line, 20, t, UI_FONT_LABEL,
+                                       UI_TEXT);
+            if (n < 1 || n > 2) {
+                T_FAIL("language %d: %s takes %d lines: \"%s\"", lang,
+                       ui_text_name(k_card[i]), n, t);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_enums_mirror_the_fetch_and_the_release_parser);
@@ -903,5 +946,6 @@ int main(void)
     RUN(the_download_cancels_and_its_failure_closes);
     RUN(every_view_renders_inside_its_canvas);
     RUN(both_screens_carry_the_band_and_the_home_tag);
+    RUN(every_card_text_takes_two_lines_at_most);
     return test_summary("upd_screen");
 }

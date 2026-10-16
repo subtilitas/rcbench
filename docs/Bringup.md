@@ -78,8 +78,9 @@ received.
 | `every probe came back intact` | the wire is fine | a remaining fault is above the wire |
 
 The console writes these verdicts. The splash and the bus fault screen show
-two of them shorter, to fit 29 cells: `not every probe crosses` and
-`probes lost, no bus error`.
+their own wording: `All test frames returned intact.`, `No test frames
+returned.`, `Test frames returned with changed data.`, `Some test frames were
+lost.` and `Test frames lost without a bus error.`.
 
 Corruption is reported before loss when both occur, because a marginal bus
 produces both and the corruption identifies the cause.

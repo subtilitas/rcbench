@@ -505,6 +505,44 @@ TEST_CASE(an_alert_survives_navigation)
     CHECK(ui_router_alert() == NULL);
 }
 
+/* An alert given more than one row of the band's 94 cells fits the band's
+ * two rows in each language, its %s filled with a version of 8 characters and
+ * its %u with 65535, the longest each takes. */
+TEST_CASE(a_two_row_alert_fits_two_rows_of_the_band)
+{
+    int seen = 0;
+    for (int id = 0; id < (int)TX_COUNT; ++id) {
+        if (strncmp(ui_text_name((ui_text_id_t)id), "ALERT_", 6) != 0
+            || ui_text_cells((ui_text_id_t)id) <= 94) {
+            continue;
+        }
+        ++seen;
+        for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+            const char *f = ui_tr_in((ui_lang_t)l, (ui_text_id_t)id);
+            char text[UI_ALERT_MAX * 2];
+            size_t n = 0;
+            for (; *f != '\0' && n + 9u < sizeof(text); ++f) {
+                if (f[0] == '%' && f[1] == 's') {
+                    n += (size_t)snprintf(text + n, sizeof(text) - n, "10.10.10");
+                    ++f;
+                } else if (f[0] == '%' && f[1] == 'u') {
+                    n += (size_t)snprintf(text + n, sizeof(text) - n, "65535");
+                    ++f;
+                } else {
+                    text[n++] = *f;
+                }
+            }
+            text[n] = '\0';
+            const int rows = ui_router_alert_rows(text);
+            if (rows < 1 || rows > 2) {
+                T_FAIL("%s in language %d takes %d rows: \"%s\"",
+                       ui_text_name((ui_text_id_t)id), l, rows, text);
+            }
+        }
+    }
+    CHECK(seen > 0);
+}
+
 /* A point on the alert band that, with no alert there, opens a screen from
  * the overview: the tap the band must keep from the screen beneath.  -1
  * when the overview has nothing there. */
@@ -2531,6 +2569,107 @@ TEST_CASE(the_bubble_never_covers_stop_and_fits_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The widest row of chips under an hour, MOTOR & ESC ARMED in SIM, starts
+ * right of that screen's home tag in both languages. */
+/* The leftmost chip's x for @p st. */
+static int chips_left(const ui_bench_status_t *st)
+{
+    int left = W;
+    for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
+        gfx_rect_t r;
+        if (ui_band_chip_rect(st, (ui_band_chip_t)chip, &r) && r.x < left) {
+            left = r.x;
+        }
+    }
+    return left;
+}
+
+/*
+ * Every screen with the band and a home tag (all but the splash, the menu,
+ * the bus-fault screen and the panel's own update, as in ui_router.c), every
+ * row of chips the band can show, in each language: the row starts right of
+ * the tag.  The link down means SIM, no fault and the arm local; a clock of
+ * minutes, of hours, of 10 hours and of 99.  Two kinds of row are wider
+ * than the room right of FILES & UPDATE's tag, the widest, and are held to
+ * the x that docs/Screens.md states for them instead: ARMED with a FAULT
+ * code, and ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG, and in German
+ * SAFE with a FAULT code and a clock of 10 hours.
+ */
+TEST_CASE(the_widest_chip_row_clears_the_home_tag)
+{
+    const uint32_t runs[] = { 0u, 59u * 60u + 59u, 3600u,
+                              9u * 3600u + 59u * 60u + 59u, 10u * 3600u,
+                              99u * 3600u + 59u * 60u + 59u };
+    const uint8_t roles[] = { 0u, UI_ARMED_MOTOR, UI_ARMED_SERVO,
+                              UI_ARMED_MOTOR | UI_ARMED_SERVO };
+    int widest = 0;
+
+    for (int id = SCREEN_MOTOR; id < SCREEN_COUNT; ++id) {
+        if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE) {
+            continue;
+        }
+        const gfx_rect_t tag = ui_home_tag_rect(
+            ui_router_title((ui_screen_id_t)id));
+        const int end = tag.x + tag.w;
+        widest = end > widest ? end : widest;
+        for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+            ui_text_set_language((ui_lang_t)lang);
+            for (int up = 0; up < 2; ++up) {
+                for (int armed = 0; armed < 2; ++armed) {
+                    for (int ro = 0; ro < 4; ++ro) {
+                        for (int fault = 0; fault < 1 + up; ++fault) {
+                            for (size_t k = 0; k < sizeof(runs) / sizeof(runs[0]);
+                                 ++k) {
+                                if (!armed && ro > 0) {
+                                    continue;
+                                }
+                                ui_bench_status_t st;
+                                memset(&st, 0, sizeof(st));
+                                st.link_up     = up != 0;
+                                st.mode        = ui_band_mode(up != 0);
+                                st.armed       = armed != 0;
+                                st.armed_roles = roles[ro];
+                                st.faults      = fault ? 0x7Fu : 0u;
+                                st.run_seconds = runs[k];
+                                const int left = chips_left(&st);
+                                const bool named_role =
+                                    roles[ro] == UI_ARMED_MOTOR
+                                    || roles[ro] == UI_ARMED_SERVO;
+                                int floor = end;
+                                if (armed && fault) {
+                                    floor = 216;
+                                } else if (armed && !up && named_role
+                                           && lang == UI_LANG_DE) {
+                                    floor = 234;
+                                } else if (!armed && fault
+                                           && lang == UI_LANG_DE
+                                           && runs[k] >= 10u * 3600u) {
+                                    floor = 272;
+                                }
+                                floor = floor < end ? floor : end;
+                                if (left < floor) {
+                                    T_FAIL("screen %d, language %d, link %d, "
+                                           "armed %d roles %u, faults %d, "
+                                           "run %lu s: chips from x %d, the "
+                                           "tag ends at %d", id, lang, up,
+                                           armed, (unsigned)roles[ro], fault,
+                                           (unsigned long)runs[k], left, end);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /* FILES & UPDATE's tag is the widest, and the band's tight layout
+     * starts where it ends. */
+    CHECK_EQ(widest, 274);
+    CHECK_EQ(widest, ui_home_tag_rect(ui_router_title(SCREEN_WIFI)).x
+                     + ui_home_tag_rect(ui_router_title(SCREEN_WIFI)).w);
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /*
  * The framebuffer of @p chip's bubble opened on the menu with @p first and
  * then shown with @p then, and of the bubble opened with @p then from the
@@ -2634,14 +2773,14 @@ TEST_CASE(the_link_bubble_follows_the_link)
  * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
  * injector is attached, has both its paragraphs under its title in both
  * languages; a mode string the band has no text for is its title alone.
- * The floor is each paragraph's cells over a line's 61, at 18 px a line
- * and 4 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
+ * The floor is each paragraph's cells over a line's 61, at 17 px a line
+ * and 3 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
  * bubble that drops either paragraph is shorter.
  */
 TEST_CASE(the_inject_bubble_explains_the_injector)
 {
     const int title_only = 30 + 10;   /* HELP_TOP + HELP_BOTTOM */
-    const int cells = 61, pitch = 18, para = 4;
+    const int cells = 61, pitch = 17, para = 3;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         int floor_h = title_only + para;
@@ -2743,7 +2882,7 @@ TEST_CASE(the_link_bubble_carries_the_refused_frames)
         REQUIRE(ui_band_help_rect(&down, UI_BAND_CHIP_LINK, &rd));
         REQUIRE(ui_band_help_rect(&down_n, UI_BAND_CHIP_LINK, &rdn));
         /* One line more at 1, and the widest count still one line. */
-        CHECK_EQ(r1.h, r0.h + 18 + 4);
+        CHECK_EQ(r1.h, r0.h + 17 + 3);
         CHECK_EQ(rm.h, r1.h);
         /* None with the link down, whatever the count. */
         CHECK_EQ(rdn.h, rd.h);
@@ -2919,6 +3058,7 @@ int main(void)
     RUN(every_screen_renders_something_and_has_a_title);
     RUN(an_unknown_screen_id_falls_back_to_the_overview);
     RUN(an_alert_survives_navigation);
+    RUN(a_two_row_alert_fits_two_rows_of_the_band);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);
     RUN(a_second_contact_cannot_take_the_alert);
@@ -2981,6 +3121,7 @@ int main(void)
     RUN(a_tap_closes_the_bubble_and_does_nothing_else);
     RUN(stop_works_through_an_open_bubble);
     RUN(the_bubble_never_covers_stop_and_fits_in_both_languages);
+    RUN(the_widest_chip_row_clears_the_home_tag);
     RUN(the_fault_bubble_follows_the_bits_while_open);
     RUN(a_bubble_whose_chip_goes_closes);
     RUN(the_link_bubble_follows_the_link);
