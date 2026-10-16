@@ -421,7 +421,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/sense/as5600.c` | 78 | 78 | 100.0% |
 | `shared/sense/sense_sched.c` | 459 | 459 | 100.0% |
 | `shared/sense/sense_svc.c` | 160 | 160 | 100.0% |
-| `shared/sense/sense_trace.c` | 642 | 642 | 100.0% |
+| `shared/sense/sense_trace_feed.c` | 112 | 112 | 100.0% |
+| `shared/sense/sense_trace.c` | 530 | 530 | 100.0% |
 | `protocols/phase_tap/tone.c` | 372 | 372 | 100.0% |
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
