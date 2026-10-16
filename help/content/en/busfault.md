@@ -16,17 +16,17 @@ The panel runs a CAN echo self-test at every start, for 1200 ms inside the splas
 
 - The heading is the verdict.
 - WHAT THIS MEANS says it in one line.
-- CHECK, IN THIS ORDER lists what to check, the cheapest check first.
+- CHECK IN THIS ORDER lists what to check, the cheapest check first.
 - The right column shows what both ends counted: sent, returned, altered, lost.
 
 ![Nothing came back](view:busfault-silent)
 
 | Heading | WHAT THIS MEANS | The checks point to |
 |---|---|---|
-| `no probe came back` | `Nothing answered on the bus. The two boards are not talking.` | power, CANH and CANL crossed, the release, the terminators |
-| `probes come back altered` | `Frames cross and arrive changed. The wire or the bit timing.` | the terminators, the branch length, CANH and CANL twisted |
-| `not every probe crosses` | `Frames cross, some are lost, and the bus reported errors.` | the terminators, the bus length, CANH and CANL twisted, a connector |
-| `probes lost, no bus error` | `Frames arrived intact and were dropped unread. Not the wire.` | not the wire; report it with the numbers on the right |
+| `No test frames returned.` | `No response on the bus. The two boards cannot communicate.` | power, CANH and CANL crossed, the release, the terminators |
+| `Test frames returned with changed data.` | `Frames arrive with changed data. Check the wiring and bit timing.` | the terminators, the branch length, CANH and CANL twisted |
+| `Some test frames were lost.` | `Some frames are lost, and the bus reports errors.` | the terminators, the bus length, CANH and CANL twisted, a connector |
+| `Test frames lost without a bus error.` | `Frames arrived intact, then were discarded unread. Not a wiring fault.` | not the wire; report it with the numbers on the right |
 
 The terminators read about 60 ohms across CANH and CANL with the bench switched off. 120 ohms means one of the two is missing. The total bus stays under 5 m, each branch under 30 cm.
 
@@ -38,11 +38,11 @@ The same screen opens when a link that was up has been gone for 4 s. The heading
 
 | Heading | Meaning |
 |---|---|
-| `this panel is off the bus` | too many frames went unacknowledged; it stopped transmitting |
-| `this panel is rejoining` | it counts the quiet time a rejoin needs; give it 3 s |
-| `the controller has stopped` | idle and not restarted: a fault in the panel's firmware |
-| `the link stopped answering` | the controller is on the bus and nothing answers |
-| `the controller cannot be read` | the driver is not running; nothing can be sent |
+| `Panel disconnected from the bus.` | too many frames went unacknowledged; it stopped transmitting |
+| `Panel is reconnecting.` | it counts the quiet time a rejoin needs; give it 3 s |
+| `The panel's CAN controller has stopped.` | idle and not restarted: a fault in the panel's firmware |
+| `The link stopped responding.` | the controller is on the bus and nothing answers |
+| `Cannot read the controller's state.` | the driver is not running; nothing can be sent |
 
 The screen never opens while the bench is ARMED: it has no STOP. While ARMED the alert band says the link is gone, and the screen waits for the switch to SAFE.
 

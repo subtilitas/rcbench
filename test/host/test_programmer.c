@@ -479,7 +479,7 @@ TEST_CASE(only_the_modelled_classes_carry_the_mark)
 #define LIST_DN_X    761
 #define LIST_CY      27
 #define TIMING_X     698
-#define TIMING_Y     70
+#define TIMING_Y     27
 #define HOLD_X       156
 #define HOLD_Y       378
 #define CANCEL_X     684
@@ -1328,7 +1328,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     }
     CHECK(programmer_screen_stick_row_why(row) == NULL);
     const char *warn = programmer_screen_stick_row_warn(row);
-    CHECK(warn != NULL && strcmp(warn, "ESC rating unknown") == 0);
+    CHECK(warn != NULL && strcmp(warn, "ESC voltage rating unknown.") == 0);
     open_model("dualsky-xcontroller", NULL);
     CHECK(programmer_screen_stick_page() != NULL);
     tap(STEP_UP_X, STEP_CY(0));
@@ -1337,14 +1337,14 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     hold_for(3.0f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "no cell count in the profile: set VOLTAGE on TIMING");
+                 "Profile has no cell count. Set VOLTAGE on the TIMING page.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     settings_set(SET_STICK_V, 7.4f);
     scr->tick(0.02f);
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "VOLTAGE 7.4 V: ESC rating unknown, check it");
+                 "VOLTAGE 7.4 V: check the ESC's voltage rating. It is unknown.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -1643,10 +1643,10 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     }
     CHECK(six >= 0);
     CHECK_STR_EQ(programmer_screen_stick_row_why(six),
-                 "20.0 V, ESC rated 8.4 V");
+                 "20.0 V; ESC maximum 8.4 V");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(programmer_screen_stick_row_why(six),
-                 "20.0 V, ESC bis 8.4 V");
+                 "20.0 V; ESC höchstens 8.4 V");
     ui_text_set_language(UI_LANG_EN);
     open_model("hobbywing-flyfun-8item", "FlyFun-6A");
     CHECK(programmer_screen_stick_page() == NULL);   /* refused */
@@ -1664,7 +1664,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "VOLTAGE 20.0 V is over the ESC's 8.4 V");
+                 "VOLTAGE 20.0 V exceeds the ESC limit of 8.4 V.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -1717,7 +1717,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
         row = (q != NULL && strcmp(q->id, "card-one-amp") == 0) ? i : row;
     }
     const char *why = programmer_screen_stick_row_why(row);
-    CHECK(why != NULL && strcmp(why, "2.0 A, ESC rated 1 A") == 0);
+    CHECK(why != NULL && strcmp(why, "2.0 A; ESC maximum 1 A") == 0);
     settings_set(SET_STICK_I, 1.0f);
     scr->tick(0.02f);
     CHECK(programmer_screen_stick_row_why(row) == NULL);
@@ -1729,7 +1729,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     hold_for(2.25f);
     CHECK_EQ(programmer_screen_stick_runs(), 0u);
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "CURRENT LIMIT 2.0 A is over the ESC's 1 A");
+                 "CURRENT LIMIT 2.0 A exceeds the ESC rating of 1 A.");
     settings_set(SET_STICK_I, 1.0f);
     scr->leave();
     esc_profiles_clear_overrides();
@@ -1750,10 +1750,10 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     CHECK(kx >= 0);
     CHECK(programmer_screen_stick_row_why(kx) == NULL);
     const char *warn = programmer_screen_stick_row_warn(kx);
-    CHECK(warn != NULL && strcmp(warn, "ESC rating unknown") == 0);
+    CHECK(warn != NULL && strcmp(warn, "ESC voltage rating unknown.") == 0);
     ui_text_set_language(UI_LANG_DE);
     warn = programmer_screen_stick_row_warn(kx);
-    CHECK(warn != NULL && strcmp(warn, "ESC-Grenze unbekannt") == 0);
+    CHECK(warn != NULL && strcmp(warn, "Zulässige ESC-Spannung unbekannt.") == 0);
     ui_text_set_language(UI_LANG_EN);
     open_model("kontronik-kontrol-x", "KOLIBRI-X 60 LV");
     CHECK(programmer_screen_stick_page() != NULL);
@@ -1761,11 +1761,12 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     tap(STEP_UP_X, STEP_CY(0));
     supply_reads_off();
     scr->tick(0.02f);
-    char want[64];
+    char want[96];
     const uint32_t mv = esc_stick_model_mv(esc_profiles_find(
                                                "kontronik-kontrol-x"), -1);
     snprintf(want, sizeof(want),
-             "%u.%u V from the family's lowest cells: rating unknown",
+             "%u.%u V uses the family's lowest cell count. This ESC's "
+             "rating is unknown.",
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
     CHECK_STR_EQ(programmer_screen_stick_note(), want);
     scr->leave();
@@ -2342,8 +2343,8 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(r.pct == ESC_STICK_PCT_MAX);
     CHECK(programmer_screen_stick_hand_shown() == false);
     CHECK_STR_EQ(programmer_screen_stick_left_text(),
-                 "No DONE within %u s ends the run: supply off, and the ESC "
-                 "may lock itself.");
+                 "Without DONE within %u s, the run ends and power switches "
+                 "off. The ESC may lock itself.");
     draws();                                 /* the prompt */
     for (uint32_t i = 0; i < ESC_STICK_HAND_MIN_MS; ++i) {
         rig_step(&r);
@@ -2398,8 +2399,8 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK_EQ(run->phase, ESC_STICK_HAND_END);
     CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
     CHECK_STR_EQ(programmer_screen_stick_left_text(),
-                 "No DONE within %u s ends the run: supply off, and the mode "
-                 "may not be stored.");
+                 "Without DONE within %u s, the run ends and power switches "
+                 "off. The mode may not be saved.");
     draws();                                 /* the prompt */
     rig_run(&r, ESC_STICK_HAND_WAIT_MS + 1000u);
     CHECK_EQ(run->reason, ESC_STICK_R_HAND);
@@ -2460,13 +2461,13 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
         CHECK_EQ(esc_stick_made_count(run), (unsigned)picks - 1u);
         if (pass == 0) {
             CHECK_STR_EQ(programmer_screen_stick_result_head(),
-                         "5 of 6 selections made.");
+                         "5 of 6 selections completed.");
             /* The ESC's loop decides which selection comes last; here the
              * one being confirmed is shown on a row, and the line for the
              * two past the fourth counts both made. */
             CHECK(run->active < 4u && esc_stick_unsure(run, run->active));
             CHECK_STR_EQ(programmer_screen_stick_result_more(),
-                         "AND 2 MORE, 2 OF THEM MADE");
+                         "AND 2 MORE, 2 COMPLETED");
             /* The same end with the one being confirmed past the fourth
              * row: the line names it unsure (the run's state moved to
              * that change, as a loop that sounds it last leaves it). */
@@ -2475,17 +2476,17 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
             moved->active = 5u;
             CHECK(esc_stick_unsure(run, 5u));
             CHECK_STR_EQ(programmer_screen_stick_result_head(),
-                         "5 of 6 selections made.");
+                         "5 of 6 selections completed.");
             CHECK_STR_EQ(programmer_screen_stick_result_more(),
-                         "AND 2 MORE, 1 OF THEM MADE, 1 UNSURE");
+                         "AND 2 MORE, 1 COMPLETED, 1 UNCERTAIN");
             ui_text_set_language(UI_LANG_DE);
             CHECK_STR_EQ(programmer_screen_stick_result_more(),
-                         "UND 2 WEITERE, 1 DAVON AUSGEFÜHRT, 1 UNSICHER");
+                         "UND 2 WEITERE, 1 AUSGEFÜHRT, 1 UNKLAR");
             draws();
             ui_text_set_language(UI_LANG_EN);
         } else {
             CHECK_STR_EQ(programmer_screen_stick_result_head(),
-                         "0 of 1 selections made.");
+                         "0 of 1 selections completed.");
             CHECK_STR_EQ(programmer_screen_stick_result_more(), "");
         }
         draws();
@@ -3987,7 +3988,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(3.3f, 7.59f);
     CHECK(!run_starts());
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "7.60 V is above the SUPPLY cap of 7.59 V");
+                 "7.60 V exceeds the SUPPLY limit of 7.59 V.");
 
     fresh();
     descend_to_hobbywing();
@@ -4001,7 +4002,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     supply_gives(7.61f, 21.0f);
     CHECK(!run_starts());
     CHECK_STR_EQ(programmer_screen_stick_note(),
-                 "VOLTAGE is below the supply's 7.61 V");
+                 "VOLTAGE is below the supply minimum of 7.61 V.");
 }
 
 /* The list the same: a profile that needs 7.6 V opens on a supply whose
@@ -4027,7 +4028,7 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
             const char *why = programmer_screen_stick_row_why(i);
             CHECK(why != NULL);
             if (why != NULL) {
-                CHECK_STR_EQ(why, "needs 7.6 V, cap 7.5 V");
+                CHECK_STR_EQ(why, "needs 7.6 V; limit 7.5 V");
             }
             break;
         }
@@ -4037,9 +4038,56 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
     CHECK(programmer_screen_stick_page() == NULL);
 }
 
+/*
+ * A string the screen breaks onto two lines is held, in ui_text.def, to the
+ * cells of both: the note left of RUN (2 x 73), a parameter's help (2 x
+ * 96), and the prompt's and the warning's two lines (2 x 92).  Each has to
+ * break into its two lines as the screen breaks it, in every language.
+ * SUPPLY OFF NOT CONFIRMED is one line of 93 on the result and two of 69
+ * on MANUAL INTERVENTION REQUIRED.
+ */
+TEST_CASE(every_two_line_string_breaks_into_two_lines)
+{
+    static const struct {
+        const char *prefix;
+        int cells, line;
+    } k[] = {
+        { "SP_", 146, 73 },      { "ESC_WHY_", 146, 73 },
+        { "PG_HELP_", 192, 96 }, { "SP_", 184, 92 },
+    };
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        for (int i = 0; i < TX_COUNT; ++i) {
+            const char *name = ui_text_name((ui_text_id_t)i);
+            const char *s = ui_tr_in((ui_lang_t)l, (ui_text_id_t)i);
+            for (size_t j = 0; j < sizeof(k) / sizeof(k[0]); ++j) {
+                if (strncmp(name, k[j].prefix, strlen(k[j].prefix)) == 0
+                    && ui_text_cells((ui_text_id_t)i) == k[j].cells
+                    && programmer_screen_wrap_lines(s, k[j].line) > 2) {
+                    T_FAIL("%s in language %d takes %d lines of %d", name,
+                           l, programmer_screen_wrap_lines(s, k[j].line),
+                           k[j].line);
+                }
+            }
+        }
+        CHECK(programmer_screen_wrap_lines(
+                  ui_tr_in((ui_lang_t)l, TX_SP_HAND_OVER_LIVE), 69) <= 2);
+    }
+}
+
+/* A line of no cells, or fewer, still holds one: every text ends. */
+TEST_CASE(a_wrap_into_no_cells_still_ends)
+{
+    CHECK_EQ(programmer_screen_wrap_lines("abc", 0), 3);
+    CHECK_EQ(programmer_screen_wrap_lines("abc", -4), 3);
+    CHECK_EQ(programmer_screen_wrap_lines("a b", 0), 2);
+    CHECK_EQ(programmer_screen_wrap_lines("", 0), 0);
+    CHECK_EQ(programmer_screen_wrap_lines("abc", 1), 3);
+}
+
 int main(void)
 {
     RUN(the_protocol_list_is_pressable_before_it_is_painted);
+    RUN(a_wrap_into_no_cells_still_ends);
     RUN(a_class_shows_only_its_own_protocols);
     RUN(stepping_back_up_drops_the_connection);
     RUN(back_climbs_one_level_at_a_time);
@@ -4110,5 +4158,6 @@ int main(void)
     RUN(a_programmer_control_released_for_the_finger_is_not_pressed);
     RUN(a_voltage_equal_to_the_supplys_cap_or_minimum_runs);
     RUN(a_profile_at_the_supplys_cap_opens_from_the_list);
+    RUN(every_two_line_string_breaks_into_two_lines);
     return test_summary("programmer");
 }

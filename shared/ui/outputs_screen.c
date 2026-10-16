@@ -32,9 +32,13 @@
 #define DD_Y     44
 #define DD_H     54
 
+/* Why no pin can be ticked: two lines of 18 px under the counts. */
+#define REASON_Y (DD_Y + DD_H + 60)
+
 /* Shown only while the pages read describe no binding: held for UI_HOLD_S,
- * it writes a binding with no pin. */
-#define CLR_Y    (DD_Y + DD_H + 92)
+ * it writes a binding with no pin.  Below the reason's second line; its
+ * label on two lines where it needs them. */
+#define CLR_Y    (DD_Y + DD_H + 100)
 #define CLR_H    48
 
 /*
@@ -484,6 +488,49 @@ static void event(const touch_event_t *evt)
 
 /* ------------------------------------------------------------------ render */
 
+int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
+                 int max_lines, const gfx_font_t *font, gfx_color_t ink,
+                 bool centre)
+{
+    const int cell = gfx_text_width(font, " ", 1);
+    const int cells = (cell > 0) ? box.w / cell : 0;
+    int lines = 0;
+    const char *at = (text != NULL) ? text : "";
+    while (*at == ' ') {
+        ++at;
+    }
+    while (*at != '\0' && lines < max_lines) {
+        size_t len = strlen(at);
+        if (lines + 1 < max_lines && gfx_text_cells(at) > cells) {
+            /* Up to the last space in the line, or the whole width where
+             * none falls in it. */
+            const size_t fit = gfx_text_prefix(at, cells);
+            size_t cut = fit;
+            while (cut > 0u && at[cut] != ' ') {
+                --cut;
+            }
+            len = (cut > 0u) ? cut : fit;
+        }
+        if (c != NULL) {
+            char buf[96];
+            const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
+            memcpy(buf, at, n);
+            buf[n] = '\0';
+            const int x = centre
+                              ? box.x + (box.w
+                                         - gfx_text_width(font, buf, 1)) / 2
+                              : box.x;
+            gfx_text(c, x, box.y + lines * pitch, buf, font, ink, 1);
+        }
+        at += len;
+        while (*at == ' ') {
+            ++at;
+        }
+        ++lines;
+    }
+    return lines;
+}
+
 static const char *result_text(void)
 {
     switch (s.result) {
@@ -691,7 +738,7 @@ static void draw_left(gfx_canvas_t *c)
 
     ui_choice_face(c, dd_rect(), p->name, s.hit_kind == HIT_DD, s.open);
 
-    char buf[64];
+    char buf[96];
     const uint8_t n = outbind_chosen(&s.bind);
     const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
                                                       : (uint8_t)OUT_MAX_SLOTS;
@@ -706,7 +753,8 @@ static void draw_left(gfx_canvas_t *c)
     }
 
     if (outputs_screen_reason(buf, sizeof(buf))) {
-        gfx_text(c, COL_X, DD_Y + DD_H + 60, buf, UI_FONT_LABEL, UI_WARN, 1);
+        (void)outputs_wrap(c, gfx_rect_make(COL_X, REASON_Y, COL_W, 16), 18,
+                           buf, 2, UI_FONT_LABEL, UI_WARN, false);
     }
 
     if (s.read == BIND_READ_ODD) {
@@ -718,16 +766,25 @@ static void draw_left(gfx_canvas_t *c)
         gfx_fill_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0, fill);
         gfx_draw_chamfer_rect_ex(c, k.x, k.y, k.w, k.h, 10, 0, 10, 0,
                                  UI_DANGER);
+        /* One line in the middle, or two 20 px apart about it, 8 px in
+         * from either end. */
         const char *label = TR(OUT_HOLD_UNBIND);
-        const int lw = gfx_text_width(UI_FONT_LABEL, label, 1);
-        gfx_text(c, k.x + (k.w - lw) / 2, k.y + (k.h - 16) / 2, label,
-                 UI_FONT_LABEL, UI_TEXT, 1);
+        const gfx_rect_t in = gfx_rect_make(k.x + 8, k.y, k.w - 16, 16);
+        const int lines = outputs_wrap(NULL, in, 20, label, 2, UI_FONT_LABEL,
+                                   UI_TEXT, true);
+        (void)outputs_wrap(c,
+                           gfx_rect_make(in.x, k.y + (k.h - 16) / 2
+                                                   - (lines - 1) * 10,
+                                         in.w, 16),
+                           20, label, 2, UI_FONT_LABEL, UI_TEXT, true);
     }
 
     gfx_text(c, COL_X, SCREEN_H - 92, TR(OUT_LAST_WRITE), UI_FONT_LABEL,
              UI_TEXT_FAINT, 1);
-    gfx_text(c, COL_X, SCREEN_H - 70, result_text(), UI_FONT_HEAD,
-             result_color(), 1);
+    /* In the head face, on a second line where it is wider than the
+     * column. */
+    (void)outputs_wrap(c, gfx_rect_make(COL_X, SCREEN_H - 70, COL_W, 28), 30,
+                       result_text(), 2, UI_FONT_HEAD, result_color(), false);
 }
 
 static void draw_cell(gfx_canvas_t *c, int i)
@@ -787,7 +844,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
 
     /* Under the box and the name, from the cell's left edge: the longest
      * protocol name is 112 px of the cell's 121. */
-    char label[24];
+    char label[32];
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
     case OUTPUTS_CELL_RESERVED: lc = UI_DANGER;   break;

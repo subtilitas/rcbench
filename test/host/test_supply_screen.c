@@ -2191,7 +2191,7 @@ TEST_CASE(the_header_names_the_pd_minis_uart_pins)
     st.online = true;
     supply_screen_push(&st);
     supply_screen_header_text(line, sizeof(line));
-    CHECK_STR_EQ(line, "SUPPLY MODEL   ONLINE");
+    CHECK_STR_EQ(line, "SIMULATED SUPPLY   ONLINE");
 }
 
 TEST_CASE(the_pins_in_the_header_are_drawn_and_a_change_redraws_it)

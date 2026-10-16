@@ -29,11 +29,12 @@
 
 /*
  * The state card is only as wide as the widest thing it must hold: the word
- * FRAME LOST at 16x28, and the sentence under it at 8x16, both 160 pixels.
- * Everything it saves goes to the traces, which is the half of this screen
- * that can use more room.
+ * KEIN SIGNAL at 16x28, 176 pixels, 6 px inside the badge's 188 and the
+ * card's 12 px margins.  The sentence under it wraps onto two lines of 23
+ * cells at 8x16.  Everything it saves goes to the traces, which is the half
+ * of this screen that can use more room.
  */
-#define RCARD_PREF 190
+#define RCARD_PREF 212
 #define LCARD_W (W - 2 * PAD - 8 - RCARD_PREF)
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W RCARD_PREF
@@ -60,7 +61,7 @@
 
 #define LAB_W     40               /* the channel's name              */
 #define TRACE_W   (HIST * PITCH)
-#define BAR_W     58
+#define BAR_W     52
 #define BAR_GAP   8
 #define VAL_W     40
 
@@ -376,10 +377,36 @@ static void draw_state(gfx_canvas_t *c)
                     : s.frame.failsafe   ? TR(AN_WHY_FAILSAFE)
                     : s.frame.frame_lost ? TR(AN_WHY_LOST)
                                          : TR(AN_WHY_LIVE);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, (int16_t)(BODY_Y + 72),
-                                 (int16_t)w, 16 },
-                why, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_CENTER);
+    /* Two lines of the card's width, each centred, broken after the last
+     * space that leaves the first line within it. */
+    const int cells = w / 8;
+    char first[64];
+    const char *rest = NULL;
+    snprintf(first, sizeof(first), "%s", why);
+    if (gfx_text_cells(first) > cells) {
+        for (char *sp = strrchr(first, ' '); sp != NULL;
+             sp = strrchr(first, ' ')) {
+            *sp = '\0';
+            if (gfx_text_cells(first) <= cells) {
+                rest = why + (sp - first) + 1;
+                break;
+            }
+        }
+        if (rest == NULL) {
+            snprintf(first, sizeof(first), "%s", why);
+        }
+    }
+    for (int i = 0; i < 2; ++i) {
+        const char *line = (i == 0) ? first : rest;
+        if (line == NULL) {
+            break;
+        }
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)x,
+                                     (int16_t)(BODY_Y + 72 + i * 18),
+                                     (int16_t)w, 16 },
+                    line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
+                    GFX_ALIGN_CENTER);
+    }
 }
 
 static void stat_row(gfx_canvas_t *c, int y, const char *label,
@@ -402,27 +429,27 @@ static void draw_right(gfx_canvas_t *c)
 
     const int x = RCARD_X + 12;
     const int w = RCARD_W - 24;
-    gfx_hline(c, x, BODY_Y + 100, w, ui_theme_color(UI_C_EDGE));
+    gfx_hline(c, x, BODY_Y + 118, w, ui_theme_color(UI_C_EDGE));
 
     char buf[24];
-    stat_row(c, BODY_Y + 114, "BUS", "S.BUS");
+    stat_row(c, BODY_Y + 132, "BUS", "S.BUS");
     snprintf(buf, sizeof(buf), "%u Hz", s.rate_hz);
-    stat_row(c, BODY_Y + 138, "RATE", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 156, "RATE", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.frames);
-    stat_row(c, BODY_Y + 162, "FRAMES", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 180, "FRAMES", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.resyncs);
-    stat_row(c, BODY_Y + 186, "RESYNC", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 204, "RESYNC", s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.bad_footer);
-    stat_row(c, BODY_Y + 210, "BAD TAIL", s.have ? buf : "---");
+    stat_row(c, BODY_Y + 228, "BAD TAIL", s.have ? buf : "---");
 
-    gfx_hline(c, x, BODY_Y + 238, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, BODY_Y + 250, "DIGITAL", UI_FONT_LABEL,
+    gfx_hline(c, x, BODY_Y + 256, w, ui_theme_color(UI_C_EDGE));
+    gfx_text(c, x, BODY_Y + 268, "DIGITAL", UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    /* Stacked, so the card stays 190 px wide and the width goes to the
+    /* Stacked, so the card stays 212 px wide and the width goes to the
      * traces. */
     for (int i = 0; i < 2; ++i) {
         const bool on = s.have && ((i == 0) ? s.frame.ch17 : s.frame.ch18);
-        const gfx_rect_t r = { (int16_t)x, (int16_t)(BODY_Y + 272 + i * 34),
+        const gfx_rect_t r = { (int16_t)x, (int16_t)(BODY_Y + 290 + i * 34),
                                (int16_t)w, 28 };
         ui_button(c, r, (i == 0) ? "CH17" : "CH18",
                   on ? ui_theme_color(UI_C_ACCENT)

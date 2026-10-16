@@ -45,8 +45,8 @@ const char *ui_band_mode_inject(void);
 const char *ui_band_armed_label(uint8_t roles);
 
 /**
- * The label for the coprocessor's refused link frames, "Link frames refused:
- * N" in the language in force, into @p out of @p n bytes: the one place it
+ * The label for the coprocessor's refused link frames, "Rejected link
+ * frames: N" in the language in force, into @p out of @p n bytes: the one place it
  * is built.  MOTOR & ESC shows it in its header strip.  False, with @p out
  * empty, while the link is down or the count (st->link_refused) is 0, so a
  * coprocessor older than 4.21, which sends no count, shows no label.

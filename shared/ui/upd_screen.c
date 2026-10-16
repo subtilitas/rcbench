@@ -16,7 +16,8 @@
 
 /* The area below the band: 800 x 432 px.  UPDATES lays out as FILES &
  * UPDATE does: the buttons on the left, what is kept and what last happened
- * on the right. */
+ * on the right, each text broken into lines of the card's 44 cells, 20 px
+ * apart. */
 #define BX      16
 #define BW      360
 #define BH      56
@@ -350,6 +351,15 @@ static void text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
                 col, 1, GFX_ALIGN_LEFT);
 }
 
+/* @p t in the card from @p y, as many lines as it takes; returns the y
+ * under its last line. */
+static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
+                gfx_color_t col)
+{
+    return y + 20 * ui_text_wrap(c, gfx_rect_make(x, y, w, 18), 20, t,
+                                 UI_FONT_LABEL, col);
+}
+
 static gfx_color_t hold_fill(const ui_hold_t *h)
 {
     if (h->flash_left > 0) {
@@ -517,34 +527,24 @@ static void render(gfx_canvas_t *c, int buffer_index)
     char line[96], second[96];
     int y = 32;
     snprintf(line, sizeof(line), TR(WF_Q_RUN), s_v.running);
-    text_in(c, x, y, w, line, UI_FONT_LABEL, UI_TEXT);
-    y += 24;
+    y = para(c, x, y, w, line, UI_TEXT) + 4;
     if (s_v.unavailable) {
-        text_in(c, x, y, w, TR(WF_UNAVAIL_1), UI_FONT_LABEL, UI_WARN);
-        text_in(c, x, y + 20, w, TR(WF_UNAVAIL_2), UI_FONT_LABEL, UI_WARN);
-        y += 52;
+        y = para(c, x, y, w, TR(WF_UNAVAIL_1), UI_WARN);
+        y = para(c, x, y, w, TR(WF_UNAVAIL_2), UI_WARN) + 12;
     } else if (s_v.have_net) {
         snprintf(line, sizeof(line), TR(WF_HOME_IS), s_v.net);
-        text_in(c, x, y, w, line, UI_FONT_LABEL, UI_TEXT_DIM);
-        y += 32;
+        y = para(c, x, y, w, line, UI_TEXT_DIM) + 12;
     } else {
-        text_in(c, x, y, w, TR(WF_HOME_NONE), UI_FONT_LABEL, UI_WARN);
-        text_in(c, x, y + 20, w, TR(UPD_KEEP_NET), UI_FONT_LABEL,
-                UI_TEXT_DIM);
-        y += 52;
+        y = para(c, x, y, w, TR(WF_HOME_NONE), UI_WARN);
+        y = para(c, x, y, w, TR(UPD_KEEP_NET), UI_TEXT_DIM) + 12;
     }
 
     /* The job under way, or how the last one ended. */
     upd_result_text(&s_v, line, sizeof(line), second, sizeof(second));
     if (line[0] != '\0') {
         const gfx_color_t col = upd_busy(&s_v) ? UI_TEXT : result_colour();
-        text_in(c, x, y, w, line, UI_FONT_LABEL, col);
-        y += 20;
-        if (second[0] != '\0') {
-            text_in(c, x, y, w, second, UI_FONT_LABEL, UI_TEXT_DIM);
-            y += 20;
-        }
-        y += 12;
+        y = para(c, x, y, w, line, col);
+        y = para(c, x, y, w, second, UI_TEXT_DIM) + 12;
     }
 
     /* Why the buttons are grey, when they are and the result did not
@@ -556,19 +556,20 @@ static void render(gfx_canvas_t *c, int buffer_index)
         if (why != UPD_WHY_NONE
             && !(s_v.got == UPD_GOT_BLOCKED && s_v.why == why)) {
             blocked_text(why, line, sizeof(line), second, sizeof(second));
-            text_in(c, x, y, w, line, UI_FONT_LABEL, UI_WARN);
-            y += 20;
-            if (second[0] != '\0') {
-                text_in(c, x, y, w, second, UI_FONT_LABEL, UI_WARN);
-            }
+            y = para(c, x, y, w, line, UI_WARN);
+            (void)para(c, x, y, w, second, UI_WARN);
         }
     }
 
-    /* What the reminder does, at the card's foot. */
-    text_in(c, x, 16 + 400 - 56, w, TR(UPD_ABOUT_1), UI_FONT_LABEL,
-            UI_TEXT_DIM);
-    text_in(c, x, 16 + 400 - 36, w, TR(UPD_ABOUT_2), UI_FONT_LABEL,
-            UI_TEXT_DIM);
+    /* What the reminder does, at the card's foot: its last line ends 18 px
+     * above the card's bottom edge. */
+    const int foot = ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
+                                  TR(UPD_ABOUT_1), UI_FONT_LABEL, UI_TEXT)
+                     + ui_text_wrap(NULL, gfx_rect_make(x, 0, w, 18), 20,
+                                    TR(UPD_ABOUT_2), UI_FONT_LABEL, UI_TEXT);
+    y = para(c, x, 16 + 400 - 16 - 20 * foot, w, TR(UPD_ABOUT_1),
+             UI_TEXT_DIM);
+    (void)para(c, x, y, w, TR(UPD_ABOUT_2), UI_TEXT_DIM);
 
     if (s.hold.flash_left > 0) {
         ui_hold_flash_step(&s.hold);

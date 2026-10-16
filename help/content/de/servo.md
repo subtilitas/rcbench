@@ -18,7 +18,7 @@ Die rechte Karte, von oben:
 
 | Zeile | Zeigt |
 |---|---|
-| PULSBREITE | die Pulsbreite, die der Bildschirm befiehlt, in us |
+| SOLL-PULSBREITE | die Pulsbreite, die der Bildschirm befiehlt, in us |
 | GEMESSEN | den Winkel des Horns vom Winkelsensor AS5600, solange er eingeschaltet ist und seinen Magneten sieht, -180,0 bis +179,9 deg; sonst `---` |
 | STROM | den Strom der Servoschiene von ihrem Messgerät, in Hundertstel Ampere |
 | Typzeile | Servotyp, Frame Rate und Pulsbereich, die gelten: `STANDARD PWM  50 Hz  1000-2000` |
@@ -42,13 +42,13 @@ ARMED SERVO treibt die Servo-Ausgänge und einen pulsenden PROG PORT. Throttle-A
 |---|---|---|
 | Das Zifferblatt | abgelehnt | befiehlt die Position unter dem Finger |
 | Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt das Horn vom befohlenen Wert aus |
-| ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS CENTRE plus TRIM |
+| ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS MITTE plus TRIMMUNG |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, hält und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe | stellt die Ruder in ihre Ruhe: 1500 us bei STANDARD PWM, 760 us bei NARROW 760 |
 | TEMPO | einstellbar | einstellbar; eine gehaltene Position wird mit der neuen Rate erneut gesendet |
 | TEST STARTEN | abgelehnt: `ZUERST ARM` | startet nach seinem Halten den automatischen Test |
 
-Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIM. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem Koprozessor älter als Protokoll 4.2.
+Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIMMUNG. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem Koprozessor älter als Protokoll 4.2.
 
 ## Das Messgerät der Servoschiene
 
@@ -100,7 +100,7 @@ TEST STARTEN auf der Seite TEST führt das Servo durch die dort gewählten Verso
 
 ![Ein Testlauf](view:servo-run)
 
-Die Optionen schließen beim Start des Laufs. Stufe und Phase stehen oben auf der linken Karte, das Messgerät neben TEST BEENDEN: `PD mini`, `INA3221 CH1` oder `MODELL`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
+Die Optionen schließen beim Start des Laufs. Stufe und Phase stehen oben auf der linken Karte, das Messgerät neben TEST BEENDEN: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
 
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
@@ -113,7 +113,7 @@ Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläu
 
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
-1. ENDLAGENLAUF antippen und NUR SUCHE oder SUCHE+PROG wählen.
+1. ENDLAGENLAUF antippen und NUR SUCHE oder SUCHEN + PROGRAMMIEREN wählen.
 2. Mit PWM-ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
 3. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
 4. Die Optionen schließen. Der Kasten auf der linken Karte zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
@@ -125,13 +125,13 @@ Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät d
 | Zeile | Bedingung |
 |---|---|
 | `ZUERST ARM` | der Prüfstand ist SAFE |
-| `INA3221 NICHT FÜR DIE SERVOSCHIENE EINGERICHTET` | der INA3221 oder sein CH1 ist unter SETUP, ANSCHLÜSSE aus |
-| `INA3221 NICHT ONLINE` | kein Link, oder der INA3221 antwortet nicht |
-| `NOCH KEINE INA3221-FENSTER` | der INA3221 ist noch nicht das Messgerät |
-| `SERVOSCHIENE UNTER 3.0 V ODER NICHT GELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0 V: ein ausgeschalteter Ausgang liest 0 V |
-| `PORT-PWM AUS: DER PORT GIBT KEINEN PULS AUS` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT GELESEN` | PWM-ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
-| `MITTE NICHT ZWISCHEN PULS MIN UND PULS MAX` | der Pulsbereich enthält PULS CENTRE nicht |
+| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | der INA3221 oder sein CH1 ist unter SETUP, ANSCHLÜSSE aus |
+| `INA3221 NICHT ERREICHBAR` | kein Link, oder der INA3221 antwortet nicht |
+| `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
+| `SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0 V: ein ausgeschalteter Ausgang liest 0 V |
+| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PWM-ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
+| `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 
 ### Die Suche
@@ -140,10 +140,10 @@ Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10 us je Schr
 
 | PWM-ZIEL | Suche |
 |---|---|
-| ein SERVO-PWM-Pin | von PULS CENTRE bis PULS MIN und PULS MAX; nichts wird gelesen oder geschrieben |
+| ein SERVO-PWM-Pin | von PULS MITTE bis PULS MIN und PULS MAX; nichts wird gelesen oder geschrieben |
 | PROG-PORT | zuerst eine Lesesitzung, dann von NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
 
-Die Lesesitzung hält das Servo auf PULS CENTRE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
+Die Lesesitzung hält das Servo auf PULS MITTE, schaltet den Prüfstand auf SAFE, liest das Servo mit VERBINDEN, gibt den Port mit VERLASSEN zurück und schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert. Der Lauf endet vor jeder Suche als NICHT BESTANDEN, wenn:
 
 - das Lesen scheitert (`kein KST- oder Chaservo-Servo` oder `Programmierport ohne Abschluss`): ein Servo, das kein KST oder Chaservo ist, an einem SERVO-PWM-Pin suchen;
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER liegt (`NEUTRAL außerhalb LOWER/UPPER`);
@@ -157,7 +157,7 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0 us und P
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHE+PROG braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und die dritte Zeile nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die dritte Zeile nennt die Bedingung.
+SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und die dritte Zeile nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die dritte Zeile nennt die Bedingung.
 
 ![Der Endlagenlauf beim Programmieren](view:servo-limrun)
 
@@ -197,7 +197,7 @@ Ein Lauf, der endet, während er auf ARMED wartet, schaltet den Prüfstand zudem
 
 ![Ein nach einem Schreiben beendeter Lauf](view:servo-limrun-stopped)
 
-Nach einem Schreiben behält das Servo die zuletzt geschriebenen Werte. Der Kasten zeigt dann `ZURÜCKSPIELEN IN PROGRAMM.`. Im Programmierer bietet ZURÜCKSPIELEN nach VERBINDEN und ALLES LESEN `Werte vor dem Endlagenlauf` an. Eine Sitzung nach dem Lauf sichert bei ihrem ersten Schreiben eine eigene Backup-Datei.
+Nach einem Schreiben behält das Servo die zuletzt geschriebenen Werte. Der Kasten zeigt dann `ZURÜCKSPIELEN IN PROGRAMMIEREN`. Im Programmierer bietet ZURÜCKSPIELEN nach VERBINDEN und ALLES AUSLESEN `Werte vor dem Endlagenlauf.` an. Eine Sitzung nach dem Lauf sichert bei ihrem ersten Schreiben eine eigene Backup-Datei.
 
 ![ZURÜCKSPIELEN nach einem Endlagenlauf](view:servo-limrun-restore)
 
@@ -209,7 +209,7 @@ Der Kasten bleibt bis SCHLIESSEN. Er zeigt das Urteil, den Grund oder die Werte 
 |---|---|
 | GEFUNDEN | nur Suche: ein Ende läuft an; die Endpunkte werden gemeldet |
 | FREI | kein Ende läuft an; nichts wird geschrieben |
-| BESTANDEN | programmiert, und beide Enden in der letzten Suche frei: `LEFT 150>87  RIGHT 150>95` |
+| BESTANDEN | programmiert, und beide Enden in der letzten Suche frei: `LINKS 150>87  RECHTS 150>95` |
 | NICHT BESTANDEN | ein Ende läuft weiterhin an, oder das Servo lässt sich nicht programmieren |
 | ABGEBROCHEN | eine Schutzfunktion, der Bediener, der Link, das Messgerät, das Netzteil oder der Programmierer hat ihn beendet |
 
@@ -227,5 +227,5 @@ Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT.
 ## Verwandte Seiten
 
 - [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Test, die Grenzen und das Ziel.
-- [Servo-Programmierer](servo-programmer.md): PROGRAMM., für KST- und Chaservo-Servos.
+- [Servo-Programmierer](servo-programmer.md): PROGRAMMIEREN, für KST- und Chaservo-Servos.
 - [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini, der INA3221 und der AS5600.
