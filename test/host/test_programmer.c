@@ -22,7 +22,6 @@
 
 #include "programmer_rig.h"
 
-
 /*
  * Pins: the protocol rows accept a press before the page is rendered.  Hit
  * rectangles are laid out independently of drawing, so the press here comes
