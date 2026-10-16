@@ -1,13 +1,14 @@
 /*
- * When the panel may write its own flash, and the board drawing's keep
- * under that rule.
+ * When the panel may write its own flash, the board drawing's keep under
+ * that rule, and when the coprocessor may not write its own.
  *
  * A flash operation on the panel stalls both cores, the control task's STOP,
  * OUTPUT OFF and the supply's trips with them, so a write starts only on a
  * bench that is disarmed with the supply off.  The second half drives the
  * keep the way the control task does -- one step a pass, the gate taken from
  * the arming policy and the supply in the same pass -- and holds it to
- * pausing on an arm and resuming on the disarm.
+ * pausing on an arm and resuming on the disarm.  The last case is the
+ * coprocessor's rule, which holds its store and its firmware update.
  *
  * The arming policy is the real one (arming.c); the flash is memory.
  *
@@ -264,6 +265,35 @@ TEST_CASE(an_arm_and_the_supply_both_hold_it_until_both_are_gone)
     CHECK_EQ(pass(), ART_KEEP_RUNNING);
 }
 
+/* ------------------------------------------------ the coprocessor's rule */
+
+/*
+ * The coprocessor's flash is busy while any one of its four inputs holds,
+ * and free only with all four clear:
+ *
+ *     driving  supply on  PD on  KST session  busy
+ *     false    false      false  false        false
+ *     true     false      false  false        true
+ *     false    true       false  false        true
+ *     false    false      true   false        true
+ *     false    false      false  true         true
+ *     any two or more of them true            true
+ */
+TEST_CASE(the_coprocessor_flash_is_busy_while_any_input_holds)
+{
+    CHECK(!flash_gate_busy(false, false, false, false));
+    CHECK(flash_gate_busy(true, false, false, false));
+    CHECK(flash_gate_busy(false, true, false, false));
+    CHECK(flash_gate_busy(false, false, true, false));
+    CHECK(flash_gate_busy(false, false, false, true));
+    /* Every one of the sixteen combinations. */
+    for (unsigned bits = 0; bits < 16u; ++bits) {
+        CHECK_EQ(flash_gate_busy((bits & 1u) != 0u, (bits & 2u) != 0u,
+                                 (bits & 4u) != 0u, (bits & 8u) != 0u),
+                 bits != 0u);
+    }
+}
+
 int main(void)
 {
     RUN(a_write_may_start_only_disarmed_with_the_supply_off);
@@ -271,6 +301,7 @@ int main(void)
     RUN(a_keep_handed_over_on_an_armed_bench_starts_at_the_disarm);
     RUN(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it);
     RUN(an_arm_and_the_supply_both_hold_it_until_both_are_gone);
+    RUN(the_coprocessor_flash_is_busy_while_any_input_holds);
     free(g_flash);
     free(g_payload);
     return test_summary("flash_gate");

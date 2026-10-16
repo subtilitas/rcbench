@@ -1,0 +1,167 @@
+"""The part of tools/stack_check.py both its halves share: the reader of a
+32-bit little-endian ELF (Executable and Linkable Format) file, the deepest
+chain through a call graph, and what both read out of C source and out of
+the tables in the docs.
+
+stack_check.py holds the panel's task stacks to their deepest call chain
+and stack_iomcu.py the coprocessor's two; stack_check.py's docstring says
+how.
+
+SPDX-License-Identifier: MIT
+"""
+
+import re
+import struct
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def die(msg: str) -> None:
+    sys.exit(f"stack_check: {msg}")
+
+
+# --------------------------------------------------------------- the ELF --
+
+class Elf:
+    """The sections with contents, and the symbol table, of a 32-bit
+    little-endian ELF."""
+
+    def __init__(self, path: Path) -> None:
+        d = path.read_bytes()
+        if d[:4] != b"\x7fELF" or d[4] != 1 or d[5] != 1:
+            die(f"{path} is not a 32-bit little-endian ELF")
+        self.data = d
+        shoff, = struct.unpack_from("<I", d, 0x20)
+        shentsize, shnum = struct.unpack_from("<HH", d, 0x2E)
+        heads = [struct.unpack_from("<IIIIIIIIII", d, shoff + i * shentsize)
+                 for i in range(shnum)]
+        # (address, file offset, size) of every allocated section that has
+        # bytes in the file; 8 is SHT_NOBITS.
+        self.sections = [(h[3], h[4], h[5]) for h in heads
+                         if h[1] != 8 and h[3] != 0]
+        self.symbols = []
+        for h in heads:
+            if h[1] != 2:                     # SHT_SYMTAB
+                continue
+            strtab = heads[h[6]]
+            names = d[strtab[4]: strtab[4] + strtab[5]]
+            current_file = None
+            for off in range(h[4], h[4] + h[5], 16):
+                name, value, size, info, _, shndx = struct.unpack_from(
+                    "<IIIBBH", d, off)
+                end = names.index(b"\0", name)
+                text = names[name:end].decode("utf-8", "replace")
+                kind, bind = info & 0xF, info >> 4
+                if kind == 4:                 # STT_FILE
+                    current_file = text
+                    continue
+                # (address, kind, size, name, file of a local symbol,
+                #  absolute)
+                self.symbols.append((value, kind, size, text,
+                                     current_file if bind == 0 else None,
+                                     shndx == 0xFFF1))
+
+    def read(self, addr: int, n: int) -> bytes | None:
+        for base, off, size in self.sections:
+            if base <= addr and addr + n <= base + size:
+                return self.data[off + addr - base: off + addr - base + n]
+        return None
+
+
+STT_OBJECT, STT_FUNC = 1, 2
+
+
+# ---------------------------------------------------------- the decoders --
+
+# The low @p bits bits of @p v as a signed number: a branch's offset, in
+# the panel's decoder and in the coprocessor's.
+def sext(v: int, bits: int) -> int:
+    return v - (1 << bits) if v & (1 << (bits - 1)) else v
+
+
+# -------------------------------------------------------------- C source --
+
+def call_args(text: str, start: int) -> list | None:
+    """The top-level arguments of the call whose '(' is at @p start."""
+    depth, args, cur = 0, [], start + 1
+    for i in range(start, len(text)):
+        ch = text[i]
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                args.append(text[cur:i].strip())
+                return args
+        elif ch == "," and depth == 1:
+            args.append(text[cur:i].strip())
+            cur = i + 1
+    return None
+
+
+# -------------------------------------------------------- the call graph --
+
+class Graph:
+    def __init__(self, funcs: dict, names: dict) -> None:
+        self.funcs = funcs
+        self.names = names          # address -> name, ROM included
+        self.memo = {}
+        self.cycles = set()
+
+    def label(self, addr: int) -> str:
+        f = self.funcs.get(addr)
+        return f.name if f else self.names.get(addr, f"0x{addr:08x}")
+
+    def depth(self, addr: int, path: list) -> tuple:
+        """(bytes, [(frame, depth from here, address)]) of the deepest
+        chain from @p addr."""
+        if addr in path:
+            loop = path[path.index(addr):] + [addr]
+            self.cycles.add(" -> ".join(self.label(a) for a in loop))
+            return 0, []
+        if addr in self.memo:
+            return self.memo[addr]
+        f = self.funcs.get(addr)
+        if f is None:
+            return 0, []
+        path.append(addr)
+        best, chain = 0, []
+        for c in sorted(f.calls):
+            d, ch = self.depth(c, path)
+            if d > best:
+                best, chain = d, ch
+        path.pop()
+        r = (f.frame + best, [(f.frame, f.frame + best, addr)] + chain)
+        self.memo[addr] = r
+        return r
+
+    def reach(self, root: int) -> set:
+        seen, todo = set(), [root]
+        while todo:
+            a = todo.pop()
+            if a not in seen and a in self.funcs:
+                seen.add(a)
+                todo.extend(self.funcs[a].calls)
+        return seen
+
+
+# ------------------------------------------------ the tables in the docs --
+
+def doc_rows(text: str, header: str) -> dict | None:
+    """{first cell's quoted name: [the numbers of the cells after the
+    second]} for the table under @p header; None without the table.  A
+    number is written 8,192 in English and 8 192 in German."""
+    if header not in text:
+        return None
+    rows = {}
+    for row in text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]:
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        name = re.search(r"`([^`]+)`", cells[0])
+        numbers = []
+        for cell in cells[2:]:
+            digits = re.sub(r"[,\s\u00a0\u202f]", "", cell)
+            numbers.append(int(digits) if digits.isdigit() else None)
+        rows[name.group(1) if name else cells[0]] = numbers
+    return rows

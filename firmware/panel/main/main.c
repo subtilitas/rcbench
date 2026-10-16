@@ -4673,9 +4673,7 @@ static void service_arming(bool link_up)
      */
     service_disarm(link_up);
 
-    const uint32_t stops = arming_stop_count(&s_arm);
-    if (stops != s_stops_served) {
-        s_stops_served = stops;
+    if (arming_stop_unserved(&s_arm, &s_stops_served)) {
         throttle_to_zero();
         servo_let_go();
     }
@@ -4727,10 +4725,15 @@ static void service_arming(bool link_up)
     case ARMING_ACT_ARM: {
         link_msg_t ack = { 0 };
         const uint32_t quiet = s_unanswered;
-        if (s_kst_taken) {
-            /* Asked for before the port was taken: the arm is given up
-             * with nothing written. */
-            arming_refused(&s_arm);
+        /*
+         * Each point of the handshake is decided by arming_handshake_step()
+         * from what this loop learned for it; the writes, the alerts and
+         * the bank stay here.
+         */
+        arming_hs_facts_t facts = { .link_up    = link_up,
+                                    .port_taken = s_kst_taken };
+        if (arming_handshake_step(&s_arm, ARMING_HS_HANDED, &facts, now_ms())
+            == ARMING_HS_PROG) {
             control_alert(TR(ALERT_ARM_PROG));
             break;
         }
@@ -4757,7 +4760,14 @@ static void service_arming(bool link_up)
          * renders it for as long as the centre takes to arrive.
          */
         servo_service(link_up);
-        if (link_up && s_servo_release_owed) {
+        facts.release_owed = link_up && s_servo_release_owed;
+        /* Asked only where the answer decides: asking can take an
+         * exchange. */
+        facts.rate_settled = !link_up || facts.release_owed
+                             || servo_rate_settled();
+        switch (arming_handshake_step(&s_arm, ARMING_HS_PREPARED, &facts,
+                                      now_ms())) {
+        case ARMING_HS_SERVO_HELD:
             /*
              * The release did not land, so the far end still holds the
              * position.  Arming now would render it before anything else
@@ -4772,12 +4782,18 @@ static void service_arming(bool link_up)
              * poll_far_end().
              */
             arm_write_failed(quiet, TR(ALERT_SERVO_NOT_RELEASED));
-        } else if (link_up && !servo_rate_settled()) {
+            break;
+        case ARMING_HS_SERVO_RATE:
             /* The far end may hold a rate faster than the surfaces' servos
              * take, and nothing here knows otherwise; refused like an
              * unpaid release, and asked again on the next attempt. */
             arm_write_failed(quiet, TR(ALERT_SERVO_RATE));
-        } else if (link_up) {
+            break;
+        case ARMING_HS_CLOSED:
+            /* Past the arm's deadline before CLEAR; see below. */
+            control_alert(TR(ALERT_ARM_REFUSED));
+            break;
+        case ARMING_HS_GO: {
             /*
              * Two exchanges: CLEAR on its own, then the frame that arms.
              * Each can wait a second, and what the operator wants can change
@@ -4805,21 +4821,20 @@ static void service_arming(bool link_up)
              * sets the far end's latch again.  The frame that arms is the
              * limit: acknowledged late, it has armed the far end, at rest.
              */
-            if (!arming_handshake_open(&s_arm, now_ms(), false)) {
-                control_alert(TR(ALERT_ARM_REFUSED));
-                break;
-            }
             if (!control_clear_failsafe(&ack)) {
                 arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
                 break;
             }
-            if (arming_stopped(&s_arm) || atomic_load(&s_disarm_request)) {
+            facts.disarm_asked = atomic_load(&s_disarm_request);
+            const arming_hs_t cleared =
+                arming_handshake_step(&s_arm, ARMING_HS_CLEARED, &facts,
+                                      now_ms());
+            if (cleared == ARMING_HS_WITHDRAWN) {
                 /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
-                arming_refused(&s_arm);
                 break;
             }
-            if (!arming_handshake_open(&s_arm, now_ms(), true)) {
+            if (cleared != ARMING_HS_GO) {
                 control_alert(TR(ALERT_ARM_REFUSED));
                 break;
             }
@@ -4832,11 +4847,17 @@ static void service_arming(bool link_up)
                                   now_ms());
                 arm_applied();
             }
-        } else {
+            break;
+        }
+        case ARMING_HS_LOCAL:
             outputs_arm_roles(&s_out,
                               (uint8_t)(arming_roles(&s_arm) & OUT_ROLES_ALL),
                               now_ms());
             arm_applied();
+            break;
+        default:
+            /* No other verdict is given at ARMING_HS_PREPARED. */
+            break;
         }
         break;
     }

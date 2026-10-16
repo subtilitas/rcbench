@@ -200,6 +200,56 @@ bool arming_write_failed(arming_t *a, bool answered)
     return true;
 }
 
+arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
+                                  const arming_hs_facts_t *f,
+                                  uint32_t now_ms)
+{
+    if (a == NULL || f == NULL) {
+        return ARMING_HS_CLOSED;
+    }
+    switch (at) {
+    case ARMING_HS_HANDED:
+        if (f->port_taken) {
+            /* Asked for before the port was taken: the arm is given up
+             * with nothing written. */
+            arming_refused(a);
+            return ARMING_HS_PROG;
+        }
+        return ARMING_HS_GO;
+    case ARMING_HS_PREPARED:
+        if (!f->link_up) {
+            return ARMING_HS_LOCAL;
+        }
+        if (f->release_owed) {
+            return ARMING_HS_SERVO_HELD;
+        }
+        if (!f->rate_settled) {
+            return ARMING_HS_SERVO_RATE;
+        }
+        return arming_handshake_open(a, now_ms, false) ? ARMING_HS_GO
+                                                       : ARMING_HS_CLOSED;
+    case ARMING_HS_CLEARED:
+    default:
+        if (arming_stopped(a) || f->disarm_asked) {
+            /* Stopped or disarmed while the clear was in flight. */
+            arming_refused(a);
+            return ARMING_HS_WITHDRAWN;
+        }
+        return arming_handshake_open(a, now_ms, true) ? ARMING_HS_GO
+                                                      : ARMING_HS_CLOSED;
+    }
+}
+
+bool arming_stop_unserved(const arming_t *a, uint32_t *served)
+{
+    const uint32_t stops = arming_stop_count(a);
+    if (served == NULL || stops == *served) {
+        return false;
+    }
+    *served = stops;
+    return true;
+}
+
 arming_quiet_t arming_exchange_unanswered(arming_t *a, bool link_up,
                                           bool bank_armed)
 {

@@ -1294,6 +1294,278 @@ TEST_CASE(the_handshake_ends_with_whatever_ends_an_arm)
     CHECK(!arming_handshake_open(NULL, 0, false));
 }
 
+/* ------------------------------------------- writing the arm, point by point */
+
+/* What the panel learned, with the link up and nothing in the way. */
+static arming_hs_facts_t clear_way(void)
+{
+    const arming_hs_facts_t f = { .link_up = true, .rate_settled = true };
+    return f;
+}
+
+/* A programmer that holds the port refuses the arm before anything is done
+ * for it, link or no link, and the operator can ask again. */
+TEST_CASE(a_programmer_holding_the_port_refuses_the_arm_unwritten)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    for (int up = 0; up <= 1; ++up) {
+        arming_hs_facts_t f = clear_way();
+        f.link_up    = up != 0;
+        f.port_taken = true;
+        handed_out(t0, at);
+        CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, &f, at),
+                 ARMING_HS_PROG);
+        CHECK(!a.armed);
+        CHECK(!a.arming);
+        CHECK(!a.stopped);
+        CHECK_EQ(arming_stop_count(&a), 0);
+        CHECK(arming_heartbeat(&a, at));
+        CHECK_EQ(arming_step(&a, at + 1u), ARMING_ACT_NONE);
+    }
+
+    /* Without it the arm goes on, and nothing is changed. */
+    arming_hs_facts_t f = clear_way();
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, &f, at),
+             ARMING_HS_GO);
+    CHECK(a.armed);
+    /* Whatever else is wrong is not for this point to say. */
+    f.release_owed = true;
+    f.rate_settled = false;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, &f, at + 5000u),
+             ARMING_HS_GO);
+    CHECK(a.armed);
+}
+
+/* Before CLEAR, in the order the panel asks: the link, the release, the
+ * rate, the deadline. */
+TEST_CASE(the_writes_before_clear_are_refused_in_order)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+
+    /* No link: this end's bank alone, whatever else holds, the deadline
+     * included; the policy is left armed for it. */
+    arming_hs_facts_t f = clear_way();
+    f.link_up      = false;
+    f.release_owed = true;
+    f.rate_settled = false;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_LOCAL);
+    CHECK(a.armed);
+    CHECK(!a.stopped);
+
+    /* An unpaid release before an unknown rate, and both before the
+     * deadline.  The policy is the caller's to end: its rule for a link
+     * gone quiet decides between a refusal and a stop. */
+    f.link_up = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_SERVO_HELD);
+    CHECK(a.armed);
+    CHECK(!a.stopped);
+    f.release_owed = false;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_SERVO_RATE);
+    CHECK(a.armed);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    /* The way clear: CLEAR up to and at the deadline. */
+    f = clear_way();
+    for (int d = -1; d <= 0; ++d) {
+        handed_out(t0, at);
+        CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f,
+                                       dl + (uint32_t)d),
+                 ARMING_HS_GO);
+        CHECK(a.armed);
+    }
+    /* One past it, given up as a refusal: nothing written, no stop. */
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 1u),
+             ARMING_HS_CLOSED);
+    CHECK(!a.armed);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+    CHECK(arming_heartbeat(&a, dl + 1u));
+
+    /* A disarm posted is for the point after CLEAR, not this one. */
+    f.disarm_asked = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_GO);
+}
+
+/*
+ * A STOP after ARMING_ACT_ARM, landing in the CLEAR's exchange: the pump
+ * applies it there, and the latch alone does not take the arm back -- the
+ * policy is still armed, and the deadline alone would let the frame that
+ * arms be written.  The point after CLEAR withdraws it, once.
+ */
+TEST_CASE(a_stop_after_arm_withdraws_it_after_clear)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+    const arming_hs_facts_t f = clear_way();
+
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_GO);
+    arming_stop_pressed(&a);
+    CHECK(a.armed);
+    CHECK(arming_handshake_open(&a, at + 2u, true));   /* the gap it closes */
+
+    handed_out(t0, at);
+    uint32_t served = arming_stop_count(&a);
+    arming_stop_pressed(&a);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_WITHDRAWN);
+    CHECK(!a.armed);
+    CHECK(a.stopped);                    /* the latch stands: line withheld */
+    CHECK(!arming_heartbeat(&a, at + 2u));
+    CHECK_EQ(arming_stop_count(&a), 1);  /* the press, and no second stop */
+    CHECK_EQ(arming_pressed_count(&a), 1);
+    CHECK_EQ(arming_step(&a, at + 3u), ARMING_ACT_NONE);
+    /* And the next pass lets go for it. */
+    CHECK(arming_stop_unserved(&a, &served));
+    CHECK(!arming_stop_unserved(&a, &served));
+
+    /* A stop past the deadline is still the operator's: withdrawn, not
+     * closed, and counted once. */
+    handed_out(t0, at);
+    arming_stop_pressed(&a);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, dl + 700u),
+             ARMING_HS_WITHDRAWN);
+    CHECK_EQ(arming_stop_count(&a), 1);
+
+    /* A stop from the far end in the CLEAR's exchange took the arm back
+     * itself; the latch withdraws whatever is left. */
+    handed_out(t0, at);
+    arming_stop_from_far_end(&a);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_WITHDRAWN);
+    CHECK(!a.armed);
+    CHECK_EQ(arming_stop_count(&a), 1);
+}
+
+/* After CLEAR: a disarm posted withdraws; otherwise the deadline decides,
+ * and past it the arm is given up as a stop. */
+TEST_CASE(after_clear_a_disarm_withdraws_and_the_deadline_stops)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+    arming_hs_facts_t f = clear_way();
+
+    f.disarm_asked = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_WITHDRAWN);
+    CHECK(!a.armed);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    f.disarm_asked = false;
+    for (int d = -1; d <= 0; ++d) {
+        handed_out(t0, at);
+        CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f,
+                                       dl + (uint32_t)d),
+                 ARMING_HS_GO);
+        CHECK(a.armed);
+        CHECK(!a.stopped);
+    }
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, dl + 1u),
+             ARMING_HS_CLOSED);
+    CHECK(!a.armed);
+    CHECK(a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    CHECK_EQ(arming_pressed_count(&a), 0);
+
+    /* An arm that asked no far end has no deadline at either point. */
+    arming_init(&a, 0, SETTLE_MS);
+    arming_touch_seen(&a, t0);
+    (void)arm_by(t0);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 5000u),
+             ARMING_HS_GO);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, dl + 5000u),
+             ARMING_HS_GO);
+
+    /* Nothing to judge: given up, and nothing changed. */
+    CHECK_EQ(arming_handshake_step(NULL, ARMING_HS_HANDED, &f, at),
+             ARMING_HS_CLOSED);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, NULL, at),
+             ARMING_HS_CLOSED);
+    CHECK(a.armed);
+}
+
+/*
+ * Touch that dies and answers again inside the CLEAR's exchange counts a
+ * stop and latches nothing.  The point after CLEAR asks the latch, so the
+ * frame that arms is written; the disarm the outage left is the next step's.
+ */
+TEST_CASE(a_stop_count_that_moves_without_the_latch_disarms_on_the_next_step)
+{
+    const arming_hs_facts_t f = clear_way();
+
+    /* An arm that asked no far end, so no deadline runs out meanwhile. */
+    arming_init(&a, 0, SETTLE_MS);
+    const uint32_t t = arm_by(100);
+    CHECK(a.armed);
+    uint32_t served = arming_stop_count(&a);
+    arming_touch_poll(&a, t + ARMING_TOUCH_DEAD_MS);
+    arming_touch_seen(&a, t + ARMING_TOUCH_DEAD_MS + 1u);
+    arming_touch_poll(&a, t + ARMING_TOUCH_DEAD_MS + 1u);
+    CHECK_EQ(arming_stop_count(&a), 1);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f,
+                                   t + ARMING_TOUCH_DEAD_MS + 1u),
+             ARMING_HS_GO);
+    CHECK(a.armed);
+    CHECK_EQ(arming_step(&a, t + ARMING_TOUCH_DEAD_MS + 2u),
+             ARMING_ACT_DISARM);
+    CHECK(arming_stop_unserved(&a, &served));
+}
+
+/* The count this task let go for: once per change, however many stops the
+ * change holds, and across the counter's wrap. */
+TEST_CASE(a_stale_stop_count_is_let_go_for_once)
+{
+    arming_init(&a, 0, SETTLE_MS);
+    uint32_t served = 0u;
+    CHECK(!arming_stop_unserved(&a, &served));
+
+    (void)arm_by(100);
+    arming_stop(&a);
+    CHECK(arming_stop_unserved(&a, &served));
+    CHECK_EQ(served, 1);
+    CHECK(!arming_stop_unserved(&a, &served));
+
+    /* Two stops between looks: one let-go, and the count taken whole. */
+    arming_stop_pressed(&a);
+    arming_stop_from_far_end(&a);
+    CHECK(arming_stop_unserved(&a, &served));
+    CHECK_EQ(served, 3);
+    CHECK(!arming_stop_unserved(&a, &served));
+
+    /* A stale count from either side, the wrap included: != and not >. */
+    served = 7u;
+    CHECK(arming_stop_unserved(&a, &served));
+    CHECK_EQ(served, 3);
+    a.stops = 0u;
+    served  = 0xFFFFFFFFu;
+    CHECK(arming_stop_unserved(&a, &served));
+    CHECK_EQ(served, 0);
+
+    CHECK(!arming_stop_unserved(&a, NULL));
+    served = 5u;
+    CHECK(arming_stop_unserved(NULL, &served));   /* a missing policy is 0 */
+    CHECK_EQ(served, 0);
+}
+
 /* ------------------------------------------------- every tick, the wrap too */
 
 /*
@@ -1712,6 +1984,12 @@ int main(void)
     RUN(an_unanswered_exchange_is_judged_alike_whatever_it_carried);
     RUN(the_arms_deadline_holds_through_the_handshake);
     RUN(the_handshake_ends_with_whatever_ends_an_arm);
+    RUN(a_programmer_holding_the_port_refuses_the_arm_unwritten);
+    RUN(the_writes_before_clear_are_refused_in_order);
+    RUN(a_stop_after_arm_withdraws_it_after_clear);
+    RUN(after_clear_a_disarm_withdraws_and_the_deadline_stops);
+    RUN(a_stop_count_that_moves_without_the_latch_disarms_on_the_next_step);
+    RUN(a_stale_stop_count_is_let_go_for_once);
     RUN(every_tick_is_a_start_the_run_clock_counts_from);
     RUN(every_timeout_fires_at_its_millisecond_across_the_wrap);
     RUN(a_run_across_the_wrap_ends_and_holds_whatever_ends_it);
