@@ -57,6 +57,7 @@ import sys
 from pathlib import Path
 
 import stack_check
+import stack_elf
 
 ROOT = Path(__file__).resolve().parent.parent
 PANEL_DIR = ROOT / "firmware" / "panel"
@@ -148,7 +149,7 @@ def need(cfg: dict, name: str) -> int:
     return cfg[name]
 
 
-def symbol(elf: stack_check.Elf, name: str) -> int:
+def symbol(elf: stack_elf.Elf, name: str) -> int:
     for addr, _, _, sym, _, _ in elf.symbols:
         if sym == name:
             return addr
@@ -192,7 +193,7 @@ def queues() -> tuple:
             if fn != "xQueueCreate":
                 errors.append(f"{where}: {fn}() is not one this tool reads")
                 continue
-            args = stack_check.call_args(text, m.end() - 1)
+            args = stack_elf.call_args(text, m.end() - 1)
             if args is None or len(args) != 2:
                 errors.append(f"{where}: xQueueCreate() not parsed")
                 continue
@@ -246,7 +247,7 @@ def budget(build: Path) -> tuple:
     path = build / ELF_NAME
     if not path.exists():
         die(f"{path} not found; build the panel first")
-    elf = stack_check.Elf(path)
+    elf = stack_elf.Elf(path)
     cfg = sdkconfig(build)
     heap_start = symbol(elf, "_heap_start")
     if not DRAM_LOW < heap_start < HEAP_END:
