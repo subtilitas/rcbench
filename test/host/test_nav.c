@@ -505,6 +505,44 @@ TEST_CASE(an_alert_survives_navigation)
     CHECK(ui_router_alert() == NULL);
 }
 
+/* An alert given more than one row of the band's 94 cells fits the band's
+ * two rows in each language, its %s filled with a version of 8 characters and
+ * its %u with 65535, the longest each takes. */
+TEST_CASE(a_two_row_alert_fits_two_rows_of_the_band)
+{
+    int seen = 0;
+    for (int id = 0; id < (int)TX_COUNT; ++id) {
+        if (strncmp(ui_text_name((ui_text_id_t)id), "ALERT_", 6) != 0
+            || ui_text_cells((ui_text_id_t)id) <= 94) {
+            continue;
+        }
+        ++seen;
+        for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+            const char *f = ui_tr_in((ui_lang_t)l, (ui_text_id_t)id);
+            char text[UI_ALERT_MAX * 2];
+            size_t n = 0;
+            for (; *f != '\0' && n + 9u < sizeof(text); ++f) {
+                if (f[0] == '%' && f[1] == 's') {
+                    n += (size_t)snprintf(text + n, sizeof(text) - n, "10.10.10");
+                    ++f;
+                } else if (f[0] == '%' && f[1] == 'u') {
+                    n += (size_t)snprintf(text + n, sizeof(text) - n, "65535");
+                    ++f;
+                } else {
+                    text[n++] = *f;
+                }
+            }
+            text[n] = '\0';
+            const int rows = ui_router_alert_rows(text);
+            if (rows < 1 || rows > 2) {
+                T_FAIL("%s in language %d takes %d rows: \"%s\"",
+                       ui_text_name((ui_text_id_t)id), l, rows, text);
+            }
+        }
+    }
+    CHECK(seen > 0);
+}
+
 /* A point on the alert band that, with no alert there, opens a screen from
  * the overview: the tap the band must keep from the screen beneath.  -1
  * when the overview has nothing there. */
@@ -2945,6 +2983,7 @@ int main(void)
     RUN(every_screen_renders_something_and_has_a_title);
     RUN(an_unknown_screen_id_falls_back_to_the_overview);
     RUN(an_alert_survives_navigation);
+    RUN(a_two_row_alert_fits_two_rows_of_the_band);
     RUN(an_alert_clears_after_30_s_and_a_new_one_starts_again);
     RUN(the_frame_an_alert_arrives_in_does_not_count);
     RUN(a_second_contact_cannot_take_the_alert);
