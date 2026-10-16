@@ -479,6 +479,14 @@ static void text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
                 col, 1, GFX_ALIGN_LEFT);
 }
 
+/* @p t in the card from @p y, broken into lines of its 44 cells 20 px
+ * apart; returns the y under its last line. */
+static int para(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
+{
+    return y + 20 * ui_text_wrap(c, gfx_rect_make(RX + 16, y, RW - 32, 18),
+                                 20, t, UI_FONT_LABEL, col);
+}
+
 static const char *why_text(void)
 {
     switch (s.v.off) {
@@ -524,10 +532,8 @@ static void draw_main(gfx_canvas_t *c)
 
     ui_card(c, gfx_rect_make(RX, 16, RW, 400), UI_PANEL);
     int y = 32;
-    text_in(c, RX + 16, y, RW - 32, TR(WF_JOBS_1), UI_FONT_LABEL, UI_TEXT);
-    text_in(c, RX + 16, y + 20, RW - 32, TR(WF_JOBS_2), UI_FONT_LABEL,
-            UI_TEXT);
-    y += 56;
+    y = para(c, y, TR(WF_JOBS_1), UI_TEXT);
+    y = para(c, y, TR(WF_JOBS_2), UI_TEXT) + 16;
     if (here) {
         /* Without Wi-Fi set up the kept network was never read. */
         char line[80];
@@ -536,43 +542,30 @@ static void draw_main(gfx_canvas_t *c)
         } else {
             snprintf(line, sizeof(line), "%s", TR(WF_HOME_NONE));
         }
-        text_in(c, RX + 16, y, RW - 32, line, UI_FONT_LABEL, UI_TEXT_DIM);
-        y += 32;
+        y = para(c, y, line, UI_TEXT_DIM) + 12;
     }
     if (!here) {
-        text_in(c, RX + 16, y, RW - 32, TR(WF_UNAVAIL_1), UI_FONT_LABEL,
-                UI_WARN);
-        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_UNAVAIL_2), UI_FONT_LABEL,
-                UI_WARN);
-        y += 52;
+        y = para(c, y, TR(WF_UNAVAIL_1), UI_WARN);
+        y = para(c, y, TR(WF_UNAVAIL_2), UI_WARN) + 12;
     } else if (!free_) {
-        text_in(c, RX + 16, y, RW - 32, TR(WF_NEEDS_1), UI_FONT_LABEL, UI_WARN);
-        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_NEEDS_2), UI_FONT_LABEL,
-                UI_WARN);
-        y += 52;
+        y = para(c, y, TR(WF_NEEDS_1), UI_WARN);
+        y = para(c, y, TR(WF_NEEDS_2), UI_WARN) + 12;
     }
     if (s.v.save_failed) {
-        text_in(c, RX + 16, y, RW - 32, TR(WF_SAVE_FAILED_1), UI_FONT_LABEL,
-                UI_WARN);
-        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_SAVE_FAILED_2),
-                UI_FONT_LABEL, UI_WARN);
-        y += 52;
+        y = para(c, y, TR(WF_SAVE_FAILED_1), UI_WARN);
+        y = para(c, y, TR(WF_SAVE_FAILED_2), UI_WARN) + 12;
     }
     const char *why = why_text();
     if (why != NULL) {
-        text_in(c, RX + 16, y, RW - 32, why, UI_FONT_LABEL, UI_WARN);
-        y += 20;
+        y = para(c, y, why, UI_WARN);
         if (s.v.off == WIFI_WHY_JOIN) {
-            text_in(c, RX + 16, y, RW - 32, TR(WF_TRY_AP), UI_FONT_LABEL,
-                    UI_TEXT_DIM);
-            y += 20;
+            y = para(c, y, TR(WF_TRY_AP), UI_TEXT_DIM);
         }
         y += 12;
     }
     if (!s.v.code_on) {
-        text_in(c, RX + 16, y, RW - 32, TR(WF_OPEN_1), UI_FONT_LABEL, UI_WARN);
-        text_in(c, RX + 16, y + 20, RW - 32, TR(WF_OPEN_2), UI_FONT_LABEL,
-                UI_WARN);
+        y = para(c, y, TR(WF_OPEN_1), UI_WARN);
+        (void)para(c, y, TR(WF_OPEN_2), UI_WARN);
     }
 }
 
@@ -954,8 +947,10 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
                     UI_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
         ui_button(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed, true);
     } else if (u.v.state == UPDATE_RESTARTING) {
-        gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UP_RESTART),
-                    UI_FONT_HEAD, UI_OK, 1, GFX_ALIGN_LEFT);
+        /* Nothing under it: a line longer than the 47 cells breaks onto
+         * the next, 40 px lower. */
+        (void)ui_text_wrap(c, gfx_rect_make(24, y, 752, 30), 40,
+                           TR(UP_RESTART), UI_FONT_HEAD, UI_OK);
     } else if (failed) {
         gfx_text_in(c, gfx_rect_make(24, y, 752, 30), TR(UP_FAILED),
                     UI_FONT_HEAD, UI_DANGER, 1, GFX_ALIGN_LEFT);

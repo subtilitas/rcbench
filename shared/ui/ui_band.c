@@ -109,6 +109,10 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * the previous one leaves, so no chip needs another's width in advance and a
  * long mode string cannot push the clock under the ARMED badge.  One layout
  * for drawing and for hit-testing, so a tap finds the chip that is drawn.
+ * Chips stand 6 px apart and each takes the 3 px beside it for a tap, so
+ * the strips meet without overlapping.  MOTOR & ESC's home tag ends where
+ * its widest row starts: the clock under an hour, ARMED MOTOR, SIM and
+ * NO LINK's 16 cells.
  */
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
@@ -137,7 +141,7 @@ static void chips_layout(const ui_bench_status_t *st, chips_t *l)
         l->on[chip] = true;
         l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), 10, (int16_t)w,
                                     (int16_t)(UI_BAND_H - 20) };
-        right = right - w - 8;
+        right = right - w - 6;
     }
 }
 
@@ -164,8 +168,8 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
     chips_t l;
     chips_layout(st, &l);
     for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
-        if (l.on[chip] && x >= l.r[chip].x - 4
-            && x < l.r[chip].x + l.r[chip].w + 4) {
+        if (l.on[chip] && x >= l.r[chip].x - 3
+            && x < l.r[chip].x + l.r[chip].w + 3) {
             return (ui_band_chip_t)chip;
         }
     }
@@ -187,8 +191,8 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 #define HELP_PAD     16     /* text from the bubble's sides            */
 #define HELP_TOP     30     /* the first line from the top: tab and 10 */
 #define HELP_BOTTOM  10
-#define HELP_PITCH   18
-#define HELP_PARA    4      /* more between two paragraphs             */
+#define HELP_PITCH   17
+#define HELP_PARA    3      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the
  * render loop alone, and the render task's stack is budgeted. */

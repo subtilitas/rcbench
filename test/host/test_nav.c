@@ -2531,6 +2531,32 @@ TEST_CASE(the_bubble_never_covers_stop_and_fits_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* The widest row of chips under an hour, MOTOR & ESC ARMED in SIM, starts
+ * right of that screen's home tag in both languages. */
+TEST_CASE(the_widest_chip_row_clears_the_home_tag)
+{
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof(st));
+    st.armed       = true;
+    st.armed_roles = UI_ARMED_MOTOR;
+    st.run_seconds = 59u * 60u + 59u;
+    st.mode        = ui_band_mode(false);
+    const gfx_rect_t tag = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
+             ++chip) {
+            gfx_rect_t r;
+            if (ui_band_chip_rect(&st, (ui_band_chip_t)chip, &r)
+                && r.x < tag.x + tag.w) {
+                T_FAIL("language %d, chip %d at x %d, the tag ends at %d",
+                       lang, chip, r.x, tag.x + tag.w);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /*
  * The framebuffer of @p chip's bubble opened on the menu with @p first and
  * then shown with @p then, and of the bubble opened with @p then from the
@@ -2634,14 +2660,14 @@ TEST_CASE(the_link_bubble_follows_the_link)
  * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
  * injector is attached, has both its paragraphs under its title in both
  * languages; a mode string the band has no text for is its title alone.
- * The floor is each paragraph's cells over a line's 61, at 18 px a line
- * and 4 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
+ * The floor is each paragraph's cells over a line's 61, at 17 px a line
+ * and 3 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
  * bubble that drops either paragraph is shorter.
  */
 TEST_CASE(the_inject_bubble_explains_the_injector)
 {
     const int title_only = 30 + 10;   /* HELP_TOP + HELP_BOTTOM */
-    const int cells = 61, pitch = 18, para = 4;
+    const int cells = 61, pitch = 17, para = 3;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         int floor_h = title_only + para;
@@ -2743,7 +2769,7 @@ TEST_CASE(the_link_bubble_carries_the_refused_frames)
         REQUIRE(ui_band_help_rect(&down, UI_BAND_CHIP_LINK, &rd));
         REQUIRE(ui_band_help_rect(&down_n, UI_BAND_CHIP_LINK, &rdn));
         /* One line more at 1, and the widest count still one line. */
-        CHECK_EQ(r1.h, r0.h + 18 + 4);
+        CHECK_EQ(r1.h, r0.h + 17 + 3);
         CHECK_EQ(rm.h, r1.h);
         /* None with the link down, whatever the count. */
         CHECK_EQ(rdn.h, rd.h);
@@ -2981,6 +3007,7 @@ int main(void)
     RUN(a_tap_closes_the_bubble_and_does_nothing_else);
     RUN(stop_works_through_an_open_bubble);
     RUN(the_bubble_never_covers_stop_and_fits_in_both_languages);
+    RUN(the_widest_chip_row_clears_the_home_tag);
     RUN(the_fault_bubble_follows_the_bits_while_open);
     RUN(a_bubble_whose_chip_goes_closes);
     RUN(the_link_bubble_follows_the_link);
