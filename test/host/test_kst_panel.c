@@ -6037,6 +6037,33 @@ TEST_CASE(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe)
     }
 }
 
+/* Notes that fit take one page.  Notes that do not take pages that keep
+ * their last row for the count: no page holds more than room - 1 rows,
+ * no note is split, and every note is on a page. */
+TEST_CASE(notes_that_do_not_fit_take_pages_and_none_is_lost)
+{
+    int page[5];
+    const int fit[3] = { 2, 1, 2 };
+    const int many[5] = { 2, 2, 1, 2, 1 };
+
+    CHECK(kst_panel_pack_notes(fit, 3, 5, page) == 1);
+    CHECK(page[0] == 0 && page[1] == 0 && page[2] == 0);
+    for (int room = 3; room <= 7; ++room) {
+        const int pages = kst_panel_pack_notes(many, 5, room, page);
+        int used[5] = { 0 };
+
+        CHECK(pages >= 2);
+        for (int i = 0; i < 5; ++i) {
+            CHECK(page[i] >= 0 && page[i] < pages);
+            CHECK(i == 0 || page[i] >= page[i - 1]);
+            used[page[i]] += many[i];
+        }
+        for (int pg = 0; pg < pages; ++pg) {
+            CHECK(used[pg] > 0 && used[pg] <= room - 1);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(without_a_link_nothing_on_the_servo_tab_takes_a_tap);
@@ -6165,5 +6192,6 @@ int main(void)
     RUN(a_session_after_a_limit_run_saves_its_own_backup);
     RUN(a_run_write_refused_before_it_is_sent_switches_write_enable_off);
     RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
+    RUN(notes_that_do_not_fit_take_pages_and_none_is_lost);
     return test_summary("kst_panel");
 }

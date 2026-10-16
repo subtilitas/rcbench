@@ -550,6 +550,10 @@ FIT_ONLY = {
     # SUPPLY's MODE card after either trip, its line wrapped in the card.
     "supply-trip-i":    (None, "supply", "dark"),
     "supply-trip-v":    (None, "supply", "dark"),
+    # The SERVO PROGRAMMER's notes turned to their second page, where they
+    # take more rows than there are above the message.
+    "servo-kst-file-locked-p2": (None, "servo", "dark"),
+    "servo-kst-journal-p2": (None, "servo", "dark"),
     # The analyser on a frame the receiver flags as lost.
     "analyser-lost":    (None, "analyser", "dark"),
     # The SERVO screen's OUTPUT page with the frame rate refused and with a

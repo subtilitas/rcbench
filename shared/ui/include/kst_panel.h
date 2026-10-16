@@ -238,6 +238,22 @@ const char *kst_panel_choice_label(int i);
 /** The open list's title; NULL while none is open. */
 const char *kst_panel_choice_title(void);
 
+/**
+ * The page each of @p count notes of @p rows rows takes in @p room rows:
+ * every note on page 0 when they fit, else pages that keep their last row
+ * for the page count, a note never split.  Writes @p page and returns the
+ * number of pages.
+ */
+int kst_panel_pack_notes(const int *rows, int count, int room, int *page);
+
+/** The pages the open tab's notes take: 1 when they fit above the message;
+ *  a tap on the notes shows the next. */
+int kst_panel_note_pages(void);
+
+/** The notes' area, a tap on which shows the next page; empty while the
+ *  notes take one page. */
+gfx_rect_t kst_panel_notes_rect(void);
+
 #ifdef __cplusplus
 }
 #endif

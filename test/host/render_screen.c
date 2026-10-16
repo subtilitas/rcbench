@@ -2839,7 +2839,18 @@ int main(int argc, char **argv)
         if (strncmp(view, "servo-limrun", 12) == 0) {
             limrun_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
-            kst_view(view);
+            /* A view with -p2 is its view with the notes turned to their
+             * second page: a tap on them. */
+            char base[64];
+            const size_t len = strlen(view);
+            const bool p2 = len > 3 && strcmp(view + len - 3, "-p2") == 0;
+
+            snprintf(base, sizeof(base), "%.*s",
+                     (int)(p2 ? len - 3 : len), view);
+            kst_view(base);
+            if (p2 && kst_panel_notes_rect().w > 0) {
+                ktap(kst_panel_notes_rect());
+            }
         } else if (strcmp(view, "servo-hv") == 0
                    || strcmp(view, "servo-hv-live") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
