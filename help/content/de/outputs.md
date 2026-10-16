@@ -41,7 +41,7 @@ Das Wählen eines Protokolls schreibt nichts. Es bestimmt, welche Pins abgehakt 
 
 ## Leerlaufpuls und Vollpuls
 
-Ein MOTOR-PWM-Kanal sendet 0 % Throttle als Leerlaufpuls und 100 % als Vollpuls, ab Werk 1000 us und 2000 us. Beide stehen unter SETUP, ESC / PRÜFSTAND, in Schritten von 10 us: Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us. Ein SERVO-PWM-Kanal behält 1000 bis 2000 us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den Koprozessor 300 ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss unter dem Vollpuls liegen -- nicht gesendet`.
+Ein MOTOR-PWM-Kanal sendet 0 % Throttle als Leerlaufpuls und 100 % als Vollpuls, ab Werk 1000 us und 2000 us. Beide stehen unter SETUP, ESC / PRÜFSTAND, in Schritten von 10 us: Leerlaufpuls 800 bis 1600 us, Vollpuls 1400 bis 2400 us. Ein SERVO-PWM-Kanal behält 1000 bis 2000 us, oder den Bereich, den SERVO sendet. Eine Änderung erreicht den Koprozessor 300 ms nach der letzten Änderung, solange der Prüfstand SAFE ist. Ein Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das Band meldet `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
 
 Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses Senders als null. Leerlaufpuls auf oder unter diesen Puls setzen und Vollpuls auf oder über den längsten: Für einen Sender, der 985 bis 2012 us sendet, 980 us und 2020 us.
 
@@ -55,13 +55,13 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 | ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
 | rot, durchgestrichen | reserviert: GP3 trägt den Sicherheits-Heartbeat, GP8 bis GP12 den CAN-Controller (Controller Area Network) | tut nichts |
 | `PROG-PORT` | der Pin des Programmierports des Koprozessors, ab Werk GP13 | tut nichts |
-| ausgegraut, `SLICE VON GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin des Programmierports; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: SLICE VON PROG-PORT GP13` unter der Zahl |
-| ausgegraut, `PWM VON GP0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22) | tut nichts; `GP16: GLEICHER PWM-KANAL WIE GP0` unter der Zahl |
+| ausgegraut, `GLEICHER PWM-SLICE WIE GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin des Programmierports; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` unter der Zahl |
+| ausgegraut, `GLEICHER PWM-KANAL WIE GP0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22) | tut nichts; `GP16: GLEICHER PWM-KANAL WIE GP0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |
 
 ![PPM mit bereits gebundenen Servo-Pins](view:outputs-full)
 
-Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BRAUCHT 8 KANÄLE, 4 FREI`, `ALLE 8 SLOTS BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
+Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber unter der Zahl: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder `SERVO PWM BELEGT 8 PINS`.
 
 ![GP13 vom Programmierport gehalten](view:outputs-prog)
 
@@ -71,7 +71,7 @@ Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat 
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-OFF bindet nichts und löst nichts. Mit OFF gewählt zeigt jeder gebundene Pin den Namen seines Protokolls; die ganze Bindung steht auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `OFF ZEIGT ALLES, ÄNDERT NICHTS`.
+OFF bindet nichts und löst nichts. Mit OFF gewählt zeigt jeder gebundene Pin den Namen seines Protokolls; die ganze Bindung steht auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN`.
 
 ## LETZTER SCHREIBVORGANG
 
@@ -79,22 +79,22 @@ Jeder Haken wird sofort geschrieben. Danach liest das Panel die Seiten des Kopro
 
 | LETZTER SCHREIBVORGANG | Bedeutung |
 |---|---|
-| `NICHT GESCHR.` | seit dem Start des Panels nichts geschrieben |
+| `NICHT GESCHRIEBEN` | seit dem Start des Panels nichts geschrieben |
 | `GESCHRIEBEN` | der Koprozessor hat das Schreiben bestätigt |
-| `KEIN LINK` | ein Austausch bekam binnen 1000 ms keine Antwort, oder der Link steht nicht |
+| `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000 ms keine Antwort, oder der Link steht nicht |
 | `ABGELEHNT` | der Koprozessor hat abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei ARMED oder eine Frame Rate, die er nicht zurücksetzen konnte |
 
-Ein Koprozessor mit Protokoll 4.10 oder neuer übernimmt die Bindung als Ganzes: `KEIN LINK` und `ABGELEHNT` lassen die gültige Bindung, wie sie war.
+Ein Koprozessor mit Protokoll 4.10 oder neuer übernimmt die Bindung als Ganzes: `KEINE VERBINDUNG` und `ABGELEHNT` lassen die gültige Bindung, wie sie war.
 
 ## Eine Bindung, die nicht bestätigt ist
 
 ![Die zuletzt gelesene Bindung nach einem gescheiterten Lesen](view:outputs-unread)
 
-Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, gedimmt, mit `BINDUNG NICHT GELESEN - GESPERRT`. Ein Tipp auf einen Pin tut nichts, hier und auf PICK A PIN. Das Panel liest bei jedem Link-Aufbau und alle 500 ms erneut.
+Der Bildschirm ändert eine Bindung erst, nachdem er sie gelesen hat. Solange eine Seite nicht gelesen wurde, behält der Bildschirm die zuletzt gelesene Bindung, gedimmt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.`. Ein Tipp auf einen Pin tut nichts, hier und auf PICK A PIN. Das Panel liest bei jedem Link-Aufbau und alle 500 ms erneut.
 
 ![Seiten, die keine Bindung beschreiben](view:outputs-odd)
 
-Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `PAGES OHNE GÜLTIGE BINDUNG` und bietet `HALTEN: ALLE PINS LÖSEN` an. 2 s gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2 s oder das Verlassen des Bildschirms bricht das Halten ab.
+Werden die Seiten gelesen, beschreiben aber keine Bindung, die der Bildschirm kennt, zum Beispiel ein Pin in zwei Slots, lautet er `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und bietet `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` an. 2 s gehalten schreibt es eine Bindung ohne Pin, und Änderungen werden wieder angenommen. Ein Finger, der die Taste verlässt, ein Abheben vor 2 s oder das Verlassen des Bildschirms bricht das Halten ab.
 
 ## Der Koprozessor behält die Bindung
 

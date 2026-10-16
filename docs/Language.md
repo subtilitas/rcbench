@@ -52,10 +52,10 @@ configurator, a manual or a datasheet, and the safety controls, which read
 the same in every language. A translated ARM would not match the word in the
 manual beside the bench.
 
-- The safety and drive controls, and INSTALL, the panel update's hold:
-  ARM, DISARM, STOP, SWEEP, PAUSE, TRIM,
-  REVERSE. CENTRE stays English as a pulse name (PULS CENTRE);
-  the SERVO button that moves the servo there reads ZENTRIEREN. HOLD stays
+- The safety and drive controls: ARM, DISARM, STOP, SWEEP, PAUSE. The SERVO
+  rows are German where the word has a German equivalent: TRIMMUNG,
+  UMKEHREN, PULS MITTE; the button that moves the servo to the centre reads
+  ZENTRIEREN. HOLD stays
   English as the servo test's phase name. PAUSED, the sweep button of a
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
@@ -69,12 +69,11 @@ manual beside the bench.
   (constant voltage), CC (constant current), STANDARD PWM, HELI CYCLIC,
   ESC STICK, BUS OFF, and the status band's BENCH and SIM.
 - The bench's state words, short enough for their place: SAFE and ARMED on
-  the status band, and SILENT on the ANALYSER's verdict. ARM and DISARM are
+  the status band. ARM and DISARM are
   the buttons; SAFE and ARMED are the states.
-- The field's own terms: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
-  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Slice, Pad, Resync,
-  Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT on
-  FILES & UPDATE), Upload, Build.
+- The field's own terms: Failsafe, Brown-out, Timing, Endpoint, Live,
+  Online, Touch, Display, Pin, Slot, Slice, Pad, Resync, Bad tail, tx err,
+  rx err, bus err, Frame, Upload, Build.
 - Units, the stick positions MIN, MID and MAX, and the key legends DEL, CLR
   and OK.
 - The vendor tool's names of a KST or Chaservo servo's settings, as the
@@ -92,11 +91,11 @@ One German word per English concept, on every screen and in the report.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
-| commanded pulse (SERVO, COMMANDED) | PULSBREITE, like PULS MIN, PULS CENTRE and PULS MAX; the supply's SET line is SOLL |
-| input (of a supply), wiring | Eingang, Verdrahtung |
+| commanded pulse (SERVO, COMMANDED) | SOLL-PULSBREITE, like PULS MIN, PULS MITTE and PULS MAX; the supply's SET line is SOLL |
+| input (of a supply), wiring (the PD mini's connections) | Eingang, Anschlüsse |
 | current limit | Strombegrenzung |
-| cap | Obergrenze |
-| trip (the supply's own cut-off), current trip, voltage trip | Abschaltung (ABSCH. on the MODE card), Überstrom, Überspannung |
+| cap | Grenze (Obergrenze only for the upper end of a pair) |
+| trip (the supply's own cut-off), current trip, voltage trip | Abschaltung (ABGESCHALTET on the MODE card), Überstrom, Überspannung |
 | card | Karte |
 | run | Lauf |
 | step (of the supply) | Stufe |
@@ -109,16 +108,16 @@ One German word per English concept, on every screen and in the report.
 | hold to … | … halten |
 | refused | abgelehnt |
 | screen (a page of the interface) | Seite |
-| screen (the display) | Bildschirm |
+| screen (the display) | Anzeige |
 | coprocessor | Koprozessor |
 | emergency stop | Not-Aus |
 | board | Platine |
-| pack, cell, spread | Akku, Zelle, Streuung |
+| pack, cell, spread (between cells) | Akku, Zelle, Unterschied |
 | peak | Spitze (max on a card) |
 | idle current, holding current | Ruhestrom, Haltestrom |
 | travel, travel time | Weg, Stellzeit |
 | stall | blockieren |
-| movement, dwell, settle | Bewegung, Verweilen, Einschwingen |
+| movement, dwell, settle | Bewegung, Haltezeit, Einschwingzeit |
 | paused (the sweep button) | PAUSIERT |
 | speed (of the servo test), range | Tempo, Bereich |
 | device under test | Prüfling |
@@ -128,19 +127,20 @@ One German word per English concept, on every screen and in the report.
 | beep | Piepton |
 | item, value (of an ESC menu) | Punkt, Wert |
 | entry (into an ESC menu), power-up | Einstieg, Einschalten |
-| manual step (at the ESC), MANUAL INTERVENTION REQUIRED, the MANUAL tag | Handgriff, MANUELLER EINGRIFF NÖTIG, HAND |
+| manual step (at the ESC), MANUAL INTERVENTION REQUIRED, the MANUAL tag | Handgriff, MANUELLER EINGRIFF NÖTIG, MANUELL |
 | DONE (a manual step confirmed) | ERLEDIGT |
 | threshold | Schwelle |
 | defaults | Vorgaben |
 | channel | Kanal |
 | probe (of the CAN self-test) | Testframe |
 | terminator, branch (of a bus) | Abschluss, Stichleitung |
-| separator, row, column | Trenner, Zeile, Spalte |
+| separator, row, column | Trennzeichen, Zeile, Spalte |
 | Wi-Fi | WLAN |
-| home network, network name, hidden network | Heimnetz, Netzname, verstecktes Netz |
+| network, home network, network name, hidden network | Netzwerk, Heimnetz, Netzwerkname, verstecktes Netzwerk |
+| forget (a saved network), unbind | löschen |
 | access code | Zugangscode |
 | upload, download | hochladen, herunterladen |
-| image (a firmware file), install | Image, installieren |
+| firmware (a file), install, download (the panel update's hold) | Firmware, installieren, laden |
 | plot, table | Grafik, Tabelle |
 | simulated, modelled (computed by the panel) | simuliert |
 | model (an aircraft, an ESC product) | Modell |
@@ -149,14 +149,25 @@ One German word per English concept, on every screen and in the report.
 | horn (of a servo) | Ruderhorn |
 | start (a run) | starten, START on a button |
 | surface (an output's role) | Ruder |
-| connect, disconnect, read, write | verbinden, trennen, lesen, schreiben |
+| connect, disconnect, read (a device), write | verbinden, trennen, auslesen, schreiben |
+| refresh (a list), rescan | aktualisieren |
 | restore (a backup to a servo) | zurückspielen |
 | enable (the write to a servo) | freigeben |
 | record (of an interrupted write) | Vermerk |
 | store (a backup), stored | speichern, gespeichert |
 | verify (a servo against what was read) | prüfen |
 | locked (a value shown and not written) | gesperrt |
-| speed, speed limit (of a programmed servo) | Tempo, Tempolimit |
+| speed, speed limit (of a programmed servo) | Tempo, Tempogrenze |
+| link (to the coprocessor), NO LINK | Verbindung, KEINE VERBINDUNG |
+| binding (a pin's role), bind | Zuordnung, zuordnen |
+| frame rate (of a servo) | Pulsrate |
+| throttle | Gas |
+| access point (the panel's own Wi-Fi) | WLAN-Hotspot |
+| servo programmer | Servoprogrammierung |
+| log (a recording), log run | Aufzeichnung, Aufzeichnungslauf |
+| IP address | IP-Adresse |
+| acknowledge, confirm | bestätigen |
+| SILENT (the ANALYSER's verdict) | KEIN SIGNAL |
 
 The register is an instrument's: a noun where a label will do, the
 imperative where an instruction is needed, no "Sie". An uppercase label

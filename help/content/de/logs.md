@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE LOGS` und `Keine Karte. Karte einsetzen und NEU LESEN tippen.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCH001.CSV` und aufwärts geschrieben. NEU LESEN liest die Karte erneut.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCH001.CSV` und aufwärts geschrieben. AKTUALISIEREN liest die Karte erneut.
 
 ## Die Dateiliste
 
@@ -22,7 +22,7 @@ Der Kopf nennt die Karte und ihren freien Platz. Jede Zeile ist eine Datei mit i
 
 | Taste | Was sie tut |
 |---|---|
-| NEU LESEN | liest die Karte erneut und wählt den neuesten Lauf |
+| AKTUALISIEREN | liest die Karte erneut und wählt den neuesten Lauf |
 | WLAN | öffnet [Dateien und Update](wifi.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte Datei in der Importansicht; grau, solange nichts gewählt ist |
@@ -42,14 +42,14 @@ Das Band meldet, was die Karte mit einem Lauf gemacht hat:
 
 | Meldung | Bedeutung |
 |---|---|
-| `keine Karte -- dieser Lauf wird nicht aufgezeichnet` | nichts ist eingebunden |
-| `Karte nicht lesbar -- Lauf nicht aufgezeichnet` | die Karte lässt sich nicht auflisten |
-| `Karte voll oder nicht beschreibbar -- Lauf nicht aufgezeichnet` | keine Laufdatei ließ sich anlegen |
-| `die Karte kam nicht nach -- Lauf nicht aufgezeichnet` | jede Zeile ging verloren |
-| `die Karte fiel zurück -- das Log hat Lücken` | einige Zeilen gingen verloren; die Zeitspalte zeigt wo |
-| `die Karte nimmt keine Zeilen mehr an -- Lauf ab hier nicht aufgezeichnet` | ein Schreiben ist mitten im Lauf gescheitert |
-| `die Karte nimmt keine Zeilen mehr an -- das Log ist unvollständig` | dasselbe, beim Schließen des Laufs erneut gemeldet |
-| `die Karte versagte beim letzten Schreiben -- das Log ist unvollständig` | die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
+| `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist eingebunden |
+| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte lässt sich nicht auflisten |
+| `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | keine Laufdatei ließ sich anlegen |
+| `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile ging verloren |
+| `Die Karte war zu langsam. In der Aufzeichnung fehlen Daten.` | einige Zeilen gingen verloren; die Zeitspalte zeigt wo |
+| `Daten können nicht mehr auf die Karte gespeichert werden. Aufzeichnung endet hier.` | ein Schreiben ist mitten im Lauf gescheitert |
+| `Daten konnten nicht mehr auf die Karte geschrieben werden. Aufzeichnung unvollständig.` | dasselbe, beim Schließen des Laufs erneut gemeldet |
+| `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Die ersten vier hinterlassen keine Datei. Die letzten vier hinterlassen eine Datei, die zu früh endet.
 
@@ -61,16 +61,16 @@ Die ersten vier hinterlassen keine Datei. Die letzten vier hinterlassen eine Dat
 
 | Zeile | Zeigt |
 |---|---|
-| TRENNER | SEMIKOLON, KOMMA, TAB oder PIPE |
-| ZAHLEN | ENGLISCH (Dezimalpunkt) oder DEUTSCH (Dezimalkomma) |
+| TRENNZEICHEN | SEMIKOLON, KOMMA, TAB oder SENKRECHTER STRICH |
+| ZAHLENFORMAT | ENGLISCH (Dezimalpunkt) oder DEUTSCH (Dezimalkomma) |
 | ZEILEN, SPALTEN | die gefundenen Datenzeilen und Spalten |
 | ZEITACHSE | die Spalte, die als Zeit gilt, oder ZEILENINDEX |
-| UNGLEICH | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
+| UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
-Die rechte Liste nennt jede Spalte mit ihrem ersten Wert und ihrem Bereich, vom kleinsten zum größten. Ein Tipp auf eine Zahlenspalte nimmt sie in die Grafik auf oder heraus; der Titel zählt sie, `GRAFIK 4/4`. TRENNER und ZAHLEN schalten durch die Möglichkeiten, AUTO zuerst, wenn Werte oder Spalten falsch aussehen. ZURÜCK führt zur Liste; GRAFIK zeichnet die gewählten Spalten.
+Die rechte Liste nennt jede Spalte mit ihrem ersten Wert und ihrem Bereich, vom kleinsten zum größten. Ein Tipp auf eine Zahlenspalte nimmt sie in die Grafik auf oder heraus; der Titel zählt sie, `GRAFIK 4/4`. TRENNZEICHEN und ZAHLENFORMAT schalten durch die Möglichkeiten, AUTO zuerst, wenn Werte oder Spalten falsch aussehen. ZURÜCK führt zur Liste; GRAFIK zeichnet die gewählten Spalten.
 
-Eine letzte Zeile ohne Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat. Sie wird weggelassen, ZEILEN steht in der Warnfarbe, und die Ansicht zeigt `LETZTE ZEILE ABGEBROCHEN, FEHLT`.
+Eine letzte Zeile ohne Zeilenvorschub ist eine Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat. Sie wird weggelassen, ZEILEN steht in der Warnfarbe, und die Ansicht zeigt `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`.
 
 ## Die Grafik
 

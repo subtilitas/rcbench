@@ -6,7 +6,7 @@ order: 22
 
 # Servo-Programmierer
 
-Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. PROGRAMM., oben auf der rechten Karte von [SERVO](servo.md), öffnet ihn über der linken Karte. PROGRAMM. beendet einen laufenden automatischen Test.
+Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. PROGRAMMIEREN, oben auf der rechten Karte von [SERVO](servo.md), öffnet ihn über der linken Karte. PROGRAMMIEREN beendet einen laufenden automatischen Test.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench ist mit ihnen nicht verbunden, wird von ihnen nicht empfohlen und nicht gefördert. Die Namen sagen, mit welchen Servos der Programmierer arbeitet.
 
@@ -19,7 +19,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 - Einen Koprozessor mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
 - Das Servo am Programmierport des Koprozessors, Port 1: GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist.
 - PWM-ZIEL auf PROG-PORT in den [Servo-Optionen](servo-settings.md#prüfling).
-- Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Erst DISARM: bei ARMED wird der Port nicht übernommen.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
+- Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
 ![Ein Koprozessor ohne Programmierport](view:servo-kst-nopage)
 ![Die Standardausgänge sind das Ziel](view:servo-kst-target)
@@ -36,9 +36,9 @@ WEITERES stellt, solange der Tester den Port hat, was VERBINDEN anwendet:
 
 | Eintrag | Bereich | Vorgabe |
 |---|---|---|
-| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in Schritten von 0,1 V; bis 8,4 V mit HV SERVO eingeschaltet | 5,0 V |
-| STROMGRENZE | 50 bis 3000 mA | 1000 mA |
-| WARTEN VOR PWM | 0 bis 10000 ms | 100 ms |
+| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in Schritten von 0,1 V; bis 8,4 V mit HV-SERVO eingeschaltet | 5,0 V |
+| STROMBEGRENZUNG | 50 bis 3000 mA | 1000 mA |
+| WARTEZEIT VOR PWM | 0 bis 10000 ms | 100 ms |
 
 ![Ein PD mini antwortet](view:servo-kst-supply)
 ![Die Versorgung im Programmiermodus](view:servo-kst-supplied)
@@ -54,22 +54,22 @@ Solange der Port aus dem PWM-Betrieb genommen ist, gehören die Sollwerte des Ne
 | Zeile | Taste | Wirkung |
 |---|---|---|
 | PORT | VERBINDEN, ABBRECHEN, VERLASSEN | nimmt den Port, beendet den laufenden Vorgang, gibt den Port zurück |
-| SERVO V6, SERVO V8 | ALLES LESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
+| SERVO V6, SERVO V8 | ALLES AUSLESEN | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
 | ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
 | WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN |
-| SCHREIBEN AUF SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
+| SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
 | ÄNDERUNGEN | n WERTE SCHREIBEN | schreibt die geänderten Werte |
 
 V6 ist eine Ansteuerung mit 20 kHz, V8 eine mit 333 Hz. Der Typ wird nie bearbeitet und nie geschrieben.
 
 ![Ein Servo unbekannter Belegung: nur lesen](view:servo-kst-readonly)
 
-Ein Servo, dessen Register nicht zur bekannten Belegung passen, wird gezeigt und nie beschrieben: `Nur lesen: dieses Servo ist kein bekannter Typ.`
+Ein Servo, dessen Register nicht zur bekannten Belegung passen, wird gezeigt und nie beschrieben: `Nur Auslesen möglich. Dieser Servotyp ist unbekannt.`
 
 ## Bearbeiten
 
-![Geänderte Werte auf TUNING](view:servo-kst-tune)
+![Geänderte Werte auf ABSTIMMEN](view:servo-kst-tune)
 
 Ein Wert wird in einem Entwurf auf dem Panel bearbeitet. Vor dem Schreiben erreicht nichts das Servo. Ein geänderter Wert ist mit `*` und der Akzentfüllung markiert. Eine Zahl öffnet das Tastenfeld, begrenzt auf das, was die harten Grenzen annehmen; STRETCH öffnet eine Liste; ein Schalter schaltet beim Tipp um.
 
@@ -78,10 +78,10 @@ Ein Wert wird in einem Entwurf auf dem Panel bearbeitet. Vor dem Schreiben errei
 
 | Reiter | Zeilen |
 |---|---|
-| TUNING | DEAD BAND, MAX. DUTY (10 bis 98 %), BOOST (bis 3000 us), STRETCH (x1 bis x32), SOFT START, SPEED LIMIT, SPEED |
+| ABSTIMMEN | DEAD BAND, MAX. DUTY (10 bis 98 %), BOOST (bis 3000 us), STRETCH (x1 bis x32), SOFT START, TEMPOGRENZE, TEMPO |
 | PULS | NEUTRAL (1360 bis 1640 us), PULSE LOWER (ab 500 us), PULSE UPPER (bis 2500 us), LEFT ANGLE, RIGHT ANGLE, REVERSION |
-| FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500 us), AFTER (0,4 bis 13,0 s) |
-| SPERRE | der Servotyp, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
+| FAILSAFE | BEWEGEN BEI SIGNALVERLUST, POSITION (500 bis 2500 us), NACH (0,4 bis 13,0 s) |
+| GESPERRT | der Servotyp, LOCK, MODE und der Schutzblock; nur angezeigt, nie bearbeitet |
 
 ![Der Reiter PULS](view:servo-kst-pulse)
 ![Der Reiter FAILSAFE](view:servo-kst-failsafe)
@@ -96,13 +96,13 @@ Ein Tipp, der eine harte Grenze verletzen würde, ändert nichts und nennt die G
 
 Ein Wert innerhalb der harten Grenzen, der eine weiche Grenze verletzt, öffnet ÄNDERUNG PRÜFEN, mit dem Wert des Servos, dem neuen Wert und einer Zeile je Grenze. HALTEN ZUM ÜBERNEHMEN übernimmt ihn nach 2 s; ABBRECHEN lässt den Entwurf, wie er war. Ein [Endlagenlauf](servo.md#der-endlagenlauf) fragt hier nicht: Sein Halten von 2 s beim Start ist die Zustimmung zu einem LEFT ANGLE oder RIGHT ANGLE unter 50.
 
-![Der Reiter SPERRE](view:servo-kst-locked)
+![Der Reiter GESPERRT](view:servo-kst-locked)
 
 ## Schreiben
 
 ![Das Schreiben freigeben](view:servo-kst-enable)
 
-SCHREIBEN AUF SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; HALTEN ZUM FREIGEBEN schaltet es nach 2 s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
+SCHREIBEN INS SERVO FREIGEBEN ist ab Werk aus. Ein Tipp auf AUS öffnet eine Seite, die die Risiken nennt; HALTEN ZUM FREIGEBEN schaltet es nach 2 s ein. Es geht aus bei jedem Aufruf von SERVO, bei jedem STOP, VERBINDEN und VERLASSEN, bei verlorenem Link und wenn ein Servo unklar ist.
 
 ![Drei geänderte Werte, der Schalter an](view:servo-kst-changes)
 ![Die Seite zum Schreiben](view:servo-kst-write)
@@ -135,7 +135,7 @@ Ein Tipp auf eine Datei lädt sie in den Entwurf. Vor dem Schreiben erreicht nic
 ![Die Liste von ZURÜCKSPIELEN](view:servo-kst-restore-list)
 ![Das Zurückspielen des Backups der Sitzung](view:servo-kst-restore)
 
-ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, die Werte vor einem unterbrochenen Schreiben oder `Werte vor dem Endlagenlauf`. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2 s.
+ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach VERBINDEN zuerst gelesen wurde, die Werte vor einem unterbrochenen Schreiben oder `Werte vor dem Endlagenlauf.`. Jedes Zurückspielen braucht den Schreibschalter und ein Halten von 2 s.
 
 ![WEITERES im Programmiermodus](view:servo-kst-more)
 
@@ -147,15 +147,15 @@ ZURÜCKSPIELEN schreibt das Backup der Sitzung zurück, das Servo, wie es nach V
 
 ![Ein unterbrochenes Schreiben](view:servo-kst-doubt)
 
-Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu startet, ABBRECHEN oder ein Stopp es beendet oder kein Ergebnis rechtzeitig ankommt. Der Reiter zeigt dann `Schreiben unterbrochen. Servo ist evtl. halb beschrieben.`, bis das Servo erneut gelesen ist. ALLES LESEN vergleicht das Servo mit dem Vermerk und bietet ZURÜCKSPIELEN an.
+Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu startet, ABBRECHEN oder ein Stopp es beendet oder kein Ergebnis rechtzeitig ankommt. Der Reiter zeigt dann `Schreiben wurde unterbrochen. Die Einstellungen sind vielleicht unvollständig.`, bis das Servo erneut gelesen ist. ALLES AUSLESEN vergleicht das Servo mit dem Vermerk und bietet ZURÜCKSPIELEN an.
 
 ![Das Servo hält eine Mischung alter und neuer Werte](view:servo-kst-journal)
 
 ## Verlassen
 
-![PROGRAMMIEREN VERLASSEN](view:servo-kst-leave)
+![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
 
-VERLASSEN, oder SCHLIESSEN im Programmiermodus, öffnet PROGRAMMIEREN VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2 s. Der Port hält seine Leitung für WARTEN VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben.
+VERLASSEN, oder SCHLIESSEN im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2 s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben.
 
 ## Verwandte Seiten
 

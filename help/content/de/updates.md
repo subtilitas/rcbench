@@ -14,14 +14,14 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 |---|---|
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
-| 2 s HALTEN: DOWNLOAD & INSTALL | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
+| 2 s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
 
 ## Was die Suche braucht
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
 
 - ein unter [Dateien und Update](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, und NACH UPDATES SUCHEN ist grau;
-- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `WLAN braucht SAFE, Netzteil aus`;
+- den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `Für WLAN muss SAFE aktiv und das Netzteil aus sein.`;
 - kein laufendes Update des Koprozessors und keine Panel-Installation im Gang.
 
 Der Download braucht außerdem, dass keine Platinenzeichnung geladen oder gespeichert wird.
@@ -38,13 +38,13 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 | Karte | Bedeutung |
 |---|---|
 | `Version 0.20.0 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
-| `Aktuell: dieses Panel hat 0.19.0.` | das neueste Release ist die laufende Version oder älter |
-| `Verbinden scheiterte: ...`, `Das Heimnetz ist weggefallen.` | das Verbinden scheiterte, wie unter Dateien und Update |
-| `Keine Antwort in 30 s.` | die 30 s sind abgelaufen |
+| `Aktuell. Panel-Version: 0.19.0.` | das neueste Release ist die laufende Version oder älter |
+| `Verbinden scheiterte: ...`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
+| `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten |
-| `GitHub lehnte ab: HTTP 404.` | eine andere Antwort als ein Redirect |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | eine andere Antwort als ein Redirect |
 | `Unerwartete Antwort von GitHub.` | der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was |
-| `WLAN ging aus: ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
+| `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
 | `Abgebrochen: ...` | FILES & UPDATE, das Update des Koprozessors oder ABBRECHEN beendeten die Suche |
 
 ![Eine Suche ohne Antwort](view:updates-failed)

@@ -20,7 +20,7 @@ Nine tiles, 150 x 204 px each, in two rows:
 | SERVO | travel, current | [Servo](servo.md) |
 | SUPPLY | set and log V/A | [Supply](supply.md) |
 | ANALYSER | buses and frames | [Analyser](analyser.md) |
-| LOGS | record and read | [Logs](logs.md) |
+| LOGS | record and view data | [Logs](logs.md) |
 | SETUP | pack and output | [Setup](setup.md) |
 | BATTERY | cells, iR, mAh | [Battery](battery.md) |
 | BALANCE | vibration, phase | [Balance](balance.md) |
@@ -28,9 +28,9 @@ Nine tiles, 150 x 204 px each, in two rows:
 
 A tap opens a tile when the finger lifts on the same tile it pressed. A press that slides off the tile opens nothing.
 
-## The MODELLED mark
+## The SIMULATED mark
 
-The MODELLED mark on a tile says that the coprocessor reports no capability for that screen, or that its sensor is not enabled. It does not classify each value on the screen: ANALYSER and BATTERY carry the mark and show no values at all, and SERVO without the mark shows the panel's supply model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each screen names the source of its readings itself.
+The SIMULATED mark on a tile says that the coprocessor reports no capability for that screen, or that its sensor is not enabled. It does not classify each value on the screen: ANALYSER and BATTERY carry the mark and show no values at all, and SERVO without the mark shows the panel's supply model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each screen names the source of its readings itself.
 
 The mark follows the capability bits the coprocessor reports at link-up:
 

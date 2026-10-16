@@ -20,8 +20,8 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 
 The card names the running version and the kept home network. The check and the download need:
 
-- a home network kept on [Files and update](wifi.md#choosing-a-home-network). Without one the card says `No home network kept.` and CHECK FOR UPDATES is grey;
-- the bench SAFE, the supply output off and no log run open. Otherwise the key is grey and the card says `Wi-Fi needs SAFE, the supply off`;
+- a home network kept on [Files and update](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` and CHECK FOR UPDATES is grey;
+- the bench SAFE, the supply output off and no log run open. Otherwise the key is grey and the card says `Wi-Fi requires SAFE, the supply output off,`;
 - no coprocessor update running and no panel install under way.
 
 The download also needs no board drawing being fetched or kept.
@@ -38,13 +38,13 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 | Card | Meaning |
 |---|---|
 | `Version 0.20.0 is available.` | the newest release is newer than the running build; the hold appears |
-| `Up to date: this panel runs 0.19.0.` | the newest release is the running version or older |
-| `Join failed: ...`, `The home network went away.` | the join failed, as on Files and update |
-| `No answer within 30 s.` | the 30 s ran out |
+| `Up to date. Panel version: 0.19.0.` | the newest release is the running version or older |
+| `Join failed: ...`, `Connection to the home network lost.` | the join failed, as on Files and update |
+| `No response within 30 s.` | the 30 s ran out |
 | `No connection to GitHub.` | the name lookup, the connection or the certificate check failed |
-| `GitHub refused: HTTP 404.` | an answer other than a redirect |
+| `GitHub rejected the request: HTTP 404.` | an answer other than a redirect |
 | `Unexpected answer from GitHub.` | the `Location` is missing or out of form; a second line says which |
-| `Wi-Fi went off: ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
+| `Wi-Fi switched off: bench ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
 | `Stopped: ...` | FILES & UPDATE, the coprocessor's update or CANCEL ended the check |
 
 ![A check that found no answer](view:updates-failed)

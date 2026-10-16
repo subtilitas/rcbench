@@ -55,9 +55,10 @@ Sicherheitsbedienelemente, die in jeder Sprache gleich lauten. Ein
 übersetztes ARM würde nicht zum Wort in der Anleitung neben dem Prüfstand
 passen.
 
-- Die Sicherheits- und Antriebsbedienung und INSTALL, das Halten des
-  Panel-Updates: ARM, DISARM, STOP, SWEEP, PAUSE, TRIM, REVERSE. CENTRE bleibt als Pulsname Englisch (PULS CENTRE); die
-  Taste auf SERVO, die das Servo dorthin fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
+- Die Sicherheits- und Antriebsbedienung: ARM, DISARM, STOP, SWEEP, PAUSE.
+  Die Zeilen auf SERVO sind Deutsch, wo das Wort eine deutsche Entsprechung
+  hat: TRIMMUNG, UMKEHREN, PULS MITTE; die Taste, die das Servo zur Mitte
+  fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
@@ -70,18 +71,17 @@ passen.
   (Constant Voltage), CC (Constant Current), STANDARD PWM, HELI CYCLIC,
   ESC STICK, BUS OFF, und BENCH und SIM im Statusband.
 - Die Zustandswörter des Prüfstands, kurz genug für ihren Platz: SAFE und
-  ARMED im Statusband, und SILENT im Urteil des ANALYSER. ARM und DISARM sind
+  ARMED im Statusband. ARM und DISARM sind
   die Tasten, SAFE und ARMED die Zustände.
-- Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
-  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Slice, Pad, Resync,
-  Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT auf
-  FILES & UPDATE), Upload, Build.
+- Die Begriffe des Fachs: Failsafe, Brown-out, Timing, Endpoint, Live,
+  Online, Touch, Display, Pin, Slot, Slice, Pad, Resync, Bad tail, tx err,
+  rx err, bus err, Frame, Upload, Build.
 - Einheiten, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen
   DEL, CLR und OK.
 - Die Namen, die das Werkzeug des Herstellers den Einstellungen eines KST-
   oder Chaservo-Servos gibt, als Zeilen des Servo-Programmierers: DEAD BAND,
   MAX. DUTY, BOOST, STRETCH, SOFT START, NEUTRAL, PULSE LOWER, PULSE UPPER,
-  LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs SPERRE;
+  LEFT ANGLE, RIGHT ANGLE, REVERSION und die Zeilen seines Tabs GESPERRT;
   dazu PORT, BACKUP und Pairing.
 
 ## Glossar
@@ -94,11 +94,11 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | supply | Netzteil |
 | output | Ausgang |
 | set point | Sollwert |
-| commanded pulse (SERVO, COMMANDED) | PULSBREITE, wie PULS MIN, PULS CENTRE und PULS MAX; die Zeile SET des Netzteils heißt SOLL |
-| input (of a supply), wiring | Eingang, Verdrahtung |
+| commanded pulse (SERVO, COMMANDED) | SOLL-PULSBREITE, wie PULS MIN, PULS MITTE und PULS MAX; die Zeile SET des Netzteils heißt SOLL |
+| input (of a supply), wiring (die Anschlüsse des PD mini) | Eingang, Anschlüsse |
 | current limit | Strombegrenzung |
-| cap | Obergrenze |
-| trip (die eigene Abschaltung des Netzteils), current trip, voltage trip | Abschaltung (ABSCH. auf der Karte MODUS), Überstrom, Überspannung |
+| cap | Grenze (Obergrenze nur für das obere Ende eines Paars) |
+| trip (die eigene Abschaltung des Netzteils), current trip, voltage trip | Abschaltung (ABGESCHALTET auf der Karte MODUS), Überstrom, Überspannung |
 | card | Karte |
 | run | Lauf |
 | step (des Netzteils) | Stufe |
@@ -111,16 +111,16 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | hold to … | … halten |
 | refused | abgelehnt |
 | screen (eine Seite der Oberfläche) | Seite |
-| screen (das Display) | Bildschirm |
+| screen (das Display) | Anzeige |
 | coprocessor | Koprozessor |
 | emergency stop | Not-Aus |
 | board | Platine |
-| pack, cell, spread | Akku, Zelle, Streuung |
+| pack, cell, spread (zwischen Zellen) | Akku, Zelle, Unterschied |
 | peak | Spitze (max auf einer Karte) |
 | idle current, holding current | Ruhestrom, Haltestrom |
 | travel, travel time | Weg, Stellzeit |
 | stall | blockieren |
-| movement, dwell, settle | Bewegung, Verweilen, Einschwingen |
+| movement, dwell, settle | Bewegung, Haltezeit, Einschwingzeit |
 | paused (the sweep button) | PAUSIERT |
 | speed (des Servotests), range | Tempo, Bereich |
 | device under test | Prüfling |
@@ -130,19 +130,20 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | beep | Piepton |
 | item, value (eines ESC-Menüs) | Punkt, Wert |
 | entry (in ein ESC-Menü), power-up | Einstieg, Einschalten |
-| manual step (am ESC), MANUAL INTERVENTION REQUIRED, das Schild MANUAL | Handgriff, MANUELLER EINGRIFF NÖTIG, HAND |
+| manual step (am ESC), MANUAL INTERVENTION REQUIRED, das Schild MANUAL | Handgriff, MANUELLER EINGRIFF NÖTIG, MANUELL |
 | DONE (ein Handgriff bestätigt) | ERLEDIGT |
 | threshold | Schwelle |
 | defaults | Vorgaben |
 | channel | Kanal |
 | probe (des CAN-Selbsttests) | Testframe |
 | terminator, branch (eines Busses) | Abschluss, Stichleitung |
-| separator, row, column | Trenner, Zeile, Spalte |
+| separator, row, column | Trennzeichen, Zeile, Spalte |
 | Wi-Fi | WLAN |
-| home network, network name, hidden network | Heimnetz, Netzname, verstecktes Netz |
+| network, home network, network name, hidden network | Netzwerk, Heimnetz, Netzwerkname, verstecktes Netzwerk |
+| forget (ein gespeichertes Netz), unbind | löschen |
 | access code | Zugangscode |
 | upload, download | hochladen, herunterladen |
-| image (a firmware file), install | Image, installieren |
+| firmware (eine Datei), install, download (das Halten des Panel-Updates) | Firmware, installieren, laden |
 | plot, table | Grafik, Tabelle |
 | simulated, modelled (vom Panel berechnet) | simuliert |
 | model (ein Flugmodell, ein ESC-Produkt) | Modell |
@@ -151,14 +152,25 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | horn (eines Servos) | Ruderhorn |
 | start (einen Lauf) | starten, START auf einem Knopf |
 | surface (die Rolle eines Ausgangs) | Ruder |
-| connect, disconnect, read, write | verbinden, trennen, lesen, schreiben |
+| connect, disconnect, read (ein Gerät), write | verbinden, trennen, auslesen, schreiben |
+| refresh (eine Liste), rescan | aktualisieren |
 | restore (ein Backup auf ein Servo) | zurückspielen |
 | enable (das Schreiben auf ein Servo) | freigeben |
 | record (eines unterbrochenen Schreibens) | Vermerk |
 | store (ein Backup), stored | speichern, gespeichert |
 | verify (ein Servo gegen das Gelesene) | prüfen |
 | locked (ein Wert, der gezeigt und nicht geschrieben wird) | gesperrt |
-| speed, speed limit (eines programmierten Servos) | Tempo, Tempolimit |
+| speed, speed limit (eines programmierten Servos) | Tempo, Tempogrenze |
+| link (zum Koprozessor), NO LINK | Verbindung, KEINE VERBINDUNG |
+| binding (die Rolle eines Pins), bind | Zuordnung, zuordnen |
+| frame rate (eines Servos) | Pulsrate |
+| throttle | Gas |
+| access point (das eigene WLAN des Panels) | WLAN-Hotspot |
+| servo programmer | Servoprogrammierung |
+| log (eine Aufzeichnung), log run | Aufzeichnung, Aufzeichnungslauf |
+| IP address | IP-Adresse |
+| acknowledge, confirm | bestätigen |
+| SILENT (das Urteil des ANALYSER) | KEIN SIGNAL |
 
 Der Ton ist der eines Messgeräts: ein Substantiv, wo eine Beschriftung
 reicht, der Imperativ, wo eine Anweisung nötig ist, kein "Sie". Eine

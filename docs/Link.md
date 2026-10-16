@@ -76,7 +76,7 @@ register is added at the end, which an older panel can ignore.
 A coprocessor reporting a protocol major other than the panel's is treated as
 absent: the link stays down, the splash screen marks the coprocessor step
 failed beside the version it reported, the panel logs both majors and raises
-the alert `protocol mismatch -- will not switch to ARMED`, and no write reaches the
+the alert `Protocol versions do not match. ARMED is blocked.`, and no write reaches the
 coprocessor. Its outputs stay off, and the panel runs as it does with no
 coprocessor connected. A panel and a coprocessor on different sides of a
 major bump are therefore flashed together.
@@ -154,8 +154,7 @@ The page refuses SDA and SCL that are not one block's pair whatever ENABLE
 holds; a coprocessor of 0.15.0 or older takes them with ENABLE 0 and refuses
 the part enabled afterwards. The wire format and the protocol minor are the
 same. A panel of 0.15.0 or older, whose two pin settings are independent,
-sees the refusal at the edit in place of at the enable: its alert `sensor
-pins GP15/GP17 refused -- see SETUP INTERFACES`, once per edit and per
+sees the refusal at the edit in place of at the enable: its alert `Sensor pins GP15/GP17 rejected. Check SETUP > INTERFACES.`, once per edit and per
 link-up, and the page keeps the pins it had. Its pins at −1 are written as
 ENABLE 0 with 0 for the pin and are taken as before. A set-up in the
 coprocessor's flash whose pins are not a pair is refused whole at boot, and
@@ -190,7 +189,7 @@ reserved.
 | Panel | Coprocessor | The encoder (SENSE bit 2, registers 26 to 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | served |
-| 4.9 | 4.8 or 4.7 | the panel does not write ENABLE bit 2 and reads SENSE's registers 12 to 25 only; with the encoder enabled on SETUP it says `coprocessor older than 4.9 -- AS5600 not read`, at link-up and when the encoder is enabled while the coprocessor answers. A 4.8 coprocessor's page has 26 registers and refuses a read past them |
+| 4.9 | 4.8 or 4.7 | the panel does not write ENABLE bit 2 and reads SENSE's registers 12 to 25 only; with the encoder enabled on SETUP it says `Coprocessor firmware older than 4.9. AS5600 not read.`, at link-up and when the encoder is enabled while the coprocessor answers. A 4.8 coprocessor's page has 26 registers and refuses a read past them |
 | 4.9 | 4.6 or older | nothing is sent to SENSE; the same alert |
 | 4.8 or 4.7 | 4.9 | the panel never writes bit 2 and never reads registers 26 to 31. An encoder kept in the coprocessor's flash from a 4.9 panel stays enabled and is read; its two pins stay held from the outputs |
 
@@ -488,7 +487,7 @@ which a set-up register is read a second time is 742.5 µs.
 | Panel | Coprocessor | SERVO_WIN (0x31), `RESETS` and `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | served. While SENSE enables the INA3221 with CH1, this build's panel reads SERVO_WIN every poll and SENSE's registers 12 to 31, `RESETS` among them. It arms no capture |
-| 4.11 | 4.10 or older | the coprocessor answers a request to 0x31 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 11. It takes the INA3221's windows from SERVO_SENSE, the last one per read, reads the PD mini as the servo rail's meter and says once `coprocessor older than 4.11 -- servo current read from PD mini`. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
+| 4.11 | 4.10 or older | the coprocessor answers a request to 0x31 with BAD_PAGE; the panel reads the minor at link-up and sends nothing there below 11. It takes the INA3221's windows from SERVO_SENSE, the last one per read, reads the PD mini as the servo rail's meter and says once `Coprocessor firmware older than 4.11. Servo current is read from the PD mini.`. Register 31 reads 0, and a part that reset itself stays ONLINE on its power-on set-up. A `CAP_HOLD_MA` of 32768 to 65535 is refused with BAD_VALUE |
 | 4.10 or older | 4.11 | the panel never reads 0x31 and reads register 31 as a reserved register it ignores. A holding level it writes, 0 to 32767 mA, means the same. A part found reset reads offline for 1000 ms and then online again |
 
 **The panel's reads.** `shared/bench/sense_link.c` takes each CH1 window
@@ -1564,8 +1563,7 @@ panel forgets the count at each link-up and takes it again from the first
 STATUS read after it.
 
 MOTOR & ESC shows the count in its header strip, after the poll rate and the
-error count, while the link is up and the count is above 0: `Link frames
-refused: 37`, in German `Abgelehnte Link-Frames: 37`. No other screen shows
+error count, while the link is up and the count is above 0: `Rejected link frames: 37`, in German `Abgelehnte Link-Frames: 37`. No other screen shows
 it. The bring-up log line `iomcu  frames ... refused N` carries it as well.
 `ui_link_refused_label()` in `shared/ui/ui_band.c` builds the label.
 
@@ -1707,9 +1705,9 @@ is 1000 x major + minor and patch, so 0.18.0 is version 18.0.
 | a session found at the check, left by this panel before a restart or a lost link | ended with ABORT | checks on: the check reads the state again and asks for the hash |
 | ACTIVATED found at the check | restarts within 20 ms | reads again until the restart, gives up after 10 s |
 | a restart mid-transfer | the session is gone | starts again from block 0, at most 3 times |
-| no answer for 4 s | | gives up: `no answer` |
-| SHA-256 mismatch at FINISH | state failed, error 7 | `image check failed`, the old image runs |
-| no BUY within 16.7 s of the restart | the boot ROM restarts into the old slot | gives up at 12 s: `new image did not start` |
+| no answer for 4 s | | gives up: `no response` |
+| SHA-256 mismatch at FINISH | state failed, error 7 | `firmware check failed`, the old image runs |
+| no BUY within 16.7 s of the restart | the boot ROM restarts into the old slot | gives up at 12 s: `new firmware did not start` |
 | hash of the running slot or the image | | gives up after 10 s |
 
 A failed or abandoned update leaves the old image running and the other slot
@@ -1724,9 +1722,9 @@ with the coprocessor's HASH_RUNNING over the same number of bytes.
 | Result | Panel |
 | --- | --- |
 | same | nothing |
-| different | the alert `coprocessor runs another build -- the menu offers its update`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
-| an image on trial | writes BUY at once and says `coprocessor's new image kept` |
-| BAD_PAGE or no slots | the alert `coprocessor takes no update over CAN -- load it once over USB` |
+| different | the alert `Coprocessor runs a different build. An update is available in the menu.`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
+| an image on trial | writes BUY at once and says `New coprocessor firmware kept.` |
+| BAD_PAGE or no slots | the alert `Coprocessor cannot update over CAN. Install firmware once via USB.` |
 
 The check runs at a protocol major mismatch as well: the identity registers
 and the update pages answer across majors, and the update moves the
