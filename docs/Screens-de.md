@@ -2871,13 +2871,21 @@ Pin, mit dem er kollidiert.
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
 | `SLICE VON GP13` | `GP28: SLICE VON PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin des Programmierports, solange der Port ihn hält; GP13 und GP28 sind Slice 6 |
-| `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
+| `PWM VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
 
-Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl
-oder zum nächsten Haken. Eine Zeile zum Budget des Protokolls (`ALLE 8
+Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
+zum nächsten Haken, der greift, zum nächsten Besuch des Bildschirms oder zu
+einem Wechsel der Platine. Eine Zeile zum Budget des Protokolls (`ALLE 8
 SLOTS BELEGT` und die anderen) geht vor. DShot und PPM laufen auf PIO
 (Programmable I/O), nicht auf einem Slice, und bekommen beide Pins
 angeboten.
+
+Einschränkung: Die Slice-Regel braucht den Pin des Programmierports, den das
+Panel vom Koprozessor liest. Bis diese Lesung da ist, bis zu 500 ms nach dem
+Aufbau der Verbindung oder einem Wechsel des Port-Pins, wird GP28 angeboten,
+und ein Tippen darauf endet in `LETZTER SCHREIBVORGANG: ABGELEHNT`. Andere
+Prüfungen des Koprozessors, etwa die Bildrate der SERVO-Seite auf einem Pin
+neben MOTOR PWM, lehnen auf diesem Bildschirm ebenfalls ohne Grund ab.
 
 Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
 Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim

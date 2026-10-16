@@ -480,6 +480,17 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
             /* Another pick ends the answer. */
             choose_named(pwm[k]);
             CHECK_STR_EQ(reason(), "");
+
+            /* So does a change of board: the line keeps a catalogue index,
+             * which names another pin, or none, on another board. */
+            tap_pin(28);
+            CHECK(strncmp(reason(), "GP28", 4) == 0);
+            outbind_t b = *outputs_screen_binding();
+            outbind_t other = b;
+            other.board = (uint16_t)(b.board + 1u);
+            outputs_screen_set_binding(&other);
+            outputs_screen_set_binding(&b);
+            CHECK_STR_EQ(reason(), "");
         }
 
         fresh();

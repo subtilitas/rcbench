@@ -2635,10 +2635,18 @@ grey, no tick, and the pin it clashes with named under its name.
 | `SLICE OF GP13` | `GP28: PWM SLICE OF PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
 | `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
-The line stands under the protocol, in amber, until the next pick or tick.
-A line on the protocol's own budget (`ALL 8 SLOTS IN USE` and the others)
-comes first. DShot and PPM run on PIO (programmable I/O), not on a slice,
-and are offered both pins.
+The line stands under the protocol, in amber, until the next pick, the next
+tick that lands, the next visit to the screen or a change of board. A line
+on the protocol's own budget (`ALL 8 SLOTS IN USE` and the others) comes
+first. DShot and PPM run on PIO (programmable I/O), not on a slice, and are
+offered both pins.
+
+Limitation: the slice rule needs the programming port's pin, which the panel
+reads from the coprocessor. Until that reading arrives, up to 500 ms after
+the link comes up or the port's pin changes, GP28 is offered, and a tap on
+it ends in `LAST WRITE: REFUSED`. Other coprocessor checks, such as the
+SERVO page's frame rate on a pin shared with MOTOR PWM, also refuse with no
+reason on this screen.
 
 The pad number under each pin is the one printed on the board, so an operator
 counting pads and an operator reading GPIO (general-purpose input/output)

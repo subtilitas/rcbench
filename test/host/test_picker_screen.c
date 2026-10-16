@@ -951,6 +951,24 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
         CHECK_EQ(s_applied, 0);
         CHECK(strncmp(reason(), "GP16", 4) == 0);
         CHECK(ends_with(reason(), "GP0"));
+        /* A tick that lands ends the answer. */
+        CHECK(picker_screen_button_rect(idx(17u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 1);
+        CHECK_STR_EQ(reason(), "");
+        /* And so does a change of board: the line keeps a catalogue index,
+         * which names another pin, or none, on another board. */
+        CHECK(picker_screen_button_rect(idx(16u), &r));
+        tap_rect(r);
+        CHECK(strncmp(reason(), "GP16", 4) == 0);
+        {
+            outbind_t b = *picker_screen_binding();
+            outbind_t other = b;
+            other.board = (uint16_t)(b.board + 1u);
+            picker_screen_set_binding(&other);
+            picker_screen_set_binding(&b);
+            CHECK_STR_EQ(reason(), "");
+        }
         pick("MOTOR PWM");
         CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_HELD);
         pick("DSHOT300");

@@ -171,8 +171,11 @@ void picker_screen_set_binding(const outbind_t *b)
          * picker still named the board before, and nothing else asks again
          * until the screen is entered.
          */
-        if (s.bind.board != was && s.source != NULL) {
-            s.source(s.bind.board);
+        if (s.bind.board != was) {
+            s.refused = -1;     /* an index into the catalogue before */
+            if (s.source != NULL) {
+                s.source(s.bind.board);
+            }
         }
     }
 }
@@ -620,7 +623,12 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
         }
         return PICKER_PIN_HELD;
     }
-    /* Free, and the PWM generator cannot take it beside what it carries:
+    /* A soldered board's pins are nobody's to press, and a binding no read
+     * has confirmed is nobody's to edit: shown, and not offered. */
+    if (s.unread || (bd != NULL && bd->fixed)) {
+        return PICKER_PIN_LOCKED;
+    }
+    /* Free and offered, and the PWM generator cannot take it beside what it carries:
      * held by the pin it clashes with.  outbind_pwm_clash() takes the port's
      * pin as the coprocessor reads it, PICKER_NO_PIN being no pin. */
     if (outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
@@ -630,11 +638,6 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
                                       cap);
         }
         return PICKER_PIN_HELD;
-    }
-    /* A soldered board's pins are nobody's to press, and a binding no read
-     * has confirmed is nobody's to edit: shown, and not offered. */
-    if (s.unread || (bd != NULL && bd->fixed)) {
-        return PICKER_PIN_LOCKED;
     }
     if (held != 0u) {
         return PICKER_PIN_TICKED;
@@ -1148,7 +1151,7 @@ static void event(const touch_event_t *evt)
      * reason is printed under the protocol list. */
     const picker_pin_t st = picker_screen_pin((uint8_t)was, NULL, 0);
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
-        if (!s.unread
+        if (st == PICKER_PIN_HELD
             && outbind_pwm_clash(&s.bind, (uint8_t)was, g_prog_gpio, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;

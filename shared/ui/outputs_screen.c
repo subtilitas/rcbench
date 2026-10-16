@@ -189,6 +189,9 @@ void outputs_screen_set_binding(const outbind_t *b)
     } else {
         s.off_picked = false;
     }
+    if (s.bind.board != had_board) {
+        s.refused = -1;         /* an index into the catalogue before */
+    }
     s.confirmed = s.bind;
     s.read      = BIND_READ_OK;
     drop_clear_hold();

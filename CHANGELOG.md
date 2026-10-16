@@ -118,8 +118,9 @@ history is in git.
 
 ### Fixed
 
-- OUTPUTS and PICK A PIN no longer offer a SERVO PWM or MOTOR PWM pin the
-  coprocessor refuses, which ended in `LAST WRITE: REFUSED` with no reason.
+- OUTPUTS and PICK A PIN no longer offer a SERVO PWM or MOTOR PWM pin that
+  the coprocessor's slice and compare-register rules refuse, which ended in
+  `LAST WRITE: REFUSED` with no reason.
   A pin on the programming port's PWM slice (GP28 while the port holds
   GP13, both slice 6) and a pin on the compare register of a pin bound as
   PWM (GP16 beside GP0, and the pairs GP1/17, GP2/18, GP4/20, GP5/21,
