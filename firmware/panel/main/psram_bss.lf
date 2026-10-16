@@ -49,6 +49,7 @@ entries:
 archive: liblogfile.a
 entries:
     log_csv (extram_bss)
+    log_reader (extram_bss)
 
 [mapping:rcbench_esc_psram]
 archive: libesc.a

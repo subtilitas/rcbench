@@ -96,6 +96,7 @@ TRACKED = [
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
+    "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
     "shared/safety/heartbeat.c",
