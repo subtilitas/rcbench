@@ -96,7 +96,7 @@
  */
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
-#define SETB_W    96
+#define SETB_W    108
 /* The CURRENT row, whose value is repainted by itself. */
 #define CUR_Y     92
 #define TAG_Y     118
@@ -240,8 +240,8 @@ static const ov_row_t k_rows[] = {
     { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 0, false },
     { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
     { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
-    { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 6, false },
-    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 5, false },
+    { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 5, true  },
+    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 6, false },
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
@@ -2590,15 +2590,20 @@ static gfx_rect_t test_start_rect(void)
 
 /* The run on the left card, clear of the dial and the case, and its one
  * button: STOP TEST while it runs, CLOSE after. */
+/*
+ * The run's box on the left card, clear of the dial's +90 label on its
+ * right: four lines of 31 cells, 20 px apart, over its button.
+ */
+#define BOX_CELLS 31
 static gfx_rect_t test_box_rect(void)
 {
-    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 112 };
+    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 132 };
 }
 
 static gfx_rect_t test_btn_rect(void)
 {
     const gfx_rect_t b = test_box_rect();
-    return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 72), 130, 32 };
+    return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 92), 130, 32 };
 }
 
 static int decimals_of(setting_id_t id)
@@ -5018,6 +5023,61 @@ static void draw_dial(gfx_canvas_t *c)
     }
 }
 
+/*
+ * @p text in the 8x16 face from (x, y) down, @p pitch px a line, in lines
+ * of at most @p cells cells: each broken at the last double space that
+ * keeps the line within them, the gap between two fields, or else at the
+ * last single space.  A word longer than a line stays whole.  With @p c
+ * NULL nothing is drawn.  Returns the lines it takes.
+ */
+static int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
+                     const char *text, int cells, gfx_color_t ink)
+{
+    int lines = 0;
+    const char *rest = text;
+    while (*rest != '\0') {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "%s", rest);
+        size_t len = strlen(buf);
+        if (gfx_text_cells(buf) > cells) {
+            size_t brk = 0u, dbl = 0u;
+            for (size_t i = 1u; i < len; ++i) {
+                if (buf[i] != ' ' || buf[i - 1u] == ' ') {
+                    continue;
+                }
+                buf[i] = '\0';
+                const bool fits = gfx_text_cells(buf) <= cells;
+                buf[i] = ' ';
+                if (!fits) {
+                    break;
+                }
+                brk = i;
+                if (buf[i + 1u] == ' ') {
+                    dbl = i;
+                }
+            }
+            if (dbl > 0u) {
+                brk = dbl;
+            }
+            if (brk == 0u) {
+                const char *sp = strchr(buf, ' ');
+                brk = (sp != NULL) ? (size_t)(sp - buf) : len;
+            }
+            buf[brk] = '\0';
+            len = brk;
+        }
+        if (c != NULL) {
+            gfx_text(c, x, y + lines * pitch, buf, &gfx_font_8x16, ink, 1);
+        }
+        ++lines;
+        rest += len;
+        while (*rest == ' ') {
+            ++rest;
+        }
+    }
+    return lines;
+}
+
 /* A file's name for the run's number: BENCHnnn.CSV. */
 static void test_file_name(char *b, size_t n)
 {
@@ -5089,10 +5149,12 @@ static void draw_test_box(gfx_canvas_t *c)
                  (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
     }
     gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
-    gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-    gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
+    /* The second line takes the box's third as well where it is longer
+     * than the box is wide; the third moves down to the fourth. */
+    const int n2 = wrap_text(c, b.x + 10, b.y + 28, 20, l2, BOX_CELLS,
+                             ui_theme_color(UI_C_TEXT));
+    gfx_text(c, b.x + 10, b.y + 28 + 20 * ((n2 > 1) ? n2 : 1), l3,
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
     ui_button(c, test_btn_rect(), running ? TR(SV_STOP_TEST) : TR(SUP_CLOSE),
               running ? ui_theme_color(UI_C_DANGER)
                       : ui_theme_color(UI_C_PANEL_HI), false, true);
@@ -5147,7 +5209,7 @@ static void draw_lim_box(gfx_canvas_t *c)
     gfx_color_t head = ui_theme_color(UI_C_ACCENT);
     gfx_color_t col3 = ui_theme_color(UI_C_TEXT_DIM);
     const char *right = "INA3221";
-    char f[LOG_RUN_NAME_MAX + 4];
+    char f[LOG_RUN_NAME_MAX + 4] = "";
     if (running) {
         if (r->cfg.program) {
             snprintf(l1, sizeof(l1), TR(SV_LIM_TITLE_PROG), r->writes,
@@ -5223,17 +5285,20 @@ static void draw_lim_box(gfx_canvas_t *c)
             snprintf(l3, sizeof(l3), TR(SV_LIM_ENDS), a, z);
         }
         lim_file_name(f, sizeof(f));
-        right = f;
     }
     gfx_text(c, b.x + 10, b.y + 8, l1, &gfx_font_8x16, head, 1);
     gfx_text(c, b.x + 10, b.y + 28, l2, &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);
     gfx_text(c, b.x + 10, b.y + 48, l3, &gfx_font_8x16, col3, 1);
+    /* The report under the run's lines once it has ended. */
+    if (!running) {
+        gfx_text(c, b.x + 10, b.y + 68, f, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
     ui_button(c, test_btn_rect(), running ? TR(SV_LIM_STOP) : TR(SUP_CLOSE),
               running ? ui_theme_color(UI_C_DANGER)
                       : ui_theme_color(UI_C_PANEL_HI), false, true);
-    /* The meter it reads beside the button while it runs; the report
-     * after. */
+    /* The meter it reads, beside the button. */
     const gfx_rect_t btn = test_btn_rect();
     const int mw = gfx_text_width(&gfx_font_8x16, right, 1);
     gfx_text(c, b.x + b.w - 10 - mw, btn.y + 8, right, &gfx_font_8x16,
@@ -5833,7 +5898,10 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     return warn;
 }
 
-/* Whether the frame rate reached the pins, in two lines. */
+/* A line of a page's note: the overlay less 10 px each side, 58 cells. */
+#define NOTE_CELLS ((OV_W - 20) / 8)
+
+/* Whether the frame rate reached the pins, in two lines or more. */
 static void draw_rate_note(gfx_canvas_t *c, int x, int y)
 {
     const servo_rate_state_t st = (s.rate_hz == s.frame_hz
@@ -5879,8 +5947,10 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     }
     const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
                                  : ui_theme_color(UI_C_TEXT_FAINT);
-    gfx_text(c, x, y, l1, &gfx_font_8x16, col, 1);
-    gfx_text(c, x, y + 18, l2, &gfx_font_8x16, col, 1);
+    /* Each line wraps onto the next where it is longer than the page's
+     * 58 cells. */
+    const int n1 = wrap_text(c, x, y, 18, l1, NOTE_CELLS, col);
+    (void)wrap_text(c, x, y + 18 * n1, 18, l2, NOTE_CELLS, col);
 }
 
 /* START TEST: green, fading to the danger red across its hold, as ARM;
@@ -6141,6 +6211,9 @@ static void draw_warn_apply(gfx_canvas_t *c)
               s.warn.down, true);
 }
 
+/* A line of a warning: the overlay less 20 px each side, in 8 px cells. */
+#define WARN_CELLS ((OV_W - 40) / 8)
+
 /*
  * The warning a type or a frame rate that can destroy a servo needs before
  * it is applied: in the danger colour, saying what it is and what it does
@@ -6167,10 +6240,11 @@ static void draw_warning(gfx_canvas_t *c)
         TR(SV_DESTROY_1), TR(SV_DESTROY_2), TR(SV_DESTROY_3),
         TR(SV_DESTROY_4), TR(SV_DESTROY_5),
     };
+    int y = a.y + 104;
     for (int i = 0; i < 5; ++i) {
-        gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
-                 (i < 3) ? ui_theme_color(UI_C_TEXT)
-                         : ui_theme_color(UI_C_TEXT_DIM), 1);
+        y += 22 * wrap_text(c, a.x + 20, y, 22, lines[i], WARN_CELLS,
+                            (i < 3) ? ui_theme_color(UI_C_TEXT)
+                                    : ui_theme_color(UI_C_TEXT_DIM));
     }
     draw_warn_apply(c);
     ui_button(c, warn_cancel_rect(), TR(CANCEL),
@@ -6214,15 +6288,15 @@ static void draw_hv(gfx_canvas_t *c)
     const char *const lines[] = {
         TR(SV_HV_1), TR(SV_HV_2), TR(SV_HV_3), TR(SV_HV_4), TR(SV_HV_5),
     };
+    int y = a.y + 104;
     for (int i = 0; i < 5; ++i) {
-        gfx_text(c, a.x + 20, a.y + 104 + i * 22, lines[i], &gfx_font_8x16,
-                 (i < 4) ? ui_theme_color(UI_C_TEXT)
-                         : ui_theme_color(UI_C_TEXT_DIM), 1);
+        y += 22 * wrap_text(c, a.x + 20, y, 22, lines[i], WARN_CELLS,
+                            (i < 4) ? ui_theme_color(UI_C_TEXT)
+                                    : ui_theme_color(UI_C_TEXT_DIM));
     }
     if (s.ask.purpose == ASK_SET && supply_screen_output_on()) {
-        gfx_text(c, a.x + 20, a.y + 104 + 5 * 22 + 8,
-                 TR(SV_HV_LIVE),
-                 &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
+        (void)wrap_text(c, a.x + 20, y + 8, 22, TR(SV_HV_LIVE), WARN_CELLS,
+                        ui_theme_color(UI_C_WARN));
     }
     draw_ask_apply(c);
     ui_button(c, warn_cancel_rect(), TR(CANCEL),

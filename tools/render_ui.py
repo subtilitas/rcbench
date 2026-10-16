@@ -534,6 +534,13 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
+    # The analyser on a frame the receiver flags as lost.
+    "analyser-lost":    (None, "analyser", "dark"),
+    # The SERVO screen's OUTPUT page with the frame rate refused and with a
+    # coprocessor that cannot set it; the HV warning with the output on.
+    "servo-rate-refused": (None, "servo", "dark"),
+    "servo-rate-unsupported": (None, "servo", "dark"),
+    "servo-hv-live":    (None, "servo", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over
