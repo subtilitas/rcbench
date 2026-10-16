@@ -11,7 +11,7 @@
  * edge out of LIVE, and nothing changes a value outside LIVE.
  *
  * The release a run of the automatic test ends with needs a supply and a
- * servo model; its row is in test_servo.c
+ * servo model; its row is in test_servo_test_panel.c
  * (a_run_follows_the_value_state_at_every_edge).
  *
  * Touch is fed through the tracker and the router (touch_feed.h).
