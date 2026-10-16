@@ -630,11 +630,33 @@ const char *ui_router_alert(void)
     return s.has_held ? s.held : NULL;
 }
 
+/* The alert's text: 94 cells from x 12, clear of the "x" at x 780.  Text
+ * wider than one line breaks at a space onto a second, 16 px under the
+ * first: two rows of the 8x16 face fill 32 of the band's 34 px. */
+#define ALERT_TEXT_X 12
+#define ALERT_TEXT_W (94 * 8)
+#define ALERT_PITCH  16
+
+int ui_router_alert_rows(const char *text)
+{
+    return ui_text_wrap(NULL, gfx_rect_make(ALERT_TEXT_X, 0, ALERT_TEXT_W,
+                                            ALERT_PITCH),
+                        ALERT_PITCH, text, &gfx_font_8x16, 0);
+}
+
 static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
 {
     const int y = PANEL_H - ALERT_H;
     gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, ui_theme_color(UI_C_DANGER));
-    gfx_text(c, 12, y + 9, text, &gfx_font_8x16, ui_theme_color(UI_C_TEXT), 1);
+    if (ui_router_alert_rows(text) <= 1) {
+        gfx_text(c, ALERT_TEXT_X, y + 9, text, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT), 1);
+    } else {
+        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 1, ALERT_TEXT_W,
+                                            ALERT_PITCH),
+                           ALERT_PITCH, text, &gfx_font_8x16,
+                           ui_theme_color(UI_C_TEXT));
+    }
     if (closable) {
         gfx_text(c, PANEL_W - 12 - 8, y + 9, "x", &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT), 1);

@@ -84,7 +84,7 @@ hinzukommt, was ein älteres Panel ignorieren kann.
 Ein Koprozessor, der eine andere Protokoll-Major meldet als das Panel, gilt
 als abwesend: der Link bleibt unten, der Splash markiert den
 Koprozessor-Schritt als fehlgeschlagen neben der gemeldeten Version, das
-Panel protokolliert beide Majors und meldet `Protokoll passt nicht -- kein ARM`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
+Panel protokolliert beide Majors und meldet `Protokollversionen passen nicht zusammen. ARMED ist gesperrt.`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
 und das Panel läuft wie ohne angeschlossenen Koprozessor. Panel und
 Koprozessor auf verschiedenen Seiten eines Major-Sprungs werden deshalb
 zusammen geflasht.
@@ -169,8 +169,7 @@ auch immer ENABLE hält; ein Koprozessor von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
-der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17
-abgelehnt -- siehe SETUP ANSCHLÜSSE`, einmal je Änderung und je Link-Aufbau,
+der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und wie bisher angenommen. Eine
 Konfiguration im Flash des Koprozessors, deren Pins kein Paar sind, wird
@@ -207,7 +206,7 @@ bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
 | Panel | Koprozessor | Der Encoder (SENSE Bit 2, Register 26 bis 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | bedient |
-| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `Koprozessor älter als 4.9 -- AS5600 nicht gelesen`, beim Link-up und wenn der Encoder freigegeben wird, während der Koprozessor antwortet. Die Page eines 4.8-Koprozessors hat 26 Register und weist ein Lesen darüber hinaus ab |
+| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `Koprozessor-Firmware älter als 4.9. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der Koprozessor antwortet. Die Page eines 4.8-Koprozessors hat 26 Register und weist ein Lesen darüber hinaus ab |
 | 4.9 | 4.6 oder älter | an SENSE wird nichts gesendet; dieselbe Meldung |
 | 4.8 oder 4.7 | 4.9 | das Panel schreibt Bit 2 nie und liest die Register 26 bis 31 nie. Ein Encoder, den ein 4.9-Panel im Flash des Koprozessors hinterlassen hat, bleibt freigegeben und wird gelesen; seine zwei Pins bleiben den Ausgängen entzogen |
 
@@ -257,7 +256,7 @@ measured magnet field strength goes below the minimum specified level
 register is 0", mit Bz_ERROR bei 8 mT. Der Zählerstand ist dann keine
 Position: eine Messung ohne MD löscht den Anker, `AS5600_STILL_MS` liest 0,
 und das Panel gibt den Winkel an nichts weiter -- nicht an die Seite SERVO,
-nicht an ENC-MITTE, nicht an einen Lauf. ML und MH sind "AGC maximum gain
+nicht an SENSOR-MITTE, nicht an einen Lauf. ML und MH sind "AGC maximum gain
 overflow, magnet too weak" und "AGC minimum gain overflow, magnet too
 strong"; das Datenblatt nennt keine Wirkung auf den Winkel und spezifiziert
 sein Rauschen nur für 30 bis 90 mT. Mit gesetztem MD wird der Zählerstand
@@ -534,7 +533,7 @@ ein zweites Mal gelesen wird, hat 742,5 µs.
 | Panel | Koprozessor | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | bedient. Solange SENSE den INA3221 mit CH1 freigibt, liest das Panel dieses Builds SERVO_WIN bei jedem Poll und von SENSE die Register 12 bis 31, darunter `RESETS`. Es schaltet keine Messung scharf |
-| 4.11 | 4.10 oder älter | der Koprozessor beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `Koprozessor älter als 4.11 -- Servostrom vom PD mini gelesen`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
+| 4.11 | 4.10 oder älter | der Koprozessor beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `Koprozessor-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
 | 4.10 oder älter | 4.11 | das Panel liest 0x31 nie und liest Register 31 als reserviertes Register, das es übergeht. Ein Haltestrom, den es schreibt, 0 bis 32767 mA, bedeutet dasselbe. Ein zurückgesetzt gefundenes Bauteil liest 1000 ms lang offline und dann wieder online |
 
 **Die Lesezugriffe des Panels.** `shared/bench/sense_link.c` nimmt jede
@@ -1708,7 +1707,7 @@ jeder Zähler von STATUS. Das Panel vergisst die Zahl bei jedem Link-up und
 
 MOTOR & ESC zeigt die Zahl in seiner Kopfzeile nach der Abfragerate und der
 Fehlerzahl, solange der Link steht und die Zahl über 0 liegt:
-`Abgelehnte Link-Frames: 37`. Kein anderer Screen zeigt sie. Die Logzeile beim Link-up `iomcu  frames ...
+`Abgelehnte Verbindungsframes: 37`. Kein anderer Screen zeigt sie. Die Logzeile beim Link-up `iomcu  frames ...
 refused N` enthält sie ebenfalls. `ui_link_refused_label()` in
 `shared/ui/ui_band.c` baut das Label.
 
@@ -1860,8 +1859,8 @@ Patch, 0.18.0 ist also Version 18.0.
 | ACTIVATED bei der Prüfung gefunden | startet innerhalb von 20 ms neu | liest erneut bis zum Neustart, gibt nach 10 s auf |
 | ein Neustart mitten in der Übertragung | die Sitzung ist weg | beginnt wieder bei Block 0, höchstens 3-mal |
 | 4 s keine Antwort | | gibt auf: `keine Antwort` |
-| SHA-256 passt bei FINISH nicht | Zustand fehlgeschlagen, Fehler 7 | `Image-Prüfung fehlgeschlagen`, das alte Image läuft |
-| kein BUY innerhalb 16,7 s nach dem Neustart | das Boot-ROM startet neu in den alten Slot | gibt nach 12 s auf: `neues Image startete nicht` |
+| SHA-256 passt bei FINISH nicht | Zustand fehlgeschlagen, Fehler 7 | `Firmware-Prüfung fehlgeschlagen`, das alte Image läuft |
+| kein BUY innerhalb 16,7 s nach dem Neustart | das Boot-ROM startet neu in den alten Slot | gibt nach 12 s auf: `neue Firmware ist nicht gestartet` |
 | Hash des laufenden Slots oder des Images | | gibt nach 10 s auf |
 
 Ein gescheitertes oder abgebrochenes Update lässt das alte Image laufen und
@@ -1877,9 +1876,9 @@ gelesen, mit HASH_RUNNING des Koprozessors über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
-| ein Image auf Probe | schreibt sofort BUY und meldet `Neues Image des Koprozessors behalten` |
-| BAD_PAGE oder keine Slots | der Alarm `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` |
+| verschieden | der Alarm `Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| ein Image auf Probe | schreibt sofort BUY und meldet `Neue Koprozessor-Firmware dauerhaft übernommen.` |
+| BAD_PAGE oder keine Slots | der Alarm `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das

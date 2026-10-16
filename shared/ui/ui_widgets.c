@@ -110,16 +110,69 @@ void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill)
               gfx_lerp(fill, GFX_BLACK, 40));
 }
 
-void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-             gfx_color_t dot, gfx_color_t fill)
+int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
+                 const gfx_font_t *f, gfx_color_t col)
+{
+    if (t == NULL || f == NULL) {
+        return 0;
+    }
+    const int m = gfx_text_width(f, "M", 1);
+    const int cells = (m > 0) ? first.w / m : 0;
+    if (cells < 1) {
+        return 0;
+    }
+    char line[128];
+    int n = 0;
+    while (*t == ' ') {
+        ++t;
+    }
+    while (*t != '\0') {
+        /* The whole rest, or up to the last space inside the line, or the
+         * line's cells of a word longer than it. */
+        size_t len = strlen(t);
+        if (gfx_text_cells(t) > cells) {
+            const size_t max = gfx_text_prefix(t, cells);
+            len = max;
+            for (size_t i = max; i > 0u; --i) {
+                if (t[i] == ' ') {
+                    len = i;
+                    break;
+                }
+            }
+        }
+        if (c != NULL) {
+            const size_t k = (len < sizeof(line)) ? len : sizeof(line) - 1u;
+            memcpy(line, t, k);
+            line[k] = '\0';
+            gfx_text_in(c, gfx_rect_make(first.x, first.y + n * pitch,
+                                         first.w, first.h),
+                        line, f, col, 1, GFX_ALIGN_LEFT);
+        }
+        ++n;
+        t += len;
+        while (*t == ' ') {
+            ++t;
+        }
+    }
+    return n;
+}
+
+void ui_pill_inset(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t dot, gfx_color_t fill, int inset)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     int cy = r.y + r.h / 2;
-    gfx_fill_circle(c, r.x + 12, cy, 4, dot);
-    gfx_draw_circle(c, r.x + 12, cy, 6, gfx_lerp(dot, fill, 130));
+    gfx_fill_circle(c, r.x + inset / 2, cy, 4, dot);
+    gfx_draw_circle(c, r.x + inset / 2, cy, 6, gfx_lerp(dot, fill, 130));
     if (label) {
-        gfx_text(c, r.x + 24, cy - 8, label, UI_FONT_LABEL, UI_TEXT, 1);
+        gfx_text(c, r.x + inset, cy - 8, label, UI_FONT_LABEL, UI_TEXT, 1);
     }
+}
+
+void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+             gfx_color_t dot, gfx_color_t fill)
+{
+    ui_pill_inset(c, r, label, dot, fill, UI_PILL_INSET);
 }
 
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,
@@ -231,9 +284,33 @@ void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
     const gfx_rect_t nr = { r.x, (int16_t)(r.y + icon_dy + 40), r.w, 22 };
     gfx_text_in(c, nr, name ? name : "", &gfx_font_8x16, UI_TEXT, 1,
                 GFX_ALIGN_CENTER);
+    /* A line wider than the tile breaks at the last space that fits and
+     * takes a second row 18 px under the first, where the tile has room
+     * for it; a line with no such space is clipped. */
+    const char *ln = (line != NULL) ? line : "";
+    const int cells = r.w / gfx_text_width(&gfx_font_8x16, "M", 1);
+    size_t cut = strlen(ln);
+    if (gfx_text_cells(ln) > cells
+        && icon_dy + 64 + 18 + 20 <= r.h) {
+        for (size_t i = gfx_text_prefix(ln, cells); i > 0u; --i) {
+            if (ln[i] == ' ') {
+                cut = i;
+                break;
+            }
+        }
+    }
+    char first[64];
+    const size_t k = (cut < sizeof(first)) ? cut : sizeof(first) - 1u;
+    memcpy(first, ln, k);
+    first[k] = '\0';
     const gfx_rect_t lr = { r.x, (int16_t)(r.y + icon_dy + 64), r.w, 20 };
-    gfx_text_in(c, lr, line ? line : "", &gfx_font_8x16, UI_TEXT_DIM, 1,
+    gfx_text_in(c, lr, first, &gfx_font_8x16, UI_TEXT_DIM, 1,
                 GFX_ALIGN_CENTER);
+    if (ln[cut] != '\0') {
+        const gfx_rect_t lr2 = { r.x, (int16_t)(lr.y + 18), r.w, 20 };
+        gfx_text_in(c, lr2, ln + cut + 1, &gfx_font_8x16, UI_TEXT_DIM, 1,
+                    GFX_ALIGN_CENTER);
+    }
 }
 
 void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed)

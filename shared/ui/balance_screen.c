@@ -33,7 +33,7 @@
 /* The MODELLED pill under the readings, above the rule at BODY_Y + 296. */
 #define MARK_DY 270
 
-#define LCARD_W 494
+#define LCARD_W 450
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)
 
@@ -288,8 +288,8 @@ static void draw_aircraft(gfx_canvas_t *c)
     const int fw     = 268;              /* the firewall             */
     const int prop   = 388;              /* the disc, edge on        */
 
-    gfx_hline(c, 24, ground, 452, faint);
-    for (int x = 28; x < 476; x += 16) {
+    gfx_hline(c, 24, ground, 412, faint);
+    for (int x = 28; x < 436; x += 16) {
         gfx_capsule_aa(c, x, ground + 2, x - 6, ground + 10, 1, faint);
     }
 

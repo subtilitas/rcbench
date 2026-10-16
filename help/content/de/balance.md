@@ -6,7 +6,7 @@ order: 80
 
 # Wuchten
 
-BALANCE findet, wo ein Propeller oder Impeller Masse braucht, und zeigt, wo die beiden Sensoren hinkommen. Der Bildschirm öffnet über die Kachel BALANCE im [Menü](overview.md). Drei Reiter: WUCHTEN, TESTGESTELL und FLUGMODELL.
+BALANCE findet, wo ein Propeller oder Impeller Masse braucht, und zeigt, wo die beiden Sensoren hinkommen. Der Bildschirm öffnet über die Kachel BALANCE im [Menü](overview.md). Drei Reiter: WUCHTEN, PRÜFGESTELL und FLUGMODELL.
 
 ## Der Reiter WUCHTEN
 
@@ -20,18 +20,18 @@ Ein Wuchtergebnis ist ein Betrag und ein Winkel. Die rechte Karte stellt den Rot
 | BLÄTTER, `-`, `+` | die Blattzahl, 2 bis 6 |
 | VIBRATION | die Vibration, in g |
 | WINKEL | der Winkel der schweren Stelle, in deg |
-| ZUFÜGEN | die zuzufügende Masse, in g |
+| HINZUFÜGEN | die zuzufügende Masse, in g |
 | WO | wo die Masse hinkommt: zwischen zwei Blätter oder auf die Nabe unter einem Winkel |
 
-In diesem Release ist kein Sensor angeschlossen. VIBRATION, WINKEL und ZUFÜGEN sind feste Werte, 0,42 g, 265 deg und 0,35 g, keine Messung. Eine Marke SIMULIERT und `Nicht gemessen.` stehen darunter. Die Blattrechnung funktioniert: WO setzt den Winkel für die eingestellte Blattzahl in einen Bezug auf die Blätter um.
+In diesem Release ist kein Sensor angeschlossen. VIBRATION, WINKEL und HINZUFÜGEN sind feste Werte, 0,42 g, 265 deg und 0,35 g, keine Messung. Eine Marke SIMULIERT und `Nicht gemessen.` stehen darunter. Die Blattrechnung funktioniert: WO setzt den Winkel für die eingestellte Blattzahl in einen Bezug auf die Blätter um.
 
 ![Ein Impeller mit fünf Blättern](view:balance-edf)
 
-Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265 deg`, weil eine Blattspitze im Mantel nicht erreichbar ist.
+Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265 Grad`, weil eine Blattspitze im Mantel nicht erreichbar ist.
 
 Ohne Indexpuls braucht das Wuchten vier Läufe: eine Referenz, dann je eine Testmasse bei 0, 120 und 240 deg. Ein Indexpuls halbiert das.
 
-## Der Reiter TESTGESTELL
+## Der Reiter PRÜFGESTELL
 
 ![Wo die Sensoren an einem Testgestell hinkommen](view:balance-rig)
 

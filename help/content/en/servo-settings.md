@@ -43,10 +43,10 @@ The OUTPUT page says what became of the rate:
 
 | Note | Meaning |
 |---|---|
-| `In force: OUTPUTS run at 330 Hz.` | the coprocessor runs the rate on the target it holds |
-| `The rate goes to the coprocessor with the next position.` | not written yet |
+| `Active: OUTPUTS run at 330 Hz.` | the coprocessor runs the rate on the target it holds |
+| `The frame rate will be sent to the coprocessor with the next position command.` | not written yet |
 | `REFUSED: ...` | a pulse is longer than the frame, or a pin shares a PWM slice at another rate; the pins keep their rate |
-| `No link: the rate in force is not known.` | no coprocessor answers |
+| `No link. The active frame rate is unknown.` | no coprocessor answers |
 
 ## TEST
 
@@ -57,11 +57,11 @@ The OUTPUT page says what became of the rate:
 | CURVE | SQUARE, SINE, TRIANGLE | SINE | the curve of SWEEP and of the test's moves |
 | SPEED | 0.05 to 5 Hz | 0.5 Hz | curves a second |
 | RANGE | 10 to 100 % | 80 % | the share of the travel moved through |
-| LENGTH BY | TIME, MOVES | TIME | how each supply step is measured |
+| TEST LENGTH BY | TIME, MOVES | TIME | how each supply step is measured |
 | TEST TIME | 5 to 3600 s | 60 s | the length of a step |
 | MOVEMENTS | 1 to 1000 | 20 | the moves of a step |
-| DWELL | 0 to 5000 ms | 200 ms | held at each end |
-| SETTLE | 0 to 10000 ms | 500 ms | waited after a supply step before measuring |
+| DWELL TIME | 0 to 5000 ms | 200 ms | held at each end |
+| SETTLING TIME | 0 to 10000 ms | 500 ms | waited after a supply step before measuring |
 | STEP 4.8 V, STEP 6.0 V | ON, OFF | ON | the supply steps |
 | HV SERVO | ON, OFF | OFF | adds STEP 7.4 V and STEP 8.4 V; off at every restart |
 | BROWN-OUT | ON, OFF | ON | from 5.0 V down until the servo stops moving |
@@ -82,7 +82,7 @@ With HV SERVO on and a step above 6.0 V chosen, START TEST opens HV SERVOS ONLY 
 | IDLE CURRENT | 0 to 5.00 A | 0, not checked | fail above this at rest |
 | HOLD CURRENT | 0 to 5.00 A | 0, not checked | fail above this holding an end |
 | TRAVEL TIME | 0 to 5000 ms | 0, not checked | fail above this from end to end |
-| LIMIT RUN | SEARCH ONLY, SEARCH+PROG | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
+| LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
 | SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with PWM TARGET on PROG PORT only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us before the search |
 
 START LIMIT RUN, under the table, starts the [limit run](servo.md#the-limit-run) with a 2 s hold while ARMED. The line under it names the output and the meter, or why the run cannot start.
@@ -116,7 +116,7 @@ The TARGET row of the right card names the pins the tester drives now. It stays 
 | `PROG PORT GP13 PWM OFF` | the port is the target and renders no pulse |
 | `NO SERVO PWM PIN` | no pin is bound as SERVO PWM |
 | `PINS NOT READ` | no binding has been read |
-| `NOT KNOWN` | the coprocessor's programming-port page is not read |
+| `UNKNOWN` | the coprocessor's programming-port page is not read |
 | `NO LINK` | no coprocessor answers; the tester sends nothing |
 
 The row follows the target the coprocessor holds, not the setting. A PWM TARGET change waits for a quiet bench.

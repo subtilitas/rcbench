@@ -64,9 +64,9 @@ The line over the plot names the meter of the servo rail:
 
 The INA3221 becomes the meter 1000 ms after its conditions hold: it is enabled on SETUP, INTERFACES with CH1, the coprocessor speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638 A on a 0.1 ohm shunt, shows in the warning colour: its mean is then a bound.
 
-![The panel's supply model as the meter, with the MODELLED pill](view:servo-model)
+![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
-While the PD mini is disabled on SETUP, INTERFACES, the supply is the panel's model, and a MODELLED pill sits on the plot. Its readings are simulated, not measured.
+While the PD mini is disabled on SETUP, INTERFACES, the supply is the panel's model, and a SIMULATED pill sits on the plot. Its readings are simulated, not measured.
 
 A reading that did not arrive is `---` in the CURRENT row, `--` on the line and a gap in the plot.
 
@@ -100,7 +100,7 @@ START TEST on the TEST page steps the servo through the supply voltages chosen t
 
 ![A test run](view:servo-run)
 
-The settings close as the run starts. Its step and phase show at the top of the left card, with the meter beside STOP TEST: `PD mini`, `INA3221 CH1` or `MODEL`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
+The settings close as the run starts. Its step and phase show at the top of the left card, with the meter beside STOP TEST: `PD mini`, `INA3221 CH1` or `SIMULATION`. The run ends early, the output off and the servo released, on STOP TEST, STOP, a switch to SAFE, a lost link, leaving the screen, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, or a change to the servo's settings. A run on the INA3221 also ends when the INA3221 stops being the meter, or when no window with both current and voltage arrives for 200 ms (4 windows of 50 ms): `no INA3221 window for 0.2 s`.
 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
@@ -113,7 +113,7 @@ The limit run finds where the installed servo binds at each end of its travel. I
 
 ![The limit run, ready](view:servo-limrun-ready)
 
-1. Tap LIMIT RUN to choose SEARCH ONLY or SEARCH+PROG.
+1. Tap LIMIT RUN to choose SEARCH ONLY or SEARCH + PROGRAM.
 2. With PWM TARGET on PROG PORT, tap SERVO PULSES to choose KEEP or 1000-2000. It starts at KEEP.
 3. Hold START LIMIT RUN for 2 s while the bench is ARMED. A tap or a shorter hold starts nothing.
 4. The settings close. The box on the left card shows the phase, the side and the pulse, and the output it drives.
@@ -125,13 +125,13 @@ The run reads only INA3221 CH1. With the PD mini or the model as the servo rail'
 | Line | Condition |
 |---|---|
 | `ARM FIRST` | the bench is SAFE |
-| `INA3221 NOT SET UP AS THE SERVO RAIL'S METER` | the INA3221 or its CH1 is off on SETUP, INTERFACES |
-| `INA3221 NOT ONLINE` | no link, or the INA3221 does not answer |
-| `NO INA3221 WINDOWS YET` | the INA3221 is not the meter yet |
-| `SERVO RAIL UNDER 3.0 V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0 V: an output that is off reads 0 V |
-| `PORT PWM OFF: THE PORT RENDERS NO PULSE` | PWM TARGET is PROG PORT with PORT PWM off |
+| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | the INA3221 or its CH1 is off on SETUP, INTERFACES |
+| `INA3221 OFFLINE` | no link, or the INA3221 does not answer |
+| `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the meter yet |
+| `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window has no rail voltage, or less than 3.0 V: an output that is off reads 0 V |
+| `PORT PWM OFF. NO PULSES ON THIS PORT.` | PWM TARGET is PROG PORT with PORT PWM off |
 | `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET is the bench's outputs, and no output is bound as SERVO PWM, or the binding is not read yet |
-| `CENTRE NOT BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
+| `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | the pulse range does not hold PULSE CENTRE |
 | `LAST REPORT STILL WRITING` | a test or a run is under way, or its report is still going to the card |
 
 ### The search
@@ -157,7 +157,7 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 us and PULSE UPPER 2000.0 us
 
 ### Programming LEFT ANGLE and RIGHT ANGLE
 
-SEARCH+PROG needs a KST or Chaservo servo on the programming port: PWM TARGET on PROG PORT, the port in PWM, and 4.8 V or more. With a PD mini, its output must be on and its set point counts; without one, the servo rail in the INA3221's last window counts. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the third line says why. On PROG PORT every run starts with a read session: a port not in PWM, a PD mini output that is off, or a supply under 4.8 V keeps the button grey for SEARCH ONLY as well, and the third line names the condition.
+SEARCH + PROGRAM needs a KST or Chaservo servo on the programming port: PWM TARGET on PROG PORT, the port in PWM, and 4.8 V or more. With a PD mini, its output must be on and its set point counts; without one, the servo rail in the INA3221's last window counts. On the bench's outputs LIMIT RUN reads SEARCH ONLY and the third line says why. On PROG PORT every run starts with a read session: a port not in PWM, a PD mini output that is off, or a supply under 4.8 V keeps the button grey for SEARCH ONLY as well, and the third line names the condition.
 
 ![The limit run, programming](view:servo-limrun)
 
@@ -197,7 +197,7 @@ A run that ends while it waits for ARMED also switches the bench to SAFE.
 
 ![A run stopped after a write](view:servo-limrun-stopped)
 
-After a write the servo keeps the values last written. The box then reads `RESTORE IN PROGRAM.`. On the programmer, CONNECT and READ ALL, then RESTORE offers `Values before the limit run`. A session after the run saves its own backup file at its first write.
+After a write the servo keeps the values last written. The box then reads `RESTORE IN PROGRAM.`. On the programmer, CONNECT and READ ALL, then RESTORE offers `Settings before the limit run.`. A session after the run saves its own backup file at its first write.
 
 ![RESTORE after a limit run](view:servo-limrun-restore)
 

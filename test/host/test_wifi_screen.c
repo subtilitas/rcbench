@@ -679,9 +679,21 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
     CHECK_STR_EQ(scr()->title, "FILES & UPDATE");
 }
 
+/* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the
+ * card's 44 cells twice, with no line of one word between its parts. */
+TEST_CASE(the_first_sentence_is_wrapped_once_in_two_lines)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_EQ(wifi_screen_jobs_lines(), 2);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_view_enums_mirror_the_session_and_the_installer);
+    RUN(the_first_sentence_is_wrapped_once_in_two_lines);
     RUN(the_texts_name_the_session_limits);
     RUN(without_a_kept_network_only_the_access_point_is_offered);
     RUN(with_a_kept_network_both_are_offered_and_forget_is_there);

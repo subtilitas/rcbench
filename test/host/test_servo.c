@@ -1444,7 +1444,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     CHECK_EQ(servo_rate_in_force(18u), SERVO_RATE_IN_FORCE_SURFACES);
     CHECK_EQ(servo_rate_in_force(1u), SERVO_RATE_IN_FORCE_SURFACES);
     CHECK_STR_EQ(ui_tr(TX_SV_IN_FORCE_SURFACES_1),
-                 "In force: every PWM surface runs at %u Hz.");
+                 "Active: all PWM control surfaces run at %u Hz.");
 
     fresh();
     two_buffers();
@@ -1492,7 +1492,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     CHECK(both_whole());
     CHECK(!note_rows_equal(target, NOTE_L1_Y));
     CHECK(note_rows_equal(target, NOTE_L2_Y));
-    CHECK(note_matches("In force: every PWM surface runs at 60 Hz.",
+    CHECK(note_matches("Active: all PWM control surfaces run at 60 Hz.",
                        ui_tr(TX_SV_IN_FORCE_2), false));
     free(target);
 }
@@ -1509,33 +1509,33 @@ typedef struct {
     bool        warn;
 } note_state_t;
 
-#define PPM_LINE "A PPM output keeps its own frame."
-#define NOT_SET  "The PWM TARGET setting is not in force."
+#define PPM_LINE "PPM outputs keep their own frame rate."
+#define NOT_SET  "The PWM TARGET setting is not active."
 static const note_state_t k_note[] = {
-    { 0, 0u, SERVO_SCREEN_NO_PIN, false, "In force: OUTPUTS run at 50 Hz.",
+    { 0, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50 Hz.",
       PPM_LINE, false },
-    { 1, 1u, 13u, true, "In force: PROG PORT GP13 runs at 50 Hz.", PPM_LINE,
+    { 1, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50 Hz.", PPM_LINE,
       false },
     /* PROG PORT set and the port unbound: the outputs stay the target. */
-    { 1, 0u, SERVO_SCREEN_NO_PIN, false, "In force: OUTPUTS run at 50 Hz.",
+    { 1, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50 Hz.",
       NOT_SET, true },
     /* The port held while OUTPUTS is set: the change waits for rest. */
-    { 0, 1u, 13u, true, "In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    { 0, 1u, 13u, true, "Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
       true },
     { 1, 1u, SERVO_SCREEN_NO_PIN, true,
-      "In force: 50 Hz on PROG PORT, which has no pin.", PPM_LINE, true },
-    { 1, 1u, 63u, false, "In force: PROG PORT GP63 runs at 50 Hz.",
-      "PORT PWM is OFF: the port renders no pulse.", true },
+      "Active: 50 Hz on PROG PORT. No pin is assigned to it.", PPM_LINE, true },
+    { 1, 1u, 63u, false, "Active: PROG PORT GP63 runs at 50 Hz.",
+      "PORT PWM is OFF. The port sends no pulses.", true },
     /* The port with no pin and its pulse off: the first line still says
      * there is no pin, the second that no pulse goes out. */
     { 1, 1u, SERVO_SCREEN_NO_PIN, false,
-      "In force: 50 Hz on PROG PORT, which has no pin.",
-      "PORT PWM is OFF: the port renders no pulse.", true },
+      "Active: 50 Hz on PROG PORT. No pin is assigned to it.",
+      "PORT PWM is OFF. The port sends no pulses.", true },
     { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, true,
-      "In force: 50 Hz. The target is not known.", PPM_LINE, true },
+      "Active rate: 50 Hz. Target unknown.", PPM_LINE, true },
     /* No link: the coprocessor may have restarted, so no rate is named. */
     { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, true,
-      "No link: the rate in force is not known.", PPM_LINE, true },
+      "No link. The active frame rate is unknown.", PPM_LINE, true },
 };
 #define NOTE_N ((int)(sizeof(k_note) / sizeof(k_note[0])))
 
@@ -1569,37 +1569,37 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
      * the port's pin, then the outputs once more. */
     servo_screen_set_drive(1u, 13u, true);
     CHECK(both_whole());
-    CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
                        true));
     servo_screen_set_drive(1u, 13u, false);
     CHECK(both_whole());
-    CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.", NOT_SET,
                        true));
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
     CHECK(both_whole());
-    CHECK(note_matches("In force: OUTPUTS run at 50 Hz.", PPM_LINE, false));
+    CHECK(note_matches("Active: OUTPUTS run at 50 Hz.", PPM_LINE, false));
 
     /* German, the same states: protocol and setting names as the UI writes
      * them. */
     static const char *const de[NOTE_N][2] = {
         { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
-          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
-          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
         { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
           "Die Einstellung PWM-ZIEL ist nicht aktiv." },
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
           "Die Einstellung PWM-ZIEL ist nicht aktiv." },
-        { "Aktiv: 50 Hz auf PROG-PORT, der keinen Pin hat.",
-          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+        { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
+          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
         { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
-          "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
-        { "Aktiv: 50 Hz auf PROG-PORT, der keinen Pin hat.",
-          "PORT-PWM ist AUS: der Port gibt keinen Puls aus." },
-        { "Aktiv: 50 Hz. Das Ziel ist unbekannt.",
-          "Ein PPM-Ausgang behält seinen eigenen Frame." },
-        { "Kein Link: die aktive Rate ist unbekannt.",
-          "Ein PPM-Ausgang behält seinen eigenen Frame." },
+          "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
+        { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
+          "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
+        { "Aktive Pulsrate: 50 Hz. Ziel unbekannt.",
+          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+        { "Keine Verbindung. Die aktive Pulsrate ist unbekannt.",
+          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
     };
     ui_text_set_language(UI_LANG_DE);
     for (int i = 0; i < NOTE_N; ++i) {
@@ -1616,9 +1616,9 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
     /* The rate is the one passed; a NULL buffer or no room writes nothing. */
     char a[96], b[96];
     CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 1u, 13u, true, 1));
-    CHECK_STR_EQ(a, "In force: PROG PORT GP13 runs at 560 Hz.");
+    CHECK_STR_EQ(a, "Active: PROG PORT GP13 runs at 560 Hz.");
     CHECK(!servo_in_force_note(a, b, sizeof(a), 560u, 0u, 13u, true, 0));
-    CHECK_STR_EQ(a, "In force: OUTPUTS run at 560 Hz.");
+    CHECK_STR_EQ(a, "Active: OUTPUTS run at 560 Hz.");
     memset(a, 'x', sizeof(a));
     memset(b, 'x', sizeof(b));
     CHECK(!servo_in_force_note(NULL, b, sizeof(b), 50u, 0u, 0xFFu, false, 1));
@@ -1646,33 +1646,33 @@ TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
     open_settings();
     servo_screen_rate(SERVO_RATE_IN_FORCE, 560u);
     CHECK(both_whole());
-    CHECK(note_matches("In force: PROG PORT GP13 runs at 560 Hz.", PPM_LINE,
+    CHECK(note_matches("Active: PROG PORT GP13 runs at 560 Hz.", PPM_LINE,
                        false));
 
     char a[96], b[96];
     CHECK(servo_in_force_note(a, b, sizeof(a), 560u,
                               SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, 1));
-    CHECK_STR_EQ(a, "In force: 560 Hz. The target is not known.");
+    CHECK_STR_EQ(a, "Active rate: 560 Hz. Target unknown.");
     CHECK(servo_in_force_note(a, b, sizeof(a), 560u, 1u, SERVO_SCREEN_NO_PIN,
                               true, 1));
-    CHECK_STR_EQ(a, "In force: 560 Hz on PROG PORT, which has no pin.");
+    CHECK_STR_EQ(a, "Active: 560 Hz on PROG PORT. No pin is assigned to it.");
 
     /* The link goes: the drawn note names no rate, in the warning colour. */
     servo_screen_set_drive(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN,
                            false);
     CHECK(both_whole());
-    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+    CHECK(note_matches("No link. The active frame rate is unknown.", PPM_LINE,
                        true));
     /* A 4.1 to 4.18 coprocessor's "every PWM surface" line too. */
     servo_screen_rate(servo_rate_in_force(18u), 560u);
     CHECK(both_whole());
-    CHECK(note_matches("No link: the rate in force is not known.", PPM_LINE,
+    CHECK(note_matches("No link. The active frame rate is unknown.", PPM_LINE,
                        true));
     /* And back with the link: the surfaces at the rate again. */
     servo_screen_set_drive(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN,
                            false);
     CHECK(both_whole());
-    CHECK(note_matches("In force: every PWM surface runs at 560 Hz.",
+    CHECK(note_matches("Active: all PWM control surfaces run at 560 Hz.",
                        PPM_LINE, false));
 }
 
@@ -1716,10 +1716,10 @@ TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
         CHECK(both_whole());
         if (bound) {
-            CHECK(note_matches("In force: PROG PORT GP13 runs at 50 Hz.",
+            CHECK(note_matches("Active: PROG PORT GP13 runs at 50 Hz.",
                                PPM_LINE, false));
         } else {
-            CHECK(note_matches("In force: OUTPUTS run at 50 Hz.", NOT_SET,
+            CHECK(note_matches("Active: OUTPUTS run at 50 Hz.", NOT_SET,
                                true));
         }
     }
@@ -4523,7 +4523,7 @@ TEST_CASE(a_question_does_not_outlive_its_run)
 #define START_X  369
 #define START_Y  323
 #define BOXBTN_X 91
-#define BOXBTN_Y 104
+#define BOXBTN_Y 124
 #define HV_ROW_Y ROW_Y(2)
 
 /* A bench for the screen's run: the servo model on the output, SUPPLY's
@@ -6180,13 +6180,13 @@ static const char *const k_tgt_txt[2][TGT_N] = {
       "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
       "NO SERVO PWM PIN",
       "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
-      "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "NOT KNOWN", "NO LINK" },
+      "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "UNKNOWN", "NO LINK" },
     { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
       "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
       "KEIN SERVO-PWM-PIN",
-      "PINS NICHT GELESEN", "PROG-PORT", "PROG-PORT GP13",
+      "PINS NICHT AUSGELESEN", "PROG-PORT", "PROG-PORT GP13",
       "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
-      "KEIN LINK" },
+      "KEINE VERBINDUNG" },
 };
 
 /* The box a label and a value give, drawn over the screen's with the
@@ -6466,9 +6466,9 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     /* Not known and no link name no pin and no port, pins bound or not;
      * a pin and a pulse passed with them are ignored. */
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, 13u, true, PIN(2), true,
-               "NOT KNOWN", true);
+               "UNKNOWN", true);
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false, 0u,
-               false, "NOT KNOWN", true);
+               false, "UNKNOWN", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, 13u, true, PIN(2), true,
                "NO LINK", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false, 0u,
@@ -6489,7 +6489,7 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     check_line(SERVO_SCREEN_TARGET_UNKNOWN, SERVO_SCREEN_NO_PIN, false,
                PIN(2), true, "UNBEKANNT", true);
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false,
-               PIN(2), true, "KEIN LINK", true);
+               PIN(2), true, "KEINE VERBINDUNG", true);
     ui_text_set_language(UI_LANG_EN);
     /* A short buffer is cut, not overrun; none is no line. */
     char small[8];
@@ -7270,7 +7270,7 @@ TEST_CASE(the_tag_row_carries_the_pulse_range)
 
 /*
  * The supply the rail's line names is the PD mini, or the panel's model of
- * it: then the MODELLED (SIMULIERT) pill sits on the plot's top-left corner,
+ * it: then the SIMULATED (SIMULIERT) pill sits on the plot's top-left corner,
  * under the name, 88 px or as wide as a longer word and 20 px high, as the
  * overview's is.  A change of the model reaches it without a tap; with
  * INA3221 CH1 as the meter it is not shown.
@@ -7315,19 +7315,19 @@ TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
     meter(SERVO_SOURCE_PDMINI);
     rail_supply(6.0f, 0.4f);
     CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
-    CHECK(!pill_reads("MODELLED"));
+    CHECK(!pill_reads("SIMULATED"));
     /* The model switched on: the pill, the name kept, no tap needed. */
     supply_screen_set_model(true);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("MODELLED"));
+    CHECK(pill_reads("SIMULATED"));
     CHECK(line_supply("6.00 V", "0.40 A", "2.4 W"));
     /* A new sample repaints the plot, and the pill with it. */
     rail_supply(6.0f, 0.5f);
-    CHECK(pill_reads("MODELLED"));
+    CHECK(pill_reads("SIMULATED"));
     /* No coprocessor: the supply's sample, still under PD MINI. */
     meter(SERVO_SOURCE_MODEL);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("MODELLED"));
+    CHECK(pill_reads("SIMULATED"));
     CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
     /* In German the word is SIMULIERT; the name stays PD MINI. */
     ui_text_set_language(UI_LANG_DE);
@@ -7339,14 +7339,14 @@ TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
     /* INA3221 CH1 as the meter: its own name and no pill. */
     meter(SERVO_SOURCE_INA3221);
     scr->tick(1.0f / 39.0f);
-    CHECK(!pill_reads("MODELLED"));
+    CHECK(!pill_reads("SIMULATED"));
     meter(SERVO_SOURCE_PDMINI);
     scr->tick(1.0f / 39.0f);
-    CHECK(pill_reads("MODELLED"));
+    CHECK(pill_reads("SIMULATED"));
     /* The model switched off: the pill goes, without a tap. */
     supply_screen_set_model(false);
     scr->tick(1.0f / 39.0f);
-    CHECK(!pill_reads("MODELLED"));
+    CHECK(!pill_reads("SIMULATED"));
     CHECK(line_supply("6.00 V", "0.50 A", "3.0 W"));
 }
 
@@ -8729,11 +8729,11 @@ TEST_CASE(a_runs_start_and_end_are_told_where_they_happen)
 
 /*
  * START LIMIT RUN, mirrored from servo_screen.c: at START TEST's place on
- * the LIMITS page, LIMIT RUN at the left column's row 6, and the page's
+ * the LIMITS page, LIMIT RUN across both columns of row 5, and the page's
  * three lines under them from 2 px under the top of row 7, 18 px apart.
  */
 #define LIM_TAB     2
-#define LIM_MODE_Y  ROW_Y(6)
+#define LIM_MODE_Y  ROW_Y(5)
 #define LIM_LINE_Y(i) (54 + 7 * 42 + 2 + 18 * (i))
 
 /* Buffer 0 drawn with the LIMITS page open, and whether its line @p i

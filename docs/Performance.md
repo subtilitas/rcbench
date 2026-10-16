@@ -189,7 +189,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,960 | 2,208 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,008 | 2,160 |
 | `control` | `control_task` | 6,144 | 4,288 | 832 |
 | `runlog` | `log_task` | 4,352 | 2,992 | 336 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
@@ -322,8 +322,7 @@ stand in for. `esp_wifi_init()` takes the Wi-Fi driver's static RX
 (receive) and TX (transmit) buffers: 16 of each, about 1,600 bytes each,
 51,200 bytes of DMA-capable (direct memory access) internal RAM.
 `CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` makes the TX buffers static. When
-they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi
-did not start.".
+they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi could not start.".
 
 `tools/ram_budget.py` reads the internal heap a panel build leaves and
 subtracts what the panel allocates at run time, then what each Wi-Fi mode
@@ -336,15 +335,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 126,832 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 299,152 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,056 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,928 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 104,776 |
-| `before` | heap left with the panel up and the radio off | 194,376 |
+| `before` | heap left with the panel up and the radio off | 194,152 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 91,216 |
+| `left` | heap left with the largest mode up | 90,992 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

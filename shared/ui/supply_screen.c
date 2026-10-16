@@ -98,9 +98,14 @@
 #define OV_Y      UP_Y
 #define OV_W      LEFT_W
 #define OV_H      (H - UP_Y - PAD)
-#define OV_COL_W  (OV_W / 2 - 16)
 #define OV_ROW_H  36
-#define OV_VAL_W  120
+#define OV_VAL_W  100
+/* The caps and start values on the left, 210 px; the trips, their help and
+ * the confirmations on the right, 300 px, the 37 cells the help's lines
+ * take. */
+#define OV_COL_W  210
+#define OV_COL1_X (OV_X + 10 + OV_COL_W + 16)
+#define OV_COL1_W (OV_X + OV_W - 10 - OV_COL1_X)
 
 /* The sample rate of the panel's loop, which is the plot's time base. */
 #define SAMPLE_HZ 20.0f
@@ -314,9 +319,10 @@ static gfx_rect_t overlay_area(void)
 
 static gfx_rect_t row_rect(int i)
 {
-    const int x = (k_rows[i].col == 0) ? OV_X + 10 : OV_X + OV_W / 2 + 6;
-    return (gfx_rect_t){ (int16_t)x, (int16_t)(OV_Y + k_rows[i].y),
-                         OV_COL_W, OV_ROW_H };
+    const bool left = (k_rows[i].col == 0);
+    return (gfx_rect_t){ (int16_t)(left ? OV_X + 10 : OV_COL1_X),
+                         (int16_t)(OV_Y + k_rows[i].y),
+                         (int16_t)(left ? OV_COL_W : OV_COL1_W), OV_ROW_H };
 }
 
 static gfx_rect_t row_value_rect(int i)
@@ -1400,6 +1406,49 @@ static void draw_out_button(gfx_canvas_t *c)
     out_flash_advance();
 }
 
+/* The bytes of the next row of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start. */
+static size_t row_len(const char *at, int cells)
+{
+    if (gfx_text_cells(at) <= cells) {
+        return strlen(at);
+    }
+    const size_t len = gfx_text_prefix(at, cells);
+    size_t cut = len;
+    while (cut > 0u && at[cut] != ' ') {
+        --cut;
+    }
+    return (cut > 0u) ? cut : len;
+}
+
+/*
+ * @p text in rows of at most @p cells of the label face, broken after a
+ * space, from (x, y) down by @p pitch; with @p c NULL only counted.
+ * Returns the rows.
+ */
+static int wrap_rows(gfx_canvas_t *c, int x, int y, int pitch,
+                     const char *text, int cells, gfx_color_t ink)
+{
+    int rows = 0;
+    const char *at = text;
+    while (*at != '\0') {
+        const size_t len = row_len(at, cells);
+        if (c != NULL) {
+            char line[128];
+            const size_t n = (len < sizeof(line)) ? len : sizeof(line) - 1u;
+            memcpy(line, at, n);
+            line[n] = '\0';
+            gfx_text(c, x, y + rows * pitch, line, &gfx_font_8x16, ink, 1);
+        }
+        ++rows;
+        at += len;
+        while (*at == ' ') {
+            ++at;
+        }
+    }
+    return rows;
+}
+
 static const char *mode_text(void)
 {
     if (!s.sup.online) {
@@ -1573,6 +1622,20 @@ static void draw_cards(gfx_canvas_t *c)
     gfx_fill_round_rect(c, r.x + 8, r.y + 7, 3, 10, 1, mc);
     gfx_text(c, r.x + 16, r.y + 6, TR(SUP_MODE), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT), 1);
+    if (tripped) {
+        /*
+         * A trip says why in a sentence the card's width does not hold
+         * beside the mode in the double size: the mode goes on the label's
+         * row in the single size, and the sentence takes the card's width
+         * in up to two rows under it.
+         */
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 6),
+                                     (int16_t)(r.w - 16), 16 },
+                    mode_text(), &gfx_font_8x16, mc, 1, GFX_ALIGN_RIGHT);
+        (void)wrap_rows(c, r.x + 8, r.y + 23, 16, mode_line(),
+                        (r.w - 16) / 8, ui_theme_color(UI_C_TEXT_FAINT));
+        return;
+    }
     gfx_text(c, r.x + 8, r.y + 26, mode_line(), &gfx_font_8x16,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 12),
@@ -1735,7 +1798,7 @@ static void draw_settings(gfx_canvas_t *c)
     }
 
     const int lx = a.x + 10;
-    const int rx = a.x + a.w / 2 + 6;
+    const int rx = OV_COL1_X;
     gfx_text(c, lx, a.y + 56, TR(SUP_CAPS), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
     gfx_text(c, lx, a.y + 174, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
@@ -1807,9 +1870,11 @@ static void draw_confirm(gfx_canvas_t *c)
               s.pressed == P_APPLY, true);
     ui_button(c, s.discard_btn, TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
               s.pressed == P_DISCARD, true);
-    gfx_text(c, a.x + 20, a.y + a.h - 26,
-             TR(SUP_ASK_OFF), &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    /* Under the buttons, its last row where a single one stands. */
+    const int cells = (a.w - 40) / 8;
+    const int rows = wrap_rows(NULL, 0, 0, 18, TR(SUP_ASK_OFF), cells, 0);
+    (void)wrap_rows(c, a.x + 20, a.y + a.h - 26 - (rows - 1) * 18, 18,
+                    TR(SUP_ASK_OFF), cells, ui_theme_color(UI_C_TEXT_FAINT));
 }
 
 enum { TAG_LIVE = 0, TAG_HELD, TAG_IDLE, TAG_COUNT };
