@@ -25,7 +25,7 @@ static const ui_text_id_t k_labels[SPLASH_STEP_COUNT] = {
 
 static struct {
     splash_result_t result[SPLASH_STEP_COUNT];
-    char            detail[SPLASH_STEP_COUNT][64];
+    char            detail[SPLASH_STEP_COUNT][SPLASH_DETAIL_MAX];
     float           held_s;
     bool            skipped;
     unsigned        drawn_mask;   /**< per framebuffer, bit per buffer      */
