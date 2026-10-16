@@ -9,7 +9,7 @@ einzelnen Bildschirme bedient werden.
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
-FEHLER-Code, sobald einer gemeldet wird, der Modus und VERBINDUNG oder KEINE VERBINDUNG.
+FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEINE VERBINDUNG.
 Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
 Koprozessors ansteuert, und SIM, solange kein Koprozessor antwortet und das
 Panel mit seinen eigenen Modellen rechnet.
@@ -77,7 +77,7 @@ Die Home-Tags enden bei x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
 
 Ein Tipp auf einen Chip des Bands öffnet unter dem Band einen Kasten, der
 sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun
-ist: VERBINDUNG oder KEINE VERBINDUNG, der Modus, FEHLER, der Arm-Chip und die
+ist: LINK oder KEINE VERBINDUNG, der Modus, FEHLER, der Arm-Chip und die
 Laufzeituhr. Der Kasten öffnet 4 px unter dem Band an der linken Kante des
 getippten Chips, so weit nach links verschoben, dass er 8 px innerhalb des
 Panels bleibt. Er ist 520 px breit; der Kasten von FEHLER reicht über das
