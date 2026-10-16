@@ -54,6 +54,7 @@
 
 #include "programmer_screen.h"
 
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +79,9 @@
 #define PARM_Y    98
 #define PARM_H    252
 #define HELP_Y    (PARM_Y + PARM_H + 8)
+/* A parameter's help line: 96 cells from PAD + 12, inside the card's
+ * edge. */
+#define HELP_CELLS 96
 #define BTN_Y     (H - PAD - 36)
 
 #define ROW_Y0    (PARM_Y + 34)
@@ -312,7 +316,16 @@ static const proto_t k_protos[] = {
 #define SP_ROW_Y0  52
 #define SP_ROW_H   36
 #define SP_QUEUE   8
-#define SP_NOTE    72
+#define SP_NOTE    160
+
+/* A model's row, from its left edge: the name in 26 cells from 12 px, the
+ * current and the voltage right-aligned in 48 and 56 px, and the family.
+ * Right of the family, what the profile is or why it does not run: 220 px,
+ * or up to SP_WHY_CELLS where a reason needs them, the family giving way. */
+#define SP_AMPS_X   224
+#define SP_VOLTS_X  276
+#define SP_FAMILY_X 344
+#define SP_WHY_CELLS ((W - 2 * PAD - 24 - 12 - SP_FAMILY_X) / 8)
 
 /* The search field in the crumb row, and the keyboard docked to the right
  * of SP_DOCK_X below it while the field is typed in. */
@@ -446,7 +459,7 @@ typedef struct {
     uint8_t              hand_seen[SP_MAX / 8];
 
     gfx_rect_t rows[SP_ROWS], list_up, list_dn;
-    gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn;
+    gfx_rect_t hold_btn, cancel_btn, hand_btn, steps_btn, timing_btn;
 } stick_t;
 
 /* --------------------------------------------------------------- the state */
@@ -622,6 +635,11 @@ static void reset(void)
     /* In the item list's header, between CHANGE and the count. */
     s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
                                     24 };
+    /* In the profile page's crumb row, at its right, so the card's line
+     * of how the menu works has the card's width: CONNECT's size, level
+     * with BACK's middle. */
+    s.st.timing_btn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 168),
+                                    (int16_t)(CRUMB_Y - 3), 168, 36 };
     adopt_device();
 }
 
@@ -984,6 +1002,44 @@ static void draw_crumb(gfx_canvas_t *c, const char *trail)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
+static size_t sp_line_len(const char *at, int cells);
+static int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
+                   const char *text, int cells, int max_lines,
+                   gfx_color_t ink);
+static int sp_wrap_lines(const char *text, int cells, int max_lines);
+static void sp_note(gfx_canvas_t *c, int x, int right, const char *text,
+                    gfx_color_t ink);
+
+/*
+ * A class's line in @p r, centred: one line in the middle of it, or two
+ * 18 px apart about the middle where it needs more than the width.
+ */
+static void draw_blurb(gfx_canvas_t *c, gfx_rect_t r, const char *text)
+{
+    const gfx_color_t ink = ui_theme_color(UI_C_TEXT_DIM);
+    const int cells = r.w / 8;
+    const size_t len = sp_line_len(text, cells);
+    if (text[len] == '\0') {
+        gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + r.h / 2 - 8), r.w,
+                                     16 },
+                    text, UI_FONT_LABEL, ink, 1, GFX_ALIGN_CENTER);
+        return;
+    }
+    char first[64];
+    const size_t n = (len < sizeof(first)) ? len : sizeof(first) - 1u;
+    memcpy(first, text, n);
+    first[n] = '\0';
+    const char *rest = text + len;
+    while (*rest == ' ') {
+        ++rest;
+    }
+    gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + r.h / 2 - 17), r.w,
+                                 16 },
+                first, UI_FONT_LABEL, ink, 1, GFX_ALIGN_CENTER);
+    gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + r.h / 2 + 1), r.w, 16 },
+                rest, UI_FONT_LABEL, ink, 1, GFX_ALIGN_CENTER);
+}
+
 static DRAWER void draw_classes(gfx_canvas_t *c)
 {
     gfx_text(c, PAD + 12, 24, TR(PG_WHAT), UI_FONT_LABEL,
@@ -997,11 +1053,10 @@ static DRAWER void draw_classes(gfx_canvas_t *c)
         gfx_text_in(c, (gfx_rect_t){ r.x, (int16_t)(r.y + 62), r.w, 28 },
                     k_classes[i].name, UI_FONT_HEAD,
                     ui_theme_color(UI_C_TEXT), 1, GFX_ALIGN_CENTER);
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 12),
-                                     (int16_t)(r.y + 104),
-                                     (int16_t)(r.w - 24), 16 },
-                    ui_tr(k_classes[i].blurb), UI_FONT_LABEL,
-                    ui_theme_color(UI_C_TEXT_DIM), 1, GFX_ALIGN_CENTER);
+        /* Under the name, above the count: 34 px for one line or two. */
+        draw_blurb(c, (gfx_rect_t){ (int16_t)(r.x + 12), (int16_t)(r.y + 95),
+                                    (int16_t)(r.w - 24), 34 },
+                   ui_tr(k_classes[i].blurb));
         int n = 0;
         for (int p = 0; p < PROTO_COUNT; ++p) {
             if (k_protos[p].klass == i) { ++n; }
@@ -1065,8 +1120,8 @@ static DRAWER void draw_device(gfx_canvas_t *c)
                          : ui_theme_color(UI_C_TEXT_DIM), 1);
     gfx_text(c, tx, DEV_Y + 24, ui_tr(proto()->transport), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, BTN_Y + 9, TR(PG_MODEL_NOTE), UI_FONT_LABEL,
-             ui_theme_color(UI_C_WARN), 1);
+    sp_note(c, x, s.read_btn.x - 8, TR(PG_MODEL_NOTE),
+            ui_theme_color(UI_C_WARN));
     ui_button(c, s.connect_btn, s.connected ? TR(PG_DISCONNECT)
                                             : TR(PG_CONNECT),
               s.connected ? ui_theme_color(UI_C_PANEL_HI)
@@ -1190,10 +1245,18 @@ static DRAWER void draw_params(gfx_canvas_t *c)
      * The selected parameter's help line.
      */
     const param_def_t *p = &proto()->params[s.picked];
-    gfx_text(c, PAD + 12, HELP_Y, p->name, UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text(c, PAD + 12, HELP_Y + 18, ui_tr(p->help), UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    const char *help = ui_tr(p->help);
+    if (sp_wrap_lines(help, HELP_CELLS, 2) > 1) {
+        /* Two lines of help take the name's line: the row above shows the
+         * name picked. */
+        (void)sp_wrap(c, PAD + 12, HELP_Y, 18, help, HELP_CELLS, 2,
+                      ui_theme_color(UI_C_TEXT_FAINT));
+    } else {
+        gfx_text(c, PAD + 12, HELP_Y, p->name, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, PAD + 12, HELP_Y + 18, help, UI_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_FAINT), 1);
+    }
 
     const int n = programmer_screen_dirty();
     char wr[32];
@@ -1338,6 +1401,25 @@ static int sp_wrap_lines(const char *text, int cells, int max_lines)
     return lines;
 }
 
+int programmer_screen_wrap_lines(const char *text, int cells)
+{
+    return sp_wrap_lines(text, cells, INT_MAX);
+}
+
+/*
+ * A line at the foot of a page, from @p x to @p right, left of the buttons
+ * there: on one line level with their labels, or where it needs more, on
+ * two from 2 px under their top, the second ending 2 px under their foot.
+ */
+static void sp_note(gfx_canvas_t *c, int x, int right, const char *text,
+                    gfx_color_t ink)
+{
+    const int cells = (right - x) / 8;
+    const int y = (sp_wrap_lines(text, cells, 2) > 1) ? BTN_Y + 2
+                                                      : BTN_Y + 9;
+    (void)sp_wrap(c, x, y, 18, text, cells, 2, ink);
+}
+
 /* A manual step in the language showing: the profile's German where it
  * gives one and German shows, else its English. */
 const char *programmer_screen_step_text(const esc_manual_t *m)
@@ -1386,25 +1468,59 @@ static const char *sp_when_text(const esc_manual_t *m)
 
 /*
  * The stick engine's refusals are English, held where the engine writes
- * them; the screen shows each in the language showing by matching its
- * English.  One the table does not know shows as the engine wrote it.
+ * them (esc_stick.c); the screen shows each in the language showing by
+ * matching the engine's words.  One the table does not know shows as the
+ * engine wrote it.
  */
-static const ui_text_id_t k_why[] = {
-    TX_ESC_WHY_NO_PROFILE, TX_ESC_WHY_PERSON, TX_ESC_WHY_NO_PROCEDURE,
-    TX_ESC_WHY_AFTER_POWER, TX_ESC_WHY_MELODY, TX_ESC_WHY_YES_NO,
-    TX_ESC_WHY_POSITION, TX_ESC_WHY_OWN_KIND, TX_ESC_WHY_PITCH,
-    TX_ESC_WHY_NO_ITEMS, TX_ESC_WHY_NO_SELECT, TX_ESC_WHY_REST_ENTRY,
-    TX_ESC_WHY_STORE_TWO, TX_ESC_WHY_TWO_MOVES, TX_ESC_WHY_SELECT_REST,
-    TX_ESC_WHY_VALUE_SELECT, TX_ESC_WHY_ONE_MOVE, TX_ESC_WHY_MANY_ONE,
-    TX_ESC_WHY_COUNTED_ONE, TX_ESC_WHY_REPEAT, TX_ESC_WHY_STORE_SELECT,
-    TX_ESC_WHY_NO_TIMING, TX_ESC_WHY_NOTHING, TX_ESC_WHY_TOO_MANY,
-    TX_ESC_WHY_NO_ITEM, TX_ESC_WHY_ACTIONS, TX_ESC_WHY_NO_VALUE,
-    TX_ESC_WHY_ZERO, TX_ESC_WHY_ONE_PER_ITEM, TX_ESC_WHY_BEEP_GAP,
-    TX_ESC_WHY_LONG, TX_ESC_WHY_LONG_MAX, TX_ESC_WHY_GROUP_GAP,
-    TX_ESC_WHY_THRESHOLD, TX_ESC_WHY_ENTRY, TX_ESC_WHY_SELECT_WINDOW,
-    TX_ESC_WHY_VALUE_WINDOW, TX_ESC_WHY_NO_RUN, TX_ESC_WHY_ONE_VALUE,
-    TX_ESC_WHY_HAND, TX_ESC_WHY_ENTRY_POS, TX_ESC_WHY_ENTRY_TIME,
-    TX_ESC_WHY_AFTER_TWO, TX_ESC_WHY_AFTER_NONE, TX_ESC_WHY_MENU_REST,
+static const struct {
+    const char *engine;
+    ui_text_id_t text;
+} k_why[] = {
+    { "no profile", TX_ESC_WHY_NO_PROFILE },
+    { "needs a person at the ESC", TX_ESC_WHY_PERSON },
+    { "no usable procedure", TX_ESC_WHY_NO_PROCEDURE },
+    { "entered after power-on", TX_ESC_WHY_AFTER_POWER },
+    { "melody menu", TX_ESC_WHY_MELODY },
+    { "yes/no menu", TX_ESC_WHY_YES_NO },
+    { "stick-position menu", TX_ESC_WHY_POSITION },
+    { "menu of its own kind", TX_ESC_WHY_OWN_KIND },
+    { "tones told apart by pitch", TX_ESC_WHY_PITCH },
+    { "no items", TX_ESC_WHY_NO_ITEMS },
+    { "no select move", TX_ESC_WHY_NO_SELECT },
+    { "rest move, no entry time", TX_ESC_WHY_REST_ENTRY },
+    { "store move, two stages", TX_ESC_WHY_STORE_TWO },
+    { "two moves, no value tones", TX_ESC_WHY_TWO_MOVES },
+    { "select move is the rest", TX_ESC_WHY_SELECT_REST },
+    { "value move = select move", TX_ESC_WHY_VALUE_SELECT },
+    { "item and value, one move", TX_ESC_WHY_ONE_MOVE },
+    { "many changes, one stage", TX_ESC_WHY_MANY_ONE },
+    { "items counted, one stage", TX_ESC_WHY_COUNTED_ONE },
+    { "values repeat across items", TX_ESC_WHY_REPEAT },
+    { "store move = select move", TX_ESC_WHY_STORE_SELECT },
+    { "no timing", TX_ESC_WHY_NO_TIMING },
+    { "nothing to change", TX_ESC_WHY_NOTHING },
+    { "too many changes", TX_ESC_WHY_TOO_MANY },
+    { "no such item", TX_ESC_WHY_NO_ITEM },
+    { "reset and exit are actions, not settings", TX_ESC_WHY_ACTIONS },
+    { "no such value", TX_ESC_WHY_NO_VALUE },
+    { "value 0 is not sounded", TX_ESC_WHY_ZERO },
+    { "one change per item", TX_ESC_WHY_ONE_PER_ITEM },
+    { "BEEP MIN and GAP MIN above 0", TX_ESC_WHY_BEEP_GAP },
+    { "LONG above BEEP MIN", TX_ESC_WHY_LONG },
+    { "LONG MAX above LONG", TX_ESC_WHY_LONG_MAX },
+    { "GROUP GAP above GAP MIN", TX_ESC_WHY_GROUP_GAP },
+    { "THRESHOLD above HYSTERESIS", TX_ESC_WHY_THRESHOLD },
+    { "ENTRY above 500 ms", TX_ESC_WHY_ENTRY },
+    { "GROUP GAP misses the select window", TX_ESC_WHY_SELECT_WINDOW },
+    { "GROUP GAP misses the value window", TX_ESC_WHY_VALUE_WINDOW },
+    { "no run", TX_ESC_WHY_NO_RUN },
+    { "one value: nothing to choose", TX_ESC_WHY_ONE_VALUE },
+    { "manual step", TX_ESC_WHY_HAND },
+    { "changes need different power-up positions", TX_ESC_WHY_ENTRY_POS },
+    { "changes need different entry times", TX_ESC_WHY_ENTRY_TIME },
+    { "moves after the value, two stages", TX_ESC_WHY_AFTER_TWO },
+    { "a move after the value makes no move", TX_ESC_WHY_AFTER_NONE },
+    { "menu start, rest elsewhere", TX_ESC_WHY_MENU_REST },
 };
 
 const char *programmer_screen_why_text(const char *why)
@@ -1413,8 +1529,8 @@ const char *programmer_screen_why_text(const char *why)
         return TR(SP_REFUSED);
     }
     for (size_t i = 0; i < sizeof(k_why) / sizeof(k_why[0]); ++i) {
-        if (strcmp(why, ui_tr_in(UI_LANG_EN, k_why[i])) == 0) {
-            return ui_tr(k_why[i]);
+        if (strcmp(why, k_why[i].engine) == 0) {
+            return ui_tr(k_why[i].text);
         }
     }
     return why;
@@ -2670,7 +2786,7 @@ static bool sp_down(const touch_event_t *evt)
         ++s.rev;
         return true;
     }
-    if (hit(s.connect_btn, px, py)) {
+    if (hit(t->timing_btn, px, py)) {
         t->timing = true;                   /* TIMING */
         t->tscroll = 0;
         t->tpicked = 0;
@@ -2752,11 +2868,17 @@ static DRAWER void sp_draw_find(gfx_canvas_t *c)
     }
 }
 
+/* The red MANUAL tag's width, px. */
+static int sp_tag_w(void)
+{
+    return gfx_text_cells(TR(SP_HAND_TAG)) * 8 + 12;
+}
+
 /* The red MANUAL tag, its right edge at @p right; its width, px. */
 static int sp_draw_tag(gfx_canvas_t *c, int right, int y)
 {
     const char *tag = TR(SP_HAND_TAG);
-    const int w = gfx_text_cells(tag) * 8 + 12;
+    const int w = sp_tag_w();
     const gfx_color_t red = ui_theme_color(UI_C_DANGER);
     gfx_fill_round_rect(c, right - w, y, w, 20, 4, red);
     gfx_text_in(c, (gfx_rect_t){ (int16_t)(right - w), (int16_t)y,
@@ -2853,7 +2975,7 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
 {
     const esc_profile_t *p = esc_profiles_at(row->prof);
     const esc_model_t *m = &p->models[row->model];
-    char cap[40];
+    char cap[64];
     const char *why = sp_model_why(p, row->model, cap, sizeof(cap));
     const bool runs = why == NULL;
     ui_card(c, r, runs ? ui_theme_color(UI_C_PANEL)
@@ -2878,19 +3000,14 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
         return;
     }
     sp_text(c, r.x + 12, r.y + 8, m->name, 26, ink);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 228), (int16_t)(r.y + 8),
-                                 56, 16 },
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + SP_AMPS_X),
+                                 (int16_t)(r.y + 8), 48, 16 },
                 amps, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 288), (int16_t)(r.y + 8),
-                                 64, 16 },
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + SP_VOLTS_X),
+                                 (int16_t)(r.y + 8), 56, 16 },
                 volts, UI_FONT_LABEL, dim, 1, GFX_ALIGN_RIGHT);
-    const int tag = (p->manual_count > 0u)
-                        ? sp_draw_tag(c, r.x + r.w - 236, r.y + 6) + 8
-                        : 0;
-    sp_text(c, r.x + 368, r.y + 8, p->family, (r.w - 368 - 236 - tag) / 8,
-            ui_theme_color(UI_C_TEXT_FAINT));
     char right[80];
-    char warn[40];
+    char warn[64];
     const bool unrated = runs
                          && sp_model_warn(p, row->model, warn, sizeof(warn))
                                 != NULL;
@@ -2910,8 +3027,25 @@ static DRAWER void sp_draw_model(gfx_canvas_t *c, gfx_rect_t r,
     } else {
         snprintf(right, sizeof(right), "%s", why);
     }
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 232),
-                                 (int16_t)(r.y + 8), 220, 16 },
+    /* The right text in 220 px, or as wide as it is up to the family's
+     * column (SP_WHY_CELLS); the MANUAL tag left of it where both fit, and
+     * the family in what is left, from 3 cells. */
+    const int room = SP_WHY_CELLS * 8;
+    int rw = gfx_text_cells(right) * 8;
+    rw = (rw < 220) ? 220 : rw;
+    rw = (rw > room) ? room : rw;
+    sp_cut(right, sizeof(right), rw / 8);
+    const int rx = r.w - 12 - rw;
+    const int tag = (p->manual_count > 0u && rw + 4 + sp_tag_w() <= room)
+                        ? sp_draw_tag(c, r.x + rx - 4, r.y + 6) + 8
+                        : 0;
+    const int fam = (rx - 4 - tag - SP_FAMILY_X) / 8;
+    if (fam >= 3) {
+        sp_text(c, r.x + SP_FAMILY_X, r.y + 8, p->family, fam,
+                ui_theme_color(UI_C_TEXT_FAINT));
+    }
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + rx), (int16_t)(r.y + 8),
+                                 (int16_t)rw, 16 },
                 right, UI_FONT_LABEL,
                 unrated ? ui_theme_color(UI_C_WARN)
                 : runs  ? ui_theme_color(UI_C_ACCENT)
@@ -3796,12 +3930,12 @@ static DRAWER void sp_draw_items(gfx_canvas_t *c)
     (void)sp_changes(ch, &picked);
     const bool can = sp_can_run();
     if (t->note[0] != '\0') {
-        sp_text(c, PAD + 12, BTN_Y + 9, t->note, 56,
+        sp_note(c, PAD + 12, s.write_btn.x - 8, t->note,
                 ui_theme_color(UI_C_WARN));
     } else {
-        sp_text(c, PAD + 12, BTN_Y + 9,
+        sp_note(c, PAD + 12, s.write_btn.x - 8,
                 (picked == 0u) ? TR(SP_PICK_VALUE) : TR(SP_UNVERIFIED),
-                56, ui_theme_color(UI_C_TEXT_FAINT));
+                ui_theme_color(UI_C_TEXT_FAINT));
     }
     char run[32];
     if (picked > 0u) {
@@ -3856,7 +3990,10 @@ static DRAWER void sp_draw_crumb(gfx_canvas_t *c)
     }
     ui_button(c, s.back, TR(LOG_BACK), ui_theme_color(UI_C_PANEL_HI), false,
               !esc_stick_running(&t->run));
-    sp_text(c, s.back.x + s.back.w + 16, CRUMB_Y + 8, line, 72,
+    /* Up to TIMING where the profile page shows it. */
+    const int x = s.back.x + s.back.w + 16;
+    sp_text(c, x, CRUMB_Y + 8, line,
+            t->timing ? 72 : (t->timing_btn.x - 8 - x) / 8,
             ui_theme_color(UI_C_TEXT_DIM));
 }
 
@@ -3899,7 +4036,7 @@ static DRAWER void sp_draw_card(gfx_canvas_t *c)
                                       : sp_mark(TX_SP_FROM_SETTING_MARK));
     gfx_text(c, PAD + 12, DEV_Y + 22, line, UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    ui_button(c, s.connect_btn, "TIMING", ui_theme_color(UI_C_PANEL_HI),
+    ui_button(c, t->timing_btn, "TIMING", ui_theme_color(UI_C_PANEL_HI),
               false, !esc_stick_running(&t->run) && !t->shown);
 }
 
@@ -4079,7 +4216,7 @@ static DRAWER void sp_draw_hand(gfx_canvas_t *c)
                           ui_theme_color(UI_C_TEXT));
         y += 4;
     }
-    char why[48];
+    char why[64];
     const char *no = sp_model_why(p, t->hand_model, why, sizeof(why));
     if (t->shown && t->p == p && !sp_supply_reads_off()) {
         snprintf(line, sizeof(line), "%s", TR(SP_HAND_OVER_LIVE));
@@ -4166,7 +4303,8 @@ static DRAWER void sp_draw_prompt(gfx_canvas_t *c)
              : esc_stick_end_locks(e)         ? TR(SP_PROMPT_LEFT_END)
                                               : TR(SP_PROMPT_LEFT_CUT),
              (unsigned)((esc_stick_hand_left_ms(e) + 999u) / 1000u));
-    sp_text(c, a.x + 20, y, line, 92, ui_theme_color(UI_C_TEXT_FAINT));
+    (void)sp_wrap(c, a.x + 20, y, 22, line, 92, 2,
+                  ui_theme_color(UI_C_TEXT_FAINT));
     const bool ready = esc_stick_hand_ready(e);
     ui_button(c, t->hold_btn, TR(SP_HAND_DONE),
               ready ? ui_theme_color(UI_C_OK)
@@ -4402,7 +4540,7 @@ bool programmer_screen_stick_supply_reads_off(void)
 const char *programmer_screen_stick_hand_why(void)
 {
     const stick_t *t = &s.st;
-    static char why[48];
+    static char why[64];
     if (!t->hand_open || t->hand_p == NULL) {
         return NULL;
     }

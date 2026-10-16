@@ -168,7 +168,14 @@ void programmer_screen_stick_lights(bool *red, bool *green);
 
 /**
  * A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),
- * esc_stick_start()) in the language showing, found by its English; one the
- * screen does not know comes back as given, and NULL as "refused".
+ * esc_stick_start()) in the language showing, found by the engine's
+ * words; one the screen does not know comes back as given, and NULL as
+ * "refused".
  */
 const char *programmer_screen_why_text(const char *why);
+
+/**
+ * The lines @p text takes broken as the screen breaks it, in lines of
+ * @p cells; for tests.
+ */
+int programmer_screen_wrap_lines(const char *text, int cells);
