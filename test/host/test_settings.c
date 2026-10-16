@@ -1545,6 +1545,54 @@ TEST_CASE(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value)
     CHECK_EQ(unscrolled, 0);
 }
 
+/*
+ * Every list scrolled to its end shows its last row whole: the row inside
+ * the list, above the strip, its bottom edge drawn and its help line in
+ * the faint text colour.  Drags of 240 px until the scroll stops, in both
+ * languages, as the German labels are the longer.
+ */
+TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
+            gesture_screen((setting_cat_t)cat);
+            ui_text_set_language((ui_lang_t)lang);
+            const int n = settings_in_category((setting_cat_t)cat, NULL, 0);
+            int max = 0;
+            for (int k = 0; k < 2 * n; ++k) {
+                swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 248, 4);
+            }
+            const int scroll = settings_screen_scroll(&max);
+            CHECK_EQ(scroll, max);
+            const int top = LIST_Y + (n - 1) * ROW_PITCH - scroll;
+            const int bottom = top + ROW_H;
+            if (top < LIST_Y || bottom > LIST_Y + LIST_H
+                || bottom > STRIP_Y) {
+                T_FAIL("category %d, language %d: last row %d..%d", cat,
+                       lang, top, bottom);
+                continue;
+            }
+            memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            settings_screen_invalidate();
+            ui_router_render(&s_c, 0);
+            CHECK_EQ(gfx_pixel_get(&s_c, LIST_X + 300, bottom - 1),
+                     ui_theme_color(UI_C_EDGE));
+            int help = 0;
+            for (int y = top + 33; y < top + 49; ++y) {
+                for (int x = LIST_X + 16; x < MINUS_X - 10; ++x) {
+                    help += gfx_pixel_get(&s_c, x, y)
+                            == ui_theme_color(UI_C_TEXT_FAINT);
+                }
+            }
+            if (help == 0) {
+                T_FAIL("category %d, language %d: no help line on the last "
+                       "row", cat, lang);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* What a tester's panel showed: INA3221 shunt 99.9 mOhm and Sensor SDA 15
  * after the INTERFACES list was scrolled twice from its bottom row. */
 TEST_CASE(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins)
@@ -3711,6 +3759,7 @@ int main(void)
     RUN(a_swipe_that_starts_on_a_key_column_scrolls_and_changes_no_value);
     RUN(a_swipe_beside_the_key_columns_scrolls_and_changes_no_value);
     RUN(two_scrolls_from_the_bottom_row_leave_the_shunt_and_the_pins);
+    RUN(every_list_at_its_end_shows_its_last_row_whole);
     RUN(a_tap_steps_each_kind_of_key_once);
     RUN(a_held_key_repeats_five_times_in_one_second_and_38_in_three);
     RUN(a_stalled_frame_adds_at_most_the_capped_steps_to_a_held_key);
