@@ -1123,9 +1123,9 @@ static void limrun_view(const char *view)
     tap(734, UI_BAND_H + 24);                   /* SETTINGS */
     tap(216, UI_BAND_H + 27);                   /* LIMITS */
     if (s_lr.prog) {
-        tap(100, UI_BAND_H + 323);              /* LIMIT RUN: SEARCH+PROG */
+        tap(100, UI_BAND_H + 281);              /* LIMIT RUN: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
-            tap(100, UI_BAND_H + 281);          /* SERVO PULSES: 1000-2000 */
+            tap(100, UI_BAND_H + 323);          /* SERVO PULSES: 1000-2000 */
         }
     }
     limrun_ms(100u);
@@ -2499,6 +2499,10 @@ int main(int argc, char **argv)
             if (strcmp(view, "analyser-failsafe") == 0) {
                 raw[23] |= SBUS_FLAG_FAILSAFE;
             }
+            /* analyser-lost: the receiver flags a damaged frame. */
+            if (strcmp(view, "analyser-lost") == 0) {
+                raw[23] |= SBUS_FLAG_FRAME_LOST;
+            }
 
             sbus_frame_t frame;
             bool got = false;
@@ -2798,8 +2802,14 @@ int main(int argc, char **argv)
                 servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
         }
-        /* A coprocessor that took the screen's 50 Hz. */
+        /* A coprocessor that took the screen's 50 Hz; one that refused it,
+         * and one with no SERVO page, for the OUTPUT page's note. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        if (strcmp(view, "servo-rate-refused") == 0) {
+            servo_screen_rate(SERVO_RATE_REFUSED, 50u);
+        } else if (strcmp(view, "servo-rate-unsupported") == 0) {
+            servo_screen_rate(SERVO_RATE_UNSUPPORTED, 50u);
+        }
         /* The binding read: one SERVO PWM output on GP2. */
         servo_screen_set_pins((uint64_t)1u << 2, true);
         /* The output encoder on, its centre at count 3000 and the horn
@@ -2830,10 +2840,15 @@ int main(int argc, char **argv)
             limrun_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
             kst_view(view);
-        } else if (strcmp(view, "servo-hv") == 0) {
+        } else if (strcmp(view, "servo-hv") == 0
+                   || strcmp(view, "servo-hv-live") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
-             * warning.  The keypad's keys from a probe opened where the
-             * screen opens its own, over the left card. */
+             * warning, and in servo-hv-live with the output on.  The
+             * keypad's keys from a probe opened where the screen opens its
+             * own, over the left card. */
+            if (strcmp(view, "servo-hv-live") == 0) {
+                supply_screen_set_output(true);
+            }
             ui_router_goto(SCREEN_SERVO);
             tap(579, UI_BAND_H + 237);
             ui_keypad_t kp;

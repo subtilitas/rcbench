@@ -5299,10 +5299,10 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
 #define LR_SETB_X  734
 #define LR_TAB_X   216          /* LIMITS */
 #define LR_TAB_Y   27
-#define LR_MODE_X  100          /* LIMIT RUN, the left column's row 6 */
+#define LR_MODE_X  100          /* LIMIT RUN, row 5 across both columns */
 #define LR_START_X 369          /* START LIMIT RUN, the right column's */
 #define LR_ROW6_Y  323
-#define LR_ROW5_Y  281          /* SERVO PULSES, the left column's row 5 */
+#define LR_ROW5_Y  281          /* LIMIT RUN; SERVO PULSES is row 6's left */
 
 static struct {
     servo_sim_t sv;
@@ -5455,9 +5455,9 @@ static void lr_start_with(bool pulses)
 {
     screen_tap(LR_SETB_X, BTN_Y);
     screen_tap(LR_TAB_X, LR_TAB_Y);
-    screen_tap(LR_MODE_X, LR_ROW6_Y);
+    screen_tap(LR_MODE_X, LR_ROW5_Y);
     if (pulses) {
-        screen_tap(LR_MODE_X, LR_ROW5_Y);
+        screen_tap(LR_MODE_X, LR_ROW6_Y);
     }
     ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);
@@ -5793,7 +5793,7 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     lr_ms(40u);
     screen_tap(LR_SETB_X, BTN_Y);
     screen_tap(LR_TAB_X, LR_TAB_Y);
-    screen_tap(LR_MODE_X, LR_ROW5_Y);       /* where SERVO PULSES would be */
+    screen_tap(LR_MODE_X, LR_ROW6_Y);       /* where SERVO PULSES would be */
     ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
     lr_ms(2300u);
     ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
