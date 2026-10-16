@@ -12,10 +12,10 @@ MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen L
 
 ![Link steht, noch nie ARMED, kein Pin als Motor gebunden](view:motor-idle)
 
-- Das Tag der Grafik lautet `TELEMETRIE RUHT`, und die Grafik zeigt `kein Lauf aufgezeichnet`, bis zum ersten Schalten auf ARMED.
+- Das Tag der Grafik lautet `TELEMETRIE INAKTIV`, und die Grafik zeigt `Noch kein Lauf aufgezeichnet.`, bis zum ersten Schalten auf ARMED.
 - Die Zeile unter dem Balken lautet `ZUERST ARM`, solange der Prüfstand SAFE ist. Der Balken und die Tasten `-1` und `+1` sind gedimmt und nehmen keinen Befehl an.
 - Die Anzeigen zeigen `---`, solange nichts einen Wert gemeldet hat.
-- `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN`, in der Warnfarbe, sagt: Die Bindung ist gelesen, und kein Pin ist als Motor gebunden. Einen Pin unter [Ausgänge](outputs.md) binden.
+- `ZIEL: KEIN MOTOR-PIN ZUGEORDNET`, in der Warnfarbe, sagt: Die Bindung ist gelesen, und kein Pin ist als Motor gebunden. Einen Pin unter [Ausgänge](outputs.md) binden.
 
 ## Das Throttle-Feld nennt seine Pins
 
@@ -24,8 +24,8 @@ Das Throttle-Feld nennt links neben dem Prozentwert die Pins, die der Throttle t
 | Zeile | Bedingung |
 |---|---|
 | `ZIEL: GP0 GP1` | die Pins, die der Throttle treibt, in Pin-Reihenfolge |
-| `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden |
-| `ZIEL: BINDUNG NICHT GELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte |
+| `ZIEL: KEIN MOTOR-PIN ZUGEORDNET` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden |
+| `ZIEL: ZUORDNUNG NICHT AUSGELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte |
 
 ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hier genannten Pins.
 
@@ -45,7 +45,7 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | ändern um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt den Throttle von seinem Wert aus |
 | ARM | schaltet nach 2 s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
-| SPITZEN ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
+| SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
 Das Verlassen des Bildschirms, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0 %.
@@ -56,7 +56,7 @@ Solange kein Koprozessor antwortet, zeigt das Band SIM, und SIMULATION steht que
 
 ![Die Grafik hält den Lauf nach dem Schalten auf SAFE](view:motor-held)
 
-Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTER LAUF`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 534 Spalten bei 20 Messungen pro Sekunde, 26,7 s. Ein längerer Lauf zeigt seine letzten 26,7 s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
+Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TELEMETRIE`, und am rechten Rand steht `ENDE`. Das nächste Schalten auf ARMED löscht sie. Die Grafik hat 534 Spalten bei 20 Messungen pro Sekunde, 26,7 s. Ein längerer Lauf zeigt seine letzten 26,7 s; der ganze Lauf steht in seiner CSV-Datei (Comma-Separated Values) auf der Karte.
 
 Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben immer live, ARMED oder nicht.
 

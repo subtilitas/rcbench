@@ -59,7 +59,10 @@
  * Above the PINS table, left of the first button above the board: the
  * protocol list's face, the count, and the reason no pin can be added.  The
  * face is the outputs screen's: 266 px holds the longest protocol name,
- * "DSHOT600 BIDIR", in the head face.
+ * "DSHOT600 BIDIR", in the head face.  The reason takes a second line where
+ * it needs one, above the PINS table: what is left of it, 17 cells at most
+ * (test_picker_screen holds every reason to it), so it ends left of the
+ * widest board's edge at 150 px.
  */
 #define HEAD_X      6
 #define HEAD_Y      8
@@ -68,7 +71,7 @@
 #define FACE_H      48
 #define COUNT_Y     (HEAD_Y + FACE_H + 8)
 #define REASON_Y    (COUNT_Y + 20)
-#define HEAD_H      (REASON_Y + 16 - HEAD_Y)
+#define HEAD_H      (REASON_Y + 18 + 16 - HEAD_Y)
 
 /* The open list covers the board, as it covers the pins on OUTPUTS. */
 #define POP_W       300
@@ -877,11 +880,12 @@ static void draw_head(gfx_canvas_t *c)
     ui_choice_face(c, picker_screen_list_face(),
                    outbind_protos()[proto_shown()].name,
                    s.hit_kind == HIT_FACE, s.open);
-    char buf[64];
+    char buf[96];
     picker_screen_count(buf, sizeof(buf));
     gfx_text(c, HEAD_X, COUNT_Y, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
     if (picker_screen_reason(buf, sizeof(buf))) {
-        gfx_text(c, HEAD_X, REASON_Y, buf, UI_FONT_LABEL, UI_WARN, 1);
+        (void)outputs_wrap(c, gfx_rect_make(HEAD_X, REASON_Y, HEAD_W, 16), 18,
+                           buf, 2, UI_FONT_LABEL, UI_WARN, false);
     }
 }
 

@@ -41,7 +41,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on SETUP, ESC / BENCH, in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the coprocessor 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `idle pulse must be below full pulse -- not sent`.
+A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on SETUP, ESC / BENCH, in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the coprocessor 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012 us, 980 us and 2020 us.
 
@@ -55,7 +55,7 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the coprocessor's programming port, GP13 by default | does nothing |
-| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: PWM SLICE OF PROG PORT GP13` under the count |
+| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
 | greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
@@ -71,7 +71,7 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-OFF binds nothing and unbinds nothing. With OFF picked, every bound pin shows the name of its protocol, so the whole binding is on one screen. A tap on a pin does nothing, and the line under the list reads `OFF SHOWS ALL, EDITS NOTHING`.
+OFF binds nothing and unbinds nothing. With OFF picked, every bound pin shows the name of its protocol, so the whole binding is on one screen. A tap on a pin does nothing, and the line under the list reads `OFF: VIEW ALL, NO EDITING`.
 
 ## LAST WRITE
 
@@ -90,11 +90,11 @@ A coprocessor of protocol 4.10 or later takes the binding whole: `NO LINK` and `
 
 ![The last binding read, after a read that failed](view:outputs-unread)
 
-The screen edits a binding only after reading it. While a page did not read, the screen keeps the last binding read, dimmed, with `BINDING NOT READ - NO EDITS`. A tap on a pin does nothing, here and on PICK A PIN. The panel reads again at every link-up and every 500 ms.
+The screen edits a binding only after reading it. While a page did not read, the screen keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.`. A tap on a pin does nothing, here and on PICK A PIN. The panel reads again at every link-up and every 500 ms.
 
 ![Pages no binding describes](view:outputs-odd)
 
-When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `PAGES HOLD NO VALID BINDING` and offers `HOLD: UNBIND ALL PINS`. Held for 2 s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2 s or leaving the screen abandons the hold.
+When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD: CLEAR ALL PIN ASSIGNMENTS`. Held for 2 s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2 s or leaving the screen abandons the hold.
 
 ## The coprocessor keeps the binding
 

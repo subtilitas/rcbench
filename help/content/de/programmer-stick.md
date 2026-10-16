@@ -18,7 +18,7 @@ Kein ESC wurde aufgezeichnet, und kein Profil ist geprüft. Jede Pieptonzeit ist
 4. Die Versorgungsleitungen des ESC an den Netzteilausgang legen. Den PD mini unter [Anschlüsse](setup-interfaces.md#der-pd-mini) einschalten.
 5. Den Netzteilausgang abschalten.
 
-START öffnet nichts, solange eines davon fehlt, und die Zeile neben START nennt den Grund, zum Beispiel `kein Throttle-Pin gebunden: einen auf OUTPUTS binden` oder `Netzteil simuliert: START braucht einen PD mini`. START braucht einen Messwert des Netzteils, nicht älter als 1000 ms, der den Ausgang aus mit höchstens 20 mA für 200 ms meldet.
+START öffnet nichts, solange eines davon fehlt, und die Zeile neben START nennt den Grund, zum Beispiel `Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.` oder `Netzteil ist simuliert. START benötigt einen PD mini.`. START braucht einen Messwert des Netzteils, nicht älter als 1000 ms, der den Ausgang aus mit höchstens 20 mA für 200 ms meldet.
 
 ## Hersteller und Modelle
 
@@ -29,9 +29,9 @@ Die Liste hat zwei Ebenen.
 - **Hersteller**: alphabetisch, jeder mit der Zahl seiner ausführbaren Modelle, `10 VON 82 AUSFÜHRBAR`. Ein Hersteller ohne ausführbares Modell ist dunkel gezeichnet. Ein Tipp öffnet seine Modelle.
 - **Modelle**: nach Strom, dann Spannung, dann Name. Eine Zeile zeigt das Modell, seinen Strom und seine Spannung, seine Familie und was sein Profil ist oder warum es nicht ausführbar ist. ZURÜCK führt zu den Herstellern.
 
-![Die Modelle von Kontronik, markiert mit HAND](view:programmer-stick-hand-list)
+![Die Modelle von Kontronik, markiert mit MANUELL](view:programmer-stick-hand-list)
 
-Eine rote Marke HAND kennzeichnet ein Modell, dessen ESC während des Laufs eine Person braucht.
+Eine rote Marke MANUELL kennzeichnet ein Modell, dessen ESC während des Laufs eine Person braucht.
 
 ## Suche
 
@@ -49,7 +49,7 @@ SUCHE filtert die angezeigte Ebene. Ihre Tastatur dockt rechts an, und jede Tast
 
 ![Zwei Werte gewählt: START 2](view:programmer-stick-items)
 
-Die Seite eines Profils listet seine Menüpunkte. Jeder beginnt bei BEHALTEN, das den Punkt lässt, wie er ist. `-` und `+` gehen durch die Werte des Punkts und halten an beiden Enden. AKTION, NICHT SETZBAR kennzeichnet einen Punkt, der eine Aktion ist, etwa ein Zurücksetzen; NICHTS ZU WÄHLEN einen Punkt mit einem Wert. Die Zeile unter der Liste nennt die Werte des gewählten Punkts und die Vorgabe. START zählt die gewählten Werte.
+Die Seite eines Profils listet seine Menüpunkte. Jeder beginnt bei BEHALTEN, das den Punkt lässt, wie er ist. `-` und `+` gehen durch die Werte des Punkts und halten an beiden Enden. AKTION, KEINE EINSTELLUNG kennzeichnet einen Punkt, der eine Aktion ist, etwa ein Zurücksetzen; KEINE AUSWAHL einen Punkt mit einem Wert. Die Zeile unter der Liste nennt die Werte des gewählten Punkts und die Vorgabe. START zählt die gewählten Werte.
 
 Der Kopf zeigt die Art des Menüs, Spannung und Strom des Netzteils für den Lauf und die Einstiegszeit. TIMING öffnet die Pieptonzeiten und die Netzteileinstellungen:
 
@@ -59,9 +59,9 @@ Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an; das Speicher
 
 ## Die Warnung und der Lauf
 
-![KEIN PROPELLER, MOTOR GESICHERT?](view:programmer-stick-warning)
+![PROPELLER AB? MOTOR GESICHERT?](view:programmer-stick-warning)
 
-START öffnet eine Warnung über den ganzen Bildschirm: KEIN PROPELLER, MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2 s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN schließt die Warnung.
+START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2 s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN schließt die Warnung.
 
 ![Ein Lauf zählt Punktgruppen](view:programmer-stick-run)
 
@@ -119,7 +119,7 @@ Ein Kontronik-ESC bestätigt einen gespeicherten Modus mit Tönen und sperrt sic
 
 ![NICHT BESTÄTIGT: der ESC kann gesperrt sein](view:programmer-stick-hand-locked)
 
-Geht das Netzteil aus, bevor der ESC bestätigt hat, markiert das Ergebnis die Änderung als UNSICHER und sagt, dass der ESC gesperrt sein kann.
+Geht das Netzteil aus, bevor der ESC bestätigt hat, markiert das Ergebnis die Änderung als UNKLAR und sagt, dass der ESC gesperrt sein kann.
 
 ## Verwandte Seiten
 

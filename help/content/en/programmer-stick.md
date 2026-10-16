@@ -18,7 +18,7 @@ No ESC has been recorded and no profile is verified. Every beep time is a defaul
 4. Connect the ESC's power leads to the supply output. Enable the PD mini on [Interfaces](setup-interfaces.md#the-pd-mini).
 5. Switch the supply output off.
 
-RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `no throttle pin bound: bind one on OUTPUTS` or `the supply is modelled: RUN needs a PD mini`. RUN needs a supply reading no older than 1000 ms that reports the output off with at most 20 mA for 200 ms.
+RUN opens nothing while one of these is missing, and the line beside RUN names the reason, for example `No throttle pin assigned. Assign one on OUTPUTS.` or `Supply is simulated. RUN needs a PD mini.`. RUN needs a supply reading no older than 1000 ms that reports the output off with at most 20 mA for 200 ms.
 
 ## Makers and models
 
@@ -26,7 +26,7 @@ RUN opens nothing while one of these is missing, and the line beside RUN names t
 
 The list has two levels.
 
-- **Makers**: alphabetical, each with how many of its models run, `10 OF 82 RUN`. A maker none of whose models runs is drawn dark. A tap opens its models.
+- **Makers**: alphabetical, each with how many of its models run, `10 OF 82 CAN RUN`. A maker none of whose models runs is drawn dark. A tap opens its models.
 - **Models**: by current, then voltage, then name. A row shows the model, its current and voltage, its family, and what its profile is or why it does not run. BACK returns to the makers.
 
 ![Kontronik's models, tagged MANUAL](view:programmer-stick-hand-list)
@@ -49,7 +49,7 @@ SEARCH filters the level showing. Its keyboard docks on the right and every key 
 
 ![Two values picked: RUN 2](view:programmer-stick-items)
 
-A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT SET marks an item that is an action, such as a reset; NOTHING TO CHOOSE an item with one value. The line under the list names the selected item's values and the default. RUN counts the values picked.
+A profile's page lists its menu items. Each starts at KEEP, which leaves the item as it is. `-` and `+` move through the item's values and stop at either end. ACTION, NOT A SETTING marks an item that is an action, such as a reset; NO OPTIONS an item with one value. The line under the list names the selected item's values and the default. RUN counts the values picked.
 
 The header shows the menu's kind, the supply's voltage and current for the run, and the entry time. TIMING opens the beep timings and the supply settings:
 
@@ -59,9 +59,9 @@ None of the timings is measured. CLOSE asks for them to be saved; the save waits
 
 ## The warning and the run
 
-![NO PROPELLER, MOTOR SECURED?](view:programmer-stick-warning)
+![PROPELLER REMOVED? MOTOR SECURED?](view:programmer-stick-warning)
 
-RUN opens a warning over the whole screen: NO PROPELLER, MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2 s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL closes the warning.
+RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2 s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL closes the warning.
 
 ![A run counting item groups](view:programmer-stick-run)
 
@@ -119,7 +119,7 @@ A Kontronik ESC confirms a stored mode with tones and locks itself when its supp
 
 ![NOT CONFIRMED: the ESC may be locked](view:programmer-stick-hand-locked)
 
-When the supply goes off before the ESC confirmed, the result marks the change UNSURE and says the ESC may be locked.
+When the supply goes off before the ESC confirmed, the result marks the change UNCERTAIN and says the ESC may be locked.
 
 ## Related pages
 

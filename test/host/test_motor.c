@@ -1826,17 +1826,17 @@ TEST_CASE(no_throttle_pin_and_an_unread_binding_are_warnings)
     char line[96];
     ui_text_set_language(UI_LANG_EN);
     CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
-    CHECK_STR_EQ(line, "TARGET: NO PIN BOUND AS MOTOR");
+    CHECK_STR_EQ(line, "TARGET: NO MOTOR PIN ASSIGNED");
     CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
-    CHECK_STR_EQ(line, "TARGET: BINDING NOT READ");
+    CHECK_STR_EQ(line, "TARGET: ASSIGNMENT NOT READ");
     /* A mask with a binding not read is no pin. */
     CHECK(motor_throttle_target(line, sizeof(line), 3u, false, 47u));
-    CHECK_STR_EQ(line, "TARGET: BINDING NOT READ");
+    CHECK_STR_EQ(line, "TARGET: ASSIGNMENT NOT READ");
     ui_text_set_language(UI_LANG_DE);
     CHECK(motor_throttle_target(line, sizeof(line), 0u, true, 47u));
-    CHECK_STR_EQ(line, "ZIEL: KEIN PIN ALS MOTOR GEBUNDEN");
+    CHECK_STR_EQ(line, "ZIEL: KEIN MOTOR-PIN ZUGEORDNET");
     CHECK(motor_throttle_target(line, sizeof(line), 0u, false, 47u));
-    CHECK_STR_EQ(line, "ZIEL: BINDUNG NICHT GELESEN");
+    CHECK_STR_EQ(line, "ZIEL: ZUORDNUNG NICHT AUSGELESEN");
     ui_text_set_language(UI_LANG_EN);
 }
 

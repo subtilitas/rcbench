@@ -115,7 +115,7 @@ STATUS-Page lesen das Failsafe und den Heartbeat und nicht den Latch: nach
 einem Start meldet STATUS Idle ohne Fault-Bit, und ein ON der Versorgung wird
 vor dem ersten Schalten auf ARMED angenommen. Der Latch steht nicht auf STATUS. Ein
 Koprozessor mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
-Panel als `Koprozessor auf SAFE -- erneut ARM` meldet.
+Panel als `Koprozessor hat auf SAFE geschaltet. ARM erneut halten.` meldet.
 
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
 Koprozessor nicht mehr, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
@@ -162,7 +162,7 @@ des Koprozessors braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
 einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
 gelöscht ist, und schreibt erst dann CLEAR und den Frame, der auf ARMED schaltet. Ist
 das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
-das Schalten auf ARMED mit `Koprozessor lehnte ARM ab` auf und schreibt nichts, der
+das Schalten auf ARMED mit `Der Koprozessor hat den Wechsel zu ARMED abgelehnt.` auf und schreibt nichts, der
 Latch des Koprozessors bleibt also gesetzt. Eine Antwort, die später als
 diese 300 ms zurückkommt, wird nicht verwendet, was immer sie sagt.
 
@@ -192,7 +192,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
 
 - STOP rastet ein. Der Prüfstand bleibt SAFE, bis er erneut auf ARMED
   geschaltet wird.
-- STOP schließt die Rückfrage AUSGANG IST EIN auf SUPPLY und SERVO. Jeder
+- STOP schließt die Rückfrage AUSGANG IST EINGESCHALTET auf SUPPLY und SERVO. Jeder
   Bildschirm zählt die Stopps, die ihm gemeldet werden, und eine Rückfrage
   gilt nur unter dem Zählerstand, mit dem sie gestellt wurde. Ein ÜBERNEHMEN
   im selben Frame wie STOP ändert also keinen Sollwert, auch wenn das
@@ -233,7 +233,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   holt sie neu. Die Dauer eines Löschvorgangs auf dem Flash des Panels
   ist nicht gemessen.
 - Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy auf ARMED, nachdem
-  seine Warnung (KEIN PROPELLER, MOTOR GESICHERT?) 2 s gehalten ist. Danach
+  seine Warnung (PROPELLER AB? MOTOR GESICHERT?) 2 s gehalten ist. Danach
   setzt er das Gas auf die Einstiegsstellung des Profils, bevor er das
   Netzteil einschaltet; bei den meisten ESCs ist das der Knüppel auf MAX: so
   wird ihr Menü betreten. Der ESC gibt dann sein Programmiermenü aus und

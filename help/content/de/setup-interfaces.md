@@ -39,13 +39,13 @@ Der Koprozessor liest einen TI INA228 im Strompfad des ESC und einen TI INA3221 
 - Ein Messwert am oberen Ende des Bereichs wird als übersteuert gezeigt, nie als Wert: 163,8 mV über dem Shunt des INA3221.
 - Ein Monitor, der nicht mehr antwortet, schaltet den Prüfstand nicht auf SAFE: Auf die Messwerte der Monitore löst nichts aus.
 
-Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5 s. Zum Beispiel: `Sensor-SDA oder -SCL nicht gesetzt -- siehe SETUP ANSCHLÜSSE`, `INA228 und INA3221 beide auf 0x40 -- siehe SETUP ANSCHLÜSSE`, `INA228 antwortet nicht auf 0x45`, `INA3221 CH1 übersteuert bei 1.64 A -- Strom ist eine Grenze`.
+Das Band nennt, was schiefgeht, eine Meldung zur selben Zeit, höchstens eine alle 5 s. Zum Beispiel: `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.`, `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.`, `INA228 antwortet nicht unter 0x45.`, `INA3221 CH1 bei 1.64 A übersteuert. Anzeige zeigt nur den Grenzwert.`.
 
 ## Eine Zeile, die der Koprozessor nicht hält
 
 ![Zeilen, die der Koprozessor nicht übernommen hat](view:setup-unheld)
 
-Eine Zeile, deren Wert nicht der ist, den der Koprozessor hält, hat Rand und Wert in der Warnfarbe, und ihre Hilfezeile lautet `Vom Koprozessor nicht übernommen`. Die Markierung steht:
+Eine Zeile, deren Wert nicht der ist, den der Koprozessor hält, hat Rand und Wert in der Warnfarbe, und ihre Hilfezeile lautet `Vom Koprozessor nicht übernommen.`. Die Markierung steht:
 
 - nach einer Änderung, bis das Schreiben übernommen ist: 500 ms nach der letzten Änderung, für die Strommonitore erst, wenn der Prüfstand SAFE ist;
 - bei einem Wert, den der Koprozessor abgelehnt hat, bis er auf einen geändert wird, den er annimmt;
@@ -60,7 +60,7 @@ Solange kein Koprozessor antwortet, ist keine Zeile markiert. AS5600-Mitte ist e
 | AS5600 | EIN, AUS | AUS | ein magnetischer Winkelsensor AS5600 an der Abtriebswelle des Servos, auf seiner festen Adresse 0x36 am Sensorbus |
 | AS5600-Mitte | 0 bis 4095 | 0 | der Zählwert mit dem Servo in Neutral; 4096 Zählwerte je Umdrehung, 0,0879 deg je Zählwert |
 
-Der Winkelsensor braucht einen Koprozessor mit Protokoll 4.9 oder neuer. ENC-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen`, oder wenn der Magnet zu schwach oder zu stark ist.
+Der Winkelsensor braucht einen Koprozessor mit Protokoll 4.9 oder neuer. SENSOR-MITTE in den [Servo-Optionen](servo-settings.md#prüfling) setzt die Mitte aus dem aktuellen Messwert. Das Band meldet, wenn der Sensor keinen Magneten sieht, `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.`, oder wenn der Magnet zu schwach oder zu stark ist.
 
 ## Der Phasenabgriff
 

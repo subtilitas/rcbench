@@ -832,7 +832,7 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         fresh();
         ui_text_set_language((ui_lang_t)lang);
-        char who[24];
+        char who[32];
 
         /* No port read: GP13 is a pin like the others. */
         CHECK_EQ(picker_screen_pin(idx(13u), who, sizeof(who)),
@@ -916,7 +916,7 @@ static bool ends_with(const char *s, const char *tail)
 TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-        char who[24];
+        char who[32];
         gfx_rect_t r;
 
         fresh();
@@ -1190,7 +1190,7 @@ TEST_CASE(every_reserved_pin_is_named_and_has_no_button)
     for (uint8_t i = 0; i < bd->count; ++i) {
         if (!bd->pins[i].reserved) { continue; }
         ++reserved;
-        char who[24];
+        char who[32];
         gfx_rect_t r;
         CHECK_EQ(picker_screen_pin(i, who, sizeof(who)), PICKER_PIN_RESERVED);
         CHECK_STR_EQ(who, bd->pins[i].held_by);
@@ -1230,7 +1230,7 @@ TEST_CASE(switching_the_protocol_keeps_the_pins_and_writes_nothing)
     CHECK(picker_screen_row(0, &row));
     CHECK_EQ(row.gpio, 6u);
     CHECK(!picker_screen_row(1, &row));
-    char who[24];
+    char who[32];
     CHECK_EQ(picker_screen_pin(idx(0u), who, sizeof(who)), PICKER_PIN_HELD);
     CHECK_STR_EQ(who, "SERVO PWM");
     render();
@@ -1615,6 +1615,52 @@ TEST_CASE(queries_past_the_end_answer_nothing)
     CHECK_EQ(s_applied, 0);
 }
 
+/*
+ * The reason under the protocol list: 35 cells under the count, and what
+ * does not fit there on a second line of at most 17 cells, which ends left
+ * of the widest board (150 px).  Every reason the picker shows, in every
+ * language, the longest protocol name and two-digit numbers in it.
+ */
+TEST_CASE(every_reason_ends_left_of_the_board)
+{
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        char s[9][96];
+        const ui_lang_t g = (ui_lang_t)l;
+        snprintf(s[0], sizeof(s[0]), "%s", ui_tr_in(g, TX_PK_NOT_READ));
+        snprintf(s[1], sizeof(s[1]), "%s", ui_tr_in(g, TX_OUT_OFF_VIEW));
+        snprintf(s[2], sizeof(s[2]), ui_tr_in(g, TX_OUT_TAKES_PIN),
+                 "DSHOT600 BIDIR", 1u);
+        snprintf(s[3], sizeof(s[3]), ui_tr_in(g, TX_OUT_TAKES_PINS),
+                 "DSHOT600 BIDIR", 8u);
+        snprintf(s[4], sizeof(s[4]), ui_tr_in(g, TX_OUT_ALL_SLOTS), 8u);
+        snprintf(s[5], sizeof(s[5]), ui_tr_in(g, TX_OUT_NEEDS_CHANNEL), 1u,
+                 0u);
+        snprintf(s[6], sizeof(s[6]), ui_tr_in(g, TX_OUT_NEEDS_CHANNELS), 16u,
+                 15u);
+        snprintf(s[7], sizeof(s[7]), ui_tr_in(g, TX_OUT_SLICE_WHY), 28u,
+                 13u);
+        snprintf(s[8], sizeof(s[8]), ui_tr_in(g, TX_OUT_COMPARE_WHY), 28u,
+                 13u);
+        for (int i = 0; i < 9; ++i) {
+            const char *rest = "";
+            if (gfx_text_cells(s[i]) > 35) {
+                const size_t fit = gfx_text_prefix(s[i], 35);
+                size_t cut = fit;
+                while (cut > 0u && s[i][cut] != ' ') {
+                    --cut;
+                }
+                rest = s[i] + ((cut > 0u) ? cut : fit);
+                while (*rest == ' ') {
+                    ++rest;
+                }
+            }
+            if (gfx_text_cells(rest) > 17) {
+                T_FAIL("language %d: \"%s\" leaves \"%s\"", l, s[i], rest);
+            }
+        }
+    }
+}
+
 int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
@@ -1651,5 +1697,6 @@ int main(void)
     RUN(every_state_renders_inside_its_canvas);
     RUN(a_tall_board_is_drawn_to_scale_and_not_stretched);
     RUN(queries_past_the_end_answer_nothing);
+    RUN(every_reason_ends_left_of_the_board);
     return test_summary("picker_screen");
 }
