@@ -1282,7 +1282,7 @@ Keine davon ist erfolgt.
 Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
 wartet, einen Koprozessor, der neu startet, und einen Programmierer, der
 den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
-`test_settings` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
+`test_settings_screen` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
 eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
 `test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
 fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
