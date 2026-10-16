@@ -298,6 +298,91 @@ bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared);
  */
 bool arming_write_failed(arming_t *a, bool answered);
 
+/**
+ * Where the panel is in writing the arm arming_step() handed out with
+ * ARMING_ACT_ARM; see arming_handshake_step().
+ */
+typedef enum {
+    /** Just handed out: nothing done for it yet. */
+    ARMING_HS_HANDED = 0,
+    /** The command is zero and the surfaces have been centred. */
+    ARMING_HS_PREPARED,
+    /** CLEAR came back acknowledged. */
+    ARMING_HS_CLEARED,
+} arming_hs_at_t;
+
+/** What the panel learned for the arm since the last point. */
+typedef struct {
+    bool link_up;       /**< the control loop holds the link as up        */
+    bool port_taken;    /**< the servo programmer has a port or an
+                             operation under way                           */
+    bool release_owed;  /**< a servo release the far end has not taken    */
+    /**
+     * The rate the surfaces run at is known.  Asking can take an exchange;
+     * read only at ARMING_HS_PREPARED with the link up and no release owed,
+     * and the caller need not ask otherwise.
+     */
+    bool rate_settled;
+    bool disarm_asked;  /**< a disarm is posted and not yet delivered     */
+} arming_hs_facts_t;
+
+/** What the panel does next with the arm, after arming_handshake_step(). */
+typedef enum {
+    /** Go on: at ARMING_HS_HANDED prepare, at ARMING_HS_PREPARED write
+     *  CLEAR, at ARMING_HS_CLEARED write the frame that arms. */
+    ARMING_HS_GO = 0,
+    /** No link: arm this end's bank for arming_roles(), nothing written. */
+    ARMING_HS_LOCAL,
+    /** The servo programmer holds the port: given up as arming_refused()
+     *  gives one up, nothing written. */
+    ARMING_HS_PROG,
+    /** A servo release the far end has not taken: the arm fails as a write
+     *  that did not go through, nothing written.  The policy is unchanged;
+     *  the caller ends the arm as arming_write_failed() or
+     *  arming_link_lost() does, by whether the link went quiet. */
+    ARMING_HS_SERVO_HELD,
+    /** The surfaces' rate is not known; the same as ARMING_HS_SERVO_HELD. */
+    ARMING_HS_SERVO_RATE,
+    /** Past the arm's deadline: given up as arming_handshake_open() gives
+     *  it up, before CLEAR as a refusal and after it as a stop. */
+    ARMING_HS_CLOSED,
+    /** A stop or a disarm landed while CLEAR was on the wire: given up as
+     *  arming_refused() gives one up.  The operator asked for it. */
+    ARMING_HS_WITHDRAWN,
+} arming_hs_t;
+
+/**
+ * The next step of writing the arm arming_step() handed out, at @p at with
+ * what the panel learned in @p f.
+ *
+ *     HANDED     port taken                      ARMING_HS_PROG
+ *                otherwise                       ARMING_HS_GO
+ *     PREPARED   link down                       ARMING_HS_LOCAL
+ *                release owed                    ARMING_HS_SERVO_HELD
+ *                rate not settled                ARMING_HS_SERVO_RATE
+ *                deadline passed                 ARMING_HS_CLOSED
+ *                otherwise                       ARMING_HS_GO, write CLEAR
+ *     CLEARED    stopped, or a disarm asked      ARMING_HS_WITHDRAWN
+ *                deadline passed                 ARMING_HS_CLOSED
+ *                otherwise                       ARMING_HS_GO, write ARM
+ *
+ * The verdicts that end the arm change the policy as their comments say;
+ * ARMING_HS_GO and ARMING_HS_LOCAL change nothing.  The CLEAR and the frame
+ * that arms can still fail on the wire; arming_write_failed() and the
+ * caller's own rule for a link gone quiet decide those.
+ */
+arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
+                                  const arming_hs_facts_t *f,
+                                  uint32_t now_ms);
+
+/**
+ * Whether a stop has been applied that the caller has not let go for yet:
+ * true once for every change of arming_stop_count() from @p *served, which
+ * it then takes.  Every stop counts, latched or not, armed or not, and two
+ * stops between calls are let go for once.
+ */
+bool arming_stop_unserved(const arming_t *a, uint32_t *served);
+
 /** The coprocessor disarmed us: a NACK on a control write, or a failsafe. */
 void arming_stop_from_far_end(arming_t *a);
 
