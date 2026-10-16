@@ -12,7 +12,7 @@ PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens 
 
 ![Writing the image](view:panel-update)
 
-The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the coprocessor holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64 KiB, and shows the bytes written and the percentage. The picture may flicker while the flash is erased. Do not switch the panel off.
+The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the coprocessor holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64 KiB, and shows the bytes written and the percentage. The display may flicker while flash memory is erased. Do not switch off the panel.
 
 How long the erase and the write take is not measured.
 
@@ -20,9 +20,9 @@ How long the erase and the write take is not measured.
 
 ![Written and checked: the panel restarts](view:panel-update-done)
 
-When the write completes, the slot is read back and checked, it becomes the slot that starts, and the panel restarts. The splash shows the new version, and the band says `panel firmware 0.19.0 installed`.
+When the write completes, the slot is read back and checked, it becomes the slot that starts, and the panel restarts. The splash shows the new version, and the band says `Panel firmware 0.19.0 installed.`.
 
-The first start of a new build is a trial. The build is kept once the display and touch are up. A start that does not get there goes back to the build before it, and the band says `panel firmware 0.19.0 did not start -- 0.18.0 runs again`. When keeping a good start fails, the band says `panel firmware 0.19.0 not kept -- the next start goes back`.
+The first start of a new build is a trial. The build is kept once the display and touch are up. A start that does not get there goes back to the build before it, and the band says `Panel firmware 0.19.0 failed to start. Version 0.18.0 is running again.`. When keeping a good start fails, the band says `Panel firmware 0.19.0 was not kept. The next restart restores the previous version.`.
 
 ## The write failed
 

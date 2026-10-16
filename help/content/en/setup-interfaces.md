@@ -34,18 +34,18 @@ The coprocessor reads a TI INA228 in the ESC's power path and a TI INA3221 on th
 
 - The bus runs at 400 kHz; that is not a setting.
 - The coprocessor takes a change only while the bench is SAFE.
-- With the INA228 enabled and answering, the MOTOR & ESC tile loses its MODELLED mark and [MOTOR & ESC](motor.md#table) reads its voltage and current.
+- With the INA228 enabled and answering, the MOTOR & ESC tile loses its SIMULATED mark and [MOTOR & ESC](motor.md#table) reads its voltage and current.
 - With the INA3221 on with CH1, [SERVO](servo.md#the-servo-rail-s-meter) reads the servo rail's current from it.
 - A reading at the top of the range is shown as clipped, never as a value: 163.8 mV across the INA3221's shunt.
 - A monitor that stops answering does not switch the bench to SAFE: nothing trips on the monitors' readings.
 
-The band names what goes wrong, one message at a time, at most one every 5 s. For example: `sensor SDA or SCL not set -- see SETUP INTERFACES`, `INA228 and INA3221 both at 0x40 -- see SETUP INTERFACES`, `INA228 not answering at 0x45`, `INA3221 CH1 clipped at 1.64 A -- current is a bound`.
+The band names what goes wrong, one message at a time, at most one every 5 s. For example: `Sensor SDA or SCL not set. Check SETUP > INTERFACES.`, `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.`, `INA228 is not responding at 0x45.`, `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.`.
 
 ## A row the coprocessor does not hold
 
 ![Rows the coprocessor has not taken](view:setup-unheld)
 
-A row whose value is not the one the coprocessor holds has its edge and value in the warning colour, and its help line reads `Not taken by the coprocessor`. The mark shows:
+A row whose value is not the one the coprocessor holds has its edge and value in the warning colour, and its help line reads `Not accepted by the coprocessor.`. The mark shows:
 
 - after an edit, until the write is taken: 500 ms after the last edit, for the current monitors only once the bench is SAFE;
 - on a value the coprocessor refused, until it is changed to one it takes;
@@ -60,7 +60,7 @@ No row is marked while no coprocessor answers. AS5600 centre is the panel's own 
 | AS5600 | ON, OFF | OFF | an AS5600 magnetic angle sensor on the servo's output shaft, at its fixed address 0x36 on the sensor bus |
 | AS5600 centre | 0 to 4095 | 0 | the count with the servo at neutral; 4096 counts a turn, 0.0879 deg a count |
 
-The encoder needs a coprocessor of protocol 4.9 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 sees no magnet -- check the magnet on the horn shaft`, or when the magnet is too weak or too strong.
+The encoder needs a coprocessor of protocol 4.9 or later. ENC CENTRE on the [servo settings](servo-settings.md#dut) sets the centre from the live reading. The band says when the sensor sees no magnet, `AS5600 detects no magnet. Check the magnet on the servo horn shaft.`, or when the magnet is too weak or too strong.
 
 ## The phase tap
 

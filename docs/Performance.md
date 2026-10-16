@@ -322,8 +322,7 @@ stand in for. `esp_wifi_init()` takes the Wi-Fi driver's static RX
 (receive) and TX (transmit) buffers: 16 of each, about 1,600 bytes each,
 51,200 bytes of DMA-capable (direct memory access) internal RAM.
 `CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` makes the TX buffers static. When
-they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi
-did not start.".
+they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi could not start.".
 
 `tools/ram_budget.py` reads the internal heap a panel build leaves and
 subtracts what the panel allocates at run time, then what each Wi-Fi mode

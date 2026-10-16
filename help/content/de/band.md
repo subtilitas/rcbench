@@ -14,7 +14,7 @@ Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann STOP
 
 | Chip | Zeigt |
 |---|---|
-| LINK, KEIN LINK | ob der Koprozessor auf dem CAN-Bus (Controller Area Network) antwortet |
+| VERBINDUNG, KEINE VERBINDUNG | ob der Koprozessor auf dem CAN-Bus (Controller Area Network) antwortet |
 | BENCH, SIM | BENCH, solange der Koprozessor antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
 | FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der Koprozessor meldet; fehlt, solange keiner anliegt |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED | was das Schalten auf ARMED treibt |
@@ -43,16 +43,16 @@ STOP wirkt auf jedem Bildschirm mit Band. Es schaltet den Prüfstand auf SAFE, s
 
 ## Hilfe zu den Chips
 
-![Der Kasten unter dem Chip LINK](view:band-link)
+![Der Kasten unter dem Chip VERBINDUNG](view:band-link)
 ![Der Kasten unter dem Chip SAFE](view:band-safe)
 
 Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun ist. Der Kasten ist 520 px breit und öffnet 4 px unter dem Band. Jeder Tipp schließt ihn und tut sonst nichts. Das Verlassen des Bildschirms schließt ihn ebenfalls. Der Text folgt dem Zustand, solange der Kasten offen ist.
 
 ![Der Kasten unter ARMED MOTOR](view:band-armed)
 
-![LINK mit 37 abgelehnten Link-Frames](view:band-link-refused)
+![VERBINDUNG mit 37 abgelehnten Link-Frames](view:band-link-refused)
 
-Hat der Koprozessor seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten von LINK mit ihrer Zahl, zum Beispiel `Abgelehnte Link-Frames: 37`.
+Hat der Koprozessor seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten von VERBINDUNG mit ihrer Zahl, zum Beispiel `Abgelehnte Verbindungsframes: 37`.
 
 ## FEHLER-Codes
 
@@ -80,7 +80,7 @@ Eine Störung, die der offene Bildschirm nicht zeigt, erscheint in einem roten B
 
 - Es verschwindet 30 s nach seinem Eintreffen. Ein neuer Alert startet die 30 s neu.
 - Ein Tipp auf das Band, rechts mit einem `x` markiert, löscht es früher. Der Bildschirm darunter bekommt weder diesen Tipp noch einen zweiten Finger auf dem Band.
-- "Touch antwortete nicht -- der Prüfstand nimmt kein ARM an", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
+- "Touchscreen antwortet nicht. ARMED ist gesperrt.", beim Start gezeigt, bleibt bis zum Neustart und hat kein `x`.
 
 ## Berührungen nahe am Band
 

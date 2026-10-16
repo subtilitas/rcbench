@@ -344,8 +344,7 @@ einspringen kann. `esp_wifi_init()` nimmt die statischen RX- und
 TX-Puffer (Empfangen, Senden) des WLAN-Treibers: je 16 zu etwa 1 600
 Bytes, 51 200 Bytes DMA-fähiger (Direct Memory Access) interner RAM.
 `CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` macht die TX-Puffer statisch.
-Passen sie nicht, startet das WLAN nicht, und FILES & UPDATE zeigt „WLAN
-startete nicht.“.
+Passen sie nicht, startet das WLAN nicht, und FILES & UPDATE zeigt „WLAN konnte nicht starten.“.
 
 `tools/ram_budget.py` liest den internen Heap, den ein Panel-Build übrig
 lässt, und zieht ab, was das Panel zur Laufzeit belegt, dann, was jeder
@@ -363,7 +362,7 @@ Kartenübertragung, solange das WLAN läuft.
 | `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 299 152 |
 | `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 104 776 |
 | `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 194 376 |
-| `AP` | ACCESS POINT: das WLAN, der Server der Seite und seine Task | 98 724 |
+| `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |

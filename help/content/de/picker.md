@@ -38,16 +38,16 @@ Die Platine markiert auch die anderen Adern eines Servokabels:
 
 Oben links steht die Protokollliste, dasselbe Bedienelement wie unter Ausgänge. Eine Wahl bestimmt das Protokoll, zu dem ein Tipp auf eine Taste kommt, und schreibt nichts. Ein Tipp außerhalb der offenen Liste schließt sie.
 
-Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die Pins über alle Protokolle. Darunter steht in Amber der Grund, warum keine Taste hinzukommen kann:
+Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle. Darunter steht in Amber der Grund, warum keine Taste hinzukommen kann:
 
 | Zeile | Wann |
 |---|---|
-| `ALLE 8 SLOTS BELEGT` | 8 Pins sind über alle Protokolle gebunden |
-| `BRAUCHT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
+| `ALLE 8 PLÄTZE BELEGT` | 8 Pins sind über alle Protokolle gebunden |
+| `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `OFF ZEIGT ALLES, ÄNDERT NICHTS` | OFF ist gewählt |
-| `NICHT GELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
-| `GP28: SLICE VON PROG-PORT GP13` | ein Tipp auf GP28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GP13 hält: ein PWM-Slice; die Taste ist grau |
+| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
+| `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | ein Tipp auf GP28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GP13 hält: ein PWM-Slice; die Taste ist grau |
 | `GP16: GLEICHER PWM-KANAL WIE GP0` | ein Tipp auf GP16 unter SERVO PWM oder MOTOR PWM bei GP0 als PWM gebunden: ein PWM-Compare-Register; die Taste ist grau |
 
 ![Acht von acht Slots belegt](view:picker-full)
@@ -68,7 +68,7 @@ Der Koprozessor trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jede
 
 ![Die Pin-Auswahl, allein aus der Form gezeichnet](view:picker-drawn)
 
-Ohne Zeichnung, oder solange die Übertragung nicht fertig ist, werden Umriss und Pads aus der Form der Platine gezeichnet, und die Tasten liegen an denselben Stellen. Eine Platine, die ihre Form nicht meldet, wird nicht gezeichnet: Der Bildschirm zeigt `KEIN BILD DIESER PLATINE`, und ihre Pins stehen unter Ausgänge.
+Ohne Zeichnung, oder solange die Übertragung nicht fertig ist, werden Umriss und Pads aus der Form der Platine gezeichnet, und die Tasten liegen an denselben Stellen. Eine Platine, die ihre Form nicht meldet, wird nicht gezeichnet: Der Bildschirm zeigt `KEIN PLATINENBILD VERFÜGBAR`, und ihre Pins stehen unter Ausgänge.
 
 Die Zeichnung des RP2350-CAN hat 1.560 Bytes, geladen in 26 Blöcken zu 62 Bytes. Die Dauer ist nicht gemessen. Das Schreiben in den Flash wartet auf einen Prüfstand, der SAFE ist und dessen Netzteil aus ist.
 

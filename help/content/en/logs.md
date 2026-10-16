@@ -12,7 +12,7 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO LOGS` and `No card. Insert one and tap RESCAN.` A card without a CSV file in its root reads `No .csv files in the root.` Runs are written as `BENCH001.CSV` and upwards. RESCAN reads the card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` A card without a CSV file in its root reads `No .csv files in the top-level folder.` Runs are written as `BENCH001.CSV` and upwards. RESCAN reads the card again.
 
 ## The file list
 
@@ -42,14 +42,14 @@ The band reports what the card did to a run:
 
 | Message | Meaning |
 |---|---|
-| `no card -- this run is not recorded` | nothing is mounted |
-| `card unreadable -- run not recorded` | the card does not list |
-| `card full or unwritable -- run not recorded` | no run file could be created |
-| `the card did not keep up -- run not recorded` | every row was dropped |
-| `the card fell behind -- the log has gaps` | some rows were dropped; the time column shows where |
-| `the card stopped taking rows -- run not recorded past here` | a write failed mid-run |
-| `the card stopped taking rows -- the log is short` | the same, said again when the run closes |
-| `the card failed on the last write -- the log is short` | the rows since the last commit are not in the file |
+| `No card. This run is not being recorded.` | nothing is mounted |
+| `Cannot read the card. Run not recorded.` | the card does not list |
+| `Card full or not writable. Run not recorded.` | no run file could be created |
+| `Card too slow. Run not recorded.` | every row was dropped |
+| `The card was too slow. Some data is missing from the recording.` | some rows were dropped; the time column shows where |
+| `Data can no longer be saved to the card. Recording stopped here.` | a write failed mid-run |
+| `Data could no longer be saved to the card. Recording incomplete.` | the same, said again when the run closes |
+| `The last write to the card failed. Recording incomplete.` | the rows since the last commit are not in the file |
 
 The first four leave no file. The last four leave a file that stops early.
 
@@ -62,15 +62,15 @@ OPEN reads the file and shows what it decided before anything is plotted.
 | Line | Shows |
 |---|---|
 | SEPARATOR | SEMICOLON, COMMA, TAB or PIPE |
-| NUMBERS | ENGLISH (decimal point) or GERMAN (decimal comma) |
+| NUMBER FORMAT | ENGLISH (decimal point) or GERMAN (decimal comma) |
 | ROWS, COLUMNS | the data rows and columns found |
 | TIME AXIS | the column taken as time, or ROW INDEX |
-| RAGGED | rows with another cell count than the header |
+| UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
 The right list names each column with its first value and its range, lowest to highest. A tap on a numeric column adds it to the plot or takes it off; the title counts them, `PLOT 4/4`. SEP and NUM step through the choices, AUTO first, when the values or columns look wrong. BACK returns to the list; PLOT draws the chosen columns.
 
-A last row without a line feed is a row cut off by a power loss or a full card. It is left out, ROWS shows in the warning colour and the view reads `LAST ROW CUT OFF - LEFT OUT`.
+A last row without a line feed is a row cut off by a power loss or a full card. It is left out, ROWS shows in the warning colour and the view reads `INCOMPLETE LAST ROW. SKIPPED.`.
 
 ## The plot
 

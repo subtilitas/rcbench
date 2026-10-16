@@ -21,7 +21,7 @@ measured angle into a blade reference ("between blades two and three") in
 addition to the angle.
 
 The readings (vibration 0.42 g, angle 265°, mass to add 0.35 g) are fixed
-values and not a measurement. A MODELLED mark and the words "Not measured."
+values and not a measurement. A SIMULATED mark and the words "Not measured."
 stand under them, in the same pill the menu uses. Only the BALANCE pane carries
 the mark.
 
@@ -76,5 +76,5 @@ specified, which is 300° at 10,000 rpm.
 ## What the measurement needs
 
 An accelerometer and, optionally, an index sensor on the coprocessor. Neither
-is fitted, so the screen runs from the model and carries the MODELLED mark. The
+is fitted, so the screen runs from the model and carries the SIMULATED mark. The
 setup, the blade arithmetic and both placement guides work without them.
