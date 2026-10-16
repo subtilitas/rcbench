@@ -19,7 +19,7 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 - A coprocessor of protocol 4.13 or later; LEAVE needs 4.15.
 - The servo on the coprocessor's programming port, port 1: GP13, pad 17, unless another pin is stored for it.
 - PWM TARGET set to PROG PORT on the [servo settings](servo-settings.md#dut).
-- The bench SAFE. CONNECT is refused while ARMED with `DISARM first: the port is not taken while ARMED.` While the port is held, no screen switches the bench to ARMED.
+- The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
 
 ![A coprocessor without the programming port](view:servo-kst-nopage)
 ![The standard outputs are the target](view:servo-kst-target)
@@ -65,7 +65,7 @@ V6 is a 20 kHz drive, V8 a 333 Hz drive. The type is never edited and never writ
 
 ![A servo of unknown layout: read only](view:servo-kst-readonly)
 
-A servo whose registers do not fit the known layout is shown and never written: `Read only: this servo is not a known type.`
+A servo whose registers do not fit the known layout is shown and never written: `Read only. This servo type is unknown.`
 
 ## Editing
 
@@ -135,7 +135,7 @@ A tap on a file loads it into the draft. Nothing reaches the servo before the wr
 ![The restore list](view:servo-kst-restore-list)
 ![A restore of the session's backup](view:servo-kst-restore)
 
-RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Values before the limit run`. Every restore needs the write switch and a 2 s hold.
+RESTORE writes back the session's backup, the servo as first read after CONNECT, the values before an interrupted write, or `Settings before the limit run.`. Every restore needs the write switch and a 2 s hold.
 
 ![MORE in programming mode](view:servo-kst-more)
 
@@ -147,7 +147,7 @@ RESTORE writes back the session's backup, the servo as first read after CONNECT,
 
 ![An interrupted write](view:servo-kst-doubt)
 
-A write counts as interrupted when the link goes, a board restarts, ABORT or a stop ends it, or no result arrives in time. The tab then reads `A write was interrupted. The servo may be half written.` until the servo is read again. READ ALL compares the servo with the record and offers RESTORE.
+A write counts as interrupted when the link goes, a board restarts, ABORT or a stop ends it, or no result arrives in time. The tab then reads `Writing was interrupted. The settings may be incomplete.` until the servo is read again. READ ALL compares the servo with the record and offers RESTORE.
 
 ![The servo holds a mix of old and new values](view:servo-kst-journal)
 

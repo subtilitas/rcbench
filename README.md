@@ -52,7 +52,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry; simulated values while no coprocessor answers |
 | Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the coprocessor; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report; a [programmer for KST and Chaservo servos](docs/ServoProgrammer.md) with backup, limit checks and a write switch | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured; the limit search and the synchronisation are host-tested against a modelled servo and run on no board; the programmer is host-tested, no frame sent to a servo |
 | Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the coprocessor drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
-| Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / SILENT | S.BUS decoder built; PIO (programmable input/output) receiver not written |
+| Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / NO SIGNAL | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
 | Battery | per-cell spread and verdict | screen built; cell monitor not fitted |
@@ -101,7 +101,7 @@ specifications, not from other implementations (a licensing rule), and coverage
 has a per-file floor as well as a total.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 42,251 of 43,238 lines in 147 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.7%**, 42,728 of 43,737 lines in 147 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

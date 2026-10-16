@@ -15,11 +15,11 @@ OPTIONEN, oben auf der rechten Karte von [SERVO](servo.md), öffnet die Optionen
 | Option | Bereich | Was sie tut |
 |---|---|---|
 | TYP | STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760 | das Servoprofil |
-| FRAME RATE | die Liste des Typs, oder EIGENE über das Tastenfeld | wie oft ein Puls gesendet wird |
-| PULS MIN, PULS CENTRE, PULS MAX | 400 bis 2500 us; jedes Ende mindestens 50 us von PULS CENTRE entfernt | -90 deg ist MIN, 0 ist CENTRE, +90 deg ist MAX |
-| TRIM | -200 bis +200 us, 5 us je Schritt | wird zur Mitte addiert |
+| PULSRATE | die Liste des Typs, oder EIGENE EINSTELLUNG über das Tastenfeld | wie oft ein Puls gesendet wird |
+| PULS MIN, PULS MITTE, PULS MAX | 400 bis 2500 us; jedes Ende mindestens 50 us von PULS MITTE entfernt | -90 deg ist MIN, 0 ist MITTE, +90 deg ist MAX |
+| TRIMMUNG | -200 bis +200 us, 5 us je Schritt | wird zur Mitte addiert |
 | WEG | 10 bis 90 deg | wie weit das Horn je Richtung gehen darf |
-| REVERSE | EIN, AUS | die Richtung, in der der Winkel auf den Puls abgebildet wird |
+| UMKEHREN | EIN, AUS | die Richtung, in der der Winkel auf den Puls abgebildet wird |
 
 | Typ | Mitte | Weg | Frame Rates |
 |---|---|---|---|
@@ -44,9 +44,9 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 | Hinweis | Bedeutung |
 |---|---|
 | `Aktiv: AUSGÄNGE laufen mit 330 Hz.` | der Koprozessor fährt die Rate auf dem Ziel, das er hält |
-| `Die Rate geht mit der nächsten Position an den Koprozessor.` | noch nicht geschrieben |
+| `Die Pulsrate wird mit der nächsten Position an den Koprozessor gesendet.` | noch nicht geschrieben |
 | `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
-| `Kein Link: die aktive Rate ist unbekannt.` | kein Koprozessor antwortet |
+| `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein Koprozessor antwortet |
 
 ## TEST
 
@@ -57,19 +57,19 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 | KURVE | RECHTECK, SINUS, DREIECK | SINUS | die Kurve von SWEEP und der Bewegungen des Tests |
 | TEMPO | 0,05 bis 5 Hz | 0,5 Hz | Kurven pro Sekunde |
 | BEREICH | 10 bis 100 % | 80 % | der Anteil des Wegs, der durchfahren wird |
-| LÄNGE NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
+| TESTDAUER NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
 | TESTZEIT | 5 bis 3600 s | 60 s | die Dauer einer Stufe |
 | BEWEGUNGEN | 1 bis 1000 | 20 | die Bewegungen einer Stufe |
-| VERWEILEN | 0 bis 5000 ms | 200 ms | an jedem Ende gehalten |
-| EINSCHWINGEN | 0 bis 10000 ms | 500 ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
+| HALTEZEIT | 0 bis 5000 ms | 200 ms | an jedem Ende gehalten |
+| EINSCHWINGZEIT | 0 bis 10000 ms | 500 ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
 | STUFE 4.8 V, STUFE 6.0 V | EIN, AUS | EIN | die Netzteilstufen |
-| HV SERVO | EIN, AUS | AUS | fügt STUFE 7.4 V und STUFE 8.4 V hinzu; bei jedem Neustart aus |
+| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4 V und STUFE 8.4 V hinzu; bei jedem Neustart aus |
 | BROWN-OUT | EIN, AUS | EIN | ab 5,0 V abwärts, bis das Servo stehen bleibt |
 | TEST STARTEN | | | der automatische Test: ein Halten von 2 s bei ARMED |
 
-![HV SERVO eingeschaltet](view:servo-hv)
+![HV-SERVO eingeschaltet](view:servo-hv)
 
-Ist HV SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STARTEN zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+Ist HV-SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STARTEN zuerst NUR HV-SERVOS und nennt die höchste Stufe.
 
 ## GRENZEN
 
@@ -82,7 +82,7 @@ Ist HV SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STA
 | RUHESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
 | HALTESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
 | STELLZEIT | 0 bis 5000 ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
-| ENDLAGENLAUF | NUR SUCHE, SUCHE+PROG | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
+| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
 | SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit PWM-ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0 us |
 
 ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-endlagenlauf) mit einem Halten von 2 s bei ARMED. Die Zeile darunter nennt Ausgang und Messgerät oder den Grund, warum der Lauf nicht starten kann.
@@ -97,7 +97,7 @@ ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-e
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
 | BERICHT | ein Textbericht, `BENCHnnn.TXT`, neben dem Log jedes Tests |
 | AS5600 | der Winkelsensor an der Hornwelle, dieselbe Einstellung wie unter [Anschlüsse](setup-interfaces.md) |
-| ENC-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
+| SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 | PWM-ZIEL | AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, der Programmierport des Koprozessors |
 | PORT-PWM | EIN oder AUS: der Puls auf dem Programmierport, solange er das Ziel ist |
 
@@ -115,12 +115,12 @@ Die Zeile ZIEL der rechten Karte nennt die Pins, die der Tester jetzt treibt. Si
 | `PROG-PORT GP13` | der Pin des Programmierports, in der Warnfarbe |
 | `PROG-PORT GP13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
 | `KEIN SERVO-PWM-PIN` | kein Pin ist als SERVO PWM gebunden |
-| `PINS NICHT GELESEN` | keine Bindung wurde gelesen |
+| `PINS NICHT AUSGELESEN` | keine Bindung wurde gelesen |
 | `UNBEKANNT` | die Programmierport-Seite des Koprozessors ist nicht gelesen |
-| `KEIN LINK` | kein Koprozessor antwortet; der Tester sendet nichts |
+| `KEINE VERBINDUNG` | kein Koprozessor antwortet; der Tester sendet nichts |
 
 Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung. Eine Änderung von PWM-ZIEL wartet auf einen ruhenden Prüfstand.
 
 ## Die Werte behalten
 
-AUSGANG, HV SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. TEST, der Rest von GRENZEN und PRÜFLING werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. TEST, der Rest von GRENZEN und PRÜFLING werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.

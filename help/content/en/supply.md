@@ -10,9 +10,9 @@ SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (
 
 ## The supply model
 
-![SUPPLY with the PD mini disabled: SUPPLY MODEL](view:supply)
+![SUPPLY with the PD mini disabled: SIMULATED SUPPLY](view:supply)
 
-With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SUPPLY MODEL` and the menu tile is marked MODELLED. The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a 0.05 ohm source resistance. Its readings are not measured, and nothing on the bench is powered.
+With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supply. The header reads `SIMULATED SUPPLY` and the menu tile is marked SIMULATED. The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a 0.05 ohm source resistance. Its readings are not measured, and nothing on the bench is powered.
 
 ## The PD mini
 
@@ -25,7 +25,7 @@ With the PD mini enabled, the header names the module and the coprocessor pins t
 | `ONLINE 38400` | the module answers; the number is the baud rate in use |
 | `NOT ANSWERING` | no coprocessor that speaks protocol 4.3 answers, or the readings are older than 1500 ms; an output that is on is switched off |
 
-Before the first switch-on the plot reads `output not switched on yet`, and the cards show dashes until a reading arrives.
+Before the first switch-on the plot reads `Output has not been switched on yet.`, and the cards show dashes until a reading arrives.
 
 ## The readings
 
@@ -34,7 +34,7 @@ Before the first switch-on the plot reads `output not switched on yet`, and the 
 | VOLT | the output voltage; the set point in brackets; the run's lowest voltage under it |
 | CURR | the output current; the current limit in brackets; the run's peak under it |
 | PWR | the output power and the run's peak |
-| MODE | CV (constant voltage) at the set voltage, CC (constant current) at the current limit, TRIP after a trip; CC is drawn in the warning colour |
+| MODE | CV (constant voltage) at the set voltage, CC (constant current) at the current limit, TRIPPED after a trip; CC is drawn in the warning colour |
 
 The plot shows voltage, current and power over the last 27 s, with each set point as a dashed line. TABLE lists the same values. The bracketed value is the set point the supply reports; while it does not answer, the one the screen holds.
 
@@ -97,7 +97,7 @@ SETTINGS, at the right of the strip, opens the settings over the left column. A 
 - A current trip at or above CURRENT LIMIT does not fire: the supply holds the limit in CC.
 - A cap lowered under a set point brings the set point down to it.
 
-The settings are kept in NVS (non-volatile storage). They are written on the next frame with the bench SAFE and the output off. The bottom line reads `SAVED`, `SAVE WAITING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED`.
+The settings are kept in NVS (non-volatile storage). They are written on the next frame with the bench SAFE and the output off. The bottom line reads `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED`.
 
 With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It switches the output off and restarts the module, for a module that shows ERR. Whether a restart clears every ERR is not measured.
 

@@ -163,7 +163,7 @@ static const char *trace(void)
     out[0] = '\0';
     const uint8_t n = outbind_pin_count(OUTBIND_BOARD_PICO_HEADER);
     for (uint8_t i = 0; i < n; ++i) {
-        char label[24];
+        char label[32];
         const outputs_cell_t st = outputs_screen_cell(i, label,
                                                       sizeof(label));
         const int w = snprintf(out + at, sizeof(out) - at, "GP%u %s '%s'\n",
@@ -383,7 +383,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
     static gfx_color_t px[GUARD_CANVAS_PIXELS(800, 432)];
     guard_canvas_t g;
     gfx_canvas_t c;
-    char l[24];
+    char l[32];
 
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         fresh();
@@ -454,7 +454,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
 TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
 {
     static const char *const pwm[2] = { "SERVO PWM", "MOTOR PWM" };
-    char l[24];
+    char l[32];
 
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         for (unsigned k = 0; k < 2u; ++k) {
@@ -523,7 +523,7 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
  */
 TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
 {
-    char l[24];
+    char l[32];
 
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         fresh();
@@ -954,8 +954,8 @@ TEST_CASE(a_protocol_named_from_outside_lands_over_the_one_on_screen)
     "GP14 free 'PAD 19'\n"                                                    \
     "GP15 free 'PAD 20'\n"                                                    \
     "GP16 free 'PAD 21'\n"                                                    \
-    "GP17 held 'PWM CH OF GP1'\n"                                             \
-    "GP18 held 'PWM CH OF GP2'\n"                                             \
+    "GP17 held 'PWM CH OF GP1'\n"                                  \
+    "GP18 held 'PWM CH OF GP2'\n"                                  \
     "GP19 free 'PAD 25'\n"                                                    \
     "GP20 free 'PAD 26'\n"                                                    \
     "GP21 free 'PAD 27'\n"                                                    \
@@ -976,7 +976,7 @@ TEST_CASE(the_screen_opens_on_the_lowest_protocol_that_holds_a_pin)
     CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("SERVO PWM"));
     CHECK_EQ(outputs_screen_cell(idx(0), NULL, 0), OUTPUTS_CELL_HELD);
     CHECK_EQ(outputs_screen_cell(idx(2), NULL, 0), OUTPUTS_CELL_TICKED);
-    char l[24];
+    char l[32];
     (void)outputs_screen_cell(idx(0), l, sizeof(l));
     CHECK_STR_EQ(l, "DSHOT600 BIDIR");
     (void)outputs_screen_cell(idx(1), l, sizeof(l));
@@ -1006,7 +1006,7 @@ TEST_CASE(off_shows_the_protocol_of_every_bound_pin)
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     CHECK_EQ(s_applied, 0);
     CHECK_STR_EQ(trace(), TRACE_OFF);
-    CHECK_STR_EQ(reason(), "OFF SHOWS ALL, EDITS NOTHING");
+    CHECK_STR_EQ(reason(), "OFF: VIEW ALL, NO EDITING");
 
     /* The same pins under SERVO PWM: its own two show their pad. */
     choose_named("SERVO PWM");
@@ -1031,9 +1031,9 @@ TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
     }
     CHECK_EQ(s_applied, 0);
     CHECK(memcmp(&before, outputs_screen_binding(), sizeof(before)) == 0);
-    CHECK_STR_EQ(reason(), "OFF SHOWS ALL, EDITS NOTHING");
+    CHECK_STR_EQ(reason(), "OFF: VIEW ALL, NO EDITING");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(reason(), "OFF ZEIGT ALLES, ÄNDERT NICHTS");
+    CHECK_STR_EQ(reason(), "AUS: ALLES ANZEIGEN, NICHTS ÄNDERN");
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -1139,7 +1139,7 @@ TEST_CASE(off_stays_until_another_entry_is_picked_or_the_screen_is_left)
 TEST_CASE(off_with_nothing_bound_is_left_by_a_pick)
 {
     fresh();
-    CHECK_STR_EQ(reason(), "OFF SHOWS ALL, EDITS NOTHING");
+    CHECK_STR_EQ(reason(), "OFF: VIEW ALL, NO EDITING");
     tap_pin(4);
     CHECK_EQ(s_applied, 0);
     choose_named("SERVO PWM");
@@ -1177,11 +1177,11 @@ TEST_CASE(a_binding_that_did_not_read_is_kept_marked_and_not_edited)
     CHECK(!outputs_screen_editable());
     CHECK_EQ(outputs_screen_read_state(), BIND_READ_NONE);
     CHECK_STR_EQ(trace(), TRACE_SERVO);         /* GP4 is free again */
-    CHECK_STR_EQ(reason(), "BINDING NOT READ - NO EDITS");
+    CHECK_STR_EQ(reason(), "ASSIGNMENT NOT READ. EDITING LOCKED.");
     scr()->render(&c, 0);
     CHECK(reason_ink(&c) != quiet);
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(reason(), "BINDUNG NICHT GELESEN - GESPERRT");
+    CHECK_STR_EQ(reason(), "ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.");
     ui_text_set_language(UI_LANG_EN);
 
     /* Ticked, free, held or reserved: no tap acts. */
@@ -1210,7 +1210,7 @@ TEST_CASE(a_binding_that_did_not_read_is_kept_marked_and_not_edited)
     choose_named("MOTOR PWM");
     CHECK_EQ(s_applied, 1);
     CHECK_EQ(outputs_screen_cell(idx(1), NULL, 0), OUTPUTS_CELL_TICKED);
-    CHECK_STR_EQ(reason(), "BINDING NOT READ - NO EDITS");
+    CHECK_STR_EQ(reason(), "ASSIGNMENT NOT READ. EDITING LOCKED.");
     choose_named("SERVO PWM");
 
     /* Pages no binding describes: the same, with its own reason. */
@@ -1221,9 +1221,9 @@ TEST_CASE(a_binding_that_did_not_read_is_kept_marked_and_not_edited)
     outputs_screen_set_reading(&odd);
     CHECK_EQ(outputs_screen_read_state(), BIND_READ_ODD);
     CHECK_STR_EQ(trace(), TRACE_SERVO);
-    CHECK_STR_EQ(reason(), "PAGES HOLD NO VALID BINDING");
+    CHECK_STR_EQ(reason(), "NO VALID ASSIGNMENT IN THE PAGES");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(reason(), "PAGES OHNE GÜLTIGE BINDUNG");
+    CHECK_STR_EQ(reason(), "KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES");
     ui_text_set_language(UI_LANG_EN);
     tap_pin(4);
     tap_pin(2);
@@ -1345,6 +1345,44 @@ TEST_CASE(a_selection_from_the_picker_is_a_pick)
     CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, 13u, NULL, 0));
 }
 
+/*
+ * The column's lines that break onto a second line where they need it: the
+ * reason under the protocol (266 px), the label of the button that unbinds
+ * every pin (250 px inside it) and the last write in the head face
+ * (266 px).  ui_text.def holds each to both lines' cells; each has to break
+ * into the two, in every language, a pin number at its widest.
+ */
+TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
+{
+    static const struct {
+        ui_text_id_t id;
+        int w;
+        bool head;
+    } k[] = {
+        { TX_OUT_OFF_VIEW, 266, false },    { TX_OUT_NOT_READ, 266, false },
+        { TX_OUT_NOT_MAPPED, 266, false },  { TX_OUT_SLICE_WHY, 266, false },
+        { TX_OUT_COMPARE_WHY, 266, false }, { TX_OUT_HOLD_UNBIND, 250, false },
+        { TX_OUT_WRITTEN, 266, true },      { TX_OUT_REFUSED, 266, true },
+        { TX_OUT_NOT_WRITTEN, 266, true },  { TX_OUT_NO_LINK, 266, true },
+    };
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+            char s[96];
+            snprintf(s, sizeof(s), ui_tr_in((ui_lang_t)l, k[i].id), 28u,
+                     13u);
+            const int n = outputs_wrap(NULL, gfx_rect_make(0, 0, k[i].w, 16),
+                                       18, s, 3,
+                                       k[i].head ? UI_FONT_HEAD
+                                                 : UI_FONT_LABEL,
+                                       0, false);
+            if (n > 2) {
+                T_FAIL("%s in language %d takes %d lines",
+                       ui_text_name(k[i].id), l, n);
+            }
+        }
+    }
+}
+
 int main(void)
 {
     RUN(a_pick_calls_the_apply_seam_for_no_entry);
@@ -1379,5 +1417,6 @@ int main(void)
     RUN(null_events_are_refused_rather_than_dereferenced);
     RUN(a_cancelled_press_applies_nothing);
     RUN(a_release_the_tracker_makes_for_a_jump_picks_nothing);
+    RUN(every_two_line_string_of_the_column_breaks_into_two);
     return test_summary("outputs_screen");
 }

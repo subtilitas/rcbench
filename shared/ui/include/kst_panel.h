@@ -188,6 +188,11 @@ kst_prog_t *kst_panel_model(void);
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE]);
 
+/** The rows of 8 x 16 cells a line of a message, a note or a warning page
+ *  takes, wrapped at a space to the overlay's width less 10 px a side, one
+ *  cell a row at least (before kst_panel_init(), say). */
+int kst_panel_text_rows(const char *s);
+
 /** The line a rule's refusal or warning shows. */
 const char *kst_panel_rule_text(unsigned rule);
 
@@ -233,6 +238,39 @@ const char *kst_panel_label(int page, int row, int col);
 const char *kst_panel_choice_label(int i);
 /** The open list's title; NULL while none is open. */
 const char *kst_panel_choice_title(void);
+
+/**
+ * The page each of @p count notes of @p rows rows takes in @p room rows:
+ * every note on page 0 when they fit, else pages that keep their last row
+ * for the page count, a note never split.  A note marked in @p standing is
+ * on page 0, and the others fill the rows left after the standing ones;
+ * with no row left beside the standing notes for the count, the others
+ * get page -1, shown on no page.  Writes @p page and returns the number of
+ * pages.
+ */
+int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
+                         int room, int *page);
+
+/** The pages the open tab's notes take: 1 when they fit above the message;
+ *  a tap on the notes shows the next. */
+int kst_panel_note_pages(void);
+
+/** The notes' area, a tap on which shows the next page; empty while the
+ *  notes take one page. */
+gfx_rect_t kst_panel_notes_rect(void);
+
+/** The notes' page shown, from 0. */
+int kst_panel_note_page(void);
+
+/** The @p i-th note on the page shown, from the top; NULL past the last. */
+const char *kst_panel_shown_note(int i);
+
+/** The lines of the last message drawn under the notes. */
+int kst_panel_shown_message_lines(void);
+
+/** The rows the notes and the message of the page shown are drawn in,
+ *  across the area; empty for none. */
+gfx_rect_t kst_panel_notes_drawn(void);
 
 #ifdef __cplusplus
 }

@@ -107,7 +107,7 @@ The latch is separate from the link failsafe. The supply's ON and the STATUS
 page read the failsafe and the heartbeat and not the latch: after a start
 STATUS reads idle with no fault bit, and a supply ON is taken before the
 first switch to ARMED. The latch is not on STATUS. A latched coprocessor shows as the
-refused ARM, which the panel reports as `coprocessor switched to SAFE -- arm again`.
+refused ARM, which the panel reports as `Coprocessor switched to SAFE. Hold ARM again.`.
 
 The panel has its own rule for the same events. When the coprocessor stops
 answering while the bench is ARMED, or while a switch to ARMED is waiting for the line,
@@ -150,7 +150,7 @@ before it trusts the line: 100 to 125 ms at the control task's 5 ms period.
 The panel waits 100 ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that switches to ARMED. If the bit has not cleared 300 ms after the hold completed, the
-panel gives the switch up with `coprocessor refused to switch to ARMED` and writes nothing,
+panel gives the switch up with `The coprocessor refused to switch to ARMED.` and writes nothing,
 so the coprocessor's latch stays set. An answer that comes back later than
 those 300 ms is not used, whatever it says.
 
@@ -210,7 +210,7 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   link-up fetches it again. The duration of
   one erase on the panel's flash is not measured.
 - A stick run on PROGRAMMER switches to ARMED through the same policy, after its warning
-  (NO PROPELLER, MOTOR SECURED?) is held for 2 s. It then sets the throttle
+  (PROPELLER REMOVED? MOTOR SECURED?) is held for 2 s. It then sets the throttle
   to the profile's entry position before it switches the supply on, which
   for most ESCs is the stick at MAX: that is how their menu is entered. The
   ESC then sounds its programming menu and does not drive, but in rare

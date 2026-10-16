@@ -62,7 +62,8 @@
 #define BR_WIFI   gfx_rect_make(144, FOOT_Y, 120, FOOT_H)
 #define BR_OPEN   gfx_rect_make(664, FOOT_Y, 120, FOOT_H)
 #define BR_DELETE gfx_rect_make(536, FOOT_Y, 120, FOOT_H)
-/* 32 cells to DELETE: the 26 a message about a file declares, and more. */
+/* Two lines of 32 cells to DELETE: the 28 a message about a file declares,
+ * and the file's name. */
 #define BR_MSG_X  272
 
 /* The DELETE question, drawn in place of the list. */
@@ -825,12 +826,22 @@ static void render_browse(gfx_canvas_t *c)
         }
     }
     if (s.message[0] != '\0') {
-        /* Clipped to the gap between the buttons: a long name runs out of
-         * room rather than over DELETE. */
-        gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
-                                     msg_end - 8 - BR_MSG_X, FOOT_H),
-                    s.message, UI_FONT_LABEL,
-                    s.message_ok ? UI_TEXT_DIM : UI_DANGER, 1, GFX_ALIGN_LEFT);
+        /* In the gap between the buttons, on two 18 px lines of the 42 px
+         * footer when one is too short.  A message longer than two lines is
+         * one line clipped there: a long name runs out of room rather than
+         * over DELETE. */
+        const gfx_color_t col = s.message_ok ? UI_TEXT_DIM : UI_DANGER;
+        const gfx_rect_t two = gfx_rect_make(BR_MSG_X, FOOT_Y + 3,
+                                             msg_end - 8 - BR_MSG_X, 18);
+        const int n = ui_text_wrap(NULL, two, 18, s.message, UI_FONT_LABEL,
+                                   col);
+        if (n == 2) {
+            (void)ui_text_wrap(c, two, 18, s.message, UI_FONT_LABEL, col);
+        } else {
+            gfx_text_in(c, gfx_rect_make(BR_MSG_X, FOOT_Y,
+                                         msg_end - 8 - BR_MSG_X, FOOT_H),
+                        s.message, UI_FONT_LABEL, col, 1, GFX_ALIGN_LEFT);
+        }
     }
 }
 
@@ -850,7 +861,8 @@ static void render_import(gfx_canvas_t *c)
     gfx_text(c, 300, 12, s.name, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     if (!s.have_analysis) {
-        gfx_rect_t box = gfx_rect_make(120, 160, 560, 150);
+        /* 74 cells of text inside 24 px margins. */
+        gfx_rect_t box = gfx_rect_make(80, 160, 640, 150);
         ui_panel(c, box, TR(LOG_CANNOT_READ), UI_DANGER);
         gfx_text(c, box.x + 24, box.y + 52,
                  s.message[0] ? s.message : TR(LOG_UNREADABLE), UI_FONT_LABEL,
@@ -861,9 +873,11 @@ static void render_import(gfx_canvas_t *c)
     } else {
         ui_panel(c, IM_LEFT, TR(LOG_DETECTED), UI_ACCENT);
 
+        /* Rows 20 px apart, so that under the evidence the warnings take
+         * up to four lines of 33 cells above the hints. */
         char line[64];
-        int y = IM_LEFT.y + 38;
-        const int lh = 24;
+        int y = IM_LEFT.y + 34;
+        const int lh = 20;
 
         struct {
             const char *key;
@@ -935,43 +949,47 @@ static void render_import(gfx_canvas_t *c)
         }
 
         ui_rule(c, IM_LEFT.x + 16, y + 2, IM_LEFT.w - 32, UI_EDGE);
-        y += 14;
+        y += 12;
 
         /* The evidence behind the detection. */
         snprintf(line, sizeof(line), TR(LOG_EVIDENCE),
                  s.an.votes.de, s.an.votes.en, s.an.votes.ambiguous);
         gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_TEXT_FAINT, 1);
-        y += 20;
+        y += 18;
 
-        bool warned = true;
+        /* A warning breaks onto a second line of 33 cells, 18 px lower. */
+        const gfx_rect_t warn = gfx_rect_make(IM_LEFT.x + 16, y,
+                                              IM_LEFT.w - 32, 18);
+        int lines = 0;
         if (s.an.convention_conflict) {
-            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_MIXED),
-                     UI_FONT_LABEL, UI_DANGER, 1);
+            lines = ui_text_wrap(c, warn, 18, TR(LOG_MIXED), UI_FONT_LABEL,
+                                 UI_DANGER);
         } else if (s.an.long_rows > 0) {
             /* Those rows lost every cell after the overflow, and a lost cell
              * looks exactly like a blank one further down. */
             snprintf(line, sizeof(line), TR(LOG_TOO_LONG),
                      s.an.long_rows);
-            gfx_text(c, IM_LEFT.x + 16, y, line, UI_FONT_LABEL, UI_DANGER, 1);
+            lines = ui_text_wrap(c, warn, 18, line, UI_FONT_LABEL,
+                                 UI_DANGER);
         } else if (s.an.ragged_rows > 0) {
-            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_ROWS_DIFFER),
-                     UI_FONT_LABEL, UI_DANGER, 1);
+            lines = ui_text_wrap(c, warn, 18, TR(LOG_ROWS_DIFFER),
+                                 UI_FONT_LABEL, UI_DANGER);
         } else if (!s.an.convention_confident) {
-            gfx_text(c, IM_LEFT.x + 16, y, TR(LOG_UNSETTLED),
-                     UI_FONT_LABEL, UI_WARN, 1);
-        } else {
-            warned = false;
+            lines = ui_text_wrap(c, warn, 18, TR(LOG_UNSETTLED),
+                                 UI_FONT_LABEL, UI_WARN);
         }
         if (s.an.cut_row) {
-            /* Independent of the line above: the row left out has no other
-             * place on screen.  It takes the next line when one is shown. */
-            gfx_text(c, IM_LEFT.x + 16, warned ? y + 18 : y, TR(LOG_LAST_CUT),
-                     UI_FONT_LABEL, UI_WARN, 1);
+            /* Independent of the lines above: the row left out has no other
+             * place on screen.  It follows them when they are shown. */
+            gfx_rect_t cut = warn;
+            cut.y = (int16_t)(warn.y + 18 * lines);
+            (void)ui_text_wrap(c, cut, 18, TR(LOG_LAST_CUT), UI_FONT_LABEL,
+                               UI_WARN);
         }
 
         /* The override controls for the two detections above. */
-        int hy = IM_LEFT.y + IM_LEFT.h - 50;
-        ui_rule(c, IM_LEFT.x + 16, hy - 10, IM_LEFT.w - 32, UI_EDGE);
+        int hy = IM_LEFT.y + IM_LEFT.h - 44;
+        ui_rule(c, IM_LEFT.x + 16, hy - 6, IM_LEFT.w - 32, UI_EDGE);
         gfx_text(c, IM_LEFT.x + 16, hy, TR(LOG_HINT_NUM),
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
         gfx_text(c, IM_LEFT.x + 16, hy + 18, TR(LOG_HINT_SEP),

@@ -79,7 +79,7 @@ Inline, in paragraphs, list items, table cells and headings:
 | Inline | Syntax |
 |---|---|
 | Bold | `**text**` |
-| Code | `` `text` `` (single backticks; nothing inside is formatted) |
+| Code | `` `text` `` (single backticks; nothing inside is formatted, and every space is kept) |
 | Link | `[text](target)` |
 | Escape | `\` before one of ``\ ` * _ [ ] ( ) # | ! < > -`` |
 

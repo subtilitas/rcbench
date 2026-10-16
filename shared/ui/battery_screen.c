@@ -31,6 +31,18 @@
 #define PLOT_W  (LCARD_W - 36)
 #define MEAN_Y  200
 #define REACH   96             /* pixels for the full divergence scale */
+
+/* The right card, top down: the verdict box, its reason in up to two
+ * wrapped lines, the readings and the note.  Text in it is 32 cells of the
+ * label face wide. */
+#define VERDICT_Y 20
+#define WHY_Y     (VERDICT_Y + 66)
+#define WRAP_H    18
+#define RULE1_Y   (WHY_Y + 2 * WRAP_H + 10)
+#define ROW_Y     (RULE1_Y + 16)
+#define ROW_PITCH 30
+#define RULE2_Y   (ROW_Y + 6 * ROW_PITCH + 2)
+#define NOTE_Y    (RULE2_Y + 12)
 /*
  * The scale floor, in millivolts at full deflection.
  *
@@ -212,6 +224,49 @@ static void draw_cells(gfx_canvas_t *c)
     }
 }
 
+/* The bytes of the next line of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start. */
+static size_t line_len(const char *at, int cells)
+{
+    if (gfx_text_cells(at) <= cells) {
+        return strlen(at);
+    }
+    const size_t len = gfx_text_prefix(at, cells);
+    size_t cut = len;
+    while (cut > 0u && at[cut] != ' ') {
+        --cut;
+    }
+    return (cut > 0u) ? cut : len;
+}
+
+/*
+ * @p text in lines of the label face as wide as @p box, broken after a
+ * space, from the box's top down by WRAP_H, aligned in the box by @p align.
+ * Returns the y under the last line.
+ */
+static int wrap_in(gfx_canvas_t *c, gfx_rect_t box, const char *text,
+                   gfx_color_t ink, gfx_align_t align)
+{
+    const int cells = box.w / 8;
+    int y = box.y;
+    const char *at = text;
+    while (*at != '\0') {
+        char line[96];
+        const size_t len = line_len(at, cells);
+        const size_t n = (len < sizeof(line)) ? len : sizeof(line) - 1u;
+        memcpy(line, at, n);
+        line[n] = '\0';
+        gfx_text_in(c, (gfx_rect_t){ box.x, (int16_t)y, box.w, 16 }, line,
+                    UI_FONT_LABEL, ink, 1, align);
+        y += WRAP_H;
+        at += len;
+        while (*at == ' ') {
+            ++at;
+        }
+    }
+    return y;
+}
+
 static void row(gfx_canvas_t *c, int y, const char *k, const char *v,
                 gfx_color_t ink)
 {
@@ -244,14 +299,13 @@ static void draw_verdict(gfx_canvas_t *c)
         tone = ui_theme_color(UI_C_OK);
     }
 
-    gfx_fill_round_rect(c, x, 56, w, 56, UI_R_CARD,
+    gfx_fill_round_rect(c, x, VERDICT_Y, w, 56, UI_R_CARD,
                         gfx_lerp(ui_theme_color(UI_C_PANEL), tone, 40));
-    gfx_draw_round_rect(c, x, 56, w, 56, UI_R_CARD, tone);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, 74, (int16_t)w, 20 },
+    gfx_draw_round_rect(c, x, VERDICT_Y, w, 56, UI_R_CARD, tone);
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, VERDICT_Y + 18, (int16_t)w, 20 },
                 word, UI_FONT_HEAD, tone, 1, GFX_ALIGN_CENTER);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x, 120, (int16_t)w, 16 },
-                why, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
-                GFX_ALIGN_CENTER);
+    (void)wrap_in(c, (gfx_rect_t){ (int16_t)x, WHY_Y, (int16_t)w, 0 }, why,
+                  ui_theme_color(UI_C_TEXT_DIM), GFX_ALIGN_CENTER);
 }
 
 static void draw_right(gfx_canvas_t *c)
@@ -260,7 +314,7 @@ static void draw_right(gfx_canvas_t *c)
 
     const int x = RCARD_X + 14;
     const int w = RCARD_W - 28;
-    gfx_hline(c, x, 152, w, ui_theme_color(UI_C_EDGE));
+    gfx_hline(c, x, RULE1_Y, w, ui_theme_color(UI_C_EDGE));
 
     char buf[32];
     const gfx_color_t ink = ui_theme_color(UI_C_TEXT);
@@ -270,7 +324,7 @@ static void draw_right(gfx_canvas_t *c)
                 TX_BAT_CELLS, TX_BAT_PACK, TX_BAT_MEAN, TX_BAT_SPREAD,
                 TX_BAT_PACK_IR, TX_BAT_USED,
             };
-            row(c, 168 + i * 30, ui_tr(k[i]), "---",
+            row(c, ROW_Y + i * ROW_PITCH, ui_tr(k[i]), "---",
                 ui_theme_color(UI_C_TEXT_FAINT));
         }
         return;
@@ -285,29 +339,32 @@ static void draw_right(gfx_canvas_t *c)
     const float spread = battery_screen_spread_mv();
 
     snprintf(buf, sizeof(buf), "%dS", s.b.cells & 0xFF);
-    row(c, 168, TR(BAT_CELLS), buf, ink);
+    row(c, ROW_Y, TR(BAT_CELLS), buf, ink);
     snprintf(buf, sizeof(buf), "%.2f V", (double)pack);
-    row(c, 198, TR(BAT_PACK), buf, ink);
+    row(c, ROW_Y + 1 * ROW_PITCH, TR(BAT_PACK), buf, ink);
     snprintf(buf, sizeof(buf), "%.3f V", (double)mean);
-    row(c, 228, TR(BAT_MEAN), buf, ink);
+    row(c, ROW_Y + 2 * ROW_PITCH, TR(BAT_MEAN), buf, ink);
     snprintf(buf, sizeof(buf), "%d mV", (int)(spread + 0.5f));
-    row(c, 258, TR(BAT_SPREAD), buf,
+    row(c, ROW_Y + 3 * ROW_PITCH, TR(BAT_SPREAD), buf,
         (spread >= SPREAD_BAD_MV)   ? ui_theme_color(UI_C_DANGER)
       : (spread >= SPREAD_WATCH_MV) ? ui_theme_color(UI_C_WARN)
                                     : ui_theme_color(UI_C_OK));
     snprintf(buf, sizeof(buf), "%.1f mOhm", (double)ir);
-    row(c, 288, TR(BAT_PACK_IR), buf, ink);
+    row(c, ROW_Y + 4 * ROW_PITCH, TR(BAT_PACK_IR), buf, ink);
     snprintf(buf, sizeof(buf), TR(BAT_USED_OF),
              (int)s.b.drawn_mah, (int)s.b.capacity_mah);
-    row(c, 318, TR(BAT_USED), buf, ink);
+    row(c, ROW_Y + 5 * ROW_PITCH, TR(BAT_USED), buf, ink);
 
-    gfx_hline(c, x, 350, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, 362, TR(BAT_NOTE_1), UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, 380, TR(BAT_NOTE_2), UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, 398, TR(BAT_NOTE_3), UI_FONT_LABEL,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_hline(c, x, RULE2_Y, w, ui_theme_color(UI_C_EDGE));
+    /* The note is two sentences, the second given in two parts; each
+     * sentence wraps to the card. */
+    char rest[128];
+    snprintf(rest, sizeof(rest), "%s %s", TR(BAT_NOTE_2), TR(BAT_NOTE_3));
+    const gfx_rect_t note = { (int16_t)x, NOTE_Y, (int16_t)w, 0 };
+    const int y = wrap_in(c, note, TR(BAT_NOTE_1),
+                          ui_theme_color(UI_C_TEXT_FAINT), GFX_ALIGN_LEFT);
+    (void)wrap_in(c, (gfx_rect_t){ note.x, (int16_t)y, note.w, 0 }, rest,
+                  ui_theme_color(UI_C_TEXT_FAINT), GFX_ALIGN_LEFT);
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
