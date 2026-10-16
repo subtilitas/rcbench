@@ -58,6 +58,12 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
     return g;
 }
 
+bool safety_gate_arm_now(bool gate_arm, uint16_t quiet_mask,
+                         bool update_holds)
+{
+    return gate_arm && quiet_mask == 0u && !update_holds;
+}
+
 uint8_t safety_gate_control_write(uint16_t *control, uint8_t off, uint8_t n,
                                   const uint16_t *in,
                                   const heartbeat_mon_t *beat,

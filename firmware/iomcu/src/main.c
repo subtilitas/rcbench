@@ -34,6 +34,7 @@
 #include "link_dev.h"
 #include "link_pages.h"
 #include "dshot.h"
+#include "flash_gate.h"
 #include "out_bind.h"
 #include "rcbench_version.h"
 #include "out_stage.h"
@@ -1965,18 +1966,16 @@ static void outputs_off(void)
 }
 
 /*
- * Whether flash may not be written now, for the store and for the firmware
- * update alike.  The bank driving: a window stops this core and steps no
- * output.  The supply asked on or perhaps on: its UART replies would overrun
- * the 8-byte FIFO in a 19 ms window, and an OFF asked over the link would
- * wait for it.  A KST session: a flash write stalls the pass that steps it.
+ * Whether flash may not be written now: flash_gate_busy(), host-tested,
+ * with this end's four inputs.  A function of its own because
+ * update_hw_init() takes one.  The PD mini is asked only while it is open.
  */
 static bool flash_busy(void)
 {
-    return outputs_driving(&s_outputs)
-           || s_supply.regs[LINK_SP_OUTPUT] != 0u
-           || (s_pd_open && pdmini_may_be_on(&s_pd))
-           || kst_port_state(&s_kst) != LINK_KST_PWM;
+    return flash_gate_busy(outputs_driving(&s_outputs),
+                           s_supply.regs[LINK_SP_OUTPUT] != 0u,
+                           s_pd_open && pdmini_may_be_on(&s_pd),
+                           kst_port_state(&s_kst) != LINK_KST_PWM);
 }
 
 int main(void)
@@ -2325,14 +2324,12 @@ int main(void)
          * not refreshed here for the same reason: a channel is alive because
          * the host wrote it.
          */
-        /* Not while a programming port is out of PWM: programming and an
-         * armed bank are exclusive at this end too, and the port takes no
-         * ENTER while the bank is armed. */
-        /* Nor while a firmware update runs or its image waits for BUY: the
-         * control page refuses the ARM, and this holds the bank down for
-         * an ARM written before the session began. */
-        const bool arm_now = gate.arm && kst_port_quiet_mask(&s_kst) == 0u
-                             && !update_hw_holds_arm();
+        /* safety_gate_arm_now() is the rule, host-tested: the gate's arm,
+         * held down by a programming port out of PWM and by a firmware
+         * update. */
+        const bool arm_now = safety_gate_arm_now(gate.arm,
+                                                 kst_port_quiet_mask(&s_kst),
+                                                 update_hw_holds_arm());
         /* Only the roles ARM names: an arm for the throttle leaves the
          * servos and the programming ports without a pulse, and an arm for
          * the surfaces leaves the motors without one. */
