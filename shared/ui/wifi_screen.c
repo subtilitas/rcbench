@@ -487,6 +487,21 @@ static int para(gfx_canvas_t *c, int y, const char *t, gfx_color_t col)
                                  20, t, UI_FONT_LABEL, col);
 }
 
+/* What the page is for: one sentence, given in two parts, wrapped once. */
+static void jobs_text(char *out, size_t n)
+{
+    snprintf(out, n, "%s %s", TR(WF_JOBS_1), TR(WF_JOBS_2));
+}
+
+int wifi_screen_jobs_lines(void)
+{
+    char jobs[128];
+
+    jobs_text(jobs, sizeof(jobs));
+    return ui_text_wrap(NULL, gfx_rect_make(RX + 16, 0, RW - 32, 18), 20,
+                        jobs, UI_FONT_LABEL, UI_TEXT);
+}
+
 static const char *why_text(void)
 {
     switch (s.v.off) {
@@ -532,8 +547,12 @@ static void draw_main(gfx_canvas_t *c)
 
     ui_card(c, gfx_rect_make(RX, 16, RW, 400), UI_PANEL);
     int y = 32;
-    y = para(c, y, TR(WF_JOBS_1), UI_TEXT);
-    y = para(c, y, TR(WF_JOBS_2), UI_TEXT) + 16;
+    {
+        char jobs[128];
+
+        jobs_text(jobs, sizeof(jobs));
+        y = para(c, y, jobs, UI_TEXT) + 16;
+    }
     if (here) {
         /* Without Wi-Fi set up the kept network was never read. */
         char line[80];
