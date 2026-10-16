@@ -536,6 +536,20 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
+    # The bus fault's other two verdicts and its other four controller
+    # states, so every meaning and check is measured where it wraps.
+    "busfault-lossy":   (None, "busfault", "dark"),
+    "busfault-dropped": (None, "busfault", "dark"),
+    "busfault-lost-rejoin":  (None, "busfault", "dark"),
+    "busfault-lost-stopped": (None, "busfault", "dark"),
+    "busfault-lost-running": (None, "busfault", "dark"),
+    "busfault-lost-unknown": (None, "busfault", "dark"),
+    # BATTERY's two other verdicts, whose reasons wrap in the right card.
+    "battery-healthy":  (None, "battery", "dark"),
+    "battery-replace":  (None, "battery", "dark"),
+    # SUPPLY's MODE card after either trip, its line wrapped in the card.
+    "supply-trip-i":    (None, "supply", "dark"),
+    "supply-trip-v":    (None, "supply", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

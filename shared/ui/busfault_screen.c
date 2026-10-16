@@ -16,21 +16,35 @@
 #define W 800
 #define H 480
 
-/* The red bar across the top, and the verdict under it. */
+/* The red bar across the top, and the verdict under it across the whole
+ * width: 47 cells of the heading face. */
 #define BAR_H     56
 #define VERDICT_Y (BAR_H + 16)
-#define MEANING_Y (VERDICT_Y + 34)
 
-/* The two columns: what to do on the left, what was measured on the right. */
+/* The two columns under the verdict: what it means and what to do on the
+ * left, what was measured on the right.  The right column is 24 cells of
+ * the label face, the left 67, and its text wraps. */
+#define COLS_Y    (VERDICT_Y + 38)
 #define COL_X     24
-#define COL_W     470
-#define NUM_X     (COL_X + COL_W + 18)
-#define NUM_W     (W - NUM_X - 24)
+#define NUM_W     192
+#define NUM_X     (W - 24 - NUM_W)
+#define COL_W     (NUM_X - 18 - COL_X)
+#define COL_CELLS (COL_W / 8)
 
-#define HEAD_Y    150
-#define LIST_Y    (HEAD_Y + 26)
+/* A wrapped line's pitch, and the right column's line, heading and
+ * section steps. */
+#define WRAP_PITCH 18
+#define NUM_PITCH  18
+#define NUM_HEAD   20
+#define NUM_GAP    26
+
+/* The meaning takes up to two lines from COLS_Y. */
+#define MEANING_LINES 2
+#define HEAD_Y    (COLS_Y + MEANING_LINES * WRAP_PITCH + 8)
+#define LIST_Y    (HEAD_Y + 24)
 #define LIST_PITCH 27
 #define LIST_MAX  5
+#define LIST_CELLS (COL_CELLS - 2)
 
 /* What acknowledging leaves behind, under the list. */
 #define NOTE_Y    322
@@ -295,6 +309,46 @@ static void tick(float dt_s)
 
 /* ---------------------------------------------------------------- drawing */
 
+/* The bytes of the next line of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start. */
+static size_t line_len(const char *at, int cells)
+{
+    if (gfx_text_cells(at) <= cells) {
+        return strlen(at);
+    }
+    const size_t len = gfx_text_prefix(at, cells);
+    size_t cut = len;
+    while (cut > 0u && at[cut] != ' ') {
+        --cut;
+    }
+    return (cut > 0u) ? cut : len;
+}
+
+/*
+ * @p text in lines of at most @p cells of the label face, broken after a
+ * space, from (x, y) down by WRAP_PITCH.  Returns the lines drawn.
+ */
+static int wrap_text(gfx_canvas_t *c, int x, int y, const char *text,
+                     int cells, gfx_color_t ink)
+{
+    int lines = 0;
+    const char *at = text;
+    while (*at != '\0') {
+        char buf[128];
+        size_t len = line_len(at, cells);
+        const size_t n = (len < sizeof(buf)) ? len : sizeof(buf) - 1u;
+        memcpy(buf, at, n);
+        buf[n] = '\0';
+        gfx_text(c, x, y + lines * WRAP_PITCH, buf, UI_FONT_LABEL, ink, 1);
+        ++lines;
+        at += len;
+        while (*at == ' ') {
+            ++at;
+        }
+    }
+    return lines;
+}
+
 /*
  * Danger red while it is waiting to be held, fading to the OK green it
  * settles on, and the same two-frame flash ARM gives as the command goes.
@@ -322,43 +376,43 @@ static void flash_advance(void)
  * there was no echo run, so there is nothing to count probes against. */
 static void draw_link_numbers(gfx_canvas_t *c)
 {
-    int y = VERDICT_Y;
+    int y = COLS_Y;
     char line[48];
 
     gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    y += 24;
+    y += NUM_HEAD;
 
     snprintf(line, sizeof(line), TR(BF_DOWN), (unsigned long)s.r.down_s);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_WARN), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_REQUESTS), (unsigned long)s.r.polls);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_NO_ANSWER),
              (unsigned long)s.r.timeouts);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.timeouts > 0 ? ui_theme_color(UI_C_WARN)
                               : ui_theme_color(UI_C_TEXT), 1);
-    y += 30;
+    y += NUM_GAP;
 
     gfx_text(c, NUM_X, y, "CONTROLLER", UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    y += 22;
+    y += NUM_HEAD;
     gfx_text(c, NUM_X, y, bus_word(s.r.bus), UI_FONT_LABEL,
              s.r.bus == BUSFAULT_BUS_RUNNING ? ui_theme_color(UI_C_OK)
                                              : ui_theme_color(UI_C_DANGER), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
              (unsigned long)s.r.tx_errors, (unsigned long)s.r.rx_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.tx_errors >= 128u ? ui_theme_color(UI_C_DANGER)
                                    : ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), "bus err %lu",
              (unsigned long)s.r.bus_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_REJOINS),
              (unsigned long)s.r.recoveries);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
@@ -368,50 +422,50 @@ static void draw_link_numbers(gfx_canvas_t *c)
 
 static void draw_numbers(gfx_canvas_t *c)
 {
-    int y = VERDICT_Y;
+    int y = COLS_Y;
     gfx_text(c, NUM_X, y, TR(BF_MEASURED), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    y += 24;
+    y += NUM_HEAD;
 
     char line[48];
     snprintf(line, sizeof(line), TR(BF_SENT), (unsigned long)s.r.sent);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_RETURNED), (unsigned long)s.r.echoed);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.echoed > 0 ? ui_theme_color(UI_C_OK)
                             : ui_theme_color(UI_C_DANGER), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_ALTERED), (unsigned long)s.r.corrupt);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.corrupt > 0 ? ui_theme_color(UI_C_DANGER)
                              : ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), TR(BF_LOST), (unsigned long)s.r.lost);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
              s.r.lost > 0 ? ui_theme_color(UI_C_WARN)
                           : ui_theme_color(UI_C_TEXT), 1);
-    y += 30;
+    y += NUM_GAP;
 
     gfx_text(c, NUM_X, y, TR(BF_THIS_PANEL), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    y += 22;
+    y += NUM_HEAD;
     snprintf(line, sizeof(line), "tx err %lu  rx err %lu",
              (unsigned long)s.r.tx_errors, (unsigned long)s.r.rx_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), "bus err %lu", (unsigned long)s.r.bus_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     if (s.r.bus_off) {
         gfx_text(c, NUM_X, y, "BUS OFF", UI_FONT_LABEL,
                  ui_theme_color(UI_C_DANGER), 1);
     }
-    y += 30;
+    y += NUM_GAP;
 
     gfx_text(c, NUM_X, y, TR(BF_COPROCESSOR), UI_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
-    y += 22;
+    y += NUM_HEAD;
     if (!s.r.have_remote) {
         /*
          * Not an error line of its own: a far end that cannot be asked is
@@ -426,14 +480,14 @@ static void draw_numbers(gfx_canvas_t *c)
              UI_FONT_LABEL,
              s.r.remote_up ? ui_theme_color(UI_C_OK)
                            : ui_theme_color(UI_C_DANGER), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), "tx err %u  rx err %u",
              (unsigned)s.r.remote_tx_errors, (unsigned)s.r.remote_rx_errors);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     snprintf(line, sizeof(line), "flags 0x%02X", (unsigned)s.r.remote_flags);
     gfx_text(c, NUM_X, y, line, UI_FONT_LABEL, ui_theme_color(UI_C_TEXT), 1);
-    y += 20;
+    y += NUM_PITCH;
     if (s.r.remote_overflows > 0u) {
         snprintf(line, sizeof(line), TR(BF_DROPPED), s.r.remote_overflows);
         gfx_text(c, NUM_X, y, line, UI_FONT_LABEL,
@@ -461,9 +515,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
         gfx_text(c, COL_X, VERDICT_Y,
                  lost ? bus_text(s.r.bus) : busfault_verdict_text(s.r.verdict),
                  UI_FONT_HEAD, ui_theme_color(UI_C_TEXT), 1);
-        gfx_text(c, COL_X, MEANING_Y,
-                 lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
-                 UI_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+        (void)wrap_text(c, COL_X, COLS_Y,
+                        lost ? bus_meaning(s.r.bus) : meaning_of(s.r.verdict),
+                        COL_CELLS, ui_theme_color(UI_C_TEXT_DIM));
 
         gfx_text(c, COL_X, HEAD_Y,
                  lost ? TR(BF_HEAD_MEANS) : TR(BF_HEAD_CHECK),
@@ -472,18 +526,21 @@ static void render(gfx_canvas_t *c, int buffer_index)
         const char *checks[LIST_MAX] = { 0 };
         const int n = lost ? bus_checks(s.r.bus, checks)
                            : checks_for(s.r.verdict, checks);
+        int y = LIST_Y;
         for (int i = 0; i < n; ++i) {
             /* A continuation line is indented and carries no bullet: it is
-             * the same instruction, not the next one. */
+             * the same instruction, not the next one.  An item wider than
+             * the column wraps under itself at WRAP_PITCH. */
             const bool cont = (checks[i][0] == ' ');
             if (!cont) {
-                gfx_fill_rect(c, COL_X + 2, LIST_Y + i * LIST_PITCH + 6, 5, 5,
+                gfx_fill_rect(c, COL_X + 2, y + 6, 5, 5,
                               ui_theme_color(UI_C_ACCENT));
             }
-            gfx_text(c, COL_X + 16, LIST_Y + i * LIST_PITCH, checks[i],
-                     UI_FONT_LABEL,
-                     cont ? ui_theme_color(UI_C_TEXT_DIM)
-                          : ui_theme_color(UI_C_TEXT), 1);
+            const int lines = wrap_text(c, COL_X + 16, y, checks[i],
+                                        LIST_CELLS,
+                                        cont ? ui_theme_color(UI_C_TEXT_DIM)
+                                             : ui_theme_color(UI_C_TEXT));
+            y += LIST_PITCH + (lines - 1) * WRAP_PITCH;
         }
 
         /*

@@ -19,7 +19,7 @@
 
 /* Mirrored from balance_screen.c. */
 #define PAD      6
-#define LCARD_W  494
+#define LCARD_W  450
 #define RCARD_X  (PAD + LCARD_W + 8)
 #define RCARD_W  (W - RCARD_X - PAD)
 #define BODY_Y   44
@@ -117,7 +117,7 @@ TEST_CASE(the_readings_carry_the_modelled_mark)
         fresh();
         CHECK_STR_EQ(balance_screen_model_mark(), TR(BAL_MODELLED));
         CHECK_STR_EQ(balance_screen_model_note(), TR(BAL_MODEL_NOTE));
-        CHECK_STR_EQ(TR(BAL_MODELLED), lang ? "SIMULIERT" : "MODELLED");
+        CHECK_STR_EQ(TR(BAL_MODELLED), lang ? "SIMULIERT" : "SIMULATED");
         scr->render(&cv, 0);
         CHECK_EQ(fb[(MARK_Y + 1) * W + MARK_X + 60],
                  ui_theme_color(UI_C_PANEL_SUNK));
