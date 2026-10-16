@@ -188,8 +188,9 @@ static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
                     for (int sx = 0; sx < scale; ++sx) {
                         const int px = x + col * scale + sx;
                         const int py = y + row * scale + sy;
-                        gfx_pixel(c, px, py,
-                                  gfx_lerp(gfx_pixel_get(c, px, py), fg, cov));
+                        gfx_pixel_inl(c, px, py,
+                                      gfx_lerp(gfx_pixel_get_inl(c, px, py),
+                                               fg, cov));
                     }
                 }
                 ++col;
@@ -204,7 +205,7 @@ static int draw_glyph(gfx_canvas_t *c, int x, int y, uint32_t cp,
             }
             int run = col - start;
             if (scale == 1) {
-                gfx_hline(c, x + start, y + row, run, fg);
+                gfx_hline_inl(c, x + start, y + row, run, fg);
             } else {
                 gfx_fill_rect(c, x + start * scale, y + row * scale,
                               run * scale, scale, fg);
@@ -299,7 +300,7 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
     gfx_trace_text(c, x, y, tw, th, s, &box);
 #endif
     gfx_rect_t saved = c->clip;
-    if (gfx_clip_intersect(c, box)) {
+    if (gfx_clip_intersect_inl(c, box)) {
         text_run(c, x, y, s, font, fg, scale);
     }
     c->clip = saved;
