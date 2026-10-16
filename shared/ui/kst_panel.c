@@ -3205,9 +3205,12 @@ static void plan_notes(notes_plan_t *p)
  * that takes fewer.  Notes that need more rows than there are above the
  * message take pages: the standing notes are on the first, whole, the
  * other notes page after them, the area's last notes row counts the pages,
- * and a tap on the notes shows the next.  The message is shown whole
- * unless the standing notes alone fill the rows above it: its last lines
- * that would leave the area are left out.
+ * and a tap on the notes shows the next.  Where the standing notes and the
+ * message leave no row for the count, the other notes wait for the message
+ * to go, and the standing notes rise into the gap above their place: the
+ * tallest pair and the tallest message take 9 rows, which fit under the
+ * SERVO tab's last row.  A message line that would still leave the area
+ * is not drawn.
  */
 static void layout_notes(notes_plan_t *p)
 {

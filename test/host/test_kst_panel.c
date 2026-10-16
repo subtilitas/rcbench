@@ -6136,6 +6136,78 @@ static int message_rows(const kst_prog_msg_t *m)
     return rows;
 }
 
+/* The rows of a journal line with a port or pin number of 3 digits. */
+static int journal_rows(ui_text_id_t id)
+{
+    char line[KST_PANEL_LINE];
+
+    snprintf(line, sizeof(line), ui_tr(id), 255u);
+    return kst_panel_text_rows(line);
+}
+
+static int max_int(int a, int b)
+{
+    return a > b ? a : b;
+}
+
+/* The standing lines take up to two rows each and every message up to
+ * three lines: the tallest pair and the tallest message together fit
+ * between the SERVO tab's last row and the area's foot, so neither is cut
+ * and no note reaches into a value row. */
+TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
+{
+    static const unsigned args[] = { 0u, 1u, 2u, 9u, 10u, 99u, 255u, 256u,
+                                     0x0101u, 0x0F0Fu, 0xFFFFu };
+    static const uint8_t regs[] = { 0x00u, 0x10u, 0xFFu };
+
+    fresh();
+    for (int lang = 0; lang < 2; ++lang) {
+        const gfx_rect_t last = val(PG_SERVO, 4, 0);
+        const int fit = (AREA.y + AREA.h - 6 - (last.y + last.h)) / 18;
+        int held = 0;
+        int msg = 0;
+
+        ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
+        held = max_int(held, kst_panel_text_rows(TR(KP_M_STOPPED)));
+        held = max_int(held, kst_panel_text_rows(TR(KP_WRITING)));
+        held = max_int(held, kst_panel_text_rows(TR(KP_JOURNAL_KEPT)));
+        held = max_int(held, max_int(journal_rows(TX_KP_M_JOURNAL_ASK),
+                                     journal_rows(TX_KP_M_JOURNAL_ASK_PIN))
+                             + max_int(kst_panel_text_rows(
+                                           TR(KP_M_JOURNAL_SAME)),
+                                       kst_panel_text_rows(
+                                           TR(KP_M_JOURNAL_DONE))));
+        held = max_int(held, kst_panel_text_rows(TR(KP_M_JOURNAL))
+                             + max_int(journal_rows(TX_KP_M_JOURNAL_2),
+                                       journal_rows(TX_KP_M_JOURNAL_2_PIN)));
+        held = max_int(held,
+                       kst_panel_text_rows(TR(KP_M_JOURNAL_OTHER))
+                       + max_int(journal_rows(TX_KP_M_JOURNAL_OTHER_2),
+                                 journal_rows(TX_KP_M_JOURNAL_OTHER_2_PIN)));
+        held = max_int(held, kst_panel_text_rows(TR(KP_S_LOCKED))
+                             + kst_panel_text_rows(TR(KP_S_LOCKED_2)));
+        held = max_int(held, kst_panel_text_rows(TR(KP_DOUBT))
+                             + kst_panel_text_rows(TR(KP_M_NEED_READ)));
+        held = max_int(held, kst_panel_text_rows(TR(KP_M_READ_ONLY))
+                             + kst_panel_text_rows(TR(KP_M_READ_ONLY_2)));
+        for (unsigned id = 1u; id < 256u; ++id) {
+            for (size_t a = 0; a < sizeof(args) / sizeof(args[0]); ++a) {
+                for (size_t r = 0; r < sizeof(regs); ++r) {
+                    const kst_prog_msg_t m = { .id = (uint8_t)id,
+                                               .reg = regs[r],
+                                               .arg = (uint16_t)args[a] };
+
+                    msg = max_int(msg, message_rows(&m));
+                }
+            }
+        }
+        CHECK(held > 0);
+        CHECK(msg > 0);
+        CHECK(held + msg <= fit);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 TEST_CASE(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page)
 {
     fresh();
@@ -6370,6 +6442,7 @@ int main(void)
     RUN(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe);
     RUN(notes_that_do_not_fit_take_pages_and_none_is_lost);
     RUN(standing_notes_are_on_the_first_page_whole);
+    RUN(every_message_fits_whole_beside_every_standing_pair);
     RUN(a_servo_in_doubt_keeps_its_standing_lines_on_the_first_page);
     RUN(the_notes_start_on_their_first_page_again);
     RUN(a_text_before_the_area_is_set_still_ends);
