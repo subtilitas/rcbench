@@ -2571,33 +2571,102 @@ TEST_CASE(the_bubble_never_covers_stop_and_fits_in_both_languages)
 
 /* The widest row of chips under an hour, MOTOR & ESC ARMED in SIM, starts
  * right of that screen's home tag in both languages. */
+/* The leftmost chip's x for @p st. */
+static int chips_left(const ui_bench_status_t *st)
+{
+    int left = W;
+    for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
+        gfx_rect_t r;
+        if (ui_band_chip_rect(st, (ui_band_chip_t)chip, &r) && r.x < left) {
+            left = r.x;
+        }
+    }
+    return left;
+}
+
+/*
+ * Every screen with the band and a home tag (all but the splash, the menu,
+ * the bus-fault screen and the panel's own update, as in ui_router.c), every
+ * row of chips the band can show, in each language: the row starts right of
+ * the tag.  The link down means SIM, no fault and the arm local; a clock of
+ * minutes, of hours, of 10 hours and of 99.  Two kinds of row are wider
+ * than the room right of FILES & UPDATE's tag, the widest, and are held to
+ * the x that docs/Screens.md states for them instead: ARMED with a FAULT
+ * code, and ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG, and in German
+ * SAFE with a FAULT code and a clock of 10 hours.
+ */
 TEST_CASE(the_widest_chip_row_clears_the_home_tag)
 {
-    ui_bench_status_t st;
-    memset(&st, 0, sizeof(st));
-    st.armed       = true;
-    st.armed_roles = UI_ARMED_MOTOR;
-    st.mode        = ui_band_mode(false);
-    const gfx_rect_t tag = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
-    /* A run of minutes, of hours and of 99 hours. */
-    const uint32_t runs[] = { 59u * 60u + 59u, 3600u,
+    const uint32_t runs[] = { 0u, 59u * 60u + 59u, 3600u,
+                              9u * 3600u + 59u * 60u + 59u, 10u * 3600u,
                               99u * 3600u + 59u * 60u + 59u };
-    for (int k = 0; k < 3; ++k) {
+    const uint8_t roles[] = { 0u, UI_ARMED_MOTOR, UI_ARMED_SERVO,
+                              UI_ARMED_MOTOR | UI_ARMED_SERVO };
+    int widest = 0;
+
+    for (int id = SCREEN_MOTOR; id < SCREEN_COUNT; ++id) {
+        if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE) {
+            continue;
+        }
+        const gfx_rect_t tag = ui_home_tag_rect(
+            ui_router_title((ui_screen_id_t)id));
+        const int end = tag.x + tag.w;
+        widest = end > widest ? end : widest;
         for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-            st.run_seconds = runs[k];
             ui_text_set_language((ui_lang_t)lang);
-            for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
-                 ++chip) {
-                gfx_rect_t r;
-                if (ui_band_chip_rect(&st, (ui_band_chip_t)chip, &r)
-                    && r.x < tag.x + tag.w) {
-                    T_FAIL("run %lu s, language %d, chip %d at x %d, the tag "
-                           "ends at %d", (unsigned long)runs[k], lang, chip, r.x,
-                           tag.x + tag.w);
+            for (int up = 0; up < 2; ++up) {
+                for (int armed = 0; armed < 2; ++armed) {
+                    for (int ro = 0; ro < 4; ++ro) {
+                        for (int fault = 0; fault < 1 + up; ++fault) {
+                            for (size_t k = 0; k < sizeof(runs) / sizeof(runs[0]);
+                                 ++k) {
+                                if (!armed && ro > 0) {
+                                    continue;
+                                }
+                                ui_bench_status_t st;
+                                memset(&st, 0, sizeof(st));
+                                st.link_up     = up != 0;
+                                st.mode        = ui_band_mode(up != 0);
+                                st.armed       = armed != 0;
+                                st.armed_roles = roles[ro];
+                                st.faults      = fault ? 0x7Fu : 0u;
+                                st.run_seconds = runs[k];
+                                const int left = chips_left(&st);
+                                const bool named_role =
+                                    roles[ro] == UI_ARMED_MOTOR
+                                    || roles[ro] == UI_ARMED_SERVO;
+                                int floor = end;
+                                if (armed && fault) {
+                                    floor = 216;
+                                } else if (armed && !up && named_role
+                                           && lang == UI_LANG_DE) {
+                                    floor = 234;
+                                } else if (!armed && fault
+                                           && lang == UI_LANG_DE
+                                           && runs[k] >= 10u * 3600u) {
+                                    floor = 272;
+                                }
+                                floor = floor < end ? floor : end;
+                                if (left < floor) {
+                                    T_FAIL("screen %d, language %d, link %d, "
+                                           "armed %d roles %u, faults %d, "
+                                           "run %lu s: chips from x %d, the "
+                                           "tag ends at %d", id, lang, up,
+                                           armed, (unsigned)roles[ro], fault,
+                                           (unsigned long)runs[k], left, end);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
+    /* FILES & UPDATE's tag is the widest, and the band's tight layout
+     * starts where it ends. */
+    CHECK_EQ(widest, 274);
+    CHECK_EQ(widest, ui_home_tag_rect(ui_router_title(SCREEN_WIFI)).x
+                     + ui_home_tag_rect(ui_router_title(SCREEN_WIFI)).w);
     ui_text_set_language(UI_LANG_EN);
 }
 
