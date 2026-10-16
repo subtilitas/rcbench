@@ -1473,7 +1473,7 @@ static void tap(const ui_screen_t *scr, int x, int y)
 #define DD_Y   44
 #define DD_H   54
 #define POP_ROW 46
-#define CLR_Y  (DD_Y + DD_H + 92)
+#define CLR_Y  (DD_Y + DD_H + 100)
 #define CLR_H  48
 #define GRID_X 288
 #define GRID_Y 16
@@ -1499,7 +1499,7 @@ static void pick(const char *name)
 
 static const char *label(uint8_t gpio)
 {
-    static char buf[4][24];
+    static char buf[4][32];
     static unsigned at;
     char *b = buf[at++ % 4u];
     (void)outputs_screen_cell(idx(gpio), b, sizeof(buf[0]));
@@ -1587,7 +1587,7 @@ TEST_CASE(a_failed_write_neither_blanks_the_screen_nor_lets_a_tap_write)
         check_bench_shown();
         CHECK_STR_EQ(label(4), "PAD 6");
         CHECK_EQ(outputs_screen_cell(idx(4), NULL, 0), OUTPUTS_CELL_FREE);
-        CHECK_STR_EQ(reason(), "BINDING NOT READ - NO EDITS");
+        CHECK_STR_EQ(reason(), "ASSIGNMENT NOT READ. EDITING LOCKED.");
 
         /* A tap now: no call of the seam, nothing sent. */
         const unsigned sent = bus.exchanges;
@@ -1696,7 +1696,7 @@ TEST_CASE(pages_no_binding_describes_are_shown_as_such_and_not_overwritten)
     panel_read();
     CHECK_EQ(outputs_screen_read_state(), BIND_READ_ODD);
     CHECK(!outputs_screen_editable());
-    CHECK_STR_EQ(reason(), "PAGES HOLD NO VALID BINDING");
+    CHECK_STR_EQ(reason(), "NO VALID ASSIGNMENT IN THE PAGES");
     /* The binding last read stays on the screen. */
     check_bench_shown();
 
@@ -1842,7 +1842,7 @@ TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
     run_ms(1000u);
     panel_poll();
     CHECK_EQ(outputs_screen_read_state(), BIND_READ_ODD);
-    CHECK_STR_EQ(reason(), "PAGES HOLD NO VALID BINDING");
+    CHECK_STR_EQ(reason(), "NO VALID ASSIGNMENT IN THE PAGES");
     /* The last binding read, GP0 included. */
     CHECK_EQ(outbind_chosen_total(outputs_screen_binding()), 4);
     CHECK_EQ(outputs_screen_cell(idx(0), NULL, 0), OUTPUTS_CELL_TICKED);
