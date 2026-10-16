@@ -135,6 +135,8 @@ TRACKED = [
     "shared/outputs/prog_port.c",
     "shared/bench/kst_link.c",
     "shared/bench/kst_prog.c",
+    "shared/bench/kst_prog_card.c",
+    "shared/bench/kst_prog_file.c",
     "shared/bench/kst_card.c",
     "shared/bench/prog_link.c",
     "shared/can/can_timing.c",
