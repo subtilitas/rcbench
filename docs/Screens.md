@@ -54,6 +54,19 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
+Current limitation: the chips stand from STOP to the left. A row that would
+reach x 274, where the widest home tag (FILES & UPDATE) ends, starts each
+label 16 px into its chip instead of 24 px. Three rows are still wider and
+reach under the home tag of some screens. A tap there acts on the home tag,
+not on the chip:
+
+- ARMED with a FAULT code: down to x 216.
+- ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG, in German: down to x 234.
+- SAFE with a FAULT code and a run clock of 10 h or more, in German: x 272.
+
+The home tags end at x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
+(FILES & UPDATE) and at x 210 or less on the other screens.
+
 ### Chip help
 
 A tap on a chip of the band opens a box under the band that says what the
@@ -723,7 +736,7 @@ moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
 files. START TEST needs the bench in ARMED and a supply that answers; the line
 under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
-OUTSIDE THE LIMITS (a chosen step above the voltage cap in force, checked
+OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
 before any warning opens) or LAST REPORT STILL WRITING, and follows the
 bench and the settings as they change. A third line, across the card under
 both columns, says when no reading can pass STALL AT: `STALL AT 2.00 A
@@ -2019,7 +2032,7 @@ both said. In order:
 | `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > INTERFACES.` | the INA3221 stays off |
 | `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the coprocessor found SDA held low and clocks it free |
-| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `-- 0x44 answers` is added when the coprocessor's address scan found something where the part could be |
+| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the coprocessor's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
 | `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
 | `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
@@ -2421,7 +2434,7 @@ most, together.
 
 ![A check under way](img/updates-checking.png)
 
-The card shows the step (`Joining Workshop 2.4`, `Checking GitHub.`) and the
+The card shows the step (`Connecting to Workshop 2.4`, `Checking GitHub.`) and the
 seconds left (`26 s left`). The result stays on the card until the next
 check:
 
@@ -2437,7 +2450,7 @@ check:
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
 | `GitHub rejected the request: HTTP 404.` | An answer other than a redirect. |
 | `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
-| `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a log run opened.`, `...: STOP.` | The check ended for that. |
+| `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: FILES & UPDATE is using Wi-Fi.` | FILES & UPDATE opened. |
 | `Stopped: the coprocessor update has started.` | The coprocessor's update began. |
 | `Cancelled.` | CANCEL. |
@@ -2512,7 +2525,7 @@ nothing touches the flash.
 
 | Step | Shown while |
 | --- | --- |
-| `Joining Workshop 2.4` | the join and the address |
+| `Connecting to Workshop 2.4` | the join and the address |
 | `Reading SHA256SUMS.` | the first file |
 | `Downloading firmware.` | the image; the bar and `720896 of 1843200 bytes (39 %)` count it |
 | `Checking the SHA-256 checksum and firmware.` | the checks |

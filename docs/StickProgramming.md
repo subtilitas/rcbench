@@ -61,7 +61,7 @@ PROGRAMMER, then ESC STICK:
 The list has two levels.
 
 - **Makers.** One row a maker, alphabetical with case folded: its name, how
-  many of its models run of all it lists (`10 OF 82 RUN`), and the red
+  many of its models run of all it lists (`10 OF 82 CAN RUN`), and the red
   MANUAL tag where a model it lists has [manual steps](#manual-steps). A
   maker none of whose models runs is drawn dark. A tap opens its models.
 - **Models.** One row a model of that maker, by current, then the maximum

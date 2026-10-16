@@ -606,7 +606,7 @@ loaded; a line that names it shows its first 14 characters and `..`.
 ![A full card](img/servo-kst-card-full.png)
 
 A save the card ends after the 5 s is the file it made. With no other file
-operation running the line changes to `Servo values saved to the card:` and
+operation running the line changes to `Servo settings saved to the card:` and
 the name. It is the session's backup file if the servo still holds the
 saved values and no write followed.
 
@@ -864,7 +864,7 @@ across a power cycle of the bench.
 
 `Writing was interrupted. The settings may be incomplete.` stays until the
 servo is read, with the pin of the write below it: `Do not use the servo. Connect it to GP13 and tap READ ALL.` A record that holds no pin names the
-port instead: `Connect it on port 1 and READ ALL.` Every control but **CONNECT**, **READ
+port instead: `Do not use the servo. Connect it to port 1 and tap READ ALL.` Every control but **CONNECT**, **READ
 ALL**, **RESTORE**, **LEAVE** and, where the session's restore needs it,
 the write switch is off. The read compares the servo with the
 record:
@@ -892,7 +892,7 @@ servo of the write.
 The record belongs to one servo. A servo read on another port is not that
 servo, and neither is one with a register that holds neither the value of
 the image before the write nor the value the write was to leave: `The interrupted write affected a different servo.` `It was connected to GP13. Discard the record under RESTORE.` For a record that holds no pin the line names the
-port: `It was on port 1.` Nothing is restored, edited or written while that
+port: `It was connected to port 1. Discard the record under RESTORE.` Nothing is restored, edited or written while that
 stands, and **RESTORE** holds the discard entry only. **LEAVE** and a
 **CONNECT** of the write's servo bring the comparison above. One register
 is exempt: the low register of a field that lies in two registers and that
@@ -1069,7 +1069,7 @@ line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) 
 - The error code the card's file system gives for a write-protected card
   is not known. A code other than read-only file system, access denied
   and operation not permitted shows `Card write error.` in place of
-  `Card takes no file`.
+  `Cannot save: card write-protected, or KST is not a folder.`
 - The proposed names end at `KST999`. With that name taken the next free
   number is proposed, and the highest number is then not the latest file.
 - A page behind the first 64 files reads the directory once more per 64

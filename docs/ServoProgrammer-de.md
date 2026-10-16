@@ -951,7 +951,7 @@ Einschalten des Prüfstands.
 
 `Schreiben wurde unterbrochen. Die Einstellungen sind vielleicht unvollständig.` bleibt stehen,
 bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. An GP13 anschließen und ALLES AUSLESEN tippen.` Ein Vermerk ohne Pin nennt
-stattdessen den Port: `An Port 1 verbinden und ALLES AUSLESEN.` Jedes Bedienelement außer
+stattdessen den Port: `Benutze das Servo nicht. An Port 1 anschließen und ALLES AUSLESEN tippen.` Jedes Bedienelement außer
 **VERBINDEN**, **ALLES AUSLESEN**, **ZURÜCKSPIELEN**, **VERLASSEN** und, wo
 das Zurückspielen der Sitzung ihn braucht, dem Schreibschalter ist aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
@@ -1180,8 +1180,8 @@ Codes.
 - Der Fehlercode, den das Dateisystem der Karte bei einer
   schreibgeschützten Karte liefert, ist nicht bekannt. Ein anderer Code
   als schreibgeschütztes Dateisystem, Zugriff verweigert und Operation
-  nicht erlaubt zeigt `Schreibfehler der Karte.` statt
-  `Karte nimmt keine Datei`.
+  nicht erlaubt zeigt `Schreibfehler auf der Karte.` statt
+  `Speichern nicht möglich: Karte schreibgeschützt oder KST kein Ordner.`
 - Die Vorgabenamen enden bei `KST999`. Ist dieser Name vergeben, wird die
   nächste freie Nummer vorgeschlagen, und die höchste Nummer ist dann nicht
   die neueste Datei.

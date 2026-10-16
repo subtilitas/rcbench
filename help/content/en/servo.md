@@ -96,7 +96,7 @@ A finger on the dial, CENTRE, RELEASE, STOP, a switch to SAFE and leaving the sc
 
 ## The automatic test
 
-START TEST on the TEST page steps the servo through the supply voltages chosen there. At each step it measures the current at rest, moving and holding, times the travel, and finds the voltage at which the servo stops moving. START TEST is a 2 s hold. It needs the bench ARMED and a supply that answers; otherwise the line under it names the reason: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `A STEP IS OUTSIDE THE LIMITS` or `LAST REPORT STILL WRITING`.
+START TEST on the TEST page steps the servo through the supply voltages chosen there. At each step it measures the current at rest, moving and holding, times the travel, and finds the voltage at which the servo stops moving. START TEST is a 2 s hold. It needs the bench ARMED and a supply that answers; otherwise the line under it names the reason: `ARM FIRST`, `NO STEP CHOSEN`, `SUPPLY NOT ANSWERING`, `RANGE TOO SMALL`, `A STEP IS OUTSIDE THE CAPS` or `LAST REPORT STILL WRITING`.
 
 ![A test run](view:servo-run)
 

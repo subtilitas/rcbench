@@ -39,7 +39,7 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 |---|---|
 | `Version 0.20.0 is available.` | the newest release is newer than the running build; the hold appears |
 | `Up to date. Panel version: 0.19.0.` | the newest release is the running version or older |
-| `Join failed: ...`, `Connection to the home network lost.` | the join failed, as on Files and update |
+| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | the join failed, as on Files and update |
 | `No response within 30 s.` | the 30 s ran out |
 | `No connection to GitHub.` | the name lookup, the connection or the certificate check failed |
 | `GitHub rejected the request: HTTP 404.` | an answer other than a redirect |

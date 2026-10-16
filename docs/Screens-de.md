@@ -60,6 +60,19 @@ Band sind die oberen 48 px des Panels.
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
+Aktuelle Einschränkung: Die Chips stehen von STOP aus nach links. Eine
+Reihe, die x 274 erreichen würde, wo das breiteste Home-Tag (FILES & UPDATE)
+endet, beginnt jede Beschriftung 16 px statt 24 px im Chip. Drei Reihen sind
+trotzdem breiter und reichen unter das Home-Tag mancher Bildschirme. Ein
+Tipp dort wirkt auf das Home-Tag, nicht auf den Chip:
+
+- ARMED mit einem FEHLER-Code: bis x 216.
+- ARMED MOTOR oder ARMED SERVO mit KEINE VERBINDUNG: bis x 234.
+- SAFE mit einem FEHLER-Code und einer Laufzeituhr ab 10 h: x 272.
+
+Die Home-Tags enden bei x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
+(FILES & UPDATE) und auf den anderen Bildschirmen bei x 210 oder weniger.
+
 ### Hilfe zu den Chips
 
 Ein Tipp auf einen Chip des Bands öffnet unter dem Band einen Kasten, der
@@ -802,7 +815,7 @@ in ARMED und ein Netzteil, das antwortet; die Zeile darunter sagt ZUERST ARM,
 KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
 und WEG fallen auf PULS MITTE), STUFE ÜBER DEN OBERGRENZEN (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
-Warnung aufgeht) oder LETZTER BERICHT SCHREIBEN LÄUFT NOCH und folgt dem Prüfstand und
+Warnung aufgeht) oder LETZTER BERICHT SCHREIBT NOCH und folgt dem Prüfstand und
 den Einstellungen, wenn sie sich ändern. Eine dritte Zeile, quer über die
 Karte unter beiden Spalten, sagt, wenn kein Messwert BLOCKIERT AB
 überschreiten kann: `BLOCKIERT AB 2.00 A unerreichbar: Strombegrenzung
@@ -2216,7 +2229,7 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 | `INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
 | `INA3221-Einstellungen abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der INA3221 bleibt aus |
 | `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
-| `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `-- 0x44 antwortet` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
+| `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
 | `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
 | `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
 | `INA3221 CH1 bei 1.64 A übersteuert. Anzeige zeigt nur den Grenzwert.` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
@@ -2664,7 +2677,7 @@ Karte bis zur nächsten Suche:
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabelle unten). |
-| `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang an.`, `...: ein Log-Lauf begann.`, `...: STOP.` | Die Suche endete deshalb. |
+| `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
 | `Abgebrochen: FILES & UPDATE nutzt das WLAN.` | FILES & UPDATE wurde geöffnet. |
 | `Abgebrochen: Koprozessor-Update gestartet.` | Das Update des Koprozessors begann. |
 | `Abgebrochen.` | ABBRECHEN. |
@@ -3037,7 +3050,7 @@ auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
-Unter der Liste steht `N VON 8 SLOTS BELEGT`, gezählt über alle Protokolle:
+Unter der Liste steht `N VON 8 PLÄTZEN BELEGT`, gezählt über alle Protokolle:
 die Protokolle teilen sich die 8 Slots der OUTPUTS-Page. Darunter steht in
 Bernstein der Grund, warum keine Taste hinzukommen kann, in den Worten des
 Outputs-Bildschirms:

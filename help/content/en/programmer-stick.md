@@ -26,7 +26,7 @@ RUN opens nothing while one of these is missing, and the line beside RUN names t
 
 The list has two levels.
 
-- **Makers**: alphabetical, each with how many of its models run, `10 OF 82 RUN`. A maker none of whose models runs is drawn dark. A tap opens its models.
+- **Makers**: alphabetical, each with how many of its models run, `10 OF 82 CAN RUN`. A maker none of whose models runs is drawn dark. A tap opens its models.
 - **Models**: by current, then voltage, then name. A row shows the model, its current and voltage, its family, and what its profile is or why it does not run. BACK returns to the makers.
 
 ![Kontronik's models, tagged MANUAL](view:programmer-stick-hand-list)

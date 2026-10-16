@@ -39,7 +39,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 |---|---|
 | `Version 0.20.0 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
 | `Aktuell. Panel-Version: 0.19.0.` | das neueste Release ist die laufende Version oder älter |
-| `Verbinden scheiterte: ...`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
 | `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten |
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | eine andere Antwort als ein Redirect |

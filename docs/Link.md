@@ -1563,7 +1563,7 @@ panel forgets the count at each link-up and takes it again from the first
 STATUS read after it.
 
 MOTOR & ESC shows the count in its header strip, after the poll rate and the
-error count, while the link is up and the count is above 0: `Rejected link frames: 37`, in German `Abgelehnte Link-Frames: 37`. No other screen shows
+error count, while the link is up and the count is above 0: `Rejected link frames: 37`, in German `Abgelehnte Verbindungsframes: 37`. No other screen shows
 it. The bring-up log line `iomcu  frames ... refused N` carries it as well.
 `ui_link_refused_label()` in `shared/ui/ui_band.c` builds the label.
 
