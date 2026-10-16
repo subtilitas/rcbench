@@ -256,6 +256,61 @@ void bench_totals_show(const bench_totals_t *t, bench_state_t *b);
  */
 void bench_state_track_peaks(bench_state_t *b);
 
+/*
+ * How stale a speed may be before it stops being reported.
+ *
+ * Frames go out at a kilohertz, so a reply older than this is not a slow
+ * update but an ESC that has stopped answering -- unplugged, or one that
+ * never did bidirectional DShot.  A held-over speed on a stopped motor is
+ * exactly the plausible wrong number this bench exists to avoid.
+ */
+#define BENCH_RPM_STALE_MS  200u
+
+/*
+ * How old an extended-telemetry reading may be before the field goes empty.
+ *
+ * Longer than BENCH_RPM_STALE_MS because the rates are not the same: an ESC
+ * answers every frame with a period and interleaves temperature, voltage and
+ * current between them a few times a second.  Holding those to the speed's
+ * window would blank fields that are arriving exactly as the protocol sends
+ * them.
+ */
+#define BENCH_EDT_STALE_MS  2000u
+
+/** One extended-telemetry reading as the DShot driver holds it. */
+typedef struct {
+    bool     ok;        /**< the driver has one (outputs_hw_edt() true)  */
+    uint16_t count;     /**< the frame's payload, dshot_edt_*() units     */
+    uint32_t age_ms;    /**< how long ago it arrived                      */
+} bench_edt_reading_t;
+
+/**
+ * The ESC's telemetry as the coprocessor reads it at a sample: raw, with
+ * each reading's age and whether there is one.
+ */
+typedef struct {
+    uint16_t poles;         /**< MOTOR_POLES: magnets, not pole pairs     */
+    bool     erpm_ok;       /**< the driver has a speed (outputs_hw_erpm()) */
+    uint32_t erpm;          /**< electrical rpm                            */
+    uint32_t erpm_age_ms;
+    bench_edt_reading_t voltage;
+    bench_edt_reading_t current;
+    bench_edt_reading_t temperature;
+} bench_telem_t;
+
+/**
+ * The live readings of @p b and their valid bits from @p t, for the
+ * coprocessor's sample.  voltage, current, power, rpm, temp_esc,
+ * temp_motor and flags are rebuilt; the peaks and every other field stay.
+ *
+ * rpm with LINK_BN_RPM_OK from a speed no older than BENCH_RPM_STALE_MS
+ * and poles not 0; voltage, current and temp_esc with LINK_BN_VOLTAGE_OK,
+ * LINK_BN_CURRENT_OK and LINK_BN_TEMP_OK from readings no older than
+ * BENCH_EDT_STALE_MS, in the units of dshot_edt_*(); power, the product,
+ * only with both halves.  LINK_BN_TEMP_MOT_OK is never set.
+ */
+void bench_state_from_telem(bench_state_t *b, const bench_telem_t *t);
+
 #ifdef __cplusplus
 }
 #endif

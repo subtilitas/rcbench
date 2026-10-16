@@ -114,6 +114,7 @@ SOURCES = [
     "shared/servo/servo_limit.c",
     "shared/servo/servo_limrun.c",
     "protocols/sbus/sbus.c",
+    "protocols/dshot/dshot_telem.c",
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_pwm_map.c",
@@ -139,6 +140,7 @@ INCLUDES = [
     "protocols/sbus/include",
     "protocols/pdmini/include",
     "protocols/kst/include",
+    "protocols/dshot/include",
 ]
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",

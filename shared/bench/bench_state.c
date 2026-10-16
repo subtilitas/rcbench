@@ -7,6 +7,8 @@
 #include <math.h>
 #include <string.h>
 
+#include "dshot.h"
+
 /* The scales of the BENCH page registers, matching link_pages.h.  A scale
  * that disagrees with the wire produces a wrong reading, not a crash. */
 #define CV_PER_V   100.0f   /* 10 mV steps  */
@@ -337,5 +339,61 @@ void bench_state_track_peaks(bench_state_t *b)
     }
     if (b->rpm > b->rpm_max) {
         b->rpm_max = b->rpm;
+    }
+}
+
+void bench_state_from_telem(bench_state_t *b, const bench_telem_t *t)
+{
+    if (b == NULL || t == NULL) {
+        return;
+    }
+    /*
+     * The live readings and their valid bits are rebuilt every sample; the
+     * peaks are not, because a peak that is recomputed from one sample is
+     * the current reading wearing a different name.
+     */
+    b->voltage     = 0.0f;
+    b->current     = 0.0f;
+    b->power       = 0.0f;
+    b->rpm         = 0.0f;
+    b->temp_esc    = 0.0f;
+    b->temp_motor  = 0.0f;
+    b->flags       = 0u;
+
+    if (t->poles != 0u && t->erpm_ok && t->erpm_age_ms <= BENCH_RPM_STALE_MS) {
+        /* Pole pairs, not poles: one electrical revolution per pair. */
+        b->rpm = (float)dshot_rpm(t->erpm, (uint8_t)(t->poles / 2u));
+        b->flags |= (uint16_t)LINK_BN_RPM_OK;
+    }
+
+    /*
+     * What the ESC says about itself, when it does extended telemetry.  The
+     * units belong to the frame type and are the module's (dshot_edt_*()).
+     *
+     * There is no other source for any of these on this board.  An ESC that
+     * was not asked, or that does not know the command, leaves them empty and
+     * the flags clear, which is what the panel draws as a blank field rather
+     * than as a zero.
+     */
+    if (t->voltage.ok && t->voltage.age_ms <= BENCH_EDT_STALE_MS) {
+        b->voltage = (float)dshot_edt_millivolts(t->voltage.count) / 1000.0f;
+        b->flags |= (uint16_t)LINK_BN_VOLTAGE_OK;
+    }
+    if (t->current.ok && t->current.age_ms <= BENCH_EDT_STALE_MS) {
+        b->current = (float)dshot_edt_amps(t->current.count);
+        b->flags |= (uint16_t)LINK_BN_CURRENT_OK;
+    }
+    if (t->temperature.ok && t->temperature.age_ms <= BENCH_EDT_STALE_MS) {
+        /* The ESC's own, and only that.  LINK_BN_TEMP_MOT_OK stays clear:
+         * an ESC knows nothing about the motor it drives, and temp_motor has
+         * no source on this board at all. */
+        b->temp_esc = (float)dshot_edt_celsius(t->temperature.count);
+        b->flags |= (uint16_t)LINK_BN_TEMP_OK;
+    }
+    /* Power is the product and not a reading, so it is only as good as both
+     * halves: one of them missing leaves it empty rather than zero. */
+    if ((b->flags & (uint16_t)LINK_BN_VOLTAGE_OK) != 0u
+        && (b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
+        b->power = b->voltage * b->current;
     }
 }
