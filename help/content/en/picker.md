@@ -47,6 +47,8 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
 | `OFF SHOWS ALL, EDITS NOTHING` | OFF is selected |
 | `NOT READ` | the binding is not confirmed; every key is grey |
+| `GP28: PWM SLICE OF PROG PORT GP13` | a tap on GP28 under SERVO PWM or MOTOR PWM while the programming port holds GP13: one PWM slice; the key is grey |
+| `GP16: SAME PWM CHANNEL AS GP0` | a tap on GP16 under SERVO PWM or MOTOR PWM with GP0 bound as PWM: one PWM compare register; the key is grey |
 
 ![Eight of eight slots in use](view:picker-full)
 

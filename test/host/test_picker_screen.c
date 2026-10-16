@@ -899,6 +899,66 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+static bool ends_with(const char *s, const char *tail)
+{
+    const size_t n = strlen(s), t = strlen(tail);
+    return n >= t && strcmp(s + n - t, tail) == 0;
+}
+
+/*
+ * The picker meets the coprocessor's two PWM refusals as OUTPUTS does: a PWM
+ * pin on the programming port's slice (GP28 beside GP13, slice 6), and one
+ * on the compare register of a pin bound as PWM (GP16 beside GP0).  Each is
+ * held with the pin that holds it named, a tap writes nothing, and the line
+ * under the protocol list names both pins.  DShot takes either.
+ */
+TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        char who[24];
+        gfx_rect_t r;
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        picker_screen_set_prog_pin(13u);
+        CHECK_EQ(picker_screen_pin(idx(28u), who, sizeof(who)),
+                 PICKER_PIN_HELD);
+        CHECK(ends_with(who, "GP13"));
+        CHECK_STR_EQ(reason(), "");
+        CHECK(picker_screen_button_rect(idx(28u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 0);
+        CHECK(strncmp(reason(), "GP28", 4) == 0);
+        CHECK(ends_with(reason(), "GP13"));
+        CHECK_EQ(outbind_chosen_total(picker_screen_binding()), 0);
+        pick("MOTOR PWM");
+        CHECK_EQ(picker_screen_pin(idx(28u), NULL, 0), PICKER_PIN_HELD);
+        pick("DSHOT600");
+        CHECK_EQ(picker_screen_pin(idx(28u), NULL, 0), PICKER_PIN_FREE);
+        CHECK_STR_EQ(reason(), "");
+        picker_screen_set_prog_pin(PICKER_NO_PIN);
+
+        fresh();
+        static const uint8_t gp0[1] = { 0 };
+        bind_more("SERVO PWM", gp0, 1u, "SERVO PWM");
+        CHECK_EQ(picker_screen_pin(idx(16u), who, sizeof(who)),
+                 PICKER_PIN_HELD);
+        CHECK(ends_with(who, "GP0"));
+        CHECK_EQ(picker_screen_pin(idx(17u), NULL, 0), PICKER_PIN_FREE);
+        CHECK(picker_screen_button_rect(idx(16u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 0);
+        CHECK(strncmp(reason(), "GP16", 4) == 0);
+        CHECK(ends_with(reason(), "GP0"));
+        pick("MOTOR PWM");
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_HELD);
+        pick("DSHOT300");
+        CHECK_EQ(picker_screen_pin(idx(16u), NULL, 0), PICKER_PIN_FREE);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /*
  * Every button against everything else on the screen, with the
  * coprocessor's drawing and with the board drawn from its shape (both 205 px
@@ -1021,10 +1081,15 @@ TEST_CASE(a_full_bench_takes_no_ninth_pin_and_says_why)
         for (uint8_t i = 0; i < bd->count; ++i) {
             const uint8_t g = outbind_group_of(picker_screen_binding(), i);
             const picker_pin_t st = picker_screen_pin(i, NULL, 0);
+            /* GP16 to GP21 share a compare register with the PWM pins
+             * GP0 to GP5: held by them before the count refuses them. */
+            const bool partner = outbind_pwm_clash(picker_screen_binding(),
+                                                   i, PICKER_NO_PIN, NULL)
+                                 != OUTBIND_CLASH_NONE;
             const picker_pin_t want_st =
                 bd->pins[i].reserved ? PICKER_PIN_RESERVED
                 : (g == proto_named("SERVO PWM")) ? PICKER_PIN_TICKED
-                : (g != 0u) ? PICKER_PIN_HELD : PICKER_PIN_REFUSED;
+                : (g != 0u || partner) ? PICKER_PIN_HELD : PICKER_PIN_REFUSED;
             if (st != want_st) {
                 T_FAIL("GP%u is %d, want %d", bd->pins[i].gpio, (int)st,
                        (int)want_st);
@@ -1535,6 +1600,7 @@ TEST_CASE(queries_past_the_end_answer_nothing)
 int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
+    RUN(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named);
     RUN(off_picked_here_ends_when_the_screen_is_left);
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);

@@ -192,6 +192,118 @@ TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
     CHECK_EQ(outbind_chosen(&b), 1);
 }
 
+/*
+ * GP0 and GP16 are one compare register on two pads, as are GP1/17, GP2/18,
+ * GP4/20, GP5/21 and GP6/22 on this header.  The coprocessor's
+ * out_pwm_bind() refuses the second pin of a pair, so a PWM protocol is not
+ * offered it beside a pin bound as PWM in either PWM protocol.  DShot runs
+ * on PIO and is offered it; the other channel of the slice is a register of
+ * its own and is offered too.
+ */
+TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
+{
+    static const uint8_t pair[6][2] = {
+        { 0, 16 }, { 1, 17 }, { 2, 18 }, { 4, 20 }, { 5, 21 }, { 6, 22 },
+    };
+    static const char *const pwm[2] = { "SERVO PWM", "MOTOR PWM" };
+    for (unsigned p = 0; p < 6u; ++p) {
+        for (unsigned o = 0; o < 2u; ++o) {
+            const uint8_t a = pair[p][o], z = pair[p][1u - o];
+            for (unsigned h = 0; h < 2u; ++h) {
+                for (unsigned e = 0; e < 2u; ++e) {
+                    outbind_t b;
+                    init(&b);
+                    outbind_set_proto(&b, proto_named(pwm[h]));
+                    CHECK(outbind_toggle(&b, idx(a)));
+                    outbind_set_proto(&b, proto_named(pwm[e]));
+                    if (outbind_can_add(&b, idx(z))
+                        || outbind_toggle(&b, idx(z))) {
+                        T_FAIL("%s offered GP%u beside GP%u in %s", pwm[e],
+                               z, a, pwm[h]);
+                    }
+                    CHECK(outbind_can_add(&b, idx((uint8_t)(a ^ 1u)))
+                          || (a ^ 1u) == 3u || (a ^ 1u) == 23u);
+                    outbind_set_proto(&b, proto_named("DSHOT300"));
+                    CHECK(outbind_can_add(&b, idx(z)));
+                }
+            }
+        }
+    }
+}
+
+/*
+ * The two refusals as the screens ask for them.  The slice rule needs the
+ * programming port's pin: GP28 is slice 6 with GP13, and the coprocessor's
+ * prog_port_slots_check() refuses it to PWM while the port holds GP13.  A
+ * slot on GP13 leaves the port without a pin, and the slice is free then.
+ */
+TEST_CASE(the_pwm_clash_names_the_rule_and_the_pin)
+{
+    outbind_t b;
+    uint8_t with = 0u;
+    init(&b);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 13u, &with),
+             OUTBIND_CLASH_PROG_SLICE);
+    CHECK_EQ(with, 13u);
+    /* The port's own pin is the port's, not a clash; nor is a pin of
+     * another slice, a reserved pin, or a port with no pin. */
+    CHECK_EQ(outbind_pwm_clash(&b, idx(13), 13u, &with), OUTBIND_CLASH_NONE);
+    CHECK_EQ(with, OUTBIND_NO_GPIO);
+    CHECK_EQ(outbind_pwm_clash(&b, idx(14), 13u, NULL), OUTBIND_CLASH_NONE);
+    CHECK_EQ(outbind_pwm_clash(&b, idx(12), 13u, NULL), OUTBIND_CLASH_NONE);
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), OUTBIND_NO_GPIO, NULL),
+             OUTBIND_CLASH_NONE);
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), (uint8_t)(OUT_MAX_PIN + 1u),
+                               NULL),
+             OUTBIND_CLASH_NONE);
+    /* A port on a pin this header does not bring out still has a slice:
+     * GP29 is slice 6 too. */
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 29u, NULL),
+             OUTBIND_CLASH_PROG_SLICE);
+    /* MOTOR PWM is the same generator; DShot and PPM are not. */
+    outbind_set_proto(&b, proto_named("MOTOR PWM"));
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 13u, NULL),
+             OUTBIND_CLASH_PROG_SLICE);
+    outbind_set_proto(&b, proto_named("DSHOT600"));
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 13u, NULL), OUTBIND_CLASH_NONE);
+    outbind_set_proto(&b, proto_named("PPM"));
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 13u, NULL), OUTBIND_CLASH_NONE);
+
+    /* A slot on the port's pin: the port has none, and GP28 is free. */
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    CHECK(outbind_toggle(&b, idx(13)));
+    CHECK_EQ(outbind_pwm_clash(&b, idx(28), 13u, NULL), OUTBIND_CLASH_NONE);
+    CHECK(outbind_toggle(&b, idx(13)));
+
+    /* The compare register, with the bound pin named; the slice rule comes
+     * first when both hold. */
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK_EQ(outbind_pwm_clash(&b, idx(16), OUTBIND_NO_GPIO, &with),
+             OUTBIND_CLASH_COMPARE);
+    CHECK_EQ(with, 0u);
+    CHECK_EQ(outbind_pwm_clash(&b, idx(16), 1u, &with),
+             OUTBIND_CLASH_PROG_SLICE);
+    CHECK_EQ(with, 1u);
+    /* A pin a protocol holds is not refused: it can be given back. */
+    CHECK_EQ(outbind_pwm_clash(&b, idx(0), OUTBIND_NO_GPIO, NULL),
+             OUTBIND_CLASH_NONE);
+
+    /* Nothing to ask about. */
+    CHECK_EQ(outbind_pwm_clash(NULL, 0u, 13u, &with), OUTBIND_CLASH_NONE);
+    CHECK_EQ(with, OUTBIND_NO_GPIO);
+    CHECK_EQ(outbind_pwm_clash(&b, (uint8_t)OUTBIND_PINS, 13u, NULL),
+             OUTBIND_CLASH_NONE);
+    outbind_t none;
+    outbind_init(&none);
+    none.proto = 1u;
+    CHECK_EQ(outbind_pwm_clash(&none, 0u, 1u, NULL), OUTBIND_CLASH_NONE);
+    b.proto = (uint8_t)OUTBIND_PROTOS;
+    CHECK_EQ(outbind_pwm_clash(&b, idx(16), OUTBIND_NO_GPIO, NULL),
+             OUTBIND_CLASH_NONE);
+}
+
 TEST_CASE(switching_protocol_changes_which_set_is_edited)
 {
     outbind_t b;
@@ -1974,6 +2086,8 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
 int main(void)
 {
     RUN(the_catalogue_is_the_header_and_nothing_else);
+    RUN(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered);
+    RUN(the_pwm_clash_names_the_rule_and_the_pin);
     RUN(the_reserved_set_holds_every_pin_the_header_does_not_offer);
     RUN(an_output_is_refused_on_each_pin_the_module_keeps_or_lacks);
     RUN(the_pad_numbers_match_the_ones_printed_on_the_board);

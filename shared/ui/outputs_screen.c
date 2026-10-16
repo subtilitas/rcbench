@@ -82,6 +82,9 @@ static struct {
     int       hit_kind;
     int       hit_index;
     ui_hold_t clear;        /* the hold on UNBIND ALL PINS */
+    /* The pin whose tap a PWM clash refused last, or -1: the line under the
+     * protocol says why, until another pick or tick. */
+    int       refused;
     outputs_result_t result;
 
     outputs_apply_fn apply;
@@ -116,6 +119,15 @@ static bool prog_taken(uint8_t index)
            && index < outbind_pin_count(s.bind.board)
            && outbind_pins(s.bind.board)[index].gpio == g_prog_gpio
            && outbind_group_of(&s.bind, index) == 0u;
+}
+
+/* Whether the coprocessor would refuse pin @p index to the protocol being
+ * edited: the programming port's slice, or a bound PWM pin's compare
+ * register.  The port's own pin is prog_taken(), not this. */
+static bool clashes(uint8_t index)
+{
+    return outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
+           != OUTBIND_CLASH_NONE;
 }
 
 void outputs_screen_invalidate(void)
@@ -244,6 +256,7 @@ void outputs_screen_select(uint8_t proto)
     }
     outbind_set_proto(&s.bind, proto);
     s.off_picked = (proto == 0u);
+    s.refused = -1;
     touched();
 }
 
@@ -317,6 +330,7 @@ static void reset(void)
     outbind_init(&s.bind);
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
+    s.refused = -1;
     ui_hold_reset(&s.clear);
     touched();
 }
@@ -325,6 +339,7 @@ static void enter(void)
 {
     s.open = false;
     s.hit_kind = HIT_NONE;
+    s.refused = -1;
     ui_hold_reset(&s.clear);
     touched();
 }
@@ -445,9 +460,14 @@ static void event(const touch_event_t *evt)
                && inside(cell_rect(index), x, y)) {
         /* A refused tick is not silent: the cell flashes nothing, but the
          * count under the protocol does not move and the reason is printed
-         * in the cell or under the protocol. */
-        if (outputs_screen_editable() && !prog_taken((uint8_t)index)
-            && outbind_toggle(&s.bind, (uint8_t)index)) {
+         * in the cell or under the protocol.  A PWM clash names the pin
+         * tapped there. */
+        if (outputs_screen_editable() && clashes((uint8_t)index)) {
+            s.refused = index;
+            touched();
+        } else if (outputs_screen_editable() && !prog_taken((uint8_t)index)
+                   && outbind_toggle(&s.bind, (uint8_t)index)) {
+            s.refused = -1;
             changed();
         }
     } else if (kind == HIT_CLEAR) {
@@ -519,7 +539,55 @@ bool outputs_screen_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_NOT_MAPPED));
         return true;
     }
-    return outputs_reason_of(&s.bind, buf, cap);
+    return outputs_reason_of(&s.bind, buf, cap)
+           || outputs_clash_reason(&s.bind, s.refused, g_prog_gpio, buf, cap);
+}
+
+bool outputs_clash_label(const outbind_t *b, uint8_t index,
+                         uint8_t prog_gpio, char *buf, size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    uint8_t with;
+    switch (outbind_pwm_clash(b, index, prog_gpio, &with)) {
+    case OUTBIND_CLASH_PROG_SLICE:
+        snprintf(buf, cap, TR(OUT_SLICE_OF), (unsigned)with);
+        return true;
+    case OUTBIND_CLASH_COMPARE:
+        snprintf(buf, cap, TR(OUT_COMPARE_OF), (unsigned)with);
+        return true;
+    case OUTBIND_CLASH_NONE:
+    default:
+        return false;
+    }
+}
+
+bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
+                          char *buf, size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    if (b == NULL) {
+        return false;
+    }
+    if (index < 0 || index >= (int)outbind_pin_count(b->board)) {
+        return false;
+    }
+    uint8_t with;
+    const outbind_clash_t why = outbind_pwm_clash(b, (uint8_t)index,
+                                                  prog_gpio, &with);
+    if (why == OUTBIND_CLASH_NONE) {
+        return false;
+    }
+    snprintf(buf, cap,
+             (why == OUTBIND_CLASH_PROG_SLICE) ? TR(OUT_SLICE_WHY)
+                                               : TR(OUT_COMPARE_WHY),
+             (unsigned)outbind_pins(b->board)[index].gpio, (unsigned)with);
+    return true;
 }
 
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)
@@ -596,6 +664,15 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
         }
         return OUTPUTS_CELL_HELD;
     }
+    /* Free, and the PWM generator cannot take it beside what it carries:
+     * held by the pin it clashes with, which the line names. */
+    if (clashes(index)) {
+        if (label != NULL) {
+            (void)outputs_clash_label(&s.bind, index, g_prog_gpio, label,
+                                      cap);
+        }
+        return OUTPUTS_CELL_HELD;
+    }
     if (label != NULL) {
         snprintf(label, cap, "PAD %u", (unsigned)pin->pad);
     }
@@ -669,7 +746,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
      */
     const bool live = outputs_screen_editable();
     const bool reserved = pin->reserved || prog_taken((uint8_t)i);
-    const bool can = live && !reserved
+    const bool can = live && !reserved && !clashes((uint8_t)i)
                      && outbind_can_add(&s.bind, (uint8_t)i);
     const bool lit = live && on;
 

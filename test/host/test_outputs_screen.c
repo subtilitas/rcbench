@@ -181,6 +181,13 @@ static const char *reason(void)
     return buf;
 }
 
+/* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+static bool ends_with(const char *s, const char *tail)
+{
+    const size_t n = strlen(s), t = strlen(tail);
+    return n >= t && strcmp(s + n - t, tail) == 0;
+}
+
 static void pose_three_protocols(void)
 {
     fresh();
@@ -433,6 +440,129 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
         tap_pin(13);
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
         outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * A PWM pin on the programming port's slice is not offered.  The
+ * coprocessor's prog_port_slots_check() refuses a PWM slot that shares a
+ * slice with a port's pin, and GP28 is slice 6 with GP13.  The cell names
+ * the port's pin, a tap writes nothing, and the line under the protocol
+ * names both pins.  DShot runs on PIO, not on a slice, and takes the pin.
+ */
+TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
+{
+    static const char *const pwm[2] = { "SERVO PWM", "MOTOR PWM" };
+    char l[24];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (unsigned k = 0; k < 2u; ++k) {
+            fresh();
+            ui_text_set_language((ui_lang_t)lang);
+            outputs_screen_set_prog_pin(13u);
+            choose_named(pwm[k]);
+            const int was = s_applied;
+
+            CHECK_EQ(outputs_screen_cell(idx(28), l, sizeof(l)),
+                     OUTPUTS_CELL_HELD);
+            CHECK(ends_with(l, "GP13"));
+            /* Slice 7 is not the port's. */
+            CHECK_EQ(outputs_screen_cell(idx(14), NULL, 0),
+                     OUTPUTS_CELL_FREE);
+            /* The cell says it before a tap; the line answers the tap. */
+            CHECK_STR_EQ(reason(), "");
+            tap_pin(28);
+            CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
+            CHECK_EQ(s_applied, was);
+            CHECK(strncmp(reason(), "GP28", 4) == 0);
+            CHECK(ends_with(reason(), "GP13"));
+            /* Another pick ends the answer. */
+            choose_named(pwm[k]);
+            CHECK_STR_EQ(reason(), "");
+        }
+
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        outputs_screen_set_prog_pin(13u);
+        choose_named("DSHOT600");
+        CHECK_EQ(outputs_screen_cell(idx(28), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_STR_EQ(reason(), "");
+        tap_pin(28);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
+        CHECK_EQ(s_applied, 1);
+
+        /* No port pin: GP28 is a PWM pin like the others. */
+        fresh();
+        outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+        choose_named("SERVO PWM");
+        CHECK_EQ(outputs_screen_cell(idx(28), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_STR_EQ(reason(), "");
+    }
+    outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * GP0 and GP16 are one compare register on two pads, and the coprocessor's
+ * out_pwm_bind() refuses the second pin of the pair.  Beside a pin bound as
+ * PWM in either PWM protocol, its partner is not offered to a PWM protocol;
+ * the cell names the bound pin, and a refused tap names both under the
+ * protocol.  Giving the bound pin back offers the partner again.
+ */
+TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
+{
+    char l[24];
+
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        choose_named("SERVO PWM");
+        tap_pin(0);
+        tap_pin(1);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
+        const int was = s_applied;
+
+        CHECK_EQ(outputs_screen_cell(idx(16), l, sizeof(l)),
+                 OUTPUTS_CELL_HELD);
+        CHECK(ends_with(l, "GP0"));
+        CHECK_EQ(outputs_screen_cell(idx(17), l, sizeof(l)),
+                 OUTPUTS_CELL_HELD);
+        CHECK(ends_with(l, "GP1"));
+        /* The other channel of the slice is a register of its own. */
+        CHECK_EQ(outputs_screen_cell(idx(18), NULL, 0), OUTPUTS_CELL_FREE);
+
+        /* The line names the pin tapped, not the lowest one refused. */
+        CHECK_STR_EQ(reason(), "");
+        tap_pin(17);
+        CHECK_EQ(outbind_chosen(outputs_screen_binding()), 2);
+        CHECK_EQ(s_applied, was);
+        CHECK(strncmp(reason(), "GP17", 4) == 0);
+        CHECK(ends_with(reason(), "GP1"));
+        tap_pin(16);
+        CHECK_EQ(s_applied, was);
+        CHECK(strncmp(reason(), "GP16", 4) == 0);
+        CHECK(ends_with(reason(), "GP0"));
+        /* A tick that lands ends it. */
+        tap_pin(4);
+        CHECK_EQ(s_applied, was + 1);
+        CHECK_STR_EQ(reason(), "");
+
+        /* The other PWM protocol meets the same register. */
+        choose_named("MOTOR PWM");
+        CHECK_EQ(outputs_screen_cell(idx(16), NULL, 0), OUTPUTS_CELL_HELD);
+        tap_pin(16);
+        CHECK_EQ(s_applied, was + 1);
+
+        /* DShot does not drive a compare register. */
+        choose_named("DSHOT300");
+        CHECK_EQ(outputs_screen_cell(idx(16), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_STR_EQ(reason(), "");
+
+        choose_named("SERVO PWM");
+        tap_pin(0);
+        CHECK_EQ(outputs_screen_cell(idx(16), NULL, 0), OUTPUTS_CELL_FREE);
+        CHECK_EQ(outputs_screen_cell(idx(17), NULL, 0), OUTPUTS_CELL_HELD);
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -798,14 +928,30 @@ TEST_CASE(a_protocol_named_from_outside_lands_over_the_one_on_screen)
     "GP13 held 'SERVO PWM'\n"                                                 \
     TRACE_GP14_TO_GP28
 
-/* SERVO PWM selected: its two pins are ticked and show their pad. */
+/*
+ * SERVO PWM selected: its two pins are ticked and show their pad.  GP17 and
+ * GP18 share a compare register with the PWM pins GP1 and GP2, so they are
+ * held by them; GP16 is GP0's partner, and GP0 is DShot, which drives no
+ * compare register.
+ */
 #define TRACE_SERVO                                                           \
     "GP0 held 'DSHOT600 BIDIR'\n"                                             \
     "GP1 held 'MOTOR PWM'\n"                                                  \
     "GP2 ticked 'PAD 4'\n"                                                    \
     TRACE_GP3_TO_GP12                                                         \
     "GP13 ticked 'PAD 17'\n"                                                  \
-    TRACE_GP14_TO_GP28
+    "GP14 free 'PAD 19'\n"                                                    \
+    "GP15 free 'PAD 20'\n"                                                    \
+    "GP16 free 'PAD 21'\n"                                                    \
+    "GP17 held 'PWM CH OF GP1'\n"                                             \
+    "GP18 held 'PWM CH OF GP2'\n"                                             \
+    "GP19 free 'PAD 25'\n"                                                    \
+    "GP20 free 'PAD 26'\n"                                                    \
+    "GP21 free 'PAD 27'\n"                                                    \
+    "GP22 free 'PAD 29'\n"                                                    \
+    "GP26 free 'PAD 31'\n"                                                    \
+    "GP27 free 'PAD 32'\n"                                                    \
+    "GP28 free 'PAD 34'\n"
 
 /*
  * The protocol selected on entry is the lowest-numbered one that holds a
@@ -1171,6 +1317,21 @@ TEST_CASE(a_selection_from_the_picker_is_a_pick)
     CHECK(!outputs_reason_of(NULL, buf, sizeof(buf)));
     CHECK_STR_EQ(buf, "");
     CHECK(!outputs_reason_of(outputs_screen_binding(), NULL, 0));
+
+    /* The PWM clash lines take no missing binding, buffer or pin either. */
+    strcpy(buf, "x");
+    CHECK(!outputs_clash_reason(NULL, 0, 13u, buf, sizeof(buf)));
+    CHECK_STR_EQ(buf, "");
+    CHECK(!outputs_clash_reason(outputs_screen_binding(), -1, 13u, buf,
+                                sizeof(buf)));
+    CHECK(!outputs_clash_reason(outputs_screen_binding(),
+                                (int)OUTBIND_PINS, 13u, buf, sizeof(buf)));
+    CHECK(!outputs_clash_reason(outputs_screen_binding(), 0, 13u, NULL, 0));
+    strcpy(buf, "x");
+    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, 13u, buf,
+                               sizeof(buf)));
+    CHECK_STR_EQ(buf, "");
+    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, 13u, NULL, 0));
 }
 
 int main(void)
@@ -1196,6 +1357,8 @@ int main(void)
     RUN(a_reserved_pin_never_reaches_the_apply_seam);
     RUN(a_pin_too_many_does_not_apply);
     RUN(the_programming_ports_pin_is_taken_and_takes_no_tick);
+    RUN(a_pwm_pin_on_the_programming_ports_slice_is_not_offered);
+    RUN(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered);
     RUN(nothing_can_be_ticked_while_the_protocol_is_off);
     RUN(every_state_renders_without_reading_off_the_canvas);
     RUN(a_board_that_can_take_nothing_says_why);

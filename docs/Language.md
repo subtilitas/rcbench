@@ -72,7 +72,7 @@ manual beside the bench.
   the status band, and SILENT on the ANALYSER's verdict. ARM and DISARM are
   the buttons; SAFE and ARMED are the states.
 - The field's own terms: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
-  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
+  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Slice, Pad, Resync,
   Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT on
   FILES & UPDATE), Upload, Build.
 - Units, the stick positions MIN, MID and MAX, and the key legends DEL, CLR

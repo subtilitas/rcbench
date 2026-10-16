@@ -383,9 +383,50 @@ bool outbind_toggle(outbind_t *b, uint8_t index);
  */
 void outbind_set_proto(outbind_t *b, uint8_t proto);
 
-/** True when this pin may still be added to the protocol being edited, for a
- *  screen drawing it. */
+/**
+ * True when this pin may still be added to the protocol being edited, for a
+ * screen drawing it.
+ *
+ * Includes the compare-register rule of outbind_pwm_clash(), which needs no
+ * programming port: a PWM protocol is not offered the partner of a pin bound
+ * as PWM.  The slice rule needs the port's pin, which this binding does not
+ * carry, so a screen asks outbind_pwm_clash() for it.
+ */
 bool outbind_can_add(const outbind_t *b, uint8_t index);
+
+/** No programming port pin, for outbind_pwm_clash(). */
+#define OUTBIND_NO_GPIO 0xFFu
+
+/** Why the PWM generator cannot take a pin, as outbind_pwm_clash() says. */
+typedef enum {
+    OUTBIND_CLASH_NONE = 0,
+    /** The pin's slice is the programming port's pin's slice. */
+    OUTBIND_CLASH_PROG_SLICE,
+    /** The pin's compare register drives a pin already bound as PWM. */
+    OUTBIND_CLASH_COMPARE,
+} outbind_clash_t;
+
+/**
+ * Whether the coprocessor refuses catalogue entry @p index for the protocol
+ * being edited, beside @p prog_gpio and the pins @p b binds as PWM.
+ *
+ * Applies to a protocol on OUT_DRIVER_PWM and a pin that is not reserved
+ * and that no protocol holds; any other pin or protocol is
+ * OUTBIND_CLASH_NONE.  Two refusals, in this order:
+ *
+ *  - OUTBIND_CLASH_PROG_SLICE: the pin shares a slice with @p prog_gpio, the
+ *    programming port's pin (prog_port_slots_check()).  Only while no
+ *    protocol holds @p prog_gpio: a slot on that pin leaves the port without
+ *    one.  OUTBIND_NO_GPIO, or any GPIO past OUT_MAX_PIN, is no port.
+ *  - OUTBIND_CLASH_COMPARE: the pin shares a compare register with a pin a
+ *    PWM protocol holds (out_pwm_bind() in the coprocessor).
+ *
+ * Both are out_pwm_same_slice() and out_pwm_same_compare(), the helpers the
+ * coprocessor decides with.  @p with, when not NULL, gets the GPIO the pin
+ * clashes with, or OUTBIND_NO_GPIO for OUTBIND_CLASH_NONE.
+ */
+outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
+                                  uint8_t prog_gpio, uint8_t *with);
 
 /* ------------------------------------------------------------- the pages */
 

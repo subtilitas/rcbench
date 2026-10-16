@@ -89,7 +89,9 @@ typedef enum {
     OUTPUTS_CELL_NONE = 0,  /**< no such pin on this board                  */
     OUTPUTS_CELL_FREE,      /**< bound to nothing: "PAD n"                  */
     OUTPUTS_CELL_TICKED,    /**< bound in the selected protocol: "PAD n"    */
-    OUTPUTS_CELL_HELD,      /**< bound in another protocol: its name        */
+    OUTPUTS_CELL_HELD,      /**< bound in another protocol: its name; or a
+                                 PWM pin the coprocessor refuses: the pin
+                                 it clashes with (outputs_clash_label())   */
     OUTPUTS_CELL_RESERVED,  /**< the coprocessor's own: what holds it       */
 } outputs_cell_t;
 
@@ -106,14 +108,16 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
  * The GPIO the coprocessor's programming port is bound to, as its page reads
  * it, or OUTPUTS_NO_PIN (the start value).  While no protocol holds that pin
  * its cell reads OUTPUTS_CELL_RESERVED with the port's name and takes no
- * tick.  It stays across a reset of the screen.
+ * tick, and a PWM protocol is not offered the other pin of its slice.  It
+ * stays across a reset of the screen.
  */
 void outputs_screen_set_prog_pin(uint8_t gpio);
 
 /**
- * The line under the protocol that says why no pin can be ticked, as the
- * screen draws it in the language in force; an empty string when there is
- * none.  Returns whether there is one.
+ * The line under the protocol that says why no pin can be ticked, or why the
+ * PWM pin last tapped cannot be (outputs_clash_reason()), until another pick
+ * or tick, as the screen draws it in the language in force; an empty string
+ * when there is none.  Returns whether there is one.
  */
 bool outputs_screen_reason(char *buf, size_t cap);
 
@@ -125,6 +129,27 @@ bool outputs_screen_reason(char *buf, size_t cap);
  * still be added.
  */
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
+
+/**
+ * The line under a pin's GPIO name for a pin the coprocessor refuses the
+ * PWM generator (outbind_pwm_clash() with @p prog_gpio): "SLICE OF GP13"
+ * beside the programming port's pin, "PWM CH OF GP0" beside a pin bound as
+ * PWM.  An empty string and false for any other pin.  The pin picker names
+ * the holder with the same line.
+ */
+bool outputs_clash_label(const outbind_t *b, uint8_t index,
+                         uint8_t prog_gpio, char *buf, size_t cap);
+
+/**
+ * The line under the protocol for such a pin, catalogue entry @p index:
+ * "GP28: PWM SLICE OF PROG PORT GP13", "GP16: SAME PWM CHANNEL AS GP0".  An
+ * empty string and false when that pin is not refused, or @p index is no
+ * entry (-1).  Both screens pass the pin whose tap was refused last, and
+ * show it after outputs_reason_of(): a protocol that can take no pin at all
+ * says that first.  The cell names the holder before any tap.
+ */
+bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
+                          char *buf, size_t cap);
 
 /**
  * Select protocol @p proto, as a pick in the list does: the set shown and

@@ -118,6 +118,17 @@ history is in git.
 
 ### Fixed
 
+- OUTPUTS and PICK A PIN no longer offer a SERVO PWM or MOTOR PWM pin the
+  coprocessor refuses, which ended in `LAST WRITE: REFUSED` with no reason.
+  A pin on the programming port's PWM slice (GP28 while the port holds
+  GP13, both slice 6) and a pin on the compare register of a pin bound as
+  PWM (GP16 beside GP0, and the pairs GP1/17, GP2/18, GP4/20, GP5/21,
+  GP6/22) are held: grey, the cell `SLICE OF GP13` or `PWM CH OF GP0`, and
+  a tap puts `GP28: PWM SLICE OF PROG PORT GP13` or `GP16: SAME PWM CHANNEL
+  AS GP0` under the protocol. The panel decides with the coprocessor's own
+  `out_pwm_same_slice()` and `out_pwm_same_compare()`
+  (`outbind_pwm_clash()`). DShot and PPM are offered both pins.
+
 - Upload on the English page of the browser access works. The script of
   the page wrote the texts `The file is larger than the panel's slot.` and
   `The upload broke off.` inside single quotes unescaped; the apostrophe

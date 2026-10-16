@@ -55,6 +55,8 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the coprocessor's programming port, GP13 by default | does nothing |
+| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: PWM SLICE OF PROG PORT GP13` under the count |
+| greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
 ![PPM with servo pins already bound](view:outputs-full)
