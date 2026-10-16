@@ -6,7 +6,8 @@
  *
  * Under test: each servo window reaching the log once; a row unheld from
  * its edit to the acknowledgement, across a lost link and a restart; the
- * ESC's figures and the totals while the read is fresh; and the output
+ * ESC's figures and the totals while the read is fresh; the store off said
+ * once per link; and the output
  * encoder (protocol 4.9): ENABLE bit 2 and SENSE 26 to 31 sent only to a
  * coprocessor that names 4.9, the operator told once when one older is
  * asked for it, the status read taken to 31 only while the

@@ -13,7 +13,7 @@
  * an idle bank and once the set-up has rested; the identity read again
  * after a write is taken; the reads' rates; and the events a read raises --
  * a part not answering, the wrong identity, a stuck bus, a clipped
- * reading, the store off -- each once, the second of two after the gap.  What the reads
+ * reading -- each once, the second of two after the gap.  What the reads
  * hold, handed to the screens, is test_sense_link_view.c.
  *
  * SPDX-License-Identifier: MIT
