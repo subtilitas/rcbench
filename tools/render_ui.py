@@ -467,7 +467,10 @@ INCLUDES = [
 
 def build(tmp: pathlib.Path, trace: bool = False) -> pathlib.Path:
     exe = tmp / ("render_trace" if trace else "render_screen")
-    cmd = ["cc", "-O2", "-g", *STRICT, "-o", str(exe)]
+    # With the touch injector's texts, as the host suite builds: the
+    # band-inject view draws INJECT's bubble and --fit measures it.
+    cmd = ["cc", "-O2", "-g", *STRICT, "-DRCBENCH_TOUCH_INJECTOR=1",
+           "-o", str(exe)]
     if trace:
         cmd += ["-DGFX_TEXT_TRACE"]
     cmd += [str(REPO / s) for s in SOURCES]

@@ -38,10 +38,12 @@ const char *ui_band_mode(bool link_up)
     return link_up ? "BENCH" : "SIM";
 }
 
+#ifdef RCBENCH_TOUCH_INJECTOR
 const char *ui_band_mode_inject(void)
 {
     return "INJECT";
 }
+#endif
 
 const char *ui_band_armed_label(uint8_t roles)
 {
@@ -277,11 +279,14 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
         } else if (st->mode != NULL
                    && strcmp(st->mode, ui_band_mode(false)) == 0) {
             ids[n++] = TX_BH_MODE_SIM;
-        } else if (st->mode != NULL
-                   && strcmp(st->mode, ui_band_mode_inject()) == 0) {
+        }
+#ifdef RCBENCH_TOUCH_INJECTOR
+        else if (st->mode != NULL
+                 && strcmp(st->mode, ui_band_mode_inject()) == 0) {
             ids[n++] = TX_BH_MODE_INJECT;
             ids[n++] = TX_BH_MODE_INJECT_LOST;
         }
+#endif
         break;
     case UI_BAND_CHIP_ARMED:
         if (!st->armed) {

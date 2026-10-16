@@ -2632,24 +2632,33 @@ TEST_CASE(the_link_bubble_follows_the_link)
 
 /*
  * INJECT, the mode a build with RCBENCH_TOUCH_INJECTOR names while a touch
- * injector answered at start-up, has a body under its title in both
- * languages, as BENCH and SIM have; a mode string the band has no text for
- * is its title alone.
+ * injector is attached, has both its paragraphs under its title in both
+ * languages; a mode string the band has no text for is its title alone.
+ * The floor is each paragraph's cells over a line's 61, at 18 px a line
+ * and 4 px between the two (ui_band.c's HELP_PITCH and HELP_PARA): a
+ * bubble that drops either paragraph is shorter.
  */
 TEST_CASE(the_inject_bubble_explains_the_injector)
 {
     const int title_only = 30 + 10;   /* HELP_TOP + HELP_BOTTOM */
+    const int cells = 61, pitch = 18, para = 4;
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
+        int floor_h = title_only + para;
+        floor_h += pitch * ((gfx_text_cells(ui_tr(TX_BH_MODE_INJECT))
+                             + cells - 1) / cells);
+        floor_h += pitch * ((gfx_text_cells(ui_tr(TX_BH_MODE_INJECT_LOST))
+                             + cells - 1) / cells);
         for (int link = 0; link < 2; ++link) {
             ui_bench_status_t st = k_all_chips;
             st.link_up = link != 0;
             st.mode    = ui_band_mode_inject();
             gfx_rect_t r;
             REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_MODE, &r));
-            if (r.h <= title_only) {
+            if (r.h < floor_h) {
                 T_FAIL("language %d, link %d: INJECT's bubble is %d px, "
-                       "its title alone", lang, link, r.h);
+                       "under the %d px its two paragraphs take",
+                       lang, link, r.h, floor_h);
             }
             st.mode = "OTHER";
             REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_MODE, &r));

@@ -128,8 +128,8 @@ history is in git.
   opens a bubble with two paragraphs: where touch comes from, the I2C
   address 0x14, how old touch counts, and what a silent injector does
   through the 200 ms, 500 ms and 1000 ms steps to the detach and the probe
-  that re-attaches it. It showed the title alone.
-
+  that re-attaches it. It showed the title alone. The released image holds
+  neither the mode name nor the text.
 - Upload on the English page of the browser access works. The script of
   the page wrote the texts `The file is larger than the panel's slot.` and
   `The upload broke off.` inside single quotes unescaped; the apostrophe
