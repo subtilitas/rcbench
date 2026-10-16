@@ -151,6 +151,23 @@ TEST_CASE(the_voltage_is_the_lowest_cell_count_the_family_states)
     CHECK_EQ(esc_stick_profile_mv(&p), 7200u);   /* six NiMH cells */
 }
 
+/* Reset and exit are actions: the ESC acts on the select move and sounds
+ * no values, so they are not offered as changes. */
+TEST_CASE(reset_and_exit_are_not_changes)
+{
+    rig("hobbywing-flyfun-8item");
+    const char *why = NULL;
+    esc_stick_change_t c[2] = { change(3, 2), change(7, 1) };
+    CHECK(esc_stick_is_action(&r.p->items[6]));
+    CHECK(esc_stick_is_action(&r.p->items[7]));
+    CHECK(!esc_stick_is_action(&r.p->items[0]));
+    CHECK(!esc_stick_is_action(NULL));
+    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "reset and exit are actions, not settings");
+    c[1] = change(8, 1);
+    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
+}
+
 /* An item with one value -- a rule written as a value, "N beeps = N
  * cells" -- is nothing to choose, and is not offered. */
 TEST_CASE(an_item_with_one_value_is_not_offered)
@@ -168,23 +185,6 @@ TEST_CASE(an_item_with_one_value_is_not_offered)
     const char *why = NULL;
     CHECK(!esc_stick_check(r.p, c, 1, &r.t, &why));
     CHECK_STR_EQ(why, "one value: nothing to choose");
-}
-
-/* Reset and exit are actions: the ESC acts on the select move and sounds
- * no values, so they are not offered as changes. */
-TEST_CASE(reset_and_exit_are_not_changes)
-{
-    rig("hobbywing-flyfun-8item");
-    const char *why = NULL;
-    esc_stick_change_t c[2] = { change(3, 2), change(7, 1) };
-    CHECK(esc_stick_is_action(&r.p->items[6]));
-    CHECK(esc_stick_is_action(&r.p->items[7]));
-    CHECK(!esc_stick_is_action(&r.p->items[0]));
-    CHECK(!esc_stick_is_action(NULL));
-    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
-    CHECK_STR_EQ(why, "reset and exit are actions, not settings");
-    c[1] = change(8, 1);
-    CHECK(!esc_stick_check(r.p, c, 2, &r.t, &why));
 }
 
 /*
@@ -272,52 +272,121 @@ TEST_CASE(a_step_the_run_cannot_wait_for_is_refused)
     CHECK_STR_EQ(why, "needs a person at the ESC");
 }
 
-/* A car mode the manual programs from the middle is not stored from the
- * profile's brake position. */
-/*
- * What the PD mini's 20 V leaves out, as the docs count it: of the profiles
- * the engine runs, one family whose lowest cell count needs more
- * (hobbywing-skywalker-v2-hv-opto, 22.8 V), and six model rows, each at
- * 22.8 V: its two models and four of families that open.
- */
-TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
+/* What one power-up cannot take is refused, not reordered or guessed. */
+TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
 {
-    static const char *const k_rows[] = {
-        "FLYFUN 130A HV OPTO V5", "FLYFUN 160A HV OPTO V5",
-        "Skywalker 130A HV OPTO V2", "Skywalker 160A HV OPTO V2",
-        "Gecko 120A OPTO HV", "Gecko 150A OPTO HV",
+    const char *why = NULL;
+    /* Two stages: the ESC picks the order, so the changes share one. */
+    rig("hobbywing-flyfun-8item");
+    static esc_profile_t two;
+    static esc_item_t two_items[2];
+    static esc_value_t two_values[2];
+    two = *r.p;
+    memcpy(two_items, r.p->items, sizeof(two_items));
+    memcpy(two_values, r.p->items[1].values, sizeof(two_values));
+    two_values[1].entry_throttle = ESC_THR_MID;
+    two_items[1].values = two_values;
+    two.items = two_items;
+    two.item_count = 2;
+    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
+    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
+    CHECK_STR_EQ(why, "changes need different power-up positions");
+    c[0] = (esc_stick_change_t){ 1u, 1u };
+    CHECK(esc_stick_check(&two, c, 1, &r.t, &why));
+    /* The rest there is the select move: hobbywing selects at MIN. */
+    two_values[1].entry_throttle = ESC_THR_MIN;
+    CHECK(!esc_stick_check(&two, c, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "select move is the rest");
+
+    /* A hand at a powered ESC with the stick at MAX. */
+    rig("kontronik-jazz");
+    static esc_profile_t jazz;
+    static esc_item_t jazz_item;
+    static esc_value_t jazz_values[9];
+    jazz = *r.p;
+    jazz_item = r.p->items[0];
+    memcpy(jazz_values, r.p->items[0].values,
+           r.p->items[0].value_count * sizeof(jazz_values[0]));
+    jazz_values[2].entry_throttle = ESC_THR_MAX;
+    jazz_item.values = jazz_values;
+    jazz.items = &jazz_item;
+    esc_stick_change_t m[1] = { { 0u, 2u } };
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "select move is the rest");
+    jazz.select_throttle = ESC_THR_MID;
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "manual step");
+    /* A named rest away from a value's position needs the entry time. */
+    jazz.listen_throttle = ESC_THR_MIN;
+    jazz.entry_hold_ms = 0u;
+    jazz_values[2].entry_throttle = ESC_THR_MID;
+    jazz.select_throttle = ESC_THR_MAX;
+    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
+    CHECK_STR_EQ(why, "rest move, no entry time");
+    /* An at_power_up step's hold is a time the profile states: the run
+     * waits it (esc_stick_change_entry_ms()), so the move to the rest is
+     * timed and the change runs.  Entry MIN, the value at MID, the rest at
+     * MIN, the hold the only time given. */
+    static const esc_manual_t k_held[] = {
+        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
     };
-    unsigned families = 0u, rows = 0u, runs = 0u;
-    for (size_t i = 0; i < esc_profiles_count(); ++i) {
-        const esc_profile_t *p = esc_profiles_at(i);
-        if (esc_stick_kind(p, NULL) == ESC_STICK_KIND_NONE) {
-            continue;
-        }
-        ++runs;
-        if (esc_stick_model_mv(p, -1) > 20000u) {
-            ++families;
-            CHECK_STR_EQ(p->id, "hobbywing-skywalker-v2-hv-opto");
-            CHECK_EQ(esc_stick_model_mv(p, -1), 22800u);
-        }
-        for (int m = 0; m < (int)p->model_count; ++m) {
-            if (esc_stick_model_mv(p, m) <= 20000u) {
-                continue;
-            }
-            ++rows;
-            CHECK_EQ(esc_stick_model_mv(p, m), 22800u);
-            bool known = false;
-            for (size_t k = 0; k < sizeof(k_rows) / sizeof(k_rows[0]); ++k) {
-                known = known || strcmp(p->models[m].name, k_rows[k]) == 0;
-            }
-            if (!known) {
-                T_FAIL("%s: %s needs %u mV", p->id, p->models[m].name,
-                       (unsigned)esc_stick_model_mv(p, m));
-            }
-        }
-    }
-    CHECK_EQ(runs, 24u);
-    CHECK_EQ(families, 1u);
-    CHECK_EQ(rows, 6u);
+    jazz.manual = k_held;
+    jazz.manual_count = 1;
+    CHECK_EQ(jazz.entry_throttle, ESC_THR_MIN);
+    CHECK_EQ(esc_stick_change_entry(&jazz, &m[0]), ESC_THR_MID);
+    CHECK_EQ(esc_stick_change_entry_ms(&jazz, &m[0], &r.t), 3000u);
+    CHECK(esc_stick_check(&jazz, m, 1, &r.t, &why));
+    /* The same hold, the value at the entry's MIN and the rest at MID:
+     * the profile-wide rule takes the hold too. */
+    jazz.listen_throttle = ESC_THR_MID;
+    jazz_values[2].entry_throttle = ESC_THR_NONE;
+    CHECK(esc_stick_kind(&jazz, &why) != ESC_STICK_KIND_NONE);
+    jazz.manual = NULL;
+    jazz.manual_count = 0;
+    jazz.automatable = ESC_AUTO_FULL;
+    CHECK_EQ(esc_stick_kind(&jazz, &why), ESC_STICK_KIND_NONE);
+    CHECK_STR_EQ(why, "rest move, no entry time");
+}
+
+/*
+ * Items that apply to different models may share their number and a
+ * value number, each value with its own moves after the selection.  The
+ * simulated ESC takes the first match's moves only, and never writes more
+ * than the space it is given: the store move and 4 moves each would be 9
+ * into the sim's 5 (an overflow ASan reports without the cap).
+ */
+TEST_CASE(shared_numbers_do_not_overflow_the_store_moves)
+{
+    static esc_value_t v1[1], v2[1];
+    static esc_item_t it[2];
+    static esc_profile_t p;
+    p = *esc_profiles_find("kontronik-pix");
+    v1[0] = (esc_value_t){ "a", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MIN, ESC_THR_MAX, ESC_THR_MIN,
+                             ESC_THR_MAX } };
+    v2[0] = (esc_value_t){ "b", 2u, false, ESC_THR_NONE, 0u, 4u,
+                           { ESC_THR_MID, ESC_THR_MIN, ESC_THR_MID,
+                             ESC_THR_MIN } };
+    it[0] = p.items[0];
+    it[0].number = 1u;
+    it[0].values = v1;
+    it[0].value_count = 1u;
+    it[1] = it[0];
+    it[1].values = v2;
+    p.items = it;
+    p.item_count = 2u;
+    p.store_throttle = ESC_THR_MID;
+    esc_throttle_t out[ESC_AFTER_MAX + 1u];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, out,
+                                 sizeof(out) / sizeof(out[0])), 5u);
+    CHECK_EQ(out[0], ESC_THR_MID);              /* the store move */
+    CHECK_EQ(out[1], ESC_THR_MIN);              /* the first match's */
+    CHECK_EQ(out[4], ESC_THR_MAX);
+    esc_throttle_t two[2];
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, two, 2u), 2u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 9u, out, 5u), 1u);   /* no value */
+    CHECK_EQ(esc_sim_store_moves(NULL, 1u, 2u, out, 5u), 0u);
+    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, NULL, 5u), 0u);
 }
 
 /*
@@ -449,44 +518,49 @@ TEST_CASE(the_set_points_stay_within_the_escs_ratings)
 }
 
 /*
- * Items that apply to different models may share their number and a
- * value number, each value with its own moves after the selection.  The
- * simulated ESC takes the first match's moves only, and never writes more
- * than the space it is given: the store move and 4 moves each would be 9
- * into the sim's 5 (an overflow ASan reports without the cap).
+ * What the PD mini's 20 V leaves out, as the docs count it: of the profiles
+ * the engine runs, one family whose lowest cell count needs more
+ * (hobbywing-skywalker-v2-hv-opto, 22.8 V), and six model rows, each at
+ * 22.8 V: its two models and four of families that open.
  */
-TEST_CASE(shared_numbers_do_not_overflow_the_store_moves)
+TEST_CASE(twenty_volts_leave_out_one_family_and_six_models)
 {
-    static esc_value_t v1[1], v2[1];
-    static esc_item_t it[2];
-    static esc_profile_t p;
-    p = *esc_profiles_find("kontronik-pix");
-    v1[0] = (esc_value_t){ "a", 2u, false, ESC_THR_NONE, 0u, 4u,
-                           { ESC_THR_MIN, ESC_THR_MAX, ESC_THR_MIN,
-                             ESC_THR_MAX } };
-    v2[0] = (esc_value_t){ "b", 2u, false, ESC_THR_NONE, 0u, 4u,
-                           { ESC_THR_MID, ESC_THR_MIN, ESC_THR_MID,
-                             ESC_THR_MIN } };
-    it[0] = p.items[0];
-    it[0].number = 1u;
-    it[0].values = v1;
-    it[0].value_count = 1u;
-    it[1] = it[0];
-    it[1].values = v2;
-    p.items = it;
-    p.item_count = 2u;
-    p.store_throttle = ESC_THR_MID;
-    esc_throttle_t out[ESC_AFTER_MAX + 1u];
-    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, out,
-                                 sizeof(out) / sizeof(out[0])), 5u);
-    CHECK_EQ(out[0], ESC_THR_MID);              /* the store move */
-    CHECK_EQ(out[1], ESC_THR_MIN);              /* the first match's */
-    CHECK_EQ(out[4], ESC_THR_MAX);
-    esc_throttle_t two[2];
-    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, two, 2u), 2u);
-    CHECK_EQ(esc_sim_store_moves(&p, 1u, 9u, out, 5u), 1u);   /* no value */
-    CHECK_EQ(esc_sim_store_moves(NULL, 1u, 2u, out, 5u), 0u);
-    CHECK_EQ(esc_sim_store_moves(&p, 1u, 2u, NULL, 5u), 0u);
+    static const char *const k_rows[] = {
+        "FLYFUN 130A HV OPTO V5", "FLYFUN 160A HV OPTO V5",
+        "Skywalker 130A HV OPTO V2", "Skywalker 160A HV OPTO V2",
+        "Gecko 120A OPTO HV", "Gecko 150A OPTO HV",
+    };
+    unsigned families = 0u, rows = 0u, runs = 0u;
+    for (size_t i = 0; i < esc_profiles_count(); ++i) {
+        const esc_profile_t *p = esc_profiles_at(i);
+        if (esc_stick_kind(p, NULL) == ESC_STICK_KIND_NONE) {
+            continue;
+        }
+        ++runs;
+        if (esc_stick_model_mv(p, -1) > 20000u) {
+            ++families;
+            CHECK_STR_EQ(p->id, "hobbywing-skywalker-v2-hv-opto");
+            CHECK_EQ(esc_stick_model_mv(p, -1), 22800u);
+        }
+        for (int m = 0; m < (int)p->model_count; ++m) {
+            if (esc_stick_model_mv(p, m) <= 20000u) {
+                continue;
+            }
+            ++rows;
+            CHECK_EQ(esc_stick_model_mv(p, m), 22800u);
+            bool known = false;
+            for (size_t k = 0; k < sizeof(k_rows) / sizeof(k_rows[0]); ++k) {
+                known = known || strcmp(p->models[m].name, k_rows[k]) == 0;
+            }
+            if (!known) {
+                T_FAIL("%s: %s needs %u mV", p->id, p->models[m].name,
+                       (unsigned)esc_stick_model_mv(p, m));
+            }
+        }
+    }
+    CHECK_EQ(runs, 24u);
+    CHECK_EQ(families, 1u);
+    CHECK_EQ(rows, 6u);
 }
 
 /* A two-stage power-up takes one entry time for every change; a value
@@ -559,96 +633,20 @@ TEST_CASE(shared_entry_times_compare_what_the_run_waits)
     CHECK_STR_EQ(why, "changes need different entry times");
 }
 
-/* What one power-up cannot take is refused, not reordered or guessed. */
-TEST_CASE(a_power_up_position_that_cannot_work_is_refused)
-{
-    const char *why = NULL;
-    /* Two stages: the ESC picks the order, so the changes share one. */
-    rig("hobbywing-flyfun-8item");
-    static esc_profile_t two;
-    static esc_item_t two_items[2];
-    static esc_value_t two_values[2];
-    two = *r.p;
-    memcpy(two_items, r.p->items, sizeof(two_items));
-    memcpy(two_values, r.p->items[1].values, sizeof(two_values));
-    two_values[1].entry_throttle = ESC_THR_MID;
-    two_items[1].values = two_values;
-    two.items = two_items;
-    two.item_count = 2;
-    esc_stick_change_t c[2] = { { 0u, 1u }, { 1u, 1u } };
-    CHECK(!esc_stick_check(&two, c, 2, &r.t, &why));
-    CHECK_STR_EQ(why, "changes need different power-up positions");
-    c[0] = (esc_stick_change_t){ 1u, 1u };
-    CHECK(esc_stick_check(&two, c, 1, &r.t, &why));
-    /* The rest there is the select move: hobbywing selects at MIN. */
-    two_values[1].entry_throttle = ESC_THR_MIN;
-    CHECK(!esc_stick_check(&two, c, 1, &r.t, &why));
-    CHECK_STR_EQ(why, "select move is the rest");
-
-    /* A hand at a powered ESC with the stick at MAX. */
-    rig("kontronik-jazz");
-    static esc_profile_t jazz;
-    static esc_item_t jazz_item;
-    static esc_value_t jazz_values[9];
-    jazz = *r.p;
-    jazz_item = r.p->items[0];
-    memcpy(jazz_values, r.p->items[0].values,
-           r.p->items[0].value_count * sizeof(jazz_values[0]));
-    jazz_values[2].entry_throttle = ESC_THR_MAX;
-    jazz_item.values = jazz_values;
-    jazz.items = &jazz_item;
-    esc_stick_change_t m[1] = { { 0u, 2u } };
-    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
-    CHECK_STR_EQ(why, "select move is the rest");
-    jazz.select_throttle = ESC_THR_MID;
-    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
-    CHECK_STR_EQ(why, "manual step");
-    /* A named rest away from a value's position needs the entry time. */
-    jazz.listen_throttle = ESC_THR_MIN;
-    jazz.entry_hold_ms = 0u;
-    jazz_values[2].entry_throttle = ESC_THR_MID;
-    jazz.select_throttle = ESC_THR_MAX;
-    CHECK(!esc_stick_check(&jazz, m, 1, &r.t, &why));
-    CHECK_STR_EQ(why, "rest move, no entry time");
-    /* An at_power_up step's hold is a time the profile states: the run
-     * waits it (esc_stick_change_entry_ms()), so the move to the rest is
-     * timed and the change runs.  Entry MIN, the value at MID, the rest at
-     * MIN, the hold the only time given. */
-    static const esc_manual_t k_held[] = {
-        { ESC_MANUAL_AT_POWER_UP, "Hold the button.", 3000u, NULL, false, false },
-    };
-    jazz.manual = k_held;
-    jazz.manual_count = 1;
-    CHECK_EQ(jazz.entry_throttle, ESC_THR_MIN);
-    CHECK_EQ(esc_stick_change_entry(&jazz, &m[0]), ESC_THR_MID);
-    CHECK_EQ(esc_stick_change_entry_ms(&jazz, &m[0], &r.t), 3000u);
-    CHECK(esc_stick_check(&jazz, m, 1, &r.t, &why));
-    /* The same hold, the value at the entry's MIN and the rest at MID:
-     * the profile-wide rule takes the hold too. */
-    jazz.listen_throttle = ESC_THR_MID;
-    jazz_values[2].entry_throttle = ESC_THR_NONE;
-    CHECK(esc_stick_kind(&jazz, &why) != ESC_STICK_KIND_NONE);
-    jazz.manual = NULL;
-    jazz.manual_count = 0;
-    jazz.automatable = ESC_AUTO_FULL;
-    CHECK_EQ(esc_stick_kind(&jazz, &why), ESC_STICK_KIND_NONE);
-    CHECK_STR_EQ(why, "rest move, no entry time");
-}
-
 int main(void)
 {
     RUN(the_profiles_the_engine_runs_are_the_counted_menus);
     RUN(a_run_that_cannot_work_is_refused_before_it_starts);
     RUN(the_voltage_is_the_lowest_cell_count_the_family_states);
-    RUN(an_item_with_one_value_is_not_offered);
     RUN(reset_and_exit_are_not_changes);
+    RUN(an_item_with_one_value_is_not_offered);
     RUN(a_hold_on_every_value_times_the_rest_move);
     RUN(a_step_the_run_cannot_wait_for_is_refused);
-    RUN(twenty_volts_leave_out_one_family_and_six_models);
-    RUN(the_set_points_stay_within_the_escs_ratings);
+    RUN(a_power_up_position_that_cannot_work_is_refused);
     RUN(shared_numbers_do_not_overflow_the_store_moves);
+    RUN(the_set_points_stay_within_the_escs_ratings);
+    RUN(twenty_volts_leave_out_one_family_and_six_models);
     RUN(an_entry_time_that_cannot_work_is_refused);
     RUN(shared_entry_times_compare_what_the_run_waits);
-    RUN(a_power_up_position_that_cannot_work_is_refused);
     return test_summary("esc_stick_rules");
 }
