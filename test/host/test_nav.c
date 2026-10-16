@@ -2577,18 +2577,24 @@ TEST_CASE(the_widest_chip_row_clears_the_home_tag)
     memset(&st, 0, sizeof(st));
     st.armed       = true;
     st.armed_roles = UI_ARMED_MOTOR;
-    st.run_seconds = 59u * 60u + 59u;
     st.mode        = ui_band_mode(false);
     const gfx_rect_t tag = ui_home_tag_rect(ui_router_title(SCREEN_MOTOR));
-    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
-        ui_text_set_language((ui_lang_t)lang);
-        for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
-             ++chip) {
-            gfx_rect_t r;
-            if (ui_band_chip_rect(&st, (ui_band_chip_t)chip, &r)
-                && r.x < tag.x + tag.w) {
-                T_FAIL("language %d, chip %d at x %d, the tag ends at %d",
-                       lang, chip, r.x, tag.x + tag.w);
+    /* A run of minutes, of hours and of 99 hours. */
+    const uint32_t runs[] = { 59u * 60u + 59u, 3600u,
+                              99u * 3600u + 59u * 60u + 59u };
+    for (int k = 0; k < 3; ++k) {
+        for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+            st.run_seconds = runs[k];
+            ui_text_set_language((ui_lang_t)lang);
+            for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT;
+                 ++chip) {
+                gfx_rect_t r;
+                if (ui_band_chip_rect(&st, (ui_band_chip_t)chip, &r)
+                    && r.x < tag.x + tag.w) {
+                    T_FAIL("run %lu s, language %d, chip %d at x %d, the tag "
+                           "ends at %d", (unsigned long)runs[k], lang, chip, r.x,
+                           tag.x + tag.w);
+                }
             }
         }
     }

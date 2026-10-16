@@ -64,9 +64,15 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
 void ui_tile(gfx_canvas_t *c, gfx_rect_t r, int icon_dy, ui_icon_fn icon,
              const char *name, const char *line, bool pressed);
 
-/** Small status pill: a filled dot, then a label. */
+/** Small status pill: a filled dot, then a label UI_PILL_INSET px from
+ *  the pill's left edge, the dot centred half that from it. */
+#define UI_PILL_INSET 24
 void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
              gfx_color_t dot, gfx_color_t fill);
+
+/** ui_pill() with the label @p inset px from the left edge. */
+void ui_pill_inset(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t dot, gfx_color_t fill, int inset);
 
 /** Horizontal proportional bar, @p frac in 0..1, with an optional peak tick. */
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,

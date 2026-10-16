@@ -157,16 +157,22 @@ int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
     return n;
 }
 
-void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-             gfx_color_t dot, gfx_color_t fill)
+void ui_pill_inset(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                   gfx_color_t dot, gfx_color_t fill, int inset)
 {
     gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, r.h / 2, fill);
     int cy = r.y + r.h / 2;
-    gfx_fill_circle(c, r.x + 12, cy, 4, dot);
-    gfx_draw_circle(c, r.x + 12, cy, 6, gfx_lerp(dot, fill, 130));
+    gfx_fill_circle(c, r.x + inset / 2, cy, 4, dot);
+    gfx_draw_circle(c, r.x + inset / 2, cy, 6, gfx_lerp(dot, fill, 130));
     if (label) {
-        gfx_text(c, r.x + 24, cy - 8, label, UI_FONT_LABEL, UI_TEXT, 1);
+        gfx_text(c, r.x + inset, cy - 8, label, UI_FONT_LABEL, UI_TEXT, 1);
     }
+}
+
+void ui_pill(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+             gfx_color_t dot, gfx_color_t fill)
+{
+    ui_pill_inset(c, r, label, dot, fill, UI_PILL_INSET);
 }
 
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,

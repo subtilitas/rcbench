@@ -2217,7 +2217,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "programmer-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strcmp(view, "programmer-stick-timing") == 0) {
-                tap(698, UI_BAND_H + 70);       /* TIMING */
+                tap(698, UI_BAND_H + 27);       /* TIMING */
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {

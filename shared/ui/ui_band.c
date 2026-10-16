@@ -110,10 +110,14 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * long mode string cannot push the clock under the ARMED badge.  One layout
  * for drawing and for hit-testing, so a tap finds the chip that is drawn.
  * Chips stand 6 px apart and each takes the 3 px beside it for a tap, so
- * the strips meet without overlapping.  MOTOR & ESC's home tag ends where
- * its widest row starts: the clock under an hour, ARMED MOTOR, SIM and
- * NO LINK's 16 cells.
+ * the strips meet without overlapping.  A label starts UI_PILL_INSET px
+ * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
+ * that would reach CHIPS_MIN_X, where MOTOR & ESC's home tag, the widest,
+ * ends, starts its labels 16 px in: its widest row is a clock of hours,
+ * ARMED MOTOR, SIM and NO LINK's 16 cells.
  */
+#define CHIPS_MIN_X    226
+#define CHIP_INSET_TIGHT 16
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
     UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
@@ -122,12 +126,15 @@ static const ui_band_chip_t k_order[] = {
 typedef struct {
     bool       on[UI_BAND_CHIP_COUNT];
     gfx_rect_t r[UI_BAND_CHIP_COUNT];
+    int        inset;      /* the labels' start in their chips */
 } chips_t;
 
-static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+static int chips_place(const ui_bench_status_t *st, chips_t *l, int inset)
 {
     memset(l, 0, sizeof(*l));
+    l->inset = inset;
     int right = PANEL_W - STOP_W - STOP_M - 12;
+    int left = right;
     for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         const ui_band_chip_t chip = k_order[i];
         if (!chip_shown(st, chip)) {
@@ -136,12 +143,21 @@ static void chips_layout(const ui_bench_status_t *st, chips_t *l)
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
         /* LINK alone carries a dot. */
-        const int w = 14 + gfx_text_width(&gfx_font_8x16, label, 1) + 14
+        const int w = inset + gfx_text_width(&gfx_font_8x16, label, 1) + 4
                       + (chip == UI_BAND_CHIP_LINK ? 14 : 0);
         l->on[chip] = true;
         l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), 10, (int16_t)w,
                                     (int16_t)(UI_BAND_H - 20) };
-        right = right - w - 6;
+        left = right - w;
+        right = left - 6;
+    }
+    return left;
+}
+
+static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+{
+    if (chips_place(st, l, UI_PILL_INSET) < CHIPS_MIN_X) {
+        (void)chips_place(st, l, CHIP_INSET_TIGHT);
     }
 }
 
@@ -480,6 +496,6 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         default:
             break;
         }
-        ui_pill(c, l.r[chip], label, dot, fill);
+        ui_pill_inset(c, l.r[chip], label, dot, fill, l.inset);
     }
 }
