@@ -2624,8 +2624,8 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SAME PWM SLICE AS GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
-| `SAME PWM CHANNEL AS GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
+| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
+| `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
 The line stands under the protocol, in amber, until the next pick, the next
 tick that lands, the next visit to the screen or a change of board. A line
