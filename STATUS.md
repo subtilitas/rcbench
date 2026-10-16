@@ -210,12 +210,12 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 123 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 124 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
 `test_motor`, `test_motor_arm`, `test_value_state`, `test_servo`, `test_servo_arm`,
-`test_analyser`, `test_programmer`, `test_balance`, `test_battery`,
+`test_analyser`, `test_programmer`, `test_esc_stick_panel`, `test_balance`, `test_battery`,
 `test_settings`, `test_logfile`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
 `test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
