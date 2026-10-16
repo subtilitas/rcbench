@@ -42,6 +42,35 @@ today. The smallest headroom through one of their files is 656 bytes
 (`servo_report.c` on the panel main task). Each of these PRs still runs
 `stack_check.py --check-doc` on the panel ELF before and after.
 
+## Status
+
+The owner took every fork recommendation (F1 to F25). Open PRs, each on
+its own branch from main edd813d6, CI green on every job including both
+firmware images and both `stack_check --check-doc` steps unless noted:
+
+| Row | PR | Branch | State |
+| --- | --- | --- | --- |
+| 0a | #416 | `codesize/0a-doc-citations` | open, green |
+| 0b | #417 | `codesize/0b-stack-elf` | open, green |
+| 0b (`PORT_CALLS`) | #418 | `codesize/0b-port-calls` (on #417) | open, green; no measured depth changed |
+| 1 | #420 | `codesize/1-arm-flash-gates` | open, CI pending |
+| 2 | #419 | `codesize/2-arming-step` | open, green; no measured depth changed |
+| 3 | #421 | `codesize/3-bench-telem` | open, CI pending |
+
+Measured against the rows above:
+
+- 0a: about 200 citations in 4 hardware docs, not the counts listed. Seven
+  `ui_text.def` citations in `IOBoard.md` describe text that is not in the
+  tree (OneShot/MultiShot, KISS telemetry, signal-only mode, socket
+  ceilings); they wait for the owner to reword or delete them.
+- 2: the ARM branch holds about 15 lines of decisions; the rest is I/O.
+  Only the decisions move (`arming_handshake_step()`), +39/-18 in `main.c`.
+- 3: +340/-88 over 13 files; `shared/bench` depends on `protocols/dshot`.
+- #421 and #416 both rewrite 4 rows of `IOBoard.md`; the second to merge
+  keeps #421's rows.
+- The host suite counts 127 tests in a build configured by `coverage.py`:
+  `esc_parity` is not registered with coverage on.
+
 ## Rules for every PR of the plan
 
 1. Behaviour is identical. A move changes no logic, timing or wire format.
