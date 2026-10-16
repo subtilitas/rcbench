@@ -68,7 +68,7 @@ OPEN reads the file and shows what it decided before anything is plotted.
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
-The right list names each column with its first value and its range, lowest to highest. A tap on a numeric column adds it to the plot or takes it off; the title counts them, `PLOT 4/4`. SEP and NUM step through the choices, AUTO first, when the values or columns look wrong. BACK returns to the list; PLOT draws the chosen columns.
+The right list names each column with its first value and its range, lowest to highest. A tap on a numeric column adds it to the plot or takes it off; the title counts them, `PLOT  4/4`. SEP and NUM step through the choices, AUTO first, when the values or columns look wrong. BACK returns to the list; PLOT draws the chosen columns.
 
 A last row without a line feed is a row cut off by a power loss or a full card. It is left out, ROWS shows in the warning colour and the view reads `INCOMPLETE LAST ROW. SKIPPED.`.
 

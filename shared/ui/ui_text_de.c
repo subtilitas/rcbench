@@ -2026,7 +2026,7 @@ static const char *const k_servo[SERVO_STR_COUNT] = {
     [SERVO_STR_L_R_SEARCH]       = "Gesucht:         von %u us bis %u us und "
                                    "%u us",
     [SERVO_STR_L_R_OUTPUT]       = "Ausgang:         %s, %u Hz",
-    [SERVO_STR_L_R_PULSE]        = "Pulsbereich:     Centre %u us, %u-%u us",
+    [SERVO_STR_L_R_PULSE]        = "Pulsbereich:     Mitte %u us, %u-%u us",
     [SERVO_STR_L_R_METER]        = "Strom:           INA3221 CH1, Fenster "
                                    "zu 50 ms, Shunt %.1f mOhm",
     [SERVO_STR_L_R_RULE]         = "Suchregel:       Schritte zu 10 us, 120 "

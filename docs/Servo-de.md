@@ -78,7 +78,7 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | Zeile | Bedingung |
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
-| `LETZTER BERICHT SCHREIBEN LÄUFT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
+| `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
 | `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | INA3221 oder sein CH1 in SETUP aus, ein Koprozessor älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000 ms gehalten, oder kein Fenster mit Strom in den letzten 200 ms |
@@ -375,7 +375,7 @@ Prüfling:        SERVO
 Firmware:        rcbench 0.20.0
 Modus:           Suche, dann LEFT ANGLE und RIGHT ANGLE programmiert
 Ausgang:         PROG-PORT GP13, 50 Hz
-Pulsbereich:     Centre 1500 us, 1000-2000 us
+Pulsbereich:     Mitte 1500 us, 1000-2000 us
 Gesucht:         von 1500 us bis 1000 us und 2000 us
 Strom:           INA3221 CH1, Fenster zu 50 ms, Shunt 100.0 mOhm
 Suchregel:       Schritte zu 10 us, 120 ms warten, Mittel über 80 ms; angelaufen über 1.8 x frei und +0.15 A
