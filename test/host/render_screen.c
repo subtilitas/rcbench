@@ -1956,6 +1956,13 @@ int main(int argc, char **argv)
             tap(78, UI_BAND_H + 153);
             tap(212, UI_BAND_H + 381);
             tap(78, UI_BAND_H + 229);
+        } else if (strncmp(view, "supply-trip-", 12) == 0) {
+            /* The fit check's: the output switched off by either trip. */
+            st.output = false;
+            st.trip = (view[12] == 'i') ? SUPPLY_TRIP_CURRENT
+                                        : SUPPLY_TRIP_VOLTAGE;
+            supply_screen_set_output(false);
+            supply_screen_push(&st);
         }
     }
 
@@ -2317,6 +2324,13 @@ int main(int argc, char **argv)
             b.volts[i] = v[i];
             b.milliohms[i] = ir[i];
         }
+        /* The fit check's: the two other verdicts, the weak cell 15 mV
+         * and 75 mV under the next lowest. */
+        if (strcmp(view, "battery-healthy") == 0) {
+            b.volts[2] = 3.795f;
+        } else if (strcmp(view, "battery-replace") == 0) {
+            b.volts[2] = 3.731f;
+        }
         b.capacity_mah = 5000.0f;
         b.drawn_mah    = 1840.0f;
         b.valid        = true;
@@ -2392,6 +2406,28 @@ int main(int argc, char **argv)
                 .polls = 5323, .timeouts = 44,
                 .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
                 .bus_off = true,
+            };
+            r = q;
+        } else if (strcmp(view, "busfault-lossy") == 0
+                   || strcmp(view, "busfault-dropped") == 0) {
+            /* The fit check's: the other two verdicts' texts, and the
+             * coprocessor's dropped count under DROPPED. */
+            const bool dropped = strcmp(view, "busfault-dropped") == 0;
+            r.verdict = dropped ? CAN_SELFTEST_DROPPED : CAN_SELFTEST_LOSSY;
+            r.corrupt = 0;
+            r.remote_overflows = dropped ? 16u : 0u;
+        } else if (strncmp(view, "busfault-lost-", 14) == 0) {
+            /* The fit check's: every other state of a dropped link. */
+            const char *st = view + 14;
+            const busfault_report_t q = {
+                .kind = BUSFAULT_LINK_LOST,
+                .bus = strcmp(st, "rejoin") == 0 ? BUSFAULT_BUS_RECOVERING
+                     : strcmp(st, "stopped") == 0 ? BUSFAULT_BUS_STOPPED
+                     : strcmp(st, "running") == 0 ? BUSFAULT_BUS_RUNNING
+                                                  : BUSFAULT_BUS_UNKNOWN,
+                .down_s = 47, .recoveries = 44,
+                .polls = 5323, .timeouts = 44,
+                .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
             };
             r = q;
         }

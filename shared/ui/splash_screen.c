@@ -25,7 +25,7 @@ static const ui_text_id_t k_labels[SPLASH_STEP_COUNT] = {
 
 static struct {
     splash_result_t result[SPLASH_STEP_COUNT];
-    char            detail[SPLASH_STEP_COUNT][32];
+    char            detail[SPLASH_STEP_COUNT][64];
     float           held_s;
     bool            skipped;
     unsigned        drawn_mask;   /**< per framebuffer, bit per buffer      */
@@ -126,7 +126,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
         const int y = LIST_Y + i * ROW_H;
-        gfx_fill_rect(c, LIST_X, y, 400, ROW_H - 4,
+        gfx_fill_rect(c, LIST_X, y, W - LIST_X, ROW_H - 4,
                       ui_theme_color(UI_C_BG));
         gfx_text(c, LIST_X, y + 6, ui_tr(k_labels[i]), &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_DIM), 1);

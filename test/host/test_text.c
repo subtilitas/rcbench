@@ -166,7 +166,7 @@ TEST_CASE(every_string_fits_its_declared_field)
 /*
  * Buffers are bytes and a German letter is two of them: an alert has to fit
  * the router's and the snapshot's UI_ALERT_MAX, terminator included, and
- * everything main.c hands the splash as a detail its 32.
+ * everything main.c hands the splash as a detail its 64.
  */
 TEST_CASE(alerts_and_details_fit_their_buffers)
 {
@@ -189,7 +189,7 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
         for (size_t k = 0; k < sizeof(k_details) / sizeof(k_details[0]);
              ++k) {
             const size_t n = strlen(ui_tr_in((ui_lang_t)l, k_details[k]));
-            if (n >= 32u) {
+            if (n >= 64u) {
                 T_FAIL("%s is %zu bytes", ui_text_name(k_details[k]), n);
             }
         }
