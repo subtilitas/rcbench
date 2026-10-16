@@ -34,16 +34,6 @@ static inline void check_split(const char *raw, const char *digits, int sign,
     }
 }
 
-static inline double parsed(const char *raw, log_conv_t conv)
-{
-    double out = 0.0;
-    if (!log_parse_with(raw, conv, &out, NULL, 0)) {
-        T_FAIL("parse(\"%s\") rejected", raw);
-        return 0.0;
-    }
-    return out;
-}
-
 static char g_text[8192];
 static size_t g_len;
 static log_source_t g_src;

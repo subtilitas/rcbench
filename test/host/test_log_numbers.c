@@ -56,6 +56,16 @@ static log_conv_t infer(const char *const *vals, int n, log_ambig_t fallback,
     return log_votes_result(&v, fallback, confident, conflict);
 }
 
+static double parsed(const char *raw, log_conv_t conv)
+{
+    double out = 0.0;
+    if (!log_parse_with(raw, conv, &out, NULL, 0)) {
+        T_FAIL("parse(\"%s\") rejected", raw);
+        return 0.0;
+    }
+    return out;
+}
+
 TEST_CASE(one_value_settles_the_whole_column)
 {
     /* "10,23" proves comma-decimal, so "1,234" must read 1.234 not 1234. */
