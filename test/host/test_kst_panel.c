@@ -6165,7 +6165,7 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
         const gfx_rect_t last = val(PG_SERVO, 4, 0);
         const int fit = (AREA.y + AREA.h - 6 - (last.y + last.h)) / 18;
         int held = 0;
-        int msg = 0;
+        int text = 0;
 
         ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
         held = max_int(held, kst_panel_text_rows(TR(KP_M_STOPPED)));
@@ -6197,13 +6197,13 @@ TEST_CASE(every_message_fits_whole_beside_every_standing_pair)
                                                .reg = regs[r],
                                                .arg = (uint16_t)args[a] };
 
-                    msg = max_int(msg, message_rows(&m));
+                    text = max_int(text, message_rows(&m));
                 }
             }
         }
         CHECK(held > 0);
-        CHECK(msg > 0);
-        CHECK(held + msg <= fit);
+        CHECK(text > 0);
+        CHECK(held + text <= fit);
     }
     ui_text_set_language(UI_LANG_EN);
 }
