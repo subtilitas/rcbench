@@ -40,7 +40,8 @@ UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 REPORT = SHARED / "servo" / "servo_report.c"
 # The files that look the report's strings up, each with its macro: the
 # automatic test's report and the limit run's.
-LOOKUPS = ((REPORT, "S"), (SHARED / "servo" / "servo_limrun.c", "LS"))
+LOOKUPS = ((REPORT, "S"),
+           (SHARED / "servo" / "servo_limrun_report.c", "LS"))
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]

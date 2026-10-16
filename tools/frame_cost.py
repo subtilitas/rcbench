@@ -113,6 +113,7 @@ SOURCES = [
     "shared/servo/servo_report.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_limrun.c",
+    "shared/servo/servo_limrun_report.c",
     "protocols/sbus/sbus.c",
     "protocols/dshot/dshot_telem.c",
     "shared/outputs/outputs.c",
