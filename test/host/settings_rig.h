@@ -177,6 +177,7 @@ static inline void every_id_observer(setting_id_t id)
         ++s_seen_ids[id];
     }
 }
+
 /* The middle of the hub's tile @p index, in panel coordinates. */
 static inline int tile_x(int index)
 {
@@ -273,6 +274,13 @@ static inline unsigned save_face(void)
     return (unsigned)(sum & 0xffffffffUL);
 }
 
+/*
+ * The cases below put finger frames through the tracker and the router
+ * (touch_feed.h), one report every REPORT_S with the frame's tick after it,
+ * and compare every setting before and after.  Coordinates are the
+ * panel's.  XL is on a row's label, XM and XP are the centres of the "-"
+ * and the "+" column.
+ */
 #define REPORT_S 0.010f
 #define XL       400
 #define XM       (MINUS_X + BTN_W / 2)
