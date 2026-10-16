@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "out_pwm_map.h"
 #include "outputs_pages.h"
 
 /*
@@ -797,6 +798,12 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
     if (outbind_chosen(b) >= cap_of(p)) {
         return false;
     }
+    /* A compare register drives one pulse width, and the coprocessor binds
+     * it to one pin. */
+    if (outbind_pwm_clash(b, index, OUTBIND_NO_GPIO, NULL)
+        != OUTBIND_CLASH_NONE) {
+        return false;
+    }
     /*
      * The page's own budgets, shared by every protocol: eight slots and eight
      * channels.  PPM renders eight channels on its one pin, so it fills the
@@ -807,6 +814,49 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
     }
     return (unsigned)outbind_channels_used(b) + p->channels
            <= LINK_OUT_CHANNELS;
+}
+
+outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
+                                  uint8_t prog_gpio, uint8_t *with)
+{
+    if (with != NULL) {
+        *with = OUTBIND_NO_GPIO;
+    }
+    if (b == NULL) {
+        return OUTBIND_CLASH_NONE;
+    }
+    const outbind_board_t *bd = outbind_board(b->board);
+    const uint8_t proto = (b->proto < OUTBIND_PROTOS) ? b->proto : 0u;
+    if (bd == NULL || index >= bd->count || bd->pins[index].reserved
+        || k_protos[proto].driver != OUT_DRIVER_PWM
+        || outbind_group_of(b, index) != 0u) {
+        return OUTBIND_CLASH_NONE;
+    }
+    const uint8_t gpio = bd->pins[index].gpio;
+    /*
+     * The port's own pin is the port's, which is a different refusal and
+     * the screens draw it as the port.  A slot on the port's pin leaves the
+     * port without one, and then its slice is free.
+     */
+    if (prog_gpio <= OUT_MAX_PIN && prog_gpio != gpio
+        && outbind_group_of(b, outbind_index_of(b->board, prog_gpio)) == 0u
+        && out_pwm_same_slice(gpio, prog_gpio)) {
+        if (with != NULL) {
+            *with = prog_gpio;
+        }
+        return OUTBIND_CLASH_PROG_SLICE;
+    }
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        const uint8_t g = outbind_group_of(b, i);
+        if (i != index && g != 0u && k_protos[g].driver == OUT_DRIVER_PWM
+            && out_pwm_same_compare(bd->pins[i].gpio, gpio)) {
+            if (with != NULL) {
+                *with = bd->pins[i].gpio;
+            }
+            return OUTBIND_CLASH_COMPARE;
+        }
+    }
+    return OUTBIND_CLASH_NONE;
 }
 
 bool outbind_toggle(outbind_t *b, uint8_t index)

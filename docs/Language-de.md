@@ -73,7 +73,7 @@ passen.
   ARMED im Statusband, und SILENT im Urteil des ANALYSER. ARM und DISARM sind
   die Tasten, SAFE und ARMED die Zustände.
 - Die Begriffe des Fachs: Frame Rate, Throttle, Failsafe, Brown-out, Timing,
-  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Pad, Resync,
+  Endpoint, Link, Live, Online, Touch, Display, Pin, Slot, Slice, Pad, Resync,
   Bad tail, tx err, rx err, bus err, Frame, Access Point (ACCESS POINT auf
   FILES & UPDATE), Upload, Build.
 - Einheiten, die Stickpositionen MIN, MID und MAX und die Tastenbeschriftungen

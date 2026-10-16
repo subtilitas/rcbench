@@ -2862,6 +2862,31 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
+SERVO PWM und MOTOR PWM laufen auf den PWM-Slices, und der Koprozessor lehnt
+dort zwei Bindungen ab ([Servo-PWM](DShot-de.md#servo-pwm)). Unter diesen
+beiden Einträgen hält der Bildschirm einen solchen Pin, wie er einen Pin
+eines anderen Protokolls hält: grau, ohne Haken, und unter seinem Namen der
+Pin, mit dem er kollidiert.
+
+| Zelle | Zeile nach einem Tippen darauf | Regel |
+| --- | --- | --- |
+| `SLICE VON GP13` | `GP28: SLICE VON PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin des Programmierports, solange der Port ihn hält; GP13 und GP28 sind Slice 6 |
+| `PWM VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
+
+Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
+zum nächsten Haken, der greift, zum nächsten Besuch des Bildschirms oder zu
+einem Wechsel der Platine. Eine Zeile zum Budget des Protokolls (`ALLE 8
+SLOTS BELEGT` und die anderen) geht vor. DShot und PPM laufen auf PIO
+(Programmable I/O), nicht auf einem Slice, und bekommen beide Pins
+angeboten.
+
+Einschränkung: Die Slice-Regel braucht den Pin des Programmierports, den das
+Panel vom Koprozessor liest. Bis diese Lesung da ist, bis zu 500 ms nach dem
+Aufbau der Verbindung oder einem Wechsel des Port-Pins, wird GP28 angeboten,
+und ein Tippen darauf endet in `LETZTER SCHREIBVORGANG: ABGELEHNT`. Andere
+Prüfungen des Koprozessors, etwa die Bildrate der SERVO-Seite auf einem Pin
+neben MOTOR PWM, lehnen auf diesem Bildschirm ebenfalls ohne Grund ab.
+
 Die Pad-Nummer unter jedem Pin ist die auf der Platine aufgedruckte, damit wer
 Pads zählt und wer GPIO-Nummern (General-Purpose Input/Output) liest beim
 gleichen Pin ankommen.
@@ -3053,6 +3078,13 @@ nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal. Ein
 Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
 Koprozessor gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.
+
+Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der Koprozessor
+auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GP28, solange
+der Port GP13 hält, und der Partner eines als PWM gebundenen Pins, GP16
+neben GP0. Ein Tippen darauf ändert nichts und setzt die Zeile des
+Outputs-Bildschirms unter die Zählung: `GP28: SLICE VON PROG-PORT GP13`,
+`GP16: GLEICHER PWM-KANAL WIE GP0`.
 
 ![GP13 beim Programmierport](img/de/picker-prog.png)
 

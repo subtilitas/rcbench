@@ -2539,6 +2539,18 @@ int main(int argc, char **argv)
             outbind_set_proto(&b, proto_named("PPM"));
             outputs_screen_set_binding(&b);
         }
+        if (strcmp(view, "outputs-prog") == 0) {
+            /* GP28 tapped: slice 6 is the port's, so the line under the
+             * protocol says why the cell is held.  Its cell is column 3,
+             * row 4 of the grid (288 + 3 * 125, 16 + 4 * 57). */
+            touch_event_t d = { TOUCH_EVENT_DOWN,
+                                { 0, 288 + 3 * 125 + 60,
+                                  UI_BAND_H + 16 + 4 * 57 + 26, 40 }, 0u };
+            touch_event_t u = d;
+            u.type = TOUCH_EVENT_UP;
+            ui_router_event(&d);
+            ui_router_event(&u);
+        }
         if (strcmp(view, "outputs-protocol") == 0
             || strcmp(view, "outputs-off") == 0) {
             /* Tap the dropdown open. */
@@ -2649,6 +2661,20 @@ int main(int argc, char **argv)
                                             NULL);
         }
         ui_router_goto(SCREEN_PICKER);
+        if (strcmp(view, "picker-prog") == 0) {
+            /* GP28 tapped: slice 6 is the port's, so the line under the
+             * count says why it is held. */
+            gfx_rect_t k;
+            if (picker_screen_button_rect(
+                    outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 28u), &k)) {
+                const int16_t kx = (int16_t)(k.x + k.w / 2);
+                const int16_t ky = (int16_t)(k.y + k.h / 2 + UI_BAND_H);
+                touch_event_t d = { TOUCH_EVENT_DOWN, { 0, kx, ky, 40 }, 0u };
+                touch_event_t u = { TOUCH_EVENT_UP,   { 0, kx, ky, 40 }, 0u };
+                ui_router_event(&d);
+                ui_router_event(&u);
+            }
+        }
         if (strcmp(view, "picker-protocol") == 0) {
             /* The protocol list tapped open over the board. */
             const gfx_rect_t f = picker_screen_list_face();

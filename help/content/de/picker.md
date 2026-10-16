@@ -47,6 +47,8 @@ Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die Pins über alle Protokolle. Da
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
 | `OFF ZEIGT ALLES, ÄNDERT NICHTS` | OFF ist gewählt |
 | `NICHT GELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
+| `GP28: SLICE VON PROG-PORT GP13` | ein Tipp auf GP28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GP13 hält: ein PWM-Slice; die Taste ist grau |
+| `GP16: GLEICHER PWM-KANAL WIE GP0` | ein Tipp auf GP16 unter SERVO PWM oder MOTOR PWM bei GP0 als PWM gebunden: ein PWM-Compare-Register; die Taste ist grau |
 
 ![Acht von acht Slots belegt](view:picker-full)
 

@@ -127,6 +127,9 @@ static struct {
     bool     open;           /**< the protocol list is open                  */
     /* The binding shown is not one a read confirmed: no button acts. */
     bool     unread;
+    /* The pin whose tap a PWM clash refused last, or -1: the reason line
+     * says why, until another pick or tick. */
+    int      refused;
     bool     chrome_valid[MAX_FBS];
 } s;
 
@@ -168,8 +171,11 @@ void picker_screen_set_binding(const outbind_t *b)
          * picker still named the board before, and nothing else asks again
          * until the screen is entered.
          */
-        if (s.bind.board != was && s.source != NULL) {
-            s.source(s.bind.board);
+        if (s.bind.board != was) {
+            s.refused = -1;     /* an index into the catalogue before */
+            if (s.source != NULL) {
+                s.source(s.bind.board);
+            }
         }
     }
 }
@@ -622,6 +628,17 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
     if (s.unread || (bd != NULL && bd->fixed)) {
         return PICKER_PIN_LOCKED;
     }
+    /* Free and offered, and the PWM generator cannot take it beside what it carries:
+     * held by the pin it clashes with.  outbind_pwm_clash() takes the port's
+     * pin as the coprocessor reads it, PICKER_NO_PIN being no pin. */
+    if (outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
+        != OUTBIND_CLASH_NONE) {
+        if (holder != NULL) {
+            (void)outputs_clash_label(&s.bind, index, g_prog_gpio, holder,
+                                      cap);
+        }
+        return PICKER_PIN_HELD;
+    }
     if (held != 0u) {
         return PICKER_PIN_TICKED;
     }
@@ -692,7 +709,8 @@ bool picker_screen_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(PK_NOT_READ));
         return true;
     }
-    return outputs_reason_of(&s.bind, buf, cap);
+    return outputs_reason_of(&s.bind, buf, cap)
+           || outputs_clash_reason(&s.bind, s.refused, g_prog_gpio, buf, cap);
 }
 
 /* --------------------------------------------------------------- drawing */
@@ -1053,6 +1071,7 @@ static int button_under(int x, int y)
 static void pick(uint8_t proto)
 {
     outbind_set_proto(&s.bind, proto);
+    s.refused = -1;
     if (s.select != NULL) {
         s.select(proto);
     }
@@ -1132,10 +1151,18 @@ static void event(const touch_event_t *evt)
      * reason is printed under the protocol list. */
     const picker_pin_t st = picker_screen_pin((uint8_t)was, NULL, 0);
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
+        if (st == PICKER_PIN_HELD
+            && outbind_pwm_clash(&s.bind, (uint8_t)was, g_prog_gpio, NULL)
+                   != OUTBIND_CLASH_NONE) {
+            s.refused = was;
+        }
         return;
     }
-    if (outbind_toggle(&s.bind, (uint8_t)was) && s.apply != NULL) {
-        s.apply(&s.bind);
+    if (outbind_toggle(&s.bind, (uint8_t)was)) {
+        s.refused = -1;
+        if (s.apply != NULL) {
+            s.apply(&s.bind);
+        }
     }
 }
 
@@ -1144,6 +1171,7 @@ static void reset(void)
     memset(&s, 0, sizeof(s));
     outbind_init(&s.bind);
     s.hit = -1;
+    s.refused = -1;
     touched();
 }
 
@@ -1151,6 +1179,7 @@ static void enter(void)
 {
     s.hit_kind = HIT_NONE;
     s.hit = -1;
+    s.refused = -1;
     s.open = false;
     /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */

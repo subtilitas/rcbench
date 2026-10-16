@@ -103,7 +103,9 @@ typedef enum {
     PICKER_PIN_TICKED,    /**< accented: bound in the protocol selected; a tap
                                frees it                                       */
     PICKER_PIN_HELD,      /**< grey: another protocol or the programming port
-                               has it                                         */
+                               has it, or the PWM generator cannot take it
+                               beside the port's slice or a bound pin's
+                               compare register (outbind_pwm_clash())         */
     PICKER_PIN_REFUSED,   /**< grey: free, and the protocol selected can take
                                no more pins; the reason line says why         */
     PICKER_PIN_LOCKED,    /**< grey: the binding is not confirmed, or the
@@ -114,9 +116,10 @@ typedef enum {
 
 /**
  * The state of catalogue entry @p index, as the screen draws it.  @p holder,
- * when not NULL, gets what holds the pin: the protocol's name or PROG PORT
- * for PICKER_PIN_HELD, the reserving function for PICKER_PIN_RESERVED, and
- * an empty string otherwise.
+ * when not NULL, gets what holds the pin: the protocol's name, PROG PORT, or
+ * the pin a PWM pin clashes with (outputs_clash_label(): "SLICE OF GP13",
+ * "PWM CH OF GP0") for PICKER_PIN_HELD, the reserving function for
+ * PICKER_PIN_RESERVED, and an empty string otherwise.
  */
 picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap);
 
@@ -183,7 +186,9 @@ void picker_screen_count(char *buf, size_t cap);
 /**
  * The amber line under the count: NOT READ while the binding is not
  * confirmed, else the reason the protocol selected can take no more pins
- * (outputs_reason_of()).  False and an empty string when there is none.
+ * (outputs_reason_of()), else why the PWM generator cannot take the pin
+ * last tapped (outputs_clash_reason()), until another pick or tick.
+ * False and an empty string when there is none.
  */
 bool picker_screen_reason(char *buf, size_t cap);
 
