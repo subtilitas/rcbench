@@ -182,6 +182,11 @@ history is in git.
   the clean start of boot: the first whole frame after a restart is in
   place. The console logs each restart as
   `display: scan restarted, N since start`.
+- `tools/stack_check.py` counts the chain through `cu_port_exchange()` in
+  the control task's depth. The coprocessor update's requests go through
+  that port, which recovers the bus and then calls `exchange()`; the
+  check followed only `port_exchange()` and counted the other call as
+  followed (`PORT_CALLS`).
 
 ## 0.20.0 - 2026-10-15
 

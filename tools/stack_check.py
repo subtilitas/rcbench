@@ -105,6 +105,9 @@ and recursion are counted and named, as for the panel.
                                         and hold core 0's row of the
                                         coprocessor table in the same pages
 
+The coprocessor's half is tools/stack_iomcu.py.  The ELF reader and the
+call graph both halves use are tools/stack_elf.py.
+
 SPDX-License-Identifier: MIT
 """
 
@@ -114,7 +117,10 @@ import struct
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
+                       die, doc_rows, sext)
+from stack_iomcu import IOMCU_DIR, IOMCU_ELF, check_iomcu_doc, iomcu_check
+
 PANEL_DIR = ROOT / "firmware" / "panel"
 # The FreeRTOS calls that create a task with a stack from the heap; the
 # entry, the name and the stack size are their first three arguments.
@@ -146,13 +152,18 @@ SCREEN_CALLS = {
 }
 
 # The link_port_t callbacks shared/link calls: the functions the panel puts
-# in its two ports.  A request to the coprocessor waits in exchange(), which
-# runs the safety loop, so this is the control task's deepest chain and it
-# is followed by name.  A function listed here that makes no indirect call,
-# or a callback that is not one function in the ELF, fails the check.
+# in its two ports, k_port and the coprocessor update's k_cu_port, whose
+# exchange, cu_port_exchange(), asks for the bus back and then calls
+# exchange().  A request to the coprocessor waits in exchange(), which runs
+# the safety loop, so this is the control task's deepest chain and it is
+# followed by name.  A function listed here that makes no indirect call, or
+# a callback that is not one function in the ELF, fails the check.
+# test/tools/test_stack_check.py holds the table to every link_port_t in
+# firmware/panel.
 PORT_CALLS = {
-    "link_write_acked": ("port_exchange", "port_now", "port_between"),
-    "link_read_window": ("port_exchange", "port_now"),
+    "link_write_acked": ("port_exchange", "cu_port_exchange", "port_now",
+                         "port_between"),
+    "link_read_window": ("port_exchange", "cu_port_exchange", "port_now"),
 }
 
 # The art_flash_t callbacks shared/artwork calls: the panel's one flash, in
@@ -173,61 +184,6 @@ BOOT_CALLS = {
 }
 
 
-def die(msg: str) -> None:
-    sys.exit(f"stack_check: {msg}")
-
-
-# --------------------------------------------------------------- the ELF --
-
-class Elf:
-    """The sections with contents, and the symbol table, of a 32-bit
-    little-endian ELF."""
-
-    def __init__(self, path: Path) -> None:
-        d = path.read_bytes()
-        if d[:4] != b"\x7fELF" or d[4] != 1 or d[5] != 1:
-            die(f"{path} is not a 32-bit little-endian ELF")
-        self.data = d
-        shoff, = struct.unpack_from("<I", d, 0x20)
-        shentsize, shnum = struct.unpack_from("<HH", d, 0x2E)
-        heads = [struct.unpack_from("<IIIIIIIIII", d, shoff + i * shentsize)
-                 for i in range(shnum)]
-        # (address, file offset, size) of every allocated section that has
-        # bytes in the file; 8 is SHT_NOBITS.
-        self.sections = [(h[3], h[4], h[5]) for h in heads
-                         if h[1] != 8 and h[3] != 0]
-        self.symbols = []
-        for h in heads:
-            if h[1] != 2:                     # SHT_SYMTAB
-                continue
-            strtab = heads[h[6]]
-            names = d[strtab[4]: strtab[4] + strtab[5]]
-            current_file = None
-            for off in range(h[4], h[4] + h[5], 16):
-                name, value, size, info, _, shndx = struct.unpack_from(
-                    "<IIIBBH", d, off)
-                end = names.index(b"\0", name)
-                text = names[name:end].decode("utf-8", "replace")
-                kind, bind = info & 0xF, info >> 4
-                if kind == 4:                 # STT_FILE
-                    current_file = text
-                    continue
-                # (address, kind, size, name, file of a local symbol,
-                #  absolute)
-                self.symbols.append((value, kind, size, text,
-                                     current_file if bind == 0 else None,
-                                     shndx == 0xFFF1))
-
-    def read(self, addr: int, n: int) -> bytes | None:
-        for base, off, size in self.sections:
-            if base <= addr and addr + n <= base + size:
-                return self.data[off + addr - base: off + addr - base + n]
-        return None
-
-
-STT_OBJECT, STT_FUNC = 1, 2
-
-
 # ------------------------------------------------------------ the decoder --
 
 def length(b0: int) -> int:
@@ -236,10 +192,6 @@ def length(b0: int) -> int:
     forms."""
     op0 = b0 & 0xF
     return 3 if op0 < 8 else (2 if op0 < 14 else 4)
-
-
-def sext(v: int, bits: int) -> int:
-    return v - (1 << bits) if v & (1 << (bits - 1)) else v
 
 
 def decode(pc: int, w: int, n: int) -> tuple:
@@ -504,24 +456,6 @@ def screen_tables(elf: Elf) -> tuple:
 
 # ----------------------------------------------------------------- tasks --
 
-def call_args(text: str, start: int) -> list | None:
-    """The top-level arguments of the call whose '(' is at @p start."""
-    depth, args, cur = 0, [], start + 1
-    for i in range(start, len(text)):
-        ch = text[i]
-        if ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0:
-                args.append(text[cur:i].strip())
-                return args
-        elif ch == "," and depth == 1:
-            args.append(text[cur:i].strip())
-            cur = i + 1
-    return None
-
-
 def in_build_dir(rel: Path) -> bool:
     """Whether @p rel, relative to firmware/panel, lies in a build tree:
     build/, or a second one such as build-inject/ (docs/Building.md)."""
@@ -590,593 +524,6 @@ def main_stack(build: Path) -> int:
     return int(m.group(1))
 
 
-class Graph:
-    def __init__(self, funcs: dict, names: dict) -> None:
-        self.funcs = funcs
-        self.names = names          # address -> name, ROM included
-        self.memo = {}
-        self.cycles = set()
-
-    def label(self, addr: int) -> str:
-        f = self.funcs.get(addr)
-        return f.name if f else self.names.get(addr, f"0x{addr:08x}")
-
-    def depth(self, addr: int, path: list) -> tuple:
-        """(bytes, [(frame, depth from here, address)]) of the deepest
-        chain from @p addr."""
-        if addr in path:
-            loop = path[path.index(addr):] + [addr]
-            self.cycles.add(" -> ".join(self.label(a) for a in loop))
-            return 0, []
-        if addr in self.memo:
-            return self.memo[addr]
-        f = self.funcs.get(addr)
-        if f is None:
-            return 0, []
-        path.append(addr)
-        best, chain = 0, []
-        for c in sorted(f.calls):
-            d, ch = self.depth(c, path)
-            if d > best:
-                best, chain = d, ch
-        path.pop()
-        r = (f.frame + best, [(f.frame, f.frame + best, addr)] + chain)
-        self.memo[addr] = r
-        return r
-
-    def reach(self, root: int) -> set:
-        seen, todo = set(), [root]
-        while todo:
-            a = todo.pop()
-            if a not in seen and a in self.funcs:
-                seen.add(a)
-                todo.extend(self.funcs[a].calls)
-        return seen
-
-
-# ------------------------------------------------------ the coprocessor --
-
-IOMCU_DIR = ROOT / "firmware" / "iomcu"
-IOMCU_ELF = "rcbench-iomcu.elf"
-
-# Core 0 runs main() on the main stack, the top StackSize bytes of the
-# region the pico-sdk's linker script reserves: __StackBottom to __StackTop.
-# Thread code and interrupt handlers share it.  Core 1 runs on the array its
-# launch passes.
-CORE0 = ("core 0", "main", ("__StackBottom", "__StackTop"))
-CORE1 = ("core 1", "core1_main", "s_stack")
-
-# What an interrupt puts on the stack before its handler's first frame on a
-# Cortex-M33 with the FPU (floating-point unit) in use: 8 words of integer
-# state, 18 words of floating-point state, and up to 4 bytes to align the
-# frame to 8.
-ARM_EXCEPTION_FRAME = 8 * 4 + 18 * 4 + 4
-
-# The pico-sdk calls that install an interrupt handler; the handler is their
-# second argument, loaded into r1 from a literal before the call.  Every
-# handler found this way is a root: the deepest of them, on top of an
-# exception frame, is what an interrupt costs the stack it lands on.
-IRQ_INSTALLERS = ("irq_set_exclusive_handler", "irq_add_shared_handler")
-
-# The calls through a table of function pointers that are followed by
-# name: caller -> (table object, bytes per row, offsets of the pointers in a
-# row).  link_dev_dispatch() calls a page's read and write handler through
-# the link_page_t table firmware/iomcu/src/main.c passes to link_dev_init();
-# a write handler binds outputs and is the deepest thing a request reaches.
-# The last number is how many calls through the table the caller's source
-# makes: two of read and one of write in shared/link/link_dev.c.  A caller
-# here that makes no indirect call or more than that many, or a table that
-# is not rows of that size holding function addresses, fails the check: a
-# further call through a pointer is not one the table stands for.
-POINTER_TABLES = {
-    "link_dev_dispatch": ("k_pages", 12, (4, 8), 3),
-}
-
-# Calls in the image that the firmware's arguments never take:
-# (caller, callee) -> (the functions that may call the caller, why).  The
-# edge is left out of the graph and printed.  The entry fails the check when
-# the edge is not in the image, when a function outside the list calls the
-# caller, and when NEEDLE_LIMIT below is not met, so it cannot outlive its
-# reason.
-#
-# newlib's strstr() hands a needle of 255 characters or more to
-# two_way_long_needle(), whose frame holds a 1024-byte shift table.  Every
-# needle in shared/, protocols/ and firmware/iomcu is a string literal
-# under that.
-NOT_TAKEN = {
-    ("strstr", "two_way_long_needle"): (
-        ("outbind_board_to_regs",),
-        "every strstr() needle is a literal shorter than 255 characters"),
-}
-NEEDLE_LIMIT = 255
-NEEDLE_DIRS = (ROOT / "shared", ROOT / "protocols", IOMCU_DIR / "src")
-
-
-def long_needles() -> list:
-    """Every strstr() call under NEEDLE_DIRS whose needle is not a string
-    literal shorter than NEEDLE_LIMIT, as "file:line"."""
-    out = []
-    for base in NEEDLE_DIRS:
-        for src in sorted(base.rglob("*.c")):
-            raw = src.read_text(encoding="utf-8")
-            # Comments out, line breaks kept: a comment that names
-            # strstr() is not a call.
-            text = re.sub(r"/\*.*?\*/|//[^\n]*",
-                          lambda m: re.sub(r"[^\n]", " ", m.group(0)), raw,
-                          flags=re.S)
-            for m in re.finditer(r"\bstrstr\s*\(", text):
-                args = call_args(text, m.end() - 1)
-                lit = (re.fullmatch(r'"((?:[^"\\]|\\.)*)"', args[1])
-                       if args and len(args) == 2 else None)
-                if lit is None or len(lit.group(1)) >= NEEDLE_LIMIT:
-                    line = text.count("\n", 0, m.start()) + 1
-                    out.append(f"{src.relative_to(ROOT)}:{line}")
-    return out
-
-
-# What a core's stack keeps free beyond its deepest chain and one interrupt:
-# room for calls through a pointer, which the graph does not follow, and for
-# a second interrupt on top of the first.
-IOMCU_MARGIN = 256
-
-
-def bits(v: int) -> int:
-    return bin(v).count("1")
-
-
-def thumb_imm(hw1: int, hw2: int) -> int:
-    """ThumbExpandImm of a 32-bit data-processing instruction."""
-    imm12 = ((hw1 >> 10) & 1) << 11 | ((hw2 >> 12) & 7) << 8 | hw2 & 0xFF
-    if imm12 >> 10 == 0:
-        b, mode = imm12 & 0xFF, (imm12 >> 8) & 3
-        return (b, b << 16 | b, b << 24 | b << 8,
-                b << 24 | b << 16 | b << 8 | b)[mode]
-    rot, val = imm12 >> 7, 0x80 | imm12 & 0x7F
-    return (val >> rot | val << (32 - rot)) & 0xFFFFFFFF
-
-
-def thumb(pc: int, hw1: int, hw2: int) -> tuple:
-    """One Thumb instruction: (length, kind, argument), kind one of
-    "push" (bytes the stack pointer goes down), "pop" (bytes up, whether
-    it loads pc), "call" (target), "callx", "branch" (target), "jump"
-    (target), "jumpx" (a jump through a register or a table), "jumplit"
-    (a jump to the address a literal holds; the literal's address), "end"
-    (a return), "dynamic" (the stack pointer set from a register),
-    "lit" (register, literal address), or None."""
-    if hw1 >> 11 < 0x1D:                               # 16 bits
-        if hw1 & 0xFE00 == 0xB400:                     # push
-            return 2, "push", 4 * bits(hw1 & 0x1FF)
-        if hw1 & 0xFE00 == 0xBC00:                     # pop
-            return 2, "pop", (4 * bits(hw1 & 0x1FF), bool(hw1 & 0x100))
-        if hw1 & 0xFF80 == 0xB080:                     # sub sp, #imm
-            return 2, "push", 4 * (hw1 & 0x7F)
-        if hw1 & 0xFF80 == 0xB000:                     # add sp, #imm
-            return 2, "pop", (4 * (hw1 & 0x7F), False)
-        if hw1 & 0xFF87 == 0x4700:                     # bx
-            return 2, ("end" if (hw1 >> 3) & 0xF == 14 else "jumpx"), None
-        if hw1 & 0xFF87 == 0x4780:                     # blx register
-            return 2, "callx", None
-        if hw1 & 0xFF87 == 0x4687:                     # mov pc, register
-            return 2, "jumpx", None
-        if hw1 & 0xFF87 == 0x4685 or hw1 & 0xFF87 == 0x4485:
-            return 2, "dynamic", None                  # mov / add sp, reg
-        if hw1 & 0xF000 == 0xD000 and (hw1 >> 8) & 0xF < 0xE:
-            return 2, "branch", pc + 4 + sext((hw1 & 0xFF) << 1, 9)
-        if hw1 & 0xF800 == 0xE000:
-            return 2, "jump", pc + 4 + sext((hw1 & 0x7FF) << 1, 12)
-        if hw1 & 0xF500 == 0xB100:                     # cbz, cbnz
-            return 2, "branch", pc + 4 + (
-                ((hw1 >> 9) & 1) << 6 | ((hw1 >> 3) & 0x1F) << 1)
-        if hw1 & 0xF800 == 0x4800:                     # ldr rt, [pc, #imm]
-            return 2, "lit", ((hw1 >> 8) & 7,
-                              ((pc + 4) & ~3) + 4 * (hw1 & 0xFF))
-        return 2, None, None
-    if hw1 & 0xF800 == 0xF000 and hw2 & 0x8000:        # branches, bl
-        s = (hw1 >> 10) & 1
-        j1, j2 = (hw2 >> 13) & 1, (hw2 >> 11) & 1
-        if hw2 & 0x5000 == 0x0000:                     # conditional, or msr
-            if (hw1 >> 7) & 7 == 7:
-                return 4, None, None                   # msr, mrs and kin
-            off = (s << 20 | j2 << 19 | j1 << 18 | (hw1 & 0x3F) << 12
-                   | (hw2 & 0x7FF) << 1)
-            return 4, "branch", pc + 4 + sext(off, 21)
-        i1, i2 = 1 - (j1 ^ s), 1 - (j2 ^ s)
-        off = (s << 24 | i1 << 23 | i2 << 22 | (hw1 & 0x3FF) << 12
-               | (hw2 & 0x7FF) << 1)
-        target = pc + 4 + sext(off, 25)
-        if hw2 & 0x5000 == 0x1000:
-            return 4, "jump", target                   # b.w
-        if hw2 & 0x5000 == 0x5000:
-            return 4, "call", target                   # bl
-        return 4, "callx", None                        # blx to ARM: none here
-    if hw1 == 0xE92D:                                  # push.w
-        return 4, "push", 4 * bits(hw2)
-    if hw1 == 0xE8BD:                                  # pop.w
-        return 4, "pop", (4 * bits(hw2), bool(hw2 & 0x8000))
-    if hw1 == 0xF84D and hw2 & 0x0FFF == 0x0D04:       # str rt, [sp, #-4]!
-        return 4, "push", 4
-    if hw1 == 0xF85D and hw2 & 0x0FFF == 0x0B04:       # ldr rt, [sp], #4
-        return 4, "pop", (4, hw2 >> 12 == 15)
-    if hw1 & 0xFBEF == 0xF1AD and hw2 & 0x8F00 == 0x0D00:
-        return 4, "push", thumb_imm(hw1, hw2)          # sub.w sp, sp, #imm
-    if hw1 & 0xFBFF == 0xF2AD and hw2 & 0x8F00 == 0x0D00:
-        return 4, "push", (((hw1 >> 10) & 1) << 11 | ((hw2 >> 12) & 7) << 8
-                           | hw2 & 0xFF)               # subw sp, sp, #imm
-    if hw1 & 0xFBEF == 0xF10D and hw2 & 0x8F00 == 0x0D00:
-        return 4, "pop", (thumb_imm(hw1, hw2), False)  # add.w sp, sp, #imm
-    if hw1 & 0xFBFF == 0xF20D and hw2 & 0x8F00 == 0x0D00:
-        return 4, "pop", (((hw1 >> 10) & 1) << 11 | ((hw2 >> 12) & 7) << 8
-                          | hw2 & 0xFF, False)         # addw sp, sp, #imm
-    if hw1 & 0xFFEF in (0xEBAD, 0xEB0D) and hw2 & 0x0F00 == 0x0D00:
-        return 4, "dynamic", None                      # sub / add sp, sp, reg
-    if hw1 & 0xFFBF == 0xED2D and hw2 & 0x0E00 == 0x0A00:      # vpush
-        return 4, "push", 4 * (hw2 & 0xFF)
-    if hw1 & 0xFFBF == 0xECBD and hw2 & 0x0E00 == 0x0A00:      # vpop
-        return 4, "pop", (4 * (hw2 & 0xFF), False)
-    if hw1 & 0xFFF0 == 0xE8D0 and hw2 & 0xFFE0 == 0xF000:
-        return 4, "jumpx", None                        # tbb, tbh
-    if hw1 & 0xFF7F == 0xF85F:                         # ldr.w rt, literal
-        off = hw2 & 0xFFF
-        lit = ((pc + 4) & ~3) + (off if hw1 & 0x80 else -off)
-        # Into pc it is the linker's veneer: a jump to the address the
-        # literal holds, from flash to a function kept in RAM.
-        return 4, ("jumplit" if hw2 >> 12 == 15 else "lit"), (
-            lit if hw2 >> 12 == 15 else (hw2 >> 12, lit))
-    return 4, None, None
-
-
-class ArmFunc:
-    __slots__ = ("addr", "name", "frame", "calls", "callx", "dynamic",
-                 "stray", "asm", "tails", "handlers", "unread")
-
-    def __init__(self, addr: int, name: str) -> None:
-        self.addr = addr
-        self.name = name
-        self.frame = 0          # the lowest the stack pointer goes, in bytes
-        self.calls = set()      # addresses called or tail-jumped to
-        self.callx = 0          # calls and jumps through a register
-        self.dynamic = False    # the stack pointer is set from a register
-        self.stray = 0          # calls to an address no function starts at
-        self.asm = set()        # functions called that have no size, by name
-        self.tails = 0          # jumps out of the function, taken as calls
-        self.handlers = set()   # interrupt handlers this function installs
-        self.unread = 0         # installs whose handler was not read
-
-
-def code_spans(addr: int, size: int, marks: list) -> list:
-    """The parts of [addr, addr + size) that are Thumb code: the linker
-    keeps the assembler's $t and $d symbols, which say where code stops and
-    a literal pool or a jump table starts."""
-    import bisect
-    end = addr + size
-    i = bisect.bisect_right(marks, (addr, "~")) - 1
-    state = marks[i][1] if i >= 0 else "t"
-    spans, at = [], addr
-    for where, kind in marks[max(i + 1, 0):]:
-        if where >= end:
-            break
-        if kind != state:
-            if state == "t" and where > at:
-                spans.append((at, where))
-            state, at = kind, where
-    if state == "t" and end > at:
-        spans.append((at, end))
-    return spans
-
-
-def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
-                  installers: set) -> ArmFunc:
-    """A function's frame and calls.
-
-    The frame is the lowest point the stack pointer reaches along the
-    function's instructions in address order: pushes and subtractions take
-    it down, pops and additions bring it back.  After a return the count
-    resumes at the lowest point seen so far, because the block that follows
-    is entered from a branch at a depth this pass does not know; that never
-    counts a frame too small."""
-    f = ArmFunc(addr, name)
-
-    def inside(a: int) -> bool:
-        return addr <= a < addr + size
-
-    def install(target: int, regs: dict) -> None:
-        """A call or a tail jump to an installer takes its handler from
-        r1."""
-        if target in installers:
-            if 1 in regs:
-                f.handlers.add(regs[1] & ~1)
-            else:
-                f.unread += 1
-
-    steps = []
-    for lo, hi in code_spans(addr, size, marks):
-        code = elf.read(lo, hi - lo)
-        if code is None:
-            continue
-        pc = lo
-        while pc + 2 <= hi:
-            hw1 = int.from_bytes(code[pc - lo: pc - lo + 2], "little")
-            hw2 = 0
-            if hw1 >> 11 >= 0x1D:
-                if pc + 4 > hi:
-                    break
-                hw2 = int.from_bytes(code[pc - lo + 2: pc - lo + 4],
-                                     "little")
-            n, kind, arg = thumb(pc, hw1, hw2)
-            steps.append((pc, kind, arg))
-            pc += n
-    # Where two paths meet, a register holds what either path loaded, so a
-    # literal loaded before a branch target is forgotten at it.
-    joins = {arg for _, kind, arg in steps
-             if kind in ("branch", "jump") and inside(arg)}
-
-    cur = low = 0
-    regs = {}                   # register -> literal value loaded into it
-    for pc, kind, arg in steps:
-        if pc in joins:
-            regs = {}
-        if kind == "push":
-            cur += arg
-            low = max(low, cur)
-        elif kind == "pop":
-            cur = max(cur - arg[0], 0)
-            if arg[1]:
-                cur, regs = low, {}
-        elif kind == "lit":
-            word = elf.read(arg[1], 4)
-            if word is None:
-                regs.pop(arg[0], None)
-            else:
-                regs[arg[0]] = int.from_bytes(word, "little")
-        elif kind == "call":
-            f.calls.add(arg)
-            install(arg, regs)
-            regs = {}
-        elif kind == "callx":
-            f.callx += 1
-            regs = {}
-        elif kind in ("branch", "jump"):
-            if not inside(arg):
-                # A tail call: the jumping function has released its
-                # frame, so adding the target's depth to this frame is
-                # an upper bound.
-                f.calls.add(arg)
-                f.tails += 1
-                install(arg, regs)
-            if kind == "jump":
-                cur, regs = low, {}
-        elif kind == "jumplit":
-            word = elf.read(arg, 4)
-            if word is None:
-                f.callx += 1
-            else:
-                f.calls.add(int.from_bytes(word, "little") & ~1)
-                f.tails += 1
-            cur, regs = low, {}
-        elif kind == "jumpx":
-            f.callx += 1
-            cur, regs = low, {}
-        elif kind == "end":
-            cur, regs = low, {}
-        elif kind == "dynamic":
-            f.dynamic = True
-    f.frame = low
-    return f
-
-
-def iomcu_check(build: Path, verbose: bool) -> tuple:
-    """(rows, fails, lines to print) for the coprocessor image: one row per
-    core, (name, entry, stack, depth, interrupt, spare)."""
-    path = build / IOMCU_ELF
-    if not path.exists():
-        die(f"{path} not found; build the coprocessor first")
-    sys.setrecursionlimit(20000)
-    elf = Elf(path)
-    if elf.data[0x12:0x14] != b"\x28\x00":
-        die(f"{path} is not an ARM ELF")
-
-    marks = sorted({(s[0], s[3][1]) for s in elf.symbols
-                    if s[3][:2] in ("$t", "$d") and s[3][2:3] in ("", ".")})
-    sizes, names = {}, {}
-    for addr, kind, size, name, _, _ in sorted(elf.symbols,
-                                               key=lambda s: s[3]):
-        if kind == STT_FUNC and addr & 1:
-            names.setdefault(addr & ~1, name)
-            sizes[addr & ~1] = max(sizes.get(addr & ~1, 0), size)
-    by_name = {}
-    for addr, name in names.items():
-        by_name.setdefault(name, []).append(addr)
-    installers = {a for n in IRQ_INSTALLERS for a in by_name.get(n, [])}
-    funcs = {a: analyse_thumb(elf, a, n, names[a], marks, installers)
-             for a, n in sizes.items() if n > 0}
-    for f in funcs.values():
-        for c in f.calls:
-            if c in funcs:
-                continue
-            # A function symbol with no size is hand-written: the pico-sdk's
-            # floating-point routines.  Its frame is not read.
-            if c in names:
-                f.asm.add(names[c])
-            else:
-                f.stray += 1
-
-    fails, out = [], []
-    # The calls shared/link makes through the page table: every page's read
-    # and write handler, read out of the table in the ELF.
-    for caller, (table, entry, offsets, sites) in POINTER_TABLES.items():
-        addrs = by_name.get(caller, [])
-        objs = [s for s in elf.symbols if s[3] == table
-                and s[1] == STT_OBJECT]
-        if len(addrs) != 1 or len(objs) != 1:
-            fails.append(f"POINTER_TABLES: {caller} is {len(addrs)} "
-                         f"functions and {table} is {len(objs)} objects in "
-                         f"the ELF, not 1 each")
-            continue
-        f = funcs[addrs[0]]
-        raw = elf.read(objs[0][0], objs[0][2])
-        if not 0 < f.callx <= sites or raw is None or len(raw) % entry:
-            fails.append(f"POINTER_TABLES: {caller} makes {f.callx} "
-                         f"indirect calls, not 1 to {sites}, or {table} is "
-                         f"not rows of {entry} bytes; the table no longer "
-                         f"matches shared/link")
-            continue
-        for row in range(0, len(raw), entry):
-            for off in offsets:
-                word, = struct.unpack_from("<I", raw, row + off)
-                if word == 0:
-                    continue
-                if word & ~1 not in funcs:
-                    fails.append(f"POINTER_TABLES: {table} holds "
-                                 f"0x{word:08x}, which is no function")
-                    continue
-                f.calls.add(word & ~1)
-        f.callx = 0
-
-    for (caller, callee), (allowed, why) in NOT_TAKEN.items():
-        a, b = by_name.get(caller, []), by_name.get(callee, [])
-        if len(a) != 1 or len(b) != 1 or b[0] not in funcs[a[0]].calls:
-            fails.append(f"NOT_TAKEN: {caller} does not call {callee} in "
-                         f"this image; take the entry out")
-            continue
-        others = sorted(f.name for f in funcs.values()
-                        if a[0] in f.calls and f.name not in allowed)
-        if others:
-            fails.append(f"NOT_TAKEN: {caller} is also called by "
-                         f"{', '.join(others)}; the entry covers "
-                         f"{', '.join(allowed)}")
-            continue
-        funcs[a[0]].calls.discard(b[0])
-        out.append(f"not taken: {caller} -> {callee} "
-                   f"({funcs[b[0]].frame} bytes): {why}")
-    for where in long_needles():
-        fails.append(f"{where}: a strstr() needle that is not a string "
-                     f"literal under {NEEDLE_LIMIT} characters")
-
-    g = Graph(funcs, names)
-
-    def measure(root: int) -> tuple:
-        g.cycles, g.memo = set(), {}
-        depth, chain = g.depth(root, [])
-        seen = g.reach(root)
-        unknown = []
-        indirect = sum(funcs[a].callx for a in seen)
-        if indirect:
-            unknown.append(f"{indirect} calls or jumps through a register")
-        dynamic = sorted(funcs[a].name for a in seen if funcs[a].dynamic)
-        if dynamic:
-            unknown.append(f"{len(dynamic)} functions that size a frame at "
-                           f"run time ({', '.join(dynamic)})")
-        asm = sorted({n for a in seen for n in funcs[a].asm})
-        if asm:
-            unknown.append(f"{len(asm)} hand-written functions with no "
-                           f"size, frame unknown")
-        stray = sum(funcs[a].stray for a in seen)
-        if stray:
-            unknown.append(f"{stray} calls to no function's start")
-        if g.cycles:
-            unknown.append(f"{len(g.cycles)} cycles, each counted once")
-        if verbose:
-            notes[root] = (
-                sorted((funcs[a].name, funcs[a].callx) for a in seen
-                       if funcs[a].callx), asm, sorted(g.cycles))
-        return depth, chain, unknown
-
-    notes = {}
-
-    # Every handler the image installs, and the deepest of them.
-    unread = sorted(f.name for f in funcs.values() if f.unread)
-    for name in unread:
-        fails.append(f"{name} installs an interrupt handler this tool does "
-                     f"not read: it is not loaded into r1 from a literal")
-    if not installers:
-        fails.append("no " + " or ".join(IRQ_INSTALLERS) + " in the ELF; "
-                     "IRQ_INSTALLERS no longer matches the pico-sdk")
-    handlers = sorted({h for f in funcs.values() for h in f.handlers})
-    irq_depth, irq_name, irq_chain, irq_unknown = 0, "none", [], []
-    out.append("interrupt handlers installed, and their deepest chain:")
-    for h in handlers:
-        if h not in funcs:
-            fails.append(f"an interrupt handler at 0x{h:08x} is no "
-                         f"function in the ELF")
-            continue
-        depth, chain, unknown = measure(h)
-        out.append(f"  {funcs[h].name:<34} {depth:>5}")
-        if depth > irq_depth:
-            irq_depth, irq_name = depth, funcs[h].name
-            irq_chain, irq_unknown = chain, unknown
-    irq_cost = ARM_EXCEPTION_FRAME + irq_depth
-    out.append(f"an interrupt costs {irq_cost} bytes: a {ARM_EXCEPTION_FRAME}"
-               f"-byte exception frame and {irq_depth} for {irq_name}")
-    out.append(f"margin: {IOMCU_MARGIN} bytes for what is not followed")
-
-    symbols = {}
-    for addr, kind, size, name, _, _ in elf.symbols:
-        symbols.setdefault(name, []).append((addr, kind, size))
-    rows, detail = [], []
-    out.append(f"{'core':<8} {'entry':<12} {'stack':>6} {'depth':>6} "
-               f"{'irq':>5} {'spare':>6}  result")
-    for label, entry, where in (CORE0, CORE1):
-        if isinstance(where, tuple):
-            ends = [symbols.get(n, []) for n in where]
-            if any(len(e) != 1 for e in ends):
-                fails.append(f"{label}: {' and '.join(where)} are not one "
-                             f"symbol each in the ELF")
-                continue
-            stack = ends[1][0][0] - ends[0][0][0]
-        else:
-            arrays = [s for s in symbols.get(where, [])
-                      if s[1] == STT_OBJECT]
-            if len(arrays) != 1:
-                fails.append(f"{label}: {where} is {len(arrays)} objects "
-                             f"in the ELF, not 1")
-                continue
-            stack = arrays[0][2]
-        addrs = by_name.get(entry, [])
-        if len(addrs) != 1:
-            fails.append(f"{label}: entry {entry} is {len(addrs)} functions "
-                         f"in the ELF, not 1")
-            continue
-        depth, chain, unknown = measure(addrs[0])
-        spare = stack - IOMCU_MARGIN - depth - irq_cost
-        over = spare < 0
-        if over:
-            fails.append(f"{label}: {depth} bytes deep and {irq_cost} for "
-                         f"an interrupt, over its {stack} bytes less "
-                         f"{IOMCU_MARGIN}")
-        result = ("OVER" if over else "within, as a lower bound"
-                  if unknown or irq_unknown else "within")
-        out.append(f"{label:<8} {entry:<12} {stack:>6} {depth:>6} "
-                   f"{irq_cost:>5} {spare:>6}  {result}")
-        if unknown:
-            out.append(f"{'':<8} not followed: " + "; ".join(unknown))
-        rows.append((label, entry, stack, depth, irq_cost, spare))
-        detail.append((label, depth, chain, addrs[0]))
-    if irq_unknown:
-        out.append(f"{'interrupt':<8} not followed: "
-                   + "; ".join(irq_unknown))
-    if verbose:
-        if irq_chain:
-            detail.append(("interrupt", irq_depth, irq_chain,
-                           irq_chain[0][2]))
-        for label, depth, chain, root in detail:
-            out.append(f"\n== {label}: {depth} bytes; frame, depth from "
-                       f"here, function")
-            for own, total, addr in chain:
-                out.append(f"   {own:5d} {total:6d}  {g.label(addr)}")
-            indirect, asm, cycles = notes.get(root, ([], [], []))
-            if indirect:
-                out.append("   calls and jumps through a register, not "
-                           "followed:")
-                out += [f"     {fn} x{n}" for fn, n in indirect]
-            if asm:
-                out.append("   hand-written functions, frame unknown:")
-                out.append("     " + ", ".join(asm))
-            if cycles:
-                out.append("   cycles, each counted once:")
-                out += [f"     {c}" for c in cycles]
-    return rows, fails, out
-
-
 # ------------------------------------------------- the tables in the docs --
 
 # The panel's task table in each language, and the sentence that counts the
@@ -1191,24 +538,6 @@ PERFORMANCE = (
      "Reserve unter der Marge (Bytes) |",
      r"(\d+) solche Aufrufe sind von `main_task` aus erreichbar"),
 )
-
-
-def doc_rows(text: str, header: str) -> dict | None:
-    """{first cell's quoted name: [the numbers of the cells after the
-    second]} for the table under @p header; None without the table.  A
-    number is written 8,192 in English and 8 192 in German."""
-    if header not in text:
-        return None
-    rows = {}
-    for row in text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]:
-        cells = [c.strip() for c in row.strip().strip("|").split("|")]
-        name = re.search(r"`([^`]+)`", cells[0])
-        numbers = []
-        for cell in cells[2:]:
-            digits = re.sub(r"[,\s\u00a0\u202f]", "", cell)
-            numbers.append(int(digits) if digits.isdigit() else None)
-        rows[name.group(1) if name else cells[0]] = numbers
-    return rows
 
 
 def table_problems(page: str, said: dict | None, measured: dict) -> list:
@@ -1244,40 +573,6 @@ def check_panel_doc(rows: dict, pointer_calls: int) -> list:
             out.append(f"{page.name}: says {m.group(1)} calls through a "
                        f"pointer are reachable from main_task; measured "
                        f"{pointer_calls}")
-    return out
-
-
-# The coprocessor's table in each language and the name of core 0's row.
-# Core 0's row is held: stack, deepest chain, one interrupt, spare.  Core
-# 1's is not: its chain moves with the compiler, 640 bytes with
-# arm-none-eabi-gcc 13.2.1 and 644 with 14.2.
-IOMCU_PERFORMANCE = (
-    (ROOT / "docs" / "Performance.md",
-     "| Core | Entry | Stack (bytes) | Deepest chain (bytes) | "
-     "One interrupt (bytes) | Spare below the margin (bytes) |",
-     "core 0"),
-    (ROOT / "docs" / "Performance-de.md",
-     "| Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | "
-     "Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |",
-     "Kern 0"),
-)
-
-
-def check_iomcu_doc(rows: list) -> list:
-    """Core 0's row of the coprocessor table in Performance.md and its
-    German page against iomcu_check()'s rows."""
-    measured = [list(r[2:]) for r in rows if r[0] == CORE0[0]]
-    if len(measured) != 1:
-        return ["core 0 is not measured; its row in the docs is not held"]
-    out = []
-    for page, header, name in IOMCU_PERFORMANCE:
-        said = doc_rows(page.read_text(encoding="utf-8"), header)
-        if said is None or name not in said:
-            out.append(f"{page.name}: no coprocessor table with a row for "
-                       f"{name}")
-        elif said[name] != measured[0]:
-            out.append(f"{page.name}: the coprocessor table gives {name} "
-                       f"as {said[name]}; measured {measured[0]}")
     return out
 
 
