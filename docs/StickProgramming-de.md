@@ -736,7 +736,7 @@ Liste.
 | SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
 
 Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in
-`shared/esc/esc_stick.c`, ein Fall je Grund. `tools/check_docs.py` liest
+`shared/esc/esc_stick_read.c`, ein Fall je Grund. `tools/check_docs.py` liest
 diese Funktion und schlägt fehl, wenn diese Tabelle oder ihr englisches
 Gegenstück etwas anderes sagt. TOUCH VERLOREN ist an: Ereignisse gingen
 verloren, sie wurden nicht gewählt.
@@ -793,8 +793,9 @@ Menü nach `hold_ms`. Das der Host-Suite tut es (`wait_hand`): das Menü
 wartet auf die Handlung, beantwortet sie mit drei Pieptönen und beginnt die
 Folge 1500 ms später.
 
-Die Host-Suite (`test_esc_stick`) lässt den Ablauf von Ende zu Ende gegen
-die Simulation laufen: zwei- und einstufige Menüs, wiederholte Gruppen, eine
+Die Host-Suiten `test_esc_stick`, `test_esc_stick_entry` und
+`test_esc_stick_hand` lassen den Ablauf von Ende zu Ende gegen die
+Simulation laufen: zwei- und einstufige Menüs, wiederholte Gruppen, eine
 Ruhestellung, Ein- und Ausschalten zwischen Änderungen, Messwerte 100 bis
 190 ms auseinander, 30 mA Rauschen, ein verlorener Piepton in einer Gruppe,
 ein Menü mit einem Punkt mehr als das Profil, ein ESC, der nie piept, und

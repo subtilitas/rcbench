@@ -101,6 +101,9 @@ SOURCES = [
     "shared/esc/esc_json.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
+    "shared/esc/esc_stick_rules.c",
+    "shared/esc/esc_det.c",
+    "shared/esc/esc_stick_read.c",
     "shared/esc/esc_sim.c",
     # The board drawing the coprocessor serves: generated data, so the
     # screenshot is the drawing a bench shows.

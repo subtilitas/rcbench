@@ -5,7 +5,8 @@
 # runs a profile against the supply current, and a simulated ESC for it.  No
 # file access and no I/O, so the host suite feeds the parser hostile input
 # without a card and runs the programmer against the simulation.
-set(SRCS esc_profiles_gen.c esc_json.c esc_registry.c esc_stick.c esc_sim.c)
+set(SRCS esc_profiles_gen.c esc_json.c esc_registry.c esc_stick.c
+         esc_stick_rules.c esc_det.c esc_stick_read.c esc_sim.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
