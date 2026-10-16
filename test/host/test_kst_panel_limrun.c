@@ -764,10 +764,6 @@ TEST_CASE(a_limit_run_aborted_behind_its_arm_leaves_the_bench_safe)
     }
 }
 
-/* Notes that fit take one page.  Notes that do not take pages that keep
- * their last row for the count: no page holds more than room - 1 rows,
- * no note is split, and every note is on a page. */
-
 int main(void)
 {
     RUN(a_limit_run_programs_the_servo_on_the_programming_port);

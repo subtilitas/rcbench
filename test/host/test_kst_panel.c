@@ -15,6 +15,37 @@
  */
 #include "kst_panel_rig.h"
 
+/* The SERVO tab's line @p i under its rows, "" for none. */
+static const char *status(int i)
+{
+    const char *t = kst_panel_status_line(i);
+
+    return t != NULL ? t : "";
+}
+
+/* MORE, and the entry @p i of its list. */
+static void more_input(int i)
+{
+    tap(kst_panel_tab_rect(PG_SERVO));
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    tap(kst_panel_choice_rect(i));
+}
+
+/* Digits, a dot for '.', then OK. */
+static void type_text(const char *t)
+{
+    static const ui_key_t d[] = { UI_KEY_0, UI_KEY_1, UI_KEY_2, UI_KEY_3,
+                                  UI_KEY_4, UI_KEY_5, UI_KEY_6, UI_KEY_7,
+                                  UI_KEY_8, UI_KEY_9 };
+
+    key(UI_KEY_CLR);
+    for (; *t != '\0'; ++t) {
+        key(*t == '.' ? UI_KEY_DOT : d[*t - '0']);
+    }
+    key(UI_KEY_OK);
+}
+
 /* ------------------------------------------------------------ port and tabs */
 
 TEST_CASE(without_a_link_nothing_on_the_servo_tab_takes_a_tap)
@@ -3392,6 +3423,9 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
     CHECK(!kst_prog_write_enabled(M));
 }
 
+/* Notes that fit take one page.  Notes that do not take pages that keep
+ * their last row for the count: no page holds more than room - 1 rows,
+ * no note is split, and every note is on a page. */
 TEST_CASE(notes_that_do_not_fit_take_pages_and_none_is_lost)
 {
     int page[5];

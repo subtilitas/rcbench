@@ -1303,11 +1303,12 @@ Meldung, die geht, wenn ihre Bedingung endet, die Zeilen, die keinen Tipp
 annehmen, die Beschriftung der Zeile PORT, kein Komma in einer Zahl der
 deutschen Tabelle, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 **ABBRECHEN** und **STOP** abschneiden, eine Karte, die versagt, und die
-Timeouts über den Überlauf der Uhr bei 2^32 ms. Die Servodateien laufen
-gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
+Timeouts über den Überlauf der Uhr bei 2^32 ms. `test_kst_panel_files` fährt die
+Servodateien gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
 beide Servotypen und ihre Abweichung in beiden Richtungen, jede
 Ablehnung, die Grenze von 5 s, ein erstes Schreiben mit einer Karte, die
-voll ist oder versagt, und die Schreiben ohne Karte: das erste Schreiben,
+voll ist oder versagt.
+`test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
 Schreibseite entnommene Karte. Ein Kommando, das die Control-Task nach
