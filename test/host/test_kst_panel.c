@@ -3904,8 +3904,8 @@ static bool lines_ok(unsigned id, unsigned arg, uint8_t reg)
     bool ok = n >= 1 && n <= KST_PANEL_MSG_LINES;
 
     for (int i = 0; i < n; ++i) {
-        /* 58 cells fit the card. */
-        ok = ok && t[i][0] != '\0' && strlen(t[i]) <= 62u;
+        /* A line wraps onto two rows of the card's 58 cells at most. */
+        ok = ok && t[i][0] != '\0' && kst_panel_text_rows(t[i]) <= 2;
         ok = ok && strchr(t[i], '%') == NULL;
     }
     return ok;
@@ -3982,7 +3982,7 @@ static void texts_in(ui_lang_t lang)
         m.id = KST_PROG_MSG_EDIT_HARD;
         m.arg = (uint16_t)rule;
         CHECK(kst_panel_rule_text(rule)[0] != '\0');
-        CHECK(strlen(kst_panel_rule_text(rule)) <= 62u);
+        CHECK(kst_panel_text_rows(kst_panel_rule_text(rule)) <= 2);
         CHECK_EQ(kst_panel_message_lines(&m, t), 1);
         CHECK_STR_EQ(t[0], kst_panel_rule_text(rule));
         m.id = KST_PROG_MSG_RESTORE_REFUSED;
@@ -4455,7 +4455,8 @@ TEST_CASE(a_message_goes_when_what_it_says_no_longer_holds)
 }
 
 /* The PORT row carries what CONNECT asks of the supply, where the bench
- * sets the supply; German field names are the maker's, with a point. */
+ * sets the supply; the labels of the rows that are no register's name are
+ * the language's. */
 TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -4478,11 +4479,37 @@ TEST_CASE(the_port_row_names_the_programming_voltage_and_current)
         /* Inside the row, left of its button. */
         CHECK(kst_panel_value_rect(PG_SERVO, 0, 0).x - AREA.x - 10
               > (int)strlen(want) * 8);
-        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 0), "SPEED LIMIT");
-        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 1), "SPEED");
-        CHECK_STR_EQ(kst_panel_label(PG_FAILSAFE, 1, 1), "AFTER");
+        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 0),
+                     lang == (int)UI_LANG_EN ? "SPEED LIMIT" : "TEMPOGRENZE");
+        CHECK_STR_EQ(kst_panel_label(PG_TUNE, 3, 1),
+                     lang == (int)UI_LANG_EN ? "SPEED" : "TEMPO");
+        CHECK_STR_EQ(kst_panel_label(PG_FAILSAFE, 1, 1),
+                     lang == (int)UI_LANG_EN ? "AFTER" : "NACH");
     }
     ui_text_set_language(UI_LANG_EN);
+}
+
+/* A note, a message's line or a warning page's line is wrapped onto two
+ * rows of the card: ui_text.def gives it 116 cells, the two rows' 58, and
+ * every language's text takes no more than the two rows at a space. */
+TEST_CASE(every_wrapped_text_takes_two_rows_at_most)
+{
+    fresh();
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        for (unsigned id = 0; id < (unsigned)TX_COUNT; ++id) {
+            const char *t = ui_tr_in((ui_lang_t)lang, (ui_text_id_t)id);
+
+            if (strncmp(ui_text_name((ui_text_id_t)id), "KP_", 3) != 0
+                || ui_text_cells((ui_text_id_t)id) != 116) {
+                continue;
+            }
+            if (kst_panel_text_rows(t) > 2) {
+                T_FAIL("%s in language %d takes %d rows: \"%s\"",
+                       ui_text_name((ui_text_id_t)id), lang,
+                       kst_panel_text_rows(t), t);
+            }
+        }
+    }
 }
 
 /* One decimal convention in the German texts: the point the values on the
@@ -6113,6 +6140,7 @@ int main(void)
     RUN(the_writing_line_has_a_singular_and_a_form_without_a_count);
     RUN(a_message_goes_when_what_it_says_no_longer_holds);
     RUN(the_port_row_names_the_programming_voltage_and_current);
+    RUN(every_wrapped_text_takes_two_rows_at_most);
     RUN(no_german_text_writes_a_number_with_a_comma);
     RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);
     RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
