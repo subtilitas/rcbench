@@ -352,7 +352,10 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 893 | 844 | 94.5% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
-| `shared/esc/esc_stick.c` | 1040 | 1008 | 96.9% |
+| `shared/esc/esc_stick.c` | 552 | 540 | 97.8% |
+| `shared/esc/esc_stick_rules.c` | 284 | 269 | 94.7% |
+| `shared/esc/esc_det.c` | 132 | 130 | 98.5% |
+| `shared/esc/esc_stick_read.c` | 72 | 69 | 95.8% |
 | `shared/esc/esc_sim.c` | 367 | 343 | 93.5% |
 | `shared/servo/servo_sim.c` | 126 | 124 | 98.4% |
 | `protocols/sbus/sbus.c` | 55 | 54 | 98.2% |
