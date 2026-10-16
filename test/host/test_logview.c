@@ -20,7 +20,9 @@
 #include "log_viewer_screen.h"
 #include "settings.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 #include "ui_theme.h"
+#include "ui_widgets.h"
 #include "touch_feed.h"
 
 #define W 800
@@ -2398,6 +2400,44 @@ TEST_CASE(nothing_that_acts_is_under_the_alert_band)
     }
 }
 
+/*
+ * The import's warnings break into lines of DETECTED's 268 px, 33 cells,
+ * and its file messages into the footer's 248 px between WI-FI and DELETE:
+ * ui_text.def declares two of those lines, 66 cells, for each warning, and
+ * this holds each to the two lines as the screen breaks it, the longest
+ * count and file name included.
+ */
+TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
+{
+    static const ui_text_id_t k_warn[] = {
+        TX_LOG_MIXED, TX_LOG_ROWS_DIFFER, TX_LOG_LAST_CUT, TX_LOG_UNSETTLED,
+    };
+    static const ui_text_id_t k_file[] = {
+        TX_LOG_CANNOT_OPEN, TX_LOG_IS_FOLDER, TX_LOG_CANNOT_DELETE,
+        TX_LOG_DELETED,
+    };
+    const gfx_rect_t warn = gfx_rect_make(32, 0, 268, 18);
+    const gfx_rect_t foot = gfx_rect_make(272, 0, 248, 18);
+    char line[96];
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (size_t i = 0; i < sizeof(k_warn) / sizeof(k_warn[0]); ++i) {
+            CHECK(ui_text_wrap(NULL, warn, 18, ui_tr(k_warn[i]),
+                               UI_FONT_LABEL, UI_TEXT) <= 2);
+        }
+        snprintf(line, sizeof(line), ui_tr(TX_LOG_TOO_LONG), 2147483647);
+        CHECK(ui_text_wrap(NULL, warn, 18, line, UI_FONT_LABEL, UI_TEXT)
+              <= 2);
+        for (size_t i = 0; i < sizeof(k_file) / sizeof(k_file[0]); ++i) {
+            /* A run's name, as the logger writes it. */
+            snprintf(line, sizeof(line), ui_tr(k_file[i]), "BENCH999.CSV");
+            CHECK(ui_text_wrap(NULL, foot, 18, line, UI_FONT_LABEL, UI_TEXT)
+                  <= 2);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(every_view_draws_something);
@@ -2463,5 +2503,6 @@ int main(void)
     RUN(a_second_finger_presses_nothing_on_the_list_views);
     RUN(a_press_left_behind_holds_nothing_on_the_way_back_in);
     RUN(nothing_that_acts_is_under_the_alert_band);
+    RUN(every_warning_and_file_message_takes_two_lines_at_most);
     return test_summary("logview");
 }

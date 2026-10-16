@@ -51,7 +51,7 @@ them reaches a wire: the one-wire bootloader protocols of BLHeli_S firmware
 and AM32 firmware (19,200 baud), the text command line of ESCape32 firmware
 over the signal line, the framed packets of VESC firmware (115,200 baud) and
 the Hitec D-series servo protocol. The PROGRAMMER screen marks these classes
-MODELLED.
+SIMULATED.
 
 ---
 

@@ -33,9 +33,9 @@ beiden, welches Ende aufgehört hat:
 
 | Requests | Panel zeigt | Lesart |
 | --- | --- | --- |
-| steigend | `LINK` | funktioniert |
-| unverändert | `KEIN LINK` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
-| steigend | `KEIN LINK` | die Anfragen kommen an, die Antworten nicht zurück |
+| steigend | `VERBINDUNG` | funktioniert |
+| unverändert | `KEINE VERBINDUNG` | es kommt nichts an — das Panel sendet nicht mehr, oder die Verkabelung ist offen |
+| steigend | `KEINE VERBINDUNG` | die Anfragen kommen an, die Antworten nicht zurück |
 
 `CAN did not answer on SPI` heißt, dass der Controller nach dem Reset nicht
 den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
@@ -48,7 +48,7 @@ Der Test läuft bei jedem Start. Er dauert 1200 ms, innerhalb des Splash und
 vor dem Identity-Poll: ein kaputter Bus wird so als kaputter Bus diagnostiziert
 und nicht als eine Identity, die nie geantwortet hat.
 
-Ein anderes Urteil als `alle Testframes intakt zurück` bringt das Panel auf den
+Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` bringt das Panel auf den
 [Bus-Fehler-Bildschirm](#der-bus-fehler-bildschirm) statt ins Menü. Es muss
 nichts aktiviert werden, und es wird keine Konsole gebraucht.
 
@@ -75,11 +75,11 @@ sie mit der Zahl, die es empfangen hat.
 
 | Befund | Bedeutung | Prüfen |
 | --- | --- | --- |
-| `kein Testframe kam zurück` (Konsole: `no probe came back`) | nichts kommt durch | CANH/CANL vertauscht; Gegenseite versorgt; gleiche Bitrate an beiden Enden; Abschlusswiderstände an beiden Enden |
-| `Testframes verändert zurück` (Konsole: `probes come back altered`) | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
-| `Testframes gehen verloren` (Konsole: `probes cross, and not all of them`) | grenzwertiger Bus | Timing, ein Abschluss, oder ein für die Rate zu langer Bus |
-| `Testframes weg ohne Busfehler` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
-| `alle Testframes intakt zurück` (Konsole: `every probe came back intact`) | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
+| `Kein Testframe kam zurück.` (Konsole: `no probe came back`) | nichts kommt durch | CANH/CANL vertauscht; Gegenseite versorgt; gleiche Bitrate an beiden Enden; Abschlusswiderstände an beiden Enden |
+| `Testframes kamen mit veränderten Daten zurück.` (Konsole: `probes come back altered`) | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
+| `Einige Testframes gingen verloren.` (Konsole: `probes cross, and not all of them`) | grenzwertiger Bus | Timing, ein Abschluss, oder ein für die Rate zu langer Bus |
+| `Testframes gingen ohne Busfehler verloren.` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
+| `Alle Testframes kamen korrekt zurück.` (Konsole: `every probe came back intact`) | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
 
 Die Konsole schreibt die englischen Urteile. Startbildschirm und
 Bus-Fehler-Bildschirm zeigen die deutschen aus der Tabelle; jedes passt in
@@ -100,7 +100,7 @@ einmal, bevor der Durchlauf vorbei ist.
 
 ### Der Bus-Fehler-Bildschirm
 
-Ein anderes Urteil als `alle Testframes intakt zurück` wird auf dem Panel vor
+Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` wird auf dem Panel vor
 dem Menü gezeigt, denn der Fehler ist von jedem anderen Bildschirm aus
 unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
 Koprozessor, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,

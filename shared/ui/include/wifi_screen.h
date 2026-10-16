@@ -180,6 +180,10 @@ void wifi_screen_invalidate(void);
 
 const ui_screen_t *wifi_screen(void);
 
+/** The lines the card's first sentence takes, WF_JOBS_1 and WF_JOBS_2
+ *  joined by a space and wrapped once; for tests. */
+int wifi_screen_jobs_lines(void);
+
 /* ------------------------------------------------------ PANEL UPDATE */
 
 typedef enum {
