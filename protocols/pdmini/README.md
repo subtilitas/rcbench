@@ -8,7 +8,7 @@ The module has two parts.
 
 | Part | Files | Depends on |
 |---|---|---|
-| Core | `pdmini.c`, `include/pdmini.h` | C11 standard headers |
+| Core | `pdmini.c`, `pdmini_codec.c`, `pdmini_jobs.c`, `pdmini_int.h`, `include/pdmini.h` | C11 standard headers |
 | RP2350 pin driver | `rp2350/pd_uart.pio`, `rp2350/pd_uart.c`, `rp2350/pd_uart.h` | the core, pico-sdk |
 
 ## Constraints
