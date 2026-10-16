@@ -387,6 +387,37 @@ TEST_CASE(null_arguments_arm_nothing)
     CHECK(safety_gate_line_trusted(LINK_FAULT_LINK_SILENT));
 }
 
+/*
+ * The firmware's arm for the pass, every combination of its three inputs:
+ *
+ *     gate.arm  quiet mask  update holds  armed
+ *     false     any         any           false
+ *     true      0           false         true
+ *     true      non-zero    false         false
+ *     true      0           true          false
+ *     true      non-zero    true          false
+ *
+ * A port is any bit of the mask: the first and the highest each hold it.
+ */
+TEST_CASE(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update)
+{
+    const uint16_t masks[] = { 0x0000u, 0x0001u, 0x8000u, 0xFFFFu };
+    for (unsigned a = 0; a < 2u; ++a) {
+        for (size_t m = 0; m < sizeof(masks) / sizeof(masks[0]); ++m) {
+            for (unsigned u = 0; u < 2u; ++u) {
+                const bool want = a != 0u && masks[m] == 0u && u == 0u;
+                CHECK_EQ(safety_gate_arm_now(a != 0u, masks[m], u != 0u),
+                         want);
+            }
+        }
+    }
+    /* Each input alone, against all of them clear. */
+    CHECK(safety_gate_arm_now(true, 0u, false));
+    CHECK(!safety_gate_arm_now(false, 0u, false));
+    CHECK(!safety_gate_arm_now(true, 1u, false));
+    CHECK(!safety_gate_arm_now(true, 0u, true));
+}
+
 /* --------------------------------------------------------- the two ends */
 
 #define D_CH_THROTTLE LINK_OUT_CHANNELS   /* the coprocessor's own throttle */
@@ -1646,6 +1677,7 @@ int main(void)
     RUN(link_silence_latches_at_200_ms_across_the_wrap);
     RUN(a_refused_arm_leaves_the_latch_set);
     RUN(null_arguments_arm_nothing);
+    RUN(the_pass_arms_only_on_the_gate_with_no_port_out_and_no_update);
     RUN(a_role_arm_is_passed_on_and_every_stop_takes_it_whole);
     RUN(a_bad_arm_value_latches_nothing);
     RUN(the_power_up_arm_is_taken_on_the_first_hold);

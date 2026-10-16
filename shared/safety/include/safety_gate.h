@@ -74,6 +74,25 @@ safety_gate_t safety_gate_step(heartbeat_mon_t *beat, bool line_edge,
                                uint32_t now_ms);
 
 /**
+ * Whether the bank is armed for this pass: the pass's decision
+ * (safety_gate_t.arm, @p gate_arm) and two holds only the firmware can see.
+ *
+ * Not while a programming port is out of PWM (@p quiet_mask, the ports
+ * kst_port_quiet_mask() names, non-zero): programming and an armed bank
+ * are exclusive at this end too, and the port takes no ENTER while the
+ * bank is armed.
+ *
+ * Nor while a firmware update runs or its image waits for BUY
+ * (@p update_holds): the control page refuses the ARM, and this holds the
+ * bank down for an ARM written before the session began.
+ *
+ * True only when @p gate_arm is true, @p quiet_mask is 0 and
+ * @p update_holds is false.
+ */
+bool safety_gate_arm_now(bool gate_arm, uint16_t quiet_mask,
+                         bool update_holds);
+
+/**
  * A write to the CONTROL page: link_control_write() with this end's answer
  * to whether the bench may arm, and the CLEAR acted on.
  *

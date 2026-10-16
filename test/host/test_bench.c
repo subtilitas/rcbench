@@ -814,6 +814,186 @@ TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
     bench_state_log_row(&b, false, NULL);
 }
 
+/* ---------------------------------------- the coprocessor's ESC telemetry */
+
+/* A speed, a voltage, a current and a temperature, all fresh: 14 magnets,
+ * 7 pole pairs; 100 counts of 250 mV, 30 A, 45 C. */
+static bench_telem_t telem_fresh(void)
+{
+    bench_telem_t t;
+    memset(&t, 0, sizeof(t));
+    t.poles       = 14u;
+    t.erpm_ok     = true;
+    t.erpm        = 70000u;
+    t.erpm_age_ms = 0u;
+    t.voltage     = (bench_edt_reading_t){ true, 100u, 0u };
+    t.current     = (bench_edt_reading_t){ true, 30u, 0u };
+    t.temperature = (bench_edt_reading_t){ true, 45u, 0u };
+    return t;
+}
+
+/* Every live field and its bit, in the units a person reads. */
+TEST_CASE(the_escs_telemetry_fills_the_live_readings_in_their_units)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    const bench_telem_t t = telem_fresh();
+    bench_state_from_telem(&b, &t);
+    CHECK_EQ(b.flags, LINK_BN_RPM_OK | LINK_BN_VOLTAGE_OK
+                      | LINK_BN_CURRENT_OK | LINK_BN_TEMP_OK);
+    CHECK_NEAR(b.rpm, 10000.0f, 0.0f);       /* 70,000 eRPM over 7 pairs */
+    CHECK_NEAR(b.voltage, 25.0f, 0.0f);
+    CHECK_NEAR(b.current, 30.0f, 0.0f);
+    CHECK_NEAR(b.power, 750.0f, 0.0f);
+    CHECK_NEAR(b.temp_esc, 45.0f, 0.0f);
+    CHECK_NEAR(b.temp_motor, 0.0f, 0.0f);
+    CHECK((b.flags & LINK_BN_TEMP_MOT_OK) == 0u);
+}
+
+/* The speed's limit is inclusive: 200 ms old is reported, 201 ms is not. */
+TEST_CASE(a_speed_goes_empty_past_200_ms)
+{
+    const uint32_t ages[] = { BENCH_RPM_STALE_MS - 1u, BENCH_RPM_STALE_MS,
+                              BENCH_RPM_STALE_MS + 1u };
+    const bool fresh[] = { true, true, false };
+    CHECK_EQ(BENCH_RPM_STALE_MS, 200u);
+    for (size_t i = 0; i < 3u; ++i) {
+        bench_state_t b;
+        memset(&b, 0, sizeof(b));
+        bench_telem_t t = telem_fresh();
+        t.erpm_age_ms = ages[i];
+        bench_state_from_telem(&b, &t);
+        CHECK_EQ((b.flags & LINK_BN_RPM_OK) != 0u, fresh[i]);
+        CHECK_NEAR(b.rpm, fresh[i] ? 10000.0f : 0.0f, 0.0f);
+        /* The other fields keep their own window. */
+        CHECK((b.flags & LINK_BN_VOLTAGE_OK) != 0u);
+    }
+}
+
+/* Each extended-telemetry reading on its own: 2,000 ms old is reported,
+ * 2,001 ms is not, and the speed's 200 ms do not apply. */
+TEST_CASE(an_extended_reading_goes_empty_past_2000_ms)
+{
+    const uint32_t ages[] = { BENCH_EDT_STALE_MS - 1u, BENCH_EDT_STALE_MS,
+                              BENCH_EDT_STALE_MS + 1u };
+    const bool fresh[] = { true, true, false };
+    CHECK_EQ(BENCH_EDT_STALE_MS, 2000u);
+    for (size_t i = 0; i < 3u; ++i) {
+        bench_state_t b;
+        memset(&b, 0, sizeof(b));
+        bench_telem_t t = telem_fresh();
+        t.voltage.age_ms = ages[i];
+        bench_state_from_telem(&b, &t);
+        CHECK_EQ((b.flags & LINK_BN_VOLTAGE_OK) != 0u, fresh[i]);
+        CHECK_NEAR(b.voltage, fresh[i] ? 25.0f : 0.0f, 0.0f);
+        CHECK((b.flags & LINK_BN_CURRENT_OK) != 0u);
+
+        t = telem_fresh();
+        t.current.age_ms = ages[i];
+        bench_state_from_telem(&b, &t);
+        CHECK_EQ((b.flags & LINK_BN_CURRENT_OK) != 0u, fresh[i]);
+        CHECK_NEAR(b.current, fresh[i] ? 30.0f : 0.0f, 0.0f);
+        CHECK((b.flags & LINK_BN_VOLTAGE_OK) != 0u);
+
+        t = telem_fresh();
+        t.temperature.age_ms = ages[i];
+        bench_state_from_telem(&b, &t);
+        CHECK_EQ((b.flags & LINK_BN_TEMP_OK) != 0u, fresh[i]);
+        CHECK_NEAR(b.temp_esc, fresh[i] ? 45.0f : 0.0f, 0.0f);
+        CHECK((b.flags & LINK_BN_TEMP_MOT_OK) == 0u);
+    }
+}
+
+/* No poles set, or no reading from the driver, leaves the field empty
+ * however fresh the age reads.  One magnet is no pair: rpm 0, reported. */
+TEST_CASE(no_poles_or_no_reading_leaves_the_field_empty)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_telem_t t = telem_fresh();
+    t.poles = 0u;
+    bench_state_from_telem(&b, &t);
+    CHECK((b.flags & LINK_BN_RPM_OK) == 0u);
+    CHECK_NEAR(b.rpm, 0.0f, 0.0f);
+
+    t = telem_fresh();
+    t.erpm_ok = false;
+    bench_state_from_telem(&b, &t);
+    CHECK((b.flags & LINK_BN_RPM_OK) == 0u);
+    CHECK_NEAR(b.rpm, 0.0f, 0.0f);
+
+    t = telem_fresh();
+    t.poles = 1u;
+    bench_state_from_telem(&b, &t);
+    CHECK((b.flags & LINK_BN_RPM_OK) != 0u);
+    CHECK_NEAR(b.rpm, 0.0f, 0.0f);
+
+    t = telem_fresh();
+    t.voltage.ok = false;
+    t.current.ok = false;
+    t.temperature.ok = false;
+    bench_state_from_telem(&b, &t);
+    CHECK_EQ(b.flags, LINK_BN_RPM_OK);
+    CHECK_NEAR(b.voltage, 0.0f, 0.0f);
+    CHECK_NEAR(b.current, 0.0f, 0.0f);
+    CHECK_NEAR(b.temp_esc, 0.0f, 0.0f);
+}
+
+/* Power only with both halves: either one missing leaves it empty. */
+TEST_CASE(power_needs_both_the_voltage_and_the_current)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_telem_t t = telem_fresh();
+    t.current.ok = false;
+    bench_state_from_telem(&b, &t);
+    CHECK_NEAR(b.power, 0.0f, 0.0f);
+    CHECK_NEAR(b.voltage, 25.0f, 0.0f);
+
+    t = telem_fresh();
+    t.voltage.age_ms = BENCH_EDT_STALE_MS + 1u;
+    bench_state_from_telem(&b, &t);
+    CHECK_NEAR(b.power, 0.0f, 0.0f);
+    CHECK_NEAR(b.current, 30.0f, 0.0f);
+}
+
+/* The live fields are rebuilt from nothing every sample; the peaks, the
+ * totals and the rest are left alone. */
+TEST_CASE(a_sample_rebuilds_the_live_fields_and_keeps_the_rest)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.voltage     = 12.0f;
+    b.current     = 5.0f;
+    b.power       = 60.0f;
+    b.rpm         = 3000.0f;
+    b.temp_esc    = 30.0f;
+    b.temp_motor  = 40.0f;
+    b.flags       = 0xFFFFu;
+    b.charge_mah  = 123.0f;
+    b.voltage_min = 11.0f;
+    b.rpm_max     = 9000.0f;
+    bench_telem_t t;
+    memset(&t, 0, sizeof(t));
+    bench_state_from_telem(&b, &t);
+    CHECK_EQ(b.flags, 0u);
+    CHECK_NEAR(b.voltage, 0.0f, 0.0f);
+    CHECK_NEAR(b.current, 0.0f, 0.0f);
+    CHECK_NEAR(b.power, 0.0f, 0.0f);
+    CHECK_NEAR(b.rpm, 0.0f, 0.0f);
+    CHECK_NEAR(b.temp_esc, 0.0f, 0.0f);
+    CHECK_NEAR(b.temp_motor, 0.0f, 0.0f);
+    CHECK_NEAR(b.charge_mah, 123.0f, 0.0f);
+    CHECK_NEAR(b.voltage_min, 11.0f, 0.0f);
+    CHECK_NEAR(b.rpm_max, 9000.0f, 0.0f);
+
+    /* NULL changes nothing. */
+    b.flags = 0x1234u;
+    bench_state_from_telem(&b, NULL);
+    bench_state_from_telem(NULL, &t);
+    CHECK_EQ(b.flags, 0x1234u);
+}
+
 int main(void)
 {
     RUN(every_field_survives_the_round_trip);
@@ -840,5 +1020,11 @@ int main(void)
     RUN(the_totals_go_on_past_benchs_bounds);
     RUN(the_escs_figures_come_from_whichever_page_carries_them);
     RUN(a_window_only_row_carries_the_window_and_no_sample);
+    RUN(the_escs_telemetry_fills_the_live_readings_in_their_units);
+    RUN(a_speed_goes_empty_past_200_ms);
+    RUN(an_extended_reading_goes_empty_past_2000_ms);
+    RUN(no_poles_or_no_reading_leaves_the_field_empty);
+    RUN(power_needs_both_the_voltage_and_the_current);
+    RUN(a_sample_rebuilds_the_live_fields_and_keeps_the_rest);
     return test_summary("bench");
 }

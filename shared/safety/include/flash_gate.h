@@ -1,5 +1,6 @@
 /*
- * When the panel may write its own flash.
+ * When the panel may write its own flash, and when the coprocessor may not
+ * write its own.
  *
  * CONFIG_SPI_FLASH_AUTO_SUSPEND is off on the panel, so an erase or a write
  * of its main flash disables the cache and stalls both cores for its length:
@@ -14,6 +15,9 @@
  * save before it commits a page of NVS (non-volatile storage), and the board
  * drawing's keeper before each sector.  A write that is not allowed waits;
  * arming and the supply are never refused for one.
+ *
+ * The coprocessor's rule is flash_gate_busy(), for its output store and its
+ * firmware update alike.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -41,6 +45,24 @@ extern "C" {
  * True only when both are false.
  */
 bool flash_gate_open(bool armed, bool supply);
+
+/**
+ * Whether the coprocessor's flash may not be written now, for the store and
+ * for the firmware update alike.  The bank driving: a window stops this core
+ * and steps no output.  The supply asked on or perhaps on: its UART replies
+ * would overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over the
+ * link would wait for it.  A KST session: a flash write stalls the pass that
+ * steps it.
+ *
+ * @p driving      the bank is driving (outputs_driving()).
+ * @p supply_on    the SUPPLY page's output register is non-zero.
+ * @p pd_on        the PD mini is open and may be on (pdmini_may_be_on()).
+ * @p kst_session  the KST port is out of PWM.
+ *
+ * False only when all four are false.
+ */
+bool flash_gate_busy(bool driving, bool supply_on, bool pd_on,
+                     bool kst_session);
 
 #ifdef __cplusplus
 }
