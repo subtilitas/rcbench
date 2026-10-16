@@ -95,6 +95,7 @@ SOURCES = [
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
     "shared/esc/esc_json.c",
+    "shared/esc/esc_json_lex.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
     "shared/esc/esc_sim.c",
