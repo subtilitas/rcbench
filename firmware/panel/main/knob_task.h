@@ -4,7 +4,9 @@
  *
  * The sensor is registered on the bus once, before the control task
  * starts, and the task reads it only while the setting is on, so a panel
- * with the knob off sends nothing to 0x06.  What it hands over is
+ * with the knob off sends nothing to 0x06.  While the knob has no
+ * reference the task probes 0x06 before reading, so a panel with the knob
+ * on and no sensor logs nothing per poll.  What it hands over is
  * motion, a count of steps since the last take, never an angle: a knob that
  * stops answering stops adding to it.
  *
@@ -17,8 +19,10 @@
 #include <stdint.h>
 
 /**
- * Register the sensor on the bus.  Call once, after board_init() and before
- * any other task uses the bus.
+ * Register the sensor on the bus.  Call once, after board_init().  The
+ * touch task already reads the bus by then; ESP-IDF v5.4's
+ * i2c_master_bus_add_device() inserts the device under the bus lock, so the
+ * add waits out a touch transaction instead of racing it.
  */
 void knob_task_attach(void);
 

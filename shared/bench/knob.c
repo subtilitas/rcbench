@@ -9,6 +9,7 @@
 const uint8_t knob_poll_regs[KNOB_POLL_READS] = {
     KNOB_REG_ANGLE_HI,      /* first, as the datasheet asks */
     KNOB_REG_ANGLE_LO,
+    KNOB_REG_ANGLE_HI,      /* again: the high byte did not move meanwhile */
 };
 
 uint16_t knob_decode(uint8_t hi, uint8_t lo)
@@ -32,6 +33,11 @@ bool knob_attach(knob_t *k, unsigned addr)
 int knob_poll_addr(const knob_t *k)
 {
     return k->attached ? (int)k->addr : -1;
+}
+
+bool knob_poll_probe_first(const knob_t *k)
+{
+    return k->attached && !k->have_ref;
 }
 
 void knob_reset(knob_t *k)
@@ -70,6 +76,9 @@ int knob_poll_done(knob_t *k, bool answered,
 {
     if (!k->attached || !answered || bytes == NULL) {
         return knob_feed(k, false, 0);
+    }
+    if (bytes[0] != bytes[2]) {
+        return 0;               /* torn: no reading, the reference stays */
     }
     return knob_feed(k, true, knob_clockwise(knob_decode(bytes[0], bytes[1])));
 }

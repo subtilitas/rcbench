@@ -2,10 +2,10 @@
  * The rotary knob: an MT6701 magnetic angle sensor on the panel's I2C
  * (Inter-Integrated Circuit) bus, read as relative motion.
  *
- * Owns no hardware.  It names the reads of one poll, decodes the bytes the
- * panel reads and turns two successive angles into a signed count of steps,
- * so the same code is tested on the host.  The panel's task does the bus
- * transactions (firmware/panel/main/knob_task.c).
+ * Owns no hardware.  It names the transactions of one poll, decodes the
+ * bytes the panel reads and turns two successive angles into a signed count
+ * of steps, so the same code is tested on the host.  The panel's task does
+ * the bus transactions (firmware/panel/main/knob_task.c).
  *
  * The knob moves a slider by how far it turns, never to where it points:
  * the first reading after power-up, and after the sensor stopped answering,
@@ -24,6 +24,12 @@
  *   are not used.  Register 0x03 is read first, then 0x04, each in a
  *   transaction of its own (figure 20): the register address written, a
  *   repeated START, one byte read.
+ * - Neither version says that reading 0x03 latches 0x04.  Version 0.1
+ *   documents a burst read (section 6.6.3); version 1.9 no longer does.  So
+ *   the poll reads 0x03, 0x04 and 0x03 again and takes the angle only when
+ *   both 0x03 bytes agree: a high byte that changed between them can belong
+ *   to another sample than the low byte, off by up to 64 counts.  A poll
+ *   whose two 0x03 bytes differ moves nothing and keeps the reference.
  * - The I2C registers carry no field-strength or status bit.  The
  *   magnet-too-strong, too-weak, push and loss-of-track bits Mg[3:0] are in
  *   the SSI (synchronous serial interface) frame only (section 7.8).  An
@@ -37,9 +43,18 @@
  *   needed for I2C.
  *
  * Direction: the angle rises counter-clockwise seen from the chip's top
- * for the standard MT6701CT-STD and MT6701QT-STD (section 2 and figure 27).
- * The knob counts clockwise seen from the top as positive, so a clockwise
- * turn raises the throttle.  Not checked on hardware.
+ * (figure 27) on the MT6701CT-STD and MT6701QT-STD with DIR, register 0x29
+ * bit 1 in EEPROM, at its default 0 (section 8.1).  The knob counts that
+ * mirrored, so a clockwise turn seen from the top, the magnet above the
+ * chip's top face, raises the throttle.  An MT6701CT-STV, whose angle rises
+ * clockwise (section 2), a part with DIR = 1, or a sensor seen from below
+ * turns the knob the other way.  Not checked on hardware.
+ *
+ * A missing sensor: a read the sensor does not acknowledge makes the bus
+ * driver log three error lines.  So a knob without a reference, after
+ * power-up or after a read went unanswered, first probes its address, an
+ * address byte alone, which the driver does not log, and reads only after
+ * an acknowledge (knob_poll_probe_first()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -65,8 +80,11 @@ _Static_assert(!PANEL_I2C_RESERVED(KNOB_I2C_ADDR),
 /** Angle[5:0] in bits 7..2; bits 1..0 not used. */
 #define KNOB_REG_ANGLE_LO    0x04
 
-/** The reads of one poll, one byte each, in this order. */
-#define KNOB_POLL_READS      2
+/**
+ * The reads of one poll, one byte each, in this order: 0x03, 0x04, 0x03.
+ * The angle is taken only when the first and the last agree.
+ */
+#define KNOB_POLL_READS      3
 extern const uint8_t knob_poll_regs[KNOB_POLL_READS];
 
 /** Steps in one turn: 14 bits. */
@@ -120,6 +138,13 @@ bool knob_attach(knob_t *k, unsigned addr);
  */
 int knob_poll_addr(const knob_t *k);
 
+/**
+ * Whether the next poll probes the address before its reads: an attached
+ * knob with no reference.  A probe that is not acknowledged ends the poll
+ * as not answered, with no read made.
+ */
+bool knob_poll_probe_first(const knob_t *k);
+
 /** Forget the reference: the next usable reading moves nothing. */
 void knob_reset(knob_t *k);
 
@@ -136,7 +161,8 @@ int knob_feed(knob_t *k, bool usable, uint16_t raw);
  * End one poll.  @p answered: every read of knob_poll_regs answered, and
  * @p bytes[i] is what knob_poll_regs[i] gave.  Returns the steps, positive
  * clockwise seen from the top; a poll that was not answered, or a knob
- * that is not attached, returns 0 and forgets the reference.
+ * that is not attached, returns 0 and forgets the reference.  A poll whose
+ * two 0x03 bytes differ returns 0 and keeps the reference.
  */
 int knob_poll_done(knob_t *k, bool answered,
                    const uint8_t bytes[KNOB_POLL_READS]);

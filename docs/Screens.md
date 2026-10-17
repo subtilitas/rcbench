@@ -1989,8 +1989,11 @@ across a third of its travel from -travel to +travel.
   answering set a reference and move nothing, so a knob that comes back
   turned does not jump the slider.
 - The sensor is read every 10 ms, and every 100 ms while it does not answer.
-  A poll is two reads, 0x03 and then 0x04, each with a 5 ms bus timeout; a
-  NACK or a timeout on either counts as no answer. The sensor reports no
+  A poll is three reads, 0x03, 0x04 and 0x03 again, each with a 5 ms bus
+  timeout; a NACK or a timeout on any counts as no answer. While the knob
+  has no reference, a probe of 0x06 (the address byte alone) comes first,
+  and the reads follow only when it is acknowledged. A poll whose two 0x03
+  bytes differ moves nothing and keeps the reference. The sensor reports no
   magnet status over I2C, so an answer is a reading. A step of more than
   90 deg between two readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it
@@ -2013,10 +2016,13 @@ across a third of its travel from -travel to +travel.
   kept either; the switch to SAFE returns the slider to 0 %, and the next turn after
   a switch to ARMED counts from there.
 - The panel never puts the knob, or another device of the builder's, at an
-  address the board answers at on that bus: 0x14, 0x20 to 0x27, 0x30 to 0x3F
-  and 0x5D. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
-  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends one unanswered read
-  to 0x06 every 100 ms and changes nothing else.
+  address the board answers at on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F
+  and 0x5D, or at one the I2C specification reserves, 0x00 to 0x03 and 0x78
+  to 0x7F. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
+  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends
+  one unacknowledged probe to 0x06 every 100 ms. In the host tests' model of
+  the bus that changes nothing else. On the panel it is not measured: 0x00
+  to 0x07 have not been scanned on this board.
 - The knob is not measured on hardware: its direction, its noise and its
   behaviour with no magnet over it.
 

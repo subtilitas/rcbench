@@ -134,7 +134,7 @@ Idle pulse and Full pulse go to the coprocessor at link-up and on every change. 
 - A finger on the throttle track or the SERVO dial owns the value while it is down.
 - The sensor is read every 10 ms. A step over 90 deg between two readings is dropped.
 
-The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it: the board's CH422G I/O expander and GT911 touch controller answer there. With no sensor fitted, Rotary knob ON changes nothing else. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
+The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it, where the board's CH422G I/O expander and GT911 touch controller answer, nor 0x00 to 0x03 or 0x78 to 0x7F, which the I2C specification reserves. With no sensor fitted, Rotary knob ON probes 0x06 every 100 ms. The host tests show that this changes nothing else; on the panel it is not measured. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
 ## INTERFACES
 

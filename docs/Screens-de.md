@@ -2186,10 +2186,13 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Sensors setzen eine Referenz und bewegen nichts; ein Knopf, der verdreht
   zurückkommt, lässt den Regler also nicht springen.
 - Der Sensor wird alle 10 ms gelesen, und alle 100 ms, solange er nicht
-  antwortet. Eine Abfrage sind zwei Lesezugriffe, 0x03 und danach 0x04, jeder
-  mit 5 ms Bus-Timeout; ein NACK oder ein Timeout bei einem davon gilt als
-  keine Antwort. Der Sensor meldet über I2C keinen Magnetstatus, also ist eine
-  Antwort ein Messwert. Ein Sprung von mehr als 90 deg zwischen zwei Messungen
+  antwortet. Eine Abfrage sind drei Lesezugriffe, 0x03, 0x04 und noch einmal
+  0x03, jeder mit 5 ms Bus-Timeout; ein NACK oder ein Timeout bei einem davon
+  gilt als keine Antwort. Solange der Knopf keine Referenz hat, geht ein Probe
+  von 0x06 voraus (nur das Adressbyte), und die Lesezugriffe folgen nur, wenn
+  er bestätigt wird. Eine Abfrage, deren zwei 0x03-Bytes sich unterscheiden,
+  bewegt nichts und behält die Referenz. Der Sensor meldet über I2C keinen
+  Magnetstatus, also ist eine Antwort ein Messwert. Ein Sprung von mehr als 90 deg zwischen zwei Messungen
   gilt als Störung und wird verworfen.
 - Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
   solange er aufliegt, und für den ganzen Frame, in dem er das Bedienelement
@@ -2214,11 +2217,14 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   in SAFE nichts und wird nicht aufgehoben; das Schalten auf SAFE setzt den
   Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
   dort.
-- Das Panel legt den Knopf und kein anderes Gerät des Erbauers auf eine
-  Adresse, auf der die Platine an diesem Bus antwortet: 0x14, 0x20 bis 0x27,
-  0x30 bis 0x3F und 0x5D. Bei 0x20 bis 0x27 und 0x30 bis 0x3F erreicht ein
-  Zugriff den Expander CH422G als Befehl. Ohne Sensor sendet `Drehknopf` EIN alle 100 ms einen unbeantworteten
-  Lesezugriff an 0x06 und ändert sonst nichts.
+- Das Panel legt weder den Knopf noch ein anderes selbst angeschlossenes
+  Gerät auf eine Adresse, auf der die Platine an diesem Bus antwortet, 0x14,
+  0x20 bis 0x27, 0x30 bis 0x3F und 0x5D, oder auf eine, die die
+  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F. Bei 0x20 bis
+  0x27 und 0x30 bis 0x3F erreicht ein Zugriff den Expander CH422G als Befehl.
+  Ohne Sensor sendet `Drehknopf` EIN alle 100 ms einen unbestätigten Probe an
+  0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
+  nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 

@@ -393,16 +393,25 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   a horn position that is waiting for the frame: a completed ARM, a DISARM, a
   release and a peak reset stay, and its motion is dropped. The knob is read by
   a task of its own on the core the renderer uses, never by the control task,
-  with a 5 ms bus timeout on each of the two transactions of a poll, so a
-  sensor that holds the shared I2C bus delays the touch read by at most 10 ms
-  per poll. The touch read is not on the heartbeat's path: the control task
+  with a 5 ms bus timeout on each transaction of a poll: a probe while it
+  has no reference, then three reads. A failed transaction also costs the
+  driver's recovery, a controller reset and a bus clear that waits up to
+  50 ms more while SDA is held low. A sensor that holds SDA low therefore
+  delays the touch read by about 55 ms per transaction. That is under the
+  touch read's own 100 ms bus timeout (`GT911_I2C_TIMEOUT_MS`), and a touch
+  controller silent for 500 ms switches the bench to SAFE
+  (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
   generates the heartbeat and does not use the I2C bus. The board answers at
   0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on that bus, and the CH422G I/O
   expander takes a transaction at its addresses as a command: at 0x30 to 0x3F
   the written byte becomes its output byte, which holds the backlight, the
   touch reset and the USB/CAN (Universal Serial Bus / Controller Area
   Network) select. The panel refuses to put the knob, or any other device of
-  the builder's, at those addresses (`shared/bench/include/panel_i2c.h`).
+  the builder's, at those addresses or at the ones the I2C specification
+  reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
+  That nothing on the board answers at the knob's 0x06 rests on the CH422G's
+  and the GT911's documented addressing: the board's one bus scan covered
+  0x08 to 0x77.
 - If the touch controller stops answering for 500 ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the coprocessor does not switch back to ARMED when traffic returns.

@@ -143,7 +143,12 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
   datasheet gives 0x26); a sensor moved there is not read.
 - The board answers at 0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on this bus
   (the CH422G and the GT911). The panel refuses to put any other device at
-  those addresses (`shared/bench/include/panel_i2c.h`). 0x06 is outside them.
+  those addresses, or at 0x00 to 0x03 and 0x78 to 0x7F, which the I2C
+  specification reserves (`shared/bench/include/panel_i2c.h`). 0x06 is
+  outside them. It is one of the specification's Hs-mode (high-speed mode)
+  master codes, 0x04 to 0x07, which no device on this bus uses. The board's
+  one bus scan covered 0x08 to 0x77, so that nothing else answers at 0x06
+  is not measured.
 - Bus clock: 400 kHz. The datasheet allows an SCL (serial clock) period down
   to 1 us and a rise and fall time of 150 ns at most. The rise time on the
   terminal is not measured.
@@ -151,9 +156,12 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
 - The I2C registers carry no field status: the magnet-too-weak and
   too-strong bits are in the SSI frame only. A sensor with no magnet over it
   still answers with an angle, and the panel takes it as a reading.
-- Direction: the datasheet's angle rises counter-clockwise seen from the
-  chip's top. The panel counts the other way, so a clockwise turn seen from
-  the top raises the throttle.
+- Direction: on the MT6701CT-STD with DIR (register 0x29 bit 1, in EEPROM)
+  at its default 0, the angle rises counter-clockwise seen from the chip's
+  top. The panel counts the other way, so with the magnet above the chip's
+  top face a clockwise turn raises the throttle. An MT6701CT-STV, whose
+  angle rises clockwise, a part with DIR = 1, or a sensor mounted to be seen
+  from below turns the knob the other way.
 
 The knob is off until SETUP, APPLICATION, Rotary knob is switched on.
 [Screens](Screens.md#application-the-rotary-knob) describes what it does.

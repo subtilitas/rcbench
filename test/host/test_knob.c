@@ -32,13 +32,16 @@
  * section 6): at 0x30 to 0x3F it becomes the output byte IO7..IO0, at 0x24
  * the system byte.  Its read part is not answered here.  The GT911 answers
  * at 0x5D, the MT6701 at 0x06 when fitted, and nothing else answers.
+ * A probe is the address byte alone.
  */
 typedef struct {
     uint8_t  ch_io;          /* the CH422G's output byte                 */
     uint8_t  ch_sys;         /* its system byte                          */
     bool     mt6701;         /* an MT6701 at KNOB_I2C_ADDR               */
     uint16_t angle;          /* its angle, the datasheet's 0..16383      */
-    int      xfers;          /* transactions started                     */
+    int      xfers;          /* transactions started, probes included    */
+    int      probes;         /* of them address-only probes              */
+    int      reads;          /* of them register reads                   */
     int      to_reserved;    /* of them at an address of the board's     */
     int      to_other;       /* at an address neither 0x06 nor reserved  */
 } bus_t;
@@ -57,7 +60,7 @@ static void bus_up(bus_t *b, bool mt6701, uint16_t angle)
     b->angle = angle;
 }
 
-static bool bus_read(bus_t *b, uint8_t addr, uint8_t reg, uint8_t *byte)
+static void bus_count(bus_t *b, uint8_t addr)
 {
     ++b->xfers;
     if (panel_i2c_addr_reserved(addr)) {
@@ -65,6 +68,19 @@ static bool bus_read(bus_t *b, uint8_t addr, uint8_t reg, uint8_t *byte)
     } else if (addr != KNOB_I2C_ADDR) {
         ++b->to_other;
     }
+}
+
+static bool bus_probe(bus_t *b, uint8_t addr)
+{
+    bus_count(b, addr);
+    ++b->probes;
+    return addr == 0x5Du || (addr == KNOB_I2C_ADDR && b->mt6701);
+}
+
+static bool bus_read(bus_t *b, uint8_t addr, uint8_t reg, uint8_t *byte)
+{
+    bus_count(b, addr);
+    ++b->reads;
     if (addr >= 0x30u && addr <= 0x3Fu) {
         b->ch_io = reg;
         return false;
@@ -98,6 +114,9 @@ static int poll(knob_t *k, bus_t *b, bool *answered)
     uint8_t bytes[KNOB_POLL_READS] = { 0 };
     const int addr = knob_poll_addr(k);
     bool ok = addr >= 0;
+    if (ok && knob_poll_probe_first(k)) {
+        ok = bus_probe(b, (uint8_t)addr);
+    }
     for (int i = 0; ok && i < KNOB_POLL_READS; ++i) {
         ok = bus_read(b, (uint8_t)addr, knob_poll_regs[i], &bytes[i]);
     }
@@ -107,10 +126,12 @@ static int poll(knob_t *k, bus_t *b, bool *answered)
     return knob_poll_done(k, ok, bytes);
 }
 
+/* A stable reading: 0x03, 0x04, 0x03 of one angle. */
 static void bytes_of(uint16_t angle, uint8_t out[KNOB_POLL_READS])
 {
     out[0] = (uint8_t)(angle >> 6);
     out[1] = (uint8_t)((angle & 0x3Fu) << 2);
+    out[2] = out[0];
 }
 
 /* ---- the sensor ------------------------------------------------------- */
@@ -120,10 +141,11 @@ TEST_CASE(the_address_and_the_registers_are_the_datasheets)
     CHECK_EQ(KNOB_I2C_ADDR, 0x06);
     CHECK_EQ(KNOB_REG_ANGLE_HI, 0x03);
     CHECK_EQ(KNOB_REG_ANGLE_LO, 0x04);
-    CHECK_EQ(KNOB_POLL_READS, 2);
-    /* 0x03 first, then 0x04. */
+    CHECK_EQ(KNOB_POLL_READS, 3);
+    /* 0x03 first, then 0x04, then 0x03 again for the tear check. */
     CHECK_EQ(knob_poll_regs[0], KNOB_REG_ANGLE_HI);
     CHECK_EQ(knob_poll_regs[1], KNOB_REG_ANGLE_LO);
+    CHECK_EQ(knob_poll_regs[2], KNOB_REG_ANGLE_HI);
     CHECK_EQ(KNOB_COUNTS, 16384);
     CHECK(!panel_i2c_addr_reserved(KNOB_I2C_ADDR));
     /* The address the datasheet's EEPROM moves it to: 0x46 in version 1.9
@@ -289,15 +311,100 @@ TEST_CASE(a_nack_or_a_timeout_leaves_the_knob_idle)
     bytes_of(4999, b);
     CHECK_EQ(knob_poll_done(&k, true, b), 1);
 
-    /* Through the bus model: no sensor fitted, the first read NACKs and the
-     * second is not made. */
+    /* Through the bus model: no sensor fitted.  The knob has no reference,
+     * so it probes; the probe is not acknowledged and no read is made. */
     bus_t bus;
     bus_up(&bus, false, 0);
+    knob_reset(&k);
     bool answered = true;
+    CHECK(knob_poll_probe_first(&k));
     CHECK_EQ(poll(&k, &bus, &answered), 0);
     CHECK(!answered);
-    CHECK_EQ(bus.xfers, 1);
+    CHECK_EQ(bus.probes, 1);
+    CHECK_EQ(bus.reads, 0);
     CHECK(!k.have_ref);
+}
+
+TEST_CASE(a_sensor_that_goes_costs_one_unanswered_read_then_only_probes)
+{
+    knob_t k;
+    bus_t bus;
+    bus_up(&bus, true, 5000);
+    CHECK(knob_attach(&k, KNOB_I2C_ADDR));
+
+    /* First poll: probe, then the three reads; then reads only. */
+    bool answered = false;
+    CHECK_EQ(poll(&k, &bus, &answered), 0);
+    CHECK(answered);
+    CHECK_EQ(bus.probes, 1);
+    CHECK_EQ(bus.reads, KNOB_POLL_READS);
+    CHECK(!knob_poll_probe_first(&k));
+    for (int i = 0; i < 5; ++i) {
+        (void)poll(&k, &bus, &answered);
+    }
+    CHECK_EQ(bus.probes, 1);
+    CHECK_EQ(bus.reads, 6 * KNOB_POLL_READS);
+
+    /* The sensor goes.  The next poll still reads and its first read is
+     * not answered (the driver logs that one); every poll after it probes
+     * and reads nothing. */
+    bus.mt6701 = false;
+    CHECK_EQ(poll(&k, &bus, &answered), 0);
+    CHECK(!answered);
+    CHECK_EQ(bus.reads, 6 * KNOB_POLL_READS + 1);
+    for (int i = 0; i < 20; ++i) {
+        CHECK_EQ(poll(&k, &bus, &answered), 0);
+        CHECK(!answered);
+    }
+    CHECK_EQ(bus.probes, 1 + 20);
+    CHECK_EQ(bus.reads, 6 * KNOB_POLL_READS + 1);
+
+    /* Back, turned: the probe answers, the reads set a new reference. */
+    bus.mt6701 = true;
+    bus.angle = 9000;
+    CHECK_EQ(poll(&k, &bus, &answered), 0);
+    CHECK(answered);
+    CHECK(k.have_ref);
+    bus.angle = 8990;
+    CHECK_EQ(poll(&k, &bus, &answered), 10);
+    CHECK_EQ(bus.to_reserved, 0);
+    CHECK_EQ(bus.to_other, 0);
+}
+
+TEST_CASE(a_high_byte_that_moved_between_the_reads_is_no_reading)
+{
+    knob_t k;
+    uint8_t b[KNOB_POLL_READS];
+    CHECK(knob_attach(&k, KNOB_I2C_ADDR));
+    bytes_of(70, b);
+    CHECK_EQ(knob_poll_done(&k, true, b), 0);          /* the reference */
+    const uint16_t ref = k.ref;
+
+    /* A tear across 63 -> 64: 0x03 read at 63 (0x00), 0x04 read at 64
+     * (Angle[5:0] = 0), 0x03 read again at 64 (0x01).  Decoded alone the
+     * first two bytes say 0, 64 counts off.  Refused, reference kept. */
+    b[0] = 0x00;
+    b[1] = 0x00;
+    b[2] = 0x01;
+    CHECK_EQ(knob_poll_done(&k, true, b), 0);
+    CHECK(k.have_ref);
+    CHECK_EQ(k.ref, ref);
+    /* And the other way, 64 -> 63. */
+    b[0] = 0x01;
+    b[1] = 0xFC;
+    b[2] = 0x00;
+    CHECK_EQ(knob_poll_done(&k, true, b), 0);
+    CHECK_EQ(k.ref, ref);
+
+    /* The stable reading after it counts from the kept reference: 70 -> 64
+     * is 6 counts clockwise (the angle falls). */
+    bytes_of(64, b);
+    CHECK_EQ(knob_poll_done(&k, true, b), 6);
+    bytes_of(63, b);
+    CHECK_EQ(knob_poll_done(&k, true, b), 1);
+    /* Equal 0x03 bytes with any 0x04 are taken. */
+    b[1] = 0xFF;
+    CHECK_EQ(knob_poll_done(&k, true, b), 0);           /* 63 again */
 }
 
 TEST_CASE(a_step_over_a_quarter_turn_is_a_glitch_and_moves_nothing)
@@ -338,8 +445,8 @@ TEST_CASE(an_address_the_board_answers_at_is_refused_and_never_sent)
     CHECK_EQ(bus.ch_io & (1u << 5), 0u);
 
     static const unsigned refused[] = {
-        0x14, 0x20, 0x23, 0x24, 0x26, 0x27, 0x30, 0x36, 0x38, 0x3F, 0x5D,
-        0x80, 0xFF, 0x136,
+        0x00, 0x03, 0x14, 0x20, 0x23, 0x24, 0x26, 0x27, 0x30, 0x36, 0x38,
+        0x3F, 0x5D, 0x78, 0x7F, 0x80, 0xFF, 0x136,
     };
     for (size_t i = 0; i < sizeof refused / sizeof refused[0]; ++i) {
         bus_up(&bus, true, 100);
@@ -353,6 +460,14 @@ TEST_CASE(an_address_the_board_answers_at_is_refused_and_never_sent)
         CHECK_EQ(bus.xfers, 0);
         CHECK_EQ(bus.ch_io, BUS_IO_UP);
         CHECK_EQ(bus.ch_sys, BUS_SYS_UP);
+        CHECK(!k.have_ref);
+        CHECK(!knob_poll_probe_first(&k));
+        /* Bytes handed to a detached knob move nothing either. */
+        uint8_t b[KNOB_POLL_READS];
+        bytes_of(1000, b);
+        CHECK_EQ(knob_poll_done(&k, true, b), 0);
+        bytes_of(900, b);
+        CHECK_EQ(knob_poll_done(&k, true, b), 0);
         CHECK(!k.have_ref);
     }
     /* A refused attach after a good one takes the address away. */
@@ -381,7 +496,8 @@ TEST_CASE(a_turning_knob_reaches_only_its_own_address)
         CHECK(answered);
     }
     CHECK_EQ(total, 40000);
-    CHECK_EQ(bus.xfers, 401 * KNOB_POLL_READS);
+    CHECK_EQ(bus.probes, 1);
+    CHECK_EQ(bus.reads, 401 * KNOB_POLL_READS);
     CHECK_EQ(bus.to_reserved, 0);
     CHECK_EQ(bus.to_other, 0);
     CHECK_EQ(bus.ch_io, BUS_IO_UP);
@@ -423,7 +539,10 @@ TEST_CASE(enabling_the_knob_with_no_sensor_changes_nothing_else)
     }
     CHECK_EQ(total, 0);
     CHECK(!k.have_ref);
-    CHECK_EQ(bus.xfers, 10000 / KNOB_POLL_IDLE_MS);   /* one NACKed read each */
+    /* One unacknowledged probe a poll, no register read: the driver logs
+     * nothing for a probe. */
+    CHECK_EQ(bus.probes, 10000 / KNOB_POLL_IDLE_MS);
+    CHECK_EQ(bus.reads, 0);
     CHECK_EQ(bus.to_reserved, 0);
     CHECK_EQ(bus.to_other, 0);
     CHECK_EQ(bus.ch_io, BUS_IO_UP);
@@ -562,6 +681,8 @@ int main(void)
     RUN(a_reading_out_of_range_is_taken_modulo_a_turn);
     RUN(a_knob_that_stops_answering_holds_no_value);
     RUN(a_nack_or_a_timeout_leaves_the_knob_idle);
+    RUN(a_sensor_that_goes_costs_one_unanswered_read_then_only_probes);
+    RUN(a_high_byte_that_moved_between_the_reads_is_no_reading);
     RUN(a_step_over_a_quarter_turn_is_a_glitch_and_moves_nothing);
     RUN(an_address_the_board_answers_at_is_refused_and_never_sent);
     RUN(a_turning_knob_reaches_only_its_own_address);

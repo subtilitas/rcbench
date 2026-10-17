@@ -7,10 +7,12 @@
 #include <stddef.h>
 
 const panel_i2c_range_t panel_i2c_reserved_table[] = {
+    { 0x00, 0x03, "I2C reserved" },
     { 0x14, 0x14, "GT911" },
     { 0x20, 0x27, "CH422G" },
     { 0x30, 0x3F, "CH422G" },
     { 0x5D, 0x5D, "GT911" },
+    { 0x78, 0x7F, "I2C reserved" },
 };
 
 const unsigned panel_i2c_reserved_count =

@@ -149,7 +149,12 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   wird nicht gelesen.
 - Die Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F
   und 0x5D (CH422G und GT911). Das Panel legt kein anderes Gerät auf diese
-  Adressen (`shared/bench/include/panel_i2c.h`). 0x06 liegt außerhalb.
+  Adressen und auch keines auf 0x00 bis 0x03 und 0x78 bis 0x7F, die die
+  I2C-Spezifikation reserviert (`shared/bench/include/panel_i2c.h`). 0x06
+  liegt außerhalb. Es ist einer der Hs-Mode-Mastercodes (Hs: High-Speed) der
+  Spezifikation, 0x04 bis 0x07, die kein Gerät an diesem Bus benutzt. Der
+  eine Busscan der Platine umfasste 0x08 bis 0x77; dass sonst nichts auf
+  0x06 antwortet, ist also nicht gemessen.
 - Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
   Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
   Anstiegszeit am Anschluss ist nicht gemessen.
@@ -157,9 +162,13 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 - Die I2C-Register tragen keinen Feldstatus: Die Bits für zu schwaches und
   zu starkes Feld stehen nur im SSI-Rahmen. Ein Sensor ohne Magnet darüber
   antwortet trotzdem mit einem Winkel, und das Panel nimmt ihn als Messwert.
-- Drehrichtung: Der Winkel des Datenblatts steigt gegen den Uhrzeigersinn,
-  von der Chipoberseite gesehen. Das Panel zählt umgekehrt, also erhöht eine
-  Drehung im Uhrzeigersinn, von oben gesehen, den Throttle.
+- Drehrichtung: Beim MT6701CT-STD mit DIR (Register 0x29 Bit 1, im EEPROM)
+  auf seinem Standard 0 steigt der Winkel gegen den Uhrzeigersinn, von der
+  Chipoberseite gesehen. Das Panel zählt umgekehrt, also erhöht mit dem
+  Magneten über der Chipoberseite eine Drehung im Uhrzeigersinn den
+  Throttle. Ein MT6701CT-STV, dessen Winkel im Uhrzeigersinn steigt, ein
+  Teil mit DIR = 1 oder ein von unten gesehen montierter Sensor dreht den
+  Knopf andersherum.
 
 Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet wird.
 [Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er tut.

@@ -33,3 +33,11 @@ esp_err_t panel_i2c_add_device(unsigned addr, i2c_master_dev_handle_t *out)
     }
     return err;
 }
+
+esp_err_t panel_i2c_probe(unsigned addr, int timeout_ms)
+{
+    if (panel_i2c_addr_reserved(addr)) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    return i2c_master_probe(board_i2c_bus(), (uint16_t)addr, timeout_ms);
+}

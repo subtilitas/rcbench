@@ -19,8 +19,10 @@ static const char *TAG = "knob";
  * Short, because the bus is shared with the touch controller, which the touch
  * task reads every 10 ms by default (and on the touch interrupt): a sensor
  * that holds the bus costs that task at most this long per transaction, far
- * under the 150 ms the safety line is watched against.  The two
- * transactions of one poll take about 0.2 ms at 400 kHz.
+ * under the 150 ms the safety line is watched against.  The three
+ * transactions of one poll take about 0.3 ms at 400 kHz.  A failed one
+ * costs more: the driver resets the controller and clears the bus, which
+ * waits up to 50 ms (I2C_CLR_BUS_TIMEOUT_MS) while SDA is held low.
  */
 #define KNOB_I2C_TIMEOUT_MS 5
 
@@ -32,7 +34,8 @@ static knob_t s_knob;
 
 /*
  * One register per transaction, Angle[13:6] at 0x03 first and Angle[5:0] at
- * 0x04 second, as the MT6701 datasheet's figure 20 reads them (knob.h).
+ * 0x04 second, as the MT6701 datasheet's figure 20 reads them, then 0x03
+ * again to catch a high byte that moved in between (knob.h).
  */
 static bool knob_read(uint8_t reg, uint8_t *byte)
 {
@@ -54,7 +57,14 @@ static void knob_task(void *arg)
             continue;
         }
         uint8_t bytes[KNOB_POLL_READS] = { 0 };
-        bool answered = knob_poll_addr(&s_knob) >= 0;
+        const int addr = knob_poll_addr(&s_knob);
+        bool answered = addr >= 0;
+        /* No reference: an unlogged probe first, so a missing sensor costs
+         * one address byte a poll and no driver error lines. */
+        if (answered && knob_poll_probe_first(&s_knob)) {
+            answered = panel_i2c_probe((unsigned)addr, KNOB_I2C_TIMEOUT_MS)
+                       == ESP_OK;
+        }
         for (int i = 0; answered && i < KNOB_POLL_READS; ++i) {
             answered = knob_read(knob_poll_regs[i], &bytes[i]);
         }
@@ -70,11 +80,11 @@ static void knob_task(void *arg)
 void knob_task_attach(void)
 {
     /*
-     * The bus driver's add and remove calls are not thread-safe against a
-     * transaction on the same bus, and the touch task reads the touch
-     * controller on it every 10 ms by default, and on the touch interrupt.
-     * The handle is allocated once, before that task exists, and stays
-     * registered; the setting only gates the polling.
+     * The touch task already reads the touch controller on this bus, every
+     * 10 ms by default and on the touch interrupt.  ESP-IDF v5.4's add
+     * inserts the device under the bus lock, so it waits out a touch
+     * transaction.  The handle is allocated once and stays registered; the
+     * setting only gates the polling.
      *
      * Two guards against an address the board answers at, which on this
      * bus would be a CH422G command: knob_attach() refuses it for the polls

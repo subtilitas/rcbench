@@ -454,9 +454,15 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   vollendetes Schalten auf ARMED, ein Schalten auf SAFE, ein Freigeben und ein Zurücksetzen
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
-  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede der zwei
-  Transaktionen eines Polls; ein Sensor, der den gemeinsamen I2C-Bus
-  festhält, verzögert das Lesen des Touch also um höchstens 10 ms je Poll.
+  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede
+  Transaktion eines Polls: ein Probe, solange er keine Referenz hat, dann drei
+  Lesezugriffe. Eine fehlgeschlagene Transaktion kostet dazu die Erholung des
+  Treibers, einen Reset des Controllers und ein Freiräumen des Busses, das bis
+  zu 50 ms länger wartet, solange SDA low gehalten wird. Ein Sensor, der SDA
+  low hält, verzögert das Lesen des Touch also um etwa 55 ms je Transaktion.
+  Das liegt unter dem eigenen Bus-Timeout des Touch-Lesens von 100 ms
+  (`GT911_I2C_TIMEOUT_MS`), und ein Touch-Controller, der 500 ms schweigt,
+  schaltet den Prüfstand auf SAFE (`ARMING_TOUCH_DEAD_MS`).
   Das Lesen des Touch liegt nicht auf dem Weg des Heartbeats: die
   Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Die
   Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F und
@@ -464,8 +470,12 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Befehl: Bei 0x30 bis 0x3F wird das geschriebene Byte sein Ausgangsbyte, das
   die Hintergrundbeleuchtung, den Touch-Reset und die USB/CAN-Auswahl (USB:
   Universal Serial Bus, CAN: Controller Area Network) hält. Das Panel legt
-  weder den Knopf noch ein anderes Gerät des Erbauers auf diese Adressen
-  (`shared/bench/include/panel_i2c.h`).
+  weder den Knopf noch ein anderes selbst angeschlossenes Gerät auf diese
+  Adressen oder auf die, die die I2C-Spezifikation reserviert, 0x00 bis 0x03
+  und 0x78 bis 0x7F (`shared/bench/include/panel_i2c.h`). Dass auf der
+  Platine nichts auf der Adresse 0x06 des Knopfs antwortet, beruht auf der
+  dokumentierten Adressierung von CH422G und GT911: Der eine Busscan der
+  Platine umfasste 0x08 bis 0x77.
 - Antwortet der Touch-Controller 500 ms lang nicht, schaltet der Prüfstand auf SAFE
   und verweigert das Schalten auf ARMED. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.
