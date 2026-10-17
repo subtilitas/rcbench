@@ -32,11 +32,8 @@
 #include <string.h>
 
 #include "kst_panel.h"
-#include "kst_port.h"
 #include "link_pages.h"
-#include "log_name.h"
 #include "outputs.h"
-#include "rcbench_version.h"
 #include "servo_limrun.h"
 #include "servo_sweep.h"
 #include "settings.h"
