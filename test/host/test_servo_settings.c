@@ -776,23 +776,23 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
      * them. */
     static const char *const de[NOTE_N][2] = {
         { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
-          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+          "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
-          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+          "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
           "Die Einstellung PWM-ZIEL ist nicht aktiv." },
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
           "Die Einstellung PWM-ZIEL ist nicht aktiv." },
         { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
-          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+          "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
           "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
         { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
           "PORT-PWM ist AUS. Der Port gibt keine Pulse aus." },
         { "Aktive Pulsrate: 50 Hz. Ziel unbekannt.",
-          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+          "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Keine Verbindung. Die aktive Pulsrate ist unbekannt.",
-          "PPM-Ausgänge behalten ihre eigene Frame-Rate." },
+          "PPM-Ausgänge behalten ihre eigene Pulsrate." },
     };
     ui_text_set_language(UI_LANG_DE);
     for (int i = 0; i < NOTE_N; ++i) {
