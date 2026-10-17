@@ -65,6 +65,7 @@ SOURCES = [
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
+    "shared/ui/servo_settings_panel.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",

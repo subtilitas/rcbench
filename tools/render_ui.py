@@ -66,6 +66,7 @@ SOURCES = [
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
+    "shared/ui/servo_settings_panel.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
     # what the views drive it with: the link module, the coprocessor's
     # port and the core.

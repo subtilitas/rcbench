@@ -35,7 +35,8 @@
 /*
  * Geometry in panel coordinates, mirrored from servo_screen.c with the
  * band's height added: the shaft, the three buttons of the right card with
- * ARM under them, SPEED's track, and the SETTINGS overlay's rows.
+ * ARM under them, SPEED's track, and the SETTINGS overlay's rows (from
+ * servo_settings_panel.c).
  */
 #define P(y)        (UI_BAND_H + (y))
 #define SHAFT_X     300
