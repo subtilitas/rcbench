@@ -103,6 +103,8 @@ static void touched(void)
     ++s.gen;
 }
 
+static const outbind_proto_t *chosen_proto(void);
+
 /* The GPIO the coprocessor's programming port is bound to, or none. */
 static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
 
@@ -175,14 +177,18 @@ void outputs_screen_set_binding(const outbind_t *b)
     const uint16_t had_board = s.bind.board;
     const uint8_t  chosen    = s.bind.proto;
     /*
-     * Except across a change of board, where nothing carries over.  A pin
-     * index means a different pin in another catalogue, which is why
-     * outbind_set_board() clears the selection, and a protocol chosen for the
-     * hardware that was there is no better than the pins were.
+     * Except across a change of board, where a protocol chosen for the
+     * hardware that was there carries over no better than the pins do: a
+     * pin index means a different pin in another catalogue, which is why
+     * outbind_set_board() clears the selection.  The selection goes to OFF,
+     * picked, whatever it was: a board that answers during a visit -- the
+     * first link-up, a swapped coprocessor -- must not hand the next tap a
+     * protocol nobody picked for it, the wire's or the one before.
      */
+    const bool named = (b->proto != outbind_wire_proto(b));
     const bool keep = (chosen != 0u || s.off_picked)
-                   && (b->board == had_board)
-                   && (b->proto == outbind_wire_proto(b));
+                   && (b->board == had_board) && !named;
+    const bool to_off = (b->board != had_board) && !named;
 
     s.bind = *b;
     /* Read off the wire or restored, so it is trimmed before it is drawn
@@ -190,6 +196,9 @@ void outputs_screen_set_binding(const outbind_t *b)
     outbind_trim(&s.bind);
     if (keep) {
         outbind_set_proto(&s.bind, chosen);
+    } else if (to_off) {
+        outbind_set_proto(&s.bind, 0u);
+        s.off_picked = true;
     } else {
         s.off_picked = false;
     }
@@ -213,11 +222,14 @@ void outputs_screen_set_reading(const bind_reading_t *r)
     }
     if (r->bind.board != s.bind.board || r->state == BIND_READ_NO_BOARD) {
         /* Another board, or one with no pin map: nothing read earlier is a
-         * binding of it. */
+         * binding of it.  The reading names no protocol, and the selection
+         * goes to OFF, picked, as in set_binding(), so the next binding
+         * read keeps it. */
         s.bind = r->bind;
         outbind_trim(&s.bind);
+        outbind_set_proto(&s.bind, 0u);
         s.confirmed  = s.bind;
-        s.off_picked = false;
+        s.off_picked = true;
     } else {
         /*
          * The pins go back to the last binding a read confirmed.  An edit
@@ -342,35 +354,25 @@ static void reset(void)
     touched();
 }
 
+/*
+ * Every visit opens on the overview: OFF selected, so every bound pin names
+ * its protocol and no tap edits.  The operator picks the protocol to edit,
+ * and picking OFF again goes back to the overview.  Selecting writes
+ * nothing, so opening the screen sends no page.  The pin picker opens on
+ * OFF the same way.
+ */
 static void enter(void)
 {
     s.open = false;
     s.hit_kind = HIT_NONE;
-    s.refused = -1;
     ui_hold_reset(&s.clear);
-    touched();
-}
-
-/*
- * A picked OFF ends with the visit, on this screen or on the pin picker.
- * The picker joins its taps to the protocol selected here, and left on OFF
- * it could add no pin; the next entry opens on the lowest-numbered protocol
- * that holds one.
- */
-void outputs_screen_end_off(void)
-{
-    if (s.off_picked) {
-        s.off_picked = false;
-        outbind_set_proto(&s.bind, outbind_wire_proto(&s.bind));
-        touched();
-    }
+    outputs_screen_select(0u);
 }
 
 static void leave(void)
 {
     s.open = false;
     drop_clear_hold();
-    outputs_screen_end_off();
 }
 
 /* UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for
@@ -427,9 +429,13 @@ static void event(const touch_event_t *evt)
             s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear); touched();
             return;
         }
-        /* A binding that is not confirmed takes no press on a pin: the
-         * reason is under the protocol. */
-        const int c = outputs_screen_editable() ? cell_at(x, y) : -1;
+        /* A binding that is not confirmed takes no press on a pin, and
+         * neither does OFF, which edits none: the reason is under the
+         * protocol, and a cell that lit under the finger would say a tap
+         * there acts. */
+        const int c = (outputs_screen_editable()
+                       && chosen_proto()->max_pins != 0u)
+                          ? cell_at(x, y) : -1;
         if (c >= 0) {
             s.hit_kind = HIT_CELL; s.hit_index = c; touched();
         }
@@ -739,11 +745,16 @@ static void draw_left(gfx_canvas_t *c)
     ui_choice_face(c, dd_rect(), p->name, s.hit_kind == HIT_DD, s.open);
 
     char buf[96];
-    const uint8_t n = outbind_chosen(&s.bind);
-    const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS) ? p->max_pins
-                                                      : (uint8_t)OUT_MAX_SLOTS;
-    snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n, (unsigned)cap);
-    gfx_text(c, COL_X, DD_Y + DD_H + 16, buf, UI_FONT_LABEL, UI_TEXT_DIM, 1);
+    /* OFF takes no pin, so a count of its pins says nothing. */
+    if (p->max_pins != 0u) {
+        const uint8_t n = outbind_chosen(&s.bind);
+        const uint8_t cap = (p->max_pins < OUT_MAX_SLOTS)
+                                ? p->max_pins : (uint8_t)OUT_MAX_SLOTS;
+        snprintf(buf, sizeof(buf), TR(OUT_PINS_OF), (unsigned)n,
+                 (unsigned)cap);
+        gfx_text(c, COL_X, DD_Y + DD_H + 16, buf, UI_FONT_LABEL, UI_TEXT_DIM,
+                 1);
+    }
 
     if (p->channels > 1u) {
         snprintf(buf, sizeof(buf), TR(OUT_CHANNELS_ON_PIN),
@@ -848,8 +859,14 @@ static void draw_cell(gfx_canvas_t *c, int i)
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
     case OUTPUTS_CELL_RESERVED: lc = UI_DANGER;   break;
-    case OUTPUTS_CELL_HELD:     lc = UI_TEXT_DIM; break;
-    default:                                      break;
+    case OUTPUTS_CELL_HELD:
+        /* The overview (OFF) edits no protocol, so what holds each bound
+         * pin is the thing it shows: in full ink, apart from free pins and
+         * PWM clashes.  Dim again while the binding is not confirmed. */
+        lc = (live && proto == 0u && held != 0u) ? UI_TEXT : UI_TEXT_DIM;
+        break;
+    default:
+        break;
     }
     gfx_text(c, r.x + CELL_LABEL_X, r.y + 33, label, UI_FONT_LABEL, lc, 1);
 }

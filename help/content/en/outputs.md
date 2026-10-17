@@ -6,15 +6,16 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md). The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
 ![Four pins bound as SERVO PWM](view:outputs)
 
-1. Pick a protocol in the PROTOCOL list.
+1. Pick a protocol in the PROTOCOL list. Until then a tap on a pin does nothing.
 2. Tap a pin to tick it. A tick binds the pin to the protocol at once; there is no APPLY key.
 3. Tap a ticked pin to give it back.
+4. Pick OFF to go back to the overview.
 
 The count under the list, `4 OF 8 PINS`, says how many pins the protocol holds and how many it takes. A pin belongs to one protocol at most. Several protocols can be bound at once.
 
@@ -67,11 +68,11 @@ When the selected protocol can take no more pins, the reason stands under the co
 
 A stored binding that holds GP13 keeps it: the programming port then has no pin, and the [servo programmer](servo-programmer.md) says so on CONNECT.
 
-## OFF
+## The overview: OFF
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-OFF binds nothing and unbinds nothing. With OFF picked, every bound pin shows the name of its protocol, so the whole binding is on one screen. A tap on a pin does nothing, and the line under the list reads `OFF: VIEW ALL, NO EDITING`.
+Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as a coprocessor that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
 
 ## LAST WRITE
 

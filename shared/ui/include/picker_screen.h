@@ -28,7 +28,8 @@
  * bind.
  *
  * The protocol a tap binds to is chosen here or on the outputs screen, with
- * the same list; the two screens show one selection.
+ * the same list; the two screens show one selection.  Every visit opens with
+ * OFF selected, the overview: no key acts until a protocol is picked.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -75,8 +76,10 @@ void picker_screen_follow(uint8_t proto, bool editable);
 /**
  * Called with the protocol picked in this screen's list, so the outputs
  * screen selects the same one (outputs_screen_select()).  A pick writes
- * nothing; the apply function is not called for it.  OFF picked here ends
- * when this screen is left, on both screens (outputs_screen_end_off()).
+ * nothing; the apply function is not called for it.  Entering this screen
+ * calls it with OFF (0), so every visit opens on the overview: OFF
+ * selected on both screens, and a tap on a key changes nothing until a
+ * protocol is picked.
  */
 typedef void (*picker_select_fn)(uint8_t proto);
 void picker_screen_set_select(picker_select_fn fn);

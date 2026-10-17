@@ -1489,18 +1489,60 @@ and DELETE on a run removes the report with the same name and number too.
 The list draws names in alphabetical order, so the runs stand grouped by
 name: `BENCH`, then `ESC`, then `SERVO`.
 
-The list holds 48 entries and a card holds up to 999 runs. When there are more
-than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`
-instead of `FILES`, so a run that is missing from the list is a run the list
-was too short for rather than a run that was never written. The number in the
-name is what newest means: the panel has no clock that survives a power cycle,
-so every file on the card is dated 1980-01-01. A run outranks a file the bench
-did not write, so a card holding 48 or more runs lists no other file. Delete
-old runs to get one back.
+The list shows the card a page of 48 entries at a time, and a card holds up
+to 999 runs. Pages run newest run first: runs by number, highest first, then
+the files the bench did not write, by name. The rows of a page run the same
+way, the newest run at the top. The number in the name is what newest means:
+the panel has no clock that survives a power cycle, so every file on the card
+is dated 1980-01-01.
 
-RESCAN, and every read of the card, selects the newest run and scrolls it
-into view, so OPEN opens the run just recorded. A card with no numbered run
-selects nothing.
+![A full card of 999 runs and one other file on its fourth page](img/logs-pages.png)
+
+With more than 48 files on the card, PREV and NEXT show in the header row and
+the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`, instead
+of `FILES`. PREV is grey on the first page and NEXT on the last. Pages are cut
+from the top, 48 at a time: when fewer than 48 entries stand ahead of the page
+on screen, for example after a run was recorded, PREV reads the first page
+from the top. Runs recorded while a later page is open appear from page 1, by
+NEXT from page 1 or RESCAN on page 1; on the way back PREV passes over as many
+entries as were recorded, and the tab numbers show the shift. Each page is one
+read of the card's root directory: the walk keeps the 48 entries of that page
+and counts the rest, so the panel holds one page in memory whatever the card
+holds. The read runs on the task that draws the screen and handles touch. For
+999 runs the selection takes about 2 ms on a desktop computer (x86-64,
+measured); on the panel it is estimated at 20 to 40 ms, and the directory read
+at 63 sectors of 512 bytes, about 25 ms at the card's 20 MHz SPI (Serial
+Peripheral Interface) clock, or 125 sectors, about 50 ms, with a report beside
+every run. Neither is measured on the panel. Each entry's size comes with the
+directory read, so a page costs one walk and the selection.
+
+The scroll bar along the list's right edge is 42 px wide, 8.1 mm on the
+panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on
+the page, and it scrolls within the page. A tap on the track brings the
+thumb's middle to the finger; a finger on the thumb drags it.
+
+RESCAN reads the page on screen again. On the first page it reads from the
+top, so a run recorded since shows. On another page it reads from that page's
+first entry, also when that file has been deleted since. When the card holds
+fewer entries than that place, RESCAN shows the last page. Every read selects
+the page's newest run, the top row, so OPEN opens the run just recorded. A
+page with no numbered run selects nothing. DELETE reads the page again the
+same way and keeps the scroll, with nothing selected: DELETE and OPEN are grey
+until a row is chosen. Deleting the last page's only file shows the page
+before.
+
+The header names the card by its volume label, read once when the card is
+mounted. A card without a label shows the product name the card reports
+(for example `SC16G`), and a card that reports neither shows `SD CARD`.
+
+A card put in while none is mounted is mounted by RESCAN and opens on its
+first page. A card swapped for another while one is mounted is not mounted
+again until the panel restarts
+([STATUS](https://github.com/subtilitas/rcbench/blob/main/STATUS.md)); what
+the list shows in that state is not measured. The viewer reads from the first
+page whenever the name in the header changes, and on the panel that name
+changes only with a new mount. Two cards with the same label, or two
+unlabelled cards of one model, carry the same name.
 
 In the plot, two fingers zoom: spreading them zooms in, pinching zooms out,
 and moving both together pans. The view stays where the fingers leave it, and
@@ -2582,7 +2624,9 @@ Current limitations:
 
 Behind the OUTPUTS tile on SETUP; its home tag leads back there. The
 protocols bound to the
-coprocessor's pins, and which pins each one drives.
+coprocessor's pins, and which pins each one drives. It opens on the
+[overview](#the-overview-off): OFF selected, every bound pin named by its
+protocol, and no pin editable until a protocol is picked.
 
 ![Outputs](img/outputs.png)
 
@@ -2707,10 +2751,8 @@ screen shows as ticked and which set the next tick joins. Nothing is dropped:
 the pins ticked for the protocol being left stay bound, and the pins of the
 one arrived at come back as they were. A selector that retargeted the current
 pins would make binding a second protocol mean unbinding the first. On entry
-the list shows the lowest-numbered protocol that holds a pin, in the list's
-order, or OFF when no pin is bound. A protocol picked without ticking a pin
-stays selected across read-backs and across leaving the screen, and is the
-one a tap on PICK A PIN joins. The list on PICK A PIN selects the same
+the list shows OFF, the overview. A protocol picked stays selected across
+read-backs of the same board. The list on PICK A PIN selects the same
 protocol.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
@@ -2732,21 +2774,34 @@ So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
 
-### OFF
+### The overview: OFF
 
-OFF is the first entry of the list and binds nothing: it takes 0 pins, and
-the count under it reads `0 OF 0 PINS`. With OFF picked, every bound pin
-shows the name of the protocol that holds it, so the whole binding is on one
-screen. No pin can be ticked or unticked: a tap on a pin does nothing, and
-the line under the list says `OFF: VIEW ALL, NO EDITING`. Picking OFF
-writes nothing and unbinds nothing.
+Every visit to the screen opens with OFF selected. OFF is the first entry of
+the list and binds nothing: it takes 0 pins, so no pin count is shown under
+it. With OFF selected, every bound pin shows the name of the
+protocol that holds it in full-brightness text, so the whole binding and
+every pin the coprocessor drives are on one screen. No pin can be ticked or
+unticked: a tap on a pin does nothing and writes nothing, and the line under
+the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes
+nothing. Picking a protocol in the list leaves the overview, and picking OFF
+goes back to it; neither writes or unbinds anything.
 
-OFF stays picked across read-backs, repaints and a link that goes down and
-comes back, until another entry is picked or the screen is left. The next
-entry opens on the lowest-numbered protocol that holds a pin.
+OFF stays selected until another entry is picked: across read-backs,
+repaints, a link that goes down and comes back, and leaving the screen. A
+change of board selects OFF, whatever was selected: a coprocessor that
+answers for the first time during the visit, or one swapped for another
+board. A protocol picked before is not carried to the board that answers,
+so the next tap writes nothing. A press on a pin draws no pressed face.
+PICK A PIN opens with OFF selected too.
+
+One write is reachable with OFF selected. With pages that describe no
+binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
+`HOLD: CLEAR ALL PIN ASSIGNMENTS` for 2 s writes a binding with no pin. That
+hold is the way out of those pages
+([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
 
 GP0 bound as DSHOT600 BIDIR, GP1 as MOTOR PWM, GP2 and GP13 as SERVO PWM,
-with OFF picked. A slot holds GP13 on this bench, so the programming port
+with OFF selected. A slot holds GP13 on this bench, so the programming port
 has no pin:
 
 ![OFF shows the protocol of every bound pin](img/outputs-off.png)
@@ -2822,9 +2877,11 @@ Top left is the protocol list, the same control as on the Outputs screen. It
 names the selected protocol. A tap opens it over the board; a pick selects
 the protocol a tap on a key joins, on this screen and on the Outputs screen,
 and writes nothing. A tap outside the open list closes it and picks nothing.
-OFF picked here ends when the screen is left, as on the Outputs screen: the
-next visit to either screen opens on the lowest-numbered protocol that holds
-a pin.
+Every visit opens with OFF selected, on this screen and on the Outputs
+screen: no key binds or unbinds a pin until a protocol is picked, and the
+line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
+selected across read-backs until a protocol is picked, and a change of
+board selects OFF, whatever was selected.
 
 ![The protocol list on the picker](img/picker-protocol.png)
 
@@ -2837,7 +2894,7 @@ the reason no key can be added, in the words of the Outputs screen:
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, which carries 8 channels on one pin, with 4 servo pins bound |
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
-| `OFF: VIEW ALL, NO EDITING` | OFF is selected |
+| `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed |
 
 Without the line a board drawn all grey reads as a fault.
@@ -2848,7 +2905,9 @@ Down the left, under PINS, are the selected protocol's pins in channel
 order, each with the pad number printed on the board in the PAD column. Down
 the right, under IN USE, are the pins other protocols hold, each group named
 and listed where its first pin falls. The two tables together read as one
-run of channels, because that is what the OUTPUTS page carries.
+run of channels, because that is what the OUTPUTS page carries. With OFF
+selected the PINS table is not drawn, because OFF holds no pin; the slot
+count and IN USE stay, and IN USE then lists every bound pin.
 
 The pin of the coprocessor's programming port, GP13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN

@@ -1635,19 +1635,69 @@ Bericht mit demselben Namen und derselben Nummer mit. Die Liste ordnet die
 Namen alphabetisch, die Läufe stehen also nach Namen gruppiert: `BENCH`,
 dann `ESC`, dann `SERVO`.
 
-Die Liste fasst 48 Einträge, die Karte bis zu 999 Läufe. Passen nicht alle
-hinein, behält die Liste die neuesten Läufe, und ihr Reiter zeigt
-`48 VON 137 DATEIEN` statt `DATEIEN`: ein Lauf, der in der Liste fehlt, ist dann
-einer, für den die Liste zu kurz war, und nicht einer, der nie geschrieben
-wurde. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
-keine Uhr, die einen Stromausfall übersteht, deshalb trägt jede Datei auf der
-Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
-nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
-andere Datei mehr. Alte Läufe löschen, um eine zurückzuholen.
+Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
+zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
+Nummer, die höchste zuerst, dann die Dateien, die der Prüfstand nicht
+geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
+Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im
+Namen: die Panel-Platine hat keine Uhr, die einen Stromausfall übersteht,
+deshalb trägt jede Datei auf der Karte das Datum 1980-01-01.
 
-AKTUALISIEREN, und jedes Lesen der Karte, wählt den neuesten Lauf aus und rollt
-ihn ins Bild, sodass ÖFFNEN den gerade aufgezeichneten Lauf öffnet. Eine Karte
-ohne nummerierten Lauf wählt nichts aus.
+![Eine volle Karte mit 999 Läufen und einer anderen Datei auf ihrer vierten Seite](img/de/logs-pages.png)
+
+Mit mehr als 48 Dateien auf der Karte stehen `VORIGE` und `NÄCHSTE` in der
+Kopfzeile, und der Reiter nennt den Teil der Karte, den die Seite zeigt,
+`DATEIEN 145 BIS 192 VON 1000`, statt `DATEIEN`. `VORIGE` ist auf der ersten
+Seite grau, `NÄCHSTE` auf der letzten. Die Seiten werden von oben zu je 48
+geschnitten: stehen vor der gezeigten Seite weniger als 48 Einträge, etwa
+nachdem ein Lauf aufgezeichnet wurde, liest `VORIGE` die erste Seite von oben.
+Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist,
+erscheinen ab Seite 1, mit `NÄCHSTE` von Seite 1 oder `AKTUALISIEREN` auf
+Seite 1; auf dem Rückweg überspringt `VORIGE` so viele Einträge, wie
+aufgezeichnet wurden, und die Zahlen im Reiter zeigen die Verschiebung. Jede
+Seite liest das Wurzelverzeichnis der Karte einmal: der Durchlauf behält die
+48 Einträge dieser Seite und zählt den Rest, sodass das Panel eine Seite im
+Speicher hält, unabhängig davon, wie viele Dateien die Karte enthält. Das
+Lesen läuft auf der Task, die den Bildschirm zeichnet und Berührungen
+verarbeitet. Bei 999 Läufen braucht die Auswahl auf einem Desktop-Rechner
+(x86-64, gemessen) etwa 2 ms; auf dem Panel sind 20 bis 40 ms geschätzt, und
+das Verzeichnis sind 63 Sektoren zu 512 Bytes, etwa 25 ms beim SPI-Takt (SPI:
+Serial Peripheral Interface) der Karte von 20 MHz, oder 125 Sektoren, etwa
+50 ms, mit einem Bericht neben jedem Lauf. Beides ist auf dem Panel nicht
+gemessen. Die Größe jedes Eintrags kommt mit dem Lesen des Verzeichnisses,
+eine Seite kostet also einen Durchlauf und die Auswahl.
+
+Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei 0,194 mm
+Pixelabstand. Die Länge des Griffs entspricht dem Anteil der sichtbaren Zeilen
+an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf die Bahn bringt
+die Mitte des Griffs unter den Finger; ein Finger auf dem Griff zieht ihn.
+
+`AKTUALISIEREN` liest die gezeigte Seite erneut. Auf der ersten Seite liest es
+von oben, sodass ein inzwischen aufgezeichneter Lauf erscheint. Auf einer
+anderen Seite liest es ab dem ersten Eintrag dieser Seite, auch wenn diese
+Datei inzwischen gelöscht ist. Enthält die Karte inzwischen weniger Einträge,
+zeigt `AKTUALISIEREN` die letzte Seite. Jedes Lesen wählt den neuesten Lauf
+der Seite aus, die oberste Zeile, sodass `ÖFFNEN` den gerade aufgezeichneten
+Lauf öffnet. Eine Seite ohne nummerierten Lauf wählt nichts aus. `LÖSCHEN`
+liest die Seite genauso erneut und behält die Rollposition, ohne Auswahl:
+`LÖSCHEN` und `ÖFFNEN` sind grau, bis eine Zeile gewählt ist. Das Löschen der
+einzigen Datei der letzten Seite zeigt die Seite davor.
+
+Die Kopfzeile nennt die Karte mit ihrer Datenträgerbezeichnung, gelesen
+einmal beim Einbinden der Karte. Eine Karte ohne Bezeichnung zeigt den
+Produktnamen, den die Karte meldet (zum Beispiel `SC16G`), und eine Karte,
+die keines von beiden meldet, zeigt `SD-KARTE`.
+
+Wird eine Karte eingesteckt, während keine eingebunden ist, bindet
+`AKTUALISIEREN` sie ein; sie öffnet auf ihrer ersten Seite. Eine Karte, die
+gegen eine andere getauscht wird, während eine eingebunden ist, wird bis zum
+Neustart des Panels nicht neu eingebunden
+([STATUS](https://github.com/subtilitas/rcbench/blob/main/STATUS.md)); was die
+Liste in diesem Zustand zeigt, ist nicht gemessen. Der Betrachter liest von
+der ersten Seite, sobald sich der Name in der Kopfzeile ändert, und auf dem
+Panel ändert sich dieser Name nur mit einem neuen Einbinden. Zwei Karten mit
+derselben Bezeichnung oder zwei Karten eines Modells ohne Bezeichnung tragen
+denselben Namen.
 
 In der Grafik zoomen zwei Finger: Auseinanderziehen vergrößert,
 Zusammenziehen verkleinert, beide zusammen bewegt verschiebt den Ausschnitt.
@@ -2817,7 +2867,10 @@ Aktuelle Einschränkungen:
 
 Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
 Die Protokolle, die an die
-Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt.
+Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt. Der
+Bildschirm öffnet auf der [Übersicht](#die-übersicht-off): OFF gewählt,
+jeder gebundene Pin mit seinem Protokoll benannt, und kein Pin änderbar, bis
+ein Protokoll gewählt ist.
 
 ![Outputs](img/de/outputs.png)
 
@@ -2950,12 +3003,9 @@ Pin-Satz der Bildschirm als angehakt zeigt und welchem Satz der nächste Haken
 zufällt. Nichts wird verworfen: die Pins des verlassenen Protokolls bleiben
 gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
 Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
-zu binden das erste löst. Beim Betreten zeigt die Liste das Protokoll mit der
-niedrigsten Nummer in der Reihenfolge der Liste, das einen Pin hält, oder OFF,
-wenn kein Pin gebunden ist. Ein Protokoll, das gewählt wurde, ohne einen Pin
-anzuhaken, bleibt über das Zurücklesen und über das Verlassen des Bildschirms
-gewählt, und ihm fällt ein Tippen auf PICK A PIN zu. Die Liste auf PICK A PIN
-wählt dasselbe Protokoll.
+zu binden das erste löst. Beim Betreten zeigt die Liste OFF, die Übersicht.
+Ein gewähltes Protokoll bleibt über das Zurücklesen derselben Platine
+gewählt. Die Liste auf PICK A PIN wählt dasselbe Protokoll.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
@@ -2977,18 +3027,34 @@ Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
-### OFF
+### Die Übersicht: OFF
 
-OFF ist der erste Eintrag der Liste und bindet nichts: er nimmt 0 Pins, und
-die Zählung darunter lautet `0 VON 0 PINS`. Mit OFF gewählt zeigt jeder
-gebundene Pin den Namen des Protokolls, das ihn hält, die ganze Bindung steht
-also auf einem Bildschirm. Kein Pin lässt sich anhaken oder lösen: ein Tippen
-auf einen Pin bewirkt nichts, und die Zeile unter der Liste sagt `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN`. OFF zu wählen schreibt nichts und löst nichts.
+Jeder Besuch des Bildschirms öffnet mit OFF gewählt. OFF ist der erste
+Eintrag der Liste und bindet nichts: er nimmt 0 Pins, darum steht unter ihm
+keine Pin-Zählung. Mit OFF gewählt zeigt jeder gebundene Pin den
+Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
+und jeder Pin, den der Koprozessor treibt, stehen also auf einem Bildschirm.
+Kein Pin lässt sich anhaken oder lösen: ein Tippen auf einen Pin bewirkt
+nichts und schreibt nichts, und die Zeile unter der Liste sagt
+`PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt
+nichts. Ein Protokoll in der Liste zu wählen verlässt die Übersicht, OFF zu
+wählen kehrt zu ihr zurück; keines von beiden schreibt etwas oder löst eine
+Bindung.
 
-OFF bleibt gewählt über das Zurücklesen, über Neuzeichnen und über einen
-Link, der abreißt und wiederkommt, bis ein anderer Eintrag gewählt oder der
-Bildschirm verlassen wird. Das nächste Betreten öffnet auf dem Protokoll mit
-der niedrigsten Nummer, das einen Pin hält.
+OFF bleibt gewählt, bis ein anderer Eintrag gewählt wird: über das
+Zurücklesen, über Neuzeichnen, über einen Link, der abreißt und wiederkommt,
+und über das Verlassen des Bildschirms. Ein Wechsel der Platine wählt OFF,
+was auch gewählt war: ein Koprozessor, der während des Besuchs zum ersten
+Mal antwortet, oder einer, der gegen eine andere Platine getauscht wird. Ein
+zuvor gewähltes Protokoll geht nicht auf die Platine über, die antwortet;
+der nächste Tipp schreibt also nichts. Ein Druck auf einen Pin zeigt keine
+gedrückte Fläche. PICK A PIN öffnet ebenfalls mit OFF gewählt.
+
+Ein Schreibvorgang ist mit OFF gewählt erreichbar. Bei Pages, die keine
+Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
+und `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` 2 s gehalten schreibt eine Bindung
+ohne Pin. Dieses Halten ist der Weg aus diesen Pages
+([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
 
 GP0 als DSHOT600 BIDIR gebunden, GP1 als MOTOR PWM, GP2 und GP13 als SERVO
 PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GP13, der
@@ -3071,9 +3137,12 @@ Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
 über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
 Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
 schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
-nichts. Hier gewähltes OFF endet, wenn der Bildschirm verlassen wird, wie
-auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
-öffnet mit dem Protokoll der niedrigsten Nummer, das einen Pin hält.
+nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
+dem Outputs-Bildschirm: keine Taste bindet oder löst einen Pin, bis ein
+Protokoll gewählt ist, und die Zeile unter der Liste sagt
+`PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
+gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
+OFF, was auch gewählt war.
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
@@ -3087,7 +3156,7 @@ Outputs-Bildschirms:
 | `ALLE 8 PLÄTZE BELEGT` | über alle Protokolle sind 8 Pins gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
 
 Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.
@@ -3099,7 +3168,9 @@ Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
 der Spalte PAD. Rechts unter BELEGT stehen die Pins, die andere Protokolle
 halten, jede Gruppe mit Namen und dort eingereiht, wo ihr erster Pin liegt.
 Beide Tabellen zusammen lesen sich als ein Lauf von Kanälen, denn das ist,
-was die OUTPUTS-Page trägt.
+was die OUTPUTS-Page trägt. Mit OFF gewählt fehlt die Tabelle PINS, denn OFF
+hält keinen Pin; die Slot-Zählung und BELEGT bleiben, und BELEGT führt dann
+jeden gebundenen Pin.
 
 Der Pin des Programmierports des Koprozessors, ab Werk GP13 (Pad 17), ist grau
 gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert

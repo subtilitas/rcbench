@@ -23,6 +23,8 @@
 #include <math.h>
 #include <string.h>
 
+#include "log_name.h"
+#include "log_select.h"
 #include "log_viewer_screen.h"
 #include "busfault_screen.h"
 #include "ui_textkey.h"
@@ -203,17 +205,40 @@ static const struct {
     { "SWEEP_920KV.CSV", 4096 },
 };
 
-static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
+/* logs-pages: a full card, every run and one file the bench did not
+ * write, so the tab carries the widest count it can: "FILES 145 TO 192 OF
+ * 1000" on the fourth page, which the fit check measures. */
+#define PAGES_RUNS LOG_RUN_LAST
+#define PAGES_NEXT 3
+static bool g_pages_card;
+
+static int fake_list(log_viewer_file_t *out, int max_entries,
+                     log_viewer_page_t *page, void *ctx)
 {
     (void)ctx;
+    log_select_page_t sel;
+    log_select_page_begin(&sel, out, max_entries, page);
     int n = 0;
-    for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]) && n < max_entries;
-         ++i) {
-        snprintf(out[n].name, sizeof(out[n].name), "%s", k_card[i].name);
-        out[n].size = k_card[i].size;
-        out[n].is_dir = false;
+    log_viewer_file_t f;
+    memset(&f, 0, sizeof(f));
+    if (g_pages_card) {
+        for (int r = 1; r <= PAGES_RUNS; ++r, ++n) {
+            log_run_name(f.name, sizeof(f.name), r);
+            f.size = 9000u + (uint32_t)r * 37u;
+            log_select_page_offer(&sel, &f);
+        }
+        snprintf(f.name, sizeof(f.name), "%s", "SWEEP_920KV.CSV");
+        f.size = 4096;
+        log_select_page_offer(&sel, &f);
         ++n;
+    } else {
+        for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i, ++n) {
+            snprintf(f.name, sizeof(f.name), "%s", k_card[i].name);
+            f.size = k_card[i].size;
+            log_select_page_offer(&sel, &f);
+        }
     }
+    (void)log_select_page_end(&sel, page);
     return n;
 }
 
@@ -225,10 +250,11 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
     return true;
 }
 
+/* The card's volume label, what the panel's header shows. */
 static const char *fake_volume(void *ctx)
 {
     (void)ctx;
-    return "BENCH SD  14.7 GB FREE";
+    return "UNITEST";
 }
 
 /* Present so the browse view offers DELETE; the shots stop at the question,
@@ -241,10 +267,12 @@ static bool fake_remove(const char *name, void *ctx)
 }
 
 /* No card mounted: the lister has no volume to read. */
-static int nocard_list(log_viewer_file_t *out, int max_entries, void *ctx)
+static int nocard_list(log_viewer_file_t *out, int max_entries,
+                       log_viewer_page_t *page, void *ctx)
 {
     (void)out;
     (void)max_entries;
+    (void)page;
     (void)ctx;
     return -1;
 }
@@ -306,6 +334,9 @@ static void write_ppm(const char *path, const gfx_color_t *pixels)
 /* FOOT_Y and the DELETE button's x from the same file. */
 #define BR_FOOT_Y_LOCAL 352
 #define BR_DELETE_CX    596
+/* NEXT in the header row, over OPEN. */
+#define BR_NEXT_CX      724
+#define BR_PG_CY_LOCAL  21
 
 static void tap(int x, int y)
 {
@@ -2571,6 +2602,11 @@ int main(int argc, char **argv)
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
         ui_router_goto(SCREEN_OUTPUTS);
+        if (strcmp(view, "outputs-off") != 0) {
+            /* Every visit opens on the overview, OFF; the views of a
+             * protocol being edited pick it, as the operator does. */
+            outputs_screen_select(b.proto);
+        }
         if (strcmp(view, "outputs-full") == 0) {
             /*
              * PPM with servo pins already bound: the whole board greyed and
@@ -2592,17 +2628,8 @@ int main(int argc, char **argv)
             ui_router_event(&d);
             ui_router_event(&u);
         }
-        if (strcmp(view, "outputs-protocol") == 0
-            || strcmp(view, "outputs-off") == 0) {
+        if (strcmp(view, "outputs-protocol") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
-            ui_router_event(&d);
-            ui_router_event(&u);
-        }
-        if (strcmp(view, "outputs-off") == 0) {
-            /* And OFF picked in it, the first row: every bound pin says
-             * which protocol holds it. */
             touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
             touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
             ui_router_event(&d);
@@ -2702,6 +2729,11 @@ int main(int argc, char **argv)
                                             NULL);
         }
         ui_router_goto(SCREEN_PICKER);
+        /* Every visit opens on OFF; the protocol is picked after, as the
+         * panel's follow of the Outputs screen brings one. */
+        if (strcmp(view, "picker-off") != 0) {
+            picker_screen_follow(b.proto, picker_screen_editable());
+        }
         if (strcmp(view, "picker-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
              * count says why it is held. */
@@ -3025,22 +3057,28 @@ int main(int argc, char **argv)
         /* logs-nocard: a lister that finds no volume. */
         log_viewer_set_io(strcmp(view, "logs-nocard") == 0 ? &k_io_nocard
                                                             : &k_io);
+        /* logs-pages: a full card, on its fourth page. */
+        g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
         /*
-         * BR_LIST starts at y = 36 in screen coordinates, its rows begin
+         * BR_LIST starts at y = 44 in screen coordinates, its rows begin
          * 30 px below that header, and a row is 44 px, so the first row's
-         * middle is 36 + 30 + 22.  The band offset is added because
+         * middle is 44 + 30 + 22.  The band offset is added because
          * ui_router_event takes panel coordinates and strips it on the way
          * in.
          */
         if (strcmp(view, "logs-nocard") == 0) {
             /* The browser as it opens: nothing to select. */
+        } else if (strcmp(view, "logs-pages") == 0) {
+            for (int p = 0; p < PAGES_NEXT; ++p) {
+                tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+            }
         } else if (strcmp(view, "logs-delete") == 0) {
-            tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
+            tap(400, UI_BAND_H + 44 + 30 + 22);   /* select */
             tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */
         } else if (strcmp(view, "logs") != 0) {
-            tap(400, UI_BAND_H + 36 + 30 + 22);   /* select */
-            tap(400, UI_BAND_H + 36 + 30 + 22);   /* open   */
+            tap(400, UI_BAND_H + 44 + 30 + 22);   /* select */
+            tap(400, UI_BAND_H + 44 + 30 + 22);   /* open   */
         }
         if (strcmp(view, "logs-plot") == 0) {
             tap(690, UI_BAND_H + IM_BTN_Y_LOCAL + 23);   /* PLOT */

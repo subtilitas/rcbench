@@ -6,7 +6,7 @@ order: 63
 
 # Pin-Auswahl
 
-PICK A PIN zeigt die Platine des Koprozessors, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md).
+PICK A PIN zeigt die Platine des Koprozessors, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md). Jeder Besuch öffnet mit OFF gewählt: Keine Taste bindet oder löst einen Pin, bis ein Protokoll in der Liste gewählt ist, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`.
 
 ## Die Platine und ihre Tasten
 
@@ -45,7 +45,7 @@ Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle.
 | `ALLE 8 PLÄTZE BELEGT` | 8 Pins sind über alle Protokolle gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
 | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | ein Tipp auf GP28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GP13 hält: ein PWM-Slice; die Taste ist grau |
 | `GP16: GLEICHER PWM-KANAL WIE GP0` | ein Tipp auf GP16 unter SERVO PWM oder MOTOR PWM bei GP0 als PWM gebunden: ein PWM-Compare-Register; die Taste ist grau |
@@ -54,7 +54,7 @@ Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle.
 
 ## PINS und BELEGT
 
-PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfolge mit der auf der Platine gedruckten Pad-Nummer. BELEGT, rechts abwärts, listet die Pins, die andere Protokolle halten, jede Gruppe unter dem Namen ihres Protokolls.
+PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfolge mit der auf der Platine gedruckten Pad-Nummer. BELEGT, rechts abwärts, listet die Pins, die andere Protokolle halten, jede Gruppe unter dem Namen ihres Protokolls. Mit OFF gewählt fehlt PINS, denn OFF hält keinen Pin, und BELEGT führt jeden gebundenen Pin.
 
 ![GP13 vom Programmierport gehalten](view:picker-prog)
 

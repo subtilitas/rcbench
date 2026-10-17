@@ -8,6 +8,22 @@ history is in git.
 
 ### Added
 
+- The LOG VIEWER reaches every file on the card in pages of 48, newest
+  runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
+  row turn the page; they show only on a card of more than 48 files.
+  Pages are cut from the top, so PREV with fewer than 48 entries ahead
+  of the page, after a run was recorded, shows the first page. One page
+  costs one walk of the card's root directory and holds 48 entries in
+  memory. RESCAN reads the page shown again, and a page emptied by DELETE
+  or a shrunk card shows the last page left.
+- The LOG VIEWER list has a scroll bar 42 px (8.1 mm) wide at the right
+  edge. Its thumb is the rows shown out of the rows on the page; a touch
+  on the track moves the thumb's middle there, a drag on it scrolls the
+  page.
+- The LOG VIEWER header names the card by its FAT (File Allocation Table)
+  volume label, read once per mount through `f_getlabel`
+  (`CONFIG_FATFS_USE_LABEL=y`). A card without a label shows the name the
+  card reports of itself, as before.
 - The SERVO screen runs the installed-limit search: START LIMIT RUN on the
   LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
   PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
@@ -104,17 +120,41 @@ history is in git.
   `ESCnnn.CSV` for a switch of the throttle outputs to ARMED (MOTOR & ESC, a
   stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch of the surfaces to
   ARMED from SERVO and for a SUPPLY run. With a coprocessor older than
-  protocol 4.18 every switch to ARMED covers the throttle outputs, so a switch
-  to ARMED from SERVO writes `ESCnnn.CSV`. The numbers 001 to 999 are one series across the
-  three names: a run takes one above the highest number on the card under
-  any name, and a card holding a number 999 takes no further run. A card
-  holding only `BENCHnnn` files continues above their numbers. The LOG
-  VIEWER lists, ranks and deletes all three, opens on the highest number,
-  and deletes a run's report under the run's own name. Its empty card reads
+  protocol 4.18 every switch to ARMED covers the throttle outputs, so a
+  switch to ARMED from SERVO writes `ESCnnn.CSV`. The numbers 001 to 999 are
+  one series across the three names: a run takes one above the highest
+  number on the card under any name, and a card holding a number 999 takes
+  no further run. A card holding only `BENCHnnn` files continues above their
+  numbers. The LOG VIEWER lists, pages and deletes all three, newest number
+  first across the names, opens on the highest number, and deletes a run's
+  report under the run's own name. Two runs with one number, which only a
+  card edited on a computer holds, follow by name. Its empty card reads
   `Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.` Firmware 0.20.0 and
-  older numbers runs above the highest `BENCHnnn` file only: going back to it
-  on a card written since can give a run a number that an `ESCnnn` or
+  older numbers runs above the highest `BENCHnnn` file only: going back to
+  it on a card written since can give a run a number that an `ESCnnn` or
   `SERVOnnn` file already carries, and nothing is overwritten.
+- The LOG VIEWER tab reads `FILES 1 TO 48 OF 200` (`DATEIEN 1 BIS 48 VON
+  200`) on a card of more than one page.
+- The LOG VIEWER draws the rows of a page newest run first, the order the
+  pages run in, where it drew them by name.
+- After DELETE the LOG VIEWER keeps the scroll and selects nothing, so
+  DELETE and OPEN are grey until a row is chosen; it selected the page's
+  newest run, which can be out of sight.
+- The panel's directory walk reads a directory through FatFs `f_readdir`
+  and takes each file's size from the directory entry. The 48 `stat`
+  calls a LOG VIEWER listing made are gone; on a card of 999 runs each of
+  them read up to 63 directory sectors.
+- OUTPUTS and PICK A PIN open on the overview on every visit: OFF selected,
+  every bound pin named by its protocol in full-brightness text. A tap on a
+  pin changes nothing and writes nothing until a protocol is picked in the
+  list; picking OFF goes back to the overview. The line under the list reads
+  `CHOOSE A PROTOCOL, THEN TAP PINS` (German
+  `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`). OUTPUTS shows no pin count and PICK
+  A PIN no PINS table on OFF. OFF stays selected across leaving the screen
+  and read-backs. A change of board, such as a coprocessor that answers or
+  is swapped during the visit, selects OFF whatever was selected, so a
+  protocol picked before is not carried to it. Opening either screen writes
+  nothing to the coprocessor.
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save

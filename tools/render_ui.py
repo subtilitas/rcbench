@@ -118,6 +118,7 @@ SOURCES = [
     "firmware/iomcu/src/board_drawing_rp2350_can.c",
     "shared/ui/board_drawing.c",
     "shared/ui/log_viewer_screen.c",
+    "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
@@ -295,6 +296,9 @@ SCREENS = {
     "logs":       ("logs.png",       "logs",       "dark"),
     # No card mounted.
     "logs-nocard": ("logs-nocard.png", "logs", "dark"),
+    # A card of 121 files, more than a page: the second page, PREV and NEXT
+    # in the header row.
+    "logs-pages": ("logs-pages.png", "logs", "dark"),
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
     "programmer-protocols": ("programmer-protocols.png", "programmer", "dark"),
     "programmer-idle": ("programmer-idle.png", "programmer", "dark"),
@@ -372,7 +376,8 @@ SCREENS = {
     "outputs-full": ("outputs-full.png", "outputs", "dark"),
     # The longest protocol name, DSHOT600 BIDIR, in the closed list.
     "outputs-bidir": ("outputs-bidir.png", "outputs", "dark"),
-    # OFF picked: every bound pin names its protocol, the longest among them.
+    # The overview every visit opens on, OFF: every bound pin names its
+    # protocol, the longest among them.
     "outputs-off": ("outputs-off.png", "outputs", "dark"),
     # The binding last read, after a read that failed.
     "outputs-unread": ("outputs-unread.png", "outputs", "dark"),
