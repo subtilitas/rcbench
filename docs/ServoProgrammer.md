@@ -1018,7 +1018,7 @@ port is in PWM again.
 | The coprocessor reports a result, a refusal or an outcome this panel has no line for | `The coprocessor reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own
-line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) lists the codes.
+line. [The link page](LinkKST.md) lists the codes.
 
 ## Limitations
 
