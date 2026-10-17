@@ -79,6 +79,11 @@ static ui_screen_id_t s_update_back = SCREEN_LOGS;
 extern const uint8_t _binary_rcbench_iomcu_bin_start[];
 extern const uint8_t _binary_rcbench_iomcu_bin_end[];
 #define CU_IMG _binary_rcbench_iomcu_bin_start
+/* The image is two linker symbols, its start and its end.  cppcheck takes
+ * them for two arrays and their difference for a subtraction across objects;
+ * to the linker they are one object.  The suppression covers every use of
+ * CU_LEN and nothing else in this file. */
+// cppcheck-suppress-macro subtractPointers
 #define CU_LEN ((uint32_t)(_binary_rcbench_iomcu_bin_end \
                            - _binary_rcbench_iomcu_bin_start))
 #else

@@ -247,8 +247,11 @@ jobs:
                       /etc/apt/sources.list.d/*microsoft* || true
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build cppcheck clang-tidy
-          python3 -m pip install --quiet ruff==0.16.5
+            cmake ninja-build clang-tidy
+          # cppcheck 2.17.1 from the PyPI wheel (the distribution's package
+          # is 2.13); the version check fails the step when the pin drifts.
+          python3 -m pip install --quiet ruff==0.16.5 cppcheck==1.5.1
+          cppcheck --version | grep -qx 'Cppcheck 2\.17\.1.*'
 
       # clang-tidy needs to know how each file is compiled, and CMake can say.
       - name: Describe the build

@@ -276,8 +276,8 @@ are built with the library flags `-Wall -Wextra -Werror -Wshadow -Wconversion
 -Wno-sign-conversion`; `test/host/.clang-tidy` lists the checks that are off
 for them, each with its reason.
 
-CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at these
-exact versions. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a
+CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5, pytest 9.1.1 and cppcheck
+2.17.1 (the PyPI wheel `cppcheck` 1.5.1) at these exact versions. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a
 test after 120 s. With the environment variable `CI` set, a missing C++
 compiler fails the CMake configure step of the host suite, and a missing `git`, `cmake` or `cc`
 fails the end-to-end cases of `tools/mutate.py`. `tools/check_docs.py` holds
