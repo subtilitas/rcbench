@@ -203,6 +203,17 @@ history is in git.
   that port, which recovers the bus and then calls `exchange()`; the
   check followed only `port_exchange()` and counted the other call as
   followed (`PORT_CALLS`).
+- `tools/stack_check.py` reports each task's deepest chain with no
+  function on it twice, whatever the functions' addresses. The check kept
+  a depth cut short where a chain met a function already on it, and gave
+  that depth to every later caller, so a chain through a cycle read up to
+  416 bytes low: `main_task` 5,024 bytes for 5,440, `control_task` 4,032
+  for 4,448, `fetch_task` 2,400 for 2,816, `log_task` 2,992 for 3,408. The
+  check splits the call graph into its strongly connected components,
+  keeps the depth of each function entered from outside its component, and
+  tries every way through a component. The `runlog` task's stack is 4,608
+  bytes, 256 more: its deepest chain is 80 bytes over the limit of its
+  4,352-byte stack.
 
 ## 0.20.0 - 2026-10-15
 

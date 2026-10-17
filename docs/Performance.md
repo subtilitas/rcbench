@@ -189,14 +189,14 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,896 | 2,272 |
-| `control` | `control_task` | 6,144 | 4,112 | 1,008 |
-| `runlog` | `log_task` | 4,352 | 2,992 | 336 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,440 | 1,728 |
+| `control` | `control_task` | 6,144 | 4,448 | 672 |
+| `runlog` | `log_task` | 4,608 | 3,408 | 176 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
-| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,400 | 4,768 |
+| `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 2,816 | 4,352 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the Wi-Fi driver, the TCP/IP (transmission control
@@ -224,7 +224,8 @@ bound for that reason:
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
   the ELF;
-- recursion, which the tool counts once.
+- recursion: a function already on a chain is not entered again, so a
+  chain runs round a cycle at most once.
 
 CI runs the tool with `--check-doc` on the ESP-IDF v5.4 build, which fails
 when the table above or the count of calls through a pointer differs from
@@ -300,7 +301,8 @@ Each depth is a lower bound:
 - 17 hand-written arithmetic routines of the pico-sdk carry no size in the
   ELF, and their frames are not read;
 - one interrupt is counted, not a second one on top of it;
-- recursion is counted once.
+- recursion: a function already on a chain is not entered again, so a
+  chain runs round a cycle at most once.
 
 Core 0's stack is the whole of the RAM region `SCRATCH_Y`, 0x20081000 to
 0x20082000; the image places nothing else in it, and the link fails when
@@ -314,7 +316,7 @@ The UI keeps its frames small where it is cheap. A page's drawer is a
 separate function, so only the page on screen holds its buffers: on
 PROGRAMMER, `render()`'s frame is 32 bytes and the largest page's 464. A
 line copied for display is copied without `snprintf()`, which reaches
-newlib's float conversion: 1,952 bytes deep in the call graph.
+newlib's float conversion: 2,368 bytes deep in the call graph.
 
 ## Internal RAM
 
@@ -336,15 +338,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,048 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,936 |
-| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 104,776 |
-| `before` | heap left with the panel up and the radio off | 194,160 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,064 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,920 |
+| `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 105,032 |
+| `before` | heap left with the panel up and the radio off | 193,888 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 91,000 |
+| `left` | heap left with the largest mode up | 90,728 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every
