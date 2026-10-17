@@ -30,7 +30,8 @@
 #define PART    (2u * ART_SLOT_BYTES)
 /* What the panel passes: four good intervals, plus one. */
 #define SETTLE_MS (HEARTBEAT_GOOD_RUN * HEARTBEAT_PERIOD_MS + HEARTBEAT_PERIOD_MS)
-/* The control task's period, CONTROL_PERIOD_MS in main.c. */
+/* The control task's period, CONTROL_PERIOD_MS in
+ * firmware/panel/main/panel.h. */
 #define PASS_MS 5u
 /* 3 sectors, a slot's capacity, so a keep runs 11 steps and can be stopped
  * part way.  The store keeps any length up to a slot; a drawing is at most

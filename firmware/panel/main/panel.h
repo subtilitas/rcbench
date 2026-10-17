@@ -72,6 +72,9 @@ static inline uint32_t now_ms(void)
 
 #define ALERT_MAX         UI_ALERT_MAX
 
+/* The control task's period; see "the two loops' plumbing" in main.c. */
+#define CONTROL_PERIOD_MS 5u
+
 /* The link to the coprocessor, used during bring-up and in the loop. */
 extern link_host_t    s_host;
 /* A link_cap_t bitmap from the coprocessor's identity page; see main.c. */
@@ -282,8 +285,6 @@ extern bool s_pump_live;
  * exchange. */
 void control_pump(void);
 
-/* The coprocessor update's check, for a coprocessor that just answered. */
-void cu_link_up(const link_msg_t *reply);
 
 /* The GPIOs of the slots of the channels the SERVO screen's horn drives
  * (servo_link_binding()), and whether a binding was read; see main.c. */
@@ -837,3 +838,30 @@ void art_keep_service(void);
 void art_stop(const char *why);
 void art_begin(uint16_t board);
 void art_slice(void);
+
+/* ---------------------------------------------------------- panel_update.c */
+
+/* An install about to write the flash asks the control task to stand
+ * still (s_fw_quiet_req), and the control task says it does
+ * (s_fw_quiet_ack).  False when wifi_access_init() failed (s_wifi_ok). */
+extern atomic_bool s_fw_quiet_req;
+extern atomic_bool s_fw_quiet_ack;
+extern bool        s_wifi_ok;
+
+/* Whether the coprocessor's update may start: see fw_coproc_may_start().
+ * From any task. */
+bool cu_may_start(void);
+/* The coprocessor update's check, for a coprocessor that just answered. */
+void cu_link_up(const link_msg_t *reply);
+/* One pass of the coprocessor's update, before the poll: true while the
+ * update holds the link.  Control task. */
+bool cu_service(bool *link_up, bench_state_t *bench,
+                uint32_t *last_poll, uint32_t *last_status);
+
+/* Once a frame on app_main: FILES & UPDATE, the reminder, SETUP > UPDATES
+ * and the coprocessor update's screen. */
+void wifi_service(bool armed, uint32_t stops_now);
+void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
+void upd_service(bool armed, bool unsafe, uint32_t stops_now,
+                 const cu_snap_t *cs);
+void cu_render_service(bool unsafe, const cu_snap_t *cs);
