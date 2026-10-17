@@ -727,6 +727,8 @@ extern arm_watch_t s_arm_watch;
 extern float s_log_t;
 void log_follow_runs(void);
 
+/* The screens' commands, app_main -> control task; see main.c. */
+extern QueueHandle_t s_cmd_q;
 /* Queue a command for the control task. */
 void send_cmd(const panel_cmd_t *in);
 
@@ -797,10 +799,15 @@ extern bench_totals_t s_totals;
 extern uint32_t       s_totals_ms;
 void arm_applied(void);
 void arm_watch_service(bool link_up);
+/* A disarm asked for; the latched stop and the arming policy's act. */
+void service_disarm(bool link_up);
+void service_arming(bool link_up);
 bool write_output_binding(const outbind_t *bind);
 bool disarm_here(bool link_up);
 void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
                      bench_state_t *bench);
+/* What the screens asked for, in the order they asked it. */
+void drain_commands(bool link_up, bench_state_t *bench);
 
 /* ---------------------------------------------------------- panel_render.c */
 

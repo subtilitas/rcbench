@@ -20,6 +20,7 @@
 #include "motor_screen.h"
 #include "panel.h"
 #include "programmer_screen.h"
+#include "servo_link.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "storage.h"
@@ -102,6 +103,74 @@ void kst_ui_service(void)
  * wait behind the work of the screen being entered.
  */
 void flush_screen_commands(uint32_t stops_now);
+
+/*
+ * Queue a command, and do not lose it.  Every command is already taken from
+ * its screen by the time it gets here, so a refused send is a discarded
+ * disarm or a throttle that never arrives.
+ */
+void send_cmd(const panel_cmd_t *in)
+{
+    panel_cmd_t cmd = *in;
+    const panel_cmd_t *pc = &cmd;
+    /*
+     * A disarm does not depend on the queue.
+     *
+     * The queue drops its oldest entry when it is full, and a screen that is
+     * being left generates commands on the way out while the next screen
+     * generates more: a disarm posted by leave() can be evicted by them and
+     * the bench stays armed with nobody watching it.  So it is also a flag,
+     * the way a stop is, and applying it twice costs nothing.
+     */
+    if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
+        atomic_fetch_add(&s_lets_go, 1u);
+        atomic_store(&s_disarm_request, true);
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_DISARM) {
+        atomic_fetch_add(&s_lets_go, 1u);
+        atomic_store(&s_disarm_request, true);
+        servo_link_ask_release();
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_RELEASE) {
+        /*
+         * RELEASE lets go of the pin without disarming the bench, and it is
+         * as much a safety command as the disarm: waiting behind a backlog
+         * of positions, three exchanges each, would hold the servo for
+         * seconds after the operator asked it to stop.
+         */
+        atomic_fetch_add(&s_lets_go, 1u);
+        servo_link_ask_release();
+    } else if (pc->kind == PANEL_CMD_SERVO
+               && (pc->servo.kind == SERVO_CMD_HOLD || pc->servo.ends_sweep)) {
+        /*
+         * HOLD, and a finger on the dial or CENTRE that ends a sweep, stop
+         * a moving servo, so they do not wait either: a sweep being written
+         * gives way at once, and one queued before them is dropped as
+         * stale.  Each is a drive itself, so it carries the generation it
+         * opens.
+         */
+        cmd.lets_go = atomic_fetch_add(&s_lets_go, 1u) + 1u;
+        servo_link_ask_hold();
+    } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.off) {
+        /* The supply's OFF, for the same reason as the disarm. */
+        atomic_fetch_add(&s_supply_offs, 1u);
+        atomic_store(&s_supply_off_request, true);
+    }
+
+    if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
+        return;
+    }
+    panel_cmd_t stale;
+    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
+        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
+        /* An ON the control task will never see is one it will never take
+         * either; counted here, so nothing waits on it for ever. */
+        atomic_fetch_add(&s_supply_ons_taken, 1u);
+    }
+    if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
+        ESP_LOGW(TAG, "control queue full; a command was lost");
+    }
+}
 
 /*
  * The render loop's record of s_touch_q: what it has taken, and the losses it
