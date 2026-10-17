@@ -4431,9 +4431,10 @@ TEST_CASE(a_withdrawal_on_an_armed_bench_restores_the_drive)
 /* ------------------------------------------- the servo rail's meter */
 
 /*
- * Mirrored from servo_screen.c: the right card's column, the CURRENT row,
- * the line over the power plot with its 64 px name (PD MINI) or 88 px name
- * (INA3221 CH1), and the line and plot together (power_rect()).
+ * Mirrored from servo_screen.c and servo_screen_int.h: the right card's
+ * column, the CURRENT row, the line over the power plot with its 64 px name
+ * (PD MINI) or 88 px name (INA3221 CH1), and the line and plot together
+ * (power_rect()).
  */
 #define RAIL_X     514
 #define RAIL_W     268

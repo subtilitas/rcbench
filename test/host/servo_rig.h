@@ -88,8 +88,9 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                        ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * The SETTINGS overlay, mirrored from servo_screen.c: the button at the top
- * of the right card, then over the left card its tabs, CLOSE, the rows of a
+ * The SETTINGS overlay, mirrored from servo_screen.c and
+ * servo_settings_panel.c: the button at the top of the right card, then over
+ * the left card its tabs, CLOSE, the rows of a
  * page (left column at x 16, right at x 255, 42 px apart from y 54), the
  * list a row opens (two columns of five, 46 px apart from y 54) and the
  * warning's HOLD TO APPLY and CANCEL.

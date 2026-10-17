@@ -29,9 +29,10 @@
 /* ------------------------------------------------------------ the limit run */
 
 /*
- * START LIMIT RUN, mirrored from servo_screen.c: at START TEST's place on
- * the LIMITS page, LIMIT RUN across both columns of row 5, and the page's
- * three lines under them from 2 px under the top of row 7, 18 px apart.
+ * START LIMIT RUN, mirrored from servo_screen.c and servo_screen_int.h: at
+ * START TEST's place on the LIMITS page, LIMIT RUN across both columns of
+ * row 5 (servo_settings_panel.c), and the page's three lines under them
+ * from 2 px under the top of row 7, 18 px apart.
  */
 #define LIM_TAB     2
 #define LIM_MODE_Y  ROW_Y(5)

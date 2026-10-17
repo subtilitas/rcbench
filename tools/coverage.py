@@ -78,6 +78,7 @@ TRACKED = [
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
+    "shared/ui/servo_settings_panel.c",
     "shared/ui/kst_panel.c",
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",

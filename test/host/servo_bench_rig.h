@@ -29,9 +29,10 @@
 #include "ui_widgets.h"
 
 /*
- * START TEST, mirrored from servo_screen.c: under the TEST page's right
- * column, row 6; the box on the left card and its button; HV SERVO at the
- * right column's row 2.
+ * START TEST, mirrored from servo_screen_int.h: under the TEST page's right
+ * column, row 6; the box on the left card and its button, from
+ * servo_screen.c; HV SERVO at the right column's row 2, from
+ * servo_settings_panel.c.
  */
 #define START_X  369
 #define START_Y  323

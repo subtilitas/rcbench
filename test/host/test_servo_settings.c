@@ -592,9 +592,10 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
  * surface at it, whatever the target, and the note says that instead in
  * its first line.  Both are news, not a warning.
  */
-/* The rate note on the OUTPUT page, mirrored from servo_screen.c: its first
- * line at OV_NOTE_Y + 2 * 18 (306), its second 18 px below, each 16 px high,
- * from x 16 to x 490, inside the overlay's border at x 493. */
+/* The rate note on the OUTPUT page, mirrored from servo_settings_panel.c:
+ * its first line at OV_NOTE_Y + 2 * 18 (306), its second 18 px below,
+ * each 16 px high, from x 16 to x 490, inside the overlay's border at
+ * x 493. */
 #define NOTE_X    16
 #define NOTE_L1_Y 306
 #define NOTE_L2_Y (NOTE_L1_Y + 18)
