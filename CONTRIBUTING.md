@@ -372,7 +372,8 @@ sentence, and keep technical vocabulary in English: protocol names, mode names,
 register and field names.
 
 The wiki is the manual. `STATUS.md` is the record of what is built, what is
-open and what is settled. `CHANGELOG.md` is the version history.
+open and what is settled. `CHANGELOG.md` is the version history;
+`CHANGELOG-0.9.md` holds versions 0.9.1 and older.
 
 ## Pull requests
 

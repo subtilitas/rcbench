@@ -58,10 +58,10 @@ Release ab, das sie hat:
 Das USB-Laden einer neuen Bench, oder einer mit 0.18.0 und älter, bringt
 die Partitionstabelle des Koprozessors und die zwei Anwendungs-Slots des
 Panels an ihren Platz, und keins von beiden kommt über den Link. Ein Panel
-mit 0.19.0 nimmt kein Image über WLAN: ACCESS POINT endet beim Drücken mit
-`WLAN startete nicht.`, und nach der Schätzung des internen RAM
+mit 0.19.0 nimmt kein Image über WLAN: WLAN-HOTSPOT endet beim Drücken mit
+`WLAN konnte nicht starten.`, und nach der Schätzung des internen RAM
 (Random-Access Memory) in [Performance](Performance-de.md#interner-ram)
-endet HEIMNETZ VERBINDEN genauso. Ab 0.20.0 installiert das Panel ein
+endet MIT HEIMNETZ VERBINDEN genauso. Ab 0.20.0 installiert das Panel ein
 Release über WLAN ([Bildschirme: Dateien &
 Update](Screens-de.md#dateien--update)) oder lädt es von GitHub
 ([Bildschirme: Updates](Screens-de.md#updates)), und der Koprozessor bekommt
@@ -127,8 +127,7 @@ die Einrichtung der Strommonitore, mit der Ausnahme für einen RP2350 der
 Stepping A2, die [unten](#die-partitionstabelle-des-koprozessors) steht.
 
 Das Panel darf zuerst kommen. Ein Panel mit 0.19.0 oder neuer an einem
-Koprozessor ohne Partitionstabelle zeigt `Koprozessor nimmt kein Update über
-CAN -- einmal über USB laden`, bis Schritt 2 erledigt ist; der Link läuft
+Koprozessor ohne Partitionstabelle zeigt `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, bis Schritt 2 erledigt ist; der Link läuft
 solange.
 
 ### Ab 0.19.0
@@ -149,14 +148,13 @@ dem Update.
 3. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
    vergleicht das Panel das laufende Image des Koprozessors per SHA-256 mit
    dem Image, das es mitbringt, findet einen anderen Build, und das Band
-   meldet `Koprozessor hat einen anderen Build -- das Menü bietet sein
-   Update an`.
+   meldet `Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.`.
 4. **Koprozessor.** Die Frage öffnet sich auf dem Menü, solange die Bench
    SAFE ist, der Ausgang der Versorgung aus und der Funk des Panels aus. Sie
    nennt 0.19.0 auf dem Koprozessor und 0.20.0 im Panel. START 2 s halten.
    Der Fortschritt füllt den Bildschirm ([Bildschirme:
    Koprozessor-Update](Screens-de.md#koprozessor-update)), und zurück auf
-   dem Menü meldet das Band `Koprozessor auf 0.20.0 aktualisiert`.
+   dem Menü meldet das Band `Koprozessor auf 0.20.0 aktualisiert.`.
 
 | Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
 | --- | --- | --- |
@@ -177,7 +175,7 @@ schreibt keins von beiden. CANCEL auf der Frage lässt den Koprozessor auf
 Updates der Strom aus, läuft das alte Image weiter, und der nächste
 Link-Aufbau bietet das Update wieder an. Ein Koprozessor, der das USB-Laden
 für 0.19.0 verpasst hat, hat keine Partitionstabelle: das Band meldet
-`Koprozessor nimmt kein Update über CAN -- einmal über USB laden`, und er
+`Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, und er
 bekommt [Schritt 2](#aus-den-release-assets). Die Dauer des Updates über CAN
 ist nicht gemessen.
 
@@ -300,7 +298,7 @@ lang innerhalb des Splash. Er beantwortet eine Frage: kommen Frames unversehrt
 über den Bus? Er benutzt kein Page-Protokoll; besteht er und der Link arbeitet
 trotzdem nicht, liegt der Fehler oberhalb des Drahts.
 
-**Gut sieht nach nichts aus:** der Splash zeigt `LINK  OK  CAN 1 Mbit/s` und
+**Gut sieht nach nichts aus:** der Splash zeigt `VERBINDUNG  OK  CAN 1 Mbit/s` und
 übergibt ans Menü.
 
 **Ein Fehlschlag ist ein Bildschirm**, vor dem Menü, mit dem Urteil, der Liste
@@ -804,7 +802,7 @@ wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
    schalten, in der Mitte lassen, Netzteil an bei 4,80 V. `t` drücken und
    auf die Zeile `$Z` warten.
 6. Bewegungen, in denselben Mitschnitt: auf der Seite TEST des Bildschirms
-   SERVO LÄNGE NACH auf BEWEGUNGEN, BEWEGUNGEN 20, VERWEILEN 1000 ms,
+   SERVO TESTDAUER NACH auf BEWEGUNGEN, BEWEGUNGEN 20, HALTEZEIT 1000 ms,
    STUFE 4.8 V an, jede andere Stufe und BROWN-OUT aus. TEST STARTEN. Der
    Trace läuft von der ersten Bewegung bis 4 s nach der letzten; auf seine
    Zeile `$Z` warten, dann PuTTY schließen.
@@ -936,7 +934,7 @@ des Arms ist, beantwortet er nicht.
 Welle.
 
 1. SETUP → ANSCHLÜSSE: `AS5600` auf ON, bei einem Prüfstand in SAFE. Auf der Seite
-   PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, ENC-MITTE
+   PRÜFLING des Bildschirms SERVO, Servo in Neutralstellung, SENSOR-MITTE
    antippen.
 2. Die Schritte 5 bis 7 von Teil A wiederholen.
 3. Jeden Mitschnitt zusammen mit der `BENCHnnn.CSV` seines Tests von der

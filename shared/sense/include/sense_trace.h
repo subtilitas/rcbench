@@ -162,8 +162,10 @@
  * A console that is not connected: the pump is told so, drops a trace
  * under way without a line and counts it (out.abandoned).
  *
- * Pure C, no SDK (software development kit).  Host-tested in
- * test_sense_trace.
+ * Pure C, no SDK (software development kit): core 1's side in
+ * sense_trace_feed.c, core 0's in sense_trace.c.  Host-tested in
+ * test_sense_trace_feed, test_sense_trace, test_sense_trace_next,
+ * test_sense_trace_setup and test_sense_trace_lines.
  *
  * SPDX-License-Identifier: MIT
  */

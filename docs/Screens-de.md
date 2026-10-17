@@ -9,7 +9,7 @@ einzelnen Bildschirme bedient werden.
 
 Das obere Band ist auf allen Bildschirmen gleich. Von rechts: STOP, die
 Laufzeituhr (in ARMED oder nach einem Lauf), der Arm-Chip, ein
-FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEIN LINK.
+FEHLER-Code, sobald einer gemeldet wird, der Modus und LINK oder KEINE VERBINDUNG.
 Der Modus ist BENCH, solange der Link steht und das Panel die Ausgänge des
 Koprozessors ansteuert, und SIM, solange kein Koprozessor antwortet und das
 Panel mit seinen eigenen Modellen rechnet.
@@ -60,11 +60,24 @@ Band sind die oberen 48 px des Panels.
   bedient, während der erste zieht. Nach dem Home-Tag bewegt der Finger, der
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
+Aktuelle Einschränkung: Die Chips stehen von STOP aus nach links. Eine
+Reihe, die x 274 erreichen würde, wo das breiteste Home-Tag (FILES & UPDATE)
+endet, beginnt jede Beschriftung 16 px statt 24 px im Chip. Drei Reihen sind
+trotzdem breiter und reichen unter das Home-Tag mancher Bildschirme. Ein
+Tipp dort wirkt auf das Home-Tag, nicht auf den Chip:
+
+- ARMED mit einem FEHLER-Code: bis x 216.
+- ARMED MOTOR oder ARMED SERVO mit KEINE VERBINDUNG: bis x 234.
+- SAFE mit einem FEHLER-Code und einer Laufzeituhr ab 10 h: x 272.
+
+Die Home-Tags enden bei x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
+(FILES & UPDATE) und auf den anderen Bildschirmen bei x 210 oder weniger.
+
 ### Hilfe zu den Chips
 
 Ein Tipp auf einen Chip des Bands öffnet unter dem Band einen Kasten, der
 sagt, was der Zustand des Chips für den Prüfstand bedeutet und was zu tun
-ist: LINK oder KEIN LINK, der Modus, FEHLER, der Arm-Chip und die
+ist: LINK oder KEINE VERBINDUNG, der Modus, FEHLER, der Arm-Chip und die
 Laufzeituhr. Der Kasten öffnet 4 px unter dem Band an der linken Kante des
 getippten Chips, so weit nach links verschoben, dass er 8 px innerhalb des
 Panels bleibt. Er ist 520 px breit; der Kasten von FEHLER reicht über das
@@ -88,8 +101,8 @@ Band, also verdeckt keiner STOP, und keiner reicht bis zum Alert-Band.
   Kasten öffnet, wird wie an der Kante des Bands losgelassen.
 
 Solange der Link steht und der Koprozessor Link-Frames abgelehnt hat, endet
-der Kasten von LINK mit ihrer Zahl, derselben Zeile, die MOTOR & ESC in
-dem Streifen über beiden Spalten zeigt: `Abgelehnte Link-Frames: 37`
+der Kasten von VERBINDUNG mit ihrer Zahl, derselben Zeile, die MOTOR & ESC in
+dem Streifen über beiden Spalten zeigt: `Abgelehnte Verbindungsframes: 37`
 ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)). Die Zeile folgt der
 Zahl, solange der Kasten offen ist, und verschwindet mit dem Link.
 
@@ -110,9 +123,9 @@ kennt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 
 ![Der Kasten von FEHLER mit LINK_SILENT, HEARTBEAT und STORE_OFF](img/de/band-fault.png)
 
-![Der Kasten von LINK](img/de/band-link.png)
+![Der Kasten von VERBINDUNG](img/de/band-link.png)
 
-![Der Kasten von LINK mit 37 abgelehnten Link-Frames](img/de/band-link-refused.png)
+![Der Kasten von VERBINDUNG mit 37 abgelehnten Link-Frames](img/de/band-link-refused.png)
 
 ![Der Kasten von SAFE](img/de/band-safe.png)
 
@@ -132,7 +145,7 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
   Loslassen des ersten Fingers löscht.
 - Ein Alert, der kommt, während ein Finger auf dem Band liegt, wird durch
   dieses Loslassen nicht gelöscht.
-- "Touch antwortete nicht -- der Prüfstand nimmt kein ARM an" beim Start
+- "Touchscreen antwortet nicht. ARMED ist gesperrt." beim Start
   bleibt bis zum Neustart und hat kein `x`: es gibt keinen Touch, mit dem man tippen könnte.
   Ein späterer Alert erscheint darüber; ist er gelöscht, steht wieder dieser.
 
@@ -202,8 +215,8 @@ in der Warnfarbe:
 
 | Zeile | Bedingung |
 |---|---|
-| `ZIEL: KEIN PIN ALS MOTOR GEBUNDEN` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
-| `ZIEL: BINDUNG NICHT GELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
+| `ZIEL: KEIN MOTOR-PIN ZUGEORDNET` | die Bindung ist gelesen und kein Pin ist als Motor gebunden |
+| `ZIEL: ZUORDNUNG NICHT AUSGELESEN` | keine Bindung wurde gelesen: der Link ist unten, die Pages ließen sich nicht lesen, oder für das Board gibt es keine Pin-Belegung |
 
 Das Gas bewegt sich in beiden Zuständen weiter. ARM schaltet die ganze Bank
 auf ARMED, nicht nur die hier genannten Pins.
@@ -214,9 +227,9 @@ auf ARMED, nicht nur die hier genannten Pins.
 Die Kurve ist die Aufzeichnung eines Laufs. Sie läuft nur, solange der
 Prüfstand ARMED ist: das Schalten auf ARMED löscht sie, das Schalten auf SAFE hält sie
 so an, wie sie stand. Die Beschriftung der Fläche liest `TELEMETRIE LIVE`,
-solange sie läuft, `TELEMETRIE, LETZTER LAUF`, solange sie einen Lauf hält, und
-`TELEMETRIE RUHT` vor dem ersten Schalten auf ARMED, wenn im Plot
-`kein Lauf aufgezeichnet` steht. Die rechte Achsenbeschriftung liest `JETZT`, solange
+solange sie läuft, `TELEMETRIE, LETZTE TELEMETRIE`, solange sie einen Lauf hält, und
+`TELEMETRIE INAKTIV` vor dem ersten Schalten auf ARMED, wenn im Plot
+`Noch kein Lauf aufgezeichnet.` steht. Die rechte Achsenbeschriftung liest `JETZT`, solange
 sie läuft, und `ENDE` dort, wo eine gehaltene stehen geblieben ist. Die
 Anzeigen, die TABELLE-Seite, die Summen und die Temperaturleiste sind
 jederzeit live, ob ARMED oder SAFE.
@@ -242,7 +255,7 @@ und drei Temperaturen. ESC und MOT kommen von der Bench-Page. MCU ist der
 eigene Die des Panels, gelesen vom Sensor des ESP32-S3: die Temperatur der
 Displayplatine, nicht die des Koprozessors. Solange der Link steht und der
 Koprozessor seit dem Einschalten Link-Frames abgelehnt hat, zeigt der
-Streifen nach der Fehlerzahl, wie viele: `Abgelehnte Link-Frames: 37`. Ein
+Streifen nach der Fehlerzahl, wie viele: `Abgelehnte Verbindungsframes: 37`. Ein
 Koprozessor älter als Protokoll 4.21 sendet keine Zahl, und der Streifen
 zeigt keine ([Abgelehnte Frames](Link-de.md#abgelehnte-frames)).
 
@@ -263,7 +276,7 @@ Bedienelement tut:
 | `-1`, `+1` | abgelehnt; gedimmt gezeichnet | schalten um einen Prozentpunkt |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Gas von seinem Wert aus |
 | ARM | schaltet nach seinem Halten von 2 s die Throttle-Ausgänge auf ARMED; gesperrt gezeichnet und ohne Wirkung, solange der [Servo-Programmierer](ServoProgrammer-de.md) einen Port hält | schaltet bei einem Tap auf SAFE |
-| SPITZEN ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
+| SPITZENWERTE ZURÜCKSETZEN | setzt die Spitzen zurück | setzt die Spitzen zurück |
 | GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
 
 In SAFE zeigt die Zeile unter dem Track `ZUERST ARM`. Die Ablehnung reicht
@@ -301,7 +314,7 @@ wurde, zwei Sekunden später wieder auf ARMED schalten. Das Schalten auf ARMED l
 zweimal aufblitzen: weiss, schwarz, rot, und noch einmal, je ein gezeichneter
 Frame. Ein Prüfstand in ARMED trägt das Gefahrenrot, und DISARM ist ein Druck
 und kein Halten: Anhalten braucht nie ein Halten. DISARM und STOP halten den
-Ausgang sofort an, ohne Rampe. SPITZEN ZURÜCKSETZEN löscht die Spitzenwertmarken und
+Ausgang sofort an, ohne Rampe. SPITZENWERTE ZURÜCKSETZEN löscht die Spitzenwertmarken und
 lässt die Live-Anzeigen unverändert.
 
 ### EFF ist eine Guessimetrik
@@ -473,7 +486,7 @@ bewegt dessen Drehung das Horn von dort aus, wo es steht
 ([der Knopf](#anwendung-der-drehknopf)).
 
 Ein Finger zieht das Zifferblatt. Ein Druck eines zweiten Fingers irgendwo
-auf dem Bildschirm beendet den Drag, wie er einen Drag auf SPEED beendet: Das
+auf dem Bildschirm beendet den Drag, wie er einen Drag auf TEMPO beendet: Das
 Horn bleibt, wo es befohlen wurde, und das Zifferblatt folgt wieder nach
 einem neuen Druck darauf.
 
@@ -509,20 +522,20 @@ Was jedes Bedienelement auf einem Prüfstand in SAFE tut:
 
 | Bedienelement | SAFE | ARMED |
 | --- | --- | --- |
-| Das Zifferblatt | abgelehnt: kein Kommando, Horn und PULSBREITE bleiben | befiehlt die Stellung unter dem Finger |
+| Das Zifferblatt | abgelehnt: kein Kommando, Horn und SOLL-PULSBREITE bleiben | befiehlt die Stellung unter dem Finger |
 | Drehknopf | abgelehnt; die Drehung wird nicht aufgehoben | bewegt das Horn vom befohlenen Wert aus |
-| ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS CENTRE plus TRIM |
+| ZENTRIEREN | abgelehnt; gedimmt gezeichnet | befiehlt PULS MITTE plus TRIMMUNG |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
-| OPTIONEN: TYP, FRAME RATE, PULS MIN, CENTRE und MAX, TRIM, WEG, REVERSE | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
+| OPTIONEN: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
 
 In SAFE wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
-ARM`. Horn und PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
-Neustart PULS CENTRE. Eine in SAFE geänderte Pulsbreiten-Einstellung ändert
-die Mikrosekunden, die PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
+ARM`. Horn und SOLL-PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
+Neustart PULS MITTE. Eine in SAFE geänderte Pulsbreiten-Einstellung ändert
+die Mikrosekunden, die SOLL-PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
 ihn nicht. Von einem DISARM an, das der Bildschirm anfordert, durch den Tap
 oder durch das Verlassen, oder einem STOP auf einem Prüfstand in ARMED, bis
 der Prüfstand SAFE meldet, gilt die Spalte SAFE ebenfalls, und ein
@@ -531,7 +544,7 @@ Tests enden dort, wo es angefordert wird.
 
 Schaltet der Prüfstand auf ARMED, wird der befohlene Wert zur Ruhelage, die die Pins
 treiben: die Mitte zwischen den Endpunkten des Kanals, 1500 us bei STANDARD
-PWM und 760 us bei NARROW 760, ohne TRIM. Ohne Rückmeldung wird das Horn
+PWM und 760 us bei NARROW 760, ohne TRIMMUNG. Ohne Rückmeldung wird das Horn
 sofort dort gezeichnet. Der erste Drag oder die erste Knopfdrehung nach einem
 ARM beginnt bei diesem Wert, gleich was der Bildschirm vorher zeigte; 1 %
 Knopfdrehung bei STANDARD PWM fordert 1510 us an. Ein Typ oder eine
@@ -547,7 +560,7 @@ Wert kehrt auf den vor der Drehung zurück.
 
 Für FREIGEBEN auf einem Prüfstand in ARMED gilt die Regel des ARM erneut.
 Die Pins gehen in die Ruhelage, und der befohlene Wert wird zu dieser
-Ruhelage: 1500 us bei STANDARD PWM, 760 us bei NARROW 760, ohne TRIM. Das
+Ruhelage: 1500 us bei STANDARD PWM, 760 us bei NARROW 760, ohne TRIMMUNG. Das
 Horn wird mit TEMPO dorthin laufend gezeichnet. Ein laufender Drag endet.
 Ein Druck auf das Zifferblatt steuert das Servo wieder an, und die erste
 Knopfdrehung zählt von der Ruhelage: 1 % Knopfdrehung bei STANDARD PWM
@@ -647,7 +660,7 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 - Ein Tippen auf einen Sollwert öffnet das Keypad über der linken Karte. Ein
   Wert außerhalb der Grenzen wird hineingeholt, wie auf SUPPLY.
 - Ist der Ausgang an, wartet ein getippter Sollwert auf die Rückfrage von
-  SUPPLY, AUSGANG IST EIN, mit ÜBERNEHMEN und ABBRECHEN, außer SUPPLYs OPTIONEN, RÜCKFRAGE
+  SUPPLY, AUSGANG IST EINGESCHALTET, mit ÜBERNEHMEN und ABBRECHEN, außer SUPPLYs OPTIONEN, RÜCKFRAGE
   IM BETRIEB, TASTENFELD ist aus. Die Rückfrage verschwindet unbeantwortet, wenn
   der Ausgang ausgeht oder STOP gedrückt wird. Ein ÜBERNEHMEN im selben Frame
   wie STOP übernimmt nichts, auch wenn das Netzteil den Ausgang erst eine
@@ -688,8 +701,8 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
 nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
-5 Zyklen je Sekunde) und VERWEILEN (die Haltezeit an jedem Ende) von der
-TEST-Seite, um PULS CENTRE herum. BEREICH ist ein Anteil des Wegs, den das
+5 Zyklen je Sekunde) und HALTEZEIT (die Haltezeit an jedem Ende) von der
+TEST-Seite, um PULS MITTE herum. BEREICH ist ein Anteil des Wegs, den das
 Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
@@ -735,11 +748,9 @@ dort. Eine während der Pause auf der TEST-Seite geänderte Kurve startet
 stattdessen als neuer Sweep. Ein Koprozessor älter als 4.6, oder einer, der
 das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
-Rechteck --, und das Alert-Band sagt es: `Koprozessor älter als 4.6 -- der
-Sweep beginnt von vorn` oder `Koprozessor lehnte das Fortsetzen ab -- der
-Sweep beginnt von vorn`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
+Rechteck --, und das Alert-Band sagt es: `Koprozessor-Firmware älter als 4.6. Sweep beginnt von vorn.` oder `Koprozessor hat das Fortsetzen abgelehnt. Sweep beginnt von vorn.`. Ebenso ein Tippen auf PAUSIERT, während der HOLD
 unbeantwortet ist, denn der Koprozessor kann dann halten oder noch laufen:
-`Pause unbeantwortet -- der Sweep beginnt von vorn`. Ein Tippen auf
+`Pause wurde nicht bestätigt. Sweep beginnt von vorn.`. Ein Tippen auf
 PAUSIERT vor einem HOLD, den das Panel dann loslässt (siehe unten),
 startet nichts: die Pause endet mit diesem HOLD.
 
@@ -759,7 +770,7 @@ wird gesendet, wenn der Link zurückkommt, und das nächste Tippen startet
 einen Sweep. Ein Finger auf der Skala, ZENTRIEREN, FREIGEBEN, STOP, ein
 DISARM und das Verlassen der Seite beenden einen Sweep, ob er läuft oder
 angehalten ist, und der Knopf heißt wieder SWEEP. Ein geänderter Typ, eine
-geänderte Frame Rate, Pulsbreite, Trim, WEG oder REVERSE beenden auch eine
+geänderte Frame Rate, Pulsbreite, Trim, WEG oder UMKEHREN beenden auch eine
 Pause; das Servo wird dann als Position am Winkel der Pause gehalten. Mit
 Rückmeldung ist das der Winkel, den das Servo zuletzt gemeldet hat und zu
 dem es sich nach dem Tippen noch bewegen kann; ohne Rückmeldung ist es die
@@ -802,7 +813,7 @@ Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.m
 beschreibt das Verfahren und die Dateien. TEST STARTEN braucht einen Prüfstand
 in ARMED und ein Netzteil, das antwortet; die Zeile darunter sagt ZUERST ARM,
 KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
-und WEG fallen auf PULS CENTRE), STUFE ÜBER DEN OBERGRENZEN (eine
+und WEG fallen auf PULS MITTE), STUFE ÜBER DEN OBERGRENZEN (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
 Warnung aufgeht) oder LETZTER BERICHT SCHREIBT NOCH und folgt dem Prüfstand und
 den Einstellungen, wenn sie sich ändern. Eine dritte Zeile, quer über die
@@ -815,14 +826,14 @@ bei oder über seinem Bereich liegt. TEST STARTEN bleibt offen: siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 Es ist ein Halten über zwei Sekunden,
 die Geste von AUSGANG EIN, weil ein Lauf das Netzteil einschaltet und das Servo
-bewegt. Ist HV SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
+bewegt. Ist HV-SERVO an und eine Stufe über 6,0 V gewählt, öffnet ein Tippen
 stattdessen NUR HV-SERVOS mit der höchsten Stufe, und der Lauf startet erst,
-nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV SERVO gilt für die Sitzung:
+nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV-SERVO gilt für die Sitzung:
 jeder Neustart schaltet es aus.
 
 Die Einstellungen schließen sich beim Start, und Stufe und Phase stehen oben
 auf der linken Karte, daneben, neben TEST BEENDEN, das Messgerät, das der
-Lauf liest: `PD mini`, `INA3221 CH1` oder `MODELL`. Es ist das Messgerät der
+Lauf liest: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Es ist das Messgerät der
 Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)). Der
 Lauf führt das Servo und die Sollwerte und den Schalter von SUPPLY, bis er
@@ -860,9 +871,9 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 **ENDLAGENLAUF STARTEN führt die Endlagensuche aus**, auf der Seite
 GRENZEN: das Servo wird in Schritten von 10 us nach außen gefahren, bis
 sein Strom ein angelaufenes Gestänge zeigt, und mit ENDLAGENLAUF auf
-SUCHE+PROG werden LEFT ANGLE und RIGHT ANGLE eines KST- oder
+SUCHEN + PROGRAMMIEREN werden LEFT ANGLE und RIGHT ANGLE eines KST- oder
 Chaservo-Servos gesenkt, bis kein Ende mehr anläuft. An einem SERVO-PWM-Pin
-läuft die Suche von PULS CENTRE bis PULS MIN und PULS MAX; am PROG-PORT
+läuft die Suche von PULS MITTE bis PULS MIN und PULS MAX; am PROG-PORT
 kommt zuerst eine Lesesitzung, und die Suche läuft von NEUTRAL des Servos
 bis zu seinem eigenen PULSE LOWER und PULSE UPPER.
 [Servoverfahren](Servo-de.md#eingebaute-mechanische-endlage) beschreibt
@@ -886,16 +897,15 @@ ausgeschaltetem Ausgang.
 
 ### Programmierer
 
-PROGRAMM., neben OPTIONEN, öffnet den Programmierer für KST- und
+PROGRAMMIEREN, neben OPTIONEN, öffnet den Programmierer für KST- und
 Chaservo-Servos über der linken Karte. Er nimmt den Programmierport des
 Koprozessors, im Auslieferzustand GP13 an Pad 17, aus PWM
 (Pulsweitenmodulation) und liest und schreibt die Einstellungen des Servos
 über dessen Signalleitung. Er verbindet nur, wenn PWM-ZIEL auf der Seite
-PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Programmieren braucht
-den Programmier-Port.` und VERBINDEN ist gesperrt. Solange er den Port hält,
+PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt das Overlay offen und OPTIONEN ist aus; ARM ist gesperrt gezeichnet
 und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
+SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
 Spannung und die Stromgrenze, die VERBINDEN stellt, `PORT  5.0 V  1000 mA`.
 Die Sollwerte und AUSGANG EIN der Zeile SOLL und des SUPPLY-Bildschirms sind
@@ -917,27 +927,27 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | Seite | Einstellung | Wirkung |
 | --- | --- | --- |
 | AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
-| AUSGANG | FRAME RATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE über die Tastatur |
-| AUSGANG | PULS MIN, CENTRE, MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist CENTRE, +90 Grad ist MAX, und FREIGEBEN ruht auf CENTRE. Ein Ende liegt nicht weiter von CENTRE entfernt als CENTRE von 400 us oder 2500 us |
-| AUSGANG | TRIM | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über die Tastatur |
+| AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist MITTE, +90 Grad ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400 us oder 2500 us |
+| AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
 | AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
-| AUSGANG | REVERSE | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
+| AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
 | TEST | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
-| TEST | LÄNGE NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
-| TEST | VERWEILEN, EINSCHWINGEN | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| TEST | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV SERVO an |
-| TEST | HV SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
+| TEST | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
+| TEST | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
+| TEST | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV-SERVO an |
+| TEST | HV-SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
 | TEST | TEST STARTEN | der automatische Test: 2 s Halten bei einem Prüfstand in ARMED; TEST BEENDEN, solange er läuft |
 | GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
 | GRENZEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
 | GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
-| GRENZEN | ENDLAGENLAUF | NUR SUCHE oder SUCHE+PROG, ein Tippen schaltet um; SUCHE+PROG wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund unter ENDLAGENLAUF STARTEN. Für die Sitzung |
+| GRENZEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund unter ENDLAGENLAUF STARTEN. Für die Sitzung |
 | GRENZEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit PWM-ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0 us. Vorgabe BEHALTEN; für die Sitzung |
 | GRENZEN | ENDLAGENLAUF STARTEN | die Endlagensuche: 2 s Halten bei einem Prüfstand in ARMED und dem INA3221 als Messgerät der Servoschiene; LAUF BEENDEN, solange sie läuft |
 | PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
-| PRÜFLING | ENC-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+| PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
 | PRÜFLING | PWM-ZIEL | was der Tester treibt: AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. PROG-PORT braucht der Programmierer. Gesperrt, solange der Prüfstand ARMED ist, während eines Sweeps oder Tests und solange der Programmierer den Port hält ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
 | PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS in ARMED wie in SAFE, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
@@ -952,7 +962,7 @@ gebunden sind: `GP4`, `GP2 GP4`; so viele Pins, wie in die 23
 Zeichen des Werts passen, dann `+N`: 6 Pins ab GP40 lauten
 `GP40 GP41 GP42 GP43 +2`. Der Wert steht rechtsbündig neben dem Namen. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
-(`PINS NICHT GELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
+(`PINS NICHT AUSGELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
 Warnfarbe; der Pin ist der GPIO, den der Koprozessor für den Programmierport
 meldet. Die Befehle des Testers erreichen dann die SERVO-PWM-Ausgänge nicht;
 bei einer Bank in ARMED halten diese ihren Ruhepuls, die Mitte zwischen
@@ -962,7 +972,7 @@ ebenfalls in der Warnfarbe: die Befehle gehen trotzdem an den Port. Mit
 PORT-PWM aus gibt der Port keinen Puls aus, und die Zeile hängt `PWM AUS`
 an: `PROG-PORT GP13 PWM AUS`, 22 Zeichen mit einem zweistelligen Pin. Zwei
 Zustände nennen kein Ziel, beide in der Warnfarbe, und in keinem sendet der
-Tester einen Befehl: `KEIN LINK`, solange kein Koprozessor antwortet, und
+Tester einen Befehl: `KEINE VERBINDUNG`, solange kein Koprozessor antwortet, und
 `UNBEKANNT`, solange die Programmierport-Seite des Koprozessors seit dem
 Linkaufbau nicht gelesen wurde, ein Schreiben auf sie nicht bestätigt wurde
 oder ein Lesen nicht beantwortet wurde. Solange der Servo-Programmer den Port
@@ -993,9 +1003,9 @@ Schmalband-Heckservos nennt, mit mindestens 0,5 ms zwischen den Impulsen. Eine
 Rate, die den Impulsen keine Pause lässt, wird abgelehnt, ebenso ein längerer
 PULS MAX bei einer Rate, in die er nicht passt. Die Pause gilt nach dem
 längsten Impuls, den der Koprozessor ausgeben kann, dem oberen Ende des
-Bereichs, den ein Befehl trägt: PULS MAX, oder darüber hinaus, wenn CENTRE
-nicht in der Mitte liegt, um so viel, wie CENTRE näher an MAX liegt als an MIN.
-Ein CENTRE, der dieses Ende über die Pause der Rate schieben würde, wird
+Bereichs, den ein Befehl trägt: PULS MAX, oder darüber hinaus, wenn PULS MITTE
+nicht in der Mitte liegt, um so viel, wie PULS MITTE näher an MAX liegt als an MIN.
+Eine PULS MITTE, die dieses Ende über die Pause der Rate schieben würde, wird
 ebenfalls abgelehnt.
 
 **Ein Heli-Typ oder jede Bildwiederholrate über 60 Hz kann ein Servo zerstören,
@@ -1031,8 +1041,8 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der Koprozessor hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel von der Einstellung PWM-ZIEL abweicht (zweite Zeile `Die Einstellung PWM-ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS: der Port gibt keinen Puls aus.`) und solange das Ziel unbekannt ist. Mit einem Koprozessor vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher Koprozessor fährt jede PWM-Surface mit der Rate, gleich was PWM-ZIEL nennt. Ohne Link lauten beide `Kein Link: die aktive Rate ist unbekannt.` in der Warnfarbe: ein Koprozessor, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
-| Die Rate geht mit der nächsten Position | noch nicht geschrieben |
+| Aktiv | die Rate läuft auf dem Ziel, das der Koprozessor hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel von der Einstellung PWM-ZIEL abweicht (zweite Zeile `Die Einstellung PWM-ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem Koprozessor vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher Koprozessor fährt jede PWM-Surface mit der Rate, gleich was PWM-ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein Koprozessor, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser Koprozessor nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
 
@@ -1040,14 +1050,14 @@ Ein Neustart des Koprozessors und jede auf OUTPUTS geschriebene Bindung setzen
 jeden Slot auf seine eigene Rate zurück, 50 Hz für ein Servo; die Seite sendet
 ihre Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
-Rate jedes Slots unbeantwortet bleibt (OUTPUTS meldet `KEIN LINK`) oder
+Rate jedes Slots unbeantwortet bleibt (OUTPUTS meldet `KEINE VERBINDUNG`) oder
 abgelehnt wird (`ABGELEHNT`), und der Prüfstand wird von keiner
 Seite aus ARMED, solange die Rate des PWM-ZIELS nicht bekannt ist: Der Arm
-wird mit `Frame Rate des Servos unbekannt -- erneut ARM` abgelehnt, und ein Arm, der
+wird mit `Pulsrate des Servos unbekannt. ARM erneut halten.` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
 
-Die AUSGANG-Einstellungen und HV SERVO gelten für die Sitzung; die übrigen
+Die AUSGANG-Einstellungen und HV-SERVO gelten für die Sitzung; die übrigen
 Einstellungen unter TEST, GRENZEN und PRÜFLING liegen im NVS (Non-Volatile Storage)
 und werden wie bei SUPPLY geschrieben.
 
@@ -1079,7 +1089,7 @@ in SETUP unter ANSCHLÜSSE eingeschaltet, nennt die Kopfzeile das Modul und die 
 es hängt: `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und
 PD mini RX. Ist einer der beiden Pins nicht gesetzt, steht `PD MINI OHNE PINS`
 in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stelle ein Modell eines
-Netzteils: die Kopfzeile sagt NETZTEIL SIMULIERT, und die Kachel im Menü trägt
+Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
 SIMULIERT.
 
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
@@ -1168,9 +1178,9 @@ fehlschlägt, während die anderen Lesungen antworten --, bleibt ONLINE: nach
 Leistung Striche, und keine Abschaltschwelle, kein Spitzenwert und keine
 Summe übernimmt einen Messwert; nach
 3000 ms (`SUPPLY_LINK_BLIND_MS`) wird ein Ausgang, der an ist, abgeschaltet,
-und das Band sagt `Netzteil liefert keine Messwerte -- Ausgang aus`. Ein Sollwert, der sich
+und das Band sagt `Keine Messwerte vom Netzteil. Ausgang aus.`. Ein Sollwert, der sich
 schneller ändert, als das Modul ihn übernimmt -- der Slider gezogen mit
-SLIDER, SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
+REGLER UND SCHRITTE aus, etwa ein neuer Sollwert alle 50 ms --, hält die
 Messwerte nicht auf: eine Lesung, die 400 ms über ihre Fälligkeit hinaus
 ist (`PDMINI_POLL_LATE_MS`), geht vor das nächste Schreiben eines Sollwerts,
 eine nach der anderen mit einer anderen Transaktion dazwischen; das Lesen
@@ -1202,7 +1212,7 @@ Aktuelle Einschränkung: antwortet das Modul 279 ms oder später und wird der
 Slider gezogen, wird die Anzeige erst 3,7 s bis 5,0 s nach dem letzten
 Lesen der Anzeige gelesen (5,0 s bei 390 ms), über `SUPPLY_LINK_BLIND_MS`
 hinaus; ein Ausgang, der an ist, wird abgeschaltet, und das Band sagt
-`Netzteil liefert keine Messwerte -- Ausgang aus`. Das Panel liest die Page
+`Keine Messwerte vom Netzteil. Ausgang aus.`. Das Panel liest die Page
 alle 100 ms, was die Lücke, die es sieht, um bis zu 100 ms verlängert: ab
 263 ms Verspätung ist die Lücke des Treibers über 2,9 s, die Abschaltung ist
 also ab 263 ms möglich. In Ruhe steht das Lesen der Anzeige bis zu 2,5 s bei
@@ -1223,7 +1233,7 @@ Modul, das sofort antwortet, und weiter auseinander bei einem, das spät
 antwortet (siehe oben). Liegt die Eingangsspannung bei 2 Lesungen hintereinander
 unter dem Sollwert plus 0,5 V, schaltet er den Ausgang sofort ab, und das
 Band nennt Eingangsspannung und Sollwert, zum Beispiel
-`Eingangsspannung des PD mini 6.18 V unter Sollwert 6.00 V + 0.5 V -- Ausgang aus`.
+`PD-mini-Eingang 6.18 V liegt unter den nötigen 6.00 V + 0.5 V. Ausgang aus.`.
 Vom Einbruch bis zur Abschaltung vergeht bei einem Modul, das sofort
 antwortet, etwa 1,0 s. Aktuelle Einschränkung: bei einem, das spät
 antwortet, sind es 1,7 s bei 100 ms Verspätung, 1,9 s bei 200 ms und bis zu
@@ -1238,7 +1248,7 @@ gewählt: ob ein eingeschaltetes Modul bei einbrechender Eingangsspannung in ERR
 ist nicht gemessen, also kann die Regel einen Lauf abbrechen, der
 durchgehalten hätte.
 
-AUSGANG EIN und AUS, SPITZEN ZURÜCKSETZEN und die Messwerte bleiben unter der Tastatur,
+AUSGANG EIN und AUS, SPITZENWERTE ZURÜCKSETZEN und die Messwerte bleiben unter der Tastatur,
 der Frage und OPTIONEN bedienbar. Ein Finger zur Zeit: solange einer ein
 Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
 etwas.
@@ -1253,7 +1263,7 @@ in dem der Prüfstand SAFE ist und kein Schalten auf ARMED wartet, der Ausgang
 des Netzteils aus ist und kein ON eingereiht ist und die Zeichnung der Platine
 weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung
 aus SETUP: ein Flash-Schreibvorgang hält beide Kerne an, AUSGANG AUS und die
-Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN WARTET, NICHT GESPEICHERT
+Abschaltungen eingeschlossen. Die unterste Zeile sagt GESPEICHERT, SPEICHERN AUSSTEHEND, NICHT GESPEICHERT
 (der Schreibvorgang wurde abgelehnt) oder SETUP NICHT GESPEICHERT: eine
 Änderung in SETUP, die ohne SPEICHERN verlassen wurde und die nichts schreibt, bis
 SPEICHERN dort oder eine Änderung hier danach fragt.
@@ -1269,7 +1279,7 @@ SPEICHERN dort oder eine Änderung hier danach fragt.
 | ÜBERSTROM | 0 bis 5 A | AUS | Ausgang aus, wenn der Strom ABSCHALTZEIT lang darüber lag |
 | ÜBERSPANNUNG | 0 bis 21 V | AUS | Ausgang aus, wenn die Spannung ABSCHALTZEIT lang darüber lag |
 | ABSCHALTZEIT | 0 bis 5000 ms | 100 ms | wie lange ein Messwert über einer Abschaltschwelle liegt, bevor sie auslöst |
-| SLIDER, SCHRITTE | EIN, AUS | EIN | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
+| REGLER UND SCHRITTE | EIN, AUS | EIN | fragen, bevor der Schieber einen eingeschalteten Ausgang ändert |
 | TASTENFELD | EIN, AUS | EIN | fragen, bevor die Tastatur einen eingeschalteten Ausgang ändert |
 
 Eine Grenze, die unter einen Sollwert gesenkt wird, holt den Sollwert sofort
@@ -1280,7 +1290,7 @@ AUS. Eine Abschaltschwelle von 0 ist aus. Die Zeit über einer
 Abschaltschwelle zählt ab dem ersten Messwert darüber. Ein Messwert unter
 seiner Abschaltschwelle beginnt die Zählung neu; ein Messwert, der nicht
 ankam, lässt sie stehen. Eine Abschaltung schaltet den Ausgang ab, MODUS zeigt
-ABSCH., bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welche
+ABGESCHALTET, bis der Ausgang wieder eingeschaltet wird, und das Band sagt, welche
 Schwelle ausgelöst hat. Das Netzteil hält seine Strombegrenzung in CC, daher löst ein
 ÜBERSTROM auf oder über STROMBEGRENZUNG nicht aus; unter der Begrenzung
 gesetzt, schaltet er eine Last ab, die zu lange zu viel zieht.
@@ -1300,7 +1310,7 @@ der Ausgang geht aus, und das Band sagt es.
 Ein Lauf ist ein Einschalten des Ausgangs. Der Plot leert sich, wenn der
 Ausgang angeht, und hält den Lauf, nachdem er ausgeht. mAh und Wh unter dem
 Schalter zählen den Lauf aus den angezeigten Messwerten, jeder Schritt auf 1 s
-begrenzt. SPITZEN ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
+begrenzt. SPITZENWERTE ZURÜCKSETZEN beginnt die niedrigsten und höchsten Werte neu ab dem
 aktuellen Messwert.
 
 Ein Lauf wird in eine eigene `BENCHnnn.CSV` geschrieben, eine Zeile alle
@@ -1337,7 +1347,7 @@ kann sich zwischen zwei Zustandslesungen selbst einschalten, über seinen
 Knopf oder seine Einstellung AUTO OUT, und neue Pins ließen ihm keinen Weg
 zum OFF. Zeigt die Lesung den Ausgang an oder schlägt sie fehl, wird die
 Änderung abgewiesen, und das Band sagt
-`Verdrahtung des PD mini abgelehnt -- sein Ausgang kann an sein`. Eine
+`PD-mini-Anschlüsse abgelehnt. Sein Ausgang kann noch eingeschaltet sein.`. Eine
 abgewiesene Änderung wird erst wieder geschrieben, wenn sich die Verdrahtung
 in SETUP ändert. PD mini Baud ist die eigene UART-Baudrate-
 Einstellung des Moduls: 9600, 19200 (ab Werk), 38400, 57600, 115200, 230400
@@ -1356,9 +1366,9 @@ in einer Spur; ein Dropout ist eine Kerbe durch alle sechzehn im selben
 Moment.
 
 Keine Firmware speist diesen Bildschirm bisher (siehe
-[Empfängerbusse](Receivers-de.md)); er zeigt SILENT.
+[Empfängerbusse](Receivers-de.md)); er zeigt KEIN SIGNAL.
 
-Der Zustandsblock zeigt einen von SILENT, FAILSAFE, FRAME LOST und LIVE, mit
+Der Zustandsblock zeigt einen von KEIN SIGNAL, FAILSAFE, FRAME LOST und LIVE, mit
 einer Zeile Erklärung:
 
 ![Ein Empfänger im Failsafe](img/de/analyser-failsafe.png)
@@ -1378,7 +1388,7 @@ sein Gasknüppel-Menü; sie hat eine eigene Seite,
 ![Geräteklasse](img/de/programmer.png)
 
 Die Klassen ESC und SERVO sind ein Modell im Panel. Kein Transport trägt
-ihre Protokolle: VERBINDEN, LESEN und SCHREIBEN ändern die eigene Kopie des
+ihre Protokolle: VERBINDEN, AUSLESEN und SCHREIBEN ändern die eigene Kopie des
 Panels von einem Gerät und senden nichts auf eine Leitung. Das nach
 VERBINDEN genannte Gerät stammt aus dem Modell, nicht aus einer Antwort der
 Hardware, und SCHREIBEN erreicht kein Gerät. Jede Seite der beiden Klassen
@@ -1473,8 +1483,7 @@ Wert; START zählt die gewählten Werte:
 
 ![Zwei Werte gewählt](img/de/programmer-stick-items.png)
 
-START öffnet eine Warnung über den ganzen Bildschirm, KEIN PROPELLER, MOTOR
-GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
+START öffnet eine Warnung über den ganzen Bildschirm, PROPELLER AB? MOTOR GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
 Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
 beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
 
@@ -1487,7 +1496,7 @@ schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem
 
 Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
 und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
-HAND und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
+MANUELL und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
 Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
 Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
 späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
@@ -1588,8 +1597,7 @@ Zeilenvorschub (LF, 0x0A). Text nach dem letzten Zeilenvorschub ist eine
 Zeile, die ein Stromausfall oder eine volle Karte abgeschnitten hat: Sie
 kann jedes Feld enthalten und eine gekürzte Zahl, `95` von `9554`, deshalb
 fehlt sie in den Zeilen, den Kennwerten und im Plot. ZEILEN steht dann in
-der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE ABGEBROCHEN,
-FEHLT`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
+der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
 verliert ihre letzte Zeile genauso. Leerzeichen nach dem letzten
 Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR). Vom
 Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis `BENCH999.CSV`
@@ -1610,7 +1618,7 @@ Karte das Datum 1980-01-01. Ein Lauf geht einer Datei vor, die der Prüfstand
 nicht geschrieben hat, also listet eine Karte mit 48 oder mehr Läufen keine
 andere Datei mehr. Alte Läufe löschen, um eine zurückzuholen.
 
-NEU LESEN, und jedes Lesen der Karte, wählt den neuesten Lauf aus und rollt
+AKTUALISIEREN, und jedes Lesen der Karte, wählt den neuesten Lauf aus und rollt
 ihn ins Bild, sodass ÖFFNEN den gerade aufgezeichneten Lauf öffnet. Eine Karte
 ohne nummerierten Lauf wählt nichts aus.
 
@@ -1682,14 +1690,14 @@ erscheint im Band:
 
 | Meldung | Was passiert ist |
 |---|---|
-| `keine Karte -- dieser Lauf wird nicht aufgezeichnet` | nichts ist gemountet, der Lauf wurde nie geöffnet |
-| `Karte nicht lesbar -- Lauf nicht aufgezeichnet` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
-| `Karte voll oder nicht beschreibbar -- Lauf nicht aufgezeichnet` | es ließ sich keine Laufnummer anlegen |
-| `die Karte kam nicht nach -- Lauf nicht aufgezeichnet` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
-| `die Karte fiel zurück -- das Log hat Lücken` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
-| `die Karte nimmt keine Zeilen mehr an -- Lauf ab hier nicht aufgezeichnet` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
-| `die Karte nimmt keine Zeilen mehr an -- das Log ist unvollständig` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
-| `die Karte versagte beim letzten Schreiben -- das Log ist unvollständig` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
+| `Keine Karte. Dieser Lauf wird nicht aufgezeichnet.` | nichts ist gemountet, der Lauf wurde nie geöffnet |
+| `Karte nicht lesbar. Lauf nicht aufgezeichnet.` | die Karte ließ sich nicht auflisten, es war keine Laufnummer wählbar |
+| `Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.` | es ließ sich keine Laufnummer anlegen |
+| `Karte zu langsam. Lauf nicht aufgezeichnet.` | jede Zeile wurde verworfen, es gibt für diesen Lauf gar keine Datei |
+| `Die Karte war zu langsam. In der Aufzeichnung fehlen Daten.` | einzelne Zeilen wurden verworfen; die Zeitspalte der Datei zeigt, wo |
+| `Daten können nicht mehr auf die Karte gespeichert werden. Aufzeichnung endet hier.` | ein Schreibvorgang ist mitten im Lauf fehlgeschlagen, jede weitere Zeile wird abgewiesen |
+| `Daten konnten nicht mehr auf die Karte geschrieben werden. Aufzeichnung unvollständig.` | derselbe Fehler, beim Schließen des Laufs noch einmal gemeldet |
+| `Letzter Schreibvorgang auf die Karte fehlgeschlagen. Aufzeichnung unvollständig.` | das Schließen ist fehlgeschlagen, die Zeilen seit dem letzten Festschreiben fehlen in der Datei |
 
 Bei den ersten vier gibt es keine Datei zu suchen. Bei den letzten vier gibt
 es eine, und sie hört zu früh auf.
@@ -1706,7 +1714,7 @@ Liste und läse sich wie ein fertiger.
 FILES & UPDATE betreibt das WLAN des Panels für zwei Aufgaben im Browser:
 jede Datei der Karte zum Herunterladen und ein Panel-Firmware-Image zum
 Hochladen. Der Bildschirm öffnet aus LOGS, mit WLAN in der unteren Reihe
-neben NEU LESEN. Der Funk läuft nur, solange dieser Bildschirm offen ist,
+neben AKTUALISIEREN. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
@@ -1721,22 +1729,21 @@ die Karte sagt, was fehlt:
 Er geht von selbst aus beim Schalten auf ARMED, bei STOP, beim Einschalten
 des Netzteilausgangs, beim Beginn eines Log-Laufs, nach 10 min ohne Anfrage
 und nach 16 falschen Zugangscodes. Die Karte sagt dann in einer Zeile,
-warum: `WLAN ging aus: ARMED.`, `WLAN ging aus: STOP.`,
-`WLAN ging aus: Netzteilausgang an.`, `WLAN ging aus: ein Log-Lauf begann.`,
-`WLAN ging aus: 10 min ohne Anfrage.`,
-`WLAN ging aus: 16 falsche Zugangscodes.` oder `WLAN startete nicht.` Ein
+warum: `WLAN ausgeschaltet: Prüfstand ARMED.`, `WLAN ausgeschaltet: STOP.`,
+`WLAN ausgeschaltet: Netzteilausgang ein.`, `WLAN ausgeschaltet: Aufzeichnungslauf gestartet.`,
+`WLAN nach 10 min ohne Anfrage ausgeschaltet.`,
+`WLAN nach 16 falschen Zugangscodes ausgeschaltet.` oder `WLAN konnte nicht starten.` Ein
 STOP oder ein Schalten auf ARMED verwirft auch ein hochgeladenes Image, das
 am Panel wartet. Solange der Funk läuft, laufen der Link zum Koprozessor und
 der Heartbeat wie auf jedem anderen Bildschirm.
 
 Ließ sich das WLAN beim Start nicht einrichten (kein Speicher für seine
 Sperre oder seine Puffer), sind alle Tasten grau, und die Karte sagt
-`WLAN nicht verfügbar: Einrichtung beim Start gescheitert; ein Neustart
-versucht es.` Der Rest des Panels läuft wie ohne WLAN.
+`WLAN wurde beim Start nicht eingerichtet und ist nicht verfügbar. Starte für einen neuen Versuch neu.` Der Rest des Panels läuft wie ohne WLAN.
 
-### ACCESS POINT
+### WLAN-HOTSPOT
 
-ACCESS POINT startet das eigene Netz des Panels. Der Bildschirm zeigt, was
+WLAN-HOTSPOT startet das eigene Netz des Panels. Der Bildschirm zeigt, was
 ein Telefon oder ein Rechner braucht:
 
 ![Der Access Point läuft](img/de/wifi-ap.png)
@@ -1748,10 +1755,10 @@ ein Telefon oder ein Rechner braucht:
 | Netzname | `rcbench-` und 4 Hex-Ziffern der MAC-Adresse (Media Access Control) des Panels, `rcbench-3F7A` |
 | Passwort | 8 Zeichen, bei jedem Start neu, aus `abcdefghjkmnpqrstuvwxyz23456789` (kein 0, 1, i, l oder o) |
 | Clients | 1 gleichzeitig |
-| Adresse | `http://192.168.4.1/` |
+| IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
 
-1. LOGS → WLAN → ACCESS POINT.
+1. LOGS → WLAN → WLAN-HOTSPOT.
 2. Am Telefon oder Rechner dem Netz beitreten, das der Bildschirm nennt, mit
    dem Passwort, das er zeigt.
 3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
@@ -1772,7 +1779,7 @@ Access Points steht einmal darin.
 ![Die gefundenen Netze](img/de/wifi-scan.png)
 
 Ein Tippen auf ein Netz öffnet die Tastatur für sein Passwort.
-VERSTECKTES NETZ öffnet sie für den Namen eines Netzes, das sich nicht
+VERSTECKTES NETZWERK öffnet sie für den Namen eines Netzes, das sich nicht
 ankündigt, und danach für das Passwort. NEU SUCHEN sucht erneut; ABBRECHEN
 geht zurück.
 
@@ -1790,12 +1797,12 @@ Passwort hat 8 bis 63 Zeichen, den Bereich von WPA2 und WPA3 Personal: Das
 64. Zeichen wird abgewiesen, und OK unter 8 Zeichen sagt es.
 
 ![Das Passwort, verborgen](img/de/wifi-key-pass.png)
-![ZEIGEN](img/de/wifi-key-shown.png)
+![ANZEIGEN](img/de/wifi-key-shown.png)
 ![Weniger als 8 Zeichen](img/de/wifi-key-short.png)
 
-Das Passwort steht als Punkte da bis ZEIGEN; VERBERGEN verbirgt es wieder.
+Das Passwort steht als Punkte da bis ANZEIGEN; VERBERGEN verbirgt es wieder.
 OK behält das Netz: Name und Passwort gehen in den NVS (Non-Volatile
-Storage), und der Bildschirm bietet dann HEIMNETZ VERBINDEN an.
+Storage), und der Bildschirm bietet dann MIT HEIMNETZ VERBINDEN an.
 
 ![Ein Heimnetz ist gespeichert](img/de/wifi-home.png)
 
@@ -1812,15 +1819,15 @@ Abstand von 5 s versucht (`WA_MDNS_RETRIES`, `WA_MDNS_RETRY_MS`); danach
 bleibt der Name bis zum nächsten Verbinden stumm, und die Adresse geht
 weiter.
 
-Ein Verbinden, das scheitert, sagt warum und bietet ACCESS POINT an, das
+Ein Verbinden, das scheitert, sagt warum und bietet WLAN-HOTSPOT an, das
 ohne Heimnetz geht:
 
 | Zeile auf der Karte | Bedingung |
 | --- | --- |
-| `Verbinden scheiterte: Passwort abgelehnt.` | 3 Abbrüche der Authentifizierung in Folge innerhalb 20 s (`WA_AUTH_TRIES`): Schlüssel abgelehnt, MIC-Fehler (Message Integrity Code) oder Schlüssel-Handshake ohne Antwort in der Zeit; oder keine Verbindung innerhalb 20 s (`WA_JOIN_MS`) mit einem Abbruch der Authentifizierung als letztem Abbruch |
-| `Verbinden scheiterte: Netz nicht gefunden.` | keine Verbindung innerhalb 20 s (`WA_JOIN_MS`), und der letzte Abbruch von anderer Art oder keiner |
-| `Verbinden scheiterte: keine Adresse in 15 s.` | verbunden, aber keine Adresse per DHCP (Dynamic Host Configuration Protocol) innerhalb 15 s (`WA_ADDRESS_MS`) |
-| `Das Heimnetz ist weggefallen.` | verbunden, dann hat das Netz das Panel getrennt |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.` | 3 Abbrüche der Authentifizierung in Folge innerhalb 20 s (`WA_AUTH_TRIES`): Schlüssel abgelehnt, MIC-Fehler (Message Integrity Code) oder Schlüssel-Handshake ohne Antwort in der Zeit; oder keine Verbindung innerhalb 20 s (`WA_JOIN_MS`) mit einem Abbruch der Authentifizierung als letztem Abbruch |
+| `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.` | keine Verbindung innerhalb 20 s (`WA_JOIN_MS`), und der letzte Abbruch von anderer Art oder keiner |
+| `Keine Verbindung. Nach 15 s noch keine IP-Adresse.` | verbunden, aber keine Adresse per DHCP (Dynamic Host Configuration Protocol) innerhalb 15 s (`WA_ADDRESS_MS`) |
+| `Verbindung zum Heimnetz verloren.` | verbunden, dann hat das Netz das Panel getrennt |
 
 Ein Abbruch während des Verbindens verbindet neu. Ein einzelner Abbruch der
 Authentifizierung beendet das Verbinden nicht: ESP-IDF meldet ein falsches
@@ -1830,15 +1837,14 @@ wenn Panel oder Router beschäftigt sind. Jeder andere Abbruch setzt die
 Zählung auf 0 zurück. Jeder Abbruch steht als eine Zeile mit seiner
 Grundnummer im seriellen Log (`wifi_err_reason_t` von ESP-IDF).
 
-HEIMNETZ VERGESSEN löscht Name und Passwort aus dem NVS und schaltet den
+HEIMNETZ LÖSCHEN löscht Name und Passwort aus dem NVS und schaltet den
 Zugangscode wieder ein.
 
 Eine Änderung des Gespeicherten (ein Netz, VERGESSEN, der Schalter des
 Zugangscodes) gilt sofort und erreicht den NVS im nächsten Frame, der den
 Flash schreiben darf. Ein Schreiben, das fehlschlägt, wird noch 3-mal im
 Abstand von 10 s versucht (`WA_PENDING_RETRIES`, `WA_PENDING_RETRY_MS`),
-und die Karte sagt `Nicht gespeichert: Flash-Schreibfehler. Die nächste
-Änderung versucht es neu.`, bis eines gelingt. Die Änderung gilt in jedem
+und die Karte sagt `Nicht gespeichert. Schreiben in den Flash fehlgeschlagen. Bei der nächsten Änderung wird es erneut versucht.`, bis eines gelingt. Die Änderung gilt in jedem
 Fall bis zum Neustart des Panels; nur ein gelungenes Schreiben überdauert
 ihn.
 
@@ -1869,10 +1875,10 @@ nichts. Der Browser behält ihn für die Sitzung. 16 falsche Codes schalten
 den Funk aus.
 
 ZUGANGSCODE schaltet ihn, für beide Wege. Er ist voreingestellt ein, nach
-HEIMNETZ VERGESSEN und auf einem Panel ohne gespeicherte Werte. Der Schalter
+HEIMNETZ LÖSCHEN und auf einem Panel ohne gespeicherte Werte. Der Schalter
 liegt im NVS. Aus listet die Seite, sendet Dateien und nimmt einen Upload
 ohne Code an, und der Bildschirm sagt
-`Zugangscode aus: die Seite ist für jedes Gerät im Netz offen.` Ein Upload
+`Zugangscode aus. Jedes Gerät im Netzwerk kann die Seite öffnen.` Ein Upload
 installiert trotzdem erst nach 2 s Halten am Panel.
 
 ### Die Seite
@@ -1934,11 +1940,10 @@ angeboten. Der Build, der schon läuft, wird nicht angeboten:
 ![Dieselbe Version, ein anderer Build](img/de/wifi-rebuild.png)
 ![Der Build, der läuft](img/de/wifi-installed.png)
 
-INSTALL ist 2 s Halten (`2 s HALTEN: INSTALL`). Der Browser kann es nicht
+INSTALL ist 2 s Halten (`2 s HALTEN: INSTALLIEREN`). Der Browser kann es nicht
 starten. Es braucht SAFE, den Netzteilausgang aus, keinen offenen Log-Lauf,
 keine Platinenzeichnung, die geladen oder gespeichert wird, und kein
-laufendes Update des Koprozessors (`Installation wartet: das Update des
-Koprozessors läuft.`). ABBRECHEN verwirft das Image.
+laufendes Update des Koprozessors (`Installation wartet auf das Ende des Koprozessor-Updates.`). ABBRECHEN verwirft das Image.
 
 ![Schreiben](img/de/panel-update.png)
 
@@ -1956,7 +1961,7 @@ startet neu.
 ![Geschrieben und geprüft](img/de/panel-update-done.png)
 
 Der Splash zeigt die neue Version, und das Band sagt
-`Panel-Firmware 0.19.0 installiert`. Ein Schreiben, das fehlschlägt, ändert
+`Panel-Firmware 0.19.0 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
 zu LOGS, nach einem Download von GitHub dorthin, wo der Download begann.
 
@@ -1966,12 +1971,12 @@ Der erste Start eines neuen Builds ist ein Versuch. Der Build bleibt, sobald
 Display und Touch laufen. Ein Start, der nicht so weit kommt, durch einen
 Fehler, einen Neustart oder einen fehlenden Touch-Controller, geht zurück
 zum Build davor, der dann
-`Panel-Firmware 0.19.0 startete nicht -- 0.18.0 läuft wieder` im Band
+`Panel-Firmware 0.19.0 ist nicht gestartet. Version 0.18.0 läuft wieder.` im Band
 zeigt. Ein gescheiterter Start bleibt nie: Schlägt das Markieren als
 ungültig fehl, startet das Panel mit unbestätigtem Versuch neu, und der
 Bootloader geht trotzdem zurück. Schlägt das Behalten eines guten Starts
 fehl (otadata nicht geschrieben), sagt das Band
-`Panel-Firmware 0.19.0 nicht übernommen -- der nächste Start geht zurück`;
+`Panel-Firmware 0.19.0 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`;
 der Build läuft bis dahin.
 
 Aktuelle Einschränkungen:
@@ -2217,20 +2222,20 @@ gleichzeitige beide gesagt werden. In dieser Reihenfolge:
 
 | Meldung | Wann |
 | --- | --- |
-| `Koprozessor ohne SENSE-Page -- Strommonitore nicht gelesen` | ein Monitor ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
-| `Sensor-SDA oder -SCL nicht gesetzt -- siehe SETUP ANSCHLÜSSE` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `INA228 und INA3221 beide auf 0x40 -- siehe SETUP ANSCHLÜSSE` | beide auf einer Adresse eingeschaltet; auf der Page ist keiner eingeschaltet |
-| `Sensor-Pins GP16/GP17 abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30 s lang gezeigt oder bis zum Antippen, einmal je Änderung |
-| `INA228 Shunt oder Höchststrom abgelehnt -- siehe SETUP ANSCHLÜSSE` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
-| `INA3221-Einstellung abgelehnt -- siehe SETUP ANSCHLÜSSE` | der INA3221 bleibt aus |
-| `Sensorbus hängt: SDA auf low -- wird freigetaktet` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
-| `INA228 antwortet nicht auf 0x45` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `-- 0x44 antwortet` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
-| `0x40 antwortet mit 1408h, kein INA3221 -- nicht benutzt` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
-| `INA228-Strom am Ende des Messbereichs -- Strom ist eine Grenze` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
-| `INA3221 CH1 übersteuert bei 1.64 A -- Strom ist eine Grenze` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
-| `Speicher des Koprozessors aus -- Einstellungen gelten bis zum Neustart` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
-| `Koprozessor älter als 4.11 -- Servostrom vom PD mini gelesen` | der INA3221 ist mit CH1 eingeschaltet, und der Koprozessor spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
-| `INA3221 hat sich zurückgesetzt -- Versorgung prüfen` | der Koprozessor fand den INA3221 mit seiner Einschalt-Konfiguration und hat ihn 1000 ms später neu eingestellt; einmal je Reset gesagt. Die Fenster dieser 1000 ms halten keine Messungen |
+| `Koprozessor hat keine SENSE-Page. Stromsensoren werden nicht ausgelesen.` | ein Monitor ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.7; gesagt beim Link-Aufbau und wenn ein Monitor eingeschaltet wird, während er antwortet |
+| `SDA oder SCL der Sensoren nicht festgelegt. SETUP > ANSCHLÜSSE prüfen.` | ein Monitor ist mit einem Pin auf −1 eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `INA228 und INA3221 nutzen beide 0x40. SETUP > ANSCHLÜSSE prüfen.` | beide auf einer Adresse eingeschaltet; auf der Page ist keiner eingeschaltet |
+| `Sensor-Pins GP16/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der Koprozessor hat die Pins abgelehnt: an einen Ausgang gebunden, vom PD mini oder vom Phasenabgriff belegt oder reserviert; beide Monitore bleiben aus. 30 s lang gezeigt oder bis zum Antippen, einmal je Änderung |
+| `INA228-Shunt oder Höchststrom abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | die Spannung über dem Shunt beim Höchststrom übersteigt 163,84 mV, oder der Messbereich, den er ergibt, übersteigt 2000 A; der INA228 bleibt aus |
+| `INA3221-Einstellungen abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der INA3221 bleibt aus |
+| `Sensorbus blockiert: SDA auf Low. Freitakten wird versucht.` | der Koprozessor fand SDA auf low gehalten und taktet ihn frei |
+| `INA228 antwortet nicht unter 0x45.` | eingeschaltet, und 2,5 s nach Annahme seiner Einstellung keine Antwort, oder keine Antwort mehr, nachdem er geantwortet hat. `Ein Gerät antwortet unter 0x44.` wird angefügt, wenn der Adress-Scan des Koprozessors dort etwas gefunden hat, wo das Bauteil sein könnte |
+| `0x40 meldet 1408h, kein INA3221. Gerät wird nicht verwendet.` | an der Adresse des Bauteils antwortet etwas mit einer anderen Identität |
+| `INA228-Strom am Messbereichsende. Anzeige zeigt nur den Grenzwert.` | der INA228 hat im letzten 50-ms-Fenster oder seit dem Schalten auf ARMED das Ende seines Bereichs gelesen |
+| `INA3221 CH1 bei 1.64 A übersteuert. Anzeige zeigt nur den Grenzwert.` | ein Kanal, den der INA3221 liest, hat das obere Ende seines Bereichs erreicht; der Strom ist sein Vollausschlag |
+| `Koprozessor-Speicher nicht verfügbar. Einstellungen gehen beim Neustart verloren.` | STATUS-Fehlerbit 6: der Koprozessor speichert in diesem Boot nichts, die Einstellung, die Bindungen und die Verdrahtung des Netzteils sind bei seinem Neustart verloren; einmal je Link-Aufbau gesagt |
+| `Koprozessor-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.` | der INA3221 ist mit CH1 eingeschaltet, und der Koprozessor spricht Protokoll 4.7 bis 4.10: er hat keinen Fenster-Ring, und der PD mini ist das Messgerät der Servo-Schiene. Gesagt beim Link-Aufbau und wenn der INA3221 eingeschaltet wird, während er antwortet |
+| `INA3221 hat sich zurückgesetzt. Versorgung prüfen.` | der Koprozessor fand den INA3221 mit seiner Einschalt-Konfiguration und hat ihn 1000 ms später neu eingestellt; einmal je Reset gesagt. Die Fenster dieser 1000 ms halten keine Messungen |
 
 Eine abgelehnte Einstellung wird erst wieder geschrieben, wenn sie sich unter
 SETUP ändert. Pins, die das Paar eines I2C-Blocks sind und abgelehnt wurden,
@@ -2245,7 +2250,7 @@ nicht auf SAFE: auf den Messwerten der Monitore löst nichts aus.
 
 Eine Zeile, deren Wert nicht der ist, den die Page des Koprozessors hält,
 ist markiert: ihr Rand und ihr Wert sind in der Warnfarbe gezeichnet, und
-ihre Hilfezeile lautet `Vom Koprozessor nicht übernommen`. Das Panel
+ihre Hilfezeile lautet `Vom Koprozessor nicht übernommen.`. Das Panel
 vergleicht die Einstellung, die es verlangt, mit der, die die Page zuletzt
 bestätigt oder zurückgelesen hat (`sense_link_unheld()`,
 `tone_link_unheld()`). Die Marke gilt für die Zeilen der Strommonitore, für
@@ -2275,7 +2280,7 @@ Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | AS5600 | EIN, AUS | AUS | der Ausgangsencoder; er nimmt SDA und SCL des Sensorbusses oben, beide Pins müssen gesetzt sein |
-| AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. ENC-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
+| AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. SENSOR-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
 
 Das Panel schreibt das Freigabe-Bit mit dem Rest des Bus-Frames, 500 ms nach
 der letzten Änderung und nur bei einem Prüfstand in SAFE, an einen Koprozessor,
@@ -2285,11 +2290,11 @@ sagt, jeweils einmal und eins nach dem anderen wie bei den Monitoren:
 
 | Meldung | Wann |
 | --- | --- |
-| `Koprozessor älter als 4.9 -- AS5600 nicht gelesen` | der Encoder ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
-| `AS5600 antwortet nicht an 0x36` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
-| `AS5600 sieht keinen Magneten -- Magnet auf der Hornwelle prüfen` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, ENC-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
-| `AS5600: Magnet zu schwach -- näher heranbringen` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
-| `AS5600: Magnet zu stark -- weiter weg` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
+| `Koprozessor-Firmware älter als 4.9. AS5600 nicht ausgelesen.` | der Encoder ist eingeschaltet, und der Koprozessor spricht ein Protokoll älter als 4.9; gesagt beim Link-Aufbau und wenn der Encoder eingeschaltet wird, während er antwortet |
+| `AS5600 antwortet nicht unter 0x36.` | eingeschaltet, und 2,5 s nach seiner Einstellung ohne Antwort, oder nicht mehr antwortend, nachdem er es tat; auch wenn etwas an 0x36 einen STATUS gibt, den kein AS5600 gibt, ML und MH zugleich |
+| `AS5600 erkennt keinen Magneten. Magnet an der Servoabtriebswelle prüfen.` | er antwortet, ein Winkel wurde gelesen, und STATUS MD (Magnet erkannt) ist nicht gesetzt. Der Zählerstand ist kein Winkel: GEMESSEN zeigt `---`, SENSOR-MITTE setzt nichts, und ein Lauf protokolliert und beurteilt keinen Winkel |
+| `AS5600: Magnetfeld zu schwach. Magnet näher heranbringen.` | STATUS MD und ML sind gesetzt. Der Winkel wird verwendet; das Datenblatt des Sensors spezifiziert sein Rauschen nur für 30 bis 90 mT |
+| `AS5600: Magnetfeld zu stark. Abstand zum Magneten vergrößern.` | STATUS MD und MH sind gesetzt. Der Winkel wird verwendet, wie bei ML |
 
 Eine Magnetmeldung wird einmal gesagt, bis das Feld wieder stimmt, und noch
 einmal, wenn ein als schwach oder stark gelesener Magnet verschwindet oder ein
@@ -2353,11 +2358,11 @@ wie bei den Strommonitoren:
 
 | Meldung | Wann |
 | --- | --- |
-| `Koprozessor ohne TONE-Page -- Phasenabgriff nicht gelesen` | der Abgriff ist eingeschaltet und der Koprozessor spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
-| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut geschrieben. Von einem Koprozessor mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5 s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
-| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt -- siehe SETUP ANSCHLÜSSE` | der Koprozessor lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
-| `Phasenabgriff: Pin GP22 nicht frei -- Abgriff läuft nicht` | der Koprozessor meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der Koprozessor führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des Koprozessors lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt -- siehe SETUP ANSCHLÜSSE` nur für eine andere Einstellung als die, die der Koprozessor behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
-| `Phasenabgriff: Aufnahme übergelaufen -- Pieptöne abgeschnitten` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des Koprozessors ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
+| `Koprozessor hat keine TONE-Page. Phasenabgriff nicht ausgelesen.` | der Abgriff ist eingeschaltet und der Koprozessor spricht ein Protokoll älter als 4.8; gesagt beim Link-Aufbau und wenn der Abgriff eingeschaltet wird, während er antwortet |
+| `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der Koprozessor lehnte den ersten Frame ab: der Pin ist nicht erlaubt, der Tonbereich nicht einer, den er nimmt (der höchste Ton nicht über dem tiefsten, oder die Pause kürzer als die Periode des tiefsten Tons), oder er führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet). Ein Pin, den ein Ausgang, der Sensorbus, der PD mini oder ein Programmierport hält, wird als belegt abgelehnt (BUSY, Protokoll 4.17): alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Jede andere Ablehnung wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut geschrieben. Von einem Koprozessor mit 4.16 oder älter, der für beides BAD_VALUE sagt, wird der Frame alle 5 s erneut angeboten, wenn sein Tonbereich und seine Pause gültig sind ([Link](Link-de.md#ein-belegter-pin-am-phasenabgriff)) |
+| `Phasenabgriff: Sprung, Pause oder Perioden abgelehnt. SETUP > ANSCHLÜSSE prüfen.` | der Koprozessor lehnte den zweiten Frame ab; nicht erneut geschrieben, bis sich ein Wert ändert |
+| `Pin GP22 für den Phasenabgriff ist belegt. Erfassung läuft nicht.` | der Koprozessor meldet den Pin als abgelehnt, aus einem von zwei Gründen. Eine im Flash gehaltene Einstellung traf bei seinem Start auf eine Bindung: der erste Frame wird alle 5 s ohne weitere Meldung erneut angeboten, damit ein freigegebener Pin den Abgriff startet. Der Koprozessor führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet, Protokoll 4.17): kein Pin ist gebunden, und einen freizugeben ändert nichts. Das nächste Angebot des ersten Frames wird ohne weitere Meldung mit BAD_VALUE abgelehnt, und der Frame wird erst nach der nächsten Änderung unter SETUP ANSCHLÜSSE oder dem Link-Aufbau erneut angeboten; nur ein Neustart des Koprozessors lässt den Abgriff laufen. Das Band sagt `Phasenabgriff an GP22, 400 bis 6500 Hz abgelehnt. SETUP > ANSCHLÜSSE prüfen.` nur für eine andere Einstellung als die, die der Koprozessor behalten hat, geschrieben beim Link-Aufbau vor dem ersten Lesen des Status oder weniger als 5 s, nachdem der Pin zuerst als nicht frei gemeldet oder zuletzt angeboten wurde; eine spätere Änderung geht als stilles Angebot hinaus |
+| `Phasenabgriff: Erfassung übergelaufen. Pieptöne unvollständig.` | der Aufnahmering oder die FIFO (First in, first out: Warteschlange) des Koprozessors ist seit dem Einschalten des Abgriffs übergelaufen; der laufende Piepton wurde abgeschnitten |
 
 ### Werte behalten
 
@@ -2455,12 +2460,12 @@ Das Medium kann einen Teil des abgelehnten Schreibens halten, und ein
 Neustart würde ihn laden.
 
 Bei ARMED ist VERWERFEN inaktiv gezeichnet, und die Zeile
-`VERWERFEN wartet auf SAFE.` sagt warum. Mehrere Werte auf einmal
+`VERWERFEN wartet, bis der Prüfstand SAFE ist.` sagt warum. Mehrere Werte auf einmal
 zurückzustellen, Pins darunter, ist auf einem laufenden Prüfstand eine
 Änderung, die der Bediener in diesem Moment nicht vorgenommen hat. BLEIBEN
 und SPEICHERN wirken bei ARMED; ein Speichern wartet als `BEI STILLSTAND` auf
 SAFE. Nach einem abgelehnten Speichern steht die Zeile
-`Letztes Speichern fehlgeschlagen. SPEICHERN versucht es erneut.` in der
+`Speichern fehlgeschlagen. Tippe erneut auf SPEICHERN.` in der
 Danger-Farbe.
 
 Die Warnung hält nur das Home-Tag:
@@ -2509,11 +2514,11 @@ tut — der Draht hat eben noch Frames getragen.
 
 | Überschrift | Bedeutung |
 | --- | --- |
-| `Panel ist vom Bus getrennt` | zu viele Frames blieben unquittiert; es hat aufgehört zu senden |
-| `Panel verbindet sich neu` | es zählt die Ruhezeit ab, die ein Rejoin braucht, rund 3 s |
-| `Controller des Panels steht` | untätig und nicht neu gestartet — ein Fehler in der Firmware |
-| `Link antwortet nicht mehr` | der Controller ist am Bus und niemand antwortet |
-| `Controller nicht lesbar` | der Treiber läuft nicht; es kann nichts gesendet werden |
+| `Panel vom Bus getrennt.` | zu viele Frames blieben unquittiert; es hat aufgehört zu senden |
+| `Panel verbindet sich neu.` | es zählt die Ruhezeit ab, die ein Rejoin braucht, rund 3 s |
+| `CAN-Controller des Panels ist gestoppt.` | untätig und nicht neu gestartet — ein Fehler in der Firmware |
+| `Verbindung antwortet nicht mehr.` | der Controller ist am Bus und niemand antwortet |
+| `Controller-Zustand nicht auslesbar.` | der Treiber läuft nicht; es kann nichts gesendet werden |
 
 Vier Sekunden, nicht eine: der Link fällt gelegentlich für einen Poll aus, und
 ein Bildschirm, der bei jedem Zucken übernimmt, ist einer, den man wegklickt.
@@ -2553,7 +2558,7 @@ Ein Panel, das mit dem Image des Koprozessors gebaut ist, bringt es mit und
 bietet es an, wenn der Koprozessor einen anderen Build laufen hat. Die
 Prüfung läuft bei jedem Link-up und vergleicht SHA-256-Digests (Secure Hash
 Algorithm), nicht Versionsnummern. Ein anderer Build meldet den Alarm
-`Koprozessor hat einen anderen Build -- das Menü bietet sein Update an`, und
+`Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.`, und
 die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
 Ausgang der Versorgung aus, der Funk des Panels ganz aus und
 keine Installation eines Panel-Images im Gang. Ein START, während eines
@@ -2568,8 +2573,7 @@ und das Panel fragt für diese Koprozessor-Version nicht noch einmal, bis es
 neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab. START
 braucht das 2-s-Halten, die ARM-Geste mit demselben Überblenden.
 
-Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Das Image
-dieses Panels ist älter.` in der Warnfarbe, und START braucht dasselbe
+Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, und START braucht dasselbe
 Halten.
 
 ![Ein älteres Image](img/de/coproc-update-older.png)
@@ -2584,26 +2588,26 @@ hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
 | Schritt | Gezeigt, während |
 | --- | --- |
-| `Image wird vorbereitet` | das Panel das Image hasht, 8 KiB je Schritt |
-| `Image wird gesendet` | die Blöcke hinausgehen, je 64 Byte; der Balken und `Block 1497 von 2994, 50 %` zählen sie |
-| `Koprozessor prüft das Image` | der Koprozessor den geschriebenen Slot hasht |
-| `Koprozessor startet das neue Image` | er in den neuen Slot neu startet, auf Probe |
-| `Neues Image wird behalten` | das Panel die Identität des neuen Images liest und BUY schreibt |
+| `Firmware wird vorbereitet.` | das Panel das Image hasht, 8 KiB je Schritt |
+| `Firmware wird gesendet.` | die Blöcke hinausgehen, je 64 Byte; der Balken und `Block 1497 von 2994, 50 %` zählen sie |
+| `Koprozessor prüft die Firmware.` | der Koprozessor den geschriebenen Slot hasht |
+| `Koprozessor startet die neue Firmware.` | er in den neuen Slot neu startet, auf Probe |
+| `Neue Firmware wird dauerhaft übernommen.` | das Panel die Identität des neuen Images liest und BUY schreibt |
 
 Der Bildschirm kehrt zum Menü zurück, wenn das Update endet. Das Alarmband
 sagt dann, wie es endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
-| `Koprozessor auf 0.18.0 aktualisiert` | das neue Image läuft und bleibt |
-| `Koprozessor-Update abgebrochen: keine Antwort -- das alte Image läuft` | 4 s lang hat nichts geantwortet |
-| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6 -- das alte Image läuft` | der Koprozessor hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
-| `Koprozessor-Update abgebrochen: Image-Prüfung fehlgeschlagen -- das alte Image läuft` | der SHA-256 des Slots ist nicht der des Images |
-| `Koprozessor-Update abgebrochen: Flash blieb belegt -- das alte Image läuft` | die Sperre des Speichers blieb 10 s zu |
-| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet -- das alte Image läuft` | drei Anläufe ab Block 0 |
-| `Koprozessor-Update abgebrochen: neues Image startete nicht -- das alte Image läuft` | keine Identität vom neuen Image innerhalb 12 s; das Boot-ROM kehrt zum alten zurück |
-| `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` | ein Koprozessor ohne die Update-Pages oder ohne die Partitionstabelle ([Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors)) |
-| `Neues Image des Koprozessors behalten` | ein beim Link-up gefundenes Image auf Probe wurde behalten |
+| `Koprozessor auf 0.18.0 aktualisiert.` | das neue Image läuft und bleibt |
+| `Koprozessor-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | 4 s lang hat nichts geantwortet |
+| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6. Vorherige Firmware läuft.` | der Koprozessor hat einen Schritt abgelehnt; die Fehlernummern stehen in [Link](Link-de.md#die-pages) |
+| `Koprozessor-Update abgebrochen: Firmware-Prüfung fehlgeschlagen. Vorherige Firmware läuft.` | der SHA-256 des Slots ist nicht der des Images |
+| `Koprozessor-Update abgebrochen: Flash-Speicher blieb belegt. Vorherige Firmware läuft.` | die Sperre des Speichers blieb 10 s zu |
+| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet. Vorherige Firmware läuft.` | drei Anläufe ab Block 0 |
+| `Koprozessor-Update abgebrochen: neue Firmware ist nicht gestartet. Vorherige Firmware läuft.` | keine Identität vom neuen Image innerhalb 12 s; das Boot-ROM kehrt zum alten zurück |
+| `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` | ein Koprozessor ohne die Update-Pages oder ohne die Partitionstabelle ([Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors)) |
+| `Neue Koprozessor-Firmware dauerhaft übernommen.` | ein beim Link-up gefundenes Image auf Probe wurde behalten |
 
 Ausschalten während des Updates: der Koprozessor startet sein altes Image,
 und das nächste Link-up bietet das Update wieder an. Das Update schreibt den
@@ -2628,17 +2632,17 @@ pro Start des Panels.
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
-| `2 s HALTEN: DOWNLOAD & INSTALL` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
 
 - ein auf FILES & UPDATE gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
   Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
-  `Speichern unter LOGS > WLAN.`, und NACH UPDATES SUCHEN ist grau;
+  `Speichere ein Netzwerk unter LOGS > WLAN.`, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
   Sonst ist die Taste grau, und die Karte sagt
-  `WLAN braucht SAFE, Netzteil aus` und `und keinen offenen Log-Lauf.`;
+  `Für WLAN muss SAFE aktiv und das Netzteil aus sein.` und `Es darf kein Aufzeichnungslauf offen sein.`;
 - kein laufendes Update des Koprozessors und keine Panel-Installation im
   Gang.
 
@@ -2657,7 +2661,7 @@ geht der Funk aus. Verbinden, Adresse und Anfrage dauern zusammen höchstens
 
 ![Eine laufende Suche](img/de/updates-checking.png)
 
-Die Karte zeigt den Schritt (`Verbinde mit Workshop 2.4`, `Frage GitHub`)
+Die Karte zeigt den Schritt (`Verbindung mit Workshop 2.4 wird aufgebaut`, `GitHub wird geprüft.`)
 und die verbleibenden Sekunden (`noch 26 s`). Das Ergebnis bleibt auf der
 Karte bis zur nächsten Suche:
 
@@ -2667,17 +2671,17 @@ Karte bis zur nächsten Suche:
 | Karte | Bedeutung |
 | --- | --- |
 | `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
-| `Aktuell: dieses Panel hat 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
-| `Verbinden scheiterte: Passwort abgelehnt.`, `Verbinden scheiterte: Netz nicht gefunden.`, `Verbinden scheiterte: keine Adresse in 15 s.`, `Das Heimnetz ist weggefallen.` | Das Verbinden scheiterte, wie auf FILES & UPDATE. |
-| `Keine Antwort in 30 s.` | Die 30 s sind abgelaufen. |
+| `Aktuell. Panel-Version: 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf FILES & UPDATE. |
+| `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
-| `GitHub lehnte ab: HTTP 404.` | Eine andere Antwort als ein Redirect. |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabelle unten). |
-| `WLAN ging aus: ARMED.`, `...: Netzteilausgang an.`, `...: ein Log-Lauf begann.`, `...: STOP.` | Die Suche endete deshalb. |
-| `Abgebrochen: FILES & UPDATE nahm das WLAN.` | FILES & UPDATE wurde geöffnet. |
-| `Abgebrochen: Update des Koprozessors begann.` | Das Update des Koprozessors begann. |
-| `Abgebrochen: ABBRECHEN.` | ABBRECHEN. |
-| `WLAN startete nicht.` | Der Funk kam nicht hoch. |
+| `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
+| `Abgebrochen: FILES & UPDATE nutzt das WLAN.` | FILES & UPDATE wurde geöffnet. |
+| `Abgebrochen: Koprozessor-Update gestartet.` | Das Update des Koprozessors begann. |
+| `Abgebrochen.` | ABBRECHEN. |
+| `WLAN konnte nicht starten.` | Der Funk kam nicht hoch. |
 
 ![Eine Suche ohne Antwort](img/de/updates-failed.png)
 
@@ -2689,11 +2693,11 @@ beide gleich und PATCH größer.
 
 | Zweite Zeile | Bedeutung |
 | --- | --- |
-| `Kein Location-Header in der Antwort.` | Der Redirect trägt keinen `Location`-Header. |
-| `Eine Adresse über ihrer Längengrenze.` | Ein `Location` über 69 Bytes: die Tag-Adresse und 18 Bytes. |
-| `Ein Byte außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
-| `Eine Adresse an unerwarteter Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
-| `Der Versionstext ist ungültig.` | Der Tag verletzt die Regel oben. |
+| `In der Antwort fehlt der Location-Header.` | Der Redirect trägt keinen `Location`-Header. |
+| `Die Adresse ist zu lang.` | Ein `Location` über 69 Bytes: die Tag-Adresse und 18 Bytes. |
+| `Ein Byte liegt außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
+| `Die Adresse steht an einer unerwarteten Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
+| `Der Versionstext hat ein ungültiges Format.` | Der Tag verletzt die Regel oben. |
 
 ### Die Erinnerung
 
@@ -2715,9 +2719,9 @@ Menü zu sehen ist.
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `JETZT IGNORIEREN` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über den HOME-Tag wirkt genauso. |
+| `JETZT NICHT` | Schließt die Erinnerung bis zum nächsten Start des Panels. Verlassen über den HOME-Tag wirkt genauso. |
 | `NICHT MEHR ERINNERN` | Schaltet ERINNERUNG BEIM START aus und fordert das Speichern an, das im nächsten Moment geschieht, in dem die Einstellungen geschrieben werden dürfen ([Werte behalten](#werte-behalten)). SETUP > UPDATES schaltet sie wieder ein. |
-| `2 s HALTEN: DOWNLOAD & INSTALL` | Dasselbe Halten wie auf UPDATES. |
+| `2 s HALTEN: LADEN & INSTALLIEREN` | Dasselbe Halten wie auf UPDATES. |
 
 Findet die Suche beim Start kein neueres Release oder scheitert sie, zeigt
 sie nichts. Ihr Ergebnis steht auf UPDATES.
@@ -2751,10 +2755,10 @@ berührt nichts den Flash.
 
 | Schritt | Zu sehen, solange |
 | --- | --- |
-| `Verbinde mit Workshop 2.4` | Verbinden und Adresse laufen |
-| `Lese SHA256SUMS` | die erste Datei kommt |
-| `Lade das Image` | das Image kommt; der Balken und `720896 von 1843200 Bytes (39 %)` zählen es |
-| `Prüfe SHA-256 und das Image` | die Prüfungen laufen |
+| `Verbindung mit Workshop 2.4 wird aufgebaut` | Verbinden und Adresse laufen |
+| `SHA256SUMS wird gelesen.` | die erste Datei kommt |
+| `Firmware wird heruntergeladen.` | das Image kommt; der Balken und `720896 von 1843200 Bytes (39 %)` zählen es |
+| `SHA-256-Prüfsumme und Firmware werden geprüft.` | die Prüfungen laufen |
 
 ABBRECHEN beendet den Download. Er endet auch bei STOP, bei ARMED, wenn der
 Netzteilausgang angeht, wenn ein Log-Lauf beginnt, wenn eine
@@ -2766,13 +2770,13 @@ Halten das der Erinnerung war.
 
 | Zeile | Bedeutung |
 | --- | --- |
-| `SHA256SUMS nicht verwendbar.` | `SHA256SUMS` fehlt (`HTTP-Status 404.`), ist über 4096 Bytes groß, `Eine Zeile ist ungültig.`, `Keine Zeile für das Image.` oder `Das Image in zwei Zeilen.` |
-| `SHA-256 weicht von SHA256SUMS ab.` | Das Image ist nicht das, das das Release nennt. |
-| `Das Image fiel durch die Prüfungen.` | Eine der Prüfungen des Image lehnte es ab. |
-| `GitHub lehnte ab: HTTP 404.` | Eine Antwort auf das Image, die weder die Datei noch ein Redirect ist. |
-| `Unerwartete Antwort von GitHub.` | `Mehr als 3 Redirects.`, `Ein Redirect zu einem fremden Host.`, `Eine Adresse über ihrer Längengrenze.` (ein `Location` über 2048 Bytes), `Keine Größe angekündigt.`, `Eine leere Antwort.`, `Größer als das Panel annimmt.`, `Kürzer als angekündigt.`, `Das Image nennt eine andere Version.` |
-| `Kein Speicher für das Image.` | Der PSRAM hatte keinen Platz für die angekündigte Größe. |
-| `Keine Antwort in 30 s.`, `Keine Antwort in 180 s.` | Die 30 s des Verbindens oder die 180 s des Downloads sind abgelaufen. |
+| `SHA256SUMS-Datei nicht verwendbar.` | `SHA256SUMS` fehlt (`HTTP-Status 404.`), ist über 4096 Bytes groß, `Eine Prüfsummenzeile hat ein ungültiges Format.`, `Kein Prüfsummeneintrag für diese Firmware.` oder `Zwei Prüfsummeneinträge für diese Firmware.` |
+| `SHA-256-Prüfsumme stimmt nicht mit SHA256SUMS überein.` | Das Image ist nicht das, das das Release nennt. |
+| `Die Firmware hat die Prüfungen des Panels nicht bestanden.` | Eine der Prüfungen des Image lehnte es ab. |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine Antwort auf das Image, die weder die Datei noch ein Redirect ist. |
+| `Unerwartete Antwort von GitHub.` | `Mehr als 3 Weiterleitungen.`, `Weiterleitung zu einem nicht erlaubten Host.`, `Die Adresse ist zu lang.` (ein `Location` über 2048 Bytes), `Die Antwort enthält keine Größenangabe.`, `Die Antwort ist leer.`, `Der Download ist zu groß für das Panel.`, `Weniger Daten als angekündigt empfangen.`, `Die Firmware-Datei nennt eine andere Version.` |
+| `Nicht genug Speicher für die Firmware.` | Der PSRAM hatte keinen Platz für die angekündigte Größe. |
+| `Keine Antwort innerhalb von 30 s.`, `Keine Antwort innerhalb von 180 s.` | Die 30 s des Verbindens oder die 180 s des Downloads sind abgelaufen. |
 
 Aktuelle Einschränkungen:
 
@@ -2825,7 +2829,7 @@ Ein Coprozessor, der sich verbindet, bekommt die beiden Einstellungen, bevor
 der Prüfstand ihn treibt: bei einem Prüfstand in ARMED bleibt er
 SAFE, bis er sie hat. Ein
 Leerlaufpuls, der nicht unter dem Vollpuls liegt, wird nicht gesendet, und das
-Band zeigt `Leerlaufpuls muss unter dem Vollpuls liegen -- nicht gesendet`.
+Band zeigt `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.`.
 
 Ein ESC, dessen Gasweg an einem Sender kalibriert wurde, nimmt den kürzesten
 Puls dieses Senders als null. Einen Leerlaufpuls darüber liest der ESC als Gas,
@@ -2835,7 +2839,7 @@ und den Vollpuls auf oder über seinen längsten: bei einem Sender mit 985 bis
 2012 us also 980 us und 2020 us.
 
 Wenn das Protokoll keinen Pin mehr nehmen kann, steht der Grund in Bernstein
-darunter: `BRAUCHT 8 KANÄLE, 4 FREI`, `ALLE 8 SLOTS BELEGT` oder
+darunter: `BENÖTIGT 8 KANÄLE, 4 FREI`, `ALLE 8 PLÄTZE BELEGT` oder
 `SERVO PWM BELEGT 8 PINS`. Eine komplett graue Platine ohne Begründung daneben liest sich
 wie ein Defekt, und PPM färbt die ganze Platine grau, sobald irgendetwas
 anderes gebunden ist.
@@ -2870,13 +2874,12 @@ Pin, mit dem er kollidiert.
 
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
-| `SLICE VON GP13` | `GP28: SLICE VON PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin des Programmierports, solange der Port ihn hält; GP13 und GP28 sind Slice 6 |
-| `PWM VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
+| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin des Programmierports, solange der Port ihn hält; GP13 und GP28 sind Slice 6 |
+| `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
 
 Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
 zum nächsten Haken, der greift, zum nächsten Besuch des Bildschirms oder zu
-einem Wechsel der Platine. Eine Zeile zum Budget des Protokolls (`ALLE 8
-SLOTS BELEGT` und die anderen) geht vor. DShot und PPM laufen auf PIO
+einem Wechsel der Platine. Eine Zeile zum Budget des Protokolls (`ALLE 8 PLÄTZE BELEGT` und die anderen) geht vor. DShot und PPM laufen auf PIO
 (Programmable I/O), nicht auf einem Slice, und bekommen beide Pins
 angeboten.
 
@@ -2900,18 +2903,18 @@ Protokoll als LETZTER SCHREIBVORGANG:
 
 | LETZTER SCHREIBVORGANG | Bedeutung |
 | --- | --- |
-| `NICHT GESCHR.` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
+| `NICHT GESCHRIEBEN` | seit dem Start des Panels wurde nichts geschrieben, oder ein Schreibvorgang wurde nicht gesendet, weil die Bindung auf dem Bildschirm nicht durch ein Lesen bestätigt war |
 | `GESCHRIEBEN` | der Koprozessor hat jeden Austausch des Schreibvorgangs bestätigt |
-| `KEIN LINK` | ein Austausch des Schreibvorgangs blieb 1000 ms ohne Antwort, oder der Link war unten |
+| `KEINE VERBINDUNG` | ein Austausch des Schreibvorgangs blieb 1000 ms ohne Antwort, oder der Link war unten |
 | `ABGELEHNT` | der Koprozessor hat geantwortet und abgelehnt: ein Pin, den er nicht binden kann, eine Änderung bei einem Prüfstand in ARMED oder eine Frame Rate, die er nicht zurücksetzen konnte |
 
 An einen Koprozessor mit Protokoll 4.10 wird die Bindung als Ganzes
 geschrieben: die beiden Pages werden neben den geltenden vorbereitet und von
 einem Commit gemeinsam übernommen
-([Link](Link-de.md#eine-bindung-als-ganzes)). `KEIN LINK` und `ABGELEHNT`
+([Link](Link-de.md#eine-bindung-als-ganzes)). `KEINE VERBINDUNG` und `ABGELEHNT`
 lassen die geltende Bindung dann genau, wie sie war, außer wenn allein die
 Bestätigung des Commits verloren geht: dann gilt die Bindung, der Bildschirm
-meldet `KEIN LINK`, und das Lesen beim nächsten Link-Aufbau zeigt sie. Ein
+meldet `KEINE VERBINDUNG`, und das Lesen beim nächsten Link-Aufbau zeigt sie. Ein
 älterer Koprozessor übernimmt die Pages Eintrag für Eintrag, und ein
 Schreibvorgang, der mittendrin endet, lässt die Einträge davor in Kraft.
 
@@ -2953,8 +2956,7 @@ OFF ist der erste Eintrag der Liste und bindet nichts: er nimmt 0 Pins, und
 die Zählung darunter lautet `0 VON 0 PINS`. Mit OFF gewählt zeigt jeder
 gebundene Pin den Namen des Protokolls, das ihn hält, die ganze Bindung steht
 also auf einem Bildschirm. Kein Pin lässt sich anhaken oder lösen: ein Tippen
-auf einen Pin bewirkt nichts, und die Zeile unter der Liste sagt `OFF ZEIGT
-ALLES, ÄNDERT NICHTS`. OFF zu wählen schreibt nichts und löst nichts.
+auf einen Pin bewirkt nichts, und die Zeile unter der Liste sagt `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN`. OFF zu wählen schreibt nichts und löst nichts.
 
 OFF bleibt gewählt über das Zurücklesen, über Neuzeichnen und über einen
 Link, der abreißt und wiederkommt, bis ein anderer Eintrag gewählt oder der
@@ -2979,8 +2981,8 @@ Lesen hat eines von vier Ergebnissen:
 | Gelesen | Der Bildschirm |
 | --- | --- |
 | beide Pages gelesen, und sie beschreiben eine Bindung, auch eine ohne gebundenen Pin | zeigt sie und nimmt Änderungen an |
-| eine Page wurde nicht gelesen: keine Antwort in 1000 ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `BINDUNG NICHT GELESEN - GESPERRT` |
-| beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `PAGES OHNE GÜLTIGE BINDUNG` und der Taste `HALTEN: ALLE PINS LÖSEN` |
+| eine Page wurde nicht gelesen: keine Antwort in 1000 ms, eine Ablehnung, oder der Link ist unten | behält die zuletzt gelesene Bindung, abgedunkelt, mit `ZUORDNUNG NICHT AUSGELESEN. ÄNDERN GESPERRT.` |
+| beide Pages gelesen, und keine Bindung beschreibt sie: ein Pin in zwei Slots, eine Rate oder ein Treiber, den kein Protokolleintrag hat, ein Pin außerhalb der Platine oder reserviert, Kanäle nicht in Slot-Reihenfolge | behält die zuletzt gelesene Bindung, abgedunkelt, mit `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` und der Taste `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` |
 | der Koprozessor ist eine Platine, für die dieser Build keine Pin-Tabelle hat | zeigt keine Pins |
 
 Im zweiten und dritten Zustand bewirkt ein Tippen auf einen Pin hier und auf
@@ -2995,7 +2997,7 @@ Lesen, das eine Bindung ergibt, beendet den Zustand.
 ![Die zuletzt gelesene Bindung nach einem fehlgeschlagenen Lesen](img/de/outputs-unread.png)
 
 Pages, die keine Bindung beschreibt, werden durch erneutes Lesen nicht
-lesbar. `HALTEN: ALLE PINS LÖSEN`, 2 s gehalten, schreibt eine Bindung ohne
+lesbar. `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN`, 2 s gehalten, schreibt eine Bindung ohne
 Pin; das Zurücklesen zeigt dann nichts gebunden, und Änderungen werden wieder
 angenommen. Es ist der einzige Schreibvorgang, den der Bildschirm in diesem
 Zustand sendet. Ein Finger, der die Taste verlässt, ein Abheben vor 2 s und
@@ -3048,18 +3050,18 @@ auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
-Unter der Liste steht `N VON 8 SLOTS BELEGT`, gezählt über alle Protokolle:
+Unter der Liste steht `N VON 8 PLÄTZEN BELEGT`, gezählt über alle Protokolle:
 die Protokolle teilen sich die 8 Slots der OUTPUTS-Page. Darunter steht in
 Bernstein der Grund, warum keine Taste hinzukommen kann, in den Worten des
 Outputs-Bildschirms:
 
 | Zeile | Wann |
 | --- | --- |
-| `ALLE 8 SLOTS BELEGT` | über alle Protokolle sind 8 Pins gebunden |
-| `BRAUCHT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
+| `ALLE 8 PLÄTZE BELEGT` | über alle Protokolle sind 8 Pins gebunden |
+| `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `OFF ZEIGT ALLES, ÄNDERT NICHTS` | OFF ist gewählt |
-| `NICHT GELESEN` | die Bindung ist nicht bestätigt |
+| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
 
 Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.
 
@@ -3083,7 +3085,7 @@ Unter SERVO PWM und MOTOR PWM ist auch eine Taste grau, die der Koprozessor
 auf einem PWM-Slice ablehnt, wie auf dem Outputs-Bildschirm: GP28, solange
 der Port GP13 hält, und der Partner eines als PWM gebundenen Pins, GP16
 neben GP0. Ein Tippen darauf ändert nichts und setzt die Zeile des
-Outputs-Bildschirms unter die Zählung: `GP28: SLICE VON PROG-PORT GP13`,
+Outputs-Bildschirms unter die Zählung: `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13`,
 `GP16: GLEICHER PWM-KANAL WIE GP0`.
 
 ![GP13 beim Programmierport](img/de/picker-prog.png)
@@ -3100,7 +3102,7 @@ nehmen: 16 Zeilen, 320 px der 360 px unter der Überschrift.
 Ein Tippen auf eine Taste schreibt die Bindung über dieselbe Folge wie ein
 Haken auf dem Outputs-Bildschirm, mit denselben Ergebnissen. Solange die
 Bindung nicht bestätigt ist — ein Lesen schlug fehl, oder die Pages
-beschreiben keine Bindung — ist jede Taste grau, `NICHT GELESEN` steht unter
+beschreiben keine Bindung — ist jede Taste grau, `NICHT AUSGELESEN` steht unter
 der Zählung, und ein Tippen auf eine Taste ändert nichts und schreibt nichts.
 Die Protokollliste wählt weiterhin.
 
@@ -3229,7 +3231,7 @@ Auf einer eigenen Seite beschrieben: [Auswuchten](Balance-de.md).
 Der Reiter WUCHTEN zeigt einen festen Winkel (265°) und zwei feste Werte
 (0,42 g Vibration, 0,35 g zuzufügende Masse), solange kein Sensor verbaut ist.
 Die Pille SIMULIERT und der Text „Nicht gemessen.“ stehen unter den Werten,
-20 px hoch und 88 px breit. Die Reiter TESTGESTELL und FLUGMODELL zeigen
+20 px hoch und 88 px breit. Die Reiter PRÜFGESTELL und FLUGMODELL zeigen
 Platzierungshilfen und tragen keine Marke.
 
 ## Unbekannte Bildschirm-IDs

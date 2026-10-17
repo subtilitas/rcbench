@@ -928,8 +928,9 @@ static void draw_header(gfx_canvas_t *c)
  */
 static void draw_derived(gfx_canvas_t *c)
 {
-    const gfx_rect_t box = { (int16_t)(LEFT_X + 150), UP_Y + 2,
-                             (int16_t)(LEFT_W - 156), 16 };
+    /* Right of the panel's tag: its 20 cells and the tab's 26 px. */
+    const gfx_rect_t box = { (int16_t)(LEFT_X + 186), UP_Y + 2,
+                             (int16_t)(LEFT_W - 192), 16 };
     gfx_fill_rect(c, box.x, box.y, box.w, box.h, ui_theme_color(UI_C_PANEL));
 
     /* What the ESC says, or failing that what somebody typed in. */
@@ -1221,7 +1222,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                  tag_text(tag, tag_buf, sizeof(tag_buf)),
                  ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ LEFT_X, LO_Y, LEFT_W, LO_H },
-                 "THROTTLE", ui_theme_color(UI_C_ACCENT));
+                 TR(MO_THROTTLE), ui_theme_color(UI_C_ACCENT));
         ui_panel(c, (gfx_rect_t){ RIGHT_X, LO_Y, RIGHT_W, LO_H },
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;

@@ -10,15 +10,16 @@
 # through shared/outputs, whose SENSE page validates an INA228 set-up with
 # ina228_calibrate() and publishes the snapshot; the coprocessor runs them.
 #
-# sense_trace.c turns CH1's 1 ms samples into text lines for a debug build
-# of the coprocessor (its SENSE_TRACE option).  The panel does not compile
-# it; a coprocessor image built without the option does not link it.
+# sense_trace_feed.c (core 1's feed) and sense_trace.c (core 0's side) turn
+# CH1's 1 ms samples into text lines for a debug build of the coprocessor
+# (its SENSE_TRACE option).  The panel does not compile them; a coprocessor
+# image built without the option does not link them.
 set(SRCS sense_bus.c ina228.c ina3221.c as5600.c sense_sched.c sense_svc.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES servo)
 else()
-    add_library(rcbench_sense STATIC ${SRCS} sense_trace.c)
+    add_library(rcbench_sense STATIC ${SRCS} sense_trace_feed.c sense_trace.c)
     target_include_directories(rcbench_sense PUBLIC include)
     target_link_libraries(rcbench_sense PUBLIC rcbench_servo)
 endif()

@@ -43,6 +43,7 @@ STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
 SOURCES = [
     "test/host/render_screen.c",
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
@@ -66,11 +67,14 @@ SOURCES = [
     "shared/ui/ui_textkey.c",
     "shared/ui/ui_pinlist.c",
     "shared/ui/servo_screen.c",
+    "shared/ui/servo_settings_panel.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
     # what the views drive it with: the link module, the coprocessor's
     # port and the core.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
+    "shared/bench/kst_prog_card.c",
+    "shared/bench/kst_prog_file.c",
     "shared/bench/kst_card.c",
     "shared/bench/prog_link.c",
     "shared/logfile/kst_store.c",
@@ -89,6 +93,7 @@ SOURCES = [
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
     "shared/ui/programmer_screen.c",
+    "shared/ui/esc_stick_panel.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
@@ -99,8 +104,12 @@ SOURCES = [
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
     "shared/esc/esc_json.c",
+    "shared/esc/esc_json_lex.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
+    "shared/esc/esc_stick_rules.c",
+    "shared/esc/esc_det.c",
+    "shared/esc/esc_stick_read.c",
     "shared/esc/esc_sim.c",
     # The board drawing the coprocessor serves: generated data, so the
     # screenshot is the drawing a bench shows.
@@ -111,6 +120,7 @@ SOURCES = [
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
+    "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
     "shared/bench/bench_state.c",
@@ -120,9 +130,11 @@ SOURCES = [
     "shared/servo/servo_sweep.c",
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
+    "shared/servo/servo_str.c",
     "shared/servo/servo_report.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_limrun.c",
+    "shared/servo/servo_limrun_report.c",
     "protocols/sbus/sbus.c",
     "protocols/dshot/dshot_telem.c",
     "shared/outputs/outputs.c",
@@ -536,6 +548,31 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
+    # The bus fault's other two verdicts and its other four controller
+    # states, so every meaning and check is measured where it wraps.
+    "busfault-lossy":   (None, "busfault", "dark"),
+    "busfault-dropped": (None, "busfault", "dark"),
+    "busfault-lost-rejoin":  (None, "busfault", "dark"),
+    "busfault-lost-stopped": (None, "busfault", "dark"),
+    "busfault-lost-running": (None, "busfault", "dark"),
+    "busfault-lost-unknown": (None, "busfault", "dark"),
+    # BATTERY's two other verdicts, whose reasons wrap in the right card.
+    "battery-healthy":  (None, "battery", "dark"),
+    "battery-replace":  (None, "battery", "dark"),
+    # SUPPLY's MODE card after either trip, its line wrapped in the card.
+    "supply-trip-i":    (None, "supply", "dark"),
+    "supply-trip-v":    (None, "supply", "dark"),
+    # The SERVO PROGRAMMER's notes turned to their second page, where they
+    # take more rows than there are above the message.
+    "servo-kst-file-locked-p2": (None, "servo", "dark"),
+    "servo-kst-journal-p2": (None, "servo", "dark"),
+    # The analyser on a frame the receiver flags as lost.
+    "analyser-lost":    (None, "analyser", "dark"),
+    # The SERVO screen's OUTPUT page with the frame rate refused and with a
+    # coprocessor that cannot set it; the HV warning with the output on.
+    "servo-rate-refused": (None, "servo", "dark"),
+    "servo-rate-unsupported": (None, "servo", "dark"),
+    "servo-hv-live":    (None, "servo", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

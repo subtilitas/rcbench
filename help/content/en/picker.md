@@ -45,9 +45,9 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, with 4 servo pins bound |
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
-| `OFF SHOWS ALL, EDITS NOTHING` | OFF is selected |
+| `OFF: VIEW ALL, NO EDITING` | OFF is selected |
 | `NOT READ` | the binding is not confirmed; every key is grey |
-| `GP28: PWM SLICE OF PROG PORT GP13` | a tap on GP28 under SERVO PWM or MOTOR PWM while the programming port holds GP13: one PWM slice; the key is grey |
+| `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | a tap on GP28 under SERVO PWM or MOTOR PWM while the programming port holds GP13: one PWM slice; the key is grey |
 | `GP16: SAME PWM CHANNEL AS GP0` | a tap on GP16 under SERVO PWM or MOTOR PWM with GP0 bound as PWM: one PWM compare register; the key is grey |
 
 ![Eight of eight slots in use](view:picker-full)
@@ -68,7 +68,7 @@ The coprocessor carries a drawing of itself: outline, parts and every pad, to sc
 
 ![The picker drawn from the shape alone](view:picker-drawn)
 
-Without a drawing, or while the transfer is not finished, the outline and pads are drawn from the board's shape, and the keys are in the same places. A board that does not report its shape is not drawn: the screen reads `NO PICTURE OF THIS BOARD`, and its pins are on Outputs.
+Without a drawing, or while the transfer is not finished, the outline and pads are drawn from the board's shape, and the keys are in the same places. A board that does not report its shape is not drawn: the screen reads `NO BOARD IMAGE AVAILABLE`, and its pins are on Outputs.
 
 The drawing of the RP2350-CAN is 1,560 bytes, fetched in 26 blocks of 62 bytes. The time this takes is not measured. Writing it to flash waits for a bench that is SAFE with the supply off.
 

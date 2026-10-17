@@ -109,7 +109,17 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * the previous one leaves, so no chip needs another's width in advance and a
  * long mode string cannot push the clock under the ARMED badge.  One layout
  * for drawing and for hit-testing, so a tap finds the chip that is drawn.
+ * Chips stand 6 px apart and each takes the 3 px beside it for a tap, so
+ * the strips meet without overlapping.  A label starts UI_PILL_INSET px
+ * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
+ * that would reach CHIPS_MIN_X, where FILES & UPDATE's home tag, the widest
+ * (test_nav measures every screen's), ends, starts its labels 16 px in.
+ * Rows wider than that still reach under the tags: ARMED with a FAULT code
+ * down to x 216, ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG to 234,
+ * and in German SAFE with a FAULT code and a clock of 10 hours to 272.
  */
+#define CHIPS_MIN_X    274
+#define CHIP_INSET_TIGHT 16
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,
     UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
@@ -118,12 +128,15 @@ static const ui_band_chip_t k_order[] = {
 typedef struct {
     bool       on[UI_BAND_CHIP_COUNT];
     gfx_rect_t r[UI_BAND_CHIP_COUNT];
+    int        inset;      /* the labels' start in their chips */
 } chips_t;
 
-static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+static int chips_place(const ui_bench_status_t *st, chips_t *l, int inset)
 {
     memset(l, 0, sizeof(*l));
+    l->inset = inset;
     int right = PANEL_W - STOP_W - STOP_M - 12;
+    int left = right;
     for (size_t i = 0; i < sizeof(k_order) / sizeof(k_order[0]); ++i) {
         const ui_band_chip_t chip = k_order[i];
         if (!chip_shown(st, chip)) {
@@ -132,12 +145,21 @@ static void chips_layout(const ui_bench_status_t *st, chips_t *l)
         char buf[24];
         const char *label = chip_label(st, chip, buf, sizeof(buf));
         /* LINK alone carries a dot. */
-        const int w = 14 + gfx_text_width(&gfx_font_8x16, label, 1) + 14
+        const int w = inset + gfx_text_width(&gfx_font_8x16, label, 1) + 4
                       + (chip == UI_BAND_CHIP_LINK ? 14 : 0);
         l->on[chip] = true;
         l->r[chip]  = (gfx_rect_t){ (int16_t)(right - w), 10, (int16_t)w,
                                     (int16_t)(UI_BAND_H - 20) };
-        right = right - w - 8;
+        left = right - w;
+        right = left - 6;
+    }
+    return left;
+}
+
+static void chips_layout(const ui_bench_status_t *st, chips_t *l)
+{
+    if (chips_place(st, l, UI_PILL_INSET) < CHIPS_MIN_X) {
+        (void)chips_place(st, l, CHIP_INSET_TIGHT);
     }
 }
 
@@ -164,8 +186,8 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
     chips_t l;
     chips_layout(st, &l);
     for (int chip = UI_BAND_CHIP_NONE + 1; chip < UI_BAND_CHIP_COUNT; ++chip) {
-        if (l.on[chip] && x >= l.r[chip].x - 4
-            && x < l.r[chip].x + l.r[chip].w + 4) {
+        if (l.on[chip] && x >= l.r[chip].x - 3
+            && x < l.r[chip].x + l.r[chip].w + 3) {
             return (ui_band_chip_t)chip;
         }
     }
@@ -187,8 +209,8 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 #define HELP_PAD     16     /* text from the bubble's sides            */
 #define HELP_TOP     30     /* the first line from the top: tab and 10 */
 #define HELP_BOTTOM  10
-#define HELP_PITCH   18
-#define HELP_PARA    4      /* more between two paragraphs             */
+#define HELP_PITCH   17
+#define HELP_PARA    3      /* more between two paragraphs             */
 
 /* One paragraph, and one line of it.  Static: the bubble is drawn by the
  * render loop alone, and the render task's stack is budgeted. */
@@ -476,6 +498,6 @@ void ui_band_render(gfx_canvas_t *c, const char *title, bool show_home,
         default:
             break;
         }
-        ui_pill(c, l.r[chip], label, dot, fill);
+        ui_pill_inset(c, l.r[chip], label, dot, fill, l.inset);
     }
 }

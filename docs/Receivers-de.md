@@ -20,7 +20,7 @@ Externe Bauteile sind nicht nötig.
 Keine Firmware speist den Analyser: Der S.BUS-Decoder ist in das Panel-Image
 und die Host-Tests eingebunden, auf keinem der beiden Boards gibt es eine
 Bytequelle, und nichts ruft `analyser_screen_push()` oder
-`analyser_screen_silent()` auf. Der Bildschirm zeigt daher SILENT. Die
+`analyser_screen_silent()` auf. Der Bildschirm zeigt daher KEIN SIGNAL. Die
 folgenden Zustände sind das, was der Bildschirm zeichnet, wenn er gespeist
 wird, wie die Host-Tests ihn ausführen.
 
@@ -33,7 +33,7 @@ zeigt einen von:
 | LIVE | Frames kommen an, der Sender wird empfangen | die Werte sind gültig |
 | FRAME LOST | dieser Frame kam nicht unversehrt an | in großer Entfernung vereinzelt; gehäuft am Prüfstand weist auf Verdrahtung oder Decoder |
 | FAILSAFE | der Empfänger hat den Sender verloren und sendet seine Failsafe-Werte | als Stopp behandeln; die Werte sind wohlgeformt und bedeutungslos |
-| SILENT | nichts auf der Leitung | Empfängerversorgung, Verdrahtung, Pin |
+| KEIN SIGNAL | nichts auf der Leitung | Empfängerversorgung, Verdrahtung, Pin |
 
 Ein Empfänger im Failsafe sendet sechzehn plausible, gleichmäßig laufende
 Kanalwerte. Zum Prüfen des Failsafe-Verhaltens eines Empfängers den Sender

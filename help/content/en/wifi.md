@@ -30,13 +30,13 @@ The radio goes off on its own, and the card names the reason in one line:
 
 | Line | Cause |
 |---|---|
-| `Wi-Fi went off: ARMED.` | a switch to ARMED |
-| `Wi-Fi went off: STOP.` | STOP |
-| `Wi-Fi went off: supply output on.` | the supply output came on |
-| `Wi-Fi went off: a log run opened.` | a run started recording |
-| `Wi-Fi went off: 10 min without a request.` | no request for 10 min |
-| `Wi-Fi went off: 16 wrong access codes.` | 16 wrong codes on the page |
-| `Wi-Fi did not start.` | the radio failed to start |
+| `Wi-Fi switched off: bench ARMED.` | a switch to ARMED |
+| `Wi-Fi switched off: STOP.` | STOP |
+| `Wi-Fi switched off: supply output on.` | the supply output came on |
+| `Wi-Fi switched off: a recording session started.` | a run started recording |
+| `Wi-Fi switched off after 10 min without a request.` | no request for 10 min |
+| `Wi-Fi switched off after 16 wrong access codes.` | 16 wrong codes on the page |
+| `Wi-Fi could not start.` | the radio failed to start |
 
 Leaving the screen switches the radio off as well. The link to the coprocessor and the heartbeat run as on every other screen.
 
@@ -53,7 +53,7 @@ ACCESS POINT starts the panel's own network. The screen shows what a phone or a 
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, for example `rcbench-3F7A` |
 | Password | 8 characters, new at every start, without 0, 1, i, l and o |
 | Clients | 1 at a time |
-| Address | `http://192.168.4.1/` |
+| IP address | `http://192.168.4.1/` |
 | Range | not measured |
 
 1. On the phone or computer, join the network the screen names, with the password it shows.
@@ -98,16 +98,16 @@ JOIN HOME NETWORK joins the kept network. Joined, the screen shows the network, 
 
 | Line | Condition |
 |---|---|
-| `Join failed: password refused.` | the network refused the password 3 times in a row, or refused it last when 20 s ran out |
-| `Join failed: network not found.` | no association within 20 s, and the last drop of another kind, or none |
-| `Join failed: no address in 15 s.` | associated, and no address within 15 s |
-| `The home network went away.` | joined, then the network dropped the panel |
+| `Could not connect. Password rejected.` | the network refused the password 3 times in a row, or refused it last when 20 s ran out |
+| `Could not connect. Network not found.` | no association within 20 s, and the last drop of another kind, or none |
+| `Connection failed. No IP address within 15 s.` | associated, and no address within 15 s |
+| `Connection to the home network lost.` | joined, then the network dropped the panel |
 
 A failed join offers ACCESS POINT. WI-FI OFF switches the radio off.
 
 ## The access code
 
-The browser page asks for an 8-character code before it lists a file or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off: the page is open to every device on the network.` An upload still installs only after the 2 s hold on the panel.
+The browser page asks for an 8-character code before it lists a file or takes an upload. The screen shows the code, and it is new at every start of the radio. 16 wrong codes switch the radio off. ACCESS CODE switches the code off for both ways in; the screen then reads `Access code off. Any device on the network can open the page.` An upload still installs only after the 2 s hold on the panel.
 
 ## The browser page
 
