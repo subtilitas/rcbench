@@ -190,7 +190,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,312 | 1,856 |
-| `control` | `control_task` | 6,144 | 4,528 | 592 |
+| `control` | `control_task` | 6,144 | 4,592 | 528 |
 | `runlog` | `log_task` | 4,608 | 3,408 | 176 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
