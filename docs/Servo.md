@@ -1056,7 +1056,7 @@ An aborted run reads `Result:
 ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
 never reached reads `not run`. `Can destroy` names the red tag when a heli
 type or a frame rate above 60 Hz is in force. Every word of the report is in
-one table in `shared/servo/servo_report.c`, and the report is written in the
+one table in `shared/servo/servo_str.c`, and the report is written in the
 interface language showing when its run starts: German from
 `shared/ui/ui_text_de.c` ([Interface language](Language.md)). The CSV is
 English in every language.

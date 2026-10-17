@@ -8,7 +8,7 @@
 # against the INA3221's windows, then the servo's own LEFT and RIGHT ANGLE
 # through the programmer.
 set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
-         servo_test.c servo_report.c servo_limrun.c servo_limrun_report.c)
+         servo_test.c servo_str.c servo_report.c servo_limrun.c servo_limrun_report.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
