@@ -29,6 +29,7 @@ set(SRCS
     balance_screen.c
     battery_screen.c
     programmer_screen.c
+    esc_stick_panel.c
     log_viewer_screen.c
     log_select.c
     settings_screen.c

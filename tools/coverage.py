@@ -84,6 +84,7 @@ TRACKED = [
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
     "shared/ui/programmer_screen.c",
+    "shared/ui/esc_stick_panel.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
