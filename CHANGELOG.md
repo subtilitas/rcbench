@@ -99,15 +99,15 @@ history is in git.
 
 ### Changed
 
-- OUTPUTS opens on the overview on every visit: OFF selected, every bound
-  pin named by its protocol in full-brightness text. A tap on a pin changes
-  nothing and writes nothing until a protocol is picked in the list; picking
-  OFF goes back to the overview. The line under the list reads
-  `CHOOSE A PROTOCOL, THEN TAP PINS`
-  (German `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`), also on PICK A PIN with OFF
-  selected. Opening the screen writes nothing to
-  the coprocessor. PICK A PIN keeps the protocol last picked, or opens on the
-  lowest-numbered protocol that holds a pin.
+- OUTPUTS and PICK A PIN open on the overview on every visit: OFF selected,
+  every bound pin named by its protocol in full-brightness text. A tap on a
+  pin changes nothing and writes nothing until a protocol is picked in the
+  list; picking OFF goes back to the overview. The line under the list reads
+  `CHOOSE A PROTOCOL, THEN TAP PINS` (German
+  `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`), and OUTPUTS shows no pin count. OFF
+  stays selected across leaving the screen, read-backs and a coprocessor
+  that answers or changes board during the visit. Opening either screen
+  writes nothing to the coprocessor.
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save

@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF picked and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -72,7 +72,7 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-Every visit to OUTPUTS opens with OFF picked. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. Pick a protocol to edit its pins; pick OFF to come back here.
+Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. OFF stays selected until a protocol is picked, also across leaving the screen and a change of board. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
 
 ## LAST WRITE
 

@@ -2000,16 +2000,19 @@ TEST_CASE(the_pin_picker_follows_a_pick_that_wrote_nothing)
     CHECK_EQ(panel.applied, 1);
     CHECK_EQ(outbind_group_of(&panel.cmd, idx(4)), proto_named("MOTOR PWM"));
 
-    /* OFF picked and the screen left: the picker is not left on OFF. */
+    /* OFF picked and the screen left: the picker follows OFF, and its tap
+     * writes nothing. */
     panel_fresh(10u);
     pick("OFF");
-    picker_screen_follow(outputs_screen_binding()->proto,
-                         outputs_screen_editable());
-    CHECK_EQ(picker_screen_binding()->proto, 0);
     outputs_screen()->leave();
     picker_screen_follow(outputs_screen_binding()->proto,
                          outputs_screen_editable());
-    CHECK_EQ(picker_screen_binding()->proto, proto_named("SERVO PWM"));
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    tap(picker_screen(), bx, by);
+    CHECK_EQ(panel.applied, 0);
+    pick("SERVO PWM");
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
     tap(picker_screen(), bx, by);
     CHECK_EQ(panel.applied, 1);
     /* A protocol number off the table is not followed. */
@@ -2021,8 +2024,9 @@ TEST_CASE(the_pin_picker_follows_a_pick_that_wrote_nothing)
  * Opening the Outputs screen lands on the overview and sends nothing: no
  * exchange on the bus, the coprocessor's pages as they were.  A tap on a
  * pin there, on the grid or on PICK A PIN following it, calls no apply.
- * Left with OFF, the picker follows the lowest-numbered protocol that
- * holds a pin, and its tap writes again.
+ * Left with OFF, both screens stay on it; PICK A PIN opens on it as well,
+ * after a protocol picked on the Outputs screen too, and its tap writes
+ * only once a protocol is picked in its own list.
  */
 TEST_CASE(opening_the_outputs_overview_sends_nothing)
 {
@@ -2056,9 +2060,38 @@ TEST_CASE(opening_the_outputs_overview_sends_nothing)
     outputs_screen()->leave();
     picker_screen_follow(outputs_screen_binding()->proto,
                          outputs_screen_editable());
-    CHECK_EQ(picker_screen_binding()->proto, proto_named("SERVO PWM"));
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    tap(picker_screen(), bx, by);
+    CHECK_EQ(panel.applied, 0);
+
+    /* SERVO PWM picked on the Outputs screen, then PICK A PIN opened: the
+     * picker selects OFF through its hook, so the next frame's follow
+     * brings OFF and not SERVO PWM. */
+    outputs_screen()->enter();
+    pick("SERVO PWM");
+    outputs_screen()->leave();
+    picker_screen_set_select(outputs_screen_select);
+    picker_screen()->enter();
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    tap(picker_screen(), bx, by);
+    CHECK_EQ(panel.applied, 0);
+    panel_cmd();
+    panel_poll();
+    CHECK_EQ(bus.exchanges, sent);
+    CHECK(far_holds(&s_old));
+
+    /* A protocol picked through the picker's hook, as its list does, is
+     * what makes its tap write. */
+    outputs_screen_select(proto_named("SERVO PWM"));
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
     tap(picker_screen(), bx, by);
     CHECK_EQ(panel.applied, 1);
+    picker_screen_set_select(NULL);
 }
 
 int main(void)

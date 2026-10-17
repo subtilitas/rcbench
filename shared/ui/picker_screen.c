@@ -1179,12 +1179,23 @@ static void reset(void)
     touched();
 }
 
+/*
+ * Every visit opens on the overview, as the Outputs screen's does: OFF
+ * selected here for the first frame, and on the Outputs screen through the
+ * select hook, which this screen follows every frame.  Without the hook the
+ * next follow puts the Outputs screen's protocol back; without the line
+ * here the first frame shows the protocol before.
+ */
 static void enter(void)
 {
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.refused = -1;
     s.open = false;
+    outbind_set_proto(&s.bind, 0u);
+    if (s.select != NULL) {
+        s.select(0u);
+    }
     /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */
     if (s.source != NULL) {
@@ -1198,17 +1209,6 @@ static void leave(void)
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.open = false;
-    /*
-     * OFF picked here ends with the visit, as it does on the Outputs
-     * screen.  Kept there, the next frame's follow would select it here
-     * again, and the next visit would open on a board where no key adds a
-     * pin.
-     */
-    outputs_screen_end_off();
-    if (s.bind.proto == 0u) {
-        outbind_set_proto(&s.bind, outbind_wire_proto(&s.bind));
-        touched();
-    }
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)

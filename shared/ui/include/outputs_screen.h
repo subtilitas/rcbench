@@ -3,7 +3,8 @@
  *
  * Every visit opens on the overview: OFF selected, every bound pin named by
  * its protocol, and a tap on a pin changes nothing until a protocol is
- * picked.  Picking OFF in the list goes back to the overview.
+ * picked.  Selecting OFF in the list goes back to the overview.  The pin
+ * picker opens on it too.
  *
  * One protocol and a set of pins rather than eight independent slots, because
  * that is the shape of the job in front of the operator -- four servo leads,
@@ -170,23 +171,13 @@ int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
 /**
  * Select protocol @p proto, as a pick in the list does: the set shown and
  * the group the next tick joins.  Writes nothing and calls nothing.  OFF
- * (0) is the overview: entering this screen selects it, and it stays
- * selected until another protocol is selected or this screen or the pin
- * picker is left.  An index past the table is ignored.  The pin
- * picker's list selects through this, so the two screens show one
+ * (0) is the overview: entering this screen or the pin picker selects it,
+ * and it stays selected across readings, a change of board included, until
+ * another protocol is selected.  An index past the table is ignored.  The
+ * pin picker's list selects through this, so the two screens show one
  * selection.
  */
 void outputs_screen_select(uint8_t proto);
-
-/**
- * End a picked OFF as leaving this screen does: the selection moves to the
- * lowest-numbered protocol that holds a pin, or stays OFF when none does,
- * so the pin picker does not open on OFF.
- * Nothing changes when OFF was not picked.  Writes nothing and calls
- * nothing.  The pin picker calls it when it is left, so OFF picked there
- * ends with that visit too.
- */
-void outputs_screen_end_off(void);
 
 #ifdef __cplusplus
 }

@@ -72,7 +72,7 @@ Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat 
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Jeder Besuch von OUTPUTS öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts zum Koprozessor. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren.
+Jeder Besuch von OUTPUTS öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den Koprozessor. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms und einen Wechsel der Platine. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren. [PICK A PIN](picker.md) öffnet ebenfalls mit OFF gewählt.
 
 ## LETZTER SCHREIBVORGANG
 

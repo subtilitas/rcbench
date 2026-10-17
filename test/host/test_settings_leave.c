@@ -668,8 +668,8 @@ static void count_apply(const outbind_t *b)
 /*
  * The OUTPUTS tile opens the overview, and nothing about it is a setting:
  * opening it and a tap on a pin write no binding, and neither they nor a
- * pin ticked and unticked leave anything unsaved or warn on leaving SETUP.  A value changed
- * after the visit still holds the home tag.
+ * pin ticked and unticked leave anything unsaved or warn on leaving
+ * SETUP.  A value changed after the visit still holds the home tag.
  */
 TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
 {

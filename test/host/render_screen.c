@@ -2698,6 +2698,11 @@ int main(int argc, char **argv)
                                             NULL);
         }
         ui_router_goto(SCREEN_PICKER);
+        /* Every visit opens on OFF; the protocol is picked after, as the
+         * panel's follow of the Outputs screen brings one. */
+        if (strcmp(view, "picker-off") != 0) {
+            picker_screen_follow(b.proto, picker_screen_editable());
+        }
         if (strcmp(view, "picker-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
              * count says why it is held. */

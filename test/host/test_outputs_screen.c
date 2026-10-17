@@ -1111,6 +1111,59 @@ static bool label_inked(const gfx_canvas_t *c, uint8_t gpio, gfx_color_t ink)
     return false;
 }
 
+/* Whether any pixel of @p ink lies in the row the pin count is drawn on. */
+static bool count_row_inked(const gfx_canvas_t *c, gfx_color_t ink)
+{
+    const int y0 = DD_Y + DD_H + 16;
+    for (int yy = y0; yy < y0 + 14; ++yy) {
+        for (int xx = DD_X; xx < DD_X + DD_W; ++xx) {
+            if (c->pixels[yy * c->stride + xx] == ink) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * OFF takes no pin, so the overview shows no pin count, and a press on a
+ * pin draws no pressed face: the cell does not look as if it would act.
+ * A protocol picked brings both back.
+ */
+TEST_CASE(the_overview_shows_no_count_and_no_pressed_face)
+{
+    static gfx_color_t px[800 * 432], was[800 * 432];
+    gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
+
+    pose_three_protocols();
+    scr()->enter();
+    outputs_screen_invalidate();
+    scr()->render(&c, 0);
+    CHECK(!count_row_inked(&c, UI_TEXT_DIM));
+    memcpy(was, px, sizeof(px));
+
+    int x, y;
+    cell_centre(4, &x, &y);                     /* a free pin */
+    press_at(x, y);
+    outputs_screen_invalidate();
+    scr()->render(&c, 0);
+    CHECK(memcmp(was, px, sizeof(px)) == 0);
+    release_at(x, y);
+    CHECK_EQ(s_applied, 0);
+
+    choose_named("SERVO PWM");
+    outputs_screen_invalidate();
+    scr()->render(&c, 0);
+    CHECK(count_row_inked(&c, UI_TEXT_DIM));
+    memcpy(was, px, sizeof(px));
+    press_at(x, y);
+    outputs_screen_invalidate();
+    scr()->render(&c, 0);
+    CHECK(memcmp(was, px, sizeof(px)) != 0);
+    release_at(x, y);
+    CHECK_EQ(s_applied, 1);
+}
+
 /*
  * The overview draws the protocol under each bound pin in full ink, apart
  * from the pad numbers of free pins.  With a protocol picked, the pins of
@@ -1222,11 +1275,11 @@ TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
 
 /*
  * OFF is a pick like any other.  It stays across a reading of the same
- * pages, a second one, a repaint, a link that goes and comes back, and a
- * reading of other pins, until another entry is picked or the screen is
- * left.
+ * pages, a second one, a repaint, a link that goes and comes back, a
+ * reading of other pins, a leave and a change of board, until another
+ * entry is picked.
  */
-TEST_CASE(off_stays_until_another_entry_is_picked_or_the_screen_is_left)
+TEST_CASE(off_stays_until_another_entry_is_picked)
 {
     static gfx_color_t px[800 * 432];
     gfx_canvas_t c = { px, 800, 432, 800, { 0, 0, 800, 432 } };
@@ -1282,19 +1335,19 @@ TEST_CASE(off_stays_until_another_entry_is_picked_or_the_screen_is_left)
     outputs_screen_set_reading(&r);
     CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("MOTOR PWM"));
 
-    /* OFF again, and the screen is left: the selection moves to the
-     * lowest-numbered protocol holding a pin, so the pin picker does not
-     * open on OFF.  The next entry here opens on the overview again. */
+    /* OFF again, and the screen is left: the selection stays OFF, and the
+     * next entry opens on the overview as every entry does. */
     choose_named("OFF");
     scr()->leave();
-    CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("SERVO PWM"));
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     scr()->enter();
     outputs_screen_set_reading(&r);
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
 
-    /* A picked protocol other than OFF outlasts the visit for the pin
-     * picker, which joins its taps to it; this screen's next entry opens
-     * on the overview. */
+    /* A picked protocol other than OFF outlasts the visit; the next entry
+     * opens on the overview. */
     choose_named("PPM");
     scr()->leave();
     CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("PPM"));
@@ -1304,8 +1357,7 @@ TEST_CASE(off_stays_until_another_entry_is_picked_or_the_screen_is_left)
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     CHECK_EQ(s_applied, 0);
 
-    /* OFF never survives a change of board, or a protocol named from
-     * outside. */
+    /* A protocol named from outside lands, as a pick does. */
     choose_named("OFF");
     outbind_t named = r.bind;
     outbind_set_proto(&named, (uint8_t)proto_row("PPM"));
@@ -1313,13 +1365,98 @@ TEST_CASE(off_stays_until_another_entry_is_picked_or_the_screen_is_left)
     CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("PPM"));
     outputs_screen_set_reading(&r);
     CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("PPM"));
+
+    /* A change of board keeps OFF: no protocol was picked for the board
+     * that answers now.  Out to another board and back, by binding and by
+     * reading, a board with no pin map included. */
     choose_named("OFF");
     outbind_t other;
     outbind_init(&other);
     outbind_set_board(&other, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
     outputs_screen_set_binding(&other);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     outputs_screen_set_reading(&r);
-    CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("SERVO PWM"));
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    bind_reading_t unmapped = r;
+    unmapped.state = BIND_READ_NO_BOARD;
+    outbind_init(&unmapped.bind);
+    outbind_set_board(&unmapped.bind, (uint16_t)0xBEEFu);
+    outputs_screen_set_reading(&unmapped);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
+    tap_pin(13);
+    tap_pin(2);
+    CHECK_EQ(s_applied, 0);
+}
+
+/*
+ * The panel boots with the coprocessor off: the screen knows no board, and
+ * opens on the overview.  The coprocessor comes up and its first reading
+ * names a board and a binding.  Nobody picked a protocol, so a tap still
+ * writes nothing -- the overview must not hand the next tap the lowest
+ * protocol the reading holds.
+ */
+TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_overview)
+{
+    outbind_t b;
+    three_protocols(&b);
+    bind_reading_t r;
+    read_back(&b, &r);
+
+    /* No board yet: the read the panel posts while the link is down. */
+    scr()->reset();
+    outputs_screen_set_apply(on_apply);
+    s_applied = 0;
+    bind_reading_t none;
+    (void)bind_link_classify(&none, 0u, NULL, NULL);
+    outputs_screen_set_reading(&none);
+    scr()->enter();
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+
+    outputs_screen_set_reading(&r);
+    CHECK(outputs_screen_editable());
+    CHECK_EQ((int)outputs_screen_binding()->board,
+             (int)OUTBIND_BOARD_PICO_HEADER);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
+    for (uint8_t gp = 0; gp < 30u; ++gp) {
+        if (idx(gp) < OUTBIND_PINS) { tap_pin(gp); }
+    }
+    CHECK_EQ(s_applied, 0);
+
+    /* A pick is what makes a pin tickable. */
+    choose_named("SERVO PWM");
+    tap_pin(4);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, idx(4)), proto_row("SERVO PWM"));
+}
+
+/* A coprocessor swapped for another board type while the screen is open:
+ * the overview stays, and a tap writes nothing. */
+TEST_CASE(a_board_swapped_during_a_visit_keeps_the_overview)
+{
+    fresh();
+    outbind_t other;
+    outbind_init(&other);
+    outbind_set_board(&other, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
+    outputs_screen_set_binding(&other);
+    scr()->enter();
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+
+    outbind_t b;
+    three_protocols(&b);
+    bind_reading_t r;
+    read_back(&b, &r);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->board,
+             (int)OUTBIND_BOARD_PICO_HEADER);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    tap_pin(4);
+    tap_pin(13);
+    CHECK_EQ(s_applied, 0);
+    CHECK_EQ(outputs_screen_cell(idx(13), NULL, 0), OUTPUTS_CELL_HELD);
 }
 
 /* OFF with nothing bound is where a bench starts: a reading does not move
@@ -1575,13 +1712,16 @@ int main(void)
 {
     RUN(a_pick_calls_the_apply_seam_for_no_entry);
     RUN(the_screen_opens_on_the_overview);
+    RUN(the_overview_shows_no_count_and_no_pressed_face);
     RUN(the_overview_with_nothing_bound_writes_nothing);
     RUN(the_overview_with_every_slot_bound_names_every_pin);
     RUN(the_overview_draws_each_bound_pins_protocol_in_full_ink);
     RUN(a_pick_and_off_again_go_to_a_protocol_and_back_to_the_overview);
     RUN(off_shows_the_protocol_of_every_bound_pin);
     RUN(a_tap_on_a_pin_does_nothing_while_off_is_selected);
-    RUN(off_stays_until_another_entry_is_picked_or_the_screen_is_left);
+    RUN(off_stays_until_another_entry_is_picked);
+    RUN(a_board_that_answers_during_a_visit_keeps_the_overview);
+    RUN(a_board_swapped_during_a_visit_keeps_the_overview);
     RUN(off_with_nothing_bound_is_left_by_a_pick);
     RUN(a_binding_that_did_not_read_is_kept_marked_and_not_edited);
     RUN(a_failed_read_for_another_board_keeps_no_binding);
