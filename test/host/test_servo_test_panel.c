@@ -946,7 +946,7 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     bench_fresh();
     open_settings();
     tap(TAB_X(1), TAB_Y);
-    /* START TEST's lines, mirrored from servo_screen.c: the plan 2 px
+    /* START TEST's lines, mirrored from servo_test_panel.c: the plan 2 px
      * under the top of row 7 (54 + 7 * 42), the state 18 px under the
      * plan and the note 36 px under it. */
     const int y = 54 + 7 * 42 + 2 + 36;

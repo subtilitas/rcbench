@@ -1,15 +1,18 @@
 /*
- * The SERVO screen's private seam between servo_screen.c, the screen, and
- * servo_settings_panel.c, its settings overlay: the layout both draw on,
- * the profiles, the overlay's pages, rows and presses, the state both read
- * and write, the functions each calls of the other, and the small helpers
- * both inline.  Nothing outside shared/ui includes this header; the
- * screen's interface is servo_screen.h.
+ * The SERVO screen's private seam between servo_screen.c, the screen,
+ * servo_settings_panel.c, its settings overlay, and servo_test_panel.c, its
+ * automatic test: the layout they draw on, the profiles, the overlay's
+ * pages, rows and presses, the state they read and write, the functions
+ * each calls of the others, and the small helpers they inline.  Nothing
+ * outside shared/ui includes this header; the screen's interface is
+ * servo_screen.h.
  *
  * The state is one object, `s`, defined in servo_screen.c, so its .bss
  * stays where psram_bss.lf puts servo_screen's.  The helpers below are
  * static inline, as they were static in the one file the screen was: GCC
- * inlines them in each file as it did.
+ * inlines them in each file as it did.  test_ended() is static inline as
+ * well.  The one file inlined it in servo_screen_service() and called it
+ * out of line from three places; servo_test_panel.c inlines it at those.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -564,7 +567,7 @@ typedef struct {
 /* The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
-/* --- servo_screen.c's side, which the settings overlay calls ------------- */
+/* --- servo_screen.c's side, which the overlay and the test panel call ---- */
 
 /* The profile in force (apply_profile()) and the one asked for, which
  * opens the warning first where it can destroy a servo (ask_profile()). */
@@ -576,14 +579,19 @@ void reissue(void);
 int wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text,
               int cells, gfx_color_t ink);
 
-/* The automatic test. */
-int test_blocked(void);
-float test_top_v(void);
-void test_begin(void);
-void test_end_now(servo_test_abort_t why);
-void ask_hv_test(void);
-void draw_test_start(gfx_canvas_t *c);
-void draw_test_lines(gfx_canvas_t *c);
+/* A pulse as an angle (us_to_deg() below), and the commands a run posts
+ * as a finger's: a command (post()), RELEASE (release()), and the sweep
+ * ended (stop_sweep()) or as SETUP sets it (sweep_cfg_now()). */
+float us_to_deg_f(float us);
+void post(servo_cmd_kind_t kind, uint16_t us);
+void release(void);
+void stop_sweep(void);
+sweep_cfg_t sweep_cfg_now(void);
+
+/* Whether a run is under way, told to the panel where it changes, and a
+ * supply sample as a run reads it: both runs' (servo_screen_on_testing()). */
+void test_tell(void);
+servo_test_reading_t test_reading_of(const supply_state_t *st);
 
 /* The limit run. */
 const char *lim_prog_why(void);
@@ -636,7 +644,48 @@ void draw_save_line(gfx_canvas_t *c);
 void draw_warn_apply(gfx_canvas_t *c);
 void draw_ask_apply(gfx_canvas_t *c);
 
-/* --- helpers both files inline ------------------------------------------- */
+/* --- servo_test_panel.c's side, which the screen and the overlay call ---- */
+
+/* The restore's stages: the OFF the run's end posted not yet taken; taken,
+ * waiting for the next frame; waiting for a sample taken since; a sample
+ * showed the output off. */
+enum { RS_OFF_POSTED = 0, RS_OFF_SENT, RS_SAMPLE, RS_OFF_SEEN };
+
+/* The automatic test. */
+int test_blocked(void);
+float test_top_v(void);
+void test_begin(void);
+void test_end_now(servo_test_abort_t why);
+void ask_hv_test(void);
+void draw_test_start(gfx_canvas_t *c);
+void draw_test_lines(gfx_canvas_t *c);
+
+/* The run against the meter in force (test_meter_follow()); every frame
+ * (test_tick()) and whichever screen is up (test_restore_service()); what
+ * the box shows of it, as one number (test_signature()); and the box. */
+void test_meter_follow(servo_source_id_t id, uint32_t changes);
+void test_restore_service(void);
+uint32_t test_signature(void);
+void test_tick(void);
+void draw_test_box(gfx_canvas_t *c);
+
+/* A run that was running is over, however it ended: its OFF is posted
+ * (test_apply()), and the restore of the set points starts waiting. */
+static inline void test_ended(void)
+{
+    if (!s.test_seen || servo_test_running(&s.test)) {
+        return;
+    }
+    s.test_seen     = false;
+    s.test_restore  = true;
+    s.restore_stage = RS_OFF_POSTED;
+    s.test_v1       = supply_screen_set_v();
+    s.test_i1       = supply_screen_set_i();
+    ++s.test_rev;
+    ++s.ctrl_rev;
+}
+
+/* --- helpers the three files inline -------------------------------------- */
 
 static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
@@ -669,6 +718,11 @@ static inline uint16_t cmd_top(void)
     uint16_t lo, hi;
     cmd_range(&lo, &hi);
     return hi;
+}
+
+static inline float us_to_deg(uint16_t us)
+{
+    return us_to_deg_f((float)us);
 }
 
 static inline float clamp_travel(float deg)
@@ -746,6 +800,49 @@ static inline gfx_rect_t test_start_rect(void)
     return (gfx_rect_t){ (int16_t)(OV_X + 20 + OV_COL_W),
                          (int16_t)(OV_ROW0 + 6 * OV_PITCH), (int16_t)OV_COL_W,
                          OV_ROW_H };
+}
+
+/* The automatic test's and the limit run's: the clock they and the
+ * supply's readings share, the abort for what took the INA3221 off the
+ * rail, and the box on the left card both draw in. */
+
+/* The clock the run and the supply's readings share. */
+static inline uint32_t test_now(void)
+{
+    return s.have_now ? s.now_ms : s.clock_ms;
+}
+
+/* A run's abort for the condition that took the INA3221 off the rail. */
+static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
+{
+    switch (why) {
+    case SERVO_SOURCE_WHY_NO_LINK:   return SERVO_TEST_AB_LINK;
+    case SERVO_SOURCE_WHY_OFF:
+    case SERVO_SOURCE_WHY_OLD:
+    case SERVO_SOURCE_WHY_NOT_HELD:  return SERVO_TEST_AB_INA_SETUP;
+    case SERVO_SOURCE_WHY_SILENT:    return SERVO_TEST_AB_INA_SILENT;
+    case SERVO_SOURCE_WHY_NO_WINDOW: return SERVO_TEST_AB_INA_NO_WINDOW;
+    case SERVO_SOURCE_WHY_RESET:     return SERVO_TEST_AB_INA_RESET;
+    default:                         return SERVO_TEST_AB_INA_METER;
+    }
+}
+
+/* The run on the left card, clear of the dial and the case, and its one
+ * button: STOP TEST while it runs, CLOSE after. */
+/*
+ * The run's box on the left card, clear of the dial's +90 label on its
+ * right: four lines of 31 cells, 20 px apart, over its button.
+ */
+#define BOX_CELLS 31
+static inline gfx_rect_t test_box_rect(void)
+{
+    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 132 };
+}
+
+static inline gfx_rect_t test_btn_rect(void)
+{
+    const gfx_rect_t b = test_box_rect();
+    return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 92), 130, 32 };
 }
 
 /* A run with a step past a standard servo's rating starts only through the
