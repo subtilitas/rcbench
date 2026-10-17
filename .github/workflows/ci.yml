@@ -302,7 +302,8 @@ jobs:
       # does not, and clang-tidy does not run over firmware/ at all, because
       # it compiles each file and needs every ESP-IDF and pico-sdk header to
       # do it.  The panel's main.c is checked on its own with the main task's
-      # stack size defined: it refuses to compile under 8192.
+      # stack size defined: it refuses to compile under 8192.  The files cut
+      # from it, which share panel.h with it, are checked in the same run.
       - name: cppcheck over the firmware
         run: |
           cppcheck --error-exitcode=1 --std=c11 --quiet \
@@ -318,7 +319,9 @@ jobs:
             -Itestbench/touch-injector/core/include \
             $(git ls-files 'firmware/**/*.c' 'protocols/*/rp2350/*.c' \
                 'testbench/touch-injector/rp2350/*.c' \
-                | grep -v '^firmware/panel/main/main\.c$')
+                | grep -v -e '^firmware/panel/main/main\.c$' \
+                    -e '^firmware/panel/main/panel_card\.c$' \
+                    -e '^firmware/panel/main/panel_log\.c$')
           cppcheck --error-exitcode=1 --std=c11 --quiet \
             --enable=warning,performance,portability \
             --inline-suppr --suppressions-list=.cppcheck-suppress \
@@ -328,7 +331,8 @@ jobs:
                 'firmware/**/include/*' \
                 | sed 's|/include/.*|/include|; s|^|-I|' | sort -u) \
             -Ifirmware/panel/main \
-            firmware/panel/main/main.c
+            firmware/panel/main/main.c firmware/panel/main/panel_card.c \
+            firmware/panel/main/panel_log.c
 
       # A translated format reaches snprintf() through a table lookup, which
       # -Wformat cannot see; this compiles shared/ again with the English

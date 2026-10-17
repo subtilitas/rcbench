@@ -53,6 +53,18 @@ def test_a_numeric_item_size_and_a_configured_length(panel):
     assert rows[0][1] == rb.QUEUE + 32 * 4
 
 
+def test_a_length_from_a_header_beside_the_file(panel):
+    panel("main/panel.h", "#define DEPTH 8\n#define ITEM 16u\n")
+    panel("other/far.h", "#define FAR 2\n")
+    panel("main/a.c", '#include "panel.h"\n#include "far.h"\n'
+                      "#define ITEM 4\n"
+                      "void f(void) { xQueueCreate(DEPTH, ITEM);\n"
+                      "  xQueueCreate(FAR, ITEM); }\n")
+    rows, errors = rb.queues()
+    assert [r[1] for r in rows] == [rb.QUEUE + 8 * 4]
+    assert len(errors) == 1 and "queue length 'FAR'" in errors[0]
+
+
 def test_a_mutex_and_a_binary_semaphore_are_a_queue_header(panel):
     panel("main/a.c", "void f(void) { xSemaphoreCreateMutex();\n"
                       "  xSemaphoreCreateBinary(); }\n")
