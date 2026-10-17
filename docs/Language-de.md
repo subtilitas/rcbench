@@ -254,8 +254,9 @@ python3 tools/check_formats.py
 kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts
 durch sein englisches Literal ersetzt, unter `-Wformat=2
 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung
-fehl: jedes englische Format passt zu den Argumenten seines Aufrufs. Die
-`main.c` des Panels liegt nicht in `shared/` und ist nicht abgedeckt.
+fehl: jedes englische Format passt zu den Argumenten seines Aufrufs. Das
+Verzeichnis `firmware/panel/main/` des Panels liegt nicht in `shared/` und ist
+nicht abgedeckt.
 
 `test_text` deckt den Rest ab: jede ID hat Deutsch, jedes deutsche Format
 wandelt, was sein Englisch wandelt, jeder Text mit angegebener Breite passt
