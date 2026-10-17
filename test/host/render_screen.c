@@ -966,7 +966,7 @@ static void servo_run_view(bool to_the_end, bool ina)
 }
 
 /*
- * The limit run of LIMITS, on the bench of the host tests (test_kst_panel.c):
+ * The limit run of LIMITS, on the bench of the host tests (test_kst_panel_limrun.c):
  * the simulated KST servo on programming port 1, GP13, behind the servo
  * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
  * and RIGHT ANGLE put it at 4 us a count (kst_sim.h sim_horn_us()); its
