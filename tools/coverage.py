@@ -182,6 +182,7 @@ TRACKED = [
     "protocols/pdmini/pdmini.c",
     "shared/bench/supply_link.c",
     "shared/bench/sense_link.c",
+    "shared/bench/sense_link_view.c",
     "shared/bench/servo_source.c",
     "shared/bench/tone_link.c",
     "shared/bench/knob.c",
