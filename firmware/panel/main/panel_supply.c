@@ -489,7 +489,7 @@ void supply_pump(void)
      * the new run's.  Never the end of a bench run: that is the outer
      * loop's, after the pass's bench sample is logged, as it always was.
      */
-    if (s_log_kind != LOG_RUN_BENCH) {
+    if (!log_run_armed(s_log_kind)) {
         log_follow_runs();
     }
     supply_step(step_s);

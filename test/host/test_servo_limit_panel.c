@@ -279,7 +279,7 @@ TEST_CASE(programming_is_not_offered_off_the_programming_port)
 }
 
 /* SEARCH ONLY on the INA3221: both ends found, the servo let go, nothing
- * else asked of the bench, and BENCHnnn.TXT opened alone with the limit
+ * else asked of the bench, and SERVOnnn.TXT opened alone with the limit
  * report: both endpoints inside the servo's stops, nothing written. */
 TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
 {

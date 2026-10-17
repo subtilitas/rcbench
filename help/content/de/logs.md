@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCH001.CSV` und aufwärts geschrieben. AKTUALISIEREN liest die Karte erneut.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCHnnn.CSV`, `ESCnnn.CSV` oder `SERVOnnn.CSV` geschrieben, nummeriert von 001 bis 999. AKTUALISIEREN liest die Karte erneut.
 
 ## Die Dateiliste
 
@@ -34,7 +34,16 @@ Der Kopf nennt die Karte und ihren freien Platz. Jede Zeile ist eine Datei mit i
 
 ## Was ein Lauf schreibt
 
-Eine Datei ist ein Lauf: ein Schalten auf ARMED, ein Einschalten des Ausgangs auf SUPPLY bei SAFE oder ein automatischer Servotest. Ein Servotest schreibt zusätzlich einen Bericht, `BENCHnnn.TXT`, den die Liste nicht zeigt. LÖSCHEN auf einem Lauf entfernt auch seinen Bericht.
+Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
+
+| Name | Lauf |
+|---|---|
+| `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
+| `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
+| `ESCnnn.CSV` | ein Schalten auf ARMED der Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `BENCHnnn.CSV` | ein Schalten auf ARMED von SERVO oder ein Einschalten des Ausgangs auf SUPPLY bei SAFE |
+
+Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Liste ordnet die Namen alphabetisch, die Läufe stehen also gruppiert: `BENCH`, dann `ESC`, dann `SERVO`.
 
 Ein Lauf wird alle 20 Zeilen oder alle 1000 ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0 s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20 s bei 20 Hz, wenn sie stockt.
 

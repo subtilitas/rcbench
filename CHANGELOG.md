@@ -17,7 +17,7 @@ history is in git.
   outside the bench's PULSE MIN to PULSE MAX ends the run before anything
   is driven, `servo pulses outside MIN/MAX`, the bench left SAFE and both
   ranges named. The search runs in 10 us steps on INA3221 CH1's 50 ms
-  windows, reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
+  windows, reports both endpoints in a `SERVOnnn.TXT` of its own, and changes
   nothing of the bench's own pulse range. It runs only with the INA3221 as
   the servo rail's meter, on a rail of 3.0 V or more in the last window
   (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
@@ -99,6 +99,17 @@ history is in git.
 
 ### Changed
 
+- Run logs are named by the writer that made them: `SERVOnnn.CSV` and
+  `SERVOnnn.TXT` for the automatic servo test and the limit run,
+  `ESCnnn.CSV` for a switch to ARMED of the throttle outputs (MOTOR & ESC, a
+  stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch to ARMED from SERVO
+  and for a SUPPLY run. The numbers 001 to 999 are one series across the
+  three names: a run takes one above the highest number on the card under
+  any name, and a card holding a number 999 takes no further run. A card
+  holding only `BENCHnnn` files continues above their numbers. The LOG
+  VIEWER lists, ranks and deletes all three, opens on the highest number,
+  and deletes a run's report under the run's own name. Its empty card reads
+  `Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.`
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save
@@ -110,7 +121,7 @@ history is in git.
 - The automatic servo test on the INA3221 ends ABORTED after 200 ms without
   a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
   run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
-- A servo run's `BENCHnnn.TXT` report counts as an open log run until the
+- A servo run's `SERVOnnn.TXT` report counts as an open log run until the
   card has closed it, as its CSV does: Wi-Fi and an update wait for it, and
   the log viewer neither lists nor opens it while it is written.
 - The SERVO settings' line that says the setup is not saved spans the

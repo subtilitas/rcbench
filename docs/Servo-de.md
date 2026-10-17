@@ -356,7 +356,7 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 ![Nur Suche](img/de/servo-limrun-found.png)
 ![Die Pulse des Servos außerhalb von PULS MIN und PULS MAX](img/de/servo-limrun-range.png)
 
-Der Bericht ist eine eigene `BENCHnnn.TXT` ohne CSV-Datei daneben, unter
+Der Bericht ist eine eigene `SERVOnnn.TXT` ohne CSV-Datei daneben, unter
 der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
 der Seite PRÜFLING sagt. Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
@@ -974,12 +974,14 @@ Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 
 Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein Prüfstand
 in ARMED, und die eigene Task der SD-Karte schreibt seine Dateien:
-`BENCHnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
-BERICHT an (PRÜFLING-Seite) `BENCHnnn.TXT`. Ein Lauf ist eine CSV: das eigene
+`SERVOnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
+BERICHT an (PRÜFLING-Seite) `SERVOnnn.TXT`. Die Nummer ist eine Reihe mit
+den Läufen `BENCHnnn.CSV` und `ESCnnn.CSV` auf der Karte
+([Logs](Screens-de.md#logs)). Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen
 wieder, wenn der Lauf endet. Eine Nummer, die nur ein
-`BENCHnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
+`SERVOnnn.TXT` trägt, dessen CSV am Computer gelöscht wurde, ist trotzdem
 vergeben, damit kein Bericht überschrieben wird, und LÖSCHEN in der
 Log-Ansicht löscht mit einem Lauf seinen Bericht. Ein Lauf, den die Karte nicht
 annimmt, sagt das in der Leiste und im Ergebnis, `NICHT AUFGEZEICHNET`. Zeilen, für

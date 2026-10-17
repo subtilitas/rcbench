@@ -182,23 +182,19 @@ atomic_uint s_log_open_run;
 atomic_uint s_test_open_run;
 
 /*
- * A servo run's report, BENCHnnn.TXT, from its open to its close, as a run
+ * A servo run's report, SERVOnnn.TXT, from its open to its close, as a run
  * number, or 0: the automatic test's after its CSV, and the limit run's,
  * which has no CSV.  An open report is an open run (run_open_now()).
  */
 atomic_uint s_test_open_txt;
 
-/* Whether @p name is a file the logger is still writing. */
+/* Whether @p name is a file the logger is still writing, under any of the
+ * writers' prefixes (log_name_busy()). */
 static bool card_busy(const char *name)
 {
-    const int n = log_run_number(name);
-    const int r = log_report_number(name);
-    const unsigned open_run  = atomic_load(&s_log_open_run);
-    const unsigned open_test = atomic_load(&s_test_open_run);
-    const unsigned open_txt  = atomic_load(&s_test_open_txt);
-    return (n > 0 && ((open_run != 0u && n == (int)open_run)
-                      || (open_test != 0u && n == (int)open_test)))
-        || (r > 0 && open_txt != 0u && r == (int)open_txt);
+    return log_name_busy(name, atomic_load(&s_log_open_run),
+                         atomic_load(&s_test_open_run),
+                         atomic_load(&s_test_open_txt));
 }
 
 /*
@@ -402,11 +398,11 @@ static bool card_remove(const char *name, void *ctx)
     }
     ESP_LOGI(TAG, "deleted %s", path);
     /* A servo test's report goes with its run: left behind, it would be
-     * the only file carrying the number. */
-    const int run = log_run_number(name);
-    if (run > 0) {
-        char txt[LOG_RUN_NAME_MAX];
-        log_report_name(txt, sizeof(txt), run);
+     * the only file carrying the number.  The same prefix as the run's,
+     * so a servo test's BENCHnnn.CSV takes its BENCHnnn.TXT. */
+    char txt[LOG_RUN_NAME_MAX];
+    log_name_report_of(txt, sizeof(txt), name);
+    if (txt[0] != '\0') {
         storage_path(CARD_DIR, txt, path, sizeof(path));
         if (remove(path) == 0) {
             ESP_LOGI(TAG, "deleted %s", path);

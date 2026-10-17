@@ -105,7 +105,7 @@ Die Optionen schließen beim Start des Laufs. Stufe und Phase stehen oben auf de
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
 
-Das Ergebnis bleibt bis SCHLIESSEN: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `BENCHnnn.CSV` und `+ .TXT` für den Bericht.
+Das Ergebnis bleibt bis SCHLIESSEN: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `SERVOnnn.CSV` und `+ .TXT` für den Bericht.
 
 ## Der Endlagenlauf
 
@@ -216,7 +216,7 @@ Der Kasten bleibt bis SCHLIESSEN. Er zeigt das Urteil, den Grund oder die Werte 
 ![Ein programmiertes Servo](view:servo-limrun-pass)
 ![Nur Suche](view:servo-limrun-found)
 
-Der Bericht ist eine eigene `BENCHnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
+Der Bericht ist eine eigene `SERVOnnn.TXT`, geschrieben unabhängig von BERICHT. Er enthält, wo die Suche lief, die Endpunkte beider Suchen, die Pulse des Servos und das Schreiben der Pulse, LEFT ANGLE und RIGHT ANGLE vorher und nachher mit den Anteilen, dem Vorhalt und dem Endwert, die geschriebenen Werte, die gesendeten Schreibvorgänge und die Sitzungen, das Messgerät, mit eingebautem AS5600 den Winkel an jeder letzten freien Stellung, und das Urteil oder den Grund. Bis die Karte ihn geschlossen hat, warten WLAN und ein Update.
 
 ## Aktuelle Einschränkungen
 

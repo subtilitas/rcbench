@@ -12,7 +12,7 @@ LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separat
 
 ![LOGS with no card in the slot](view:logs-nocard)
 
-With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` A card without a CSV file in its root reads `No .csv files in the top-level folder.` Runs are written as `BENCH001.CSV` and upwards. RESCAN reads the card again.
+With no card mounted, the box reads `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` A card without a CSV file in its root reads `No .csv files in the top-level folder.` Runs are written as `BENCHnnn.CSV`, `ESCnnn.CSV` or `SERVOnnn.CSV`, numbered from 001 to 999. RESCAN reads the card again.
 
 ## The file list
 
@@ -34,7 +34,16 @@ The header names the card and its free space. Each row is one file with its size
 
 ## What a run writes
 
-One file is one run: one switch to ARMED, one switch-on of the SUPPLY output with the bench SAFE, or one automatic servo test. A servo test also writes a report, `BENCHnnn.TXT`, which the list does not show. DELETE on a run removes its report too.
+One file is one run. Its name says which writer made it:
+
+| Name | Run |
+|---|---|
+| `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
+| `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
+| `ESCnnn.CSV` | one switch to ARMED of the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `BENCHnnn.CSV` | one switch to ARMED from SERVO, or one switch-on of the SUPPLY output with the bench SAFE |
+
+The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list draws names in alphabetical order, so runs stand grouped: `BENCH`, then `ESC`, then `SERVO`.
 
 A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
 

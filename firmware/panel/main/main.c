@@ -1472,12 +1472,14 @@ static const servo_link_ctx_t k_servo_ctx = {
 
 /*
  * Which run the log should be recording now; see log_run_kind_t.  The bench
- * comes first: an armed bench is the run whatever the supply is doing.
+ * comes first: an armed bench is the run whatever the supply is doing, and an
+ * ESC run while the arm covers the throttle.
  */
 static log_run_kind_t log_run_wanted(void)
 {
     if (outputs_armed(&s_out)) {
-        return LOG_RUN_BENCH;
+        return outputs_role_armed(&s_out, OUT_ROLE_THROTTLE) ? LOG_RUN_ESC
+                                                              : LOG_RUN_BENCH;
     }
     return s_supply.output ? LOG_RUN_SUPPLY : LOG_RUN_NONE;
 }

@@ -446,7 +446,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_NO_LOGS]            = "KEINE AUFZEICHNUNGEN",
     [TX_LOG_NO_CARD]            = "Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.",
     [TX_LOG_NO_CSV]             = "Keine .csv-Dateien im Hauptverzeichnis.",
-    [TX_LOG_RUNS_HERE]          = "Läufe werden ab BENCH001.CSV fortlaufend nummeriert gespeichert.",
+    [TX_LOG_RUNS_HERE]          = "Läufe werden als BENCHnnn, ESCnnn oder SERVOnnn.CSV gespeichert.",
     [TX_LOG_N_OF_FILES]         = "%d VON %d DATEIEN",
     [TX_LOG_FILES]              = "DATEIEN",
     [TX_LOG_DIR]                = "ORDNER",
@@ -898,7 +898,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SV_UNSENT_1]            = "Die Pulsrate wird mit der nächsten Position",
     [TX_SV_UNSENT_2]            = "an den Koprozessor gesendet.",
     [TX_SV_RUNNING]             = "LÄUFT: STUFE %u VON %u",
-    /* The verdict and not the file: "ZULETZT NICHT BESTANDEN BENCH012.CSV"
+    /* The verdict and not the file: "ZULETZT NICHT BESTANDEN SERVO012.CSV"
      * is 36 cells in a 29-cell line, and the left card names the file.
      * %.0s takes the file's argument and prints none of it. */
     [TX_SV_LAST]                = "ZULETZT %s%.0s",
