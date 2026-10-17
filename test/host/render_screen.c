@@ -2821,9 +2821,9 @@ int main(int argc, char **argv)
         }
         /*
          * The overlay, opened the way a finger opens it.  Geometry from
-         * servo_screen_int.h and servo_settings_panel.c, offset by the band: SETTINGS at the top of the
-         * right card, the tabs over the left card, the TYPE row and the
-         * list's HELI CYCLIC.
+         * servo_screen.c and servo_settings_panel.c, offset by the band:
+         * SETTINGS at the top of the right card, the tabs over the left
+         * card, the TYPE row and the list's HELI CYCLIC.
          */
         if (strcmp(view, "servo-target") == 0) {
             /* PWM TARGET on the programming port, bound to GP13, its

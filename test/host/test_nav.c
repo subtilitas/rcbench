@@ -2297,7 +2297,7 @@ TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
  * pressed, and neither acts. */
 TEST_CASE(servo_settings_and_close_carried_into_the_band_do_nothing)
 {
-    /* Mirrored from servo_screen_int.h (SETTINGS) and servo_settings_panel.c
+    /* Mirrored from servo_screen.c (SETTINGS) and servo_settings_panel.c
      * (CLOSE). */
     const int set_x = 734, set_y = UI_BAND_H + 24;
     const int close_x = 439, close_y = UI_BAND_H + 27;
