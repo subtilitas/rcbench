@@ -1226,7 +1226,11 @@ void servo_link_came_up(uint16_t minor)
      */
     s_servo_rate_page = minor >= LINK_MINOR_SERVO_RATE;
     /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME), and
-     * 4.19 sends the rate to the PWM target alone (servo_rate_in_force()). */
+     * 4.19 sends the rate to the PWM target alone (servo_rate_in_force()).
+     * The store may stand before or after the reset with the same result:
+     * servo_rate_reset() reads s_servo_rate_page, not the minor, and the
+     * minor's readers (write_servo_rate(), the sweep's resume plan) run
+     * later on this task. */
     s_servo_minor         = minor;
     (void)servo_rate_reset();
     s_servo_sweep_page    = minor >= 2u;

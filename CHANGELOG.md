@@ -180,6 +180,11 @@ history is in git.
 
 ### Fixed
 
+- `hardware/docs/IOBoard.md` cites `STATUS.md` by section and item name
+  instead of by line, so a coverage table that grows does not move the
+  citations. Its capability-word rows state that the panel reads the word
+  at bring-up, at each link-up and after a SENSE set-up the coprocessor
+  takes.
 - A HOLD on the SERVO screen that reaches the control task more than
   500 ms after the far end last took one keeps the release it owes. The
   pause ends there, the screen shows the surfaces released, and the next

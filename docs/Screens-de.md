@@ -1629,11 +1629,11 @@ nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder au
 einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer
 bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
 überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
-ordnet sie nach dem Namen. Die Liste zeigt die
-CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
-Bericht mit demselben Namen und derselben Nummer mit. Die Liste zeigt die
-Läufe nach Nummer, den neuesten zuerst, über alle drei Namen: `ESC043.CSV`,
-dann `SERVO042.CSV`, dann `BENCH041.CSV`.
+ordnet sie nach dem Namen. Sie zeigt die CSV-Dateien und nicht die
+Berichte, und LÖSCHEN auf einem Lauf löscht den Bericht mit demselben Namen
+und derselben Nummer mit. Die Läufe stehen nach Nummer, der neueste zuerst,
+über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann
+`BENCH041.CSV`.
 
 Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
 zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach

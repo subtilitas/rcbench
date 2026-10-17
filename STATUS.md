@@ -210,7 +210,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 155 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 156 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -220,7 +220,7 @@ The host suite is 155 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`,
 `test_settings_pins_hub`, `test_settings_leave`, `test_log_numbers`, `test_log_reader`, `test_log_csv`, `test_link_crc`, `test_link_pages`,
 `test_link_watchdog`, `test_link_loopback`, `test_link_bringup`,
-`test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outstore`,
+`test_link_can`, `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`, `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`, `test_outstore`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
@@ -232,7 +232,10 @@ feeds the router, one screen or one widget frames of contacts through
 event sequence the tracker does not emit. `test/host/tick_wrap.h` runs a
 case with the clock started at tick 0 and again a chosen number of ms
 before the 32-bit millisecond count wraps at 2^32 ms, and a failure names
-the start it happened at. `test/host/guard_canvas.h`
+the start it happened at. `test_outputs_hw` builds the coprocessor's output
+layer, `firmware/iomcu/src/outputs_hw.c`, over fake pin drivers and the two
+pico-sdk clocks in `test/host/pico_stub/pico/stdlib.h`, and holds the age of
+an ESC's last reading across that wrap. `test/host/guard_canvas.h`
 puts 8 guard pixels above, below and beside a canvas, so a pixel written
 off the canvas fails the plain build and not only the sanitizer one.
 `test_fuzz_engines` runs 600 random servo tests and 2400 random stick
