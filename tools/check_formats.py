@@ -43,7 +43,7 @@ UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 # run's.
 SERVO_STR = SHARED / "servo" / "servo_str.c"
 LOOKUPS = ((SHARED / "servo" / "servo_report.c", "S"),
-           (SHARED / "servo" / "servo_limrun.c", "LS"))
+           (SHARED / "servo" / "servo_limrun_report.c", "LS"))
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]
