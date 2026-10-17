@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "art_store.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
@@ -33,6 +34,8 @@
 #include "link_port.h"
 #include "log_cadence.h"
 #include "log_viewer_screen.h"
+#include "motor_screen.h"
+#include "out_bind.h"
 #include "outputs.h"
 #include "prog_link.h"
 #include "safety_gate.h"
@@ -44,8 +47,11 @@
 #include "servo_test_io.h"
 #include "supply.h"
 #include "supply_link.h"
+#include "supply_screen.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
+#include "touch_loss.h"
+#include "touch_types.h"
 #include "ui_screen.h"
 
 /* ------------------------------------------------------------------ main.c */
@@ -93,9 +99,6 @@ extern bind_read_t    s_bind_read;
 /* The coprocessor's protocol minor, and its board identity. */
 extern uint16_t       s_far_minor;
 extern uint16_t       s_board;
-
-/* A drawing fetch is under way; see art_begin(). */
-extern bool s_artbusy;
 
 extern QueueHandle_t s_kst_q;     /**< app_main -> control task */
 extern QueueHandle_t s_sample_q;  /**< control task -> app_main */
@@ -282,23 +285,6 @@ extern bool s_pump_live;
  * exchange. */
 void control_pump(void);
 
-/* The board drawing, a slice of a poll at a time. */
-void art_stop(const char *why);
-void art_begin(uint16_t board);
-void art_slice(void);
-
-/* The supply. */
-extern supply_link_t  s_supply_link;
-extern bool           s_supply_page;
-extern bool           s_supply_auto;
-extern bool           s_supply_is_real;
-extern supply_state_t s_supply;
-extern uint32_t       s_supply_gen;
-void supply_link_service(void);
-
-/* The bench's totals, and when they last counted. */
-extern bench_totals_t s_totals;
-extern uint32_t       s_totals_ms;
 
 /* The GPIOs of the slots of the channels the SERVO screen's horn drives
  * (servo_link_binding()), and whether a binding was read; see main.c. */
@@ -620,6 +606,239 @@ void advance_model_and_log(bool link_up, float emitted,
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
 
+/* ------------------------------------------------------- main.c, continued */
+
+/* The throttle's ramp, published by app_main for the control task. */
+extern atomic_uint s_throttle_ramp;
+void publish_throttle_ramp(void);
+static inline uint16_t panel_throttle_ramp(void)
+{
+    return (uint16_t)atomic_load(&s_throttle_ramp);
+}
+
+/*
+ * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
+ * motor screen scales its time axis by the same number; the two have to
+ * agree or the axis lies about how long ago something happened.
+ */
+#define PANEL_SAMPLE_HZ   20.0f
+
+typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
+               PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
+               PANEL_CMD_SUPPLY } panel_cmd_kind_t;
+
+typedef struct {
+    panel_cmd_kind_t kind;
+    motor_cmd_t      motor;
+    servo_cmd_t      servo;
+    outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
+    supply_cmd_t     supply; /**< PANEL_CMD_SUPPLY: set points and the switch */
+    /**
+     * How many stops the sender had seen when it queued this.
+     *
+     * The queue and the stop latch cross between the two tasks
+     * independently, so an arm can be queued from a gesture the sender
+     * watched, and a stop be applied before that arm is drained: the arm
+     * would then clear a latch that was set after it was asked for. An arm
+     * carrying a count that is no longer current is out of date and is
+     * dropped.
+     */
+    uint32_t         stops;
+    /** And how many times it had been told to let go; see s_lets_go. */
+    uint32_t         lets_go;
+    /** And how many times the supply's output had been asked off; see
+     *  s_supply_offs. */
+    uint32_t         supply_offs;
+    /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
+     *  an ON queued before an edit on SETUP is not applied after it, even
+     *  one undone since. */
+    uint32_t         pdmini_edits;
+    /**
+     * And what the render side knew of the touch stream when it queued
+     * this: how many times it had dropped the screens' gestures for a loss
+     * (s_loss_gen), and the number of the last event it had taken off
+     * s_touch_q.  An arm completes a hold, and a hold that completed on a
+     * contact whose events went missing is an arm the operator may not
+     * have made.  The render side cancels what it still holds when it
+     * finds a loss, but an arm already handed over is past its reach, so
+     * the control task compares these when it takes the arm and watches
+     * it until the render side has seen the bench armed; see
+     * touch_loss.h.  Only an arm: a loss makes no throttle or position
+     * suspect, and a disarm is never dropped.
+     */
+    uint32_t         loss_gen;
+    uint32_t         consumed_seq;
+} panel_cmd_t;
+
+/* What became of the last output-page write. */
+extern atomic_int s_outputs_result;
+
+/* The queues between the two tasks, and their items; see main.c. */
+typedef struct {
+    touch_event_t evt;
+    uint32_t      seq;
+    bool          lost;    /**< a loss notice, not an event */
+} touch_item_t;
+extern QueueHandle_t s_touch_q;   /**< control task -> app_main */
+typedef struct {
+    supply_state_t    st;
+    servo_source_id_t source;
+    uint32_t          changes;
+    /* Why the INA3221 last stopped being the meter, and at which count
+     * (servo_source_dropped()), as of the same poll. */
+    servo_source_why_t dropped;
+    uint32_t          dropped_at;
+} supply_item_t;
+extern QueueHandle_t s_supply_q;  /**< control task -> app_main */
+
+/* STOP's request and its count; the let-goes asked for. */
+extern atomic_bool s_stop_request;
+extern atomic_bool s_stop_counted;
+extern atomic_uint s_lets_go;
+
+/* The supply's switch and set points, from the render side. */
+extern atomic_bool s_supply_off_request;
+extern atomic_uint s_supply_offs;
+extern atomic_uint s_supply_set_mv;
+extern atomic_uint s_supply_set_ma;
+extern atomic_uint s_supply_vmax_mv;
+extern atomic_uint s_supply_imax_ma;
+extern atomic_uint s_supply_trip_ma;
+extern atomic_uint s_supply_trip_mv;
+extern atomic_uint s_supply_trip_ms;
+extern atomic_uint s_supply_ack;
+extern atomic_bool s_supply_live;
+extern atomic_uint s_supply_ons_sent;
+extern atomic_uint s_supply_ons_taken;
+extern atomic_uint s_pdmini_edits;
+extern atomic_bool s_supply_real;
+
+/* The touch stream's numbering and losses, and the arm watch; see
+ * touch_loss.h. */
+extern atomic_uint s_drv_gaps;
+extern atomic_uint s_tq_published;
+extern uint32_t    s_lost_notice_seq;
+extern atomic_uint s_loss_gen;
+extern atomic_uint s_arm_ack;
+extern uint32_t    s_arm_take_gen;
+extern uint32_t    s_arm_take_drv;
+extern arm_watch_t s_arm_watch;
+
+/* A supply run's row timestamp, and the log's run edges; see main.c. */
+extern float s_log_t;
+void log_follow_runs(void);
+
+/* The screens' commands, app_main -> control task; see main.c. */
+extern QueueHandle_t s_cmd_q;
+
+/* ---------------------------------------------------------- panel_supply.c */
+
+/* The modelled supply and the PD mini's link. */
+extern supply_sim_t   s_supply_sim;
+extern supply_link_t  s_supply_link;
+/* Set points the supply reported, for the screen to adopt. */
+extern atomic_uint    s_supply_adopt_mv;
+extern atomic_uint    s_supply_adopt_ma;
+extern atomic_uint    s_supply_adopt_gen;
+extern atomic_uint    s_supply_adopt_done;
+/* The ESC (electronic speed controller) model's profile and its runs. */
+extern atomic_uintptr_t s_escsim_profile;
+extern atomic_uint    s_escsim_runs;
+extern bool           s_supply_page;
+extern bool           s_supply_auto;
+extern bool           s_supply_is_real;
+extern supply_state_t s_supply;
+extern uint32_t       s_supply_ms;
+extern uint32_t       s_supply_stops_served;
+extern uint32_t       s_supply_step_ms;
+extern uint32_t       s_supply_gen;
+
+void supply_log_tail(void);
+void supply_switch(bool on);
+void supply_follow_set(void);
+/*
+ * Every stop switches the output off: STOP, touch that died, an arm the
+ * watch undid, the far end's refusal.  Called from control_pump(), which
+ * runs inside every exchange's wait, and again wherever the supply is
+ * stepped or switched, so a stop counted anywhere cuts the output before
+ * the next reading is taken or logged.
+ */
+static inline void supply_follow_stops(void)
+{
+    const uint32_t stops = arming_stop_count(&s_arm);
+    if (stops != s_supply_stops_served) {
+        s_supply_stops_served = stops;
+        supply_switch(false);
+    }
+}
+
+/*
+ * An OFF asked for, whether or not its queue entry survived; applying it
+ * twice costs nothing.  Called before the drain, so an OFF is never left
+ * waiting behind the queue's backlog.  And the set points, every pass.
+ */
+static inline void supply_service(void)
+{
+    if (atomic_exchange(&s_supply_off_request, false)) {
+        supply_switch(false);
+    }
+    supply_follow_set();
+}
+
+void apply_supply_cmd(const panel_cmd_t *pc);
+/* The supply's service, from control_pump(). */
+void supply_pump(void);
+void supply_link_service(void);
+
+/* ------------------------------------------------------------- panel_arm.c */
+
+void control_setup(telemetry_sim_t *sim, bench_state_t *bench);
+/* The bench's totals, and when they last counted. */
+extern bench_totals_t s_totals;
+extern uint32_t       s_totals_ms;
+void arm_watch_service(bool link_up);
+/* The latched stop, and the act the arming policy asks for. */
+void service_arming(bool link_up);
+bool disarm_here(bool link_up);
+/* What the screens asked for, in the order they asked it. */
+void drain_commands(bool link_up, bench_state_t *bench);
+
+/* ---------------------------------------------------------- panel_render.c */
+
+void kst_ui_service(void);
+extern unsigned s_tq_lost;
+bool supply_live_or_coming(void);
+void publish_supply_levels(void);
+void test_lines_service(void);
+typedef struct {
+    int            steps;
+    ui_screen_id_t route;
+    uint32_t       navigations;
+} knob_turn_t;
+
+knob_turn_t knob_take(void);
+void knob_apply(const knob_turn_t *turn, bool frame_lost);
+void flush_screen_commands(uint32_t stops_now);
+bool drain_touch(uint32_t stops_now);
+void outputs_apply(const outbind_t *b);
+
+/* ------------------------------------------------------------- panel_art.c */
+
+extern const art_flash_t *s_artflash;
+/* A drawing fetch is under way; see art_begin(). */
+extern bool               s_artbusy;
+extern atomic_bool        s_keeping;
+extern SemaphoreHandle_t  s_draw_lock;
+extern uint8_t           *s_drawpub;
+extern uint8_t           *s_drawshow;
+void drawing_for_picker(uint16_t board);
+void drawing_follow(void);
+void art_keep_service(void);
+/* The board drawing, a slice of a poll at a time. */
+void art_stop(const char *why);
+void art_begin(uint16_t board);
+void art_slice(void);
+
 /* ---------------------------------------------------------- panel_update.c */
 
 /* An install about to write the flash asks the control task to stand
@@ -646,10 +865,3 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
 void cu_render_service(bool unsafe, const cu_snap_t *cs);
-
-/* ------------------------------ TEMPORARY until row 26 merges: drop then */
-
-/* Defined in main.c until row 26 moves them; row 26 declares them in its
- * own sections. */
-extern atomic_bool s_keeping;
-bool supply_live_or_coming(void);

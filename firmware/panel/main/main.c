@@ -114,7 +114,7 @@
  * bank ramps a throttle upward only, so a ramp on the wire would slow the
  * rise and nothing else.  docs/Safety.md states both.
  */
-static atomic_uint s_throttle_ramp;
+atomic_uint s_throttle_ramp;
 
 /*
  * Published by app_main, which owns the settings model, and read by the
@@ -123,28 +123,13 @@ static atomic_uint s_throttle_ramp;
  * atomic carries the converted number across instead, and gives the two
  * cores the ordering a bare float does not.
  */
-static void publish_throttle_ramp(void)
+void publish_throttle_ramp(void)
 {
     const int pct = settings_get_int(SET_OUT_RAMP);
     const uint32_t per_s = ((uint32_t)OUT_SPAN * (uint32_t)pct) / 100u;
     atomic_store(&s_throttle_ramp, (unsigned)per_s);
 }
 
-static uint16_t panel_throttle_ramp(void)
-{
-    return (uint16_t)atomic_load(&s_throttle_ramp);
-}
-
-static uint16_t pct_to_span(float pct)
-{
-    if (!(pct > 0.0f)) {
-        return 0u;
-    }
-    if (pct >= 100.0f) {
-        return (uint16_t)OUT_SPAN;
-    }
-    return (uint16_t)((pct * (float)OUT_SPAN / 100.0f) + 0.5f);
-}
 #include "touch.h"
 #include "touch_map.h"
 #include "fw_install.h"
@@ -170,13 +155,6 @@ link_host_t    s_host;
  * loop reads it for the menu marks, so it is atomic. */
 atomic_uint    s_capabilities;
 link_bringup_t s_bring;
-
-
-/* The supply's service, defined with the supply.  control_pump() calls it,
- * so a stop or an OFF cuts the output where it lands and the supply keeps
- * its cadence while an exchange waits. */
-static void supply_pump(void);
-static bool disarm_here(bool link_up);
 
 
 /* ------------------------------------------------------------ the CAN bus */
@@ -333,59 +311,7 @@ static void beat(bool alive)
 static char        s_boot_alert[ALERT_MAX];
 /* s_wifi_ok and s_update_back: panel_update.c. */
 
-/*
- * The bench page is polled every 50 ms, so a sample is 1/20 s of plot.  The
- * motor screen scales its time axis by the same number; the two have to
- * agree or the axis lies about how long ago something happened.
- */
-#define PANEL_SAMPLE_HZ   20.0f
-
-typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
-               PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
-               PANEL_CMD_SUPPLY } panel_cmd_kind_t;
-
-typedef struct {
-    panel_cmd_kind_t kind;
-    motor_cmd_t      motor;
-    servo_cmd_t      servo;
-    outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
-    supply_cmd_t     supply; /**< PANEL_CMD_SUPPLY: set points and the switch */
-    /**
-     * How many stops the sender had seen when it queued this.
-     *
-     * The queue and the stop latch cross between the two tasks
-     * independently, so an arm can be queued from a gesture the sender
-     * watched, and a stop be applied before that arm is drained: the arm
-     * would then clear a latch that was set after it was asked for. An arm
-     * carrying a count that is no longer current is out of date and is
-     * dropped.
-     */
-    uint32_t         stops;
-    /** And how many times it had been told to let go; see s_lets_go. */
-    uint32_t         lets_go;
-    /** And how many times the supply's output had been asked off; see
-     *  s_supply_offs. */
-    uint32_t         supply_offs;
-    /** And how many edits the PD mini's wiring had had (s_pdmini_edits):
-     *  an ON queued before an edit on SETUP is not applied after it, even
-     *  one undone since. */
-    uint32_t         pdmini_edits;
-    /**
-     * And what the render side knew of the touch stream when it queued
-     * this: how many times it had dropped the screens' gestures for a loss
-     * (s_loss_gen), and the number of the last event it had taken off
-     * s_touch_q.  An arm completes a hold, and a hold that completed on a
-     * contact whose events went missing is an arm the operator may not
-     * have made.  The render side cancels what it still holds when it
-     * finds a loss, but an arm already handed over is past its reach, so
-     * the control task compares these when it takes the arm and watches
-     * it until the render side has seen the bench armed; see
-     * touch_loss.h.  Only an arm: a loss makes no throttle or position
-     * suspect, and a disarm is never dropped.
-     */
-    uint32_t         loss_gen;
-    uint32_t         consumed_seq;
-} panel_cmd_t;
+/* A screen's command (panel_cmd_t): panel.h. */
 
 /*
  * What became of the last output-page write.
@@ -396,7 +322,7 @@ typedef struct {
  * between processors and promises no atomicity, and these two tasks are
  * pinned to different cores.
  */
-static atomic_int s_outputs_result;
+atomic_int s_outputs_result;
 
 /*
  * What the coprocessor says its outputs are.
@@ -420,73 +346,10 @@ uint16_t       s_far_minor;
 /* The coprocessor's board identity, from the identity page at bring-up. */
 uint16_t  s_board;
 
-/*
- * Fetching the board's drawing, a slice of a poll at a time.
- *
- * Up to LINK_DRAW_MAX_BYTES (5328 bytes) over a link that carries sixty-two
- * bytes a transaction is up to 86 round trips.  Doing them in a loop would
- * stop the control task for the length of the transfer, so a bounded slice
- * of each poll goes to it and the bench keeps its cadence.
- */
-#define ART_SLICE_MS 15u
+/* Fetching the board's drawing, and keeping it: panel_art.c. */
 
-static const art_flash_t *s_artflash;
-static art_fetch_t        s_artfetch;
-static uint8_t           *s_artbuf;
-static uint16_t           s_artboard;
-bool                      s_artbusy;
-
-/*
- * Writing it down: one sector a control pass, and only on a safe bench.
- *
- * A drawing of up to 5328 bytes is up to 3 sector erases (the header's and
- * two of payload) and 2 writes and the header.  Auto-suspend
- * is off, so each one stalls both cores, this task with them, for its length
- * -- tens of milliseconds an erase.  No other task can take that stall off
- * this one.  So the keep runs here, a step a pass (art_keep_service()), and
- * a step is taken only when flash_gate_open() says so: disarmed, no arm
- * waiting, the supply off and no ON queued.  The gate is read on the same
- * task, in the same pass, that applies an arm and an ON, so neither can come
- * in between the check and the sector.
- *
- * An arm or an ON pauses the keep between two sectors; it holds its buffer
- * and carries on from the same step on the next safe pass.  Nothing is
- * findable for the board until the header, written last.
- *
- * The display stalls for each operation too: the panel's bounce-buffer refill
- * reads PSRAM through the cache a flash operation closes.  Settings saves
- * already cost that.
- */
-static uint8_t     *s_keepbuf;      /* the keeper's, once handed over */
-static art_entry_t  s_keepentry;
-static art_keep_t   s_keep;         /* control task only */
-atomic_bool  s_keeping;      /* set and cleared by the control task */
-static bool         s_keep_waited;  /* the wait is logged once a keep */
-
-/*
- * The drawing the picker may show, published by the control task and copied
- * out by the UI task.
- *
- * Emptied on every link-up edge before anything else is asked, so a drawing
- * outlives neither the coprocessor it came from nor a reflash of it.  Filled
- * only with bytes that match the ARTWORK page read on that link-up: fetched
- * and checked against its CRC and hash, or read from flash under an entry
- * whose every field equals the page (art_store_read_same()).  The board ID
- * alone never selects a kept drawing.
- *
- * s_draw_gen counts publications; the UI task re-asks when it moves, so an
- * open picker follows a link-up instead of waiting for its next visit.
- */
-static SemaphoreHandle_t s_draw_lock;
-static uint8_t          *s_drawpub;        /* LINK_DRAW_MAX_BYTES, PSRAM */
-static uint32_t          s_drawpub_bytes;  /* 0: nothing to show; lock */
-static uint16_t          s_drawpub_board;  /* lock */
-static atomic_uint       s_draw_gen;
-static uint8_t          *s_drawshow;       /* the UI task's copy, PSRAM */
-static unsigned          s_draw_seen;      /* UI task only */
-
-static QueueHandle_t     s_touch_q;   /**< control task -> app_main */
-static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
+QueueHandle_t            s_touch_q;   /**< control task -> app_main */
+QueueHandle_t            s_cmd_q;     /**< app_main -> control task */
 /* The servo programmer's commands (kst_prog_cmd_t), a queue of their own:
  * s_cmd_q drops its oldest entry when it is full. */
 #define KST_Q_LEN 4
@@ -502,17 +365,8 @@ QueueHandle_t     s_kst_q;     /**< app_main -> control task */
 QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 /* The supply's samples, one entry each, for the same reason; each with the
  * servo rail's meter and its change count as last decided when the sample
- * was queued (servo_screen_supply_at()). */
-typedef struct {
-    supply_state_t    st;
-    servo_source_id_t source;
-    uint32_t          changes;
-    /* Why the INA3221 last stopped being the meter, and at which count
-     * (servo_source_dropped()), as of the same poll. */
-    servo_source_why_t dropped;
-    uint32_t          dropped_at;
-} supply_item_t;
-static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
+ * was queued (servo_screen_supply_at()): supply_item_t, panel.h. */
+QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
 QueueHandle_t     s_enc_q;     /**< control task -> app_main */
 QueueHandle_t     s_win_q;     /**< control task -> app_main */
@@ -545,20 +399,6 @@ outputs_t s_out;
  */
 arming_t  s_arm;
 
-/* The stop count this task has already let go for; see service_arming(). */
-static uint32_t    s_stops_served;
-/*
- * When the outstanding disarm started holding the safety line down, and how
- * long that may go on for.
- *
- * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
- * certainly failed safe by then and the line can go back up: a disarm nobody
- * can deliver must not hold it down for ever.
- */
-#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
-static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
-static uint32_t    s_disarm_since;
-
 uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
 static bool      s_stop_press;
@@ -577,12 +417,12 @@ static uint8_t   s_stop_id;
  * the write then said "none" over the top of it.
  */
 static atomic_bool s_stop_live;
-static atomic_bool s_stop_request;
+atomic_bool        s_stop_request;
 /* A disarm, and the servo screen's own release, as flags rather than queue
  * entries: neither may be lost to an eviction.  See send_cmd(). */
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
-static atomic_bool s_stop_counted;
+atomic_bool        s_stop_counted;
 atomic_bool        s_disarm_request;
 /*
  * How many times the panel has been told to let go: a disarm, or an explicit
@@ -592,15 +432,15 @@ atomic_bool        s_disarm_request;
  * entries, out of the order the queue holds, so a drive command still behind
  * one would otherwise put back what it let go of.
  */
-static atomic_uint s_lets_go;
+atomic_uint s_lets_go;
 /*
  * And how many times the supply's output has been asked off, for the same
  * reason: an OFF is a flag as well as a queue entry, so an ON still behind it
  * in the queue would otherwise switch the output back on.  See
  * supply_service().
  */
-static atomic_bool s_supply_off_request;
-static atomic_uint s_supply_offs;
+atomic_bool s_supply_off_request;
+atomic_uint s_supply_offs;
 /*
  * The supply's set points as the screen holds them, in mV and mA: a level the
  * render loop stores every frame and the control task reads, not a queue
@@ -609,25 +449,25 @@ static atomic_uint s_supply_offs;
  * same frame is queued, so an ON taken from the queue is never applied ahead
  * of the set points it was asked under.
  */
-static atomic_uint s_supply_set_mv;
-static atomic_uint s_supply_set_ma;
+atomic_uint s_supply_set_mv;
+atomic_uint s_supply_set_ma;
 /*
  * And the operator's limits, the same way: caps on the set points in mV and
  * mA, the trips in mA and mV (0 is off) and the trip time in ms.  The screen
  * already keeps its set points under the caps; the control task applies
  * them again, because it is what the supply obeys.
  */
-static atomic_uint s_supply_vmax_mv;
-static atomic_uint s_supply_imax_ma;
-static atomic_uint s_supply_trip_ma;
-static atomic_uint s_supply_trip_mv;
-static atomic_uint s_supply_trip_ms;
+atomic_uint s_supply_vmax_mv;
+atomic_uint s_supply_imax_ma;
+atomic_uint s_supply_trip_ma;
+atomic_uint s_supply_trip_mv;
+atomic_uint s_supply_trip_ms;
 /*
  * The newest ON the render side has seen applied, from a frame that found
  * the touch stream whole: the supply's counterpart of s_arm_ack.  See
  * supply_watch_service().
  */
-static atomic_uint s_supply_ack;
+atomic_uint s_supply_ack;
 /*
  * Whether the output is on, stored by the control task the moment it
  * switches, and the ONs the render side has queued against the ones the
@@ -636,9 +476,9 @@ static atomic_uint s_supply_ack;
  * snapshot is a frame old, and an ON queued in this frame is in neither.
  * See supply_live_or_coming().
  */
-static atomic_bool s_supply_live;
-static atomic_uint s_supply_ons_sent;
-static atomic_uint s_supply_ons_taken;
+atomic_bool s_supply_live;
+atomic_uint s_supply_ons_sent;
+atomic_uint s_supply_ons_taken;
 /*
  * Where the PD mini is wired, from SETUP INTERFACES, in one word so a write
  * never pairs one edit's TX with another's RX: bit 24 enabled, bits 23..16
@@ -648,13 +488,13 @@ static atomic_uint s_supply_ons_taken;
 atomic_uint s_pdmini_wiring;
 /* And how many times it has been edited: an edit undone before a queued ON
  * is applied leaves the word as it was, but not this count. */
-static atomic_uint s_pdmini_edits;
+atomic_uint s_pdmini_edits;
 /*
  * Whether the SUPPLY screen drives the PD mini rather than the panel's
  * model: SETUP INTERFACES enables it.  Stored by the control task, read by
  * app_main for the screen's header, caps and the menu's badge.
  */
-static atomic_bool s_supply_real;
+atomic_bool s_supply_real;
 /* The PD mini's input in mV as its page last read, 0 while not known: the
  * screen keeps the voltage under it (PDMINI_CAP_MV). */
 atomic_uint s_supply_vin_mv;
@@ -671,7 +511,7 @@ atomic_uint s_supply_baud;
  * and the arm watch compares it.
  */
 static touch_seq_rx_t s_drv_rx = { .next = 1u };   /* touch_seq_rx_init() */
-static atomic_uint    s_drv_gaps;
+atomic_uint           s_drv_gaps;
 
 /*
  * s_touch_q, from the control task to the render loop.  The control task is
@@ -681,16 +521,11 @@ static atomic_uint    s_drv_gaps;
  * render loop meets it in order, ahead of the events that followed the gap;
  * s_lost_notice_seq is the number of the latest such item, for the check on
  * an arm (touch_loss.h, arm_watch_take_ok()).  Both control-task values.
+ * The item is touch_item_t, in panel.h.
  */
-typedef struct {
-    touch_event_t evt;
-    uint32_t      seq;
-    bool          lost;    /**< a loss notice, not an event */
-} touch_item_t;
-
 static uint32_t    s_tq_seq;
-static atomic_uint s_tq_published;
-static uint32_t    s_lost_notice_seq;
+atomic_uint        s_tq_published;
+uint32_t           s_lost_notice_seq;
 
 /*
  * The render loop's side.  s_loss_gen counts the times it dropped the
@@ -699,18 +534,18 @@ static uint32_t    s_lost_notice_seq;
  * loop has seen, set at the end of a frame that began with the bench armed
  * and found no loss; see arm_watch_lost().
  */
-static atomic_uint s_loss_gen;
-static atomic_uint s_arm_ack;
+atomic_uint s_loss_gen;
+atomic_uint s_arm_ack;
 
 /*
  * The arm in flight, control task only.  An arm's two stamps are kept from
  * the moment it is taken, because the exchanges that apply it can take two
  * seconds, and the watch starts once it is applied.
  */
-static uint32_t    s_arm_take_gen;
-static uint32_t    s_arm_take_drv;
+uint32_t           s_arm_take_gen;
+uint32_t           s_arm_take_drv;
 uint32_t           s_arm_gen;
-static arm_watch_t s_arm_watch;
+arm_watch_t        s_arm_watch;
 
 /*
  * The pole count the coprocessor holds, and whether it is current.
@@ -1501,7 +1336,7 @@ log_run_kind_t        s_log_kind;
 
 /* The control task's: the timestamp a supply run's next row carries.  A
  * bench run's is s_log_cad's. */
-static float        s_log_t;
+float               s_log_t;
 
 /* An automatic servo test or a limit run is running, for the control
  * task's bench and supply logs:
@@ -1535,1160 +1370,23 @@ void log_post(log_row_t *row)
 
 /* Asking the far end, exchange(): panel_link.c. */
 
-/* ------------------------------------------------------ the board drawing */
-
-bool supply_live_or_coming(void);
-
-/* Publish @p bytes of @p src for @p board, or nothing for a NULL @p src. */
-static void draw_publish(uint16_t board, const uint8_t *src, uint32_t bytes)
-{
-    if (s_draw_lock == NULL || s_drawpub == NULL) {
-        return;
-    }
-    xSemaphoreTake(s_draw_lock, portMAX_DELAY);
-    if (src != NULL && bytes != 0u && bytes <= LINK_DRAW_MAX_BYTES) {
-        memcpy(s_drawpub, src, bytes);
-        s_drawpub_bytes = bytes;
-        s_drawpub_board = board;
-    } else {
-        s_drawpub_bytes = 0u;
-    }
-    xSemaphoreGive(s_draw_lock);
-    atomic_fetch_add(&s_draw_gen, 1u);
-}
-
-/*
- * The picker asking for a board's drawing: on the way into the screen, and
- * from the UI loop whenever a link-up edge published or withdrew one.  UI
- * task only.  The copy is the picker's until the next call, and the picker
- * checks it against the board's catalogue before showing it.
- */
-static void drawing_for_picker(uint16_t board)
-{
-    uint32_t bytes = 0u;
-    if (s_draw_lock != NULL && s_drawpub != NULL && s_drawshow != NULL) {
-        xSemaphoreTake(s_draw_lock, portMAX_DELAY);
-        if (s_drawpub_bytes != 0u && s_drawpub_board == board) {
-            memcpy(s_drawshow, s_drawpub, s_drawpub_bytes);
-            bytes = s_drawpub_bytes;
-        }
-        xSemaphoreGive(s_draw_lock);
-    }
-    if (bytes == 0u) {
-        (void)picker_screen_set_drawing(NULL, 0u, NULL);
-        return;
-    }
-    const char *why = "";
-    if (!picker_screen_set_drawing(s_drawshow, bytes, &why)) {
-        ESP_LOGW(TAG, "hardware %u's drawing is not shown: %s",
-                 (unsigned)board, why);
-    }
-}
-
-/* A publication since the picker last asked: ask again. UI task only. */
-static void drawing_follow(void)
-{
-    const unsigned gen = atomic_load(&s_draw_gen);
-    if (gen != s_draw_seen) {
-        s_draw_seen = gen;
-        drawing_for_picker(picker_screen_binding()->board);
-    }
-}
-
-static void art_keep_end(void)
-{
-    heap_caps_free(s_keepbuf);
-    s_keepbuf = NULL;
-    atomic_store(&s_keeping, false);
-}
-
-/*
- * One step of the keep, from the control task after the pass has applied
- * its arm, disarm and supply commands.  At most one sector, and none unless
- * the bench is disarmed with no arm waiting and the supply off and not
- * coming on.
- */
-static void art_keep_service(void)
-{
-    if (!atomic_load(&s_keeping)) {
-        return;
-    }
-    const bool open = flash_gate_open(
-        arming_link_needed(&s_arm, outputs_armed(&s_out)),
-        supply_live_or_coming());
-    switch (art_keep_step(&s_keep, open)) {
-    case ART_KEEP_WAITING:
-        if (!s_keep_waited) {
-            s_keep_waited = true;
-            ESP_LOGI(TAG, "keeping hardware %u's drawing waits for a "
-                          "bench in SAFE with the supply off",
-                     (unsigned)s_keepentry.board);
-        }
-        break;
-    case ART_KEEP_DONE:
-        ESP_LOGI(TAG, "hardware %u's drawing kept",
-                 (unsigned)s_keepentry.board);
-        art_keep_end();
-        break;
-    case ART_KEEP_FAILED:
-        ESP_LOGW(TAG, "hardware %u's drawing could not be kept; it will be "
-                      "fetched again", (unsigned)s_keepentry.board);
-        art_keep_end();
-        break;
-    case ART_KEEP_IDLE:
-        art_keep_end();             /* not reached: s_keeping means busy */
-        break;
-    default:
-        break;
-    }
-}
-
-void art_stop(const char *why)
-{
-    if (s_artbuf != NULL) {
-        heap_caps_free(s_artbuf);
-        s_artbuf = NULL;
-    }
-    if (s_artbusy && why != NULL) {
-        ESP_LOGW(TAG, "gave up on hardware %u's drawing: %s",
-                 (unsigned)s_artboard, why);
-    }
-    s_artbusy = false;
-}
-
-/*
- * How the fetch reaches the far end.  The sequence itself is in
- * shared/artwork, where the suite runs it against a device in memory and can
- * stop the link at a chosen transaction; this is the two calls it needs.
- */
-static bool art_link_read(void *ctx, uint8_t page, uint8_t count,
-                          uint16_t *regs)
-{
-    (void)ctx;
-    link_msg_t r;
-    if (!poll_page(&s_host, page, count, &r) || r.op != LINK_OP_DATA) {
-        return false;
-    }
-    for (uint8_t i = 0; i < count; ++i) {
-        regs[i] = r.regs[i];
-    }
-    return true;
-}
-
-static bool art_link_write(void *ctx, uint8_t page, uint8_t reg,
-                           uint16_t value)
-{
-    (void)ctx;
-    link_msg_t ack;
-    return write_regs(&s_host, page, reg, 1u, &value, &ack)
-           && ack.op != LINK_OP_NACK;
-}
-
-static const art_transport_t s_art_link = {
-    art_link_read, art_link_write, NULL,
-};
-
-/*
- * On the link-up edge: withdraw the last drawing, ask what this one is, and
- * show the kept copy only when it is this drawing -- else fetch it.
- *
- * Two transactions and at most one flash read here; a fetch happens a slice
- * of a poll at a time below.  A coprocessor older than 4.20 serves a
- * photograph or nothing, and is drawn from its shape.
- */
-void art_begin(uint16_t board)
-{
-    art_stop(NULL);
-    draw_publish(board, NULL, 0u);
-    s_artboard = board;
-
-    if (s_far_minor < LINK_MINOR_DRAWING) {
-        ESP_LOGI(TAG, "hardware %u serves no board drawing (protocol 4.%u); "
-                      "PICK A PIN draws its shape", (unsigned)board,
-                 (unsigned)s_far_minor);
-        return;
-    }
-    uint16_t meta[LINK_AW_COUNT];
-    uint32_t bytes = 0u;
-    const char *why = "";
-    if (!art_fetch_meta(&s_art_link, meta, &bytes, &why)) {
-        /* Three different things end here -- no drawing, no page, and a page
-         * that disagrees with itself -- and only the last is a fault. The
-         * line says which rather than reporting all three as the first. */
-        ESP_LOGI(TAG, "no drawing from hardware %u: %s", (unsigned)board,
-                 why);
-        return;
-    }
-    art_entry_t key;
-    if (!art_fetch_key(meta, board, &key)) {
-        return;         /* not reached: art_fetch_meta() checked the page */
-    }
-
-    s_artbuf = heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM);
-    if (s_artbuf == NULL) {
-        ESP_LOGW(TAG, "no room for a %u byte drawing", (unsigned)bytes);
-        return;
-    }
-    if (s_artflash != NULL && !atomic_load(&s_keeping)
-        && art_store_read_same(s_artflash, &key, s_artbuf, bytes)) {
-        draw_publish(board, s_artbuf, bytes);
-        ESP_LOGI(TAG, "hardware %u's drawing is kept: %u bytes, hash %08lx",
-                 (unsigned)board, (unsigned)bytes, (unsigned long)key.hash);
-        art_stop(NULL);
-        return;
-    }
-    if (!art_fetch_begin(&s_artfetch, meta, s_artbuf, bytes)) {
-        ESP_LOGW(TAG, "hardware %u: %s", (unsigned)board,
-                 art_fetch_why(&s_artfetch));
-        art_stop(NULL);
-        return;
-    }
-    s_artbusy = true;
-    ESP_LOGI(TAG, "fetching hardware %u's drawing: %u bytes, hash %08lx",
-             (unsigned)board, (unsigned)bytes, (unsigned long)key.hash);
-}
-
-/* It arrived and it is the drawing it claimed.  Show it, then keep it. */
-static void art_finish(void)
-{
-    s_artbusy = false;
-    const uint32_t bytes = art_fetch_bytes(&s_artfetch);
-    draw_publish(s_artboard, s_artbuf, bytes);
-    if (s_artflash == NULL || atomic_load(&s_keeping)) {
-        ESP_LOGW(TAG, "hardware %u's drawing arrived; it is not kept, so it "
-                      "will be fetched again", (unsigned)s_artboard);
-        art_stop(NULL);
-        return;
-    }
-    s_keepentry.board  = s_artboard;
-    s_keepentry.format = art_fetch_format(&s_artfetch);
-    s_keepentry.width  = art_fetch_width(&s_artfetch);
-    s_keepentry.height = art_fetch_height(&s_artfetch);
-    s_keepentry.crc    = art_fetch_crc(&s_artfetch);
-    s_keepentry.hash   = art_fetch_hash(&s_artfetch);
-    s_keepentry.bytes  = bytes;
-    /*
-     * Hand the buffer over and stop owning it.  Nothing is written here:
-     * art_keep_service() takes it a sector a pass, on a safe bench.  The
-     * fetch checked the payload's CRC and hash; the keep's read-back checks
-     * the flash against them before the header goes in.
-     */
-    s_keepbuf = s_artbuf;
-    s_artbuf  = NULL;
-    if (!art_keep_begin(&s_keep, s_artflash, s_keepentry.board, &s_keepentry,
-                        s_keepbuf)) {
-        ESP_LOGW(TAG, "hardware %u's drawing does not fit a slot; it will "
-                      "be fetched again", (unsigned)s_artboard);
-        heap_caps_free(s_keepbuf);
-        s_keepbuf = NULL;
-        return;
-    }
-    s_keep_waited = false;
-    atomic_store(&s_keeping, true);
-}
-
-/*
- * One bounded slice of the fetch.
- *
- * A block at a time until the slice is spent: this task also beats the
- * safety line, and its ceiling is 150 ms.  The sequence does exactly the
- * blocks it is given, so how much of a poll goes to a drawing is decided
- * here and nowhere else.
- */
-void art_slice(void)
-{
-    const uint32_t began = now_ms();
-    while (s_artbusy && (uint32_t)(now_ms() - began) < ART_SLICE_MS) {
-        switch (art_fetch_step(&s_artfetch, &s_art_link, 1u)) {
-        case ART_FETCH_RUNNING:
-            break;
-        case ART_FETCH_DONE:
-            art_finish();
-            return;
-        default:
-            art_stop(art_fetch_why(&s_artfetch));
-            return;
-        }
-    }
-}
+/* The board drawing: panel_art.c. */
 
 /* The control page: panel_link.c. */
-
-static uint16_t pct_to_hundredths(float pct)
-{
-    if (!(pct > 0.0f)) {
-        return 0u;
-    }
-    if (pct >= 100.0f) {
-        return (uint16_t)LINK_THROTTLE_MAX;
-    }
-    return (uint16_t)((pct * 100.0f) + 0.5f);
-}
 
 
 /* ------------------------------------------------------------------- main */
 
 /* --------------------------------------------------------- the control task */
 
-/* ------------------------------------------------------------- the supply */
-
-/*
- * The programmable supply.
- *
- * The PD mini, driven by the coprocessor over the SUPPLY page (protocol 4.3)
- * when one answers that speaks it and SETUP INTERFACES enables the module;
- * the panel's model, supply_sim_t, otherwise, so the screen, the log and the
- * rules here are the same either way.  s_supply_on is what the operator
- * asked; the readings come from the source in use.  Control task only,
- * beside the bench, because every stop is seen here and a stop switches the
- * output off whatever screen is up.
- *
- * s_supply_ms is when the totals last counted.  s_supply_fresh says the next
- * reading starts the run's extremes: the output has just come on, and the
- * reading in s_supply is still the one taken with it off.
- */
-static supply_sim_t   s_supply_sim;
-supply_link_t         s_supply_link;
+/* The supply: panel_supply.c. */
 /* The link modules' state, SENSE to PROG: panel_services.c. */
-/*
- * The supply command a programming port left on the SUPPLY page, for the
- * SUPPLY screen's set points: the values, and a count the control task
- * raises with each.  The render loop puts them on the screen and stores the
- * count it served; until then the screen's older set points are not sent.
- */
-static atomic_uint        s_supply_adopt_mv;
-static atomic_uint        s_supply_adopt_ma;
-static atomic_uint        s_supply_adopt_gen;
-static atomic_uint        s_supply_adopt_done;
-/*
- * The ESC a stick run programs, when the supply is the panel's model.
- *
- * The PROGRAMMER screen publishes the profile of a run under way, and how
- * many runs it has started, from the render loop; the control task makes
- * the model's current the simulated ESC's, so the run counts beeps from the
- * same samples the PD mini would give it.  The ESC sees the throttle the
- * control page carries -- the raw command, as a pin bound on the
- * coprocessor does -- and no signal while the bank is disarmed.
- */
-static atomic_uintptr_t s_escsim_profile;
-static atomic_uint      s_escsim_runs;
-static esc_sim_t        s_escsim;          /* control task only */
-static unsigned         s_escsim_runs_seen;
-static bool             s_escsim_live;
-/* The coprocessor that answered speaks protocol 4.3: it has the page. */
-bool s_supply_page;
-/* And speaks 4.4: AUTO baud and the BAUD_FOUND register. */
-bool s_supply_auto;
-/* The PD mini, not the model, is the supply; see supply_real_follow(). */
-bool                  s_supply_is_real;
-static bool           s_supply_on;
-supply_state_t        s_supply;
-static uint32_t       s_supply_ms;
-static bool           s_supply_fresh;
-/* The stop count the supply has answered; see supply_follow_stops(). */
-static uint32_t       s_supply_stops_served;
-/* The trips' time over their thresholds; see supply_trip_step(). */
-static supply_trip_t  s_supply_trip;
-/* When the supply was last stepped, on its own cadence; see supply_pump(). */
-static uint32_t       s_supply_step_ms;
-/*
- * The ON in flight, watched as an arm is (s_arm_watch): a hold that completed
- * on a contact whose events went missing is an ON the operator may not have
- * made, and the render side can cancel only an ON it has not yet handed
- * over.  s_supply_gen numbers the ONs applied; the snapshot carries it.
- */
-static arm_watch_t    s_supply_watch;
-uint32_t              s_supply_gen;
 
-/*
- * The interval since the last step, up to now, on the reading that held
- * through it: counted into the totals and, while a supply run is being
- * logged, written as the run's last row, so the log ends on the totals the
- * screen shows.  For the moments a supply run ends between two steps -- the
- * output switched off, or the bench taking the log over.
- */
-static void supply_log_tail(void)
-{
-    const uint32_t t = now_ms();
-    float dt = (float)(uint32_t)(t - s_supply_ms) / 1000.0f;
-    if (dt > BENCH_TOTALS_MAX_STEP_S) {
-        dt = BENCH_TOTALS_MAX_STEP_S;
-    }
-    supply_count_totals(&s_supply, dt);
-    s_supply_ms = t;
-    /* No row while a servo run is under way: a limit run switches the bench
-     * to SAFE for each write, and its report is the record.  The log's clock
-     * runs on through it, as the totals do. */
-    if (s_log_kind == LOG_RUN_SUPPLY) {
-        s_log_t += dt;
-        if (!atomic_load(&s_servo_testing)) {
-            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-            row.u.supply = s_supply;
-            log_post(&row);
-        }
-    }
-}
+/* The bench's own state, the arm watch, the bench's totals, the latched
+ * stop and the arming policy's act: panel_arm.c. */
 
-/* The set points the screen holds, applied when they change; see
- * s_supply_set_mv.  Compared as stored, in mV and mA, because the supply
- * snaps what it is given and a snapped value need not equal it. */
-static unsigned s_supply_set_mv_applied;
-static unsigned s_supply_set_ma_applied;
-
-static void supply_switch(bool on)
-{
-    if (s_supply_on == on) {
-        return;
-    }
-    if (!on) {
-        /* The run's last interval, before the output is marked off: an OFF
-         * taken inside an exchange's wait can end a second-long one. */
-        supply_log_tail();
-        arm_watch_end(&s_supply_watch);
-    }
-    s_supply_on = on;
-    if (s_supply_is_real) {
-        supply_link_command(&s_supply_link, on,
-                            (uint16_t)s_supply_set_mv_applied,
-                            (uint16_t)s_supply_set_ma_applied);
-    } else {
-        supply_sim_output(&s_supply_sim, on);
-    }
-    s_supply.output = on;
-    atomic_store(&s_supply_live, on);
-    if (on) {
-        /* A run starts with nothing counted and nothing tripped. */
-        supply_reset_totals(&s_supply);
-        supply_trip_reset(&s_supply_trip);
-        s_supply.trip  = (uint8_t)SUPPLY_TRIP_NONE;
-        s_supply_ms    = now_ms();
-        s_supply_fresh = true;
-        /* And the step clock: the run's first step, and its first row's
-         * time, count from the switch-on and not from the last step taken
-         * with the output off. */
-        s_supply_step_ms = now_ms();
-    }
-}
-
-/* The operator's limits as the render side last stored them. */
-static supply_limits_t supply_limits_now(void)
-{
-    const supply_limits_t l = {
-        (float)atomic_load(&s_supply_vmax_mv) / 1000.0f,
-        (float)atomic_load(&s_supply_imax_ma) / 1000.0f,
-        (float)atomic_load(&s_supply_trip_ma) / 1000.0f,
-        (float)atomic_load(&s_supply_trip_mv) / 1000.0f,
-        (float)atomic_load(&s_supply_trip_ms) / 1000.0f,
-    };
-    return l;
-}
-
-/*
- * Every stop switches the output off: STOP, touch that died, an arm the
- * watch undid, the far end's refusal.  Called from control_pump(), which
- * runs inside every exchange's wait, and again wherever the supply is
- * stepped or switched, so a stop counted anywhere cuts the output before
- * the next reading is taken or logged.
- */
-static void supply_follow_stops(void)
-{
-    const uint32_t stops = arming_stop_count(&s_arm);
-    if (stops != s_supply_stops_served) {
-        s_supply_stops_served = stops;
-        supply_switch(false);
-    }
-}
-
-static void supply_follow_set(void)
-{
-    unsigned mv = atomic_load(&s_supply_set_mv);
-    unsigned ma = atomic_load(&s_supply_set_ma);
-    /* Under the caps, whatever the screen sent: the screen keeps its set
-     * points under them already, and this is what the supply obeys. */
-    const unsigned vmax = atomic_load(&s_supply_vmax_mv);
-    const unsigned imax = atomic_load(&s_supply_imax_ma);
-    /* A programming port holds the supply: the set points are the port's,
-     * and neither the screen's nor a limit that moved is written over
-     * them.  The coprocessor refuses it too (supply_page.h). */
-    if (s_kst_taken) {
-        return;
-    }
-    /* A programming port's command the screen has not taken yet: what the
-     * screen holds is older than the page. */
-    if (atomic_load(&s_supply_adopt_gen)
-        != atomic_load(&s_supply_adopt_done)) {
-        return;
-    }
-    if (mv > vmax) {
-        mv = vmax;
-    }
-    if (ma > imax) {
-        ma = imax;
-    }
-    if (mv == s_supply_set_mv_applied && ma == s_supply_set_ma_applied) {
-        return;
-    }
-    s_supply_set_mv_applied = mv;
-    s_supply_set_ma_applied = ma;
-    /* The model takes them whichever supply is in use, so a return to it
-     * starts where the screen is. */
-    supply_sim_set(&s_supply_sim, (float)mv / 1000.0f, (float)ma / 1000.0f);
-    if (s_supply_is_real) {
-        /* Shown as the module reads them back, once it has. */
-        supply_link_command(&s_supply_link, s_supply_on, (uint16_t)mv,
-                            (uint16_t)ma);
-    } else {
-        s_supply.set_v = s_supply_sim.set_v;
-        s_supply.set_i = s_supply_sim.set_i;
-    }
-}
-
-/*
- * An OFF asked for, whether or not its queue entry survived; applying it
- * twice costs nothing.  Called before the drain, so an OFF is never left
- * waiting behind the queue's backlog.  And the set points, every pass.
- */
-static void supply_service(void)
-{
-    if (atomic_exchange(&s_supply_off_request, false)) {
-        supply_switch(false);
-    }
-    supply_follow_set();
-}
-
-/*
- * What the supply screen asked for.  An ON completes a hold, so it goes the
- * way an arm does: not past a stop, an OFF, a change to the PD mini's
- * wiring or a touch loss that came after the screen posted it, and watched after it is taken until the render side
- * has seen the output on (supply_watch_service()).  The operator repeats the
- * hold.
- */
-static void apply_supply_cmd(const panel_cmd_t *pc)
-{
-    const supply_cmd_t *c = &pc->supply;
-    if (c->reset) {
-        supply_reset_peaks(&s_supply);
-    }
-    if (c->module_reset && s_supply_is_real) {
-        supply_switch(false);
-        /* RESET is a 4.4 register: an older coprocessor would refuse it
-         * unseen, so the operator is told instead. */
-        if (s_supply_auto) {
-            supply_link_reset(&s_supply_link);
-        } else {
-            control_alert(TR(ALERT_PDMINI_OLD));
-        }
-    }
-    if (c->off) {
-        supply_switch(false);
-    } else if (c->on) {
-        /* The pump first, so a STOP or a loss still in the driver's queue
-         * is counted before the ON is judged against them. */
-        control_pump();
-        if (!s_kst_taken
-            && pc->stops == arming_stop_count(&s_arm)
-            && pc->supply_offs == atomic_load(&s_supply_offs)
-            && pc->pdmini_edits == atomic_load(&s_pdmini_edits)
-            && arm_watch_take_ok(pc->loss_gen, atomic_load(&s_loss_gen),
-                                 s_lost_notice_seq, pc->consumed_seq)) {
-            /* At the set points stored before this ON was queued. */
-            supply_follow_set();
-            supply_switch(true);
-            ++s_supply_gen;
-            arm_watch_begin(&s_supply_watch, pc->loss_gen,
-                            atomic_load(&s_drv_gaps), s_supply_gen);
-        }
-    }
-    if (c->on) {
-        /* Taken, whatever became of it, and only now: an applied ON has
-         * stored s_supply_live first, so supply_live_or_coming() never
-         * reads the gap between the two. */
-        atomic_fetch_add(&s_supply_ons_taken, 1u);
-    }
-}
-
-/* The supply as it is now, for the screen; the oldest sample goes when the
- * queue is full, as the bench's do. */
-static void supply_queue_sample(void)
-{
-    supply_item_t item = {
-        .st      = s_supply,
-        .source  = servo_source_id(&s_servo_source),
-        .changes = servo_source_changes(&s_servo_source),
-    };
-    item.dropped = servo_source_dropped(&s_servo_source, &item.dropped_at);
-    if (xQueueSend(s_supply_q, &item, 0) != pdTRUE) {
-        supply_item_t stale;
-        (void)xQueueReceive(s_supply_q, &stale, 0);
-        (void)xQueueSend(s_supply_q, &item, 0);
-    }
-}
-
-/*
- * Which supply the screen drives: the PD mini whenever SETUP INTERFACES
- * enables it -- not answering while no coprocessor that speaks the SUPPLY
- * page does -- and the model otherwise.  A change switches the output off.
- * No exchange here: called from the step, inside the pump.  Returns the
- * wiring word it followed, so a write chosen after it is chosen for that
- * word and not for one stored since.
- */
-static unsigned supply_real_follow(void)
-{
-    /*
-     * Any change to the PD mini's wiring, not only enabling it: the page
-     * takes new pins only with the output off, so a change under a live
-     * output would otherwise wait for an OFF nobody asks for.
-     */
-    static supply_link_follow_t seen;
-    /* The count before the word: an edit that has counted and not yet
-     * stored its word is followed as a change, so it cannot pass as none. */
-    const unsigned edits = atomic_load(&s_pdmini_edits);
-    const unsigned wiring = atomic_load(&s_pdmini_wiring);
-    const bool rewired = supply_link_wiring_moved(&seen, edits, wiring);
-    const bool real = (wiring & (1u << 24)) != 0u;
-    if (real == s_supply_is_real) {
-        if (rewired) {
-            atomic_store(&s_supply_vin_mv, 0u);   /* other pins, perhaps */
-            atomic_store(&s_supply_baud, 0u);
-        }
-        if (rewired && real && s_supply_on) {
-            supply_switch(false);
-            control_alert(TR(ALERT_PDMINI_WIRING));
-        }
-        return wiring;
-    }
-    if (s_supply_on) {
-        supply_switch(false);
-        control_alert(TR(ALERT_SUPPLY_CHANGED));
-    }
-    s_supply_is_real = real;
-    atomic_store(&s_supply_vin_mv, 0u);   /* another module, perhaps */
-    atomic_store(&s_supply_baud, 0u);
-    supply_link_command(&s_supply_link, false,
-                        (uint16_t)s_supply_set_mv_applied,
-                        (uint16_t)s_supply_set_ma_applied);
-    atomic_store(&s_supply_real, real);
-    return wiring;
-}
-
-/* The model's load is the simulated ESC while a stick run wants one. */
-static void escsim_load(void)
-{
-    const esc_profile_t *p =
-        (const esc_profile_t *)atomic_load(&s_escsim_profile);
-    if (p == NULL) {
-        s_escsim_live = false;
-        return;
-    }
-    const unsigned runs = atomic_load(&s_escsim_runs);
-    if (!s_escsim_live || runs != s_escsim_runs_seen || s_escsim.p != p) {
-        esc_sim_init(&s_escsim, p, NULL);
-        s_escsim_runs_seen = runs;
-        s_escsim_live = true;
-    }
-    const float pct = outputs_role_armed(&s_out, OUT_ROLE_THROTTLE)
-                          ? (float)s_throttle_hundredths / 100.0f : -1.0f;
-    const int32_t ma = esc_sim_step(&s_escsim, now_ms(), s_supply_on, pct);
-    if (s_supply.output) {
-        s_supply.i = (float)ma / 1000.0f;
-        s_supply.p = s_supply.v * s_supply.i;
-        s_supply.mode = SUPPLY_MODE_CV;
-    }
-}
-
-/*
- * One step of the supply at the sample cadence: its readings, the run's
- * extremes and totals, and a sample for the screen.
- */
-static void supply_step(float step_s)
-{
-    /* A stop counted outside the pump -- the far end's refusal, or STOP
-     * from the queue -- is answered before this reading is taken. */
-    supply_follow_stops();
-    (void)supply_real_follow();
-    if (s_supply_is_real) {
-        supply_link_state(&s_supply_link, now_ms(), &s_supply);
-        s_supply.output = s_supply_on;
-    } else {
-        /* Every step of the model is a reading, taken now. */
-        supply_sim_step(&s_supply_sim, step_s, &s_supply);
-        s_supply.taken_ms = now_ms();   /* a reading every step */
-        s_supply.stamped  = true;
-        escsim_load();
-    }
-    /*
-     * A supply that stops answering takes its output with it, switched off
-     * here so that it does not come back on by itself when the supply
-     * answers again.  The model always answers.
-     */
-    if (!s_supply.online && s_supply_on) {
-        supply_switch(false);
-        control_alert(TR(ALERT_SUPPLY_SILENT));
-    } else if (s_supply_is_real && s_supply_on
-               && supply_link_blind(&s_supply_link, now_ms())) {
-        /* The page answers and the module reads ONLINE, but its reading
-         * count has stood for SUPPLY_LINK_BLIND_MS: readings marked not
-         * valid, which no trip acts on.  Off, as for a supply gone. */
-        supply_switch(false);
-        control_alert(TR(ALERT_SUPPLY_NO_READING));
-    }
-    if (s_supply.output) {
-        if (s_supply_fresh) {
-            supply_reset_peaks(&s_supply);
-            s_supply_fresh = false;
-        } else {
-            supply_track_peaks(&s_supply);
-        }
-    }
-    /* The operator's trips, on this reading.  The output goes off and the
-     * trip stays on the MODE card until the output is switched on again. */
-    const supply_limits_t lim = supply_limits_now();
-    const supply_trip_kind_t trip =
-        supply_trip_step(&s_supply_trip, &lim, &s_supply, step_s);
-    if (trip != SUPPLY_TRIP_NONE) {
-        /* The reading that tripped, as it was taken -- on -- so the plot
-         * keeps it; the sample after the switch-off ends the run. */
-        supply_queue_sample();
-        supply_switch(false);
-        s_supply.trip = (uint8_t)trip;
-        /* In integers: this can run inside an exchange's wait, deep on the
-         * control task's stack, and a float conversion is the deepest thing
-         * snprintf does. */
-        /* The threshold the trip was judged against, from the same
-         * snapshot, not one an edit may have stored since. */
-        const unsigned milli = (unsigned)lroundf(
-            ((trip == SUPPLY_TRIP_CURRENT) ? lim.trip_i : lim.trip_v)
-            * 1000.0f);
-        char line[ALERT_MAX];
-        snprintf(line, sizeof(line), TR(ALERT_SUPPLY_TRIP),
-                 milli / 1000u, (milli % 1000u) / 10u,
-                 (trip == SUPPLY_TRIP_CURRENT) ? "A" : "V");
-        control_alert(line);
-    }
-    /* Over the time that passed, measured, as the bench's totals are. */
-    const uint32_t t = now_ms();
-    supply_count_totals(&s_supply, (float)(uint32_t)(t - s_supply_ms) / 1000.0f);
-    s_supply_ms = t;
-    supply_queue_sample();
-}
-
-/*
- * The bench's own state, before the loop that maintains it.
- *
- * The last line is the one with a consequence outside this file:
- * s_pump_live tells exchange() that a control task exists, so the wait for a
- * link reply pumps the renderer instead of standing still.  Before this
- * point there is no such task and nothing to pump.
- */
-static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
-{
-    memset(bench, 0, sizeof(*bench));
-    telemetry_sim_init(sim, NULL);
-    /*
-     * The panel's throttle is a channel in an output bank, under the same
-     * arming and staleness rules as the coprocessor's outputs.  The slew is
-     * not shared: this bank takes the `Ramp limit` setting and a bound
-     * throttle channel on the coprocessor takes none, so the two ends do
-     * answer that one differently.  Only this bank's answer is read, and
-     * only while the link is down.
-     */
-    outputs_init(&s_out, now_ms());
-    (void)outputs_set_role(&s_out, PANEL_CH_THROTTLE, OUT_ROLE_THROTTLE);
-    publish_throttle_ramp();
-    (void)outputs_set_slew(&s_out, PANEL_CH_THROTTLE, panel_throttle_ramp());
-    arming_init(&s_arm, now_ms(), HEARTBEAT_SETTLE_MS);
-    /* And past the settle an arm waits for the far end's own word on the
-     * line; see far_line_trusted(). */
-    arming_set_line_wait(&s_arm, ARMING_LINE_WAIT_MS);
-    /* The supply starts switched off, its readings those of an off output. */
-    supply_sim_init(&s_supply_sim);
-    supply_sim_step(&s_supply_sim, 0.0f, &s_supply);
-    supply_link_init(&s_supply_link);
-    sense_link_init(&s_sense_link);
-    servo_source_init(&s_servo_source);
-    tone_link_init(&s_tone_link);
-    kst_link_init(&s_kst_link);
-    prog_link_init(&s_prog_link);
-    s_supply_ms      = now_ms();
-    s_supply_step_ms = now_ms();
-    s_pump_live = true;
-}
-
-/*
- * An arm was applied: number it, and watch it until the render side has
- * seen it.  The snapshot carries the number; the render side acknowledges it
- * at the end of a frame that began with the bench armed and found no loss.
- */
-/*
- * The run's charge and energy, counted here from what is shown -- the ESC's
- * readings over the link, the model's while it is down -- so one count runs
- * through the whole run whatever the source does; see bench_totals_t.
- * Control task only.  s_totals_ms is when it last counted.
- */
-bench_totals_t s_totals;
-uint32_t       s_totals_ms;
-
-static void arm_applied(void)
-{
-    /* A run starts with nothing counted. */
-    bench_totals_reset(&s_totals);
-    s_totals_ms = now_ms();
-    ++s_arm_gen;
-    arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
-}
-
-/*
- * The look at the touch stream for an arm still being handed over, once
- * per pass and after the snapshot is published.  control_pump() looks too,
- * inside every exchange's wait, and stops rather than disarms there; this
- * is the look that also ends the watch once the bench is no longer armed.
- *
- * Until the render side has seen the bench armed, a loss there is answered
- * by cancelling screens that still believe the bench is disarmed, which
- * posts no disarm: the render side reads the snapshot at the start of its
- * frame, so a frame can begin before this arm was published and find a loss
- * after.  So a loss of either kind between the taking and that
- * acknowledgement -- the render side dropping gestures, or a gap this task
- * found in the driver's stream -- undoes the arm here.  After it, a loss is
- * seen by the render side against an armed bench and answered there.  The
- * operator repeats the hold.
- */
-static void arm_watch_service(bool link_up)
-{
-    if (!outputs_armed(&s_out)) {
-        arm_watch_end(&s_arm_watch);
-        return;
-    }
-    if (arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
-                       atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
-        (void)disarm_here(link_up);
-        /* A disarm counts no stop, so the supply is cut here as well: an
-         * arm the watch undid is a stop to the supply wherever it is found
-         * (control_pump() finds it by arming_stop()). */
-        supply_switch(false);
-        control_alert(TR(ALERT_TOUCH_ARM_AGAIN));
-    }
-}
-
-/*
- * The latched stop, and then the act the arming policy asks for.
- *
- * link_up is passed in because an arm and a disarm are written to the
- * coprocessor's control page only while the link is up.  The flag is the
- * control loop's own and is published nowhere this could read it.
- */
-/*
- * A disarm that was asked for, whether or not its queue entry survived.
- *
- * Doing it twice is doing it once: the policy, the bank and the far end all
- * take the same state again.  Called between queue entries as well as before
- * the drain, because a backlog of servo positions can hold the drain for
- * seconds -- three exchanges each -- and a disarm must not wait behind
- * commands that were asked for before it.
- */
-static void service_disarm(bool link_up)
-{
-    bool owed = false;
-
-    if (servo_link_take_release()) {
-        owed = true;
-    }
-
-    if (atomic_load(&s_disarm_request)) {
-        if (!s_disarm_timing) {
-            s_disarm_timing = true;
-            s_disarm_since  = now_ms();
-        }
-        const bool told = disarm_here(link_up);
-        /*
-         * The request stands until the far end has taken it, because the
-         * heartbeat is withheld while it stands and clearing it first would
-         * put the line back up during the very transaction meant to deliver
-         * it -- with the far end still armed if that transaction is lost.
-         *
-         * Or until the line has been down long enough that the far end has
-         * failed safe on its own account, which is the same outcome by the
-         * other route and stops a disarm nobody can deliver from holding the
-         * line down for ever.
-         */
-        if (told
-            || (uint32_t)(now_ms() - s_disarm_since) >= DISARM_INHIBIT_MS) {
-            atomic_store(&s_disarm_request, false);
-            s_disarm_timing = false;
-        }
-        owed = true;
-    }
-
-    /* Whichever of the two it was, the position it let go of is settled
-     * here rather than at the end of the drain, behind whatever else is
-     * queued. */
-    if (owed) {
-        servo_link_service(link_up);
-    }
-}
-
-static void service_arming(bool link_up)
-{
-    /*
-     * STOP latches rather than clearing on the next frame: a stop that lasts
-     * one frame is one the coprocessor may never see, and its monostable holds
-     * for longer than a frame.  Only an explicit arm clears it.
-     *
-     * This is the router's backstop for a press the pump's own hit test
-     * missed; a press it saw has already been applied there.
-     */
-    if (atomic_exchange(&s_stop_request, false)
-        && !atomic_exchange(&s_stop_counted, false)) {
-        arming_stop_pressed(&s_arm);        /* the band's STOP, pressed */
-    }
-
-    /*
-     * Every stop lets go of what was being driven, whether or not the bench
-     * was armed and whichever thing raised it -- a press, the far end, touch
-     * that stopped answering.  A bench that was not armed still had a servo
-     * held, and nothing else would have released it: the position would go on
-     * being refreshed every 100 ms, over the top of an outputs binding made
-     * later.
-     */
-    service_disarm(link_up);
-
-    if (arming_stop_unserved(&s_arm, &s_stops_served)) {
-        throttle_to_zero();
-        servo_link_let_go();
-    }
-    supply_follow_stops();
-
-    /*
-     * One place decides, and it is the one under test.  A disarm here is the
-     * policy's, not this loop's: a latched stop, dead touch, or an arm that
-     * finished settling.
-     */
-    /*
-     * An arm past its settle asks the far end whether it trusts the line,
-     * once a pass until it does or the bound has passed; a yes that comes
-     * back past the bound arms nothing.  With no far end there is nobody to
-     * ask and the settle alone decides, however late this pass is.  The exchange pumps, so a STOP can land in
-     * it: the policy then holds no arm and drops the answer.
-     *
-     * A question nobody answers is the link going quiet under a waiting
-     * arm, and is stopped here as poll_far_end() stops it on its own edge:
-     * left to the policy it would run past the bound and be given up, and
-     * the poll would then find no arm to stop.
-     */
-    if (!link_up) {
-        arming_line_nobody(&s_arm);
-    } else if (arming_line_wanted(&s_arm, now_ms())) {
-        bool answered = true;
-        const bool trusted = far_line_trusted(&answered);
-        if (answered) {
-            arming_line_report(&s_arm, trusted);
-        } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
-            far_end_stop_here();
-        }
-    }
-
-    const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
-    switch (arming_step(&s_arm, now_ms())) {
-    case ARMING_ACT_DISARM:
-        outputs_arm(&s_out, false, now_ms());
-        throttle_to_zero();
-        servo_link_let_go();
-        if (was_touch_dead) {
-            control_alert(TR(ALERT_TOUCH_STOPPED));
-        }
-        if (link_up) {
-            link_msg_t ack = { 0 };
-            (void)control_write(false, &ack);
-        }
-        break;
-    case ARMING_ACT_ARM: {
-        link_msg_t ack = { 0 };
-        const uint32_t quiet = s_unanswered;
-        /*
-         * Each point of the handshake is decided by arming_handshake_step()
-         * from what this loop learned for it; the writes, the alerts and
-         * the bank stay here.
-         */
-        arming_hs_facts_t facts = { .link_up    = link_up,
-                                    .port_taken = s_kst_taken };
-        if (arming_handshake_step(&s_arm, ARMING_HS_HANDED, &facts, now_ms())
-            == ARMING_HS_PROG) {
-            control_alert(TR(ALERT_ARM_PROG));
-            break;
-        }
-        /*
-         * An arm starts from nothing, and this is where that is made true
-         * rather than hoped for.  ARM and THROTTLE travel in one
-         * transaction, so a command left over from before the disarm is the
-         * first thing the far end acts on -- and it steps straight to it.
-         * The coprocessor's throttle is bank channel 8, off the CHAN_CFG
-         * page that addresses channels 0 to 7, so its slew is never
-         * configured and stays at the zero outputs_init() left: there is no
-         * ramp on that channel at any time.
-         *
-         * Every disarm returns the command to zero as well.  A disarm that
-         * forgot to would be a motor stepping to its old position on a bench
-         * the operator had just stopped, and there has been one.
-         */
-        throttle_to_zero();
-        servo_link_let_go();
-        /*
-         * And the surfaces are centred before the arm, not after it.  The far
-         * end applies ARM and stamps every channel's clock before it steps its
-         * outputs, so a channel still holding a position at that moment
-         * renders it for as long as the centre takes to arrive.
-         */
-        servo_link_service(link_up);
-        facts.release_owed = link_up && servo_link_release_owed();
-        /* Asked only where the answer decides: asking can take an
-         * exchange. */
-        facts.rate_settled = !link_up || facts.release_owed
-                             || servo_link_rate_settled();
-        switch (arming_handshake_step(&s_arm, ARMING_HS_PREPARED, &facts,
-                                      now_ms())) {
-        case ARMING_HS_SERVO_HELD:
-            /*
-             * The release did not land, so the far end still holds the
-             * position.  Arming now would render it before anything else
-             * reached it, so the arm is refused and the debt stays; the next
-             * attempt starts by paying it.
-             *
-             * Only while there is a link.  With none, the debt cannot be paid
-             * by anybody and nothing at the far end is being armed either, so
-             * refusing would leave the panel unable to arm its own bank --
-             * the simulator included -- until a coprocessor answered again.
-             * What the far end must not do meanwhile is arm; see
-             * poll_far_end().
-             */
-            arm_write_failed(quiet, TR(ALERT_SERVO_NOT_RELEASED));
-            break;
-        case ARMING_HS_SERVO_RATE:
-            /* The far end may hold a rate faster than the surfaces' servos
-             * take, and nothing here knows otherwise; refused like an
-             * unpaid release, and asked again on the next attempt. */
-            arm_write_failed(quiet, TR(ALERT_SERVO_RATE));
-            break;
-        case ARMING_HS_CLOSED:
-            /* Past the arm's deadline before CLEAR; see below. */
-            control_alert(TR(ALERT_ARM_REFUSED));
-            break;
-        case ARMING_HS_GO: {
-            /*
-             * Two exchanges: CLEAR on its own, then the frame that arms.
-             * Each can wait a second, and what the operator wants can change
-             * between them: the pump runs inside both and applies a stop,
-             * and a disarm can be posted while the clear is still on the
-             * wire.  Asked again before the write that actually arms,
-             * because after it the far end is driving and nothing here can
-             * take it back for the length of a timeout.
-             *
-             * CLEAR travels first and alone.  The far end checks ARM against
-             * its failsafe before it applies a CLEAR from the same frame, so
-             * a frame carrying both is refused with NOT_ARMED exactly when
-             * the clear was needed.  The frame that arms carries ARM,
-             * THROTTLE and the pole count together, so the run starts on the
-             * count that was sent or does not start; control_arm() says why.
-             */
-            /*
-             * And the arm's deadline, the one its wait for the line ended
-             * at, is asked again before each of the two writes: the
-             * exchanges above and the CLEAR are answered in about a
-             * millisecond and can be answered up to LINK_HOST_TIMEOUT_MS
-             * (1000 ms) late.  Past it the arm is given up and nothing
-             * further is written (arming_handshake_open()): before CLEAR
-             * as a refusal, after it as a stop, whose withheld heartbeat
-             * sets the far end's latch again.  The frame that arms is the
-             * limit: acknowledged late, it has armed the far end, at rest.
-             */
-            if (!control_clear_failsafe(&ack)) {
-                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
-                break;
-            }
-            facts.disarm_asked = atomic_load(&s_disarm_request);
-            const arming_hs_t cleared =
-                arming_handshake_step(&s_arm, ARMING_HS_CLEARED, &facts,
-                                      now_ms());
-            if (cleared == ARMING_HS_WITHDRAWN) {
-                /* Stopped or disarmed while the clear was in flight.  No
-                 * alert: the operator asked for this and knows. */
-                break;
-            }
-            if (cleared != ARMING_HS_GO) {
-                control_alert(TR(ALERT_ARM_REFUSED));
-                break;
-            }
-            if (!control_arm(&ack)) {
-                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
-            } else {
-                /* The roles the far end armed, which an older one makes
-                 * every role. */
-                outputs_arm_roles(&s_out, outputs_arm_roles_of(s_arm_value),
-                                  now_ms());
-                arm_applied();
-            }
-            break;
-        }
-        case ARMING_HS_LOCAL:
-            outputs_arm_roles(&s_out,
-                              (uint8_t)(arming_roles(&s_arm) & OUT_ROLES_ALL),
-                              now_ms());
-            arm_applied();
-            break;
-        default:
-            /* No other verdict is given at ARMING_HS_PREPARED. */
-            break;
-        }
-        break;
-    }
-    case ARMING_ACT_GIVE_UP:
-        /* The far end did not come to trust the line inside the bound.
-         * Nothing was written, CLEAR included, so its arm latch stands. */
-        control_alert(TR(ALERT_ARM_REFUSED));
-        break;
-    default:
-        break;
-    }
-}
-
-/*
- * The outputs screen's choice, onto the coprocessor's two output pages.
- *
- * Leaves what became of it in s_outputs_result, which app_main hands to the
- * screen; screen state is app_main's alone.  True when a page may have been
- * written: the rate reset that leads the sequence landed, or there is none.
- */
-static bool write_output_binding(const outbind_t *bind)
-{
-    uint16_t cfg[LINK_CC_COUNT];
-    uint16_t slots[LINK_OS_COUNT];
-    outbind_to_chan_cfg(bind, cfg, endpoints_min(), endpoints_max());
-    (void)outbind_to_slots(bind, slots);
-
-    /*
-     * The sequence is bind_link_write()'s: prepared and committed whole on a
-     * coprocessor speaking 4.10, page by page on an older one.
-     *
-     * A write that got no answer and one that was refused are different things
-     * to be told.  REFUSED sends the operator back to the pins they chose; NO
-     * LINK sends them to the cable.  Collapsing the two would send them to the
-     * wrong one every time the link dropped mid-write.
-     */
-    outputs_result_t res = OUTPUTS_OK;
-    bind_rate_t rate = BIND_RATE_NOT_SENT;
-    switch (bind_link_write(&s_host, &k_port, s_far_minor, cfg, slots,
-                            &rate)) {
-    case BIND_WRITTEN: res = OUTPUTS_OK;      break;
-    case BIND_REFUSED: res = OUTPUTS_REFUSED; break;
-    case BIND_NO_LINK:
-    default:           res = OUTPUTS_NO_LINK; break;
-    }
-    /* The sequence put each slot back at its own rate first, or found that
-     * it could not: the rate this end holds the far end to follows it. */
-    servo_link_rate_reset_note(rate != BIND_RATE_NOT_SENT,
-                               rate == BIND_RATE_LANDED);
-    atomic_store(&s_outputs_result, (int)res);
-    return rate == BIND_RATE_NOT_SENT || rate == BIND_RATE_LANDED;
-}
+/* The outputs screen's choice, onto the coprocessor's two output pages:
+ * write_output_binding(), panel_arm.c. */
 
 /* The GPIOs of the slots of the channels the horn drives
  * (servo_link_binding()), for the SERVO screen's TARGET row; whether a
@@ -2698,59 +1396,7 @@ atomic_bool   s_servo_pins_known;
 /* For the screen's runs: the SENSE page holds the encoder enabled. */
 atomic_bool s_enc_held;
 
-/*
- * Disarming, wherever it was asked for.
- *
- * Two screens can arm the bench and both disarm it the same way: the policy
- * is told, this end's own bank stops driving, the throttle goes to zero so
- * the next arm cannot carry the last one's command, and the far end is told
- * while there is a link to tell it on.
- */
-static bool disarm_here(bool link_up)
-{
-    arming_request_disarm(&s_arm);
-    outputs_arm(&s_out, false, now_ms());
-    throttle_to_zero();
-    servo_link_let_go();
-    if (!link_up) {
-        return false;   /* nothing to tell it on, so it has not been told */
-    }
-    link_msg_t ack = { 0 };
-    return control_write(false, &ack);
-}
-
-/*
- * One motor command.  Arming is asked of the policy rather than done here;
- * the throttle is a channel command like any other.
- */
-static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
-                            bench_state_t *bench)
-{
-    switch (mc->kind) {
-    case MOTOR_CMD_ARM:
-        /*
-         * Arming is the deliberate act that clears a latched stop. The policy
-         * clears it, gives the heartbeat time to be believed and only then
-         * asks for the write; see shared/safety/arming.c.
-         */
-        /* The throttle's outputs, and no other: a servo bound beside the
-         * motor stays without a pulse.  Armed for the surfaces, the bench
-         * disarms first (arming_request_arm_roles()). */
-        arming_request_arm_roles(&s_arm, now_ms(),
-                                 OUT_ROLE_BIT(OUT_ROLE_THROTTLE));
-        break;
-    case MOTOR_CMD_DISARM:
-        (void)disarm_here(link_up);
-        break;
-    case MOTOR_CMD_THROTTLE:
-        s_throttle_hundredths = pct_to_hundredths(mc->value);
-        (void)outputs_set(&s_out, PANEL_CH_THROTTLE,
-                          pct_to_span(mc->value), now_ms());
-        break;
-    case MOTOR_CMD_RESET_PEAKS: bench_state_reset_peaks(bench); break;
-    default: break;
-    }
-}
+/* Disarming, and one motor command: panel_arm.c. */
 
 /*
  * The SERVO screen's link (shared/outputs/servo_link.c) reaches this task's
@@ -2822,162 +1468,7 @@ static const servo_link_ctx_t k_servo_ctx = {
     .arm_surfaces = servo_ctx_arm_surfaces,
 };
 
-/*
- * What the screens asked for, in the order they asked it.
- *
- * The screens run on app_main and the link belongs to this task, so a command
- * crosses as a queue entry and is acted on here.  link_up is passed in
- * because most of these write to the far end, and the flag that says whether
- * that is possible is the control loop's.
- */
-static void drain_commands(bool link_up, bench_state_t *bench)
-{
-    panel_cmd_t pc;
-    while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
-        /*
-         * Between entries, because a backlog of positions is seconds of
-         * exchanges and a disarm asked for during it must not wait them out.
-         */
-        service_disarm(link_up);
-        supply_service();
-
-        /* The supply is the panel's own and touches no link; its ON carries
-         * its own checks.  See apply_supply_cmd(). */
-        if (pc.kind == PANEL_CMD_SUPPLY) {
-            apply_supply_cmd(&pc);
-            continue;
-        }
-
-        /*
-         * Nothing asked for before a stop drives anything after it.
-         *
-         * The count of stops the sender had seen is no longer current, so
-         * something stopped the bench between the asking and the arriving.
-         * An arm would clear that stop's own latch; a position or a throttle
-         * would put back what the stop had just let go of -- and a stop from
-         * touch dying or from the far end has no queued STOP behind it to
-         * settle the surfaces a second time.
-         *
-         * Only what drives.  A disarm, a release or a binding asked for
-         * before the stop still means what it meant.
-         */
-        const bool drives = (pc.kind == PANEL_CMD_MOTOR
-                             && (pc.motor.kind == MOTOR_CMD_ARM
-                                 || pc.motor.kind == MOTOR_CMD_THROTTLE))
-                            || (pc.kind == PANEL_CMD_SERVO
-                                && (pc.servo.kind == SERVO_CMD_ARM
-                                    || pc.servo.kind == SERVO_CMD_POSITION
-                                    || pc.servo.kind == SERVO_CMD_CENTRE
-                                    || pc.servo.kind == SERVO_CMD_SWEEP
-                                    || pc.servo.kind == SERVO_CMD_HOLD));
-        if (drives
-            && (pc.stops != arming_stop_count(&s_arm)
-                || pc.lets_go != atomic_load(&s_lets_go))) {
-            continue;
-        }
-        /*
-         * Nothing arms across a touch loss.  The hold that posted this arm
-         * may have completed on a contact whose release went missing, and
-         * the render side can cancel only what it has not yet handed over;
-         * this arm was.  So the driver's queue is drained first -- a loss in
-         * it that happened before now is found here and queued as a notice
-         * the render side has not consumed -- and the arm is dropped when the
-         * render side has dropped gestures since it posted, or has a notice
-         * it had not yet seen (arm_watch_take_ok()).  The operator repeats
-         * the hold.
-         */
-        const bool arms = (pc.kind == PANEL_CMD_MOTOR
-                           && pc.motor.kind == MOTOR_CMD_ARM)
-                          || (pc.kind == PANEL_CMD_SERVO
-                              && pc.servo.kind == SERVO_CMD_ARM);
-        if (arms && s_kst_taken) {
-            /* Programming a servo and an armed bench are exclusive,
-             * whichever screen asks. */
-            control_alert(TR(ALERT_ARM_PROG));
-            continue;
-        }
-        if (arms) {
-            control_pump();
-            if (!arm_watch_take_ok(pc.loss_gen, atomic_load(&s_loss_gen),
-                                   s_lost_notice_seq, pc.consumed_seq)) {
-                continue;
-            }
-            s_arm_take_gen = pc.loss_gen;
-            s_arm_take_drv = atomic_load(&s_drv_gaps);
-        }
-        if (pc.kind == PANEL_CMD_STOP) {
-            arming_stop_pressed(&s_arm);    /* a screen's STOP, pressed */
-            outputs_arm(&s_out, false, now_ms());
-            throttle_to_zero();
-            servo_link_let_go();
-            if (link_up) {
-                link_msg_t ack = { 0 };
-                (void)control_write(false, &ack);
-            }
-            continue;
-        }
-        if (pc.kind == PANEL_CMD_OUTPUTS) {
-            if (!link_up) {
-                atomic_store(&s_outputs_result, (int)OUTPUTS_NO_LINK);
-                post_no_reading();
-                continue;
-            }
-            /*
-             * Only over pages that were read.  A binding queued before a
-             * read failed, or built on a screen that showed nothing, would
-             * replace whatever the far end holds; the screens refuse the
-             * tap themselves once they are told, and this is the same rule
-             * for a command already on its way (bind_link_may_write()).
-             * Nothing is sent.  LAST WRITE goes from WRITTEN to NOT WRITTEN;
-             * a NO LINK or REFUSED that explains the state stays.
-             */
-            if (!bind_link_may_write(s_bind_read, s_board, &pc.bind)) {
-                int was = (int)OUTPUTS_OK;
-                (void)atomic_compare_exchange_strong(&s_outputs_result, &was,
-                                                     (int)OUTPUTS_IDLE);
-                continue;
-            }
-            /* The sequence leads with the SERVO rate reset and writes
-             * nothing over a rate that did not go back: a refusal is told
-             * as REFUSED, no answer as NO LINK. */
-            if (!write_output_binding(&pc.bind)) {
-                /* No page was written.  The screens still show the tap, so
-                 * the far end is asked what it holds. */
-                read_outputs_binding();
-                continue;
-            }
-            /*
-             * What the horn may drive has changed, and what this end sent is
-             * not the answer: a write whose acknowledgement was lost was
-             * applied over there all the same, so a result of NO LINK does
-             * not mean the old binding still stands.  The mask goes unknown
-             * and the far end is asked, here rather than at the next link-up
-             * edge -- the operator can bind a servo and walk straight to the
-             * screen that drives it, and a read that fails is retried by the
-             * poll loop.
-             *
-             * The debt is not voided.  A binding writes the roles and the
-             * slots and not the commands, so a surface the horn left
-             * somewhere is still there afterwards and still owes a centre.
-             * The release goes to whatever is a surface under the new
-             * binding: a channel this binding turned into a motor carries the
-             * rest its new role brought with it, and a servo horn writing to
-             * it would undo exactly that.  What stops here is the holding --
-             * the screen's position was for the wiring just replaced.
-             */
-            servo_link_forget_binding();
-            servo_link_let_go();
-            read_outputs_binding();
-            continue;
-        }
-        if (pc.kind == PANEL_CMD_SERVO) {
-            servo_link_apply(pc.servo, link_up, pc.stops);
-            continue;
-        }
-
-        apply_motor_cmd(&pc.motor, link_up, bench);
-    }
-}
+/* What the screens asked for, drain_commands(): panel_arm.c. */
 
 /*
  * Which run the log should be recording now; see log_run_kind_t.  The bench
@@ -2998,7 +1489,7 @@ static log_run_kind_t log_run_wanted(void)
  * nothing here opens or writes a file.  A change from one kind to the other
  * is an end and a start in the same call, so the two land in two files.
  */
-static void log_follow_runs(void)
+void log_follow_runs(void)
 {
     const log_run_kind_t wanted = log_run_wanted();
     if (wanted == s_log_kind) {
@@ -3050,224 +1541,8 @@ static void log_follow_runs(void)
     atomic_store(&s_log_run_now, s_log_run_ctr);
 }
 
-/*
- * The ON in flight, against the touch stream: the arm watch's rules on the
- * supply's output.  Until the render side has acknowledged this ON from a
- * frame that began with the output on and found the stream whole, a loss of
- * either kind switches the output off again.
- */
-static void supply_watch_service(void)
-{
-    if (!s_supply.output) {
-        arm_watch_end(&s_supply_watch);
-        return;
-    }
-    if (arm_watch_lost(&s_supply_watch, atomic_load(&s_loss_gen),
-                       atomic_load(&s_drv_gaps), atomic_load(&s_supply_ack))) {
-        supply_switch(false);
-        control_alert(TR(ALERT_TOUCH_SWITCH_ON));
-    }
-}
-
-/*
- * The supply, from control_pump(): at the top of every pass and inside every
- * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000 ms) a time.  A
- * stop, an OFF and a touch loss cut the output here, and the supply is
- * stepped, logged and published every 1/PANEL_SAMPLE_HZ whatever the link is
- * doing -- the supply is the panel's own and an unanswered coprocessor is
- * no reason for its plot or its log to thin out.
- */
-static void supply_pump(void)
-{
-    /* The cuts first -- a stop, then a lost ON -- and only then the set
-     * points, so a level stored after a touch loss never reaches an output
-     * that loss is about to switch off. */
-    supply_follow_stops();
-    supply_watch_service();
-    supply_service();
-
-    const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);
-    if (since < (uint32_t)(1000.0f / PANEL_SAMPLE_HZ)) {
-        return;
-    }
-    s_supply_step_ms = now_ms();
-    float step_s = (float)since / 1000.0f;
-    if (step_s > BENCH_TOTALS_MAX_STEP_S) {
-        step_s = BENCH_TOTALS_MAX_STEP_S;
-    }
-    /*
-     * The run's edges before the step, so a bench taking the log over ends
-     * the supply's file on the interval up to now, and this step's row is
-     * the new run's.  Never the end of a bench run: that is the outer
-     * loop's, after the pass's bench sample is logged, as it always was.
-     */
-    if (s_log_kind != LOG_RUN_BENCH) {
-        log_follow_runs();
-    }
-    supply_step(step_s);
-
-    /* Not after a trip or a lost supply in this step: the switch-off wrote
-     * the run's last row already, and the run ends at the next edge.  No
-     * row while a servo run is under way, and the log's clock runs on
-     * through it, as the totals do. */
-    if (s_log_kind == LOG_RUN_SUPPLY && s_supply.output) {
-        s_log_t += step_s;
-        if (!atomic_load(&s_servo_testing)) {
-            log_row_t row = { .kind = LOG_RUN_SUPPLY, .t_s = s_log_t };
-            row.u.supply = s_supply;
-            log_post(&row);
-        }
-    }
-
-    snap_lock();
-    s_snap.supply     = s_supply;
-    s_snap.supply_gen = s_supply_gen;
-    snap_unlock();
-}
-
-/*
- * What the SUPPLY page said that the operator is told, and an ON it refused
- * or let go switched off here too.
- */
-static void supply_link_alerts(void)
-{
-    const uint16_t ev = supply_link_events(&s_supply_link);
-    if ((ev & (SUPPLY_LINK_EV_ON_REFUSED | SUPPLY_LINK_EV_ON_LOST
-               | SUPPLY_LINK_EV_TRIPPED)) != 0u) {
-        supply_switch(false);
-        control_alert(((ev & SUPPLY_LINK_EV_TRIPPED) != 0u)
-                          ? TR(ALERT_PDMINI_OFF)
-                      : ((ev & SUPPLY_LINK_EV_ON_LOST) != 0u)
-                          ? TR(ALERT_SUPPLY_OFF_REMOTE)
-                          : TR(ALERT_SUPPLY_REFUSED_ON));
-    }
-    if ((ev & SUPPLY_LINK_EV_SAGGED) != 0u) {
-        /* Switched off at the coprocessor for an input under the set point
-         * and the headroom: the input and the set point it was read with. */
-        supply_switch(false);
-        uint16_t vin = 0u;
-        uint16_t set = 0u;
-        supply_link_sag(&s_supply_link, &vin, &set);
-        char line[ALERT_MAX];
-        snprintf(line, sizeof(line), TR(ALERT_PDMINI_SAG),
-                 vin / 1000u, (vin % 1000u) / 10u,
-                 set / 1000u, (set % 1000u) / 10u);
-        control_alert(line);
-    }
-    if ((ev & SUPPLY_LINK_EV_WIRING_REFUSED) != 0u) {
-        control_alert(TR(ALERT_PDMINI_PINS));
-    }
-    if ((ev & SUPPLY_LINK_EV_WIRING_LIVE) != 0u) {
-        control_alert(TR(ALERT_PDMINI_WIRING_LIVE));
-    }
-    if ((ev & SUPPLY_LINK_EV_STUCK) != 0u) {
-        control_alert(TR(ALERT_PDMINI_SWITCH));
-    }
-    if ((ev & SUPPLY_LINK_EV_SET_STUCK) != 0u) {
-        control_alert(TR(ALERT_PDMINI_SET));
-    }
-    /* A rate AUTO found is not a fault: it is in the SUPPLY screen's
-     * header, not in the alert band, which stays until another alert
-     * replaces it. */
-}
-
-/*
- * The SUPPLY page: what is owed written -- an OFF first -- and the page read
- * every SUPPLY_LINK_READ_MS.  From poll_bench(), outside the pump: the pump
- * runs inside an exchange and switches the supply by asking
- * (supply_switch()), which this pays.  A coprocessor without the page is
- * left alone, and the PD mini reads as not answering.
- */
-void supply_link_service(void)
-{
-    if (!s_supply_page) {
-        return;
-    }
-    supply_wiring_t w = { 0 };
-    for (int k = 0; k < 3; ++k) {
-        /*
-         * An edit on SETUP is followed straight before each write, and the
-         * write chosen after it, with no exchange between: an ON taken
-         * before the edit is switched off before it can reach the page with
-         * the old wiring.  The exchanges of the writes before this one run
-         * the pump and take milliseconds; the render core publishes edits
-         * throughout.  An edit landing between this and the frame leaving
-         * comes after the ON as the page sees it, and the next pass writes
-         * the OFF, as for an edit made while the output is on.
-         */
-        w = wiring_of(supply_real_follow());
-        if (w.baud >= SUPPLY_LINK_BAUD_AUTO && !s_supply_auto) {
-            w.baud = 1u;   /* a 4.3 coprocessor has no AUTO: the as-shipped 19200 */
-        }
-        supply_link_wire(&s_supply_link, &w);
-        uint8_t off = 0u;
-        uint8_t n = 0u;
-        uint16_t regs[LINK_SP_FLAGS];
-        if (supply_link_next(&s_supply_link, &off, &n, regs)
-            == SUPPLY_LINK_W_NONE) {
-            break;
-        }
-        link_msg_t reply = { 0 };
-        int result = SUPPLY_LINK_NO_ANSWER;
-        if (write_regs(&s_host, LINK_PAGE_SUPPLY, off, n, regs, &reply)) {
-            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
-                                                : SUPPLY_LINK_ACK;
-        }
-        supply_link_written(&s_supply_link, result);
-        /* Before the next exchange, whose pump could ask again for an ON
-         * this one refused. */
-        supply_link_alerts();
-        if (result == SUPPLY_LINK_NO_ANSWER) {
-            break;
-        }
-    }
-    /* Read while the PD mini is in use, or while something written waits on
-     * a read; a disabled one settled costs nothing. */
-    if ((w.en || !supply_link_settled(&s_supply_link))
-        && supply_link_read_due(&s_supply_link, now_ms())) {
-        link_msg_t reply = { 0 };
-        /* A 4.3 coprocessor's page ends before BAUD_FOUND. */
-        const bool read = poll_page(&s_host, LINK_PAGE_SUPPLY,
-                                    s_supply_auto ? (uint8_t)LINK_SP_COUNT
-                                                  : (uint8_t)LINK_SP_BAUD_FOUND,
-                                    &reply)
-                          && reply.op == LINK_OP_DATA;
-        if (read && !s_supply_auto) {
-            reply.regs[LINK_SP_BAUD_FOUND] = SUPPLY_LINK_BAUD_AUTO;
-        }
-        supply_link_read(&s_supply_link, read ? reply.regs : NULL, now_ms());
-        {
-            /*
-             * A programming port commanded the supply (4.13): this end's
-             * copy follows the page, so the next command written is the
-             * port's and not the one from before it, and the SUPPLY screen
-             * shows the set points in force.
-             */
-            bool     on;
-            uint16_t mv, ma;
-            if (supply_link_adopted(&s_supply_link, &on, &mv, &ma)) {
-                s_supply_set_mv_applied = mv;
-                s_supply_set_ma_applied = ma;
-                atomic_store(&s_supply_adopt_mv, mv);
-                atomic_store(&s_supply_adopt_ma, ma);
-                atomic_fetch_add(&s_supply_adopt_gen, 1u);
-                supply_switch(on);
-            }
-        }
-        if (read) {
-            atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
-            /* 0 for a rate still being looked for: no rate in the header.
-             * A 4.3 coprocessor has no BAUD_FOUND and runs at the BAUD it
-             * holds, which is what it accepted, not what was last sent: a
-             * refused wiring write leaves the old rate in place. */
-            atomic_store(&s_supply_baud,
-                         (unsigned)supply_page_baud(
-                             s_supply_auto ? reply.regs[LINK_SP_BAUD_FOUND]
-                                           : reply.regs[LINK_SP_BAUD]));
-        }
-    }
-    supply_link_alerts();
-}
+/* The supply's service, from control_pump(), and its page:
+ * panel_supply.c. */
 
 /* The SENSE, TONE, KST and PROG services: panel_services.c.  The poll
  * of the far end, poll_far_end(): panel_poll.c. */
@@ -3397,485 +1672,8 @@ static void control_task(void *arg)
     }
 }
 
-/*
- * Queue a command, and do not lose it.  Every command is already taken from
- * its screen by the time it gets here, so a refused send is a discarded
- * disarm or a throttle that never arrives.
- */
-/*
- * The programmer's model, once a frame: what the control task last
- * published, the commands it has decided on, and its file.
- *
- * A command the queue does not take is not carried out, and the model says
- * so when its answer does not come (KST_PROG_MSG_TIMEOUT).
- */
-static void kst_ui_service(void)
-{
-    static kst_prog_feed_t feed;
-    static bool            file_out;
-
-    snap_lock();
-    feed = s_snap.kst;
-    snap_unlock();
-    kst_panel_feed(&feed);
-
-    /* A card put in after the boot is mounted here, on the task RESCAN
-     * mounts one on: once for an opening of the programmer or a tap on one
-     * of its actions while none is mounted. */
-    if (!file_out && !storage_mounted() && kst_panel_card_look()) {
-        (void)storage_init();
-        /* And its record is read before a command or a file goes out: a
-         * write interrupted before this start stands as at the start. */
-        kst_record_load(true);
-    }
-
-    /* A command stays with the model while the queue has no room: one
-     * taken here and not queued is gone, an ABORT among them. */
-    kst_prog_cmd_t cmd;
-    while (uxQueueSpacesAvailable(s_kst_q) > 0u && kst_panel_take(&cmd)) {
-        if (xQueueSend(s_kst_q, &cmd, 0) != pdTRUE) {
-            ESP_LOGW(TAG, "servo programmer: a command was lost");
-        }
-    }
-
-    /* The servo files: the log task has the card.  No card call is made
-     * here. */
-    static bool card_out;
-    if (card_out
-        && atomic_load(&s_kst_card_answered)
-               == atomic_load(&s_kst_card_sent)) {
-        card_out = false;
-        kst_panel_card_done(&s_kst_card_done);
-    }
-    if (!card_out && kst_panel_card_take(&s_kst_card_req)) {
-        atomic_fetch_add(&s_kst_card_sent, 1u);
-        card_out = true;
-    }
-
-    if (file_out) {
-        if (atomic_load(&s_kst_file_done) != atomic_load(&s_kst_file_sent)) {
-            return;
-        }
-        file_out = false;
-        kst_panel_file_done(atomic_load(&s_kst_file_ok));
-    }
-    const size_t len = kst_panel_file_take(s_kst_file, sizeof(s_kst_file));
-    if (len != 0u) {
-        s_kst_file_len = len;
-        atomic_fetch_add(&s_kst_file_sent, 1u);
-        file_out = true;
-    }
-}
-
-/*
- * Take what the screens have decided and hand it to the control task.
- *
- * Called after every touch event as well as once a pass, because a screen's
- * enter() can be long: a command recorded by the screen being left must not
- * wait behind the work of the screen being entered.
- */
-static void flush_screen_commands(uint32_t stops_now);
-
-static void send_cmd(const panel_cmd_t *in)
-{
-    panel_cmd_t cmd = *in;
-    const panel_cmd_t *pc = &cmd;
-    /*
-     * A disarm does not depend on the queue.
-     *
-     * The queue drops its oldest entry when it is full, and a screen that is
-     * being left generates commands on the way out while the next screen
-     * generates more: a disarm posted by leave() can be evicted by them and
-     * the bench stays armed with nobody watching it.  So it is also a flag,
-     * the way a stop is, and applying it twice costs nothing.
-     */
-    if (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_DISARM) {
-        atomic_fetch_add(&s_lets_go, 1u);
-        atomic_store(&s_disarm_request, true);
-    } else if (pc->kind == PANEL_CMD_SERVO
-               && pc->servo.kind == SERVO_CMD_DISARM) {
-        atomic_fetch_add(&s_lets_go, 1u);
-        atomic_store(&s_disarm_request, true);
-        servo_link_ask_release();
-    } else if (pc->kind == PANEL_CMD_SERVO
-               && pc->servo.kind == SERVO_CMD_RELEASE) {
-        /*
-         * RELEASE lets go of the pin without disarming the bench, and it is
-         * as much a safety command as the disarm: waiting behind a backlog
-         * of positions, three exchanges each, would hold the servo for
-         * seconds after the operator asked it to stop.
-         */
-        atomic_fetch_add(&s_lets_go, 1u);
-        servo_link_ask_release();
-    } else if (pc->kind == PANEL_CMD_SERVO
-               && (pc->servo.kind == SERVO_CMD_HOLD || pc->servo.ends_sweep)) {
-        /*
-         * HOLD, and a finger on the dial or CENTRE that ends a sweep, stop
-         * a moving servo, so they do not wait either: a sweep being written
-         * gives way at once, and one queued before them is dropped as
-         * stale.  Each is a drive itself, so it carries the generation it
-         * opens.
-         */
-        cmd.lets_go = atomic_fetch_add(&s_lets_go, 1u) + 1u;
-        servo_link_ask_hold();
-    } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.off) {
-        /* The supply's OFF, for the same reason as the disarm. */
-        atomic_fetch_add(&s_supply_offs, 1u);
-        atomic_store(&s_supply_off_request, true);
-    }
-
-    if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
-        return;
-    }
-    panel_cmd_t stale;
-    if (xQueueReceive(s_cmd_q, &stale, 0) == pdTRUE
-        && stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
-        /* An ON the control task will never see is one it will never take
-         * either; counted here, so nothing waits on it for ever. */
-        atomic_fetch_add(&s_supply_ons_taken, 1u);
-    }
-    if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
-        ESP_LOGW(TAG, "control queue full; a command was lost");
-    }
-}
-
-/*
- * The render loop's record of s_touch_q: what it has taken, and the losses it
- * found there, for the frame log.  Render loop only.
- */
-static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
-static unsigned       s_tq_lost;
-
-/*
- * Whether the supply's output is on, or an ON for it is queued and not yet
- * taken.  Read at the moment it is asked, from what the control task stores
- * when it switches, so an ON queued earlier in this frame counts.
- */
-bool supply_live_or_coming(void)
-{
-    /* The counters before the flag.  The control task stores the flag
-     * before it counts an ON taken, so read in this order there is no
-     * moment at which both say nothing is coming while the output is on. */
-    const bool coming = atomic_load(&s_supply_ons_taken)
-                        != atomic_load(&s_supply_ons_sent);
-    return coming || atomic_load(&s_supply_live);
-}
-
-/*
- * The supply screen's limits and set points, as the levels the control task
- * reads.  Every frame, from the render loop that owns the screen.
- */
-static void publish_supply_levels(void)
-{
-    const supply_limits_t lim = supply_screen_limits();
-    atomic_store(&s_supply_vmax_mv, (unsigned)lroundf(lim.v_max * 1000.0f));
-    atomic_store(&s_supply_imax_ma, (unsigned)lroundf(lim.i_max * 1000.0f));
-    atomic_store(&s_supply_trip_ma, (unsigned)lroundf(lim.trip_i * 1000.0f));
-    atomic_store(&s_supply_trip_mv, (unsigned)lroundf(lim.trip_v * 1000.0f));
-    atomic_store(&s_supply_trip_ms, (unsigned)lroundf(lim.trip_s * 1000.0f));
-    atomic_store(&s_supply_set_mv,
-                 (unsigned)lroundf(supply_screen_set_v() * 1000.0f));
-    atomic_store(&s_supply_set_ma,
-                 (unsigned)lroundf(supply_screen_set_i() * 1000.0f));
-}
-
-/*
- * The servo test's lines, from the screen to the logger, as many as the
- * queue takes; the rest wait in the screen's outbox for the next frame.
- * Every frame, whichever screen is up, so a run ended by leaving SERVO still
- * writes its report.  And the files' number back to the screen, once the
- * logger has answered every OPEN sent.
- */
-static void test_lines_service(void)
-{
-    bool open_waits = false;     /* a new run's OPEN not yet queued */
-    for (;;) {
-        const char *text = NULL;
-        const servo_test_out_t k = servo_screen_test_peek(&text);
-        if (k == SERVO_TEST_OUT_NONE) {
-            break;
-        }
-        test_line_t l;
-        l.kind = (uint8_t)k;
-        snprintf(l.text, sizeof(l.text), "%s", text);
-        const bool open = k == SERVO_TEST_OUT_OPEN
-                          || k == SERVO_TEST_OUT_OPEN_TXT;
-        if (xQueueSend(s_test_q, &l, 0) != pdTRUE) {
-            open_waits = open;
-            break;
-        }
-        if (open) {
-            atomic_fetch_add(&s_test_opens_sent, 1u);
-        }
-        if (k == SERVO_TEST_OUT_END) {
-            ++s_test_ends_sent;
-        }
-        servo_screen_test_pop();
-    }
-    /* Not the last run's number for a run whose OPEN still waits.  The
-     * counts are read before the number and the report state, which the
-     * logger stores before it counts. */
-    const unsigned sent = atomic_load(&s_test_opens_sent);
-    const unsigned done = atomic_load(&s_test_opens_done);
-    const unsigned ends = atomic_load(&s_test_ends_done);
-    if (sent != 0u && !open_waits && done == sent) {
-        servo_screen_test_files(atomic_load(&s_test_file),
-                                atomic_load(&s_test_report));
-    }
-    /* No run starts until the logger has taken the last run's OPEN and
-     * END, and the screen has their answer: one number and one report
-     * state in flight at a time, each the run's that sent it. */
-    servo_screen_test_logger_busy(open_waits || done != sent
-                                  || ends != s_test_ends_sent);
-}
-
-/*
- * The rotary knob turns the slider of the bench screen on top: the throttle
- * on MOTOR & ESC, the horn on SERVO.
- *
- * The motion is taken at the start of the frame together with the screen it
- * was turned on and the router's navigation count, and applied at the end,
- * after the last touch drain and the tick.  A motion turned on another
- * screen, with the setting off, in a frame in which the router navigated at
- * all (a tap on a menu item navigates inside the drain, and a tap away and a
- * tap back lands on the same screen), in a frame that lost touch events, or
- * in a frame in which a finger owned the slider or the dial is dropped and
- * not applied later.  The knob's command is posted after the frame's flush
- * and goes with the next one.  If the next frame's first drain finds a touch
- * loss, the command is withdrawn before the loss flushes the screens
- * (knob_withdraw()), so a frame that lost touch never moves the output from
- * the knob.  The knob moves a value by how far it turned; it arms nothing,
- * and a disarm, a stop or leaving the screen act exactly as they do for the
- * touch slider.
- */
-typedef struct {
-    int            steps;
-    ui_screen_id_t route;
-    uint32_t       navigations;
-} knob_turn_t;
-
-static knob_turn_t knob_take(void)
-{
-    const bool on = settings_get_bool(SET_KNOB_EN);
-    knob_task_set_enabled(on);
-    const int steps = knob_task_take();
-    motor_screen_knob_frame();
-    servo_screen_knob_frame();
-    return (knob_turn_t){ .steps = on ? steps : 0,
-                          .route = ui_router_current(),
-                          .navigations = ui_router_navigations() };
-}
-
-static void knob_withdraw(void)
-{
-    motor_screen_knob_cancel();
-    servo_screen_knob_cancel();
-}
-
-static void knob_apply(const knob_turn_t *turn, bool frame_lost)
-{
-    if (turn->steps == 0 || frame_lost
-        || ui_router_navigations() != turn->navigations
-        || ui_router_current() != turn->route) {
-        return;
-    }
-    const float span =
-        knob_span_fraction(turn->steps, settings_get_int(SET_KNOB_SCALE));
-    switch (turn->route) {
-    case SCREEN_MOTOR: motor_screen_knob(span); break;
-    case SCREEN_SERVO: servo_screen_knob(span); break;
-    default: break;
-    }
-}
-
-/*
- * Stamped with what this loop knows of the touch stream as it queues the
- * command: the gestures it has dropped (s_loss_gen, which only this loop
- * writes) and the number of the last event it took.  The control task
- * compares both when it takes an arm; see arm_watch_take_ok().
- */
-static void flush_screen_commands(uint32_t stops_now)
-{
-    const uint32_t loss_gen = atomic_load(&s_loss_gen);
-    const uint32_t consumed = s_tq_rx.next - 1u;
-    motor_cmd_t mc;
-    while (motor_screen_poll_cmd(&mc)) {
-        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                           .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go),
-                           .loss_gen = loss_gen,
-                           .consumed_seq = consumed };
-        send_cmd(&pc);
-    }
-    /* A stick run on PROGRAMMER moves the throttle and arms as the MOTOR
-     * screen does, through the same commands and the same policy. */
-    while (programmer_screen_poll_cmd(&mc)) {
-        panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
-                           .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go),
-                           .loss_gen = loss_gen,
-                           .consumed_seq = consumed };
-        send_cmd(&pc);
-    }
-    servo_cmd_t sv;
-    if (servo_screen_take(&sv)) {
-        panel_cmd_t pc = { .kind = PANEL_CMD_SERVO, .servo = sv,
-                           .stops = stops_now,
-                           .lets_go = atomic_load(&s_lets_go),
-                           .loss_gen = loss_gen,
-                           .consumed_seq = consumed };
-        send_cmd(&pc);
-    }
-    /* A programming port's command on the supply, onto the screen before
-     * the screen's set points are published; see s_supply_adopt_mv. */
-    const unsigned adopt = atomic_load(&s_supply_adopt_gen);
-    if (adopt != atomic_load(&s_supply_adopt_done)) {
-        supply_screen_adopt((float)atomic_load(&s_supply_adopt_mv) / 1000.0f,
-                            (float)atomic_load(&s_supply_adopt_ma) / 1000.0f);
-    }
-    /* The limits and the set points first, as levels; see
-     * s_supply_set_mv. */
-    publish_supply_levels();
-    atomic_store(&s_supply_adopt_done, adopt);
-    supply_cmd_t sc;
-    if (supply_screen_poll_cmd(&sc)) {
-        if (sc.on) {
-            atomic_fetch_add(&s_supply_ons_sent, 1u);
-        }
-        panel_cmd_t pc = { .kind = PANEL_CMD_SUPPLY, .supply = sc,
-                           .stops = stops_now,
-                           .supply_offs = atomic_load(&s_supply_offs),
-                           .pdmini_edits = atomic_load(&s_pdmini_edits),
-                           .loss_gen = loss_gen,
-                           .consumed_seq = consumed };
-        send_cmd(&pc);
-    }
-}
-
-/*
- * The screens' record of the glass is stale: an event between the last one
- * they saw and the next never reached them.  Every gesture in progress is
- * dropped, which asks for nothing -- what letting go early already does --
- * except where abandoning is itself the failure (a disarm press; see
- * ui_router_cancel_gestures()).  What that posts goes now, not at the end of
- * the frame: a lost event is what a stalled renderer produces, and a DISARM
- * must not wait behind the render and the flip.
- *
- * The STOP marker goes too, unless a request is already raised.  The marker
- * says the router will latch a stop the control task already applied, and
- * the router's press of the band was just cancelled, so no request follows
- * to consume it; one left standing would swallow the next stop that
- * genuinely needs the backstop.  A request the router latched before the
- * loss will consume it as it should -- including one still in the router's
- * own latch, which this frame would hand over only later: it is handed over
- * here first, the same way, so the marker is kept for it.  The residual is
- * a request raised by the backstop between the load and the store, which
- * resolves to a stop applied twice, and that latches the same way one does.
- */
-static void touch_stream_broke(uint32_t stops_now)
-{
-    /* A throttle or position the knob posted last frame and the flush below
-     * would send is not sent: this frame lost touch. */
-    knob_withdraw();
-    ui_router_cancel_gestures();
-    atomic_fetch_add(&s_loss_gen, 1u);
-    if (ui_router_take_stop()) {
-        atomic_store(&s_stop_request, true);
-    }
-    if (!atomic_load(&s_stop_request)) {
-        atomic_store(&s_stop_counted, false);
-    }
-    flush_screen_commands(stops_now);
-}
-
-/*
- * Hand the screens what the control task saw of the panel.  Returns whether
- * the stream was found broken.  Render loop only.
- */
-static bool drain_touch(uint32_t stops_now)
-{
-    bool lost = false;
-    /*
-     * What the control task saw of the panel, numbered.  The last number
-     * it published is read before the drain: every item up to it had
-     * been offered by then, so one the drain does not deliver was
-     * dropped (touch_seq_tail()).
-     *
-     * A loss is answered before the next event is dispatched.  The
-     * events after it were captured around the one that went missing,
-     * and dispatching them into a screen whose record of the glass is
-     * stale is what the cancellation exists to prevent: a queued movement
-     * on a reused track id commands a servo position, an orphan release
-     * applies a binding change, and cancelling afterwards cannot take
-     * either back.  A notice from the control task -- a gap in the
-     * driver's stream -- arrives in the same order, ahead of the events
-     * that followed that gap.
-     */
-    const uint32_t tq_published = atomic_load(&s_tq_published);
-    touch_item_t item;
-    while (xQueueReceive(s_touch_q, &item, 0) == pdTRUE) {
-        const uint32_t missed = touch_seq_take(&s_tq_rx, item.seq);
-        s_tq_lost += missed;
-        if (missed > 0u || item.lost) {
-            touch_stream_broke(stops_now);
-            lost = true;
-        }
-        if (item.lost) {
-            continue;
-        }
-        const ui_screen_id_t before = ui_router_current();
-        ui_router_event(&item.evt);
-        /*
-         * A navigation, and only a navigation, is taken out before the
-         * next event is dispatched.
-         *
-         * Leaving a bench screen records a disarm, and entering a screen
-         * runs its enter() there and then -- the log viewer's reads the
-         * card's whole root directory.  Two taps in one drain, HOME and
-         * then LOGS, would otherwise leave the disarm sitting in the
-         * screen while the walk ran, and the output stays live for as
-         * long as that takes.
-         *
-         * Not after every event.  The servo screen holds one pending
-         * command and lets the next overwrite it, so a drag's queued
-         * MOVEs collapse to where the finger is now.  Taking each one out
-         * as it arrives turns that into a queue of positions the finger
-         * has already left, and the horn follows them one link exchange
-         * at a time.  A navigation is the one thing that cannot be
-         * coalesced away, and nothing else here needs to jump the queue.
-         *
-         * STOP is unaffected either way: the control task hit-tests its
-         * band itself.
-         */
-        if (ui_router_current() != before) {
-            flush_screen_commands(stops_now);
-        }
-    }
-    {
-        const uint32_t tail = touch_seq_tail(&s_tq_rx, tq_published);
-        if (tail > 0u) {
-            s_tq_lost += tail;
-            touch_stream_broke(stops_now);
-            lost = true;
-        }
-    }    return lost;
-}
-
-/*
- * The outputs screen's choice, on its way to the control task.
- *
- * The screen runs on app_main and the link belongs to the control task, so
- * this queues rather than writes.  Everything the far end thinks of the
- * choice comes back as a word the control task leaves behind.
- */
-static void outputs_apply(const outbind_t *b)
-{
-    if (b == NULL) {
-        return;
-    }
-    panel_cmd_t pc = { .kind = PANEL_CMD_OUTPUTS, .bind = *b };
-    send_cmd(&pc);
-}
+/* The render side's services, the touch drain and the screens'
+ * commands, send_cmd() among them: panel_render.c. */
 
 /* Wi-Fi and the update, and GitHub's check and download: panel_update.c. */
 
