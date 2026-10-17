@@ -23,6 +23,7 @@
 #include "prog_link.h"
 #include "sense_link.h"
 #include "sense_page.h"
+#include "servo_link.h"
 #include "servo_screen.h"
 #include "servo_source.h"
 #include "servo_test_io.h"
@@ -586,6 +587,16 @@ __attribute__((noinline)) void kst_link_service(void)
     }
 }
 
+/* One read of the programming ports' page, into s_prog_link. */
+static __attribute__((noinline)) void prog_page_read(void)
+{
+    link_msg_t reply = { 0 };
+    const bool read = read_regs(&s_host, LINK_PAGE_PROG, 0u,
+                                (uint8_t)LINK_PG_REGS, &reply)
+                      && reply.op == LINK_OP_DATA;
+    prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
+}
+
 /*
  * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
  * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
@@ -601,56 +612,15 @@ __attribute__((noinline)) void prog_link_service(void)
     prog_hold_look();
     prog_link_want(&s_prog_link, (uint8_t)atomic_load(&s_prog_want_target),
                    atomic_load(&s_prog_want_pwm));
+    /* The read in a frame of its own, apart from the one the SERVO
+     * screen's writes take after it (servo_link_prog_service()). */
     if (prog_link_read_due(&s_prog_link, now_ms())) {
-        link_msg_t reply = { 0 };
-        const bool read = read_regs(&s_host, LINK_PAGE_PROG, 0u,
-                                    (uint8_t)LINK_PG_REGS, &reply)
-                          && reply.op == LINK_OP_DATA;
-        prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
+        prog_page_read();
     }
-    const bool rest = !outputs_armed(&s_out) && !s_servo_sweeping
-                      && !s_servo_holding && !s_servo_sweep_unknown;
-    if (rest && prog_link_pending(&s_prog_link)) {
-        servo_let_go();
-    }
-    const bool quiet = rest && !s_servo_release_owed && s_servo_written == 0u
-                       && s_servo_held.kind == SERVO_CMD_NONE;
-    prog_link_write_t w;
-    if (prog_link_next(&s_prog_link, quiet, &w)) {
-        link_msg_t reply = { 0 };
-        /* A pulse comes on under the range the screen names, stated to the
-         * port first: from 4.16 a range longer than the frame refuses it,
-         * and the port may still hold another profile's. */
-        const uint8_t on = prog_link_pulse_on(&s_prog_link, &w);
-        bool ack = true;
-        if (on != 0u && servo_named(&s_servo_range)) {
-            uint16_t cfg[LINK_CC_COUNT];
-            servo_cfg(&s_servo_range, cfg);
-            ack = servo_cfg_write(on, 0u, 1u, cfg, &reply);
-        }
-        ack = ack
-              && write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u, &w.value,
-                            &reply)
-              && reply.op == LINK_OP_ACK;
-        prog_link_written(&s_prog_link, &w, ack);
-    }
-    /* From 4.19 a TARGET change returns the SERVO rate to 0: the next
-     * position that wants a faster one leads with it again, and one whose
-     * TARGET write went unanswered counts as fast until a reset lands. */
-    switch (prog_link_rate(&s_prog_link)) {
-    case PROG_LINK_RATE_RESET:
-        servo_rate_reset_note(s_servo_rate_page, true);
-        break;
-    case PROG_LINK_RATE_UNKNOWN:
-        servo_rate_reset_note(s_servo_rate_page, false);
-        break;
-    case PROG_LINK_RATE_KEPT:
-    default:
-        break;
-    }
+    servo_link_prog_service();
     atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
     prog_drive_publish();
-    servo_surfaces_publish();
+    servo_link_surfaces_publish();
 }
 
 /* What the programmer's model is fed, as it stands.  Under the snapshot's

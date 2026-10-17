@@ -176,6 +176,22 @@ FLASH_CALLS = {
     "art_store_read": ("part_read",),
 }
 
+# The servo_link_ctx_t callbacks shared/outputs/servo_link.c calls: the
+# SERVO screen's link on the control task, whose callbacks reach the
+# panel's output bank, arming policy and alerts in main.c.  Each callback is
+# called from one function of its own there.  The same checks as
+# PORT_CALLS; test/tools/test_stack_check.py holds the table to
+# servo_link.c and to the panel's k_servo_ctx.
+SERVO_CALLS = {
+    "sl_now_ms": ("port_now",),
+    "sl_armed": ("servo_ctx_armed",),
+    "sl_stopped": ("servo_ctx_stopped",),
+    "sl_alert": ("servo_ctx_alert",),
+    "sl_disarm": ("servo_ctx_disarm",),
+    "sl_stop_count": ("servo_ctx_stop_count",),
+    "sl_arm_surfaces": ("servo_ctx_arm_surfaces",),
+}
+
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
 # check after an update, in components/fw_ota, which writes otadata on the
 # main task.  The same checks as PORT_CALLS.
@@ -649,7 +665,9 @@ def main() -> int:
                                ("FLASH_CALLS", "shared/artwork",
                                 FLASH_CALLS),
                                ("BOOT_CALLS", "shared/fwupdate",
-                                BOOT_CALLS)):
+                                BOOT_CALLS),
+                               ("SERVO_CALLS", "shared/outputs",
+                                SERVO_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:
