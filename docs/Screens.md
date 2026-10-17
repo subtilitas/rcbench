@@ -1466,18 +1466,44 @@ which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
 does not show. A number carried by either file is taken, and DELETE on a run
 removes its report too.
 
-The list holds 48 entries and a card holds up to 999 runs. When there are more
-than fit, the list keeps the newest runs and its tab reads `48 OF 137 FILES`
-instead of `FILES`, so a run that is missing from the list is a run the list
-was too short for rather than a run that was never written. The number in the
-name is what newest means: the panel has no clock that survives a power cycle,
-so every file on the card is dated 1980-01-01. A run outranks a file the bench
-did not write, so a card holding 48 or more runs lists no other file. Delete
-old runs to get one back.
+The list shows the card a page of 48 entries at a time, and a card holds up
+to 999 runs. Pages run newest run first: runs by number, highest first, then
+the files the bench did not write, by name. Within a page the rows are drawn
+by name. The number in the name is what newest means: the panel has no clock
+that survives a power cycle, so every file on the card is dated 1980-01-01.
 
-RESCAN, and every read of the card, selects the newest run and scrolls it
-into view, so OPEN opens the run just recorded. A card with no numbered run
-selects nothing.
+![A card of 121 files on its second page](img/logs-pages.png)
+
+With more than 48 files on the card, PREV and NEXT show in the header row and
+the tab names the page's part of the card, `FILES 49 TO 96 OF 121`, instead
+of `FILES`. PREV is grey on the first page and NEXT on the last. Each page is
+one read of the card's root directory: the walk keeps the 48 entries of that
+page and counts the rest, so the panel holds one page in memory whatever the
+card holds. The read runs on the task that draws the screen and handles
+touch. For 999 runs the selection takes about 2 ms on a desktop computer
+(x86-64, measured); on the panel it is estimated at 20 to 40 ms, and the
+directory read at 63 sectors of 512 bytes, about 25 ms at the card's 20 MHz
+SPI (Serial Peripheral Interface) clock, or 125 sectors, about 50 ms, with a
+report beside every run. Neither is measured on the panel. Each entry's size
+comes with the directory read, so the walk is the whole cost.
+
+The scroll bar along the list's right edge is 42 px wide, 8.1 mm on the
+panel's 0.194 mm pixels. Its thumb is the rows on screen against the rows on
+the page, and it scrolls within the page. A tap on the track brings the
+thumb's middle to the finger; a finger on the thumb drags it.
+
+RESCAN reads the page on screen again. On the first page it reads from the
+top, so a run recorded since shows. On another page it reads from that page's
+first entry, also when that file has been deleted since. When the card holds
+fewer entries than that place, RESCAN shows the last page. A card with
+another name in the header opens on its first page. Every read selects the
+page's newest run and scrolls it into view, so OPEN opens the run just
+recorded. A page with no numbered run selects nothing. DELETE reads the page
+again the same way: deleting the last page's only file shows the page before.
+
+The header names the card by its volume label, read once when the card is
+mounted. A card without a label shows the product name the card reports
+(for example `SC16G`), and a card that reports neither shows `SD CARD`.
 
 In the plot, two fingers zoom: spreading them zooms in, pinching zooms out,
 and moving both together pans. The view stays where the fingers leave it, and

@@ -84,6 +84,8 @@ static const struct {
 
 static bool g_no_card;
 static bool g_empty_card;
+/* The card's name in the header; another name is another card. */
+static const char *g_volume = "BENCH01";
 
 /*
  * A card holding more runs than the list has room for, or 0 for the fixture
@@ -92,6 +94,14 @@ static bool g_empty_card;
  * on the panel with storage_walk()'s count.
  */
 static int g_card_runs;
+/* Beside those runs, this many files the bench did not write, OTHERnnn.CSV,
+ * and the first run number, so a card can hold runs 61 to 120 only. */
+static int g_card_others;
+static int g_card_run0 = 1;
+/* Runs deleted from that card, by number. */
+static bool g_run_gone[LOG_RUN_LAST + 1];
+/* What the last listing asked for, and how many listings there were. */
+static log_viewer_page_t g_last_page;
 
 /* Which listed entry is a subdirectory, or -1 for none.  A card full of
  * directories is not the normal case, and every other case here wants to open
@@ -108,25 +118,57 @@ static char g_removed_name[LOG_VIEWER_NAME_MAX];
 static bool g_remove_refuses;
 static int g_list_calls;        /* how often the card was listed */
 
-static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
+/*
+ * The runs card as the panel reads it: every entry offered to the page
+ * selection in directory order, which is creation order on FAT -- the others
+ * first, then the runs oldest first -- as card_list() does.
+ */
+static int runs_list(log_viewer_file_t *out, int max_entries,
+                     log_viewer_page_t *page)
+{
+    log_select_page_t sel;
+    log_select_page_begin(&sel, out, max_entries, page);
+    int n = 0;
+    log_viewer_file_t f;
+    memset(&f, 0, sizeof(f));
+    for (int i = 0; i < g_card_others; ++i, ++n) {
+        snprintf(f.name, sizeof(f.name), "OTHER%03d.CSV", i);
+        f.size = 512u;
+        log_select_page_offer(&sel, &f);
+    }
+    for (int r = g_card_run0; r < g_card_run0 + g_card_runs; ++r) {
+        if (r > LOG_RUN_LAST || g_run_gone[r]) {
+            continue;
+        }
+        log_run_name(f.name, sizeof(f.name), r);
+        f.size = 1024u;
+        log_select_page_offer(&sel, &f);
+        ++n;
+    }
+    (void)log_select_page_end(&sel, page);
+    return n;
+}
+
+static int fake_list(log_viewer_file_t *out, int max_entries,
+                     log_viewer_page_t *page, void *ctx)
 {
     (void)ctx;
     ++g_list_calls;
+    if (page != NULL) {
+        g_last_page = *page;
+    }
     if (g_no_card) {
         return -1;
     }
     if (g_empty_card) {
+        if (page != NULL) {
+            page->ahead = 0;
+            page->held = 0;
+        }
         return 0;       /* mounted, and nothing on it the viewer can open */
     }
-    if (g_card_runs > 0) {
-        const int fits = (g_card_runs < max_entries) ? g_card_runs : max_entries;
-        for (int i = 0; i < fits; ++i) {
-            log_run_name(out[i].name, sizeof(out[i].name),
-                         g_card_runs - fits + 1 + i);
-            out[i].size = 1024u;
-            out[i].is_dir = false;
-        }
-        return g_card_runs;
+    if (g_card_runs > 0 || g_card_others > 0) {
+        return runs_list(out, max_entries, page);
     }
     static const uint32_t sizes[] = { 900u, 4096u, 300u, 200u, 120u,
                                       3u * 1024u * 1024u, 12u };
@@ -144,6 +186,11 @@ static int fake_list(log_viewer_file_t *out, int max_entries, void *ctx)
         out[n].size = sizes[i % (sizeof(sizes) / sizeof(sizes[0]))];
         out[n].is_dir = ((int)i == g_dir_index);
         ++n;
+    }
+    /* The fixture card is one page, in the order the cases address it. */
+    if (page != NULL) {
+        page->ahead = 0;
+        page->held = n;
     }
     return n;
 }
@@ -167,7 +214,7 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
 static const char *fake_volume(void *ctx)
 {
     (void)ctx;
-    return g_no_card ? "" : "BENCH01";
+    return g_no_card ? "" : g_volume;
 }
 
 static bool fake_remove(const char *name, void *ctx)
@@ -177,6 +224,12 @@ static bool fake_remove(const char *name, void *ctx)
     snprintf(g_removed_name, sizeof(g_removed_name), "%s", name);
     if (g_remove_refuses) {
         return false;
+    }
+    const int run = log_run_number(name);
+    if (g_card_runs > 0 && run >= g_card_run0
+        && run < g_card_run0 + g_card_runs && !g_run_gone[run]) {
+        g_run_gone[run] = true;
+        return true;
     }
     for (size_t i = 0; i < sizeof(k_card) / sizeof(k_card[0]); ++i) {
         if (strcmp(name, k_card[i].name) == 0 && !g_removed[i]) {
@@ -218,6 +271,11 @@ static void reset_screen(void)
     g_no_card = false;
     g_empty_card = false;
     g_card_runs = 0;
+    g_card_others = 0;
+    g_card_run0 = 1;
+    memset(g_run_gone, 0, sizeof(g_run_gone));
+    memset(&g_last_page, 0, sizeof(g_last_page));
+    g_volume = "BENCH01";
     memset(g_removed, 0, sizeof(g_removed));
     g_remove_calls = 0;
     g_removed_name[0] = '\0';
@@ -271,7 +329,7 @@ static void draw(void)
 
 /* Geometry mirrored from the screen; if it moves, these move with it.  Panel
  * coordinates: the band is UI_BAND_H rows tall and the screen starts below. */
-#define BR_ROW_Y(i) (36 + 30 + (i) * 44 + 18)
+#define BR_ROW_Y(i) (44 + 30 + (i) * 44 + 18)
 /* BR_ROWS: the file rows the list shows at once. */
 #define BR_ROWS_SEEN 6
 #define IM_ROW_Y(i) (36 + 30 + (i) * 36 + 14)
@@ -972,7 +1030,7 @@ TEST_CASE(both_framebuffers_follow_an_interaction)
  * back as letters, and it fails when the title stops saying what it should.
  */
 #define BR_TAB_X 16
-#define BR_TAB_Y 36
+#define BR_TAB_Y 44
 
 static int browse_tab_width(void)
 {
@@ -1221,7 +1279,8 @@ TEST_CASE(a_list_that_was_cut_says_so)
     log_viewer_refresh();
     draw();
     char want[32];
-    snprintf(want, sizeof(want), "%d OF %d FILES", LOG_VIEWER_MAX_FILES, 200);
+    snprintf(want, sizeof(want), "FILES 1 TO %d OF %d", LOG_VIEWER_MAX_FILES,
+             200);
     CHECK_EQ(browse_tab_width(), tab_width_for(want));
 }
 
@@ -1262,6 +1321,569 @@ static void ask_to_delete(int row)
 {
     tap(400, BR_ROW_Y(row));
     tap(DELETE_X, FOOT_CY);
+}
+
+/* -------------------------------------------------------------- pages --- */
+
+/*
+ * A card of @p runs runs and @p others other files, offered in an order that
+ * is neither the rank nor its reverse, and its full rank order in @p all.
+ */
+#define PG_MAX (LOG_RUN_LAST + 8)
+static log_viewer_file_t g_pg_all[PG_MAX];
+static int g_pg_n;
+static int g_pg_order[PG_MAX];
+
+static int by_rank(const void *a, const void *b)
+{
+    return log_name_rank(((const log_viewer_file_t *)a)->name,
+                         ((const log_viewer_file_t *)b)->name);
+}
+
+static void pg_card(int runs, int others)
+{
+    g_pg_n = 0;
+    for (int r = 1; r <= runs; ++r) {
+        memset(&g_pg_all[g_pg_n], 0, sizeof(g_pg_all[0]));
+        log_run_name(g_pg_all[g_pg_n].name, sizeof(g_pg_all[0].name), r);
+        g_pg_all[g_pg_n].size = (uint32_t)r;
+        ++g_pg_n;
+    }
+    for (int i = 0; i < others; ++i) {
+        memset(&g_pg_all[g_pg_n], 0, sizeof(g_pg_all[0]));
+        snprintf(g_pg_all[g_pg_n].name, sizeof(g_pg_all[0].name),
+                 "OTHER%03d.CSV", i);
+        ++g_pg_n;
+    }
+    /* A stride coprime with any count up to PG_MAX scatters the order. */
+    for (int i = 0; i < g_pg_n; ++i) {
+        g_pg_order[i] = (int)(((long)i * 7919L) % g_pg_n);
+    }
+}
+
+/* One walk: the page @p q asks for, into @p set of @p cap. */
+static int pg_walk(log_viewer_file_t *set, int cap, log_viewer_page_t *q)
+{
+    log_select_page_t sel;
+    log_select_page_begin(&sel, set, cap, q);
+    for (int i = 0; i < g_pg_n; ++i) {
+        log_select_page_offer(&sel, &g_pg_all[g_pg_order[i]]);
+    }
+    return log_select_page_end(&sel, q);
+}
+
+/* The edge of a page in rank order: first (@p sign 1) or last (-1). */
+static const char *pg_edge(const log_viewer_file_t *set, int n, int sign)
+{
+    int best = 0;
+    for (int i = 1; i < n; ++i) {
+        if (sign * log_name_rank(set[i].name, set[best].name) < 0) {
+            best = i;
+        }
+    }
+    return set[best].name;
+}
+
+/* Whether @p set holds ranks [first, first + n) of the card, drawn in
+ * display order. */
+static bool pg_is_slice(const log_viewer_file_t *set, int n, int first,
+                        const log_viewer_file_t *ranked)
+{
+    static log_viewer_file_t want[LOG_VIEWER_MAX_FILES];
+    memcpy(want, ranked + first, (size_t)n * sizeof(want[0]));
+    log_select_sort(want, n);
+    for (int i = 0; i < n; ++i) {
+        if (strcmp(set[i].name, want[i].name) != 0
+            || set[i].size != want[i].size) {
+            return false;
+        }
+    }
+    return true;
+}
+
+TEST_CASE(pages_of_a_card_cover_it_once_in_rank_order_both_ways)
+{
+    /*
+     * At the page boundaries: none, one page exactly, one over, two exactly,
+     * two and one over, and a full card of 999 runs with files the bench did
+     * not write behind them.  NEXT's chain from the first page reaches every
+     * entry once, in rank order, and PREV's chain from the last page walks
+     * the same pages back.
+     */
+    static const struct { int runs, others; } cards[] = {
+        { 0, 0 }, { 48, 0 }, { 49, 0 }, { 96, 0 }, { 97, 0 },
+        { 999, 0 }, { 999, 3 }, { 40, 9 },
+    };
+    static log_viewer_file_t ranked[PG_MAX];
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    static int starts[PG_MAX / LOG_VIEWER_MAX_FILES + 2];
+    for (size_t c = 0; c < sizeof(cards) / sizeof(cards[0]); ++c) {
+        pg_card(cards[c].runs, cards[c].others);
+        memcpy(ranked, g_pg_all, (size_t)g_pg_n * sizeof(ranked[0]));
+        qsort(ranked, (size_t)g_pg_n, sizeof(ranked[0]), by_rank);
+
+        const int pages = (g_pg_n + LOG_VIEWER_MAX_FILES - 1)
+                          / LOG_VIEWER_MAX_FILES;
+        log_viewer_page_t q;
+        memset(&q, 0, sizeof(q));
+        q.dir = LOG_PAGE_FROM;
+        int seen = 0;
+        int p = 0;
+        for (;;) {
+            const int held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+            CHECK_EQ(q.held, held);
+            if (held == 0) {
+                break;
+            }
+            CHECK_EQ(q.ahead, seen);
+            CHECK(pg_is_slice(set, held, seen, ranked));
+            CHECK_EQ(held, (g_pg_n - seen < LOG_VIEWER_MAX_FILES)
+                               ? g_pg_n - seen : LOG_VIEWER_MAX_FILES);
+            starts[p++] = seen;
+            seen += held;
+            q.dir = LOG_PAGE_AFTER;
+            snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, -1));
+        }
+        CHECK_EQ(seen, g_pg_n);
+        CHECK_EQ(p, pages);
+
+        /* Back from the last page: BEFORE with no key is the last of all,
+         * cut to what whole pages leave. */
+        if (pages == 0) {
+            memset(&q, 0, sizeof(q));
+            q.dir = LOG_PAGE_BEFORE;
+            CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
+            CHECK_EQ(q.ahead, 0);
+            continue;
+        }
+        memset(&q, 0, sizeof(q));
+        q.dir = LOG_PAGE_BEFORE;
+        int held = pg_walk(set, g_pg_n - starts[pages - 1], &q);
+        CHECK_EQ(q.ahead, starts[pages - 1]);
+        CHECK(pg_is_slice(set, held, starts[pages - 1], ranked));
+        for (int k = pages - 2; k >= 0; --k) {
+            snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
+            held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+            CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
+            CHECK_EQ(q.ahead, starts[k]);
+            CHECK(pg_is_slice(set, held, starts[k], ranked));
+        }
+        /* And before the first page there is nothing. */
+        snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
+        CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
+        CHECK_EQ(q.ahead, 0);
+    }
+}
+
+TEST_CASE(a_page_key_whose_file_has_gone_still_names_its_place)
+{
+    /* FROM a name the card no longer holds starts with the entry ranking
+     * behind it: a deleted page's first entry still finds the page. */
+    pg_card(100, 0);
+    /* BENCH060 is gone. */
+    for (int i = 0; i < g_pg_n; ++i) {
+        if (strcmp(g_pg_all[i].name, "BENCH060.CSV") == 0) {
+            g_pg_all[i] = g_pg_all[g_pg_n - 1];
+            --g_pg_n;
+            break;
+        }
+    }
+    for (int i = 0; i < g_pg_n; ++i) {
+        g_pg_order[i] = i;
+    }
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_FROM;
+    snprintf(q.key, sizeof(q.key), "%s", "BENCH060.CSV");
+    CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
+    CHECK_EQ(q.ahead, 40);                     /* runs 100 to 61 */
+    CHECK_STR_EQ(pg_edge(set, q.held, 1), "BENCH059.CSV");
+    CHECK_STR_EQ(pg_edge(set, q.held, -1), "BENCH012.CSV");
+
+    /* Case is folded: the key is the same file in lower case. */
+    snprintf(q.key, sizeof(q.key), "%s", "bench059.csv");
+    q.dir = LOG_PAGE_AFTER;
+    CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
+    CHECK_STR_EQ(pg_edge(set, q.held, 1), "BENCH058.CSV");
+
+    /* No set, no room, no candidate: nothing kept, nothing past its end. */
+    log_select_page_t sel;
+    log_select_page_begin(&sel, NULL, 4, &q);
+    log_select_page_offer(&sel, &g_pg_all[0]);
+    log_select_page_offer(&sel, NULL);
+    CHECK_EQ(log_select_page_end(&sel, NULL), 0);
+    log_select_page_begin(NULL, set, 4, NULL);
+    log_select_page_offer(NULL, &g_pg_all[0]);
+    CHECK_EQ(log_select_page_end(NULL, &q), 0);
+    /* A page of NULL is the first. */
+    log_select_page_begin(&sel, set, 4, NULL);
+    for (int i = 0; i < g_pg_n; ++i) {
+        log_select_page_offer(&sel, &g_pg_all[i]);
+    }
+    CHECK_EQ(log_select_page_end(&sel, NULL), 4);
+    CHECK_STR_EQ(pg_edge(set, 4, 1), "BENCH100.CSV");
+}
+
+/* The header row's PREV and NEXT, in screen coordinates. */
+#define PREV_X  596
+#define NEXT_X_PG 724
+#define PG_CY   21
+
+static void next_page(void)
+{
+    tap(NEXT_X_PG, PG_CY);
+}
+
+static void prev_page(void)
+{
+    tap(PREV_X, PG_CY);
+}
+
+/* The tab reads "FILES a TO b OF n", or FILES with @p n 0. */
+static void check_tab(int a, int b, int n)
+{
+    draw();
+    char want[48];
+    if (n == 0) {
+        snprintf(want, sizeof(want), "%s", "FILES");
+    } else {
+        snprintf(want, sizeof(want), "FILES %d TO %d OF %d", a, b, n);
+    }
+    if (browse_tab_width() != tab_width_for(want)) {
+        T_FAIL("the tab is %d px wide, \"%s\" is %d", browse_tab_width(),
+               want, tab_width_for(want));
+    }
+}
+
+/* The run OPEN opens, which is the newest run on the page: the page's
+ * identity, read without a getter.  Back to the list afterwards. */
+static void check_newest(int run)
+{
+    tap(OPEN_X, FOOT_CY);
+    char want[LOG_RUN_NAME_MAX];
+    log_run_name(want, sizeof(want), run);
+    CHECK_STR_EQ(log_viewer_open_name(), want);
+    tap(BACK_X, IM_BTN_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+}
+
+static void runs_card(int runs)
+{
+    fresh();
+    g_card_runs = runs;
+    log_viewer_refresh();
+}
+
+TEST_CASE(a_card_of_one_page_or_none_shows_no_page_buttons)
+{
+    /* 0 files and exactly 48: the tab reads FILES, and where PREV and NEXT
+     * would be a tap reads nothing from the card. */
+    fresh();
+    g_empty_card = true;
+    log_viewer_refresh();
+    draw();
+    int calls = g_list_calls;
+    next_page();
+    prev_page();
+    CHECK_EQ(g_list_calls, calls);
+
+    runs_card(LOG_VIEWER_MAX_FILES);
+    check_tab(0, 0, 0);
+    calls = g_list_calls;
+    next_page();
+    prev_page();
+    CHECK_EQ(g_list_calls, calls);
+    check_newest(LOG_VIEWER_MAX_FILES);
+}
+
+TEST_CASE(forty_nine_runs_are_two_pages_and_the_second_holds_the_oldest)
+{
+    runs_card(49);
+    check_tab(1, 48, 49);
+    check_newest(49);
+
+    /* PREV is grey on the first page: a tap reads nothing. */
+    int calls = g_list_calls;
+    prev_page();
+    CHECK_EQ(g_list_calls, calls);
+
+    next_page();
+    CHECK_EQ(g_list_calls, calls + 1);       /* one walk for the page */
+    check_tab(49, 49, 49);
+    check_newest(1);
+
+    /* NEXT is grey on the last. */
+    calls = g_list_calls;
+    next_page();
+    CHECK_EQ(g_list_calls, calls);
+    CHECK_EQ(g_last_page.dir, LOG_PAGE_AFTER);
+
+    prev_page();
+    CHECK_EQ(g_list_calls, calls + 1);
+    CHECK_EQ(g_last_page.dir, LOG_PAGE_BEFORE);
+    check_tab(1, 48, 49);
+    check_newest(49);
+}
+
+TEST_CASE(ninety_six_and_ninety_seven_runs_page_at_48)
+{
+    runs_card(96);
+    check_tab(1, 48, 96);
+    next_page();
+    check_tab(49, 96, 96);
+    check_newest(48);
+    int calls = g_list_calls;
+    next_page();
+    CHECK_EQ(g_list_calls, calls);
+
+    runs_card(97);
+    next_page();
+    check_tab(49, 96, 97);
+    check_newest(49);
+    next_page();
+    check_tab(97, 97, 97);
+    check_newest(1);
+    prev_page();
+    prev_page();
+    check_tab(1, 48, 97);
+    check_newest(97);
+}
+
+TEST_CASE(a_full_card_is_reached_to_its_oldest_run_a_walk_a_page)
+{
+    /* 999 runs: 21 pages, the last holding 39.  Each page is one listing. */
+    runs_card(LOG_RUN_LAST);
+    const int pages = (LOG_RUN_LAST + LOG_VIEWER_MAX_FILES - 1)
+                      / LOG_VIEWER_MAX_FILES;
+    for (int p = 1; p < pages; ++p) {
+        const int calls = g_list_calls;
+        next_page();
+        CHECK_EQ(g_list_calls, calls + 1);
+    }
+    const int first = (pages - 1) * LOG_VIEWER_MAX_FILES + 1;
+    check_tab(first, LOG_RUN_LAST, LOG_RUN_LAST);
+    check_newest(LOG_RUN_LAST - first + 1);
+    for (int p = 1; p < pages; ++p) {
+        prev_page();
+    }
+    check_tab(1, 48, LOG_RUN_LAST);
+    check_newest(LOG_RUN_LAST);
+}
+
+TEST_CASE(files_the_bench_did_not_write_follow_the_runs_and_are_counted)
+{
+    /* 48 runs and 5 other .csv files: the runs fill the first page, the
+     * others are the second, and the count holds all 53. */
+    fresh();
+    g_card_runs = 48;
+    g_card_others = 5;
+    log_viewer_refresh();
+    check_tab(1, 48, 53);
+    check_newest(48);
+    next_page();
+    check_tab(49, 53, 53);
+    /* No run on that page: nothing selected, OPEN opens nothing. */
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));
+    CHECK_STR_EQ(log_viewer_open_name(), "OTHER000.CSV");
+}
+
+TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
+{
+    runs_card(49);
+    next_page();
+    check_tab(49, 49, 49);
+    /* The page selects its newest run, BENCH001: DELETE asks about it. */
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK(g_run_gone[1]);
+    /* 48 left, one page: FILES, and the newest run selected. */
+    check_tab(0, 0, 0);
+    check_newest(49);
+
+    /* Two on the last page: one deleted, the page stays. */
+    runs_card(98);
+    next_page();
+    next_page();
+    check_tab(97, 98, 98);
+    tap(DELETE_X, FOOT_CY);                     /* BENCH002, selected */
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK(g_run_gone[2]);
+    check_tab(97, 97, 97);
+    check_newest(1);
+}
+
+TEST_CASE(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card)
+{
+    runs_card(150);
+    next_page();
+    next_page();
+    check_tab(97, 144, 150);
+    check_newest(54);
+
+    /* The same card read again: the same page. */
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(97, 144, 150);
+
+    /* Runs 1 to 60 gone behind the screen's back: the page starts where it
+     * did, at run 54's place, and that is past the card's end now.  The
+     * last page is shown, cut as the pages from the first cut it. */
+    g_card_run0 = 61;
+    g_card_runs = 90;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(49, 90, 90);
+    check_newest(102);
+
+    /* A run recorded while page 1 shows is on it after RESCAN. */
+    runs_card(60);
+    tap(RESCAN_X, FOOT_CY);
+    g_card_runs = 61;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 61);
+    check_newest(61);
+}
+
+TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
+{
+    runs_card(150);
+    next_page();
+    check_tab(49, 96, 150);
+
+    /* Another card's name in the header: its first page. */
+    g_volume = "UNITEST";
+    g_card_runs = 120;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 120);
+    check_newest(120);
+
+    /* Pulled, then put back: the read that finds no volume forgets the
+     * page, and the next one starts at the first. */
+    next_page();
+    g_no_card = true;
+    tap(RESCAN_X, FOOT_CY);
+    g_no_card = false;
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(1, 48, 120);
+
+    /* Same name, other runs: the page's place in the new card's order,
+     * with the tab's numbers the new card's. */
+    next_page();
+    g_card_run0 = 500;
+    g_card_runs = 200;
+    tap(RESCAN_X, FOOT_CY);
+    /* The page started at run 72; every run of 500 to 699 ranks ahead of
+     * it, so it is past the end and the last page shows. */
+    check_tab(193, 200, 200);
+}
+
+/* ---------------------------------------------------------- scroll bar --- */
+
+/* The bar: x of its middle, and the track's top and height. */
+#define BAR_X     755
+#define BAR_TOP   (44 + 30)
+#define BAR_H     (6 * 44 - 4)
+
+/* Open the top row; its run number says where the list is scrolled. */
+static int top_row_run(void)
+{
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));
+    const int run = log_run_number(log_viewer_open_name());
+    tap(BACK_X, IM_BTN_CY);
+    return run;
+}
+
+TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
+{
+    /* 48 runs: rows are runs 1 to 48 top down, and 42 is the last scroll. */
+    runs_card(48);
+    /* A tap at the bottom of the track brings the thumb there. */
+    tap(BAR_X, BAR_TOP + BAR_H - 2);
+    draw();
+    CHECK_EQ(top_row_run(), 43);
+    /* And at the top, back. */
+    tap(BAR_X, BAR_TOP + 1);
+    CHECK_EQ(top_row_run(), 1);
+
+    /* Dragging the thumb (32 px at the top) by half the travel scrolls half
+     * the page; past the track's end it stops at the end, and on a 49th
+     * row there is nothing to scroll to. */
+    const int th = BAR_H * 6 / 48;
+    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + th / 2);
+    send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
+    draw();
+    send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
+    CHECK_EQ(top_row_run(), 22);
+    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H / 2);
+    send(TOUCH_EVENT_MOVE, BAR_X, 2000);
+    send(TOUCH_EVENT_UP, BAR_X, 2000);
+    CHECK_EQ(top_row_run(), 43);
+    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H - 1);
+    send(TOUCH_EVENT_MOVE, BAR_X, -2000);
+    send(TOUCH_EVENT_UP, BAR_X, -2000);
+    CHECK_EQ(top_row_run(), 1);
+
+    /* A tap on the bar selects no row and opens nothing, and reads no
+     * card. */
+    const int calls = g_list_calls;
+    tap(BAR_X, BAR_TOP + 100);
+    tap(BAR_X, BAR_TOP + 100);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    CHECK_EQ(g_list_calls, calls);
+
+    /* With every row showing there is nothing to scroll. */
+    runs_card(4);
+    tap(BAR_X, BAR_TOP + BAR_H - 2);
+    CHECK_EQ(top_row_run(), 1);
+
+    /* The bar scrolls within the page: at the bottom of page 2 of 97 the
+     * last row is the oldest run on that page, and NEXT does not move. */
+    runs_card(97);
+    next_page();
+    tap(BAR_X, BAR_TOP + 1);
+    CHECK_EQ(top_row_run(), 2);
+    tap(BAR_X, BAR_TOP + BAR_H - 2);
+    CHECK_EQ(top_row_run(), 44);
+    check_tab(49, 96, 97);
+
+    /* A touch loss ends a drag: the next move belongs to no press. */
+    runs_card(48);
+    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + 1);
+    screen()->cancel();
+    send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + BAR_H);
+    send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + BAR_H);
+    CHECK_EQ(top_row_run(), 1);
+}
+
+TEST_CASE(the_header_names_the_card_or_says_sd_card)
+{
+    /* No name, and the header reads what it reads for a card without one:
+     * SD CARD.  A name is drawn instead. */
+    static gfx_color_t *named;
+    if (named == NULL) {
+        named = calloc((size_t)W * H, sizeof(gfx_color_t));
+        REQUIRE_ALLOC(named);
+    }
+    fresh();
+    g_volume = "SD CARD";
+    log_viewer_refresh();
+    draw();
+    memcpy(named, s_fb, (size_t)W * H * sizeof(gfx_color_t));
+
+    fresh();
+    g_volume = "";
+    log_viewer_refresh();
+    draw();
+    CHECK(memcmp(named, s_fb, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+
+    fresh();
+    g_volume = "UNITEST";
+    log_viewer_refresh();
+    draw();
+    CHECK(memcmp(named, s_fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
 }
 
 TEST_CASE(delete_asks_first_and_deletes_only_the_file_it_named)
@@ -2470,6 +3092,18 @@ int main(void)
     RUN(a_full_list_keeps_runs_over_what_it_cannot_date);
     RUN(a_list_that_was_cut_says_so);
     RUN(a_count_above_the_list_does_not_reach_past_it);
+    RUN(pages_of_a_card_cover_it_once_in_rank_order_both_ways);
+    RUN(a_page_key_whose_file_has_gone_still_names_its_place);
+    RUN(a_card_of_one_page_or_none_shows_no_page_buttons);
+    RUN(forty_nine_runs_are_two_pages_and_the_second_holds_the_oldest);
+    RUN(ninety_six_and_ninety_seven_runs_page_at_48);
+    RUN(a_full_card_is_reached_to_its_oldest_run_a_walk_a_page);
+    RUN(files_the_bench_did_not_write_follow_the_runs_and_are_counted);
+    RUN(deleting_the_last_pages_only_file_shows_the_page_before);
+    RUN(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card);
+    RUN(a_card_swapped_mid_page_opens_on_its_first_page);
+    RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
+    RUN(the_header_names_the_card_or_says_sd_card);
     RUN(delete_asks_first_and_deletes_only_the_file_it_named);
     RUN(cancel_deletes_nothing_and_keeps_the_selection);
     RUN(a_finger_that_slides_off_delete_deletes_nothing);

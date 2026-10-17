@@ -51,11 +51,37 @@
 /* What a view shows above the footer ends this far above it. */
 #define FOOT_GAP  6
 
-#define BR_LIST   gfx_rect_make(16, 36, 768, FOOT_Y - FOOT_GAP - 36)
+/* The list starts under the header row, which holds the card's name and,
+ * when the card holds more than one page, PREV and NEXT. */
+#define BR_LIST_Y 44
+#define BR_LIST   gfx_rect_make(16, BR_LIST_Y, 768, FOOT_Y - FOOT_GAP - BR_LIST_Y)
 #define BR_ROW_H  44
-/* (310 - 30) / 44 = 6 rows fit the list.  A seventh needs 338 px and would
+/* (302 - 30) / 44 = 6 rows fit the list.  A seventh needs 338 px and would
  * cross the panel border into the footer. */
 #define BR_ROWS   6
+
+/*
+ * The scroll bar along the list's right edge, BR_BAR_W px wide: 8.1 mm on
+ * the panel.  The Waveshare ESP32-S3-Touch-LCD-7 shows 800 x 480 px on a
+ * 154.88 x 86.72 mm viewing area (CNX Software's listing of the board,
+ * https://www.cnx-software.com/2024/05/30/7-inch-esp32-s3-touchscreen-display-rs485-can-bus-i2c-uart-analog-sensor-interfaces/;
+ * Waveshare's pages give no active area), so a pixel is
+ * 154.88 / 800 = 0.1936 mm across and 42 px is 8.13 mm.  The track runs the
+ * height of the rows, and the thumb's share of it is the rows' share of the
+ * page.
+ */
+#define BR_BAR_W  42
+#define BR_BAR    gfx_rect_make(16 + 768 - 8 - BR_BAR_W, BR_LIST_Y + 30, \
+                                BR_BAR_W, BR_ROWS * BR_ROW_H - 4)
+/* A row runs from the list's left inset to 8 px short of the bar. */
+#define BR_ROW_X  (16 + 8)
+#define BR_ROW_W  (16 + 768 - 8 - BR_BAR_W - 8 - BR_ROW_X)
+
+/* PREV and NEXT, over DELETE and OPEN in the header row. */
+#define BR_PG_Y   2
+#define BR_PG_H   38
+#define BR_PREV   gfx_rect_make(536, BR_PG_Y, 120, BR_PG_H)
+#define BR_NEXT   gfx_rect_make(664, BR_PG_Y, 120, BR_PG_H)
 
 /* Footer buttons, in the order browse_event() hit-tests them. */
 #define BR_RESCAN gfx_rect_make(16, FOOT_Y, 120, FOOT_H)
@@ -113,8 +139,12 @@
 
 _Static_assert(FOOT_Y + FOOT_H + 4 <= SCREEN_H - UI_ALERT_H,
                "the footer ends 4 px above the alert band");
-_Static_assert(30 + BR_ROWS * BR_ROW_H <= FOOT_Y - FOOT_GAP - 36,
+_Static_assert(30 + BR_ROWS * BR_ROW_H <= FOOT_Y - FOOT_GAP - BR_LIST_Y,
                "the file list's rows fit its panel");
+_Static_assert(BR_PG_Y + BR_PG_H + 4 <= BR_LIST_Y,
+               "PREV and NEXT end above the list");
+_Static_assert((BR_ROWS * BR_ROW_H - 4) * BR_ROWS / LOG_VIEWER_MAX_FILES >= 32,
+               "the scroll bar's thumb is 32 px or more on a full page");
 _Static_assert(30 + IM_ROWS * IM_ROW_H <= FOOT_Y - FOOT_GAP - 36,
                "the column list's rows fit its panel");
 _Static_assert(PV_POS_Y + PV_POS_H <= 68 + PV_PANEL_H,
@@ -131,11 +161,20 @@ static struct {
     log_viewer_io_t io;
 
     log_viewer_file_t files[LOG_VIEWER_MAX_FILES];
-    int n_files;  /* rows held, never above LOG_VIEWER_MAX_FILES */
-    int n_card;   /* what the volume holds; above n_files when cut */
+    int n_files;  /* rows on the page, never above LOG_VIEWER_MAX_FILES */
+    int n_card;   /* what the volume holds; above n_files when paged */
+    int first;    /* entries ahead of the page, in log_name_rank() order */
     int listed;   /* -1 no volume, 0 not read, 1 read     */
     int sel;      /* highlighted file                     */
     int scroll;
+    /* The card's name when the page was read: another name on RESCAN is
+     * another card, and it opens on its first page. */
+    char volume[LOG_VIEWER_NAME_MAX];
+
+    /* A finger on the scroll bar: the thumb follows it, held where it took
+     * the thumb, grab px below the thumb's top. */
+    bool bar_drag;
+    int bar_grab;
 
     char name[LOG_VIEWER_NAME_MAX];
     char message[80];
@@ -319,54 +358,177 @@ void log_viewer_set_io(const log_viewer_io_t *io)
     log_viewer_invalidate();
 }
 
-void log_viewer_refresh(void)
+/* The card's name as the I/O reports it now, or "". */
+static const char *volume_now(void)
+{
+    const char *vol = (s.io.volume != NULL) ? s.io.volume(s.io.ctx) : NULL;
+    return (vol != NULL) ? vol : "";
+}
+
+/*
+ * The entry on the page that log_name_rank() puts first (@p sign 1) or last
+ * (-1), or "" with an empty page: the edges PREV, NEXT and RESCAN name.
+ */
+static const char *page_edge(int sign)
+{
+    int best = -1;
+    for (int i = 0; i < s.n_files; ++i) {
+        if (best < 0
+            || sign * log_name_rank(s.files[i].name, s.files[best].name) < 0) {
+            best = i;
+        }
+    }
+    return (best >= 0) ? s.files[best].name : "";
+}
+
+/*
+ * One walk of the directory for the page @p dir and @p key name, of at most
+ * @p cap entries.
+ */
+static int list_once(log_page_dir_t dir, const char *key, int cap)
+{
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = dir;
+    snprintf(q.key, sizeof(q.key), "%s", (key != NULL) ? key : "");
+    const int n = s.io.list(s.files, cap, &q, s.io.ctx);
+    if (n < 0) {
+        return n;
+    }
+    /*
+     * The count is what the volume holds, which can be more than was
+     * written: a card takes up to 999 runs and this screen holds a page of
+     * LOG_VIEWER_MAX_FILES of them.  Rows are clamped to what is in the
+     * array -- every list index below runs off the end otherwise -- and the
+     * place to what the count leaves room for, so the tab never names a row
+     * past the card's last.
+     */
+    int held = q.held;
+    if (held > n) {
+        held = n;
+    }
+    if (held > cap) {
+        held = cap;
+    }
+    if (held < 0) {
+        held = 0;
+    }
+    int ahead = q.ahead;
+    if (ahead > n - held) {
+        ahead = n - held;
+    }
+    if (ahead < 0) {
+        ahead = 0;
+    }
+    s.n_card = n;
+    s.n_files = held;
+    s.first = ahead;
+    return n;
+}
+
+/*
+ * Read the page @p dir and @p key name, and select its newest run.
+ *
+ * A page that comes back empty from a card that is not, is a page past the
+ * end: the card has fewer entries than when the key was read, after a
+ * DELETE or behind the screen's back.  The last page is read instead, as
+ * the pages from the first one cut it: what is left of the count after
+ * whole pages of LOG_VIEWER_MAX_FILES.  A page before the first that comes
+ * back short is the first page, read again so that it is full.
+ */
+static void read_page(log_page_dir_t dir, const char *key)
 {
     /* A re-read can be of another card, and a name on it is another file. */
     s.doomed[0] = '\0';
     s.n_files = 0;
     s.n_card = 0;
+    s.first = 0;
     s.sel = -1;
     s.scroll = 0;
+    s.bar_drag = false;
+    /* Copied: @p key may point into the array the listing overwrites. */
+    char k[LOG_VIEWER_NAME_MAX];
+    snprintf(k, sizeof(k), "%s", (key != NULL) ? key : "");
+    snprintf(s.volume, sizeof(s.volume), "%s", volume_now());
     if (s.io.list == NULL) {
         s.listed = -1;
-    } else {
-        int n = s.io.list(s.files, LOG_VIEWER_MAX_FILES, s.io.ctx);
-        if (n < 0) {
-            s.listed = -1;
-        } else {
-            /*
-             * The count is what the volume holds, which can be more than was
-             * written: a card takes up to 999 runs and this screen holds
-             * LOG_VIEWER_MAX_FILES of them.  Rows are clamped to what is in
-             * the array -- every list index below runs off the end otherwise
-             * -- and the browse panel names both numbers, because a viewer
-             * that shows a subset without saying so is a viewer the operator
-             * reads as the whole card.
-             */
-            s.n_card = n;
-            s.n_files = (n < LOG_VIEWER_MAX_FILES) ? n : LOG_VIEWER_MAX_FILES;
-            s.listed = 1;
-            /*
-             * The run just recorded is the one an operator re-reads the card
-             * for, so the list opens on it: the highest run number, scrolled
-             * into view.  A card with no numbered run keeps no selection.
-             */
-            int best = -1;
-            for (int i = 0; i < s.n_files; ++i) {
-                if (!s.files[i].is_dir &&
-                    log_run_number(s.files[i].name) >= 0 &&
-                    (best < 0 || log_name_rank(s.files[i].name,
-                                               s.files[best].name) < 0)) {
-                    best = i;
-                }
-            }
-            s.sel = best;
-            if (best >= BR_ROWS) {
-                s.scroll = best - BR_ROWS + 1;
-            }
+        log_viewer_invalidate();
+        return;
+    }
+    int n = list_once(dir, k, LOG_VIEWER_MAX_FILES);
+    if (n > 0 && s.n_files == 0) {
+        n = list_once(LOG_PAGE_BEFORE, "",
+                      n - (n - 1) / LOG_VIEWER_MAX_FILES * LOG_VIEWER_MAX_FILES);
+    } else if (n > 0 && dir == LOG_PAGE_BEFORE && s.first == 0
+               && s.n_files < LOG_VIEWER_MAX_FILES && s.n_files < n) {
+        n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
+    }
+    if (n < 0) {
+        s.n_files = 0;
+        s.n_card = 0;
+        s.first = 0;
+        s.listed = -1;
+        log_viewer_invalidate();
+        return;
+    }
+    s.listed = 1;
+    /*
+     * The run just recorded is the one an operator re-reads the card for, so
+     * the list opens on it: the highest run number on the page, scrolled into
+     * view.  A page with no numbered run keeps no selection.
+     */
+    int best = -1;
+    for (int i = 0; i < s.n_files; ++i) {
+        if (!s.files[i].is_dir &&
+            log_run_number(s.files[i].name) >= 0 &&
+            (best < 0 || log_name_rank(s.files[i].name,
+                                       s.files[best].name) < 0)) {
+            best = i;
         }
     }
+    s.sel = best;
+    if (best >= BR_ROWS) {
+        s.scroll = best - BR_ROWS + 1;
+    }
     log_viewer_invalidate();
+}
+
+void log_viewer_refresh(void)
+{
+    read_page(LOG_PAGE_FROM, "");
+}
+
+/*
+ * Read the page on screen again.  The first page is read from the top, so a
+ * run recorded since shows; any other from its first entry, and an entry
+ * deleted since still names its place.  Another card's name in the header
+ * is another card, read from its first page.
+ */
+static void rescan(void)
+{
+    if (s.first == 0 || s.listed != 1
+        || strcmp(s.volume, volume_now()) != 0) {
+        read_page(LOG_PAGE_FROM, "");
+    } else {
+        read_page(LOG_PAGE_FROM, page_edge(1));
+    }
+}
+
+/* Whether the card holds more than the page shows, either side of it. */
+static bool paged(void)
+{
+    return s.listed == 1 && s.n_files > 0
+           && (s.first > 0 || s.first + s.n_files < s.n_card);
+}
+
+static bool can_prev(void)
+{
+    return paged() && s.first > 0;
+}
+
+static bool can_next(void)
+{
+    return paged() && s.first + s.n_files < s.n_card;
 }
 
 static void drop_data(void)
@@ -739,12 +901,65 @@ static void render_question(gfx_canvas_t *c)
     ui_button(c, DQ_DELETE, TR(LOG_DELETE), UI_DANGER, s.press_btn == 1, true);
 }
 
+/*
+ * The thumb of the scroll bar: its top in @p y and its height in @p h.  The
+ * whole track while every row of the page shows.
+ */
+static void bar_thumb(int *y, int *h)
+{
+    const gfx_rect_t t = BR_BAR;
+    if (s.n_files <= BR_ROWS) {
+        *y = t.y;
+        *h = t.h;
+        return;
+    }
+    const int th = t.h * BR_ROWS / s.n_files;
+    const int max = s.n_files - BR_ROWS;
+    *y = t.y + (t.h - th) * s.scroll / max;
+    *h = th;
+}
+
+/* The scroll that puts the thumb's top nearest @p top. */
+static int bar_scroll_at(int top)
+{
+    int ty;
+    int th;
+    bar_thumb(&ty, &th);
+    const int travel = BR_BAR.h - th;
+    const int max = s.n_files - BR_ROWS;
+    if (travel <= 0 || max <= 0) {
+        return 0;
+    }
+    int off = top - BR_BAR.y;
+    if (off < 0) {
+        off = 0;
+    }
+    if (off > travel) {
+        off = travel;
+    }
+    return (off * max + travel / 2) / travel;
+}
+
+static void render_bar(gfx_canvas_t *c)
+{
+    const gfx_rect_t t = BR_BAR;
+    gfx_fill_chamfer_rect(c, t.x, t.y, t.w, t.h, UI_CHAMFER_SM, UI_PANEL_SUNK);
+    int ty;
+    int th;
+    bar_thumb(&ty, &th);
+    /* Accent while there is something to scroll, as the SETUP lists' bar;
+     * the raised panel colour when the page shows whole. */
+    const gfx_color_t col = (s.n_files > BR_ROWS) ? UI_ACCENT : UI_PANEL_HI;
+    gfx_fill_chamfer_rect(c, t.x + 4, ty + 2, t.w - 8, th - 4, UI_CHAMFER_SM,
+                          col);
+}
+
 static void render_browse(gfx_canvas_t *c)
 {
-    const char *vol = (s.io.volume != NULL) ? s.io.volume(s.io.ctx) : NULL;
+    const char *vol = volume_now();
     char head[64];
-    snprintf(head, sizeof(head), "%s", (vol != NULL && vol[0] != '\0')
-                                           ? vol : TR(LOG_SD_CARD));
+    snprintf(head, sizeof(head), "%s", (vol[0] != '\0') ? vol
+                                                         : TR(LOG_SD_CARD));
     gfx_text(c, 300, 12, head, UI_FONT_LABEL, UI_TEXT_DIM, 1);
 
     /*
@@ -767,28 +982,29 @@ static void render_browse(gfx_canvas_t *c)
                  UI_FONT_LABEL, UI_TEXT_FAINT, 1);
     } else {
         /*
-         * The tab carries both numbers when the volume holds more than the
-         * list does: a file missing from a list headed FILES reads as a file
-         * that is not on the card.  Which entries arrive is the lister's
-         * decision -- the panel's keeps the newest runs, see log_select.h.
-         * The buffer takes both counts written out in full, so a volume that
-         * reports a nonsense one still leaves a terminated title.
+         * The tab names the page's place in the card when the volume holds
+         * more than the page does: a file missing from a list headed FILES
+         * reads as a file that is not on the card.  Pages run newest run
+         * first, see log_select.h.  The buffer takes the three counts
+         * written out in full, so a volume that reports a nonsense one still
+         * leaves a terminated title.
          */
-        char title[48];
-        if (s.n_card > s.n_files) {
-            snprintf(title, sizeof(title), TR(LOG_N_OF_FILES), s.n_files,
-                     s.n_card);
+        char title[64];
+        if (paged()) {
+            snprintf(title, sizeof(title), TR(LOG_N_OF_FILES), s.first + 1,
+                     s.first + s.n_files, s.n_card);
         } else {
             snprintf(title, sizeof(title), "%s", TR(LOG_FILES));
         }
         ui_panel(c, BR_LIST, title, UI_ACCENT);
+        render_bar(c);
         int y = BR_LIST.y + 30;
         for (int r = 0; r < BR_ROWS; ++r) {
             int i = s.scroll + r;
             if (i >= s.n_files) {
                 break;
             }
-            gfx_rect_t row = gfx_rect_make(BR_LIST.x + 8, y, BR_LIST.w - 16,
+            gfx_rect_t row = gfx_rect_make(BR_ROW_X, y, BR_ROW_W,
                                            BR_ROW_H - 4);
             bool on = (i == s.sel);
             gfx_fill_chamfer_rect(c, row.x, row.y, row.w, row.h, UI_CHAMFER_SM,
@@ -809,6 +1025,12 @@ static void render_browse(gfx_canvas_t *c)
         }
     }
 
+    if (paged()) {
+        ui_button(c, BR_PREV, TR(LOG_PREV), UI_PANEL_HI, s.press_btn == 4,
+                  can_prev());
+        ui_button(c, BR_NEXT, TR(LOG_NEXT), UI_PANEL_HI, s.press_btn == 5,
+                  can_next());
+    }
     ui_button(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI, s.press_btn == 0,
               true);
     /* FILES & UPDATE: the card's files to a browser, over the panel's
@@ -1360,10 +1582,11 @@ static void delete_doomed(void)
         s.name[0] = '\0';
     }
     /* Re-read rather than drop the row here: the card says what is on it.
-     * The selection goes with the file, so a second DELETE needs a second
-     * choice; the scroll stays near the gap. */
+     * The page stays, or is the last one when the file was the last page's
+     * only entry.  The selection goes with the file, so a second DELETE needs
+     * a second choice; the scroll stays near the gap. */
     const int scroll = s.scroll;
-    log_viewer_refresh();
+    rescan();
     s.scroll = scroll;
     clamp_scroll(&s.scroll, s.n_files, BR_ROWS);
     set_message(TR(LOG_DELETED), name);
@@ -1424,18 +1647,40 @@ static void browse_event(const touch_event_t *e)
         return;
     }
 
-    const gfx_rect_t btns[4] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI };
+    /* PREV and NEXT are buttons only while they show. */
+    const gfx_rect_t btns[6] = { BR_RESCAN, BR_OPEN, BR_DELETE, BR_WIFI,
+                                 BR_PREV, BR_NEXT };
+    const int n_btns = paged() ? 6 : 4;
 
     switch (e->type) {
     case TOUCH_EVENT_DOWN:
         if (!tap_begin(e)) {
             break;
         }
-        s.press_btn = hit_button(btns, 4, e->point.x, e->point.y);
+        s.press_btn = hit_button(btns, n_btns, e->point.x, e->point.y);
         s.press_row = -1;
         s.dragged = false;
         s.pressing = false;
-        if (s.press_btn < 0 && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
+        s.bar_drag = false;
+        if (s.press_btn < 0 && s.listed == 1 && s.n_files > 0
+            && gfx_rect_contains(BR_BAR, e->point.x, e->point.y)) {
+            /*
+             * The scroll bar.  A press on the thumb takes it where it is
+             * held; a press on the track beside it brings the thumb's middle
+             * to the finger.  Either way the finger then drags it.
+             */
+            int ty;
+            int th;
+            bar_thumb(&ty, &th);
+            s.bar_drag = true;
+            if (e->point.y >= ty && e->point.y < ty + th) {
+                s.bar_grab = e->point.y - ty;
+            } else {
+                s.bar_grab = th / 2;
+                s.scroll = bar_scroll_at(e->point.y - s.bar_grab);
+            }
+        } else if (s.press_btn < 0
+                   && gfx_rect_contains(BR_LIST, e->point.x, e->point.y)) {
             s.pressing = true;
             s.press_y0 = e->point.y;
             s.press_scroll0 = s.scroll;
@@ -1449,7 +1694,13 @@ static void browse_event(const touch_event_t *e)
         break;
 
     case TOUCH_EVENT_MOVE:
-        if (s.pressing && tap_mine(e)) {
+        if (s.bar_drag && tap_mine(e)) {
+            const int scroll = bar_scroll_at(e->point.y - s.bar_grab);
+            if (scroll != s.scroll) {
+                s.scroll = scroll;
+                log_viewer_invalidate();
+            }
+        } else if (s.pressing && tap_mine(e)) {
             int dy = e->point.y - s.press_y0;
             if (dy > DRAG_SLOP || dy < -DRAG_SLOP) {
                 s.dragged = true;
@@ -1471,11 +1722,20 @@ static void browse_event(const touch_event_t *e)
                          && tap_on(e, list_row_rect(BR_LIST, BR_ROW_H,
                                                     s.press_row - s.scroll));
         s.pressing = false;
+        s.bar_drag = false;
         s.press_btn = -1;
         /* A press that slid off its button is not a tap on it. */
         const bool on = btn >= 0 && tap_on(e, btns[btn]);
         if (on && btn == 0) {
-            log_viewer_refresh();
+            rescan();
+        } else if (on && btn == 4) {
+            if (can_prev()) {
+                read_page(LOG_PAGE_BEFORE, page_edge(1));
+            }
+        } else if (on && btn == 5) {
+            if (can_next()) {
+                read_page(LOG_PAGE_AFTER, page_edge(-1));
+            }
         } else if (on && btn == 1) {
             open_selected();
         } else if (on && btn == 3) {
@@ -1921,6 +2181,7 @@ static void cancel(void)
     s.q_down    = false;
     s.pinch     = false;
     s.panning   = false;
+    s.bar_drag  = false;
     log_viewer_invalidate();
 }
 
@@ -1947,6 +2208,7 @@ static void enter(void)
     s.pressing  = false;
     s.press_btn = -1;
     s.q_down    = false;
+    s.bar_drag  = false;
     if (s.listed == 0) {
         log_viewer_refresh();
     }

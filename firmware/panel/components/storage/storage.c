@@ -5,13 +5,14 @@
 #include "storage.h"
 
 #include <ctype.h>
-#include <dirent.h>
-#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include "board.h"
+/* ff.h first: diskio_sdmmc.h uses its BYTE without including it. */
+#include "ff.h"
+#include "diskio_sdmmc.h"
 #include "driver/sdspi_host.h"
 #include "driver/spi_common.h"
 #include "esp_check.h"
@@ -25,9 +26,44 @@ static struct {
     sdmmc_card_t *card;
     bool bus_up;
     bool mounted;
-    char name[24];
+    /* The volume label, or the CID's product name without one: 11 FAT
+     * label characters take up to 33 bytes in UTF-8. */
+    char name[40];
+    /* The FatFs drive of the mounted card, "0:", for f_readdir(). */
+    char drive[8];
     char status[48];
 } s;
+
+/*
+ * The card's name: its volume label, e.g. "UNITEST", or the product name in
+ * its CID (card identification register), e.g. "SC16G", when the volume has
+ * no label or it does not read.
+ *
+ * Read once per mount, here, and kept: f_getlabel() reads the root
+ * directory from its first sector until it meets the label's entry.  A
+ * formatter writes that entry first, so a labelled card costs one 512-byte
+ * sector read; a card without a label is read to the directory's end, 16
+ * entries per sector, about 125 sectors for 999 runs and their reports.
+ */
+static void read_name(void)
+{
+    snprintf(s.name, sizeof(s.name), "%s", s.card->cid.name);
+    if (s.drive[0] == '\0') {
+        return;
+    }
+    /* FatFs asks for 34 bytes for a label in UTF-8 (ff.c, f_getlabel). */
+    char label[34];
+    label[0] = '\0';
+    const FRESULT fr = f_getlabel(s.drive, label, NULL);
+    if (fr != FR_OK) {
+        ESP_LOGW(TAG, "volume label did not read: %d", (int)fr);
+        return;
+    }
+    label[sizeof(label) - 1u] = '\0';
+    if (label[0] != '\0') {
+        snprintf(s.name, sizeof(s.name), "%s", label);
+    }
+}
 
 esp_err_t storage_init(void)
 {
@@ -91,7 +127,12 @@ esp_err_t storage_init(void)
     }
 
     s.mounted = true;
-    snprintf(s.name, sizeof(s.name), "%s", s.card->cid.name);
+    s.drive[0] = '\0';
+    const BYTE pdrv = ff_diskio_get_pdrv_card(s.card);
+    if (pdrv != 0xffu) {
+        snprintf(s.drive, sizeof(s.drive), "%u:", (unsigned)pdrv);
+    }
+    read_name();
     ESP_LOGI(TAG, "%s mounted, %llu MB", s.name,
              (unsigned long long)(storage_total_bytes() / (1024ULL * 1024ULL)));
     return ESP_OK;
@@ -103,6 +144,7 @@ void storage_deinit(void)
         esp_vfs_fat_sdcard_unmount(STORAGE_MOUNT_POINT, s.card);
         s.card = NULL;
         s.mounted = false;
+        s.drive[0] = '\0';
         board_sd_cs(false);
     }
     if (s.bus_up) {
@@ -199,62 +241,74 @@ static bool suffix_matches(const char *name, const char *suffixes)
     return false;
 }
 
+/* What one walk reads into: on the heap, because the walk runs on the task
+ * that renders as well as on the run logger's, and a FILINFO with its long
+ * name buffer is 280 bytes or more. */
+typedef struct {
+    FF_DIR dir;
+    FILINFO info;
+} walk_buf_t;
+
 int storage_walk(const char *dir, const char *suffixes,
                  storage_visit_fn visit, void *ctx, storage_tick_fn tick)
 {
-    if (!s.mounted) {
-        return -1;
-    }
-
-    char path[STORAGE_NAME_MAX * 2];
-    if (dir == NULL || dir[0] == '\0' || strcmp(dir, "/") == 0) {
-        snprintf(path, sizeof(path), "%s", STORAGE_MOUNT_POINT);
-    } else {
-        snprintf(path, sizeof(path), "%s/%s", STORAGE_MOUNT_POINT, dir);
-    }
-
-    DIR *d = opendir(path);
-    if (d == NULL) {
+    if (!s.mounted || s.drive[0] == '\0') {
         return -1;
     }
 
     /*
-     * readdir() returns NULL for two different things: the end of the
-     * directory, and a read that failed.  A card pulled part way through a
-     * listing takes the second, and without errno the two are the same
-     * answer -- so a card that has gone would be reported as a card with
-     * nothing on it, and the screen would tell the operator their logs had
-     * vanished rather than that the card had.
+     * FatFs's own directory read, by drive number, rather than opendir() and
+     * readdir() through the VFS (virtual file system): f_readdir() fills the
+     * entry's size and attributes in the same pass, and readdir() drops
+     * them.  A size taken afterwards is an f_stat(), which looks the name up
+     * from the directory's first entry, one 512-byte sector per 16 entries:
+     * 48 sizes on a root of 999 runs were about 2900 sector reads.
+     */
+    char path[STORAGE_NAME_MAX * 2];
+    if (dir == NULL || dir[0] == '\0' || strcmp(dir, "/") == 0) {
+        snprintf(path, sizeof(path), "%s/", s.drive);
+    } else {
+        snprintf(path, sizeof(path), "%s/%s", s.drive, dir);
+    }
+
+    walk_buf_t *w = malloc(sizeof(*w));
+    if (w == NULL) {
+        ESP_LOGW(TAG, "no memory to list %s", path);
+        return -1;
+    }
+    FRESULT fr = f_opendir(&w->dir, path);
+    if (fr != FR_OK) {
+        free(w);
+        return -1;
+    }
+
+    /*
+     * The end of the directory and a read that failed are two answers: a
+     * card pulled part way through a listing is a failure, and reporting it
+     * as the end would tell the operator their logs had vanished rather than
+     * that the card had.
      */
     int matched = 0;
     for (;;) {
-        /*
-         * Cleared immediately before every call, because only this call's
-         * answer is being read.  Clearing it once per matched entry instead
-         * leaves whatever tick(), visit() or stat() set standing across every
-         * entry the filters reject, and the end-of-directory NULL then reads
-         * as a failure: a directory that was read whole is reported as no
-         * volume, and the run-number scan refuses to record a run over it.
-         */
-        errno = 0;
-        struct dirent *e = readdir(d);
-        if (e == NULL) {
+        fr = f_readdir(&w->dir, &w->info);
+        if (fr != FR_OK || w->info.fname[0] == '\0') {
             break;
         }
+        const FILINFO *e = &w->info;
         /* Per entry read, before any filter.  What the filters reject never
          * reaches the visitor, and a root of unrelated files is the case that
          * takes longest with nothing else running. */
         if (tick != NULL) {
             tick();
         }
-        if (e->d_name[0] == '.') {
-            continue; /* ".", ".." and the metadata files a Mac leaves behind */
+        if (e->fname[0] == '.') {
+            continue; /* the metadata files a Mac leaves behind */
         }
-        bool is_dir = (e->d_type == DT_DIR);
-        if (!is_dir && !suffix_matches(e->d_name, suffixes)) {
+        const bool is_dir = (e->fattrib & AM_DIR) != 0;
+        if (!is_dir && !suffix_matches(e->fname, suffixes)) {
             continue;
         }
-        size_t len = strlen(e->d_name);
+        size_t len = strlen(e->fname);
         if (len >= STORAGE_NAME_MAX) {
             /* A name that does not fit cannot be reopened, so a truncated
              * version is not shown. */
@@ -263,39 +317,21 @@ int storage_walk(const char *dir, const char *suffixes,
         }
 
         storage_entry_t cur;
-        memcpy(cur.name, e->d_name, len + 1u);
+        memcpy(cur.name, e->fname, len + 1u);
         cur.is_dir = is_dir;
-        /*
-         * No size here.  A stat() is another path lookup through the same
-         * single-sector directory window, and the walk sees every matching
-         * name on the card while its caller keeps a bounded few: on a card
-         * holding hundreds of runs that is hundreds of synchronous card
-         * transactions on the task that renders and handles touch.
-         * storage_size() fills in the ones that are kept.
-         */
-        cur.size = 0;
+        cur.size = is_dir ? 0u
+                 : (e->fsize > UINT32_MAX) ? UINT32_MAX : (uint32_t)e->fsize;
         ++matched;
         if (visit != NULL) {
             visit(&cur, ctx);
         }
     }
-    const int err = errno;
-    closedir(d);
-    if (err != 0) {
-        ESP_LOGW(TAG, "listing %s stopped: %s", path, strerror(err));
+    (void)f_closedir(&w->dir);
+    free(w);
+    if (fr != FR_OK) {
+        ESP_LOGW(TAG, "listing %s stopped: FatFs %d", path, (int)fr);
         return -1;              /* no volume, not an empty one */
     }
 
     return matched;
-}
-
-uint32_t storage_size(const char *dir, const char *name)
-{
-    if (name == NULL || !s.mounted) {
-        return 0u;
-    }
-    char full[STORAGE_NAME_MAX * 3];
-    storage_path(dir, name, full, sizeof(full));
-    struct stat st;
-    return (stat(full, &st) == 0) ? (uint32_t)st.st_size : 0u;
 }

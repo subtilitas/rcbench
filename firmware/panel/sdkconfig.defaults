@@ -170,6 +170,11 @@ CONFIG_FATFS_MAX_LFN=255
 # (American Standard Code for Information Interchange) comes out of FatFs
 # in code page 437.
 CONFIG_FATFS_API_ENCODING_UTF_8=y
+# Volume label ------------------------------------------------------------
+#
+# The log viewer's header names the card by its volume label, which
+# f_getlabel() reads; it is compiled only with this.
+CONFIG_FATFS_USE_LABEL=y
 
 # Application slots ---------------------------------------------------------
 #

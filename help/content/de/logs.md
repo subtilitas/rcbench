@@ -18,19 +18,25 @@ Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine 
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf nennt die Karte und ihren freien Platz. Jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
 
 | Taste | Was sie tut |
 |---|---|
-| AKTUALISIEREN | liest die Karte erneut und wählt den neuesten Lauf |
+| AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
+| ZURÜCK, WEITER | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | WLAN | öffnet [Dateien und Update](wifi.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte Datei in der Importansicht; grau, solange nichts gewählt ist |
 
-- Die Liste fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Bei mehr Dateien, als passen, behält die Liste die neuesten Läufe, und ihr Reiter zeigt `48 VON 137 DATEIEN`.
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 49 BIS 96 VON 121`.
+
+![Die zweite Seite einer Karte mit 121 Dateien](view:logs-pages)
+
+- Der Rollbalken am rechten Rand, 8,1 mm breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
+- Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; hält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite. Eine Karte mit einem anderen Namen öffnet auf ihrer ersten Seite.
 - Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
 - Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste.
-- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px scrollt die Liste und wählt nichts.
+- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px auf den Zeilen scrollt die Liste und wählt nichts.
 
 ## Was ein Lauf schreibt
 

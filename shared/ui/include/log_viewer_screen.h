@@ -43,24 +43,57 @@ typedef struct {
     bool is_dir;
 } log_viewer_file_t;
 
+/**
+ * Which page of the volume list() writes.
+ *
+ * A page is up to LOG_VIEWER_MAX_FILES entries that stand next to each other
+ * in log_name_rank() order, newest run first.  It is named by the name at
+ * its edge, @p key, and not by its number: the directory is read in one walk
+ * per page and nothing about the pages before it is held, so the walk keeps
+ * the entries on the right side of @p key and counts the rest.  A key whose
+ * file has gone still names a place in that order.
+ */
+typedef enum {
+    /** The first entries that rank with @p key or behind it. */
+    LOG_PAGE_FROM = 0,
+    /** The first entries that rank behind @p key: the next page. */
+    LOG_PAGE_AFTER,
+    /** The last entries that rank ahead of @p key: the page before.  With
+     *  an empty @p key, the last entries of all: the last page. */
+    LOG_PAGE_BEFORE
+} log_page_dir_t;
+
+typedef struct {
+    log_page_dir_t dir;              /**< in */
+    /** in: "" for FROM and AFTER is the first entry of all */
+    char key[LOG_VIEWER_NAME_MAX];
+    int ahead;   /**< out: entries that rank ahead of the first one written */
+    int held;    /**< out: entries written */
+} log_viewer_page_t;
+
 typedef struct {
     /**
-     * Fill @p out with at most @p max_entries entries and return how many the
-     * volume holds, or -1 when there is no volume at all.
+     * Fill @p out with the page @p page asks for, at most @p max_entries
+     * entries in the order the browse list draws them, set @p page's ahead
+     * and held, and return how many entries the volume holds, or -1 when
+     * there is no volume at all.
      *
      * The count may be larger than @p max_entries: a card takes up to 999
-     * runs, and the screen shows what fits and says how many there are.  A
-     * count above @p max_entries means all @p max_entries were written, and
-     * they are the ones worth keeping -- newest run first, see log_select.h.
-     * The first @p max_entries in directory order would hide every run made
-     * after the card passed that many files.
+     * runs, and the screen shows them a page at a time and says which part
+     * of the count it shows.  log_select.h chooses the page while the
+     * directory is read.  A @p page of NULL is the first page.
      */
-    int (*list)(log_viewer_file_t *out, int max_entries, void *ctx);
+    int (*list)(log_viewer_file_t *out, int max_entries,
+                log_viewer_page_t *page, void *ctx);
     /** Open a listed name as a rewindable source; false if it fails to open. */
     bool (*open)(const char *name, log_source_t *src, void *ctx);
     /** Release whatever open() acquired. */
     void (*close)(void *ctx);
-    /** Volume label for the header, e.g. the card name.  May be NULL. */
+    /**
+     * The card's name for the header: its volume label, or what the card
+     * says of itself when it has none.  May be NULL, and then the header
+     * reads SD CARD.
+     */
     const char *(*volume)(void *ctx);
     /**
      * Delete a listed name from the volume; false if it is refused or fails.
@@ -122,10 +155,10 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
                            const char *unit);
 
 /**
- * Re-read the directory, e.g. after a card was inserted.  Closes an open
- * DELETE question: the name it asked about may be on another card now.
- * Selects the newest numbered run, so the run just recorded is the one
- * OPEN opens.
+ * Re-read the directory from its first page, e.g. after a card was
+ * inserted.  Closes an open DELETE question: the name it asked about may be
+ * on another card now.  Selects the newest numbered run, so the run just
+ * recorded is the one OPEN opens.
  */
 void log_viewer_refresh(void);
 

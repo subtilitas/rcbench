@@ -54,7 +54,11 @@ bool storage_mounted(void);
 uint64_t storage_total_bytes(void);
 uint64_t storage_free_bytes(void);
 
-/** Card name from its CID, or "" when nothing is mounted. */
+/**
+ * The card's name: its volume label, or the product name in its CID (card
+ * identification register) when it has no label.  Read once per mount.
+ * "" when nothing is mounted.
+ */
 const char *storage_card_name(void);
 
 /** What went wrong, for the splash line.  "" when all is well. */
@@ -63,20 +67,15 @@ const char *storage_status(void);
 /** Called once per matching entry, in the order the volume holds them. */
 typedef void (*storage_visit_fn)(const storage_entry_t *entry, void *ctx);
 
-/**
- * The size of one file, in bytes.
- *
- * Separate from the walk because a size costs a path lookup of its own, and a
- * caller that keeps a bounded few of what the walk offers should pay for
- * those and no more. Zero for a name that will not stat, which is what an
- * entry that has gone between the walk and this call looks like.
- */
-uint32_t storage_size(const char *dir, const char *name);
-
 typedef void (*storage_tick_fn)(void);
 
 /**
- * Walk a directory, handing every matching entry to @p visit.
+ * Walk a directory, handing every matching entry to @p visit, with its size
+ * (0 for a directory).
+ *
+ * One pass over the directory's entries and nothing else: the size comes
+ * with the entry, so a caller that keeps a few does not look each of them up
+ * again from the directory's start.
  *
  * The whole directory is read, and nothing here decides what is worth
  * keeping: a caller with room for fewer entries than the card holds chooses
