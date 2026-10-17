@@ -128,7 +128,7 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
  *
  * Nine fit the grid.  A tenth needs a second page, through ui_tabs in the
  * strip's free columns, which is not built: the build stops at a tenth
- * entry (the assertion under the table), and so does test_settings.
+ * entry (the assertion under the table), and so does test_settings_pins_hub.
  */
 typedef struct {
     ui_icon_fn     icon;

@@ -1056,7 +1056,7 @@ An aborted run reads `Result:
 ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
 never reached reads `not run`. `Can destroy` names the red tag when a heli
 type or a frame rate above 60 Hz is in force. Every word of the report is in
-one table in `shared/servo/servo_report.c`, and the report is written in the
+one table in `shared/servo/servo_str.c`, and the report is written in the
 interface language showing when its run starts: German from
 `shared/ui/ui_text_de.c` ([Interface language](Language.md)). The CSV is
 English in every language.
@@ -1073,7 +1073,7 @@ holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
 it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
 
-`test_servo_test_win` runs the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
+`test_servo_test_win`, `test_servo_test_win_read` and `test_servo_test_win_chain` run the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
 coprocessor's schedule and pages turn it into windows, `sense_link` takes
 each once and `servo_source` names the meter, beside a model of the PD mini
 read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an
