@@ -488,12 +488,12 @@ gezeichnet.
 
 | Phase | Gas | Netzteil | Endet |
 | --- | --- | --- | --- |
-| FREIGABE | MIN | aus, angefordert aus | wenn der Prüfstand ARMED meldet; nach 3000 ms: WEITERHIN SAFE |
+| ARMING | MIN | aus, angefordert aus | wenn der Prüfstand ARMED meldet; nach 3000 ms: WEITERHIN SAFE |
 | SIGNAL | MIN, dann Einschaltstellung | aus | der Knüppel bleibt auf MIN, bis das Netzteil in Messwerten seit der Ausschaltanforderung des Laufs aus meldet (sein eigener Zustand aus, der Strom 200 ms lang bei höchstens 20 mA), geht dann in die Einschaltstellung und bleibt dort 1000 ms, damit der ESC das Signal beim Start sieht; nicht innerhalb von 3000 ms aus: NETZTEIL BLEIBT EIN. Hat sich der Knüppel bewegt, beendet ein Messwert mit Ausgang an oder Strom oben den Lauf sofort mit NETZTEIL BLEIBT EIN, 1000 ms ohne Messwert mit KEINE MESSWERTE |
 | HANDGRIFF | Einschaltstellung | aus, gemeldet aus | vor einem Einschalten mit fälligem Schritt, erst gefragt, wenn das Netzteil aus meldet: ERLEDIGT, dann EINSCHALTEN; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT; ein Messwert mit Ausgang an oder Strom oben: sofort NETZTEIL BLEIBT EIN; 1000 ms kein Messwert: KEINE MESSWERTE |
 | EINSCHALTEN | Einstiegsstellung | an | wenn ein Messwert den Ausgang an meldet; nach 3000 ms: EINSCHALTEN NICHT BESTÄTIGT |
 | MENÜEINSTIEG | Einstiegsstellung | an | MENÜEINSTIEG nach dem Einschalten: das `entry_hold_ms` des Werts, sonst das `hold_ms` des Profils, wo es eines nennt, und nicht kürzer als das längste `hold_ms` eines Schritts `at_power_up` |
-| HANDGRIFF, SPANNUNG AN | Einschaltstellung | an | nach MENÜEINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
+| HANDGRIFF, SPANNUNG EIN | Einschaltstellung | an | nach MENÜEINSTIEG mit einem fälligen Schritt `before_menu`, der nicht der Start des Menüs ist: ERLEDIGT, dann der nächste Schritt oder das Menü; kein ERLEDIGT in 60 s: NICHT BESTÄTIGT. Nach dem letzten Schritt wird aus PUNKTE oder WERTE gefragt, schon zählend |
 | WARTEN AUF DEN ESC | wo es speicherte | an | nach SPEICHERN mit einem fälligen Schritt `before_power_off`: ERLEDIGT, dann der nächste solche Schritt oder das Netzteil aus (AUS- UND EINSCHALTEN oder AUSSCHALTEN); kein ERLEDIGT in 60 s: NICHT BESTÄTIGT, und das Ergebnis sagt, dass der ESC gesperrt sein kann |
 | PUNKTE | Ruhestellung | an | eine Punktgruppe in Reihenfolge nennt einen gewünschten Punkt: die Auswahlbewegung |
 | WERTE | wo die letzte Bewegung es ließ | an | eine Wertgruppe in Reihenfolge nennt den gewünschten Wert: die Wertbewegung |

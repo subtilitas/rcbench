@@ -204,8 +204,8 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 024 | 2 144 |
-| `control` | `control_task` | 6 144 | 4 320 | 800 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 008 | 2 160 |
+| `control` | `control_task` | 6 144 | 4 016 | 1 104 |
 | `runlog` | `log_task` | 4 352 | 2 992 | 336 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
@@ -231,10 +231,9 @@ Untergrenze:
 
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
-  den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers,
-  denen der Startprüfung nach einem Update und den Callbacks des Links des
-  SERVO-Bildschirms in das Panel, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 224
+  den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers
+  und denen der Startprüfung nach einem Update, denen es nach Namen folgt
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 224
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
