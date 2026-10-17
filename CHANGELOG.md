@@ -115,7 +115,7 @@ history is in git.
   the log viewer neither lists nor opens it while it is written.
 - The SERVO settings' line that says the setup is not saved spans the
   card: the German text is 296 px wide.
-- The panel's texts are reworked: 846 English and 896 German strings change
+- The panel's texts are reworked: 846 English and 895 German strings change
   wording in `shared/ui/ui_text.def` and `shared/ui/ui_text_de.c`, and one
   string, `MO_THROTTLE`, is new. The pages that quote a string show the new
   wording, and `docs/Language.md` lists the German terms that change, among

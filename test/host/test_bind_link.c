@@ -15,7 +15,7 @@
  * after its last change.
  *
  * The panel's control task is not in this suite.  panel_cmd() and
- * panel_poll() walk what firmware/panel/main/main.c does with an OUTPUTS
+ * panel_poll() walk what firmware/panel/main/ does with an OUTPUTS
  * command, a poll and a link edge, through the same shared calls.
  *
  * SPDX-License-Identifier: MIT
@@ -261,8 +261,8 @@ static struct {
     uint32_t last_dispatch_ms;
     uint32_t longest_gap_ms;    /* between two requests the device heard   */
 
-    /* firmware/panel/main/main.c: an exchange that ended unanswered sends
-     * nothing more until the next poll takes the link down. */
+    /* firmware/panel/main/panel_link.c: an exchange that ended unanswered
+     * sends nothing more until the next poll takes the link down. */
     bool     quiet;
 } bus;
 
