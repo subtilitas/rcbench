@@ -17,8 +17,9 @@
 
 /*
  * Five columns by two rows: ten 150 x 204 px tiles with 8 px margins under
- * the 48 px band.  A tile's line holds 16 characters of the 8 x 16 font,
- * 128 of its 150 px.
+ * the 48 px band.  A tile's line holds 18 characters of the 8 x 16 font,
+ * 144 of its 150 px, on each of two rows: the second ends 8 px above the
+ * SIMULATED badge.
  */
 #define COLS 5
 #define ROWS 2

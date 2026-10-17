@@ -6,8 +6,8 @@ Der Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über
 dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte
 Einstellungen zurück. Die Servos der zwei Marken teilen ein Protokoll und
 einen Registersatz. Er ist ein Overlay auf dem
-[SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMM.** oben auf
-der rechten Karte geöffnet. **PROGRAMM.** beendet einen laufenden
+[SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMMIEREN** oben auf
+der rechten Karte geöffnet. **PROGRAMMIEREN** beendet einen laufenden
 automatischen Test als `vom Bediener gestoppt`.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
@@ -29,7 +29,7 @@ bevor man sich auf ein Schreiben verlässt.
 ## Randbedingungen
 
 - Der Koprozessor spricht Protokoll 4.13 oder neuer. Mit einem älteren sagt
-  das Overlay `Nicht verfügbar: Koprozessor ohne Programmier-Port.` und
+  das Overlay `Nicht verfügbar: Der Koprozessor hat keinen Programmierport.` und
   `Koprozessor auf Version 4.13 oder neuer aktualisieren.`, und jedes
   Bedienelement außer **SCHLIESSEN** ist aus.
 - **VERLASSEN** mit seinem Warten braucht Protokoll 4.15 auf dem
@@ -47,18 +47,18 @@ bevor man sich auf ein Schreiben verlässt.
 - Ein Servo zur Zeit.
 - Der Port ist in PWM (Pulsweitenmodulation) oder im Programmieren, nie in
   beidem. Solange der Port im Programmieren ist, sendet der Tester keinen
-  Puls darauf, und seine Zeile **PULSBREITE** zeigt `---`.
+  Puls darauf, und seine Zeile **SOLL-PULSBREITE** zeigt `---`.
 - Programmieren und ein Prüfstand in ARMED schließen sich aus.
   **VERBINDEN** wird abgelehnt mit
-  `Erst DISARM: bei ARMED wird der Port nicht übernommen.`, wenn ARMED für
+  `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.`, wenn ARMED für
   irgendeine Rolle gilt, angefragt ist oder ein Finger auf **ARM** liegt. Solange der Port
   gehalten wird, von **VERBINDEN** bis er PWM meldet, setzt kein Bildschirm
   den Prüfstand auf ARMED: **ARM** auf SERVO und auf MOTOR & ESC ist
   gesperrt gezeichnet und nimmt keinen Druck an, und ein Lauf des
   ESC-Stick-Programmierers startet nicht und meldet
-  `Servo-Programmierer hält einen Port: erst VERLASSEN.` Ein ARM, das den
+  `Servoprogrammierung belegt einen Port. Zuerst auf SERVO auf VERLASSEN tippen.` Ein ARM, das den
   Prüfstand auf anderem Weg erreicht, wird mit dem Hinweis
-  `kein ARM: der Servo-Programmierer hält einen Port` abgelehnt. **DISARM**
+  `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.` abgelehnt. **DISARM**
   und **STOP** wirken in jedem Zustand. In ARMED werden das Lesen, das
   Prüfen, das Schreiben, das Zurückspielen und das Lösen der Kopplung mit
   derselben Zeile wie **VERBINDEN** abgelehnt; **VERLASSEN** wird
@@ -74,7 +74,7 @@ bevor man sich auf ein Schreiben verlässt.
 - Ob eine gegebene Hardware die Antwort des Servos zum Pin zurückführt,
   weiß der Koprozessor nicht. Ein Servo an einem Port, der es nicht tut,
   beendet **VERBINDEN** mit
-  `Kein Servo antwortet. Stecker, Versorgung, Port prüfen.`
+  `Kein Servo antwortet. Stecker, Versorgung und Port prüfen.`
 
 ## Das Ziel
 
@@ -112,8 +112,8 @@ hält, lässt dem Port keinen. Der Tester behält dann die Standardausgänge,
 was immer die Zeile sagt.
 
 Mit den Standardausgängen als Ziel zeigt der Programmierer
-`Programmieren braucht den Programmier-Port.` und
-`SERVO, Reiter PRÜFLING: PWM-ZIEL auf PROG-PORT stellen.`, und jedes
+`Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
+`Unter SERVO > PRÜFLING das PWM-ZIEL auf PROG-PORT stellen.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
@@ -122,16 +122,16 @@ Bedienelement außer **SCHLIESSEN** ist aus.
 
 | Zustand | Zeile auf dem Reiter SERVO | Der Port führt |
 | --- | --- | --- |
-| PWM, ein PD mini antwortet | `Der Tester hat Port 1. VERBINDEN stellt 5.0 V, 1000 mA.` | die Pulse des Testers |
-| PWM, kein PD mini | `Der Tester hat Port 1. Kein PD mini: Versorgung bleibt.` | die Pulse des Testers |
-| Verbinden | `Verbinde auf Port 1: kein PWM darauf.` | 50 ms keinen Puls, dann 100 ms Low, dann die Einstiegssequenz |
-| Programmieren | `Port 1 ist im Programmiermodus: kein PWM darauf.` | nur Frames |
-| Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus, kein PWM: 5.00 V, 37 mA.` | nur Frames |
-| Arbeiten | `Arbeite: 12 Frames.` | die Frames des laufenden Vorgangs |
-| Arbeiten, ein Schreiben von Werten | `Schreibe 3 Register. Gesendete Frames: 94.` oder `Schreibe 1 Register. Gesendete Frames: 31.` | die Frames des Schreibens; die Zahl nennt die Register, die das Schreiben setzt |
-| Arbeiten, ein Zurückspielen des Backups der Sitzung oder ein Lösen des Pairings | `Schreibe. Gesendete Frames: 12.` | die Frames des Schreibens; der Koprozessor plant es allein, und das Panel hat keine Zahl |
-| Arbeiten, der Koprozessor plant | `Plane die Schreibfolge. Noch kein Frame gesendet.` | nichts: ein Koprozessor der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
-| Verlassen | `Verlasse den Programmiermodus. PWM ist noch nicht an.` | die Leitung auf Low für **WARTEN VOR PWM**; kein Puls, bis der Port PWM meldet |
+| PWM, ein PD mini antwortet | `Tester nutzt Port 1. VERBINDEN stellt 5.0 V und 1000 mA ein.` | die Pulse des Testers |
+| PWM, kein PD mini | `Tester nutzt Port 1. Kein PD mini: Versorgung bleibt unverändert.` | die Pulse des Testers |
+| Verbinden | `Verbindung an Port 1 wird aufgebaut. PWM ist aus.` | 50 ms keinen Puls, dann 100 ms Low, dann die Einstiegssequenz |
+| Programmieren | `Port 1 ist im Programmiermodus. PWM ist aus.` | nur Frames |
+| Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus. PWM aus. 5.00 V, 37 mA.` | nur Frames |
+| Arbeiten | `Vorgang läuft: 12 Frames.` | die Frames des laufenden Vorgangs |
+| Arbeiten, ein Schreiben von Werten | `3 Register werden geschrieben. Gesendete Frames: 94.` oder `1 Register wird geschrieben. Gesendete Frames: 31.` | die Frames des Schreibens; die Zahl nennt die Register, die das Schreiben setzt |
+| Arbeiten, ein Zurückspielen des Backups der Sitzung oder ein Lösen des Pairings | `Schreibvorgang läuft. Gesendete Frames: 12.` | die Frames des Schreibens; der Koprozessor plant es allein, und das Panel hat keine Zahl |
+| Arbeiten, der Koprozessor plant | `Schreibreihenfolge wird vorbereitet. Noch kein Frame gesendet.` | nichts: ein Koprozessor der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
+| Verlassen | `Programmiermodus wird verlassen. PWM ist noch aus.` | die Leitung auf Low für **WARTEZEIT VOR PWM**; kein Puls, bis der Port PWM meldet |
 
 **VERBINDEN** nimmt den Port aus PWM, stellt die Versorgung, wo ein PD mini
 antwortet, fährt die Einstiegssequenz und liest alle 32 Register. Die Taste
@@ -141,7 +141,7 @@ und **VERLASSEN** im Programmiermodus.
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 
 Solange ein Schreiben, ein Zurückspielen oder ein Lösen des Pairings läuft,
-zeigt der Reiter SERVO `Schreibe: nicht abziehen.` in der Warnfarbe, und
+zeigt der Reiter SERVO `Schreibvorgang läuft. Nicht trennen.` in der Warnfarbe, und
 **ZURÜCKSPIELEN** nimmt keinen Tipp an. Der Vermerk dieses Schreibens liegt
 auf der Karte oder im Speicher und wird nicht als
 [unterbrochenes Schreiben](#ein-unterbrochenes-schreiben) gezeigt, bevor
@@ -157,14 +157,14 @@ Overlay wieder offen.
 
 | **VERBINDEN** endet mit | Bedeutung |
 | --- | --- |
-| `Der Programmier-Port hat keinen Pin. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
-| `Der Koprozessor hat diesen Programmier-Port nicht.` | der Koprozessor hat weniger Ports als den angefragten |
-| `Programmierspannung oder -strom über den SUPPLY-Grenzen.` und `Unter WEITERES senken oder Grenze anheben. Nichts gesetzt.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMGRENZE über seiner Stromgrenze; nichts wird gesendet |
-| `Erst DISARM: bei ARMED wird der Port nicht übernommen.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Der Port ist beschäftigt. Erneut versuchen.` ab |
-| `Die Versorgung gibt diese Spannung oder Grenze nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
-| `Versorgung unter 4.8 V. Programmieren braucht 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
-| `Versorgung schaltete nicht in 3000 ms. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
-| `Koprozessor vertraut dem Link noch nicht. Neu versuchen.` | der Koprozessor vertraut dem Heartbeat nicht, oder der Link war still |
+| `Dem Programmierport ist kein Pin zugeordnet. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
+| `Diesen Programmierport gibt es auf dem Koprozessor nicht.` | der Koprozessor hat weniger Ports als den angefragten |
+| `Programmierspannung oder -strom überschreitet die SUPPLY-Grenzen.` und `Wert unter WEITERES senken oder Grenze erhöhen. Nichts übernommen.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMBEGRENZUNG über seiner Stromgrenze; nichts wird gesendet |
+| `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Port belegt. Erneut versuchen.` ab |
+| `Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
+| `Versorgung unter 4.8 V. Programmieren benötigt mindestens 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
+| `Versorgung hat nicht innerhalb von 3000 ms geschaltet. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
+| `Koprozessor hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der Koprozessor vertraut dem Heartbeat nicht, oder der Link war still |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
@@ -195,9 +195,9 @@ stellt.
 
 | Eintrag | Bereich | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
-| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in 0,1 V; bis 8,4 V mit HV SERVO ein | 5,0 V | die Versorgungsspannung des Servos im Programmiermodus |
-| STROMGRENZE | 50 bis 3000 mA | 1000 mA | die Stromgrenze der Versorgung während des Programmierens |
-| WARTEN VOR PWM | 0 bis 10 000 ms | 100 ms | die Zeit, die der Port seine Leitung zwischen **VERLASSEN** und dem ersten Puls auf Low hält |
+| PROGRAMMIERSPANNUNG | 4,8 bis 6,0 V in 0,1 V; bis 8,4 V mit HV-SERVO ein | 5,0 V | die Versorgungsspannung des Servos im Programmiermodus |
+| STROMBEGRENZUNG | 50 bis 3000 mA | 1000 mA | die Stromgrenze der Versorgung während des Programmierens |
+| WARTEZEIT VOR PWM | 0 bis 10 000 ms | 100 ms | die Zeit, die der Port seine Leitung zwischen **VERLASSEN** und dem ersten Puls auf Low hält |
 
 Jeder Eintrag öffnet die Zahlentastatur mit seinem Bereich. Ein Wert
 außerhalb des Bereichs wird nicht übernommen. Alle drei werden mit den
@@ -208,7 +208,7 @@ und die Sitzung beginnt 1000 ms, nachdem der PD mini ein liest. Bei einem
 Ausgang, der ein ist, läuft die Sitzung mit der niedrigeren der zwei
 Spannungen und der niedrigeren der zwei Stromgrenzen: eine Spannung über
 der Programmierspannung wird auf sie gesenkt, eine Stromgrenze über
-STROMGRENZE auf diese, und keine wird angehoben. Das Verlassen des
+STROMBEGRENZUNG auf diese, und keine wird angehoben. Das Verlassen des
 Programmierens stellt einen Wert, den **VERBINDEN** gesenkt hat, nicht
 wieder her.
 
@@ -223,8 +223,8 @@ Port. Der Koprozessor lehnt jede Änderung der Spannung und der Stromgrenze
 und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
 SUPPLY-Bildschirm und die Zeile SOLL der rechten Karte zeigen dasselbe: die
 Sollwerte, die Schieber, die Schritte und **AUSGANG EIN** sind gedimmt und
-nehmen keinen Druck, **AUSGANG AUS** und **SPITZEN ZURÜCKSETZEN** arbeiten,
-und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servo-Programmierer`. Die
+nehmen keinen Druck, **AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten,
+und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servoprogrammierung.`. Die
 Grenzen in den Einstellungen des SUPPLY-Bildschirms bleiben editierbar;
 eine Grenze, die unter einen Sollwert gesenkt wird, erreicht den Sollwert,
 wenn der Port wieder in PWM ist.
@@ -239,17 +239,17 @@ Abfallen braucht, ist nicht gemessen.
 ![Die Tastatur für die Spannung](img/de/servo-kst-voltage.png)
 ![Die Tastatur für das Warten](img/de/servo-kst-wait.png)
 
-Eine Spannung über 6,0 V braucht **HV SERVO** auf dem Reiter TEST von
+Eine Spannung über 6,0 V braucht **HV-SERVO** auf dem Reiter TEST von
 **OPTIONEN**; ohne es endet die Tastatur bei 6,0 V. Mit ihm öffnet ein Wert
 über 6,0 V die Warnseite der Hochspannungs-Einstellung des
 SERVO-Bildschirms, und **HALTEN ZUM ÜBERNEHMEN** übernimmt ihn nach 2 s.
-Das Ausschalten von **HV SERVO** setzt eine Programmierspannung über 6,0 V
+Das Ausschalten von **HV-SERVO** setzt eine Programmierspannung über 6,0 V
 auf 5,0 V zurück.
 
 Eine Spannung über 6,0 V wird nicht gespeichert. Die SERVO-Einstellungen
 halten für sie 6,0 V, und ein gespeicherter Wert über 6,0 V, von der
 Einstellungsseite oder aus einer Einstellungsdatei, wird als 6,0 V geladen
-und so gespeichert, mit **HV SERVO** ein oder aus. Der Programmierer liest
+und so gespeichert, mit **HV-SERVO** ein oder aus. Der Programmierer liest
 die Einstellungen beim Öffnen und bei jedem Betreten des SERVO-Bildschirms,
 solange kein Port gehalten wird, und wenn das Panel unter einem gehaltenen
 Port startet: jedes davon beginnt bei 6,0 V oder darunter, und eine Spannung
@@ -267,7 +267,7 @@ folgen dem, was der Port gestellt hat.
 ![Die Versorgung im Programmiermodus](img/de/servo-kst-supplied.png)
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
-angewendet. **WARTEN VOR PWM** wendet ein Koprozessor ab Link-Version 4.15
+angewendet. **WARTEZEIT VOR PWM** wendet ein Koprozessor ab Link-Version 4.15
 beim [Verlassen](#verlassen) an, mit und ohne PD mini.
 
 ## Reiter SERVO
@@ -277,11 +277,11 @@ beim [Verlassen](#verlassen) an, mit und ohne PD mini.
 | Zeile | Taste | Wirkung |
 | --- | --- | --- |
 | PORT | **VERBINDEN**, **ABBRECHEN**, **VERLASSEN** | nimmt den Port, beendet den laufenden Vorgang, [gibt den Port zurück](#verlassen) |
-| SERVO, dann SERVO V6 oder SERVO V8 | **ALLES LESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen; die Zeile nennt danach [den Servotyp](#der-servotyp) |
+| SERVO, dann SERVO V6 oder SERVO V8 | **ALLES AUSLESEN** | liest die 32 Register, jedes, bis 3 von höchstens 5 Lesungen übereinstimmen; die Zeile nennt danach [den Servotyp](#der-servotyp) |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
 | ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
 | WEITERES | **WÄHLEN** | in PWM [was VERBINDEN stellt](#die-versorgung); im Programmiermodus [PRÜFEN, ÄNDERUNGEN VERWERFEN, PAIRING LÖSEN](#weiteres) |
-| SCHREIBEN AUF SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
+| SCHREIBEN INS SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
 | ÄNDERUNGEN | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
 
 In PWM mit einem antwortenden PD mini lautet die Zeile PORT
@@ -305,8 +305,7 @@ ist.
 Der Koprozessor vergleicht das Abbild mit dem Layout des bekannten Servos,
 seinem Fingerprint. Ein Abbild, das nicht passt, wird gezeigt und nie
 geschrieben: die Zeilen zum Ändern und der Schreibschalter sind aus und
-nehmen keinen Tipp an, der Reiter behält `Nur lesen: dieses Servo ist kein
-bekannter Typ.`, und **PAIRING LÖSEN** wird abgelehnt. **ALLES LESEN**, das Speichern in eine Datei und
+nehmen keinen Tipp an, der Reiter behält `Nur Auslesen möglich. Dieser Servotyp ist unbekannt.`, und **PAIRING LÖSEN** wird abgelehnt. **ALLES AUSLESEN**, das Speichern in eine Datei und
 **PRÜFEN** arbeiten. Eine Datei wird nicht geladen.
 
 ![Ein Servo, das nicht zum Fingerprint passt](img/de/servo-kst-readonly.png)
@@ -318,7 +317,7 @@ Ein Wert wird in einem Entwurf auf dem Panel geändert. Vor
 der von dem des Servos abweicht, ist doppelt markiert: durch `*` davor und
 durch die Akzentfüllung.
 
-![Geänderte Werte auf TUNING](img/de/servo-kst-tune.png)
+![Geänderte Werte auf ABSTIMMEN](img/de/servo-kst-tune.png)
 
 Ein Zahlenwert öffnet die Tastatur. Sein Bereich ist der, den die harten
 Limits im Entwurf, wie er steht, annehmen; ein Wert außerhalb lässt sich
@@ -330,7 +329,7 @@ Sekunde und nach weiteren 1,8 s 30 je Sekunde.
 ![Die Tastatur mit dem Bereich, den die Limits annehmen](img/de/servo-kst-keypad.png)
 ![Die Stretch-Liste](img/de/servo-kst-stretch.png)
 
-### TUNING
+### ABSTIMMEN
 
 | Zeile | Registerfeld | Hartes Limit |
 | --- | --- | --- |
@@ -339,8 +338,8 @@ Sekunde und nach weiteren 1,8 s 30 je Sekunde.
 | BOOST | Boost, µs | höchstens 3000 µs |
 | STRETCH | Stretch, Faktor | x1 bis x32; die 2 übrigen Codes werden nicht angeboten |
 | SOFT START | Soft_Start, EIN oder AUS | keines |
-| SPEED LIMIT | spd_sel, EIN oder AUS | EIN braucht SPEED ab 5 % |
-| SPEED | SPD, % | höchstens 100 %; mindestens 5 %, solange SPEED LIMIT EIN ist |
+| TEMPOGRENZE | spd_sel, EIN oder AUS | EIN braucht TEMPO ab 5 % |
+| TEMPO | SPD, % | höchstens 100 %; mindestens 5 %, solange TEMPOGRENZE EIN ist |
 
 ### PULS
 
@@ -357,7 +356,7 @@ Sekunde und nach weiteren 1,8 s 30 je Sekunde.
 
 Die Umrechnung von NEUTRAL zwischen Register und µs ist eine Anpassung an
 3 Werte und um etwa 1 µs unsicher. Der Reiter sagt zu den beiden Winkeln
-`LEFT ANGLE, RIGHT ANGLE: Servo-Zahl, Einheit unbekannt.` Die Bildschirme
+`LEFT ANGLE, RIGHT ANGLE: Werte aus dem Servo. Die Einheit ist unbekannt.` Die Bildschirme
 schreiben `us` für µs: ihre Schrift hat kein Mikro-Zeichen.
 
 ### FAILSAFE
@@ -368,10 +367,10 @@ schreiben `us` für µs: ihre Schrift hat kein Mikro-Zeichen.
 | --- | --- | --- |
 | BEWEGEN BEI SIGNALVERLUST | Allow Uncont, EIN oder AUS | keines |
 | POSITION | Uncontrolled Pos, µs | 500 bis 2500 µs und innerhalb PULSE LOWER bis PULSE UPPER |
-| AFTER | Uncontrolled Time, s | 0,4 bis 13,0 s |
+| NACH | Uncontrolled Time, s | 0,4 bis 13,0 s |
 
 Die Limits sind die aus `protocols/kst/kst_limits.c`; das Panel hält keine
-eigenen. Das untere Limit von MAX. DUTY und die 5 % von SPEED sind
+eigenen. Das untere Limit von MAX. DUTY und die 5 % von TEMPO sind
 Festlegungen, keine Messwerte eines Servos.
 
 ### Ein Wert, den ein hartes Limit ablehnt
@@ -402,26 +401,26 @@ andere Seite legt: 97 % bestätigt, 98 % fragt erneut und zeigt `MAX. DUTY:
 
 | Bedingung | Warnung |
 | --- | --- |
-| MAX. DUTY über dem des Servos | `Mehr Duty erhöht Blockierstrom und Wärme.` |
-| MAX. DUTY unter 50 % | `Wenig Duty schwächt das Servo: Ruder evtl. nicht gehalten.` |
+| MAX. DUTY über dem des Servos | `Höheres Duty erhöht den Blockierstrom und die Erwärmung.` |
+| MAX. DUTY unter 50 % | `Niedriges Duty schwächt das Servo. Es hält das Ruder möglicherweise nicht.` |
 | BOOST über dem des Servos | `Mehr Boost kann das Servo brummen und heiß werden lassen.` |
-| STRETCH über dem des Servos | `Mehr Stretch kann das Servo schwingen lassen.` |
-| SOFT START ausgeschaltet | `Ohne Soft Start springt das Servo beim Einschalten.` |
-| SPEED LIMIT eingeschaltet | `Speed Limit aktiv: das Servo fährt mit gesetztem Speed.` |
-| SPEED unter 30 % bei SPEED LIMIT EIN | `Ein langsames Servo kann die Kontrolle am Modell kosten.` |
-| DEAD BAND unter dem des Servos | `Ein schmales Dead Band kann Pendeln und Wärme verursachen.` |
-| DEAD BAND unter 1,0 µs | `Sehr schmales Dead Band: Pendeln und Wärme wahrscheinlich.` |
+| STRETCH über dem des Servos | `Mehr Stretch kann das Servo zum Schwingen bringen.` |
+| SOFT START ausgeschaltet | `Ohne Soft Start bewegt sich das Servo beim Einschalten ruckartig.` |
+| TEMPOGRENZE eingeschaltet | `Tempogrenze aktiv. Das Servo bewegt sich mit dem eingestellten Tempo.` |
+| TEMPO unter 30 % bei TEMPOGRENZE EIN | `Ein zu langsames Servo kann zum Kontrollverlust über das Modell führen.` |
+| DEAD BAND unter dem des Servos | `Ein schmales Dead Band kann Pendeln und Erwärmung verursachen.` |
+| DEAD BAND unter 1,0 µs | `Sehr schmales Dead Band. Pendeln und Erwärmung sind wahrscheinlich.` |
 | BEWEGEN BEI SIGNALVERLUST eingeschaltet | `Ohne Signal fährt das Servo auf die Failsafe-Position.` |
-| POSITION mehr als 300 µs von NEUTRAL, BEWEGEN BEI SIGNALVERLUST EIN | `Die Failsafe-Position liegt weit von der Mitte.` |
-| AFTER unter 1,0 s | `Kurze Aussetzer lösen die Failsafe-Bewegung aus.` |
-| ein Endpunkt weniger als 300 µs von NEUTRAL | `Endpunkt nah an Neutral: wenig Weg auf dieser Seite.` |
-| ein Endpunkt mehr als 100 µs von dem des Servos | `Endpunkt geändert: der Weg je Knüppelweg ändert sich.` |
-| NEUTRAL mehr als 20 µs von dem des Servos | `Die Mitte wandert; eine Seite rückt näher an den Anschlag.` |
-| REVERSION geändert | `Richtung ist umgekehrt. Vor dem Flug jedes Ruder prüfen.` |
-| ein Winkel über dem des Servos | `Mehr Weg kann das Servo in den Anschlag fahren: es brennt.` |
-| ein Winkel unter 50 | `Kleiner Winkel: wenig Weg für den vollen Knüppelweg.` |
-| DEAD BAND unter 1,0 µs bei STRETCH über x1 | `Schmales Dead Band mit mehr Gain: Schwingen droht.` |
-| MAX. DUTY über 90 % bei einem Winkel über dem des Servos | `Viel Duty, mehr Weg: Blockieren kann das Servo zerstören.` |
+| POSITION mehr als 300 µs von NEUTRAL, BEWEGEN BEI SIGNALVERLUST EIN | `Die Failsafe-Position liegt weit von der Mitte entfernt.` |
+| NACH unter 1,0 s | `Kurze Aussetzer lösen die Failsafe-Bewegung aus.` |
+| ein Endpunkt weniger als 300 µs von NEUTRAL | `Endpunkt nah an Neutral. Auf dieser Seite bleibt wenig Weg.` |
+| ein Endpunkt mehr als 100 µs von dem des Servos | `Endpunkt geändert. Dadurch ändert sich auch der Servoweg je Knüppelbewegung.` |
+| NEUTRAL mehr als 20 µs von dem des Servos | `Die Mitte verschiebt sich. Eine Seite kommt näher an den mechanischen Anschlag.` |
+| REVERSION geändert | `Drehrichtung umgekehrt. Prüfe vor dem Flug alle Ruder.` |
+| ein Winkel über dem des Servos | `Mehr Weg kann das Servo gegen den Anschlag fahren und durchbrennen lassen.` |
+| ein Winkel unter 50 | `Kleiner Winkel. Voller Knüppelweg ergibt nur wenig Servoweg.` |
+| DEAD BAND unter 1,0 µs bei STRETCH über x1 | `Schmales Dead Band und mehr Gain können Schwingungen verursachen.` |
+| MAX. DUTY über 90 % bei einem Winkel über dem des Servos | `Hohes Duty und mehr Weg: Blockieren kann das Servo zerstören.` |
 
 "Der des Servos" ist in dieser Tabelle der Wert des Backups der Sitzung,
 das Servo, wie die Sitzung es zuerst gelesen hat. Ein Schreiben der Sitzung
@@ -431,9 +430,9 @@ oder das Backup zu einem anderen Servo gehört, ist es der zuletzt gelesene
 Wert. Die Warnungen [eines Zurückspielens](#zurückspielen) vergleichen mit
 dem Servo, wie es zuletzt gelesen wurde.
 
-### SPERRE
+### GESPERRT
 
-![Der Reiter SPERRE](img/de/servo-kst-locked.png)
+![Der Reiter GESPERRT](img/de/servo-kst-locked.png)
 
 | Zeile | Feld |
 | --- | --- |
@@ -450,7 +449,7 @@ nicht geschrieben: die Limits dieses Modus sind nicht bekannt.
 
 ## Der Schreibschalter
 
-**SCHREIBEN AUF SERVO FREIGEBEN** ist in der Vorgabe aus. Ein Tipp auf
+**SCHREIBEN INS SERVO FREIGEBEN** ist in der Vorgabe aus. Ein Tipp auf
 **AUS** öffnet eine Seite, die die Risiken nennt; **HALTEN ZUM FREIGEBEN**
 schaltet ihn nach 2 s ein. Ein Tipp auf **EIN** schaltet ihn sofort aus.
 
@@ -487,7 +486,7 @@ hält: das ist der Zustand eines Panels, das unter einer solchen Sitzung
 startet. Der Schalter öffnet dann ein Schreiben, das Zurückspielen des
 Backups der Sitzung. Ein Ändern, ein Schreiben von Werten, ein Lösen des
 Pairings und das Laden einer Datei bleiben abgelehnt bis zu einem Lesen und
-dem Ende der Sperre. **ALLES LESEN** liest in diesem Zustand das Servo und
+dem Ende der Sperre. **ALLES AUSLESEN** liest in diesem Zustand das Servo und
 zeigt seine Werte; die Sperre bleibt, und kein Wert wird geändert.
 
 ## Schreiben
@@ -510,8 +509,7 @@ steht in der Warnfarbe. Bei mehr Werten als Zeilen zählt die letzte dieser
 Zeilen den Rest: `und 4 weitere`. Ein erstes Schreiben mit Karte zeigt 7
 Werte oder 6 und die Zahl; eines ohne Karte 6 oder 5 und die Zahl.
 
-`Ruderhorn frei, kein Gestänge angeschlossen.` und `Servo am Prüfstand
-testen, bevor es ins Modell kommt.` folgen beim ersten Schreiben nach einem
+`Halte das Ruderhorn frei. Löse das Gestänge.` und `Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.` folgen beim ersten Schreiben nach einem
 **VERBINDEN** und bei jedem Schreiben, das REVERSION, NEUTRAL, PULSE LOWER,
 PULSE UPPER, LEFT ANGLE oder RIGHT ANGLE ändert. Ein Schreiben, dessen
 Start die Karte, ein Stopp oder der Link verhindert hat, ist nicht dieses
@@ -531,7 +529,7 @@ erste Schreiben: die Zeilen bleiben für das nächste.
    Schreiben hinterlassen soll, und den Port: mit Karte in `KST/KST.TXT`,
    ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
    die binnen 3 s keine Datei annimmt, wird das Schreiben nicht gesendet:
-   `Die Karte nahm keine Datei. Nichts ging aufs Servo.`
+   `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.`
 3. Das Panel sendet das Zielabbild. Der Koprozessor prüft es gegen dieselben
    Limits, plant die Registerschreibvorgänge und führt sie aus.
 4. Jedes geschriebene Register wird zurückgelesen. Ein Schreibvorgang, der
@@ -552,17 +550,17 @@ nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
 
 | Meldung | Das Servo |
 | --- | --- |
-| `Keine sichere Schreibfolge führt zu diesen Werten.` | hält, was es hielt; nichts wurde gesendet |
-| `Zu viele Änderungen für einen Plan. Nichts geschrieben.` `Änderung teilen: weniger Werte auf einmal schreiben.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216 000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
-| `Schreiben nicht übernommen. Nichts ist halb geschrieben.` | hält, was es hielt |
-| `Schreiben nicht übernommen. Der Wert ist wieder wie zuvor.` | hält, was es hielt |
-| `Nicht übernommen. Frühere Werte bleiben. ALLES LESEN.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. Der Schreibschalter geht aus, und **ALLES LESEN** kommt vor dem nächsten Schreiben |
-| `Schreiben nicht übernommen und nicht rückgängig zu machen.` | ist unklar: [zurückspielen](#ein-unterbrochenes-schreiben) |
-| `Ein Register änderte sich, das nicht geschrieben wurde.` | ist unklar |
-| `Das Servo hält nicht die erwarteten Werte.` | ist unklar |
+| `Für diese Werte gibt es keine sichere Schreibreihenfolge.` | hält, was es hielt; nichts wurde gesendet |
+| `Zu viele Änderungen für einen gemeinsamen Plan. Nichts geschrieben.` `Teile die Änderungen auf. Schreibe weniger Werte auf einmal.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216 000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
+| `Schreiben fehlgeschlagen. Keine Werte sind unvollständig geschrieben.` | hält, was es hielt |
+| `Schreiben fehlgeschlagen. Der vorherige Wert wurde wiederhergestellt.` | hält, was es hielt |
+| `Schreiben fehlgeschlagen. Zuvor geschriebene Werte bleiben. ALLES AUSLESEN tippen.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. Der Schreibschalter geht aus, und **ALLES AUSLESEN** kommt vor dem nächsten Schreiben |
+| `Schreiben fehlgeschlagen. Rückgängig machen war nicht möglich.` | ist unklar: [zurückspielen](#ein-unterbrochenes-schreiben) |
+| `Ein Register hat sich ohne Schreibzugriff geändert.` | ist unklar |
+| `Das Servo enthält nicht die erwarteten Werte.` | ist unklar |
 
 Eine Meldung über ein fehlgeschlagenes Schreiben nennt das Register und die
-Zahl der erfolgten Schreibvorgänge: `Register 03, 1 Schreibvorgang erfolgt.`
+Zahl der erfolgten Schreibvorgänge: `Register 03. 1 Schreibvorgang abgeschlossen.`
 
 ## Backups
 
@@ -582,7 +580,7 @@ Pin kannte. Ein Vermerk der Version 1 (`RCBENCH KST 1`, keine Zeile
 `pin=`) wird gelesen und nennt nur den Port. Ein Pin über GP47 wird ebenso
 gelesen: der Vermerk bleibt, und seine Zeilen nennen den Port. Eine Datei, deren Prüfsumme
 nicht stimmt, wird nicht benutzt:
-`KST.TXT auf der Karte ist nicht lesbar, bleibt ungenutzt.` Der Name `KST`
+`KST.TXT auf der Karte ist nicht lesbar. Die Datei wird nicht verwendet.` Der Name `KST`
 gehört dem Vermerk: keine Servodatei bekommt ihn, und die Liste der Dateien
 lässt ihn aus.
 
@@ -601,7 +599,7 @@ Eine Servodatei ist eine Textdatei im Ordner `KST` der SD-Karte des Panels
 mit den 32 Registern eines Servos, benannt `<name>.TXT`. Das Panel legt den
 Ordner mit dem ersten Speichern an. **DATEIEN** öffnet die Liste. Die Zeile
 ist im Programmiermodus aktiv, wenn ein Servo gelesen und nicht unklar ist;
-sonst antwortet der Tipp mit `Zuerst das Servo lesen: ALLES LESEN.`
+sonst antwortet der Tipp mit `Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.`
 Speichern und Laden arbeiten bei ausgeschaltetem Schreibschalter: eine
 Datei ändert den Entwurf auf dem Panel, nie das Servo.
 
@@ -613,7 +611,7 @@ zeigt keinen. Die Dateien mit einem vorgeschlagenen Namen, `KST` und
 3 Ziffern, stehen zusammen an der Stelle von `KST000`, die höchste Nummer
 zuerst. Die Liste erreicht jede Servodatei der Karte. Bei mehr als
 5 Dateien zählt der Titel sie, `DATEIEN 1 BIS 5 VON 7`, und
-`Weitere Dateien zeigen` blättert, nach der letzten Seite zurück zur
+`Weitere Dateien anzeigen.` blättert, nach der letzten Seite zurück zur
 ersten. Das Panel fragt die Karte für jede Seite und wartet höchstens 5 s
 darauf.
 
@@ -633,7 +631,7 @@ geändert und nie geschrieben.
 
 ### Speichern
 
-`Werte dieses Servos als neue Datei speichern` öffnet die Texttastatur mit
+`Werte dieses Servos in einer neuen Datei speichern.` öffnet die Texttastatur mit
 dem nächsten freien Vorgabenamen, `KST001` bis `KST999`. Die Tastatur
 nimmt bis zu 16 Zeichen: A bis Z, 0 bis 9, `-`, `_` und den Punkt. **OK**
 speichert; die Kartenseite prüft den Namen und ersetzt nie eine Datei.
@@ -646,12 +644,12 @@ geladen; eine Zeile, die sie nennt, zeigt ihre ersten 14 Zeichen und `..`.
 | Ergebnis | Gezeigt |
 | --- | --- |
 | Gespeichert | `Servowerte auf der Karte gespeichert: WING-R.` |
-| Ein Punkt am Anfang oder am Ende, oder ein reservierter Name: `KST`, `CON`, `PRN`, `AUX`, `NUL`, `COM1` bis `COM9`, `LPT1` bis `LPT9`, allein oder vor einem Punkt | die Tastatur bleibt offen unter `NAME NICHT ERLAUBT`; `Name nicht erlaubt: reserviert oder Punkt am Rand.` |
-| Eine Datei hat den Namen | die Tastatur bleibt offen unter `NAME VERGEBEN: ÄNDERN`; `Der Name ist vergeben. Keine Datei wird ersetzt.` |
-| Keine Karte | `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
-| Karte voll, oder `KST001` bis `KST999` sind beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert, nichts aufs Servo.` |
-| Die Karte ist schreibgeschützt, oder `KST` auf der Karte ist eine Datei und kein Ordner | `Karte nimmt keine Datei: Schreibschutz, KST kein Ordner.` |
-| Die Karte bricht das Schreiben der Datei ab oder antwortet nicht binnen 5 s | `Schreibfehler der Karte. Nichts ging aufs Servo.` |
+| Ein Punkt am Anfang oder am Ende, oder ein reservierter Name: `KST`, `CON`, `PRN`, `AUX`, `NUL`, `COM1` bis `COM9`, `LPT1` bis `LPT9`, allein oder vor einem Punkt | die Tastatur bleibt offen unter `UNGÜLTIGER NAME`; `Ungültiger Name: reserviert oder mit einem Punkt am Anfang oder Ende.` |
+| Eine Datei hat den Namen | die Tastatur bleibt offen unter `NAME VERGEBEN. ANDEREN WÄHLEN.`; `Dieser Dateiname ist bereits vergeben. Keine Datei wurde ersetzt.` |
+| Keine Karte | `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
+| Karte voll, oder `KST001` bis `KST999` sind beim Backup vor einem Schreiben alle vergeben | `Karte voll. Nichts gespeichert oder ins Servo geschrieben.` |
+| Die Karte ist schreibgeschützt, oder `KST` auf der Karte ist eine Datei und kein Ordner | `Speichern nicht möglich: Karte schreibgeschützt oder KST kein Ordner.` |
+| Die Karte bricht das Schreiben der Datei ab oder antwortet nicht binnen 5 s | `Schreibfehler auf der Karte. Keine Werte ins Servo geschrieben.` |
 
 ![Ein vergebener Name](img/de/servo-kst-name-exists.png)
 ![Ein nicht erlaubter Name](img/de/servo-kst-name-bad.png)
@@ -673,7 +671,7 @@ eingeschlossen, auch das eines Servos, das nicht zum Fingerprint passt.
 Das erste Schreiben, Zurückspielen oder Lösen des Pairings einer Sitzung
 speichert das Abbild des Servos ohne Nachfrage in eine neue Datei unter dem
 nächsten freien Vorgabenamen. Die Schreibseite sagt
-`Die Werte des Servos gehen zuerst in eine neue Datei.` Das Servo empfängt
+`Die bisherigen Servowerte werden vor dem Schreiben in einer neuen Kartendatei gesichert.` Das Servo empfängt
 nichts, bevor die Karte die Datei hält. Eine eingehängte Karte, die voll
 ist, beim Schreiben einen Fehler meldet oder zwischen Anfrage und Datei
 entnommen wird, beendet das Schreiben mit den Zeilen der Tabelle oben, und
@@ -695,9 +693,8 @@ des Pairings nicht gesperrt. Die Seite, deren Halten das Schreiben sendet,
 trägt drei weitere Zeilen:
 
 ```
-Keine Karte: es wird keine Backup-Datei gespeichert.
-Das Backup dieser Sitzung liegt nur im Prüfstand.
-Sitzungsende oder Stromausfall am Prüfstand löscht es.
+Keine Karte. Es wird keine Backup-Datei gespeichert.
+Das Backup dieser Sitzung liegt nur im Speicher des Prüfstands. Es geht beim Sitzungsende oder bei Stromausfall am Prüfstand verloren.
 ```
 
 Das eine Halten der Seite von 2 s bestätigt sie; ein zweites Halten wird
@@ -706,7 +703,7 @@ nicht verlangt. Ein vor 2 s losgelassenes Halten sendet nichts.
 ![Die Schreibseite ohne Karte](img/de/servo-kst-write-nocard.png)
 
 Nach einem solchen Schreiben zeigt der Reiter SERVO
-`Keine Backup-Datei: keine Karte. Nur Backup der Sitzung.` anstelle des
+`Keine Karte, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` anstelle des
 Dateinamens. Die einzige Kopie des Servos, wie es vorgefunden wurde, ist
 das Backup der Sitzung im Koprozessor: **VERLASSEN**, ein Neustart des
 Koprozessors und ein Stromausfall des Prüfstands beenden es, und die Werte,
@@ -724,8 +721,8 @@ wiederherstellbar.
 | Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
-| **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert, nichts aufs Servo.` |
-| Eine Karte, die nach dem Start des Panels eingesteckt wird | das Panel versucht, eine Karte einzubinden, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES LESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN AUF SERVO FREIGEBEN** oder die Schreibzeile, solange keine eingebunden ist. Das Tippen, das die Karte findet, liest noch keine Karte; das nächste hat sie, und eine offene Schreibseite wechselt zur Seite mit der Datei |
+| **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
+| Eine Karte, die nach dem Start des Panels eingesteckt wird | das Panel versucht, eine Karte einzubinden, wenn der Programmierer öffnet und bei jedem Tippen auf **VERBINDEN**, **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile, solange keine eingebunden ist. Das Tippen, das die Karte findet, liest noch keine Karte; das nächste hat sie, und eine offene Schreibseite wechselt zur Seite mit der Datei |
 
 ### Laden
 
@@ -738,17 +735,17 @@ Servo vor dem Schreibschalter, der Schreibseite und deren 2 s Halten.
 
 | Datei | Gezeigt |
 | --- | --- |
-| Vom Prüfstand gespeichert, Prüfsumme intakt | `KST001 geladen: 3 Werte weichen vom Servo ab.` oder `KST001 geladen: 1 Wert weicht vom Servo ab.` |
-| Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei, 27 von 27 Werten, wie Handeingabe.` |
-| Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitet, ohne Servotyp: 27 von 27 Werten, Handeingabe.` |
-| Enthält die änderbaren Werte des Servos | `KST001 enthält die Werte des Servos: nichts zu schreiben.` |
+| Vom Prüfstand gespeichert, Prüfsumme intakt | `KST001 geladen. 3 Werte weichen von den Servowerten ab.` oder `KST001 geladen. 1 Wert weicht von den Servowerten ab.` |
+| Bearbeitet, mit Typzeile und ohne Prüfsummenzeile | dasselbe und `Bearbeitete Datei: 27 von 27 Werten, wie manuelle Eingaben geprüft.` |
+| Bearbeitet, ohne Typzeile | dasselbe und `Bearbeitete Datei ohne Servotyp: 27 von 27 Werten, wie manuelle Eingaben geprüft.` |
+| Enthält die änderbaren Werte des Servos | `KST001 stimmt mit den Servowerten überein. Nichts zu schreiben.` |
 | Vom anderen Servotyp | `Datei ist V8, Servo ist V6. Nicht geladen.` |
-| Prüfsummenzeile vorhanden und falsch | `Datei beschädigt: Prüfsumme passt nicht. Nicht geladen.` `Ohne Prüfsummenzeile lädt sie als bearbeitete Datei.` |
+| Prüfsummenzeile vorhanden und falsch | `Datei beschädigt: Prüfsumme stimmt nicht. Nicht geladen.` `Ohne Prüfsummenzeile wird sie als bearbeitete Datei geladen.` |
 | Keine Servodatei | `Keine Servodatei. Nicht geladen.` |
-| Eine Zeile, die sich nicht lesen lässt | `Zeile 12 der Datei ist nicht lesbar. Nicht geladen.` |
-| Von einer späteren Formatversion geschrieben | `Die Datei braucht eine neuere Version. Nicht geladen.` |
-| Ein Wert außerhalb seines harten Limits | `Zeile 9: MAX. DUTY außer Grenze. Nicht geladen.` |
-| Werte, die zusammen ein hartes Limit verletzen | `Die Datei verletzt eine Grenze, nicht geladen:` und die Zeile des Limits |
+| Eine Zeile, die sich nicht lesen lässt | `Zeile 12 ist nicht lesbar. Datei nicht geladen.` |
+| Von einer späteren Formatversion geschrieben | `Diese Datei braucht eine neuere Prüfstand-Version. Nicht geladen.` |
+| Ein Wert außerhalb seines harten Limits | `Zeile 9: MAX. DUTY liegt außerhalb des erlaubten Bereichs. Nicht geladen.` |
+| Werte, die zusammen ein hartes Limit verletzen | `Datei nicht geladen. Grenzwertprüfung fehlgeschlagen:` und die Zeile des Limits |
 | Die Karte lässt sich nicht lesen oder antwortet nicht binnen 5 s | `Die Karte lässt sich nicht lesen.` |
 | Keine Servodatei auf der Karte | `Keine Servodateien auf der Karte.` |
 
@@ -785,13 +782,13 @@ sie hält, was immer die Datei sagt:
 - der Servotyp, 20k_sel,
 - Lock,
 - der Modus, Servo oder Gyro Servo,
-- der Schutzblock des Reiters SPERRE,
+- der Schutzblock des Reiters GESPERRT,
 - der Pairing-Wert, Register 1D,
 - Register 00 und jedes Bit, das zu keinem benannten Feld gehört.
 
 Eine Datei, die dort abweicht, wird geladen, und die Abweichung wird
-gezählt: `2 gesperrte Werte weichen ab: nicht geschrieben.` oder
-`1 gesperrter Wert weicht ab: nicht geschrieben.` Der Reiter SPERRE
+gezählt: `2 gesperrte Werte weichen ab. Sie werden nicht geschrieben.` oder
+`1 gesperrter Wert weicht ab. Er wird nicht geschrieben.` Der Reiter GESPERRT
 markiert jeden solchen Wert mit `!`. Eine Datei ohne Typzeile, die das
 20k_sel des anderen Typs enthält, wird genauso geladen, denn nur die
 Typzeile lehnt ein Laden ab.
@@ -811,16 +808,16 @@ Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
 
 | Quelle | Zurückgeschrieben | Nicht zurückgespielt |
 | --- | --- | --- |
-| `Backup dieser Sitzung, wie zuerst gelesen` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
-| `Werte vor dem unterbrochenen Schreiben` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
-| `Werte vor dem Endlagenlauf` | LEFT ANGLE, RIGHT ANGLE, PULSE LOWER und PULSE UPPER, wie die erste Sitzung des [Endlagenlaufs](#der-endlagenlauf) sie las, als Schreiben mit jeder Limit-Prüfung. Angeboten, solange das gelesene Servo sich in diesen vier Feldern und in keinem anderen davon unterscheidet | jedes andere Feld: es ist so, wie der Lauf es vorfand |
+| `Backup der zuerst in dieser Sitzung ausgelesenen Werte.` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
+| `Werte vor dem unterbrochenen Schreibvorgang.` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
+| `Werte vor dem Endlagenlauf.` | LEFT ANGLE, RIGHT ANGLE, PULSE LOWER und PULSE UPPER, wie die erste Sitzung des [Endlagenlaufs](#der-endlagenlauf) sie las, als Schreiben mit jeder Limit-Prüfung. Angeboten, solange das gelesene Servo sich in diesen vier Feldern und in keinem anderen davon unterscheidet | jedes andere Feld: es ist so, wie der Lauf es vorfand |
 
 Ein Zurückspielen aus dem Abbild des Panels ist ein gewöhnliches
 Schreiben: der Koprozessor nimmt ein ungeprüftes Zurückspielen nur für das
 Backup an, das er selbst hält, und diese Prüfung wird nicht abgeschwächt.
 Die Seite zählt die gesperrten Werte, die abweichen und bleiben:
-`2 gesperrte Werte weichen ab und bleiben.` oder
-`1 gesperrter Wert weicht ab und bleibt.` Eine Servodatei steht nicht in
+`2 gesperrte Werte weichen ab. Sie bleiben unverändert.` oder
+`1 gesperrter Wert weicht ab. Er bleibt unverändert.` Eine Servodatei steht nicht in
 dieser Liste: [ein Laden](#laden) macht sie zum Entwurf, und das
 gewöhnliche Schreiben sendet ihn.
 
@@ -836,9 +833,7 @@ der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 
 Das Backup der Sitzung gehört zu dem Servo, von dem es gelesen wurde. Eine
 Lesung, die vom Backup in einem Feld abweicht, das kein Schreiben der
-Sitzung ändern sollte, ist ein anderes Servo: `Anderes Servo: das Backup
-der Sitzung gehört nicht dazu.` `VERLASSEN, dann VERBINDEN: Sitzung mit
-eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
+Sitzung ändern sollte, ist ein anderes Servo: `Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.` `VERLASSEN und dann VERBINDEN startet eine neue Sitzung mit eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
 enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
@@ -854,9 +849,9 @@ Lesung vor dem ersten Schreiben eines Zurückspielens des Backups der
 Sitzung. Er hält die Menge der Register, die die Schreibvorgänge der
 Sitzung geändert haben. Ein Servo, das in einem anderen Register vom Backup
 abweicht, ist nicht das Servo des Backups: das Zurückspielen endet mit
-`Das Servo weicht vom Gelesenen ab. ALLES LESEN.`, kein Register wird
+`Servowerte weichen von den ausgelesenen Werten ab. ALLES AUSLESEN tippen.`, kein Register wird
 geschrieben, der Schreibschalter geht aus, und der Port nimmt nur
-**ALLES LESEN** an, bis das Servo gelesen ist. Das Zurückspielen repariert
+**ALLES AUSLESEN** an, bis das Servo gelesen ist. Das Zurückspielen repariert
 deshalb kein Register, das etwas anderes als ein Schreiben der Sitzung
 geändert hat. Nach einem Schreiben, das ohne vollständige Lesung des Servos
 endete, zählen die Register, die bei der nächsten vollständigen Lesung
@@ -864,7 +859,7 @@ abweichen, als von diesem Schreiben geändert.
 
 Solange nach einem unklaren Schreiben eine Lesung aussteht und die Sitzung
 nicht gesperrt ist, enthält die Liste zum Zurückspielen das Backup der
-Sitzung nicht: `Zuerst das Servo lesen: ALLES LESEN.`
+Sitzung nicht: `Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.`
 
 Ein Zurückspielen, ein Lösen des Pairings oder ein Schreiben, das die Karte
 oder die Control-Task des Panels nicht starten lässt, lässt die offenen
@@ -884,7 +879,7 @@ die unter der Sitzung ausgeschaltet wird, ein Versorgungszyklus, den der
 Port ausführt, oder der Vorgang POWER_CYCLED, den das Panel statt LEAVE
 sendet. Der Port ist dann in PWM, und die Liste zum Zurückspielen enthält
 kein Backup der Sitzung. **VERBINDEN** beginnt eine Sitzung, deren Backup
-das Servo ist, wie die erste **ALLES LESEN** es vorfindet. Eine
+das Servo ist, wie die erste **ALLES AUSLESEN** es vorfindet. Eine
 Backup-Datei auf der Karte bleibt dort.
 
 ![Ein anderes Servo als das des Backups](img/de/servo-kst-swapped.png)
@@ -897,14 +892,14 @@ sobald PWM-ZIEL auf PROG-PORT steht
 Seine erste Sitzung liest das Servo, auch bei NUR SUCHE: VERBINDEN mit
 seinem Lesen, VERLASSEN. Mit SERVOPULSE auf 1000-2000 schreibt diese
 Sitzung zudem PULSE LOWER 1000,0 µs und PULSE UPPER 2000,0 µs. Mit
-SUCHE+PROG ist jedes weitere Schreiben eine Sitzung: VERBINDEN mit seinem
-Lesen, SCHREIBEN AUF SERVO FREIGEBEN an, LEFT ANGLE und RIGHT ANGLE
+SUCHEN + PROGRAMMIEREN ist jedes weitere Schreiben eine Sitzung: VERBINDEN mit seinem
+Lesen, SCHREIBEN INS SERVO FREIGEBEN an, LEFT ANGLE und RIGHT ANGLE
 geschrieben und zurückgelesen, der Schreibschalter aus, VERLASSEN. Was das Overlay offen
 hat, schließt sich bei jedem Schritt. Ein Wert unter 50 passiert seine
 weiche Grenze ohne die Seite: das Halten von 2 s beim Start des Laufs ist
 die Zustimmung. Eine harte Grenze lehnt einen Wert ab wie eine Änderung,
 und der Lauf endet. Ein Schreiben, das vor dem Senden abgelehnt wird,
-schaltet SCHREIBEN AUF SERVO FREIGEBEN wieder aus, wie das Ende eines
+schaltet SCHREIBEN INS SERVO FREIGEBEN wieder aus, wie das Ende eines
 gesendeten Schreibens.
 
 Das erste Schreiben des Laufs sichert die Backup-Datei, wie jedes erste
@@ -915,13 +910,12 @@ keine Datei: die erste Datei hält das Servo, wie der Lauf es vorfand. Eine
 Sitzung nach dem Ende des Laufs gehört dem Bediener: ihr erstes Schreiben
 sichert eine eigene Backup-Datei, wie das erste Schreiben jeder Sitzung. Der
 Lauf hält dieses Lesen im Speicher des Panels bis zum ersten Schreiben des nächsten Laufs oder
-einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem
-Endlagenlauf` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
+einem Start des Panels, und ZURÜCKSPIELEN bietet es als `Werte vor dem Endlagenlauf.` an. Solange der Lauf den Port hält, nennen die Zeile ZIEL
 und das Feld des Laufs ihn: `PROG-PORT GP13`.
 
 Ein Lauf, der in einer Sitzung abgebrochen wird, lässt den Port im
 Programmiermodus mit den zuletzt geschriebenen Werten. VERLASSEN gibt ihn
-an PWM zurück; VERBINDEN und ALLES LESEN bieten das Zurückspielen an. Ein
+an PWM zurück; VERBINDEN und ALLES AUSLESEN bieten das Zurückspielen an. Ein
 Lauf, der in einer Sitzung nicht besteht, gibt den Port selbst mit
 VERLASSEN zurück, und sein Feld bleibt auf der linken Karte. Der Teil des
 Laufs im Programmierer, mit den Netzteilwerten, die er hält, endet, sobald
@@ -934,7 +928,7 @@ Karte.
 ![WEITERES](img/de/servo-kst-more.png)
 
 - **PRÜFEN** liest alle Register und vergleicht sie mit dem gehaltenen
-  Abbild: `Geprüft: das Servo hält, was gelesen wurde.` oder die Zahl der
+  Abbild: `Prüfung erfolgreich. Das Servo enthält die ausgelesenen Werte.` oder die Zahl der
   abweichenden Register.
 - **ÄNDERUNGEN VERWERFEN** setzt den Entwurf auf die Werte des Servos
   zurück.
@@ -955,22 +949,21 @@ Einschalten des Prüfstands.
 
 ![Ein unterbrochenes Schreiben](img/de/servo-kst-doubt.png)
 
-`Schreiben unterbrochen. Servo ist evtl. halb beschrieben.` bleibt stehen,
-bis das Servo gelesen ist, darunter der Pin des Schreibens: `Nicht
-benutzen. An GP13 verbinden und ALLES LESEN.` Ein Vermerk ohne Pin nennt
-stattdessen den Port: `An Port 1 verbinden und ALLES LESEN.` Jedes Bedienelement außer
-**VERBINDEN**, **ALLES LESEN**, **ZURÜCKSPIELEN**, **VERLASSEN** und, wo
+`Schreiben wurde unterbrochen. Die Einstellungen sind vielleicht unvollständig.` bleibt stehen,
+bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. An GP13 anschließen und ALLES AUSLESEN tippen.` Ein Vermerk ohne Pin nennt
+stattdessen den Port: `Benutze das Servo nicht. An Port 1 anschließen und ALLES AUSLESEN tippen.` Jedes Bedienelement außer
+**VERBINDEN**, **ALLES AUSLESEN**, **ZURÜCKSPIELEN**, **VERLASSEN** und, wo
 das Zurückspielen der Sitzung ihn braucht, dem Schreibschalter ist aus. Das Lesen vergleicht das Servo mit dem Vermerk:
 
 | Das Servo hält | Meldung | Danach |
 | --- | --- | --- |
-| das Abbild vor dem Schreiben | `Ist dies das Servo des unterbrochenen Schreibens, GP13?` `Es hält alte Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
-| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo des unterbrochenen Schreibens, GP13?` `Es hält neue Werte. Wenn ja: ZURÜCKSPIELEN, verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
-| etwas anderes | `Das Servo hält eine Mischung alter und neuer Werte.` `Servo nicht benutzen. Backup zurück: ZURÜCKSPIELEN.` | **ZURÜCKSPIELEN** bietet das Backup der Sitzung an, solange die Sitzung lebt, und `Werte vor dem unterbrochenen Schreiben` |
+| das Abbild vor dem Schreiben | `Ist dies das Servo, dessen Schreibvorgang an GP13 unterbrochen wurde?` `Es enthält die alten Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| das Abbild, das das Schreiben hinterlassen sollte | `Ist dies das Servo, dessen Schreibvorgang an GP13 unterbrochen wurde?` `Es enthält die neuen Werte. Ist es dasselbe Servo, den Vermerk unter ZURÜCKSPIELEN verwerfen.` | der Vermerk bleibt, bis er verworfen wird |
+| etwas anderes | `Das Servo enthält alte und neue Werte gemischt.` `Benutze dieses Servo nicht. Stelle das Backup mit ZURÜCKSPIELEN wieder her.` | **ZURÜCKSPIELEN** bietet das Backup der Sitzung an, solange die Sitzung lebt, und `Werte vor dem unterbrochenen Schreibvorgang.` |
 
 ![Das Servo hält eine Mischung](img/de/servo-kst-journal.png)
 
-`Vermerk des unterbrochenen Schreibens verwerfen` in der Liste entfernt den
+`Vermerk zum unterbrochenen Schreibvorgang verwerfen.` in der Liste entfernt den
 Vermerk ohne ein Schreiben.
 
 Ein Servo, das Register für Register das Abbild vor dem Schreiben oder das
@@ -979,16 +972,13 @@ des Schreibens oder ein zweites Servo mit denselben Einstellungen. Das
 Panel kann die beiden nicht unterscheiden und fragt. Die zwei Zeilen
 bleiben auf dem Tab SERVO stehen, der Schreibschalter geht nicht an, und
 kein Schreiben, kein Zurückspielen und keine Pairing-Freigabe wird
-gesendet. Ist es das Servo des Schreibens, beendet `Vermerk des
-unterbrochenen Schreibens verwerfen` in der Liste die Frage. Ist es das
+gesendet. Ist es das Servo des Schreibens, beendet `Vermerk zum unterbrochenen Schreibvorgang verwerfen.` in der Liste die Frage. Ist es das
 nicht, behält **VERLASSEN** den Vermerk für das Servo des Schreibens.
 
 Der Vermerk gehört zu einem Servo. Ein Servo, das an einem anderen Port
 gelesen wird, ist nicht dieses Servo, und ebenso wenig eines mit einem
 Register, das weder den Wert des Abbilds vor dem Schreiben noch den Wert
-hält, den das Schreiben hinterlassen sollte: `Das ist nicht das Servo des
-unterbrochenen Schreibens.` `Es war an GP13. ZURÜCKSPIELEN: Vermerk
-verwerfen.` Bei einem Vermerk ohne Pin nennt die Zeile den Port: `Es war an
+hält, den das Schreiben hinterlassen sollte: `Der unterbrochene Schreibvorgang betraf ein anderes Servo.` `Es war an GP13 angeschlossen. Vermerk unter ZURÜCKSPIELEN verwerfen.` Bei einem Vermerk ohne Pin nennt die Zeile den Port: `Es war an
 Port 1.` Solange das steht, wird nichts zurückgespielt, geändert oder
 geschrieben, und **ZURÜCKSPIELEN** enthält nur den Eintrag zum Verwerfen.
 **VERLASSEN** und ein **VERBINDEN** des Servos des Schreibens bringen den
@@ -1038,14 +1028,14 @@ dem Verlassen von SERVO ohne Sitzung endet, ein STOP, der das Netzteil
 ausschaltet --, außer SERVO wird vorher wieder gezeigt. Nach
 **VERLASSEN** auf SERVO bleibt der Ausgang an, bis SERVO verlassen wird.
 
-PROGRAMMIEREN VERLASSEN öffnet mit
-`Der Port geht zurück auf Servo-PWM. Versorgung bleibt.` und
-`Das Servo bekommt das Signal des Testers, es kann fahren.` Die Seite
+PROGRAMMIERMODUS VERLASSEN öffnet mit
+`Der Port wechselt zurück zu Servo-PWM. Die Versorgung bleibt unverändert.` und
+`Das Servo erhält wieder das Testsignal und kann sich bewegen.` Die Seite
 warnt, bevor geänderte Werte verloren gehen und bevor eine Sitzung endet,
 die ein unklares Servo noch zurückspielen könnte. **HALTEN ZUM VERLASSEN**
 für 2 s sendet den Vorgang LEAVE des Ports aus der Link-Version 4.15. Kein
 Frame geht an das Servo und kein Versorgungsbefehl an den PD mini. Der Port
-hält seine Leitung für [**WARTEN VOR PWM**](#die-versorgung) auf Low und
+hält seine Leitung für [**WARTEZEIT VOR PWM**](#die-versorgung) auf Low und
 gibt den Pin dann an den PWM-Generator.
 
 ![Verlassen](img/de/servo-kst-leave.png)
@@ -1055,16 +1045,16 @@ Die Seite ist dieselbe, wenn ein PD mini antwortet.
 ![VERLASSEN mit einem PD mini](img/de/servo-kst-leave-supply.png)
 
 Die Zustandszeile zeigt
-`Verlasse den Programmiermodus. PWM ist noch nicht an.`, und die
+`Programmiermodus wird verlassen. PWM ist noch aus.`, und die
 Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Die Taste
 heißt **ABBRECHEN**, solange das Warten läuft. Danach steht
-`Der Tester hat den Port wieder.`, und der Tester treibt den Port sofort,
+`Der Port ist wieder im Testermodus.`, und der Tester treibt den Port sofort,
 mit **PWM-ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
 **VERBINDEN** beginnt eine neue Sitzung mit eigenem Lesen.
 
 ### Das Warten vor PWM
 
-**WARTEN VOR PWM** ist 0 bis 10 000 ms, ab Werk 100 ms. Der Ziffernblock
+**WARTEZEIT VOR PWM** ist 0 bis 10 000 ms, ab Werk 100 ms. Der Ziffernblock
 nimmt keinen Wert über 10 000 ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0 ms endet beim nächsten Durchlauf des
 Koprozessors. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
@@ -1072,8 +1062,8 @@ Das Warten, das ein Servo braucht, ist nicht gemessen.
 
 | Während des Wartens | Wirkung |
 | --- | --- |
-| **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
-| **STOP** oder ein Wechsel des Prüfstands auf SAFE, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES LESEN** |
+| **ABBRECHEN** | der Port bleibt im Programmiermodus, die Sitzung wie zuvor; `Verlassen wurde vor dem Ende der Wartezeit unterbrochen.`; **VERLASSEN** wird sofort wieder angenommen |
+| **STOP** oder ein Wechsel des Prüfstands auf SAFE, kein PD mini antwortet | dieselbe Zeile; der Port bleibt im Programmiermodus und verlangt **ALLES AUSLESEN** |
 | Der Ausgang der Versorgung liest aus oder wird ausgeschaltet: **STOP** mit antwortendem PD mini, der eigene Schutz des PD mini | dieselbe Zeile; die Versorgung bleibt 2000 ms aus, dann ist der Port in PWM |
 | Der Link fällt aus | wie [ein Ausfall des Links](#stopps-und-ausfälle) |
 
@@ -1084,9 +1074,9 @@ Servo hält, das ein Schreiben unklar hinterlassen hat.
 
 | Der Port | Ein PD mini antwortet | Zeile | Ausweg |
 | --- | --- | --- | --- |
-| verlangt nach einem Stopp oder Abbruch ein Lesen | ja | `Der Port verlangt zuerst ein Lesen: ALLES LESEN.` | **ALLES LESEN**, dann **VERLASSEN**; oder **STOP**, das die Versorgung ausschaltet |
-| hält ein unklares Servo | ja | `Servo unklar: Port hält die Sitzung. Erst ZURÜCKSPIELEN.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` | **ZURÜCKSPIELEN**, dann **VERLASSEN**; oder **STOP** |
-| eines von beiden | nein | `Der Tester hat den Port wieder.` und `Die Sitzung war unklar: kein Warten vor PWM.` | keiner nötig: der Port ist in PWM |
+| verlangt nach einem Stopp oder Abbruch ein Lesen | ja | `Zuerst das Servo auslesen. ALLES AUSLESEN tippen.` | **ALLES AUSLESEN**, dann **VERLASSEN**; oder **STOP**, das die Versorgung ausschaltet |
+| hält ein unklares Servo | ja | `Servozustand unklar. Sitzung bleibt offen. Zuerst ZURÜCKSPIELEN.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` | **ZURÜCKSPIELEN**, dann **VERLASSEN**; oder **STOP** |
+| eines von beiden | nein | `Der Port ist wieder im Testermodus.` und `Sitzungszustand war unklar. PWM startet ohne Wartezeit.` | keiner nötig: der Port ist in PWM |
 
 Ohne PD mini schaltet **STOP** keine Versorgung und lässt den Port im
 Programmiermodus, und ein Servo, das nicht mehr antwortet, nimmt kein Lesen
@@ -1102,8 +1092,8 @@ keines.
 
 | Ein PD mini antwortet | Das Panel | Zeilen |
 | --- | --- | --- |
-| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Tester hat den Port wieder.` und `Koprozessor älter als 4.15: kein Warten vor PWM.` |
-| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini braucht den Koprozessor ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
+| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Port ist wieder im Testermodus.` und `Koprozessor-Firmware älter als 4.15. PWM startet ohne Wartezeit.` |
+| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini erfordert Koprozessor-Firmware ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
 
 Mit einem PD mini an einem solchen Koprozessor beendet **STOP** oder der
 ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
@@ -1113,20 +1103,20 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 
 | Ereignis | Wirkung |
 | --- | --- |
-| **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12 ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES LESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 2000 ms, nachdem er aus liest, wieder in PWM |
+| **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12 ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 2000 ms, nachdem er aus liest, wieder in PWM |
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
-| Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN und ALLES LESEN.` und `Zuerst die Servo-Versorgung aus- und einschalten.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
-| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Sitzung vom Port beendet: Versorgung aus oder Neustart.` und `Servo-Versorgung aus- und einschalten, dann VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
-| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES LESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
-| Der Koprozessor lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES LESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120 s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES LESEN.`; die Werte auf dem Panel werden vor einem **ALLES LESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN, dann ALLES AUSLESEN tippen.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
+| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Servoversorgung aus- und einschalten, dann VERBINDEN tippen.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
+| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES AUSLESEN tippen.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
+| Der Koprozessor lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
+| 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES AUSLESEN tippen.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
+| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120 s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES AUSLESEN tippen.`; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Das Ergebnis eines Vorgangs kommt, auf den der Programmierer nicht mehr wartet | es beendet keinen anderen Vorgang: ein Ergebnis zählt für die Anfrage, deren Nummer es trägt. **ABBRECHEN** erreicht einen Vorgang, den der Port noch als laufend meldet |
-| Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255, diesem Panel unbekannt.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
+| Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
-Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
+Zeile. [Die Link-Page](LinkKST-de.md) listet die
 Codes.
 
 ## Einschränkungen
@@ -1181,7 +1171,7 @@ Codes.
 - Antwortet ein PD mini, wird ein Port mit einem unklaren Servo durch
   **ZURÜCKSPIELEN** und **VERLASSEN** verlassen, oder durch **STOP** mit
   ausgeschalteter Versorgung.
-- **WARTEN VOR PWM** wird von einem Koprozessor vor Link-Version 4.15 nicht
+- **WARTEZEIT VOR PWM** wird von einem Koprozessor vor Link-Version 4.15 nicht
   angewendet, und nicht beim Verlassen eines unklaren Ports ohne PD mini.
   Das Warten, das ein Servo braucht, ist nicht gemessen. Die Restzeit
   eines laufenden Wartens wird nicht angezeigt.
@@ -1190,8 +1180,8 @@ Codes.
 - Der Fehlercode, den das Dateisystem der Karte bei einer
   schreibgeschützten Karte liefert, ist nicht bekannt. Ein anderer Code
   als schreibgeschütztes Dateisystem, Zugriff verweigert und Operation
-  nicht erlaubt zeigt `Schreibfehler der Karte.` statt
-  `Karte nimmt keine Datei`.
+  nicht erlaubt zeigt `Schreibfehler auf der Karte.` statt
+  `Speichern nicht möglich: Karte schreibgeschützt oder KST kein Ordner.`
 - Die Vorgabenamen enden bei `KST999`. Ist dieser Name vergeben, wird die
   nächste freie Nummer vorgeschlagen, und die höchste Nummer ist dann nicht
   die neueste Datei.
@@ -1219,8 +1209,7 @@ Codes.
 - Eine eingehängte Karte, die den Vermerk nicht annimmt, verhindert jedes
   Schreiben: eine nach dem Einhängen gezogene Karte, eine schreibgeschützte
   Karte oder eine Karte, auf der `KST/KST.TXT` oder `KST/KST.NEW` ein
-  Ordner ist. Jeder Versuch endet mit `Die Karte nahm keine Datei. Nichts
-  ging aufs Servo.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
+  Ordner ist. Jeder Versuch endet mit `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.` Das Panel hängt eine solche Karte nicht aus. Ein ohne
   Karte gestartetes Panel hält den Vermerk im Speicher und schreibt.
 - Der Vermerk eines beendeten Schreibens wird auf der Karte nach dem
   Schreiben gelöscht, durch ein eigenes Schreiben der Datei, das alle 5 s
@@ -1293,10 +1282,10 @@ Keine davon ist erfolgt.
 Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
 wartet, einen Koprozessor, der neu startet, und einen Programmierer, der
 den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
-`test_settings` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
+`test_settings_screen` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
 eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
-`test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
-fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
+`test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog` und `test_kst_prog_card`
+fahren das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
@@ -1314,17 +1303,18 @@ Meldung, die geht, wenn ihre Bedingung endet, die Zeilen, die keinen Tipp
 annehmen, die Beschriftung der Zeile PORT, kein Komma in einer Zahl der
 deutschen Tabelle, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 **ABBRECHEN** und **STOP** abschneiden, eine Karte, die versagt, und die
-Timeouts über den Überlauf der Uhr bei 2^32 ms. Die Servodateien laufen
-gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
+Timeouts über den Überlauf der Uhr bei 2^32 ms. `test_kst_panel_files` fährt die
+Servodateien gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
 beide Servotypen und ihre Abweichung in beiden Richtungen, jede
 Ablehnung, die Grenze von 5 s, ein erstes Schreiben mit einer Karte, die
-voll ist oder versagt, und die Schreiben ohne Karte: das erste Schreiben,
+voll ist oder versagt.
+`test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
 Schreibseite entnommene Karte. Ein Kommando, das die Control-Task nach
 Ablauf seiner 2 s annimmt, erreicht keine Leitung, für jede Art von
 Vorgang; eine Ablehnung bei jedem späteren Austausch jeder Art von Vorgang
-verlangt **ALLES LESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,
+verlangt **ALLES AUSLESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,
 und ein Code ohne Klasse lässt den Test fehlschlagen; ein Zurückspielen,
 das die Karte bei jedem Dateischritt nicht starten lässt, lässt die offenen
 Werte stehen; ein Vermerk von einer Karte, die vor und nach dem Lesen

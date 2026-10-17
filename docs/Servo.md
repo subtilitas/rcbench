@@ -48,7 +48,7 @@ Duration: the host test holds a full search against the modelled servo to under
 ### Running it
 
 The LIMITS page of the SERVO screen's settings holds the run. **LIMIT RUN**
-chooses SEARCH ONLY or SEARCH+PROG with a tap. **SERVO PULSES**, shown with
+chooses SEARCH ONLY or SEARCH + PROGRAM with a tap. **SERVO PULSES**, shown with
 PWM TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
 starts at KEEP. **START LIMIT RUN** starts the run with a 2 s hold, as START
 TEST does; a tap or a shorter hold starts nothing.
@@ -71,28 +71,27 @@ and the line under it says why.
 | --- | --- |
 | `ARM FIRST` | the bench is SAFE |
 | `LAST REPORT STILL WRITING` | an automatic test or a limit run is under way, or its report is still going to the card |
-| `INA3221 NOT SET UP AS THE SERVO RAIL'S METER` | INA3221 or its CH1 off in SETUP, a coprocessor older than protocol 4.11, or a SENSE page that does not hold the set-up |
-| `INA3221 NOT ONLINE` | no link, the part not answering, or its reset count moved |
-| `NO INA3221 WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
-| `SERVO RAIL UNDER 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
-| `PORT PWM OFF: THE PORT RENDERS NO PULSE` | PWM TARGET on PROG PORT with PORT PWM off |
+| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | INA3221 or its CH1 off in SETUP, a coprocessor older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
+| `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
+| `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
+| `PORT PWM OFF. NO PULSES ON THIS PORT.` | PWM TARGET on PROG PORT with PORT PWM off |
 | `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
-| `CENTRE NOT BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
+| `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
 
-SEARCH+PROG is offered for a servo on the programming port: PWM TARGET on
+SEARCH + PROGRAM is offered for a servo on the programming port: PWM TARGET on
 PROG PORT, the port in PWM, and a supply of 4.8 V or more. With a PD mini
 answering, its output must be on and its set point counts; without one, the servo rail's mean in the
 INA3221's last window. On the bench's outputs the run searches only, the
-row reads SEARCH ONLY, and the third line reads `PROGRAMMING: ONLY A SERVO
-ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
+row reads SEARCH ONLY, and the third line reads `PROGRAMMING REQUIRES A SERVO ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
 the other conditions stop SEARCH ONLY as well: the button stays grey and the
 third line names the condition.
 
 | Line | Condition |
 | --- | --- |
-| `PROGRAMMING: THE PORT IS NOT IN PWM` | the programmer holds the port, or the port is not ready for a run |
+| `PROGRAMMING: PORT IS NOT IN PWM MODE` | the programmer holds the port, or the port is not ready for a run |
 | `PROGRAMMING: PD MINI OUTPUT OFF` | a PD mini answers with its output off: the read session would switch it on beside the supply that feeds the rail |
 | `PROGRAMMING: SUPPLY SET BELOW 4.8 V` | a PD mini answers and its set point is under 4.8 V |
 | `PROGRAMMING: SERVO RAIL BELOW 4.8 V` | no PD mini answers, and the servo rail in the INA3221's last window is under 4.8 V or not read |
@@ -126,8 +125,8 @@ SERVO PULSES at 1000-2000 writes PULSE LOWER 1000.0 µs and PULSE UPPER
 back. NEUTRAL is not written. A servo that holds those values already gets
 no write. NEUTRAL outside the new range ends the run as FAIL before
 anything is driven, with RESTORE offered. The setting works with SEARCH
-ONLY and with SEARCH+PROG; with SEARCH ONLY the pulses are the only write,
-and the third line says `SEARCH ONLY: SETS PULSE LOWER/UPPER, NOTHING ELSE`.
+ONLY and with SEARCH + PROGRAM; with SEARCH ONLY the pulses are the only write,
+and the third line says `SEARCH ONLY: SETS PULSE LOWER/UPPER ONLY`.
 
 #### The registers and the model
 
@@ -289,7 +288,7 @@ pass says `RESTORE IN PROGRAM` on its box. A write that fails once sent,
 with no answer or an answer the programmer does not take, counts as
 written: part of it may have landed. A write the programmer refuses before
 it is sent counts as none. RESTORE on the programmer, after
-CONNECT and READ ALL, offers `Values before the limit run`: the servo as the
+CONNECT and READ ALL, offers `Settings before the limit run.`: the servo as the
 run's first session read it, written back as an ordinary write of LEFT
 ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER. It is offered while the
 servo read differs from it in those four fields and in no other. The hold is in the panel's memory: a start of the
@@ -455,10 +454,10 @@ Each step runs these phases:
 | Phase | The servo | Ends |
 | --- | --- | --- |
 | SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05 V, at most 3000 ms |
-| SETTLE | at PULSE CENTRE | after the TEST page's SETTLE |
+| SETTLING TIME | at PULSE CENTRE | after the TEST page's SETTLING TIME |
 | IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000 ms |
 | MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms plus the meter's lag (3300 ms on the PD mini): late with movement seen, unseen without |
-| HOLD | at that end: the holding current is the mean of the readings | after DWELL, at least 600 ms |
+| HOLD | at that end: the holding current is the mean of the readings | after DWELL TIME, at least 600 ms |
 
 The two ends are SWEEP's: RANGE of the travel either side of PULSE CENTRE,
 trim not applied. With the defaults (RANGE 80 %, TRAVEL +/-90 deg, PULSE MIN
@@ -470,7 +469,7 @@ its centre. On a bench it leaves in ARMED, the commanded value shown is then
 the rest, as after RELEASE: 1500 us for STANDARD PWM whatever the trim, and
 the next drag or knob turn starts from it. A step's first two moves, centre to the low end and on to the
 high end, are not counted: they measure each end's holding level. The counted moves then go
-end to end, MOVEMENTS of them or for TEST TIME, as LENGTH BY says, at most
+end to end, MOVEMENTS of them or for TEST TIME, as TEST LENGTH BY says, at most
 1000 a step.
 
 - **Threshold:** per step, the larger of 0.020 A (`SERVO_TEST_MOVE_MIN_A`)
@@ -522,12 +521,12 @@ had to scale. 0.13.0 took movement to be 0.10 A, and the MG90S moves at 0.04
 to 0.077 A over a 0.001 A hold: no move was seen, each ran out at 3000 ms and
 was counted late, and the run read FAIL.
 
-**Limitation: the move to the centre can reach IDLE.** With SETTLE at
+**Limitation: the move to the centre can reach IDLE.** With SETTLING TIME at
 500 ms the IDLE readings can still carry the end of the step's move to the
 centre: 0.025 A falling to 0.003 A on the 1102HB at 5.00 V, from the PD
 mini's 0.3 s lag and the move itself. That raises the idle mean and the
 noise, and the threshold with it: 0.026 A there instead of 0.020 A. A
-longer SETTLE avoids it.
+longer SETTLING TIME avoids it.
 
 **Brown-out.** After the steps, with BROWN-OUT on: from 5.00 V
 (`SERVO_TEST_BROWNOUT_START_V`), or the voltage cap in force if lower, down
@@ -537,7 +536,7 @@ The cap in force is the lowest of VOLTAGE MAX, the supply's own maximum, and
 for the PD mini its input voltage less 0.7 V. A floor off the
 0.20 V grid is the last step: on the model, whose lowest set point is
 3.3 V, the walk goes 5.0, 4.8 ... 3.4, 3.3 V. Each voltage runs
-SET, SETTLE and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
+SET, SETTLING TIME and IDLE, then two moves (`SERVO_TEST_BROWNOUT_MOVES`), centre to
 the high end and on to the low end, each held 600 ms. A voltage shows **no
 movement** when no reading of either move lies more than that voltage's
 threshold, from its own IDLE readings, from the level before its command.
@@ -679,7 +678,7 @@ the run.
 
 | Rule | Condition | Effect |
 | --- | --- | --- |
-| STALL AT | a reading after SETTLE on a voltage step whose magnitude is above STALL AT | FAIL |
+| STALL AT | a reading after SETTLING TIME on a voltage step whose magnitude is above STALL AT | FAIL |
 | STALL AT for 1 s | readings above STALL AT for 1000 ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1 s` |
 | Constant current for 1 s | the supply reports constant current (CC) in every reading for 1000 ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1 s`, whatever STALL AT is |
 | Constant current for less than 1 s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
@@ -878,7 +877,7 @@ when one of these holds:
 - the highest holding current is above HOLD CURRENT;
 - the longest travel time is above TRAVEL TIME, where the current's meter
   times travel (not the PD mini, and not the INA3221's windows);
-- a reading after SETTLE is above STALL AT;
+- a reading after SETTLING TIME is above STALL AT;
 - a counted move was late: movement seen, no arrival within the window,
   3000 ms plus the meter's lag.
 
@@ -925,7 +924,7 @@ writes:
 | `time (s)` | s | when the panel had the reading, from the run's start |
 | `test` | | `STEP` or `BROWN-OUT` |
 | `step` | | the step, 1 to n in the order run |
-| `phase` | | `SET`, `SETTLE`, `IDLE`, `MOVE` or `HOLD` |
+| `phase` | | `SET`, `SETTLING TIME`, `IDLE`, `MOVE` or `HOLD` |
 | `command (us)` | us | the pulse commanded |
 | `position (us)` | us | the measured position; empty, as nothing measures it |
 | `set (V)` | V | the step's voltage |
@@ -1057,7 +1056,7 @@ An aborted run reads `Result:
 ABORTED - <reason>`, and a step it cut short is marked `(cut short)`; one it
 never reached reads `not run`. `Can destroy` names the red tag when a heli
 type or a frame rate above 60 Hz is in force. Every word of the report is in
-one table in `shared/servo/servo_report.c`, and the report is written in the
+one table in `shared/servo/servo_str.c`, and the report is written in the
 interface language showing when its run starts: German from
 `shared/ui/ui_text_de.c` ([Interface language](Language.md)). The CSV is
 English in every language.
@@ -1074,7 +1073,7 @@ holds the engine to `servo_sim` and `supply_sim`, the SERVO screen driving
 it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
 
-`test_servo_test_win` runs the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
+`test_servo_test_win`, `test_servo_test_win_read` and `test_servo_test_win_chain` run the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
 coprocessor's schedule and pages turn it into windows, `sense_link` takes
 each once and `servo_source` names the meter, beside a model of the PD mini
 read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an

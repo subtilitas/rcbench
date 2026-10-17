@@ -22,6 +22,7 @@
 #include "servo_test.h"
 #include "settings.h"
 #include "settings_screen.h"
+#include "splash_screen.h"
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -166,7 +167,7 @@ TEST_CASE(every_string_fits_its_declared_field)
 /*
  * Buffers are bytes and a German letter is two of them: an alert has to fit
  * the router's and the snapshot's UI_ALERT_MAX, terminator included, and
- * everything main.c hands the splash as a detail its 32.
+ * everything main.c hands the splash as a detail its SPLASH_DETAIL_MAX.
  */
 TEST_CASE(alerts_and_details_fit_their_buffers)
 {
@@ -189,7 +190,7 @@ TEST_CASE(alerts_and_details_fit_their_buffers)
         for (size_t k = 0; k < sizeof(k_details) / sizeof(k_details[0]);
              ++k) {
             const size_t n = strlen(ui_tr_in((ui_lang_t)l, k_details[k]));
-            if (n >= 32u) {
+            if (n >= SPLASH_DETAIL_MAX) {
                 T_FAIL("%s is %zu bytes", ui_text_name(k_details[k]), n);
             }
         }
@@ -617,18 +618,18 @@ TEST_CASE(the_refused_frames_label_shows_only_a_count_above_zero)
 
     st.link_refused = 1u;
     CHECK(ui_link_refused_label(&st, out, sizeof(out)));
-    CHECK_STR_EQ(out, "Link frames refused: 1");
+    CHECK_STR_EQ(out, "Rejected link frames: 1");
     st.link_refused = 0xFFFFFFFFu;
     CHECK(ui_link_refused_label(&st, out, sizeof(out)));
-    CHECK_STR_EQ(out, "Link frames refused: 4294967295");
+    CHECK_STR_EQ(out, "Rejected link frames: 4294967295");
 
     ui_text_set_language(UI_LANG_DE);
     st.link_refused = 37u;
     CHECK(ui_link_refused_label(&st, out, sizeof(out)));
-    CHECK_STR_EQ(out, "Abgelehnte Link-Frames: 37");
+    CHECK_STR_EQ(out, "Abgelehnte Verbindungsframes: 37");
     st.link_refused = 0xFFFFFFFFu;
     CHECK(ui_link_refused_label(&st, out, sizeof(out)));
-    CHECK_STR_EQ(out, "Abgelehnte Link-Frames: 4294967295");
+    CHECK_STR_EQ(out, "Abgelehnte Verbindungsframes: 4294967295");
     st.link_refused = 0u;
     CHECK(!ui_link_refused_label(&st, out, sizeof(out)));
     CHECK_STR_EQ(out, "");

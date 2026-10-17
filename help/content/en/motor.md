@@ -12,10 +12,10 @@ MOTOR & ESC drives an ESC (electronic speed controller) and records a run: volta
 
 ![Link up, never armed, no pin bound as a motor](view:motor-idle)
 
-- The panel tag reads `TELEMETRY IDLE` and the plot reads `no run recorded` until the first switch to ARMED.
+- The panel tag reads `TELEMETRY IDLE` and the plot reads `No run recorded yet.` until the first switch to ARMED.
 - The line under the track reads `ARM FIRST` while the bench is SAFE. The track and the `-1` and `+1` keys are dimmed and take no command.
 - The readouts show `---` while nothing has reported a value.
-- `TARGET: NO PIN BOUND AS MOTOR`, in the warning colour, says the binding was read and no pin is bound as a motor. Bind one on [Outputs](outputs.md).
+- `TARGET: NO MOTOR PIN ASSIGNED`, in the warning colour, says the binding was read and no pin is bound as a motor. Bind one on [Outputs](outputs.md).
 
 ## The throttle panel names its pins
 
@@ -24,8 +24,8 @@ The throttle panel names the pins the throttle drives, left of the percentage: `
 | Line | Condition |
 |---|---|
 | `TARGET: GP0 GP1` | the pins the throttle drives, in pin order |
-| `TARGET: NO PIN BOUND AS MOTOR` | the binding is read and no pin is bound as a motor |
-| `TARGET: BINDING NOT READ` | the link is down, the pages did not read, or the board has no pin map |
+| `TARGET: NO MOTOR PIN ASSIGNED` | the binding is read and no pin is bound as a motor |
+| `TARGET: ASSIGNMENT NOT READ` | the link is down, the pages did not read, or the board has no pin map |
 
 ARM switches the whole bank of throttle outputs to ARMED, not only the pins named here.
 
@@ -56,7 +56,7 @@ While no coprocessor answers, the band shows SIM and SIMULATION is drawn across 
 
 ![The plot holds the run after the switch to SAFE](view:motor-held)
 
-Switching to SAFE holds the plot as it stood: the tag reads `TELEMETRY HELD` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 534 columns at 20 samples per second, 26.7 s. A longer run keeps its last 26.7 s on screen; the whole run is in its CSV (comma-separated values) file on the card.
+Switching to SAFE holds the plot as it stood: the tag reads `LAST TELEMETRY` and the right edge reads `END`. The next switch to ARMED clears it. The plot is 534 columns at 20 samples per second, 26.7 s. A longer run keeps its last 26.7 s on screen; the whole run is in its CSV (comma-separated values) file on the card.
 
 The readouts, the TABLE pane, the totals and the temperature strip stay live at all times, ARMED or not.
 

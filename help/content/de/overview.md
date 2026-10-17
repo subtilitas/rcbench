@@ -16,11 +16,11 @@ Neun Kacheln zu je 150 x 204 px, in zwei Reihen:
 
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|
-| MOTOR & ESC | Antrieb V/A rpm | [Motor und ESC](motor.md) |
+| MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
 | SERVO | Weg, Strom | [Servo](servo.md) |
-| SUPPLY | Setzen, Log V/A | [Netzteil](supply.md) |
+| SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
 | ANALYSER | Busse, Frames | [Analyser](analyser.md) |
-| LOGS | Schreiben, Lesen | [Logs](logs.md) |
+| LOGS | Daten aufzeichnen und ansehen | [Logs](logs.md) |
 | SETUP | Akku und Ausgang | [Setup](setup.md) |
 | BATTERY | Zellen, iR, mAh | [Akku](battery.md) |
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
@@ -60,7 +60,7 @@ Ein Fehler, den der offene Bildschirm nicht zeigt, erscheint in einem roten Band
 
 ![Der Splash, während die Teilsysteme sich melden](view:splash)
 
-Beim Einschalten listet der Splash jedes Teilsystem, sobald es bereit ist: PLATINE, DISPLAY, TOUCH, SPEICHER, EINSTELLUNGEN, LINK und KOPROZESSOR. Die Zeile PLATINE trägt die Firmware-Version des Panels. Die Zeile KOPROZESSOR trägt die Protokollversion und die Firmware-Version, die der Koprozessor meldet.
+Beim Einschalten listet der Splash jedes Teilsystem, sobald es bereit ist: PLATINE, DISPLAY, TOUCH, SPEICHER, EINSTELLUNGEN, VERBINDUNG und KOPROZESSOR. Die Zeile PLATINE trägt die Firmware-Version des Panels. Die Zeile KOPROZESSOR trägt die Protokollversion und die Firmware-Version, die der Koprozessor meldet.
 
 - Eine fehlende SD-Karte (Secure Digital) oder ein unbrauchbarer NVS (nichtflüchtiger Speicher) ist eine Warnung.
 - Ein Touch-Controller, der nicht antwortet, oder ein Koprozessor mit anderer Hauptversion des Protokolls ist ein Fehler. Der Prüfstand schaltet dann nicht auf ARMED.

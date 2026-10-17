@@ -16,33 +16,33 @@ Das Panel führt bei jedem Start einen CAN-Echo-Selbsttest aus, 1200 ms lang inn
 
 - Die Überschrift ist das Urteil.
 - WAS DAS BEDEUTET sagt es in einer Zeile.
-- PRÜFEN, IN DIESER REIHENFOLGE listet, was zu prüfen ist, die billigste Prüfung zuerst.
+- IN DIESER REIHENFOLGE PRÜFEN listet, was zu prüfen ist, die billigste Prüfung zuerst.
 - Die rechte Spalte zeigt, was beide Enden gezählt haben: gesendet, zurück, verändert, verloren.
 
 ![Nichts kam zurück](view:busfault-silent)
 
 | Überschrift | WAS DAS BEDEUTET | Die Prüfungen zielen auf |
 |---|---|---|
-| `kein Testframe kam zurück` | `Am Bus hat niemand geantwortet. Die Platinen reden nicht.` | Versorgung, vertauschte CANH und CANL, das Release, die Abschlüsse |
-| `Testframes verändert zurück` | `Frames kommen verändert an. Leitung oder Bit-Timing.` | die Abschlüsse, die Länge der Stichleitung, verdrillte CANH und CANL |
-| `Testframes gehen verloren` | `Frames gehen teils verloren, der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
-| `Testframes weg ohne Busfehler` | `Frames kamen intakt, blieben ungelesen. Nicht die Leitung.` | nicht die Leitung; mit den Zahlen rechts melden |
+| `Kein Testframe kam zurück.` | `Keine Antwort am Bus. Die beiden Platinen können keine Daten austauschen.` | Versorgung, vertauschte CANH und CANL, das Release, die Abschlüsse |
+| `Testframes kamen mit veränderten Daten zurück.` | `Frames kommen mit veränderten Daten an. Verkabelung und Bit-Timing prüfen.` | die Abschlüsse, die Länge der Stichleitung, verdrillte CANH und CANL |
+| `Einige Testframes gingen verloren.` | `Einige Frames gehen verloren. Der Bus meldet Fehler.` | die Abschlüsse, die Buslänge, verdrillte CANH und CANL, einen Stecker |
+| `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
 Die Abschlüsse messen bei ausgeschaltetem Prüfstand etwa 60 Ohm zwischen CANH und CANL. 120 Ohm heißt, einer der beiden fehlt. Der ganze Bus bleibt unter 5 m, jede Stichleitung unter 30 cm.
 
 ## Ein Link, der abbricht
 
-![Das Panel ist vom Bus getrennt](view:busfault-lost)
+![Panel vom Bus getrennt.](view:busfault-lost)
 
 Derselbe Bildschirm öffnet, wenn ein Link, der stand, seit 4 s weg ist. Die Überschrift sagt dann, was der eigene CAN-Controller des Panels tut:
 
 | Überschrift | Bedeutung |
 |---|---|
-| `Panel ist vom Bus getrennt` | zu viele Frames blieben unbestätigt; der Controller sendet nicht mehr |
-| `Panel verbindet sich neu` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3 s warten |
-| `Controller des Panels steht` | er steht und wurde nicht neu gestartet: ein Fehler in der Firmware des Panels |
-| `Link antwortet nicht mehr` | der Controller ist am Bus, und nichts antwortet |
-| `Controller nicht lesbar` | der Treiber läuft nicht; nichts kann gesendet werden |
+| `Panel vom Bus getrennt.` | zu viele Frames blieben unbestätigt; der Controller sendet nicht mehr |
+| `Panel verbindet sich neu.` | er zählt die Ruhezeit, die ein Neuverbinden braucht; 3 s warten |
+| `CAN-Controller des Panels ist gestoppt.` | er steht und wurde nicht neu gestartet: ein Fehler in der Firmware des Panels |
+| `Verbindung antwortet nicht mehr.` | der Controller ist am Bus, und nichts antwortet |
+| `Controller-Zustand nicht auslesbar.` | der Treiber läuft nicht; nichts kann gesendet werden |
 
 Bei ARMED öffnet der Bildschirm nie: Er hat kein STOP. Bei ARMED meldet das Alert-Band, dass der Link weg ist, und der Bildschirm wartet auf das Schalten auf SAFE.
 
@@ -50,10 +50,10 @@ Dieselben Zahlen gehen nach `RCBENCH.LOG` auf der SD-Karte (Secure Digital), ein
 
 ## Den Bildschirm verlassen
 
-2 s HALTEN ZUM QUITTIEREN schließt den Bildschirm, mit der Geste und dem Übergang von ARM. Das Quittieren repariert nichts. Der Prüfstand läuft danach in der Simulation, nichts steuert einen Ausgang an, und der Test läuft beim nächsten Start erneut.
+2 s HALTEN ZUM BESTÄTIGEN schließt den Bildschirm, mit der Geste und dem Übergang von ARM. Das Quittieren repariert nichts. Der Prüfstand läuft danach in der Simulation, nichts steuert einen Ausgang an, und der Test läuft beim nächsten Start erneut.
 
 ## Verwandte Seiten
 
 - [Menü](overview.md): der Splash und der Selbsttest.
-- [Statusband und STOP](band.md): LINK und KEIN LINK.
+- [Statusband und STOP](band.md): VERBINDUNG und KEINE VERBINDUNG.
 - [Den Link in Betrieb nehmen](https://github.com/subtilitas/rcbench/blob/main/docs/Link-de.md): die Urteile im Detail.

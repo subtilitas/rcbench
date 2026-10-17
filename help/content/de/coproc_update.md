@@ -6,7 +6,7 @@ order: 100
 
 # Koprozessor-Update
 
-Ein Firmware-Image des Panels trägt das Image des Koprozessors und bietet es an, wenn der Koprozessor einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `Koprozessor hat einen anderen Build -- das Menü bietet sein Update an` aus.
+Ein Firmware-Image des Panels trägt das Image des Koprozessors und bietet es an, wenn der Koprozessor einen anderen Build fährt. Die Prüfung läuft bei jedem Link-Aufbau über den CAN-Bus (Controller Area Network) und vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit), keine Versionsnummern. Ein anderer Build löst den Alert `Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.` aus.
 
 ## Die Frage
 
@@ -23,21 +23,21 @@ Ein anderes Verlassen der Frage lehnt sie ab wie ABBRECHEN.
 
 ![Ein älteres Image](view:coproc-update-older)
 
-Ein älteres Image wird ebenfalls angeboten. Die Frage zeigt dann `Das Image dieses Panels ist älter.` in der Warnfarbe.
+Ein älteres Image wird ebenfalls angeboten. Die Frage zeigt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe.
 
 ## Der Fortschritt
 
-![Das Image wird gesendet](view:coproc-update-progress)
+![Firmware wird gesendet.](view:coproc-update-progress)
 
 Ist das Halten vollständig, gehört das Panel dem Update. Der Link geht herunter, die Ausgänge sind aus, und der Koprozessor lehnt ARM bis zum Ende des Updates ab. Der Fortschritt füllt den Bildschirm, ohne Band und ohne STOP.
 
 | Schritt | Steht da, solange |
 |---|---|
-| `Image wird vorbereitet` | das Panel die Prüfsumme des Images bildet, 8 KiB je Schritt |
-| `Image wird gesendet` | die Blöcke hinausgehen, je 64 Bytes, gezählt als `Block 1497 von 2994, 50 %` |
-| `Koprozessor prüft das Image` | der Koprozessor die Prüfsumme des geschriebenen Slots bildet |
-| `Koprozessor startet das neue Image` | er in den neuen Slot neu startet, auf Probe |
-| `Neues Image wird behalten` | das Panel die Identität des neuen Images liest und es behält |
+| `Firmware wird vorbereitet.` | das Panel die Prüfsumme des Images bildet, 8 KiB je Schritt |
+| `Firmware wird gesendet.` | die Blöcke hinausgehen, je 64 Bytes, gezählt als `Block 1497 von 2994, 50 %` |
+| `Koprozessor prüft die Firmware.` | der Koprozessor die Prüfsumme des geschriebenen Slots bildet |
+| `Koprozessor startet die neue Firmware.` | er in den neuen Slot neu startet, auf Probe |
+| `Neue Firmware wird dauerhaft übernommen.` | das Panel die Identität des neuen Images liest und es behält |
 
 Die Übertragungsdauer ist nicht gemessen.
 
@@ -47,15 +47,15 @@ Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, und das Alert-Ban
 
 | Alert | Bedeutung |
 |---|---|
-| `Koprozessor auf 0.18.0 aktualisiert` | das neue Image läuft und wird behalten |
-| `Koprozessor-Update abgebrochen: keine Antwort -- das alte Image läuft` | 4 s antwortete nichts |
-| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6 -- das alte Image läuft` | der Koprozessor lehnte einen Schritt ab |
-| `Koprozessor-Update abgebrochen: Image-Prüfung fehlgeschlagen -- das alte Image läuft` | die SHA-256 des Slots ist nicht die des Images |
-| `Koprozessor-Update abgebrochen: Flash blieb belegt -- das alte Image läuft` | der Flash blieb 10 s belegt |
-| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet -- das alte Image läuft` | drei Starts ab Block 0 |
-| `Koprozessor-Update abgebrochen: neues Image startete nicht -- das alte Image läuft` | binnen 12 s keine Identität vom neuen Image |
-| `Koprozessor nimmt kein Update über CAN -- einmal über USB laden` | der Koprozessor hat keine Update-Seiten oder keine Partitionstabelle; ihn einmal über USB (Universal Serial Bus) flashen |
-| `Neues Image des Koprozessors behalten` | ein Image, das beim Link-Aufbau auf Probe lief, wurde behalten |
+| `Koprozessor auf 0.18.0 aktualisiert.` | das neue Image läuft und wird behalten |
+| `Koprozessor-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | 4 s antwortete nichts |
+| `Koprozessor-Update abgebrochen: abgelehnt, Fehler 6. Vorherige Firmware läuft.` | der Koprozessor lehnte einen Schritt ab |
+| `Koprozessor-Update abgebrochen: Firmware-Prüfung fehlgeschlagen. Vorherige Firmware läuft.` | die SHA-256 des Slots ist nicht die des Images |
+| `Koprozessor-Update abgebrochen: Flash-Speicher blieb belegt. Vorherige Firmware läuft.` | der Flash blieb 10 s belegt |
+| `Koprozessor-Update abgebrochen: Koprozessor 3-mal neu gestartet. Vorherige Firmware läuft.` | drei Starts ab Block 0 |
+| `Koprozessor-Update abgebrochen: neue Firmware ist nicht gestartet. Vorherige Firmware läuft.` | binnen 12 s keine Identität vom neuen Image |
+| `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` | der Koprozessor hat keine Update-Seiten oder keine Partitionstabelle; ihn einmal über USB (Universal Serial Bus) flashen |
+| `Neue Koprozessor-Firmware dauerhaft übernommen.` | ein Image, das beim Link-Aufbau auf Probe lief, wurde behalten |
 
 Ein Stromausfall während des Updates lässt den Koprozessor auf seinem alten Image, und der nächste Link-Aufbau bietet das Update erneut an.
 

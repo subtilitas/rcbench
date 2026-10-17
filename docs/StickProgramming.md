@@ -34,14 +34,12 @@ What it does not know:
 3. Connect the ESC's signal lead to a pin bound with the throttle role on
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
    the MOTOR screen does. RUN is refused while the binding binds no pin as
-   a throttle (`no throttle pin bound: bind one on OUTPUTS`) and while the
-   panel has not read the binding from the coprocessor (`the output
-   binding is not read: no throttle pin known`).
+   a throttle (`No throttle pin assigned. Assign one on OUTPUTS.`) and while the
+   panel has not read the binding from the coprocessor (`Output assignment not read. Throttle pin unknown.`).
 4. Connect the ESC's power leads to the supply output. The supply is the PD
    mini: with the PD mini disabled on SETUP the panel's supply model takes
-   its place and switches nothing, and RUN is refused with `the supply is
-   modelled: RUN needs a PD mini`. A reason that arises while the warning
-   NO PROPELLER, MOTOR SECURED? is open closes it, and the line beside RUN
+   its place and switches nothing, and RUN is refused with `Supply is simulated. RUN needs a PD mini.`. A reason that arises while the warning
+   PROPELLER REMOVED? MOTOR SECURED? is open closes it, and the line beside RUN
    names the reason.
 5. Switch the supply's output off. A run that finds it on or on its way is
    refused, and so is one whose supply reads live: its own state on, or
@@ -50,10 +48,9 @@ What it does not know:
    needs the supply known off: a reading no older than 1000 ms
    (`ESC_STICK_STALE_MS`) in which the supply itself reports its output
    off with the current at or under 20 mA for 200 ms. No reading, an older
-   one, or a supply that does not answer refuses RUN with `no fresh
-   reading says the supply is off`. A run switches the bench to ARMED: while the
+   one, or a supply that does not answer refuses RUN with `No current reading confirms that the supply is off.`. A run switches the bench to ARMED: while the
    [servo programmer](ServoProgrammer.md) holds a port, RUN is refused with
-   `Servo programmer holds a port: LEAVE on SERVO first.`
+   `Servo programmer is using a port. Tap LEAVE on SERVO first.`
 
 ## On the screen
 
@@ -64,7 +61,7 @@ PROGRAMMER, then ESC STICK:
 The list has two levels.
 
 - **Makers.** One row a maker, alphabetical with case folded: its name, how
-  many of its models run of all it lists (`10 OF 82 RUN`), and the red
+  many of its models run of all it lists (`10 OF 82 CAN RUN`), and the red
   MANUAL tag where a model it lists has [manual steps](#manual-steps). A
   maker none of whose models runs is drawn dark. A tap opens its models.
 - **Models.** One row a model of that maker, by current, then the maximum
@@ -89,8 +86,8 @@ file that would take its maker past 512 models, so a maker lists at most 512
 models.
 
 The line under the rows says no profile is verified, and the count at its
-right counts the level: `1-9 of 20 makers, 6 run` -- the makers with a
-model that runs -- or `1-9 of 82, 40 run` for a maker's models.
+right counts the level: `1-9 of 20 makers, 6 can run` -- the makers with a
+model that runs -- or `1-9 of 82, 40 can run` for a maker's models.
 
 ![The makers](img/programmer-stick.png)
 
@@ -109,7 +106,7 @@ returns to its first row whenever the search changes.
   its family's name read as one text, "Hobbywing Skywalker V2 15A-100A,
   11-item menu", or in its maker and its own name, "Kontronik JAZZ 55 LV".
 - A maker shows when the search finds any of its models; its row then
-  counts them: `1 OF 82 FOUND, 1 RUN`. No maker opens by itself, even
+  counts them: `1 OF 82 FOUND, 1 CAN RUN`. No maker opens by itself, even
   when it is the only one found.
 - Case does not matter: `KONTR*Jazz` finds Kontronik, and in it the JAZZ
   and MINIJAZZ models.
@@ -119,8 +116,8 @@ returns to its first row whenever the search changes.
   it JAZZ 55 LV alone.
 - An empty search shows every maker and every model. The search holds up
   to 16 characters, and is the same on both levels.
-- The count says what was found: `1-1 of 1 makers found, 1 run`. With
-  nothing found the list says `No profile matches the search.`
+- The count says what was found: `1-1 of 1 makers found, 1 can run`. With
+  nothing found the list says `No matching profiles found.`
 
 OK closes the keyboard with the search kept, CANCEL goes back to the search
 the keyboard opened on, and CLR then OK clears it. A row tapped while the
@@ -143,11 +140,10 @@ letter outside ASCII (American Standard Code for Information Interchange).
 A profile's page lists its menu items. Each starts at KEEP, which leaves the
 item as it is; the steppers move through the item's values and stop at
 either end. Items keyed `reset` or `exit` are actions, not settings: the ESC
-acts on the select move and sounds no values, so their rows show ACTION, NOT
-SET and offer nothing. An item with a single value -- the only setting there
+acts on the select move and sounds no values, so their rows show ACTION, NOT A SETTING and offer nothing. An item with a single value -- the only setting there
 is, or a rule written as a value, such as `hobbywing-flyfun-hv-9item`'s
 cell count, "N beeps = N cells" -- has nothing to choose; its row shows
-NOTHING TO CHOOSE. The line under the list names the selected item's values and the
+NO OPTIONS. The line under the list names the selected item's values and the
 default. RUN is offered once a value is picked and the run can start; when it
 cannot, the line beside RUN says why.
 
@@ -157,7 +153,7 @@ items may share a number and values on different models -- Jeti's Cutoff
 mode on six small 3P models and Switching frequency on the rest, both
 item 3 -- and the ESC sounds only the one it has, so a change to the other
 would store this one. RUN refuses a change to an item not on the model as
-the last check (`3 Cutoff mode is not on this model`). A page with no model
+the last check (`3 Cutoff mode is not available on this model.`). A page with no model
 picked, which only a card profile without models opens, lists the items
 every model has.
 
@@ -180,11 +176,10 @@ output off with the current down (`ESC_STICK_OFF_MA`,
 - A two-stage menu, or one that takes several changes a power-up, makes its
   changes in the order the ESC sounds them, so all changes of a run share
   one power-up. A run whose changes need different positions is refused
-  with `changes need different power-up positions`, and one whose changes
+  with `changes require different power-up positions`, and one whose changes
   need different entry times -- what the run waits: the value's
   `entry_hold_ms` or the entry's, and no less than the longest
-  `at_power_up` hold -- with `changes need
-  different entry times`; neither is reordered. No profile of record has
+  `at_power_up` hold -- with `changes require different entry times`; neither is reordered. No profile of record has
   such a mix.
 - Where the profile names no rest position the stick rests at the power-up
   position, and the select move has to differ from it.
@@ -192,8 +187,7 @@ output off with the current down (`ESC_STICK_OFF_MA`,
 The warning and the run's card show POWER-UP AT and the position when it
 is not MIN; on the warning, every position the run's power-ups take.
 
-RUN opens a warning over the whole screen, titled NO PROPELLER, MOTOR
-SECURED?. It says what the run does: it powers the ESC from the supply and
+RUN opens a warning over the whole screen, titled PROPELLER REMOVED? MOTOR SECURED?. It says what the run does: it powers the ESC from the supply and
 moves its throttle to MAX and back to step through the programming menu. In
 rare cases a motor may start and run, so a connected motor must be mounted
 solid and carry no propeller; a resistor load in place of the motor works
@@ -316,10 +310,9 @@ the ESC is powered and not to touch it. No DONE within 60 s ends the run
 with NOT CONFIRMED. That end, and every other from the selection of the
 value on -- while the ESC stores (STORING) or while the step is asked --
 switches the supply off under the store or the confirmation, and the
-result says the mode may not be stored and marks the change UNSURE, not
-MADE: the count of selections made leaves it out, and where it is past
-the fourth change the last line counts it (`AND 2 MORE, 1 OF THEM MADE,
-1 UNSURE`). The same holds for any profile whose value is stored by moves after
+result says the mode may not be stored and marks the change UNCERTAIN, not
+COMPLETED: the count of selections made leaves it out, and where it is past
+the fourth change the last line counts it (`AND 2 MORE, 1 COMPLETED, 1 UNCERTAIN`). The same holds for any profile whose value is stored by moves after
 its selection (`scheme.store`, `after_select`), with or without such a
 step, until the last of those moves is made.
 
@@ -370,7 +363,7 @@ put it:
   first would drop the groups the action starts. The generator and the
   card reader refuse such a file (`manual[0].starts_menu: the menu rests
   elsewhere (scheme.listen)`), and the engine refuses such a profile built
-  otherwise as `menu start, rest elsewhere`.
+  otherwise as `menu starts at a position other than rest`.
 
 A step at a powered ESC is asked for only with the stick at the
 motor-off position: MIN, or MID where a value's `entry_throttle` names it,
@@ -449,9 +442,9 @@ A change of either light repaints both screen buffers.
 | ARMING | MIN | off, asked off | when the bench reports ARMED; after 3000 ms: STILL SAFE |
 | SIGNAL | MIN, then the power-up position | off | the stick stays at MIN until the supply reads off in readings taken since the run asked it off (its own state off, the current at or under 20 mA for 200 ms), then goes to the power-up position and is held there 1000 ms, so the ESC sees the signal when it starts; not off within 3000 ms: SUPPLY STAYS ON. Once the stick has moved, a reading with the output on or the current up ends the run at once with SUPPLY STAYS ON, and no reading for 1000 ms with NO READINGS |
 | MANUAL STEP | the power-up position | off, read off | before a power-up with a step due, asked only once the supply reads off: DONE, then POWER ON; no DONE in 60 s: NOT CONFIRMED; a reading with the output on or the current up: SUPPLY STAYS ON at once; no reading for 1000 ms: NO READINGS |
-| POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: NO POWER |
-| ENTRY | entry position | on | ENTRY after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
-| MANUAL STEP, POWERED | the power-up position | on | after ENTRY with a `before_menu` step due that is not the menu's own start: DONE, then the next step or the menu; no DONE in 60 s: NOT CONFIRMED. The last step is asked from ITEMS or VALUES, already counting |
+| POWER ON | entry position | on | when a sample reports the output on; after 3000 ms: POWER NOT CONFIRMED |
+| ENTERING MENU | entry position | on | ENTERING MENU after power-on: the value's `entry_hold_ms`, else the profile's `hold_ms` where it states one, and no less than the longest `hold_ms` of an `at_power_up` step |
+| MANUAL STEP, POWER ON | the power-up position | on | after ENTERING MENU with a `before_menu` step due that is not the menu's own start: DONE, then the next step or the menu; no DONE in 60 s: NOT CONFIRMED. The last step is asked from ITEMS or VALUES, already counting |
 | WAITING FOR THE ESC | where it stored | on | after STORING with a `before_power_off` step due: DONE, then the next such step or the supply off (POWER CYCLE or POWER OFF); no DONE in 60 s: NOT CONFIRMED, and the result says the ESC may be locked |
 | ITEMS | rest position | on | an item group in order names a wanted item: the select move |
 | VALUES | where the last move left it | on | a value group in order names the wanted value: the value move |
@@ -495,7 +488,7 @@ own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
 
 ## How the beeps are counted
 
-- **Floor.** During ENTRY, from 500 ms after power-on, the floor is the
+- **Floor.** During ENTERING MENU, from 500 ms after power-on, the floor is the
   lowest current read. A beep cannot raise it. While the menu is counted, the
   floor follows quiet readings by 1/16 of the difference each.
 - **Beep.** A reading above the floor plus THRESHOLD starts a pulse; one
@@ -524,7 +517,7 @@ own ON and OFF. Nothing bypasses STOP or the rules for switching to ARMED.
   group lost and a beep missed in the next.
 - **Late readings.** A reading more than the shorter of BEEP MIN and GAP MIN
   after the one before is late, and so is one whose count says a reading
-  was skipped: it spoils the group it falls in and breaks the order. 3 late readings in a row end the run with READ RATE.
+  was skipped: it spoils the group it falls in and breaks the order. 3 late readings in a row end the run with READING RATE.
 
 ## The settings
 
@@ -550,7 +543,7 @@ here is measured.
 
 A run is refused, not adjusted, when the settings contradict themselves:
 LONG at or under BEEP MIN, LONG MAX at or under LONG, GROUP GAP at or under
-GAP MIN, THRESHOLD at or under HYSTERESIS, ENTRY at or under 500 ms, or
+GAP MIN, THRESHOLD at or under HYSTERESIS, ENTERING MENU at or under 500 ms, or
 GROUP GAP plus the shorter of BEEP MIN and GAP MIN at or over the profile's
 `within_ms` for its select or value move.
 
@@ -570,17 +563,17 @@ and on RUN, the last check before the run switches to ARMED:
 
 | Set point | Refused when | Row says | RUN says |
 | --- | --- | --- | --- |
-| VOLTAGE, or the cell count's | over the model's `v_max_mv` | `20.0 V, ESC rated 8.4 V` | `VOLTAGE 20.0 V is over the ESC's 8.4 V` |
-| VOLTAGE, or the cell count's | under the model's `v_min_mv`, where stated | `11.9 V, ESC from 12.0 V` | `VOLTAGE 11.9 V is under the ESC's lowest 12.0 V` |
-| CURRENT LIMIT | over the model's `current_a`, where stated | `2.0 A, ESC rated 1 A` | `CURRENT LIMIT 2.0 A is over the ESC's 1 A` |
+| VOLTAGE, or the cell count's | over the model's `v_max_mv` | `20.0 V; ESC maximum 8.4 V` | `VOLTAGE 20.0 V exceeds the ESC limit of 8.4 V.` |
+| VOLTAGE, or the cell count's | under the model's `v_min_mv`, where stated | `11.9 V; ESC minimum 12.0 V` | `VOLTAGE 11.9 V is below the ESC minimum of 12.0 V.` |
+| CURRENT LIMIT | over the model's `current_a`, where stated | `2.0 A; ESC maximum 1 A` | `CURRENT LIMIT 2.0 A exceeds the ESC rating of 1 A.` |
 
 A model that states no `v_max_mv` runs, with a warning in place of the
 row's summary and as the note beside RUN, in the warning colour:
 
 | Set point | Row says | Note says |
 | --- | --- | --- |
-| VOLTAGE set by hand | `ESC rating unknown` | `VOLTAGE 7.4 V: ESC rating unknown, check it` |
-| VOLTAGE 0, the model stating no cell count: the family's lowest stands in | `ESC rating unknown` | `7.6 V from the family's lowest cells: rating unknown` |
+| VOLTAGE set by hand | `ESC voltage rating unknown.` | `VOLTAGE 7.4 V: check the ESC's voltage rating. It is unknown.` |
+| VOLTAGE 0, the model stating no cell count: the family's lowest stands in | `ESC voltage rating unknown.` | `7.6 V uses the family's lowest cell count. This ESC's rating is unknown.` |
 
 VOLTAGE 0 on a model that states its cell count but no `v_max_mv` runs at
 that cell count with no warning: the data's own figure. A stated
@@ -616,24 +609,24 @@ minimum, where it rested, to store.
 
 | Row says | Why |
 | --- | --- |
-| needs a person at the ESC | `automatable` is `assisted` and the profile lists no manual step the run could ask for: a person reads an LED or plugs in a JetiBox |
+| manual work at the ESC required | `automatable` is `assisted` and the profile lists no manual step the run could ask for: a person reads an LED or plugs in a JetiBox |
 | manual step | a manual step during the menu, or one at a powered ESC with the entry at MID or MAX |
-| no usable procedure | `automatable` is `none` |
-| entered after power-on | `scheme.entry.when` is `after_power_on` |
+| no usable programming procedure | `automatable` is `none` |
+| menu entry is after power-on | `scheme.entry.when` is `after_power_on` |
 | melody menu, yes/no menu, stick-position menu, menu of its own kind | `scheme.type` |
-| tones told apart by pitch | `scheme.announce.encoding` is `melody` or `yes_no` |
-| item and value, one move | `item_then_value` with no `value_select`: which group the move answers is not stated |
-| two moves, no value tones | `value_select` without `item_then_value` |
-| many changes, one stage | one-stage with `"changes_per_entry": "many"` |
-| items counted, one stage | one-stage, `item` announced, several items |
-| values repeat across items | one-stage, a value number in two items |
-| select move is the rest | the select move is the rest position: no move to make |
-| value move = select move | two-stage, `value_select` equals `select` |
-| rest move, no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the profiles for YGE ESCs. A profile whose values state their own `entry_hold_ms` is judged per change: one without a time is refused, the others run |
-| store move, two stages | two-stage with a `scheme.store` |
-| store move = select move | one-stage, `scheme.store` equals `select` |
-| menu start, rest elsewhere | a step marked `starts_menu`, and the menu rests away from the power-up position: `scheme.listen` away from the entry, or a value powered up away from it |
-| needs 22.8 V, cap 21.0 V | the voltage (VOLTAGE, or the profile's cell count) is over the SUPPLY cap |
+| beeps differ by pitch | `scheme.announce.encoding` is `melody` or `yes_no` |
+| item and value use one movement | `item_then_value` with no `value_select`: which group the move answers is not stated |
+| two movements, but no value beeps | `value_select` without `item_then_value` |
+| multiple changes in a one-stage menu | one-stage with `"changes_per_entry": "many"` |
+| counted items in a one-stage menu | one-stage, `item` announced, several items |
+| values repeat between menu items | one-stage, a value number in two items |
+| selection position equals rest position | the select move is the rest position: no move to make |
+| value and selection use the same movement | two-stage, `value_select` equals `select` |
+| rest movement defined, but no entry time | `scheme.listen` differs from the power-up position and no time is stated: `hold_ms` is null, the value has no `entry_hold_ms` and no `at_power_up` step has a `hold_ms`: the profiles for YGE ESCs. A profile whose values state their own `entry_hold_ms` is judged per change: one without a time is refused, the others run |
+| save movement with a two-stage menu | two-stage with a `scheme.store` |
+| save and selection use the same movement | one-stage, `scheme.store` equals `select` |
+| menu starts at a position other than rest | a step marked `starts_menu`, and the menu rests away from the power-up position: `scheme.listen` away from the entry, or a value powered up away from it |
+| needs 22.8 V; limit 21.0 V | the voltage (VOLTAGE, or the profile's cell count) is over the SUPPLY cap |
 
 A profile corrected on the SD card is listed with its correction.
 
@@ -650,10 +643,10 @@ A profile corrected on the SD card is listed with its correction.
 | SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
 | SUPPLY NOT ANSWERING | the supply stopped answering | lit |
 | NO READINGS | the reading count unmoved for 1000 ms | lit |
-| READ RATE | 3 late readings in a row | lit |
-| NO POWER | the output not reported on within 3000 ms | lit |
+| READING RATE | 3 late readings in a row | lit |
+| POWER NOT CONFIRMED | the output not reported on within 3000 ms | lit |
 | SUPPLY STAYS ON | the supply not reporting its output off, with the current down, within 3000 ms of the run asking it off -- at the start, before a power-up or at the end -- or a reading with the output on or the current up while a step at an unpowered ESC is asked | lit |
-| TOUCH LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet ARMED | lit |
+| TOUCH SIGNAL LOST | touch events lost while the run's ARM was not yet taken, or the bench not yet ARMED | lit |
 | NO BEEPS | no beep for SILENCE | lit |
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
 | TIMEOUT | no wanted group acted on within TIMEOUT | lit |
@@ -662,9 +655,9 @@ A profile corrected on the SD card is listed with its correction.
 | SCREEN LEFT | the screen was left | dark |
 
 The red light's column is `esc_stick_reason_is_fault()` in
-`shared/esc/esc_stick.c`, one case per reason. `tools/check_docs.py` reads
+`shared/esc/esc_stick_read.c`, one case per reason. `tools/check_docs.py` reads
 that function and fails when this table, or its German twin, says
-otherwise. TOUCH LOST is lit: events were lost, not chosen.
+otherwise. TOUCH SIGNAL LOST is lit: events were lost, not chosen.
 
 STOP and BENCH STOPPED come from two counts the panel keeps: every stop,
 and of those the ones pressed (`arming_stop_pressed()`, counted in the
@@ -713,10 +706,11 @@ jumper or a button: it enters its menu after `hold_ms`. The host suite's
 does (`wait_hand`): the menu waits for the action, answers it with three
 beeps and starts the series 1500 ms later.
 
-The host suite (`test_esc_stick`) runs the engine against the simulation end
-to end: two-stage and one-stage menus, repeated groups, a rest position,
-power cycles between changes, readings 100 to 190 ms apart, noise of 30 mA,
-a beep lost from a group, a menu one item longer than the profile, an ESC
+The host suites `test_esc_stick`, `test_esc_stick_entry` and
+`test_esc_stick_hand` run the engine against the simulation end to end:
+two-stage and one-stage menus, repeated groups, a rest position, power
+cycles between changes, readings 100 to 190 ms apart, noise of 30 mA, a
+beep lost from a group, a menu one item longer than the profile, an ESC
 that never beeps, and each way a run can end. A sweep of a lost beep in
 each of the first ten groups against ESC entries 2000 ms either side of the
 engine's stores no value other than the one asked for.

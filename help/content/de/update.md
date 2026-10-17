@@ -12,7 +12,7 @@ PANEL UPDATE schreibt ein neues Firmware-Image des Panels in dessen Flash. Der B
 
 ![Das Image wird geschrieben](view:panel-update)
 
-Das Halten schaltet zuerst das Funkmodul ab. Danach stellt das Panel seine Abfragen ein und hält den Heartbeat zurück; der Koprozessor hält seine Ausgänge im Failsafe, wie bei jedem Neustart des Panels. Der Bildschirm schreibt den Slot, der nicht läuft, in Stücken von 64 KiB und zeigt die geschriebenen Bytes und den Prozentwert. Das Bild kann flackern, während der Flash gelöscht wird. Das Panel nicht ausschalten.
+Das Halten schaltet zuerst das Funkmodul ab. Danach stellt das Panel seine Abfragen ein und hält den Heartbeat zurück; der Koprozessor hält seine Ausgänge im Failsafe, wie bei jedem Neustart des Panels. Der Bildschirm schreibt den Slot, der nicht läuft, in Stücken von 64 KiB und zeigt die geschriebenen Bytes und den Prozentwert. Die Anzeige kann beim Löschen des Flash-Speichers flackern. Schalte das Panel nicht aus.
 
 Wie lange Löschen und Schreiben dauern, ist nicht gemessen.
 
@@ -20,9 +20,9 @@ Wie lange Löschen und Schreiben dauern, ist nicht gemessen.
 
 ![Geschrieben und geprüft: das Panel startet neu](view:panel-update-done)
 
-Ist das Schreiben fertig, wird der Slot zurückgelesen und geprüft, er wird zum Slot, der startet, und das Panel startet neu. Der Splash zeigt die neue Version, und das Band meldet `Panel-Firmware 0.19.0 installiert`.
+Ist das Schreiben fertig, wird der Slot zurückgelesen und geprüft, er wird zum Slot, der startet, und das Panel startet neu. Der Splash zeigt die neue Version, und das Band meldet `Panel-Firmware 0.19.0 installiert.`.
 
-Der erste Start eines neuen Builds ist ein Probestart. Der Build wird behalten, sobald Display und Touch laufen. Ein Start, der nicht so weit kommt, kehrt zum vorigen Build zurück, und das Band meldet `Panel-Firmware 0.19.0 startete nicht -- 0.18.0 läuft wieder`. Scheitert das Behalten eines guten Starts, meldet das Band `Panel-Firmware 0.19.0 nicht übernommen -- der nächste Start geht zurück`.
+Der erste Start eines neuen Builds ist ein Probestart. Der Build wird behalten, sobald Display und Touch laufen. Ein Start, der nicht so weit kommt, kehrt zum vorigen Build zurück, und das Band meldet `Panel-Firmware 0.19.0 ist nicht gestartet. Version 0.18.0 läuft wieder.`. Scheitert das Behalten eines guten Starts, meldet das Band `Panel-Firmware 0.19.0 wurde nicht übernommen. Beim nächsten Start läuft wieder die vorherige Version.`.
 
 ## Das Schreiben schlug fehl
 

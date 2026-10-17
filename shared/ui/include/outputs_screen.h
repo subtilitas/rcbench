@@ -152,6 +152,18 @@ bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
                           char *buf, size_t cap);
 
 /**
+ * @p text in lines of @p font no wider than @p box, from its top down by
+ * @p pitch, broken after the last space that fits or inside a word where
+ * none does, left-aligned or with @p centre centred in the box.  At most
+ * @p max_lines lines, the last taking the rest.  Returns the lines it
+ * takes; a NULL @p c only counts them.  Both screens draw the line under
+ * the protocol with it.
+ */
+int outputs_wrap(gfx_canvas_t *c, gfx_rect_t box, int pitch, const char *text,
+                 int max_lines, const gfx_font_t *font, gfx_color_t ink,
+                 bool centre);
+
+/**
  * Select protocol @p proto, as a pick in the list does: the set shown and
  * the group the next tick joins.  Writes nothing and calls nothing.  OFF
  * (0) stays selected until another protocol is selected or this screen or
