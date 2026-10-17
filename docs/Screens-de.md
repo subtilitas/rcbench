@@ -2162,8 +2162,8 @@ Zwei Grenzen:
 
 ### ANWENDUNG: der Drehknopf
 
-Ein magnetischer Winkelsensor AS5600 am I2C-Anschluss des Panels (I2C:
-Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
+Ein magnetischer Winkelsensor MT6701 unter 0x06 am I2C-Anschluss des Panels
+(I2C: Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
 das Gas auf MOTOR & ESC, das Horn auf SERVO. Verdrahtung:
 [Bauen](Building-de.md#verdrahtung-des-drehknopfs). Andere Bildschirme
 ignorieren ihn.
@@ -2186,9 +2186,11 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Sensors setzen eine Referenz und bewegen nichts; ein Knopf, der verdreht
   zurückkommt, lässt den Regler also nicht springen.
 - Der Sensor wird alle 10 ms gelesen, und alle 100 ms, solange er nicht
-  antwortet. Eine Messung ohne erkannten Magneten, mit zu schwachem oder zu
-  starkem Magneten oder mit Magnitude 0 gilt als keine Antwort. Ein Sprung von
-  mehr als 90 deg zwischen zwei Messungen gilt als Störung und wird verworfen.
+  antwortet. Eine Abfrage sind zwei Lesezugriffe, 0x03 und danach 0x04, jeder
+  mit 5 ms Bus-Timeout; ein NACK oder ein Timeout bei einem davon gilt als
+  keine Antwort. Der Sensor meldet über I2C keinen Magnetstatus, also ist eine
+  Antwort ein Messwert. Ein Sprung von mehr als 90 deg zwischen zwei Messungen
+  gilt als Störung und wird verworfen.
 - Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
   solange er aufliegt, und für den ganzen Frame, in dem er das Bedienelement
   berührt hat, auch wenn er in diesem Frame abhebt. Auf SERVO nimmt der Knopf das Horn nicht aus einem
@@ -2212,7 +2214,13 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   in SAFE nichts und wird nicht aufgehoben; das Schalten auf SAFE setzt den
   Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
   dort.
-- Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
+- Das Panel legt den Knopf und kein anderes Gerät des Erbauers auf eine
+  Adresse, auf der die Platine an diesem Bus antwortet: 0x14, 0x20 bis 0x27,
+  0x30 bis 0x3F und 0x5D. Bei 0x20 bis 0x27 und 0x30 bis 0x3F erreicht ein
+  Zugriff den Expander CH422G als Befehl. Ohne Sensor sendet `Drehknopf` EIN alle 100 ms einen unbeantworteten
+  Lesezugriff an 0x06 und ändert sonst nichts.
+- Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
+  und sein Verhalten ohne Magnet darüber.
 
 ### ANSCHLÜSSE: die Strommonitore
 

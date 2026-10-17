@@ -121,7 +121,7 @@ Idle pulse and Full pulse go to the coprocessor at link-up and on every change. 
 | Units | METRIC, IMPERIAL | METRIC | stored; no screen uses it in this release |
 | Dim after | 0 to 60 min, steps of 5 | 0 | stored; no screen uses it in this release |
 | One finger pans | ON, OFF | OFF | one finger pans a zoomed plot on [Logs](logs.md#the-plot) |
-| Rotary knob | ON, OFF | OFF | an AS5600 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
+| Rotary knob | ON, OFF | OFF | an MT6701 at 0x06 on the panel's I2C (Inter-Integrated Circuit) terminal turns the throttle on MOTOR & ESC or the horn on SERVO |
 | Knob scale | 90 to 720 deg, steps of 10 | 270 | the knob angle that moves the slider across its whole span |
 
 ![SETUP in the light theme](view:setup-light)
@@ -134,7 +134,7 @@ Idle pulse and Full pulse go to the coprocessor at link-up and on every change. 
 - A finger on the throttle track or the SERVO dial owns the value while it is down.
 - The sensor is read every 10 ms. A step over 90 deg between two readings is dropped.
 
-Known limitation: on the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F. That includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus.
+The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never addresses 0x14, 0x20 to 0x27, 0x30 to 0x3F or 0x5D for it: the board's CH422G I/O expander and GT911 touch controller answer there. With no sensor fitted, Rotary knob ON changes nothing else. Wiring: [Building](https://github.com/subtilitas/rcbench/blob/main/docs/Building.md#rotary-knob-wiring).
 
 ## INTERFACES
 

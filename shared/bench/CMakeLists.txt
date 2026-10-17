@@ -24,6 +24,7 @@ set(SRCS
     kst_prog_file.c
     prog_link.c
     knob.c
+    panel_i2c.c
 )
 
 # kst_card.c stands between the programmer and the card layer in

@@ -1,20 +1,45 @@
 /*
- * The rotary knob: an AS5600 magnetic angle sensor on the panel's I2C
+ * The rotary knob: an MT6701 magnetic angle sensor on the panel's I2C
  * (Inter-Integrated Circuit) bus, read as relative motion.
  *
- * Owns no hardware.  It decodes the bytes the panel reads and turns two
- * successive angles into a signed count of steps, so the same code is
- * tested on the host.  The panel's task does the bus transaction.
+ * Owns no hardware.  It names the reads of one poll, decodes the bytes the
+ * panel reads and turns two successive angles into a signed count of steps,
+ * so the same code is tested on the host.  The panel's task does the bus
+ * transactions (firmware/panel/main/knob_task.c).
  *
  * The knob moves a slider by how far it turns, never to where it points:
- * the first reading after power-up, after the sensor stopped answering, or
- * after a reading the sensor flagged unusable sets a reference and reports
- * no motion.  A knob that stops answering stops contributing.
+ * the first reading after power-up, and after the sensor stopped answering,
+ * sets a reference and reports no motion.  A knob that stops answering
+ * stops contributing.
  *
- * Address assumption: the sensor sits at 0x36.  That is outside the
- * CH422G's command addresses in its datasheet, and Waveshare's wiki
- * reserves 0x30 to 0x3F on this bus for the CH422G.  Not checked on
- * hardware.
+ * From the MagnTek MT6701 datasheet, version 1.9 (2024-05), section 7.7:
+ *
+ * - The 7-bit address is 0b0000110, 0x06.  EEPROM (electrically erasable
+ *   programmable read-only memory) programming moves it to 0b1000110, 0x46
+ *   (version 0.1 of the datasheet, 2020-03, gives 0b0100110, 0x26).  The
+ *   panel reads 0x06 only.  0x06 is outside the board's table in
+ *   panel_i2c.h; 0x26 would be inside it.
+ * - The 14-bit angle is in two registers: 0x03 holds Angle[13:6] in bits 7
+ *   to 0, 0x04 holds Angle[5:0] in bits 7 to 2, and bits 1 and 0 of 0x04
+ *   are not used.  Register 0x03 is read first, then 0x04, each in a
+ *   transaction of its own (figure 20): the register address written, a
+ *   repeated START, one byte read.
+ * - The I2C registers carry no field-strength or status bit.  The
+ *   magnet-too-strong, too-weak, push and loss-of-track bits Mg[3:0] are in
+ *   the SSI (synchronous serial interface) frame only (section 7.8).  An
+ *   answer is therefore taken as a reading; a sensor with no magnet over it
+ *   gives an angle all the same.
+ * - SCL (serial clock) period at least 1 us, so 1 MHz at most; the panel's
+ *   bus runs at 400 kHz.  SDA and SCL rise and fall in 150 ns at most.
+ * - The I2C interface needs the MODE pin high, which selects I2C/SSI over
+ *   ABZ (figure 17 ties MODE and Z/CSN to VDD; figure 6, ABZ, ties MODE to
+ *   GND).  MODE has an internal 200 kOhm pull-up.  No EEPROM setting is
+ *   needed for I2C.
+ *
+ * Direction: the angle rises counter-clockwise seen from the chip's top
+ * for the standard MT6701CT-STD and MT6701QT-STD (section 2 and figure 27).
+ * The knob counts clockwise seen from the top as positive, so a clockwise
+ * turn raises the throttle.  Not checked on hardware.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,35 +48,29 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "panel_i2c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** The AS5600's fixed 7-bit address. */
-#define KNOB_I2C_ADDR        0x36
+/** The MT6701's default 7-bit address. */
+#define KNOB_I2C_ADDR        0x06
 
-/** STATUS: bit 5 MD (magnet detected), bit 4 ML (too weak), bit 3 MH (too strong). */
-#define KNOB_REG_STATUS      0x0B
-/** RAW ANGLE: 12 bits over 0x0C (high, bits 3..0) and 0x0D (low). */
-#define KNOB_REG_RAW_ANGLE   0x0C
-/** MAGNITUDE: 12 bits over 0x1B (high, bits 3..0) and 0x1C (low). */
-#define KNOB_REG_MAGNITUDE   0x1B
+_Static_assert(!PANEL_I2C_RESERVED(KNOB_I2C_ADDR),
+               "the knob's address is one the panel board answers at");
 
-/**
- * Each register is its own transaction: the address byte, then 1 byte
- * (STATUS) or 2 bytes, high then low (RAW ANGLE, MAGNITUDE).  RAW ANGLE and
- * MAGNITUDE are special registers that suppress the address pointer's
- * automatic increment, so one read from 0x0B does not reach them.
- */
-#define KNOB_STATUS_LEN      1
-#define KNOB_WORD_LEN        2
+/** Angle[13:6], bits 7..0. */
+#define KNOB_REG_ANGLE_HI    0x03
+/** Angle[5:0] in bits 7..2; bits 1..0 not used. */
+#define KNOB_REG_ANGLE_LO    0x04
 
-#define KNOB_STATUS_MH       0x08u
-#define KNOB_STATUS_ML       0x10u
-#define KNOB_STATUS_MD       0x20u
+/** The reads of one poll, one byte each, in this order. */
+#define KNOB_POLL_READS      2
+extern const uint8_t knob_poll_regs[KNOB_POLL_READS];
 
-/** Steps in one turn: 12 bits. */
-#define KNOB_COUNTS          4096
+/** Steps in one turn: 14 bits. */
+#define KNOB_COUNTS          16384
 
 /** Poll period while the sensor answers, and while it does not. */
 #define KNOB_POLL_MS         10
@@ -70,42 +89,57 @@ extern "C" {
 #define KNOB_SCALE_DEG_MIN     90
 #define KNOB_SCALE_DEG_MAX     720
 
-typedef struct {
-    bool     magnet;      /**< MD set */
-    bool     too_weak;    /**< ML set */
-    bool     too_strong;  /**< MH set */
-    uint16_t raw;         /**< RAW ANGLE, 0..4095 */
-    uint16_t magnitude;   /**< MAGNITUDE, 0..4095 */
-} knob_reading_t;
-
 /**
- * Decode the three reads: the STATUS byte, the KNOB_WORD_LEN bytes of
- * RAW ANGLE read from KNOB_REG_RAW_ANGLE and the KNOB_WORD_LEN bytes of
- * MAGNITUDE read from KNOB_REG_MAGNITUDE, each high byte first.
- *
- * Returns whether the reading can move a slider: the magnet is detected,
- * neither too weak nor too strong, and the magnitude is not zero.  @p out is
- * filled either way.
+ * The datasheet's angle, 0..16383, rising counter-clockwise seen from the
+ * chip's top: @p hi read from KNOB_REG_ANGLE_HI, @p lo from
+ * KNOB_REG_ANGLE_LO.  Bits 1 and 0 of @p lo are ignored.
  */
-bool knob_decode(uint8_t status, const uint8_t raw[KNOB_WORD_LEN],
-                 const uint8_t magnitude[KNOB_WORD_LEN], knob_reading_t *out);
+uint16_t knob_decode(uint8_t hi, uint8_t lo);
+
+/** @p angle mirrored, rising clockwise seen from the top: 0 stays 0. */
+uint16_t knob_clockwise(uint16_t angle);
 
 typedef struct {
+    bool     attached;    /**< knob_attach() took the address */
+    uint8_t  addr;        /**< the address every poll goes to */
     bool     have_ref;
     uint16_t ref;
 } knob_t;
+
+/**
+ * Take @p addr as the sensor's address and forget the reference.  An
+ * address the panel board answers at (panel_i2c.h) is refused: the knob
+ * stays detached, knob_poll_addr() names no address and nothing is ever
+ * sent for it.  Returns whether the address was taken.
+ */
+bool knob_attach(knob_t *k, unsigned addr);
+
+/**
+ * The address the next poll reads, or -1 for a knob that is not attached:
+ * then no transaction is made.
+ */
+int knob_poll_addr(const knob_t *k);
 
 /** Forget the reference: the next usable reading moves nothing. */
 void knob_reset(knob_t *k);
 
 /**
- * Feed one poll.  @p usable false (no answer, or a reading knob_decode()
- * refused) forgets the reference.  Returns the signed steps since the last
- * usable reading, positive for a rising angle, taking the short way across
- * 4095 to 0; zero for the first reading after a reset, and for a step over
- * KNOB_MAX_STEP, which becomes the new reference.
+ * Feed one poll.  @p usable false (no answer) forgets the reference.
+ * Returns the signed steps since the last usable reading, positive for a
+ * rising @p raw, taking the short way across 16383 to 0; zero for the
+ * first reading after a reset, and for a step over KNOB_MAX_STEP, which
+ * becomes the new reference.
  */
 int knob_feed(knob_t *k, bool usable, uint16_t raw);
+
+/**
+ * End one poll.  @p answered: every read of knob_poll_regs answered, and
+ * @p bytes[i] is what knob_poll_regs[i] gave.  Returns the steps, positive
+ * clockwise seen from the top; a poll that was not answered, or a knob
+ * that is not attached, returns 0 and forgets the reference.
+ */
+int knob_poll_done(knob_t *k, bool answered,
+                   const uint8_t bytes[KNOB_POLL_READS]);
 
 /**
  * Fraction of a slider's span that @p steps moves it when the span is

@@ -180,6 +180,22 @@ history is in git.
 
 ### Fixed
 
+- SETUP, APPLICATION, Rotary knob ON no longer blanks the panel. 0.20.0's
+  knob read an AS5600 at 0x36 on the panel's I2C (Inter-Integrated Circuit)
+  bus, and 0x36 is one of the CH422G I/O expander's command addresses: the
+  register pointer the knob wrote became the expander's output byte, which
+  switched the backlight off, took CAN (Controller Area Network) off the
+  link and could hold the touch controller in reset, until a restart. The
+  knob is an MT6701 at 0x06: each poll reads 0x03 (angle bits 13 to 6) and
+  then 0x04 (bits 5 to 0), one byte each with a 5 ms timeout, every 10 ms,
+  and every 100 ms while it does not answer. A clockwise turn seen from the
+  chip's top raises the value; a step is 360/16384 deg. The panel refuses
+  to put the knob, or any device of the builder's, at an address the board
+  answers at on that bus: 0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D
+  (`shared/bench/include/panel_i2c.h`). Rotary knob ON with no sensor
+  fitted sends one unanswered read to 0x06 every 100 ms and changes
+  nothing else. The setting's help line reads `MT6701 turns the active
+  slider` (German `MT6701 dreht den aktiven Regler`).
 - A HOLD on the SERVO screen that reaches the control task more than
   500 ms after the far end last took one keeps the release it owes. The
   pause ends there, the screen shows the surfaces released, and the next

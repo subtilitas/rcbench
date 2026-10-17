@@ -121,7 +121,7 @@ Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den 
 | Einheiten | METRISCH, IMPERIAL | METRISCH | gespeichert; kein Bildschirm nutzt sie in diesem Release |
 | Dimmen nach | 0 bis 60 min, Schritte von 5 | 0 | gespeichert; kein Bildschirm nutzt es in diesem Release |
 | Ein Finger schiebt | EIN, AUS | AUS | ein Finger verschiebt eine vergrößerte Grafik unter [Logs](logs.md#die-grafik) |
-| Drehknopf | EIN, AUS | AUS | ein AS5600 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
+| Drehknopf | EIN, AUS | AUS | ein MT6701 unter 0x06 am I2C-Anschluss (Inter-Integrated Circuit) des Panels dreht den Throttle auf MOTOR & ESC oder das Horn auf SERVO |
 | Knopf-Skala | 90 bis 720 deg, Schritte von 10 | 270 | der Knopfwinkel, der den Regler über seinen ganzen Weg bewegt |
 
 ![SETUP im hellen Design](view:setup-light)
@@ -134,7 +134,7 @@ Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den 
 - Ein Finger auf dem Throttle-Balken oder dem SERVO-Zifferblatt hat den Wert, solange er aufliegt.
 - Der Sensor wird alle 10 ms gelesen. Ein Sprung über 90 deg zwischen zwei Messwerten wird verworfen.
 
-Bekannte Einschränkung: Auf dem Panel Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G der Platine auf den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F. Das schließt die feste Adresse 0x36 des AS5600 ein; ein AS5600 als Knopf lässt sich an diesem Bus nicht lesen.
+Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Panel spricht für ihn nie 0x14, 0x20 bis 0x27, 0x30 bis 0x3F oder 0x5D an: Dort antworten der I/O-Expander CH422G und der Touch-Controller GT911 der Platine. Ohne Sensor ändert `Drehknopf` EIN sonst nichts. Verdrahtung: [Bauen](https://github.com/subtilitas/rcbench/blob/main/docs/Building-de.md#verdrahtung-des-drehknopfs).
 
 ## ANSCHLÜSSE
 
