@@ -42,6 +42,7 @@ DOC_END = "<!-- framecost:end -->"
 SOURCES = [
     "test/host/bench_frame.c",
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
