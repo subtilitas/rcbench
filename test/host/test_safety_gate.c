@@ -815,7 +815,8 @@ static void p_service_arming(void)
             outputs_arm(&p_out, true, T);   /* the simulator */
             break;
         }
-        /* servo_service(): the release of a held position, one exchange. */
+        /* servo_link_service(): the release of a held position, one
+         * exchange. */
         if (!xchg(LINK_OP_READ, LINK_PAGE_CONTROL, 0, 1, NULL, &ack)) {
             ++p_quiet_release;
             p_arm_write_failed(quiet);
@@ -1041,7 +1042,7 @@ static void run_until(uint32_t end)
             wait_pumping(ms);
         }
         if (w_services && p_link_up && (int32_t)(T - p_servo_next) >= 0) {
-            /* servo_service(): a held position, written again every
+            /* servo_link_service(): a held position, written again every
              * 100 ms, ahead of the poll. */
             link_msg_t sv;
             p_servo_next = T + 100u;

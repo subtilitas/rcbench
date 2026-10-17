@@ -1713,13 +1713,6 @@ uint16_t servo_screen_frame_hz(void) { return s.frame_hz; }
 
 const char *servo_screen_type_name(void) { return type()->name; }
 
-servo_rate_state_t servo_rate_in_force(uint16_t minor)
-{
-    return (minor >= LINK_MINOR_SERVO_TARGET_RATE)
-               ? SERVO_RATE_IN_FORCE
-               : SERVO_RATE_IN_FORCE_SURFACES;
-}
-
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
 {
     if (st == s.rate_st && hz == s.rate_hz) {
@@ -2858,39 +2851,6 @@ void servo_screen_sweep_refused(void)
         s.commanded_deg = clamp_travel(s.shown_deg);
         ++s.ctrl_rev;
     }
-}
-
-uint16_t servo_cmd_pause_root(const servo_cmd_t *c)
-{
-    if (c == NULL) {
-        return 0u;
-    }
-    return (c->from_pause != 0u) ? c->from_pause : c->pause_seq;
-}
-
-bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c)
-{
-    if (e == NULL || c == NULL || !e->on) {
-        return false;
-    }
-    const bool drive = c->kind == SERVO_CMD_POSITION
-                       || c->kind == SERVO_CMD_CENTRE
-                       || c->kind == SERVO_CMD_SWEEP
-                       || c->kind == SERVO_CMD_HOLD;
-    if (!drive) {
-        return false;
-    }
-    if (c->from_pause != 0u && c->from_pause == e->pause_seq) {
-        return true;
-    }
-    e->on = false;              /* from after it: nothing of it is queued */
-    return false;
-}
-
-bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
-{
-    return c != NULL && c->kind != SERVO_CMD_SWEEP
-           && c->kind != SERVO_CMD_HOLD;
 }
 
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the

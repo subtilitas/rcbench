@@ -178,6 +178,8 @@ TRACKED = [
     "shared/outputs/out_store_rec.c",
     "shared/outputs/out_stage.c",
     "shared/outputs/bind_link.c",
+    "shared/outputs/servo_cmd.c",
+    "shared/outputs/servo_link.c",
     "shared/outputs/sense_page.c",
     "shared/outputs/tone_page.c",
     "shared/bench/telemetry_sim.c",
