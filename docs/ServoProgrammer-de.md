@@ -1116,7 +1116,7 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
-Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
+Zeile. [Die Link-Page](LinkKST-de.md) listet die
 Codes.
 
 ## Einschränkungen
@@ -1282,10 +1282,10 @@ Keine davon ist erfolgt.
 Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
 wartet, einen Koprozessor, der neu startet, und einen Programmierer, der
 den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
-`test_settings` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
+`test_settings_screen` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
 eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
-`test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog`
-fährt das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
+`test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog` und `test_kst_prog_card`
+fahren das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
 Koprozessors, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
@@ -1303,11 +1303,12 @@ Meldung, die geht, wenn ihre Bedingung endet, die Zeilen, die keinen Tipp
 annehmen, die Beschriftung der Zeile PORT, kein Komma in einer Zahl der
 deutschen Tabelle, ein Schreiben, das ein Link-Ausfall, ein Neustart,
 **ABBRECHEN** und **STOP** abschneiden, eine Karte, die versagt, und die
-Timeouts über den Überlauf der Uhr bei 2^32 ms. Die Servodateien laufen
-gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
+Timeouts über den Überlauf der Uhr bei 2^32 ms. `test_kst_panel_files` fährt die
+Servodateien gegen ein Kartenmodell: jedes Ergebnis eines Namens, jede Art von Datei,
 beide Servotypen und ihre Abweichung in beiden Richtungen, jede
 Ablehnung, die Grenze von 5 s, ein erstes Schreiben mit einer Karte, die
-voll ist oder versagt, und die Schreiben ohne Karte: das erste Schreiben,
+voll ist oder versagt.
+`test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
 Schreibseite entnommene Karte. Ein Kommando, das die Control-Task nach

@@ -276,7 +276,7 @@ jobs:
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
       # A build directory keeps the whole-program checks under -j, which
-      # cppcheck drops without one; test_settings.c includes iomcu_pins.h.
+      # cppcheck drops without one; settings_rig.h includes iomcu_pins.h.
       - name: cppcheck
         run: |
           mkdir -p "$RUNNER_TEMP/cppcheck"

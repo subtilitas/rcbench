@@ -12,7 +12,7 @@
 
 #include "sense_link.h"
 #include "servo_source.h"
-#include "servo_test.h"
+#include "servo_test_io.h"
 #include "supply.h"
 #include "ui_screen.h"
 
