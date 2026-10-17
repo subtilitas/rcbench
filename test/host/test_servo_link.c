@@ -609,6 +609,88 @@ TEST_CASE(a_hold_unrepeated_for_more_than_500_ms_is_let_go)
     CHECK(!servo_link_release_owed());
 }
 
+TEST_CASE(a_hold_asked_499_or_500_ms_after_the_last_is_held_and_owes_nothing)
+{
+    static const uint32_t gaps[] = { OUT_DEFAULT_TIMEOUT_MS - 1u,
+                                     OUT_DEFAULT_TIMEOUT_MS };
+    for (size_t i = 0; i < sizeof(gaps) / sizeof(gaps[0]); ++i) {
+        up(6u, 0x01u);
+        sweep_then_hold(7u);
+        s_now += gaps[i];
+        servo_link_apply(hold(7u), true, 0u);
+        CHECK(sweep_reg_sent(LINK_SV_HOLD));
+        uint16_t seq = 0u;
+        CHECK(!servo_link_take_hold_lost(&seq));
+        CHECK(!servo_link_release_owed());
+    }
+}
+
+TEST_CASE(a_hold_asked_501_ms_after_the_last_owes_the_release_until_paid)
+{
+    up(6u, 0x01u);
+    sweep_then_hold(7u);
+    s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;
+    servo_link_apply(hold(7u), true, 0u);
+    CHECK_EQ(bus.n, 0u);                        /* no HOLD, nothing paid */
+    uint16_t seq = 0u;
+    CHECK(servo_link_take_hold_lost(&seq));
+    CHECK_EQ(seq, 7u);
+    CHECK(servo_link_release_owed());
+
+    /* The next refresh pays it: the range, then the centre. */
+    servo_link_service(true);
+    CHECK(!servo_link_release_owed());
+    CHECK_EQ(frames_to(LINK_PAGE_CHAN_CFG, 0u), 1u);
+    const frame_t *centre = last_to(LINK_PAGE_CHANNELS);
+    CHECK(centre != NULL);
+    if (centre != NULL) {
+        CHECK_EQ(centre->regs[0], LINK_CH_SPAN / 2u);
+    }
+    clear_log();
+    servo_link_service(true);
+    CHECK_EQ(bus.n, 0u);                        /* paid once */
+}
+
+TEST_CASE(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_centre)
+{
+    up(6u, 0x01u);
+    sweep_then_hold(7u);
+    s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;
+    servo_link_apply(hold(7u), true, 0u);
+    servo_link_apply(sweep(2u, false), true, 0u);
+    /* The release first, then the curve. */
+    unsigned centre_at = LOG_MAX;
+    unsigned moves_at  = LOG_MAX;
+    for (unsigned i = 0; i < bus.n && i < LOG_MAX; ++i) {
+        if (bus.log[i].page == LINK_PAGE_CHANNELS && centre_at == LOG_MAX
+            && bus.log[i].regs[0] == LINK_CH_SPAN / 2u) {
+            centre_at = i;
+        }
+        if (bus.log[i].page == LINK_PAGE_SERVO
+            && bus.log[i].offset == LINK_SV_SWEEP_MOVES) {
+            moves_at = i;
+        }
+    }
+    CHECK(centre_at < LOG_MAX);
+    CHECK(moves_at < LOG_MAX);
+    CHECK(centre_at < moves_at);
+    CHECK(!servo_link_release_owed());
+    CHECK(servo_link_take_sweep_start());
+    CHECK_EQ(servo_link_sweep_start().from, SERVO_SWEEP_FROM_REST);
+}
+
+TEST_CASE(a_hold_lost_at_501_ms_sends_no_faster_rate)
+{
+    up(6u, 0x01u);
+    sweep_then_hold(7u);
+    s_now += OUT_DEFAULT_TIMEOUT_MS + 1u;
+    servo_cmd_t fast = hold(7u);
+    fast.frame_hz = 333u;                       /* faster than the 50 Hz */
+    servo_link_apply(fast, true, 0u);
+    CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_FRAME_HZ), 0u);
+    CHECK(servo_link_release_owed());
+}
+
 TEST_CASE(a_hold_answered_after_more_than_500_ms_ends_the_pause)
 {
     up(6u, 0x01u);
@@ -901,6 +983,10 @@ int main(void)
     RUN(a_rate_not_known_is_settled_while_armed_before_the_hold);
     RUN(a_target_change_the_page_reports_is_noted_for_the_rate);
     RUN(a_hold_unrepeated_for_more_than_500_ms_is_let_go);
+    RUN(a_hold_asked_499_or_500_ms_after_the_last_is_held_and_owes_nothing);
+    RUN(a_hold_asked_501_ms_after_the_last_owes_the_release_until_paid);
+    RUN(a_sweep_after_a_hold_lost_at_501_ms_starts_from_the_centre);
+    RUN(a_hold_lost_at_501_ms_sends_no_faster_rate);
     RUN(a_hold_answered_after_more_than_500_ms_ends_the_pause);
     RUN(a_held_position_is_said_again_at_100_ms_and_not_before);
     RUN(a_stop_during_a_position_ends_it_between_frames);

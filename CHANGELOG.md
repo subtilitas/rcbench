@@ -124,6 +124,16 @@ history is in git.
 
 ### Fixed
 
+- A HOLD on the SERVO screen that reaches the control task more than
+  500 ms after the far end last took one keeps the release it owes. The
+  pause ends there, the screen shows the surfaces released, and the next
+  pass writes the range and the centre pulse; a SWEEP asked next waits for
+  that centre. The release was dropped on that path: no centre was written,
+  a SWEEP asked next started where the surfaces had rested, and a HOLD
+  naming a frame rate above the one in force (50 Hz by default) still
+  sent its FRAME_HZ write. A control-task pass longer than 500 ms, or HOLD
+  repeats left unanswered with the link up, led there. The far end's
+  500 ms channel timeout rested the surfaces either way.
 - OUTPUTS and PICK A PIN no longer offer a SERVO PWM or MOTOR PWM pin that
   the coprocessor's slice and compare-register rules refuse, which ended in
   `LAST WRITE: REFUSED` with no reason.
