@@ -117,7 +117,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings logfile link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_win servo_page supply_page sense_page supply_link sense_link sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo servo_settings servo_test_panel servo_limit_panel analyser programmer esc_stick_panel balance battery esc_profiles esc_stick ina228 ina3221 as5600 sense_sched sense_svc sense_trace tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_prog_card kst_panel wifi_screen fw_image fw_install fw_upload fw_release wa_session wa_fetch upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen touch_merge inj_line_id inj_emu servo_limrun)
+foreach(suite gfx touch_map nav widgets keypad pinlist bench supply supply_screen pdmini motor motor_arm value_state logview logwriter log_cadence settings settings_screen settings_gesture settings_pins_hub settings_leave log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo servo_settings servo_test_panel servo_limit_panel analyser programmer esc_stick_panel balance battery esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link knob bind_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_prog_card kst_panel kst_panel_files kst_panel_nocard kst_panel_limrun wifi_screen fw_image fw_install fw_upload fw_release wa_session wa_fetch upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen touch_merge inj_line_id inj_emu servo_limrun servo_limrun_abort servo_limrun_report)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -144,13 +144,18 @@ foreach(suite board_drawing picker_screen)
     target_sources(test_${suite} PRIVATE "${BOARD_DRAWING}")
 endforeach()
 # The pins the coprocessor reserves at boot, from its own header, so
-# test_settings holds Sensor SDA's values to the page as the firmware
-# starts it.
-target_include_directories(test_settings PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/include")
+# test_settings_pins_hub holds Sensor SDA's values to the page as the
+# firmware starts it.  settings_rig.h includes the header, so every
+# settings suite finds it.
+foreach(suite settings settings_screen settings_gesture settings_pins_hub
+              settings_leave)
+    target_include_directories(test_${suite} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/iomcu/include")
+endforeach()
 # Bench recordings the servo test replays, by an absolute path, so
-# test_servo_test reads them from whatever directory it is started in.
-target_compile_definitions(test_servo_test PRIVATE
+# test_servo_test_replay and test_servo_test_win read them from whatever
+# directory they are started in.
+target_compile_definitions(test_servo_test_replay PRIVATE
     "FIXTURE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures\"")
 target_compile_definitions(test_servo_test_win PRIVATE
     "FIXTURE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures\"")

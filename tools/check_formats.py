@@ -9,9 +9,10 @@ to the call site.
 
 It compiles every C file of `shared/` once more with the lookups replaced by
 the English literals, generated here from `shared/ui/include/ui_text.def`
-and the servo report's table, under -Wformat=2 -Wformat-nonliteral, and
-fails on any warning.  A format that is still not a literal after that is a
-warning too, so a new lookup that bypasses the tables cannot slip past.
+and the servo test's table in `shared/servo/servo_str.c`, under -Wformat=2
+-Wformat-nonliteral, and fails on any warning.  A format that is still not
+a literal after that is a warning too, so a new lookup that bypasses the
+tables cannot slip past.
 
     tools/check_formats.py
 
@@ -37,10 +38,12 @@ SHARED = ROOT / "shared"
 PROTOCOLS = ROOT / "protocols"
 DEF = SHARED / "ui" / "include" / "ui_text.def"
 UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
-REPORT = SHARED / "servo" / "servo_report.c"
-# The files that look the report's strings up, each with its macro: the
-# automatic test's report and the limit run's.
-LOOKUPS = ((REPORT, "S"), (SHARED / "servo" / "servo_limrun.c", "LS"))
+# The servo test's table of words, k_str, and the files that look its
+# strings up, each with its macro: the automatic test's report and the limit
+# run's.
+SERVO_STR = SHARED / "servo" / "servo_str.c"
+LOOKUPS = ((SHARED / "servo" / "servo_report.c", "S"),
+           (SHARED / "servo" / "servo_limrun_report.c", "LS"))
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]
@@ -64,13 +67,13 @@ def literals_from_report(text: str) -> str:
     its adjacent literals kept as they are."""
     m = re.search(r"k_str\[SERVO_STR_COUNT\]\s*=\s*\{(.*?)\n\};", text, re.S)
     if m is None:
-        sys.exit("no k_str in %s" % REPORT)
+        sys.exit("no k_str in %s" % SERVO_STR)
     out = []
     entry = re.compile(r"\[SERVO_STR_(\w+)\]\s*=\s*((?:\s*%s)+)\s*," % STRING)
     for ident, lits in entry.findall(m.group(1)):
         out.append("#define SVS_%s %s" % (ident, " ".join(lits.split("\n"))))
     if not out:
-        sys.exit("no k_str entries in %s" % REPORT)
+        sys.exit("no k_str entries in %s" % SERVO_STR)
     return "\n".join(out) + "\n"
 
 
@@ -95,9 +98,7 @@ def main() -> int:
             text.replace(tr, '#include "tx_lit.h"\n#define TR(id) (TXS_##id)'),
             encoding="utf-8")
 
-        report = tree / REPORT.relative_to(SHARED)
-        text = report.read_text(encoding="utf-8")
-        svs = literals_from_report(text)
+        svs = literals_from_report(SERVO_STR.read_text(encoding="utf-8"))
         for path, name in LOOKUPS:
             copy = tree / path.relative_to(SHARED)
             body = copy.read_text(encoding="utf-8")

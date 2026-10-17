@@ -1024,7 +1024,7 @@ der Kopfzeile.
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
-`shared/servo/servo_report.c` ([Sprache der Oberfläche](Language-de.md)).
+`shared/servo/servo_str.c` ([Sprache der Oberfläche](Language-de.md)).
 Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus der
 Wiedergabe eines Laufs eines MG90S am Prüfstand mit dem PD mini steht auf
 der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:
@@ -1079,7 +1079,7 @@ Die Host-Suite prüft die Engine gegen `servo_sim` und
 Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
 
-`test_servo_test_win` fährt den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
+`test_servo_test_win`, `test_servo_test_win_read` und `test_servo_test_win_chain` fahren den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
 Zeitplan und Seiten des Koprozessors machen daraus Fenster, `sense_link`
 nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
 Modell des PD mini, das alle 104 ms gelesen wird. Zwei Aufzeichnungen von

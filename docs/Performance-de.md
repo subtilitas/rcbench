@@ -401,7 +401,7 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
-Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 16
+Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 17
 Objekten, 162 832 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
@@ -417,7 +417,7 @@ wpa_supplicant, 13 742 Bytes.
 | `kst_card` | bench | 6 208 |
 | `esc_stick_panel` | ui | 6 096 |
 | `kst_panel` | ui | 5 185 |
-| `log_csv` | logfile | 4 905 |
+| `log_csv` | logfile | 4 904 |
 | `esc_registry` | esc | 4 228 |
 | `analyser_screen` | ui | 4 036 |
 | `wa_zip` | webaccess | 2 433 |
@@ -425,6 +425,7 @@ wpa_supplicant, 13 742 Bytes.
 | `wifi_screen` | ui | 1 320 |
 | `ui_band` | ui | 1 040 |
 | `programmer_screen` | ui | 396 |
+| `log_reader` | logfile | 1 |
 
 Ein Objekt zieht nur um, wenn seinen Zustand
 

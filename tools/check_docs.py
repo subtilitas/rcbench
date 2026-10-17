@@ -349,7 +349,7 @@ UI_TEXT_DEF = UI_DIR / "include" / "ui_text.def"
 UI_TEXT_DE = UI_DIR / "ui_text_de.c"
 SETTINGS_C = REPO / "shared" / "settings" / "settings.c"
 SETTINGS_H = REPO / "shared" / "settings" / "include" / "settings.h"
-SERVO_REPORT_C = REPO / "shared" / "servo" / "servo_report.c"
+SERVO_STR_C = REPO / "shared" / "servo" / "servo_str.c"
 
 # Quotes on a German page that stay English although the screen translates
 # the same word: values of the servo test's CSV, which is English in every
@@ -455,7 +455,7 @@ def string_pairs() -> list[tuple[str, str]]:
     pairs += [(e, de_cats[c])
               for c, e in zip(cats, en_cats, strict=True) if c in de_cats]
 
-    en_servo = keyed(read(SERVO_REPORT_C), "SERVO_STR_")
+    en_servo = keyed(read(SERVO_STR_C), "SERVO_STR_")
     de_servo = keyed(table(de, "k_servo["), "SERVO_STR_")
     pairs += [(en_servo[k], v) for k, v in de_servo.items() if k in en_servo]
 
@@ -795,7 +795,7 @@ def check_version(problems: list[str]) -> None:
             "version")
 
 
-STICK_C = REPO / "shared" / "esc" / "esc_stick.c"
+STICK_C = REPO / "shared" / "esc" / "esc_stick_read.c"
 
 # The table in each stick programming page that gives every end of a run
 # its red light: the page, the header row, and the words for lit and dark.
@@ -833,7 +833,8 @@ def check_red_light_tables(problems: list[str]) -> None:
     shows in that language: one row per reason, DONE dark, nothing else."""
     faults = reason_faults()
     if not faults:
-        problems.append("esc_stick.c: no esc_stick_reason_is_fault() cases")
+        problems.append(
+            "esc_stick_read.c: no esc_stick_reason_is_fault() cases")
         return
     english = {k: c_strings(v) for k, v in re.findall(
         rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}

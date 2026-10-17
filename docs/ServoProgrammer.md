@@ -1160,8 +1160,8 @@ None of these is done.
 `test_prog_link` runs the panel's side of the target and of the port's
 pulse switch: a port without a pin, a target that waits for a bench at
 rest, a coprocessor that starts again, and a programmer that has the port
-for each of the 16 pairs of page and wanted values. `test_settings` runs
-a held setting against every call that changes one, and `test_servo` the
+for each of the 16 pairs of page and wanted values. `test_settings_screen`
+runs a held setting against every call that changes one, and `test_servo` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
@@ -1178,11 +1178,11 @@ state line and the tab's line of a running write, a message that goes when
 its condition ends, the rows that take no tap, the PORT row's label, no
 comma in a number of the German table, a
 write cut by a link loss, a restart, **ABORT** and **STOP**, a card that
-fails, and the timeouts across the 2^32 ms wrap of the clock. The servo
-files run against a card model: every name result, every kind of file,
+fails, and the timeouts across the 2^32 ms wrap of the clock. `test_kst_panel_files` runs the
+servo files against a card model: every name result, every kind of file,
 both servo types and their mismatch in both directions, every refusal,
-the 5 s limit, a first write with a card that is full or failing, and the
-writes without a card: the first write, a restore and a pairing release,
+the 5 s limit, a first write with a card that is full or failing.
+`test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
 removed under the write page. A command the control task takes after
 its 2 s have passed reaches no wire, for every kind of operation; a
