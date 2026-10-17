@@ -219,7 +219,7 @@ bound for that reason:
   callbacks, the drawing store's flash callbacks, the start check's after
   an update and the SERVO screen link's callbacks into the panel, which it
   follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 224 such
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 225 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
