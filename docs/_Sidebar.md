@@ -20,6 +20,7 @@ Using the bench
 Reference
 
 - [The link](Link.md)
+- [The programming port for KST and Chaservo servos](LinkKST.md)
 - [DShot and the output drivers](DShot.md)
 - [The OpenYGE protocol](OpenYGE.md)
 - [ESC programming profiles](EscProfiles.md)
@@ -46,6 +47,7 @@ Den Prüfstand benutzen
 Referenz
 
 - [Der Link](Link-de.md)
+- [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)
 - [DShot und die Output-Treiber](DShot-de.md)
 - [Das OpenYGE-Protokoll](OpenYGE-de.md)
 - [ESC-Programmierprofile](EscProfiles-de.md)
