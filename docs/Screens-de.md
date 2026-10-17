@@ -1607,8 +1607,12 @@ dem Namen des Schreibers und einer Nummer von 001 bis 999 abgelegt:
 | --- | --- |
 | `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten auf ARMED der Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
-| `BENCHnnn.CSV` | ein Schalten auf ARMED der Surfaces, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+
+An einem Koprozessor älter als Protokoll 4.18 umfasst jedes Schalten auf
+ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt
+dann `ESCnnn.CSV`.
 
 Die Nummern sind eine Reihe über alle drei Namen: der nächste Lauf nimmt
 eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen, auf
@@ -1620,7 +1624,12 @@ weiteren Lauf an, auch wenn niedrigere Nummern frei sind: das Band meldet
 Servotest `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine Karte, die
 nur `BENCHnnn`-Dateien trägt, auch die eines Servotests, wird genauso
 gelistet, und der nächste Lauf zählt über ihren Nummern weiter. Eine Nummer,
-die eine CSV- oder TXT-Datei trägt, ist vergeben. Die Liste zeigt die
+die eine CSV- oder TXT-Datei trägt, ist vergeben. Firmware 0.20.0 und älter
+nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf
+einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer
+bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
+überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
+ordnet sie nach dem Namen. Die Liste zeigt die
 CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
 Bericht mit demselben Namen und derselben Nummer mit. Die Liste ordnet die
 Namen alphabetisch, die Läufe stehen also nach Namen gruppiert: `BENCH`,

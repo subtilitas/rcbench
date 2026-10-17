@@ -975,8 +975,8 @@ Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein Prüfstand
 in ARMED, und die eigene Task der SD-Karte schreibt seine Dateien:
 `SERVOnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
-BERICHT an (PRÜFLING-Seite) `SERVOnnn.TXT`. Die Nummer ist eine Reihe mit
-den Läufen `BENCHnnn.CSV` und `ESCnnn.CSV` auf der Karte
+BERICHT an (PRÜFLING-Seite) `SERVOnnn.TXT`. Die Nummer gehört zu einer
+Reihe mit den Läufen `BENCHnnn.CSV` und `ESCnnn.CSV` auf der Karte
 ([Logs](Screens-de.md#logs)). Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
 läuft. Seine Zeitspalte springt über den Lauf, und seine Zeilen beginnen

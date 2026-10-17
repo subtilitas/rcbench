@@ -1465,18 +1465,26 @@ directory under the name of the writer and a number from 001 to 999:
 | --- | --- |
 | `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switching to ARMED of the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER |
-| `BENCHnnn.CSV` | one switching to ARMED of the surfaces, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
+| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
+
+With a coprocessor older than protocol 4.18, every switch to ARMED covers the
+throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
 
 The numbers are one series across the three names: the next run takes one
 above the highest number on the card, whichever name carries it, so
 `BENCH041.CSV` and `SERVO042.CSV` are followed by `ESC043.CSV` or
 `BENCH043.CSV`. A gap left by a deleted file is not filled. A card holding a
 number 999 under any name takes no further run, even with lower numbers
-free: the band reads `Card full or not writable. Run not recorded.`, or for a
-servo test `Card missing or full. Servo test not recorded.` A card that holds only `BENCHnnn` files, a servo test's among them,
-lists the same way, and the next run continues above their numbers. A number carried by a
-CSV or a TXT file is taken. The list shows the CSV files and not the reports,
+free: the band reads `Card full or not writable. Run not recorded.`, or for
+a servo test `Card missing or full. Servo test not recorded.` A card that
+holds only `BENCHnnn` files, a servo test's among them, lists the same way,
+and the next run continues above their numbers. A number carried by a CSV or
+a TXT file is taken. Firmware 0.20.0 and older numbers runs above the
+highest `BENCHnnn` file only. Going back to it on a card written by this
+firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already
+carries. Nothing is overwritten: the two files have different names, and the
+list ranks them by name. The list shows the CSV files and not the reports,
 and DELETE on a run removes the report with the same name and number too.
 The list draws names in alphabetical order, so the runs stand grouped by
 name: `BENCH`, then `ESC`, then `SERVO`.

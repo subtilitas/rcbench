@@ -142,16 +142,20 @@ TEST_CASE(every_writer_names_its_runs_and_reads_the_number_back)
         CHECK_EQ(log_report_number(name), 7);
         CHECK_EQ(log_run_number(name), -1);     /* a report is not a run */
         CHECK_EQ(log_name_number(name), 7);     /* and takes its number  */
-        CHECK_EQ(log_name_prefix(name), (int)k[w].p);
 
-        /* Every number in range survives the round trip, and every name is
-         * an 8.3 name: at most 8 characters before the dot, 3 after. */
+        /* Every number in range survives the round trip, the prefix read
+         * back with it (the report a deletion takes is the same writer's),
+         * and every name is an 8.3 name: at most 8 characters before the
+         * dot, 3 after. */
         for (int i = LOG_RUN_FIRST; i <= LOG_RUN_LAST; ++i) {
+            char want[LOG_RUN_NAME_MAX];
+            char got[LOG_RUN_NAME_MAX];
             log_name_build(name, sizeof(name), k[w].p, i, false);
+            log_name_build(want, sizeof(want), k[w].p, i, true);
+            log_name_report_of(got, sizeof(got), name);
             const char *dot = strchr(name, '.');
-            if (log_run_number(name) != i
-                || log_name_prefix(name) != (int)k[w].p || dot == NULL
-                || dot - name > 8 || strlen(dot + 1) != 3u) {
+            if (log_run_number(name) != i || strcmp(got, want) != 0
+                || dot == NULL || dot - name > 8 || strlen(dot + 1) != 3u) {
                 T_FAIL("%d wrote \"%s\", read back %d", i, name,
                        log_run_number(name));
                 break;
@@ -169,7 +173,8 @@ TEST_CASE(every_writer_names_its_runs_and_reads_the_number_back)
     CHECK_EQ(log_run_number("servo042.csv"), 42);
     CHECK_EQ(log_run_number("Esc042.Csv"), 42);
     CHECK_EQ(log_report_number("servo999.txt"), 999);
-    CHECK_EQ(log_name_prefix("esc042.csv"), (int)LOG_PREFIX_ESC);
+    log_name_report_of(b, sizeof(b), "esc042.csv");
+    CHECK_STR_EQ(b, "ESC042.TXT");
 }
 
 TEST_CASE(a_name_that_only_looks_like_a_run_is_not_one)
@@ -182,15 +187,16 @@ TEST_CASE(a_name_that_only_looks_like_a_run_is_not_one)
         "BENCH000.TXT",   "BENCH12.CSV",    "SWEEP_920KV.CSV", "RCBENCH.LOG",
         "KST.TXT",        "",
     };
+    char rep[LOG_RUN_NAME_MAX];
     for (size_t i = 0u; i < sizeof(k_not) / sizeof(k_not[0]); ++i) {
+        snprintf(rep, sizeof(rep), "x");
+        log_name_report_of(rep, sizeof(rep), k_not[i]);
         if (log_run_number(k_not[i]) != -1 || log_report_number(k_not[i]) != -1
-            || log_name_number(k_not[i]) != -1
-            || log_name_prefix(k_not[i]) != -1) {
+            || log_name_number(k_not[i]) != -1 || rep[0] != '\0') {
             T_FAIL("\"%s\" read as a run", k_not[i]);
         }
     }
     CHECK_EQ(log_name_number(NULL), -1);
-    CHECK_EQ(log_name_prefix(NULL), -1);
 }
 
 TEST_CASE(a_name_that_cannot_be_written_is_not_written_as_a_near_miss)
@@ -229,23 +235,19 @@ TEST_CASE(a_number_is_carried_by_six_names_and_each_takes_it)
             }
         }
     }
-    /* Each writer appears with both suffixes. */
-    int csv[LOG_PREFIX_COUNT] = { 0 };
-    int txt[LOG_PREFIX_COUNT] = { 0 };
-    for (int f = 0; f < LOG_NAME_FORMS; ++f) {
-        const int p = log_name_prefix(seen[f]);
-        CHECK(p >= 0 && p < (int)LOG_PREFIX_COUNT);
-        if (p >= 0 && p < (int)LOG_PREFIX_COUNT) {
-            if (log_run_number(seen[f]) == 512) {
-                ++csv[p];
-            } else {
-                ++txt[p];
+    /* Each writer appears with both suffixes, once each. */
+    for (int p = 0; p < (int)LOG_PREFIX_COUNT; ++p) {
+        for (int r = 0; r < 2; ++r) {
+            char want[LOG_RUN_NAME_MAX];
+            log_name_build(want, sizeof(want), (log_prefix_t)p, 512, r != 0);
+            int hits = 0;
+            for (int f = 0; f < LOG_NAME_FORMS; ++f) {
+                hits += (strcmp(seen[f], want) == 0) ? 1 : 0;
+            }
+            if (hits != 1) {
+                T_FAIL("\"%s\" is among the forms %d times", want, hits);
             }
         }
-    }
-    for (int p = 0; p < (int)LOG_PREFIX_COUNT; ++p) {
-        CHECK_EQ(csv[p], 1);
-        CHECK_EQ(txt[p], 1);
     }
     char name[LOG_RUN_NAME_MAX] = "x";
     log_name_form(name, sizeof(name), 512, LOG_NAME_FORMS);
@@ -592,12 +594,82 @@ TEST_CASE(the_file_being_written_is_not_listed_whatever_its_prefix)
     CHECK_EQ(held, 6);
     CHECK(!log_name_busy("servo003.csv", 0u, 0u, 0u));
     CHECK(log_name_busy("servo003.csv", 0u, 3u, 0u));
-    /* A report's number open as a run does not hold the report, and a run's
-     * number open as a report does not hold the run. */
+    /* A report's number open as a run does not hold the report.  A run's
+     * number open as a report holds the run: deleting the run would delete
+     * the report with it. */
     CHECK(!log_name_busy("SERVO003.TXT", 3u, 3u, 0u));
-    CHECK(!log_name_busy("SERVO003.CSV", 0u, 0u, 3u));
+    CHECK(log_name_busy("SERVO003.CSV", 0u, 0u, 3u));
     CHECK(!log_name_busy("SWEEP.CSV", 1u, 1u, 1u));
     CHECK(!log_name_busy(NULL, 1u, 1u, 1u));
+}
+
+/*
+ * panel_card.c's card_remove(): refused for a busy name; otherwise the name
+ * goes, and the report beside a run goes with it.  Whether it went.
+ */
+static bool card_delete(const char *name, unsigned open_run,
+                        unsigned open_test, unsigned open_txt)
+{
+    if (log_name_busy(name, open_run, open_test, open_txt)) {
+        return false;
+    }
+    char txt[LOG_RUN_NAME_MAX];
+    log_name_report_of(txt, sizeof(txt), name);
+    int kept = 0;
+    for (int i = 0; i < g_card.n; ++i) {
+        if (log_name_case_cmp(g_card.names[i], name) == 0
+            || (txt[0] != '\0'
+                && log_name_case_cmp(g_card.names[i], txt) == 0)) {
+            continue;
+        }
+        memmove(g_card.names[kept], g_card.names[i], sizeof(g_card.names[0]));
+        ++kept;
+    }
+    g_card.n = kept;
+    return true;
+}
+
+TEST_CASE(a_servo_test_whose_report_is_open_keeps_its_csv)
+{
+    /*
+     * A servo test's CSV is closed and its report SERVO003.TXT is open.
+     * Deleting SERVO003.CSV would remove the open report too, and with no
+     * file lock in FatFs the logger would go on writing into freed
+     * clusters.  So the CSV is held back with the report.
+     */
+    card_clear();
+    card_put("ESC002.CSV");
+    card_put("SERVO003.CSV");
+    card_put("SERVO003.TXT");
+    card_put("SERVO004.CSV");
+    card_put("SERVO004.TXT");
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    int files = 0;
+
+    int held = list_card(set, LOG_VIEWER_MAX_FILES, 0u, 0u, 3u, &files);
+    CHECK_EQ(files, 3);
+    CHECK(!listed(set, held, "SERVO003.CSV"));
+    CHECK(!listed(set, held, "SERVO003.TXT"));
+    CHECK(!card_delete("SERVO003.CSV", 0u, 0u, 3u));
+    CHECK(!card_delete("servo003.csv", 0u, 0u, 3u));
+    CHECK(card_has("SERVO003.CSV"));
+    CHECK(card_has("SERVO003.TXT"));
+
+    /* Another number is not held: SERVO004 goes, with its report. */
+    CHECK(listed(set, held, "SERVO004.CSV"));
+    CHECK(card_delete("SERVO004.CSV", 0u, 0u, 3u));
+    CHECK(!card_has("SERVO004.CSV"));
+    CHECK(!card_has("SERVO004.TXT"));
+    CHECK(card_has("SERVO003.TXT"));
+
+    /* The report closed: the run is listed and its deletion takes both. */
+    held = list_card(set, LOG_VIEWER_MAX_FILES, 0u, 0u, 0u, &files);
+    CHECK_EQ(files, 3);
+    CHECK(listed(set, held, "SERVO003.CSV"));
+    CHECK(card_delete("SERVO003.CSV", 0u, 0u, 0u));
+    CHECK(!card_has("SERVO003.CSV"));
+    CHECK(!card_has("SERVO003.TXT"));
+    CHECK(card_has("ESC002.CSV"));
 }
 
 TEST_CASE(the_newest_listed_run_is_found_across_prefixes)
@@ -647,6 +719,7 @@ int main(void)
     RUN(the_newest_run_ranks_first_across_prefixes);
     RUN(a_full_list_keeps_the_newest_runs_of_every_writer);
     RUN(the_file_being_written_is_not_listed_whatever_its_prefix);
+    RUN(a_servo_test_whose_report_is_open_keeps_its_csv);
     RUN(the_newest_listed_run_is_found_across_prefixes);
     return test_summary("log_name");
 }

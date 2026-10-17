@@ -119,9 +119,6 @@ int log_run_number(const char *name);
 void log_report_name(char *out, size_t out_size, int number);
 int log_report_number(const char *name);
 
-/** The prefix of a run log or a report in @p name, or -1 for any other. */
-int log_name_prefix(const char *name);
-
 /**
  * The number @p name takes from the series: a run log's or a report's, under
  * any prefix, or -1 for a name that takes none.  What the numbering walk
@@ -152,10 +149,12 @@ int log_name_next(int highest);
 void log_name_report_of(char *out, size_t out_size, const char *run_name);
 
 /**
- * Whether @p name is a file the logger is still writing: a run log whose
- * number is @p open_run (the armed or supply run) or @p open_test (a servo
- * test's CSV), or a report whose number is @p open_txt.  0 is no file open.
- * The numbers are one series, so the prefix does not enter into it.
+ * Whether @p name is a file the logger is still writing, or one whose
+ * deletion would remove such a file: a run log whose number is @p open_run
+ * (the armed or supply run), @p open_test (a servo test's CSV) or
+ * @p open_txt (a servo run's report, which a deleted run takes with it), or
+ * a report whose number is @p open_txt.  0 is no file open.  The numbers
+ * are one series, so the prefix does not enter into it.
  */
 bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,
                    unsigned open_txt);

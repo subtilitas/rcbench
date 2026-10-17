@@ -101,15 +101,20 @@ history is in git.
 
 - Run logs are named by the writer that made them: `SERVOnnn.CSV` and
   `SERVOnnn.TXT` for the automatic servo test and the limit run,
-  `ESCnnn.CSV` for a switch to ARMED of the throttle outputs (MOTOR & ESC, a
-  stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch to ARMED from SERVO
-  and for a SUPPLY run. The numbers 001 to 999 are one series across the
+  `ESCnnn.CSV` for a switch of the throttle outputs to ARMED (MOTOR & ESC, a
+  stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch of the surfaces to
+  ARMED from SERVO and for a SUPPLY run. With a coprocessor older than
+  protocol 4.18 every switch to ARMED covers the throttle outputs, so a switch
+  to ARMED from SERVO writes `ESCnnn.CSV`. The numbers 001 to 999 are one series across the
   three names: a run takes one above the highest number on the card under
   any name, and a card holding a number 999 takes no further run. A card
   holding only `BENCHnnn` files continues above their numbers. The LOG
   VIEWER lists, ranks and deletes all three, opens on the highest number,
   and deletes a run's report under the run's own name. Its empty card reads
-  `Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.`
+  `Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.` Firmware 0.20.0 and
+  older numbers runs above the highest `BENCHnnn` file only: going back to it
+  on a card written since can give a run a number that an `ESCnnn` or
+  `SERVOnnn` file already carries, and nothing is overwritten.
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save

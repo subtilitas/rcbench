@@ -152,16 +152,6 @@ int log_report_number(const char *name)
     return numbered(name, REPORT_SUFFIX, NULL);
 }
 
-int log_name_prefix(const char *name)
-{
-    int k = -1;
-    if (numbered(name, RUN_SUFFIX, &k) < 0
-        && numbered(name, REPORT_SUFFIX, &k) < 0) {
-        return -1;
-    }
-    return k;
-}
-
 int log_name_number(const char *name)
 {
     const int n = log_run_number(name);
@@ -209,8 +199,15 @@ bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,
 {
     const int n = log_run_number(name);
     const int r = log_report_number(name);
+    /*
+     * A run log under @p open_txt is busy too.  Deleting a run deletes its
+     * report (log_name_report_of()), and that report is the one still open:
+     * with no file lock in FatFs, the unlink frees clusters the logger goes
+     * on writing into.
+     */
     return (n > 0 && ((open_run != 0u && (unsigned)n == open_run)
-                      || (open_test != 0u && (unsigned)n == open_test)))
+                      || (open_test != 0u && (unsigned)n == open_test)
+                      || (open_txt != 0u && (unsigned)n == open_txt)))
         || (r > 0 && open_txt != 0u && (unsigned)r == open_txt);
 }
 

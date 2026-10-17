@@ -278,8 +278,10 @@ static void log_open(uint32_t run, log_run_kind_t kind)
     }
     /*
      * A volume that refuses one free number refuses them all, and each try is
-     * two card transactions on this task.  Walking to LOG_RUN_LAST would be
-     * 999 of them before the operator is told the run is not recorded.
+     * up to seven card transactions on this task: the LOG_NAME_FORMS (6)
+     * probes of log_number_free() and the open.  Walking to LOG_RUN_LAST
+     * would be 999 tries before the operator is told the run is not
+     * recorded.
      */
     unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {

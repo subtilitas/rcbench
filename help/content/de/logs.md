@@ -40,10 +40,12 @@ Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
 |---|---|
 | `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten auf ARMED der Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
-| `BENCHnnn.CSV` | ein Schalten auf ARMED von SERVO oder ein Einschalten des Ausgangs auf SUPPLY bei SAFE |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 
-Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Liste ordnet die Namen alphabetisch, die Läufe stehen also gruppiert: `BENCH`, dann `ESC`, dann `SERVO`.
+An einem Koprozessor älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.
+
+Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Firmware 0.20.0 und älter nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird überschrieben: Die beiden Dateien haben verschiedene Namen. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Liste ordnet die Namen alphabetisch, die Läufe stehen also gruppiert: `BENCH`, dann `ESC`, dann `SERVO`.
 
 Ein Lauf wird alle 20 Zeilen oder alle 1000 ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0 s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20 s bei 20 Hz, wenn sie stockt.
 

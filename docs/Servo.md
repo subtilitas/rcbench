@@ -903,8 +903,8 @@ compared by its magnitude and in whole mA: see
 A run takes the next run number on the card, as a bench in ARMED does, and the
 SD card's own task writes its files: `SERVOnnn.CSV`, one row per reading of
 the run's meter, and with the DUT page's REPORT on, `SERVOnnn.TXT`. The
-number is one series with the `BENCHnnn.CSV` and `ESCnnn.CSV` runs on the
-card ([Logs](Screens.md#logs)). A run is
+number belongs to one series with the `BENCHnnn.CSV` and `ESCnnn.CSV` runs
+on the card ([Logs](Screens.md#logs)). A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a

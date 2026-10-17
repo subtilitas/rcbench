@@ -40,10 +40,12 @@ One file is one run. Its name says which writer made it:
 |---|---|
 | `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switch to ARMED of the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER |
-| `BENCHnnn.CSV` | one switch to ARMED from SERVO, or one switch-on of the SUPPLY output with the bench SAFE |
+| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
 
-The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list draws names in alphabetical order, so runs stand grouped: `BENCH`, then `ESC`, then `SERVO`.
+With a coprocessor older than protocol 4.18, every switch to ARMED covers the throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
+
+The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. Firmware 0.20.0 and older numbers runs above the highest `BENCHnnn` file only. Going back to it on a card written by this firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already carries. Nothing is overwritten: the two files have different names. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list draws names in alphabetical order, so runs stand grouped: `BENCH`, then `ESC`, then `SERVO`.
 
 A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
 

@@ -325,6 +325,18 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
      * the bench is switched to SAFE and another output is bound before
      * CLOSE: the ends belong to the run, not to the target now. */
     CHECK(lim_box_reads(2, "GP2", UI_C_TEXT_DIM));
+    /* And under the output the report's name: until the logger answers,
+     * WRITING; with its number, SERVOnnn.TXT -- the servo writer's prefix,
+     * whatever the arm covers -- and never BENCHnnn.TXT. */
+    CHECK(lim_box_reads(3, TR(SV_WRITING), UI_C_TEXT_DIM));
+    servo_screen_test_files(12, true);
+    CHECK(lim_box_reads(3, "SERVO012.TXT", UI_C_TEXT_DIM));
+    CHECK(!lim_box_reads(3, "BENCH012.TXT", UI_C_TEXT_DIM));
+    servo_screen_test_files(999, true);
+    CHECK(lim_box_reads(3, "SERVO999.TXT", UI_C_TEXT_DIM));
+    servo_screen_test_files(-1, false);
+    CHECK(lim_box_reads(3, TR(SV_NOT_RECORDED), UI_C_TEXT_DIM));
+    servo_screen_test_files(12, true);
     servo_screen_set_armed(false);
     servo_screen_set_pins(PIN(5), true);
     bench_frames(100u);
