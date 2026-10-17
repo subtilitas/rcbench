@@ -350,7 +350,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
 | `shared/servo/servo_move.c` | 145 | 145 | 100.0% |
 | `shared/servo/servo_test.c` | 783 | 769 | 98.2% |
-| `shared/servo/servo_report.c` | 554 | 554 | 100.0% |
+| `shared/servo/servo_str.c` | 43 | 43 | 100.0% |
+| `shared/servo/servo_report.c` | 511 | 511 | 100.0% |
 | `shared/servo/servo_limrun.c` | 889 | 860 | 96.7% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |

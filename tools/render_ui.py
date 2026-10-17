@@ -124,6 +124,7 @@ SOURCES = [
     "shared/servo/servo_sweep.c",
     "shared/servo/servo_move.c",
     "shared/servo/servo_test.c",
+    "shared/servo/servo_str.c",
     "shared/servo/servo_report.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_limrun.c",

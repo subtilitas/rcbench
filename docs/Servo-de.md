@@ -1024,7 +1024,7 @@ der Kopfzeile.
 
 Der Bericht steht in der Sprache, die beim Start seines Laufs gilt; seine
 deutschen Wörter liegen in `shared/ui/ui_text_de.c`, die englischen in
-`shared/servo/servo_report.c` ([Sprache der Oberfläche](Language-de.md)).
+`shared/servo/servo_str.c` ([Sprache der Oberfläche](Language-de.md)).
 Die CSV ist in jeder Sprache englisch. Ein englischer Bericht aus der
 Wiedergabe eines Laufs eines MG90S am Prüfstand mit dem PD mini steht auf
 der [englischen Seite](Servo.md#files); auf Deutsch lauten seine Stufen:
