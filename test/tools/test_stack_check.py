@@ -131,6 +131,118 @@ def test_port_calls_name_every_callback_of_every_panel_port():
         assert set(sc.PORT_CALLS[caller]) == want, caller
 
 
+def graph(frames: dict, calls: dict) -> sc.Graph:
+    """A call graph of {address: frame} and {address: [callee]}."""
+    funcs = {}
+    for addr, frame in frames.items():
+        f = sc.Func(addr, f"f{addr}")
+        f.frame = frame
+        f.calls = set(calls.get(addr, ()))
+        funcs[addr] = f
+    return sc.Graph(funcs, {a: f.name for a, f in funcs.items()})
+
+
+def cycle_graph(a: int, b: int) -> sc.Graph:
+    """root (1 byte) calls A (10) and B (100); A and B call each other, and
+    A calls Y (1000).  The deepest chain is root, B, A, Y: 1111 bytes."""
+    return graph({1: 1, a: 10, b: 100, 9: 1000},
+                 {1: [a, b], a: [b, 9], b: [a]})
+
+
+@pytest.mark.parametrize("a, b", [(2, 3), (3, 2)])
+def test_a_depth_through_a_cycle_does_not_depend_on_the_addresses(a, b):
+    """A chain cut short where it meets a function already on it is no
+    answer for a caller that meets the same function from elsewhere: A
+    visited first cuts B's chain at A, and root's call to B still reaches
+    A and Y."""
+    g = cycle_graph(a, b)
+    depth, chain = g.depth(1)
+    assert depth == 1111
+    assert [addr for _, _, addr in chain] == [1, b, a, 9]
+    assert [total for _, total, _ in chain] == [1111, 1110, 1010, 1000]
+
+
+def test_a_cycle_counts_each_function_once_and_is_reported():
+    # root -> A <-> B, A -> A, B -> C: root, A, B, C; the loops are not
+    # run round again.
+    g = graph({1: 1, 2: 10, 3: 100, 4: 1000, 5: 5},
+              {1: [2], 2: [2, 3], 3: [2, 4], 5: [5]})
+    assert g.depth(1)[0] == 1111
+    assert g.recursion(g.reach(1)) == ["f2, f3"]
+    assert g.recursion(g.reach(5)) == ["f5"]
+    assert g.recursion(g.reach(4)) == []
+
+
+def test_every_entry_into_a_cycle_takes_its_own_longest_way_round():
+    # A ring 2 -> 3 -> 4 -> 2 entered at 2 and at 4.  From 2 the deepest
+    # chain is 2, 3, 7; from 4 it is 4, 2, 3, 7, which runs through 2 with
+    # 4 already on the chain.  The deepest from root is root, 4, 2, 3, 7.
+    g = graph({1: 1, 2: 10, 3: 20, 4: 30, 6: 5, 7: 500},
+              {1: [2, 4], 2: [3], 3: [4, 7], 4: [2, 6]})
+    assert g.depth(2)[0] == 10 + 20 + 500
+    assert g.depth(4)[0] == 30 + 10 + 20 + 500
+    assert g.depth(1)[0] == 1 + 30 + 10 + 20 + 500
+
+
+def longest_simple_chain(frames: dict, calls: dict, addr: int,
+                         on: frozenset = frozenset()) -> int:
+    """Every chain from @p addr with no function twice, tried one by one."""
+    if addr not in frames or addr in on:
+        return 0
+    on = on | {addr}
+    return frames[addr] + max((longest_simple_chain(frames, calls, c, on)
+                               for c in calls.get(addr, ())), default=0)
+
+
+@pytest.mark.parametrize("seed", range(200))
+def test_the_depth_is_the_longest_chain_with_no_function_twice(seed):
+    """Random graphs of 2 to 12 functions, some calling themselves, some
+    calling addresses where no function is, as a call into ROM is.  Every
+    root is asked in a shuffled order of one graph, so the depths kept for
+    one root serve the next."""
+    import random
+    rnd = random.Random(seed)
+    n = rnd.randint(2, 12)
+    frames = {a: rnd.choice((0, 16, 32, 48, 96, 400)) for a in range(n)}
+    calls = {a: [rnd.randrange(n + 3) for _ in range(rnd.randint(0, 3))]
+             for a in range(n)}
+    for a in range(n):
+        if rnd.random() < 0.2:
+            calls[a].append(a)
+    g = graph(frames, calls)
+    roots = list(range(n))
+    rnd.shuffle(roots)
+    for a in roots:
+        depth, chain = g.depth(a)
+        assert depth == longest_simple_chain(frames, calls, a), (seed, a)
+        assert chain[0][2] == a
+        assert len({addr for _, _, addr in chain}) == len(chain)
+        for (_, _, here), (_, _, there) in zip(chain, chain[1:],
+                                                  strict=False):
+            assert there in calls[here], (seed, here, there)
+        below = 0
+        for frame, total, addr in reversed(chain):
+            assert frame == frames[addr]
+            below += frame
+            assert total == below, (seed, addr)
+        assert below == depth
+
+
+def test_a_search_through_a_dense_cycle_fails_and_names_it():
+    """12 functions that all call each other: more ways through than the
+    cap allows.  The check fails with the group's size and its functions,
+    and does not run on for hours."""
+    frames = {a: 16 for a in range(12)}
+    calls = {a: [b for b in range(12) if b != a] for a in range(12)}
+    g = graph(frames, calls)
+    with pytest.raises(SystemExit) as e:
+        g.depth(0)
+    msg = str(e.value)
+    assert "a cycle of 12 functions" in msg
+    assert f"passed {sc.Graph.VISIT_CAP} visits from f0" in msg
+    assert ", ".join(sorted(f"f{a}" for a in range(12))) in msg
+
+
 OUTPUTS = sc.ROOT / "shared" / "outputs"
 
 

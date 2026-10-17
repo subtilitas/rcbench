@@ -104,38 +104,137 @@ def call_args(text: str, start: int) -> list | None:
 # -------------------------------------------------------- the call graph --
 
 class Graph:
+    """The deepest chain through a call graph, under one rule for
+    recursion: a function already on the chain is not entered again.  A
+    chain through a cycle so runs round it at most once, and the depth is
+    the largest sum of frames over every chain with no function twice.
+
+    That sum does not split at a function inside a cycle: how far a chain
+    gets from there depends on which of the cycle's functions are already
+    on it.  The graph is cut into its strongly connected components, the
+    groups of functions that can each reach the others.  No chain that
+    leaves a group comes back to it, so the depth from a function outside
+    the group a chain leaves from is the same for every chain, and is kept.
+    Inside a group every way through it is tried, which takes time that
+    grows with the factorial of a dense group's size: a search that makes
+    more than VISIT_CAP visits inside one group fails and names it.
+
+    groups() is iterative.  depth() and _through() recurse, two Python
+    frames for every function of a chain; main() raises the recursion
+    limit to 20000, and the deepest panel chain is 31 functions."""
+
+    # The visits to functions of one group a search from one entry into it
+    # makes before it fails: about 1 s.  The panel's largest group, 10
+    # functions in a ring, takes 80.
+    VISIT_CAP = 1_000_000
+
     def __init__(self, funcs: dict, names: dict) -> None:
         self.funcs = funcs
         self.names = names          # address -> name, ROM included
-        self.memo = {}
-        self.cycles = set()
+        self.memo = {}              # address -> depth entered from outside
+        self.visits = 0             # calls of _through(), every search
+        self._group = None          # address -> its component, a frozenset
 
     def label(self, addr: int) -> str:
         f = self.funcs.get(addr)
         return f.name if f else self.names.get(addr, f"0x{addr:08x}")
 
-    def depth(self, addr: int, path: list) -> tuple:
+    def groups(self) -> dict:
+        """address -> the strongly connected component it lies in, read
+        once with Tarjan's algorithm."""
+        if self._group is not None:
+            return self._group
+        index, low, stack, on, group = {}, {}, [], set(), {}
+        for root in self.funcs:
+            if root in index:
+                continue
+            work = [(root, iter(sorted(self.funcs[root].calls)))]
+            index[root] = low[root] = len(index)
+            stack.append(root)
+            on.add(root)
+            while work:
+                v, it = work[-1]
+                for w in it:
+                    if w not in self.funcs:
+                        continue
+                    if w not in index:
+                        index[w] = low[w] = len(index)
+                        stack.append(w)
+                        on.add(w)
+                        work.append((w, iter(sorted(self.funcs[w].calls))))
+                        break
+                    if w in on:
+                        low[v] = min(low[v], index[w])
+                else:
+                    work.pop()
+                    if work:
+                        u = work[-1][0]
+                        low[u] = min(low[u], low[v])
+                    if low[v] == index[v]:
+                        members = set()
+                        while True:
+                            w = stack.pop()
+                            on.discard(w)
+                            members.add(w)
+                            if w == v:
+                                break
+                        members = frozenset(members)
+                        for w in members:
+                            group[w] = members
+        self._group = group
+        return group
+
+    def depth(self, addr: int) -> tuple:
         """(bytes, [(frame, depth from here, address)]) of the deepest
         chain from @p addr."""
-        if addr in path:
-            loop = path[path.index(addr):] + [addr]
-            self.cycles.add(" -> ".join(self.label(a) for a in loop))
-            return 0, []
         if addr in self.memo:
             return self.memo[addr]
         f = self.funcs.get(addr)
         if f is None:
             return 0, []
-        path.append(addr)
-        best, chain = 0, []
-        for c in sorted(f.calls):
-            d, ch = self.depth(c, path)
-            if d > best:
-                best, chain = d, ch
-        path.pop()
-        r = (f.frame + best, [(f.frame, f.frame + best, addr)] + chain)
+        group = self.groups()[addr]
+        r = self._through(addr, group, {addr}, [0, addr])
         self.memo[addr] = r
         return r
+
+    def _through(self, addr: int, group: frozenset, on: set,
+                 count: list) -> tuple:
+        """The deepest chain from @p addr, which lies in @p group, entering
+        no function of the group in @p on again; @p count holds the visits
+        this entry into the group has made, and the function it entered
+        at."""
+        count[0] += 1
+        self.visits += 1
+        if count[0] > self.VISIT_CAP:
+            die(f"the search through a cycle of {len(group)} functions "
+                f"passed {self.VISIT_CAP} visits from {self.label(count[1])}: "
+                + ", ".join(sorted(self.label(a) for a in group)))
+        f = self.funcs[addr]
+        best, chain = 0, []
+        for c in sorted(f.calls):
+            if c in on:
+                continue
+            if c in group:
+                on.add(c)
+                d, ch = self._through(c, group, on, count)
+                on.discard(c)
+            else:
+                d, ch = self.depth(c)
+            if d > best:
+                best, chain = d, ch
+        return (f.frame + best, [(f.frame, f.frame + best, addr)] + chain)
+
+    def recursion(self, seen: set) -> list:
+        """The cycles among @p seen, one line each: the functions of every
+        strongly connected component of more than one function, and every
+        function that calls itself."""
+        group = self.groups()
+        out = set()
+        for a in seen:
+            g = group.get(a)
+            if g is not None and (len(g) > 1 or a in self.funcs[a].calls):
+                out.add(", ".join(sorted(self.label(b) for b in g)))
+        return sorted(out)
 
     def reach(self, root: int) -> set:
         seen, todo = set(), [root]

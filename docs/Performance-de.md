@@ -204,14 +204,14 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 136 | 2 032 |
-| `control` | `control_task` | 6 144 | 4 064 | 1 056 |
-| `runlog` | `log_task` | 4 352 | 2 992 | 336 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 552 | 1 616 |
+| `control` | `control_task` | 6 144 | 4 480 | 640 |
+| `runlog` | `log_task` | 4 608 | 3 408 | 176 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 808 | 1 264 |
-| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 2 400 | 4 768 |
+| `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 2 816 | 4 352 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der WLAN-Treiber, der TCP/IP-Stack (Transmission Control
@@ -239,7 +239,9 @@ Untergrenze:
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
   der ELF-Datei stehen;
-- Rekursion, die das Werkzeug einmal zählt.
+- Rekursion: Eine Funktion, die schon in einer Kette steht, wird nicht
+  noch einmal betreten; eine Kette läuft also höchstens einmal durch einen
+  Zyklus.
 
 CI führt das Werkzeug auf dem Build mit ESP-IDF v5.4 mit `--check-doc` aus;
 das schlägt fehl, wenn die Tabelle oben oder die Zahl der Aufrufe über einen
@@ -320,7 +322,9 @@ Jede Tiefe ist eine Untergrenze:
 - 17 handgeschriebene Rechenroutinen des pico-sdk tragen in der ELF-Datei
   keine Größe, und ihre Frames werden nicht gelesen;
 - gezählt wird ein Interrupt, kein zweiter auf dem ersten;
-- Rekursion wird einmal gezählt.
+- Rekursion: Eine Funktion, die schon in einer Kette steht, wird nicht
+  noch einmal betreten; eine Kette läuft also höchstens einmal durch einen
+  Zyklus.
 
 Der Stack von Kern 0 ist der gesamte RAM-Bereich `SCRATCH_Y`, 0x20081000
 bis 0x20082000; das Image legt nichts anderes hinein, und der Link schlägt
@@ -335,7 +339,7 @@ Die UI hält ihre Frames klein, wo das wenig kostet. Der Zeichner einer Seite
 ist eine eigene Funktion, sodass nur die angezeigte Seite ihre Puffer hält:
 auf PROGRAMMER ist der Frame von `render()` 32 Bytes groß und der der größten
 Seite 464. Eine Zeile, die zur Anzeige kopiert wird, wird ohne `snprintf()`
-kopiert, das die Gleitkommawandlung von newlib erreicht: 1 952 Bytes tief im
+kopiert, das die Gleitkommawandlung von newlib erreicht: 2 368 Bytes tief im
 Aufrufgraphen.
 
 ## Interner RAM
@@ -361,13 +365,13 @@ Kartenübertragung, solange das WLAN läuft.
 | --- | --- | ---: |
 | `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 127 056 |
 | `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 298 928 |
-| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 104 776 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 194 152 |
+| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 105 032 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 193 896 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 90 992 |
+| `left` | übriger Heap mit dem größten Modus | 90 736 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm

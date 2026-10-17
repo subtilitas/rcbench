@@ -436,9 +436,9 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
     g = Graph(funcs, names)
 
     def measure(root: int) -> tuple:
-        g.cycles, g.memo = set(), {}
-        depth, chain = g.depth(root, [])
+        depth, chain = g.depth(root)
         seen = g.reach(root)
+        cycles = g.recursion(seen)
         unknown = []
         indirect = sum(funcs[a].callx for a in seen)
         if indirect:
@@ -454,12 +454,13 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
         stray = sum(funcs[a].stray for a in seen)
         if stray:
             unknown.append(f"{stray} calls to no function's start")
-        if g.cycles:
-            unknown.append(f"{len(g.cycles)} cycles, each counted once")
+        if cycles:
+            unknown.append(f"{len(cycles)} recursive groups, each function "
+                           f"entered once per chain")
         if verbose:
             notes[root] = (
                 sorted((funcs[a].name, funcs[a].callx) for a in seen
-                       if funcs[a].callx), asm, sorted(g.cycles))
+                       if funcs[a].callx), asm, cycles)
         return depth, chain, unknown
 
     notes = {}
@@ -553,7 +554,8 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
                 out.append("   hand-written functions, frame unknown:")
                 out.append("     " + ", ".join(asm))
             if cycles:
-                out.append("   cycles, each counted once:")
+                out.append("   recursive groups, each function entered "
+                           "once per chain:")
                 out += [f"     {c}" for c in cycles]
     return rows, fails, out
 

@@ -286,7 +286,7 @@ fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
 deepest call chain to its stack less 1024 bytes: the UI's main task reaches
-5136 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
+5552 of 8192. With `--iomcu` it holds each coprocessor core's deepest chain,
 one interrupt and 256 bytes to the core's stack: core 0 reaches 1700 of
 4096 with 528 for an interrupt. `ram_budget.py` holds the panel's
 internal heap left with the largest Wi-Fi mode up to at least 32,768 bytes,
