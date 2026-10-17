@@ -6,6 +6,7 @@ docstring says how; the ELF reader and the call graph are in stack_elf.py.
 SPDX-License-Identifier: MIT
 """
 
+import bisect
 import re
 import struct
 import sys
@@ -228,7 +229,6 @@ def code_spans(addr: int, size: int, marks: list) -> list:
     """The parts of [addr, addr + size) that are Thumb code: the linker
     keeps the assembler's $t and $d symbols, which say where code stops and
     a literal pool or a jump table starts."""
-    import bisect
     end = addr + size
     i = bisect.bisect_right(marks, (addr, "~")) - 1
     state = marks[i][1] if i >= 0 else "t"
@@ -347,7 +347,8 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
 
 def iomcu_check(build: Path, verbose: bool) -> tuple:
     """(rows, fails, lines to print) for the coprocessor image: one row per
-    core, (name, entry, stack, depth, interrupt, spare)."""
+    core, (name, entry, stack, depth, interrupt, spare, calls and jumps
+    through a register reachable from the entry)."""
     path = build / IOMCU_ELF
     if not path.exists():
         die(f"{path} not found; build the coprocessor first")
@@ -461,7 +462,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
             notes[root] = (
                 sorted((funcs[a].name, funcs[a].callx) for a in seen
                        if funcs[a].callx), asm, cycles)
-        return depth, chain, unknown
+        return depth, chain, unknown, indirect
 
     notes = {}
 
@@ -481,7 +482,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
             fails.append(f"an interrupt handler at 0x{h:08x} is no "
                          f"function in the ELF")
             continue
-        depth, chain, unknown = measure(h)
+        depth, chain, unknown, _ = measure(h)
         out.append(f"  {funcs[h].name:<34} {depth:>5}")
         if depth > irq_depth:
             irq_depth, irq_name = depth, funcs[h].name
@@ -518,7 +519,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
             fails.append(f"{label}: entry {entry} is {len(addrs)} functions "
                          f"in the ELF, not 1")
             continue
-        depth, chain, unknown = measure(addrs[0])
+        depth, chain, unknown, through_reg = measure(addrs[0])
         spare = stack - IOMCU_MARGIN - depth - irq_cost
         over = spare < 0
         if over:
@@ -531,7 +532,8 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
                    f"{irq_cost:>5} {spare:>6}  {result}")
         if unknown:
             out.append(f"{'':<8} not followed: " + "; ".join(unknown))
-        rows.append((label, entry, stack, depth, irq_cost, spare))
+        rows.append((label, entry, stack, depth, irq_cost, spare,
+                     through_reg))
         detail.append((label, depth, chain, addrs[0]))
     if irq_unknown:
         out.append(f"{'interrupt':<8} not followed: "
@@ -577,20 +579,75 @@ IOMCU_PERFORMANCE = (
      "Kern 0"),
 )
 
+# The prose that gives core 0's figures, page by page: a pattern over the
+# page with its whitespace folded to single spaces, and what each group is.
+# "calls" is the count of calls and jumps through a register reachable
+# from main(); the others are core 0's row.  Every pattern has to match
+# once: a page whose sentence is reworded fails until this follows it.
+IOMCU_PROSE = (
+    (ROOT / "docs" / "Performance.md",
+     r"(\d[\d,]*) such calls are reachable from `main` in the image CI "
+     r"builds", ("calls",)),
+    (ROOT / "docs" / "Performance-de.md",
+     r"(\d[\d ]*?) solche Aufrufe sind von `main` aus erreichbar, im Image, "
+     r"das CI baut",
+     ("calls",)),
+    (ROOT / "STATUS.md",
+     r"`stack_check\.py --iomcu` measures (\d[\d,]*) bytes for the "
+     r"deepest chain and (\d[\d,]*) for one interrupt on the (\d[\d,]*)"
+     r"-byte stack, (\d[\d,]*) bytes above the 256-byte margin\. The "
+     r"figures are those of the image CI builds with arm-none-eabi-gcc "
+     r"13\.2\.1, and `stack_check\.py --iomcu --check-doc` holds them\. "
+     r"The depth is a lower bound: (\d[\d,]*) calls through a register "
+     r"are not followed\.",
+     ("depth", "interrupt", "stack", "spare", "calls")),
+)
+
+
+def number(text: str) -> int:
+    """8,192 in English, 8 192 in German, 8192 in either."""
+    return int(re.sub(r"[,\s\u00a0\u202f]", "", text))
+
+
+def check_iomcu_prose(core0: dict) -> list:
+    """The sentences of IOMCU_PROSE against core 0's measurement:
+    {"stack", "depth", "interrupt", "spare", "calls": int}."""
+    out = []
+    for page, pattern, names in IOMCU_PROSE:
+        text = " ".join(page.read_text(encoding="utf-8").split())
+        found = re.findall(pattern, text)
+        if len(found) != 1:
+            out.append(f"{page.name}: the sentence with core 0's "
+                       f"{', '.join(names)} is there {len(found)} times, "
+                       f"not once; IOMCU_PROSE no longer matches the page")
+            continue
+        said = found[0] if isinstance(found[0], tuple) else (found[0],)
+        for name, value in zip(names, said, strict=True):
+            if number(value) != core0[name]:
+                out.append(f"{page.name}: gives core 0's {name} as "
+                           f"{value}; measured {core0[name]}")
+    return out
+
 
 def check_iomcu_doc(rows: list) -> list:
     """Core 0's row of the coprocessor table in Performance.md and its
-    German page against iomcu_check()'s rows."""
-    measured = [list(r[2:]) for r in rows if r[0] == CORE0[0]]
+    German page, and the sentences of IOMCU_PROSE, against iomcu_check()'s
+    rows."""
+    measured = [r for r in rows if r[0] == CORE0[0]]
     if len(measured) != 1:
         return ["core 0 is not measured; its row in the docs is not held"]
+    _, _, stack, depth, irq, spare, calls = measured[0]
+    want = [stack, depth, irq, spare]
     out = []
     for page, header, name in IOMCU_PERFORMANCE:
         said = doc_rows(page.read_text(encoding="utf-8"), header)
         if said is None or name not in said:
             out.append(f"{page.name}: no coprocessor table with a row for "
                        f"{name}")
-        elif said[name] != measured[0]:
+        elif said[name] != want:
             out.append(f"{page.name}: the coprocessor table gives {name} "
-                       f"as {said[name]}; measured {measured[0]}")
+                       f"as {said[name]}; measured {want}")
+    out += check_iomcu_prose({"stack": stack, "depth": depth,
+                              "interrupt": irq, "spare": spare,
+                              "calls": calls})
     return out

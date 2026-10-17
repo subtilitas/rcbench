@@ -104,7 +104,10 @@ and recursion are counted and named, as for the panel.
                                         page to this build
     tools/stack_check.py --iomcu [BUILD] --check-doc
                                         and hold core 0's row of the
-                                        coprocessor table in the same pages
+                                        coprocessor table in the same pages,
+                                        its count of calls through a
+                                        register there, and core 0's
+                                        sentence in STATUS.md
 
 The coprocessor's half is tools/stack_iomcu.py.  The ELF reader and the
 call graph both halves use are tools/stack_elf.py.
@@ -603,9 +606,11 @@ def main() -> int:
                     help="BUILD is a coprocessor build: check its two cores")
     ap.add_argument("--check-doc", action="store_true",
                     help="also fail when the panel's task table, or with "
-                         "--iomcu core 0's row of the coprocessor table, "
-                         "in docs/Performance.md or docs/Performance-de.md "
-                         "differs from this build")
+                         "--iomcu core 0's row of the coprocessor table and "
+                         "its count of calls through a register, in "
+                         "docs/Performance.md or docs/Performance-de.md, or "
+                         "core 0's sentence in STATUS.md, differs from this "
+                         "build")
     args = ap.parse_args()
 
     if args.iomcu:

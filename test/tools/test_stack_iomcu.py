@@ -4,6 +4,7 @@ needles, and core 0's row in the docs.
 SPDX-License-Identifier: MIT
 """
 
+import re
 import struct
 
 import pytest
@@ -161,18 +162,94 @@ def test_both_pages_carry_core_0s_row_of_the_coprocessor_table():
         assert said and len(said[name]) == 4, page.name
 
 
-def test_core_0s_row_is_held_to_the_measurement():
+def said_core0():
+    """Core 0's row as Performance.md gives it, and the count of calls
+    through a register its prose gives: a measurement the docs agree
+    with."""
     page, header, name = si.IOMCU_PERFORMANCE[0]
-    said = si.doc_rows(page.read_text(encoding="utf-8"), header)[name]
-    core1 = ("core 1", "core1_main", 1, 2, 3, 4)
-    assert si.check_iomcu_doc([("core 0", "main", *said), core1]) == []
+    text = page.read_text(encoding="utf-8")
+    row = si.doc_rows(text, header)[name]
+    calls = si.number(re.findall(si.IOMCU_PROSE[0][1],
+                                 " ".join(text.split()))[0])
+    return row, calls
+
+
+CORE1 = ("core 1", "core1_main", 1, 2, 3, 4, 5)
+
+
+def test_core_0s_row_is_held_to_the_measurement():
+    said, calls = said_core0()
+    assert si.check_iomcu_doc([("core 0", "main", *said, calls),
+                               CORE1]) == []
     moved = [said[0], said[1] + 8, said[2], said[3] - 8]
-    out = si.check_iomcu_doc([("core 0", "main", *moved), core1])
-    assert len(out) == 2 and out[0] == (
+    out = si.check_iomcu_doc([("core 0", "main", *moved, calls), CORE1])
+    assert out == [
         f"Performance.md: the coprocessor table gives core 0 as {said}; "
-        f"measured {moved}")
+        f"measured {moved}",
+        f"Performance-de.md: the coprocessor table gives Kern 0 as {said}; "
+        f"measured {moved}",
+        f"STATUS.md: gives core 0's depth as {said[1]}; measured {moved[1]}",
+        f"STATUS.md: gives core 0's spare as {said[3]}; measured {moved[3]}",
+    ]
+
+
+def test_the_count_of_calls_through_a_register_is_held_on_every_page():
+    """The count drifted from 137 to 133 under a green CI once: the table
+    was held and the sentence was not."""
+    said, calls = said_core0()
+    out = si.check_iomcu_doc([("core 0", "main", *said, calls + 4), CORE1])
+    assert out == [
+        f"{page}: gives core 0's calls as {calls}; measured {calls + 4}"
+        for page in ("Performance.md", "Performance-de.md", "STATUS.md")]
+
+
+def test_every_prose_pattern_finds_its_sentence_once():
+    for page, pattern, names in si.IOMCU_PROSE:
+        text = " ".join(page.read_text(encoding="utf-8").split())
+        found = re.findall(pattern, text)
+        assert len(found) == 1, page.name
+        assert len(names) == (len(found[0]) if isinstance(found[0], tuple)
+                              else 1), page.name
+
+
+def test_a_page_without_the_sentence_fails(tmp_path, monkeypatch):
+    page = tmp_path / "Performance.md"
+    page.write_text("137 such calls are reachable from `main`;\n",
+                    encoding="utf-8")
+    monkeypatch.setattr(si, "IOMCU_PROSE",
+                        ((page, si.IOMCU_PROSE[0][1], ("calls",)),))
+    assert si.check_iomcu_prose({"calls": 137}) == [
+        "Performance.md: the sentence with core 0's calls is there 0 "
+        "times, not once; IOMCU_PROSE no longer matches the page"]
+
+
+def test_a_sentence_given_twice_fails(tmp_path, monkeypatch):
+    page = tmp_path / "Performance.md"
+    line = "133 such calls are reachable from `main` in the image CI builds"
+    page.write_text(f"{line}.\n{line}.\n", encoding="utf-8")
+    monkeypatch.setattr(si, "IOMCU_PROSE",
+                        ((page, si.IOMCU_PROSE[0][1], ("calls",)),))
+    assert "there 2 times" in si.check_iomcu_prose({"calls": 133})[0]
+
+
+def test_the_sentence_is_read_across_a_line_break(tmp_path, monkeypatch):
+    page = tmp_path / "Performance-de.md"
+    page.write_text("liest: 1 133 solche Aufrufe sind von `main` aus\n"
+                    "  erreichbar, im Image, das CI baut (gcc);\n",
+                    encoding="utf-8")
+    monkeypatch.setattr(si, "IOMCU_PROSE",
+                        ((page, si.IOMCU_PROSE[1][1], ("calls",)),))
+    assert si.check_iomcu_prose({"calls": 1133}) == []
+    assert si.check_iomcu_prose({"calls": 133}) == [
+        "Performance-de.md: gives core 0's calls as 1 133; measured 133"]
+
+
+@pytest.mark.parametrize("text, value", [
+    ("8,192", 8192), ("8 192", 8192), ("8\u202f192", 8192), ("133", 133)])
+def test_a_number_in_either_language(text, value):
+    assert si.number(text) == value
 
 
 def test_a_run_that_did_not_measure_core_0_does_not_hold_its_row():
-    assert si.check_iomcu_doc([("core 1", "core1_main", 1, 2, 3, 4)]) == [
+    assert si.check_iomcu_doc([CORE1]) == [
         "core 0 is not measured; its row in the docs is not held"]

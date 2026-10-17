@@ -44,9 +44,19 @@ short by takes from.
     tools/ram_budget.py [BUILD]               the budget; fails under the
                                               floor.  BUILD defaults to
                                               firmware/panel/build
-    tools/ram_budget.py [BUILD] --check-doc   and hold the table in
+    tools/ram_budget.py [BUILD] --check-doc   and hold the internal RAM
+                                              table and the PSRAM table in
                                               docs/Performance.md and its
                                               German page to this build
+
+The PSRAM table.  firmware/panel/main/psram_bss.lf moves the .bss of the
+objects it names to PSRAM (pseudo-static RAM).  The tool reads what the
+linker placed in .ext_ram.bss from the build's map file, object by object,
+and holds each object's row, the count of objects, their total and the
+bytes ESP-IDF's own fragments place there (ESP_IDF_PSRAM) to the pages.
+An object the fragment names that the map places nothing of fails, and so
+does an archive in .ext_ram.bss that neither the fragment nor
+ESP_IDF_PSRAM names.
 
 SPDX-License-Identifier: MIT
 """
@@ -62,6 +72,8 @@ import stack_elf
 ROOT = Path(__file__).resolve().parent.parent
 PANEL_DIR = ROOT / "firmware" / "panel"
 ELF_NAME = "rcbench-panel.elf"
+MAP_NAME = "rcbench-panel.map"
+PSRAM_LF = PANEL_DIR / "main" / "psram_bss.lf"
 
 # ESP32-S3 internal data RAM: the start, the ROM stack's low end
 # (SOC_ROM_STACK_START - SOC_ROM_STACK_SIZE) and the end.
@@ -119,6 +131,28 @@ PERFORMANCE = (
     (ROOT / "docs" / "Performance.md", "| Item | What it is | Bytes |"),
     (ROOT / "docs" / "Performance-de.md", "| Posten | Was es ist | Bytes |"),
 )
+
+
+# The PSRAM .bss table and the sentence above it, in each language: the
+# table's header, then a pattern over the page with its whitespace folded
+# that gives the count of objects, their total and ESP-IDF's own bytes.
+PSRAM_PAGES = (
+    (ROOT / "docs" / "Performance.md", "| Object | Component | .bss (bytes) |",
+     r"the zero-initialised data \(\.bss\) of (\d+) objects, "
+     r"(\d[\d,]*) bytes, named in `firmware/panel/main/psram_bss\.lf`, .*?"
+     r"wpa_supplicant, (\d[\d,]*) bytes\."),
+    (ROOT / "docs" / "Performance-de.md",
+     "| Objekt | Komponente | .bss (Bytes) |",
+     r"die nullinitialisierten Daten \(\.bss\) von (\d+) Objekten, "
+     r"(\d[\d ]*?) Bytes, benannt in `firmware/panel/main/psram_bss\.lf`, "
+     r".*?wpa_supplicant, (\d[\d ]*?) Bytes\."),
+)
+
+# The archives whose .bss ESP-IDF itself places in PSRAM under
+# CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY: lwIP, the Wi-Fi driver's
+# net80211 and pp, and wpa_supplicant.
+ESP_IDF_PSRAM = ("liblwip.a", "libnet80211.a", "libpp.a",
+                 "libwpa_supplicant.a")
 
 
 def die(msg: str) -> None:
@@ -406,6 +440,145 @@ def doc_rows(text: str, header: str) -> dict | None:
     return rows
 
 
+def lf_objects(path: Path) -> list:
+    """(archive, object) for every entry of a linker fragment that maps an
+    object's .bss to PSRAM (extram_bss), in the fragment's order."""
+    out, archive = [], None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line.startswith("["):
+            archive = None
+        elif line.startswith("archive:"):
+            archive = line.split(":", 1)[1].strip()
+        else:
+            m = re.fullmatch(r"(\w+)\s*\(extram_bss\)", line)
+            if m and archive:
+                out.append((archive, m.group(1)))
+    return out
+
+
+def map_psram(path: Path) -> dict:
+    """{(archive, object): bytes} of the input sections the linker placed
+    in the .ext_ram.bss output section of an ESP-IDF map file: .bss,
+    COMMON and EXT_RAM_BSS_ATTR's .ext_ram.bss alike.  An input section's
+    name and its address, size and file can be on two lines."""
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    start = next((i for i, line in enumerate(lines)
+                  if re.match(r"\.ext_ram\.bss\s+0x", line)), None)
+    if start is None:
+        die(f"{path} has no .ext_ram.bss section")
+    out, held = {}, None
+    for line in lines[start + 1:]:
+        if line and not line.startswith(" "):
+            break                       # the next output section
+        if held is not None:
+            line, held = held + " " + line.strip(), None
+        if re.fullmatch(r" (\.\S+|COMMON)", line):
+            held = line
+            continue
+        m = re.match(r" (?:\.\S+|COMMON)\s+0x[0-9a-fA-F]+\s+"
+                     r"0x([0-9a-fA-F]+)\s+\S*?([^/\s(]+\.a)\(([^)]+)\)$",
+                     line)
+        if m:
+            key = (m.group(2), m.group(3).split(".", 1)[0])
+            out[key] = out.get(key, 0) + int(m.group(1), 16)
+    return out
+
+
+def psram(build: Path) -> tuple:
+    """(objects, esp_idf, errors): objects is (object, component, bytes)
+    for every entry of psram_bss.lf, largest first, as the map places it;
+    esp_idf the bytes of ESP_IDF_PSRAM's archives there."""
+    path = build / MAP_NAME
+    if not path.exists():
+        die(f"{path} not found; build the panel first")
+    placed = map_psram(path)
+    named = lf_objects(PSRAM_LF)
+    errors = []
+    if not named:
+        errors.append(f"{PSRAM_LF.name} names no object")
+    objects = []
+    for archive, obj in named:
+        size = placed.get((archive, obj), 0)
+        if size == 0:
+            errors.append(f"{PSRAM_LF.name} names {obj} in {archive}, and "
+                          f"the map places none of its .bss in PSRAM")
+        objects.append((obj, re.sub(r"^lib|\.a$", "", archive), size))
+    archives = {a for a, _ in named}
+    for archive in sorted({a for a, _ in placed} - archives
+                          - set(ESP_IDF_PSRAM)):
+        errors.append(f"the map places .bss of {archive} in PSRAM, which "
+                      f"neither {PSRAM_LF.name} nor ESP_IDF_PSRAM names")
+    esp_idf = sum(n for (a, _), n in placed.items() if a in ESP_IDF_PSRAM)
+    objects.sort(key=lambda o: (-o[2], o[0]))
+    return objects, esp_idf, errors
+
+
+def psram_rows(text: str, header: str) -> dict | None:
+    """{object: (component, bytes)} for the PSRAM table under @p header;
+    None without the table."""
+    if header not in text:
+        return None
+    rows = {}
+    for row in text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]:
+        cells = [c.strip() for c in row.strip().strip("|").split("|")]
+        name = re.search(r"`([^`]+)`", cells[0])
+        digits = re.sub(r"[,\s\u00a0\u202f]", "", cells[-1])
+        rows[name.group(1) if name else cells[0]] = (
+            cells[1] if len(cells) == 3 else None,
+            int(digits) if digits.isdigit() else None)
+    return rows
+
+
+def number(text: str) -> int:
+    """8,192 in English, 8 192 in German."""
+    return int(re.sub(r"[,\s\u00a0\u202f]", "", text))
+
+
+def check_psram_doc(objects: list, esp_idf: int) -> list:
+    """The PSRAM table and its sentence on each page against psram()."""
+    out = []
+    total = sum(o[2] for o in objects)
+    for page, header, sentence in PSRAM_PAGES:
+        text = page.read_text(encoding="utf-8")
+        said = psram_rows(text, header)
+        if said is None:
+            out.append(f"{page.name}: no PSRAM table to hold")
+        else:
+            for obj, comp, size in objects:
+                if obj not in said:
+                    out.append(f"{page.name}: the PSRAM table has no row "
+                               f"for {obj}")
+                    continue
+                if said[obj][0] != comp:
+                    out.append(f"{page.name}: the PSRAM table gives {obj}'s "
+                               f"component as {said[obj][0]}; the "
+                               f"fragment's archive is lib{comp}.a")
+                if said[obj][1] != size:
+                    out.append(f"{page.name}: the PSRAM table gives {obj} "
+                               f"as {said[obj][1]} bytes; the map places "
+                               f"{size}")
+            for obj in said:
+                if obj not in {o[0] for o in objects}:
+                    out.append(f"{page.name}: the PSRAM table has a row "
+                               f"for {obj}, which {PSRAM_LF.name} does not "
+                               f"name")
+        found = re.findall(sentence, " ".join(text.split()))
+        if len(found) != 1:
+            out.append(f"{page.name}: the sentence with the PSRAM count and "
+                       f"total is there {len(found)} times, not once")
+            continue
+        count, said_total, said_idf = found[0]
+        for what, value, want in (
+                ("the count of objects", count, len(objects)),
+                ("the objects' total", said_total, total),
+                ("ESP-IDF's own .bss", said_idf, esp_idf)):
+            if number(value) != want:
+                out.append(f"{page.name}: gives {what} in PSRAM as {value}; "
+                           f"the map has {want}")
+    return out
+
+
 def check_doc(summary: dict) -> list:
     out = []
     for page, header in PERFORMANCE:
@@ -435,9 +608,9 @@ def main() -> int:
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print every allocation, not only the totals")
     ap.add_argument("--check-doc", action="store_true",
-                    help="also fail when the internal RAM table in "
-                         "docs/Performance.md or docs/Performance-de.md "
-                         "differs from this build")
+                    help="also fail when the internal RAM table or the "
+                         "PSRAM table in docs/Performance.md or "
+                         "docs/Performance-de.md differs from this build")
     args = ap.parse_args()
     build = Path(args.build or PANEL_DIR / "build")
     rows, summary, largest, fails = budget(build)
@@ -464,6 +637,14 @@ def main() -> int:
                      f"heap, under the floor of {FLOOR}")
     if args.check_doc:
         fails += check_doc(summary)
+        objects, esp_idf, errors = psram(build)
+        label = f"PSRAM .bss, {len(objects)} objects"
+        print(f"{label:<31} {fmt(sum(o[2] for o in objects)):>9}")
+        if args.verbose:
+            for obj, comp, size in objects:
+                print(f"  {obj + ' (' + comp + ')':<44} {fmt(size):>9}")
+        print(f"{'PSRAM .bss, ESP-IDF libraries':<31} {fmt(esp_idf):>9}")
+        fails += errors + check_psram_doc(objects, esp_idf)
     for f in fails:
         print("FAIL " + f)
     print(f"{len(fails)} failure(s)")
