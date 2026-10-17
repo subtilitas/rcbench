@@ -10,7 +10,7 @@
  * device under test.  A type or a frame rate that can destroy a servo not
  * made for it -- a heli profile, anything above 60 Hz -- is applied only
  * after a warning held for two seconds, and is never kept past a restart.
- * The overlay is servo_settings_panel.c; the state and the layout both
+ * The overlay is servo_settings_panel.c; the state and the layout the
  * files share are servo_screen_int.h.
  *
  * START TEST, on the TEST page, runs the automatic test (servo_test.h): the

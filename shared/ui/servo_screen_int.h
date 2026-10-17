@@ -10,7 +10,9 @@
  * The state is one object, `s`, defined in servo_screen.c, so its .bss
  * stays where psram_bss.lf puts servo_screen's.  The helpers below are
  * static inline, as they were static in the one file the screen was: GCC
- * inlines them in each file as it did.
+ * inlines them in each file as it did.  test_ended() is static inline as
+ * well.  The one file inlined it in servo_screen_service() and called it
+ * out of line from three places; servo_test_panel.c inlines it at those.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -565,7 +567,7 @@ typedef struct {
 /* The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
-/* --- servo_screen.c's side, which the settings overlay calls ------------- */
+/* --- servo_screen.c's side, which the overlay and the test panel call ---- */
 
 /* The profile in force (apply_profile()) and the one asked for, which
  * opens the warning first where it can destroy a servo (ask_profile()). */
@@ -683,7 +685,7 @@ static inline void test_ended(void)
     ++s.ctrl_rev;
 }
 
-/* --- helpers both files inline ------------------------------------------- */
+/* --- helpers the three files inline -------------------------------------- */
 
 static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
