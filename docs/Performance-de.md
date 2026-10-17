@@ -437,13 +437,12 @@ wpa_supplicant, 13 742 Bytes.
 Gelesen aus der Map-Datei des Builds mit ESP-IDF v5.4. CI führt
 `tools/ram_budget.py --check-doc` auf diesem Build aus; das schlägt fehl,
 wenn eine Zeile, die Anzahl, die Summe oder die 13 742 Bytes von ESP-IDF
-von der Map abweichen. Es schlägt auch fehl, wenn `psram_bss.lf` ein Objekt
-nennt, von dem die Map keine .bss platziert, wenn das Fragment eine andere
-Zeile enthält als Einträge `object (extram_bss)` unter einem Kopf
-`[mapping:...]`, und wenn die .bss eines
-Archivs im PSRAM landet, das weder das Fragment noch die Liste des
-Werkzeugs mit lwIP, net80211, pp und wpa_supplicant nennt. `-v` listet
-jedes Objekt.
+von der Map abweichen oder eine Zeile doppelt steht. Es schlägt auch fehl
+bei einer Zeile in `psram_bss.lf`, die kein Eintrag `object (extram_bss)`
+unter einem Kopf `[mapping:...]` ist, bei einem Objekt, das das Fragment
+nennt und von dem die Map keine .bss platziert, und bei einem Objekt im
+PSRAM, das das Fragment nicht nennt, außerhalb von lwIP, net80211, pp und
+wpa_supplicant. `-v` listet jedes Objekt.
 
 Ein Objekt zieht nur um, wenn seinen Zustand
 

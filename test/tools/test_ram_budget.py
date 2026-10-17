@@ -394,6 +394,7 @@ def test_a_drifted_total_count_or_esp_idf_figure_fails(psram_tree):
                   encoding="utf-8")
     objects, idf, _ = rb.psram(build)
     assert rb.check_psram_doc(objects, idf) == [
+        "Performance.md: gives 3 objects in PSRAM; its table has 2 row(s)",
         "Performance.md: gives the count of objects in PSRAM as 3; the map "
         "has 2",
         f"Performance.md: gives the objects' total in PSRAM as "
@@ -407,7 +408,8 @@ def test_an_object_missing_from_the_table_fails(psram_tree):
     en.write_text(en_page(ROWS[:1], 2, KST + CSV, IDF), encoding="utf-8")
     objects, idf, _ = rb.psram(build)
     assert rb.check_psram_doc(objects, idf) == [
-        "Performance.md: the PSRAM table has no row for log_csv"]
+        "Performance.md: the PSRAM table has no row for log_csv",
+        "Performance.md: gives 2 objects in PSRAM; its table has 1 row(s)"]
 
 
 def test_a_row_the_fragment_does_not_name_fails(psram_tree):
@@ -417,7 +419,8 @@ def test_a_row_the_fragment_does_not_name_fails(psram_tree):
     objects, idf, _ = rb.psram(build)
     assert rb.check_psram_doc(objects, idf) == [
         "Performance.md: the PSRAM table has a row for gone_screen, which "
-        "psram_bss.lf does not name"]
+        "psram_bss.lf does not name",
+        "Performance.md: gives 2 objects in PSRAM; its table has 3 row(s)"]
 
 
 def test_a_wrong_component_fails(psram_tree):
@@ -457,8 +460,43 @@ def test_an_archive_nobody_names_fails(psram_tree):
         encoding="utf-8")
     _, idf, errors = rb.psram(build)
     assert idf == 0x338
-    assert errors == ["the map places .bss of libmbedcrypto.a in PSRAM, "
-                      "which neither psram_bss.lf nor ESP_IDF_PSRAM names"]
+    assert errors == ["the map places .bss of aes in libmbedcrypto.a in "
+                      "PSRAM, which neither psram_bss.lf nor ESP_IDF_PSRAM "
+                      "names"]
+
+
+def test_an_unnamed_object_of_a_named_archive_fails(psram_tree):
+    """libbench.a is named for kst_card; another of its objects that lands
+    in PSRAM (EXT_RAM_BSS_ATTR) is not covered by the archive's name."""
+    build, _, _ = psram_tree
+    (build / rb.MAP_NAME).write_text(
+        MAP.replace(" .bss.later ", " .ext_ram.bss.x\n"
+                    "                0x3c1c1860       0x40 "
+                    "esp-idf/bench/libbench.a(kst_new.c.obj)\n"
+                    " .bss.later ", 1).replace(
+            "\n\n.iram0.text_end",
+            "\n .ext_ram.bss.y 0x3c1c1900       0x40 "
+            "esp-idf/bench/libbench.a(kst_new.c.obj)\n\n.iram0.text_end"),
+        encoding="utf-8")
+    objects, _, errors = rb.psram(build)
+    assert objects == ROWS
+    assert errors == ["the map places .bss of kst_new in libbench.a in "
+                      "PSRAM, which neither psram_bss.lf nor ESP_IDF_PSRAM "
+                      "names"]
+
+
+@pytest.mark.parametrize("rows", [
+    ROWS + [ROWS[0]],                                  # an exact duplicate
+    [("kst_card", "bench", 1)] + ROWS,                 # wrong, then right
+])
+def test_a_row_given_twice_fails(psram_tree, rows):
+    build, en, _ = psram_tree
+    en.write_text(en_page(rows, 2, KST + CSV, IDF), encoding="utf-8")
+    objects, idf, _ = rb.psram(build)
+    out = rb.check_psram_doc(objects, idf)
+    assert "Performance.md: the PSRAM table has kst_card twice" in out
+    assert ("Performance.md: gives 2 objects in PSRAM; its table has 3 "
+            "row(s)") in out
 
 
 def test_check_doc_reads_the_map(psram_tree, monkeypatch, capsys):
@@ -498,4 +536,4 @@ def test_both_pages_list_the_fragments_objects():
     named = {o for _, o in rb.lf_objects(rb.PSRAM_LF)[0]}
     for page, header, _ in rb.PSRAM_PAGES:
         said = rb.psram_rows(page.read_text(encoding="utf-8"), header)
-        assert set(said) == named, page.name
+        assert sorted(r[0] for r in said) == sorted(named), page.name

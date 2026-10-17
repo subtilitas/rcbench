@@ -54,10 +54,12 @@ objects it names to PSRAM (pseudo-static RAM).  The tool reads what the
 linker placed in .ext_ram.bss from the build's map file, object by object,
 and holds each object's row, the count of objects, their total and the
 bytes ESP-IDF's own fragments place there (ESP_IDF_PSRAM) to the pages.
-An object the fragment names that the map places nothing of fails, and so
-do a line of the fragment other than `object (extram_bss)` entries under
-[mapping:...] headers (lf_objects() says why) and an archive in .ext_ram.bss that neither the fragment nor
-ESP_IDF_PSRAM names.
+It fails on an object the fragment names that the map places nothing of,
+on a line of the fragment other than `object (extram_bss)` entries under
+[mapping:...] headers (lf_objects() says why), on an object in
+.ext_ram.bss that the fragment does not name, outside ESP_IDF_PSRAM's
+archives, and on a table row given twice or a count other than the
+table's rows.
 
 SPDX-License-Identifier: MIT
 """
@@ -525,29 +527,31 @@ def psram(build: Path) -> tuple:
             errors.append(f"{PSRAM_LF.name} names {obj} in {archive}, and "
                           f"the map places none of its .bss in PSRAM")
         objects.append((obj, re.sub(r"^lib|\.a$", "", archive), size))
-    archives = {a for a, _ in named}
-    for archive in sorted({a for a, _ in placed} - archives
-                          - set(ESP_IDF_PSRAM)):
-        errors.append(f"the map places .bss of {archive} in PSRAM, which "
-                      f"neither {PSRAM_LF.name} nor ESP_IDF_PSRAM names")
+    # Object by object, not archive by archive: an object of libui.a the
+    # fragment does not name, moved by EXT_RAM_BSS_ATTR, is not counted.
+    for archive, obj in sorted(set(placed) - set(named)):
+        if archive not in ESP_IDF_PSRAM:
+            errors.append(f"the map places .bss of {obj} in {archive} in "
+                          f"PSRAM, which neither {PSRAM_LF.name} nor "
+                          f"ESP_IDF_PSRAM names")
     esp_idf = sum(n for (a, _), n in placed.items() if a in ESP_IDF_PSRAM)
     objects.sort(key=lambda o: (-o[2], o[0]))
     return objects, esp_idf, errors
 
 
-def psram_rows(text: str, header: str) -> dict | None:
-    """{object: (component, bytes)} for the PSRAM table under @p header;
-    None without the table."""
+def psram_rows(text: str, header: str) -> list | None:
+    """(object, component, bytes) for every row of the PSRAM table under
+    @p header, a row given twice twice; None without the table."""
     if header not in text:
         return None
-    rows = {}
+    rows = []
     for row in text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]:
         cells = [c.strip() for c in row.strip().strip("|").split("|")]
         name = re.search(r"`([^`]+)`", cells[0])
         digits = re.sub(r"[,\s\u00a0\u202f]", "", cells[-1])
-        rows[name.group(1) if name else cells[0]] = (
-            cells[1] if len(cells) == 3 else None,
-            int(digits) if digits.isdigit() else None)
+        rows.append((name.group(1) if name else cells[0],
+                     cells[1] if len(cells) == 3 else None,
+                     int(digits) if digits.isdigit() else None))
     return rows
 
 
@@ -562,10 +566,17 @@ def check_psram_doc(objects: list, esp_idf: int) -> list:
     total = sum(o[2] for o in objects)
     for page, header, sentence in PSRAM_PAGES:
         text = page.read_text(encoding="utf-8")
-        said = psram_rows(text, header)
-        if said is None:
+        rows = psram_rows(text, header)
+        said = {}
+        if rows is None:
             out.append(f"{page.name}: no PSRAM table to hold")
         else:
+            for obj, comp, size in rows:
+                if obj in said:
+                    out.append(f"{page.name}: the PSRAM table has {obj} "
+                               f"twice")
+                    continue
+                said[obj] = (comp, size)
             for obj, comp, size in objects:
                 if obj not in said:
                     out.append(f"{page.name}: the PSRAM table has no row "
@@ -590,6 +601,9 @@ def check_psram_doc(objects: list, esp_idf: int) -> list:
                        f"total is there {len(found)} times, not once")
             continue
         count, said_total, said_idf = found[0]
+        if rows is not None and number(count) != len(rows):
+            out.append(f"{page.name}: gives {count} objects in PSRAM; its "
+                       f"table has {len(rows)} row(s)")
         for what, value, want in (
                 ("the count of objects", count, len(objects)),
                 ("the objects' total", said_total, total),
