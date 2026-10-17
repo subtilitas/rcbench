@@ -245,8 +245,14 @@ Host-Tests werden mit den Flags der Bibliotheken gebaut: `-Wall -Wextra
 -Werror -Wshadow -Wconversion -Wno-sign-conversion`; `test/host/.clang-tidy`
 listet die für sie abgeschalteten Checks, jeweils mit Grund.
 
-CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5, pytest 9.1.1 und
-cppcheck 2.17.1 (das PyPI-Wheel `cppcheck` 1.5.1) in genau diesen Versionen. Jeder Job hat ein `timeout-minutes`-Limit: 100 min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400 s, 90 min), 10 bis 60 min für die übrigen. ctest
+CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
+genau diesen Versionen und cppcheck 2.17.1, gebaut aus dem offiziellen
+Quellarchiv des Tags (`tools/install_cppcheck.sh` prüft dessen SHA-256 gegen
+den Wert in `ci.yml` und bricht bei Abweichung ab; der Build wird nach Version
+und Hash gecacht). Das cppcheck der Distribution ist älter (2.13 unter Ubuntu
+24.04) und meldet anders; lokal 2.17.1 mit `tools/install_cppcheck.sh 2.17.1
+<SHA-256 aus ci.yml> ~/cppcheck-2.17.1` oder aus einem Distributionspaket von
+2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100 min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400 s, 90 min), 10 bis 60 min für die übrigen. ctest
 bricht einen Test nach 120 s ab. Ist die Umgebungsvariable `CI` gesetzt,
 lässt ein fehlender C++-Compiler den CMake-Configure-Schritt der Host-Suite
 fehlschlagen, und ein fehlendes `git`, `cmake` oder `cc` lässt die
