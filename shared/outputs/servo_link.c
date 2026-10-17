@@ -405,7 +405,9 @@ static bool write_servo(const servo_cmd_t sv)
             atomic_store(&s_servo_hold_lost_seq,
                          (unsigned)servo_cmd_pause_root(&sv));
             atomic_store(&s_servo_hold_lost, true);
-            return true;
+            /* Not taken as held: a caller that voids an owed release on
+             * success would cancel the one just owed. */
+            return false;
         }
         const uint16_t hold = LINK_SV_HOLD;
         const uint32_t sent = sl_now_ms();
