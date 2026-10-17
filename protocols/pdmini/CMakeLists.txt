@@ -4,7 +4,7 @@
 # the driver talks through three callbacks, rp2350/ supplies them on two
 # PIO (programmable input/output) state machines, and a host suite runs
 # the driver against a modelled module.
-set(SRCS pdmini.c)
+set(SRCS pdmini.c pdmini_codec.c pdmini_jobs.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
