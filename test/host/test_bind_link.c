@@ -104,7 +104,7 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 /* The coprocessor's bank: the channels' roles, commands and outputs. */
 static outputs_t s_bank;
 
-/* The two pages' whole-page rules, as firmware/iomcu/src/main.c orders
+/* The two pages' whole-page rules, as firmware/iomcu/src/iomcu_pages.c orders
  * them, less the ones that need its silicon: refuse_slots stands for a
  * bind the silicon refuses. */
 static uint8_t take_cfg(void *ctx, const uint16_t *next)

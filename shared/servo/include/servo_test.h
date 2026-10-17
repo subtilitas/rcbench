@@ -182,6 +182,8 @@
 #include <stdint.h>
 
 #include "servo_move.h"
+#include "servo_str.h"
+#include "servo_test_io.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -261,93 +263,6 @@ extern "C" {
 /** The angle read before a command is the move's start while younger than
  *  this. */
 #define SERVO_TEST_ENC_STALE_MS      500u
-
-/* ------------------------------------------------------- what it reads */
-
-/** One reading of the supply, as SUPPLY has it (supply_state_t). */
-typedef struct {
-    float    v, i;          /**< at the output, V and A                 */
-    float    set_v;         /**< the voltage set point, read back       */
-    float    set_i;         /**< the current limit, read back           */
-    uint8_t  mode;          /**< 0 off, 1 CV, 2 CC (supply_mode_t)      */
-    bool     output;        /**< switched on                            */
-    bool     online;        /**< the supply answers                     */
-    bool     ok;            /**< voltage and current both arrived       */
-    uint8_t  trip;          /**< nonzero: tripped (supply_trip_kind_t)  */
-    uint16_t samples;       /**< readings the supply took, mod 65536    */
-    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
-} servo_test_reading_t;
-
-/** One 50 ms window of INA3221 CH1, as the window ring carries it
- *  (sense_link_win_t).  A clipped sample counts in the three currents at
- *  the end of the range it read. */
-typedef struct {
-    uint16_t number;        /**< the window's, modulo 65536             */
-    bool     current;       /**< it holds current samples               */
-    bool     voltage;       /**< it holds bus voltage samples           */
-    uint8_t  clipped;       /**< samples at an end of the range         */
-    int16_t  mean_ma, max_ma, min_ma;   /**< mA, signed                 */
-    uint16_t mean_mv, min_mv;           /**< at the load side of the shunt */
-    /** The latest it can have closed, on the run's clock
-     *  (sense_link_win_t.taken_ms): windows that arrive together carry
-     *  times 50 ms apart.  The window began SERVO_TEST_WIN_MS before. */
-    uint32_t taken_ms;
-} servo_test_win_t;
-
-/** Readings of the encoder kept for matching with the supply's rows.  The
- *  panel has one about every 40 ms, so 16 span 640 ms: more than
- *  SERVO_TEST_ENC_STALE_MS. */
-#define SERVO_TEST_ENC_HIST          16u
-
-/** A kept reading. */
-typedef struct {
-    uint32_t ms;            /**< when the panel had it                   */
-    uint16_t raw;           /**< RAW ANGLE, 0 to 4095                    */
-} servo_test_enc_sample_t;
-
-/** One reading of the output encoder, as the SENSE page has it. */
-typedef struct {
-    bool     valid;         /**< the part answers, detects its magnet and
-                                 has an angle                           */
-    uint16_t raw;           /**< RAW ANGLE, 0 to 4095                   */
-    uint16_t still_ms;      /**< the angle within the tolerance for this
-                                 long at the reading                    */
-    uint32_t taken_ms;      /**< when the panel had it, on the run's clock */
-    bool     gap;           /**< readings before this one were lost: the
-                                 angle between is not known, as after a
-                                 reading that is not valid             */
-    bool     no_magnet;     /**< not valid because the part answers and
-                                 detects no magnet (STATUS MD clear)   */
-    bool     weak, strong;  /**< valid, with the field too weak (ML) or
-                                 too strong (MH): the angle's noise is
-                                 not specified                          */
-} servo_test_enc_t;
-
-/** @p raw from @p centre on the circle, degrees, -180 to just under 180:
- *  360 / 4096 a count.  The difference of any two counts the shortest way
- *  round. */
-float servo_test_enc_deg(uint16_t raw, uint16_t centre);
-
-/** @p deg on the circle: -180 to just under 180. */
-float servo_test_enc_wrap(float deg);
-
-/** What the run wants done, from servo_test_step(). */
-typedef struct {
-    bool     set;           /**< the set points to set_v and set_i      */
-    float    set_v, set_i;
-    bool     on;            /**< the output on, after the set points    */
-    bool     off;           /**< the output off                         */
-    bool     command;       /**< the servo to cmd_us, at once (no slew) */
-    uint16_t cmd_us;
-    bool     release;       /**< the servo let go, to its centre        */
-} servo_test_do_t;
-
-/** What the caller knows each step. */
-typedef struct {
-    bool  armed;
-    float v_max;            /**< the voltage cap in force: SUPPLY's caps,
-                                 VOLTAGE MAX and the module's input clamp */
-} servo_test_in_t;
 
 /* ------------------------------------------------------ what it is told */
 
@@ -586,20 +501,8 @@ typedef struct {
 
 /* --------------------------------------------------------- the outbox */
 
-/** The longest line a log row or a report line takes, terminator included:
- *  the CSV's header with the encoder's columns is 219 characters. */
-#define SERVO_TEST_LINE_MAX 224u
 /** Log rows waiting for the card.  A row is a reading, 10 to 20 a second. */
 #define SERVO_TEST_OUTBOX   16u
-
-typedef enum {
-    SERVO_TEST_OUT_NONE = 0,
-    SERVO_TEST_OUT_OPEN,    /**< a run begins: its files are opened     */
-    SERVO_TEST_OUT_CSV,     /**< one line of the CSV                    */
-    SERVO_TEST_OUT_TXT,     /**< one line of the report                 */
-    SERVO_TEST_OUT_END,     /**< the run's files are complete           */
-    SERVO_TEST_OUT_OPEN_TXT,/**< a report alone begins: a TXT, no CSV    */
-} servo_test_out_t;
 
 typedef struct {
     servo_test_cfg_t   cfg;
@@ -843,259 +746,7 @@ void servo_test_pop(servo_test_t *t);
 /** Whether everything of the last run has been handed over. */
 bool servo_test_drained(const servo_test_t *t);
 
-/* ------------------------------------------------- report (servo_report.c) */
-
-/**
- * Every word the run puts in its files and on the SERVO screen, in one
- * table, so another language is another table.  The SERVO_STR_R_ entries
- * are the report's: some are printf formats, and a translation converts the
- * same arguments in the same order.
- */
-typedef enum {
-    SERVO_STR_PHASE_NONE = 0,
-    SERVO_STR_PHASE_SET,
-    SERVO_STR_PHASE_SETTLE,
-    SERVO_STR_PHASE_IDLE,
-    SERVO_STR_PHASE_MOVE,
-    SERVO_STR_PHASE_HOLD,
-    SERVO_STR_PASS,
-    SERVO_STR_FAIL,
-    SERVO_STR_ABORTED,
-    SERVO_STR_NOT_MEASURABLE,
-    SERVO_STR_TEST_STEP,
-    SERVO_STR_TEST_BROWNOUT,
-    SERVO_STR_AB_NONE,
-    SERVO_STR_AB_STOP,
-    SERVO_STR_AB_DISARMED,
-    SERVO_STR_AB_LINK,
-    SERVO_STR_AB_LEFT,
-    SERVO_STR_AB_OPERATOR,
-    SERVO_STR_AB_SETTINGS,
-    SERVO_STR_AB_TOUCH,
-    SERVO_STR_AB_SUPPLY_LOST,
-    SERVO_STR_AB_TRIPPED,
-    SERVO_STR_AB_SUPPLY_OFF,
-    SERVO_STR_AB_STALE,
-    SERVO_STR_AB_NOT_ON,
-    SERVO_STR_AB_SET_NOT_TAKEN,
-    SERVO_STR_AB_CAP,
-    SERVO_STR_AB_STALL,
-    SERVO_STR_AB_CC,
-    SERVO_STR_AB_WIN_STALE,
-    SERVO_STR_AB_INA_RESET,
-    SERVO_STR_AB_INA_SILENT,
-    SERVO_STR_AB_INA_NO_WINDOW,
-    SERVO_STR_AB_INA_SETUP,
-    SERVO_STR_AB_INA_METER,
-    SERVO_STR_START_OK,
-    SERVO_STR_START_NO_STEPS,
-    SERVO_STR_START_ABOVE_CAP,
-    SERVO_STR_START_NO_SUPPLY,
-    SERVO_STR_START_BAD_ENDS,
-    /* The SERVO screen's, before a run is asked of the engine. */
-    SERVO_STR_START_NOT_ARMED,
-    SERVO_STR_START_BUSY,
-    /* The TXT report, in the order it is written. */
-    SERVO_STR_R_TITLE,
-    SERVO_STR_R_RESULT,
-    SERVO_STR_R_RESULT_WHY,
-    SERVO_STR_R_RESULT_UNSEEN,
-    SERVO_STR_R_RESULT_BO_UNSEEN,
-    SERVO_STR_R_DEVICE,
-    SERVO_STR_R_FIRMWARE,
-    SERVO_STR_R_LOG,
-    SERVO_STR_R_SUPPLY,
-    SERVO_STR_R_SUPPLY_MODEL,
-    SERVO_STR_R_READINGS,
-    SERVO_STR_R_READINGS_FEW,
-    SERVO_STR_R_SKIPPED,
-    SERVO_STR_R_RESOLUTION,
-    SERVO_STR_R_RESOLUTION_UNKNOWN,
-    SERVO_STR_R_LAG,
-    SERVO_STR_R_REPEATS,
-    SERVO_STR_R_UPPER_BOUND,
-    SERVO_STR_R_DURATION,
-    SERVO_STR_R_ROWS,
-    SERVO_STR_R_SETTINGS,
-    SERVO_STR_R_TYPE,
-    SERVO_STR_R_RATE,
-    SERVO_STR_R_DANGER,
-    SERVO_STR_R_DANGER_NONE,
-    SERVO_STR_R_HV,
-    SERVO_STR_R_HV_OFF,
-    SERVO_STR_R_HV_ON_RUN,
-    SERVO_STR_R_HV_ON_NONE,
-    SERVO_STR_R_ENDS,
-    SERVO_STR_R_STEPS,
-    SERVO_STR_R_STEPS_NONE,
-    SERVO_STR_R_BROWNOUT,
-    SERVO_STR_R_BROWNOUT_NOT_RUN,
-    SERVO_STR_R_I_LIMIT,
-    SERVO_STR_R_TIMING,
-    SERVO_STR_R_LEN_MOVES,
-    SERVO_STR_R_LEN_TIME,
-    SERVO_STR_R_LIMITS,
-    SERVO_STR_R_ON,
-    SERVO_STR_R_OFF,
-    SERVO_STR_R_PER_STEP,
-    SERVO_STR_R_COLUMNS,
-    SERVO_STR_R_STEP_NOT_RUN,
-    SERVO_STR_R_CUT_SHORT,
-    SERVO_STR_R_NO_STEP,
-    SERVO_STR_R_LATE,
-    SERVO_STR_R_UNSEEN,
-    SERVO_STR_R_THRESHOLD,
-    SERVO_STR_R_ARRIVAL,
-    SERVO_STR_R_BO_HEAD,
-    SERVO_STR_R_BO_NOT_RUN,
-    SERVO_STR_R_BO_NOT_REACHED,
-    SERVO_STR_R_BO_STOPPED,
-    SERVO_STR_R_BO_ALL,
-    SERVO_STR_R_BO_NONE,
-    SERVO_STR_R_BO_RULE,
-    SERVO_STR_R_LIM_HEAD,
-    SERVO_STR_R_LIM_IDLE,
-    SERVO_STR_R_LIM_HOLD,
-    SERVO_STR_R_LIM_TRAVEL,
-    SERVO_STR_R_LIM_TRAVEL_OFF,
-    SERVO_STR_R_LIM_TRAVEL_BOUND,
-    SERVO_STR_R_LIM_TRAVEL_NONE,
-    SERVO_STR_R_LIM_STALL,
-    SERVO_STR_R_LIM_LATE,
-    SERVO_STR_R_LIM_UNSEEN,
-    SERVO_STR_R_LIM_BO_SEEN,
-    SERVO_STR_R_LIM_BO_UNSEEN,
-    SERVO_STR_R_NOT_CHECKED,
-    SERVO_STR_R_NOT_MEASURED,
-    SERVO_STR_R_UNM_HEAD,
-    SERVO_STR_R_UNM_POSITION,
-    SERVO_STR_R_UNM_PEAKS,
-    SERVO_STR_R_UNM_PATH,
-    /* The output encoder's. */
-    SERVO_STR_R_ENC_DEVICE,
-    SERVO_STR_R_ENC_HEAD,
-    SERVO_STR_R_ENC_COLUMNS,
-    SERVO_STR_R_ENC_CMD,
-    SERVO_STR_R_ENC_END,
-    SERVO_STR_R_ENC_SETTLED,
-    SERVO_STR_R_ENC_TRAVEL,
-    SERVO_STR_R_ENC_UNMOVED,
-    SERVO_STR_R_ENC_LATE,
-    SERVO_STR_R_ENC_DEADBAND,
-    SERVO_STR_R_ENC_NONE,
-    SERVO_STR_R_ENC_NO_MAGNET,
-    SERVO_STR_R_ENC_FIELD,
-    SERVO_STR_R_UNM_POSITION_ENC,
-    /* The meter's. */
-    SERVO_STR_R_LOG_WIN,
-    SERVO_STR_R_SUPPLY_PDMINI,
-    SERVO_STR_R_CURRENT,
-    SERVO_STR_R_CURRENT_INA,
-    SERVO_STR_R_VOLTAGE,
-    SERVO_STR_R_VOLTAGE_INA,
-    SERVO_STR_R_SHUNT,
-    SERVO_STR_R_INA_UNUSED,
-    SERVO_STR_R_INA_OLD,
-    SERVO_STR_R_INA_NOT_HELD,
-    SERVO_STR_R_INA_SILENT,
-    SERVO_STR_R_INA_NO_WINDOW,
-    SERVO_STR_R_INA_RESET,
-    SERVO_STR_R_INA_SETTLING,
-    SERVO_STR_R_INA_MODEL,
-    SERVO_STR_R_READINGS_WIN,
-    SERVO_STR_R_SKIPPED_WIN,
-    SERVO_STR_R_RESOLUTION_WIN,
-    SERVO_STR_R_CLIPPED,
-    SERVO_STR_R_CC,
-    SERVO_STR_R_NEGATIVE,
-    SERVO_STR_R_LIM_STALL_LIMIT,
-    SERVO_STR_R_LIM_STALL_RANGE,
-    SERVO_STR_R_UNM_POSITION_INA,
-    SERVO_STR_R_UNM_PEAKS_INA,
-    SERVO_STR_R_METER_MODEL,
-
-    /* The limit run (servo_limrun.h): its box on the SERVO screen, then
-     * its report. */
-    SERVO_STR_L_FOUND,
-    SERVO_STR_L_FREE,
-    SERVO_STR_L_PH_SEARCH,
-    SERVO_STR_L_PH_SAFE,
-    SERVO_STR_L_PH_CONNECT,
-    SERVO_STR_L_PH_WRITE,
-    SERVO_STR_L_PH_LEAVE,
-    SERVO_STR_L_PH_ARM,
-    SERVO_STR_L_PH_PROBE,
-    SERVO_STR_L_PH_CHECK,
-    SERVO_STR_L_WHY_HARD,
-    SERVO_STR_L_WHY_CLIPPED,
-    SERVO_STR_L_WHY_STALL,
-    SERVO_STR_L_WHY_SEARCH_LONG,
-    SERVO_STR_L_WHY_SUPPLY,
-    SERVO_STR_L_WHY_BENCH,
-    SERVO_STR_L_WHY_NOT_KST,
-    SERVO_STR_L_WHY_PROG,
-    SERVO_STR_L_WHY_WRITE,
-    SERVO_STR_L_WHY_OTHER,
-    SERVO_STR_L_WHY_MAPPING,
-    SERVO_STR_L_WHY_SMALLEST,
-    SERVO_STR_L_WHY_CAP,
-    SERVO_STR_L_WHY_STILL,
-    SERVO_STR_L_WHY_NO_VOLTAGE,
-    SERVO_STR_L_WHY_NO_STOP,
-    SERVO_STR_L_WHY_BEFORE_NEUTRAL,
-    SERVO_STR_L_WHY_NEUTRAL,
-    SERVO_STR_L_WHY_RANGE,
-    SERVO_STR_L_R_TITLE,
-    SERVO_STR_L_R_MODE_SEARCH,
-    SERVO_STR_L_R_MODE_PROGRAM,
-    SERVO_STR_L_R_MODE_PULSES,
-    SERVO_STR_L_R_SEARCH,
-    SERVO_STR_L_R_OUTPUT,
-    SERVO_STR_L_R_PULSE,
-    SERVO_STR_L_R_METER,
-    SERVO_STR_L_R_RULE,
-    SERVO_STR_L_R_PROTECT,
-    SERVO_STR_L_R_ENDS_HEAD,
-    SERVO_STR_L_R_CHECK_HEAD,
-    SERVO_STR_L_R_LOW,
-    SERVO_STR_L_R_HIGH,
-    SERVO_STR_L_R_END_BOUND,
-    SERVO_STR_L_R_END_FREE,
-    SERVO_STR_L_R_END_NOT_RUN,
-    SERVO_STR_L_R_ANGLE,
-    SERVO_STR_L_R_ANGLE_NONE,
-    SERVO_STR_L_R_ENC_OFF,
-    SERVO_STR_L_R_PROG_HEAD,
-    SERVO_STR_L_R_PROG_OFF,
-    SERVO_STR_L_R_PROG_FREE,
-    SERVO_STR_L_R_PROG_NO_SERVO,
-    SERVO_STR_L_R_SERVO,
-    SERVO_STR_L_R_PULSES,
-    SERVO_STR_L_R_PULSE_SET,
-    SERVO_STR_L_R_RANGE,
-    SERVO_STR_L_R_LEFT,
-    SERVO_STR_L_R_RIGHT,
-    SERVO_STR_L_R_REG,
-    SERVO_STR_L_R_REG_LIN,
-    SERVO_STR_L_R_SIDE_LO,
-    SERVO_STR_L_R_SIDE_HI,
-    SERVO_STR_L_R_SIDE_UNKNOWN,
-    SERVO_STR_L_R_METHOD,
-    SERVO_STR_L_R_WRITES,
-    SERVO_STR_L_R_BACKUP,
-    SERVO_STR_L_R_BACKUP_MEM,
-    SERVO_STR_L_R_RESTORE,
-    SERVO_STR_L_R_UNIT,
-    SERVO_STR_L_R_BENCH,
-    SERVO_STR_COUNT
-} servo_str_t;
-
-/** The English text of @p id; "" for one out of range. */
-const char *servo_str(servo_str_t id);
-
-/** @p id from @p table, or the English where @p table is NULL or holds
- *  none; "" for one out of range. */
-const char *servo_str_in(const char *const *table, servo_str_t id);
+/* ------------------------------------------------------ words (servo_str.c) */
 
 /** The entries the names below come from, for a caller with its own
  *  table. */
@@ -1117,6 +768,8 @@ const char *servo_test_csv_header_enc(void);
 
 /** The word a row's meter column carries: INA3221, PDMINI or MODEL. */
 const char *servo_test_meter_word(uint8_t kind);
+
+/* ------------------------------------------------- report (servo_report.c) */
 
 /**
  * The line that says STALL AT cannot be reached in a run of @p cfg, in the

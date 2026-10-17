@@ -1018,7 +1018,7 @@ port is in PWM again.
 | The coprocessor reports a result, a refusal or an outcome this panel has no line for | `The coprocessor reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own
-line. [The link page](Link.md#the-programming-port-for-kst-and-chaservo-servos) lists the codes.
+line. [The link page](LinkKST.md) lists the codes.
 
 ## Limitations
 
@@ -1163,7 +1163,7 @@ rest, a coprocessor that starts again, and a programmer that has the port
 for each of the 16 pairs of page and wanted values. `test_settings` runs
 a held setting against every call that changes one, and `test_servo` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
-of the files on a card held in memory. `test_kst_prog` runs the model and
+of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and

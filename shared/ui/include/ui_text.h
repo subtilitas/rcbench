@@ -24,7 +24,7 @@
 
 #include <stddef.h>
 
-#include "servo_test.h"
+#include "servo_str.h"
 #include "settings.h"
 
 #ifdef __cplusplus
