@@ -10,6 +10,8 @@
  * device under test.  A type or a frame rate that can destroy a servo not
  * made for it -- a heli profile, anything above 60 Hz -- is applied only
  * after a warning held for two seconds, and is never kept past a restart.
+ * The overlay is servo_settings_panel.c; the state and the layout both
+ * files share are servo_screen_int.h.
  *
  * START TEST, on the TEST page, runs the automatic test (servo_test.h): the
  * screen hands it the supply's samples and the clock, and does what it asks
@@ -46,13 +48,9 @@
 #include "ui_value_gate.h"
 #include "ui_widgets.h"
 
-#define W 800
-#define H (480 - UI_BAND_H)
-
-#define PAD    6
-#define LCARD_W 488
-#define RCARD_X (PAD + LCARD_W + 8)
-#define RCARD_W (W - RCARD_X - PAD)
+/* Last: its layout macros have short names (W, H, PAD), which no header
+ * included after it may meet. */
+#include "servo_screen_int.h"
 
 /* The output shaft, which everything on the left is drawn around.  It sits
  * on the top face of the case, where a servo's output is. */
@@ -89,77 +87,8 @@
  */
 #define PHI(a) (a)
 
-/*
- * The right card, top to bottom: the readings, the type and frame rate in
- * force, the servo rail's live power, the supply's set points and output
- * switch, then the servo's controls.
- */
-#define RC_X      (RCARD_X + 12)
-#define RC_W      (RCARD_W - 24)
-#define SETB_W    108
-/* PROGRAM: 13 cells of its label, as wide as SETTINGS. */
-#define PROGB_W   108
-/* The CURRENT row, whose value is repainted by itself. */
-#define CUR_Y     92
-#define TAG_Y     118
-#define TAG_H     24
-#define PWR_TXT_Y 150
-/* The line over the plot: the meter's name, 8 cells of 8 px for PD MINI
- * and 11 for INA3221 CH1, then the three readings (k_line_w). */
-#define PWR_LAB_W     64
-#define PWR_LAB_W_INA 88
-#define PWR_Y     170
-#define PWR_H     48
-/* The supply's set points, each a value the keypad opens on, and OUTPUT ON
- * and OFF: the same set points and switch as SUPPLY's, not a copy. */
-#define SUP_Y     224
-#define SUP_H     26
-#define SUP_VAL_X (RC_X + 32)
-#define SUP_VAL_W 66
-#define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + 4))
-/* The row naming what the tester drives, between SPEED's slider and
- * CENTRE. */
-#define TARGET_Y  322
-/* The top of a standard servo's rating.  A set point raised past it is
- * applied only after the HV warning is held for two seconds. */
-#define STD_SERVO_V_MAX 6.0f
-_Static_assert(KST_PANEL_STD_MV == 6000,
-               "the programmer's standard-servo ceiling is STD_SERVO_V_MAX");
-
-/*
- * The overlay: the settings and the keypad, keyboard, list and warning they
- * open all cover the left card.  The right card -- ARM, CENTRE, RELEASE and
- * the readings -- stays where it is and works.
- */
-#define OV_X      PAD
-#define OV_Y      PAD
-#define OV_W      LCARD_W
-#define OV_H      (H - 2 * PAD)
-#define OV_TAB_Y  (OV_Y + 8)
-#define OV_TAB_H  26
-#define OV_TAB_W  320
-#define OV_ROW0   (OV_Y + 48)
-#define OV_PITCH  42
-#define OV_ROW_H  34
-#define OV_COL_W  ((OV_W - 30) / 2)
-#define OV_VAL_W  100
-#define OV_NOTE_Y (OV_ROW0 + 5 * OV_PITCH + 6)
-
 /* The sample rate of the panel's loop, which is the power plot's time base. */
 #define SAMPLE_HZ 20.0f
-
-/*
- * A pulse needs a pause before the next frame.  STANDARD PWM, WIDE and
- * NARROW 760 keep one of at least 1 ms -- a 100 % margin on the 1 ms a
- * standard servo's own decoder needs -- so their fastest frame rate is
- * 1 / (longest pulse + 1 ms): 333 Hz for 2000 us.  The heli profiles run
- * at their published rates, which leave less, so theirs is set by the
- * profile and a pause of at least 0.5 ms.
- */
-#define PWM_MIN_PAUSE_US  1000u
-#define HELI_MIN_PAUSE_US 500u
-/* Above this a frame rate needs the warning: an analogue servo overheats. */
-#define SAFE_RATE_HZ      60u
 
 /*
  * The profiles the bench drives.  STANDARD PWM is the safe one and the one
@@ -167,92 +96,25 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
  * cyclic and narrow-band tail servos: 1520 us centre, +/-700 us, up to
  * 333 Hz; and 760 us centre, +/-350 us, up to 560 Hz.
  */
-typedef struct {
-    const char     *name;
-    uint16_t        min_us, centre_us, max_us;
-    const uint16_t *rates;       /* the frame rates offered, Hz           */
-    uint8_t         rate_count;
-    uint16_t        default_hz;
-    uint16_t        max_hz;      /* the profile's ceiling; 0 is the pause */
-    bool            heli;        /* choosing it needs the warning          */
-} servo_type_t;
-
 static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
 static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
 static const uint16_t k_tail_rates[] = { 200, 333, 560 };
 
 #define RATES(a) (a), (uint8_t)(sizeof(a) / sizeof((a)[0]))
-static const servo_type_t k_types[] = {
+const servo_type_t k_types[] = {
     { "STANDARD PWM",  1000, 1500, 2000, RATES(k_std_rates),  50,  0,   false },
     { "NARROW 760",    660,  760,  860,  RATES(k_std_rates),  50,  0,   false },
     { "WIDE",          800,  1500, 2200, RATES(k_std_rates),  50,  0,   false },
     { "HELI CYCLIC",   820,  1520, 2220, RATES(k_cyc_rates),  333, 333, true  },
     { "HELI TAIL 760", 410,  760,  1110, RATES(k_tail_rates), 560, 560, true  },
 };
-#define TYPE_COUNT ((int)(sizeof(k_types) / sizeof(k_types[0])))
+_Static_assert(sizeof(k_types) / sizeof(k_types[0]) == TYPE_COUNT,
+               "TYPE_COUNT in servo_screen_int.h counts k_types");
 
-/* The overlay's pages. */
-enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_COUNT };
+/* The overlay's pages' names. */
 static const ui_text_id_t k_pages[PG_COUNT] = {
     TX_SV_PG_OUTPUT, TX_SV_PG_TEST, TX_SV_PG_LIMITS, TX_SV_PG_DUT,
 };
-
-/* What a settings row edits. */
-enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
-       R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTRE, R_LIM_MODE,
-       R_LIM_PULSES };
-
-typedef struct {
-    uint8_t      page;
-    uint8_t      kind;
-    setting_id_t id;          /* R_SETTING                              */
-    ui_text_id_t label;
-    uint8_t      col, row;
-    bool         wide;        /* the value takes both columns' width    */
-} ov_row_t;
-
-static const ov_row_t k_rows[] = {
-    { PG_OUTPUT, R_TYPE,    SETTING_COUNT, TX_SV_ROW_TYPE,  0, 0, true  },
-    { PG_OUTPUT, R_RATE,    SETTING_COUNT, TX_SV_ROW_RATE,  0, 1, true  },
-    { PG_OUTPUT, R_MIN,     SETTING_COUNT, TX_SV_ROW_MIN,  0, 2, false },
-    { PG_OUTPUT, R_CENTRE,  SETTING_COUNT, TX_SV_ROW_CENTRE,  1, 2, false },
-    { PG_OUTPUT, R_MAX,     SETTING_COUNT, TX_SV_ROW_MAX,  0, 3, false },
-    { PG_OUTPUT, R_TRIM,    SETTING_COUNT, TX_SV_ROW_TRIM,  1, 3, false },
-    { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
-    { PG_OUTPUT, R_REVERSE, SETTING_COUNT, TX_SV_ROW_REVERSE,  1, 4, false },
-
-    { PG_TEST, R_SETTING, SET_SERVO_CURVE,       TX_SV_ROW_CURVE,  0, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_HZ,     TX_SV_ROW_SPEED,  0, 1, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_RANGE,  TX_SV_ROW_RANGE,  0, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_BY,      TX_SV_ROW_LEN_BY,  0, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_S,       TX_SV_ROW_LEN_S,  0, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_MOVES,   TX_SV_ROW_MOVES,  0, 5, false },
-    { PG_TEST, R_SETTING, SET_SERVO_DWELL_MS,    TX_SV_ROW_DWELL,  0, 6, false },
-    { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   TX_SV_ROW_SETTLE,  0, 7, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     TX_SV_ROW_STEP_48,  1, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     TX_SV_ROW_STEP_60,  1, 1, false },
-    { PG_TEST, R_HV,      SETTING_COUNT,         TX_SV_ROW_HV,  1, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     TX_SV_ROW_STEP_74,  1, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     TX_SV_ROW_STEP_84,  1, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    TX_SV_ROW_BROWNOUT,  1, 5, false },
-
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        TX_SV_ROW_V_MAX,  0, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        TX_SV_ROW_I_MAX,  0, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_STALL_A,       TX_SV_ROW_STALL,  0, 2, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
-    { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 5, true  },
-    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 6, false },
-
-    { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
-    { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
-    { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
-    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
-    { PG_DUT, R_SETTING, SET_SERVO_TARGET,   TX_SV_ROW_TARGET,    1, 1, false },
-    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 2, false },
-};
-#define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
 /* The power plot's series: the servo rail's voltage, current and power. */
 enum { PS_V = 0, PS_A, PS_W, PS_COUNT };
@@ -273,421 +135,8 @@ static const uint8_t k_line_w[2][PS_COUNT] = {
     { 60, 64, 56 },
 };
 
-/* What a press is on, in the overlay and the panels it opens. */
-enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
-       OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
-       OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM, OP_LIM_START };
-
-/* What the list chooses, and what the keypad types. */
-enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
-enum { KT_NONE = 0, KT_MIN, KT_CENTRE, KT_MAX, KT_TRAVEL, KT_RATE,
-       KT_SETTING, KT_SUP_V, KT_SUP_I };
-
-/* What the question or the HV warning applies: a typed set point, the
- * supply's output switched on, or the automatic test started with steps
- * above 6.0 V. */
-enum { ASK_SET = 0, ASK_ON, ASK_TEST };
-
-#define CHOICE_MAX 10
-
-/* What a command means as a pulse and an angle: the profile's pulses, trim,
- * reverse and travel, as they were when a command was sent. */
-typedef struct {
-    uint16_t min_us, centre_us, max_us;
-    int16_t  trim_us;
-    bool     reverse;
-    float    travel_deg;
-} servo_map_t;
-
-/* A curve the far end runs and this screen no longer does; see s.dr. */
-typedef struct {
-    bool        on;
-    sweep_t     sw;
-    uint32_t    from_ms;
-    int         speed_pct;
-    servo_map_t map;
-    float       out;
-} sweep_drain_t;
-
-/* The newest start or resume sent, as sent; see s.start_rec. */
-typedef struct {
-    bool        live;
-    uint16_t    seq;
-    sweep_cfg_t cfg;
-    int         speed_pct;
-} start_rec_t;
-
-static struct {
-    /* The profile in force, for this session only: STANDARD PWM at 50 Hz
-     * at every restart. */
-    int      type;
-    uint16_t min_us, centre_us, max_us;
-    uint16_t frame_hz;
-    bool     reverse;
-    int16_t  trim_us;      /**< added to centre                        */
-    float    travel_deg;   /**< how far each way the horn is allowed   */
-    int      speed_pct;    /**< how fast the bench slews the command   */
-
-    float    commanded_deg;
-    float    shown_deg;    /**< what the horn is drawn at              */
-    float    shown_cmd;    /**< the same, as the far end's command     */
-    float    measured_deg;
-    bool     have_feedback;
-    /* The output encoder's last reading (servo_screen_encoder()). */
-    bool     enc_valid;
-    bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
-    uint16_t enc_raw;
-    int      shown_q_enc;  /**< the angle as drawn, in tenths             */
-
-    bool     dragging;
-    int      drag_id;
-
-    int      shown_q_deg; /**< the position as drawn, in tenths          */
-    bool     driving;     /**< the output is being held somewhere */
-    float    pulse;       /**< phase of the grip's breathing      */
-    int      drawn_pulse[2];
-
-    servo_cmd_t pending;
-    /* The knob's position command waiting in `pending`: valid while
-     * post_count is still knob_post, with what to put back if it is
-     * withdrawn -- the commanded angle before the knob, and whether a
-     * position was pending before it. */
-    bool     knob_live;
-    bool     knob_had_cmd;
-    bool     knob_had_driving;
-    uint32_t knob_post;
-    float    knob_prev_deg;
-    /* A finger owned the dial at some point since knob_frame(). */
-    bool     knob_finger;
-    /* The settings, a sweep or a test owned the horn at some point since
-     * knob_frame(), even if it let go again before the turn is applied. */
-    bool     knob_owned;
-
-    /*
-     * Arming, which this screen needs as much as MOTOR & ESC does: until the
-     * bench is armed the coprocessor writes a pulse of length zero to every
-     * PWM pin, so dragging the horn moves nothing and shows nothing on a
-     * scope.  The gesture is ui_widgets' -- the same two seconds and the same
-     * fade as the other screen's, because it is the same control.
-     */
-    /* Whether the commanded value follows its controls (ui_value_gate.h):
-     * the bench's report, an ARM posted whose arm has not landed yet --
-     * collected by the panel, which arms only once the release it owes has
-     * been written -- and a DISARM or STOP not yet answered.  gate.armed is
-     * what the ARM button reads. */
-    ui_value_gate_t gate;
-    /* The bench is armed for any role, the motor's included: what keeps the
-     * programmer off the port while the motor is armed and this screen's
-     * surfaces are not (servo_screen_set_bench_armed()). */
-    bool       bench_armed;
-    /* The commanded value is the surface's rest and nothing has been
-     * commanded since: it follows the rest through a change of profile. */
-    bool       at_rest;
-    ui_hold_t  arm;
-    bool       arm_down;   /**< a press is on the ARM button          */
-    int        arm_id;     /**< which contact it is                   */
-    uint32_t   arm_rev;
-    uint32_t   drawn_arm[2];
-
-    gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
-    gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
-    bool       kst_shown;        /* the programmer had the left card    */
-    bool       kst_held;         /* and the port: ARM takes no press    */
-    bool       sup_held;         /* the port holds the supply: SET is dim */
-    uint32_t   drawn_kst[2], drawn_kst_hold[2];
-    ui_slider_t speed;
-
-    /* The servo rail's live power, from its meter (rail_now()): the line
-     * of readings and the plot under it. */
-    ui_plot_t      power;
-    supply_state_t sup;
-    bool           have_sup;
-    uint32_t       power_rev;
-    uint32_t       drawn_power[2];
-    /* The supply was the panel's model when the line was drawn: the pill. */
-    bool           model_shown;
-    /* The meter, as the panel last said it (servo_screen_source()), and the
-     * INA3221's last CH1 window (servo_screen_window()). */
-    servo_source_id_t source;
-    /* The change count the meter in force was decided at
-     * (servo_source_changes()): an answer from an earlier poll is not taken
-     * over it. */
-    bool              have_changes;
-    uint32_t          changes;
-    sense_link_win_t  win;
-    bool              have_win;
-    /* Why the INA3221 is not the meter now, and why and at which change
-     * count it last stopped being it (servo_screen_source_why(),
-     * servo_screen_source_dropped()). */
-    servo_source_why_t src_why;
-    bool               have_drop;
-    servo_source_why_t drop_why;
-    uint32_t           drop_at;
-    /* The CURRENT row: what it shows (cur_key_of()), and its own count of
-     * changes, so a changed digit repaints its value and not the card. */
-    int32_t        cur_key;
-    uint32_t       cur_rev;
-    uint32_t       drawn_cur[2];
-
-    /*
-     * The supply's set points and output, SUPPLY's own: OUTPUT ON is the
-     * same two-second hold, OFF the same tap.  What is drawn is compared
-     * with SUPPLY every frame, so a change made there, a cap that moved or
-     * the output going off shows here at once.
-     */
-    gfx_rect_t out_btn;
-    ui_hold_t  out_hold;
-    bool       out_down;
-    int        out_id;
-    bool       out_press_on;  /**< the press began as OUTPUT OFF       */
-    bool       out_on;        /**< the output as last drawn              */
-    float      sup_v, sup_i;  /**< the set points as last seen           */
-    uint32_t   sup_rev;
-    uint32_t   drawn_sup[2];
-    bool       kp_alone;      /**< the keypad opened the overlay itself  */
-    /* A set point waiting for APPLY: typed while the output is live, or a
-     * voltage raised past a standard servo's rating (hv), which takes the
-     * two-second hold the profile warning takes.  OUTPUT ON with a set
-     * point past that rating waits on the same hold (ASK_ON). */
-    struct {
-        bool      open;
-        bool      hv;
-        int       purpose;   /**< ASK_SET, ASK_ON or ASK_TEST          */
-        int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
-        uint32_t  off_count; /**< supply_screen_off_count() at asking  */
-        uint32_t  stops;     /**< the screen's stop count at asking     */
-        float     v, i;
-        ui_hold_t hold;
-        bool      down;
-        uint32_t  rev;
-    } ask;
-    uint32_t drawn_ask[2];
-    /* Stops seen (servo_screen_cancel_arm()), for the question above. */
-    uint32_t stops;
-
-    /* The overlay and what it opens. */
-    bool         ov_open;
-    ui_tabs_t    tabs;
-    int          ov_pressed;
-    int          ov_row;
-    uint8_t      ov_id;
-    bool         ov_have;
-    ui_keypad_t  kp;
-    int          kp_target;
-    setting_id_t kp_setting;
-    ui_textkey_t tk;
-    struct {
-        bool  open;
-        int   target;
-        setting_id_t id;
-        char  title[48];
-        char  labels[CHOICE_MAX][32];
-        int   values[CHOICE_MAX];
-        int   count;
-        int   pressed;
-    } ch;
-    struct {
-        bool      open;
-        int       type;
-        uint16_t  hz;
-        ui_hold_t hold;
-        bool      down;
-        uint32_t  rev;
-    } warn;
-    uint32_t drawn_warn[2];
-    uint8_t  drawn_save[2];
-
-    servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
-    uint16_t           rate_hz;
-
-    /* The sweep: the same curve the coprocessor runs, on this screen's own
-     * clock, to draw the horn by. */
-    bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
-    /*
-     * The pause whose HOLD what the screen expects of the far end rests on,
-     * or 0.  Set by a PAUSE of a sweep the far end is known to run.  Kept
-     * by everything that carries that pause on: its resume and the resume
-     * said again, a position said again under a changed profile, and a
-     * further PAUSE before the resume is acknowledged -- that HOLD holds
-     * what the first pause left.  Ended by the acknowledgement of a start
-     * or a resume (the far end then moves on its own), and by anything
-     * that sets a new origin: stop_sweep() -- a drag, CENTRE, RELEASE, a
-     * curve restarted, a disarm, leaving, the link going -- and
-     * start_sweep() -- SWEEP, or a PAUSED that starts a changed curve.
-     * Every command carries it (from_pause); the panel drops those of a
-     * pause it lets go of, and the screen takes that let-go exactly while
-     * it is still set to that pause (servo_screen_released()).
-     */
-    uint16_t    lineage;
-    bool        surfaces;        /* a surface is bound to sweep          */
-    /* The tap's phase of the pause in force, and for a resume asked before
-     * that pause's HOLD was acknowledged, where its replay starts: the
-     * output the far end held, once that acknowledgement says it. */
-    uint32_t    pause_tap_ms;
-    bool        resume_from_set;
-    uint16_t    resume_pause_seq;
-    float       resume_from_cmd;
-    bool        sweeping;
-    bool        paused;          /* a sweep held by PAUSE: HOLD posted   */
-    /* SPEED as the sweep ran when PAUSE was tapped: the far end slews at it
-     * until the HOLD reaches it, whatever the slider says meanwhile, since
-     * a paused slider sends nothing. */
-    int         pause_speed_pct;
-    /* And where the output was drawn at the tap, which the replay of the
-     * acknowledgement interval starts from. */
-    float       pause_from_cmd;
-    /* Which pause stands, so an acknowledgement is applied to its own. */
-    uint16_t    pause_seq;
-    bool        sweep_ended;     /* the next command ends it             */
-    sweep_t     sw;
-    uint32_t    clock_ms;
-    float       clock_frac_ms;
-    /* Without feedback: the last second and a half of where the output
-     * has been drawn, to start from where the far end's output starts. */
-    struct { uint32_t t; float cmd; } trail[64];
-    uint8_t     trail_head, trail_n;
-    /*
-     * A start or a resume asked for and not yet acknowledged: the far end
-     * is not known to move yet, so the curve is not drawn; the output goes
-     * on as it was (servo_screen_sweep_started()).  The phase the curve
-     * would begin moving from: 0 for a start, the kept one for a resume.
-     */
-    bool        awaiting;
-    uint32_t    await_phase_ms;
-    /*
-     * The far end runs a curve this screen has stopped drawing as its own:
-     * a PAUSE whose HOLD is not yet acknowledged, or a curve replaced by a
-     * start not yet acknowledged.  It is drawn on as the far end runs it --
-     * its curve, SPEED and the pulse mapping its commands were sent under
-     * -- for at most OUT_DEFAULT_TIMEOUT_MS, the longest the far end runs a
-     * sweep it has not heard.  out is the output in that mapping's command
-     * units, chased as the far end slews it.
-     */
-    sweep_drain_t dr;
-    /* The mapping the last sweep command was sent under. */
-    servo_map_t posted_map;
-    /*
-     * Sweep commands are numbered; the newest start or resume is kept with
-     * the curve it was sent with, and the wait for it is ended by its own
-     * acknowledgement or a later repeat's (servo_screen_sweep_started()).
-     * The SPEED each of the last 8 sweep commands was sent with, by
-     * number, for the one acknowledged.
-     */
-    uint16_t    start_seq;
-    start_rec_t start_rec;
-    struct { uint16_t seq; int16_t speed_pct; } sent_speed[8];
-    /*
-     * The sweep button's last tap and the screen as it was before it, while
-     * its command has not left: a second tap in the same pass undoes both,
-     * since the far end never heard the first.  post_count counts commands
-     * posted, so another command posted since makes the tap's command gone.
-     */
-    struct {
-        servo_cmd_t pending;
-        sweep_t     sw;
-        bool        sweeping, paused, awaiting, sweep_ended, driving;
-        uint32_t    await_phase_ms;
-        float       commanded_deg;
-        sweep_drain_t dr;
-        start_rec_t start_rec;
-        uint16_t    pause_seq, resume_pause_seq, lineage;
-        uint32_t    pause_tap_ms;
-        float       pause_from_cmd, resume_from_cmd;
-        int         pause_speed_pct;
-        bool        resume_from_set;
-    }           undo;
-    bool        toggle_live;
-    servo_cmd_kind_t toggle_kind;
-    uint32_t    toggle_post;
-    uint32_t    post_count;
-
-    /* Changes to what a command carries -- the profile, the pulses, trim,
-     * travel -- and how many there had been when ARM was asked for. */
-    uint32_t profile_rev;
-    uint32_t arm_profile_rev;
-
-    /*
-     * The automatic test: the run, START TEST's hold, HV SERVO, and what the
-     * left card shows of it.  HV SERVO is for the session only and off at
-     * every restart, as a profile that can destroy a servo is.
-     */
-    servo_test_t test;
-    bool      test_hv;       /**< HV SERVO: 7.4 and 8.4 V run          */
-    ui_hold_t test_hold;
-    bool      test_down;
-    uint32_t  test_rev;
-    uint32_t  drawn_test[2];
-    uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
-    bool      have_now;
-    bool      link_up;
-    bool      enc_held;      /**< the coprocessor holds the encoder on,
-                                  servo_screen_set_enc_held()           */
-    int       test_note;     /**< servo_str_t the engine refused a START
-                                  with, 0 none; test_blocked() is live  */
-    int       test_file;     /**< its files' number; 0 not yet, -1 none */
-    bool      test_report;   /**< the card took its .TXT whole          */
-    int       test_blocked_seen; /**< test_blocked() at the last tick   */
-    bool      test_online_seen;  /**< the supply answering, likewise    */
-    bool      test_box;      /**< the left card shows the run          */
-    bool      test_seen;     /**< the run was running when last looked */
-    bool      test_on_ina;   /**< the run reads the INA3221's windows   */
-    /*
-     * SUPPLY's set points go back to what they were before a run once it
-     * is over, whichever screen is up (servo_screen_service()): only once
-     * its OFF has gone, a sample taken after that shows the output off,
-     * nothing would switch it on, and nobody has set them since it ended.
-     */
-    bool      test_restore;
-    uint8_t   restore_stage; /**< RS_* below                             */
-    uint32_t  restore_ms;    /**< the clock at the stage's start         */
-    float     test_v0, test_i0;  /**< before the run                     */
-    float     test_v1, test_i1;  /**< as the run left them               */
-    uint32_t  test_sig;      /**< what the box last showed              */
-
-    /*
-     * The limit run (servo_limrun.h): the limit search on the INA3221's
-     * windows, and with LIMIT RUN at SEARCH+PROG, LEFT ANGLE and RIGHT
-     * ANGLE of a KST or Chaservo servo on the programming port lowered.
-     * Its START is the LIMITS page's, held 2 s; its box is the test's
-     * place on the left card.  One of the two runs at a time.
-     */
-    servo_limrun_t lim;
-    bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
-    bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, for the
-                                  session                                */
-    ui_hold_t lim_hold;
-    bool      lim_down;
-    bool      lim_box;       /**< the left card shows the limit run     */
-    bool      lim_seen;      /**< it was running when last looked       */
-    /** The run ended in a session and its LEAVE is on its way: the box,
-     *  not the programmer, stays on the left card, and the programmer's
-     *  run ends once the LEAVE has (lim_end_due). */
-    bool      lim_leaving;
-    bool      lim_end_due;
-    int       lim_file;      /**< its report's number; 0 not yet, -1 none */
-    bool      lim_report;    /**< the card took the report whole       */
-    const char *lim_note;    /**< why the last START was refused, or NULL */
-    uint32_t  lim_changes;   /**< the meter's change count at the start */
-    uint32_t  lim_sig;
-    /* The outbox the logger last peeked, and whose files' number comes
-     * back (servo_screen_test_files()). */
-    bool      peek_lim;
-    servo_test_out_t peek_kind;
-    bool      files_lim;
-    /* The logger has an OPEN or an END of the last run not answered yet
-     * (servo_screen_test_logger_busy()). */
-    bool      logger_busy;
-
-    uint32_t ctrl_rev;
-    uint8_t  drive_target; /* 0 the outputs, 1 + n programming port n */
-    uint8_t  drive_pin;    /* that port's GPIO, or SERVO_SCREEN_NO_PIN */
-    bool     drive_pwm;    /* that port renders its pulse              */
-    uint64_t pins;         /* GPIOs bound as SERVO PWM, bit n = GPIO n */
-    bool     pins_known;   /* a binding was read                       */
-    uint32_t drawn_ctrl[2];
-    unsigned drawn_mask;
-} s;
+/* The state, its type in servo_screen_int.h. */
+servo_screen_state_t s;
 
 /* The restore's stages: the OFF the run's end posted not yet taken; taken,
  * waiting for the next frame; waiting for a sample taken since; a sample
@@ -701,8 +150,6 @@ static uint32_t test_now(void)
 }
 
 /* ------------------------------------------------------------- conversions */
-
-static const servo_type_t *type(void) { return &k_types[s.type]; }
 
 /*
  * Each side of centre runs to its own end: MIN, CENTRE and MAX are set one
@@ -746,24 +193,6 @@ static float us_to_deg(uint16_t us)
     return us_to_deg_f((float)us);
 }
 
-/*
- * The range a command carries: the narrowest one centred on CENTRE that
- * holds MIN and MAX.  The coprocessor knows a channel only by its two
- * endpoints and rests a surface at their midpoint -- on RELEASE, before an
- * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTRE
- * is not midway between them away from its centre.  Commands never leave
- * MIN..MAX: deg_to_us() clamps them.  The PULSE keypads keep this range
- * inside OUT_FLOOR_US..OUT_CEILING_US.
- */
-static void cmd_range(uint16_t *lo, uint16_t *hi)
-{
-    const unsigned below = (unsigned)s.centre_us - (unsigned)s.min_us;
-    const unsigned above = (unsigned)s.max_us - (unsigned)s.centre_us;
-    const unsigned half  = (below > above) ? below : above;
-    *lo = (uint16_t)((unsigned)s.centre_us - half);
-    *hi = (uint16_t)((unsigned)s.centre_us + half);
-}
-
 /* The mapping in force now. */
 static servo_map_t map_now(void)
 {
@@ -802,7 +231,7 @@ static float map_us_to_deg(const servo_map_t *m, float us)
 
 /* A pulse as the far end's command, 0..OUT_SPAN of the range a command
  * carries, and back: the units it slews in. */
-static float us_to_cmd(float us)
+static inline float us_to_cmd(float us)
 {
     uint16_t lo, hi;
     cmd_range(&lo, &hi);
@@ -818,26 +247,6 @@ static float cmd_to_us(float cmd)
 }
 
 /*
- * The longest pulse the far end can render: the top of the range a command
- * carries, which is past PULSE MAX when CENTRE is off the middle.  A pulse
- * of an old span under a new range reaches it between two transactions, so
- * the frame rate's pause is kept from it rather than from PULSE MAX.
- */
-static uint16_t cmd_top(void)
-{
-    uint16_t lo, hi;
-    cmd_range(&lo, &hi);
-    return hi;
-}
-
-static float clamp_travel(float deg)
-{
-    if (deg < -s.travel_deg) { return -s.travel_deg; }
-    if (deg >  s.travel_deg) { return  s.travel_deg; }
-    return deg;
-}
-
-/*
  * The angle the pin drives on an armed bench while nothing commands it: the
  * outputs layer's rest for a surface, in the range a command carries.  The
  * midpoint of that range, so PULSE CENTRE without the trim: 1500 us for
@@ -846,18 +255,6 @@ static float clamp_travel(float deg)
 static float rest_deg(void)
 {
     return us_to_deg_f(cmd_to_us((float)outputs_role_rest(OUT_ROLE_SURFACE)));
-}
-
-/*
- * Whether the commanded value follows its controls: only in UI_VALUE_LIVE.
- * The one question every input, the drawing, a run and a late callback ask:
- * not on a disarmed bench, whose pins carry no pulse, not while an ARM is
- * on its way, and not from a DISARM or a STOP until the bench reports
- * itself disarmed.
- */
-static bool value_live(void)
-{
-    return ui_value_live(&s.gate);
 }
 
 static void post(servo_cmd_kind_t kind, uint16_t us);
@@ -879,30 +276,6 @@ static void release(void)
         s.at_rest       = true;
     }
     ++s.ctrl_rev;
-}
-
-/* The fastest frame rate the profile in force allows with these pulses:
- * the pause rule, under the profile's own ceiling. */
-static uint16_t max_rate_for(int t, uint16_t max_us)
-{
-    const servo_type_t *ty = &k_types[t];
-    const unsigned pause = ty->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
-    unsigned hz = 1000000u / ((unsigned)max_us + pause);
-    if (ty->max_hz != 0u && hz > ty->max_hz) {
-        hz = ty->max_hz;
-    }
-    return (uint16_t)hz;
-}
-
-/* A type or a rate that needs the warning before it is applied. */
-static bool dangerous(int t, uint16_t hz)
-{
-    return k_types[t].heli || hz > SAFE_RATE_HZ;
-}
-
-static bool in_force_dangerous(void)
-{
-    return dangerous(s.type, s.frame_hz);
 }
 
 /*
@@ -1584,14 +957,12 @@ void servo_screen_set_sweep(bool able)
  * servo from STANDARD PWM to NARROW 760 would otherwise leave 1500 us on a
  * servo whose maximum is 860 while the screen shows the new range.
  */
-static void test_end_now(servo_test_abort_t why);
 static void test_tell(void);
 static void ask_disarm(void);
-static void lim_end_now(servo_test_abort_t why);
 static bool bench_arming(void);
 static void lim_meter_follow(servo_source_id_t id, uint32_t changes);
 
-static void reissue(void)
+void reissue(void)
 {
     /* A run times a servo driven as it was when it started. */
     test_end_now(SERVO_TEST_AB_SETTINGS);
@@ -1962,14 +1333,6 @@ static float enc_deg_now(void)
     const float d = servo_test_enc_deg(
         s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
     return s.reverse ? -d : d;
-}
-
-/* Whether the encoder's last reading is on show and may be used: one the
- * link carried, with the encoder on in SETUP.  A link that goes down takes
- * the reading with it (servo_screen_set_link()). */
-static bool enc_shown(void)
-{
-    return s.enc_valid && s.link_up && settings_get_bool(SET_ENC_EN);
 }
 
 void servo_screen_encoder(const servo_test_enc_t *e)
@@ -2380,7 +1743,7 @@ void servo_screen_set_commanded(float deg)
  * A profile goes into force: a type with its own pulse widths when it is a
  * different type, and a frame rate no faster than its pulses allow.
  */
-static void apply_profile(int t, uint16_t hz)
+void apply_profile(int t, uint16_t hz)
 {
     if (t != s.type) {
         s.type      = t;
@@ -2399,7 +1762,7 @@ static void apply_profile(int t, uint16_t hz)
  * the warning, and goes into force only once that has been held; any other
  * goes into force at once.
  */
-static void ask_profile(int t, uint16_t hz)
+void ask_profile(int t, uint16_t hz)
 {
     const uint16_t pulses = (t != s.type) ? k_types[t].max_us : cmd_top();
     const uint16_t top = max_rate_for(t, pulses);
@@ -2439,21 +1802,9 @@ void servo_invalidate(void)
     }
 }
 
-static gfx_rect_t overlay_area(void)
-{
-    return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
-}
-
 static gfx_rect_t sup_row_rect(void)
 {
     return (gfx_rect_t){ RC_X, SUP_Y, RC_W, SUP_H };
-}
-
-/* The voltage's value (0) or the current limit's (1): tapped, the keypad. */
-static gfx_rect_t sup_val_rect(int k)
-{
-    return (gfx_rect_t){ (int16_t)(SUP_VAL_X + k * (SUP_VAL_W + 4)), SUP_Y,
-                         SUP_VAL_W, SUP_H };
 }
 
 static uint32_t test_signature(void);
@@ -2521,75 +1872,6 @@ static void reset(void)
     s.ch.pressed = -1;
 }
 
-/* --------------------------------------------------------------- the overlay */
-
-/* A row's rectangle: its column, or both for a wide one. */
-static gfx_rect_t row_rect(int i)
-{
-    const ov_row_t *r = &k_rows[i];
-    const int x = (r->col == 0) ? OV_X + 10 : OV_X + 20 + OV_COL_W;
-    const int w = r->wide ? OV_W - 20 : OV_COL_W;
-    return (gfx_rect_t){ (int16_t)x, (int16_t)(OV_ROW0 + r->row * OV_PITCH),
-                         (int16_t)w, OV_ROW_H };
-}
-
-/* Where a row's value is drawn and tapped. */
-static gfx_rect_t value_rect(int i)
-{
-    const gfx_rect_t r = row_rect(i);
-    const int w = k_rows[i].wide ? r.w - 124 : OV_VAL_W;
-    return (gfx_rect_t){ (int16_t)(r.x + r.w - w), r.y, (int16_t)w, r.h };
-}
-
-/* TRIM's two steps, inside its value. */
-static gfx_rect_t trim_rect(int i, bool up)
-{
-    const gfx_rect_t v = value_rect(i);
-    return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - 30 : v.x), v.y, 30, v.h };
-}
-
-static gfx_rect_t close_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 90), (int16_t)(OV_Y + 6),
-                         90, 30 };
-}
-
-static gfx_rect_t choice_rect(int i)
-{
-    const int per_col = 5;
-    const int col = i / per_col;
-    const int line = i % per_col;
-    return (gfx_rect_t){ (int16_t)(OV_X + 10 + col * (OV_COL_W + 10)),
-                         (int16_t)(OV_Y + 48 + line * 46),
-                         (int16_t)OV_COL_W, 40 };
-}
-
-static gfx_rect_t choice_cancel_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 110),
-                         (int16_t)(OV_Y + OV_H - 46), 110, 36 };
-}
-
-static gfx_rect_t warn_apply_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + 20), (int16_t)(OV_Y + OV_H - 76),
-                         240, 56 };
-}
-
-static gfx_rect_t warn_cancel_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 20 - 180),
-                         (int16_t)(OV_Y + OV_H - 76), 180, 56 };
-}
-
-/* START TEST, under the TEST page's right column. */
-static gfx_rect_t test_start_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + 20 + OV_COL_W),
-                         (int16_t)(OV_ROW0 + 6 * OV_PITCH), (int16_t)OV_COL_W,
-                         OV_ROW_H };
-}
-
 /* The run on the left card, clear of the dial and the case, and its one
  * button: STOP TEST while it runs, CLOSE after. */
 /*
@@ -2606,108 +1888,6 @@ static gfx_rect_t test_btn_rect(void)
 {
     const gfx_rect_t b = test_box_rect();
     return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 92), 130, 32 };
-}
-
-static int decimals_of(setting_id_t id)
-{
-    const setting_def_t *d = settings_def(id);
-    return (d->type == SET_TYPE_FLOAT && d->step < 1.0f) ? 2 : 0;
-}
-
-/* The longest pulse the frame rate in force leaves room for. */
-static uint16_t max_pulse_for_rate(void)
-{
-    const unsigned pause = type()->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
-    const unsigned period = 1000000u / (unsigned)s.frame_hz;
-    unsigned top = (period > pause) ? period - pause : 0u;
-    if (top > OUT_CEILING_US) {
-        top = OUT_CEILING_US;   /* what the coprocessor takes */
-    }
-    return (uint16_t)top;
-}
-
-static void close_panels(void)
-{
-    ui_keypad_close(&s.kp);
-    ui_textkey_close(&s.tk);
-    s.kp_target = KT_NONE;
-    s.ch.open   = false;
-    s.warn.open = false;
-    s.warn.down = false;
-    ui_hold_reset(&s.warn.hold);
-    s.ask.open  = false;    /* a set point not applied is dropped */
-    s.ask.down  = false;
-    ui_hold_reset(&s.ask.hold);
-}
-
-/* The overlay goes when the keypad that opened it for a set point is done:
- * the settings were not open, so there is nothing to go back to. */
-static void close_alone(void)
-{
-    if (s.kp_alone) {
-        s.kp_alone = false;
-        s.ov_open  = false;
-        close_panels();
-        servo_invalidate();
-    }
-}
-
-/* A set point tapped: the keypad, over the left card as the settings' is. */
-static void open_set_point(int target)
-{
-    if (!s.ov_open) {
-        s.ov_open  = true;
-        s.kp_alone = true;
-    }
-    close_panels();
-    const supply_caps_t caps = supply_screen_caps();
-    if (target == KT_SUP_V) {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_VOLTAGE), "V",
-                       supply_screen_set_v(), caps.v_min, caps.v_max, 2);
-    } else {
-        ui_keypad_open(&s.kp, overlay_area(), TR(SUP_CURRENT_LIMIT), "A",
-                       supply_screen_set_i(), caps.i_min, caps.i_max, 2);
-    }
-    s.kp_target = target;
-    servo_invalidate();
-}
-
-/* A set point typed: to the supply, or held for the question SUPPLY asks
- * before a live output changes. */
-static void set_point_typed(int target, float typed)
-{
-    const supply_caps_t caps = supply_screen_caps();
-    float v = supply_screen_set_v();
-    float i = supply_screen_set_i();
-    if (target == KT_SUP_V) {
-        v = supply_snap(typed, caps.v_min, caps.v_max, caps.v_step);
-    } else {
-        i = supply_snap(typed, caps.i_min, caps.i_max, caps.i_step);
-    }
-    if (v == supply_screen_set_v() && i == supply_screen_set_i()) {
-        close_alone();
-        return;
-    }
-    /* Raised past a standard servo's rating, from at or under it: the HV
-     * warning, which stands in for the live output's question too. */
-    const bool hv = v > STD_SERVO_V_MAX + 0.001f
-                    && supply_screen_set_v() <= STD_SERVO_V_MAX + 0.001f;
-    if (hv || supply_screen_typed_asks()) {
-        s.ask.open      = true;
-        s.ask.hv        = hv;
-        s.ask.purpose   = ASK_SET;
-        s.ask.target    = target;
-        s.ask.off_count = supply_screen_off_count();
-        s.ask.stops     = s.stops;
-        s.ask.v      = v;
-        s.ask.i      = i;
-        s.ask.down = false;
-        ui_hold_reset(&s.ask.hold);
-        servo_invalidate();
-        return;
-    }
-    supply_screen_put(v, i);
-    close_alone();
 }
 
 /* --------------------------------------------------------- the automatic test */
@@ -2735,7 +1915,7 @@ static uint8_t test_steps(float *v)
 
 /* The highest voltage a run would ask for: its top step, or the brown-out's
  * start. */
-static float test_top_v(void)
+float test_top_v(void)
 {
     float v[SERVO_TEST_STEPS_MAX];
     const uint8_t n = test_steps(v);
@@ -2747,13 +1927,6 @@ static float test_top_v(void)
         }
     }
     return top;
-}
-
-/* A run with a step past a standard servo's rating starts only through the
- * HV warning. */
-static bool test_needs_hv(void)
-{
-    return test_top_v() > STD_SERVO_V_MAX + 0.001f;
 }
 
 /* What the run is told: the TEST and LIMITS pages, the servo's profile, and
@@ -2972,7 +2145,7 @@ static void test_restore_service(void)
 
 /* End a run now, and do what that asks -- the output off, the servo let
  * go -- before whatever ended it acts. */
-static void test_end_now(servo_test_abort_t why)
+void test_end_now(servo_test_abort_t why)
 {
     lim_end_now(why);
     if (!servo_test_running(&s.test)) {
@@ -2999,7 +2172,7 @@ static void ask_disarm(void)
 }
 
 /* Why a START cannot run now, before any hold: SERVO_STR_*, or 0. */
-static int test_blocked(void)
+int test_blocked(void)
 {
     if (!value_live()) {
         return SERVO_STR_START_NOT_ARMED;
@@ -3036,7 +2209,7 @@ static int test_blocked(void)
 
 /* START TEST's hold, or the HV warning's, completed: the run starts, and
  * the settings close so the left card shows it. */
-static void test_begin(void)
+void test_begin(void)
 {
     /* The hold that started it is spent, whatever comes of it: a press
      * the overlay let go of never reaches ui_hold_end(). */
@@ -3090,7 +2263,7 @@ static void test_begin(void)
 }
 
 /* The HV warning, for a run with a step past a standard servo's rating. */
-static void ask_hv_test(void)
+void ask_hv_test(void)
 {
     close_panels();
     s.ask.open      = true;
@@ -3196,25 +2369,8 @@ static const char *lim_meter_why(void)
     return NULL;
 }
 
-static const char *lim_prog_why(void);
-
-/* The run drives the programming port: a KST or Chaservo servo is read
- * first and searched within its own pulses. */
-static bool lim_reads(void)
-{
-    return s.drive_target != 0u
-        && s.drive_target != SERVO_SCREEN_TARGET_UNKNOWN
-        && s.drive_target != SERVO_SCREEN_TARGET_NO_LINK;
-}
-
-/* SERVO PULSES is there only for the programming port. */
-static bool row_hidden(const ov_row_t *r)
-{
-    return r->kind == R_LIM_PULSES && !lim_reads();
-}
-
 /* Why a limit run cannot start now, before any hold, or NULL. */
-static const char *lim_blocked(void)
+const char *lim_blocked(void)
 {
     if (!value_live()) {
         return ui_servo_str(SERVO_STR_START_NOT_ARMED);
@@ -3254,7 +2410,7 @@ static const char *lim_blocked(void)
 /* Why the programming is not offered, or NULL: only a servo on the
  * programming port, with the port in PWM, and a PD mini on and set where a
  * session can run, or without one a servo rail read at 4.8 V or more. */
-static const char *lim_prog_why(void)
+const char *lim_prog_why(void)
 {
     if (s.drive_target == 0u || s.drive_target == SERVO_SCREEN_TARGET_UNKNOWN
         || s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
@@ -3284,12 +2440,6 @@ static const char *lim_prog_why(void)
         return TR(SV_LIM_PROG_RAIL);
     }
     return NULL;
-}
-
-/* SEARCH+PROG chosen and offered. */
-static bool lim_programs(void)
-{
-    return s.lim_prog && lim_prog_why() == NULL;
 }
 
 static void lim_cfg(servo_limrun_cfg_t *c)
@@ -3480,7 +2630,7 @@ static void lim_leave_follow(void)
 /* End the run now and do what that asks -- the output off, the servo let
  * go -- before whatever ended it acts.  A disarm while the run switches the
  * bench or holds the programmer is the run's own and ends nothing. */
-static void lim_end_now(servo_test_abort_t why)
+void lim_end_now(servo_test_abort_t why)
 {
     if (!servo_limrun_running(&s.lim)) {
         return;
@@ -3743,101 +2893,6 @@ bool servo_cmd_survives_link_loss(const servo_cmd_t *c)
            && c->kind != SERVO_CMD_HOLD;
 }
 
-/* Whether the voltage set point in force is past a standard servo's
- * rating, which OUTPUT ON on this screen applies only through the HV
- * warning. */
-static bool hv_set_point(void)
-{
-    return supply_screen_set_v() > STD_SERVO_V_MAX + 0.001f;
-}
-
-/*
- * OUTPUT ON with a set point past a standard servo's rating: the HV warning
- * and its two-second hold, in place of the ordinary hold.  A set point made
- * on SUPPLY, or one already in force before this screen was opened, reaches
- * the servo only through it.
- */
-static void ask_hv_on(void)
-{
-    if (!s.ov_open) {
-        s.ov_open  = true;
-        s.kp_alone = true;
-    }
-    close_panels();
-    s.ask.open      = true;
-    s.ask.hv        = true;
-    s.ask.purpose   = ASK_ON;
-    s.ask.target    = KT_NONE;
-    s.ask.off_count = supply_screen_off_count();
-    s.ask.stops     = s.stops;
-    s.ask.v         = supply_screen_set_v();
-    s.ask.i         = supply_screen_set_i();
-    s.ask.down      = false;
-    ui_hold_reset(&s.ask.hold);
-    servo_invalidate();
-}
-
-/* Whether the question about a live output still stands: the output on
- * or coming, not gone off since it was asked -- an OFF and a new ON
- * between two frames start a run the question was not about -- and no
- * stop since.  A stop switches the output off, but the supply reports
- * that a sample later; an APPLY drained in the frame of the stop finds
- * the output still live and is refused by the count. */
-static bool ask_stands(void)
-{
-    return supply_screen_output_live()
-           && supply_screen_off_count() == s.ask.off_count
-           && s.stops == s.ask.stops;
-}
-
-/* The question answered with APPLY, or the HV warning's hold completed. */
-static void ask_apply(void)
-{
-    s.ask.open = false;
-    s.ask.down = false;
-    /* Only the set point that was typed: the other may have moved while
-     * the question stood -- a cap that follows the PD mini's input -- and
-     * the value it had then is not one anybody asked for now. */
-    if (s.ask.purpose == ASK_TEST) {
-        test_begin();
-    } else if (s.ask.purpose == ASK_ON) {
-        supply_screen_ask_on(SUPPLY_BY_SERVO);
-    } else if (s.ask.target == KT_SUP_V) {
-        supply_screen_put(s.ask.v, supply_screen_set_i());
-    } else {
-        supply_screen_put(supply_screen_set_v(), s.ask.i);
-    }
-    close_alone();
-    servo_invalidate();
-}
-
-static void open_choice(int target, setting_id_t id, const char *title)
-{
-    s.ch.open    = true;
-    s.ch.target  = target;
-    s.ch.id      = id;
-    s.ch.count   = 0;
-    s.ch.pressed = -1;
-    snprintf(s.ch.title, sizeof(s.ch.title), "%s", title);
-}
-
-static void choice_add(const char *label, int value)
-{
-    if (s.ch.count < CHOICE_MAX) {
-        snprintf(s.ch.labels[s.ch.count], sizeof(s.ch.labels[0]), "%s", label);
-        s.ch.values[s.ch.count] = value;
-        ++s.ch.count;
-    }
-}
-
-static void open_keypad(int target, const char *title, const char *unit,
-                        float value, float lo, float hi, int decimals)
-{
-    ui_keypad_open(&s.kp, overlay_area(), title, unit, value, lo, hi,
-                   decimals);
-    s.kp_target = target;
-}
-
 /* Armed, asked to arm, or a finger on ARM, or the bench armed for the
  * motor: the programmer takes no port. */
 static bool bench_arming(void)
@@ -3856,611 +2911,6 @@ static bool arm_locked(void)
 {
     return (kst_panel_holds_port() || servo_limrun_running(&s.lim))
            && !s.gate.armed;
-}
-
-/*
- * What the tester drives changes only on a bench at rest: disarmed, no test
- * and no sweep, and the port not in the programmer's hands.  The port's
- * pulse is switched on under the same rule, and off at any time but in a
- * test or a sweep: one that went on would step and record a servo that
- * gets no pulse.  STOP and DISARM end those.
- */
-static bool target_locked(const ov_row_t *r)
-{
-    if (r->kind != R_SETTING
-        || (r->id != SET_SERVO_TARGET && r->id != SET_SERVO_PORT_PWM)) {
-        return false;
-    }
-    if (settings_held(r->id)) {
-        return true;                    /* the programmer has the port */
-    }
-    if (r->id == SET_SERVO_PORT_PWM) {
-        if (settings_get_int(SET_SERVO_TARGET) == 0) {
-            return true;                /* no port to switch */
-        }
-        if (settings_get_bool(SET_SERVO_PORT_PWM)) {
-            /* Off is taken, armed or not, outside a run. */
-            return s.sweeping || servo_test_running(&s.test)
-                   || servo_limrun_running(&s.lim);
-        }
-    }
-    return s.gate.armed || s.sweeping || servo_test_running(&s.test)
-           || servo_limrun_running(&s.lim) || kst_panel_holds_port();
-}
-
-/* A settings row tapped: the editor its kind takes. */
-static void edit_row(int i)
-{
-    const ov_row_t *r = &k_rows[i];
-    if (target_locked(r)) {
-        return;
-    }
-    switch (r->kind) {
-    case R_TYPE:
-        open_choice(CH_TYPE, SETTING_COUNT, TR(SV_SERVO_TYPE));
-        for (int t = 0; t < TYPE_COUNT; ++t) {
-            choice_add(k_types[t].name, t);
-        }
-        break;
-    case R_RATE: {
-        open_choice(CH_RATE, SETTING_COUNT, TR(SV_ROW_RATE));
-        const uint16_t top = max_rate_for(s.type, cmd_top());
-        for (int k = 0; k < type()->rate_count; ++k) {
-            if (type()->rates[k] <= top) {
-                char lbl[16];
-                snprintf(lbl, sizeof(lbl), "%u Hz", (unsigned)type()->rates[k]);
-                choice_add(lbl, type()->rates[k]);
-            }
-        }
-        choice_add(TR(SV_CUSTOM), -1);
-        break;
-    }
-    /*
-     * Each end at least 50 us from the centre, and the range a command
-     * carries -- centred on CENTRE, out to the further end; see cmd_range()
-     * -- inside what the coprocessor takes and what the frame rate leaves
-     * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
-     * end may lie no further from the centre than the centre lies from the
-     * floor or from that top.
-     */
-    case R_MIN: {
-        const unsigned c = s.centre_us;
-        const unsigned top = max_pulse_for_rate();
-        const unsigned lo = (2u * c > top + OUT_FLOOR_US) ? 2u * c - top
-                                                          : OUT_FLOOR_US;
-        open_keypad(KT_MIN, TR(SV_ROW_MIN), "us", (float)s.min_us, (float)lo,
-                    (float)(c - 50u), 0);
-        break;
-    }
-    case R_CENTRE: {
-        unsigned lo = (s.max_us + OUT_FLOOR_US + 1u) / 2u;
-        unsigned hi = (max_pulse_for_rate() + s.min_us) / 2u;
-        if (lo < s.min_us + 50u) { lo = s.min_us + 50u; }
-        if (hi > s.max_us - 50u) { hi = s.max_us - 50u; }
-        open_keypad(KT_CENTRE, TR(SV_ROW_CENTRE), "us", (float)s.centre_us,
-                    (float)lo, (float)hi, 0);
-        break;
-    }
-    case R_MAX: {
-        const unsigned c = s.centre_us;
-        unsigned top = max_pulse_for_rate();
-        if (top > 2u * c - OUT_FLOOR_US) { top = 2u * c - OUT_FLOOR_US; }
-        open_keypad(KT_MAX, TR(SV_ROW_MAX), "us", (float)s.max_us,
-                    (float)(c + 50u),
-                    (float)((top > c + 50u) ? top : c + 50u), 0);
-        break;
-    }
-    case R_TRAVEL:
-        open_keypad(KT_TRAVEL, TR(SV_ROW_TRAVEL), "deg", s.travel_deg, 10.0f,
-                    90.0f, 0);
-        break;
-    case R_REVERSE:
-        s.reverse = !s.reverse;
-        reissue();
-        break;
-    case R_HV:
-        /* For a run started after it; one under way keeps its steps. */
-        s.test_hv = !s.test_hv;
-        break;
-    case R_LIM_MODE:
-        /* For a run started after it, and only where it is offered. */
-        if (!servo_limrun_running(&s.lim) && lim_prog_why() == NULL) {
-            s.lim_prog = !s.lim_prog;
-        }
-        break;
-    case R_LIM_PULSES:
-        /* For a run started after it, on the programming port only. */
-        if (!servo_limrun_running(&s.lim) && lim_reads()) {
-            s.lim_pulses = !s.lim_pulses;
-        }
-        break;
-    case R_ENC_CENTRE:
-        /* The servo is at its neutral: the live count is the centre. */
-        if (enc_shown()) {
-            settings_set(SET_ENC_CENTRE, (float)s.enc_raw);
-            settings_request_save();
-        }
-        break;
-    case R_TEXT:
-        ui_textkey_open(&s.tk, overlay_area(), TR(SV_DUT_TITLE),
-                        settings_text(SET_TEXT_DUT_NAME), UI_TEXTKEY_MAX);
-        break;
-    case R_SETTING: {
-        const setting_def_t *d = settings_def(r->id);
-        if (d->type == SET_TYPE_BOOL) {
-            settings_set(r->id, settings_get_bool(r->id) ? 0.0f : 1.0f);
-            settings_request_save();
-        } else if (d->type == SET_TYPE_ENUM) {
-            open_choice(CH_ENUM, r->id, ui_tr(r->label));
-            for (int k = 0; k < d->option_count; ++k) {
-                choice_add(ui_setting_option(r->id, k), k);
-            }
-        } else {
-            open_keypad(KT_SETTING, ui_tr(r->label), d->unit,
-                        settings_get(r->id),
-                        d->min, d->max, decimals_of(r->id));
-            s.kp_setting = r->id;
-        }
-        break;
-    }
-    default:
-        break;
-    }
-    ++s.ctrl_rev;
-}
-
-static void choose(int k)
-{
-    const int v = s.ch.values[k];
-    const int target = s.ch.target;
-    const setting_id_t id = s.ch.id;
-    s.ch.open = false;
-    if (target == CH_TYPE) {
-        ask_profile(v, k_types[v].default_hz);
-    } else if (target == CH_RATE) {
-        if (v < 0) {
-            open_keypad(KT_RATE, TR(SV_ROW_RATE), "Hz", (float)s.frame_hz,
-                        50.0f,
-                        (float)max_rate_for(s.type, cmd_top()), 0);
-        } else {
-            ask_profile(s.type, (uint16_t)v);
-        }
-    } else if (target == CH_ENUM) {
-        settings_set(id, (float)v);
-        settings_request_save();
-    }
-    ++s.ctrl_rev;
-}
-
-static void keypad_done(ui_keypad_result_t r, float v)
-{
-    if (r == UI_KEYPAD_NONE) {
-        return;
-    }
-    const int target = s.kp_target;
-    s.kp_target = KT_NONE;
-    if (target == KT_SUP_V || target == KT_SUP_I) {
-        if (r == UI_KEYPAD_OK) {
-            set_point_typed(target, v);
-        } else {
-            close_alone();
-        }
-        ++s.ctrl_rev;
-        return;
-    }
-    if (r == UI_KEYPAD_OK) {
-        const uint16_t us = (uint16_t)lroundf(v);
-        switch (target) {
-        case KT_MIN:    s.min_us = us;    reissue(); break;
-        case KT_CENTRE: s.centre_us = us; reissue(); break;
-        case KT_MAX:
-            s.max_us = us;
-            apply_profile(s.type, s.frame_hz);   /* a rate it no longer fits
-                                                  * comes down; never up */
-            break;
-        case KT_TRAVEL:
-            s.travel_deg = (float)lroundf(v);
-            /* Not live, the value shown stays what was last driven. */
-            if (value_live()) {
-                s.commanded_deg = clamp_travel(s.commanded_deg);
-            }
-            reissue();
-            break;
-        case KT_RATE:
-            ask_profile(s.type, us);
-            break;
-        case KT_SETTING: {
-            const setting_def_t *d = settings_def(s.kp_setting);
-            /* A cap rounds down onto its step, as on SUPPLY. */
-            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
-                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
-                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
-            }
-            settings_set(s.kp_setting, v);
-            if (s.kp_setting == SET_SUPPLY_V_MAX
-                || s.kp_setting == SET_SUPPLY_I_MAX) {
-                supply_screen_limits_changed();
-            }
-            settings_request_save();
-            break;
-        }
-        default:
-            break;
-        }
-    }
-    ++s.ctrl_rev;
-}
-
-static void ov_take(const touch_event_t *evt, int code, int which)
-{
-    s.ov_have    = true;
-    s.ov_id      = evt->point.id;
-    s.ov_pressed = code;
-    s.ov_row     = which;
-    ++s.ctrl_rev;
-}
-
-static void ov_let_go(void)
-{
-    if (s.ov_have) {
-        s.ov_have    = false;
-        s.ov_pressed = OP_NONE;
-        ++s.ctrl_rev;
-    }
-}
-
-/* A press landing in the overlay: on whichever of its panels is up. */
-static void ov_down(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-    if (s.ask.open) {
-        if (gfx_rect_contains(warn_apply_rect(), x, y)) {
-            ov_take(evt, OP_ASK_APPLY, -1);
-            if (s.ask.hv) {
-                s.ask.down = true;
-                ui_hold_begin(&s.ask.hold);
-                ++s.ask.rev;
-            }
-        } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
-            ov_take(evt, OP_ASK_CANCEL, -1);
-        }
-        return;
-    }
-    if (s.warn.open) {
-        if (gfx_rect_contains(warn_apply_rect(), x, y)) {
-            ov_take(evt, OP_WARN_APPLY, -1);
-            s.warn.down = true;
-            ui_hold_begin(&s.warn.hold);
-            ++s.warn.rev;
-        } else if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
-            ov_take(evt, OP_WARN_CANCEL, -1);
-        }
-        return;
-    }
-    if (s.kp.open) {
-        ov_take(evt, OP_KEYPAD, -1);
-        (void)ui_keypad_event(&s.kp, evt, NULL);
-        return;
-    }
-    if (s.tk.open) {
-        ov_take(evt, OP_TEXT, -1);
-        (void)ui_textkey_event(&s.tk, evt, NULL, 0);
-        return;
-    }
-    if (s.ch.open) {
-        for (int k = 0; k < s.ch.count; ++k) {
-            if (gfx_rect_contains(choice_rect(k), x, y)) {
-                ov_take(evt, OP_CHOICE, k);
-                return;
-            }
-        }
-        if (gfx_rect_contains(choice_cancel_rect(), x, y)) {
-            ov_take(evt, OP_CHOICE_CANCEL, -1);
-        }
-        return;
-    }
-    if (gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
-                                        OV_TAB_W, OV_TAB_H }, x, y)) {
-        ov_take(evt, OP_TAB, -1);
-        (void)ui_tabs_event(&s.tabs, evt);
-        return;
-    }
-    if (gfx_rect_contains(close_rect(), x, y)) {
-        ov_take(evt, OP_CLOSE, -1);
-        return;
-    }
-    if (s.tabs.selected == PG_TEST
-        && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_TEST_START, -1);
-        /* A hold, unless a run is under way (a tap stops it), a step is
-         * past 6.0 V (a tap opens the HV warning, whose hold starts it), or
-         * it cannot run now (a tap says why). */
-        s.test_note = 0;
-        if (!servo_test_running(&s.test) && test_blocked() == 0
-            && !test_needs_hv()) {
-            s.test_down = true;
-            ui_hold_begin(&s.test_hold);
-        }
-        ++s.test_rev;
-        return;
-    }
-    if (s.tabs.selected == PG_LIMITS
-        && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_LIM_START, -1);
-        /* A hold, unless the run is under way (a tap stops it) or it
-         * cannot run now (a tap says why). */
-        s.lim_note = NULL;
-        if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
-            s.lim_down = true;
-            ui_hold_begin(&s.lim_hold);
-        }
-        ++s.test_rev;
-        return;
-    }
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page != s.tabs.selected || row_hidden(&k_rows[i])) {
-            continue;
-        }
-        if (k_rows[i].kind == R_TRIM) {
-            /* The steps act on the press, as the old CENTRE buttons did:
-             * a fine step should feel immediate. */
-            const bool up = gfx_rect_contains(trim_rect(i, true), x, y);
-            if (up || gfx_rect_contains(trim_rect(i, false), x, y)) {
-                ov_take(evt, up ? OP_TRIM_UP : OP_TRIM_DN, i);
-                s.trim_us = (int16_t)(s.trim_us + (up ? 5 : -5));
-                if (s.trim_us > 200) { s.trim_us = 200; }
-                if (s.trim_us < -200) { s.trim_us = -200; }
-                reissue();
-                return;
-            }
-            continue;
-        }
-        if (gfx_rect_contains(row_rect(i), x, y)) {
-            ov_take(evt, OP_ROW, i);
-            return;
-        }
-    }
-}
-
-/* The rest of an overlay press: its moves and its release. */
-static void ov_rest(const touch_event_t *evt)
-{
-    const int x = evt->point.x, y = evt->point.y;
-    const bool up = (evt->type == TOUCH_EVENT_UP);
-    const int was = s.ov_pressed;
-    const int which = s.ov_row;
-    switch (was) {
-    case OP_KEYPAD: {
-        float v = 0.0f;
-        const ui_keypad_result_t r = ui_keypad_event(&s.kp, evt, &v);
-        if (up) {
-            ov_let_go();
-        }
-        keypad_done(r, v);
-        ++s.ctrl_rev;
-        return;
-    }
-    case OP_TEXT: {
-        char name[SETTINGS_TEXT_MAX];
-        const ui_textkey_result_t r =
-            ui_textkey_event(&s.tk, evt, name, sizeof(name));
-        if (up) {
-            ov_let_go();
-        }
-        if (r == UI_TEXTKEY_OK) {
-            settings_set_text(SET_TEXT_DUT_NAME, name);
-            settings_request_save();
-        }
-        ++s.ctrl_rev;
-        return;
-    }
-    case OP_TAB:
-        if (ui_tabs_event(&s.tabs, evt)) {
-            ++s.ctrl_rev;
-        }
-        if (up) {
-            ov_let_go();
-        }
-        return;
-    case OP_ASK_APPLY:
-        if (!s.ask.hv) {
-            break;                      /* a tap: the release applies it */
-        }
-        if (!up) {
-            /* A finger that leaves APPLY abandons the hold, as on ARM. */
-            if (!gfx_rect_contains(warn_apply_rect(), x, y)
-                && ui_hold_leave(&s.ask.hold)) {
-                s.ask.down = false;
-                ++s.ask.rev;
-                ov_let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&s.ask.hold);
-        s.ask.down = false;
-        ++s.ask.rev;
-        ov_let_go();
-        return;
-    case OP_TEST_START:
-        if (!s.test_down) {
-            break;                      /* a tap: the release acts */
-        }
-        if (!up) {
-            /* A finger that leaves START TEST abandons the hold. */
-            if (!gfx_rect_contains(test_start_rect(), x, y)
-                && ui_hold_leave(&s.test_hold)) {
-                s.test_down = false;
-                ++s.test_rev;
-                ov_let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&s.test_hold);
-        s.test_down = false;
-        ++s.test_rev;
-        ov_let_go();
-        return;
-    case OP_LIM_START:
-        if (!s.lim_down) {
-            break;                      /* a tap: the release acts */
-        }
-        if (!up) {
-            /* A finger that leaves START LIMIT RUN abandons the hold. */
-            if (!gfx_rect_contains(test_start_rect(), x, y)
-                && ui_hold_leave(&s.lim_hold)) {
-                s.lim_down = false;
-                ++s.test_rev;
-                ov_let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&s.lim_hold);
-        s.lim_down = false;
-        ++s.test_rev;
-        ov_let_go();
-        return;
-    case OP_WARN_APPLY:
-        if (!up) {
-            /* A finger that leaves APPLY abandons the hold, as on ARM. */
-            if (!gfx_rect_contains(warn_apply_rect(), x, y)
-                && ui_hold_leave(&s.warn.hold)) {
-                s.warn.down = false;
-                ++s.warn.rev;
-                ov_let_go();
-            }
-            return;
-        }
-        (void)ui_hold_end(&s.warn.hold);
-        s.warn.down = false;
-        ++s.warn.rev;
-        ov_let_go();
-        return;
-    default:
-        break;
-    }
-    if (!up) {
-        return;
-    }
-    ov_let_go();
-    /* A release the finger did not make activates nothing, except the tap
-     * that stops a run. */
-    if (!touch_event_is_tap_up(evt)
-        && !(was == OP_TEST_START && servo_test_running(&s.test))
-        && !(was == OP_LIM_START && servo_limrun_running(&s.lim))) {
-        ++s.ctrl_rev;
-        return;
-    }
-    switch (was) {
-    case OP_CLOSE:
-        if (gfx_rect_contains(close_rect(), x, y)) {
-            s.ov_open = false;
-            s.kp_alone = false;
-            close_panels();
-            servo_invalidate();
-        }
-        break;
-    case OP_ROW:
-        if (which >= 0 && gfx_rect_contains(row_rect(which), x, y)) {
-            edit_row(which);
-        }
-        break;
-    case OP_CHOICE:
-        if (which >= 0 && which < s.ch.count
-            && gfx_rect_contains(choice_rect(which), x, y)) {
-            choose(which);
-        }
-        break;
-    case OP_CHOICE_CANCEL:
-        if (gfx_rect_contains(choice_cancel_rect(), x, y)) {
-            s.ch.open = false;
-        }
-        break;
-    case OP_WARN_CANCEL:
-        if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
-            s.warn.open = false;
-        }
-        break;
-    case OP_SUP_V:
-    case OP_SUP_I: {
-        const int k = (was == OP_SUP_V) ? 0 : 1;
-        if (gfx_rect_contains(sup_val_rect(k), x, y)) {
-            open_set_point((k == 0) ? KT_SUP_V : KT_SUP_I);
-        }
-        break;
-    }
-    case OP_ASK_APPLY:
-        /* Only while the question still stands: a release drained in the
-         * frame that took the live output away must not apply it. */
-        if (gfx_rect_contains(warn_apply_rect(), x, y) && s.ask.open
-            && (s.ask.hv || ask_stands())) {
-            ask_apply();
-        }
-        break;
-    case OP_ASK_CANCEL:
-        if (gfx_rect_contains(warn_cancel_rect(), x, y)) {
-            s.ask.open = false;
-            close_alone();
-            servo_invalidate();
-        }
-        break;
-    case OP_TEST_START:
-        if (!gfx_rect_contains(test_start_rect(), x, y)) {
-            break;
-        }
-        if (servo_test_running(&s.test)) {
-            test_end_now(SERVO_TEST_AB_OPERATOR);
-        } else if (test_blocked() == 0 && test_needs_hv()) {
-            ask_hv_test();
-        }
-        ++s.test_rev;
-        break;
-    case OP_LIM_START:
-        if (gfx_rect_contains(test_start_rect(), x, y)
-            && servo_limrun_running(&s.lim)) {
-            lim_end_now(SERVO_TEST_AB_OPERATOR);
-        }
-        ++s.test_rev;
-        break;
-    case OP_PROGRAM:
-        if (gfx_rect_contains(s.prog_btn, x, y)) {
-            /* PROGRAM opens the programmer over the left card and asks it
-             * to close; it stays while the port is in programming.  The
-             * settings give way to it. */
-            if (kst_panel_is_open()) {
-                kst_panel_close();
-            } else {
-                /* A run would go on behind the programmer, stepping the
-                 * rail and the position of the port CONNECT takes. */
-                test_end_now(SERVO_TEST_AB_OPERATOR);
-                s.ov_open = false;
-                s.kp_alone = false;
-                close_panels();
-                kst_panel_open();
-            }
-            servo_invalidate();
-        }
-        break;
-    case OP_SETTINGS:
-        /* The settings would cover a programmer that holds the port. */
-        if (kst_panel_holds_port()) {
-            break;
-        }
-        if (gfx_rect_contains(s.set_btn, x, y)) {
-            kst_panel_leave();
-            /* SETTINGS opens the overlay and closes it, taking whatever is
-             * open in it; a warning not held is a profile not applied.  The
-             * servo's lead runs out past the left card, where the overlay
-             * does not reach, so the change is a whole repaint. */
-            s.ov_open = !s.ov_open;
-            s.kp_alone = false;     /* whatever opened it, it is shut now */
-            close_panels();
-            servo_invalidate();
-        }
-        break;
-    default:
-        break;
-    }
-    ++s.ctrl_rev;
 }
 
 /* ------------------------------------------------------------------ events */
@@ -5032,7 +3482,7 @@ static void draw_dial(gfx_canvas_t *c)
  * last single space.  A word longer than a line stays whole.  With @p c
  * NULL nothing is drawn.  Returns the lines it takes.
  */
-static int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
+int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
                      const char *text, int cells, gfx_color_t ink)
 {
     int lines = 0;
@@ -5404,7 +3854,7 @@ static void draw_left(gfx_canvas_t *c)
     }
 }
 
-static void row_in(gfx_canvas_t *c, int y, const char *label,
+static inline void row_in(gfx_canvas_t *c, int y, const char *label,
                    gfx_color_t label_col, const char *value)
 {
     gfx_text(c, RC_X, y + 5, label, UI_FONT_LABEL, label_col, 1);
@@ -5741,223 +4191,9 @@ static void draw_right(gfx_canvas_t *c, bool power)
     draw_arm(c);
 }
 
-/* Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
- * moment, 2 refused, 3 changed on SETUP and not asked to be saved. */
-static uint8_t save_state(void)
-{
-    if (settings_save_failed()) {
-        return 2u;
-    }
-    if (settings_save_asked()) {
-        return 1u;
-    }
-    return settings_dirty() ? 3u : 0u;
-}
-
-/* Across the card: the German "not saved" line is 296 px. */
-static gfx_rect_t save_line_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
-                         (int16_t)(OV_W - 20), 18 };
-}
-
-static void draw_save_line(gfx_canvas_t *c)
-{
-    static const ui_text_id_t k_save[] = {
-        TX_SUP_SAVED, TX_SUP_SAVE_WAITING, TX_SUP_NOT_SAVED,
-        TX_SUP_SETUP_NOT_SAVED,
-    };
-    const gfx_rect_t r = save_line_rect();
-    gfx_fill_rect(c, r.x, r.y, r.w, r.h, ui_theme_color(UI_C_PANEL));
-    const uint8_t st = save_state();
-    gfx_text(c, r.x, r.y + 1, ui_tr(k_save[st]), &gfx_font_8x16,
-             (st == 2u) ? ui_theme_color(UI_C_WARN)
-                        : ui_theme_color(UI_C_TEXT_DIM), 1);
-}
-
-/* A test setting that the length rule leaves unused is drawn faint. */
-static bool row_unused(const ov_row_t *r)
-{
-    if (r->kind == R_ENC_CENTRE) {
-        return !settings_get_bool(SET_ENC_EN);
-    }
-    if (r->kind == R_LIM_MODE) {
-        return servo_limrun_running(&s.lim) || lim_prog_why() != NULL;
-    }
-    if (r->kind == R_LIM_PULSES) {
-        return servo_limrun_running(&s.lim);
-    }
-    if (r->kind != R_SETTING) {
-        return false;
-    }
-    if (target_locked(r)) {
-        return true;
-    }
-    const int by = settings_get_int(SET_SERVO_LEN_BY);
-    return (r->id == SET_SERVO_LEN_S && by != 0)
-           || (r->id == SET_SERVO_LEN_MOVES && by == 0)
-           || ((r->id == SET_SERVO_STEP_74 || r->id == SET_SERVO_STEP_84)
-               && !s.test_hv);
-}
-
-static void row_value(const ov_row_t *r, char *buf, size_t n)
-{
-    switch (r->kind) {
-    case R_TYPE:    snprintf(buf, n, "%s", type()->name); return;
-    case R_RATE:    snprintf(buf, n, "%u Hz", (unsigned)s.frame_hz); return;
-    case R_MIN:     snprintf(buf, n, "%u us", (unsigned)s.min_us); return;
-    case R_CENTRE:  snprintf(buf, n, "%u us", (unsigned)s.centre_us); return;
-    case R_MAX:     snprintf(buf, n, "%u us", (unsigned)s.max_us); return;
-    case R_TRIM:    snprintf(buf, n, "%+d", (int)s.trim_us); return;
-    case R_TRAVEL:  snprintf(buf, n, "+/-%d", (int)s.travel_deg); return;
-    case R_REVERSE: snprintf(buf, n, "%s", ui_on_off(s.reverse)); return;
-    case R_TEXT:    snprintf(buf, n, "%s", settings_text(SET_TEXT_DUT_NAME));
-                    return;
-    case R_HV:      snprintf(buf, n, "%s", ui_on_off(s.test_hv)); return;
-    case R_LIM_MODE:
-        snprintf(buf, n, "%s",
-                 lim_programs() ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH));
-        return;
-    case R_LIM_PULSES:
-        snprintf(buf, n, "%s",
-                 s.lim_pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
-        return;
-    case R_ENC_CENTRE:
-        snprintf(buf, n, "%d", settings_get_int(SET_ENC_CENTRE));
-        return;
-    default:
-        break;
-    }
-    const setting_def_t *d = settings_def(r->id);
-    const float v = settings_get(r->id);
-    const bool limit = (r->id == SET_SERVO_IDLE_MAX
-                        || r->id == SET_SERVO_HOLD_MAX
-                        || r->id == SET_SERVO_TRAVEL_MAX_MS);
-    if (d->type == SET_TYPE_BOOL) {
-        snprintf(buf, n, "%s", ui_on_off(v != 0.0f));
-    } else if (d->type == SET_TYPE_ENUM) {
-        snprintf(buf, n, "%s",
-                 ui_setting_option(r->id, settings_get_int(r->id)));
-    } else if (limit && !(v > 0.0f)) {
-        snprintf(buf, n, "%s", TR(OFF));
-    } else {
-        snprintf(buf, n, "%.*f %s", decimals_of(r->id), (double)v, d->unit);
-    }
-}
-
-static void draw_note(gfx_canvas_t *c, int x, int y, const char *const *lines,
-                      int count)
-{
-    for (int i = 0; i < count; ++i) {
-        gfx_text(c, x, y + i * 18, lines[i], &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_FAINT), 1);
-    }
-}
-
-bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
-                         uint8_t target, uint8_t gpio, bool pwm, int setting)
-{
-    if (l1 == NULL || l2 == NULL || size == 0u) {
-        return false;
-    }
-    /* No link: the coprocessor may have restarted since the rate landed,
-     * and a restart puts every pin back at its own rate, so no rate is
-     * named.  The link-up resets the rate before a target is known. */
-    if (target == SERVO_SCREEN_TARGET_NO_LINK) {
-        snprintf(l1, size, "%s", TR(SV_IN_FORCE_NO_LINK));
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
-        return true;
-    }
-    /* The page not known: the rate was acknowledged, where it runs is not
-     * known. */
-    if (target == SERVO_SCREEN_TARGET_UNKNOWN) {
-        snprintf(l1, size, TR(SV_IN_FORCE_UNKNOWN), (unsigned)hz);
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
-        return true;
-    }
-    /* The target the coprocessor holds, not the setting: the setting waits
-     * for a bench at rest, and PROG PORT with no pin bound to the port
-     * leaves the standard outputs the target. */
-    const bool other = setting < 0 || (unsigned)setting != target;
-    bool warn = other;
-    if (target == 0u) {
-        snprintf(l1, size, TR(SV_IN_FORCE_OUT), (unsigned)hz);
-    } else if (gpio == SERVO_SCREEN_NO_PIN) {
-        snprintf(l1, size, TR(SV_IN_FORCE_PORT), (unsigned)hz);
-        warn = true;
-    } else {
-        snprintf(l1, size, TR(SV_IN_FORCE_PORT_PIN), (unsigned)gpio,
-                 (unsigned)hz);
-    }
-    if (other) {
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_NOT_SET));
-    } else if (target != 0u && !pwm) {
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_PWM_OFF));
-        warn = true;
-    } else {
-        snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
-    }
-    return warn;
-}
-
-/* A line of a page's note: the overlay less 10 px each side, 58 cells. */
-#define NOTE_CELLS ((OV_W - 20) / 8)
-
-/* Whether the frame rate reached the pins, in two lines or more. */
-static void draw_rate_note(gfx_canvas_t *c, int x, int y)
-{
-    const servo_rate_state_t st = (s.rate_hz == s.frame_hz
-                                   || s.rate_st == SERVO_RATE_UNSUPPORTED)
-                                      ? s.rate_st
-                                      : SERVO_RATE_UNSENT;
-    char l1[96], l2[96];
-    bool warn = true;
-    switch (st) {
-    case SERVO_RATE_IN_FORCE:
-        warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
-                                   s.drive_target, s.drive_pin, s.drive_pwm,
-                                   settings_get_int(SET_SERVO_TARGET));
-        break;
-    case SERVO_RATE_IN_FORCE_SURFACES:
-        /* With no link the same "not known" line as from 4.19. */
-        if (s.drive_target == SERVO_SCREEN_TARGET_NO_LINK) {
-            warn = servo_in_force_note(l1, l2, sizeof(l1), s.frame_hz,
-                                       s.drive_target, s.drive_pin,
-                                       s.drive_pwm,
-                                       settings_get_int(SET_SERVO_TARGET));
-            break;
-        }
-        snprintf(l1, sizeof(l1), TR(SV_IN_FORCE_SURFACES_1),
-                 (unsigned)s.frame_hz);
-        snprintf(l2, sizeof(l2), "%s", TR(SV_IN_FORCE_2));
-        warn = false;
-        break;
-    case SERVO_RATE_REFUSED:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_REFUSED_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_REFUSED_2));
-        break;
-    case SERVO_RATE_UNSUPPORTED:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSUPPORTED_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSUPPORTED_2));
-        break;
-    case SERVO_RATE_UNSENT:
-    default:
-        snprintf(l1, sizeof(l1), "%s", TR(SV_UNSENT_1));
-        snprintf(l2, sizeof(l2), "%s", TR(SV_UNSENT_2));
-        warn = false;
-        break;
-    }
-    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
-                                 : ui_theme_color(UI_C_TEXT_FAINT);
-    /* Each line wraps onto the next where it is longer than the page's
-     * 58 cells. */
-    const int n1 = wrap_text(c, x, y, 18, l1, NOTE_CELLS, col);
-    (void)wrap_text(c, x, y + 18 * n1, 18, l2, NOTE_CELLS, col);
-}
-
 /* START TEST: green, fading to the danger red across its hold, as ARM;
  * STOP TEST in red while a run is under way. */
-static void draw_test_start(gfx_canvas_t *c)
+void draw_test_start(gfx_canvas_t *c)
 {
     const bool running = servo_test_running(&s.test);
     gfx_color_t fill = ui_theme_color(UI_C_OK);
@@ -5975,7 +4211,7 @@ static void draw_test_start(gfx_canvas_t *c)
 
 /* Under START TEST: what a run would do, and what the last one did or why
  * one did not start. */
-static void draw_test_lines(gfx_canvas_t *c)
+void draw_test_lines(gfx_canvas_t *c)
 {
     const int x = OV_X + 20 + OV_COL_W;
     const int y = OV_ROW0 + 7 * OV_PITCH + 2;
@@ -6037,7 +4273,7 @@ static void draw_test_lines(gfx_canvas_t *c)
 }
 
 /* START LIMIT RUN, on the LIMITS page where START TEST is on TEST. */
-static void draw_lim_start(gfx_canvas_t *c)
+void draw_lim_start(gfx_canvas_t *c)
 {
     const bool running = servo_limrun_running(&s.lim);
     gfx_color_t fill = ui_theme_color(UI_C_OK);
@@ -6055,7 +4291,7 @@ static void draw_lim_start(gfx_canvas_t *c)
 
 /* Under it, across the card: what the run drives and reads, what it does
  * or why it cannot, and whether it programs. */
-static void draw_lim_lines(gfx_canvas_t *c)
+void draw_lim_lines(gfx_canvas_t *c)
 {
     const int x = OV_X + 10;
     const int y = OV_ROW0 + 7 * OV_PITCH + 2;
@@ -6101,279 +4337,6 @@ static void draw_lim_lines(gfx_canvas_t *c)
                           : TR(SV_LIM_SEARCH_NOTE),
                  &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
-}
-
-static void draw_page(gfx_canvas_t *c)
-{
-    ui_tabs_render(&s.tabs, c);
-    ui_button(c, close_rect(), TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_CLOSE, true);
-    for (int i = 0; i < ROW_COUNT; ++i) {
-        const ov_row_t *r = &k_rows[i];
-        if (r->page != s.tabs.selected || row_hidden(r)) {
-            continue;
-        }
-        const gfx_rect_t rr = row_rect(i);
-        const gfx_rect_t vr = value_rect(i);
-        const bool faint = row_unused(r);
-        gfx_text(c, rr.x, rr.y + 9, ui_tr(r->label), &gfx_font_8x16,
-                 faint ? ui_theme_color(UI_C_TEXT_FAINT)
-                       : ui_theme_color(UI_C_TEXT_DIM), 1);
-        char v[32];
-        row_value(r, v, sizeof(v));
-        const bool pressed = s.ov_have && s.ov_pressed == OP_ROW
-                             && s.ov_row == i;
-        if (r->kind == R_TRIM) {
-            gfx_fill_rect(c, vr.x, vr.y, vr.w, vr.h,
-                          ui_theme_color(UI_C_PANEL_SUNK));
-            gfx_text_in(c, vr, v, &gfx_font_8x16, ui_theme_color(UI_C_TEXT),
-                        1, GFX_ALIGN_CENTER);
-            ui_button(c, trim_rect(i, false), "-",
-                      ui_theme_color(UI_C_PANEL_HI),
-                      s.ov_have && s.ov_pressed == OP_TRIM_DN, true);
-            ui_button(c, trim_rect(i, true), "+",
-                      ui_theme_color(UI_C_PANEL_HI),
-                      s.ov_have && s.ov_pressed == OP_TRIM_UP, true);
-            continue;
-        }
-        /* The type and the rate in force in the danger colour when they
-         * are ones that can destroy a servo not made for them. */
-        const bool danger = ((r->kind == R_TYPE || r->kind == R_RATE)
-                             && in_force_dangerous())
-                            || (r->kind == R_HV && s.test_hv);
-        ui_button(c, vr, v,
-                  danger ? ui_theme_color(UI_C_DANGER)
-                         : ui_theme_color(UI_C_PANEL_SUNK),
-                  pressed, !faint);
-    }
-
-    const int nx = OV_X + 10;
-    if (s.tabs.selected == PG_OUTPUT) {
-        char l1[96], l2[96];
-        snprintf(l1, sizeof(l1), TR(SV_FASTEST),
-                 (unsigned)max_rate_for(s.type, cmd_top()),
-                 type()->heli ? "0.5 ms" : "1 ms");
-        snprintf(l2, sizeof(l2), "%s", TR(SV_AT_START));
-        const char *const lines[] = { l1, l2 };
-        draw_note(c, nx, OV_NOTE_Y, lines, 2);
-        draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
-    } else if (s.tabs.selected == PG_TEST) {
-        draw_test_start(c);
-        draw_test_lines(c);
-    } else if (s.tabs.selected == PG_LIMITS) {
-        const char *const lines[] = {
-            TR(SV_LIMITS_1), TR(SV_LIMITS_2), TR(SV_LIMITS_3),
-            TR(SV_LIMITS_4),
-        };
-        draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
-        draw_lim_start(c);
-        draw_lim_lines(c);
-    } else {
-        const char *const lines[] = {
-            TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
-        };
-        draw_note(c, nx, OV_ROW0 + 4 * OV_PITCH + 6, lines, 3);
-    }
-    draw_save_line(c);
-}
-
-static void draw_choice(gfx_canvas_t *c)
-{
-    gfx_text(c, OV_X + 10, OV_Y + 16, s.ch.title, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-    for (int k = 0; k < s.ch.count; ++k) {
-        bool current = false;
-        if (s.ch.target == CH_TYPE) {
-            current = (s.ch.values[k] == s.type);
-        } else if (s.ch.target == CH_RATE) {
-            current = (s.ch.values[k] == (int)s.frame_hz);
-        } else if (s.ch.target == CH_ENUM) {
-            current = (s.ch.values[k] == settings_get_int(s.ch.id));
-        }
-        ui_button(c, choice_rect(k), s.ch.labels[k],
-                  current ? ui_theme_color(UI_C_ACCENT)
-                          : ui_theme_color(UI_C_PANEL_SUNK),
-                  s.ov_have && s.ov_pressed == OP_CHOICE && s.ov_row == k,
-                  true);
-    }
-    ui_button(c, choice_cancel_rect(), TR(CANCEL),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_CHOICE_CANCEL, true);
-}
-
-static gfx_color_t warn_fill(void)
-{
-    return ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
-                        ui_theme_color(UI_C_DANGER), s.warn.hold.held_s);
-}
-
-static void draw_warn_apply(gfx_canvas_t *c)
-{
-    ui_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY), warn_fill(),
-              s.warn.down, true);
-}
-
-/* A line of a warning: the overlay less 20 px each side, in 8 px cells. */
-#define WARN_CELLS ((OV_W - 40) / 8)
-
-/*
- * The warning a type or a frame rate that can destroy a servo needs before
- * it is applied: in the danger colour, saying what it is and what it does
- * to a servo not made for it.
- */
-static void draw_warning(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
-    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
-    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
-    gfx_text(c, a.x + 20, a.y + 20, TR(SV_DESTROY), &gfx_font_8x16,
-             red, 2);
-    const servo_type_t *t = &k_types[s.warn.type];
-    char what[80];
-    snprintf(what, sizeof(what), TR(SV_DESTROY_WHAT),
-             t->name, (unsigned)s.warn.hz,
-             (unsigned)((s.warn.type == s.type) ? s.min_us : t->min_us),
-             (unsigned)((s.warn.type == s.type) ? s.max_us : t->max_us));
-    gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-    const char *const lines[] = {
-        TR(SV_DESTROY_1), TR(SV_DESTROY_2), TR(SV_DESTROY_3),
-        TR(SV_DESTROY_4), TR(SV_DESTROY_5),
-    };
-    int y = a.y + 104;
-    for (int i = 0; i < 5; ++i) {
-        y += 22 * wrap_text(c, a.x + 20, y, 22, lines[i], WARN_CELLS,
-                            (i < 3) ? ui_theme_color(UI_C_TEXT)
-                                    : ui_theme_color(UI_C_TEXT_DIM));
-    }
-    draw_warn_apply(c);
-    ui_button(c, warn_cancel_rect(), TR(CANCEL),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_WARN_CANCEL, true);
-}
-
-static void draw_ask_apply(gfx_canvas_t *c)
-{
-    ui_button(c, warn_apply_rect(), TR(SV_HOLD_TO_APPLY),
-              ui_hold_fill(ui_theme_color(UI_C_PANEL_SUNK),
-                           ui_theme_color(UI_C_DANGER), s.ask.hold.held_s),
-              s.ask.down, true);
-}
-
-/*
- * A voltage raised past a standard servo's rating: in the danger colour of
- * the profile warning, saying what it does to a servo not rated for it.
- */
-static void draw_hv(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    const gfx_color_t red = ui_theme_color(UI_C_DANGER);
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, red);
-    gfx_draw_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2, red);
-    gfx_draw_rect(c, a.x + 2, a.y + 2, a.w - 4, a.h - 4, red);
-    gfx_text(c, a.x + 20, a.y + 20, TR(SV_HV_ONLY), &gfx_font_8x16, red, 2);
-    char what[64];
-    if (s.ask.purpose == ASK_ON) {
-        snprintf(what, sizeof(what), TR(SV_HV_ON_AT),
-                 (double)supply_screen_set_v());
-    } else if (s.ask.purpose == ASK_TEST) {
-        snprintf(what, sizeof(what), TR(SV_HV_STEPS),
-                 (double)s.ask.v);
-    } else {
-        snprintf(what, sizeof(what), TR(SV_HV_VOLTAGE),
-                 (double)supply_screen_set_v(), (double)s.ask.v);
-    }
-    gfx_text(c, a.x + 20, a.y + 66, what, &gfx_font_8x16,
-             ui_theme_color(UI_C_VOLT), 1);
-    const char *const lines[] = {
-        TR(SV_HV_1), TR(SV_HV_2), TR(SV_HV_3), TR(SV_HV_4), TR(SV_HV_5),
-    };
-    int y = a.y + 104;
-    for (int i = 0; i < 5; ++i) {
-        y += 22 * wrap_text(c, a.x + 20, y, 22, lines[i], WARN_CELLS,
-                            (i < 4) ? ui_theme_color(UI_C_TEXT)
-                                    : ui_theme_color(UI_C_TEXT_DIM));
-    }
-    if (s.ask.purpose == ASK_SET && supply_screen_output_on()) {
-        (void)wrap_text(c, a.x + 20, y + 8, 22, TR(SV_HV_LIVE), WARN_CELLS,
-                        ui_theme_color(UI_C_WARN));
-    }
-    draw_ask_apply(c);
-    ui_button(c, warn_cancel_rect(), TR(CANCEL),
-              ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
-}
-
-/*
- * SUPPLY's question before a set point changes a live output, with its
- * words: the change reaches the load at once.
- */
-static void draw_ask(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    if (s.ask.hv) {
-        draw_hv(c);
-        return;
-    }
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_WARN));
-    gfx_text(c, a.x + 20, a.y + 20, TR(SUP_OUTPUT_IS_ON), &gfx_font_8x16,
-             ui_theme_color(UI_C_WARN), 2);
-    gfx_text(c, a.x + 20, a.y + 70, TR(SUP_ASK_WHY),
-             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
-    int y = a.y + 120;
-    const struct { const char *label; float was, now; const char *unit;
-                   gfx_color_t col; } k[] = {
-        { TR(SUP_VOLTAGE), supply_screen_set_v(), s.ask.v, "V",
-          ui_theme_color(UI_C_VOLT) },
-        { TR(SUP_CURRENT_LIMIT), supply_screen_set_i(), s.ask.i, "A",
-          ui_theme_color(UI_C_CURR) },
-    };
-    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
-        if (k[i].was == k[i].now) {
-            continue;
-        }
-        gfx_text(c, a.x + 20, y + 8, k[i].label, &gfx_font_8x16,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        char line[48];
-        snprintf(line, sizeof(line), "%.2f -> %.2f %s", (double)k[i].was,
-                 (double)k[i].now, k[i].unit);
-        gfx_text(c, a.x + 150, y, line, &gfx_font_8x16, k[i].col, 2);
-        y += 50;
-    }
-    ui_button(c, warn_apply_rect(), TR(SUP_APPLY), ui_theme_color(UI_C_WARN),
-              s.ov_have && s.ov_pressed == OP_ASK_APPLY, true);
-    ui_button(c, warn_cancel_rect(), TR(CANCEL), ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
-}
-
-static void draw_overlay(gfx_canvas_t *c)
-{
-    const gfx_rect_t a = overlay_area();
-    if (s.kp.open) {
-        ui_keypad_render(&s.kp, c);
-        return;
-    }
-    if (s.tk.open) {
-        ui_textkey_render(&s.tk, c);
-        return;
-    }
-    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
-    if (s.ask.open) {
-        draw_ask(c);
-        return;
-    }
-    if (s.warn.open) {
-        draw_warning(c);
-        return;
-    }
-    gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    if (s.ch.open) {
-        draw_choice(c);
-        return;
-    }
-    draw_page(c);
 }
 
 /* What the box and the TEST page show of the run, as one number. */

@@ -15,10 +15,13 @@ set(SRCS
     supply.c
     supply_link.c
     sense_link.c
+    sense_link_view.c
     servo_source.c
     tone_link.c
     kst_link.c
     kst_prog.c
+    kst_prog_card.c
+    kst_prog_file.c
     prog_link.c
     knob.c
 )

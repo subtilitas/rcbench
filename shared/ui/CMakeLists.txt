@@ -23,11 +23,13 @@ set(SRCS
     motor_screen.c
     supply_screen.c
     servo_screen.c
+    servo_settings_panel.c
     kst_panel.c
     analyser_screen.c
     balance_screen.c
     battery_screen.c
     programmer_screen.c
+    esc_stick_panel.c
     log_viewer_screen.c
     log_select.c
     settings_screen.c

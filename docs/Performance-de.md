@@ -204,7 +204,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 008 | 2 160 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 040 | 2 128 |
 | `control` | `control_task` | 6 144 | 4 288 | 832 |
 | `runlog` | `log_task` | 4 352 | 2 992 | 336 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
@@ -269,10 +269,10 @@ Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
-für Kern 0 1 708 Bytes ergibt.
+für Kern 0 1 692 Bytes ergibt.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (472 Bytes), `can_service` (336),
+im pico-sdk scheitert: `main` (448 Bytes), `can_service` (344),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
@@ -280,13 +280,13 @@ aufruft, 228 Bytes. Der tiefste Handler ist der Worker des USB-Stacks,
 `low_priority_worker_irq`, mit 420 Bytes; auch seine Kette endet in
 `panic()`.
 
-Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 304 Bytes: `main`
-(464), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
+Ein Schreibkommando an den Programmierport für KST- und Chaservo-Servos erreicht 1 288 Bytes: `main`
+(448), `can_service` (344), `link_dev_dispatch` (32), `kst_write` (24),
 `kst_port_write` (88), `kst_session_edit` (40) und der Start eines
 Planer-Jobs, 312 Bytes ab `kst_plan_edit_begin`: `kst_plan_edit_begin`
 (40), die Grenzwertprüfung `kst_limits_edit` (248), `load` (16) und
-`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 1 016 Bytes: `main`,
-`kst_port_step` (48), `step_programming` (40), `kst_session_step` (256) und ein Slice des Planers,
+`kst_field_get` (8). Ein Durchlauf, der plant, erreicht 1 008 Bytes: `main`,
+`kst_port_step` (48), `step_programming` (40), `kst_session_step` (264) und ein Slice des Planers,
 208 Bytes ab `kst_plan_step`. Der Planer ruft sich nicht selbst auf. Der
 Job des Planers, der Plan und das bereitgestellte Image liegen im Zustand
 der Session und des Ports, nicht auf dem Stack.
@@ -309,7 +309,7 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 91 solche Aufrufe sind von `main` aus erreichbar;
+  Links liest: 137 solche Aufrufe sind von `main` aus erreichbar;
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
@@ -401,8 +401,8 @@ beiden Event-Handler, die Netzwerkschnittstelle, `esp_wifi_init`,
 Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
-Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 16
-Objekten, 161 340 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 17
+Objekten, 162 832 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
@@ -410,20 +410,21 @@ wpa_supplicant, 13 742 Bytes.
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35 328 |
-| `servo_screen` | ui | 28 509 |
+| `servo_screen` | ui | 29 365 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 412 |
 | `motor_screen` | ui | 19 968 |
-| `programmer_screen` | ui | 6 396 |
 | `kst_card` | bench | 6 208 |
+| `esc_stick_panel` | ui | 6 096 |
+| `kst_panel` | ui | 5 185 |
 | `log_csv` | logfile | 4 904 |
-| `kst_panel` | ui | 4 645 |
 | `esc_registry` | esc | 4 228 |
 | `analyser_screen` | ui | 4 036 |
 | `wa_zip` | webaccess | 2 433 |
 | `wa_page` | webaccess | 1 408 |
 | `wifi_screen` | ui | 1 320 |
 | `ui_band` | ui | 1 040 |
+| `programmer_screen` | ui | 396 |
 | `log_reader` | logfile | 1 |
 
 Ein Objekt zieht nur um, wenn seinen Zustand
