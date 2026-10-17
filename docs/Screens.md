@@ -2687,7 +2687,8 @@ the pins ticked for the protocol being left stay bound, and the pins of the
 one arrived at come back as they were. A selector that retargeted the current
 pins would make binding a second protocol mean unbinding the first. On entry
 the list shows OFF, the overview. A protocol picked stays selected across
-read-backs. The list on PICK A PIN selects the same protocol.
+read-backs of the same board. The list on PICK A PIN selects the same
+protocol.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
 
@@ -2721,13 +2722,15 @@ nothing. Picking a protocol in the list leaves the overview, and picking OFF
 goes back to it; neither writes or unbinds anything.
 
 OFF stays selected until another entry is picked: across read-backs,
-repaints, a link that goes down and comes back, a coprocessor that answers
-for the first time during the visit, a coprocessor swapped for another
-board, and leaving the screen. A press on a pin draws no pressed face. PICK
-A PIN opens with OFF selected too.
+repaints, a link that goes down and comes back, and leaving the screen. A
+change of board selects OFF, whatever was selected: a coprocessor that
+answers for the first time during the visit, or one swapped for another
+board. A protocol picked before is not carried to the board that answers,
+so the next tap writes nothing. A press on a pin draws no pressed face.
+PICK A PIN opens with OFF selected too.
 
-One write is reachable with OFF selected. Over pages no binding describes,
-the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
+One write is reachable with OFF selected. With pages that describe no
+binding, the line reads `NO VALID ASSIGNMENT IN THE PAGES`, and holding
 `HOLD: CLEAR ALL PIN ASSIGNMENTS` for 2 s writes a binding with no pin. That
 hold is the way out of those pages
 ([A binding that is not confirmed](#a-binding-that-is-not-confirmed)).
@@ -2812,8 +2815,8 @@ and writes nothing. A tap outside the open list closes it and picks nothing.
 Every visit opens with OFF selected, on this screen and on the Outputs
 screen: no key binds or unbinds a pin until a protocol is picked, and the
 line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
-selected across read-backs and a change of board, until a protocol is
-picked.
+selected across read-backs until a protocol is picked, and a change of
+board selects OFF, whatever was selected.
 
 ![The protocol list on the picker](img/picker-protocol.png)
 
@@ -2837,7 +2840,9 @@ Down the left, under PINS, are the selected protocol's pins in channel
 order, each with the pad number printed on the board in the PAD column. Down
 the right, under IN USE, are the pins other protocols hold, each group named
 and listed where its first pin falls. The two tables together read as one
-run of channels, because that is what the OUTPUTS page carries.
+run of channels, because that is what the OUTPUTS page carries. With OFF
+selected the PINS table is not drawn, because OFF holds no pin; the slot
+count and IN USE stay, and IN USE then lists every bound pin.
 
 The pin of the coprocessor's programming port, GP13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN

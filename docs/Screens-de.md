@@ -2927,8 +2927,8 @@ zufällt. Nichts wird verworfen: die Pins des verlassenen Protokolls bleiben
 gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
 Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
 zu binden das erste löst. Beim Betreten zeigt die Liste OFF, die Übersicht.
-Ein gewähltes Protokoll bleibt über das Zurücklesen gewählt. Die Liste auf
-PICK A PIN wählt dasselbe Protokoll.
+Ein gewähltes Protokoll bleibt über das Zurücklesen derselben Platine
+gewählt. Die Liste auf PICK A PIN wählt dasselbe Protokoll.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
@@ -2966,13 +2966,15 @@ Bindung.
 
 OFF bleibt gewählt, bis ein anderer Eintrag gewählt wird: über das
 Zurücklesen, über Neuzeichnen, über einen Link, der abreißt und wiederkommt,
-über einen Koprozessor, der während des Besuchs zum ersten Mal antwortet,
-über einen Koprozessor, der gegen eine andere Platine getauscht wird, und
-über das Verlassen des Bildschirms. Ein Druck auf einen Pin zeigt keine
+und über das Verlassen des Bildschirms. Ein Wechsel der Platine wählt OFF,
+was auch gewählt war: ein Koprozessor, der während des Besuchs zum ersten
+Mal antwortet, oder einer, der gegen eine andere Platine getauscht wird. Ein
+zuvor gewähltes Protokoll geht nicht auf die Platine über, die antwortet;
+der nächste Tipp schreibt also nichts. Ein Druck auf einen Pin zeigt keine
 gedrückte Fläche. PICK A PIN öffnet ebenfalls mit OFF gewählt.
 
-Ein Schreibvorgang ist mit OFF gewählt erreichbar. Über Pages, die keine
-Bindung beschreibt, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
+Ein Schreibvorgang ist mit OFF gewählt erreichbar. Bei Pages, die keine
+Bindung beschreiben, lautet die Zeile `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES`,
 und `HALTEN: ALLE PIN-ZUORDNUNGEN LÖSCHEN` 2 s gehalten schreibt eine Bindung
 ohne Pin. Dieses Halten ist der Weg aus diesen Pages
 ([Eine Bindung, die nicht bestätigt ist](#eine-bindung-die-nicht-bestätigt-ist)).
@@ -3061,8 +3063,9 @@ schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
 nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
 dem Outputs-Bildschirm: keine Taste bindet oder löst einen Pin, bis ein
 Protokoll gewählt ist, und die Zeile unter der Liste sagt
-`PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen und
-einen Wechsel der Platine gewählt, bis ein Protokoll gewählt wird.
+`PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
+gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
+OFF, was auch gewählt war.
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
@@ -3088,7 +3091,9 @@ Kanalreihenfolge, jeder mit der auf der Platine aufgedruckten Padnummer in
 der Spalte PAD. Rechts unter BELEGT stehen die Pins, die andere Protokolle
 halten, jede Gruppe mit Namen und dort eingereiht, wo ihr erster Pin liegt.
 Beide Tabellen zusammen lesen sich als ein Lauf von Kanälen, denn das ist,
-was die OUTPUTS-Page trägt.
+was die OUTPUTS-Page trägt. Mit OFF gewählt fehlt die Tabelle PINS, denn OFF
+hält keinen Pin; die Slot-Zählung und BELEGT bleiben, und BELEGT führt dann
+jeden gebundenen Pin.
 
 Der Pin des Programmierports des Koprozessors, ab Werk GP13 (Pad 17), ist grau
 gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert

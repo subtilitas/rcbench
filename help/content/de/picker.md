@@ -54,7 +54,7 @@ Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle.
 
 ## PINS und BELEGT
 
-PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfolge mit der auf der Platine gedruckten Pad-Nummer. BELEGT, rechts abwärts, listet die Pins, die andere Protokolle halten, jede Gruppe unter dem Namen ihres Protokolls.
+PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfolge mit der auf der Platine gedruckten Pad-Nummer. BELEGT, rechts abwärts, listet die Pins, die andere Protokolle halten, jede Gruppe unter dem Namen ihres Protokolls. Mit OFF gewählt fehlt PINS, denn OFF hält keinen Pin, und BELEGT führt jeden gebundenen Pin.
 
 ![GP13 vom Programmierport gehalten](view:picker-prog)
 

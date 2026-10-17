@@ -893,6 +893,11 @@ static void draw_head(gfx_canvas_t *c)
  * pad number printed on the board beside each. */
 static void draw_mine(gfx_canvas_t *c)
 {
+    /* OFF holds no pin, so a table of its pins says nothing, as the count
+     * on the Outputs screen. */
+    if (outbind_protos()[proto_shown()].max_pins == 0u) {
+        return;
+    }
     const int tx = PINS_X;
     int ty = PINS_Y;
 
@@ -1114,7 +1119,11 @@ static void event(const touch_event_t *evt)
             touched();
             return;
         }
-        const int b = s.unread ? -1 : button_under(x, y);
+        /* A binding that is not confirmed takes no press on a key, and
+         * neither does OFF, which binds none, as on the Outputs screen.
+         * OFF's keys are grey, and a grey key draws no pressed face. */
+        const bool off = outbind_protos()[proto_shown()].max_pins == 0u;
+        const int b = (s.unread || off) ? -1 : button_under(x, y);
         if (b >= 0) {
             s.hit_kind = HIT_BUTTON;
             s.hit = b;

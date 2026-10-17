@@ -196,6 +196,9 @@ static void pose_three_protocols(void)
     bind_reading_t r;
     read_back(&b, &r);
     outputs_screen_set_reading(&r);
+    /* The board answered and the selection went to OFF; SERVO PWM is
+     * picked, as an operator does to edit it. */
+    outputs_screen_select((uint8_t)proto_row("SERVO PWM"));
 }
 
 /* --------------------------------------------------------------- the list */
@@ -727,7 +730,12 @@ TEST_CASE(the_binding_survives_being_set_from_outside)
     (void)outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 7));
     outputs_screen_set_binding(&b);
 
-    /* What was loaded from storage is what the screen now shows and edits. */
+    /* What was loaded from storage is what the screen now shows, on the
+     * overview the board's first answer opened, and edits once its
+     * protocol is picked. */
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    CHECK_EQ(outputs_screen_cell(idx(7), NULL, 0), OUTPUTS_CELL_HELD);
+    choose_named("DSHOT600");
     CHECK_EQ(outputs_screen_binding()->proto, dshot600);
     CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
     tap_pin(13);
@@ -875,6 +883,96 @@ TEST_CASE(a_change_of_board_takes_the_protocol_with_it)
 
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 0);
+
+    /* Back to the Pico header with pins bound: OFF, not the protocol the
+     * pins name and not the one picked before, and a tap writes nothing. */
+    outbind_t b;
+    three_protocols(&b);
+    bind_reading_t r;
+    read_back(&b, &r);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    tap_pin(4);
+    CHECK_EQ(s_applied, 0);
+}
+
+/*
+ * A protocol picked while the coprocessor is not there -- the list works
+ * with the link down -- is not carried to the board that then answers: the
+ * selection goes to OFF, and the next tap writes nothing.  The same for a
+ * coprocessor swapped for another board after a pick.
+ */
+TEST_CASE(a_pick_made_for_one_board_is_not_carried_to_another)
+{
+    outbind_t b;
+    three_protocols(&b);
+    bind_reading_t r;
+    read_back(&b, &r);
+
+    scr()->reset();
+    outputs_screen_set_apply(on_apply);
+    s_applied = 0;
+    bind_reading_t none;
+    (void)bind_link_classify(&none, 0u, NULL, NULL);
+    outputs_screen_set_reading(&none);
+    scr()->enter();
+    choose_named("DSHOT600");
+    CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("DSHOT600"));
+
+    outputs_screen_set_reading(&r);
+    CHECK(outputs_screen_editable());
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
+    tap_pin(4);
+    CHECK_EQ(s_applied, 0);
+
+    /* Swapped after a pick: by binding, and by a reading with no pin map. */
+    choose_named("DSHOT600");
+    outbind_t other;
+    outbind_init(&other);
+    outbind_set_board(&other, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
+    outputs_screen_set_binding(&other);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    tap_pin(4);
+    CHECK_EQ(s_applied, 0);
+
+    choose_named("MOTOR PWM");
+    bind_reading_t unmapped = r;
+    unmapped.state = BIND_READ_NO_BOARD;
+    outbind_init(&unmapped.bind);
+    outbind_set_board(&unmapped.bind, (uint16_t)0xBEEFu);
+    outputs_screen_set_reading(&unmapped);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    tap_pin(4);
+    CHECK_EQ(s_applied, 0);
+
+    /* The link comes up on another board and its first read fails: the
+     * failed read names the board, and the read that follows names the
+     * same one.  The pick made before is still not carried. */
+    scr()->reset();
+    outputs_screen_set_apply(on_apply);
+    outputs_screen_set_reading(&none);
+    scr()->enter();
+    choose_named("DSHOT600");
+    bind_reading_t failed;
+    (void)bind_link_classify(&failed, OUTBIND_BOARD_PICO_HEADER, NULL, NULL);
+    outputs_screen_set_reading(&failed);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    tap_pin(4);
+    CHECK_EQ(s_applied, 0);
+
+    /* The same board read again keeps a pick made on it. */
+    choose_named("DSHOT600");
+    outputs_screen_set_reading(&r);
+    CHECK_EQ((int)outputs_screen_binding()->proto, proto_row("DSHOT600"));
+    tap_pin(4);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, idx(4)), proto_row("DSHOT600"));
 }
 
 /*
@@ -1598,7 +1696,8 @@ TEST_CASE(a_failed_read_for_another_board_keeps_no_binding)
     read_back(&b, &r);
     outputs_screen_set_reading(&r);
     CHECK(outputs_screen_editable());
-    CHECK_STR_EQ(trace(), TRACE_SERVO);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);  /* another board */
+    CHECK_STR_EQ(trace(), TRACE_OFF);
 }
 
 /* ------------------------------------------------------------------ the fit */
@@ -1731,6 +1830,7 @@ int main(void)
     RUN(a_protocol_named_from_outside_lands_over_the_one_on_screen);
     RUN(a_second_protocol_survives_the_read_back);
     RUN(a_change_of_board_takes_the_protocol_with_it);
+    RUN(a_pick_made_for_one_board_is_not_carried_to_another);
     RUN(the_protocol_list_opens_and_a_choice_closes_it);
     RUN(an_open_list_can_be_left_without_choosing);
     RUN(a_release_away_from_the_press_does_nothing);

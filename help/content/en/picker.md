@@ -54,7 +54,7 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 
 ## PINS and IN USE
 
-PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name.
+PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name. With OFF selected PINS is not shown, because OFF holds no pin, and IN USE lists every bound pin.
 
 ![GP13 held by the programming port](view:picker-prog)
 

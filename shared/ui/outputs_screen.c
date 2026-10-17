@@ -180,15 +180,15 @@ void outputs_screen_set_binding(const outbind_t *b)
      * Except across a change of board, where a protocol chosen for the
      * hardware that was there carries over no better than the pins do: a
      * pin index means a different pin in another catalogue, which is why
-     * outbind_set_board() clears the selection.  OFF is the exception.  It
-     * edits nothing on any board, and a board that answers during a visit
-     * that opened on OFF -- the first link-up, a swapped coprocessor --
-     * must not hand the next tap a protocol nobody picked.
+     * outbind_set_board() clears the selection.  The selection goes to OFF,
+     * picked, whatever it was: a board that answers during a visit -- the
+     * first link-up, a swapped coprocessor -- must not hand the next tap a
+     * protocol nobody picked for it, the wire's or the one before.
      */
     const bool named = (b->proto != outbind_wire_proto(b));
     const bool keep = (chosen != 0u || s.off_picked)
                    && (b->board == had_board) && !named;
-    const bool keep_off = s.off_picked && (b->board != had_board) && !named;
+    const bool to_off = (b->board != had_board) && !named;
 
     s.bind = *b;
     /* Read off the wire or restored, so it is trimmed before it is drawn
@@ -196,8 +196,9 @@ void outputs_screen_set_binding(const outbind_t *b)
     outbind_trim(&s.bind);
     if (keep) {
         outbind_set_proto(&s.bind, chosen);
-    } else if (keep_off) {
+    } else if (to_off) {
         outbind_set_proto(&s.bind, 0u);
+        s.off_picked = true;
     } else {
         s.off_picked = false;
     }
@@ -221,11 +222,14 @@ void outputs_screen_set_reading(const bind_reading_t *r)
     }
     if (r->bind.board != s.bind.board || r->state == BIND_READ_NO_BOARD) {
         /* Another board, or one with no pin map: nothing read earlier is a
-         * binding of it.  The reading names no protocol, and OFF picked
-         * stays picked, so the next binding read keeps OFF (set_binding()). */
+         * binding of it.  The reading names no protocol, and the selection
+         * goes to OFF, picked, as in set_binding(), so the next binding
+         * read keeps it. */
         s.bind = r->bind;
         outbind_trim(&s.bind);
+        outbind_set_proto(&s.bind, 0u);
         s.confirmed  = s.bind;
+        s.off_picked = true;
     } else {
         /*
          * The pins go back to the last binding a read confirmed.  An edit

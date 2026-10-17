@@ -1430,6 +1430,12 @@ TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_picker_on_off)
         picker_screen_set_binding(outputs_screen_binding());
         picker_screen_set_select(outputs_screen_select);
         scr()->enter();
+        /* A protocol picked before the board answers, on the Outputs
+         * screen's list: it is not carried to the board. */
+        outputs_screen_select(proto_named("DSHOT300"));
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        CHECK_EQ(picker_screen_binding()->proto, proto_named("DSHOT300"));
 
         outputs_screen_set_reading(&ok);
         picker_screen_set_binding(outputs_screen_binding());
@@ -1445,8 +1451,86 @@ TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_picker_on_off)
         CHECK(picker_screen_button_rect(idx(6u), &r));
         tap_rect(r);
         CHECK_EQ(s_applied, 0);
+
+        /* Picked here, then the coprocessor is swapped for another board
+         * and back: OFF again, and a key writes nothing. */
+        pick("SERVO PWM");
+        outbind_t gone;
+        outbind_init(&gone);
+        outbind_set_board(&gone, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
+        outputs_screen_set_binding(&gone);
+        picker_screen_set_binding(outputs_screen_binding());
+        outputs_screen_set_reading(&ok);
+        picker_screen_set_binding(outputs_screen_binding());
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        CHECK_EQ(picker_screen_binding()->proto, 0);
+        render();
+        CHECK(picker_screen_button_rect(idx(5u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 0);
         picker_screen_set_select(NULL);
     }
+}
+
+/* Whether any pixel of @p ink lies in the PINS table left of the board. */
+static bool pins_table_inked(gfx_color_t ink)
+{
+    for (int y = 128; y < SCREEN_H - 24; ++y) {
+        for (int x = 6; x < 6 + 128; ++x) {
+            if (s_px[y * SCREEN_W + x] == ink) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * OFF holds no pin, so the PINS table is not drawn, and a press on a key
+ * draws no pressed face, as on the Outputs screen.  The slot count and the
+ * IN USE table stay: they describe the overview.  A protocol picked brings
+ * the table and the pressed face back.
+ */
+TEST_CASE(off_draws_no_pins_table_and_no_pressed_key)
+{
+    static gfx_color_t was[800 * 432];
+    fresh();
+    static const uint8_t dshot[2] = { 6, 7 };
+    bind_more("DSHOT300", dshot, 2u, "SERVO PWM");
+    scr()->enter();                             /* OFF */
+    picker_screen_invalidate();
+    render();
+    CHECK(!pins_table_inked(UI_ACCENT));
+    CHECK(!pins_table_inked(UI_TEXT_FAINT));
+    CHECK(strstr(count(), "OF 8") != NULL);
+    memcpy(was, s_px, sizeof(was));
+
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(5u), &r));
+    touch_event_t d = { TOUCH_EVENT_DOWN,
+                        { 0, (int16_t)(r.x + r.w / 2),
+                          (int16_t)(r.y + r.h / 2), 40 }, 0u };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    scr()->event(&d);
+    picker_screen_invalidate();
+    render();
+    CHECK(memcmp(was, s_px, sizeof(was)) == 0);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 0);
+
+    picker_screen_follow(proto_named("SERVO PWM"), true);
+    picker_screen_invalidate();
+    render();
+    CHECK(pins_table_inked(UI_ACCENT));
+    memcpy(was, s_px, sizeof(was));
+    scr()->event(&d);
+    picker_screen_invalidate();
+    render();
+    CHECK(memcmp(was, s_px, sizeof(was)) != 0);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 1);
 }
 
 /*
@@ -1772,6 +1856,7 @@ int main(void)
     RUN(every_visit_opens_on_off_until_a_protocol_is_picked);
     RUN(a_tap_on_every_key_on_off_writes_nothing);
     RUN(a_board_that_answers_during_a_visit_keeps_the_picker_on_off);
+    RUN(off_draws_no_pins_table_and_no_pressed_key);
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);

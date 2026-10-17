@@ -72,7 +72,7 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. OFF stays selected until a protocol is picked, also across leaving the screen and a change of board. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
+Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as a coprocessor that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
 
 ## LAST WRITE
 

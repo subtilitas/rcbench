@@ -1532,6 +1532,9 @@ static void panel_fresh(uint16_t minor)
     panel_poll();
     outputs_screen()->enter();
     outputs_screen_select(proto_named("SERVO PWM"));
+    /* The panel's frame: the picker follows the selection. */
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
 }
 
 static void check_bench_shown(void)
