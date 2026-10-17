@@ -1163,7 +1163,7 @@ rest, a coprocessor that starts again, and a programmer that has the port
 for each of the 16 pairs of page and wanted values. `test_settings` runs
 a held setting against every call that changes one, and `test_servo` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
-of the files on a card held in memory. `test_kst_prog` runs the model and
+of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and

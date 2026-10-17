@@ -248,7 +248,7 @@ stops it after 120 s. `tools/mutate.py --files shared/safety/heartbeat.c
 --max-mutants 0` makes 36 mutants and the suite fails on each. A case that is
 defined and not run fails the build (`-Werror=unused-function`).
 `tools/check_docs.py` holds this list to `test/host/CMakeLists.txt`.
-Of the 13 `test_kst_*` binaries, 11 run against the servo and line model in
+Of the 13 `test_kst_*` binaries, 12 run against the servo and line model in
 `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file
 and reads 40000 random texts from 1 fixed seed. `test_kst_store` runs
