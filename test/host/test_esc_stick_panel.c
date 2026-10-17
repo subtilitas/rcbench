@@ -30,7 +30,8 @@
 
 /* ------------------------------------------------------- ESC STICK */
 
-/* Mirrored from programmer_screen.c, as the rest are. */
+/* Mirrored from esc_stick_panel.c, as the rig's are from
+ * programmer_screen.c. */
 #define SP_ROW_CY(n) (52 + (n) * 36 + 16)
 #define LIST_DN_X    761
 #define LIST_CY      27
@@ -1330,7 +1331,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
 
 /* ------------------------------------------------------------ the search */
 
-/* Mirrored from programmer_screen.c: the field, its X, and the keyboard
+/* Mirrored from esc_stick_panel.c: the field, its X, and the keyboard
  * docked right of SP_DOCK_X below the crumb row. */
 #define FIND_X     600
 #define FIND_CLR_X 682
@@ -1526,7 +1527,7 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
     CHECK_STR_EQ(programmer_screen_stick_search(), "");
 }
 
-/* The footer's count, mirrored from programmer_screen.c: SP_COUNT_W, 360
+/* The footer's count, mirrored from esc_stick_panel.c: SP_COUNT_W, 360
  * px, and beside the docked keyboard from PAD + 12 to SP_DOCK_X - 8, 326
  * px, of 8 px cells. */
 #define COUNT_CELLS      45

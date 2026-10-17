@@ -91,6 +91,7 @@ SOURCES = [
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
     "shared/ui/programmer_screen.c",
+    "shared/ui/esc_stick_panel.c",
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
