@@ -17,8 +17,8 @@ tables cannot slip past.
     tools/check_formats.py
 
 Not covered: firmware/panel/main/, which needs ESP-IDF to compile.  Its
-translated formats are ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG in main.c and
-ALERT_SENSE_SAME_ADDR, ALERT_SENSE_PINS, ALERT_SENSE_SILENT,
+translated formats are ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG in
+panel_supply.c and ALERT_SENSE_SAME_ADDR, ALERT_SENSE_PINS, ALERT_SENSE_SILENT,
 ALERT_SENSE_SILENT_FOUND, ALERT_SENSE_WRONG and ALERT_SENSE_I3221_CLIPPED in
 panel_services.c.
 

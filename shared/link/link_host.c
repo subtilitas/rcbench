@@ -135,9 +135,10 @@ bool link_host_accept(link_host_t *h, const link_msg_t *part, uint32_t now_ms,
          *
          * A refusal counted as a mismatch costs its reason.  The transaction
          * then runs to LINK_HOST_TIMEOUT_MS (1000 ms), and the caller reads
-         * the silence as a dead link: firmware/panel/main/main.c maps a
-         * refusal to OUTPUTS_REFUSED and a timeout to OUTPUTS_NO_LINK, which
-         * sends the operator to the cable instead of to the values sent.
+         * the silence as a dead link: write_output_binding() in
+         * firmware/panel/main/panel_arm.c maps a refusal to OUTPUTS_REFUSED
+         * and a timeout to OUTPUTS_NO_LINK, which sends the operator to the
+         * cable instead of to the values sent.
          */
         bool mine;
         if (h->op != LINK_OP_WRITE) {
