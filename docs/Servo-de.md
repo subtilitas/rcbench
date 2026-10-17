@@ -1079,7 +1079,7 @@ Die Host-Suite prüft die Engine gegen `servo_sim` und
 Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
 
-`test_servo_test_win` fährt den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
+`test_servo_test_win`, `test_servo_test_win_read` und `test_servo_test_win_chain` fahren den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
 Zeitplan und Seiten des Koprozessors machen daraus Fenster, `sense_link`
 nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
 Modell des PD mini, das alle 104 ms gelesen wird. Zwei Aufzeichnungen von
