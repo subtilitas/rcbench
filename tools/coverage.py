@@ -184,6 +184,8 @@ TRACKED = [
     "shared/bench/telemetry_sim.c",
     "shared/bench/supply.c",
     "protocols/pdmini/pdmini.c",
+    "protocols/pdmini/pdmini_codec.c",
+    "protocols/pdmini/pdmini_jobs.c",
     "shared/bench/supply_link.c",
     "shared/bench/sense_link.c",
     "shared/bench/sense_link_view.c",
