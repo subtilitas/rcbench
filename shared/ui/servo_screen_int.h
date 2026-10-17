@@ -1,11 +1,11 @@
 /*
  * The SERVO screen's private seam between servo_screen.c, the screen,
- * servo_settings_panel.c, its settings overlay, and servo_test_panel.c, its
- * automatic test: the layout they draw on, the profiles, the overlay's
- * pages, rows and presses, the state they read and write, the functions
- * each calls of the others, and the small helpers they inline.  Nothing
- * outside shared/ui includes this header; the screen's interface is
- * servo_screen.h.
+ * servo_settings_panel.c, its settings overlay, servo_test_panel.c, its
+ * automatic test, and servo_limit_panel.c, its limit run: the layout they
+ * draw on, the profiles, the overlay's pages, rows and presses, the state
+ * they read and write, the functions each calls of the others, and the
+ * small helpers they inline.  Nothing outside shared/ui includes this
+ * header; the screen's interface is servo_screen.h.
  *
  * The state is one object, `s`, defined in servo_screen.c, so its .bss
  * stays where psram_bss.lf puts servo_screen's.  The helpers below are
@@ -567,7 +567,7 @@ typedef struct {
 /* The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
-/* --- servo_screen.c's side, which the overlay and the test panel call ---- */
+/* --- servo_screen.c's side, which the overlay and the two panels call ---- */
 
 /* The profile in force (apply_profile()) and the one asked for, which
  * opens the warning first where it can destroy a servo (ask_profile()). */
@@ -593,12 +593,9 @@ sweep_cfg_t sweep_cfg_now(void);
 void test_tell(void);
 servo_test_reading_t test_reading_of(const supply_state_t *st);
 
-/* The limit run. */
-const char *lim_prog_why(void);
-const char *lim_blocked(void);
-void lim_end_now(servo_test_abort_t why);
-void draw_lim_start(gfx_canvas_t *c);
-void draw_lim_lines(gfx_canvas_t *c);
+/* What an edge of the value's state does: into LIVE, the value is the
+ * rest; out of LIVE, a run ends as @p why, and so does every motion. */
+void value_edge(ui_value_edge_t edge, servo_test_abort_t why);
 
 /* --- servo_settings_panel.c's side, which the screen calls --------------- */
 
@@ -685,7 +682,28 @@ static inline void test_ended(void)
     ++s.ctrl_rev;
 }
 
-/* --- helpers the three files inline -------------------------------------- */
+/* --- servo_limit_panel.c's side, which the other three files call -------- */
+
+/* Why the programming is not offered, why a run cannot start now, or
+ * NULL; the run ended now. */
+const char *lim_prog_why(void);
+const char *lim_blocked(void);
+void lim_end_now(servo_test_abort_t why);
+/* START LIMIT RUN's hold completed; the run every frame; the ended run's
+ * LEAVE, whichever screen is up; the meter changed under the run. */
+void lim_begin(void);
+void lim_tick(void);
+void lim_leave_follow(void);
+void lim_meter_follow(servo_source_id_t id, uint32_t changes);
+/* What the box and the LIMITS page show of the run, as one number. */
+uint32_t lim_signature(void);
+/* The run's box on the left card; START LIMIT RUN and the lines under it
+ * on the LIMITS page. */
+void draw_lim_box(gfx_canvas_t *c);
+void draw_lim_start(gfx_canvas_t *c);
+void draw_lim_lines(gfx_canvas_t *c);
+
+/* --- helpers the four files inline --------------------------------------- */
 
 static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
@@ -930,4 +948,22 @@ static inline gfx_rect_t save_line_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
                          (int16_t)(OV_W - 20), 18 };
+}
+
+/* --- helpers the screen and the limit run inline ------------------------- */
+
+/* The encoder's angle from its centre, degrees, in the direction of the
+ * commanded angle: negated with REVERSE on, as us_to_deg() is. */
+static inline float enc_deg_now(void)
+{
+    const float d = servo_test_enc_deg(
+        s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    return s.reverse ? -d : d;
+}
+
+/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port. */
+static inline bool bench_arming(void)
+{
+    return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
 }
