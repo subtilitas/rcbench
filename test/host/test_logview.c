@@ -1657,6 +1657,7 @@ TEST_CASE(runs_that_share_a_number_split_by_a_page_edge_are_each_on_one_page)
     q.dir = LOG_PAGE_AFTER;
     snprintf(q.key, sizeof(q.key), "%s", set[held - 1].name);
     held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+    CHECK_EQ(held, 2 + 41);         /* the other two 042s and 041 to 001 */
     CHECK_EQ(q.ahead, LOG_VIEWER_MAX_FILES);
     CHECK_STR_EQ(set[0].name, "ESC042.CSV");
     CHECK_STR_EQ(set[1].name, "SERVO042.CSV");
