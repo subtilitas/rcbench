@@ -13,5 +13,7 @@ unmatchedSuppression
 # The coprocessor image the panel carries is two linker symbols, its start
 # and its end (target_add_binary_data() in firmware/panel/main/CMakeLists.txt),
 # and CU_LEN is their difference: two arrays to cppcheck, one object to the
-# linker.  Reported only in the configuration with RCBENCH_IOMCU_IMAGE.
+# linker.  Reported only in the configuration with RCBENCH_IOMCU_IMAGE, as
+# subtractPointers by cppcheck 2.17 and as comparePointers by 2.13.
 subtractPointers:firmware/panel/main/panel_update.c
+comparePointers:firmware/panel/main/panel_update.c
