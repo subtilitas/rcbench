@@ -129,3 +129,55 @@ def test_port_calls_name_every_callback_of_every_panel_port():
     for caller, fields in callers.items():
         want = set().union(*(ports[f] for f in fields))
         assert set(sc.PORT_CALLS[caller]) == want, caller
+
+
+OUTPUTS = sc.ROOT / "shared" / "outputs"
+
+
+def servo_ctx_fields():
+    """{field: function} of the servo_link_ctx_t the panel defines."""
+    found = {}
+    for src in sorted(sc.PANEL_DIR.rglob("*.c")):
+        if sc.in_build_dir(src.relative_to(sc.PANEL_DIR)):
+            continue
+        text = src.read_text(encoding="utf-8")
+        for m in re.finditer(r"\bservo_link_ctx_t\s+\w+\s*=\s*\{([^}]*)\}",
+                             text):
+            for field, value in re.findall(r"\.(\w+)\s*=\s*(\w+)",
+                                           m.group(1)):
+                found.setdefault(field, set()).add(value)
+    return found
+
+
+def servo_callers():
+    """{function: {callback}} over shared/outputs/servo_link.c: a callback
+    of the context as its field, one of its port's as port.<field>."""
+    text = (OUTPUTS / "servo_link.c").read_text(encoding="utf-8")
+    out = {}
+    # The helpers carry __attribute__((noinline)) ahead of their name.
+    for m in re.finditer(r"^\w[^\n]*?\b(\w+)\([^)]*\)\s*\{(.*?)^\}", text,
+                         re.S | re.M):
+        body = m.group(2)
+        calls = {f"port.{f}"
+                 for f in re.findall(r"\bs_ctx->port->(\w+)\(", body)}
+        calls |= set(re.findall(r"\bs_ctx->(\w+)\(", body))
+        if calls:
+            out[m.group(1)] = calls
+    return out
+
+
+def test_servo_calls_name_every_callback_of_the_panel_servo_link():
+    """A servo_link_ctx_t callback SERVO_CALLS leaves out, or one called
+    from a function the table does not name, is a call the graph does not
+    follow."""
+    ctx, ports, callers = servo_ctx_fields(), panel_ports(), servo_callers()
+    assert ctx and callers
+    assert set(sc.SERVO_CALLS) == set(callers)
+    for caller, fields in callers.items():
+        want = set()
+        for f in fields:
+            if f.startswith("port."):
+                want |= ports[f[len("port."):]]
+            else:
+                want |= ctx[f]
+        assert set(sc.SERVO_CALLS[caller]) == want, caller

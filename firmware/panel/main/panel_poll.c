@@ -65,25 +65,25 @@ static bool poll_bench(bench_state_t *bench)
         (void)poles_service();
         /*
          * Not while a surface at the far end is still holding a position and
-         * owed a release: the far end would render that old command before
-         * the centre arrived.  servo_service() pays the debt every pass, so
-         * this holds for one.  A bank armed with no link does not reach
-         * this: poll_far_end() stops it on the edge where one answers, as
-         * it stops an armed bench on the edge where the link goes.
-         * Nor while the rate the surfaces run at is not known: the far end
-         * may hold a heli rate from before a panel restart, and
-         * servo_service() settles that every pass too.  And not after a
-         * stop or a disarm asked for since the bank armed: the exchanges
-         * that settle those debts let the pump apply a STOP, and the bank
-         * itself is disarmed only on the next service_arming() pass.
+         * owed a release: the far end would render that old command before the
+         * centre arrived.  servo_link_service() pays the debt every pass, so
+         * this holds for one.  A bank armed with no link does not reach this:
+         * poll_far_end() stops it on the edge where one answers, as it stops
+         * an armed bench on the edge where the link goes.  Nor while the rate
+         * the surfaces run at is not known: the far end may hold a heli rate
+         * from before a panel restart, and servo_link_service() settles that
+         * every pass too.  And not after a stop or a disarm asked for since
+         * the bank armed: the exchanges that settle those debts let the pump
+         * apply a STOP, and the bank itself is disarmed only on the next
+         * service_arming() pass.
          *
          * Decided after that exchange and straight before the write that
          * carries it: the pump runs inside every exchange, so a STOP or a
          * disarm can land in poles_service() as well.
          */
-        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
+        const bool armed = outputs_armed(&s_out) && !servo_link_release_owed()
                            && !s_endpoints_hold
-                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN
+                           && servo_link_hz_sent() != SERVO_HZ_UNKNOWN
                            && !arming_stopped(&s_arm)
                            && !atomic_load(&s_disarm_request);
         const bool written = control_write(armed, &ack);
@@ -301,13 +301,12 @@ void read_outputs_binding(void)
          * Held unlocked because the control task is the only one that touches
          * it, and it is the only task that writes the wire.
          */
-        s_servo_channels = outputs_role_channels(r.slots, r.cfg,
-                                                 OUT_ROLE_SURFACE);
-        s_servo_known    = true;
         atomic_store(&s_servo_pins,
                      outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
         atomic_store(&s_servo_pins_known, true);
-        servo_surfaces_publish();
+        servo_link_binding(outputs_role_channels(r.slots, r.cfg,
+                                                 OUT_ROLE_SURFACE),
+                           true);
         post_reading(&r);
         return;
     }
@@ -317,11 +316,9 @@ void read_outputs_binding(void)
      * may still be rendering surfaces from before this panel started, and
      * nothing here can name them to settle them.
      */
-    s_servo_channels = 0u;
-    s_servo_known    = false;
     atomic_store(&s_servo_pins, 0u);
     atomic_store(&s_servo_pins_known, false);
-    servo_surfaces_publish();
+    servo_link_binding(0u, false);
     post_reading(&r);
     switch (r.state) {
     case BIND_READ_NO_BOARD:
@@ -369,15 +366,6 @@ static void link_came_up(const link_msg_t *reply)
      */
     s_board = reply->regs[LINK_ID_HARDWARE];
 
-    /*
-     * Whether it takes a frame rate, and each slot back at its own.  A
-     * coprocessor that only went quiet, or a panel that restarted, can leave
-     * the far end holding a heli rate the screen no longer shows; a servo
-     * plugged in since would meet it on the next arm.  The screen sends its
-     * rate again with its next position.
-     */
-    s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR]
-                        >= LINK_MINOR_SERVO_RATE;
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
@@ -385,16 +373,8 @@ static void link_came_up(const link_msg_t *reply)
      * none until this one's status page is read. */
     s_bring.have_refused = false;
     s_bring.dev_refused  = 0u;
-    (void)servo_rate_reset();
-    s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
-    /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME). */
-    s_servo_minor         = reply->regs[LINK_ID_PROTOCOL_MINOR];
-    s_servo_sweeping      = false;
-    s_servo_holding       = false;
-    s_hold_unanswered     = false;
-    servo_phase_stopped(&s_far_phase);
-    s_servo_sweep_unknown = s_servo_sweep_page;
-    atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
+    /* The SERVO screen's link: the rate reset, the sweep's state. */
+    servo_link_came_up(reply->regs[LINK_ID_PROTOCOL_MINOR]);
 
     /*
      * Whether it drives the PD mini (4.3), and its page written again from
@@ -617,9 +597,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             /* A sweep or a hold ends with the link, here as on the screen
              * and at the far end: kept, it would be said again when the
              * link comes back and start motion nobody asked for. */
-            if (!servo_cmd_survives_link_loss(&s_servo_held)) {
-                s_servo_held.kind = SERVO_CMD_NONE;
-            }
+            servo_link_lost();
             /* The PD mini goes with it: its readings stop, and the step
              * switches an ON off as a supply not answering. */
             s_supply_page = false;
@@ -640,7 +618,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
             prog_drive_publish();
-            servo_surfaces_publish();
+            servo_link_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);
             atomic_store(&s_tone_unheld, 0u);
             bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
@@ -681,7 +659,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * until the next link-up edge -- which on a link that stays up
              * never comes.  Once it is known this costs nothing.
              */
-            if (!s_servo_known) {
+            if (!servo_link_binding_known()) {
                 read_outputs_binding();
             }
         }
