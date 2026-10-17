@@ -52,6 +52,13 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
     src/main.c
+    # main.c cut by subject; iomcu.h lists what each holds.
+    src/iomcu_pages.c
+    src/iomcu_kst.c
+    src/iomcu_sense.c
+    src/iomcu_tone.c
+    src/iomcu_bind.c
+    src/iomcu_can.c
     src/xl2515.c
     src/out_pwm.c
     src/outputs_hw.c
