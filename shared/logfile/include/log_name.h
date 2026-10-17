@@ -170,15 +170,21 @@ int log_name_case_cmp(const char *a, const char *b);
 /**
  * Order two listed names by which one a full list keeps.
  *
- * Negative when @p a is kept ahead of @p b, positive when @p b is, zero when
- * the two rank the same.  Runs come first, the newest first, whichever
- * writer made them: an operator opening a log is almost always after a
- * recent one, and a run is the only entry whose age is known.  Two runs with
- * one number, which only a card edited on a computer holds, follow by name.
- * Everything else follows in the order it is drawn in, case-insensitive by
- * name.  A card holding as many runs as the list has
- * room for therefore leaves no room for a file the bench did not write, and
- * the browse panel says how many entries the card holds.
+ * Negative when @p a is kept ahead of @p b, positive when @p b is.  Runs
+ * come first, by number, the newest first, whichever writer made them:
+ * BENCH043.CSV ranks ahead of SERVO042.CSV.  An operator opening a log is
+ * almost always after a recent one, and a run is the only entry whose age is
+ * known.  Everything else follows the runs by name, case folded.
+ *
+ * The order is strict: zero only for one name, compared with case folded
+ * (log_name_case_cmp()).  Two runs with one number under different prefixes,
+ * which only a card edited on a computer holds, follow by name: BENCH042.CSV,
+ * then ESC042.CSV, then SERVO042.CSV.  Paging needs that (log_select.h): a
+ * name that ranked equal to a page's edge would be on neither side of it.
+ *
+ * A card holding as many runs as a page has room for therefore leaves no
+ * room on the first page for a file the bench did not write; the browse
+ * panel says how many entries the card holds.
  */
 int log_name_rank(const char *a, const char *b);
 

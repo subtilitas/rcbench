@@ -1486,8 +1486,8 @@ firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already
 carries. Nothing is overwritten: the two files have different names, and the
 list ranks them by name. The list shows the CSV files and not the reports,
 and DELETE on a run removes the report with the same name and number too.
-The list draws names in alphabetical order, so the runs stand grouped by
-name: `BENCH`, then `ESC`, then `SERVO`.
+Runs are listed newest first by number, across all three names:
+`ESC043.CSV`, then `SERVO042.CSV`, then `BENCH041.CSV`.
 
 The list shows the card a page of 48 entries at a time, and a card holds up
 to 999 runs. Pages run newest run first: runs by number, highest first, then
@@ -1503,9 +1503,9 @@ the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`, instead
 of `FILES`. PREV is grey on the first page and NEXT on the last. Pages are cut
 from the top, 48 at a time: when fewer than 48 entries stand ahead of the page
 on screen, for example after a run was recorded, PREV reads the first page
-from the top. Runs recorded while a later page is open appear from page 1, by
-NEXT from page 1 or RESCAN on page 1; on the way back PREV passes over as many
-entries as were recorded, and the tab numbers show the shift. Each page is one
+from the top. Runs recorded while a later page is open are on page 1. PREV
+back from page 3 or later then passes over as many entries as were recorded;
+NEXT from page 1 shows them, and the tab numbers show the shift. Each page is one
 read of the card's root directory: the walk keeps the 48 entries of that page
 and counts the rest, so the panel holds one page in memory whatever the card
 holds. The read runs on the task that draws the screen and handles touch. For

@@ -32,7 +32,7 @@ The header names the card by its volume label; a card without one shows the name
 
 - A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 - Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
-- Runs recorded while a later page is open appear from page 1: NEXT from page 1, or RESCAN on page 1. On the way back PREV passes over as many entries as were recorded; the tab numbers show the shift.
+- Runs recorded while a later page is open are on page 1. PREV back from page 3 or later then passes over as many entries as were recorded; NEXT from page 1 shows them, and the tab numbers show the shift.
 - The scroll bar at the right edge, 8.1 mm wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
 - On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
 - After DELETE the page is read again and the scroll stays; nothing is selected, so DELETE and OPEN are grey until a row is chosen.
@@ -54,7 +54,7 @@ One file is one run. Its name says which writer made it:
 
 With a coprocessor older than protocol 4.18, every switch to ARMED covers the throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
 
-The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. Firmware 0.20.0 and older numbers runs above the highest `BENCHnnn` file only. Going back to it on a card written by this firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already carries. Nothing is overwritten: the two files have different names. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list draws names in alphabetical order, so runs stand grouped: `BENCH`, then `ESC`, then `SERVO`.
+The numbers are one series across the three names: a new run takes one above the highest number on the card, whichever name carries it. A gap left by a deleted file is not filled. A card holding a number 999 takes no further run, with lower numbers free or not. A card that holds only `BENCHnnn` files continues above their numbers. Firmware 0.20.0 and older numbers runs above the highest `BENCHnnn` file only. Going back to it on a card written by this firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already carries. Nothing is overwritten: the two files have different names. The list does not show the `.TXT` reports, and DELETE on a run removes its report too. The list shows runs newest first by number, across all three names: `ESC043.CSV`, then `SERVO042.CSV`, then `BENCH041.CSV`.
 
 A run is committed to the card every 20 rows or 1000 ms, whichever comes first. A power loss mid-run costs under 1.0 s of rows while the card keeps up, up to 84 rows, 4.20 s at 20 Hz, when it has stalled.
 

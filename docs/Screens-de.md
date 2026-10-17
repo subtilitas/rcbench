@@ -1631,9 +1631,9 @@ bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
 überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
 ordnet sie nach dem Namen. Die Liste zeigt die
 CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
-Bericht mit demselben Namen und derselben Nummer mit. Die Liste ordnet die
-Namen alphabetisch, die Läufe stehen also nach Namen gruppiert: `BENCH`,
-dann `ESC`, dann `SERVO`.
+Bericht mit demselben Namen und derselben Nummer mit. Die Liste zeigt die
+Läufe nach Nummer, den neuesten zuerst, über alle drei Namen: `ESC043.CSV`,
+dann `SERVO042.CSV`, dann `BENCH041.CSV`.
 
 Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
 zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
@@ -1652,9 +1652,9 @@ Seite grau, `NÄCHSTE` auf der letzten. Die Seiten werden von oben zu je 48
 geschnitten: stehen vor der gezeigten Seite weniger als 48 Einträge, etwa
 nachdem ein Lauf aufgezeichnet wurde, liest `VORIGE` die erste Seite von oben.
 Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist,
-erscheinen ab Seite 1, mit `NÄCHSTE` von Seite 1 oder `AKTUALISIEREN` auf
-Seite 1; auf dem Rückweg überspringt `VORIGE` so viele Einträge, wie
-aufgezeichnet wurden, und die Zahlen im Reiter zeigen die Verschiebung. Jede
+stehen auf Seite 1. `VORIGE` überspringt dann auf dem Rückweg ab Seite 3 so
+viele Einträge, wie aufgezeichnet wurden; `NÄCHSTE` von Seite 1 zeigt sie,
+und die Zahlen im Reiter zeigen die Verschiebung. Jede
 Seite liest das Wurzelverzeichnis der Karte einmal: der Durchlauf behält die
 48 Einträge dieser Seite und zählt den Rest, sodass das Panel eine Seite im
 Speicher hält, unabhängig davon, wie viele Dateien die Karte enthält. Das
