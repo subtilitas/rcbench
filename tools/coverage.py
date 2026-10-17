@@ -119,6 +119,7 @@ TRACKED = [
     "protocols/openyge/openyge_status.c",
     "protocols/openyge/openyge_params.c",
     "shared/esc/esc_json.c",
+    "shared/esc/esc_json_lex.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
     "shared/esc/esc_stick_rules.c",
