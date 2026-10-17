@@ -17,10 +17,12 @@ tables cannot slip past.
     tools/check_formats.py
 
 Not covered: firmware/panel/main/, which needs ESP-IDF to compile.  Its
-translated formats are ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG in main.c and
+translated formats are ALERT_FW_UPDATED, ALERT_FW_ROLLED_BACK,
+ALERT_FW_UNCONFIRMED, ALERT_SUPPLY_TRIP and ALERT_PDMINI_SAG in main.c;
 ALERT_SENSE_SAME_ADDR, ALERT_SENSE_PINS, ALERT_SENSE_SILENT,
-ALERT_SENSE_SILENT_FOUND, ALERT_SENSE_WRONG and ALERT_SENSE_I3221_CLIPPED in
-panel_services.c.
+ALERT_SENSE_SILENT_FOUND, ALERT_SENSE_WRONG, ALERT_SENSE_I3221_CLIPPED,
+ALERT_TONE_PIN and ALERT_TONE_BUSY in panel_services.c; and CU_WHY_REFUSED,
+ALERT_CU_FAILED and ALERT_CU_DONE in panel_update.c.
 
 SPDX-License-Identifier: MIT
 """

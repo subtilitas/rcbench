@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS "main.c" "panel_card.c" "panel_log.c" "panel_link.c" "panel_poll.c"
-         "panel_services.c" "selftest.c" "knob_task.c" "kst_files.c"
+         "panel_services.c" "panel_update.c" "selftest.c" "knob_task.c"
+         "kst_files.c"
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram
              fwupdate webaccess fw_ota wifi_access

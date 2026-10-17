@@ -65,6 +65,9 @@ static inline uint32_t now_ms(void)
 
 #define ALERT_MAX         UI_ALERT_MAX
 
+/* The control task's period; see "the two loops' plumbing" in main.c. */
+#define CONTROL_PERIOD_MS 5u
+
 /* The link to the coprocessor, used during bring-up and in the loop. */
 extern link_host_t    s_host;
 /* A link_cap_t bitmap from the coprocessor's identity page; see main.c. */
@@ -295,9 +298,6 @@ void supply_link_service(void);
 /* The bench's totals, and when they last counted. */
 extern bench_totals_t s_totals;
 extern uint32_t       s_totals_ms;
-
-/* The coprocessor update's check, for a coprocessor that just answered. */
-void cu_link_up(const link_msg_t *reply);
 
 /* The servo's wire handling; see main.c. */
 #define SERVO_HZ_UNKNOWN 0xFFFFu  /* not known: perhaps a faster rate        */
@@ -642,3 +642,37 @@ void advance_model_and_log(bool link_up, float emitted,
                            bool *new_sample);
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
+
+/* ---------------------------------------------------------- panel_update.c */
+
+/* An install about to write the flash asks the control task to stand
+ * still (s_fw_quiet_req), and the control task says it does
+ * (s_fw_quiet_ack).  False when wifi_access_init() failed (s_wifi_ok). */
+extern atomic_bool s_fw_quiet_req;
+extern atomic_bool s_fw_quiet_ack;
+extern bool        s_wifi_ok;
+
+/* Whether the coprocessor's update may start: see fw_coproc_may_start().
+ * From any task. */
+bool cu_may_start(void);
+/* The coprocessor update's check, for a coprocessor that just answered. */
+void cu_link_up(const link_msg_t *reply);
+/* One pass of the coprocessor's update, before the poll: true while the
+ * update holds the link.  Control task. */
+bool cu_service(bool *link_up, bench_state_t *bench,
+                uint32_t *last_poll, uint32_t *last_status);
+
+/* Once a frame on app_main: FILES & UPDATE, the reminder, SETUP > UPDATES
+ * and the coprocessor update's screen. */
+void wifi_service(bool armed, uint32_t stops_now);
+void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
+void upd_service(bool armed, bool unsafe, uint32_t stops_now,
+                 const cu_snap_t *cs);
+void cu_render_service(bool unsafe, const cu_snap_t *cs);
+
+/* ------------------------------ TEMPORARY until row 26 merges: drop then */
+
+/* Defined in main.c until row 26 moves them; row 26 declares them in its
+ * own sections. */
+extern atomic_bool s_keeping;
+bool supply_live_or_coming(void);
