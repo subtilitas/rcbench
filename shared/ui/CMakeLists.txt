@@ -24,6 +24,7 @@ set(SRCS
     supply_screen.c
     servo_screen.c
     servo_settings_panel.c
+    servo_limit_panel.c
     kst_panel.c
     analyser_screen.c
     balance_screen.c

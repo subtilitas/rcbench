@@ -1,10 +1,11 @@
 /*
- * The SERVO screen's private seam between servo_screen.c, the screen, and
- * servo_settings_panel.c, its settings overlay: the layout both draw on,
- * the profiles, the overlay's pages, rows and presses, the state both read
- * and write, the functions each calls of the other, and the small helpers
- * both inline.  Nothing outside shared/ui includes this header; the
- * screen's interface is servo_screen.h.
+ * The SERVO screen's private seam between servo_screen.c, the screen,
+ * servo_settings_panel.c, its settings overlay, and servo_limit_panel.c,
+ * its limit run: the layout they draw on, the profiles, the overlay's
+ * pages, rows and presses, the state they read and write, the functions
+ * each calls of another, and the small helpers they inline.  Nothing
+ * outside shared/ui includes this header; the screen's interface is
+ * servo_screen.h.
  *
  * The state is one object, `s`, defined in servo_screen.c, so its .bss
  * stays where psram_bss.lf puts servo_screen's.  The helpers below are
@@ -585,13 +586,6 @@ void ask_hv_test(void);
 void draw_test_start(gfx_canvas_t *c);
 void draw_test_lines(gfx_canvas_t *c);
 
-/* The limit run. */
-const char *lim_prog_why(void);
-const char *lim_blocked(void);
-void lim_end_now(servo_test_abort_t why);
-void draw_lim_start(gfx_canvas_t *c);
-void draw_lim_lines(gfx_canvas_t *c);
-
 /* --- servo_settings_panel.c's side, which the screen calls --------------- */
 
 /* Every panel the overlay opens shut: the keypad, the keyboard, the list,
@@ -635,6 +629,45 @@ void draw_overlay(gfx_canvas_t *c);
 void draw_save_line(gfx_canvas_t *c);
 void draw_warn_apply(gfx_canvas_t *c);
 void draw_ask_apply(gfx_canvas_t *c);
+
+/* --- servo_screen.c's side, which the limit run calls -------------------- */
+
+/* A command to the servo, and the release of the one in force. */
+void post(servo_cmd_kind_t kind, uint16_t us);
+void release(void);
+/* The sweep ended, running or paused. */
+void stop_sweep(void);
+/* What an edge of the value's state does: into LIVE, the value is the
+ * rest; out of LIVE, a run ends as @p why, and so does every motion. */
+void value_edge(ui_value_edge_t edge, servo_test_abort_t why);
+/* A pulse in degrees of the commanded angle, through the mapping in force. */
+float us_to_deg_f(float us);
+/* Whether a run is under way, told to the panel where it changes
+ * (servo_screen_on_testing()). */
+void test_tell(void);
+/* A supply sample as a run reads it. */
+servo_test_reading_t test_reading_of(const supply_state_t *st);
+
+/* --- servo_limit_panel.c's side, which the screen and the overlay call --- */
+
+/* Why the programming is not offered, why a run cannot start now, or
+ * NULL; the run ended now. */
+const char *lim_prog_why(void);
+const char *lim_blocked(void);
+void lim_end_now(servo_test_abort_t why);
+/* START LIMIT RUN's hold completed; the run every frame; the ended run's
+ * LEAVE, whichever screen is up; the meter changed under the run. */
+void lim_begin(void);
+void lim_tick(void);
+void lim_leave_follow(void);
+void lim_meter_follow(servo_source_id_t id, uint32_t changes);
+/* What the box and the LIMITS page show of the run, as one number. */
+uint32_t lim_signature(void);
+/* The run's box on the left card; START LIMIT RUN and the lines under it
+ * on the LIMITS page. */
+void draw_lim_box(gfx_canvas_t *c);
+void draw_lim_start(gfx_canvas_t *c);
+void draw_lim_lines(gfx_canvas_t *c);
 
 /* --- helpers both files inline ------------------------------------------- */
 
@@ -833,4 +866,66 @@ static inline gfx_rect_t save_line_rect(void)
 {
     return (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + OV_H - 24),
                          (int16_t)(OV_W - 20), 18 };
+}
+
+/* --- helpers the screen and the limit run inline ------------------------- */
+
+/* The clock the run and the supply's readings share. */
+static inline uint32_t test_now(void)
+{
+    return s.have_now ? s.now_ms : s.clock_ms;
+}
+
+static inline float us_to_deg(uint16_t us)
+{
+    return us_to_deg_f((float)us);
+}
+
+/* The encoder's angle from its centre, degrees, in the direction of the
+ * commanded angle: negated with REVERSE on, as us_to_deg() is. */
+static inline float enc_deg_now(void)
+{
+    const float d = servo_test_enc_deg(
+        s.enc_raw, (uint16_t)settings_get_int(SET_ENC_CENTRE));
+    return s.reverse ? -d : d;
+}
+
+/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port. */
+static inline bool bench_arming(void)
+{
+    return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
+}
+
+/* A run's abort for the condition that took the INA3221 off the rail. */
+static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
+{
+    switch (why) {
+    case SERVO_SOURCE_WHY_NO_LINK:   return SERVO_TEST_AB_LINK;
+    case SERVO_SOURCE_WHY_OFF:
+    case SERVO_SOURCE_WHY_OLD:
+    case SERVO_SOURCE_WHY_NOT_HELD:  return SERVO_TEST_AB_INA_SETUP;
+    case SERVO_SOURCE_WHY_SILENT:    return SERVO_TEST_AB_INA_SILENT;
+    case SERVO_SOURCE_WHY_NO_WINDOW: return SERVO_TEST_AB_INA_NO_WINDOW;
+    case SERVO_SOURCE_WHY_RESET:     return SERVO_TEST_AB_INA_RESET;
+    default:                         return SERVO_TEST_AB_INA_METER;
+    }
+}
+
+/* The run on the left card, clear of the dial and the case, and its one
+ * button: STOP TEST while it runs, CLOSE after. */
+/*
+ * The run's box on the left card, clear of the dial's +90 label on its
+ * right: four lines of 31 cells, 20 px apart, over its button.
+ */
+#define BOX_CELLS 31
+static inline gfx_rect_t test_box_rect(void)
+{
+    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 132 };
+}
+
+static inline gfx_rect_t test_btn_rect(void)
+{
+    const gfx_rect_t b = test_box_rect();
+    return (gfx_rect_t){ (int16_t)(b.x + 10), (int16_t)(b.y + 92), 130, 32 };
 }
