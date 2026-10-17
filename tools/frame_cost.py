@@ -69,6 +69,8 @@ SOURCES = [
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
+    "shared/bench/kst_prog_card.c",
+    "shared/bench/kst_prog_file.c",
     "shared/bench/kst_card.c",
     "shared/bench/prog_link.c",
     "shared/logfile/kst_store.c",

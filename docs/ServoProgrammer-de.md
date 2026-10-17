@@ -1116,7 +1116,7 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
-Zeile. [Die Link-Page](Link-de.md#der-programmierport-für-servos-von-kst-und-chaservo) listet die
+Zeile. [Die Link-Page](LinkKST-de.md) listet die
 Codes.
 
 ## Einschränkungen
