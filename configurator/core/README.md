@@ -397,6 +397,9 @@ ids, ids that fit the URL hash, references that resolve, parts that are
 reachable, English and German for every text, no word of the list in
 `words.ts`, a source for every record.
 
+`catalogue-osoyoo.test.ts` checks the facts, texts and sources of the Osoyoo strip data and the
+reader of the coverage report.
+
 ## Coverage
 
 Line coverage of the resolver, the groups and the motor simulator, measured by `node --test --experimental-test-coverage`.
