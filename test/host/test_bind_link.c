@@ -1514,7 +1514,8 @@ static const char *reason(void)
 }
 
 /* A panel with the link up on a 4.@p minor coprocessor, the bench binding
- * read, and SERVO PWM selected: the lowest-numbered protocol with a pin. */
+ * read, the Outputs screen entered on its overview (OFF), and SERVO PWM
+ * picked there. */
 static void panel_fresh(uint16_t minor)
 {
     fresh(minor);
@@ -1530,6 +1531,7 @@ static void panel_fresh(uint16_t minor)
     (void)picker_screen_set_drawing(NULL, 0u, NULL);
     panel_poll();
     outputs_screen()->enter();
+    outputs_screen_select(proto_named("SERVO PWM"));
 }
 
 static void check_bench_shown(void)
@@ -1810,6 +1812,11 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     for (unsigned i = 0; i < LINK_OS_COUNT; ++i) {
         CHECK_EQ(far.slots[i], 0u);
     }
+    /* The visit re-entered above opened on the overview: a tap waits for a
+     * protocol. */
+    tap_pin(4);
+    CHECK_EQ(panel.applied, 1);
+    outputs_screen_select(proto_named("SERVO PWM"));
     tap_pin(4);
     CHECK_EQ(panel.applied, 2);
 
@@ -2010,6 +2017,50 @@ TEST_CASE(the_pin_picker_follows_a_pick_that_wrote_nothing)
     CHECK_EQ(picker_screen_binding()->proto, proto_named("SERVO PWM"));
 }
 
+/*
+ * Opening the Outputs screen lands on the overview and sends nothing: no
+ * exchange on the bus, the coprocessor's pages as they were.  A tap on a
+ * pin there, on the grid or on PICK A PIN following it, calls no apply.
+ * Left with OFF, the picker follows the lowest-numbered protocol that
+ * holds a pin, and its tap writes again.
+ */
+TEST_CASE(opening_the_outputs_overview_sends_nothing)
+{
+    panel_fresh(10u);
+    outputs_screen()->leave();
+    const unsigned sent = bus.exchanges;
+    outputs_screen()->enter();
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK_STR_EQ(label(2), "SERVO PWM");
+    CHECK_STR_EQ(label(13), "SERVO PWM");
+    CHECK_STR_EQ(reason(), TR(OUT_OFF_VIEW));
+    tap_pin(4);
+    tap_pin(2);
+    CHECK_EQ(panel.applied, 0);
+
+    int bx = 0, by = 0;
+    if (!picker_button(4u, &bx, &by)) {
+        T_FAIL("GP4 has no button");
+        return;
+    }
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    tap(picker_screen(), bx, by);
+    CHECK_EQ(panel.applied, 0);
+    panel_cmd();
+    panel_poll();
+    CHECK_EQ(bus.exchanges, sent);
+    CHECK(far_holds(&s_old));
+
+    outputs_screen()->leave();
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(picker_screen_binding()->proto, proto_named("SERVO PWM"));
+    tap(picker_screen(), bx, by);
+    CHECK_EQ(panel.applied, 1);
+}
+
 int main(void)
 {
     RUN(a_wide_write_goes_out_one_frame_per_exchange);
@@ -2045,5 +2096,6 @@ int main(void)
     RUN(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap);
     RUN(the_pin_picker_writes_through_the_same_sequence);
     RUN(the_pin_picker_follows_a_pick_that_wrote_nothing);
+    RUN(opening_the_outputs_overview_sends_nothing);
     return test_summary("bind_link");
 }

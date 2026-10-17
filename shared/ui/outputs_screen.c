@@ -342,20 +342,26 @@ static void reset(void)
     touched();
 }
 
+/*
+ * Every visit opens on the overview: OFF selected, so every bound pin names
+ * its protocol and no tap edits.  The operator picks the protocol to edit,
+ * and picking OFF again goes back to the overview.  Selecting writes
+ * nothing, so opening the screen sends no page.
+ */
 static void enter(void)
 {
     s.open = false;
     s.hit_kind = HIT_NONE;
-    s.refused = -1;
     ui_hold_reset(&s.clear);
-    touched();
+    outputs_screen_select(0u);
 }
 
 /*
  * A picked OFF ends with the visit, on this screen or on the pin picker.
  * The picker joins its taps to the protocol selected here, and left on OFF
- * it could add no pin; the next entry opens on the lowest-numbered protocol
- * that holds one.
+ * it could add no pin; the picker's next visit opens on the lowest-numbered
+ * protocol that holds one.  This screen's next visit opens on OFF again
+ * (enter()).
  */
 void outputs_screen_end_off(void)
 {
@@ -848,8 +854,14 @@ static void draw_cell(gfx_canvas_t *c, int i)
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
     case OUTPUTS_CELL_RESERVED: lc = UI_DANGER;   break;
-    case OUTPUTS_CELL_HELD:     lc = UI_TEXT_DIM; break;
-    default:                                      break;
+    case OUTPUTS_CELL_HELD:
+        /* The overview (OFF) edits no protocol, so what holds each bound
+         * pin is the thing it shows: in full ink, apart from free pins and
+         * PWM clashes.  Dim again while the binding is not confirmed. */
+        lc = (live && proto == 0u && held != 0u) ? UI_TEXT : UI_TEXT_DIM;
+        break;
+    default:
+        break;
     }
     gfx_text(c, r.x + CELL_LABEL_X, r.y + 33, label, UI_FONT_LABEL, lc, 1);
 }

@@ -6,15 +6,16 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des Koprozessors an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md). Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des Koprozessors die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des Koprozessors an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des Koprozessors die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 
 ![Vier Pins als SERVO PWM gebunden](view:outputs)
 
-1. Ein Protokoll in der Liste PROTOKOLL wählen.
+1. Ein Protokoll in der Liste PROTOKOLL wählen. Bis dahin tut ein Tipp auf einen Pin nichts.
 2. Einen Pin antippen, um ihn abzuhaken. Ein Haken bindet den Pin sofort an das Protokoll; es gibt keine Taste zum Übernehmen.
 3. Einen abgehakten Pin antippen, um ihn freizugeben.
+4. OFF wählen, um zur Übersicht zurückzukehren.
 
 Die Zahl unter der Liste, `4 VON 8 PINS`, sagt, wie viele Pins das Protokoll hält und wie viele es nimmt. Ein Pin gehört höchstens einem Protokoll. Mehrere Protokolle können gleichzeitig gebunden sein.
 
@@ -67,11 +68,11 @@ Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber un
 
 Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 
-## OFF
+## Die Übersicht: OFF
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-OFF bindet nichts und löst nichts. Mit OFF gewählt zeigt jeder gebundene Pin den Namen seines Protokolls; die ganze Bindung steht auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN`.
+Jeder Besuch von OUTPUTS öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts zum Koprozessor. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren.
 
 ## LETZTER SCHREIBVORGANG
 

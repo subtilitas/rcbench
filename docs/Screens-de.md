@@ -2790,7 +2790,10 @@ Aktuelle Einschränkungen:
 
 Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
 Die Protokolle, die an die
-Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt.
+Pins des Koprozessors gebunden sind, und welche Pins jedes davon treibt. Er
+öffnet auf der [Übersicht](#die-übersicht-off): OFF gewählt, jeder gebundene
+Pin mit seinem Protokoll benannt, und kein Pin änderbar, bis ein Protokoll
+gewählt ist.
 
 ![Outputs](img/de/outputs.png)
 
@@ -2923,12 +2926,10 @@ Pin-Satz der Bildschirm als angehakt zeigt und welchem Satz der nächste Haken
 zufällt. Nichts wird verworfen: die Pins des verlassenen Protokolls bleiben
 gebunden, und die Pins des erreichten kommen zurück, wie sie waren. Ein
 Selektor, der die aktuellen Pins umlenkte, hieße, dass ein zweites Protokoll
-zu binden das erste löst. Beim Betreten zeigt die Liste das Protokoll mit der
-niedrigsten Nummer in der Reihenfolge der Liste, das einen Pin hält, oder OFF,
-wenn kein Pin gebunden ist. Ein Protokoll, das gewählt wurde, ohne einen Pin
-anzuhaken, bleibt über das Zurücklesen und über das Verlassen des Bildschirms
-gewählt, und ihm fällt ein Tippen auf PICK A PIN zu. Die Liste auf PICK A PIN
-wählt dasselbe Protokoll.
+zu binden das erste löst. Beim Betreten zeigt die Liste OFF, die Übersicht.
+Ein gewähltes Protokoll bleibt über das Zurücklesen und über das Verlassen
+des Bildschirms gewählt, und ihm fällt ein Tippen auf PICK A PIN zu. Die
+Liste auf PICK A PIN wählt dasselbe Protokoll.
 
 `DSHOT600 BIDIR` und `DSHOT300 BIDIR` sind die längsten Einträge, 14 Zeichen:
 
@@ -2950,18 +2951,25 @@ Eine Zelle ist also in einem von vier Zuständen, und jeder sagt, was zu tun
 ist: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
-### OFF
+### Die Übersicht: OFF
 
-OFF ist der erste Eintrag der Liste und bindet nichts: er nimmt 0 Pins, und
-die Zählung darunter lautet `0 VON 0 PINS`. Mit OFF gewählt zeigt jeder
-gebundene Pin den Namen des Protokolls, das ihn hält, die ganze Bindung steht
-also auf einem Bildschirm. Kein Pin lässt sich anhaken oder lösen: ein Tippen
-auf einen Pin bewirkt nichts, und die Zeile unter der Liste sagt `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN`. OFF zu wählen schreibt nichts und löst nichts.
+Jeder Besuch des Bildschirms öffnet mit OFF gewählt. OFF ist der erste
+Eintrag der Liste und bindet nichts: er nimmt 0 Pins, und die Zählung
+darunter lautet `0 VON 0 PINS`. Mit OFF gewählt zeigt jeder gebundene Pin den
+Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
+und jeder Pin, den der Koprozessor treibt, stehen also auf einem Bildschirm.
+Kein Pin lässt sich anhaken oder lösen: ein Tippen auf einen Pin bewirkt
+nichts und schreibt nichts, und die Zeile unter der Liste sagt
+`PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt
+nichts. Ein Protokoll in der Liste zu wählen verlässt die Übersicht, OFF zu
+wählen kehrt zu ihr zurück; keines von beiden schreibt oder löst etwas.
 
 OFF bleibt gewählt über das Zurücklesen, über Neuzeichnen und über einen
 Link, der abreißt und wiederkommt, bis ein anderer Eintrag gewählt oder der
-Bildschirm verlassen wird. Das nächste Betreten öffnet auf dem Protokoll mit
-der niedrigsten Nummer, das einen Pin hält.
+Bildschirm verlassen wird. Wer den Bildschirm mit OFF verlässt, verschiebt
+die Wahl auf das Protokoll mit der niedrigsten Nummer, das einen Pin hält,
+damit PICK A PIN nicht auf OFF öffnet; der nächste Besuch hier öffnet wieder
+auf OFF.
 
 GP0 als DSHOT600 BIDIR gebunden, GP1 als MOTOR PWM, GP2 und GP13 als SERVO
 PWM, mit OFF gewählt. Auf diesem Prüfstand hält ein Slot GP13, der
@@ -3044,9 +3052,9 @@ Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
 über der Platine; eine Wahl bestimmt das Protokoll, dem ein Tippen auf eine
 Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
 schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
-nichts. Hier gewähltes OFF endet, wenn der Bildschirm verlassen wird, wie
-auf dem Outputs-Bildschirm: der nächste Besuch eines der beiden Bildschirme
-öffnet mit dem Protokoll der niedrigsten Nummer, das einen Pin hält.
+nichts. Hier gewähltes OFF endet, wenn der Bildschirm verlassen wird: der
+nächste Besuch öffnet mit dem Protokoll der niedrigsten Nummer, das einen Pin
+hält. Der Outputs-Bildschirm öffnet bei jedem Besuch auf OFF.
 
 ![Die Protokollliste im Picker](img/de/picker-protocol.png)
 
@@ -3060,7 +3068,7 @@ Outputs-Bildschirms:
 | `ALLE 8 PLÄTZE BELEGT` | über alle Protokolle sind 8 Pins gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, das 8 Kanäle auf einem Pin trägt, bei 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt |
 
 Ohne diese Zeile liest sich eine ganz grau gezeichnete Platine als Fehler.

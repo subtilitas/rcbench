@@ -45,7 +45,7 @@ Unter der Liste zählt `4 VON 8 PLÄTZEN BELEGT` die Pins über alle Protokolle.
 | `ALLE 8 PLÄTZE BELEGT` | 8 Pins sind über alle Protokolle gebunden |
 | `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM, mit 4 gebundenen Servo-Pins |
 | `SERVO PWM BELEGT 8 PINS` | das gewählte Protokoll hält so viele Pins, wie es nimmt |
-| `AUS: ALLES ANZEIGEN, NICHTS ÄNDERN` | OFF ist gewählt |
+| `PROTOKOLL WÄHLEN, DANN PIN TIPPEN` | OFF ist gewählt |
 | `NICHT AUSGELESEN` | die Bindung ist nicht bestätigt; jede Taste ist grau |
 | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | ein Tipp auf GP28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GP13 hält: ein PWM-Slice; die Taste ist grau |
 | `GP16: GLEICHER PWM-KANAL WIE GP0` | ein Tipp auf GP16 unter SERVO PWM oder MOTOR PWM bei GP0 als PWM gebunden: ein PWM-Compare-Register; die Taste ist grau |

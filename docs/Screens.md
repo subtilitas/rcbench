@@ -2559,7 +2559,9 @@ Current limitations:
 
 Behind the OUTPUTS tile on SETUP; its home tag leads back there. The
 protocols bound to the
-coprocessor's pins, and which pins each one drives.
+coprocessor's pins, and which pins each one drives. It opens on the
+[overview](#the-overview-off): OFF selected, every bound pin named by its
+protocol, and no pin editable until a protocol is picked.
 
 ![Outputs](img/outputs.png)
 
@@ -2684,11 +2686,9 @@ screen shows as ticked and which set the next tick joins. Nothing is dropped:
 the pins ticked for the protocol being left stay bound, and the pins of the
 one arrived at come back as they were. A selector that retargeted the current
 pins would make binding a second protocol mean unbinding the first. On entry
-the list shows the lowest-numbered protocol that holds a pin, in the list's
-order, or OFF when no pin is bound. A protocol picked without ticking a pin
-stays selected across read-backs and across leaving the screen, and is the
-one a tap on PICK A PIN joins. The list on PICK A PIN selects the same
-protocol.
+the list shows OFF, the overview. A protocol picked stays selected across
+read-backs and across leaving the screen, and is the one a tap on PICK A PIN
+joins. The list on PICK A PIN selects the same protocol.
 
 `DSHOT600 BIDIR` and `DSHOT300 BIDIR` are the longest entries, 14 characters:
 
@@ -2709,18 +2709,23 @@ So a cell is in one of four states, and each says what to do about it: ticked
 in this protocol, held by another and named, reserved and struck through, or
 free and showing its pad number.
 
-### OFF
+### The overview: OFF
 
-OFF is the first entry of the list and binds nothing: it takes 0 pins, and
-the count under it reads `0 OF 0 PINS`. With OFF picked, every bound pin
-shows the name of the protocol that holds it, so the whole binding is on one
-screen. No pin can be ticked or unticked: a tap on a pin does nothing, and
-the line under the list says `OFF: VIEW ALL, NO EDITING`. Picking OFF
-writes nothing and unbinds nothing.
+Every visit to the screen opens with OFF selected. OFF is the first entry of
+the list and binds nothing: it takes 0 pins, and the count under it reads
+`0 OF 0 PINS`. With OFF selected, every bound pin shows the name of the
+protocol that holds it in full-brightness text, so the whole binding and
+every pin the coprocessor drives are on one screen. No pin can be ticked or
+unticked: a tap on a pin does nothing and writes nothing, and the line under
+the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes
+nothing. Picking a protocol in the list leaves the overview, and picking OFF
+goes back to it; neither writes or unbinds anything.
 
 OFF stays picked across read-backs, repaints and a link that goes down and
-comes back, until another entry is picked or the screen is left. The next
-entry opens on the lowest-numbered protocol that holds a pin.
+comes back, until another entry is picked or the screen is left. Leaving
+with OFF picked moves the selection to the lowest-numbered protocol that
+holds a pin, so PICK A PIN does not open on OFF; the next visit here opens
+on OFF again.
 
 GP0 bound as DSHOT600 BIDIR, GP1 as MOTOR PWM, GP2 and GP13 as SERVO PWM,
 with OFF picked. A slot holds GP13 on this bench, so the programming port
@@ -2799,9 +2804,9 @@ Top left is the protocol list, the same control as on the Outputs screen. It
 names the selected protocol. A tap opens it over the board; a pick selects
 the protocol a tap on a key joins, on this screen and on the Outputs screen,
 and writes nothing. A tap outside the open list closes it and picks nothing.
-OFF picked here ends when the screen is left, as on the Outputs screen: the
-next visit to either screen opens on the lowest-numbered protocol that holds
-a pin.
+OFF picked here ends when the screen is left: the next visit opens on the
+lowest-numbered protocol that holds a pin. The Outputs screen opens on OFF on
+every visit.
 
 ![The protocol list on the picker](img/picker-protocol.png)
 
@@ -2814,7 +2819,7 @@ the reason no key can be added, in the words of the Outputs screen:
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, which carries 8 channels on one pin, with 4 servo pins bound |
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
-| `OFF: VIEW ALL, NO EDITING` | OFF is selected |
+| `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed |
 
 Without the line a board drawn all grey reads as a fault.
