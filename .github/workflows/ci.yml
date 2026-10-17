@@ -276,7 +276,7 @@ jobs:
       # cppcheck sees different things: it is weaker on flow and better at
       # arithmetic and at the shapes that look wrong on their own.
       # A build directory keeps the whole-program checks under -j, which
-      # cppcheck drops without one; test_settings.c includes iomcu_pins.h.
+      # cppcheck drops without one; settings_rig.h includes iomcu_pins.h.
       - name: cppcheck
         run: |
           mkdir -p "$RUNNER_TEMP/cppcheck"
@@ -503,12 +503,12 @@ jobs:
           # The injector's code, INJECT's mode name and one literal of its
           # bubble text (shared/ui/include/ui_text.def).
           for s in touch_inject_attach ui_band_mode_inject \
-              "touch injector at I2C address 0x14"; do
+              "the injector at I2C address 0x14"; do
             grep -aqF "$s" firmware/panel/build-inject/rcbench-panel.elf
           done
           if grep -aqF -e touch_inject_ -e touch_merge_ \
               -e ui_band_mode_inject \
-              -e "touch injector at I2C address 0x14" \
+              -e "the injector at I2C address 0x14" \
               firmware/panel/build/rcbench-panel.elf; then
             echo "::error::the released image holds touch injector code"
             exit 1

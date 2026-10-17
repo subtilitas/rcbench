@@ -83,10 +83,10 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 | SAVE | asks for a write, as the save button does, then opens the menu |
 
 - DISCARD sends a pin or a port back to the coprocessor at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
-- While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits for SAFE.` says so. STAY and SAVE work.
+- While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits until the bench is SAFE.` says so. STAY and SAVE work.
 - PWM target and Port PWM are not set back while the servo programmer holds the servo port; they stay unsaved.
 - With more than 10 changes, 9 lines show and the last line reads `and 3 more` for 12.
-- After a refused save the line `The last save failed. SAVE tries again.` shows under the list. DISCARD then also asks for a write of the values put back, since the flash can hold part of the refused write.
+- After a refused save the line `Saving failed. Tap SAVE to try again.` shows under the list. DISCARD then also asks for a write of the values put back, since the flash can hold part of the refused write.
 
 ![Twelve values unsaved](view:setup-leave-many)
 

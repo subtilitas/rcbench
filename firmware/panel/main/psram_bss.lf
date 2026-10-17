@@ -35,6 +35,7 @@ entries:
     supply_screen (extram_bss)
     motor_screen (extram_bss)
     programmer_screen (extram_bss)
+    esc_stick_panel (extram_bss)
     kst_panel (extram_bss)
     analyser_screen (extram_bss)
     wifi_screen (extram_bss)
@@ -49,6 +50,7 @@ entries:
 archive: liblogfile.a
 entries:
     log_csv (extram_bss)
+    log_reader (extram_bss)
 
 [mapping:rcbench_esc_psram]
 archive: libesc.a

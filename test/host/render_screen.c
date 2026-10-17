@@ -966,7 +966,7 @@ static void servo_run_view(bool to_the_end, bool ina)
 }
 
 /*
- * The limit run of LIMITS, on the bench of the host tests (test_kst_panel.c):
+ * The limit run of LIMITS, on the bench of the host tests (test_kst_panel_limrun.c):
  * the simulated KST servo on programming port 1, GP13, behind the servo
  * model, the horn where its NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT ANGLE
  * and RIGHT ANGLE put it at 4 us a count (kst_sim.h sim_horn_us()); its
@@ -1123,9 +1123,9 @@ static void limrun_view(const char *view)
     tap(734, UI_BAND_H + 24);                   /* SETTINGS */
     tap(216, UI_BAND_H + 27);                   /* LIMITS */
     if (s_lr.prog) {
-        tap(100, UI_BAND_H + 323);              /* LIMIT RUN: SEARCH+PROG */
+        tap(100, UI_BAND_H + 281);              /* LIMIT RUN: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
-            tap(100, UI_BAND_H + 281);          /* SERVO PULSES: 1000-2000 */
+            tap(100, UI_BAND_H + 323);          /* SERVO PULSES: 1000-2000 */
         }
     }
     limrun_ms(100u);
@@ -1341,7 +1341,7 @@ static void stick_step(stick_rig_t *r)
 
 /*
  * Type @p text on the ESC STICK search keyboard, docked where
- * programmer_screen.c docks it (SP_DOCK_X 352, below the crumb row): the
+ * esc_stick_panel.c docks it (SP_DOCK_X 352, below the crumb row): the
  * key rects come from a keyboard opened for a search over the same area.
  */
 static void stick_type(const char *text)
@@ -1381,7 +1381,7 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * programmer_screen.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
+ * esc_stick_panel.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
  * v at 723 and 761 on the crumb row. */
 static void stick_tap_row(int at)
 {
@@ -1956,14 +1956,22 @@ int main(int argc, char **argv)
             tap(78, UI_BAND_H + 153);
             tap(212, UI_BAND_H + 381);
             tap(78, UI_BAND_H + 229);
+        } else if (strncmp(view, "supply-trip-", 12) == 0) {
+            /* The fit check's: the output switched off by either trip. */
+            st.output = false;
+            st.trip = (view[12] == 'i') ? SUPPLY_TRIP_CURRENT
+                                        : SUPPLY_TRIP_VOLTAGE;
+            supply_screen_set_output(false);
+            supply_screen_push(&st);
         }
     }
 
     if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
         /*
          * The ESC STICK class, walked by pressing.  Geometry from
-         * programmer_screen.c: the third tile, the makers and their models
-         * (hobbywing-flyfun-8item, by id), and the item rows' + steppers.
+         * programmer_screen.c, the third tile, and esc_stick_panel.c, the
+         * makers and their models (hobbywing-flyfun-8item, by id), and the
+         * item rows' + steppers.
          */
         const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
         supply_screen_set_caps(&caps);
@@ -2210,7 +2218,7 @@ int main(int argc, char **argv)
         } else if (strcmp(view, "programmer-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
             if (strcmp(view, "programmer-stick-timing") == 0) {
-                tap(698, UI_BAND_H + 70);       /* TIMING */
+                tap(698, UI_BAND_H + 27);       /* TIMING */
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
@@ -2317,6 +2325,13 @@ int main(int argc, char **argv)
             b.volts[i] = v[i];
             b.milliohms[i] = ir[i];
         }
+        /* The fit check's: the two other verdicts, the weak cell 15 mV
+         * and 75 mV under the next lowest. */
+        if (strcmp(view, "battery-healthy") == 0) {
+            b.volts[2] = 3.795f;
+        } else if (strcmp(view, "battery-replace") == 0) {
+            b.volts[2] = 3.731f;
+        }
         b.capacity_mah = 5000.0f;
         b.drawn_mah    = 1840.0f;
         b.valid        = true;
@@ -2394,6 +2409,28 @@ int main(int argc, char **argv)
                 .bus_off = true,
             };
             r = q;
+        } else if (strcmp(view, "busfault-lossy") == 0
+                   || strcmp(view, "busfault-dropped") == 0) {
+            /* The fit check's: the other two verdicts' texts, and the
+             * coprocessor's dropped count under DROPPED. */
+            const bool dropped = strcmp(view, "busfault-dropped") == 0;
+            r.verdict = dropped ? CAN_SELFTEST_DROPPED : CAN_SELFTEST_LOSSY;
+            r.corrupt = 0;
+            r.remote_overflows = dropped ? 16u : 0u;
+        } else if (strncmp(view, "busfault-lost-", 14) == 0) {
+            /* The fit check's: every other state of a dropped link. */
+            const char *st = view + 14;
+            const busfault_report_t q = {
+                .kind = BUSFAULT_LINK_LOST,
+                .bus = strcmp(st, "rejoin") == 0 ? BUSFAULT_BUS_RECOVERING
+                     : strcmp(st, "stopped") == 0 ? BUSFAULT_BUS_STOPPED
+                     : strcmp(st, "running") == 0 ? BUSFAULT_BUS_RUNNING
+                                                  : BUSFAULT_BUS_UNKNOWN,
+                .down_s = 47, .recoveries = 44,
+                .polls = 5323, .timeouts = 44,
+                .tx_errors = 248, .rx_errors = 0, .bus_errors = 1976,
+            };
+            r = q;
         }
         busfault_screen_set(&r);
     }
@@ -2462,6 +2499,10 @@ int main(int argc, char **argv)
              */
             if (strcmp(view, "analyser-failsafe") == 0) {
                 raw[23] |= SBUS_FLAG_FAILSAFE;
+            }
+            /* analyser-lost: the receiver flags a damaged frame. */
+            if (strcmp(view, "analyser-lost") == 0) {
+                raw[23] |= SBUS_FLAG_FRAME_LOST;
             }
 
             sbus_frame_t frame;
@@ -2762,8 +2803,14 @@ int main(int argc, char **argv)
                 servo_screen_window(&w, SERVO_SOURCE_INA3221, 1u);
             }
         }
-        /* A coprocessor that took the screen's 50 Hz. */
+        /* A coprocessor that took the screen's 50 Hz; one that refused it,
+         * and one with no SERVO page, for the OUTPUT page's note. */
         servo_screen_rate(SERVO_RATE_IN_FORCE, 50u);
+        if (strcmp(view, "servo-rate-refused") == 0) {
+            servo_screen_rate(SERVO_RATE_REFUSED, 50u);
+        } else if (strcmp(view, "servo-rate-unsupported") == 0) {
+            servo_screen_rate(SERVO_RATE_UNSUPPORTED, 50u);
+        }
         /* The binding read: one SERVO PWM output on GP2. */
         servo_screen_set_pins((uint64_t)1u << 2, true);
         /* The output encoder on, its centre at count 3000 and the horn
@@ -2775,9 +2822,9 @@ int main(int argc, char **argv)
         }
         /*
          * The overlay, opened the way a finger opens it.  Geometry from
-         * servo_screen.c, offset by the band: SETTINGS at the top of the
-         * right card, the tabs over the left card, the TYPE row and the
-         * list's HELI CYCLIC.
+         * servo_screen.c and servo_settings_panel.c, offset by the band:
+         * SETTINGS at the top of the right card, the tabs over the left
+         * card, the TYPE row and the list's HELI CYCLIC.
          */
         if (strcmp(view, "servo-target") == 0) {
             /* PWM TARGET on the programming port, bound to GP13, its
@@ -2793,11 +2840,27 @@ int main(int argc, char **argv)
         if (strncmp(view, "servo-limrun", 12) == 0) {
             limrun_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
-            kst_view(view);
-        } else if (strcmp(view, "servo-hv") == 0) {
+            /* A view with -p2 is its view with the notes turned to their
+             * second page: a tap on them. */
+            char base[64];
+            const size_t len = strlen(view);
+            const bool p2 = len > 3 && strcmp(view + len - 3, "-p2") == 0;
+
+            snprintf(base, sizeof(base), "%.*s",
+                     (int)(p2 ? len - 3 : len), view);
+            kst_view(base);
+            if (p2 && kst_panel_notes_rect().w > 0) {
+                ktap(kst_panel_notes_rect());
+            }
+        } else if (strcmp(view, "servo-hv") == 0
+                   || strcmp(view, "servo-hv-live") == 0) {
             /* The voltage on the SET line, typed past 6.0 V: the HV
-             * warning.  The keypad's keys from a probe opened where the
-             * screen opens its own, over the left card. */
+             * warning, and in servo-hv-live with the output on.  The
+             * keypad's keys from a probe opened where the screen opens its
+             * own, over the left card. */
+            if (strcmp(view, "servo-hv-live") == 0) {
+                supply_screen_set_output(true);
+            }
             ui_router_goto(SCREEN_SERVO);
             tap(579, UI_BAND_H + 237);
             ui_keypad_t kp;

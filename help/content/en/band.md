@@ -52,7 +52,7 @@ A tap on a chip opens a box under the band. It says what the chip's state means 
 
 ![LINK with 37 refused link frames](view:band-link-refused)
 
-While the coprocessor has refused link frames since its power-up, the LINK box ends with the count, for example `Link frames refused: 37`.
+While the coprocessor has refused link frames since its power-up, the LINK box ends with the count, for example `Rejected link frames: 37`.
 
 ## FAULT codes
 
@@ -80,7 +80,7 @@ A fault the open screen does not show appears in a red band, 34 px high, across 
 
 - It clears 30 s after it arrived. A new alert starts the 30 s again.
 - A tap on the band, marked `x` at its right end, clears it earlier. The screen beneath receives neither that tap nor a second finger on the band.
-- "touch did not answer -- the bench will not switch to ARMED", shown at start, stays until restart and has no `x`.
+- "Touchscreen not responding. ARMED is blocked.", shown at start, stays until restart and has no `x`.
 
 ## Touch near the band
 

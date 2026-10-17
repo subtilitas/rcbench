@@ -104,18 +104,19 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
 
 /*
  * The warning that holds a way out: a card over the body down to the
- * strip, its title, one line on what unsaved means, then one line per
- * change and up to two notes under them.  STAY, DISCARD and SAVE take the
- * strip's three columns, SAVE where SAVE is on the tiles.
- * SETTINGS_WARN_LINES lines of 22 px fit; more changes than that leave the
+ * strip, its title, up to two lines on what unsaved means, then one line
+ * per change and up to two notes under them.  STAY, DISCARD and SAVE take
+ * the strip's three columns, SAVE where SAVE is on the tiles.
+ * SETTINGS_WARN_LINES lines of 21 px fit; more changes than that leave the
  * last line to their count.
  */
 #define WARN_X      HUB_M
 #define WARN_Y      HUB_M
 #define WARN_W      (SCREEN_W - 2 * HUB_M)
 #define WARN_H      (STRIP_Y - HUB_M - WARN_Y)
-#define WARN_LINE_Y 84
-#define WARN_PITCH  22
+#define WARN_WHY_Y  46     /* from WARN_Y, 18 px a line */
+#define WARN_LINE_Y 96
+#define WARN_PITCH  21
 #define WARN_NOTE_Y (WARN_LINE_Y + SETTINGS_WARN_LINES * WARN_PITCH + 4)
 #define WARN_NOTE_PITCH 18
 
@@ -127,7 +128,7 @@ enum { HIT_NONE = 0, HIT_TILE, HIT_MINUS, HIT_PLUS, HIT_RESET, HIT_LIST,
  *
  * Nine fit the grid.  A tenth needs a second page, through ui_tabs in the
  * strip's free columns, which is not built: the build stops at a tenth
- * entry (the assertion under the table), and so does test_settings.
+ * entry (the assertion under the table), and so does test_settings_pins_hub.
  */
 typedef struct {
     ui_icon_fn     icon;
@@ -1016,8 +1017,9 @@ static void draw_warning(gfx_canvas_t *c)
                                         WARN_H - 8));
     gfx_text(c, WARN_X + 16, WARN_Y + 12, TR(SET_LEAVE_TITLE), UI_FONT_HEAD,
              UI_WARN, 1);
-    gfx_text(c, WARN_X + 16, WARN_Y + 48, TR(SET_LEAVE_WHY), UI_FONT_LABEL,
-             UI_TEXT_DIM, 1);
+    (void)ui_text_wrap(c, gfx_rect_make(WARN_X + 16, WARN_Y + WARN_WHY_Y,
+                                        WARN_W - 32, 18),
+                       18, TR(SET_LEAVE_WHY), UI_FONT_LABEL, UI_TEXT_DIM);
     char line[128];
     for (int i = 0; settings_screen_warn_line(i, line, sizeof(line)); ++i) {
         gfx_text(c, WARN_X + 16, WARN_LINE_Y + i * WARN_PITCH, line,

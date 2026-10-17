@@ -54,6 +54,19 @@ A touch belongs to what it came down on until it lifts. The band is the top
   while the first finger drags. After the home tag, the finger still on the
   glass moves nothing on the screen the tag leads to.
 
+Current limitation: the chips stand from STOP to the left. A row that would
+reach x 274, where the widest home tag (FILES & UPDATE) ends, starts each
+label 16 px into its chip instead of 24 px. Three rows are still wider and
+reach under the home tag of some screens. A tap there acts on the home tag,
+not on the chip:
+
+- ARMED with a FAULT code: down to x 216.
+- ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG, in German: down to x 234.
+- SAFE with a FAULT code and a run clock of 10 h or more, in German: x 272.
+
+The home tags end at x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
+(FILES & UPDATE) and at x 210 or less on the other screens.
+
 ### Chip help
 
 A tap on a chip of the band opens a box under the band that says what the
@@ -81,7 +94,7 @@ STOP, and none reaches the alert band.
 
 While the link is up and the coprocessor has refused link frames, the LINK
 box ends with the count, the same line MOTOR & ESC shows in its header
-strip: `Link frames refused: 37` ([Refused frames](Link.md#refused-frames)).
+strip: `Rejected link frames: 37` ([Refused frames](Link.md#refused-frames)).
 The line follows the count while the box is open and goes with the link.
 
 The FAULT box names each bit, its code and what it means:
@@ -122,7 +135,7 @@ bottom of the screen, ARM included, while it shows.
   nor a second finger's on the band; only the first finger's lift clears.
 - An alert that arrives while a finger is on the band is not cleared by
   that lift.
-- "touch did not answer -- the bench will not switch to ARMED", shown at start, stays
+- "Touchscreen not responding. ARMED is blocked.", shown at start, stays
   until restart and has no `x`: no touch is there to tap with. A later alert
   shows over it; once that one clears, it shows again.
 
@@ -130,7 +143,7 @@ bottom of the screen, ARM included, while it shows.
 
 ![The feature menu](img/overview.png)
 
-A tile marked MODELLED opens a screen whose source the bench does not
+A tile marked SIMULATED opens a screen whose source the bench does not
 report: the coprocessor reports no capability for it, or its sensor is not
 enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
 from the model. The mark does not classify each value on a screen. ANALYSER
@@ -191,8 +204,8 @@ Two states show in the warning colour:
 
 | Line | Condition |
 |---|---|
-| `TARGET: NO PIN BOUND AS MOTOR` | the binding is read and no pin is bound as a motor |
-| `TARGET: BINDING NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
+| `TARGET: NO MOTOR PIN ASSIGNED` | the binding is read and no pin is bound as a motor |
+| `TARGET: ASSIGNMENT NOT READ` | no binding was read: the link is down, the pages did not read, or no pin map exists for the board |
 
 The throttle still moves in either state. ARM switches the whole bank to ARMED, not only
 the pins named here.
@@ -202,8 +215,8 @@ the pins named here.
 
 The trace is the record of a run. It advances only while the bench is ARMED:
 switching to ARMED clears it, switching to SAFE holds it as it stood. The panel tag reads
-`LIVE TELEMETRY` while it advances, `TELEMETRY HELD` while it holds a run, and
-`TELEMETRY IDLE` before the first switch to ARMED, when the plot reads `no run recorded`.
+`LIVE TELEMETRY` while it advances, `LAST TELEMETRY` while it holds a run, and
+`TELEMETRY IDLE` before the first switch to ARMED, when the plot reads `No run recorded yet.`.
 The right-hand axis label reads `NOW` while it advances and `END` where a held
 one stopped. The readouts, the TABLE pane, the totals and the temperature
 strip are live at all times, ARMED or not.
@@ -227,7 +240,7 @@ temperatures. ESC and MOT come from the bench page. MCU is the panel's own
 die, read from the ESP32-S3's sensor: it is the display board's temperature,
 not the coprocessor's. While the link is up and the coprocessor has refused
 link frames since its power-up, the strip shows how many after the error
-count: `Link frames refused: 37`. A coprocessor older than protocol 4.21
+count: `Rejected link frames: 37`. A coprocessor older than protocol 4.21
 sends no count, and the strip shows none
 ([Refused frames](Link.md#refused-frames)).
 
@@ -386,7 +399,7 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 
 `voltage`, `current` and `power` are what the screen shows. `source` is
 `measured` on a row whose values a meter produced and `model` on a row the
-panel's model produced (the MODELLED mark); a supply file has the same last
+panel's model produced (the SIMULATED mark); a supply file has the same last
 column. A file without the column ends at `ch3 voltage` or `energy`, and the
 log viewer and the tools read both forms: `source` is a
 text column and is never plotted. `ina voltage` and
@@ -525,8 +538,8 @@ at once.
 
 The name stays `PD MINI` in both languages. While the PD mini is disabled on
 SETUP under INTERFACES, the supply is the panel's model of it, as on SUPPLY:
-then a MODELLED pill (SIMULIERT in German), 20 px high and 24 px plus the word
-wide but at least 88 px (88 px for MODELLED, 96 px for SIMULIERT), sits
+then a SIMULATED pill (SIMULIERT in German), 20 px high and 24 px plus the word
+wide but at least 88 px (88 px for SIMULATED, 96 px for SIMULIERT), sits
 on the plot's top-left corner under the name, because the line beside the
 name holds the three readings. The pill comes and goes with the model,
 without a tap. With INA3221 CH1 as the meter the line names the INA3221 and
@@ -620,7 +633,7 @@ the change on both.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
 timing does not depend on the link: the TEST page's CURVE (square, sine or
-triangle), SPEED (0.05 to 5 cycles a second) and DWELL (the hold at each
+triangle), SPEED (0.05 to 5 cycles a second) and DWELL TIME (the hold at each
 end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
@@ -664,10 +677,9 @@ changed on the TEST page while paused starts as a new sweep instead. A
 coprocessor older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
-so: `coprocessor older than 4.6 -- the sweep starts over` or `coprocessor
-refused the resume -- the sweep starts over`. So does PAUSED tapped while
+so: `Coprocessor firmware older than 4.6. Sweep starts again.` or `Coprocessor could not resume. Sweep starts again.`. So does PAUSED tapped while
 the HOLD has gone unanswered, since the coprocessor may then be holding or
-still running: `the pause went unanswered -- the sweep starts over`. A
+still running: `Pause was not confirmed. Sweep starts again.`. A
 PAUSED tapped before a HOLD that the panel then lets go of (below) starts
 nothing: the pause ends with that HOLD.
 
@@ -742,7 +754,7 @@ turns it off.
 
 The settings close as the run starts, and its step and phase show at the top
 of the left card, with the meter the run reads beside STOP TEST: `PD mini`,
-`INA3221 CH1` or `MODEL`. It is the servo rail's meter at START TEST, and
+`INA3221 CH1` or `SIMULATION`. It is the servo rail's meter at START TEST, and
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
 the servo and SUPPLY's set points and switch until it ends. It ends early, the output switched off and the servo released
 to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
@@ -774,7 +786,7 @@ plot does:
 
 **START LIMIT RUN runs the limit search** on the LIMITS page: the servo
 stepped outward in 10 us steps until its current shows the linkage bound,
-and, with LIMIT RUN on SEARCH+PROG, a KST or Chaservo servo's LEFT ANGLE
+and, with LIMIT RUN on SEARCH + PROGRAM, a KST or Chaservo servo's LEFT ANGLE
 and RIGHT ANGLE lowered until neither end binds. On a SERVO PWM pin the
 search runs from PULSE CENTRE to PULSE MIN and PULSE MAX; on PROG PORT a
 read session comes first, and the search runs from the servo's NEUTRAL to
@@ -801,8 +813,7 @@ PROGRAM, beside SETTINGS, opens the programmer for KST and Chaservo servos
 over the left card. It takes the coprocessor's programming port, GP13 on
 pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
 the servo's settings on its signal wire. It connects only with PWM TARGET
-on the DUT page set to PROG PORT; with OUTPUTS it shows `Programming needs
-the programming port.` and CONNECT is locked. While it holds the port the
+on the DUT page set to PROG PORT; with OUTPUTS it shows `Use the programming port to program a servo.` and CONNECT is locked. While it holds the port the
 overlay stays open and SETTINGS is off; ARM is drawn disabled and takes no
 press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
 tester sends no pulse to the port. In PWM with a PD mini answering, the
@@ -833,15 +844,15 @@ name opens a keyboard.
 | OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
 | OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
 | TEST | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
-| TEST | LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
-| TEST | DWELL, SETTLE | held at each end; waited after a supply step before measuring |
+| TEST | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
+| TEST | DWELL TIME, SETTLING TIME | held at each end; waited after a supply step before measuring |
 | TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
 | TEST | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
 | TEST | START TEST | the automatic test: a 2 s hold while the bench is ARMED; STOP TEST while it runs |
 | LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
 | LIMITS | STALL AT | above this current the servo counts as stalled |
 | LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
-| LIMITS | LIMIT RUN | SEARCH ONLY or SEARCH+PROG, a tap switches; SEARCH+PROG is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under START LIMIT RUN otherwise. For the session |
+| LIMITS | LIMIT RUN | SEARCH ONLY or SEARCH + PROGRAM, a tap switches; SEARCH + PROGRAM is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under START LIMIT RUN otherwise. For the session |
 | LIMITS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with PWM TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us in the run's read session, before the search. KEEP by default; for the session |
 | LIMITS | START LIMIT RUN | the limit search: a 2 s hold while the bench is ARMED and the INA3221 is the servo rail's meter; STOP RUN while it runs |
 | DUT | NAME | the device under test, up to 23 characters, for the report |
@@ -871,7 +882,7 @@ the warning colour: the commands go to the port all the same. With PORT PWM
 off the port renders no pulse, and the row adds `PWM OFF`:
 `PROG PORT GP13 PWM OFF`, 22 characters with a two-digit pin. Two states name
 no target, both in the warning colour, and the tester sends no command in
-either: `NO LINK` while no coprocessor answers, and `NOT KNOWN` while the
+either: `NO LINK` while no coprocessor answers, and `UNKNOWN` while the
 coprocessor's programming-port page has not been read since the link came
 up, a write to it was not acknowledged, or a read of it went unanswered.
 While the servo programmer holds the port, the row does not change: it keeps
@@ -933,7 +944,7 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `In force: OUTPUTS run at 330 Hz.` or `In force: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the PWM TARGET setting (second line `The PWM TARGET setting is not in force.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF: the port renders no pulse.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the PWM TARGET. With no link both read `No link: the rate in force is not known.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the PWM TARGET setting (second line `The PWM TARGET setting is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the PWM TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
@@ -944,7 +955,7 @@ its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
 does not switch to ARMED, from any screen, while the rate the PWM TARGET runs at is not
-known: the switch to ARMED is refused with `servo frame rate not known -- arm again`, and
+known: the switch to ARMED is refused with `Servo frame rate unknown. Hold ARM again.`, and
 a switch to ARMED made while the link was down reaches the coprocessor only once the
 reset has landed.
 
@@ -979,7 +990,7 @@ the PD mini enabled on SETUP under INTERFACES, the header names the module
 and the coprocessor's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
 from the PD mini TX and PD mini RX settings. With either pin not set the
 header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
-says SUPPLY MODEL and the menu tile is marked MODELLED.
+says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
@@ -1061,7 +1072,7 @@ read that fails while the other reads answer -- keeps ONLINE: after
 1500 ms without a new reading the voltage, current and power cards show
 dashes and no trip, peak or total takes a reading, and after 3000 ms (`SUPPLY_LINK_BLIND_MS`) an
 output that is on is switched off and the band says
-`supply sends no readings -- output off`. A set point changed faster than
+`No readings from the supply. Output off.`. A set point changed faster than
 the module takes it -- the slider dragged with SLIDER AND STEPS off, about
 one new set point every 50 ms -- does not hold the readings back: a reading
 400 ms past its due (`PDMINI_POLL_LATE_MS`) goes before the next set-point
@@ -1090,7 +1101,7 @@ Current limitation: with a module answering 279 ms or more late and the
 slider dragged, the display is read only 3.7 s to 5.0 s after the last
 display read (5.0 s at 390 ms), past `SUPPLY_LINK_BLIND_MS`; an output that
 is on is switched off and the band says
-`supply sends no readings -- output off`. The panel reads the page every
+`No readings from the supply. Output off.`. The panel reads the page every
 100 ms, which adds up to 100 ms to the gap it sees: from 263 ms late the
 driver's gap is over 2.9 s, so the cut is possible from 263 ms. At rest the
 display read stands up to 2.5 s at 390 ms. It stands over 1.4 s from
@@ -1111,7 +1122,7 @@ answers at once, and further apart with one that answers late (see above).
 When the input voltage reads under the set point plus 0.5 V on 2 reads in a
 row, it switches the output off at once, and the band names the input voltage
 and the set point, for example
-`PD mini input voltage 6.18 V under set 6.00 V + 0.5 V -- output off`. From the
+`PD mini input 6.18 V is below the required 6.00 V + 0.5 V. Output off.`. From the
 sag to the cut takes about 1.0 s with a module that answers at once.
 Current limitation: with one that answers late it takes 1.7 s at 100 ms
 late, 1.9 s at 200 ms and up to 4.7 s up to 390 ms (host model). The
@@ -1135,8 +1146,7 @@ storage) and survives a restart. A value opens the keypad; a switch flips on
 the tap. Every change is written at the next frame the bench is SAFE with
 no switch to ARMED waiting, the supply's output is off with no ON queued and the board's
 drawing is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
-cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE
-WAITING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
+cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE PENDING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
 change made on SETUP and left without SAVE, which nothing writes until SAVE
 there or a change here asks for it.
 
@@ -1160,7 +1170,7 @@ cap rounds down, so 12.01 V allows 12.00 V, and a trip typed above 0 is at
 least one step, never OFF. A trip of 0 is off. The time over a trip counts from
 the first reading over it. A reading under its trip starts the
 count again; a reading that did not arrive leaves it where it was. A trip
-switches the output off, MODE shows TRIP until the output is switched on
+switches the output off, MODE shows TRIPPED until the output is switched on
 again, and the band says which trip fired. The supply holds its current limit
 in CC, so a current trip at or above CURRENT LIMIT does not fire; set it below
 the limit to switch off a load that draws too much for too long.
@@ -1210,7 +1220,7 @@ most about 1.2 s, and is taken only if that read shows the output off: the
 module can switch itself on between two state reads, by its button
 or its AUTO OUT setting, and new pins would leave it no OFF path. A read
 that shows the output on, or fails, refuses the change, and the band says
-`PD mini wiring refused -- its output may be on`. A refused change is not
+`PD mini wiring rejected. Its output may still be on.`. A refused change is not
 written again until the wiring changes in SETUP. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
@@ -1227,9 +1237,9 @@ CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
 dropout is a notch across all sixteen at the same instant.
 
 No firmware feeds this screen yet (see [Receiver buses](Receivers.md)); it
-shows SILENT.
+shows NO SIGNAL.
 
-The state block shows one of SILENT, FAILSAFE, FRAME LOST and LIVE, with one
+The state block shows one of NO SIGNAL, FAILSAFE, FRAME LOST and LIVE, with one
 line of explanation:
 
 ![A receiver in failsafe](img/analyser-failsafe.png)
@@ -1251,7 +1261,7 @@ The ESC and SERVO classes are a model on the panel. No transport carries
 their protocols: CONNECT, READ and WRITE change the panel's own copy of a
 device and send nothing on a wire. The device named after CONNECT is the
 model's, not an answer from hardware, and a WRITE reaches no device. Every
-page of the two classes carries the MODELLED mark: on the class tile, on
+page of the two classes carries the SIMULATED mark: on the class tile, on
 each protocol row and on the device line, where it takes the place of a
 connection's dot. The mark's dot is amber while a session is open and grey
 while none is; it never turns green. Under the parameters the page says
@@ -1335,7 +1345,7 @@ values picked:
 
 ![Two values picked](img/programmer-stick-items.png)
 
-RUN opens a warning over the whole screen, NO PROPELLER, MOTOR SECURED?: a
+RUN opens a warning over the whole screen, PROPELLER REMOVED? MOTOR SECURED?: a
 motor on the ESC must be mounted solid and carry no propeller, or a
 resistor load takes its place. The run starts after HOLD TO RUN is held
 for 2 s:
@@ -1445,7 +1455,7 @@ edge. A row ends at its line feed (LF, 0x0A).
 Text after the last line feed is a row cut off by a power loss or a full
 card: it can hold every field and a number cut short, `95` of `9554`, so it
 is left out of the rows, the figures and the plot. ROWS then shows in the
-warning colour and the import view says `LAST ROW CUT OFF - LEFT OUT`. A
+warning colour and the import view says `INCOMPLETE LAST ROW. SKIPPED.`. A
 file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
 feed are no row. Runs recorded by the bench are written as `BENCH001.CSV` to
@@ -1524,14 +1534,14 @@ Eight messages say what a card did to a run. Each appears on the band:
 
 | Message | What happened |
 |---|---|
-| `no card -- this run is not recorded` | nothing is mounted, so the run was never opened |
-| `card unreadable -- run not recorded` | the card would not list, so a run number could not be chosen |
-| `card full or unwritable -- run not recorded` | no run number could be created |
-| `the card did not keep up -- run not recorded` | every row was dropped, so there is no file for this run at all |
-| `the card fell behind -- the log has gaps` | some rows were dropped; the file's time column shows where |
-| `the card stopped taking rows -- run not recorded past here` | a write failed mid-run; every later row is rejected |
-| `the card stopped taking rows -- the log is short` | the same failure, said again when the run closes |
-| `the card failed on the last write -- the log is short` | the close failed, so the rows since the last commit are not in the file |
+| `No card. This run is not being recorded.` | nothing is mounted, so the run was never opened |
+| `Cannot read the card. Run not recorded.` | the card would not list, so a run number could not be chosen |
+| `Card full or not writable. Run not recorded.` | no run number could be created |
+| `Card too slow. Run not recorded.` | every row was dropped, so there is no file for this run at all |
+| `The card was too slow. Some data is missing from the recording.` | some rows were dropped; the file's time column shows where |
+| `Data can no longer be saved to the card. Recording stopped here.` | a write failed mid-run; every later row is rejected |
+| `Data could no longer be saved to the card. Recording incomplete.` | the same failure, said again when the run closes |
+| `The last write to the card failed. Recording incomplete.` | the close failed, so the rows since the last commit are not in the file |
 
 The first four mean there is no file to look for. The last four mean there is
 one and it stops early.
@@ -1561,17 +1571,16 @@ is missing:
 It goes off by itself on a switch to ARMED, on STOP, on the supply output
 coming on, on a log run opening, after 10 min without a request and after 16
 wrong access codes. The card then says which, in one line:
-`Wi-Fi went off: ARMED.`, `Wi-Fi went off: STOP.`,
-`Wi-Fi went off: supply output on.`, `Wi-Fi went off: a log run opened.`,
-`Wi-Fi went off: 10 min without a request.`,
-`Wi-Fi went off: 16 wrong access codes.`, or `Wi-Fi did not start.` A STOP
+`Wi-Fi switched off: bench ARMED.`, `Wi-Fi switched off: STOP.`,
+`Wi-Fi switched off: supply output on.`, `Wi-Fi switched off: a recording session started.`,
+`Wi-Fi switched off after 10 min without a request.`,
+`Wi-Fi switched off after 16 wrong access codes.`, or `Wi-Fi could not start.` A STOP
 or a switch to ARMED also drops an uploaded image that waits on the panel.
 While the radio is up, the link to the coprocessor and the heartbeat run as
 on every other screen.
 
 When Wi-Fi could not be set up at start (no memory for its lock or its
-buffers), every button is grey and the card says `Wi-Fi is unavailable: its
-set-up failed at start. A restart tries again.` The rest of the panel runs
+buffers), every button is grey and the card says `Wi-Fi setup failed at startup. It is unavailable. Restart to try again.` The rest of the panel runs
 as without Wi-Fi.
 
 ### ACCESS POINT
@@ -1588,7 +1597,7 @@ or a computer needs:
 | Network name | `rcbench-` and 4 hex digits of the panel's MAC (media access control) address, `rcbench-3F7A` |
 | Password | 8 characters, made new at every start, from `abcdefghjkmnpqrstuvwxyz23456789` (no 0, 1, i, l or o) |
 | Clients | 1 at a time |
-| Address | `http://192.168.4.1/` |
+| IP address | `http://192.168.4.1/` |
 | Range | not measured |
 
 1. LOGS → WI-FI → ACCESS POINT.
@@ -1652,10 +1661,10 @@ the home network:
 
 | Line on the card | Condition |
 | --- | --- |
-| `Join failed: password refused.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20 s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
-| `Join failed: network not found.` | no association within 20 s (`WA_JOIN_MS`), and the last drop of another kind, or none |
-| `Join failed: no address in 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
-| `The home network went away.` | joined, then the network dropped the panel |
+| `Could not connect. Password rejected.` | 3 auth-class drops in a row within 20 s (`WA_AUTH_TRIES`): the key refused, a MIC (message integrity code) failure, or the key handshake out of time; or no association within 20 s (`WA_JOIN_MS`) with an auth-class drop as the last drop |
+| `Could not connect. Network not found.` | no association within 20 s (`WA_JOIN_MS`), and the last drop of another kind, or none |
+| `Connection failed. No IP address within 15 s.` | associated, and no address from DHCP (dynamic host configuration protocol) within 15 s (`WA_ADDRESS_MS`) |
+| `Connection to the home network lost.` | joined, then the network dropped the panel |
 
 A drop while joining connects again. One auth-class drop does not end the
 join: ESP-IDF reports a wrong password and a key handshake answered late
@@ -1670,8 +1679,7 @@ access code back to on.
 A change of what is kept (a network, FORGET, the access code switch) takes
 effect at once and reaches NVS on the next frame that may write flash. A
 write that fails is tried again 3 times, 10 s apart (`WA_PENDING_RETRIES`,
-`WA_PENDING_RETRY_MS`), and the card says `Not saved: the flash write
-failed. Another change tries again.` until one succeeds. The change holds
+`WA_PENDING_RETRY_MS`), and the card says `Not saved. Writing to flash failed. Saving will be tried again with the next change.` until one succeeds. The change holds
 until the panel restarts either way; only a write that succeeded outlasts
 the restart.
 
@@ -1702,8 +1710,7 @@ session. 16 wrong codes switch the radio off.
 ACCESS CODE switches it, for both ways in. It is on by default, after
 FORGET HOME NETWORK and on a panel with nothing kept. The switch is kept in
 NVS. Off, the page lists, sends files and takes an upload without a code,
-and the screen says `Access code off: the page is open to every device on
-the network.` An upload still installs only after the 2 s hold on the
+and the screen says `Access code off. Any device on the network can open the page.` An upload still installs only after the 2 s hold on the
 panel.
 
 ### The page
@@ -1763,7 +1770,7 @@ that runs already is not offered:
 INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
 drawing being fetched or kept and no update of the coprocessor running
-(`Install waits: the coprocessor's update runs.`). CANCEL drops the image.
+(`Installation is waiting for the coprocessor update to finish.`). CANCEL drops the image.
 
 ![Writing](img/panel-update.png)
 
@@ -1781,7 +1788,7 @@ the panel restarts.
 ![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
-`panel firmware 0.19.0 installed`. A write that fails changes nothing that
+`Panel firmware 0.19.0 installed.`. A write that fails changes nothing that
 starts: the running build stays, and CLOSE goes back to LOGS, or after a
 download from GitHub to where the download started.
 
@@ -1790,11 +1797,11 @@ download from GitHub to where the download started.
 A new build's first start is a trial. The build is kept once the display and
 touch are up. A start that does not get there, by a fault, a restart or a
 missing touch controller, goes back to the build before it, which says
-`panel firmware 0.19.0 did not start -- 0.18.0 runs again` on the band.
+`Panel firmware 0.19.0 failed to start. Version 0.18.0 is running again.` on the band.
 A failed start is never kept: when marking it invalid fails, the panel
 restarts with the trial unconfirmed, and the bootloader goes back all the
 same. When keeping a good start fails (otadata not written), the band says
-`panel firmware 0.19.0 not kept -- the next start goes back`; the build
+`Panel firmware 0.19.0 was not kept. The next restart restores the previous version.`; the build
 runs until then.
 
 Current limitations:
@@ -1994,7 +2001,7 @@ on the page first and on again after, so no step on the way puts the two
 parts on one address. A
 coprocessor older than 4.7 is sent nothing. After a write is taken the panel
 reads the coprocessor's identity again: capability bits 3 and 4 follow the
-set-up, and with the INA228 enabled the MOTOR & ESC tile loses its MODELLED
+set-up, and with the INA228 enabled the MOTOR & ESC tile loses its SIMULATED
 mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
@@ -2018,20 +2025,20 @@ both said. In order:
 
 | Message | When |
 | --- | --- |
-| `coprocessor has no SENSE page -- current monitors not read` | a monitor is enabled and the coprocessor speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
-| `sensor SDA or SCL not set -- see SETUP INTERFACES` | a monitor is enabled with a pin at −1; neither is enabled on the page |
-| `INA228 and INA3221 both at 0x40 -- see SETUP INTERFACES` | both enabled on one address; neither is enabled on the page |
-| `sensor pins GP16/GP17 refused -- see SETUP INTERFACES` | the coprocessor refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
-| `INA228 shunt or max current refused -- see SETUP INTERFACES` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
-| `INA3221 set-up refused -- see SETUP INTERFACES` | the INA3221 stays off |
-| `sensor bus stuck: SDA held low -- clocking it free` | the coprocessor found SDA held low and clocks it free |
-| `INA228 not answering at 0x45` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `-- 0x44 answers` is added when the coprocessor's address scan found something where the part could be |
-| `0x40 answers 1408h, not an INA3221 -- not used` | something answers at the part's address with another identity |
-| `INA228 current at the end of its range -- current is a bound` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
-| `INA3221 CH1 clipped at 1.64 A -- current is a bound` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
-| `coprocessor store off -- set-ups last until it restarts` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
-| `coprocessor older than 4.11 -- servo current read from PD mini` | the INA3221 is on with CH1 and the coprocessor speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
-| `INA3221 reset itself -- check its supply` | the coprocessor found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
+| `Coprocessor has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the coprocessor speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
+| `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
+| `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | both enabled on one address; neither is enabled on the page |
+| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the coprocessor refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
+| `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
+| `INA3221 settings rejected. Check SETUP > INTERFACES.` | the INA3221 stays off |
+| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the coprocessor found SDA held low and clocks it free |
+| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the coprocessor's address scan found something where the part could be |
+| `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
+| `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
+| `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
+| `Coprocessor storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
+| `Coprocessor firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the coprocessor speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
+| `INA3221 has reset. Check its power supply.` | the coprocessor found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
 
 A refused set-up is not written again until it changes on SETUP. Pins that
 are one I2C block's pair, refused because an output, the PD mini or the
@@ -2046,7 +2053,7 @@ monitors' readings.
 
 A row whose value is not the one the coprocessor's page holds is marked: its
 edge and its value are drawn in the warning colour, and its help line reads
-`Not taken by the coprocessor`. The panel compares the set-up it asks for
+`Not accepted by the coprocessor.`. The panel compares the set-up it asks for
 with the one the page last acknowledged or read back (`sense_link_unheld()`,
 `tone_link_unheld()`). The mark covers the current monitors' rows, Sensor
 SDA and Sensor SCL (one mark, the pins are one frame), AS5600, and the phase
@@ -2083,11 +2090,11 @@ once and one at a time like the monitors':
 
 | Message | When |
 | --- | --- |
-| `coprocessor older than 4.9 -- AS5600 not read` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
-| `AS5600 not answering at 0x36` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
-| `AS5600 sees no magnet -- check the magnet on the horn shaft` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
-| `AS5600 magnet too weak -- move it closer` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
-| `AS5600 magnet too strong -- move it away` | STATUS MD and MH are set. The angle is used, as with ML |
+| `Coprocessor firmware older than 4.9. AS5600 not read.` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
+| `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
+| `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
+| `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
+| `AS5600: magnetic field too strong. Move the magnet farther away.` | STATUS MD and MH are set. The angle is used, as with ML |
 
 A magnet message is said once until the field reads right again, and again
 when a magnet that read weak or strong goes missing or a missing one comes
@@ -2156,11 +2163,11 @@ current monitors:
 
 | Message | When |
 | --- | --- |
-| `coprocessor has no tone page -- phase tap not read` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` | the coprocessor refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older coprocessor, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
-| `phase tap split, gap or periods refused -- see SETUP INTERFACES` | the coprocessor refused the second frame; not written again until a value changes |
-| `phase tap pin GP22 not free -- tap not running` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run. The band says `phase tap on GP22, 400 to 6500 Hz refused -- see SETUP INTERFACES` only for a set-up other than the one the coprocessor kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
-| `phase tap capture overrun -- beeps cut` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
+| `Coprocessor has no TONE page. Phase tap not read.` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
+| `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` | the coprocessor refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older coprocessor, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the coprocessor refused the second frame; not written again until a value changes |
+| `Phase tap pin GP22 is in use. Capture not running.` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the coprocessor kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap capture overflow. Beeps are incomplete.` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values
 
@@ -2243,10 +2250,10 @@ After a refused save DISCARD also asks for a write of the values put back:
 the medium can hold part of the refused write, and a restart would load it.
 
 While the bench is ARMED, DISCARD is drawn inert and a line
-`DISCARD waits for SAFE.` says why. Setting back several values at once,
+`DISCARD waits until the bench is SAFE.` says why. Setting back several values at once,
 pins among them, on a running bench is a change the operator did not make
 in that moment. STAY and SAVE work while ARMED; a save waits for SAFE as
-`WHEN IDLE`. The line `The last save failed. SAVE tries again.` shows in
+`WHEN IDLE`. The line `Saving failed. Tap SAVE to try again.` shows in
 the danger colour after a refused save.
 
 The warning holds only the home tag:
@@ -2291,11 +2298,11 @@ the wire carried frames a moment ago.
 
 | Heading | Meaning |
 | --- | --- |
-| `this panel is off the bus` | too many frames went unacknowledged; it stopped transmitting |
-| `this panel is rejoining` | it is counting the quiet time a rejoin needs, about 3 s |
-| `the controller has stopped` | idle and not restarted — a fault in the firmware |
-| `the link stopped answering` | the controller is on the bus and nothing answers |
-| `the controller cannot be read` | the driver is not running; nothing can be sent |
+| `Panel disconnected from the bus.` | too many frames went unacknowledged; it stopped transmitting |
+| `Panel is reconnecting.` | it is counting the quiet time a rejoin needs, about 3 s |
+| `The panel's CAN controller has stopped.` | idle and not restarted — a fault in the firmware |
+| `The link stopped responding.` | the controller is on the bus and nothing answers |
+| `Cannot read the controller's state.` | the driver is not running; nothing can be sent |
 
 Four seconds, not one: the link drops for a poll now and then, and a screen
 that took over on every blip is a screen operators learn to dismiss.
@@ -2330,8 +2337,7 @@ console at all.
 A panel built with the coprocessor's image carries it and offers it when the
 coprocessor runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `coprocessor runs another build -- the menu offers its
-update`, and the question opens on the menu while the bench is SAFE, the
+build raises the alert `Coprocessor runs a different build. An update is available in the menu.`, and the question opens on the menu while the bench is SAFE, the
 supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START given while either holds is spent,
 and the question opens again once both have ended.
@@ -2344,8 +2350,7 @@ ask again for that coprocessor version until it restarts. Leaving the
 question another way declines the same way. START takes the 2 s hold, the
 ARM gesture and the same fade.
 
-An older image is offered too. The question then says `The image this panel
-carries is older.` in the warning colour, and START takes the same hold.
+An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
 
 ![An older image](img/coproc-update-older.png)
 
@@ -2359,26 +2364,26 @@ behind it.
 
 | Step | Shown while |
 | --- | --- |
-| `Preparing the image` | the panel hashes the image, 8 KiB a step |
-| `Sending the image` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
-| `Coprocessor checks the image` | the coprocessor hashes the slot it wrote |
-| `Coprocessor starts the new image` | it restarts into the new slot, on trial |
-| `Keeping the new image` | the panel reads the new image's identity and writes BUY |
+| `Preparing firmware.` | the panel hashes the image, 8 KiB a step |
+| `Sending firmware.` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
+| `Coprocessor is checking the firmware.` | the coprocessor hashes the slot it wrote |
+| `Coprocessor is starting the new firmware.` | it restarts into the new slot, on trial |
+| `Keeping the new firmware.` | the panel reads the new image's identity and writes BUY |
 
 The screen returns to the menu when the update ends. The alert band then
 says how it ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `coprocessor updated to 0.18.0` | the new image runs and is kept |
-| `coprocessor update stopped: no answer -- the old image runs` | nothing answered for 4 s |
-| `coprocessor update stopped: refused, error 6 -- the old image runs` | the coprocessor refused a step; the error numbers are in [Link](Link.md#the-pages) |
-| `coprocessor update stopped: image check failed -- the old image runs` | the SHA-256 of the slot is not the image's |
-| `coprocessor update stopped: flash stayed busy -- the old image runs` | the store's gate stayed shut for 10 s |
-| `coprocessor update stopped: coprocessor restarted 3 times -- the old image runs` | three starts from block 0 |
-| `coprocessor update stopped: new image did not start -- the old image runs` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
-| `coprocessor takes no update over CAN -- load it once over USB` | a coprocessor without the update pages or without the partition table ([First run](FirstRun.md#the-coprocessors-partition-table)) |
-| `coprocessor's new image kept` | an image found on trial at link-up was bought |
+| `Coprocessor updated to 0.18.0.` | the new image runs and is kept |
+| `Coprocessor update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
+| `Coprocessor update stopped: refused, error 6. Previous firmware is running.` | the coprocessor refused a step; the error numbers are in [Link](Link.md#the-pages) |
+| `Coprocessor update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
+| `Coprocessor update stopped: flash memory stayed busy. Previous firmware is running.` | the store's gate stayed shut for 10 s |
+| `Coprocessor update stopped: coprocessor restarted 3 times. Previous firmware is running.` | three starts from block 0 |
+| `Coprocessor update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
+| `Coprocessor cannot update over CAN. Install firmware once via USB.` | a coprocessor without the update pages or without the partition table ([First run](FirstRun.md#the-coprocessors-partition-table)) |
+| `New coprocessor firmware kept.` | an image found on trial at link-up was bought |
 
 Power off during the update: the coprocessor starts its old image, and the
 next link-up offers the update again. The update writes the slot the
@@ -2408,11 +2413,11 @@ The card names the running version and the kept home network. Both the
 check and the download need:
 
 - a home network kept on FILES & UPDATE ([Home network](#home-network)).
-  Without one, the card says `No home network kept.` and
-  `Keep one on LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
+  Without one, the card says `No home network saved.` and
+  `Save a network under LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
 - the bench SAFE, the supply output off and no log run open. Otherwise the
-  key is grey and the card says `Wi-Fi needs SAFE, the supply off` and
-  `and no log run open.`;
+  key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
+  `and no open recording session.`;
 - no update of the coprocessor running and no panel install under way.
 
 The download needs, as an install does, no board drawing being fetched or
@@ -2429,7 +2434,7 @@ most, together.
 
 ![A check under way](img/updates-checking.png)
 
-The card shows the step (`Joining Workshop 2.4`, `Asking GitHub`) and the
+The card shows the step (`Connecting to Workshop 2.4`, `Checking GitHub.`) and the
 seconds left (`26 s left`). The result stays on the card until the next
 check:
 
@@ -2439,17 +2444,17 @@ check:
 | Card | Meaning |
 | --- | --- |
 | `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
-| `Up to date: this panel runs 0.19.0.` and `Newest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
-| `Join failed: password refused.`, `Join failed: network not found.`, `Join failed: no address in 15 s.`, `The home network went away.` | The join failed, as on FILES & UPDATE. |
-| `No answer within 30 s.` | The 30 s ran out. |
+| `Up to date. Panel version: 0.19.0.` and `Latest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
+| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on FILES & UPDATE. |
+| `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
-| `GitHub refused: HTTP 404.` | An answer other than a redirect. |
+| `GitHub rejected the request: HTTP 404.` | An answer other than a redirect. |
 | `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
-| `Wi-Fi went off: ARMED.`, `...: supply output on.`, `...: a log run opened.`, `...: STOP.` | The check ended for that. |
-| `Stopped: FILES & UPDATE took the radio.` | FILES & UPDATE opened. |
-| `Stopped: the coprocessor's update began.` | The coprocessor's update began. |
-| `Stopped: CANCEL.` | CANCEL. |
-| `Wi-Fi did not start.` | The radio did not come up. |
+| `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
+| `Stopped: FILES & UPDATE is using Wi-Fi.` | FILES & UPDATE opened. |
+| `Stopped: the coprocessor update has started.` | The coprocessor's update began. |
+| `Cancelled.` | CANCEL. |
+| `Wi-Fi could not start.` | The radio did not come up. |
 
 ![A check that found no answer](img/updates-failed.png)
 
@@ -2461,11 +2466,11 @@ equal and PATCH is higher.
 
 | Second line | Meaning |
 | --- | --- |
-| `No Location in the answer.` | The redirect carries no `Location`. |
-| `An address over its length bound.` | A `Location` longer than 69 bytes: the tag address and 18 bytes. |
-| `A byte outside printable ASCII.` | A space, a control character or a byte above 126. |
-| `An address in an unexpected place.` | Not `https://github.com/subtilitas/rcbench/releases/tag/...`. |
-| `The version text is out of form.` | The tag fails the rule above. |
+| `The response has no Location header.` | The redirect carries no `Location`. |
+| `The address is too long.` | A `Location` longer than 69 bytes: the tag address and 18 bytes. |
+| `A byte is outside printable ASCII.` | A space, a control character or a byte above 126. |
+| `The address is in an unexpected location.` | Not `https://github.com/subtilitas/rcbench/releases/tag/...`. |
+| `The version text has an invalid format.` | The tag fails the rule above. |
 
 ### The reminder
 
@@ -2486,7 +2491,7 @@ gone and the menu shows.
 
 | Control | Action |
 | --- | --- |
-| `IGNORE NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
+| `NOT NOW` | Closes the reminder until the next start of the panel. Leaving it by the HOME tag does the same. |
 | `NEVER REMIND ME` | Switches REMINDER AT START off and asks for the save, which happens at the next moment the settings may be written ([Keeping the values](#keeping-the-values)). SETUP > UPDATES switches it on again. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | The same hold as on UPDATES. |
 
@@ -2520,10 +2525,10 @@ nothing touches the flash.
 
 | Step | Shown while |
 | --- | --- |
-| `Joining Workshop 2.4` | the join and the address |
-| `Reading SHA256SUMS` | the first file |
-| `Downloading the image` | the image; the bar and `720896 of 1843200 bytes (39 %)` count it |
-| `Checking SHA-256 and the image` | the checks |
+| `Connecting to Workshop 2.4` | the join and the address |
+| `Reading SHA256SUMS.` | the first file |
+| `Downloading firmware.` | the image; the bar and `720896 of 1843200 bytes (39 %)` count it |
+| `Checking the SHA-256 checksum and firmware.` | the checks |
 
 CANCEL ends the download. The download also ends on STOP, on ARMED, on the
 supply output coming on, on a log run opening, on a board drawing being
@@ -2534,13 +2539,13 @@ goes back to UPDATES, or to the menu when the hold was the reminder's.
 
 | Line | Meaning |
 | --- | --- |
-| `SHA256SUMS not usable.` | `SHA256SUMS` missing (`HTTP status 404.`), over 4096 bytes, `A line out of form.`, `No line for the image.` or `The image on two lines.` |
-| `SHA-256 differs from SHA256SUMS.` | The image is not the one the release lists. |
-| `The image failed the panel's checks.` | One of the image checks refused it. |
-| `GitHub refused: HTTP 404.` | An answer to the image other than the file or a redirect. |
-| `Unexpected answer from GitHub.` | `More than 3 redirects.`, `A redirect to an unlisted host.`, `An address over its length bound.` (a `Location` over 2048 bytes), `No size announced.`, `An empty answer.`, `Larger than the panel takes.`, `Shorter than its announced size.`, `The image names another version.` |
-| `No memory for the image.` | PSRAM had no room for the announced size. |
-| `No answer within 30 s.`, `No answer within 180 s.` | The join's 30 s or the download's 180 s ran out. |
+| `Cannot use the SHA256SUMS file.` | `SHA256SUMS` missing (`HTTP status 404.`), over 4096 bytes, `A checksum line has an invalid format.`, `No checksum entry for this firmware.` or `Two checksum entries for this firmware.` |
+| `The SHA-256 checksum does not match SHA256SUMS.` | The image is not the one the release lists. |
+| `The firmware did not pass the panel's checks.` | One of the image checks refused it. |
+| `GitHub rejected the request: HTTP 404.` | An answer to the image other than the file or a redirect. |
+| `Unexpected answer from GitHub.` | `More than 3 redirects.`, `Redirect to a host that is not allowed.`, `The address is too long.` (a `Location` over 2048 bytes), `The response does not specify a size.`, `The response is empty.`, `The download is too large for the panel.`, `Received less data than expected.`, `The firmware file specifies a different version.` |
+| `Not enough memory for the firmware.` | PSRAM had no room for the announced size. |
+| `No response within 30 s.`, `No response within 180 s.` | The join's 30 s or the download's 180 s ran out. |
 
 Current limitations:
 
@@ -2589,7 +2594,7 @@ change while the bench is SAFE; one made while it is ARMED waits for the
 switch to SAFE. A coprocessor that links up is brought to the two settings before
 the bench drives it: with the bench already ARMED, the coprocessor is held
 SAFE until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
-band says `idle pulse must be below full pulse -- not sent`.
+band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
 
 An ESC whose throttle range was calibrated on a transmitter takes that
 transmitter's shortest pulse as zero. An Idle pulse above it reads to the ESC
@@ -2632,7 +2637,7 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SLICE OF GP13` | `GP28: PWM SLICE OF PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
+| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
 | `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
 The line stands under the protocol, in amber, until the next pick, the next
@@ -2710,7 +2715,7 @@ OFF is the first entry of the list and binds nothing: it takes 0 pins, and
 the count under it reads `0 OF 0 PINS`. With OFF picked, every bound pin
 shows the name of the protocol that holds it, so the whole binding is on one
 screen. No pin can be ticked or unticked: a tap on a pin does nothing, and
-the line under the list says `OFF SHOWS ALL, EDITS NOTHING`. Picking OFF
+the line under the list says `OFF: VIEW ALL, NO EDITING`. Picking OFF
 writes nothing and unbinds nothing.
 
 OFF stays picked across read-backs, repaints and a link that goes down and
@@ -2735,8 +2740,8 @@ results:
 | Read | The screen |
 | --- | --- |
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
-| a page did not read: no answer within 1000 ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `BINDING NOT READ - NO EDITS` |
-| both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `PAGES HOLD NO VALID BINDING` and the key `HOLD: UNBIND ALL PINS` |
+| a page did not read: no answer within 1000 ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
+| both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD: CLEAR ALL PIN ASSIGNMENTS` |
 | the coprocessor is a board this build has no pin map for | shows no pins |
 
 In the second and third state a tap on a pin does nothing here and on PICK
@@ -2750,7 +2755,7 @@ binding ends the state.
 ![The last binding read, after a read that failed](img/outputs-unread.png)
 
 Pages no binding describes do not become readable by reading them again.
-`HOLD: UNBIND ALL PINS`, held for 2 s, writes a binding with no pin; the
+`HOLD: CLEAR ALL PIN ASSIGNMENTS`, held for 2 s, writes a binding with no pin; the
 read-back then shows nothing bound and edits are taken again. It is the one
 write the screen sends in this state. A finger that leaves the key, a lift
 before 2 s, and leaving the screen abandon the hold.
@@ -2809,7 +2814,7 @@ the reason no key can be added, in the words of the Outputs screen:
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, which carries 8 channels on one pin, with 4 servo pins bound |
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
-| `OFF SHOWS ALL, EDITS NOTHING` | OFF is selected |
+| `OFF: VIEW ALL, NO EDITING` | OFF is selected |
 | `NOT READ` | the binding is not confirmed |
 
 Without the line a board drawn all grey reads as a fault.
@@ -2832,7 +2837,7 @@ Under SERVO PWM and MOTOR PWM a key the coprocessor refuses on a PWM slice
 is grey too, as on the Outputs screen: GP28 while the port holds GP13, and
 the partner of a pin bound as PWM, GP16 beside GP0. A tap on it changes
 nothing and puts the Outputs screen's line under the count:
-`GP28: PWM SLICE OF PROG PORT GP13`, `GP16: SAME PWM CHANNEL AS GP0`.
+`GP28: SHARES PWM SLICE WITH PROG PORT GP13`, `GP16: SAME PWM CHANNEL AS GP0`.
 
 ![GP13 held by the programming port](img/picker-prog.png)
 
@@ -2966,7 +2971,7 @@ confirmed](#a-binding-that-is-not-confirmed).
 Described on its own page: [Balancing](Balance.md).
 
 The BALANCE pane shows a fixed angle (265°) and two fixed readings (0.42 g
-vibration, 0.35 g mass to add) until a sensor is fitted. The MODELLED pill and
+vibration, 0.35 g mass to add) until a sensor is fitted. The SIMULATED pill and
 the words "Not measured." stand under the readings, 20 px high and 88 px wide.
 The TEST RIG and AIRCRAFT panes show placement guides and carry no mark.
 

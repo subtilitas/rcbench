@@ -1079,6 +1079,47 @@ TEST_CASE(the_hold_refuses_a_null_rather_than_following_it)
     CHECK(!ui_hold_left(NULL));
 }
 
+/* The lit pixels of rows @p y0 to @p y1 and columns @p x0 to @p x1. */
+static int ink(int y0, int y1, int x0, int x1)
+{
+    int n = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = x0; x < x1; ++x) {
+            n += (fb[(size_t)y * W + x] != 0) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/*
+ * A text wraps at the last space of a line, a word longer than a line is
+ * cut at the line's end, and measuring draws nothing: the count is the one
+ * the drawing takes.
+ */
+TEST_CASE(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws)
+{
+    canvas();
+    const gfx_rect_t line = gfx_rect_make(0, 0, 80, 18);   /* 10 cells */
+    CHECK_EQ(ui_text_wrap(NULL, line, 20, "", UI_FONT_LABEL, GFX_WHITE), 0);
+    CHECK_EQ(ui_text_wrap(NULL, line, 20, "   ", UI_FONT_LABEL, GFX_WHITE),
+             0);
+    CHECK_EQ(ui_text_wrap(NULL, line, 20, "ten cells!", UI_FONT_LABEL,
+                          GFX_WHITE), 1);
+    CHECK_EQ(ui_text_wrap(NULL, line, 20, "aaaa bbbb cccc", UI_FONT_LABEL,
+                          GFX_WHITE), 2);
+    CHECK_EQ(ui_text_wrap(NULL, line, 20, "abcdefghijklmnopqrstu",
+                          UI_FONT_LABEL, GFX_WHITE), 3);
+    CHECK_EQ(ink(0, H, 0, W), 0);
+
+    /* "aaaa bbbb" on the first line, "cccc" alone on the second. */
+    CHECK_EQ(ui_text_wrap(&cv, line, 20, "aaaa bbbb cccc", UI_FONT_LABEL,
+                          GFX_WHITE), 2);
+    CHECK(ink(0, 18, 40, 72) > 0);
+    CHECK(ink(20, 38, 0, 32) > 0);
+    CHECK_EQ(ink(20, 38, 32, W), 0);
+    CHECK_EQ(ink(40, H, 0, W), 0);
+}
+
 int main(void)
 {
     RUN(the_scale_ladder_has_its_fine_steps);
@@ -1118,5 +1159,6 @@ int main(void)
     RUN(a_state_that_goes_away_under_a_press_ends_the_gesture);
     RUN(the_hold_refuses_a_null_rather_than_following_it);
     RUN(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset);
+    RUN(a_wrapped_text_breaks_at_spaces_and_measures_what_it_draws);
     return test_summary("widgets");
 }

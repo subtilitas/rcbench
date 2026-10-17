@@ -113,6 +113,13 @@ typedef struct {
 #define UI_ALERT_H 34
 #define UI_ALERT_Y (480 - UI_ALERT_H)
 
+/**
+ * The rows the alert band gives @p text: 1 for a text of up to 94 cells,
+ * 2 when it breaks at a space onto a second row, more for a text the band
+ * cannot hold.  The band draws two rows of the 8x16 face, 16 px apart.
+ */
+int ui_router_alert_rows(const char *text);
+
 void ui_router_init(void);
 
 /** Switch screens.  Calls leave() on the old and enter() on the new. */
