@@ -298,8 +298,10 @@ static void cu_checked(void)
 }
 
 /* The update has ended: the link goes back to the poll, which finds the
- * coprocessor again by its identity. */
-static void cu_ended(void)
+ * coprocessor again by its identity.  A frame of its own: inlined, its
+ * alert buffers sit in cu_service()'s frame, above poll_far_end() on the
+ * control task's deepest chain. */
+static __attribute__((noinline)) void cu_ended(void)
 {
     if (s_cu.result == LINK_UPH_UPDATED) {
         ESP_LOGI(TAG, "coprocessor updated to %u.%u.%u",
