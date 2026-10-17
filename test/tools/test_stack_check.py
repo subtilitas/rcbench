@@ -182,3 +182,29 @@ def test_every_entry_into_a_cycle_takes_its_own_longest_way_round():
     assert g.depth(2)[0] == 10 + 20 + 500
     assert g.depth(4)[0] == 30 + 10 + 20 + 500
     assert g.depth(1)[0] == 1 + 30 + 10 + 20 + 500
+
+
+def longest_simple_chain(frames: dict, calls: dict, addr: int,
+                         on: frozenset = frozenset()) -> int:
+    """Every chain from @p addr with no function twice, tried one by one."""
+    if addr not in frames or addr in on:
+        return 0
+    on = on | {addr}
+    return frames[addr] + max((longest_simple_chain(frames, calls, c, on)
+                               for c in calls.get(addr, ())), default=0)
+
+
+@pytest.mark.parametrize("seed", range(200))
+def test_the_depth_is_the_longest_chain_with_no_function_twice(seed):
+    import random
+    rnd = random.Random(seed)
+    n = rnd.randint(2, 8)
+    frames = {a: rnd.choice((0, 16, 32, 48, 96, 400)) for a in range(n)}
+    calls = {a: [rnd.randrange(n + 1) for _ in range(rnd.randint(0, 3))]
+             for a in range(n)}
+    g = graph(frames, calls)
+    for a in range(n):
+        depth, chain = g.depth(a)
+        assert depth == longest_simple_chain(frames, calls, a), (seed, a)
+        assert sum(frame for frame, _, _ in chain) == depth
+        assert len({addr for _, _, addr in chain}) == len(chain)
