@@ -1966,7 +1966,7 @@ Two limits:
 
 ### APPLICATION: the rotary knob
 
-An AS5600 magnetic angle sensor on the panel's I2C terminal (I2C:
+An MT6701 magnetic angle sensor at 0x06 on the panel's I2C terminal (I2C:
 Inter-Integrated Circuit) turns the slider of the bench screen on top: the
 throttle on MOTOR & ESC, the horn on SERVO. Wiring:
 [Building](Building.md#rotary-knob-wiring). Other screens ignore it.
@@ -1989,9 +1989,10 @@ across a third of its travel from -travel to +travel.
   answering set a reference and move nothing, so a knob that comes back
   turned does not jump the slider.
 - The sensor is read every 10 ms, and every 100 ms while it does not answer.
-  A reading with no magnet detected, a magnet too weak or too strong, or a
-  magnitude of 0 counts as no answer. A step of more than 90 deg between two
-  readings counts as a glitch and is dropped.
+  A poll is two reads, 0x03 and then 0x04, each with a 5 ms bus timeout; a
+  NACK or a timeout on either counts as no answer. The sensor reports no
+  magnet status over I2C, so an answer is a reading. A step of more than
+  90 deg between two readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it
   is down, and for the whole frame in which it touched the control, also when
   it lifts in that frame. On SERVO the knob does not take the horn from a running or paused
@@ -2011,7 +2012,13 @@ across a third of its travel from -travel to +travel.
   MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
   kept either; the switch to SAFE returns the slider to 0 %, and the next turn after
   a switch to ARMED counts from there.
-- Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
+- The panel never puts the knob, or another device of the builder's, at an
+  address the board answers at on that bus: 0x14, 0x20 to 0x27, 0x30 to 0x3F
+  and 0x5D. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
+  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends one unanswered read
+  to 0x06 every 100 ms and changes nothing else.
+- The knob is not measured on hardware: its direction, its noise and its
+  behaviour with no magnet over it.
 
 ### INTERFACES: the current monitors
 

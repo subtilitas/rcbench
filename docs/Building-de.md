@@ -110,7 +110,7 @@ diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
 
 ## Verdrahtung des Drehknopfs
 
-Der Drehknopf ist ein magnetischer Winkelsensor AS5600 am I2C-Anschluss
+Der Drehknopf ist ein magnetischer Winkelsensor MT6701 am I2C-Anschluss
 (I2C: Inter-Integrated Circuit) des Panels, der 4-poligen PH2.0-Buchse des
 Waveshare ESP32-S3-Touch-LCD-7. Der Anschluss ist GPIO8 (SDA) und GPIO9 (SCL),
 der Bus von Touch-Controller und CH422G-Expander, über den Pegelumsetzer der
@@ -118,23 +118,51 @@ Platine. Pinbelegung aus dem Text des Platinenschaltplans, nicht gemessen:
 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Vor dem Anschließen mit einem Multimeter
 prüfen.
 
-| AS5600-Pin | Anschluss an |
-| --- | --- |
-| VDD3V3 und VDD5V | 3,3 V von I2C_VCC, beide Pins verbunden, was die 3,3-V-Versorgung des Datenblatts ist. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3; ein Breakout mit eigenem Regler nimmt seinen Versorgungspin von I2C_VCC mit 3,3 V |
-| GND | GND |
-| SDA, SCL | SDA, SCL |
-| DIR | GND oder VCC, nie offen. GND: Der Winkel steigt, wenn der Magnet von der Chipoberseite gesehen im Uhrzeigersinn dreht (Datenblatt; hier nicht geprüft). VCC kehrt es um |
-| PGO | GND |
-| OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
+Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
+Interface), MODE high. MODE low wählt die ABZ-Encoderausgänge, und der Sensor
+antwortet dann nicht über I2C. Eine EEPROM-Einstellung (EEPROM: Electrically
+Erasable Programmable Read-Only Memory) ist nicht nötig. Pins des MT6701CT im
+SOP-8-Gehäuse, aus dem
+[Datenblatt MagnTek MT6701, Version 1.9](https://atta.szlcsc.com/upload/public/pdf/source/20260616/FEB700C1922508565884FF0A90656B50.pdf)
+(2024-05), Abschnitt 1 und Abbildung 17:
 
-Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip. Der
-AS5600 meldet ein zu schwaches oder zu starkes Feld im STATUS-Register, und
-das Panel behandelt beides als keine Antwort. Der Sensor liest unter 0x36, was
-fest ist. Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der
-I/O-Expander CH422G an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F,
-darunter 0x36; ein AS5600 lässt sich an diesem Bus daher nicht lesen. Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet
-wird. [Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er
-tut.
+| MT6701-Pin | Anschluss an |
+| --- | --- |
+| 1 VDD | 3,3 V von I2C_VCC. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3 |
+| 2 MODE | VDD. Ein interner Pull-up von 200 kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
+| 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
+| 4 GND | GND |
+| 5 PUSH | nicht angeschlossen |
+| 6 A/SDA | SDA |
+| 7 B/SCL | SCL |
+| 8 Z/CSN | VDD, wie Abbildung 17 |
+
+Ein Breakout führt weniger Pins heraus. Dort prüfen, dass MODE an VDD liegt
+(ein Pin, eine Brücke oder ein Pull-up) und dass sein Versorgungspin 3,3 V
+nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7 kOhm an SDA und
+SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
+3,3 V.
+
+- Adresse: 0x06, die Voreinstellung des Datenblatts. Das Panel liest nur
+  0x06. Eine EEPROM-Programmierung kann die Adresse auf 0x46 legen (Version
+  1.9; Version 0.1 des Datenblatts nennt 0x26); ein so umgestellter Sensor
+  wird nicht gelesen.
+- Die Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F
+  und 0x5D (CH422G und GT911). Das Panel legt kein anderes Gerät auf diese
+  Adressen (`shared/bench/include/panel_i2c.h`). 0x06 liegt außerhalb.
+- Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
+  Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
+  Anstiegszeit am Anschluss ist nicht gemessen.
+- Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip.
+- Die I2C-Register tragen keinen Feldstatus: Die Bits für zu schwaches und
+  zu starkes Feld stehen nur im SSI-Rahmen. Ein Sensor ohne Magnet darüber
+  antwortet trotzdem mit einem Winkel, und das Panel nimmt ihn als Messwert.
+- Drehrichtung: Der Winkel des Datenblatts steigt gegen den Uhrzeigersinn,
+  von der Chipoberseite gesehen. Das Panel zählt umgekehrt, also erhöht eine
+  Drehung im Uhrzeigersinn, von oben gesehen, den Throttle.
+
+Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet wird.
+[Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er tut.
 
 ## Befehle
 

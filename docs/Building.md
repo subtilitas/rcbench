@@ -107,7 +107,7 @@ on the image.
 
 ## Rotary knob wiring
 
-The rotary knob is an AS5600 magnetic angle sensor on the panel's I2C
+The rotary knob is an MT6701 magnetic angle sensor on the panel's I2C
 (Inter-Integrated Circuit) terminal, the 4-pin PH2.0 connector on the
 Waveshare ESP32-S3-Touch-LCD-7. The terminal is GPIO8 (SDA) and GPIO9 (SCL),
 the bus the touch controller and the CH422G expander use, through the
@@ -115,23 +115,48 @@ board's level translator. Pin order from the board schematic's text, not
 measured: 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Check it with a meter before
 connecting.
 
-| AS5600 pin | Connect to |
-| --- | --- |
-| VDD3V3 and VDD5V | 3.3 V from I2C_VCC, both pins tied together, which is the datasheet's 3.3 V supply. The board's solder jumper feeds I2C_VCC from 3V3 as shipped; a breakout with its own regulator takes its supply pin from I2C_VCC at 3.3 V |
-| GND | GND |
-| SDA, SCL | SDA, SCL |
-| DIR | GND or VCC, never open. GND: the angle rises when the magnet turns clockwise seen from the chip's top (datasheet; not checked here). VCC reverses it |
-| PGO | GND |
-| OUT | not connected; the panel reads the angle over I2C |
+The sensor has to be in its I2C/SSI (synchronous serial interface) mode,
+MODE high. MODE low selects the ABZ encoder outputs, and the sensor then does
+not answer on I2C. No EEPROM (electrically erasable programmable read-only
+memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
+[MagnTek MT6701 datasheet, version 1.9](https://atta.szlcsc.com/upload/public/pdf/source/20260616/FEB700C1922508565884FF0A90656B50.pdf)
+(2024-05), section 1 and figure 17:
 
-The magnet is a diametrically magnetised disc centred over the chip. The
-AS5600 reports a field too weak or too strong in its STATUS register, and the
-panel treats either as no answer. The sensor reads at 0x36, which is fixed.
-On the Waveshare ESP32-S3 Touch LCD 7 the CH422G I/O expander answers at I2C
-addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes 0x36, so an AS5600
-cannot be read on that bus. The knob is off until SETUP, APPLICATION, Rotary
-knob is switched on. [Screens](Screens.md#application-the-rotary-knob)
-describes what it does.
+| MT6701 pin | Connect to |
+| --- | --- |
+| 1 VDD | 3.3 V from I2C_VCC. The datasheet's supply is 3.3 to 5.0 V. The board's solder jumper feeds I2C_VCC from 3V3 as shipped |
+| 2 MODE | VDD. An internal 200 kOhm pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
+| 3 OUT | not connected; the panel reads the angle over I2C |
+| 4 GND | GND |
+| 5 PUSH | not connected |
+| 6 A/SDA | SDA |
+| 7 B/SCL | SCL |
+| 8 Z/CSN | VDD, as figure 17 |
+
+A breakout board brings out fewer pins. On one, check that MODE is at VDD
+(a pin, a jumper or a pull-up) and that its supply pin takes 3.3 V. The
+datasheet's I2C circuit has 4.7 kOhm pull-ups on SDA and SCL to VDD; a
+breakout's own pull-ups go to its VDD, here 3.3 V.
+
+- Address: 0x06, the datasheet's default. The panel reads 0x06 only. EEPROM
+  programming can move the address to 0x46 (version 1.9; version 0.1 of the
+  datasheet gives 0x26); a sensor moved there is not read.
+- The board answers at 0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on this bus
+  (the CH422G and the GT911). The panel refuses to put any other device at
+  those addresses (`shared/bench/include/panel_i2c.h`). 0x06 is outside them.
+- Bus clock: 400 kHz. The datasheet allows an SCL (serial clock) period down
+  to 1 us and a rise and fall time of 150 ns at most. The rise time on the
+  terminal is not measured.
+- The magnet is a diametrically magnetised disc centred over the chip.
+- The I2C registers carry no field status: the magnet-too-weak and
+  too-strong bits are in the SSI frame only. A sensor with no magnet over it
+  still answers with an angle, and the panel takes it as a reading.
+- Direction: the datasheet's angle rises counter-clockwise seen from the
+  chip's top. The panel counts the other way, so a clockwise turn seen from
+  the top raises the throttle.
+
+The knob is off until SETUP, APPLICATION, Rotary knob is switched on.
+[Screens](Screens.md#application-the-rotary-knob) describes what it does.
 
 ## Commands
 
