@@ -13,6 +13,7 @@
 set(SRCS
     log_numbers.c
     log_csv.c
+    log_reader.c
     log_fields.c
     log_name.c
     kst_store.c

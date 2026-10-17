@@ -377,7 +377,7 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
-What lives in PSRAM instead: the zero-initialised data (.bss) of 16 objects,
+What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
 162,832 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
@@ -393,7 +393,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 16 objects,
 | `kst_card` | bench | 6,208 |
 | `esc_stick_panel` | ui | 6,096 |
 | `kst_panel` | ui | 5,185 |
-| `log_csv` | logfile | 4,905 |
+| `log_csv` | logfile | 4,904 |
 | `esc_registry` | esc | 4,228 |
 | `analyser_screen` | ui | 4,036 |
 | `wa_zip` | webaccess | 2,433 |
@@ -401,6 +401,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 16 objects,
 | `wifi_screen` | ui | 1,320 |
 | `ui_band` | ui | 1,040 |
 | `programmer_screen` | ui | 396 |
+| `log_reader` | logfile | 1 |
 
 An object moves only when its state
 
