@@ -14,7 +14,12 @@
  * log_viewer_page_t names, and count where it starts.  Memory is the page and
  * nothing more: one walk of the directory per page, whatever the card holds.
  * Ordering for display is a separate pass, run once the directory has been
- * read to its end.
+ * read to its end: directories first, then log_name_rank() order, so the
+ * rows of a page run the same way as the pages, newest run at the top.
+ *
+ * Paging needs log_name_rank() to be a strict order: zero only for the same
+ * file.  Two names that tie fall on the key's side of every page edge, and
+ * one of them is shown on no page.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -74,7 +79,8 @@ int log_select_page_end(log_select_page_t *sel, log_viewer_page_t *page);
 
 /**
  * Put @p count entries into the order the browse list draws them in:
- * directories first, then names, case-insensitively.
+ * directories first, then log_name_rank() order -- runs newest first, then
+ * the other names, case-insensitively.
  */
 void log_select_sort(log_viewer_file_t *set, int count);
 

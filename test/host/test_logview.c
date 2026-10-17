@@ -1141,8 +1141,8 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
      * The runs arrive oldest first, which is the order a FAT (File Allocation
      * Table) directory hands its entries back until a file is deleted and its
      * slot filled again.  Keeping the first LOG_VIEWER_MAX_FILES to arrive
-     * leaves every later run off the screen for good: the browse list has one
-     * page and no way to reach past it.
+     * would put the oldest runs on the first page and the newest on the
+     * last.
      */
     static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
     int held = 0;
@@ -1155,17 +1155,18 @@ TEST_CASE(a_card_of_999_runs_offers_the_newest_that_fit)
     }
     CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
 
+    /* Drawn newest at the top, the order the pages run in. */
     log_select_sort(set, held);
     for (int r = 0; r < held; ++r) {
         char want[LOG_RUN_NAME_MAX];
-        log_run_name(want, sizeof(want), LOG_RUN_LAST - held + 1 + r);
+        log_run_name(want, sizeof(want), LOG_RUN_LAST - r);
         if (strcmp(set[r].name, want) != 0) {
             T_FAIL("row %d: got \"%s\", want \"%s\"", r, set[r].name, want);
             break;
         }
     }
     /* The whole entry travels with the name it was kept by. */
-    CHECK_EQ(set[held - 1].size, (uint32_t)LOG_RUN_LAST);
+    CHECK_EQ(set[0].size, (uint32_t)LOG_RUN_LAST);
 }
 
 /*
@@ -1241,11 +1242,12 @@ TEST_CASE(a_full_list_keeps_runs_over_what_it_cannot_date)
     CHECK_EQ(log_select_keep(set, held, 4, &late), 4);
 
     log_select_sort(set, held);
-    /* Directories first, then names: the order the browse list draws. */
+    /* Directories first, then the newest run: the order the browse list
+     * draws. */
     CHECK_STR_EQ(set[0].name, "OLD");
-    CHECK_STR_EQ(set[1].name, "BENCH001.CSV");
+    CHECK_STR_EQ(set[1].name, "BENCH003.CSV");
     CHECK_STR_EQ(set[2].name, "BENCH002.CSV");
-    CHECK_STR_EQ(set[3].name, "BENCH003.CSV");
+    CHECK_STR_EQ(set[3].name, "BENCH001.CSV");
 
     /* A set with no room takes nothing and says so. */
     log_viewer_file_t one;
@@ -1290,7 +1292,7 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
      * The count is what the card holds, which is more than the lister wrote
      * into the array.  Rows come out of the array, so the list has to stop at
      * what is in it: scrolling to the bottom of a 200-run card lands on the
-     * newest run written, not on whatever follows the array.
+     * oldest run written, not on whatever follows the array.
      */
     fresh();
     g_card_runs = 200;
@@ -1306,9 +1308,10 @@ TEST_CASE(a_count_above_the_list_does_not_reach_past_it)
     draw();
 
     /* The top row is now six from the end of what was written, and the last
-     * run written is the newest one on the card. */
+     * run written is the oldest one on the page, the newest at the top. */
     char want[LOG_RUN_NAME_MAX];
-    log_run_name(want, sizeof(want), g_card_runs - BR_ROWS_SEEN + 1);
+    log_run_name(want, sizeof(want),
+                 g_card_runs - LOG_VIEWER_MAX_FILES + BR_ROWS_SEEN);
     tap(400, BR_ROW_Y(0));
     tap(400, BR_ROW_Y(0));
     CHECK_STR_EQ(log_viewer_open_name(), want);
@@ -1540,7 +1543,8 @@ static void prev_page(void)
     tap(PREV_X, PG_CY);
 }
 
-/* The tab reads "FILES a TO b OF n", or FILES with @p n 0. */
+/* The tab reads "FILES a TO b OF n", or FILES with @p n 0: the text the
+ * list draws, compared as text, and its width on the drawn frame. */
 static void check_tab(int a, int b, int n)
 {
     draw();
@@ -1550,6 +1554,9 @@ static void check_tab(int a, int b, int n)
     } else {
         snprintf(want, sizeof(want), "FILES %d TO %d OF %d", a, b, n);
     }
+    char got[64];
+    log_viewer_browse_title(got, sizeof(got));
+    CHECK_STR_EQ(got, want);
     if (browse_tab_width() != tab_width_for(want)) {
         T_FAIL("the tab is %d px wide, \"%s\" is %d", browse_tab_width(),
                want, tab_width_for(want));
@@ -1566,6 +1573,56 @@ static void check_newest(int run)
     CHECK_STR_EQ(log_viewer_open_name(), want);
     tap(BACK_X, IM_BTN_CY);
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+}
+
+/* The bar: x of its middle, and the track's top and height. */
+#define BAR_X     755
+#define BAR_TOP   (44 + 30)
+#define BAR_H     (6 * 44 - 4)
+
+/* Open the top row; its run number says where the list is scrolled. */
+static int top_row_run(void)
+{
+    tap(400, BR_ROW_Y(0));
+    tap(400, BR_ROW_Y(0));
+    const int run = log_run_number(log_viewer_open_name());
+    tap(BACK_X, IM_BTN_CY);
+    return run;
+}
+
+/* The thumb on the drawn frame: the first accent row down the bar's middle,
+ * and how many accent rows follow. */
+static int thumb_top(void)
+{
+    for (int y = BAR_TOP; y < BAR_TOP + BAR_H; ++y) {
+        if (gfx_pixel_get(&s_c, BAR_X, y) == UI_ACCENT
+            || gfx_pixel_get(&s_c, BAR_X, y) == UI_PANEL_HI) {
+            return y;
+        }
+    }
+    return -1;
+}
+
+static int thumb_len(void)
+{
+    const int y0 = thumb_top();
+    if (y0 < 0) {
+        return 0;
+    }
+    const gfx_color_t col = gfx_pixel_get(&s_c, BAR_X, y0);
+    int y = y0;
+    while (y < BAR_TOP + BAR_H && gfx_pixel_get(&s_c, BAR_X, y) == col) {
+        ++y;
+    }
+    return y - y0;
+}
+
+/* The page is drawn newest at the top: row 0 is the page's newest run, the
+ * one OPEN opens. */
+static void check_top(int run)
+{
+    check_newest(run);
+    CHECK_EQ(top_row_run(), run);
 }
 
 static void runs_card(int runs)
@@ -1722,11 +1779,15 @@ TEST_CASE(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card)
     next_page();
     next_page();
     check_tab(97, 144, 150);
-    check_newest(54);
+    check_top(54);
 
-    /* The same card read again: the same page. */
+    /* The same card read again: the same page, its first entry included. */
     tap(RESCAN_X, FOOT_CY);
     check_tab(97, 144, 150);
+    check_top(54);
+    tap(RESCAN_X, FOOT_CY);
+    check_tab(97, 144, 150);
+    check_top(54);
 
     /* Runs 1 to 60 gone behind the screen's back: the page starts where it
      * did, at run 54's place, and that is past the card's end now.  The
@@ -1735,15 +1796,55 @@ TEST_CASE(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card)
     g_card_runs = 90;
     tap(RESCAN_X, FOOT_CY);
     check_tab(49, 90, 90);
-    check_newest(102);
+    check_top(102);
 
     /* A run recorded while page 1 shows is on it after RESCAN. */
     runs_card(60);
     tap(RESCAN_X, FOOT_CY);
+    check_top(60);
     g_card_runs = 61;
     tap(RESCAN_X, FOOT_CY);
     check_tab(1, 48, 61);
-    check_newest(61);
+    check_top(61);
+}
+
+TEST_CASE(prev_reads_the_first_page_from_the_top_whatever_changed_ahead)
+{
+    /* Page 2 of 100, and a run recorded meanwhile: 49 entries stand ahead
+     * of the page now.  PREV shows the first page as the pages cut it,
+     * the new run at its top, not the 48 just ahead of the page. */
+    runs_card(100);
+    next_page();
+    check_tab(49, 96, 100);
+    g_card_runs = 101;
+    prev_page();
+    check_tab(1, 48, 101);
+    check_top(101);
+    /* And the page after it is cut from the top as well. */
+    next_page();
+    check_tab(49, 96, 101);
+    check_top(53);
+
+    /* Everything ahead of page 2 gone behind the screen's back: PREV has
+     * nothing before the key and shows the first page, not the last. */
+    runs_card(100);
+    next_page();
+    for (int r = 53; r <= 100; ++r) {
+        g_run_gone[r] = true;
+    }
+    prev_page();
+    check_tab(1, 48, 52);
+    check_top(52);
+
+    /* Some of it gone: fewer than a page ahead, read from the top. */
+    runs_card(100);
+    next_page();
+    for (int r = 60; r <= 100; ++r) {
+        g_run_gone[r] = true;
+    }
+    prev_page();
+    check_tab(1, 48, 59);
+    check_top(59);
 }
 
 TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
@@ -1781,50 +1882,51 @@ TEST_CASE(a_card_swapped_mid_page_opens_on_its_first_page)
 
 /* ---------------------------------------------------------- scroll bar --- */
 
-/* The bar: x of its middle, and the track's top and height. */
-#define BAR_X     755
-#define BAR_TOP   (44 + 30)
-#define BAR_H     (6 * 44 - 4)
-
-/* Open the top row; its run number says where the list is scrolled. */
-static int top_row_run(void)
-{
-    tap(400, BR_ROW_Y(0));
-    tap(400, BR_ROW_Y(0));
-    const int run = log_run_number(log_viewer_open_name());
-    tap(BACK_X, IM_BTN_CY);
-    return run;
-}
 
 TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
 {
-    /* 48 runs: rows are runs 1 to 48 top down, and 42 is the last scroll. */
+    /* 48 runs: rows are runs 48 to 1 top down, and 42 is the last scroll. */
     runs_card(48);
+    /* The thumb is the rows shown against the page: 260 * 6 / 48 = 32 px,
+     * drawn 2 px in from each end, at the top of the track. */
+    const int th = BAR_H * 6 / 48;
+    draw();
+    CHECK_EQ(thumb_top(), BAR_TOP + 2);
+    CHECK_EQ(thumb_len(), th - 4);
     /* A tap at the bottom of the track brings the thumb there. */
     tap(BAR_X, BAR_TOP + BAR_H - 2);
     draw();
-    CHECK_EQ(top_row_run(), 43);
+    CHECK_EQ(thumb_top(), BAR_TOP + BAR_H - th + 2);
+    CHECK_EQ(top_row_run(), 6);
     /* And at the top, back. */
     tap(BAR_X, BAR_TOP + 1);
-    CHECK_EQ(top_row_run(), 1);
+    CHECK_EQ(top_row_run(), 48);
+
+    /* A tap off the thumb brings the thumb's middle to the finger: 200 px
+     * down the track puts its top at 184 of 228 px of travel, scroll
+     * (184 * 42 + 114) / 228 = 34, and the top row is run 48 - 34. */
+    tap(BAR_X, BAR_TOP + 200);
+    draw();
+    CHECK_EQ(top_row_run(), 14);
+    CHECK_EQ(thumb_top(), BAR_TOP + (BAR_H - th) * 34 / 42 + 2);
+    tap(BAR_X, BAR_TOP + 1);
 
     /* Dragging the thumb (32 px at the top) by half the travel scrolls half
      * the page; past the track's end it stops at the end, and on a 49th
      * row there is nothing to scroll to. */
-    const int th = BAR_H * 6 / 48;
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + th / 2);
     send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
     draw();
     send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + th / 2 + (BAR_H - th) / 2);
-    CHECK_EQ(top_row_run(), 22);
+    CHECK_EQ(top_row_run(), 27);
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H / 2);
     send(TOUCH_EVENT_MOVE, BAR_X, 2000);
     send(TOUCH_EVENT_UP, BAR_X, 2000);
-    CHECK_EQ(top_row_run(), 43);
+    CHECK_EQ(top_row_run(), 6);
     send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + BAR_H - 1);
     send(TOUCH_EVENT_MOVE, BAR_X, -2000);
     send(TOUCH_EVENT_UP, BAR_X, -2000);
-    CHECK_EQ(top_row_run(), 1);
+    CHECK_EQ(top_row_run(), 48);
 
     /* A tap on the bar selects no row and opens nothing, and reads no
      * card. */
@@ -1834,19 +1936,26 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
     CHECK_EQ(g_list_calls, calls);
 
-    /* With every row showing there is nothing to scroll. */
+    /* With every row showing there is nothing to scroll: the thumb is the
+     * whole track, and a tap or a drag on it leaves the top row. */
     runs_card(4);
+    draw();
+    CHECK_EQ(thumb_len(), BAR_H - 4);
     tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(top_row_run(), 1);
+    CHECK_EQ(top_row_run(), 4);
+    send(TOUCH_EVENT_DOWN, BAR_X, BAR_TOP + 10);
+    send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + BAR_H);
+    send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + BAR_H);
+    CHECK_EQ(top_row_run(), 4);
 
     /* The bar scrolls within the page: at the bottom of page 2 of 97 the
      * last row is the oldest run on that page, and NEXT does not move. */
     runs_card(97);
     next_page();
     tap(BAR_X, BAR_TOP + 1);
-    CHECK_EQ(top_row_run(), 2);
+    CHECK_EQ(top_row_run(), 49);
     tap(BAR_X, BAR_TOP + BAR_H - 2);
-    CHECK_EQ(top_row_run(), 44);
+    CHECK_EQ(top_row_run(), 7);
     check_tab(49, 96, 97);
 
     /* A touch loss ends a drag: the next move belongs to no press. */
@@ -1855,7 +1964,7 @@ TEST_CASE(the_scroll_bar_jumps_drags_and_stays_on_its_page)
     screen()->cancel();
     send(TOUCH_EVENT_MOVE, BAR_X, BAR_TOP + BAR_H);
     send(TOUCH_EVENT_UP, BAR_X, BAR_TOP + BAR_H);
-    CHECK_EQ(top_row_run(), 1);
+    CHECK_EQ(top_row_run(), 48);
 }
 
 TEST_CASE(the_header_names_the_card_or_says_sd_card)
@@ -3101,6 +3210,7 @@ int main(void)
     RUN(files_the_bench_did_not_write_follow_the_runs_and_are_counted);
     RUN(deleting_the_last_pages_only_file_shows_the_page_before);
     RUN(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card);
+    RUN(prev_reads_the_first_page_from_the_top_whatever_changed_ahead);
     RUN(a_card_swapped_mid_page_opens_on_its_first_page);
     RUN(the_scroll_bar_jumps_drags_and_stays_on_its_page);
     RUN(the_header_names_the_card_or_says_sd_card);

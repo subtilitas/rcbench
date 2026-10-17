@@ -134,9 +134,11 @@ static int by_display_order(const void *a, const void *b)
     if (x->is_dir != y->is_dir) {
         return x->is_dir ? -1 : 1;
     }
-    /* Names on one volume are unique, so this order is total and the sort
+    /* The pages' own order, so a page reads on from the one before it:
+     * the newest run at the top.  Names on one volume are unique and the
+     * rank is zero only for one name, so the order is total and the sort
      * needs no tie-break to be repeatable. */
-    return log_name_case_cmp(x->name, y->name);
+    return log_name_rank(x->name, y->name);
 }
 
 void log_select_sort(log_viewer_file_t *set, int count)

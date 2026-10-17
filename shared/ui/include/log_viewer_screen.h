@@ -74,7 +74,8 @@ typedef struct {
 typedef struct {
     /**
      * Fill @p out with the page @p page asks for, at most @p max_entries
-     * entries in the order the browse list draws them, set @p page's ahead
+     * entries in the order the browse list draws them (log_select_sort():
+     * newest run at the top, as the pages run), set @p page's ahead
      * and held, and return how many entries the volume holds, or -1 when
      * there is no volume at all.
      *
@@ -131,6 +132,13 @@ const log_data_t *log_viewer_data(void);
  * plotted.
  */
 void log_viewer_window(int *first, int *count);
+
+/**
+ * The browse list's tab into @p out of @p n bytes: the page's place in the
+ * card, "FILES 49 TO 96 OF 121", on a card of more than one page, and
+ * "FILES" otherwise.  The list draws this text.
+ */
+void log_viewer_browse_title(char *out, size_t n);
 
 /** The colour series @p k is drawn in. */
 gfx_color_t log_viewer_series_color(int k);

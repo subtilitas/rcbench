@@ -28,12 +28,15 @@ The header names the card by its volume label; a card without one shows the name
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected file in the import view; grey with nothing selected |
 
-- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write. With more than 48 files the tab names the page's part of the card, `FILES 49 TO 96 OF 121`.
+- A page holds 48 entries; a card holds up to 999 runs. Pages run newest run first, then the files the bench did not write, and the rows of a page run the same way, the newest run at the top. With more than 48 files the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`.
 
-![The second page of a card of 121 files](view:logs-pages)
+![The fourth page of a full card](view:logs-pages)
+
+- Pages are cut from the top, 48 at a time. With fewer than 48 entries ahead of the page on screen, for example after a run was recorded, PREV shows the first page.
 
 - The scroll bar at the right edge, 8.1 mm wide, scrolls within the page: tap the track to jump, drag the thumb to scroll.
-- On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page. A card with another name opens on its first page.
+- On a page past the first, RESCAN reads from that page's first entry; when the card now holds fewer entries, it shows the last page.
+- A card put in while none is mounted is mounted by RESCAN and opens on its first page. A card swapped for another while one is mounted is not mounted again: the list shows the first card until the panel restarts.
 - Newest means the highest number in the name. The panel has no clock that survives a power cycle, so every file is dated 1980-01-01.
 - A run being written is not listed.
 - A row takes a tap. A drag of more than 8 px on the rows scrolls the list and selects nothing.

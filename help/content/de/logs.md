@@ -23,17 +23,20 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 | Taste | Was sie tut |
 |---|---|
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
-| ZURÜCK, WEITER | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
+| VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | WLAN | öffnet [Dateien und Update](wifi.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte Datei in der Importansicht; grau, solange nichts gewählt ist |
 
-- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 49 BIS 96 VON 121`.
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
 
-![Die zweite Seite einer Karte mit 121 Dateien](view:logs-pages)
+![Die vierte Seite einer vollen Karte](view:logs-pages)
+
+- Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
 
 - Der Rollbalken am rechten Rand, 8,1 mm breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
-- Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; hält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite. Eine Karte mit einem anderen Namen öffnet auf ihrer ersten Seite.
+- Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
+- Eine Karte, die eingesteckt wird, während keine eingebunden ist, bindet AKTUALISIEREN ein, und sie öffnet auf ihrer ersten Seite. Eine Karte, die gegen eine andere getauscht wird, während eine eingebunden ist, wird nicht neu eingebunden: die Liste zeigt die erste Karte, bis das Panel neu startet.
 - Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
 - Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste.
 - Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px auf den Zeilen scrollt die Liste und wählt nichts.

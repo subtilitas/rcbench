@@ -1611,42 +1611,44 @@ ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen Bericht mit.
 Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst
 bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe
 nach Nummer, die höchste zuerst, dann die Dateien, die der Prüfstand nicht
-geschrieben hat, nach Namen. Innerhalb einer Seite stehen die Zeilen nach
-Namen. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
+geschrieben hat, nach Namen. Die Zeilen einer Seite stehen in derselben
+Reihenfolge, der neueste Lauf oben. Was neu heißt, steht in der Nummer im Namen: die Panel-Platine hat
 keine Uhr, die einen Stromausfall übersteht, deshalb trägt jede Datei auf der
 Karte das Datum 1980-01-01.
 
-![Eine Karte mit 121 Dateien auf ihrer zweiten Seite](img/de/logs-pages.png)
+![Eine volle Karte mit 999 Läufen und einer anderen Datei auf ihrer vierten Seite](img/de/logs-pages.png)
 
-Mit mehr als 48 Dateien auf der Karte stehen `ZURÜCK` und `WEITER` in der
+Mit mehr als 48 Dateien auf der Karte stehen `VORIGE` und `NÄCHSTE` in der
 Kopfzeile, und der Reiter nennt den Teil der Karte, den die Seite zeigt,
-`DATEIEN 49 BIS 96 VON 121`, statt `DATEIEN`. `ZURÜCK` ist auf der ersten
-Seite grau, `WEITER` auf der letzten. Jede Seite ist ein Lesen des
-Wurzelverzeichnisses der Karte: der Durchlauf behält die 48 Einträge dieser
-Seite und zählt den Rest, sodass das Panel eine Seite im Speicher hält, was
-auch immer die Karte fasst. Das Lesen läuft auf der Task, die den Bildschirm
+`DATEIEN 145 BIS 192 VON 1000`, statt `DATEIEN`. `VORIGE` ist auf der ersten
+Seite grau, `NÄCHSTE` auf der letzten. Die Seiten werden von oben zu je 48
+geschnitten: stehen vor der gezeigten Seite weniger als 48 Einträge, etwa
+nachdem ein Lauf aufgezeichnet wurde, liest `VORIGE` die erste Seite von
+oben. Jede Seite liest das Wurzelverzeichnis der Karte einmal: der Durchlauf
+behält die 48 Einträge dieser Seite und zählt den Rest, sodass das Panel eine
+Seite im Speicher hält, unabhängig davon, wie viele Dateien die Karte
+enthält. Das Lesen läuft auf der Task, die den Bildschirm
 zeichnet und Berührungen verarbeitet. Bei 999 Läufen braucht die Auswahl auf
 einem Desktop-Rechner (x86-64, gemessen) etwa 2 ms; auf dem Panel sind 20 bis
 40 ms geschätzt, und das Verzeichnis sind 63 Sektoren zu 512 Bytes, etwa
 25 ms beim SPI-Takt (SPI: Serial Peripheral Interface) der Karte von 20 MHz,
 oder 125 Sektoren, etwa 50 ms, mit einem Bericht neben jedem Lauf. Beides ist
 auf dem Panel nicht gemessen. Die Größe jedes Eintrags kommt mit dem Lesen
-des Verzeichnisses, der Durchlauf ist also der ganze Aufwand.
+des Verzeichnisses, eine Seite kostet also einen Durchlauf und die Auswahl.
 
-Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei den
-Pixeln des Panels von 0,194 mm. Sein Griff steht für die sichtbaren Zeilen
-gegen die Zeilen der Seite, und er rollt innerhalb der Seite. Ein Tippen auf
+Der Rollbalken am rechten Rand der Liste ist 42 px breit, 8,1 mm bei
+0,194 mm Pixelabstand. Die Länge des Griffs entspricht dem Anteil der
+sichtbaren Zeilen an der Seite, und er rollt innerhalb der Seite. Ein Tippen auf
 die Bahn bringt die Mitte des Griffs unter den Finger; ein Finger auf dem
 Griff zieht ihn.
 
 `AKTUALISIEREN` liest die gezeigte Seite erneut. Auf der ersten Seite liest es
 von oben, sodass ein inzwischen aufgezeichneter Lauf erscheint. Auf einer
 anderen Seite liest es ab dem ersten Eintrag dieser Seite, auch wenn diese
-Datei inzwischen gelöscht ist. Hält die Karte weniger Einträge als bis zu
-dieser Stelle, zeigt `AKTUALISIEREN` die letzte Seite. Eine Karte mit einem
-anderen Namen in der Kopfzeile öffnet auf ihrer ersten Seite. Jedes Lesen
-wählt den neuesten Lauf der Seite aus und rollt ihn ins Bild, sodass
-`ÖFFNEN` den gerade aufgezeichneten Lauf öffnet. Eine Seite ohne nummerierten
+Datei inzwischen gelöscht ist. Enthält die Karte inzwischen weniger Einträge,
+zeigt `AKTUALISIEREN` die letzte Seite. Jedes Lesen wählt den neuesten Lauf
+der Seite aus, die oberste Zeile, sodass `ÖFFNEN` den gerade aufgezeichneten
+Lauf öffnet. Eine Seite ohne nummerierten
 Lauf wählt nichts aus. `LÖSCHEN` liest die Seite genauso erneut: das Löschen
 der einzigen Datei der letzten Seite zeigt die Seite davor.
 
@@ -1654,6 +1656,17 @@ Die Kopfzeile nennt die Karte mit ihrer Datenträgerbezeichnung, gelesen
 einmal beim Einbinden der Karte. Eine Karte ohne Bezeichnung zeigt den
 Produktnamen, den die Karte meldet (zum Beispiel `SC16G`), und eine Karte,
 die keines von beiden meldet, zeigt `SD-KARTE`.
+
+Eine Karte, die eingesteckt wird, während keine eingebunden ist, bindet
+`AKTUALISIEREN` ein, und sie öffnet auf ihrer ersten Seite. Eine Karte, die
+gegen eine andere getauscht wird, während eine eingebunden ist, wird nicht
+neu eingebunden: `AKTUALISIEREN` liest weiter den zuerst eingebundenen
+Datenträger, bis das Panel neu startet
+([STATUS](https://github.com/subtilitas/rcbench/blob/main/STATUS.md)). Der
+Betrachter liest von der ersten Seite, sobald sich der Name in der Kopfzeile
+ändert, und auf dem Panel ändert sich dieser Name nur mit einem neuen
+Einbinden. Zwei Karten mit derselben Bezeichnung oder zwei Karten eines
+Modells ohne Bezeichnung tragen denselben Namen.
 
 In der Grafik zoomen zwei Finger: Auseinanderziehen vergrößert,
 Zusammenziehen verkleinert, beide zusammen bewegt verschiebt den Ausschnitt.

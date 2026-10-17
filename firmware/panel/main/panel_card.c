@@ -300,7 +300,8 @@ static int card_list(log_viewer_file_t *out, int max_entries,
          */
         return -1;
     }
-    /* Held in rank order while the card is read, drawn in name order. */
+    /* Held in rank order while the card is read and drawn in it: the newest
+     * run at the top. */
     (void)log_select_page_end(&pick.sel, page);
     /*
      * Files, not entries.  The number goes to the tab that says how much of

@@ -9,18 +9,21 @@ history is in git.
 ### Added
 
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
-  runs first. PREV and NEXT in the header row turn the page; they show
-  only on a card of more than 48 files. One page costs one walk of the
-  card's root directory and holds 48 entries in memory. RESCAN reads the
-  page shown again, and a page emptied by DELETE or a shrunk card shows
-  the last page left.
+  runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
+  row turn the page; they show only on a card of more than 48 files.
+  Pages are cut from the top, so PREV with fewer than 48 entries ahead
+  of the page, after a run was recorded, shows the first page. One page
+  costs one walk of the card's root directory and holds 48 entries in
+  memory. RESCAN reads the page shown again, and a page emptied by DELETE
+  or a shrunk card shows the last page left.
 - The LOG VIEWER list has a scroll bar 42 px (8.1 mm) wide at the right
   edge. Its thumb is the rows shown out of the rows on the page; a touch
-  on the track moves the thumb there, a drag on it scrolls the page.
-- The LOG VIEWER header names the card by its FAT volume label, read once
-  per mount through `f_getlabel` (`CONFIG_FATFS_USE_LABEL=y`). A card
-  without a label shows the name the card reports of itself, as before.
-
+  on the track moves the thumb's middle there, a drag on it scrolls the
+  page.
+- The LOG VIEWER header names the card by its FAT (File Allocation Table)
+  volume label, read once per mount through `f_getlabel`
+  (`CONFIG_FATFS_USE_LABEL=y`). A card without a label shows the name the
+  card reports of itself, as before.
 - The SERVO screen runs the installed-limit search: START LIMIT RUN on the
   LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
   PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
@@ -114,11 +117,12 @@ history is in git.
 
 - The LOG VIEWER tab reads `FILES 1 TO 48 OF 200` (`DATEIEN 1 BIS 48 VON
   200`) on a card of more than one page.
+- The LOG VIEWER draws the rows of a page newest run first, the order the
+  pages run in, where it drew them by name.
 - The panel's directory walk reads a directory through FatFs `f_readdir`
   and takes each file's size from the directory entry. The 48 `stat`
   calls a LOG VIEWER listing made are gone; on a card of 999 runs each of
   them read up to 63 directory sectors.
-
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save

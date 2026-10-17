@@ -205,9 +205,11 @@ static const struct {
     { "SWEEP_920KV.CSV", 4096 },
 };
 
-/* logs-pages: a card of this many runs and one file the bench did not
- * write, more than a page of the list. */
-#define PAGES_RUNS 120
+/* logs-pages: a full card, every run and one file the bench did not
+ * write, so the tab carries the widest count it can: "FILES 145 TO 192 OF
+ * 1000" on the fourth page, which the fit check measures. */
+#define PAGES_RUNS LOG_RUN_LAST
+#define PAGES_NEXT 3
 static bool g_pages_card;
 
 static int fake_list(log_viewer_file_t *out, int max_entries,
@@ -248,10 +250,11 @@ static bool fake_open(const char *name, log_source_t *src, void *ctx)
     return true;
 }
 
+/* The card's volume label, what the panel's header shows. */
 static const char *fake_volume(void *ctx)
 {
     (void)ctx;
-    return "BENCH SD  14.7 GB FREE";
+    return "UNITEST";
 }
 
 /* Present so the browse view offers DELETE; the shots stop at the question,
@@ -3053,7 +3056,7 @@ int main(int argc, char **argv)
         /* logs-nocard: a lister that finds no volume. */
         log_viewer_set_io(strcmp(view, "logs-nocard") == 0 ? &k_io_nocard
                                                             : &k_io);
-        /* logs-pages: a card of more than one page, on its second. */
+        /* logs-pages: a full card, on its fourth page. */
         g_pages_card = (strcmp(view, "logs-pages") == 0);
         log_viewer_refresh();
         /*
@@ -3066,7 +3069,9 @@ int main(int argc, char **argv)
         if (strcmp(view, "logs-nocard") == 0) {
             /* The browser as it opens: nothing to select. */
         } else if (strcmp(view, "logs-pages") == 0) {
-            tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+            for (int p = 0; p < PAGES_NEXT; ++p) {
+                tap(BR_NEXT_CX, UI_BAND_H + BR_PG_CY_LOCAL);   /* NEXT */
+            }
         } else if (strcmp(view, "logs-delete") == 0) {
             tap(400, UI_BAND_H + 44 + 30 + 22);   /* select */
             tap(BR_DELETE_CX, UI_BAND_H + BR_FOOT_Y_LOCAL + 21);   /* DELETE */

@@ -429,12 +429,15 @@ static int list_once(log_page_dir_t dir, const char *key, int cap)
 /*
  * Read the page @p dir and @p key name, and select its newest run.
  *
- * A page that comes back empty from a card that is not, is a page past the
- * end: the card has fewer entries than when the key was read, after a
- * DELETE or behind the screen's back.  The last page is read instead, as
- * the pages from the first one cut it: what is left of the count after
- * whole pages of LOG_VIEWER_MAX_FILES.  A page before the first that comes
- * back short is the first page, read again so that it is full.
+ * Pages are cut from the top, LOG_VIEWER_MAX_FILES at a time.  A page
+ * before the key that starts less than a page from the top is the first
+ * page, read again from the top: a run recorded since the key was read
+ * stands ahead of it, and so does nothing when everything ahead of the key
+ * has gone.  A page that comes back empty from a card that is not, is a
+ * page past the end: the card has fewer entries than when the key was
+ * read, after a DELETE or behind the screen's back.  The last page is read
+ * instead, as the pages from the first one cut it: what is left of the
+ * count after whole pages.
  */
 static void read_page(log_page_dir_t dir, const char *key)
 {
@@ -456,12 +459,13 @@ static void read_page(log_page_dir_t dir, const char *key)
         return;
     }
     int n = list_once(dir, k, LOG_VIEWER_MAX_FILES);
-    if (n > 0 && s.n_files == 0) {
+    if (n > 0 && dir == LOG_PAGE_BEFORE && s.first < LOG_VIEWER_MAX_FILES
+        && (s.first > 0 || s.n_files < LOG_VIEWER_MAX_FILES)
+        && s.n_files < n) {
+        n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
+    } else if (n > 0 && s.n_files == 0) {
         n = list_once(LOG_PAGE_BEFORE, "",
                       n - (n - 1) / LOG_VIEWER_MAX_FILES * LOG_VIEWER_MAX_FILES);
-    } else if (n > 0 && dir == LOG_PAGE_BEFORE && s.first == 0
-               && s.n_files < LOG_VIEWER_MAX_FILES && s.n_files < n) {
-        n = list_once(LOG_PAGE_FROM, "", LOG_VIEWER_MAX_FILES);
     }
     if (n < 0) {
         s.n_files = 0;
@@ -529,6 +533,19 @@ static bool can_prev(void)
 static bool can_next(void)
 {
     return paged() && s.first + s.n_files < s.n_card;
+}
+
+void log_viewer_browse_title(char *out, size_t n)
+{
+    if (out == NULL || n == 0) {
+        return;
+    }
+    if (paged()) {
+        snprintf(out, n, TR(LOG_N_OF_FILES), s.first + 1,
+                 s.first + s.n_files, s.n_card);
+    } else {
+        snprintf(out, n, "%s", TR(LOG_FILES));
+    }
 }
 
 static void drop_data(void)
@@ -990,12 +1007,7 @@ static void render_browse(gfx_canvas_t *c)
          * leaves a terminated title.
          */
         char title[64];
-        if (paged()) {
-            snprintf(title, sizeof(title), TR(LOG_N_OF_FILES), s.first + 1,
-                     s.first + s.n_files, s.n_card);
-        } else {
-            snprintf(title, sizeof(title), "%s", TR(LOG_FILES));
-        }
+        log_viewer_browse_title(title, sizeof(title));
         ui_panel(c, BR_LIST, title, UI_ACCENT);
         render_bar(c);
         int y = BR_LIST.y + 30;

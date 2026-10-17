@@ -249,6 +249,12 @@ typedef struct {
     FILINFO info;
 } walk_buf_t;
 
+/* A file's size goes into a 32-bit field as it is.  FatFs sizes are 32-bit
+ * while exFAT is off (FF_FS_EXFAT 0 in ESP-IDF v5.4's ffconf.h); turning it
+ * on stops the build here rather than cutting sizes over 4 GiB. */
+_Static_assert(sizeof(FSIZE_t) <= sizeof(uint32_t),
+               "storage_entry_t.size holds a 32-bit FatFs size only");
+
 int storage_walk(const char *dir, const char *suffixes,
                  storage_visit_fn visit, void *ctx, storage_tick_fn tick)
 {
@@ -319,8 +325,7 @@ int storage_walk(const char *dir, const char *suffixes,
         storage_entry_t cur;
         memcpy(cur.name, e->fname, len + 1u);
         cur.is_dir = is_dir;
-        cur.size = is_dir ? 0u
-                 : (e->fsize > UINT32_MAX) ? UINT32_MAX : (uint32_t)e->fsize;
+        cur.size = is_dir ? 0u : (uint32_t)e->fsize;
         ++matched;
         if (visit != NULL) {
             visit(&cur, ctx);
