@@ -1658,7 +1658,7 @@ measured.
   are 4.13 or later, and no LEAVE is sent unless both are 4.15.
   Host tests: `test_kst_port`, `test_prog_port`, `test_kst_link`. No pulse
   of a port is measured.
-  ([Link](docs/Link.md#the-programming-port-for-kst-and-chaservo-servos))
+  ([Link](docs/LinkKST.md))
 - **A servo configuration as a text file.** `protocols/kst/kst_file.c`
   writes the 32 registers of a KST or Chaservo servo as 35 lines of ASCII
   (American Standard Code for Information Interchange) text, fewer than
