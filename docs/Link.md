@@ -494,7 +494,7 @@ which a set-up register is read a second time is 742.5 µs.
 number once and hands the windows over oldest first. It reads SERVO_WIN
 while the coprocessor's minor is 11 or more and SENSE enables the INA3221
 with CH1; with CH1 off, or on an older coprocessor, the windows are
-SERVO_SENSE's last one per read.
+SERVO_SENSE's last one per read (`shared/bench/sense_link_view.c`).
 
 - Every poll it reads registers 0 to 15, the header and the two newest
   windows.

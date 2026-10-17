@@ -251,7 +251,7 @@ extern "C" {
 #define SERVO_TEST_MOVES_MAX         1000u
 
 /* The output encoder's constants.  The tolerance is the coprocessor's
- * SENSE_ENC_STILL_TOL, test_servo_test holds the two equal. */
+ * SENSE_ENC_STILL_TOL, test_as5600 holds the two equal. */
 #define SERVO_TEST_ENC_TOL_COUNTS    12u
 /** The same in degrees: 12 counts of 360 / 4096. */
 #define SERVO_TEST_ENC_TOL_DEG       1.0547f

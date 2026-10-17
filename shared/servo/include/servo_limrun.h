@@ -393,7 +393,7 @@ typedef struct {
     uint8_t  map_reg;       /**< the register that write goes to          */
     uint8_t  map_tries;     /**< registers tried for it                   */
     /* By side. */
-    uint8_t  stage[2];      /**< servo_limrun.c's stage_t                 */
+    uint8_t  stage[2];      /**< servo_limrun_int.h's stage_t             */
     uint16_t v0[2];         /**< the register's value at the read         */
     uint16_t v1[2];         /**< the overset; 0 where it is left out      */
     uint16_t v2[2];         /**< the final value, once known              */

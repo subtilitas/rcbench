@@ -15,6 +15,7 @@ set(SRCS
     supply.c
     supply_link.c
     sense_link.c
+    sense_link_view.c
     servo_source.c
     tone_link.c
     kst_link.c

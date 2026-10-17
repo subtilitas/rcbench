@@ -1160,8 +1160,8 @@ None of these is done.
 `test_prog_link` runs the panel's side of the target and of the port's
 pulse switch: a port without a pin, a target that waits for a bench at
 rest, a coprocessor that starts again, and a programmer that has the port
-for each of the 16 pairs of page and wanted values. `test_settings` runs
-a held setting against every call that changes one, and `test_servo` the
+for each of the 16 pairs of page and wanted values. `test_settings_screen`
+runs a held setting against every call that changes one, and `test_servo` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
 `test_kst_panel` the overlay, both against the coprocessor's port, a supply

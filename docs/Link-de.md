@@ -540,7 +540,8 @@ ein zweites Mal gelesen wird, hat 742,5 µs.
 Fensternummer von CH1 einmal und gibt die Fenster weiter, das älteste
 zuerst. Es liest SERVO_WIN, solange die Minor des Koprozessors 11 oder mehr
 ist und SENSE den INA3221 mit CH1 freigibt; ohne CH1 oder an einem älteren
-Koprozessor sind die Fenster die von SERVO_SENSE, das letzte je Lesen.
+Koprozessor sind die Fenster die von SERVO_SENSE, das letzte je Lesen
+(`shared/bench/sense_link_view.c`).
 
 - Bei jedem Poll liest es die Register 0 bis 15, den Kopf und die zwei
   neuesten Fenster.

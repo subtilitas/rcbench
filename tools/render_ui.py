@@ -43,6 +43,7 @@ STRICT = ["-Wall", "-Wextra", "-Werror", "-Wshadow", "-Wconversion",
 SOURCES = [
     "test/host/render_screen.c",
     "shared/gfx/gfx.c",
+    "shared/gfx/gfx_text.c",
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_font8x16.c",
     "shared/gfx/gfx_font16x28.c",
@@ -104,8 +105,12 @@ SOURCES = [
     # ESC STICK class lists and runs.
     "shared/esc/esc_profiles_gen.c",
     "shared/esc/esc_json.c",
+    "shared/esc/esc_json_lex.c",
     "shared/esc/esc_registry.c",
     "shared/esc/esc_stick.c",
+    "shared/esc/esc_stick_rules.c",
+    "shared/esc/esc_det.c",
+    "shared/esc/esc_stick_read.c",
     "shared/esc/esc_sim.c",
     # The board drawing the coprocessor serves: generated data, so the
     # screenshot is the drawing a bench shows.
@@ -116,6 +121,7 @@ SOURCES = [
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
     "shared/logfile/log_csv.c",
+    "shared/logfile/log_reader.c",
     "shared/logfile/log_fields.c",
     "shared/logfile/log_name.c",
     "shared/bench/bench_state.c",
@@ -129,6 +135,7 @@ SOURCES = [
     "shared/servo/servo_report.c",
     "shared/servo/servo_limit.c",
     "shared/servo/servo_limrun.c",
+    "shared/servo/servo_limrun_report.c",
     "protocols/sbus/sbus.c",
     "protocols/dshot/dshot_telem.c",
     "shared/outputs/outputs.c",
