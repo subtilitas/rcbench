@@ -196,18 +196,51 @@ def longest_simple_chain(frames: dict, calls: dict, addr: int,
 
 @pytest.mark.parametrize("seed", range(200))
 def test_the_depth_is_the_longest_chain_with_no_function_twice(seed):
+    """Random graphs of 2 to 12 functions, some calling themselves, some
+    calling addresses where no function is, as a call into ROM is.  Every
+    root is asked in a shuffled order of one graph, so the depths kept for
+    one root serve the next."""
     import random
     rnd = random.Random(seed)
-    n = rnd.randint(2, 8)
+    n = rnd.randint(2, 12)
     frames = {a: rnd.choice((0, 16, 32, 48, 96, 400)) for a in range(n)}
-    calls = {a: [rnd.randrange(n + 1) for _ in range(rnd.randint(0, 3))]
+    calls = {a: [rnd.randrange(n + 3) for _ in range(rnd.randint(0, 3))]
              for a in range(n)}
-    g = graph(frames, calls)
     for a in range(n):
+        if rnd.random() < 0.2:
+            calls[a].append(a)
+    g = graph(frames, calls)
+    roots = list(range(n))
+    rnd.shuffle(roots)
+    for a in roots:
         depth, chain = g.depth(a)
         assert depth == longest_simple_chain(frames, calls, a), (seed, a)
-        assert sum(frame for frame, _, _ in chain) == depth
+        assert chain[0][2] == a
         assert len({addr for _, _, addr in chain}) == len(chain)
+        for (_, _, here), (_, _, there) in zip(chain, chain[1:],
+                                                  strict=False):
+            assert there in calls[here], (seed, here, there)
+        below = 0
+        for frame, total, addr in reversed(chain):
+            assert frame == frames[addr]
+            below += frame
+            assert total == below, (seed, addr)
+        assert below == depth
+
+
+def test_a_search_through_a_dense_cycle_fails_and_names_it():
+    """12 functions that all call each other: more ways through than the
+    cap allows.  The check fails with the group's size and its functions,
+    and does not run on for hours."""
+    frames = {a: 16 for a in range(12)}
+    calls = {a: [b for b in range(12) if b != a] for a in range(12)}
+    g = graph(frames, calls)
+    with pytest.raises(SystemExit) as e:
+        g.depth(0)
+    msg = str(e.value)
+    assert "a cycle of 12 functions" in msg
+    assert f"passed {sc.Graph.VISIT_CAP} visits from f0" in msg
+    assert ", ".join(sorted(f"f{a}" for a in range(12))) in msg
 
 
 OUTPUTS = sc.ROOT / "shared" / "outputs"
