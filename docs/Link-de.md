@@ -1115,7 +1115,7 @@ Raten laufen. Die Regeln, die einen Slice bei einer Rate halten:
 Die Regeln sind `servo_page_write()` in `shared/outputs/servo_page.c` und
 `prog_port_write()` in `shared/outputs/prog_port.c`; der Koprozessor bindet
 die Raten in `ports_apply()` und `target_sync()` in
-`firmware/iomcu/src/main.c`.
+`firmware/iomcu/src/iomcu_pages.c`.
 
 | Panel | Koprozessor | Verhalten |
 | --- | --- | --- |

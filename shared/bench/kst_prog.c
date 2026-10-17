@@ -7,27 +7,7 @@
 
 #include <string.h>
 
-#include "link_crc.h"
-
-/* What is awaited. */
-enum {
-    W_NONE = 0,
-    W_SAVE,      /* the servo's file, before the first write      */
-    W_FILE,      /* the journal's file, before the request goes   */
-    W_ANSWER,    /* the control task's answer to the command      */
-    W_OUTCOME,   /* the operation's outcome                       */
-};
-
-/* What a write of the file is for. */
-enum {
-    FILE_NONE = 0,
-    FILE_KEEP,     /* the state changed; nobody waits            */
-    FILE_JOURNAL,  /* a write to the servo waits                 */
-};
-
-/* The text written, and the version before it, which has no pin line. */
-static const char k_head[] = "RCBENCH KST 2\n";
-static const char k_head_1[] = "RCBENCH KST 1\n";
+#include "kst_prog_int.h"
 
 /* ----------------------------------------------------------------- helpers */
 
@@ -53,7 +33,7 @@ unsigned kst_prog_journal_arg(const kst_prog_t *p)
     return arg;
 }
 
-static bool same(const kst_image_t *a, const kst_image_t *b)
+bool kst_prog_same(const kst_image_t *a, const kst_image_t *b)
 {
     return memcmp(a->r, b->r, sizeof(a->r)) == 0;
 }
@@ -64,7 +44,7 @@ static bool is_write(unsigned op)
         || op == LINK_KST_OP_RELEASE;
 }
 
-static unsigned lowest(uint64_t set)
+unsigned kst_prog_lowest(uint64_t set)
 {
     unsigned n = 0;
 
@@ -74,7 +54,7 @@ static unsigned lowest(uint64_t set)
     return n;
 }
 
-static unsigned ones(uint64_t set)
+unsigned kst_prog_ones(uint64_t set)
 {
     unsigned n = 0;
 
@@ -116,8 +96,8 @@ static kst_prog_level_t level_of(unsigned id)
     }
 }
 
-static kst_prog_msg_id_t say_reg(kst_prog_t *p, unsigned id, unsigned arg,
-                                 unsigned reg)
+kst_prog_msg_id_t kst_prog_say_reg(kst_prog_t *p, unsigned id, unsigned arg,
+                                   unsigned reg)
 {
     p->msg.id = (uint8_t)id;
     p->msg.level = (uint8_t)level_of(id);
@@ -127,9 +107,9 @@ static kst_prog_msg_id_t say_reg(kst_prog_t *p, unsigned id, unsigned arg,
     return (kst_prog_msg_id_t)id;
 }
 
-static kst_prog_msg_id_t say(kst_prog_t *p, unsigned id, unsigned arg)
+kst_prog_msg_id_t kst_prog_say(kst_prog_t *p, unsigned id, unsigned arg)
 {
-    return say_reg(p, id, arg, 0xFFu);
+    return kst_prog_say_reg(p, id, arg, 0xFFu);
 }
 
 /* The last message no longer describes what is shown: an edit was taken,
@@ -198,7 +178,7 @@ static void session_gone(kst_prog_t *p)
 
 /* -------------------------------------------------------------- the fields */
 
-static bool editable(kst_field_id_t id)
+bool kst_prog_field_editable(kst_field_id_t id)
 {
     const kst_field_t *f = kst_field(id);
 
@@ -206,7 +186,7 @@ static bool editable(kst_field_id_t id)
         && id != KST_F_DUTY_COPY;
 }
 
-static kst_field_set_t differ(const kst_image_t *a, const kst_image_t *b)
+kst_field_set_t kst_prog_differ(const kst_image_t *a, const kst_image_t *b)
 {
     kst_field_set_t set = 0;
 
@@ -222,7 +202,7 @@ static kst_field_set_t differ(const kst_image_t *a, const kst_image_t *b)
 
 /* The hard rules @p target breaks as an edit of the servo, beyond those the
  * servo's own image breaks already. */
-static kst_rules_t hard_new(const kst_prog_t *p, const kst_image_t *target)
+kst_rules_t kst_prog_hard_new(const kst_prog_t *p, const kst_image_t *target)
 {
     const kst_rules_t was = kst_limits_edit(&p->servo, &p->servo, 0, NULL);
 
@@ -297,8 +277,8 @@ static uint16_t confirmed(const kst_prog_t *p, kst_field_id_t id)
  * field is at fault for that the step moves further from the base's value
  * than the value confirmed.
  */
-static kst_rules_t soft_asks(const kst_prog_t *p, const kst_image_t *from,
-                             const kst_image_t *target)
+kst_rules_t kst_prog_soft_asks(const kst_prog_t *p, const kst_image_t *from,
+                               const kst_image_t *target)
 {
     const kst_image_t *base = soft_base(p);
     kst_rules_t ask = soft_of(p, target) & ~soft_of(p, from);
@@ -307,7 +287,7 @@ static kst_rules_t soft_asks(const kst_prog_t *p, const kst_image_t *from,
         const kst_field_id_t id = (kst_field_id_t)n;
         const uint16_t raw = kst_field_get(target, id);
 
-        if (editable(id) && raw != kst_field_get(from, id)
+        if (kst_prog_field_editable(id) && raw != kst_field_get(from, id)
             && further(raw, confirmed(p, id), kst_field_get(base, id))) {
             ask |= soft_by(p, target, id);
         }
@@ -322,7 +302,7 @@ static void confirm(kst_prog_t *p, const kst_image_t *from,
     for (unsigned n = 0; n < KST_F_COUNT; ++n) {
         const kst_field_id_t id = (kst_field_id_t)n;
 
-        if (editable(id)
+        if (kst_prog_field_editable(id)
             && kst_field_get(img, id) != kst_field_get(from, id)) {
             p->conf_raw[n] = kst_field_get(img, id);
             p->conf_set |= KST_FIELD_BIT(n);
@@ -346,7 +326,7 @@ kst_field_set_t kst_prog_soft_fields(const kst_prog_t *p,
     for (unsigned n = 0; n < KST_F_COUNT; ++n) {
         const kst_field_id_t id = (kst_field_id_t)n;
 
-        if (editable(id)
+        if (kst_prog_field_editable(id)
             && kst_field_get(img, id) != kst_field_get(&p->servo, id)
             && soft_by(p, img, id) != 0u) {
             set |= KST_FIELD_BIT(n);
@@ -359,12 +339,13 @@ static bool raw_taken(const kst_prog_t *p, kst_field_id_t id, uint16_t raw)
 {
     kst_image_t trial = p->draft;
 
-    return kst_field_edit(&trial, id, raw) && hard_new(p, &trial) == 0u;
+    return kst_field_edit(&trial, id, raw)
+        && kst_prog_hard_new(p, &trial) == 0u;
 }
 
 /* ------------------------------------------------------------- the requests */
 
-static void send(kst_prog_t *p, const kst_link_request_t *req)
+void kst_prog_send(kst_prog_t *p, const kst_link_request_t *req)
 {
     if (++p->next_id == 0u) {
         p->next_id = 1u;
@@ -406,7 +387,7 @@ static bool waits_unsent(const kst_prog_t *p)
         || (p->wait == W_ANSWER && !p->cmd_out);
 }
 
-static void card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
+void kst_prog_card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
 {
     if (++p->card_id == 0u) {
         p->card_id = 1u;
@@ -422,7 +403,7 @@ static void card_ask(kst_prog_t *p, kst_prog_card_op_t op, const char *name)
 
 /* The write that is held: the journal, its file when a card takes one, and
  * then the request. */
-static void write_go(kst_prog_t *p)
+void kst_prog_write_go(kst_prog_t *p)
 {
     const bool had_record = p->journal;
 
@@ -465,7 +446,7 @@ static void write_go(kst_prog_t *p)
         p->file_stale = p->file_busy;
         file_want(p, FILE_JOURNAL);
     } else {
-        send(p, &p->held);
+        kst_prog_send(p, &p->held);
     }
 }
 
@@ -483,7 +464,7 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
 
     /* What the servo may hold other than its backup once the command is
      * taken: a write the card keeps from starting changes no field. */
-    p->held_wrote = p->have_servo ? differ(&p->servo, target)
+    p->held_wrote = p->have_servo ? kst_prog_differ(&p->servo, target)
                                   : ~(kst_field_set_t)0;
     p->held = *req;
     p->held_target = *target;
@@ -494,9 +475,9 @@ static void send_write(kst_prog_t *p, const kst_link_request_t *req,
         p->wait = W_SAVE;
         p->wait_ms = p->f.now_ms;
         p->card_auto = true;
-        card_ask(p, KST_PROG_CARD_SAVE, NULL);
+        kst_prog_card_ask(p, KST_PROG_CARD_SAVE, NULL);
     } else {
-        write_go(p);
+        kst_prog_write_go(p);
     }
 }
 
@@ -568,7 +549,7 @@ static void adopt(kst_prog_t *p)
     p->conf_set = 0;
     p->fp_ok = kst_fingerprint(&p->servo, NULL)
             && (p->f.rd.flags & LINK_KS_F_FP_OK) != 0u;
-    if ((had && !same(&was, &p->servo)) || !p->fp_ok) {
+    if ((had && !kst_prog_same(&was, &p->servo)) || !p->fp_ok) {
         /* Another servo, or one that is not written to. */
         p->write_enabled = false;
     }
@@ -576,8 +557,8 @@ static void adopt(kst_prog_t *p)
      * differs only where a write of the session may have changed it: a
      * write that ended in doubt, read afterwards, is no other servo. */
     other = had && (p->wrote_known
-                        ? (differ(&was, &p->servo) & ~p->wrote) != 0u
-                        : !same(&was, &p->servo));
+                        ? (kst_prog_differ(&was, &p->servo) & ~p->wrote) != 0u
+                        : !kst_prog_same(&was, &p->servo));
     if (other) {
         p->backed_up = false;
         p->no_file = false;
@@ -640,10 +621,10 @@ static kst_prog_msg_id_t journal_asks(const kst_prog_t *p)
     if (!p->journal || p->journal_other || !p->have_servo) {
         return KST_PROG_MSG_NONE;
     }
-    if (same(&p->servo, &p->journal_img)) {
+    if (kst_prog_same(&p->servo, &p->journal_img)) {
         return KST_PROG_MSG_JOURNAL_SAME;
     }
-    if (same(&p->servo, &p->journal_target)) {
+    if (kst_prog_same(&p->servo, &p->journal_target)) {
         return KST_PROG_MSG_JOURNAL_DONE;
     }
     return KST_PROG_MSG_NONE;
@@ -659,7 +640,7 @@ kst_prog_msg_id_t kst_prog_journal_asks(const kst_prog_t *p)
  * Another servo's record stands, and nothing goes to this servo until the
  * record is discarded.
  */
-static bool journal_classify(kst_prog_t *p)
+bool kst_prog_journal_classify(kst_prog_t *p)
 {
     p->journal_other = p->journal && p->have_servo && !journal_fits(p);
     if (p->journal_other) {
@@ -672,31 +653,32 @@ static bool journal_classify(kst_prog_t *p)
 static void read_done(kst_prog_t *p)
 {
     if (!p->f.have_image) {
-        (void)say(p, KST_PROG_MSG_SES + KST_SES_ERR_READ, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_SES + KST_SES_ERR_READ, 0);
         return;
     }
     adopt(p);
-    if (journal_classify(p)) {
-        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
+    if (kst_prog_journal_classify(p)) {
+        (void)kst_prog_say(p, KST_PROG_MSG_JOURNAL_OTHER,
+                           kst_prog_journal_arg(p));
     } else if (kst_prog_backup_other(p)) {
         /* Another servo than the session began with: its backup is that
          * servo's and is not restored to this one. */
-        (void)say(p, KST_PROG_MSG_BACKUP_OTHER, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_BACKUP_OTHER, 0);
     } else if (journal_asks(p) != KST_PROG_MSG_NONE) {
         /* Nothing is left of the write on this servo, and the record is
          * kept: the question stands until it is discarded. */
         p->journal_open = false;
         p->write_enabled = false;
-        (void)say(p, journal_asks(p), kst_prog_journal_arg(p));
+        (void)kst_prog_say(p, journal_asks(p), kst_prog_journal_arg(p));
     } else if (p->journal && p->journal_open) {
         p->journal_open = false;
-        (void)say(p, KST_PROG_MSG_JOURNAL_DIFF, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_JOURNAL_DIFF, 0);
     } else if ((p->f.rd.flags & LINK_KS_F_LOCKED) != 0u) {
         /* Read, and still the session's restore is all that is taken. */
-        (void)say(p, KST_PROG_MSG_SES + KST_SES_ERR_LOCKED, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_SES + KST_SES_ERR_LOCKED, 0);
     } else {
-        (void)say(p, p->fp_ok ? KST_PROG_MSG_READ : KST_PROG_MSG_READ_ONLY,
-                  0);
+        (void)kst_prog_say(p, p->fp_ok ? KST_PROG_MSG_READ
+                                       : KST_PROG_MSG_READ_ONLY, 0);
     }
 }
 
@@ -713,7 +695,7 @@ static void done_ok(kst_prog_t *p, unsigned op)
             const kst_link_request_t r = request(p, LINK_KST_OP_READ_ALL);
 
             p->chain_read = false;
-            send(p, &r);
+            kst_prog_send(p, &r);
         }
         break;
     case LINK_KST_OP_READ_ALL:
@@ -740,33 +722,33 @@ static void done_ok(kst_prog_t *p, unsigned op)
              * with no servo read: it is another servo's and stands, or it
              * is this servo's and the image read says what is left of
              * it. */
-            if (p->journal && !journal_classify(p)) {
+            if (p->journal && !kst_prog_journal_classify(p)) {
                 p->journal_open = false;
             }
         } else {
             doubt(p);
         }
         if (op == LINK_KST_OP_RELEASE) {
-            (void)say(p, KST_PROG_MSG_RELEASED, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_RELEASED, 0);
         } else if (op == LINK_KST_OP_RESTORE
                    || p->restoring != KST_PROG_FROM_NONE) {
-            (void)say(p, KST_PROG_MSG_RESTORED, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_RESTORED, 0);
         } else {
-            (void)say(p, KST_PROG_MSG_WRITTEN, p->writes);
+            (void)kst_prog_say(p, KST_PROG_MSG_WRITTEN, p->writes);
         }
         break;
     case LINK_KST_OP_VERIFY:
-        (void)say(p, KST_PROG_MSG_VERIFIED, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_VERIFIED, 0);
         break;
     case LINK_KST_OP_LEAVE:
         session_gone(p);
-        (void)say(p, KST_PROG_MSG_LEFT, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_LEFT, 0);
         break;
     case LINK_KST_OP_POWER_CYCLED:
         /* The exit where LEAVE is not taken: no wait was applied. */
         session_gone(p);
-        (void)say(p, p->leave_doubt ? KST_PROG_MSG_LEFT_DOUBT
-                                    : KST_PROG_MSG_LEFT_NO_WAIT, 0);
+        (void)kst_prog_say(p, p->leave_doubt ? KST_PROG_MSG_LEFT_DOUBT
+                                       : KST_PROG_MSG_LEFT_NO_WAIT, 0);
         break;
     default:
         break;
@@ -873,7 +855,7 @@ static bool write_failed(kst_prog_t *p, const kst_link_outcome_t *o)
              * card too. */
             p->journal_open = false;
             if (p->held_over
-                && !same(&p->journal_target, &p->held_before)) {
+                && !kst_prog_same(&p->journal_target, &p->held_before)) {
                 p->journal_target = p->held_before;
                 file_want(p, FILE_KEEP);
             }
@@ -909,7 +891,8 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
         if (p->journal && p->journal_open
             && (o->kind == KST_LINK_OUT_NO_ANSWER
                 || o->kind == KST_LINK_OUT_RESTARTED)) {
-            (void)say(p, KST_PROG_MSG_JOURNAL, kst_prog_journal_arg(p));
+            (void)kst_prog_say(p, KST_PROG_MSG_JOURNAL,
+                               kst_prog_journal_arg(p));
             said = true;
         }
     }
@@ -943,11 +926,12 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
             /* The wait was cut.  The port says where it is: PROGRAMMING
              * with the session as it was after an abort, with a read owed
              * after a disarm, or on its way to PWM with the supply off. */
-            (void)say(p, KST_PROG_MSG_LEAVE_CUT, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_LEAVE_CUT, 0);
         } else if (op == LINK_KST_OP_VERIFY
                    && o->result == KST_SES_ERR_VERIFY) {
             doubt(p);
-            (void)say(p, KST_PROG_MSG_VERIFY_DIFF, ones(o->diff_regs));
+            (void)kst_prog_say(p, KST_PROG_MSG_VERIFY_DIFF,
+                               kst_prog_ones(o->diff_regs));
         } else {
             if (op == LINK_KST_OP_READ_ALL) {
                 if (p->have_servo) {
@@ -955,28 +939,29 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
                 }
             }
             if ((unsigned)o->result < KST_PROG_MSG_END - KST_PROG_MSG_SES) {
-                (void)say_reg(p, KST_PROG_MSG_SES + (unsigned)o->result,
-                              o->steps_done, o->fail_reg);
+                (void)kst_prog_say_reg(p, KST_PROG_MSG_SES
+                                          + (unsigned)o->result,
+                                       o->steps_done, o->fail_reg);
             } else {
-                (void)say(p, KST_PROG_MSG_UNKNOWN, o->result);
+                (void)kst_prog_say(p, KST_PROG_MSG_UNKNOWN, o->result);
             }
         }
         break;
     case KST_LINK_OUT_REFUSED:
         if ((unsigned)o->refusal < KST_PROG_MSG_SES - KST_PROG_MSG_REF) {
-            (void)say(p, KST_PROG_MSG_REF + (unsigned)o->refusal, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_REF + (unsigned)o->refusal, 0);
         } else {
-            (void)say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->refusal);
+            (void)kst_prog_say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->refusal);
         }
         break;
     case KST_LINK_OUT_NACK:
-        (void)say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, o->nack);
+        (void)kst_prog_say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, o->nack);
         break;
     default:
         if ((unsigned)o->kind < KST_PROG_MSG_REF - KST_PROG_MSG_OUT) {
-            (void)say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_OUT + (unsigned)o->kind, 0);
         } else {
-            (void)say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->kind);
+            (void)kst_prog_say(p, KST_PROG_MSG_UNKNOWN, (unsigned)o->kind);
         }
         break;
     }
@@ -1002,7 +987,7 @@ static bool outcome_due(const kst_prog_t *p, const kst_link_outcome_t *o)
 }
 
 /* The command was not taken, or nothing answers: nothing was sent. */
-static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
+void kst_prog_not_started(kst_prog_t *p, unsigned id, unsigned arg)
 {
     kst_link_outcome_t o;
 
@@ -1017,7 +1002,7 @@ static void not_started(kst_prog_t *p, unsigned id, unsigned arg)
     p->cmd_ready = false;
     p->chain_read = false;
     keep_back(p);
-    (void)say(p, id, arg);
+    (void)kst_prog_say(p, id, arg);
 }
 
 /* The START awaited is taken back at the gate: the link's task takes it
@@ -1046,7 +1031,7 @@ static void unanswered(kst_prog_t *p, unsigned id)
     kst_link_outcome_t o;
 
     if (!p->cmd_out || taken_back(p)) {
-        not_started(p, id, 0);
+        kst_prog_not_started(p, id, 0);
         return;
     }
     if (p->gate != NULL && !p->cmd_run && id == KST_PROG_MSG_TIMEOUT) {
@@ -1065,7 +1050,7 @@ static void unanswered(kst_prog_t *p, unsigned id)
         p->cmd.id = 0;
         p->cmd_ready = true;
         if (p->msg.id != KST_PROG_MSG_JOURNAL) {
-            (void)say(p, KST_PROG_MSG_TIMEOUT, 0);
+            (void)kst_prog_say(p, KST_PROG_MSG_TIMEOUT, 0);
         }
     }
 }
@@ -1081,12 +1066,12 @@ static void unanswered(kst_prog_t *p, unsigned id)
 static void leave_old(kst_prog_t *p)
 {
     if (!p->f.rd.known || (p->f.rd.flags & LINK_KS_F_RAIL) != 0u) {
-        not_started(p, KST_PROG_MSG_LEAVE_SUPPLY, 0);
+        kst_prog_not_started(p, KST_PROG_MSG_LEAVE_SUPPLY, 0);
     } else {
         const kst_link_request_t r = request(p, LINK_KST_OP_POWER_CYCLED);
 
         p->leave_doubt = false;
-        send(p, &r);
+        kst_prog_send(p, &r);
     }
 }
 
@@ -1181,7 +1166,8 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                 /* The coprocessor refused it: no field was written. */
                 p->wrote = p->wrote_before;
             }
-            not_started(p, KST_PROG_MSG_START + (unsigned)f->answer, 0);
+            kst_prog_not_started(p,
+                                 KST_PROG_MSG_START + (unsigned)f->answer, 0);
         }
     }
     if (f->outcomes != p->outcomes_seen) {
@@ -1202,7 +1188,8 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
             } else if (p->wait == W_ANSWER) {
                 unanswered(p, KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER);
             } else {
-                not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_NO_ANSWER, 0);
+                kst_prog_not_started(p, KST_PROG_MSG_OUT
+                                        + KST_LINK_OUT_NO_ANSWER, 0);
             }
         }
         session_gone(p);
@@ -1210,7 +1197,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
     if (f->stopped && !was_stopped) {
         p->write_enabled = false;
         if (waits_unsent(p)) {
-            not_started(p, KST_PROG_MSG_STOPPED, 0);
+            kst_prog_not_started(p, KST_PROG_MSG_STOPPED, 0);
         }
     }
 
@@ -1225,7 +1212,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         unanswered(p, KST_PROG_MSG_TIMEOUT);
     } else if (p->wait == W_FILE
                && (uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_STORE_MS) {
-        not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
+        kst_prog_not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
     } else if (p->wait == W_OUTCOME
                && ((uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_RUN_MS
                    || (uint32_t)(f->now_ms - p->run_ms)
@@ -1239,7 +1226,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
         p->cmd.kind = KST_PROG_CMD_ABORT;
         p->cmd.id = 0;
         p->cmd_ready = true;
-        (void)say(p, KST_PROG_MSG_TIMEOUT, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_TIMEOUT, 0);
     }
 
     if (p->card_op != KST_PROG_CARD_IDLE
@@ -1271,7 +1258,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                 session_gone(p);
                 if (p->msg.seq == said) {
                     /* Unless this feed said how an operation ended. */
-                    (void)say(p, KST_PROG_MSG_SESSION_ENDED, 0);
+                    (void)kst_prog_say(p, KST_PROG_MSG_SESSION_ENDED, 0);
                 }
             }
         } else {
@@ -1474,7 +1461,7 @@ static bool maybe_written(const kst_prog_t *p)
 
 /* The image the file before a write takes: the servo as the session found
  * it. */
-static const kst_image_t *file_image(const kst_prog_t *p)
+const kst_image_t *kst_prog_file_image(const kst_prog_t *p)
 {
     return p->card_auto && maybe_written(p) && p->f.have_backup
          ? &p->f.backup : &p->servo;
@@ -1490,7 +1477,7 @@ static const kst_image_t *file_image(const kst_prog_t *p)
 bool kst_prog_run_matches(const kst_prog_t *p)
 {
     return p->run_hold && p->have_servo
-        && (differ(&p->run_img, &p->servo) & ~RUN_FIELDS) == 0u;
+        && (kst_prog_differ(&p->run_img, &p->servo) & ~RUN_FIELDS) == 0u;
 }
 
 bool kst_prog_save_first(const kst_prog_t *p)
@@ -1512,12 +1499,12 @@ bool kst_prog_save_none(const kst_prog_t *p)
 
 kst_field_set_t kst_prog_changed(const kst_prog_t *p)
 {
-    return p->have_servo ? differ(&p->servo, &p->draft) : 0u;
+    return p->have_servo ? kst_prog_differ(&p->servo, &p->draft) : 0u;
 }
 
 unsigned kst_prog_changes(const kst_prog_t *p)
 {
-    return ones(kst_prog_changed(p));
+    return kst_prog_ones(kst_prog_changed(p));
 }
 
 kst_rules_t kst_prog_rules(const kst_prog_t *p)
@@ -1536,7 +1523,7 @@ bool kst_prog_range(const kst_prog_t *p, kst_field_id_t id, uint16_t *lo,
     uint32_t good = kst_field_get(&p->draft, id);
     uint32_t a, b;
 
-    if (!p->have_servo || !editable(id)) {
+    if (!p->have_servo || !kst_prog_field_editable(id)) {
         return false;
     }
     if (!raw_taken(p, id, (uint16_t)good)) {
@@ -1585,25 +1572,25 @@ kst_prog_edit_t kst_prog_edit(kst_prog_t *p, kst_field_id_t id, uint16_t raw)
     p->soft = false;
     p->soft_load = false;
     if (!kst_prog_editable(p)) {
-        (void)say(p, p->have_servo && !p->fp_ok ? KST_PROG_MSG_READ_ONLY
-                                                 : KST_PROG_MSG_NEED_READ,
-                  0);
+        (void)kst_prog_say(p, p->have_servo && !p->fp_ok
+                              ? KST_PROG_MSG_READ_ONLY : KST_PROG_MSG_NEED_READ,
+                           0);
         return KST_PROG_EDIT_REFUSED;
     }
-    if (!editable(id)) {
-        (void)say(p, KST_PROG_MSG_EDIT_LOCKED, 0);
+    if (!kst_prog_field_editable(id)) {
+        (void)kst_prog_say(p, KST_PROG_MSG_EDIT_LOCKED, 0);
         return KST_PROG_EDIT_REFUSED;
     }
     if (!kst_field_edit(&trial, id, raw)) {
-        (void)say(p, KST_PROG_MSG_EDIT_HARD, KST_RULE_COUNT);
+        (void)kst_prog_say(p, KST_PROG_MSG_EDIT_HARD, KST_RULE_COUNT);
         return KST_PROG_EDIT_REFUSED;
     }
-    hard = hard_new(p, &trial);
+    hard = kst_prog_hard_new(p, &trial);
     if (hard != 0u) {
-        (void)say(p, KST_PROG_MSG_EDIT_HARD, lowest(hard));
+        (void)kst_prog_say(p, KST_PROG_MSG_EDIT_HARD, kst_prog_lowest(hard));
         return KST_PROG_EDIT_REFUSED;
     }
-    soft = soft_asks(p, &p->draft, &trial);
+    soft = kst_prog_soft_asks(p, &p->draft, &trial);
     if (soft != 0u) {
         p->soft = true;
         p->soft_img = trial;
@@ -1621,7 +1608,7 @@ kst_prog_edit_t kst_prog_step(kst_prog_t *p, kst_field_id_t id, int dir)
 
     if ((dir > 0 && raw >= kst_field_raw_max(id)) || (dir <= 0 && raw == 0u)) {
         p->soft = false;
-        (void)say(p, KST_PROG_MSG_EDIT_HARD, KST_RULE_COUNT);
+        (void)kst_prog_say(p, KST_PROG_MSG_EDIT_HARD, KST_RULE_COUNT);
         return KST_PROG_EDIT_REFUSED;
     }
     return kst_prog_edit(p, id, (uint16_t)(dir > 0 ? raw + 1u : raw - 1u));
@@ -1650,13 +1637,14 @@ static unsigned loaded_message(const kst_prog_t *p)
 }
 
 /* The draft takes the file's target. */
-static void load_take(kst_prog_t *p, const kst_image_t *target)
+void kst_prog_load_take(kst_prog_t *p, const kst_image_t *target)
 {
-    const unsigned n = ones(differ(&p->servo, target));
+    const unsigned n = kst_prog_ones(kst_prog_differ(&p->servo, target));
 
     p->draft = *target;
     p->load_skipped = p->soft_skipped;
-    (void)say(p, loaded_message(p), n | (ones(p->load_skipped) << 8));
+    (void)kst_prog_say(p, loaded_message(p),
+                       n | (kst_prog_ones(p->load_skipped) << 8));
 }
 
 void kst_prog_soft_confirm(kst_prog_t *p)
@@ -1666,7 +1654,7 @@ void kst_prog_soft_confirm(kst_prog_t *p)
         if (p->soft_load) {
             p->soft_load = false;
             confirm(p, &p->servo, &p->soft_img);
-            load_take(p, &p->soft_img);
+            kst_prog_load_take(p, &p->soft_img);
         } else {
             confirm(p, &p->draft, &p->soft_img);
             p->draft = p->soft_img;
@@ -1738,13 +1726,13 @@ kst_prog_msg_id_t kst_prog_connect(kst_prog_t *p, uint8_t port)
         m = from_pwm(p, port);
     }
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
+        return kst_prog_say(p, m, 0);
     }
     session_gone(p);
     p->port = port;
     p->chain_read = true;
     r = request(p, LINK_KST_OP_ENTER);
-    send(p, &r);
+    kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1815,10 +1803,10 @@ kst_prog_msg_id_t kst_prog_read(kst_prog_t *p)
     const kst_prog_msg_id_t m = idle_safe(p);
 
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
+        return kst_prog_say(p, m, 0);
     }
     r = request(p, LINK_KST_OP_READ_ALL);
-    send(p, &r);
+    kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1832,11 +1820,11 @@ kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p)
         m = KST_PROG_MSG_NEED_READ;
     }
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
+        return kst_prog_say(p, m, 0);
     }
     r = request(p, LINK_KST_OP_VERIFY);
     r.image = p->servo;
-    send(p, &r);
+    kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
 }
 
@@ -1878,8 +1866,8 @@ kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
     }
     m = kst_prog_enable_check(p);
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, m == kst_prog_journal_asks(p)
-                             ? kst_prog_journal_arg(p) : 0u);
+        return kst_prog_say(p, m, m == kst_prog_journal_asks(p)
+                                ? kst_prog_journal_arg(p) : 0u);
     }
     p->write_enabled = true;
     hush(p);
@@ -1940,7 +1928,7 @@ static kst_prog_msg_id_t plan_message(kst_plan_result_t r, kst_rules_t broken,
     case KST_PLAN_OK:
         return KST_PROG_MSG_NONE;
     case KST_PLAN_ERR_RULES:
-        *arg = lowest(broken & KST_RULES_HARD);
+        *arg = kst_prog_lowest(broken & KST_RULES_HARD);
         return KST_PROG_MSG_EDIT_HARD;
     case KST_PLAN_ERR_R00:
         return (kst_prog_msg_id_t)(KST_PROG_MSG_REF + LINK_KST_REF_PLAN_R00);
@@ -1964,7 +1952,7 @@ static kst_prog_msg_id_t write_check(kst_prog_t *p, unsigned *arg)
     if (m != KST_PROG_MSG_NONE) {
         return m;
     }
-    if (same(&p->servo, &p->draft)) {
+    if (kst_prog_same(&p->servo, &p->draft)) {
         return KST_PROG_MSG_NO_CHANGES;
     }
     if (!p->write_enabled) {
@@ -1993,7 +1981,7 @@ static kst_prog_msg_id_t write_draft(kst_prog_t *p, kst_prog_from_t from)
     const kst_prog_msg_id_t m = write_check(p, &arg);
 
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     keep_now(p);
     p->soft = false;
@@ -2043,7 +2031,7 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
     const kst_prog_msg_id_t m = release_check(p, &arg);
 
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     keep_now(p);
     p->soft = false;
@@ -2058,7 +2046,7 @@ kst_prog_msg_id_t kst_prog_release(kst_prog_t *p)
 bool kst_prog_backup_other(const kst_prog_t *p)
 {
     return p->fed && p->f.have_backup && p->have_servo && p->wrote_known
-        && (differ(&p->f.backup, &p->servo) & ~p->wrote) != 0u;
+        && (kst_prog_differ(&p->f.backup, &p->servo) & ~p->wrote) != 0u;
 }
 
 static const kst_image_t *source(const kst_prog_t *p, kst_prog_from_t from)
@@ -2100,9 +2088,9 @@ bool kst_prog_restore_offered(const kst_prog_t *p, kst_prog_from_t from)
         }
         /* A locked session takes this restore and no read before it. */
         return flag(p, LINK_KS_F_LOCKED)
-            || (p->have_servo && !same(src, &p->servo));
+            || (p->have_servo && !kst_prog_same(src, &p->servo));
     }
-    return p->have_servo && !same(src, &p->servo);
+    return p->have_servo && !kst_prog_same(src, &p->servo);
 }
 
 /* What a restore from a record or a file writes: the servo's image with
@@ -2122,7 +2110,7 @@ static unsigned editable_target(const kst_prog_t *p, const kst_image_t *src,
             || id == KST_F_DUTY_COPY) {
             continue;
         }
-        if (editable(fid)) {
+        if (kst_prog_field_editable(fid)) {
             (void)kst_field_edit(target, fid, kst_field_get(src, fid));
             writes++;
         } else {
@@ -2145,7 +2133,8 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     memset(out, 0, sizeof(*out));
     out->from = (uint8_t)from;
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
+        return kst_prog_say(p, KST_PROG_MSG_JOURNAL_OTHER,
+                            kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = from_none(p, from);
@@ -2158,7 +2147,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
         }
     }
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     if (from == KST_PROG_FROM_SESSION) {
         if (!p->have_servo || kst_prog_in_doubt(p)) {
@@ -2174,7 +2163,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
             m = KST_PROG_MSG_NO_RESTORE;
         }
         if (m != KST_PROG_MSG_NONE) {
-            return say(p, m, arg);
+            return kst_prog_say(p, m, arg);
         }
         out->writes = p->plan.n;
         out->unchecked = p->plan.unchecked != 0u;
@@ -2184,16 +2173,17 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
 
     m = write_ready(p, &arg);
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     out->writes = (uint8_t)editable_target(p, src, &target, &stay);
     out->stay = (uint8_t)stay;
     if (out->writes == 0u) {
-        return say(p, KST_PROG_MSG_NO_RESTORE, out->stay);
+        return kst_prog_say(p, KST_PROG_MSG_NO_RESTORE, out->stay);
     }
-    hard = hard_new(p, &target);
+    hard = kst_prog_hard_new(p, &target);
     if (hard != 0u) {
-        return say(p, KST_PROG_MSG_RESTORE_REFUSED, lowest(hard));
+        return kst_prog_say(p, KST_PROG_MSG_RESTORE_REFUSED,
+                            kst_prog_lowest(hard));
     }
     /* The pending values stay as they are until the restore is confirmed:
      * a page that is cancelled leaves nothing of the backup behind. */
@@ -2216,7 +2206,8 @@ static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
     kst_prog_msg_id_t m = idle_safe(p);
 
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
+        return kst_prog_say(p, KST_PROG_MSG_JOURNAL_OTHER,
+                            kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = KST_PROG_MSG_NO_RESTORE;
@@ -2225,14 +2216,14 @@ static kst_prog_msg_id_t restore_editable(kst_prog_t *p, kst_prog_from_t from,
         m = write_ready(p, &arg);
     }
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     if (editable_target(p, src, &target, &stay) == 0u) {
-        return say(p, KST_PROG_MSG_NO_RESTORE, stay);
+        return kst_prog_say(p, KST_PROG_MSG_NO_RESTORE, stay);
     }
-    if (hard_new(p, &target) != 0u) {
-        return say(p, KST_PROG_MSG_RESTORE_REFUSED,
-                   lowest(hard_new(p, &target)));
+    if (kst_prog_hard_new(p, &target) != 0u) {
+        return kst_prog_say(p, KST_PROG_MSG_RESTORE_REFUSED,
+                            kst_prog_lowest(kst_prog_hard_new(p, &target)));
     }
     p->draft = target;
     p->soft = false;
@@ -2267,7 +2258,8 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
     }
     m = idle_safe(p);
     if (m == KST_PROG_MSG_NONE && p->journal_other) {
-        return say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
+        return kst_prog_say(p, KST_PROG_MSG_JOURNAL_OTHER,
+                            kst_prog_journal_arg(p));
     }
     if (m == KST_PROG_MSG_NONE && src == NULL) {
         m = from_none(p, KST_PROG_FROM_SESSION);
@@ -2279,7 +2271,7 @@ kst_prog_msg_id_t kst_prog_restore(kst_prog_t *p,
         m = KST_PROG_MSG_NEED_ENABLE;
     }
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
+        return kst_prog_say(p, m, arg);
     }
     keep_now(p);
     p->soft = false;
@@ -2346,10 +2338,10 @@ void kst_prog_forget(kst_prog_t *p)
 {
     if (p->wait != W_NONE || p->cmd_ready) {
         /* The record of the write that runs is not one to discard. */
-        (void)say(p, KST_PROG_MSG_START + KST_LINK_START_BUSY, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_START + KST_LINK_START_BUSY, 0);
     } else if (p->journal) {
         journal_clear(p);
-        (void)say(p, KST_PROG_MSG_FORGOTTEN, 0);
+        (void)kst_prog_say(p, KST_PROG_MSG_FORGOTTEN, 0);
     }
 }
 
@@ -2376,13 +2368,13 @@ kst_prog_msg_id_t kst_prog_leave(kst_prog_t *p)
     const uint16_t fl = p->f.rd.flags;
 
     if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
+        return kst_prog_say(p, m, 0);
     }
     p->leave_doubt = (fl & (LINK_KS_F_MUST_READ | LINK_KS_F_LOCKED)) != 0u
                   && (fl & LINK_KS_F_RAIL) == 0u;
     r = request(p, p->leave_doubt ? LINK_KST_OP_POWER_CYCLED
                                   : LINK_KST_OP_LEAVE);
-    send(p, &r);
+    kst_prog_send(p, &r);
     return KST_PROG_MSG_NONE;
 }
 
@@ -2403,7 +2395,7 @@ uint16_t kst_prog_wait_ms(const kst_prog_t *p)
 void kst_prog_abort(kst_prog_t *p)
 {
     if (waits_unsent(p) || (p->wait == W_ANSWER && taken_back(p))) {
-        not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
+        kst_prog_not_started(p, KST_PROG_MSG_OUT + KST_LINK_OUT_DROPPED, 0);
     } else if (p->wait != W_NONE
                || (!p->cmd_ready && flag(p, LINK_KS_F_BUSY))) {
         /* Also for an operation this model awaits no longer, or never
@@ -2412,667 +2404,4 @@ void kst_prog_abort(kst_prog_t *p)
         p->cmd.id = 0;
         p->cmd_ready = true;
     }
-}
-
-/* -------------------------------------------------------------- servo files */
-
-static kst_prog_msg_id_t card_free(const kst_prog_t *p)
-{
-    if (p->wait != W_NONE || p->cmd_ready || p->card_op != KST_PROG_CARD_IDLE) {
-        return (kst_prog_msg_id_t)(KST_PROG_MSG_START + KST_LINK_START_BUSY);
-    }
-    if (!p->fed || !p->f.card) {
-        return KST_PROG_MSG_CARD_NONE;
-    }
-    return KST_PROG_MSG_NONE;
-}
-
-/* What a load needs of the servo, when it is asked for and when the file
- * is there. */
-static kst_prog_msg_id_t load_ready(const kst_prog_t *p, unsigned *arg)
-{
-    *arg = 0;
-    if (kst_prog_state(p) != KST_PROG_PROGRAMMING) {
-        return p->wait != W_NONE || p->cmd_ready
-                   ? (kst_prog_msg_id_t)(KST_PROG_MSG_START
-                                         + KST_LINK_START_BUSY)
-                   : KST_PROG_MSG_NEED_PORT;
-    }
-    if (kst_prog_journal_other(p)) {
-        *arg = kst_prog_journal_arg(p);
-        return KST_PROG_MSG_JOURNAL_OTHER;
-    }
-    if (!p->have_servo || kst_prog_in_doubt(p)) {
-        return KST_PROG_MSG_NEED_READ;
-    }
-    if (!p->fp_ok) {
-        return KST_PROG_MSG_READ_ONLY;
-    }
-    return KST_PROG_MSG_NONE;
-}
-
-kst_prog_msg_id_t kst_prog_save(kst_prog_t *p, const char *name)
-{
-    kst_prog_msg_id_t m = card_free(p);
-
-    /* What the servo lacks is said before what the card lacks. */
-    if ((m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE)
-        && (!p->have_servo || kst_prog_in_doubt(p))) {
-        m = KST_PROG_MSG_NEED_READ;
-    }
-    if (m == KST_PROG_MSG_NONE
-        && (name == NULL || name[0] == '\0'
-            || strlen(name) >= KST_PROG_NAME_MAX)) {
-        m = KST_PROG_MSG_NAME_BAD;
-    }
-    if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
-    }
-    p->card_auto = false;
-    card_ask(p, KST_PROG_CARD_SAVE, name);
-    return KST_PROG_MSG_NONE;
-}
-
-kst_prog_msg_id_t kst_prog_files(kst_prog_t *p, unsigned first)
-{
-    kst_prog_msg_id_t m = card_free(p);
-
-    /* A servo in doubt takes no file and gives none: the read comes
-     * first, and is said before what the card lacks. */
-    if ((m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE)
-        && kst_prog_in_doubt(p)) {
-        m = KST_PROG_MSG_NEED_READ;
-    }
-    if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, 0);
-    }
-    p->card_auto = false;
-    p->card_first = (uint16_t)(first <= 0xFFFFu ? first : 0xFFFFu);
-    card_ask(p, KST_PROG_CARD_LIST, NULL);
-    return KST_PROG_MSG_NONE;
-}
-
-unsigned kst_prog_files_first(const kst_prog_t *p)
-{
-    return p->files_first;
-}
-
-kst_prog_msg_id_t kst_prog_load(kst_prog_t *p, const char *name)
-{
-    unsigned arg = 0;
-    kst_prog_msg_id_t m = card_free(p);
-
-    if (m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_CARD_NONE) {
-        /* What the servo lacks is said before what the card lacks. */
-        const kst_prog_msg_id_t servo = load_ready(p, &arg);
-
-        m = servo != KST_PROG_MSG_NONE ? servo : m;
-    }
-    if (m == KST_PROG_MSG_NONE
-        && (name == NULL || name[0] == '\0'
-            || strlen(name) >= KST_PROG_NAME_MAX)) {
-        m = KST_PROG_MSG_CARD_READ;
-    }
-    if (m != KST_PROG_MSG_NONE) {
-        return say(p, m, arg);
-    }
-    p->card_auto = false;
-    p->soft = false;
-    p->soft_load = false;
-    card_ask(p, KST_PROG_CARD_LOAD, name);
-    return KST_PROG_MSG_NONE;
-}
-
-bool kst_prog_card_busy(const kst_prog_t *p)
-{
-    return p->card_op != KST_PROG_CARD_IDLE;
-}
-
-uint32_t kst_prog_files_seq(const kst_prog_t *p)
-{
-    return p->files_seq;
-}
-
-const char *kst_prog_file_name(const kst_prog_t *p, unsigned i)
-{
-    return i < p->files_n ? p->files[i] : "";
-}
-
-unsigned kst_prog_file_count(const kst_prog_t *p, unsigned *total)
-{
-    if (total != NULL) {
-        *total = p->files_total;
-    }
-    return p->files_n;
-}
-
-unsigned kst_prog_file_type(const kst_prog_t *p, unsigned i)
-{
-    return i < p->files_n ? p->file_types[i] : 0u;
-}
-
-kst_field_set_t kst_prog_load_skipped(const kst_prog_t *p)
-{
-    return p->load_skipped;
-}
-
-const char *kst_prog_preset_name(const kst_prog_t *p)
-{
-    return p->preset;
-}
-
-const char *kst_prog_card_name(const kst_prog_t *p)
-{
-    return p->card_name;
-}
-
-kst_prog_file_kind_t kst_prog_load_kind(const kst_prog_t *p)
-{
-    return (kst_prog_file_kind_t)p->load_kind;
-}
-
-unsigned kst_prog_load_named(const kst_prog_t *p, unsigned *fields)
-{
-    if (fields != NULL) {
-        *fields = p->load_fields;
-    }
-    return p->load_named;
-}
-
-bool kst_prog_card_take(kst_prog_t *p, kst_prog_card_req_t *out)
-{
-    if (!p->card_ready) {
-        return false;
-    }
-    p->card_ready = false;
-    memset(out, 0, sizeof(*out));
-    out->op = p->card_op;
-    out->id = p->card_id;
-    out->preset = p->card_auto;
-    out->first = p->card_op == KST_PROG_CARD_LIST ? p->card_first : 0u;
-    memcpy(out->name, p->card_name, sizeof(out->name));
-    out->image = *file_image(p);
-    p->late_img = out->image;
-    return true;
-}
-
-static void name_copy(char *to, const char *from)
-{
-    memcpy(to, from, KST_PROG_NAME_MAX);
-    to[KST_PROG_NAME_MAX - 1u] = '\0';
-}
-
-static unsigned card_message(unsigned result, bool load)
-{
-    switch (result) {
-    case KST_PROG_CARD_NO_CARD:
-        return KST_PROG_MSG_CARD_NONE;
-    case KST_PROG_CARD_FULL:
-        return KST_PROG_MSG_CARD_FULL;
-    case KST_PROG_CARD_WRITE_ERR:
-        return KST_PROG_MSG_CARD_WRITE;
-    case KST_PROG_CARD_DENIED:
-        return KST_PROG_MSG_CARD_DENIED;
-    case KST_PROG_CARD_NAME:
-        return KST_PROG_MSG_NAME_BAD;
-    case KST_PROG_CARD_EXISTS:
-        return KST_PROG_MSG_NAME_EXISTS;
-    case KST_PROG_CARD_BAD:
-        return KST_PROG_MSG_LOAD_BAD;
-    case KST_PROG_CARD_CHECKSUM:
-        return KST_PROG_MSG_LOAD_CHECKSUM;
-    case KST_PROG_CARD_NEWER:
-        return KST_PROG_MSG_LOAD_NEWER;
-    default:
-        /* A result that is none of a save's or a list's. */
-        return load ? KST_PROG_MSG_CARD_READ : KST_PROG_MSG_CARD_WRITE;
-    }
-}
-
-static void save_done(kst_prog_t *p, const kst_prog_card_done_t *d)
-{
-    const bool waited = p->card_auto && p->wait == W_SAVE;
-    const bool ok = d->result == KST_PROG_CARD_OK;
-
-    if (ok) {
-        name_copy(p->card_name, d->name);
-    }
-    /* A save by hand is the session's backup while it holds the servo as
-     * the session found it: before the first write, and with no backup
-     * named yet.  A later one holds the written servo and is no backup.
-     * In a session whose writes are not all known the servo is as found
-     * only while it equals the session's backup. */
-    if (ok && (p->card_auto
-               || (!p->written && !p->backed_up
-                   && (p->wrote_known
-                       || (p->f.have_backup
-                           && same(&p->f.backup, &p->servo)))))) {
-        p->backed_up = p->have_servo;
-        p->no_file = false;
-        name_copy(p->backup, d->name);
-    }
-    if (waited) {
-        if (ok) {
-            write_go(p);
-        } else {
-            not_started(p, card_message(d->result, false), 0);
-        }
-    } else if (!p->card_auto) {
-        (void)say(p, ok ? KST_PROG_MSG_SAVED : card_message(d->result, false),
-                  0);
-    }
-    /* A save whose write was given up meanwhile says nothing more. */
-    p->card_auto = false;
-}
-
-static void list_done(kst_prog_t *p, const kst_prog_card_done_t *d)
-{
-    if (d->result != KST_PROG_CARD_OK) {
-        (void)say(p, card_message(d->result, true), 0);
-        return;
-    }
-    p->files_n = d->count <= KST_PROG_FILES_MAX ? d->count
-                                                : (uint8_t)KST_PROG_FILES_MAX;
-    p->files_total = d->total;
-    p->files_first = p->card_first;
-    for (unsigned i = 0; i < p->files_n; ++i) {
-        name_copy(p->files[i], d->names[i]);
-        p->file_types[i] = d->types[i];
-    }
-    name_copy(p->preset, d->name);
-    p->files_seq++;
-    if (d->total == 0u) {
-        (void)say(p, KST_PROG_MSG_NO_FILES, 0);
-    }
-}
-
-static void load_done(kst_prog_t *p, const kst_prog_card_done_t *d)
-{
-    unsigned arg = 0;
-    kst_rules_t hard, soft;
-    kst_prog_msg_id_t m;
-
-    if (d->result == KST_PROG_CARD_BAD) {
-        (void)say(p, KST_PROG_MSG_LOAD_BAD, d->line);
-        return;
-    }
-    if (d->result == KST_PROG_CARD_VALUE) {
-        (void)say_reg(p, KST_PROG_MSG_LOAD_VALUE, d->line, d->field);
-        return;
-    }
-    if (d->result == KST_PROG_CARD_LIMIT) {
-        (void)say(p, KST_PROG_MSG_LOAD_REFUSED, d->rule);
-        return;
-    }
-    if (d->result == KST_PROG_CARD_TYPE) {
-        (void)say(p, KST_PROG_MSG_LOAD_TYPE,
-                  d->type | ((unsigned)d->servo_type << 8));
-        return;
-    }
-    if (d->result != KST_PROG_CARD_OK) {
-        (void)say(p, card_message(d->result, true), 0);
-        return;
-    }
-    /* The servo the file was compared with may be gone meanwhile. */
-    m = load_ready(p, &arg);
-    if (m != KST_PROG_MSG_NONE) {
-        (void)say(p, m, arg);
-        return;
-    }
-    p->load_kind = d->kind < KST_PROG_FILE_KINDS ? d->kind
-                                                 : KST_PROG_FILE_UNTYPED;
-    /* A count that does not hold is not shown. */
-    p->load_fields = d->named <= d->fields ? d->fields : 0u;
-    p->load_named = p->load_fields != 0u ? d->named : 0u;
-    p->soft_skipped = d->skipped;
-    /* The card's side takes editable fields only: a target that differs
-     * anywhere else is not a file's and is not taken. */
-    for (unsigned id = 0; id < KST_F_COUNT; ++id) {
-        const kst_field_id_t fid = (kst_field_id_t)id;
-
-        if (id != KST_F_DUTY_COPY && !editable(fid)
-            && kst_field_get(&d->image, fid)
-                   != kst_field_get(&p->servo, fid)) {
-            (void)say(p, KST_PROG_MSG_LOAD_BAD, 0);
-            return;
-        }
-    }
-    if (differ(&p->servo, &d->image) == 0u) {
-        (void)say(p, KST_PROG_MSG_LOAD_SAME, ones(d->skipped));
-        return;
-    }
-    hard = hard_new(p, &d->image);
-    if (hard != 0u) {
-        (void)say(p, KST_PROG_MSG_LOAD_REFUSED, lowest(hard));
-        return;
-    }
-    soft = soft_asks(p, &p->servo, &d->image);
-    if (soft != 0u) {
-        p->soft = true;
-        p->soft_load = true;
-        p->soft_img = d->image;
-        p->soft_rules = soft;
-        (void)say(p, KST_PROG_MSG_LOAD_SOFT, 0);
-        return;
-    }
-    load_take(p, &d->image);
-}
-
-/*
- * The card ends a save this model gave up at KST_PROG_CARD_MS.  The file
- * is on the card: it is named, and it is the session's backup where a save
- * by hand would be, so that the write that follows makes no second one.
- */
-static void save_late(kst_prog_t *p, const kst_prog_card_done_t *d)
-{
-    p->late_id = 0;
-    if (d->result != KST_PROG_CARD_OK) {
-        return;
-    }
-    if (p->have_servo && same(&p->late_img, &p->servo) && !p->written
-        && !p->backed_up && !p->journal && !kst_prog_in_doubt(p)
-        && (p->wrote_known
-            || (p->f.have_backup && same(&p->f.backup, &p->servo)))) {
-        p->backed_up = true;
-        p->no_file = false;
-        name_copy(p->backup, d->name);
-    }
-    if (p->card_op == KST_PROG_CARD_IDLE) {
-        /* No other file is asked for: the name is this file's. */
-        name_copy(p->card_name, d->name);
-        (void)say(p, KST_PROG_MSG_SAVED, 0);
-    }
-}
-
-void kst_prog_card_done(kst_prog_t *p, const kst_prog_card_done_t *done)
-{
-    const unsigned op = p->card_op;
-
-    if (p->late_id != 0u && done->id == p->late_id
-        && (op == KST_PROG_CARD_IDLE || done->id != p->card_id)) {
-        save_late(p, done);
-        return;
-    }
-    if (op == KST_PROG_CARD_IDLE || done->id != p->card_id) {
-        return;
-    }
-    p->card_op = KST_PROG_CARD_IDLE;
-    p->card_ready = false;
-    switch (op) {
-    case KST_PROG_CARD_SAVE:
-        save_done(p, done);
-        break;
-    case KST_PROG_CARD_LIST:
-        list_done(p, done);
-        break;
-    default:
-        load_done(p, done);
-        break;
-    }
-}
-
-/* ----------------------------------------------------- the journal's file */
-
-static uint16_t crc16(const char *s, size_t n)
-{
-    return link_crc(LINK_CRC_INIT, s, n);
-}
-
-static char *put(char *at, const char *s)
-{
-    while (*s != '\0') {
-        *at++ = *s++;
-    }
-    return at;
-}
-
-static char *put_hex(char *at, unsigned v, unsigned digits)
-{
-    static const char k_hex[] = "0123456789ABCDEF";
-
-    for (unsigned i = digits; i > 0u; --i) {
-        *at++ = k_hex[(v >> (4u * (i - 1u))) & 0xFu];
-    }
-    return at;
-}
-
-static char *put_image(char *at, const char *key, const kst_image_t *img)
-{
-    at = put(at, key);
-    for (unsigned i = 0; i < sizeof(img->r); ++i) {
-        at = put_hex(at, img->r[i], 2);
-    }
-    *at++ = '\n';
-    return at;
-}
-
-size_t kst_prog_file_text(const kst_prog_t *p, char *out, size_t n)
-{
-    char *at = out;
-
-    if (n < KST_PROG_FILE_MAX) {
-        return 0;
-    }
-    at = put(at, k_head);
-    if (p->journal) {
-        at = put_image(at, "journal=", &p->journal_img);
-        at = put_image(at, "target=", &p->journal_target);
-        at = put(at, "port=");
-        at = put_hex(at, p->journal_port, 1);
-        *at++ = '\n';
-        at = put(at, "pin=");
-        at = put_hex(at, p->journal_pin, 2);
-        *at++ = '\n';
-    }
-    {
-        const uint16_t crc = crc16(out, (size_t)(at - out));
-
-        at = put(at, "check=");
-        at = put_hex(at, crc, 4);
-        *at++ = '\n';
-    }
-    *at = '\0';
-    return (size_t)(at - out);
-}
-
-size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n)
-{
-    size_t len;
-
-    if (!p->file_wanted || p->file_busy || !p->fed || !p->f.card) {
-        return 0;
-    }
-    len = kst_prog_file_text(p, out, n);
-    if (len != 0u) {
-        p->file_wanted = false;
-        p->file_busy = true;
-        p->file_stale = false;
-        p->file_for = p->file_next;
-        p->file_next = FILE_NONE;
-    }
-    return len;
-}
-
-void kst_prog_file_done(kst_prog_t *p, bool ok)
-{
-    const uint8_t what = p->file_for;
-    const bool stale = p->file_stale;
-
-    if (!p->file_busy) {
-        return;
-    }
-    p->file_busy = false;
-    p->file_stale = false;
-    p->file_for = FILE_NONE;
-    if (stale) {
-        /* The answer to a text of before the write that waits: that
-         * write's text is wanted still and goes next. */
-        return;
-    }
-    /* The card holds the text of before: a record cleared here would be
-     * found again at the next start.  The text is written again. */
-    p->file_retry = !ok;
-    p->file_retry_ms = p->f.now_ms;
-    if (p->wait == W_FILE && what == FILE_JOURNAL) {
-        if (ok) {
-            send(p, &p->held);
-        } else {
-            not_started(p, KST_PROG_MSG_STORE_FAILED, 0);
-        }
-    }
-}
-
-static int hex(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c - '0';
-    }
-    if (c >= 'A' && c <= 'F') {
-        return c - 'A' + 10;
-    }
-    return -1;
-}
-
-/* @p digits hexadecimal digits at @p s; -1 for anything else. */
-static long take_hex(const char *s, unsigned digits)
-{
-    long v = 0;
-
-    for (unsigned i = 0; i < digits; ++i) {
-        const int d = hex(s[i]);
-
-        if (d < 0) {
-            return -1;
-        }
-        v = v * 16 + d;
-    }
-    return v;
-}
-
-/* "key" + 64 digits + newline at @p s, @p left bytes there. */
-static bool take_image(const char *s, size_t left, const char *key,
-                       kst_image_t *img)
-{
-    const size_t k = strlen(key);
-
-    if (left < k + 65u || memcmp(s, key, k) != 0 || s[k + 64u] != '\n') {
-        return false;
-    }
-    for (size_t i = 0; i < sizeof(img->r); ++i) {
-        const long v = take_hex(s + k + 2u * i, 2);
-
-        if (v < 0) {
-            return false;
-        }
-        img->r[i] = (uint8_t)v;
-    }
-    return true;
-}
-
-typedef struct {
-    bool journal;
-    uint8_t journal_port;
-    uint8_t journal_pin;
-    kst_image_t journal_img;
-    kst_image_t journal_target;
-} loaded_t;
-
-static bool parse(loaded_t *into, const char *text, size_t len)
-{
-    const size_t head = sizeof(k_head) - 1u;
-    size_t at = head;
-    bool v1;
-    long v;
-
-    if (len < head + 11u || len >= KST_PROG_FILE_MAX) {
-        return false;
-    }
-    v1 = memcmp(text, k_head_1, head) == 0;
-    if (!v1 && memcmp(text, k_head, head) != 0) {
-        return false;
-    }
-    /* The last line is the check of all before it. */
-    if (memcmp(text + len - 11u, "check=", 6) != 0 || text[len - 1u] != '\n') {
-        return false;
-    }
-    v = take_hex(text + len - 5u, 4);
-    if (v < 0 || (uint16_t)v != crc16(text, len - 11u)) {
-        return false;
-    }
-    len -= 11u;
-
-    into->journal = false;
-    if (at != len) {
-        if (!take_image(text + at, len - at, "journal=", &into->journal_img)) {
-            return false;
-        }
-        at += 8u + 65u;
-        if (!take_image(text + at, len - at, "target=",
-                        &into->journal_target)) {
-            return false;
-        }
-        at += 7u + 65u;
-        if (len - at != (v1 ? 7u : 14u)
-            || memcmp(text + at, "port=", 5) != 0
-            || text[at + 6u] != '\n') {
-            return false;
-        }
-        v = take_hex(text + at + 5u, 1);
-        if (v < 0 || v >= (long)LINK_PG_PORTS_MAX) {
-            /* No port of any build: the record names none. */
-            return false;
-        }
-        into->journal_port = (uint8_t)v;
-        into->journal_pin = KST_PROG_NO_PIN;
-        at += 7u;
-        if (!v1) {
-            if (memcmp(text + at, "pin=", 4) != 0 || text[at + 6u] != '\n') {
-                return false;
-            }
-            v = take_hex(text + at + 4u, 2);
-            if (v < 0) {
-                return false;
-            }
-            /* A pin of no coprocessor: the record stands, by its port. */
-            if (v <= (long)KST_PROG_PIN_LAST) {
-                into->journal_pin = (uint8_t)v;
-            }
-        }
-        into->journal = true;
-    }
-    return true;
-}
-
-bool kst_prog_file_whole(const char *text, size_t len)
-{
-    loaded_t got;
-
-    memset(&got, 0, sizeof(got));
-    return parse(&got, text, len);
-}
-
-bool kst_prog_file_load(kst_prog_t *p, const char *text, size_t len)
-{
-    /* Parsed aside: a text that is not whole changes nothing. */
-    loaded_t got;
-
-    memset(&got, 0, sizeof(got));
-    if (!parse(&got, text, len)) {
-        (void)say(p, KST_PROG_MSG_FILE_BAD, 0);
-        return false;
-    }
-    p->journal = got.journal;
-    p->journal_open = got.journal;
-    p->journal_port = got.journal_port;
-    p->journal_pin = got.journal ? got.journal_pin : KST_PROG_NO_PIN;
-    p->journal_img = got.journal_img;
-    p->journal_target = got.journal_target;
-    /* With a servo read, a card mounted under a session: the record is
-     * held against that servo here, and not first at the next read. */
-    if (journal_classify(p)) {
-        (void)say(p, KST_PROG_MSG_JOURNAL_OTHER, kst_prog_journal_arg(p));
-    } else if (p->journal) {
-        (void)say(p, KST_PROG_MSG_JOURNAL, kst_prog_journal_arg(p));
-    }
-    return true;
 }
