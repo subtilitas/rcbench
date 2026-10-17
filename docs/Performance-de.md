@@ -438,7 +438,9 @@ Gelesen aus der Map-Datei des Builds mit ESP-IDF v5.4. CI führt
 `tools/ram_budget.py --check-doc` auf diesem Build aus; das schlägt fehl,
 wenn eine Zeile, die Anzahl, die Summe oder die 13 742 Bytes von ESP-IDF
 von der Map abweichen. Es schlägt auch fehl, wenn `psram_bss.lf` ein Objekt
-nennt, von dem die Map keine .bss platziert, und wenn die .bss eines
+nennt, von dem die Map keine .bss platziert, wenn das Fragment eine andere
+Zeile enthält als Einträge `object (extram_bss)` unter einem Kopf
+`[mapping:...]`, und wenn die .bss eines
 Archivs im PSRAM landet, das weder das Fragment noch die Liste des
 Werkzeugs mit lwIP, net80211, pp und wpa_supplicant nennt. `-v` listet
 jedes Objekt.

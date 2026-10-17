@@ -313,12 +313,57 @@ def test_a_map_without_the_section_stops(tmp_path):
 def test_the_fragment_is_read_entry_by_entry(tmp_path):
     lf = tmp_path / "a.lf"
     lf.write_text(LF, encoding="utf-8")
-    assert rb.lf_objects(lf) == [("libbench.a", "kst_card"),
-                                 ("liblogfile.a", "log_csv")]
+    assert rb.lf_objects(lf) == ([("libbench.a", "kst_card"),
+                                  ("liblogfile.a", "log_csv")], [])
+
+
+@pytest.mark.parametrize("entry", [
+    "    log_csv:s_row (extram_bss)",          # one symbol of an object
+    "    * (extram_bss)",                      # the whole archive
+    "    log_csv (noflash)",                   # another scheme
+    "    log_csv (extram_bss);",               # a flag list follows
+    "    if SPIRAM = y:",                      # a condition
+])
+def test_an_entry_the_reader_does_not_take_fails(tmp_path, entry):
+    """The form must not be skipped: the archive's other entry is read, so
+    a skipped line would leave the table's count and total short and
+    --check-doc green."""
+    lf = tmp_path / "a.lf"
+    lf.write_text(LF + entry + "\n", encoding="utf-8")
+    objects, errors = rb.lf_objects(lf)
+    assert objects == [("libbench.a", "kst_card"),
+                       ("liblogfile.a", "log_csv")]
+    assert errors == [f"a.lf:11: '{entry.strip()}' is not an entry this "
+                      f"tool reads: 'object (extram_bss)' under 'archive: "
+                      f"lib<name>.a' and 'entries:'"]
+
+
+@pytest.mark.parametrize("text, says", [
+    ("[sections:x]\nentries:\n    .bss+\n", "a.lf:1: [sections:x] is not"),
+    ("[mapping:a]\nkst_card (extram_bss)\n", "a.lf:2: 'kst_card"),
+    ("[mapping:a]\narchive: libbench.a\nkst_card (extram_bss)\n",
+     "a.lf:3: 'kst_card"),
+    ("[mapping:a]\narchive: *\nentries:\n", "a.lf:2: 'archive: *'"),
+])
+def test_a_fragment_out_of_shape_fails(tmp_path, text, says):
+    lf = tmp_path / "a.lf"
+    lf.write_text(text, encoding="utf-8")
+    _, errors = rb.lf_objects(lf)
+    assert errors and errors[0].startswith(says)
+
+
+def test_an_unread_entry_fails_the_psram_check(psram_tree):
+    build, _, _ = psram_tree
+    rb.PSRAM_LF.write_text(LF + "    log_csv:s_row (extram_bss)\n",
+                           encoding="utf-8")
+    objects, _, errors = rb.psram(build)
+    assert len(objects) == 2
+    assert len(errors) == 1 and "log_csv:s_row" in errors[0]
 
 
 def test_the_repositorys_fragment_names_objects():
-    named = rb.lf_objects(rb.PSRAM_LF)
+    named, errors = rb.lf_objects(rb.PSRAM_LF)
+    assert errors == []
     assert len(named) >= 10
     assert len(set(named)) == len(named)
 
@@ -450,7 +495,7 @@ def test_both_pages_carry_the_psram_table_and_its_sentence():
 
 
 def test_both_pages_list_the_fragments_objects():
-    named = {o for _, o in rb.lf_objects(rb.PSRAM_LF)}
+    named = {o for _, o in rb.lf_objects(rb.PSRAM_LF)[0]}
     for page, header, _ in rb.PSRAM_PAGES:
         said = rb.psram_rows(page.read_text(encoding="utf-8"), header)
         assert set(said) == named, page.name

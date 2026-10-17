@@ -410,8 +410,9 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
 Read from the map file of the ESP-IDF v5.4 build. CI runs
 `tools/ram_budget.py --check-doc` on that build, which fails when a row,
 the count, the total or ESP-IDF's 13,742 bytes differ from the map. It also
-fails when `psram_bss.lf` names an object the map places no .bss of, and
-when the .bss of an archive that neither the fragment nor the tool's list
+fails when `psram_bss.lf` names an object the map places no .bss of, when
+the fragment holds a line other than `object (extram_bss)` entries under a
+`[mapping:...]` header, and when the .bss of an archive that neither the fragment nor the tool's list
 of lwIP, net80211, pp and wpa_supplicant names lands in PSRAM. `-v` lists
 every object.
 

@@ -55,7 +55,8 @@ linker placed in .ext_ram.bss from the build's map file, object by object,
 and holds each object's row, the count of objects, their total and the
 bytes ESP-IDF's own fragments place there (ESP_IDF_PSRAM) to the pages.
 An object the fragment names that the map places nothing of fails, and so
-does an archive in .ext_ram.bss that neither the fragment nor
+do a line of the fragment other than `object (extram_bss)` entries under
+[mapping:...] headers (lf_objects() says why) and an archive in .ext_ram.bss that neither the fragment nor
 ESP_IDF_PSRAM names.
 
 SPDX-License-Identifier: MIT
@@ -440,21 +441,42 @@ def doc_rows(text: str, header: str) -> dict | None:
     return rows
 
 
-def lf_objects(path: Path) -> list:
-    """(archive, object) for every entry of a linker fragment that maps an
-    object's .bss to PSRAM (extram_bss), in the fragment's order."""
-    out, archive = [], None
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
+def lf_objects(path: Path) -> tuple:
+    """(objects, errors) for a linker fragment.  objects: (archive,
+    object) for every entry that maps a whole object's .bss to PSRAM,
+    `object (extram_bss)`, in the fragment's order.  errors: every line
+    that is not that, a [mapping:...] header, `archive:`, `entries:`, a
+    comment or blank.  ESP-IDF's grammar has more forms (`object:symbol`,
+    `*`, other schemes, conditions, [sections:] and [scheme:]); a form
+    this reader skipped would move .bss the table does not count, so each
+    one fails until the reader takes it."""
+    out, errors = [], []
+    archive, entries = None, False
+    for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(),
+                            1):
+        line = raw.split("#", 1)[0].strip()
+        if not line:
+            continue
+        where = f"{path.name}:{n}"
         if line.startswith("["):
-            archive = None
-        elif line.startswith("archive:"):
+            archive, entries = None, False
+            if not re.fullmatch(r"\[mapping:[\w-]+\]", line):
+                errors.append(f"{where}: {line} is not a [mapping:...] "
+                              f"section, which this tool does not read")
+        elif re.fullmatch(r"archive:\s*(lib\w+\.a)", line):
             archive = line.split(":", 1)[1].strip()
+            entries = False
+        elif line == "entries:" and archive:
+            entries = True
         else:
             m = re.fullmatch(r"(\w+)\s*\(extram_bss\)", line)
-            if m and archive:
+            if m and archive and entries:
                 out.append((archive, m.group(1)))
-    return out
+            else:
+                errors.append(f"{where}: '{line}' is not an entry this tool "
+                              f"reads: 'object (extram_bss)' under "
+                              f"'archive: lib<name>.a' and 'entries:'")
+    return out, errors
 
 
 def map_psram(path: Path) -> dict:
@@ -493,8 +515,7 @@ def psram(build: Path) -> tuple:
     if not path.exists():
         die(f"{path} not found; build the panel first")
     placed = map_psram(path)
-    named = lf_objects(PSRAM_LF)
-    errors = []
+    named, errors = lf_objects(PSRAM_LF)
     if not named:
         errors.append(f"{PSRAM_LF.name} names no object")
     objects = []
