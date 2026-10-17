@@ -20,6 +20,7 @@
 #include "link_pages.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "settings.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "touch_feed.h"
@@ -63,6 +64,9 @@ static void fresh(void)
     picker_screen_set_binding(&b);
     picker_screen_set_drawing(NULL, 0u, NULL);  /* the board from its shape */
     scr()->enter();
+    /* The visit opens on OFF; SERVO PWM is picked, as the follow of the
+     * Outputs screen brings a pick made there. */
+    picker_screen_follow(1u, true);
 }
 
 static void render(void)
@@ -1281,12 +1285,11 @@ TEST_CASE(switching_the_protocol_keeps_the_pins_and_writes_nothing)
 }
 
 /*
- * OFF picked on this screen ends when the screen is left, as it does on the
- * Outputs screen.  Kept there, the panel's follow selected it here again
- * every frame, a read-back kept it, and the next visit opened on a board
- * where no key added a pin.
+ * Every visit opens on the overview, as the Outputs screen's does: OFF on
+ * both screens, so the next frame's follow does not put a protocol back.
+ * A read-back keeps it, a leave keeps it, and only a pick ends it.
  */
-TEST_CASE(off_picked_here_ends_when_the_screen_is_left)
+TEST_CASE(every_visit_opens_on_off_until_a_protocol_is_picked)
 {
     fresh();
     static const uint8_t dshot[2] = { 6, 7 };
@@ -1295,54 +1298,239 @@ TEST_CASE(off_picked_here_ends_when_the_screen_is_left)
     outputs_screen_set_binding(picker_screen_binding());
     picker_screen_set_select(outputs_screen_select);
 
-    pick("OFF");
-    picker_screen_follow(outputs_screen_binding()->proto,
-                         outputs_screen_editable());
-    CHECK_EQ(outputs_screen_binding()->proto, 0);
-    CHECK_EQ(picker_screen_pin(idx(5u), NULL, 0), PICKER_PIN_REFUSED);
-
+    pick("DSHOT300");
     scr()->leave();
-    /* A frame on another screen follows the outputs screen, and a read-back
-     * arrives naming the protocol the pins name, as one off the wire does. */
     picker_screen_follow(outputs_screen_binding()->proto,
                          outputs_screen_editable());
+    CHECK_EQ(outputs_screen_binding()->proto, proto_named("DSHOT300"));
+
+    /* The first frame, before any follow, already shows OFF. */
+    scr()->enter();
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
+    CHECK_EQ(picker_screen_pin(idx(5u), NULL, 0), PICKER_PIN_REFUSED);
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(5u), &r));
+    tap_rect(r);
+    CHECK_EQ(s_applied, 0);
+
+    /* A read-back naming the protocol the pins name, as one off the wire
+     * does: still OFF. */
     outbind_t b = *outputs_screen_binding();
     outbind_set_proto(&b, outbind_wire_proto(&b));
     outputs_screen_set_binding(&b);
     picker_screen_set_binding(outputs_screen_binding());
     picker_screen_follow(outputs_screen_binding()->proto,
                          outputs_screen_editable());
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+    tap_rect(r);
+    CHECK_EQ(s_applied, 0);
 
+    /* Left on OFF: OFF it stays. */
+    scr()->leave();
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    CHECK_EQ(outputs_screen_binding()->proto, 0);
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+
+    /* A pick here is what makes a key act. */
     scr()->enter();
-    CHECK_EQ(outputs_screen_binding()->proto, proto_named("DSHOT300"));
-    CHECK_EQ(picker_screen_binding()->proto, proto_named("DSHOT300"));
-    CHECK_STR_EQ(reason(), "");
+    pick("DSHOT300");
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
     CHECK_EQ(picker_screen_pin(idx(5u), NULL, 0), PICKER_PIN_FREE);
+    tap_rect(r);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, idx(5u)), proto_named("DSHOT300"));
+    picker_screen_set_select(NULL);
+}
+
+/*
+ * On OFF no key acts: every button pressed, the bound ones included, and
+ * nothing is applied and nothing is left unsaved.
+ */
+TEST_CASE(a_tap_on_every_key_on_off_writes_nothing)
+{
+    fresh();
+    static const uint8_t dshot[2] = { 6, 7 };
+    bind_more("DSHOT300", dshot, 2u, "SERVO PWM");
+    outputs_screen()->reset();
+    outputs_screen_set_binding(picker_screen_binding());
+    picker_screen_set_select(outputs_screen_select);
+    scr()->enter();
+    picker_screen_follow(outputs_screen_binding()->proto,
+                         outputs_screen_editable());
+    const outbind_t before = *picker_screen_binding();
+    render();
+
+    const outbind_board_t *bd = outbind_board(BOARD);
+    unsigned pressed = 0, keys = 0;
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        keys += bd->pins[i].reserved ? 0u : 1u;
+        gfx_rect_t r;
+        if (!picker_screen_button_rect(i, &r)) { continue; }
+        tap_rect(r);
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        ++pressed;
+    }
+    CHECK_EQ(pressed, keys);            /* every key, none skipped */
+    CHECK_EQ(s_applied, 0);
+    CHECK(!settings_dirty());
+    for (uint8_t i = 0; i < bd->count; ++i) {
+        if (outbind_group_of(picker_screen_binding(), i)
+            != outbind_group_of(&before, i)) {
+            T_FAIL("a tap on OFF moved GP%u", bd->pins[i].gpio);
+        }
+    }
+    CHECK_EQ(picker_screen_binding()->proto, 0);
+
+    pick("SERVO PWM");
     gfx_rect_t r;
     CHECK(picker_screen_button_rect(idx(5u), &r));
     tap_rect(r);
     CHECK_EQ(s_applied, 1);
-    CHECK_EQ(outbind_group_of(&s_last, idx(5u)), proto_named("DSHOT300"));
-
-    /* Another protocol picked here is still picked after a leave. */
-    pick("MOTOR PWM");
-    scr()->leave();
-    picker_screen_follow(outputs_screen_binding()->proto,
-                         outputs_screen_editable());
-    CHECK_EQ(outputs_screen_binding()->proto, proto_named("MOTOR PWM"));
-    CHECK_EQ(picker_screen_binding()->proto, proto_named("MOTOR PWM"));
-
-    /* With no pin bound OFF is what a leave gives, on both screens, as it
-     * is on the Outputs screen. */
-    fresh();
-    outputs_screen()->reset();
-    outputs_screen_set_binding(picker_screen_binding());
-    picker_screen_set_select(outputs_screen_select);
-    pick("OFF");
-    scr()->leave();
-    CHECK_EQ(outputs_screen_binding()->proto, 0);
-    CHECK_EQ(picker_screen_binding()->proto, 0);
+    CHECK_EQ(outbind_group_of(&s_last, idx(5u)), proto_named("SERVO PWM"));
     picker_screen_set_select(NULL);
+}
+
+/*
+ * A board that answers during a visit, on a panel that booted with the
+ * coprocessor off, or one swapped for another: the picker stays on OFF.
+ * It takes what the Outputs screen made of the reading, as the panel's
+ * loop hands it, and follows its selection.
+ */
+TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_picker_on_off)
+{
+    static const uint16_t k_before[2] = {
+        OUTBIND_BOARD_UNKNOWN, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u),
+    };
+    for (unsigned n = 0; n < 2u; ++n) {
+        fresh();
+        static const uint8_t dshot[2] = { 6, 7 };
+        bind_more("DSHOT300", dshot, 2u, "SERVO PWM");
+        bind_reading_t ok;
+        {
+            const outbind_t full = *picker_screen_binding();
+            uint16_t slots[LINK_OS_COUNT], cc[LINK_CC_COUNT];
+            (void)outbind_to_slots(&full, slots);
+            outbind_to_chan_cfg(&full, cc, 1000u, 2000u);
+            CHECK_EQ(bind_link_classify(&ok, BOARD, slots, cc),
+                     BIND_READ_OK);
+        }
+
+        outputs_screen()->reset();
+        bind_reading_t none;
+        (void)bind_link_classify(&none, k_before[n], NULL, NULL);
+        outputs_screen_set_reading(&none);
+        picker_screen_set_binding(outputs_screen_binding());
+        picker_screen_set_select(outputs_screen_select);
+        scr()->enter();
+        /* A protocol picked before the board answers, on the Outputs
+         * screen's list: it is not carried to the board. */
+        outputs_screen_select(proto_named("DSHOT300"));
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        CHECK_EQ(picker_screen_binding()->proto, proto_named("DSHOT300"));
+
+        outputs_screen_set_reading(&ok);
+        picker_screen_set_binding(outputs_screen_binding());
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        CHECK(picker_screen_editable());
+        CHECK_EQ(picker_screen_binding()->board, BOARD);
+        CHECK_EQ(picker_screen_binding()->proto, 0);
+        render();
+        gfx_rect_t r;
+        CHECK(picker_screen_button_rect(idx(5u), &r));
+        tap_rect(r);
+        CHECK(picker_screen_button_rect(idx(6u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 0);
+
+        /* Picked here, then the coprocessor is swapped for another board
+         * and back: OFF again, and a key writes nothing. */
+        pick("SERVO PWM");
+        outbind_t gone;
+        outbind_init(&gone);
+        outbind_set_board(&gone, (uint16_t)(OUTBIND_BOARD_PICO_HEADER + 1u));
+        outputs_screen_set_binding(&gone);
+        picker_screen_set_binding(outputs_screen_binding());
+        outputs_screen_set_reading(&ok);
+        picker_screen_set_binding(outputs_screen_binding());
+        picker_screen_follow(outputs_screen_binding()->proto,
+                             outputs_screen_editable());
+        CHECK_EQ(picker_screen_binding()->proto, 0);
+        render();
+        CHECK(picker_screen_button_rect(idx(5u), &r));
+        tap_rect(r);
+        CHECK_EQ(s_applied, 0);
+        picker_screen_set_select(NULL);
+    }
+}
+
+/* Whether any pixel of @p ink lies in the PINS table left of the board. */
+static bool pins_table_inked(gfx_color_t ink)
+{
+    for (int y = 128; y < SCREEN_H - 24; ++y) {
+        for (int x = 6; x < 6 + 128; ++x) {
+            if (s_px[y * SCREEN_W + x] == ink) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * OFF holds no pin, so the PINS table is not drawn, and a press on a key
+ * draws no pressed face, as on the Outputs screen.  The slot count and the
+ * IN USE table stay: they describe the overview.  A protocol picked brings
+ * the table and the pressed face back.
+ */
+TEST_CASE(off_draws_no_pins_table_and_no_pressed_key)
+{
+    static gfx_color_t was[800 * 432];
+    fresh();
+    static const uint8_t dshot[2] = { 6, 7 };
+    bind_more("DSHOT300", dshot, 2u, "SERVO PWM");
+    scr()->enter();                             /* OFF */
+    picker_screen_invalidate();
+    render();
+    CHECK(!pins_table_inked(UI_ACCENT));
+    CHECK(!pins_table_inked(UI_TEXT_FAINT));
+    CHECK(strstr(count(), "OF 8") != NULL);
+    memcpy(was, s_px, sizeof(was));
+
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(5u), &r));
+    touch_event_t d = { TOUCH_EVENT_DOWN,
+                        { 0, (int16_t)(r.x + r.w / 2),
+                          (int16_t)(r.y + r.h / 2), 40 }, 0u };
+    touch_event_t u = d;
+    u.type = TOUCH_EVENT_UP;
+    scr()->event(&d);
+    picker_screen_invalidate();
+    render();
+    CHECK(memcmp(was, s_px, sizeof(was)) == 0);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 0);
+
+    picker_screen_follow(proto_named("SERVO PWM"), true);
+    picker_screen_invalidate();
+    render();
+    CHECK(pins_table_inked(UI_ACCENT));
+    memcpy(was, s_px, sizeof(was));
+    scr()->event(&d);
+    picker_screen_invalidate();
+    render();
+    CHECK(memcmp(was, s_px, sizeof(was)) != 0);
+    scr()->event(&u);
+    CHECK_EQ(s_applied, 1);
 }
 
 /*
@@ -1665,7 +1853,10 @@ int main(void)
 {
     RUN(an_unconfirmed_binding_takes_no_tap);
     RUN(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named);
-    RUN(off_picked_here_ends_when_the_screen_is_left);
+    RUN(every_visit_opens_on_off_until_a_protocol_is_picked);
+    RUN(a_tap_on_every_key_on_off_writes_nothing);
+    RUN(a_board_that_answers_during_a_visit_keeps_the_picker_on_off);
+    RUN(off_draws_no_pins_table_and_no_pressed_key);
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
     RUN(the_picker_follows_the_protocol_chosen_on_the_outputs_screen);
     RUN(a_button_binds_the_pad_it_is_wired_to);

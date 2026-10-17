@@ -6,7 +6,7 @@ order: 63
 
 # Pin picker
 
-PICK A PIN shows the coprocessor board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md).
+PICK A PIN shows the coprocessor board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md). Every visit opens with OFF selected: no key binds or unbinds a pin until a protocol is picked in the list, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`.
 
 ## The board and its keys
 
@@ -45,7 +45,7 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 | `ALL 8 SLOTS IN USE` | 8 pins are bound over all protocols |
 | `NEEDS 8 CHANNELS, 4 FREE` | PPM, with 4 servo pins bound |
 | `SERVO PWM TAKES 8 PINS` | the selected protocol holds as many pins as it takes |
-| `OFF: VIEW ALL, NO EDITING` | OFF is selected |
+| `CHOOSE A PROTOCOL, THEN TAP PINS` | OFF is selected |
 | `NOT READ` | the binding is not confirmed; every key is grey |
 | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | a tap on GP28 under SERVO PWM or MOTOR PWM while the programming port holds GP13: one PWM slice; the key is grey |
 | `GP16: SAME PWM CHANNEL AS GP0` | a tap on GP16 under SERVO PWM or MOTOR PWM with GP0 bound as PWM: one PWM compare register; the key is grey |
@@ -54,7 +54,7 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 
 ## PINS and IN USE
 
-PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name.
+PINS, down the left, lists the selected protocol's pins in channel order with the pad number printed on the board. IN USE, down the right, lists the pins other protocols hold, each group under its protocol's name. With OFF selected PINS is not shown, because OFF holds no pin, and IN USE lists every bound pin.
 
 ![GP13 held by the programming port](view:picker-prog)
 
