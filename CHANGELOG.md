@@ -11,7 +11,7 @@ history is in git.
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
   runs first. PREV and NEXT in the header row turn the page; they show
   only on a card of more than 48 files. One page costs one walk of the
-  `rcbench` directory and holds 48 entries in memory. RESCAN reads the
+  card's root directory and holds 48 entries in memory. RESCAN reads the
   page shown again, and a page emptied by DELETE or a shrunk card shows
   the last page left.
 - The LOG VIEWER list has a scroll bar 42 px (8.1 mm) wide at the right
@@ -114,10 +114,10 @@ history is in git.
 
 - The LOG VIEWER tab reads `FILES 1 TO 48 OF 200` (`DATEIEN 1 BIS 48 VON
   200`) on a card of more than one page.
-- The panel's directory walk reads the `rcbench` directory through FatFs
-  `f_readdir` and takes each file's size from the directory entry. The
-  48 `stat` calls a LOG VIEWER listing made are gone; on a card of 999
-  runs each of them read up to 63 directory sectors.
+- The panel's directory walk reads a directory through FatFs `f_readdir`
+  and takes each file's size from the directory entry. The 48 `stat`
+  calls a LOG VIEWER listing made are gone; on a card of 999 runs each of
+  them read up to 63 directory sectors.
 
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
