@@ -351,9 +351,9 @@ TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
  * panel that thinks it is 32.  Matching a refusal only against the
  * transaction's own offset drops it, and the transaction then runs to
  * LINK_HOST_TIMEOUT_MS (1000 ms) with the reason lost:
- * firmware/panel/main/main.c maps a refusal to OUTPUTS_REFUSED and a timeout
- * to OUTPUTS_NO_LINK, so the reason decides whether the operator is sent to
- * the pins chosen or to the cable.
+ * write_output_binding() in firmware/panel/main/panel_arm.c maps a refusal to
+ * OUTPUTS_REFUSED and a timeout to OUTPUTS_NO_LINK, so the reason decides
+ * whether the operator is sent to the pins chosen or to the cable.
  */
 TEST_CASE(a_refusal_of_a_later_fragment_answers_the_write)
 {
