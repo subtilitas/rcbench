@@ -165,6 +165,12 @@ def source_text(src: Path) -> str:
                   flags=re.S)
 
 
+def defines(text: str) -> dict:
+    """The macros of @p text whose value is a number."""
+    return dict(re.findall(r"^\s*#\s*define\s+(\w+)\s+\(?\s*(\d+)u?"
+                           r"\s*\)?\s*$", text, re.M))
+
+
 def queues() -> tuple:
     """(label, bytes, how) for every queue and semaphore firmware/panel
     creates, and the errors: a length or an item size the tool cannot
@@ -174,8 +180,14 @@ def queues() -> tuple:
         if stack_check.in_build_dir(src.relative_to(PANEL_DIR)):
             continue
         text = source_text(src)
-        macros = dict(re.findall(r"^\s*#\s*define\s+(\w+)\s+\(?\s*(\d+)u?"
-                                 r"\s*\)?\s*$", text, re.M))
+        # The macros of the headers beside the file that it includes
+        # (main.c sizes its queues in panel.h), then the file's own, which
+        # win.
+        macros = {}
+        for inc in re.findall(r'^\s*#\s*include\s+"([^"/]+)"', text, re.M):
+            if (src.parent / inc).is_file():
+                macros.update(defines(source_text(src.parent / inc)))
+        macros.update(defines(text))
         for m in re.finditer(r"\b(xQueueCreate\w*|xSemaphoreCreate\w*)\s*\(",
                              text):
             line = text.count("\n", 0, m.start()) + 1
