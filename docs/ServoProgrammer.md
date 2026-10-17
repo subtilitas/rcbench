@@ -1045,8 +1045,8 @@ line. [The link page](LinkKST.md) lists the codes.
   frame of the screen after the control task does. The control task holds
   the page of the port and the tester's commands from its own reading of
   the port.
-- The panel's glue in `firmware/panel/main/main.c` is not in the host
-  suite: the command queue between the screen and the control task, the
+- The panel's glue in `firmware/panel/main/main.c` and
+  `panel_card.c` is not in the host suite: the command queue between the screen and the control task, the
   point where the control task drops a withdrawn command, the hand-over
   of the port's state to the page and the tester, and the card's file
   calls.
