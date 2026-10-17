@@ -196,6 +196,7 @@ TRACKED = [
     "shared/sense/as5600.c",
     "shared/sense/sense_sched.c",
     "shared/sense/sense_svc.c",
+    "shared/sense/sense_trace_feed.c",
     "shared/sense/sense_trace.c",
     "protocols/phase_tap/tone.c",
     "protocols/phase_tap/edge_ring.c",
