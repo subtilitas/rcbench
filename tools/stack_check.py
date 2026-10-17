@@ -47,7 +47,8 @@ What it cannot follow it counts and names, and never drops quietly:
 - a function that opens with no entry: hand-written or call0 code, whose
   frame is not read;
 - recursion: a function already on the chain is not entered again, so a
-  depth through a cycle counts the cycle once.
+  chain runs round a cycle at most once, and the depth is the deepest of
+  every chain with no function on it twice (Graph in tools/stack_elf.py).
 
 A task with any of these has a depth that is a lower bound, and the result
 says so.  The margin is what covers them.
@@ -702,11 +703,9 @@ def main() -> int:
             fails.append(f"{name}: entry {entry} is {len(addrs)} functions "
                          f"in the ELF, not 1")
             continue
-        g.cycles = set()
-        g.memo = {}
-        depth, chain = g.depth(addrs[0], [])
-        cycles = sorted(g.cycles)
+        depth, chain = g.depth(addrs[0])
         seen = g.reach(addrs[0])
+        cycles = g.recursion(seen)
         indirect = sorted((funcs[a].name, funcs[a].callx) for a in seen
                           if funcs[a].callx)
         called_rom = sorted({r for a in seen for r in funcs[a].rom})
@@ -736,7 +735,8 @@ def main() -> int:
             unknown.append(f"{sum(n for _, n in lost)} branch targets not "
                            f"decoded in {len(lost)} functions")
         if cycles:
-            unknown.append(f"{len(cycles)} cycles, each counted once")
+            unknown.append(f"{len(cycles)} recursive groups, each function "
+                           f"entered once per chain")
         if over:
             result = "OVER"
         elif unknown:
@@ -780,7 +780,8 @@ def main() -> int:
                 for fn, n in lost:
                     print(f"     {fn} x{n}")
             if cycles:
-                print("   cycles, each counted once:")
+                print("   recursive groups, each function entered once per "
+                      "chain:")
                 for c in cycles:
                     print(f"     {c}")
 
