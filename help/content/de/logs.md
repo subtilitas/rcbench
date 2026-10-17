@@ -18,19 +18,28 @@ Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine 
 
 ![Die Dateiliste](view:logs)
 
-Der Kopf nennt die Karte und ihren freien Platz. Jede Zeile ist eine Datei mit ihrer Größe.
+Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Bezeichnung zeigt den Namen, den die Karte meldet, oder `SD-KARTE`. Jede Zeile ist eine Datei mit ihrer Größe.
 
 | Taste | Was sie tut |
 |---|---|
-| AKTUALISIEREN | liest die Karte erneut und wählt den neuesten Lauf |
+| AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
+| VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
 | WLAN | öffnet [Dateien und Update](wifi.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte Datei in der Importansicht; grau, solange nichts gewählt ist |
 
-- Die Liste fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Bei mehr Dateien, als passen, behält die Liste die neuesten Läufe, und ihr Reiter zeigt `48 VON 137 DATEIEN`.
+![Die vierte Seite einer vollen Karte](view:logs-pages)
+
+- Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
+- Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
+- Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, erscheinen ab Seite 1: mit NÄCHSTE von Seite 1 oder AKTUALISIEREN auf Seite 1. Auf dem Rückweg überspringt VORIGE so viele Einträge, wie aufgezeichnet wurden; die Zahlen im Reiter zeigen die Verschiebung.
+- Der Rollbalken am rechten Rand, 8,1 mm breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
+- Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
+- Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
+- Wird eine Karte eingesteckt, während keine eingebunden ist, bindet AKTUALISIEREN sie ein; sie öffnet auf ihrer ersten Seite. Eine Karte, die gegen eine andere getauscht wird, während eine eingebunden ist, wird bis zum Neustart des Panels nicht neu eingebunden; was die Liste in diesem Zustand zeigt, ist nicht gemessen.
 - Neueste heißt die höchste Nummer im Namen. Das Panel hat keine Uhr, die das Abschalten übersteht; jede Datei trägt das Datum 1980-01-01.
 - Ein Lauf, der gerade geschrieben wird, steht nicht in der Liste.
-- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px scrollt die Liste und wählt nichts.
+- Eine Zeile nimmt einen Tipp an. Ein Ziehen über mehr als 8 px auf den Zeilen scrollt die Liste und wählt nichts.
 
 ## Was ein Lauf schreibt
 

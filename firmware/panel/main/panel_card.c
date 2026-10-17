@@ -204,15 +204,13 @@ static bool card_busy(const char *name)
 /*
  * One directory entry on its way into the viewer's list.
  *
- * The card takes LOG_RUN_LAST runs and the list holds LOG_VIEWER_MAX_FILES of
- * them, so which of them arrive is a decision rather than a side effect of
- * where the read stopped: every entry is offered to log_select_keep(), which
- * holds the newest runs.
+ * The card takes LOG_RUN_LAST runs and a page of the list holds
+ * LOG_VIEWER_MAX_FILES of them, so which of them arrive is a decision rather
+ * than a side effect of where the read stopped: every entry is offered to
+ * log_select_page_offer(), which holds the page the viewer asked for.
  */
 typedef struct {
-    log_viewer_file_t *out;
-    int max;
-    int held;
+    log_select_page_t sel;
     int files;      /* what the card holds that this viewer could open */
 } card_pick_t;
 
@@ -241,17 +239,19 @@ static void card_take(const storage_entry_t *entry, void *ctx)
      * agree today and neither owns the other's layout.  The name is copied
      * whole and terminated by hand, so one that filled its array without a
      * terminator ends here rather than running off the end. */
-    _Static_assert(sizeof(pick->out->name) == sizeof(entry->name),
+    _Static_assert(sizeof(((log_viewer_file_t *)0)->name)
+                       == sizeof(entry->name),
                    "the viewer's name field and the card's are one size");
     log_viewer_file_t f;
     memcpy(f.name, entry->name, sizeof(f.name));
     f.name[sizeof(f.name) - 1u] = '\0';
     f.size   = entry->size;
     f.is_dir = entry->is_dir;
-    pick->held = log_select_keep(pick->out, pick->held, pick->max, &f);
+    log_select_page_offer(&pick->sel, &f);
 }
 
-static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
+static int card_list(log_viewer_file_t *out, int max_entries,
+                     log_viewer_page_t *page, void *ctx)
 {
     (void)ctx;
     /*
@@ -274,9 +274,15 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
     if (!storage_mounted()) {
         return -1;
     }
-    card_pick_t pick = { out, max_entries, 0, 0 };
-    /* No tick: this runs on the task that renders, which has no safety line
-     * to hold and nothing to pump. */
+    card_pick_t pick;
+    pick.files = 0;
+    log_select_page_begin(&pick.sel, out, max_entries, page);
+    /*
+     * No tick: this runs on the task that renders, which has no safety line
+     * to hold and nothing to pump.  One walk per page, PREV and NEXT
+     * included: the page is held and the rest of the card is counted, so a
+     * page of a full card costs what the first page of it does.
+     */
     const int total = storage_walk(CARD_DIR, CARD_SUFFIXES, card_take, &pick,
                                    NULL);
     if (total < 0) {
@@ -294,26 +300,15 @@ static int card_list(log_viewer_file_t *out, int max_entries, void *ctx)
          */
         return -1;
     }
-    /*
-     * Sizes last, and only for what was kept.  The walk carries names alone
-     * because a size is a path lookup of its own; asking for one per entry on
-     * a card holding hundreds of runs would put hundreds of card transactions
-     * on the task that renders and handles touch, to fill a column for
-     * entries the list has already dropped.
-     */
-    for (int i = 0; i < pick.held; ++i) {
-        if (!out[i].is_dir) {
-            out[i].size = storage_size(CARD_DIR, out[i].name);
-        }
-    }
-    /* Held in rank order while the card is read, drawn in name order. */
-    log_select_sort(out, pick.held);
+    /* Held in rank order while the card is read and drawn in it: the newest
+     * run at the top. */
+    (void)log_select_page_end(&pick.sel, page);
     /*
      * Files, not entries.  The number goes to the tab that says how much of
      * the card is on the list, and counting folders there would say a card
      * holds more than the list can ever show while the list is complete.
      */
-    return pick.files;     /* what the card holds; pick.held were written */
+    return pick.files;     /* what the card holds; page->held were written */
 }
 
 static bool card_open(const char *name, log_source_t *src, void *ctx)

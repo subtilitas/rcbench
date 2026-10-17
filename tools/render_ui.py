@@ -118,6 +118,7 @@ SOURCES = [
     "firmware/iomcu/src/board_drawing_rp2350_can.c",
     "shared/ui/board_drawing.c",
     "shared/ui/log_viewer_screen.c",
+    "shared/ui/log_select.c",
     "shared/ui/settings_screen.c",
     "shared/settings/settings.c",
     "shared/logfile/log_numbers.c",
@@ -295,6 +296,9 @@ SCREENS = {
     "logs":       ("logs.png",       "logs",       "dark"),
     # No card mounted.
     "logs-nocard": ("logs-nocard.png", "logs", "dark"),
+    # A card of 121 files, more than a page: the second page, PREV and NEXT
+    # in the header row.
+    "logs-pages": ("logs-pages.png", "logs", "dark"),
     "analyser-failsafe": ("analyser-failsafe.png", "analyser", "dark"),
     "programmer-protocols": ("programmer-protocols.png", "programmer", "dark"),
     "programmer-idle": ("programmer-idle.png", "programmer", "dark"),
