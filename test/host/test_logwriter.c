@@ -1313,11 +1313,22 @@ TEST_CASE(a_bench_row_names_its_source)
     CHECK(log_writer_row(&w, 1.05f, &b));
     const char *hdr_end = strchr(g_mem.buf, '\n');
     CHECK(hdr_end != NULL);
+    if (hdr_end == NULL) {
+        return;
+    }
     CHECK(memcmp(hdr_end - 7, ";source", 7) == 0);
     const char *r1 = hdr_end + 1;
     const char *r1_end = strchr(r1, '\n');
+    CHECK(r1_end != NULL);
+    if (r1_end == NULL) {
+        return;
+    }
     CHECK(memcmp(r1_end - 9, ";measured", 9) == 0);
     const char *r2_end = strchr(r1_end + 1, '\n');
+    CHECK(r2_end != NULL);
+    if (r2_end == NULL) {
+        return;
+    }
     CHECK(memcmp(r2_end - 6, ";model", 6) == 0);
 }
 
