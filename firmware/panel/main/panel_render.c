@@ -109,7 +109,7 @@ void flush_screen_commands(uint32_t stops_now);
  * its screen by the time it gets here, so a refused send is a discarded
  * disarm or a throttle that never arrives.
  */
-void send_cmd(const panel_cmd_t *in)
+static void send_cmd(const panel_cmd_t *in)
 {
     panel_cmd_t cmd = *in;
     const panel_cmd_t *pc = &cmd;

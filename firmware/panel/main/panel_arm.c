@@ -48,6 +48,20 @@ static uint16_t pct_to_span(float pct)
     return (uint16_t)((pct * (float)OUT_SPAN / 100.0f) + 0.5f);
 }
 
+/* The stop count this task has already let go for; see service_arming(). */
+static uint32_t    s_stops_served;
+/*
+ * When the outstanding disarm started holding the safety line down, and how
+ * long that may go on for.
+ *
+ * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
+ * certainly failed safe by then and the line can go back up: a disarm nobody
+ * can deliver must not hold it down for ever.
+ */
+#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
+static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
+static uint32_t    s_disarm_since;
+
 static uint16_t pct_to_hundredths(float pct)
 {
     if (!(pct > 0.0f)) {
@@ -115,7 +129,7 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
 bench_totals_t s_totals;
 uint32_t       s_totals_ms;
 
-void arm_applied(void)
+static void arm_applied(void)
 {
     /* A run starts with nothing counted. */
     bench_totals_reset(&s_totals);
@@ -157,20 +171,6 @@ void arm_watch_service(bool link_up)
     }
 }
 
-/* The stop count this task has already let go for; see service_arming(). */
-static uint32_t    s_stops_served;
-/*
- * When the outstanding disarm started holding the safety line down, and how
- * long that may go on for.
- *
- * Twice HEARTBEAT_MAX_GAP_MS (150 ms), so a far end that never answers has
- * certainly failed safe by then and the line can go back up: a disarm nobody
- * can deliver must not hold it down for ever.
- */
-#define DISARM_INHIBIT_MS (2u * HEARTBEAT_MAX_GAP_MS)
-static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
-static uint32_t    s_disarm_since;
-
 /*
  * The latched stop, and then the act the arming policy asks for.
  *
@@ -187,7 +187,7 @@ static uint32_t    s_disarm_since;
  * seconds -- three exchanges each -- and a disarm must not wait behind
  * commands that were asked for before it.
  */
-void service_disarm(bool link_up)
+static void service_disarm(bool link_up)
 {
     bool owed = false;
 
@@ -458,7 +458,7 @@ void service_arming(bool link_up)
  * screen; screen state is app_main's alone.  True when a page may have been
  * written: the rate reset that leads the sequence landed, or there is none.
  */
-bool write_output_binding(const outbind_t *bind)
+static bool write_output_binding(const outbind_t *bind)
 {
     uint16_t cfg[LINK_CC_COUNT];
     uint16_t slots[LINK_OS_COUNT];
@@ -516,8 +516,8 @@ bool disarm_here(bool link_up)
  * One motor command.  Arming is asked of the policy rather than done here;
  * the throttle is a channel command like any other.
  */
-void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
-                     bench_state_t *bench)
+static void apply_motor_cmd(const motor_cmd_t *mc, bool link_up,
+                            bench_state_t *bench)
 {
     switch (mc->kind) {
     case MOTOR_CMD_ARM:
