@@ -452,7 +452,7 @@ void lim_tick(void)
 static void lim_file_name(char *b, size_t n)
 {
     if (s.lim_file > 0) {
-        log_report_name(b, n, s.lim_file);
+        log_name_build(b, n, LOG_PREFIX_SERVO, s.lim_file, true);
     } else {
         snprintf(b, n, "%s", (s.lim_file < 0) ? TR(SV_NOT_RECORDED)
                                                : TR(SV_WRITING));

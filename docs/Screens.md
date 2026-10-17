@@ -774,7 +774,7 @@ left as they are.
 
 The result stays on the left card until CLOSE: PASS, FAIL or ABORTED and
 why, the longest travel time and the highest holding current, and the files
-the card took: `BENCHnnn.CSV`, and `+ .TXT` once the card has taken the
+the card took: `SERVOnnn.CSV`, and `+ .TXT` once the card has taken the
 report whole.
 
 ![A result](img/servo-result.png)
@@ -798,7 +798,7 @@ CURRENT INA3221 CH1`, and the next line says why it cannot start. The
 settings close as the run starts. Its box on the left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
-ends, and `BENCHnnn.TXT` until CLOSE. The run switches the bench to SAFE and
+ends, and `SERVOnnn.TXT` until CLOSE. The run switches the bench to SAFE and
 to ARMED itself for each write; the operator's STOP, SAFE or any of the
 automatic test's reasons end it with the output off.
 
@@ -1458,13 +1458,36 @@ is left out of the rows, the figures and the plot. ROWS then shows in the
 warning colour and the import view says `INCOMPLETE LAST ROW. SKIPPED.`. A
 file from another program that ends without a line feed loses its last row
 the same way. Spaces, tabs and carriage returns (CR) after the last line
-feed are no row. Runs recorded by the bench are written as `BENCH001.CSV` to
-`BENCH999.CSV` in the card's root directory. A run is one switching to
-ARMED, or one switch-on of the SUPPLY output while the bench is SAFE. An
-automatic servo test takes the next number too: its log is `BENCHnnn.CSV`,
-which the list shows as a run, and its report `BENCHnnn.TXT`, which the list
-does not show. A number carried by either file is taken, and DELETE on a run
-removes its report too.
+feed are no row. Runs recorded by the bench are written to the card's root
+directory under the name of the writer and a number from 001 to 999:
+
+| Name | Run |
+| --- | --- |
+| `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
+| `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
+| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
+
+With a coprocessor older than protocol 4.18, every switch to ARMED covers the
+throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
+
+The numbers are one series across the three names: the next run takes one
+above the highest number on the card, whichever name carries it, so
+`BENCH041.CSV` and `SERVO042.CSV` are followed by `ESC043.CSV` or
+`BENCH043.CSV`. A gap left by a deleted file is not filled. A card holding a
+number 999 under any name takes no further run, even with lower numbers
+free: the band reads `Card full or not writable. Run not recorded.`, or for
+a servo test `Card missing or full. Servo test not recorded.` A card that
+holds only `BENCHnnn` files, a servo test's among them, lists the same way,
+and the next run continues above their numbers. A number carried by a CSV or
+a TXT file is taken. Firmware 0.20.0 and older numbers runs above the
+highest `BENCHnnn` file only. Going back to it on a card written by this
+firmware can give a run a number that an `ESCnnn` or `SERVOnnn` file already
+carries. Nothing is overwritten: the two files have different names, and the
+list ranks them by name. The list shows the CSV files and not the reports,
+and DELETE on a run removes the report with the same name and number too.
+Runs are listed newest first by number, across all three names:
+`ESC043.CSV`, then `SERVO042.CSV`, then `BENCH041.CSV`.
 
 The list shows the card a page of 48 entries at a time, and a card holds up
 to 999 runs. Pages run newest run first: runs by number, highest first, then
@@ -1480,9 +1503,9 @@ the tab names the page's part of the card, `FILES 145 TO 192 OF 1000`, instead
 of `FILES`. PREV is grey on the first page and NEXT on the last. Pages are cut
 from the top, 48 at a time: when fewer than 48 entries stand ahead of the page
 on screen, for example after a run was recorded, PREV reads the first page
-from the top. Runs recorded while a later page is open appear from page 1, by
-NEXT from page 1 or RESCAN on page 1; on the way back PREV passes over as many
-entries as were recorded, and the tab numbers show the shift. Each page is one
+from the top. Runs recorded while a later page is open are on page 1. PREV
+back from page 3 or later then passes over as many entries as were recorded;
+NEXT from page 1 shows them, and the tab numbers show the shift. Each page is one
 read of the card's root directory: the walk keeps the 48 entries of that page
 and counts the rest, so the panel holds one page in memory whatever the card
 holds. The read runs on the task that draws the screen and handles touch. For

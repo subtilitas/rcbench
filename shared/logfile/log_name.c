@@ -11,15 +11,27 @@
 #include <stdio.h>
 #include <string.h>
 
-#define RUN_PREFIX     "BENCH"
-#define RUN_PREFIX_LEN 5
 #define RUN_DIGITS     3
 #define RUN_SUFFIX     ".CSV"
-#define RUN_NAME_LEN   (LOG_RUN_NAME_MAX - 1)
+#define REPORT_SUFFIX  ".TXT"
+#define SUFFIX_LEN     4
 
-_Static_assert(RUN_PREFIX_LEN + RUN_DIGITS + (sizeof(RUN_SUFFIX) - 1u)
-                   == (size_t)RUN_NAME_LEN,
-               "a run's name is its three parts and nothing else");
+_Static_assert(sizeof(RUN_SUFFIX) - 1u == SUFFIX_LEN
+                   && sizeof(REPORT_SUFFIX) == sizeof(RUN_SUFFIX),
+               "a report's name is as long as its run's");
+
+/* The writers' prefixes, in log_prefix_t order. */
+static const char *const k_prefix[LOG_PREFIX_COUNT] = {
+    [LOG_PREFIX_BENCH] = "BENCH",
+    [LOG_PREFIX_ESC]   = "ESC",
+    [LOG_PREFIX_SERVO] = "SERVO",
+};
+
+/* The longest prefix fills the buffer exactly, and is an 8.3 base name: at
+ * most 8 characters before the dot. */
+_Static_assert(5 + RUN_DIGITS + SUFFIX_LEN == LOG_RUN_NAME_MAX - 1,
+               "BENCH999.CSV and SERVO999.CSV fill the buffer");
+_Static_assert(5 + RUN_DIGITS <= 8, "an 8.3 base name");
 
 /*
  * Does @p name open with @p pat, case folded?  @p name holds at least
@@ -52,12 +64,8 @@ int log_name_case_cmp(const char *a, const char *b)
     }
 }
 
-#define REPORT_SUFFIX ".TXT"
-_Static_assert(sizeof(REPORT_SUFFIX) == sizeof(RUN_SUFFIX),
-               "a report's name is as long as its run's");
-
-static void numbered_name(char *out, size_t out_size, int number,
-                          const char *suffix)
+void log_name_build(char *out, size_t out_size, log_prefix_t prefix,
+                    int number, bool report)
 {
     if (out == NULL || out_size == 0u) {
         return;
@@ -66,60 +74,141 @@ static void numbered_name(char *out, size_t out_size, int number,
     if (out_size < (size_t)LOG_RUN_NAME_MAX) {
         return;
     }
+    if ((unsigned)prefix >= (unsigned)LOG_PREFIX_COUNT) {
+        return;
+    }
     if (number < LOG_RUN_FIRST || number > LOG_RUN_LAST) {
         return;
     }
-    snprintf(out, out_size, RUN_PREFIX "%03d%s", number, suffix);
+    snprintf(out, out_size, "%s%03d%s", k_prefix[prefix], number,
+             report ? REPORT_SUFFIX : RUN_SUFFIX);
+}
+
+log_prefix_t log_name_armed_prefix(bool throttle_armed)
+{
+    return throttle_armed ? LOG_PREFIX_ESC : LOG_PREFIX_BENCH;
 }
 
 void log_run_name(char *out, size_t out_size, int number)
 {
-    numbered_name(out, out_size, number, RUN_SUFFIX);
+    log_name_build(out, out_size, LOG_PREFIX_BENCH, number, false);
 }
 
 void log_report_name(char *out, size_t out_size, int number)
 {
-    numbered_name(out, out_size, number, REPORT_SUFFIX);
+    log_name_build(out, out_size, LOG_PREFIX_BENCH, number, true);
 }
 
-static int numbered(const char *name, const char *suffix)
+/*
+ * The number in @p name under @p suffix, any prefix, or -1; @p prefix, when
+ * not NULL, takes the prefix's index.
+ */
+static int numbered(const char *name, const char *suffix, int *prefix)
 {
+    if (name == NULL) {
+        return -1;
+    }
     /*
-     * A run's name has one shape and one length.  The length is taken first,
-     * which settles "nothing after the suffix" and puts every read below
-     * inside the name.
+     * A run's name has one shape and one length per prefix.  The length is
+     * taken first, which settles "nothing after the suffix" and puts every
+     * read below inside the name.
      */
-    if (name == NULL || strlen(name) != (size_t)RUN_NAME_LEN) {
-        return -1;
-    }
-    if (!prefix_matches(name, RUN_PREFIX, RUN_PREFIX_LEN)) {
-        return -1;
-    }
-    const char *p = name + RUN_PREFIX_LEN;
-    int v = 0;
-    for (int i = 0; i < RUN_DIGITS; ++i) {
-        if (p[i] < '0' || p[i] > '9') {
+    const size_t len = strlen(name);
+    for (int k = 0; k < (int)LOG_PREFIX_COUNT; ++k) {
+        const size_t plen = strlen(k_prefix[k]);
+        if (len != plen + RUN_DIGITS + SUFFIX_LEN
+            || !prefix_matches(name, k_prefix[k], plen)) {
+            continue;
+        }
+        const char *p = name + plen;
+        int v = 0;
+        for (int i = 0; i < RUN_DIGITS; ++i) {
+            if (p[i] < '0' || p[i] > '9') {
+                return -1;
+            }
+            v = (v * 10) + (p[i] - '0');
+        }
+        if (v < LOG_RUN_FIRST || v > LOG_RUN_LAST) {
             return -1;
         }
-        v = (v * 10) + (p[i] - '0');
+        if (log_name_case_cmp(p + RUN_DIGITS, suffix) != 0) {
+            return -1;
+        }
+        if (prefix != NULL) {
+            *prefix = k;
+        }
+        return v;
     }
-    if (v < LOG_RUN_FIRST || v > LOG_RUN_LAST) {
-        return -1;
-    }
-    if (log_name_case_cmp(p + RUN_DIGITS, suffix) != 0) {
-        return -1;
-    }
-    return v;
+    return -1;
 }
 
 int log_run_number(const char *name)
 {
-    return numbered(name, RUN_SUFFIX);
+    return numbered(name, RUN_SUFFIX, NULL);
 }
 
 int log_report_number(const char *name)
 {
-    return numbered(name, REPORT_SUFFIX);
+    return numbered(name, REPORT_SUFFIX, NULL);
+}
+
+int log_name_number(const char *name)
+{
+    const int n = log_run_number(name);
+    return (n >= 0) ? n : log_report_number(name);
+}
+
+void log_name_form(char *out, size_t out_size, int number, int form)
+{
+    if (out != NULL && out_size > 0u) {
+        out[0] = '\0';
+    }
+    if (form < 0 || form >= LOG_NAME_FORMS) {
+        return;
+    }
+    log_name_build(out, out_size, (log_prefix_t)(form / 2), number,
+                   (form % 2) != 0);
+}
+
+int log_name_next(int highest)
+{
+    if (highest < LOG_RUN_FIRST) {
+        return LOG_RUN_FIRST;
+    }
+    if (highest >= LOG_RUN_LAST) {
+        return LOG_RUN_LAST + 1;    /* full */
+    }
+    return highest + 1;
+}
+
+void log_name_report_of(char *out, size_t out_size, const char *run_name)
+{
+    int k = -1;
+    const int n = numbered(run_name, RUN_SUFFIX, &k);
+    if (n < 0) {
+        if (out != NULL && out_size > 0u) {
+            out[0] = '\0';
+        }
+        return;
+    }
+    log_name_build(out, out_size, (log_prefix_t)k, n, true);
+}
+
+bool log_name_busy(const char *name, unsigned open_run, unsigned open_test,
+                   unsigned open_txt)
+{
+    const int n = log_run_number(name);
+    const int r = log_report_number(name);
+    /*
+     * A run log under @p open_txt is busy too.  Deleting a run deletes its
+     * report (log_name_report_of()), and that report is the one still open:
+     * with no file lock in FatFs, the unlink frees clusters the logger goes
+     * on writing into.
+     */
+    return (n > 0 && ((open_run != 0u && (unsigned)n == open_run)
+                      || (open_test != 0u && (unsigned)n == open_test)
+                      || (open_txt != 0u && (unsigned)n == open_txt)))
+        || (r > 0 && open_txt != 0u && (unsigned)r == open_txt);
 }
 
 int log_name_rank(const char *a, const char *b)
@@ -139,7 +228,11 @@ int log_name_rank(const char *a, const char *b)
         if (rb < 0) {
             return -1;
         }
-        return rb - ra;     /* the higher number is the later run */
+        if (ra != rb) {
+            return rb - ra;     /* the higher number is the later run */
+        }
+        /* One number under two names only on a card edited on a computer:
+         * by name, so the order does not hang on which arrived first. */
     }
     return log_name_case_cmp(a, b);
 }

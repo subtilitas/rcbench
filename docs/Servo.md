@@ -323,7 +323,7 @@ and the report's file name until CLOSE.
 ![Search only](img/servo-limrun-found.png)
 ![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
 
-The report is a `BENCHnnn.TXT` of its own, with no CSV file beside it, under
+The report is a `SERVOnnn.TXT` of its own, with no CSV file beside it, under
 the next free number, written whatever the DUT page's REPORT says. During a
 run neither the bench log nor the supply log writes a row; the supply
 log's time runs on through the run, as its totals do. From the run's start
@@ -901,12 +901,14 @@ compared by its magnitude and in whole mA: see
 ### Files
 
 A run takes the next run number on the card, as a bench in ARMED does, and the
-SD card's own task writes its files: `BENCHnnn.CSV`, one row per reading of
-the run's meter, and with the DUT page's REPORT on, `BENCHnnn.TXT`. A run is
+SD card's own task writes its files: `SERVOnnn.CSV`, one row per reading of
+the run's meter, and with the DUT page's REPORT on, `SERVOnnn.TXT`. The
+number belongs to one series with the `BENCHnnn.CSV` and `ESCnnn.CSV` runs
+on the card ([Logs](Screens.md#logs)). A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
 way. Its time column steps over the run and its rows start again when the
 run ends. A number carried by a
-`BENCHnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
+`SERVOnnn.TXT` alone, its CSV deleted on a computer, is taken all the same,
 so no report is overwritten, and the log viewer's DELETE on a run removes its
 report with it. A run the card cannot
 take says so on the band and on the result, `NOT RECORDED`. Rows the queue to

@@ -333,12 +333,25 @@ void kst_card_serve(void);
  * supply run ends that run, and a supply output still on at the disarm starts
  * a run of its own.  One run is one file, and a file holds one kind of row,
  * so its header names every column it has.
+ *
+ * An armed run is LOG_RUN_ESC while the arm covers the throttle outputs (the
+ * MOTOR and ESC STICK screens) and LOG_RUN_BENCH while it covers the
+ * surfaces alone.  The two write the same rows and differ in the file's
+ * name, ESCnnn.CSV against BENCHnnn.CSV (log_name.h); the supply run is a
+ * BENCHnnn.CSV too.
  */
 typedef enum {
     LOG_RUN_NONE = 0,
     LOG_RUN_BENCH,
     LOG_RUN_SUPPLY,
+    LOG_RUN_ESC,
 } log_run_kind_t;
+
+/* Whether @p kind is a run of the armed bench, whichever outputs it covers. */
+static inline bool log_run_armed(log_run_kind_t kind)
+{
+    return kind == LOG_RUN_BENCH || kind == LOG_RUN_ESC;
+}
 
 /*
  * One sample on its way to the card, filled by the control task.
@@ -351,7 +364,8 @@ typedef enum {
 typedef struct {
     uint32_t       run;
     float          t_s;
-    log_run_kind_t kind;     /**< which of the two below */
+    log_run_kind_t kind;     /**< which of the two below: SUPPLY's or the
+                                  bench's, for BENCH and ESC */
     union {
         bench_state_t  bench;
         supply_state_t supply;

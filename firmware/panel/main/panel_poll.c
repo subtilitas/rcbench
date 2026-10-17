@@ -754,7 +754,7 @@ void advance_model_and_log(bool link_up, float emitted,
     float t_s = 0.0f;
     const bool logged = log_cadence_row(
         &s_log_cad, now_ms(), *new_sample,
-        log_cadence_bench_run(s_log_kind == LOG_RUN_BENCH,
+        log_cadence_bench_run(log_run_armed(s_log_kind),
                               atomic_load(&s_servo_testing)),
         &t_s);
     /* Every window is taken in the pass that brought it, logged or not:
@@ -767,7 +767,7 @@ void advance_model_and_log(bool link_up, float emitted,
             servo_window_take(bench);
         }
         if (logged) {
-            log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = t_s };
+            log_row_t row = { .kind = s_log_kind, .t_s = t_s };
             bench_state_log_row(bench, k + 1u == rows, &row.u.bench);
             log_post(&row);
         }

@@ -95,7 +95,7 @@ START LIMIT RUN, under the table, starts the [limit run](servo.md#the-limit-run)
 | Setting | What it does |
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
-| REPORT | a text report, `BENCHnnn.TXT`, beside each test's log |
+| REPORT | a text report, `SERVOnnn.TXT`, beside each test's log |
 | AS5600 | the output encoder, the same setting as on [Interfaces](setup-interfaces.md) |
 | ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
 | PWM TARGET | OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port |

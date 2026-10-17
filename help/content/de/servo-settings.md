@@ -95,7 +95,7 @@ ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-e
 | Option | Was sie tut |
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
-| BERICHT | ein Textbericht, `BENCHnnn.TXT`, neben dem Log jedes Tests |
+| BERICHT | ein Textbericht, `SERVOnnn.TXT`, neben dem Log jedes Tests |
 | AS5600 | der Winkelsensor an der Hornwelle, dieselbe Einstellung wie unter [Anschlüsse](setup-interfaces.md) |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
 | PWM-ZIEL | AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, der Programmierport des Koprozessors |

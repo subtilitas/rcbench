@@ -858,7 +858,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 Das Ergebnis bleibt bis SCHLIESSEN auf der linken Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
-Dateien, die die Karte angenommen hat: `BENCHnnn.CSV`, und `+ .TXT`, sobald
+Dateien, die die Karte angenommen hat: `SERVOnnn.CSV`, und `+ .TXT`, sobald
 die Karte den Bericht vollständig angenommen hat.
 
 ![Ein Ergebnis](img/de/servo-result.png)
@@ -885,7 +885,7 @@ Zeile sagt, warum er nicht starten kann. Die Einstellungen schließen sich
 beim Start. Sein Feld auf der linken Karte zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
-Enden und `BENCHnnn.TXT`. Der Lauf schaltet den Prüfstand für jedes
+Enden und `SERVOnnn.TXT`. Der Lauf schaltet den Prüfstand für jedes
 Schreiben selbst auf SAFE und auf ARMED; STOP und SAFE durch den Bediener
 oder einer der Gründe des automatischen Tests beenden ihn mit
 ausgeschaltetem Ausgang.
@@ -1600,13 +1600,40 @@ fehlt sie in den Zeilen, den Kennwerten und im Plot. ZEILEN steht dann in
 der Warnfarbe, und die Importansicht meldet `LETZTE ZEILE UNVOLLSTÄNDIG. ÜBERSPRUNGEN.`. Eine Datei eines anderen Programms, die ohne Zeilenvorschub endet,
 verliert ihre letzte Zeile genauso. Leerzeichen nach dem letzten
 Zeilenvorschub sind keine Zeile, ebenso Tabs und Wagenrückläufe (CR). Vom
-Prüfstand aufgezeichnete Läufe werden als `BENCH001.CSV` bis `BENCH999.CSV`
-im Wurzelverzeichnis der Karte abgelegt. Ein Lauf ist ein Schalten auf ARMED
-oder, solange der Prüfstand SAFE ist, ein Einschalten des SUPPLY-Ausgangs.
-Ein automatischer Servotest nimmt ebenfalls die nächste Nummer: sein Log ist
-`BENCHnnn.CSV`, das die Liste als Lauf zeigt, sein Bericht `BENCHnnn.TXT`,
-den die Liste nicht zeigt. Eine Nummer, die eine der beiden Dateien trägt,
-ist vergeben, und LÖSCHEN auf einem Lauf löscht seinen Bericht mit.
+Prüfstand aufgezeichnete Läufe werden im Wurzelverzeichnis der Karte unter
+dem Namen des Schreibers und einer Nummer von 001 bis 999 abgelegt:
+
+| Name | Lauf |
+| --- | --- |
+| `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
+| `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+
+An einem Koprozessor älter als Protokoll 4.18 umfasst jedes Schalten auf
+ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt
+dann `ESCnnn.CSV`.
+
+Die Nummern sind eine Reihe über alle drei Namen: der nächste Lauf nimmt
+eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen, auf
+`BENCH041.CSV` und `SERVO042.CSV` folgt also `ESC043.CSV` oder
+`BENCH043.CSV`. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht
+gefüllt. Eine Karte mit einer Nummer 999 unter irgendeinem Namen nimmt keinen
+weiteren Lauf an, auch wenn niedrigere Nummern frei sind: das Band meldet
+`Karte voll oder nicht beschreibbar. Lauf nicht aufgezeichnet.`, für einen
+Servotest `Karte fehlt oder ist voll. Servotest nicht aufgezeichnet.` Eine Karte, die
+nur `BENCHnnn`-Dateien trägt, auch die eines Servotests, wird genauso
+gelistet, und der nächste Lauf zählt über ihren Nummern weiter. Eine Nummer,
+die eine CSV- oder TXT-Datei trägt, ist vergeben. Firmware 0.20.0 und älter
+nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf
+einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer
+bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
+überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
+ordnet sie nach dem Namen. Die Liste zeigt die
+CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
+Bericht mit demselben Namen und derselben Nummer mit. Die Liste zeigt die
+Läufe nach Nummer, den neuesten zuerst, über alle drei Namen: `ESC043.CSV`,
+dann `SERVO042.CSV`, dann `BENCH041.CSV`.
 
 Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
 zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
@@ -1625,9 +1652,9 @@ Seite grau, `NÄCHSTE` auf der letzten. Die Seiten werden von oben zu je 48
 geschnitten: stehen vor der gezeigten Seite weniger als 48 Einträge, etwa
 nachdem ein Lauf aufgezeichnet wurde, liest `VORIGE` die erste Seite von oben.
 Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist,
-erscheinen ab Seite 1, mit `NÄCHSTE` von Seite 1 oder `AKTUALISIEREN` auf
-Seite 1; auf dem Rückweg überspringt `VORIGE` so viele Einträge, wie
-aufgezeichnet wurden, und die Zahlen im Reiter zeigen die Verschiebung. Jede
+stehen auf Seite 1. `VORIGE` überspringt dann auf dem Rückweg ab Seite 3 so
+viele Einträge, wie aufgezeichnet wurden; `NÄCHSTE` von Seite 1 zeigt sie,
+und die Zahlen im Reiter zeigen die Verschiebung. Jede
 Seite liest das Wurzelverzeichnis der Karte einmal: der Durchlauf behält die
 48 Einträge dieser Seite und zählt den Rest, sodass das Panel eine Seite im
 Speicher hält, unabhängig davon, wie viele Dateien die Karte enthält. Das

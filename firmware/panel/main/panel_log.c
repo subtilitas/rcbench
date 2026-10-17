@@ -116,9 +116,12 @@ static void log_highest(const storage_entry_t *entry, void *ctx)
 {
     int *highest = (int *)ctx;
     /*
-     * A servo test's report counts as its run does: a number carried only
-     * by a BENCHnnn.TXT whose CSV was deleted is still taken, so the next
-     * run neither truncates that report nor writes its CSV beside it.
+     * One series across the writers' prefixes, BENCH, ESC and SERVO
+     * (log_name.h): a card holding BENCH041.CSV and SERVO042.CSV takes the
+     * next run as 043 whichever writer it is.  A servo test's report counts
+     * as its run does: a number carried only by a SERVOnnn.TXT whose CSV was
+     * deleted is still taken, so the next run neither truncates that report
+     * nor writes its CSV beside it.
      *
      * Directories count.  The viewer skips them because it cannot open one,
      * but this is about which numbers are taken, and a directory called
@@ -126,11 +129,7 @@ static void log_highest(const storage_entry_t *entry, void *ctx)
      * it in both modes, so a run numbered into it would be a run that cannot
      * be created.  Numbering above it costs a number and nothing else.
      */
-    int n = log_run_number(entry->name);
-    const int r = log_report_number(entry->name);
-    if (r > n) {
-        n = r;
-    }
+    const int n = log_name_number(entry->name);
     if (n > *highest) {
         *highest = n;
     }
@@ -139,27 +138,39 @@ static void log_highest(const storage_entry_t *entry, void *ctx)
 /* What the numbering walk looks at: runs and the reports beside them. */
 #define NUMBERED_SUFFIXES ".csv .txt"
 
-/* Whether @p number is free: neither BENCHnnn.CSV nor BENCHnnn.TXT is on
- * the card.  @p path is left holding the CSV's path. */
+/*
+ * Whether @p number is free: none of its LOG_NAME_FORMS (6) names, a CSV or
+ * a TXT under any writer's prefix, is on the card.  Six probes, one card
+ * transaction each, for the number a run takes; the walk has put that
+ * number above every one the card holds, so the first number probed is
+ * free on a card nothing else writes to.  @p path is left holding the path
+ * of the last name probed.
+ */
 static bool log_number_free(int number, char *path, size_t n)
 {
-    char name[LOG_RUN_NAME_MAX];
-    log_report_name(name, sizeof(name), number);
-    storage_path(CARD_DIR, name, path, n);
-    FILE *probe = fopen(path, "r");
-    if (probe != NULL) {
-        fclose(probe);
-        return false;
-    }
-    log_run_name(name, sizeof(name), number);
-    storage_path(CARD_DIR, name, path, n);
-    probe = fopen(path, "r");
-    if (probe != NULL) {
-        fclose(probe);
-        return false;
+    for (int form = 0; form < LOG_NAME_FORMS; ++form) {
+        char name[LOG_RUN_NAME_MAX];
+        log_name_form(name, sizeof(name), number, form);
+        storage_path(CARD_DIR, name, path, n);
+        FILE *probe = fopen(path, "r");
+        if (probe != NULL) {
+            fclose(probe);
+            return false;
+        }
     }
     return true;
 }
+
+/* @p prefix's file of run @p number, a CSV or with @p txt its report, as a
+ * path on the card. */
+static void run_path(log_prefix_t prefix, int number, bool txt, char *path,
+                     size_t n)
+{
+    char name[LOG_RUN_NAME_MAX];
+    log_name_build(name, sizeof(name), prefix, number, txt);
+    storage_path(CARD_DIR, name, path, n);
+}
+
 static log_writer_t s_log;
 static uint32_t     s_log_last_row_ms;
 
@@ -202,21 +213,23 @@ static bool log_numbering(void)
                      NULL) < 0) {
         return false;
     }
-    s_log_next = (highest >= LOG_RUN_FIRST) ? highest + 1 : LOG_RUN_FIRST;
+    s_log_next = log_name_next(highest);
     s_log_numbered = true;
     return true;
 }
 
 /*
- * Open the run's file, on the logger task.
+ * Open the run's file, on the logger task: ESCnnn.CSV for a run of the
+ * throttle outputs (@p kind LOG_RUN_ESC), BENCHnnn.CSV for the rest.
  *
  * Every probe is a card transaction and the loop can make hundreds of them,
  * which is why the scan is here and not on the task that beats the safety
  * line.  It runs when the run's first row arrives, one sample interval
  * (50 ms) after the arm or the supply's switch-on.
  */
-static void log_open(uint32_t run)
+static void log_open(uint32_t run, log_run_kind_t kind)
 {
+    const log_prefix_t prefix = log_name_armed_prefix(kind == LOG_RUN_ESC);
     s_log_run_id      = run;
     s_log_file        = NULL;
     s_log_last_row_ms = now_ms();
@@ -239,7 +252,7 @@ static void log_open(uint32_t run)
      * 1980-01-01.  The number is the
      * only order the card carries, and the viewer reads it back with
      * log_run_number() to decide which runs it can still show once a card
-     * holds more of them than the screen does; log_run_name() is the one
+     * holds more of them than the screen does; log_name_build() is the one
      * place the name is built.
      *
      * Above every number the card already carries, not in the first gap.
@@ -265,8 +278,10 @@ static void log_open(uint32_t run)
     }
     /*
      * A volume that refuses one free number refuses them all, and each try is
-     * two card transactions on this task.  Walking to LOG_RUN_LAST would be
-     * 999 of them before the operator is told the run is not recorded.
+     * up to seven card transactions on this task: the LOG_NAME_FORMS (6)
+     * probes of log_number_free() and the open.  Walking to LOG_RUN_LAST
+     * would be 999 tries before the operator is told the run is not
+     * recorded.
      */
     unsigned refused = 0u;
     for (int i = s_log_next; i <= LOG_RUN_LAST && s_log_file == NULL; ++i) {
@@ -274,6 +289,7 @@ static void log_open(uint32_t run)
         if (!log_number_free(i, path, sizeof(path))) {
             continue;
         }
+        run_path(prefix, i, false, path, sizeof(path));
         /*
          * Claimed before the file exists, not after it does.  fopen makes the
          * directory entry visible, and the task that renders can walk the
@@ -368,9 +384,9 @@ static void log_close(void)
 }
 
 /*
- * The automatic servo test's files: its CSV as BENCHnnn.CSV under the next
- * run number, and its report as BENCHnnn.TXT under the same number.  A limit
- * run writes its report alone, as BENCHnnn.TXT under the next number.  The
+ * The automatic servo test's files: its CSV as SERVOnnn.CSV under the next
+ * run number, and its report as SERVOnnn.TXT under the same number.  A limit
+ * run writes its report alone, as SERVOnnn.TXT under the next number.  The
  * render loop hands the lines over through s_test_q (servo_screen_test_peek())
  * and this task writes them.  The armed bench's own log writes no row while
  * a test runs (log_cadence_bench_run()), so a test is one CSV.  One test
@@ -397,16 +413,10 @@ static unsigned s_test_lines;    /* since the last commit                 */
 static bool     s_test_failed;
 static bool     s_test_txt_bad;  /* a write or the close of the report failed */
 
-/* BENCHnnn.CSV, or with @p txt BENCHnnn.TXT, as a path on the card. */
+/* SERVOnnn.CSV, or with @p txt SERVOnnn.TXT, as a path on the card. */
 static void test_path(int number, bool txt, char *path, size_t n)
 {
-    char name[LOG_RUN_NAME_MAX];
-    if (txt) {
-        log_report_name(name, sizeof(name), number);
-    } else {
-        log_run_name(name, sizeof(name), number);
-    }
-    storage_path(CARD_DIR, name, path, n);
+    run_path(LOG_PREFIX_SERVO, number, txt, path, n);
 }
 
 static void test_close(void)
@@ -432,7 +442,7 @@ static void test_close(void)
 
 /* A run's OPEN: the next run number, as log_open() takes one.  With @p txt
  * the run is a report alone (SERVO_TEST_OUT_OPEN_TXT, the limit run): its
- * BENCHnnn.TXT is opened under the number, and no CSV. */
+ * SERVOnnn.TXT is opened under the number, and no CSV. */
 static void test_open(bool txt)
 {
     test_close();
@@ -449,8 +459,8 @@ static void test_open(bool txt)
             if (!log_number_free(i, path, sizeof(path))) {
                 continue;
             }
+            test_path(i, txt, path, sizeof(path));
             if (txt) {
-                test_path(i, true, path, sizeof(path));
                 atomic_store(&s_test_open_txt, (unsigned)i);
             } else {
                 atomic_store(&s_test_open_run, (unsigned)i);
@@ -586,7 +596,7 @@ void log_task(void *arg)
             if (s_log_run_id != 0u) {
                 log_close();
             }
-            log_open(row.run);
+            log_open(row.run, row.kind);
         }
         /*
          * A failed write latches the writer and every later row is rejected,

@@ -105,7 +105,7 @@ The settings close as the run starts. Its step and phase show at the top of the 
 ![A result](view:servo-result)
 ![A result read from the INA3221](view:servo-result-ina)
 
-The result stays until CLOSE: PASS, FAIL or ABORTED and why, the longest travel time, the highest holding current, and the files the card took, `BENCHnnn.CSV` and `+ .TXT` for the report.
+The result stays until CLOSE: PASS, FAIL or ABORTED and why, the longest travel time, the highest holding current, and the files the card took, `SERVOnnn.CSV` and `+ .TXT` for the report.
 
 ## The limit run
 
@@ -216,7 +216,7 @@ The box stays until CLOSE. It shows the verdict, the reason or the values, and t
 ![A programmed servo](view:servo-limrun-pass)
 ![Search only](view:servo-limrun-found)
 
-The report is a `BENCHnnn.TXT` of its own, written whatever REPORT says. It holds where the search ran, the endpoints of both searches, the servo's pulses and the pulse write, LEFT ANGLE and RIGHT ANGLE before and after with the shares, the overset and the final value, the values written, the writes sent and the sessions, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
+The report is a `SERVOnnn.TXT` of its own, written whatever REPORT says. It holds where the search ran, the endpoints of both searches, the servo's pulses and the pulse write, LEFT ANGLE and RIGHT ANGLE before and after with the shares, the overset and the final value, the values written, the writes sent and the sessions, the meter, the AS5600 angle at each last free position when it is fitted, and the verdict or the reason. Until the card has closed it, Wi-Fi and an update wait.
 
 ## Current limitations
 

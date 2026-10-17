@@ -12,7 +12,7 @@ LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die C
 
 ![LOGS ohne Karte im Steckplatz](view:logs-nocard)
 
-Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCH001.CSV` und aufwärts geschrieben. AKTUALISIEREN liest die Karte erneut.
+Ist keine Karte eingebunden, zeigt der Kasten `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Eine Karte ohne CSV-Datei im Hauptverzeichnis zeigt `Keine .csv-Dateien im Hauptverzeichnis.` Läufe werden als `BENCHnnn.CSV`, `ESCnnn.CSV` oder `SERVOnnn.CSV` geschrieben, nummeriert von 001 bis 999. AKTUALISIEREN liest die Karte erneut.
 
 ## Die Dateiliste
 
@@ -32,7 +32,7 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 
 - Eine Seite fasst 48 Einträge; eine Karte fasst bis zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf, dann folgen die Dateien, die der Prüfstand nicht geschrieben hat, und die Zeilen einer Seite stehen in derselben Reihenfolge, der neueste Lauf oben. Mit mehr als 48 Dateien nennt der Reiter den Teil der Karte, den die Seite zeigt, `DATEIEN 145 BIS 192 VON 1000`.
 - Die Seiten werden von oben zu je 48 geschnitten. Stehen vor der gezeigten Seite weniger als 48 Einträge, etwa nachdem ein Lauf aufgezeichnet wurde, zeigt VORIGE die erste Seite.
-- Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, erscheinen ab Seite 1: mit NÄCHSTE von Seite 1 oder AKTUALISIEREN auf Seite 1. Auf dem Rückweg überspringt VORIGE so viele Einträge, wie aufgezeichnet wurden; die Zahlen im Reiter zeigen die Verschiebung.
+- Läufe, die aufgezeichnet werden, während eine spätere Seite offen ist, stehen auf Seite 1. VORIGE überspringt dann auf dem Rückweg ab Seite 3 so viele Einträge, wie aufgezeichnet wurden; NÄCHSTE von Seite 1 zeigt sie, und die Zahlen im Reiter zeigen die Verschiebung.
 - Der Rollbalken am rechten Rand, 8,1 mm breit, rollt innerhalb der Seite: Tippen auf die Bahn springt, Ziehen am Griff rollt.
 - Auf einer Seite nach der ersten liest AKTUALISIEREN ab dem ersten Eintrag dieser Seite; enthält die Karte inzwischen weniger Einträge, zeigt es die letzte Seite.
 - Nach LÖSCHEN wird die Seite neu gelesen, und die Rollposition bleibt; nichts ist gewählt, LÖSCHEN und ÖFFNEN sind grau, bis eine Zeile gewählt ist.
@@ -43,7 +43,18 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 
 ## Was ein Lauf schreibt
 
-Eine Datei ist ein Lauf: ein Schalten auf ARMED, ein Einschalten des Ausgangs auf SUPPLY bei SAFE oder ein automatischer Servotest. Ein Servotest schreibt zusätzlich einen Bericht, `BENCHnnn.TXT`, den die Liste nicht zeigt. LÖSCHEN auf einem Lauf entfernt auch seinen Bericht.
+Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
+
+| Name | Lauf |
+|---|---|
+| `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
+| `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
+
+An einem Koprozessor älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.
+
+Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Firmware 0.20.0 und älter nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird überschrieben: Die beiden Dateien haben verschiedene Namen. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Liste zeigt die Läufe nach Nummer, den neuesten zuerst, über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann `BENCH041.CSV`.
 
 Ein Lauf wird alle 20 Zeilen oder alle 1000 ms auf die Karte festgeschrieben, je nachdem, was zuerst eintritt. Ein Stromausfall mitten im Lauf kostet unter 1,0 s an Zeilen, solange die Karte mithält, und bis zu 84 Zeilen, 4,20 s bei 20 Hz, wenn sie stockt.
 

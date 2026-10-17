@@ -1343,25 +1343,50 @@ static int by_rank(const void *a, const void *b)
                          ((const log_viewer_file_t *)b)->name);
 }
 
-static void pg_card(int runs, int others)
+/* One entry on the card, @p size telling it from any other. */
+static void pg_put(const char *name, uint32_t size)
 {
-    g_pg_n = 0;
-    for (int r = 1; r <= runs; ++r) {
+    if (g_pg_n < PG_MAX) {
         memset(&g_pg_all[g_pg_n], 0, sizeof(g_pg_all[0]));
-        log_run_name(g_pg_all[g_pg_n].name, sizeof(g_pg_all[0].name), r);
-        g_pg_all[g_pg_n].size = (uint32_t)r;
+        snprintf(g_pg_all[g_pg_n].name, sizeof(g_pg_all[0].name), "%s", name);
+        g_pg_all[g_pg_n].size = size;
         ++g_pg_n;
     }
-    for (int i = 0; i < others; ++i) {
-        memset(&g_pg_all[g_pg_n], 0, sizeof(g_pg_all[0]));
-        snprintf(g_pg_all[g_pg_n].name, sizeof(g_pg_all[0].name),
-                 "OTHER%03d.CSV", i);
-        ++g_pg_n;
-    }
-    /* A stride coprime with any count up to PG_MAX scatters the order. */
+}
+
+/* The offer order: a stride coprime with any count up to PG_MAX scatters
+ * it. */
+static void pg_scatter(void)
+{
     for (int i = 0; i < g_pg_n; ++i) {
         g_pg_order[i] = (int)(((long)i * 7919L) % g_pg_n);
     }
+}
+
+/* @p runs runs written by writer @p prefix, or with @p mixed by BENCH, ESC
+ * and SERVO in turn, and @p others other files. */
+static void pg_card_by(int runs, int others, bool mixed, log_prefix_t prefix)
+{
+    g_pg_n = 0;
+    for (int r = 1; r <= runs; ++r) {
+        char name[LOG_RUN_NAME_MAX];
+        log_name_build(name, sizeof(name),
+                       mixed ? (log_prefix_t)(r % (int)LOG_PREFIX_COUNT)
+                             : prefix,
+                       r, false);
+        pg_put(name, (uint32_t)r);
+    }
+    for (int i = 0; i < others; ++i) {
+        char name[LOG_VIEWER_NAME_MAX];
+        snprintf(name, sizeof(name), "OTHER%03d.CSV", i);
+        pg_put(name, 0u);
+    }
+    pg_scatter();
+}
+
+static void pg_card(int runs, int others)
+{
+    pg_card_by(runs, others, false, LOG_PREFIX_BENCH);
 }
 
 /* One walk: the page @p q asks for, into @p set of @p cap. */
@@ -1404,78 +1429,244 @@ static bool pg_is_slice(const log_viewer_file_t *set, int n, int first,
     return true;
 }
 
+/* Index of @p name in g_pg_all, or -1. */
+static int pg_index(const char *name)
+{
+    for (int i = 0; i < g_pg_n; ++i) {
+        if (strcmp(g_pg_all[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/*
+ * One page as it is drawn: in strict rank order, so its runs stand newest
+ * first whichever writer made them, and each entry counted in @p hits.
+ */
+static void pg_count(const log_viewer_file_t *set, int n, int *hits)
+{
+    for (int i = 0; i < n; ++i) {
+        const int k = pg_index(set[i].name);
+        CHECK(k >= 0);
+        if (k >= 0) {
+            ++hits[k];
+        }
+        if (i > 0 && log_name_rank(set[i - 1].name, set[i].name) >= 0) {
+            T_FAIL("\"%s\" is drawn above \"%s\"", set[i - 1].name,
+                   set[i].name);
+        }
+        const int a = (i > 0) ? log_run_number(set[i - 1].name) : -1;
+        const int b = log_run_number(set[i].name);
+        if (a >= 0 && b >= 0 && b > a) {
+            T_FAIL("run %d is drawn under the older run %d", b, a);
+        }
+    }
+}
+
+/*
+ * The card in g_pg_all, paged: NEXT's chain from the first page reaches every
+ * entry once, in rank order, and PREV's chain from the last page walks the
+ * same pages back.  Every entry is on exactly one page each way.
+ */
+static void pg_check(void)
+{
+    static log_viewer_file_t ranked[PG_MAX];
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    static int starts[PG_MAX / LOG_VIEWER_MAX_FILES + 2];
+    static int fwd[PG_MAX];
+    static int back[PG_MAX];
+    memset(fwd, 0, sizeof(fwd));
+    memset(back, 0, sizeof(back));
+    memcpy(ranked, g_pg_all, (size_t)g_pg_n * sizeof(ranked[0]));
+    qsort(ranked, (size_t)g_pg_n, sizeof(ranked[0]), by_rank);
+
+    const int pages = (g_pg_n + LOG_VIEWER_MAX_FILES - 1)
+                      / LOG_VIEWER_MAX_FILES;
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_FROM;
+    int seen = 0;
+    int p = 0;
+    for (;;) {
+        const int held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+        CHECK_EQ(q.held, held);
+        if (held == 0 || p > pages) {
+            break;
+        }
+        CHECK_EQ(q.ahead, seen);
+        CHECK(pg_is_slice(set, held, seen, ranked));
+        CHECK_EQ(held, (g_pg_n - seen < LOG_VIEWER_MAX_FILES)
+                           ? g_pg_n - seen : LOG_VIEWER_MAX_FILES);
+        pg_count(set, held, fwd);
+        starts[p++] = seen;
+        seen += held;
+        q.dir = LOG_PAGE_AFTER;
+        snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, -1));
+    }
+    CHECK_EQ(seen, g_pg_n);
+    CHECK_EQ(p, pages);
+
+    /* Back from the last page: BEFORE with no key is the last of all,
+     * cut to what whole pages leave. */
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_BEFORE;
+    if (pages == 0) {
+        CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
+        CHECK_EQ(q.ahead, 0);
+        return;
+    }
+    int held = pg_walk(set, g_pg_n - starts[pages - 1], &q);
+    CHECK_EQ(q.ahead, starts[pages - 1]);
+    CHECK(pg_is_slice(set, held, starts[pages - 1], ranked));
+    pg_count(set, held, back);
+    for (int k = pages - 2; k >= 0; --k) {
+        snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
+        held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+        CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
+        CHECK_EQ(q.ahead, starts[k]);
+        CHECK(pg_is_slice(set, held, starts[k], ranked));
+        pg_count(set, held, back);
+    }
+    /* And before the first page there is nothing. */
+    snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
+    CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
+    CHECK_EQ(q.ahead, 0);
+
+    for (int i = 0; i < g_pg_n; ++i) {
+        if (fwd[i] != 1 || back[i] != 1) {
+            T_FAIL("\"%s\" is on %d pages forward and %d back",
+                   g_pg_all[i].name, fwd[i], back[i]);
+        }
+    }
+}
+
 TEST_CASE(pages_of_a_card_cover_it_once_in_rank_order_both_ways)
 {
     /*
      * At the page boundaries: none, one page exactly, one over, two exactly,
      * two and one over, and a full card of 999 runs with files the bench did
-     * not write behind them.  NEXT's chain from the first page reaches every
-     * entry once, in rank order, and PREV's chain from the last page walks
-     * the same pages back.
+     * not write behind them.
      */
     static const struct { int runs, others; } cards[] = {
         { 0, 0 }, { 48, 0 }, { 49, 0 }, { 96, 0 }, { 97, 0 },
         { 999, 0 }, { 999, 3 }, { 40, 9 },
     };
-    static log_viewer_file_t ranked[PG_MAX];
-    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
-    static int starts[PG_MAX / LOG_VIEWER_MAX_FILES + 2];
     for (size_t c = 0; c < sizeof(cards) / sizeof(cards[0]); ++c) {
         pg_card(cards[c].runs, cards[c].others);
-        memcpy(ranked, g_pg_all, (size_t)g_pg_n * sizeof(ranked[0]));
-        qsort(ranked, (size_t)g_pg_n, sizeof(ranked[0]), by_rank);
-
-        const int pages = (g_pg_n + LOG_VIEWER_MAX_FILES - 1)
-                          / LOG_VIEWER_MAX_FILES;
-        log_viewer_page_t q;
-        memset(&q, 0, sizeof(q));
-        q.dir = LOG_PAGE_FROM;
-        int seen = 0;
-        int p = 0;
-        for (;;) {
-            const int held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
-            CHECK_EQ(q.held, held);
-            if (held == 0) {
-                break;
-            }
-            CHECK_EQ(q.ahead, seen);
-            CHECK(pg_is_slice(set, held, seen, ranked));
-            CHECK_EQ(held, (g_pg_n - seen < LOG_VIEWER_MAX_FILES)
-                               ? g_pg_n - seen : LOG_VIEWER_MAX_FILES);
-            starts[p++] = seen;
-            seen += held;
-            q.dir = LOG_PAGE_AFTER;
-            snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, -1));
-        }
-        CHECK_EQ(seen, g_pg_n);
-        CHECK_EQ(p, pages);
-
-        /* Back from the last page: BEFORE with no key is the last of all,
-         * cut to what whole pages leave. */
-        if (pages == 0) {
-            memset(&q, 0, sizeof(q));
-            q.dir = LOG_PAGE_BEFORE;
-            CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
-            CHECK_EQ(q.ahead, 0);
-            continue;
-        }
-        memset(&q, 0, sizeof(q));
-        q.dir = LOG_PAGE_BEFORE;
-        int held = pg_walk(set, g_pg_n - starts[pages - 1], &q);
-        CHECK_EQ(q.ahead, starts[pages - 1]);
-        CHECK(pg_is_slice(set, held, starts[pages - 1], ranked));
-        for (int k = pages - 2; k >= 0; --k) {
-            snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
-            held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
-            CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
-            CHECK_EQ(q.ahead, starts[k]);
-            CHECK(pg_is_slice(set, held, starts[k], ranked));
-        }
-        /* And before the first page there is nothing. */
-        snprintf(q.key, sizeof(q.key), "%s", pg_edge(set, held, 1));
-        CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), 0);
-        CHECK_EQ(q.ahead, 0);
+        pg_check();
     }
+}
+
+TEST_CASE(pages_of_mixed_writers_run_newest_first_across_the_names)
+{
+    /*
+     * BENCH, ESC and SERVO in turn: 999 runs with and without other files
+     * behind them, and the page boundaries.  Each page holds all three
+     * names and draws them by number, newest at the top; the pages run on
+     * by number across the names.
+     */
+    static const int runs[] = { 47, 48, 49, 96, 97, 999 };
+    for (size_t c = 0; c < sizeof(runs) / sizeof(runs[0]); ++c) {
+        pg_card_by(runs[c], 0, true, LOG_PREFIX_BENCH);
+        pg_check();
+    }
+    pg_card_by(LOG_RUN_LAST, 3, true, LOG_PREFIX_BENCH);
+    pg_check();
+    /* Each writer alone pages the same way. */
+    pg_card_by(LOG_RUN_LAST, 0, false, LOG_PREFIX_ESC);
+    pg_check();
+    pg_card_by(LOG_RUN_LAST, 0, false, LOG_PREFIX_SERVO);
+    pg_check();
+
+    /* The first page of the mixed full card: 999 down to 952, all three
+     * names in it. */
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    pg_card_by(LOG_RUN_LAST, 0, true, LOG_PREFIX_BENCH);
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_FROM;
+    CHECK_EQ(pg_walk(set, LOG_VIEWER_MAX_FILES, &q), LOG_VIEWER_MAX_FILES);
+    CHECK_STR_EQ(set[0].name, "BENCH999.CSV");       /* 999 % 3 == 0 */
+    CHECK_STR_EQ(set[1].name, "SERVO998.CSV");
+    CHECK_STR_EQ(set[2].name, "ESC997.CSV");
+    CHECK_STR_EQ(set[LOG_VIEWER_MAX_FILES - 1].name, "ESC952.CSV");
+}
+
+/*
+ * A card edited on a computer can hold one number under several names.  The
+ * rank breaks that tie by name, BENCH before ESC before SERVO, case folded,
+ * so the order stays strict and a page edge between them drops none.
+ */
+static void pg_tie_card(int above, const char *const *tied, int n_tied)
+{
+    g_pg_n = 0;
+    for (int r = 42 + above; r > 42; --r) {
+        char name[LOG_RUN_NAME_MAX];
+        log_name_build(name, sizeof(name),
+                       (log_prefix_t)(r % (int)LOG_PREFIX_COUNT), r, false);
+        pg_put(name, (uint32_t)r);
+    }
+    for (int i = 0; i < n_tied; ++i) {
+        pg_put(tied[i], 4200u + (uint32_t)i);
+    }
+    for (int r = 1; r < 42; ++r) {
+        char name[LOG_RUN_NAME_MAX];
+        log_name_build(name, sizeof(name),
+                       (log_prefix_t)(r % (int)LOG_PREFIX_COUNT), r, false);
+        pg_put(name, (uint32_t)r);
+    }
+    pg_scatter();
+}
+
+TEST_CASE(runs_that_share_a_number_split_by_a_page_edge_are_each_on_one_page)
+{
+    static const char *const upper[] = {
+        "SERVO042.CSV", "BENCH042.CSV", "ESC042.CSV",
+    };
+    static const char *const lower[] = {
+        "servo042.csv", "Bench042.CSV", "esc042.csv",
+    };
+    CHECK(log_name_rank("BENCH042.CSV", "ESC042.CSV") < 0);
+    CHECK(log_name_rank("ESC042.CSV", "SERVO042.CSV") < 0);
+    CHECK(log_name_rank("SERVO042.CSV", "BENCH042.CSV") > 0);
+    CHECK(log_name_rank("servo042.csv", "Bench042.CSV") > 0);
+    CHECK_EQ(log_name_rank("ESC042.CSV", "esc042.csv"), 0);
+    CHECK(log_name_rank("BENCH043.CSV", "SERVO042.CSV") < 0);
+
+    /* 47, 46 and 45 runs above: the edge after the first, after the
+     * second, and after all three of the tied names; then no edge at 48. */
+    static const int above[] = { 47, 46, 45, 48, 44 };
+    static log_viewer_file_t set[LOG_VIEWER_MAX_FILES];
+    for (size_t a = 0; a < sizeof(above) / sizeof(above[0]); ++a) {
+        for (int c = 0; c < 2; ++c) {
+            pg_tie_card(above[a], c ? lower : upper, 3);
+            pg_check();
+        }
+    }
+
+    /* 47 above: page 1 ends on BENCH042, page 2 opens on ESC042, and PREV
+     * from page 2 is page 1 again with BENCH042 at its foot. */
+    pg_tie_card(47, upper, 3);
+    log_viewer_page_t q;
+    memset(&q, 0, sizeof(q));
+    q.dir = LOG_PAGE_FROM;
+    int held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+    CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
+    CHECK_STR_EQ(set[held - 1].name, "BENCH042.CSV");
+    q.dir = LOG_PAGE_AFTER;
+    snprintf(q.key, sizeof(q.key), "%s", set[held - 1].name);
+    held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+    CHECK_EQ(held, 2 + 41);         /* the other two 042s and 041 to 001 */
+    CHECK_EQ(q.ahead, LOG_VIEWER_MAX_FILES);
+    CHECK_STR_EQ(set[0].name, "ESC042.CSV");
+    CHECK_STR_EQ(set[1].name, "SERVO042.CSV");
+    q.dir = LOG_PAGE_BEFORE;
+    snprintf(q.key, sizeof(q.key), "%s", set[0].name);
+    held = pg_walk(set, LOG_VIEWER_MAX_FILES, &q);
+    CHECK_EQ(held, LOG_VIEWER_MAX_FILES);
+    CHECK_EQ(q.ahead, 0);
+    CHECK_STR_EQ(set[held - 1].name, "BENCH042.CSV");
 }
 
 TEST_CASE(a_page_key_whose_file_has_gone_still_names_its_place)
@@ -3266,6 +3457,8 @@ int main(void)
     RUN(a_list_that_was_cut_says_so);
     RUN(a_count_above_the_list_does_not_reach_past_it);
     RUN(pages_of_a_card_cover_it_once_in_rank_order_both_ways);
+    RUN(pages_of_mixed_writers_run_newest_first_across_the_names);
+    RUN(runs_that_share_a_number_split_by_a_page_edge_are_each_on_one_page);
     RUN(a_page_key_whose_file_has_gone_still_names_its_place);
     RUN(a_card_of_one_page_or_none_shows_no_page_buttons);
     RUN(forty_nine_runs_are_two_pages_and_the_second_holds_the_oldest);

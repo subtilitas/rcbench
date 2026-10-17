@@ -8,7 +8,8 @@
 # columns being plotted become arrays.
 #
 # A run log's name carries its order.  The board has no clock that survives a
-# power cycle, so BENCHnnn.CSV is the only age on the card; the logger writes
+# power cycle, so the number in BENCHnnn.CSV, ESCnnn.CSV and SERVOnnn.CSV is
+# the only age on the card; the logger writes
 # that name and the viewer reads it back, both through log_name.c.
 set(SRCS
     log_numbers.c

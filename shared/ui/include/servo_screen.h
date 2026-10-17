@@ -434,8 +434,8 @@ servo_test_out_t servo_screen_test_peek(const char **text);
 void servo_screen_test_pop(void);
 
 /**
- * The number of the files the run's items went to -- BENCHnnn.CSV and,
- * with REPORT, BENCHnnn.TXT -- or -1 when the card took none; and whether
+ * The number of the files the run's items went to -- SERVOnnn.CSV and,
+ * with REPORT, SERVOnnn.TXT -- or -1 when the card took none; and whether
  * the card took the .TXT whole.
  */
 void servo_screen_test_files(int number, bool report);

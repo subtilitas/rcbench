@@ -207,7 +207,9 @@ static const struct {
 
 /* logs-pages: a full card, every run and one file the bench did not
  * write, so the tab carries the widest count it can: "FILES 145 TO 192 OF
- * 1000" on the fourth page, which the fit check measures. */
+ * 1000" on the fourth page, which the fit check measures.  The runs are
+ * BENCH, ESC and SERVO in turn, so the page shows the three writers in one
+ * number order. */
 #define PAGES_RUNS LOG_RUN_LAST
 #define PAGES_NEXT 3
 static bool g_pages_card;
@@ -223,7 +225,9 @@ static int fake_list(log_viewer_file_t *out, int max_entries,
     memset(&f, 0, sizeof(f));
     if (g_pages_card) {
         for (int r = 1; r <= PAGES_RUNS; ++r, ++n) {
-            log_run_name(f.name, sizeof(f.name), r);
+            log_name_build(f.name, sizeof(f.name),
+                           (log_prefix_t)(r % (int)LOG_PREFIX_COUNT), r,
+                           false);
             f.size = 9000u + (uint32_t)r * 37u;
             log_select_page_offer(&sel, &f);
         }

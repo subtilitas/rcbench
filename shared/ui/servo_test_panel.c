@@ -453,11 +453,11 @@ void servo_screen_test_logger_busy(bool busy)
 
 /* ----------------------------------------------------------------- drawing */
 
-/* A file's name for the run's number: BENCHnnn.CSV. */
+/* A file's name for the run's number: SERVOnnn.CSV. */
 static void test_file_name(char *b, size_t n)
 {
     if (s.test_file > 0) {
-        log_run_name(b, n, s.test_file);
+        log_name_build(b, n, LOG_PREFIX_SERVO, s.test_file, false);
     } else {
         snprintf(b, n, "%s", (s.test_file < 0) ? TR(SV_NOT_RECORDED)
                                                 : TR(SV_WRITING));

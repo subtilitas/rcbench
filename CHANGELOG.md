@@ -33,7 +33,7 @@ history is in git.
   outside the bench's PULSE MIN to PULSE MAX ends the run before anything
   is driven, `servo pulses outside MIN/MAX`, the bench left SAFE and both
   ranges named. The search runs in 10 us steps on INA3221 CH1's 50 ms
-  windows, reports both endpoints in a `BENCHnnn.TXT` of its own, and changes
+  windows, reports both endpoints in a `SERVOnnn.TXT` of its own, and changes
   nothing of the bench's own pulse range. It runs only with the INA3221 as
   the servo rail's meter, on a rail of 3.0 V or more in the last window
   (`SERVO RAIL UNDER 3.0 V OR NOT READ`), and on the bench's outputs only
@@ -115,6 +115,24 @@ history is in git.
 
 ### Changed
 
+- Run logs are named by the writer that made them: `SERVOnnn.CSV` and
+  `SERVOnnn.TXT` for the automatic servo test and the limit run,
+  `ESCnnn.CSV` for a switch of the throttle outputs to ARMED (MOTOR & ESC, a
+  stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch of the surfaces to
+  ARMED from SERVO and for a SUPPLY run. With a coprocessor older than
+  protocol 4.18 every switch to ARMED covers the throttle outputs, so a
+  switch to ARMED from SERVO writes `ESCnnn.CSV`. The numbers 001 to 999 are
+  one series across the three names: a run takes one above the highest
+  number on the card under any name, and a card holding a number 999 takes
+  no further run. A card holding only `BENCHnnn` files continues above their
+  numbers. The LOG VIEWER lists, pages and deletes all three, newest number
+  first across the names, opens on the highest number, and deletes a run's
+  report under the run's own name. Two runs with one number, which only a
+  card edited on a computer holds, follow by name. Its empty card reads
+  `Runs are saved as BENCHnnn, ESCnnn or SERVOnnn.CSV.` Firmware 0.20.0 and
+  older numbers runs above the highest `BENCHnnn` file only: going back to
+  it on a card written since can give a run a number that an `ESCnnn` or
+  `SERVOnnn` file already carries, and nothing is overwritten.
 - The LOG VIEWER tab reads `FILES 1 TO 48 OF 200` (`DATEIEN 1 BIS 48 VON
   200`) on a card of more than one page.
 - The LOG VIEWER draws the rows of a page newest run first, the order the
@@ -148,7 +166,7 @@ history is in git.
 - The automatic servo test on the INA3221 ends ABORTED after 200 ms without
   a window, `no INA3221 window for 0.2 s`, in place of 500 ms. The limit
   run shares the figure (`SERVO_TEST_WIN_STALE_MS`).
-- A servo run's `BENCHnnn.TXT` report counts as an open log run until the
+- A servo run's `SERVOnnn.TXT` report counts as an open log run until the
   card has closed it, as its CSV does: Wi-Fi and an update wait for it, and
   the log viewer neither lists nor opens it while it is written.
 - The SERVO settings' line that says the setup is not saved spans the
