@@ -795,7 +795,7 @@ def check_version(problems: list[str]) -> None:
             "version")
 
 
-STICK_C = REPO / "shared" / "esc" / "esc_stick.c"
+STICK_C = REPO / "shared" / "esc" / "esc_stick_read.c"
 
 # The table in each stick programming page that gives every end of a run
 # its red light: the page, the header row, and the words for lit and dark.
@@ -833,7 +833,8 @@ def check_red_light_tables(problems: list[str]) -> None:
     shows in that language: one row per reason, DONE dark, nothing else."""
     faults = reason_faults()
     if not faults:
-        problems.append("esc_stick.c: no esc_stick_reason_is_fault() cases")
+        problems.append(
+            "esc_stick_read.c: no esc_stick_reason_is_fault() cases")
         return
     english = {k: c_strings(v) for k, v in re.findall(
         rf"UI_TEXT\((\w+),\s*\d+,\s*{C_STRS}\)", read(UI_TEXT_DEF))}

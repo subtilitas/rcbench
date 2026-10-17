@@ -655,7 +655,7 @@ A profile corrected on the SD card is listed with its correction.
 | SCREEN LEFT | the screen was left | dark |
 
 The red light's column is `esc_stick_reason_is_fault()` in
-`shared/esc/esc_stick.c`, one case per reason. `tools/check_docs.py` reads
+`shared/esc/esc_stick_read.c`, one case per reason. `tools/check_docs.py` reads
 that function and fails when this table, or its German twin, says
 otherwise. TOUCH SIGNAL LOST is lit: events were lost, not chosen.
 
@@ -706,10 +706,11 @@ jumper or a button: it enters its menu after `hold_ms`. The host suite's
 does (`wait_hand`): the menu waits for the action, answers it with three
 beeps and starts the series 1500 ms later.
 
-The host suite (`test_esc_stick`) runs the engine against the simulation end
-to end: two-stage and one-stage menus, repeated groups, a rest position,
-power cycles between changes, readings 100 to 190 ms apart, noise of 30 mA,
-a beep lost from a group, a menu one item longer than the profile, an ESC
+The host suites `test_esc_stick`, `test_esc_stick_entry` and
+`test_esc_stick_hand` run the engine against the simulation end to end:
+two-stage and one-stage menus, repeated groups, a rest position, power
+cycles between changes, readings 100 to 190 ms apart, noise of 30 mA, a
+beep lost from a group, a menu one item longer than the profile, an ESC
 that never beeps, and each way a run can end. A sweep of a lost beep in
 each of the first ten groups against ESC entries 2000 ms either side of the
 engine's stores no value other than the one asked for.
