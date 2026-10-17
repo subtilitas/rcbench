@@ -253,7 +253,7 @@ TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
  * The transport the coprocessor actually is.
  *
  * exchange() above keeps one reply, which is what a request of a single
- * frame produces. firmware/iomcu/src/main.c decodes every frame it receives
+ * frame produces. firmware/iomcu/src/iomcu_can.c decodes every frame it receives
  * and answers each one (its receive loop dispatches and transmits inside the
  * same pass), so a request that took eight frames draws eight answers. A
  * write of a whole page is exactly that, and neither output page fits in one
