@@ -1464,7 +1464,7 @@ rules that keep a slice at one rate:
 The rules are `servo_page_write()` in `shared/outputs/servo_page.c` and
 `prog_port_write()` in `shared/outputs/prog_port.c`; the coprocessor binds
 the rates in `ports_apply()` and `target_sync()` in
-`firmware/iomcu/src/main.c`.
+`firmware/iomcu/src/iomcu_pages.c`.
 
 | Panel | Coprocessor | Behaviour |
 | --- | --- | --- |
