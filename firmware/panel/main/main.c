@@ -102,15 +102,6 @@
 #include "outputs_pages.h"
 
 /*
- * The panel's throttle, as a channel in an output bank.
- *
- * The ramp is a proportion of travel per second rather than a percentage, so
- * the same number means the same speed on an output whose travel is not
- * measured in percent.
- */
-#define PANEL_CH_THROTTLE     0u
-
-/*
  * The ramp comes from the `Ramp limit` setting, 5 to 300 %/s.  It governs
  * this bank, which is the modelled bench: the value it slews to is read by
  * telemetry_sim_step() and by nothing else, and only while the link is down.
@@ -203,36 +194,25 @@ static uint16_t pct_to_span(float pct)
 static const char *TAG = "rcbench";
 
 /* Used during bring-up as well as in the loop, so file scope. */
-static link_host_t    s_host;
+link_host_t    s_host;
 /* A link_cap_t bitmap from the coprocessor's identity page.  Zero until
  * something answers, which is also what it stays if nothing is fitted.
  * Read at bring-up, at every link-up edge and after a SENSE write is taken
  * (bits 3 and 4 follow the SENSE set-up), by the control task; the render
  * loop reads it for the menu marks, so it is atomic. */
-static atomic_uint    s_capabilities;
-/* LINK_ST_FAULTS from the coprocessor's last status poll, shown in the band. */
-static uint16_t       s_dev_faults;
-static link_bringup_t s_bring;
+atomic_uint    s_capabilities;
+link_bringup_t s_bring;
 
 
-/* Defined below; bring_up() asks who is there before the loop starts. */
-static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
-                      link_msg_t *reply);
-static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
-                       const uint16_t *regs, link_msg_t *reply);
 /* Paired with throttle_to_zero() in every path that stops the bench; defined
  * with the rest of the servo's wire handling. */
-static void servo_let_go(void);
+void        servo_let_go(void);
 static void servo_service(bool link_up);
 static bool servo_rate_settled(void);
 /* The supply's service, defined with the supply.  control_pump() calls it,
  * so a stop or an OFF cuts the output where it lands and the supply keeps
  * its cadence while an exchange waits. */
 static void supply_pump(void);
-/* Defined with the rest of the link's reads; the OUTPUTS screen's write asks
- * for one straight afterwards. */
-static void read_outputs_binding(void);
-static void post_no_reading(void);
 static bool disarm_here(bool link_up);
 
 
@@ -281,8 +261,8 @@ static bool              s_touch_ok = true; /* touch_init() answered    */
  * Relaxed ordering is enough.  Nothing is published through this timestamp:
  * it orders no other write, and every reader wants the value alone.
  */
-static atomic_uint s_link_lost_ms;   /* when it went, 0 while it is up   */
-static bool     s_link_lost_shown;   /* the screen has had its turn      */
+atomic_uint s_link_lost_ms;   /* when it went, 0 while it is up   */
+bool     s_link_lost_shown;   /* the screen has had its turn      */
 /*
  * Two counts, because they answer two questions.  The per-outage one sits on
  * the screen beside "down N s" and says whether the recovery is working now;
@@ -290,8 +270,8 @@ static bool     s_link_lost_shown;   /* the screen has had its turn      */
  * all session.  One number doing both would be read as the wrong one in at
  * least one of the two places.
  */
-static uint32_t s_recoveries;        /* this outage                      */
-static uint32_t s_recoveries_total;  /* since boot                       */
+uint32_t s_recoveries;        /* this outage                      */
+uint32_t s_recoveries_total;  /* since boot                       */
 
 /* ------------------------------------------------------------ the heartbeat */
 
@@ -336,7 +316,7 @@ static void heartbeat_init(void)
 static temperature_sensor_handle_t s_tsens;
 /* Read and published by the control task; app_main takes it from the
  * snapshot with everything else that crosses between the two. */
-static float                       s_mcu_c = NAN;
+float s_mcu_c = NAN;
 
 static void tsens_init(void)
 {
@@ -384,7 +364,6 @@ static void beat(bool alive)
 #define TOUCH_Q_LEN       32
 #define CMD_Q_LEN         16
 #define SAMPLE_Q_LEN      8
-#define ALERT_MAX         UI_ALERT_MAX
 
 /*
  * The panel's own update.  An install about to write the flash asks the
@@ -485,19 +464,19 @@ static atomic_int s_outputs_result;
  * configuration and pushed it would be applying it to whatever is on the
  * bench now.  The coprocessor keeps it in its own flash, and this asks.
  */
-static bind_reading_t s_outputs_read;
-static bool           s_outputs_read_fresh;    /* both under s_snap_lock */
+bind_reading_t s_outputs_read;
+bool           s_outputs_read_fresh;    /* both under s_snap_lock */
 /*
  * The state of the last reading, for the control task alone: a binding a
  * screen queued is written only over pages that were read
  * (bind_link_may_write()).  BIND_READ_NONE until the first read.
  */
-static bind_read_t    s_bind_read = BIND_READ_NONE;
+bind_read_t    s_bind_read = BIND_READ_NONE;
 /* The coprocessor serves BIND_CFG, BIND_OUT and BIND (protocol 4.10). */
-static uint16_t       s_far_minor;
+uint16_t       s_far_minor;
 
 /* The coprocessor's board identity, from the identity page at bring-up. */
-static uint16_t  s_board;
+uint16_t  s_board;
 
 /*
  * Fetching the board's drawing, a slice of a poll at a time.
@@ -513,7 +492,7 @@ static const art_flash_t *s_artflash;
 static art_fetch_t        s_artfetch;
 static uint8_t           *s_artbuf;
 static uint16_t           s_artboard;
-static bool               s_artbusy;
+bool                      s_artbusy;
 
 /*
  * Writing it down: one sector a control pass, and only on a safe bench.
@@ -569,7 +548,7 @@ static QueueHandle_t     s_cmd_q;     /**< app_main -> control task */
 /* The servo programmer's commands (kst_prog_cmd_t), a queue of their own:
  * s_cmd_q drops its oldest entry when it is full. */
 #define KST_Q_LEN 4
-static QueueHandle_t     s_kst_q;     /**< app_main -> control task */
+QueueHandle_t     s_kst_q;     /**< app_main -> control task */
 /*
  * One entry per bench sample, not a count of them.  A counter would lose the
  * samples a stalled renderer did not come back for, and the plot's time axis
@@ -578,7 +557,7 @@ static QueueHandle_t     s_kst_q;     /**< app_main -> control task */
  * SAMPLE_Q_LEN samples behind; the oldest is dropped, because a plot that is
  * 400 ms out of date is worth less than one that is current.
  */
-static QueueHandle_t     s_sample_q;  /**< control task -> app_main */
+QueueHandle_t     s_sample_q;  /**< control task -> app_main */
 /* The supply's samples, one entry each, for the same reason; each with the
  * servo rail's meter and its change count as last decided when the sample
  * was queued (servo_screen_supply_at()). */
@@ -593,89 +572,17 @@ typedef struct {
 } supply_item_t;
 static QueueHandle_t     s_supply_q;  /**< control task -> app_main */
 /* The output encoder's readings (servo_test_enc_t), each once. */
-static QueueHandle_t     s_enc_q;     /**< control task -> app_main */
-/* The INA3221's CH1 windows from the ring, each number once and in order,
- * each with the servo rail's meter and its change count as decided in the
- * poll that took it (servo_screen_window()).  Full means the renderer is
- * SAMPLE_Q_LEN windows behind, and the oldest is dropped. */
-typedef struct {
-    sense_link_win_t  win;
-    servo_source_id_t source;
-    uint32_t          changes;
-    servo_source_why_t dropped;     /* as supply_item_t's */
-    uint32_t          dropped_at;
-} servo_win_item_t;
-static QueueHandle_t     s_win_q;     /**< control task -> app_main */
-static SemaphoreHandle_t s_snap_lock;
+QueueHandle_t     s_enc_q;     /**< control task -> app_main */
+QueueHandle_t     s_win_q;     /**< control task -> app_main */
+SemaphoreHandle_t s_snap_lock;
 
-/*
- * The coprocessor's update as the render side needs it: an offer, numbered,
- * with the version the coprocessor runs; while an update runs, its step and
- * blocks; and the STARTs the control task has taken, so a progress screen
- * whose START was spent leaves.
- */
-typedef struct {
-    uint32_t     offer_gen;
-    bool         offered;
-    cu_version_t running;
-    bool         active;
-    uint8_t      step;      /* a cu_step_t */
-    uint16_t     block;
-    uint16_t     blocks;
-    uint32_t     starts_taken;
-} cu_snap_t;
+/* What the screen reads (panel_snap_t, panel.h). */
+panel_snap_t s_snap;
 
-/* What the screen reads.  Written by the control task, copied by app_main. */
-static struct {
-    bench_state_t bench;
-    supply_state_t supply;
-    uint32_t      supply_gen;  /**< which ON, for the render side's ack */
-    bool          link_up;
-    bool          armed;
-    /** The roles the bank is armed for, OUT_ROLE_BIT()s; 0 disarmed. */
-    uint8_t       armed_roles;
-    bool          arm_wanted;  /**< armed, or an arm waiting: arming_link_needed() */
-    uint32_t      arm_gen;     /**< which arm, for the render side's ack */
-    float         mcu_temp_c;
-    bool          stopped;
-    uint32_t      stops;
-    uint32_t      pressed;     /**< of the stops, those pressed */
-    uint16_t      faults;
-    uint32_t      link_errors;
-    uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
-    uint32_t      run_seconds;
-    char          alert[ALERT_MAX];
-    bool          alert_pending;
-    /* Every alert posted is numbered, and the render side records the
-     * number of the one it took: an alert posted and replaced before a
-     * frame took it was never shown.  See sense_link_alerts(). */
-    uint32_t      alert_gen;
-    uint32_t      alert_taken;
-    /* The phase tap as the control task last read it, for the stick run's
-     * page. */
-    tone_readout_t tone;
-    /* The servo rail's meter as of the last poll (servo_source.h), and the
-     * CH1 windows that left the ring untaken since boot. */
-    servo_source_id_t servo_source;
-    uint32_t      servo_source_changes;
-    /* Why the INA3221 is not the meter, and why and when it last stopped
-     * being it (servo_source_why(), servo_source_dropped()). */
-    servo_source_why_t servo_source_why;
-    servo_source_why_t servo_source_dropped;
-    uint32_t      servo_source_dropped_at;
-    uint32_t      servo_win_lost;
-    /* What the servo programmer's model is fed; see kst_publish(). */
-    kst_prog_feed_t kst;
-    /* The coprocessor's update; see cu_service(). */
-    cu_snap_t     cu;
-} s_snap;
-
-static void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
-static void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
 
 /* Called from the control task, which must not touch the router.  The
  * slot holds one alert; a later one replaces it.  Returns its number. */
-static uint32_t control_alert_numbered(const char *text)
+uint32_t control_alert_numbered(const char *text)
 {
     snap_lock();
     snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
@@ -685,32 +592,16 @@ static uint32_t control_alert_numbered(const char *text)
     return gen;
 }
 
-/* The same, for the callers that do not follow it.  Inlined where it is
- * called in this file, as the compiler chose before the numbering: a frame
- * of its own puts 32 bytes on the control task's deepest chain (drv_lost()
- * through control_pump()) and moves stack_check's walk onto a deeper path
- * through ESP-IDF's logging.  Extern for the logger task (panel.h), which
- * calls the copy the compiler keeps. */
-__attribute__((always_inline)) inline void
-control_alert(const char *text)
-{
-    snap_lock();
-    snprintf(s_snap.alert, sizeof(s_snap.alert), "%s", text);
-    s_snap.alert_pending = true;
-    ++s_snap.alert_gen;
-    snap_unlock();
-}
-
 /*
  * The safety loop's own state, at file scope because control_pump() services
  * it from inside a link exchange as well as from the top of the control task.
  */
-static outputs_t s_out;
+outputs_t s_out;
 /*
  * When the bench may be armed.  The policy lives in shared/safety/arming.c so
  * the host suite can hold it; this file drives it and acts on what it says.
  */
-static arming_t  s_arm;
+arming_t  s_arm;
 
 /* What the servo screen is holding, so it can be said again before the far
  * end times it out.  SERVO_CMD_NONE means nothing is being held. */
@@ -728,7 +619,7 @@ static uint32_t    s_stops_served;
 static bool        s_disarm_timing;   /**< whether s_disarm_since means anything */
 static uint32_t    s_disarm_since;
 
-static servo_cmd_t s_servo_held;
+servo_cmd_t        s_servo_held;
 static uint32_t    s_servo_next_ms;
 /*
  * A position the far end still holds and this end has finished with.
@@ -738,22 +629,9 @@ static uint32_t    s_servo_next_ms;
  * command through a failsafe.  A later arm -- from either screen -- would then
  * drive the surface to where it was before.
  */
-static bool        s_servo_release_owed;
-static uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
+bool        s_servo_release_owed;
+uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
 
-/*
- * A disarm returns the command to zero, here and in the output bank.
- *
- * The throttle used to survive a disarm, so the next arm wrote the previous
- * position to the control page in the same transaction that armed: the bench
- * went from stopped to whatever it was last set to, with the ramp on the far
- * side of the arm rather than in front of it.  An arm starts from nothing.
- */
-static void throttle_to_zero(void)
-{
-    s_throttle_hundredths = 0u;
-    (void)outputs_set(&s_out, PANEL_CH_THROTTLE, 0u, now_ms());
-}
 static bool      s_stop_press;
 static uint8_t   s_stop_id;
 /*
@@ -776,7 +654,7 @@ static atomic_bool s_stop_request;
 /* Set when the pump applied a stop for a press the router will also latch,
  * so the backstop does not stop the bench twice for one press. */
 static atomic_bool s_stop_counted;
-static atomic_bool s_disarm_request;
+atomic_bool        s_disarm_request;
 static atomic_bool s_servo_release_request;
 /* HOLD asked for: a sweep being written, which can take several exchanges,
  * gives way to it at once.  Cleared when the drain reaches a servo
@@ -843,7 +721,7 @@ static atomic_uint s_supply_ons_taken;
  * the TX GPIO and 15..8 the RX, each plus one with 0 for unset, bits 7..0
  * the baud setting.  Published as the pole count is; see publish_pdmini().
  */
-static atomic_uint s_pdmini_wiring;
+atomic_uint s_pdmini_wiring;
 /* And how many times it has been edited: an edit undone before a queued ON
  * is applied leaves the word as it was, but not this count. */
 static atomic_uint s_pdmini_edits;
@@ -855,10 +733,10 @@ static atomic_uint s_pdmini_edits;
 static atomic_bool s_supply_real;
 /* The PD mini's input in mV as its page last read, 0 while not known: the
  * screen keeps the voltage under it (PDMINI_CAP_MV). */
-static atomic_uint s_supply_vin_mv;
+atomic_uint s_supply_vin_mv;
 /* The PD mini's UART rate in baud as the coprocessor last reported it, for
  * the SUPPLY screen's header; 0 while not known. */
-static atomic_uint s_supply_baud;
+atomic_uint s_supply_baud;
 /*
  * The two touch queues, numbered.  See touch_loss.h for why numbers and not
  * counts: a count raised on one core after the eviction it reports can be
@@ -907,7 +785,7 @@ static atomic_uint s_arm_ack;
  */
 static uint32_t    s_arm_take_gen;
 static uint32_t    s_arm_take_drv;
-static uint32_t    s_arm_gen;
+uint32_t           s_arm_gen;
 static arm_watch_t s_arm_watch;
 
 /*
@@ -932,8 +810,8 @@ static arm_watch_t s_arm_watch;
  * read of one is a data race with no ordering between the two; the flag
  * alone does not order a second edit against a read already under way.
  */
-static atomic_bool s_poles_owed;
-static atomic_uint s_poles_value;
+atomic_bool s_poles_owed;
+atomic_uint s_poles_value;
 
 /*
  * A setting the far end keeps a copy of has changed.
@@ -968,8 +846,7 @@ static void publish_poles(void)
  * flash write at the far end; the debt is paid once the value has rested for
  * ENDPOINTS_SETTLE_MS.
  */
-#define ENDPOINTS_SETTLE_MS 300u
-static atomic_bool s_endpoints_owed;
+atomic_bool s_endpoints_owed;
 /*
  * Raised at a link-up edge, control task only: the far end is held disarmed
  * until its throttle endpoints have been brought to the settings.  A bench
@@ -977,9 +854,9 @@ static atomic_bool s_endpoints_owed;
  * otherwise arm a coprocessor that has just answered on whatever range it
  * kept in flash, and keep that range for the whole run.
  */
-static bool        s_endpoints_hold;
-static atomic_uint s_endpoints_value;
-static atomic_uint s_endpoints_at_ms;
+bool        s_endpoints_hold;
+atomic_uint s_endpoints_value;
+atomic_uint s_endpoints_at_ms;
 
 static void publish_endpoints(void)
 {
@@ -988,16 +865,6 @@ static void publish_endpoints(void)
     atomic_store(&s_endpoints_value, (lo << 16) | (hi & 0xFFFFu));
     atomic_store(&s_endpoints_at_ms, (unsigned)now_ms());
     atomic_store(&s_endpoints_owed, true);
-}
-
-static uint16_t endpoints_min(void)
-{
-    return (uint16_t)(atomic_load(&s_endpoints_value) >> 16);
-}
-
-static uint16_t endpoints_max(void)
-{
-    return (uint16_t)(atomic_load(&s_endpoints_value) & 0xFFFFu);
 }
 
 /* The PD mini's wiring, as the settings screen left it; see
@@ -1015,22 +882,6 @@ static void publish_pdmini(void)
      * new wiring can be seen. */
     atomic_fetch_add(&s_pdmini_edits, 1u);
     atomic_store(&s_pdmini_wiring, word);
-}
-
-static supply_wiring_t wiring_of(unsigned word)
-{
-    const supply_wiring_t w = {
-        .en   = (word & (1u << 24)) != 0u,
-        .tx   = (int8_t)((int)((word >> 16) & 0xFFu) - 1),
-        .rx   = (int8_t)((int)((word >> 8) & 0xFFu) - 1),
-        .baud = (uint8_t)(word & 0xFFu),
-    };
-    return w;
-}
-
-static supply_wiring_t pdmini_wiring(void)
-{
-    return wiring_of(atomic_load(&s_pdmini_wiring));
 }
 
 /*
@@ -1069,7 +920,7 @@ static void publish_sense(void)
     taskEXIT_CRITICAL(&s_sense_mux);
 }
 
-static sense_setup_t sense_wanted(void)
+sense_setup_t sense_wanted(void)
 {
     taskENTER_CRITICAL(&s_sense_mux);
     const sense_setup_t w = s_sense_want;
@@ -1103,7 +954,7 @@ static void publish_tone(void)
     taskEXIT_CRITICAL(&s_tone_mux);
 }
 
-static tone_setup_t tone_wanted(void)
+tone_setup_t tone_wanted(void)
 {
     taskENTER_CRITICAL(&s_tone_mux);
     const tone_setup_t w = s_tone_want;
@@ -1143,7 +994,7 @@ static void settings_changed(setting_id_t id)
 
 /* False until the control task owns the safety state; bring-up polls the
  * link before that, with nothing to service. */
-static bool s_pump_live;
+bool s_pump_live;
 
 /*
  * Touch, STOP, the outputs and the heartbeat -- everything with a deadline,
@@ -1234,7 +1085,7 @@ static void drv_lost(uint32_t n)
     control_alert(TR(ALERT_TOUCH_LOST_STOP));
 }
 
-static void control_pump(void)
+void control_pump(void)
 {
     /*
      * The driver's last published number, before the drain: every event up
@@ -1708,7 +1559,7 @@ static bool bring_up(void)
  * So the count is reported where it is kept, at the run's end.  The logger
  * reports what the logger knows: rows written, and a write that failed.
  */
-static log_cadence_t s_log_cad;
+log_cadence_t s_log_cad;
 
 /* The model's gate is the sample rate's period, and its longest step the
  * totals' longest. */
@@ -1722,7 +1573,7 @@ _Static_assert((uint32_t)(BENCH_TOTALS_MAX_STEP_S * 1000.0f)
  * run it has seen start.  The counter never takes the value 0, because 0 is
  * what s_log_run_now says for no run at all. */
 static uint32_t       s_log_run_ctr;
-static log_run_kind_t s_log_kind;
+log_run_kind_t        s_log_kind;
 
 /* The control task's: the timestamp a supply run's next row carries.  A
  * bench run's is s_log_cad's. */
@@ -1733,7 +1584,7 @@ static float        s_log_t;
  * stored by the SERVO screen in the call that starts or ends a run
  * (servo_screen_on_testing()), so a row is neither written into a run nor
  * left out after it by a frame's length. */
-static atomic_bool s_servo_testing;
+atomic_bool s_servo_testing;
 
 static void servo_testing_told(bool running)
 {
@@ -1749,7 +1600,7 @@ static void servo_testing_told(bool running)
  * dropped, so what the file holds is the run up to the stall.  A bench run's
  * time column is the wall time since the arm and shows the gap.
  */
-static void log_post(log_row_t *row)
+void log_post(log_row_t *row)
 {
     if (s_log_q == NULL) {
         return;
@@ -1758,196 +1609,7 @@ static void log_post(log_row_t *row)
     log_cadence_posted(&s_log_cad, xQueueSend(s_log_q, row, 0) == pdTRUE);
 }
 
-/* ---------------------------------------------------- asking the far end */
-
-/*
- * Every request to the far end goes through exchange(), and every way
- * exchange() ends without an answer goes through exchange_unanswered():
- * a frame that did not reach the wire, or a request that waited out
- * LINK_HOST_TIMEOUT_MS (1000 ms).  A refusal is an answer.  No caller
- * reports a missing answer to the link-loss rule and none can forget to.
- * Control task only, and app_main before that task exists.
- *
- * s_unanswered counts them.  An arm compares it across its own exchanges to
- * tell a far end that refused from a link that went quiet; see
- * arm_write_failed().
- *
- * s_link_is_up is whether a far end is held to be answering: set when an
- * identity probe is answered, cleared when poll_far_end() takes the link
- * down.
- *
- * s_link_quiet is set by an exchange that ended unanswered with the link
- * up, and is the only thing poll_far_end() reads to take the link down.
- * While it is set exchange() sends nothing and answers false at once, so
- * the rest of the pass does not wait out a timeout per exchange.
- */
-static uint32_t s_unanswered;
-static bool     s_link_is_up;
-static bool     s_link_quiet;
-static void exchange_unanswered(void);
-
-/*
- * Put a built request on the wire and wait for its answer.  Blocking, and
- * short: the link is host-polled, so there is never a second request in
- * flight, and a transaction is well under one panel frame.
- *
- * Reads and writes share everything after the request is built, including
- * two failure modes: a frame that never reached the wire has nothing to wait
- * for and must release the outstanding slot, and a reply wider than four
- * registers arrives in pieces that each carry their own offset.
- */
-static bool exchange(link_host_t *host, const link_msg_t *req,
-                     link_msg_t *reply)
-{
-    if (s_link_quiet) {
-        /* The link went quiet earlier in this pass.  Not sent, not counted
-         * and not judged again: the exchange that found it out was. */
-        link_host_abandon(host);
-        return false;
-    }
-    link_can_frame_t out[LINK_CAN_MAX_FRAMES];
-    const size_t n = link_can_encode(req, out, LINK_CAN_MAX_FRAMES);
-    if (n == 0) {
-        link_host_abandon(host);
-        exchange_unanswered();
-        return false;
-    }
-    const uint32_t sent_us = (uint32_t)esp_timer_get_time();
-    for (size_t i = 0; i < n; ++i) {
-        if (!can_twai_send(&out[i], 5)) {
-            /* Nothing reached the wire, so there is nothing to wait for.
-             * Leaving it outstanding would refuse every later request. */
-            link_host_abandon(host);
-            exchange_unanswered();
-            return false;
-        }
-    }
-
-    /*
-     * No sequence to follow and no continuation timer: the host knows what it
-     * asked for, and that is the only state there is.
-     */
-    for (;;) {
-        link_can_frame_t in;
-        if (can_twai_recv(&in, 5)) {
-            link_msg_t part;
-            if (link_can_decode(&in, &part)
-                && link_host_accept(host, &part, now_ms(), reply)) {
-                link_bringup_add_rtt(
-                    &s_bring,
-                    (uint32_t)((uint32_t)esp_timer_get_time() - sent_us));
-                return true;
-            }
-        }
-        /*
-         * This wait runs to LINK_HOST_TIMEOUT_MS.  The safety loop cannot
-         * stop for that long, so it runs here too: one pump per 5 ms receive
-         * window keeps the heartbeat inside its 150 ms ceiling and STOP
-         * inside a frame of the press.  Only during bring-up, before the
-         * control task exists, is there nothing to pump.
-         */
-        if (s_pump_live) {
-            control_pump();
-        }
-        /*
-         * The request's own timeout is the only thing that ends this wait.
-         *
-         * link_host_tick() answers true for two different facts: this
-         * request has been outstanding too long, and the link as a whole has
-         * gone quiet.  Only the first one releases the outstanding slot, and
-         * leaving on the second left the transaction pending for ever --
-         * link_host_read() then refused every later request, this function
-         * was never entered again, and tick() lives only in here, so the
-         * timeout that would have cleared it could not run.  The link stayed
-         * down until the panel was switched off, with polls frozen and not
-         * one timeout counted.
-         *
-         * The far end had gone quiet for a second, which is exactly when the
-         * second fact fires first: it is measured from the last reply and
-         * this request was sent after it.
-         */
-        (void)link_host_tick(host, now_ms());
-        if (!link_host_pending(host)) {
-            exchange_unanswered();
-            return false;
-        }
-    }
-}
-
-static bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
-                      link_msg_t *reply)
-{
-    link_msg_t req;
-    if (!link_host_read(host, page, 0, count, now_ms(), &req)) {
-        return false;
-    }
-    return exchange(host, &req, reply);
-}
-
-/* A window of a page from @p offset; the reply's registers start there. */
-static bool read_regs(link_host_t *host, uint8_t page, uint8_t offset,
-                      uint8_t count, link_msg_t *reply)
-{
-    link_msg_t req;
-    if (!link_host_read(host, page, offset, count, now_ms(), &req)) {
-        return false;
-    }
-    return exchange(host, &req, reply);
-}
-
-/* exchange() and the clock, as shared/link asks for them. */
-static bool port_exchange(void *ctx, link_host_t *host, const link_msg_t *req,
-                          link_msg_t *reply)
-{
-    (void)ctx;
-    return exchange(host, req, reply);
-}
-
-static uint32_t port_now(void *ctx)
-{
-    (void)ctx;
-    return now_ms();
-}
-
-/*
- * Between two frames of a write wider than one.  A page is 8 exchanges back
- * to back and a binding 17, and an exchange answered inside its first 5 ms
- * receive window returns without a pump.  The safety loop runs here once
- * 5 ms have passed since it last did: the heartbeat keeps its 20 ms edges
- * and STOP is read inside a frame of the press for as long as the write
- * takes.  A write of one frame never comes here.
- */
-static void port_between(void *ctx)
-{
-    static uint32_t pumped_ms;
-    (void)ctx;
-    if (s_pump_live && (uint32_t)(now_ms() - pumped_ms) >= 5u) {
-        pumped_ms = now_ms();
-        control_pump();
-    }
-}
-
-static const link_port_t k_port = {
-    port_exchange, port_now, NULL, port_between,
-};
-
-/*
- * A write of any width goes out one frame per exchange, each acknowledged
- * before the next is sent (link_write_acked()): the far end's controller
- * buffers 2 frames and is polled, so frames sent back to back can find it
- * full.  A write of up to 4 registers is one exchange.
- */
-static bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
-                       uint8_t count, const uint16_t *regs, link_msg_t *reply)
-{
-    return link_write_acked(host, &k_port, page, offset, count, regs, reply);
-}
-
-static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
-                       const uint16_t *regs, link_msg_t *reply)
-{
-    return write_regs(host, page, 0, count, regs, reply);
-}
+/* Asking the far end, exchange(): panel_link.c. */
 
 /* ------------------------------------------------------ the board drawing */
 
@@ -2057,7 +1719,7 @@ static void art_keep_service(void)
     }
 }
 
-static void art_stop(const char *why)
+void art_stop(const char *why)
 {
     if (s_artbuf != NULL) {
         heap_caps_free(s_artbuf);
@@ -2110,7 +1772,7 @@ static const art_transport_t s_art_link = {
  * of a poll at a time below.  A coprocessor older than 4.20 serves a
  * photograph or nothing, and is drawn from its shape.
  */
-static void art_begin(uint16_t board)
+void art_begin(uint16_t board)
 {
     art_stop(NULL);
     draw_publish(board, NULL, 0u);
@@ -2209,7 +1871,7 @@ static void art_finish(void)
  * blocks it is given, so how much of a poll goes to a drawing is decided
  * here and nowhere else.
  */
-static void art_slice(void)
+void art_slice(void)
 {
     const uint32_t began = now_ms();
     while (s_artbusy && (uint32_t)(now_ms() - began) < ART_SLICE_MS) {
@@ -2226,18 +1888,7 @@ static void art_slice(void)
     }
 }
 
-/* ------------------------------------------------------- the control page */
-
-/*
- * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
- * the link is up: the coprocessor's throttle channel goes to its rest, which
- * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500 ms) without a
- * write, so the panel keeps writing while armed.  The write that arms is
- * the same window widened to three, taking MOTOR_POLES (register 2) with
- * it.  CLEAR (register 3) is written on its own and only on an explicit
- * arm: a write that touches it must carry LINK_CLEAR_MAGIC, and it lifts a
- * latched failsafe, which no other write may do.
- */
+/* The control page: panel_link.c. */
 
 static uint16_t pct_to_hundredths(float pct)
 {
@@ -2250,516 +1901,6 @@ static uint16_t pct_to_hundredths(float pct)
     return (uint16_t)((pct * 100.0f) + 0.5f);
 }
 
-/*
- * ARM and THROTTLE, the write every 50 ms poll and every disarm makes.
- *
- * Two registers rather than the three the frame that arms carries.  This
- * write keeps a running bench running and stops a stopping one, and the
- * pole count is neither: while a run is on, an edit to it is a correction
- * paid on its own transaction by poles_service(), and a disarm has nothing
- * to convert.  Kept apart so a count the far end refuses -- or one that has
- * not changed -- never stands between the throttle and the wire.
- *
- * True when the coprocessor acknowledged; a NACK (negative acknowledge) or
- * no answer is false.
- */
-/*
- * What the far end was last armed with, the ARM value of the frame that
- * armed it.  The control task's alone.
- */
-static uint16_t s_arm_value;
-
-/*
- * The ARM value for the roles the policy asked for: the screen's own role
- * (MOTOR and the PROGRAMMER stick run the throttle, SERVO the surfaces).  A
- * coprocessor older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
- * arms its whole bank on it.
- */
-static uint16_t arm_value_wanted(void)
-{
-    return outputs_arm_value_for(s_far_minor, arming_roles(&s_arm));
-}
-
-static bool control_write(bool armed, link_msg_t *reply)
-{
-    /* The value the far end was armed with, written again: a different
-     * non-zero ARM is refused while it is armed (LINK_MINOR_ARM_ROLE). */
-    const uint16_t regs[2] = { armed ? s_arm_value : 0u,
-                               s_throttle_hundredths };
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
-           && reply->op == LINK_OP_ACK;
-}
-
-/*
- * The frame that arms: ARM, THROTTLE and MOTOR_POLES, registers 0 to 2 of
- * the control page in one CAN frame, all-or-nothing at the far end.
- *
- * The count travels with the arm because it is the divisor the far end
- * starts sampling with: a run begun on a stale one puts a wrong speed into
- * its sticky rpm_max, which no later correction removes.  In the same frame
- * the run starts on the count that was sent, or does not start.
- *
- * The debt is taken before the value is loaded.  An edit landing after the
- * load raises it again on its own and is paid at the next poll, which is
- * right: the run started on the value that went out, and the poll corrects
- * it.  A write that does not land gives the debt back if one was taken, so
- * the next poll pays it.  The count cannot refuse an arm on its own: every
- * value the setting allows is inside the range the page takes, and a
- * coprocessor whose page differs never links up (see probe_identity()).
- */
-static bool control_arm(link_msg_t *reply)
-{
-    const bool owed = atomic_exchange(&s_poles_owed, false);
-    const uint16_t arm = arm_value_wanted();
-    const uint16_t regs[LINK_CT_ARM_FRAME] = {
-        [LINK_CT_ARM]         = arm,
-        [LINK_CT_THROTTLE]    = s_throttle_hundredths,
-        [LINK_CT_MOTOR_POLES] = (uint16_t)atomic_load(&s_poles_value),
-    };
-    const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM,
-                               LINK_CT_ARM_FRAME, regs, reply)
-                    && reply->op == LINK_OP_ACK;
-    if (!ok && owed) {
-        atomic_store(&s_poles_owed, true);
-    }
-    if (ok) {
-        s_arm_value = arm;
-    }
-    return ok;
-}
-
-/*
- * The magnet count of the motor under test, read from the setting at the
- * moment of the write.
- *
- * A bidirectional DShot ESC (electronic speed controller) reports electrical
- * periods and has no idea what it is bolted to, so this is the one number the
- * far end cannot work out and the near end already has, in the Motor poles
- * setting.  Until it arrives the coprocessor reports no speed at all rather
- * than a speed derived from a guess.
- */
-static bool control_write_poles(link_msg_t *reply)
-{
-    const uint16_t poles = (uint16_t)atomic_load(&s_poles_value);
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_MOTOR_POLES, 1u,
-                      &poles, reply)
-           && reply->op == LINK_OP_ACK;
-}
-
-/*
- * Pay the debt, when one is owed and only then.
- *
- * The flag is taken before the write, so a value edited during the
- * transaction is owed again rather than dropped.
- *
- * A write nobody answered is put back and costs one more poll.  A write the
- * far end refused is not: the same request refused once is refused every
- * time, and a debt that stands through a refusal is a control write on every
- * 50 ms poll for as long as the link is up, against a coprocessor that has
- * already said no -- the missing-register case link_came_up() names is
- * exactly that. A refusal waits for a new edit or the next link-up edge.
- *
- * Returns whether the far end holds the current count.
- */
-static bool poles_service(void)
-{
-    /*
-     * One exchange, which can wait LINK_HOST_TIMEOUT_MS.  An edit made while
-     * it is on the wire raises the debt again behind the value already
-     * loaded and is paid at the next 50 ms poll; nothing waits on it here,
-     * because the write that arms carries the count itself (control_arm())
-     * and this is the path for a count edited at any other time.  A loop
-     * until the debt clears would let an operator holding a key down keep
-     * the control task on the wire for as long as the finger rests.
-     */
-    if (!atomic_exchange(&s_poles_owed, false)) {
-        return true;
-    }
-    link_msg_t pr;
-    memset(&pr, 0, sizeof(pr));
-    if (!control_write_poles(&pr)) {
-        if (pr.op == LINK_OP_NACK) {
-            control_alert(TR(ALERT_POLES));
-            return false;
-        }
-        atomic_store(&s_poles_owed, true);
-        return false;
-    }
-    return true;
-}
-
-/*
- * Bring the throttle channels' endpoints at the far end to the settings.
- *
- * Read, change, write: the page is read back, the throttle channels take the
- * two values (outputs_chan_cfg_set_throttle_range()) and every other channel
- * keeps what it holds -- a servo's range the SERVO screen named included.
- * Nothing is written when nothing changed, which is the case at every
- * link-up after the first: the far end keeps the page in flash.
- *
- * Only when @p far_disarmed: the control write of this same pass put
- * ARM = 0 at the far end and was acknowledged.  The bank's own flag is not
- * enough -- a disarm whose write never left leaves the far end driving
- * while this end reads disarmed -- and a pulse range that moves under a
- * running motor moves its throttle.  An edit made during a run waits for
- * the disarm; the hold after a link-up (s_endpoints_hold) is what makes the
- * far end disarmed for that pass on a bench armed here.
- *
- * The same refusal rules as poles_service(): a write nobody answered is
- * owed again, one the far end refused is reported and waits for a new edit.
- * The hold ends with every outcome but a missing answer, so a coprocessor
- * that refuses the page is armed on its own range rather than never.
- */
-static void endpoints_service(bool far_disarmed)
-{
-    if (!atomic_load(&s_endpoints_owed)) {
-        s_endpoints_hold = false;
-        return;
-    }
-    if (!far_disarmed) {
-        return;
-    }
-    if ((uint32_t)(now_ms() - atomic_load(&s_endpoints_at_ms))
-        < ENDPOINTS_SETTLE_MS) {
-        return;
-    }
-    if (!atomic_exchange(&s_endpoints_owed, false)) {
-        return;
-    }
-    const uint16_t lo = endpoints_min();
-    const uint16_t hi = endpoints_max();
-
-    link_msg_t ccr;
-    memset(&ccr, 0, sizeof(ccr));
-    if (!poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)) {
-        atomic_store(&s_endpoints_owed, true);
-        return;
-    }
-    const bool held = s_endpoints_hold;
-    s_endpoints_hold = false;
-    if (ccr.op == LINK_OP_NACK) {
-        control_alert(TR(ALERT_PULSE_RANGE_UNKNOWN));
-        return;
-    }
-    uint16_t cfg[LINK_CC_COUNT];
-    memcpy(cfg, ccr.regs, sizeof(cfg));
-    if (!outputs_chan_cfg_set_throttle_range(cfg, lo, hi)) {
-        /* Idle pulse and Full pulse overlap in their ranges (800 to 1600 and
-         * 1400 to 2400 us), so the pair can be inverted while it is being
-         * edited.  Said, and the far end keeps the last pair it took. */
-        control_alert(TR(ALERT_PULSE_ORDER));
-        return;
-    }
-    if (memcmp(cfg, ccr.regs, sizeof(cfg)) == 0) {
-        return;
-    }
-    link_msg_t reply;
-    memset(&reply, 0, sizeof(reply));
-    if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg, &reply)) {
-        atomic_store(&s_endpoints_owed, true);
-        s_endpoints_hold = held;
-        return;
-    }
-    if (reply.op != LINK_OP_ACK) {
-        control_alert(TR(ALERT_PULSE_REFUSED));
-    }
-}
-
-/*
- * Whether the far end trusts the heartbeat, asked of its STATUS page.
- *
- * An arm waits for this before CLEAR is written.  The heartbeat is withheld
- * while a stop is latched, and after it resumes the far end's monitor needs
- * five edges, 100 to 125 ms at a 5 ms pass and longer on a slower one: a
- * fixed wait is right for one pass period and refused at the next.  One
- * register, one frame each way.
- *
- * @p answered is false when nobody answered.  That exchange has then waited
- * LINK_HOST_TIMEOUT_MS (1000 ms), past the arm's whole bound, and it is the
- * link that is gone and not the line that is distrusted.
- */
-static bool far_line_trusted(bool *answered)
-{
-    link_msg_t st = { 0 };
-    *answered = read_regs(&s_host, LINK_PAGE_STATUS, LINK_ST_FAULTS, 1u, &st);
-    return *answered && st.op == LINK_OP_DATA
-           && safety_gate_line_trusted(st.regs[0]);
-}
-
-/*
- * A stop the policy has just latched for the far end -- a refused ARM, a
- * link that went quiet, a far end that appeared under an armed bank -- as
- * it is finished at this end.
- *
- * The command goes to zero here rather than through the policy:
- * arming_stop_from_far_end() clears a->armed itself, and arming_step()'s
- * disarm is gated on a->armed, so ARMING_ACT_DISARM cannot follow and the
- * throttle would keep its last value, to be written again with the next
- * ARM = 1.
- */
-static void far_end_stop_here(void)
-{
-    outputs_arm(&s_out, false, now_ms());
-    throttle_to_zero();
-    servo_let_go();
-    control_alert(TR(ALERT_COPRO_DISARMED));
-}
-
-/*
- * An arm that did not go through: a release or a rate the far end did not
- * take, a CLEAR or an arming frame that did not come back acknowledged.
- *
- * @p quiet_before is s_unanswered as the arm began.  Unchanged, every
- * exchange of the arm was answered and the far end refused: the panel stays
- * disarmed and says @p alert.  Changed, one of them waited out its timeout
- * or never reached the wire: the link went quiet under this arm, and the
- * far end may have taken a frame and lost only the acknowledgement.  That
- * is a stop, heartbeat withheld, and exchange_unanswered() has already made
- * it where the exchange ended; what is left here is the arm the policy
- * handed out with ARMING_ACT_ARM, which arming_link_lost() takes back
- * without counting a second stop.  A refusal is arming_refused().
- */
-static void arm_write_failed(uint32_t quiet_before, const char *alert)
-{
-    if (s_unanswered == quiet_before && !s_link_quiet) {
-        (void)arming_write_failed(&s_arm, true);
-        control_alert(alert);
-    } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
-        far_end_stop_here();
-    }
-}
-
-/*
- * An exchange ended with no answer: exchange()'s one way out for it.
- *
- * What it means is arming_exchange_unanswered()'s decision, host-tested for
- * every kind of exchange, state and place in a pass.  With the link up the
- * link is gone, and s_link_quiet says so to the rest of the pass and to
- * poll_far_end(); under an armed bench or a waiting arm the stop is latched
- * here as well, where the exchange ended, so the bank and the heartbeat do
- * not wait for the poll.  With the link down it was a probe, and a bank
- * armed with no coprocessor -- the simulated bench -- runs on through it.
- * Only memory is touched; nothing here sends.
- */
-static void exchange_unanswered(void)
-{
-    ++s_unanswered;
-    switch (arming_exchange_unanswered(&s_arm, s_link_is_up,
-                                       outputs_armed(&s_out))) {
-    case ARMING_QUIET_STOP:
-        far_end_stop_here();
-        s_link_quiet = true;
-        break;
-    case ARMING_QUIET_LINK_DOWN:
-        s_link_quiet = true;
-        break;
-    case ARMING_QUIET_NOTHING:
-    default:
-        break;
-    }
-}
-
-static bool control_clear_failsafe(link_msg_t *reply)
-{
-    const uint16_t magic = LINK_CLEAR_MAGIC;
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1u, &magic,
-                      reply)
-           && reply->op == LINK_OP_ACK;
-}
-
-
-/*
- * One block naming the most fundamental fault rather than the loudest.
- * Printed every 5 s while the link is down and every 60 s while it is up.
- */
-/*
- * The same report, on its way to the card.
- *
- * A tester can send a file; a tester cannot send a console this board does
- * not have.  Only while the link is down and only at link_report()'s 5 s
- * cadence, so the volume is a few hundred bytes a minute.
- *
- * Handed to the logger task rather than written here.  This runs on the task
- * that beats the safety line, and an append is three card transactions --
- * open, write, close -- each of which can block for as long as the card
- * takes.  A queue that is full drops the line: a report is worth less than
- * the beat, and the next one is 5 s away.
- */
-static void debug_log(const char *line)
-{
-    if (s_note_q == NULL) {
-        return;
-    }
-    char note[LOG_NOTE_MAX];
-    snprintf(note, sizeof(note), "%s", line);
-    (void)xQueueSend(s_note_q, note, 0);
-}
-
-/* A number, or "?" when it could not be read: the column keeps its place. */
-static const char *u32(char *out, size_t n, uint32_t v)
-{
-    snprintf(out, n, "%lu", (unsigned long)v);
-    return out;
-}
-
-/* What can_twai_recover() found, in the screen's vocabulary. */
-static busfault_bus_t bus_state(void)
-{
-    switch (can_twai_health()) {
-    case CAN_TWAI_RUNNING:    return BUSFAULT_BUS_RUNNING;
-    case CAN_TWAI_RECOVERING: return BUSFAULT_BUS_RECOVERING;
-    case CAN_TWAI_STOPPED:    return BUSFAULT_BUS_STOPPED;
-    case CAN_TWAI_BUS_OFF:    return BUSFAULT_BUS_OFF;
-    case CAN_TWAI_UNKNOWN:
-    default:                  return BUSFAULT_BUS_UNKNOWN;
-    }
-}
-
-/*
- * What the panel knows about a link that stopped, for the screen and for the
- * card.  Everything in it is read here rather than remembered, so a
- * photograph of the screen and a line in the file describe the same moment.
- */
-static void link_lost_report(busfault_report_t *r)
-{
-    memset(r, 0, sizeof(*r));
-    r->kind       = BUSFAULT_LINK_LOST;
-    r->bus        = bus_state();
-    /*
-     * The timestamp is read once.  The control task clears it on the other
-     * core the moment the link answers, and a second read that caught the
-     * zero would make this now_ms() / 1000 -- the uptime, printed as how
-     * long the link has been down.
-     */
-    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-    r->down_s     = lost_ms == 0u
-                        ? 0u
-                        : (uint32_t)(now_ms() - lost_ms) / 1000u;
-    r->recoveries = s_recoveries;
-    r->polls      = s_host.polls;
-    r->timeouts   = s_host.timeouts;
-    (void)can_twai_errors(&r->tx_errors, &r->rx_errors, &r->bus_errors,
-                          &r->bus_off);
-}
-
-static void link_report(void)
-{
-    s_bring.polls         = s_host.polls;
-    s_bring.replies       = s_host.replies;
-    s_bring.timeouts      = s_host.timeouts;
-    s_bring.mismatches    = s_host.mismatches;
-    s_bring.nacks         = s_host.nacks;
-    /*
-     * Left at zero.  link_bringup reads rx_crc_errors as "frames this end
-     * received and found corrupt", and TWAI (Two-Wire Automotive Interface,
-     * the ESP32-S3's CAN controller) has no such counter: bus_error_count is
-     * cumulative for the life of the driver and includes transmit-side
-     * acknowledge errors, so one missing ACK (acknowledge) at power-on would
-     * pin the diagnosis at "frames arrive corrupt" for the whole session.
-     * The controller's own counters are printed below under their own names.
-     */
-    s_bring.rx_crc_errors = 0;
-    s_bring.rx_resyncs    = 0;
-
-    const link_diag_t d = link_bringup_diagnose(&s_bring);
-    ESP_LOGI(TAG, "LINK %s", link_diag_text(d));
-    if (d != LINK_DIAG_OK) {
-        ESP_LOGW(TAG, "  check: %s", link_diag_hint(d));
-    }
-    ESP_LOGI(TAG, "  panel  polls %lu replies %lu timeouts %lu stale %lu "
-                  "nack %lu crc %lu resync %lu",
-             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
-             (unsigned long)s_bring.timeouts,
-             (unsigned long)s_bring.mismatches, (unsigned long)s_bring.nacks,
-             (unsigned long)s_bring.rx_crc_errors,
-             (unsigned long)s_bring.rx_resyncs);
-    if (s_bring.have_status) {
-        ESP_LOGI(TAG, "  iomcu  frames %lu crc %lu resync %lu refused %lu",
-                 (unsigned long)s_bring.dev_frames,
-                 (unsigned long)s_bring.dev_crc_errors,
-                 (unsigned long)s_bring.dev_resyncs,
-                 (unsigned long)s_bring.dev_refused);
-    } else {
-        ESP_LOGI(TAG, "  iomcu  never answered a status read");
-    }
-    if (s_bring.rt_samples > 0) {
-        /*
-         * The round trip as measured.  CAN arbitrates rather than taking
-         * turns, so there is no turnaround allowance to compare it against.
-         */
-        ESP_LOGI(TAG, "  round trip min %lu avg %lu max %lu us",
-                 (unsigned long)s_bring.rt_min_us,
-                 (unsigned long)s_bring.rt_mean_us,
-                 (unsigned long)s_bring.rt_max_us);
-    }
-
-    /*
-     * And the controller itself, which is a different question from whether
-     * anything answered: a transmit error counter climbing towards 256 says
-     * nobody is acknowledging, and bus off says the panel has already stopped
-     * transmitting.  The recovery runs on the poll gate; this line is how it
-     * is seen from a console.
-     */
-    uint32_t tec = 0, rec = 0, bus = 0;
-    bool off = false;
-    char n1[12], n2[12], n3[12];
-    const bool have_bus = can_twai_errors(&tec, &rec, &bus, &off);
-    if (have_bus) {
-        ESP_LOGI(TAG, "  bus    tx errors %lu rx errors %lu bus errors %lu%s",
-                 (unsigned long)tec, (unsigned long)rec, (unsigned long)bus,
-                 off ? " -- BUS OFF" : "");
-    } else {
-        /* Zeros here would read as a healthy bus.  A controller that never
-         * started is a different diagnosis from one with no errors. */
-        ESP_LOGI(TAG, "  bus    the controller is not running");
-    }
-
-    /*
-     * And to the card, one line with everything on it, the same fields in the
-     * same order every time.  This is the line a tester sends when the
-     * panel's console cannot be reached; a file whose shape changes with the
-     * fault is one nobody can read down a column, and the reading that most
-     * needs a timestamp is the one where the controller would not answer.
-     */
-    /* Read once, like every other reader of it: the control task can clear
-     * it between the test and the subtraction. */
-    const uint32_t lost_ms = atomic_load(&s_link_lost_ms);
-    char row[208];
-    snprintf(row, sizeof(row),
-             "t=%lus link=down for %lus  bus=%s tx_err=%s rx_err=%s "
-             "bus_err=%s rejoins=%lu/%lu  polls=%lu replies=%lu timeouts=%lu",
-             (unsigned long)(now_ms() / 1000u),
-             (unsigned long)(lost_ms == 0u
-                                 ? 0u
-                                 : (now_ms() - lost_ms) / 1000u),
-             !have_bus ? "not running" : (off ? "OFF" : "on"),
-             have_bus ? u32(n1, sizeof(n1), tec) : "?",
-             have_bus ? u32(n2, sizeof(n2), rec) : "?",
-             have_bus ? u32(n3, sizeof(n3), bus) : "?",
-             (unsigned long)s_recoveries, (unsigned long)s_recoveries_total,
-             (unsigned long)s_bring.polls, (unsigned long)s_bring.replies,
-             (unsigned long)s_bring.timeouts);
-    debug_log(row);
-}
-
-/*
- * The seam between measured and modelled numbers.  When the coprocessor
- * answers, its numbers are used, and the LINK_BN_SIMULATED flag travels with
- * them.  When it does not, the panel models locally and sets the same flag.
- * Nothing above this function knows the difference.
- */
-static bool read_bench(link_host_t *host, bench_state_t *out)
-{
-    link_msg_t reply;
-    if (!poll_page(host, LINK_PAGE_BENCH, LINK_BN_COUNT, &reply)) {
-        return false;
-    }
-    if (reply.op == LINK_OP_NACK) {
-        return false;
-    }
-    bench_state_from_regs(out, reply.regs, reply.offset, reply.count);
-    return true;
-}
 
 /* ------------------------------------------------------------------- main */
 
@@ -2783,53 +1924,8 @@ static bool read_bench(link_host_t *host, bench_state_t *out)
  * reading in s_supply is still the one taken with it off.
  */
 static supply_sim_t   s_supply_sim;
-static supply_link_t  s_supply_link;
-/* The current monitors' pages, SENSE and SERVO_SENSE (4.7); see
- * sense_link_service().  Control task only. */
-static sense_link_t   s_sense_link;
-/* Which meter measures the servo rail, decided once per poll.  Control
- * task only. */
-static servo_source_t s_servo_source;
-/* The phase tap's page, TONE (4.8); see tone_link_service().  Control task
- * only. */
-static tone_link_t    s_tone_link;
-/*
- * The page of the programmer for KST and Chaservo servos, KST (4.12); see
- * kst_link_service().  Control task only.
- *
- * The programmer's model (kst_prog.h) runs in the render loop.  It hands
- * its commands over through s_kst_q and reads what became of them in the
- * snapshot: the number of the last command carried out with what
- * kst_link_start() said, and a count of the outcomes handed out with the
- * last of them.
- *
- * kst_commands(), kst_link_service() and kst_publish() are kept out of
- * line.  Inlined, their locals widen control_task()'s frame by 448 bytes,
- * and the task's deepest path, a report from inside an exchange, starts in
- * that frame.
- */
-static kst_link_t         s_kst_link;
-/*
- * The programming ports' page, PROG (4.13); see prog_link_service().
- * Control task only.  What the SERVO screen wants of it crosses as two
- * levels the render loop stores every frame, and the pin of port 0 goes
- * back as one for the OUTPUTS screen's picker.
- */
-static prog_link_t        s_prog_link;
-static atomic_uint        s_prog_want_target;
-static atomic_bool        s_prog_want_pwm;
-static atomic_uint        s_prog_pin = PROG_LINK_NO_PIN;
-/* Where the tester's commands go, for the SERVO screen's TARGET row:
- * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
- * pulse in bit 16.  One word, so the screen never reads one drive's target
- * with another's pin or pulse.  No link until a coprocessor answers. */
-#define DRIVE_PWM_BIT (1u << 16)
-static atomic_uint        s_drive =
-    ((unsigned)PROG_LINK_TARGET_NO_LINK << 8) | PROG_LINK_NO_PIN;
-_Static_assert(PROG_LINK_NO_PIN == SERVO_SCREEN_NO_PIN
-               && PROG_LINK_TARGET_UNKNOWN == SERVO_SCREEN_TARGET_UNKNOWN
-               && PROG_LINK_TARGET_NO_LINK == SERVO_SCREEN_TARGET_NO_LINK,
-               "the drive crosses to the SERVO screen unchanged");
+supply_link_t         s_supply_link;
+/* The link modules' state, SENSE to PROG: panel_services.c. */
 /*
  * The supply command a programming port left on the SUPPLY page, for the
  * SUPPLY screen's set points: the values, and a count the control task
@@ -2840,39 +1936,6 @@ static atomic_uint        s_supply_adopt_mv;
 static atomic_uint        s_supply_adopt_ma;
 static atomic_uint        s_supply_adopt_gen;
 static atomic_uint        s_supply_adopt_done;
-static uint32_t           s_kst_answer_id;
-static kst_link_start_t   s_kst_answer;
-static uint32_t           s_kst_outcomes;
-static kst_link_outcome_t s_kst_outcome;
-static uint32_t           s_kst_stops;    /* stops an abort was sent for */
-
-/* Whether the servo programmer has a port, or an operation under way: the
- * bench takes no arm then (kst_prog.h).  Control task only.  Read once a
- * pass by kst_port_look(), before the arms of the pass are served: no
- * command of the programmer is taken between the two. */
-static bool s_kst_taken;
-
-/* What app_main and the control task share of a START in the queue: the
- * model offers its pass, kst_commands() claims it, and a START the model
- * gave up is dropped there (kst_prog.h). */
-static kst_prog_gate_t s_kst_gate;
-
-static __attribute__((noinline)) void kst_port_look(void)
-{
-    kst_link_readout_t rd;
-    kst_link_readout(&s_kst_link, &rd);
-    s_kst_taken = kst_prog_port_taken(&rd);
-}
-
-/* The PROG page is not written and the tester commands no port while the
- * programmer has one (prog_link.h): by the link module as it stands now,
- * after the commands of the pass. */
-static __attribute__((noinline)) void prog_hold_look(void)
-{
-    kst_link_readout_t rd;
-    kst_link_readout(&s_kst_link, &rd);
-    prog_link_hold(&s_prog_link, kst_prog_port_taken(&rd));
-}
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
@@ -2889,13 +1952,13 @@ static esc_sim_t        s_escsim;          /* control task only */
 static unsigned         s_escsim_runs_seen;
 static bool             s_escsim_live;
 /* The coprocessor that answered speaks protocol 4.3: it has the page. */
-static bool           s_supply_page;
+bool s_supply_page;
 /* And speaks 4.4: AUTO baud and the BAUD_FOUND register. */
-static bool           s_supply_auto;
+bool s_supply_auto;
 /* The PD mini, not the model, is the supply; see supply_real_follow(). */
-static bool           s_supply_is_real;
+bool                  s_supply_is_real;
 static bool           s_supply_on;
-static supply_state_t s_supply;
+supply_state_t        s_supply;
 static uint32_t       s_supply_ms;
 static bool           s_supply_fresh;
 /* The stop count the supply has answered; see supply_follow_stops(). */
@@ -2911,7 +1974,7 @@ static uint32_t       s_supply_step_ms;
  * over.  s_supply_gen numbers the ONs applied; the snapshot carries it.
  */
 static arm_watch_t    s_supply_watch;
-static uint32_t       s_supply_gen;
+uint32_t              s_supply_gen;
 
 /*
  * The interval since the last step, up to now, on the reading that held
@@ -3338,8 +2401,8 @@ static void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
  * through the whole run whatever the source does; see bench_totals_t.
  * Control task only.  s_totals_ms is when it last counted.
  */
-static bench_totals_t s_totals;
-static uint32_t       s_totals_ms;
+bench_totals_t s_totals;
+uint32_t       s_totals_ms;
 
 static void arm_applied(void)
 {
@@ -3672,7 +2735,7 @@ static void service_arming(bool link_up)
  * screen; screen state is app_main's alone.  True when a page may have been
  * written: the rate reset that leads the sequence landed, or there is none.
  */
-static void servo_rate_reset_note(bool page, bool landed);
+void servo_rate_reset_note(bool page, bool landed);
 
 static bool write_output_binding(const outbind_t *bind)
 {
@@ -3719,15 +2782,15 @@ static bool write_output_binding(const outbind_t *bind)
  * to command whatever was bound first, which on a bench with an ESC on the
  * lowest pin is the motor.
  */
-static uint8_t s_servo_channels;
+uint8_t s_servo_channels;
 /* The GPIOs of those channels' slots, for the SERVO screen's TARGET row;
  * whether a binding was read. */
-static atomic_ullong s_servo_pins;
-static atomic_bool   s_servo_pins_known;
+atomic_ullong s_servo_pins;
+atomic_bool   s_servo_pins_known;
 /* For the screen's SWEEP: a binding read, with a surface in it. */
 static atomic_bool s_servo_surfaces;
 /* For the screen's runs: the SENSE page holds the encoder enabled. */
-static atomic_bool s_enc_held;
+atomic_bool s_enc_held;
 /* A sweep command with no surface to sweep: the screen stops waiting. */
 static atomic_bool s_sweep_refused;
 /* The pause the panel last let go of: commands asked during it and queued
@@ -3748,7 +2811,7 @@ static servo_pause_end_t s_pause_ended;
  * merely sent counts: a write whose acknowledgement was lost was applied over
  * there all the same.
  */
-static bool s_servo_known;
+bool s_servo_known;
 
 /*
  * And whether the last position actually reached any of them.
@@ -3759,14 +2822,14 @@ static bool s_servo_known;
  * always the channels bound as surfaces now, because a channel that has
  * stopped being one must not be written by this screen.
  */
-static uint8_t s_servo_written;
+uint8_t s_servo_written;
 
 /*
  * For the screen's SWEEP and its horn: there is something to move.  A
  * programming port as target is one output; with the standard outputs it is
  * a binding read with a surface in it.
  */
-static void servo_surfaces_publish(void)
+void servo_surfaces_publish(void)
 {
     atomic_store(&s_servo_surfaces,
                  prog_link_target(&s_prog_link) != 0u
@@ -3778,8 +2841,8 @@ static void servo_surfaces_publish(void)
  * programming port @p port (1 + n) as target, to that port's registers.  A
  * port is written as channel 0 of @p cfg.
  */
-static bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
-                            const uint16_t *cfg, link_msg_t *reply)
+bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
+                     const uint16_t *cfg, link_msg_t *reply)
 {
     if (port != 0u) {
         uint16_t regs[PROG_LINK_CFG_REGS];
@@ -3866,11 +2929,11 @@ static bool servo_countermanded(void)
  * would be released at the old profile's centre.  So a release restates the
  * range first.  Kind NONE until a command names one.
  */
-static servo_cmd_t s_servo_range;
+servo_cmd_t s_servo_range;
 
 /* Whether a command names a range the far end takes.  A command that names
  * none keeps the standard one. */
-static bool servo_named(const servo_cmd_t *sv)
+bool servo_named(const servo_cmd_t *sv)
 {
     return sv->max_us > sv->min_us
            && sv->min_us >= LINK_CC_FLOOR_US
@@ -3878,7 +2941,7 @@ static bool servo_named(const servo_cmd_t *sv)
 }
 
 /* The CHAN_CFG page for the surfaces under @p sv's range and speed. */
-static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
+void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 {
     const bool named = servo_named(sv);
     for (uint8_t i = 0; i < LINK_OUT_CHANNELS; ++i) {
@@ -3901,15 +2964,15 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
  * sweep included, writes a stop first, which also clears a finished sweep
  * that the same curve would otherwise not start again.
  */
-static bool        s_servo_sweep_page;
-static bool        s_servo_sweeping;
-static bool        s_servo_holding;      /* LINK_SV_HOLD in force there */
+bool               s_servo_sweep_page;
+bool               s_servo_sweeping;
+bool               s_servo_holding;      /* LINK_SV_HOLD in force there */
 static uint32_t    s_servo_hold_ms;      /* when the far end last took it */
 static atomic_bool s_servo_hold_lost;    /* for the screen: it let go */
 static atomic_uint s_servo_hold_lost_seq; /* of this pause */
-static bool        s_servo_sweep_unknown;
-static atomic_bool s_servo_sweep_able;   /* for the screen's SWEEP */
-static uint16_t    s_servo_minor;        /* its protocol minor: 6 resumes */
+bool               s_servo_sweep_unknown;
+atomic_bool        s_servo_sweep_able;   /* for the screen's SWEEP */
+uint16_t           s_servo_minor;        /* its protocol minor: 6 resumes */
 /* The curve the far end last took, and when it started one: a curve that
  * differs from the one running starts over there, and the screen draws the
  * horn from that moment rather than from its tap. */
@@ -3922,10 +2985,10 @@ static atomic_bool s_sweep_start_new;
 static atomic_uint s_sweep_start_seq;    /* the command it acknowledges */
 /* The far end's phase as acknowledgements time it, and the HOLD that
  * paused a running sweep: which pause, and the phase it kept. */
-static servo_phase_t s_far_phase;
+servo_phase_t s_far_phase;
 /* A HOLD write that went unanswered: it may have reached the far end, so
  * the phase it kept is not known here when a retry is acknowledged. */
-static bool          s_hold_unanswered;
+bool          s_hold_unanswered;
 static atomic_uint s_sweep_held_seq;
 static atomic_uint s_sweep_held_kept;
 static atomic_bool s_sweep_held_new;
@@ -4420,9 +3483,8 @@ static bool write_servo(const servo_cmd_t sv)
  * back.
  */
 #define SERVO_BIND_HZ    50u      /* the binding's SERVO PWM rate         */
-#define SERVO_HZ_UNKNOWN 0xFFFFu  /* not known: perhaps a faster rate        */
-static bool     s_servo_rate_page;
-static uint16_t s_servo_hz_sent = SERVO_HZ_UNKNOWN;  /* acknowledged; 0 own */
+bool            s_servo_rate_page;
+uint16_t        s_servo_hz_sent = SERVO_HZ_UNKNOWN;  /* acknowledged; 0 own */
 static uint16_t s_servo_hz_refused;  /* the last rate it refused; 0 none     */
 static atomic_uint s_servo_rate_shown;  /* (servo_rate_state_t << 16) | Hz */
 
@@ -4520,7 +3582,7 @@ static bool write_servo_and_rate(const servo_cmd_t sv)
  * servo_rate_reset_note() is what a reset leaves behind at this end, for the
  * reset a binding's own sequence sends (bind_link_write()) as well.
  */
-static void servo_rate_reset_note(bool page, bool landed)
+void servo_rate_reset_note(bool page, bool landed)
 {
     s_servo_hz_refused = 0u;
     if (!page) {
@@ -4532,7 +3594,7 @@ static void servo_rate_reset_note(bool page, bool landed)
     servo_rate_show(SERVO_RATE_UNSENT, 0u);
 }
 
-static bool servo_rate_reset(void)
+bool servo_rate_reset(void)
 {
     if (!s_servo_rate_page) {
         servo_rate_reset_note(false, true);
@@ -4756,7 +3818,7 @@ static void apply_servo_cmd(const servo_cmd_t sv, bool link_up, uint32_t stops)
  * position that landed and then stopped being held is still out there, and it
  * is the far end's copy that arms the bench into it.
  */
-static void servo_let_go(void)
+void servo_let_go(void)
 {
     if (s_servo_held.kind != SERVO_CMD_NONE || s_servo_written != 0u) {
         s_servo_release_owed = true;
@@ -5174,7 +4236,7 @@ static void supply_link_alerts(void)
  * (supply_switch()), which this pays.  A coprocessor without the page is
  * left alone, and the PD mini reads as not answering.
  */
-static void supply_link_service(void)
+void supply_link_service(void)
 {
     if (!s_supply_page) {
         return;
@@ -5265,1415 +4327,9 @@ static void supply_link_service(void)
     supply_link_alerts();
 }
 
-/* The part names as the alerts print them. */
-static const char *const k_sense_part[2] = { "INA228", "INA3221" };
+/* The SENSE, TONE, KST and PROG services: panel_services.c.  The poll
+ * of the far end, poll_far_end(): panel_poll.c. */
 
-/* The sensor alert posted and not yet seen taken: its number in the alert
- * slot (0 none) and its event.  Control task only. */
-static uint32_t s_sense_alert_gen;
-static uint32_t s_sense_alert_ev;
-
-/*
- * What the SENSE and SERVO_SENSE pages said that the operator is told.
- * The band shows one line and the snapshot holds one pending alert, so
- * this takes one event at a time, the most pressing first, and the next no
- * sooner than SENSE_LINK_EVENT_GAP_MS later (sense_link_event()): two parts
- * that both stop answering are both said, one after the other.
- *
- * An event is taken only into a free slot, and followed until a frame has
- * taken it.  Any other alert replaces it -- a NACKed control write's
- * "coprocessor disarmed" in the same pass, say -- and one replaced before
- * a frame took it goes back to the queue (sense_link_event_back()): its
- * read will not raise it again.
- */
-static void sense_link_alerts(void)
-{
-    snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
-    snap_unlock();
-    if (s_sense_alert_gen != 0u) {
-        if ((int32_t)(taken - s_sense_alert_gen) >= 0) {
-            s_sense_alert_gen = 0u;                  /* shown */
-        } else if (posted != s_sense_alert_gen) {
-            sense_link_event_back(&s_sense_link, s_sense_alert_ev);
-            s_sense_alert_gen = 0u;                  /* replaced unseen */
-        } else {
-            return;                                  /* not taken yet */
-        }
-    }
-    if (!slot_free) {
-        return;
-    }
-    const uint32_t ev = sense_link_event(&s_sense_link, now_ms());
-    if (ev == 0u) {
-        return;
-    }
-    s_sense_alert_ev = ev;
-    char line[ALERT_MAX];
-    if ((ev & SENSE_LINK_EV_STORE_OFF) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_STORE_OFF));
-    }
-    if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
-        /* The full scale in hundredths of an ampere, rounded: 1638 mA on
-         * the DAOKAI's 0.1 Ohm reads 1.64 A. */
-        const uint32_t ca = (sense_i3221_full_scale_ma(
-                                 sense_link_i3221_dmohm(&s_sense_link))
-                             + 5u) / 10u;
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_I3221_CLIPPED),
-                 (unsigned)sense_link_clipped_channel(&s_sense_link),
-                 (unsigned)(ca / 100u), (unsigned)(ca % 100u));
-        s_sense_alert_gen = control_alert_numbered(line);
-    }
-    if ((ev & SENSE_LINK_EV_I228_CLIPPED) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_CLIPPED));
-    }
-    static const uint32_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
-                                          SENSE_LINK_EV_I3221_SILENT };
-    static const uint32_t k_wrong[2]  = { SENSE_LINK_EV_I228_WRONG,
-                                          SENSE_LINK_EV_I3221_WRONG };
-    for (unsigned p = 0u; p < 2u; ++p) {
-        const sense_link_part_t part = (sense_link_part_t)p;
-        const unsigned addr = sense_link_addr(&s_sense_link, part);
-        if ((ev & k_silent[p]) != 0u) {
-            /* With what did answer, where something did: a solder bridge
-             * set otherwise, as often as not. */
-            const unsigned found = sense_link_event_found(&s_sense_link, part);
-            if (found != 0u) {
-                snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT_FOUND),
-                         k_sense_part[p], addr, found);
-            } else {
-                snprintf(line, sizeof(line), TR(ALERT_SENSE_SILENT),
-                         k_sense_part[p], addr);
-            }
-            s_sense_alert_gen = control_alert_numbered(line);
-        }
-        if ((ev & k_wrong[p]) != 0u) {
-            snprintf(line, sizeof(line), TR(ALERT_SENSE_WRONG), addr,
-                     (unsigned)sense_link_event_id(&s_sense_link, part),
-                     k_sense_part[p]);
-            s_sense_alert_gen = control_alert_numbered(line);
-        }
-    }
-    if ((ev & SENSE_LINK_EV_STUCK) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_STUCK));
-    }
-    if ((ev & SENSE_LINK_EV_I3221_REFUSED) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I3221_SETUP));
-    }
-    if ((ev & SENSE_LINK_EV_I228_REFUSED) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_I228_SETUP));
-    }
-    if ((ev & SENSE_LINK_EV_BUS_REFUSED) != 0u) {
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_PINS),
-                 sense_link_sda(&s_sense_link), sense_link_scl(&s_sense_link));
-        s_sense_alert_gen = control_alert_numbered(line);
-    }
-    if ((ev & SENSE_LINK_EV_SAME_ADDR) != 0u) {
-        snprintf(line, sizeof(line), TR(ALERT_SENSE_SAME_ADDR),
-                 (unsigned)s_sense_link.want[LINK_SN_I228_ADDR]);
-        s_sense_alert_gen = control_alert_numbered(line);
-    }
-    if ((ev & SENSE_LINK_EV_PINS_UNSET) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_SENSE_PINS_UNSET));
-    }
-    if ((ev & SENSE_LINK_EV_NO_PAGE) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_NO_SENSE_PAGE));
-    }
-    if ((ev & SENSE_LINK_EV_ENC_OLD) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_ENC_OLD));
-    }
-    if ((ev & SENSE_LINK_EV_ENC_SILENT) != 0u) {
-        s_sense_alert_gen = control_alert_numbered(TR(ALERT_ENC_SILENT));
-    }
-    if ((ev & SENSE_LINK_EV_ENC_MAGNET) != 0u) {
-        /* The most pressing of what the last read said: no magnet, then
-         * too weak, then too strong. */
-        const uint16_t m = sense_link_enc_magnet(&s_sense_link);
-        s_sense_alert_gen = control_alert_numbered(
-            ((m & LINK_SN_ENC_MD) == 0u) ? TR(ALERT_ENC_NO_MAGNET)
-            : ((m & LINK_SN_ENC_ML) != 0u) ? TR(ALERT_ENC_WEAK)
-                                           : TR(ALERT_ENC_STRONG));
-    }
-}
-
-/*
- * The output encoder's readings to the SERVO screen: one per SENSE read
- * that moved the sample count, so a run sees each angle once, and one
- * "none" when the angle stops being readable, and another when its reason
- * changes between "no magnet" and any other.  sense_link_enc() hands out
- * an angle only while the sensor detects its magnet.  Control task only.
- */
-static void enc_queue(void)
-{
-    static bool     given;
-    static bool     was_valid;
-    static bool     was_no_magnet;
-    static uint16_t last_samples;
-    static uint32_t last_taken;
-    sense_link_enc_t e;
-    servo_test_enc_t q;
-    memset(&q, 0, sizeof(q));
-    if (sense_link_enc(&s_sense_link, now_ms(), &e)) {
-        /* The same read is not sent twice: the page is read every 40 ms
-         * and the count moves 20 times in that. */
-        if (given && was_valid && e.taken_ms == last_taken
-            && e.samples == last_samples) {
-            return;
-        }
-        q.valid    = true;
-        q.raw      = e.raw;
-        q.still_ms = e.still_ms;
-        q.taken_ms = e.taken_ms;
-        q.weak     = e.weak;
-        q.strong   = e.strong;
-        given        = true;
-        was_valid    = true;
-        last_taken   = e.taken_ms;
-        last_samples = e.samples;
-    } else {
-        q.no_magnet = sense_link_enc_no_magnet(&s_sense_link, now_ms());
-        if (given && !was_valid && q.no_magnet == was_no_magnet) {
-            return;
-        }
-        given         = true;
-        was_valid     = false;
-        was_no_magnet = q.no_magnet;
-    }
-    if (xQueueSend(s_enc_q, &q, 0) != pdTRUE) {
-        /* The screen has not drained 8 readings (320 ms): what is queued
-         * may hold the only "none" marker, and dropping one entry would
-         * keep the readings after it.  All of it goes, and the reading
-         * that follows says readings were lost. */
-        servo_test_enc_t stale;
-        while (xQueueReceive(s_enc_q, &stale, 0) == pdTRUE) { }
-        q.gap = true;
-        (void)xQueueSend(s_enc_q, &q, 0);
-    }
-}
-
-/* The servo meter's alert posted and not yet seen taken: its number in the
- * alert slot (0 none) and its event.  Control task only. */
-static uint32_t s_source_alert_gen;
-static uint32_t s_source_alert_ev;
-
-/*
- * What the choice of the servo rail's meter says to the operator, one
- * event at a time into a free alert slot and followed until a frame has
- * taken it, as sense_link_alerts() does for the current monitors.
- */
-static void servo_source_alerts(void)
-{
-    snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
-    snap_unlock();
-    if (s_source_alert_gen != 0u) {
-        if ((int32_t)(taken - s_source_alert_gen) >= 0) {
-            s_source_alert_gen = 0u;                 /* shown */
-        } else if (posted != s_source_alert_gen) {
-            servo_source_event_back(&s_servo_source, s_source_alert_ev);
-            s_source_alert_gen = 0u;                 /* replaced unseen */
-        } else {
-            return;                                  /* not taken yet */
-        }
-    }
-    if (!slot_free) {
-        return;
-    }
-    const uint32_t ev = servo_source_event(&s_servo_source, now_ms());
-    if (ev == 0u) {
-        return;
-    }
-    s_source_alert_ev = ev;
-    if ((ev & SERVO_SOURCE_EV_OLD) != 0u) {
-        s_source_alert_gen = control_alert_numbered(TR(ALERT_SERVO_METER_OLD));
-    } else {
-        s_source_alert_gen = control_alert_numbered(TR(ALERT_I3221_RESET));
-    }
-}
-
-/*
- * The current monitors' pages: the set-up SETUP names written when it
- * differs from what SENSE holds, the identity read again after a write is
- * taken, and SENSE's, SERVO_SENSE's and SERVO_WIN's readings read at their
- * rates (sense_link.h).  Then the servo rail's meter is chosen from what
- * was read (servo_source.h).  From poll_bench(), after the control write,
- * so @p idle -- the bank disarmed here and ARM written 0 there -- is this
- * pass's.  A coprocessor older than 4.7 is sent nothing, and one older
- * than 4.11 nothing on SERVO_WIN.
- *
- * With the INA228 as BENCH's source, @p bench gets the ESC's own figures
- * from the last SENSE read, the INA228's clipped flag, and its totals in
- * SENSE's finer steps while that read is younger than two polls.
- */
-/* The INTERFACES rows the coprocessor does not hold, for SETUP's marks:
- * sense_link_unheld() and tone_link_unheld() as of the last poll, and 0
- * with the link down.  Control task writes, app_main reads. */
-static atomic_uint s_sense_unheld;
-static atomic_uint s_tone_unheld;
-
-static void sense_link_service(bool idle, bench_state_t *bench)
-{
-    const sense_setup_t w = sense_wanted();
-    sense_link_want(&s_sense_link, &w, now_ms());
-    for (int k = 0; k < 6; ++k) {
-        sense_link_op_t op;
-        if (!sense_link_next(&s_sense_link, now_ms(), idle, &op)) {
-            break;
-        }
-        link_msg_t reply = { 0 };
-        const bool answered =
-            op.write ? write_regs(&s_host, op.page, op.off, op.n, op.regs,
-                                  &reply)
-                     : read_regs(&s_host, op.page, op.off, op.n, &reply);
-        int result = SENSE_LINK_NO_ANSWER;
-        if (answered) {
-            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
-                                                : SENSE_LINK_ACK;
-        }
-        sense_link_done(&s_sense_link, result,
-                        (answered && reply.op == LINK_OP_DATA) ? reply.regs
-                                                               : NULL,
-                        now_ms());
-        if (result == SENSE_LINK_NO_ANSWER) {
-            break;
-        }
-    }
-    uint16_t caps = 0u;
-    if (sense_link_take_caps(&s_sense_link, &caps)) {
-        atomic_store(&s_capabilities, (unsigned)caps);
-    }
-    sense_link_alerts();
-    atomic_store(&s_enc_held, sense_link_enc_on(&s_sense_link));
-    atomic_store(&s_sense_unheld,
-                 (unsigned)sense_link_unheld(&s_sense_link));
-    enc_queue();
-    sense_link_meter_t meter;
-    sense_link_meter(&s_sense_link, &meter);
-    (void)servo_source_step(&s_servo_source, now_ms(), true, s_far_minor,
-                            &meter);
-    servo_source_alerts();
-
-    const bool sensed = (bench->flags & (uint16_t)LINK_BN_SENSED) != 0u;
-    bool v_ok = false;
-    bool i_ok = false;
-    float volts = 0.0f;
-    float amps = 0.0f;
-    if (sensed) {
-        (void)sense_link_esc(&s_sense_link, now_ms(), &v_ok, &volts, &i_ok,
-                             &amps);
-    }
-    bench_state_set_esc(bench, v_ok, volts, i_ok, amps,
-                        sensed && (sense_link_flags(&s_sense_link)
-                                   & LINK_SN_I228_CLIPPED) != 0u);
-    /* The totals from the last SENSE read while it is younger than two
-     * polls: one read that went unanswered keeps the finer figure rather
-     * than stepping back to BENCH's rounding for a sample. */
-    int32_t charge = 0;
-    uint32_t energy = 0u;
-    if (sensed
-        && sense_link_totals(&s_sense_link, now_ms(), &charge, &energy)) {
-        bench_state_fine_totals(bench, charge, energy);
-    }
-}
-
-/* The tone alert posted and not yet seen taken: its number in the alert
- * slot (0 none) and its event.  Control task only. */
-static uint32_t s_tone_alert_gen;
-static uint16_t s_tone_alert_ev;
-
-/*
- * What the TONE page said that the operator is told, one event at a time
- * into a free alert slot and followed until a frame has taken it, as
- * sense_link_alerts() does for the current monitors.
- */
-static void tone_link_alerts(void)
-{
-    snap_lock();
-    const bool     slot_free = !s_snap.alert_pending;
-    const uint32_t posted    = s_snap.alert_gen;
-    const uint32_t taken     = s_snap.alert_taken;
-    snap_unlock();
-    if (s_tone_alert_gen != 0u) {
-        if ((int32_t)(taken - s_tone_alert_gen) >= 0) {
-            s_tone_alert_gen = 0u;                   /* shown */
-        } else if (posted != s_tone_alert_gen) {
-            tone_link_event_back(&s_tone_link, s_tone_alert_ev);
-            s_tone_alert_gen = 0u;                   /* replaced unseen */
-        } else {
-            return;                                  /* not taken yet */
-        }
-    }
-    if (!slot_free) {
-        return;
-    }
-    const uint16_t ev = tone_link_event(&s_tone_link, now_ms());
-    if (ev == 0u) {
-        return;
-    }
-    s_tone_alert_ev = ev;
-    char line[ALERT_MAX];
-    if ((ev & TONE_LINK_EV_NO_PAGE) != 0u) {
-        s_tone_alert_gen = control_alert_numbered(TR(ALERT_NO_TONE_PAGE));
-    } else if ((ev & TONE_LINK_EV_PIN_REFUSED) != 0u) {
-        snprintf(line, sizeof(line), TR(ALERT_TONE_PIN),
-                 tone_link_pin(&s_tone_link), tone_link_f_min(&s_tone_link),
-                 tone_link_f_max(&s_tone_link));
-        s_tone_alert_gen = control_alert_numbered(line);
-    } else if ((ev & TONE_LINK_EV_SETUP_REFUSED) != 0u) {
-        s_tone_alert_gen = control_alert_numbered(TR(ALERT_TONE_SETUP));
-    } else if ((ev & TONE_LINK_EV_PIN_BUSY) != 0u) {
-        snprintf(line, sizeof(line), TR(ALERT_TONE_BUSY),
-                 tone_link_pin(&s_tone_link));
-        s_tone_alert_gen = control_alert_numbered(line);
-    } else if ((ev & TONE_LINK_EV_OVERRUN) != 0u) {
-        s_tone_alert_gen = control_alert_numbered(TR(ALERT_TONE_OVERRUN));
-    }
-}
-
-/*
- * The phase tap's page: the set-up SETUP names written when it differs
- * from what TONE holds, registers 8 to 23 read at 20 Hz and the beeps
- * taken by number (tone_link.h).  From poll_bench(); a coprocessor older
- * than 4.8 is sent nothing.  A tap change is taken armed or not, so no
- * idle gate.
- */
-static void tone_link_service(void)
-{
-    const tone_setup_t w = tone_wanted();
-    tone_link_want(&s_tone_link, &w, now_ms());
-    for (int k = 0; k < 8; ++k) {
-        tone_link_op_t op;
-        if (!tone_link_next(&s_tone_link, now_ms(), &op)) {
-            break;
-        }
-        link_msg_t reply = { 0 };
-        const bool answered =
-            op.write ? write_regs(&s_host, op.page, op.off, op.n, op.regs,
-                                  &reply)
-                     : read_regs(&s_host, op.page, op.off, op.n, &reply);
-        int result = TONE_LINK_NO_ANSWER;
-        if (answered) {
-            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
-                                                : TONE_LINK_ACK;
-        }
-        tone_link_done(&s_tone_link, result,
-                       (answered && reply.op == LINK_OP_DATA) ? reply.regs
-                                                              : NULL,
-                       now_ms());
-        if (result == TONE_LINK_NO_ANSWER) {
-            break;
-        }
-    }
-    tone_link_alerts();
-    atomic_store(&s_tone_unheld, (unsigned)tone_link_unheld(&s_tone_link));
-}
-
-/*
- * The programmer's commands, every pass and whatever the link does: a
- * command with no link is answered KST_LINK_START_DOWN, and the model says
- * so.
- *
- * And STOP.  Every stop this end latches, pressed or the bench's own, ends
- * an operation: kst_link_abort() drops a command not sent yet, sends no
- * command again that went without an answer, and sends ABORT for one the
- * coprocessor runs.  After the commands, so a start queued before the stop
- * is dropped by it.
- */
-static __attribute__((noinline)) void kst_commands(void)
-{
-    kst_prog_cmd_t cmd;
-    while (xQueueReceive(s_kst_q, &cmd, 0) == pdTRUE) {
-        if (cmd.kind == KST_PROG_CMD_START
-            && !kst_prog_gate_claim(&s_kst_gate, cmd.id)) {
-            /* Given up by the model while it waited here: not carried
-             * out and not answered. */
-            continue;
-        }
-        if (cmd.kind == KST_PROG_CMD_START) {
-            /* No port is taken on an armed bench: nothing is sent. */
-            s_kst_answer    = (cmd.req.op == LINK_KST_OP_ENTER
-                               && outputs_armed(&s_out))
-                                  ? KST_LINK_START_BUSY
-                                  : kst_link_start(&s_kst_link, &cmd.req);
-            s_kst_answer_id = cmd.id;
-        } else if (cmd.kind == KST_PROG_CMD_FETCH) {
-            (void)kst_link_fetch(&s_kst_link);
-        } else {
-            kst_link_abort(&s_kst_link);
-        }
-    }
-    const uint32_t stops = arming_stop_count(&s_arm);
-    if (stops != s_kst_stops) {
-        s_kst_stops = stops;
-        kst_link_abort(&s_kst_link);
-    }
-    prog_hold_look();
-}
-
-/*
- * The programmer's page: status read every KST_LINK_POLL_MS (50 ms) while
- * an operation runs and every KST_LINK_IDLE_MS (500 ms) otherwise, a
- * request's staged registers and command written, the results and the
- * images read (kst_link.h).  From poll_bench(), at most 4 exchanges a pass;
- * a coprocessor older than 4.12 is sent nothing.
- */
-static __attribute__((noinline)) void kst_link_service(void)
-{
-    for (int k = 0; k < 4; ++k) {
-        kst_link_xfer_t x;
-        if (!kst_link_next(&s_kst_link, now_ms(), &x)) {
-            break;
-        }
-        link_msg_t reply = { 0 };
-        const bool answered =
-            x.write ? write_regs(&s_host, x.page, x.off, x.n, x.regs, &reply)
-                    : read_regs(&s_host, x.page, x.off, x.n, &reply);
-        int result = KST_LINK_NO_ANSWER;
-        if (answered) {
-            result = (reply.op == LINK_OP_NACK) ? (int)reply.regs[0]
-                                                : KST_LINK_ACK;
-        }
-        kst_link_done(&s_kst_link, result,
-                      (answered && reply.op == LINK_OP_DATA) ? reply.regs
-                                                             : NULL);
-        if (result == KST_LINK_NO_ANSWER) {
-            break;
-        }
-    }
-}
-
-/* Where the tester's commands go, into s_drive for the SERVO screen: from
- * each pass of prog_link_service() and from the link-lost edge. */
-static void prog_drive_publish(void)
-{
-    const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
-    atomic_store(&s_drive, ((unsigned)drive.target << 8) | drive.pin
-                           | (drive.pwm ? DRIVE_PWM_BIT : 0u));
-}
-
-/*
- * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
- * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
- * From poll_bench(); a coprocessor older than 4.13 is sent nothing.
- *
- * A pulse bit goes off whatever the bench does.  The target changes, and a
- * pulse comes on, only on a bench at rest: disarmed, no sweep, no hold, no
- * position held and no release owed.  A position still out is let go first,
- * so the release reaches the target that renders it.
- */
-static __attribute__((noinline)) void prog_link_service(void)
-{
-    prog_hold_look();
-    prog_link_want(&s_prog_link, (uint8_t)atomic_load(&s_prog_want_target),
-                   atomic_load(&s_prog_want_pwm));
-    if (prog_link_read_due(&s_prog_link, now_ms())) {
-        link_msg_t reply = { 0 };
-        const bool read = read_regs(&s_host, LINK_PAGE_PROG, 0u,
-                                    (uint8_t)LINK_PG_REGS, &reply)
-                          && reply.op == LINK_OP_DATA;
-        prog_link_read(&s_prog_link, read ? reply.regs : NULL, now_ms());
-    }
-    const bool rest = !outputs_armed(&s_out) && !s_servo_sweeping
-                      && !s_servo_holding && !s_servo_sweep_unknown;
-    if (rest && prog_link_pending(&s_prog_link)) {
-        servo_let_go();
-    }
-    const bool quiet = rest && !s_servo_release_owed && s_servo_written == 0u
-                       && s_servo_held.kind == SERVO_CMD_NONE;
-    prog_link_write_t w;
-    if (prog_link_next(&s_prog_link, quiet, &w)) {
-        link_msg_t reply = { 0 };
-        /* A pulse comes on under the range the screen names, stated to the
-         * port first: from 4.16 a range longer than the frame refuses it,
-         * and the port may still hold another profile's. */
-        const uint8_t on = prog_link_pulse_on(&s_prog_link, &w);
-        bool ack = true;
-        if (on != 0u && servo_named(&s_servo_range)) {
-            uint16_t cfg[LINK_CC_COUNT];
-            servo_cfg(&s_servo_range, cfg);
-            ack = servo_cfg_write(on, 0u, 1u, cfg, &reply);
-        }
-        ack = ack
-              && write_regs(&s_host, LINK_PAGE_PROG, w.off, 1u, &w.value,
-                            &reply)
-              && reply.op == LINK_OP_ACK;
-        prog_link_written(&s_prog_link, &w, ack);
-    }
-    /* From 4.19 a TARGET change returns the SERVO rate to 0: the next
-     * position that wants a faster one leads with it again, and one whose
-     * TARGET write went unanswered counts as fast until a reset lands. */
-    switch (prog_link_rate(&s_prog_link)) {
-    case PROG_LINK_RATE_RESET:
-        servo_rate_reset_note(s_servo_rate_page, true);
-        break;
-    case PROG_LINK_RATE_UNKNOWN:
-        servo_rate_reset_note(s_servo_rate_page, false);
-        break;
-    case PROG_LINK_RATE_KEPT:
-    default:
-        break;
-    }
-    atomic_store(&s_prog_pin, prog_link_pin(&s_prog_link, 0u));
-    prog_drive_publish();
-    servo_surfaces_publish();
-}
-
-/* What the programmer's model is fed, as it stands.  Under the snapshot's
- * lock. */
-static __attribute__((noinline)) void kst_publish(kst_prog_feed_t *f)
-{
-    kst_link_outcome_t o;
-    if (kst_link_outcome(&s_kst_link, &o)) {
-        s_kst_outcome = o;
-        ++s_kst_outcomes;
-    }
-    f->now_ms = now_ms();
-    kst_link_readout(&s_kst_link, &f->rd);
-    f->have_image  = kst_link_image(&s_kst_link, &f->image);
-    f->have_backup = kst_link_backup(&s_kst_link, &f->backup);
-    f->answer_id   = s_kst_answer_id;
-    f->answer      = s_kst_answer;
-    f->outcomes    = s_kst_outcomes;
-    f->outcome     = s_kst_outcome;
-    f->stopped     = arming_stopped(&s_arm);
-    f->armed       = outputs_armed(&s_out);
-    f->card        = storage_mounted();
-    f->target      = prog_link_target(&s_prog_link);
-    /* The pin of each programming port, for the journal of a write. */
-    f->port_pin_known = 0u;
-    for (uint8_t port = 0; port < LINK_PG_PORTS_MAX; ++port) {
-        const uint8_t pin = prog_link_pin(&s_prog_link, port);
-        f->port_pin[port] = pin;
-        if (pin != PROG_LINK_NO_PIN) {
-            f->port_pin_known |= (uint8_t)(1u << port);
-        }
-    }
-    /* The PD mini's output while it is the supply, answers and is on. */
-    f->supply_read = s_supply_is_real && s_supply.online && s_supply.output;
-    f->out_mv      = 0u;
-    f->out_ma      = 0u;
-    f->set_mv      = 0u;
-    if (f->supply_read) {
-        const float set = s_supply.set_v * 1000.0f + 0.5f;
-
-        f->set_mv = set <= 0.0f ? 0u
-                  : set >= 65535.0f ? 65535u : (uint16_t)set;
-        const float mv = s_supply.v * 1000.0f + 0.5f;
-        const float ma = s_supply.i * 1000.0f + 0.5f;
-        f->out_mv = mv <= 0.0f ? 0u : mv >= 65535.0f ? 65535u : (uint16_t)mv;
-        f->out_ma = ma <= 0.0f ? 0u : ma >= 65535.0f ? 65535u : (uint16_t)ma;
-    }
-}
-
-/*
- * The bench page, and the control page in the same pass.
- *
- * While the far end answers, the bench page is what is asked for; identity is
- * asked only while the far end is silent.
- */
-static bool poll_bench(bench_state_t *bench)
-{
-    const bool answered = read_bench(&s_host, bench);
-    if (answered) {
-        link_msg_t ack = { 0 };
-        /*
-         * The pole count, when an edit or a write that did not land leaves
-         * one owed.  Between arms this is the path an edit takes to the far
-         * end: nothing else writes the register while the link stays up, and
-         * the write that arms carries the count of its own accord
-         * (control_arm()).  STOP and a re-arm produce no link-down edge, so
-         * without this a count edited on a live link would wait for the
-         * cable, a coprocessor reset or a panel reboot.
-         *
-         * Costs a transaction only while the debt stands, which is one poll
-         * per edit.
-         */
-        (void)poles_service();
-        /*
-         * Not while a surface at the far end is still holding a position and
-         * owed a release: the far end would render that old command before
-         * the centre arrived.  servo_service() pays the debt every pass, so
-         * this holds for one.  A bank armed with no link does not reach
-         * this: poll_far_end() stops it on the edge where one answers, as
-         * it stops an armed bench on the edge where the link goes.
-         * Nor while the rate the surfaces run at is not known: the far end
-         * may hold a heli rate from before a panel restart, and
-         * servo_service() settles that every pass too.  And not after a
-         * stop or a disarm asked for since the bank armed: the exchanges
-         * that settle those debts let the pump apply a STOP, and the bank
-         * itself is disarmed only on the next service_arming() pass.
-         *
-         * Decided after that exchange and straight before the write that
-         * carries it: the pump runs inside every exchange, so a STOP or a
-         * disarm can land in poles_service() as well.
-         */
-        const bool armed = outputs_armed(&s_out) && !s_servo_release_owed
-                           && !s_endpoints_hold
-                           && s_servo_hz_sent != SERVO_HZ_UNKNOWN
-                           && !arming_stopped(&s_arm)
-                           && !atomic_load(&s_disarm_request);
-        const bool written = control_write(armed, &ack);
-        /*
-         * The throttle's endpoints, when an edit or a link-up leaves them
-         * owed -- after the control write, and only when that write put
-         * ARM = 0 at the far end and was acknowledged, with the bench
-         * disarmed here or held for this very debt.  Costs a read, and a
-         * write only when the page differs.
-         */
-        endpoints_service(written && !armed
-                          && (!outputs_armed(&s_out) || s_endpoints_hold));
-        /* And the supply's page, a write only when one is owed. */
-        supply_link_service();
-        /* And the current monitors': a set-up only with ARM written 0 and
-         * acknowledged and the bank disarmed here, as the page refuses one
-         * while the bank drives. */
-        sense_link_service(written && !armed && !outputs_armed(&s_out),
-                           bench);
-        /* And the phase tap's: an input, taken armed or not. */
-        tone_link_service();
-        /* And the servo programmer's: the coprocessor decides what it
-         * starts, armed or not. */
-        kst_link_service();
-        /* And the programming ports': the SERVO screen's target and the
-         * port's pulse switch. */
-        prog_link_service();
-        if (!written && armed && ack.op == LINK_OP_NACK) {
-            /*
-             * The coprocessor is in failsafe, has lost the heartbeat or
-             * holds its arm latch -- it started again, or the line was
-             * distrusted for a moment.  A stop latches at this end too.
-             */
-            arming_stop_from_far_end(&s_arm);
-            far_end_stop_here();
-        }
-    }
-    return answered;
-}
-
-/*
- * Who is there, while nothing is answering.
- *
- * True only for a DATA identity page from a coprocessor speaking
- * LINK_PROTOCOL_MAJOR; reply then holds that page.
- */
-/* A protocol mismatch has been reported and has not ended since. */
-static bool s_mismatch_told;
-/* The coprocessor update's check, for a coprocessor that just answered. */
-static void cu_link_up(const link_msg_t *reply);
-
-static bool probe_identity(link_msg_t *reply)
-{
-    bool answered;
-    /*
-     * The bus first, because a controller that has fallen off it cannot ask
-     * anything.  A transmitter nobody answers -- a coprocessor not powered
-     * yet, or one that has reset -- adds 8 to its error counter per attempt
-     * and is off the bus in about four milliseconds, and the ESP32-S3's TWAI
-     * does not come back on its own.  Without this the first quiet moment on
-     * the bus is permanent: every later transmit fails, the panel shows NO
-     * LINK and only a power cycle clears it.
-     */
-    if (can_twai_recover() == CAN_TWAI_RECOVERING) {
-        ++s_recoveries;
-        ++s_recoveries_total;
-    }
-
-    /*
-     * A NACK answers the request it refuses, so poll_page() is true for one
-     * and regs[0] carries a refusal reason rather than the first identity
-     * register.  Only a DATA reply holds an identity page, and only an
-     * identity page says there is a coprocessor there to talk to.
-     */
-    answered = poll_page(&s_host, LINK_PAGE_IDENTITY, LINK_ID_COUNT, reply)
-               && reply->op == LINK_OP_DATA;
-    if (answered
-        && reply->regs[LINK_ID_PROTOCOL_MAJOR] != LINK_PROTOCOL_MAJOR) {
-        /* A protocol major that differs from LINK_PROTOCOL_MAJOR refuses
-         * arming; the register is the first one of the identity page.
-         *
-         * Said once per mismatch, not at every poll: the probe repeats each
-         * second while the link is down, and an alert raised again each
-         * time would never expire and could not be tapped away.  A probe
-         * nobody answers, or one that matches, makes the next one news. */
-        if (!s_mismatch_told) {
-            ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
-                     (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
-                     (unsigned)LINK_PROTOCOL_MAJOR);
-            control_alert(TR(ALERT_MISMATCH));
-            s_mismatch_told = true;
-            /* The identity registers and the update pages answer across
-             * majors (link_pages.h), so a coprocessor this panel cannot
-             * drive can still be moved to the image it carries. */
-            cu_link_up(reply);
-        }
-        answered = false;
-    } else {
-        s_mismatch_told = false;
-    }
-    return answered;
-}
-
-/*
- * A board this build ships no catalogue for, described by the board itself.
- */
-static void learn_board_pins(void)
-{
-    link_msg_t cat;
-    const bool answered_cat =
-        poll_page(&s_host, LINK_PAGE_CATALOGUE, LINK_CAT_COUNT, &cat);
-    if (answered_cat && cat.op == LINK_OP_DATA
-        && outbind_learn_board(s_board, cat.regs)) {
-        ESP_LOGI(TAG, "hardware %u described itself: %u pins",
-                 (unsigned)s_board,
-                 (unsigned)outbind_pin_count(s_board));
-        /*
-         * And where they are, if it says.  Only a drawing of the board needs
-         * this, so a board that answers neither this nor ARTWORK is used from
-         * its catalogue and is not drawn.
-         */
-        link_msg_t shp;
-        if (poll_page(&s_host, LINK_PAGE_SHAPE, LINK_SH_COUNT, &shp)
-            && shp.op == LINK_OP_DATA
-            && outbind_learn_shape(s_board, shp.regs)) {
-            ESP_LOGI(TAG, "hardware %u says where its pads are",
-                     (unsigned)s_board);
-        } else {
-            ESP_LOGI(TAG, "hardware %u does not say where its pads are; it "
-                          "will be listed and not drawn", (unsigned)s_board);
-        }
-        /*
-         * And which of them are grounds and rails.  A board that does not say
-         * has them unmarked, which is a lead placed by reading the board
-         * rather than the screen.
-         */
-        link_msg_t pdr;
-        if (poll_page(&s_host, LINK_PAGE_PADS, LINK_PAD_COUNT, &pdr)
-            && pdr.op == LINK_OP_DATA
-            && outbind_learn_pads(s_board, pdr.regs)) {
-            ESP_LOGI(TAG, "hardware %u says which pads are grounds and rails",
-                     (unsigned)s_board);
-        }
-    } else if (answered_cat && cat.op == LINK_OP_NACK
-               && cat.regs[0] == LINK_NACK_BAD_PAGE) {
-        /*
-         * Not a fault, and not warned about: a coprocessor built before the
-         * page refuses it by design, every time the link comes up.  A warning
-         * on every link-up for a bench that is working as built is a warning
-         * nobody reads.
-         */
-        ESP_LOGI(TAG, "hardware %u predates the catalogue page; the screen "
-                      "will offer no pins", (unsigned)s_board);
-    } else {
-        ESP_LOGW(TAG, "hardware %u has no pin map in this build and did not "
-                      "describe itself; the screen will offer no pins",
-                 (unsigned)s_board);
-    }
-}
-
-/* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
- * for the MOTOR & ESC screen's target line, and whether a binding was read.
- * The same pages the coprocessor's throttle role reads. */
-static atomic_ullong s_throttle_pins;
-static atomic_bool   s_throttle_pins_known;
-
-/* A reading, into the snapshot the outputs and picker screens take. */
-static void post_reading(const bind_reading_t *r)
-{
-    s_bind_read = r->state;
-    /* A binding that did not read names no pin: the screen says so. */
-    const bool known = (r->state == BIND_READ_OK);
-    atomic_store(&s_throttle_pins,
-                 known ? outputs_role_pins(r->slots, r->cfg, OUT_ROLE_THROTTLE)
-                       : 0u);
-    atomic_store(&s_throttle_pins_known, known);
-    if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
-        s_outputs_read = *r;
-        s_outputs_read_fresh = true;
-        xSemaphoreGive(s_snap_lock);
-    }
-}
-
-/*
- * No reading is to be had: the link is down.  The screens keep the last
- * binding read, marked, and take no edit until one is read again.
- */
-static void post_no_reading(void)
-{
-    static bind_reading_t r;     /* 140 bytes kept off the task's stack */
-    (void)bind_link_classify(&r, s_board, NULL, NULL);
-    post_reading(&r);
-}
-
-/*
- * What the coprocessor's outputs already are, into the snapshot the outputs
- * and picker screens read.
- *
- * bind_link_read() reads both pages and tells four results apart: a binding
- * (one with nothing bound included), pages that did not read, pages no
- * binding describes, and a board this build has no pin map for.  Only the
- * first is a binding to edit; the screens are told which of the others it
- * is.
- */
-static void read_outputs_binding(void)
-{
-    static bind_reading_t r;     /* control task only */
-    if (bind_link_read(&s_host, &k_port, s_board, &r) == BIND_READ_OK) {
-        /*
-         * Which channels the horn may drive, from the pages themselves rather
-         * than from the binding they were read into.  A binding names one
-         * role per slot -- outbind_from_slots() takes a slot's role from its
-         * first channel -- so a multi-channel slot whose channels disagree
-         * would put a throttle in the surfaces' mask, and the horn would
-         * command it.  The pages answer per channel.
-         *
-         * Held unlocked because the control task is the only one that touches
-         * it, and it is the only task that writes the wire.
-         */
-        s_servo_channels = outputs_role_channels(r.slots, r.cfg,
-                                                 OUT_ROLE_SURFACE);
-        s_servo_known    = true;
-        atomic_store(&s_servo_pins,
-                     outputs_role_pins(r.slots, r.cfg, OUT_ROLE_SURFACE));
-        atomic_store(&s_servo_pins_known, true);
-        servo_surfaces_publish();
-        post_reading(&r);
-        return;
-    }
-    /*
-     * A binding that would not read is unknown, not empty.  The horn
-     * drives nothing either way, but the release stays owed: the far end
-     * may still be rendering surfaces from before this panel started, and
-     * nothing here can name them to settle them.
-     */
-    s_servo_channels = 0u;
-    s_servo_known    = false;
-    atomic_store(&s_servo_pins, 0u);
-    atomic_store(&s_servo_pins_known, false);
-    servo_surfaces_publish();
-    post_reading(&r);
-    switch (r.state) {
-    case BIND_READ_NO_BOARD:
-        ESP_LOGW(TAG, "hardware %u has no pin map in this build; the "
-                      "screen will offer no pins", (unsigned)s_board);
-        break;
-    case BIND_READ_ODD:
-        ESP_LOGW(TAG, "the output pages describe no binding this build can "
-                      "show; the screen takes no edit but UNBIND ALL PINS");
-        break;
-    default:
-        ESP_LOGW(TAG, "could not read the outputs page; the screen keeps the "
-                      "last binding read and takes no edit");
-        break;
-    }
-}
-
-/*
- * The edge: a coprocessor started answering.
- *
- * All of it costs a transaction and none of it changes while the link is up,
- * so it runs once per edge rather than once per 50 ms poll.  reply is the
- * identity page that detected the edge.
- */
-static void link_came_up(const link_msg_t *reply)
-{
-    /*
-     * Who answered, before anything is decoded against it.
-     *
-     * The identity read at bring-up runs once, with whatever was attached then
-     * -- which may have been nothing.  A coprocessor that turns up later, or
-     * one swapped for another, would otherwise have its outputs page read
-     * against a board identity from boot, or against zero, and the screen
-     * would offer no pins for as long as it stayed plugged in.
-     *
-     * The identity page that detected this edge is that answer, so it is used
-     * rather than read again.  A second read costs a transaction on the edge.
-     * The retry loop that would wrap it is bring-up's: it draws a frame
-     * between attempts, which belongs to the splash and not to a task running
-     * beside the renderer.
-     *
-     * Nothing has to forget the board.  The edge fires only on an identity
-     * page, and the pages below are decoded against it in the same pass, so no
-     * read of it can reach a value from an earlier coprocessor.
-     */
-    s_board = reply->regs[LINK_ID_HARDWARE];
-
-    /*
-     * Whether it takes a frame rate, and each slot back at its own.  A
-     * coprocessor that only went quiet, or a panel that restarted, can leave
-     * the far end holding a heli rate the screen no longer shows; a servo
-     * plugged in since would meet it on the next arm.  The screen sends its
-     * rate again with its next position.
-     */
-    s_servo_rate_page = reply->regs[LINK_ID_PROTOCOL_MINOR]
-                        >= LINK_MINOR_SERVO_RATE;
-    /* A binding is prepared and committed whole from 4.10
-     * (bind_link_write()), and written page by page before it. */
-    s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
-    /* A refusal count is the coprocessor's that sent it: the band shows
-     * none until this one's status page is read. */
-    s_bring.have_refused = false;
-    s_bring.dev_refused  = 0u;
-    (void)servo_rate_reset();
-    s_servo_sweep_page    = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 2u;
-    /* 4.6 carries a held sweep on from its phase (LINK_SV_RESUME). */
-    s_servo_minor         = reply->regs[LINK_ID_PROTOCOL_MINOR];
-    s_servo_sweeping      = false;
-    s_servo_holding       = false;
-    s_hold_unanswered     = false;
-    servo_phase_stopped(&s_far_phase);
-    s_servo_sweep_unknown = s_servo_sweep_page;
-    atomic_store(&s_servo_sweep_able, s_servo_sweep_page);
-
-    /*
-     * Whether it drives the PD mini (4.3), and its page written again from
-     * the start: a coprocessor that started again holds nothing, and one
-     * that only went quiet may hold an ON this panel has since let go.
-     */
-    s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
-    atomic_store(&s_supply_vin_mv, 0u);
-    atomic_store(&s_supply_baud, 0u);
-    /* 4.4 finds the module's rate itself, and has BAUD_FOUND. */
-    s_supply_auto = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 4u;
-    supply_link_lost(&s_supply_link);
-    if (!s_supply_page && pdmini_wiring().en) {
-        control_alert(TR(ALERT_NO_SUPPLY_PAGE));
-    }
-
-    /*
-     * And the current monitors' pages (4.7): what SENSE holds is read
-     * before anything is written, and a coprocessor older than that is sent
-     * nothing.  Its capability bits are this identity page's: bits 3 and 4
-     * follow a SENSE set-up kept in its flash, whoever wrote it.
-     */
-    atomic_store(&s_capabilities,
-                 (unsigned)reply->regs[LINK_ID_CAPABILITIES]);
-    {
-        const sense_setup_t w = sense_wanted();
-        sense_link_want(&s_sense_link, &w, now_ms());
-    }
-    sense_link_came_up(&s_sense_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
-                       now_ms());
-    sense_link_alerts();
-    /* And the phase tap's page (4.8), the same way. */
-    {
-        const tone_setup_t tw = tone_wanted();
-        tone_link_want(&s_tone_link, &tw, now_ms());
-    }
-    tone_link_came_up(&s_tone_link, reply->regs[LINK_ID_PROTOCOL_MINOR],
-                      now_ms());
-    tone_link_alerts();
-    /* And the servo programmer's page (4.12). */
-    kst_link_came_up(&s_kst_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
-    /* And the programming ports' (4.13): not known until it is read. */
-    prog_link_came_up(&s_prog_link, reply->regs[LINK_ID_PROTOCOL_MINOR]);
-    prog_drive_publish();
-
-    /*
-     * A board this build ships no catalogue for describes its own pins, so a
-     * coprocessor newer than this panel is usable rather than blank.
-     *
-     * Only when the build has none.  A board it knows uses its own catalogue:
-     * that one has been read by somebody, names the exact signal holding each
-     * reserved pin, and cannot change under a running bench.
-     *
-     * Nothing here makes a pin safe.  The coprocessor reserves its own set at
-     * its own end whatever this page says, so a catalogue that is wrong costs
-     * a pin rather than the safety line.  A coprocessor built before the page
-     * answers NACK, which is not a failure: the screen then offers nothing for
-     * that board, as it did before.
-     */
-    if (outbind_board(s_board) == NULL) {
-        learn_board_pins();
-    }
-
-    /*
-     * And its drawing: the kept one when it is this drawing, else fetched a
-     * slice of a poll at a time below.
-     */
-    art_begin(s_board);
-
-    /*
-     * The pole count.  A coprocessor that has just started holds zero, and
-     * one whose cable came back holds whatever it was last told, so the edge
-     * sends it either way.
-     *
-     * The warning is here rather than in the payer.  A refusal means the
-     * register is not in that coprocessor's build, which is a fact about the
-     * board that just answered and worth one line per edge; the retry at
-     * every poll would repeat it twenty times a second.
-     */
-    atomic_store(&s_poles_owed, true);
-    if (!poles_service()) {
-        ESP_LOGW(TAG, "coprocessor did not take the pole count -- rpm will "
-                      "read empty");
-    }
-    /*
-     * The throttle's pulse endpoints, for the same reason: a coprocessor
-     * replaced or reflashed since the debt was last paid holds its own
-     * CHAN_CFG, and the panel would go on showing a range the motor channels
-     * do not have.  The far end is held disarmed until it is paid
-     * (s_endpoints_hold), by endpoints_service() at the next poll,
-     * which reads the page and writes it only if the throttle channels
-     * differ, so an edge to a coprocessor that already agrees costs a read.
-     */
-    atomic_store(&s_endpoints_owed, true);
-    s_endpoints_hold = true;
-    /*
-     * And what its outputs already are.  The screen shows what is configured
-     * over there, not what this panel last sent: after a panel restart those
-     * are different things, and only one of them is driving pins.
-     */
-    read_outputs_binding();
-
-    /* And whether it runs the image this panel carries. */
-    cu_link_up(reply);
-}
-
-/*
- * The status page's counters, into the bring-up record.  A 4.21 or later
- * coprocessor is asked for its refusal count as well; an older one refuses
- * a read past its 8 registers, so it is asked for those
- * (link_bringup_status_count()) and its count stays 0.
- */
-static void read_status_counters(void)
-{
-    link_msg_t st;
-    if (poll_page(&s_host, LINK_PAGE_STATUS,
-                  link_bringup_status_count(s_far_minor), &st)
-        /* have_status, which two of link_bringup's diagnoses are gated
-         * on, is set here. */
-        && link_bringup_take_status(&s_bring, &st, &s_dev_faults)) {
-        /* The band shows the bitmap as a code; a store that keeps nothing
-         * this boot is said in words, once per link-up. */
-        sense_link_faults(&s_sense_link, s_dev_faults);
-        sense_link_alerts();
-    }
-}
-
-/*
- * The far end: one poll, and everything that hangs off whether it answered.
- *
- * Every value it maintains belongs to the control loop and is passed in.
- * link_up is both the gate's period -- 50 ms up, 1000 ms down -- and this
- * poll's answer; last_poll and last_status are the two gates' clocks.
- * Returns whether this pass produced a bench sample.
- */
-static bool poll_far_end(bool *link_up, bench_state_t *bench,
-                         uint32_t *last_poll, uint32_t *last_status)
-{
-    bool new_sample = false;
-    /*
-     * Whether the link is up is read from one thing: s_link_quiet, which
-     * exchange() sets when any request ends unanswered with the link up --
-     * the bench read or the control write of this poll, a page service, a
-     * servo refresh, a command's write, the status read, a slice of the
-     * drawing, an exchange of an arm.  A poll's own return value is
-     * whether a bench sample or an identity arrived and takes no part.
-     *
-     * Set since the last poll, it is this poll's answer at once: ahead of
-     * the 50 ms gate, and without a read that would wait another
-     * LINK_HOST_TIMEOUT_MS (1000 ms) to learn the same.  An armed bench has
-     * been stopped already, where the exchange ended.
-     */
-    if (s_link_quiet
-        || (uint32_t)(now_ms() - *last_poll) >= (*link_up ? 50u : 1000u)) {
-        *last_poll = now_ms();
-        link_msg_t reply;
-        bool answered = false;
-        if (s_link_quiet) {
-            /* Nothing is asked. */
-        } else if (*link_up) {
-            answered = poll_bench(bench);
-        } else {
-            answered = probe_identity(&reply);
-        }
-        if (s_link_quiet) {
-            /* Before this poll or inside it.  Taken down here and the
-             * latch released: the next request is the identity probe. */
-            answered = false;
-            s_link_quiet = false;
-            s_link_is_up = false;
-        }
-        if (answered != *link_up) {
-            ESP_LOGI(TAG, "coprocessor %s",
-                     answered ? "answered" : "went quiet");
-            if (answered) {
-                /* From here on an unanswered exchange is a link lost,
-                 * link_came_up()'s own included. */
-                s_link_is_up = true;
-                /*
-                 * A bank armed with no link -- the simulator's -- is
-                 * stopped before anything is written: the far end was
-                 * never asked to arm, and the ARM this bank writes at
-                 * every poll would ask it now, at this end's throttle.
-                 */
-                if (arming_link_found(&s_arm, outputs_armed(&s_out))) {
-                    far_end_stop_here();
-                }
-                link_came_up(&reply);
-            }
-        }
-        if (!answered && s_artbusy) {
-            /* The board that was sending it is gone, so the rest of its
-             * drawing is not coming.  Nothing was kept or shown: both wait
-             * for the whole thing to check out. */
-            art_stop("the link went quiet");
-        }
-        /*
-         * The link going, and how long ago.  Taken here rather than in the
-         * render loop because this is where the answer arrives; the screen is
-         * only shown from there.
-         */
-        if (answered) {
-            atomic_store(&s_link_lost_ms, 0u);
-            s_link_lost_shown = false;
-            s_recoveries      = 0;   /* the next outage counts its own */
-        } else if (*link_up) {
-            /* The edge: it was up until this poll. */
-            atomic_store(&s_link_lost_ms, now_ms());
-            /*
-             * An armed bench stops with the link, and so does an arm still
-             * waiting for the line.  The far end has failed safe on its own
-             * 200 ms of silence, or it has started again; either way the
-             * bank and the command kept here would be written to it as
-             * ARM = 1 at the first poll it answers, with nobody having
-             * asked.  The stop also withholds the heartbeat.
-             */
-            if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
-                far_end_stop_here();
-            }
-            /* A sweep or a hold ends with the link, here as on the screen
-             * and at the far end: kept, it would be said again when the
-             * link comes back and start motion nobody asked for. */
-            if (!servo_cmd_survives_link_loss(&s_servo_held)) {
-                s_servo_held.kind = SERVO_CMD_NONE;
-            }
-            /* The PD mini goes with it: its readings stop, and the step
-             * switches an ON off as a supply not answering. */
-            s_supply_page = false;
-            supply_link_lost(&s_supply_link);
-            atomic_store(&s_supply_vin_mv, 0u);
-            atomic_store(&s_supply_baud, 0u);
-            /* And the monitors' pages: nothing on them is known until the
-             * link comes back, and the ESC's figures go with the readings. */
-            sense_link_lost(&s_sense_link);
-            (void)servo_source_step(&s_servo_source, now_ms(), false, 0u,
-                                    NULL);
-            tone_link_lost(&s_tone_link);
-            /* An operation under way ends unanswered; the programmer
-             * says what that means for the servo. */
-            kst_link_lost(&s_kst_link);
-            /* And no port is the target or names a pin, and the SERVO
-             * screen's TARGET row says no link. */
-            prog_link_lost(&s_prog_link);
-            atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
-            prog_drive_publish();
-            servo_surfaces_publish();
-            atomic_store(&s_sense_unheld, 0u);
-            atomic_store(&s_tone_unheld, 0u);
-            bench_state_set_esc(bench, false, 0.0f, false, 0.0f, false);
-            bench->servo_new = false;
-            /* And the binding: what the screens show is the last one read,
-             * and they take no edit until the link-up read. */
-            post_no_reading();
-        }
-        /*
-         * A sample exists only if the bench page was read.  A poll that timed
-         * out republishes nothing: counting it would put a stale reading on
-         * the plot as a fresh column and stamp a log row for a measurement
-         * that never arrived.
-         *
-         * Taken before link_up moves, and from the branch rather than from
-         * the answer.  While the link is down the question asked is the
-         * identity page, so an answer there says a coprocessor is there to
-         * talk to and says nothing about the bench: bench still holds
-         * whatever it held, which at boot is zeros.
-         */
-        new_sample = *link_up && answered;
-        *link_up = answered;
-        if (!answered) {
-            s_link_is_up = false;
-        }
-
-        /*
-         * The status page is read a tenth as often as the bench page: a status
-         * read costs a whole transaction and its numbers move slowly.
-         */
-        if (*link_up && (uint32_t)(now_ms() - *last_status) >= 500u) {
-            *last_status = now_ms();
-            read_status_counters();
-            /*
-             * And the binding, while it is unknown.  Without a retry an
-             * output page that would not read once leaves the servo screen
-             * unable to name a channel, and the release it owes unpayable,
-             * until the next link-up edge -- which on a link that stays up
-             * never comes.  Once it is known this costs nothing.
-             */
-            if (!s_servo_known) {
-                read_outputs_binding();
-            }
-        }
-
-        /*
-         * And a slice of the drawing, last: the bench's own pages are what
-         * the operator is watching, and this is a transfer that happens once
-         * and can afford to wait for them.
-         */
-        if (*link_up && s_artbusy) {
-            art_slice();
-        }
-    }
-    return new_sample;
-}
-
-/*
- * The INA3221's next window into @p bench's log fields, and a ring window
- * onto the queue to the render side as well.  Control task only.
- */
-static void servo_window_take(bench_state_t *bench)
-{
-    if (!sense_link_win_on(&s_sense_link)) {
-        (void)sense_link_take_window(&s_sense_link, bench);
-        return;
-    }
-    sense_link_win_t w;
-    if (!sense_link_take_win(&s_sense_link, &w)) {
-        return;
-    }
-    sense_link_win_bench(&s_sense_link, &w, bench);
-    /* With the meter as this poll decided it: the snapshot the render side
-     * reads can be older or newer than a window on the queue. */
-    servo_win_item_t item = {
-        .win     = w,
-        .source  = servo_source_id(&s_servo_source),
-        .changes = servo_source_changes(&s_servo_source),
-    };
-    item.dropped = servo_source_dropped(&s_servo_source, &item.dropped_at);
-    if (xQueueSend(s_win_q, &item, 0) != pdTRUE) {
-        servo_win_item_t stale;
-        (void)xQueueReceive(s_win_q, &stale, 0);
-        (void)xQueueSend(s_win_q, &item, 0);
-    }
-}
-
-/*
- * The model's step, the run's totals and the bench log's rows, each decided
- * for this pass.
- *
- * The model runs on its own 50 ms gate, not on the poll's.  The poll's runs
- * at 1 Hz while the link is down, which would step the model once per
- * 1000 ms of wall clock instead of twenty times -- the plot's axis twenty
- * times slow.  Its step is the time that passed, capped at a second like
- * the totals: a probe for the coprocessor's identity can hold this loop for
- * its whole 1000 ms timeout.
- *
- * The log has no gate: a pass that brought a sample writes one row for
- * each INA3221 window the poll handed over and one row when it handed over
- * none, stamped with the wall time since the arm; see log_cadence.h.
- */
-static void advance_model_and_log(bool link_up, float emitted,
-                                  telemetry_sim_t *sim, bench_state_t *bench,
-                                  bool *new_sample)
-{
-    float step_s = 0.0f;
-    if (log_cadence_model_due(&s_log_cad, now_ms(), link_up, &step_s)) {
-        telemetry_sim_step(sim, emitted, step_s, bench);
-        *new_sample = true;
-    }
-    /*
-     * The run's totals, from the sample either source just wrote, over the
-     * time since the last one -- measured, not the 50 ms the model's cadence
-     * aims at: a link probe can hold this loop for a second, and a
-     * coprocessor sample arrives on the poll's clock.
-     */
-    if (*new_sample) {
-        const uint32_t t = now_ms();
-        bench_totals_count(&s_totals, bench,
-                           (float)(uint32_t)(t - s_totals_ms) / 1000.0f,
-                           outputs_armed(&s_out));
-        s_totals_ms = t;
-    }
-    /*
-     * Written over the source's own charge and energy before the screen or
-     * the log sees them, on every pass and not only a counted one: the first
-     * read after a link-up is not a new sample, and it has written the
-     * coprocessor's own empty registers over the totals.
-     */
-    bench_totals_show(&s_totals, bench);
-    /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
-    float t_s = 0.0f;
-    const bool logged = log_cadence_row(
-        &s_log_cad, now_ms(), *new_sample,
-        log_cadence_bench_run(s_log_kind == LOG_RUN_BENCH,
-                              atomic_load(&s_servo_testing)),
-        &t_s);
-    /* Every window is taken in the pass that brought it, logged or not:
-     * the render side has each once, and a window taken before a run is
-     * in none of its rows. */
-    const unsigned windows = sense_link_windows(&s_sense_link);
-    const unsigned rows    = log_cadence_rows(windows);
-    for (unsigned k = 0u; k < rows; ++k) {
-        if (k < windows) {
-            servo_window_take(bench);
-        }
-        if (logged) {
-            log_row_t row = { .kind = LOG_RUN_BENCH, .t_s = t_s };
-            bench_state_log_row(bench, k + 1u == rows, &row.u.bench);
-            log_post(&row);
-        }
-        /* The window is in that row and in no later one. */
-        bench->servo_new = false;
-    }
-}
-
-/*
- * What the renderer draws: the numbers under the mutex, and the sample on the
- * queue.
- */
-static void publish_snapshot(const bench_state_t *bench, bool link_up,
-                             bool new_sample)
-{
-    snap_lock();
-    s_snap.bench       = *bench;
-    s_snap.supply      = s_supply;
-    s_snap.supply_gen  = s_supply_gen;
-    s_snap.link_up     = link_up;
-    s_snap.armed       = outputs_armed(&s_out);
-    s_snap.armed_roles = outputs_armed_roles(&s_out);
-    s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);
-    s_snap.arm_gen     = s_arm_gen;
-    s_snap.stopped     = arming_stopped(&s_arm);
-    s_snap.stops       = arming_stop_count(&s_arm);
-    s_snap.pressed     = arming_pressed_count(&s_arm);
-    s_snap.faults      = link_up ? s_dev_faults : (uint16_t)0;
-    s_snap.link_errors = (uint32_t)s_bring.dev_crc_errors
-                         + (uint32_t)s_bring.dev_resyncs;
-    s_snap.link_refused = s_bring.dev_refused;
-    s_snap.run_seconds = arming_run_seconds(&s_arm);
-    s_snap.mcu_temp_c  = s_mcu_c;
-    tone_link_readout(&s_tone_link, now_ms(), &s_snap.tone);
-    s_snap.servo_source   = servo_source_id(&s_servo_source);
-    s_snap.servo_source_changes = servo_source_changes(&s_servo_source);
-    s_snap.servo_source_why = servo_source_why(&s_servo_source);
-    s_snap.servo_source_dropped =
-        servo_source_dropped(&s_servo_source,
-                             &s_snap.servo_source_dropped_at);
-    s_snap.servo_win_lost = sense_link_win_lost(&s_sense_link);
-    kst_publish(&s_snap.kst);
-    snap_unlock();
-
-    /* One queue entry per sample, so none of the plot's time base is lost to
-     * a renderer that was busy. */
-    if (new_sample && xQueueSend(s_sample_q, bench, 0) != pdTRUE) {
-        bench_state_t stale;
-        (void)xQueueReceive(s_sample_q, &stale, 0);
-        (void)xQueueSend(s_sample_q, bench, 0);
-    }
-}
 
 /* -------------------------------------------- the coprocessor's update */
 
@@ -6813,7 +4469,7 @@ static void cu_publish_progress(bool active)
  * coprocessor of another major.  Its build is checked against the carried
  * image, whatever was decided for the coprocessor before it.
  */
-static void cu_link_up(const link_msg_t *reply)
+void cu_link_up(const link_msg_t *reply)
 {
     if (CU_LEN == 0u || reply == NULL || s_cu_state == CU_UPDATING) {
         return;

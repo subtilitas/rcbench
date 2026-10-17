@@ -1153,8 +1153,7 @@ Codes.
   einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
   die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
   Lesung des Ports.
-- Der Code des Panels in `firmware/panel/main/main.c` und
-  `panel_card.c` ist nicht in der Host-Suite: die Warteschlange der Kommandos zwischen Bildschirm und
+- Der Code des Panels in `firmware/panel/main/` ist nicht in der Host-Suite: die Warteschlange der Kommandos zwischen Bildschirm und
   Control-Task, die Stelle, an der die Control-Task ein zurückgezogenes
   Kommando verwirft, die Übergabe des Portzustands an die Seite und den
   Tester, und die Dateiaufrufe der Karte.

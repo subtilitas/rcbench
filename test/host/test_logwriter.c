@@ -900,7 +900,7 @@ TEST_CASE(a_sink_that_needs_no_commit_still_writes_the_whole_run)
 
 /*
  * One pass of the control task's log step, as advance_model_and_log() in
- * the panel's main.c makes it: the row decision, then one row for each
+ * the panel's panel_poll.c makes it: the row decision, then one row for each
  * window the poll handed over and one when it handed over none, the sample
  * in the last.  Returns the rows written.
  */

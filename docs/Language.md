@@ -243,8 +243,8 @@ python3 tools/check_formats.py
 compiles `shared/` with every `TR()` call and every report word replaced
 by its English literal, under `-Wformat=2 -Wformat-nonliteral
 -Wformat-signedness`, and fails on any warning: each English format
-matches the arguments its call passes. The panel's `main.c` is not in
-`shared/` and not covered.
+matches the arguments its call passes. The panel's `firmware/panel/main/` is
+not in `shared/` and not covered.
 
 `test_text` covers the rest: every ID has German, every German format
 converts what its English does, every string with a declared width fits it
