@@ -69,6 +69,7 @@ SOURCES = [
     "shared/ui/servo_screen.c",
     "shared/ui/servo_settings_panel.c",
     "shared/ui/servo_test_panel.c",
+    "shared/ui/servo_limit_panel.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
     # what the views drive it with: the link module, the coprocessor's
     # port and the core.
@@ -142,6 +143,7 @@ SOURCES = [
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/servo_cmd.c",
     "shared/can/can_selftest.c",
     "shared/link/link_can.c",
     "shared/link/link_control.c",

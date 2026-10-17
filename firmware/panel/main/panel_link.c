@@ -407,7 +407,7 @@ void far_end_stop_here(void)
 {
     outputs_arm(&s_out, false, now_ms());
     throttle_to_zero();
-    servo_let_go();
+    servo_link_let_go();
     control_alert(TR(ALERT_COPRO_DISARMED));
 }
 

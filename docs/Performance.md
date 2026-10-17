@@ -189,8 +189,8 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,896 | 2,272 |
-| `control` | `control_task` | 6,144 | 4,000 | 1,120 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,024 | 2,144 |
+| `control` | `control_task` | 6,144 | 4,032 | 1,088 |
 | `runlog` | `log_task` | 4,352 | 2,992 | 336 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
@@ -216,11 +216,12 @@ bound for that reason:
 
 - calls through a function pointer, except the router's calls into a screen,
   which the tool reads out of every screen's table, and the link port's
-  callbacks, the drawing store's flash callbacks and the start check's after
-  an update, which it follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`): 224 such calls are
-  reachable from `main_task`, most of them in ESP-IDF's storage and display
-  drivers;
+  callbacks, the drawing store's flash callbacks, the start check's after
+  an update and the SERVO screen link's callbacks into the panel, which it
+  follows by name
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 224 such
+  calls are reachable from `main_task`, most of them in ESP-IDF's storage
+  and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
   the ELF;
 - recursion, which the tool counts once.
@@ -335,15 +336,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,040 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,944 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,064 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,920 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 104,776 |
-| `before` | heap left with the panel up and the radio off | 194,168 |
+| `before` | heap left with the panel up and the radio off | 194,144 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 91,008 |
+| `left` | heap left with the largest mode up | 90,984 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

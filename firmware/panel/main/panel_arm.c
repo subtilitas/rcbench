@@ -24,6 +24,7 @@
 #include "panel.h"
 #include "prog_link.h"
 #include "sense_link.h"
+#include "servo_link.h"
 #include "servo_source.h"
 #include "supply.h"
 #include "supply_link.h"
@@ -186,8 +187,8 @@ bool write_output_binding(const outbind_t *bind)
     }
     /* The sequence put each slot back at its own rate first, or found that
      * it could not: the rate this end holds the far end to follows it. */
-    servo_rate_reset_note(rate != BIND_RATE_NOT_SENT,
-                          rate == BIND_RATE_LANDED);
+    servo_link_rate_reset_note(rate != BIND_RATE_NOT_SENT,
+                               rate == BIND_RATE_LANDED);
     atomic_store(&s_outputs_result, (int)res);
     return rate == BIND_RATE_NOT_SENT || rate == BIND_RATE_LANDED;
 }
@@ -205,7 +206,7 @@ bool disarm_here(bool link_up)
     arming_request_disarm(&s_arm);
     outputs_arm(&s_out, false, now_ms());
     throttle_to_zero();
-    servo_let_go();
+    servo_link_let_go();
     if (!link_up) {
         return false;   /* nothing to tell it on, so it has not been told */
     }

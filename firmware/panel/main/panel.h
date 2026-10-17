@@ -40,6 +40,7 @@
 #include "prog_link.h"
 #include "safety_gate.h"
 #include "sense_link.h"
+#include "servo_link.h"
 #include "servo_page.h"
 #include "servo_screen.h"
 #include "servo_source.h"
@@ -284,36 +285,12 @@ void control_pump(void);
 /* The coprocessor update's check, for a coprocessor that just answered. */
 void cu_link_up(const link_msg_t *reply);
 
-/* The servo's wire handling; see main.c. */
-#define SERVO_HZ_UNKNOWN 0xFFFFu  /* not known: perhaps a faster rate        */
-extern servo_cmd_t   s_servo_held;
-extern bool          s_servo_release_owed;
-extern uint8_t       s_servo_channels;
+/* The GPIOs of the slots of the channels the SERVO screen's horn drives
+ * (servo_link_binding()), and whether a binding was read; see main.c. */
 extern atomic_ullong s_servo_pins;
 extern atomic_bool   s_servo_pins_known;
+/* For the SERVO screen's runs: the SENSE page holds the encoder enabled. */
 extern atomic_bool   s_enc_held;
-extern bool          s_servo_known;
-extern uint8_t       s_servo_written;
-extern servo_cmd_t   s_servo_range;
-extern bool          s_servo_sweep_page;
-extern bool          s_servo_sweeping;
-extern bool          s_servo_holding;
-extern bool          s_servo_sweep_unknown;
-extern atomic_bool   s_servo_sweep_able;
-extern uint16_t      s_servo_minor;
-extern servo_phase_t s_far_phase;
-extern bool          s_hold_unanswered;
-extern bool          s_servo_rate_page;
-extern uint16_t      s_servo_hz_sent;
-/* Paired with throttle_to_zero() in every path that stops the bench. */
-void servo_let_go(void);
-void servo_surfaces_publish(void);
-bool servo_cfg_write(uint8_t port, uint8_t first, uint8_t count,
-                     const uint16_t *cfg, link_msg_t *reply);
-bool servo_named(const servo_cmd_t *sv);
-void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg);
-void servo_rate_reset_note(bool page, bool landed);
-bool servo_rate_reset(void);
 
 /* ------------------------------------------------------------ panel_card.c */
 
