@@ -4,7 +4,9 @@ Base: main edd813d6 (2026-10-16). It replaces the plan of 2026-10-12 on base
 840360f8. It rests on four measured group reports: firmware, tools,
 configurator and docs; screens and text tables; KST, PD mini, link modules
 and out_bind; servo and ESC engines, gfx, logs and settings. Every figure
-below is measured on edd813d6 unless it says "about" or "not measured".
+below is measured on edd813d6 unless it says "about", "not measured" or
+"on main". "On main", the Status section and the lists of what stays over
+1,000 lines are measured on main 14337c92 (2026-10-17).
 
 Abbreviations: PR = pull request; KST = the programming wire of KST and
 Chaservo servos; PD = USB Power Delivery; ESC = electronic speed controller;
@@ -44,36 +46,144 @@ today. The smallest headroom through one of their files is 656 bytes
 
 ## Status
 
-The owner took every fork recommendation (F1 to F25). Waves 0 and 1 are
-merged into main, one at a time, each with green CI on a head that
-contained current main:
+On main 14337c92 (2026-10-17). The owner took every fork recommendation
+(F1 to F25) and chose row 22's design. On 2026-10-17 the owner accepted the
+deviations reported by then, row 12's cut among them. 34 of the 35 rows are
+merged, one at a time, each with green CI on a head that contained current
+main. Row 18 waits for the next release (F12); no release follows v0.20.0
+yet. Dates are UTC.
 
-| Row | PR | Merge commit |
-| --- | --- | --- |
-| 0a | #416 | d869c5b0 |
-| 0b | #417 | dcb6f9a3 |
-| 0b (`PORT_CALLS`) | #418 | d13c7fa2 |
-| 2 | #419 | b7816fe6 |
-| 1 | #420 | eb8a9323 |
-| 3 | #421 | 453cf334 |
+| Row | PR | Merge commit | Merged |
+| --- | --- | --- | --- |
+| 0a | #416 | d869c5b0 | 2026-10-16 |
+| 0b | #417 | dcb6f9a3 | 2026-10-16 |
+| 0b (`PORT_CALLS`) | #418 | d13c7fa2 | 2026-10-16 |
+| 1 | #420 | eb8a9323 | 2026-10-16 |
+| 2 | #419 | b7816fe6 | 2026-10-16 |
+| 3 | #421 | 453cf334 | 2026-10-16 |
+| 4 | #435 | 7ac34202 | 2026-10-17 |
+| 5 | #426 | 496f0aa0 | 2026-10-17 |
+| 6 | #424 | be1d843e | 2026-10-17 |
+| 7 | #434 | 19ce055a | 2026-10-17 |
+| 8 | #423 | 8e6f657e | 2026-10-17 |
+| 9 | #436 | be8c1771 | 2026-10-17 |
+| 10 | #433 | 751eb9ab | 2026-10-17 |
+| 11 | #437 | b7bbe94e | 2026-10-17 |
+| 12 | #442 | 86e16116 | 2026-10-17 |
+| 13 | #430 | 7b18ee14 | 2026-10-17 |
+| 14 | #425 | 6df6dc79 | 2026-10-17 |
+| 15 | #428 | 8597670a | 2026-10-17 |
+| 16 | #432 | af30b6ed | 2026-10-17 |
+| 17 | #429 | 6f15c208 | 2026-10-17 |
+| 18 | none | waits for the next release | - |
+| 19 | #443 | 58f6ac05 | 2026-10-17 |
+| 20 | #444 | 84824773 | 2026-10-17 |
+| 21 | #446 | 1083e430 | 2026-10-17 |
+| 22 | #449 | 1edf01f3 | 2026-10-17 |
+| 23 | #441 | 6d5c9cbe | 2026-10-17 |
+| 24 | #448 | b17075f2 | 2026-10-17 |
+| 25 | #450 | e9e20986 | 2026-10-17 |
+| 26 | #453 | 48053d16 | 2026-10-17 |
+| 27 | #452 | 2a579c82 | 2026-10-17 |
+| 28 | #439 | 7c56be9f | 2026-10-17 |
+| 29 | #427 | b57fcf09 | 2026-10-17 |
+| 30 | #431 | ea828cb6 | 2026-10-17 |
+| 31 | #445 | c14dc3c3 | 2026-10-17 |
+| 32 | #438 | d41f777b | 2026-10-17 |
+| 33 | #440 | f3f0a8c3 | 2026-10-17 |
+
+Merges beside the rows that touch their files: #422 (ea7fdf9a, text
+rework; it shifts the line ranges of screens and tests, `kst_panel.c`
+3,134 to 3,588), #447 (4364ad24) and #451 (dfe5561d) for the `IOBoard.md`
+citations, #454 (b8dc8b1d: `stack_check.py` measures a cycle exactly, the
+`runlog` stack goes from 4,352 to 4,608 bytes), #455 (09cc2011: a HOLD
+keeps the release it owes, in `servo_link.c`).
 
 Measured against the rows above:
 
-- 0a: about 200 citations in 4 hardware docs, not the counts listed. Seven
-  `ui_text.def` citations in `IOBoard.md` describe text that is not in the
-  tree (OneShot/MultiShot, KISS telemetry, signal-only mode, socket
-  ceilings); they wait for the owner to reword or delete them.
+- 0a: about 200 citations in 4 hardware docs (`hardware/docs/IOBoard.md`,
+  `hardware/STATUS.md`, `hardware/docs/Control.md`,
+  `hardware/docs/Supply.md`), not the counts listed. The seven
+  `ui_text.def` citations name revision `c7f4ff9a^`, which holds the
+  cited text (owner, 2026-10-17; #451). The `STATUS.md:N` citations in
+  `IOBoard.md` are outside the row; #462 cites them by section and item
+  name.
 - 0b: `PORT_CALLS` follows `cu_port_exchange`; no measured depth changed.
+  F4's "no lazy import" is about `stack_check.py`, `stack_elf.py` and
+  `stack_iomcu.py`; the one function-level import, the standard library's
+  `bisect` in `code_spans()`, is not that case.
 - 2: the ARM branch holds about 15 lines of decisions; the rest is I/O.
   Only the decisions move (`arming_handshake_step()`), +39/-18 in `main.c`.
-  `control_task` stays at 4,288 of 5,120 bytes.
+  `control_task` stays at 4,288 of 5,120 bytes. The row's cases take
+  `test_arming.c` to 2,005 lines.
 - 1 and 3: core 0's deepest chain goes from 1,716 to 1,700 bytes (1,612
   spare below the margin); each PR alone measured 1,708.
 - 3: +340/-88 over 13 files; `shared/bench` depends on `protocols/dshot`.
-- The host suite counts 127 tests in a build configured by `coverage.py`:
-  `esc_parity` is not registered with coverage on.
+  The row's cases take `test_bench.c` to 1,030 lines.
+- 4: 45 translation units take `servo_str.h` (plan 44 + 8). Through these
+  functions the panel main task has 2,416 bytes spare, not 656 (#435).
+- 6: `gfx_pixel`, `gfx_pixel_get` and `gfx_hline` are `static inline` in
+  `gfx_int.h`, so `draw_glyph` keeps them inlined.
+- 9: 220 cases = 144 + 48 + 21 + 7. `test_servo_arm.c` keeps its own
+  fixture and does not take `servo_rig.h`: taking it rewrites that
+  fixture, which is not a move (#436).
+- 10: 73 cases (#422 adds 2) = 13 + 60. 11: 132 cases = 89 + 17 + 14 + 12.
+- 12: 31 card cases, 122 stay; `test_kst_prog.c` 5,401 lines,
+  `kst_prog_fix.h` 512. The criterion is in the row (#442).
+- 13: 83 cases = 8 + 13 + 32 + 16 + 14 (plan 8/9/34/15/17): each case is
+  in the suite of the part it tests.
+- 14: core 1's chain is 640 bytes on CI's GCC 13.2.1, 644 on ARM GNU 14.2.
+- 19: `programmer_screen.c` 992, `esc_stick_panel.c` 3,451,
+  `programmer_screen_int.h` 311. The shared `programmer_shared_t` has 15
+  fields; the stick reads 14 of them 105 times.
+- 20: `servo_settings_panel.c` 1,341 lines (plan 1,204): its drawers move
+  with it (#444). The seam `servo_screen_int.h` (969 lines) holds 42
+  `extern` prototypes, 35 `static inline` functions and 2 objects.
+- 21: `servo_test_panel.c` 675 lines (plan 801): the limit run's parts go
+  to row 31 (#446). 31: `servo_limit_panel.c` 653; `servo_screen.c` 3,613
+  (plan 4,291): 3,653 after row 31, and row 22 takes `servo_cmd.c`'s part.
+- 22: see the row. `servo_link.c` 1,393 lines; the control task's deepest
+  chain grows by 16 bytes (#449).
+- 23: `main.c` 945 lines (plan 843): the console report stays. 31
+  variables become `extern` (plan 27), each with a user in another file.
+  8 helpers become `static inline` in `iomcu.h`; `reserve_held()` has an
+  out-of-line copy before and after, the other 7 have none. Core 0's
+  chain: 1,700 bytes on CI's GCC 13.2.1, 1,692 on ARM GNU 14.2.
+- 24: `panel_card.c` 556 and `panel_log.c` 658 lines (plan 930 and 710):
+  `poll_identity()` and `bring_up()` stay in `main.c` as boot code (#448).
+- 25: 640 + 822 + 671 lines; the servo section's statics lose `static`
+  for row 22 (#450).
+- 26: 658 + 703 + 505 + 366 lines. `DISARM_INHIBIT_MS` stays file-local;
+  `s_arm_take_*` are `extern` in `main.c`; `log_follow_runs()` and
+  `s_log_t` lose `static` (#453).
+- 27: `panel_update.c` 948 lines (plan 876). Panel `main.c` ends at 2,422
+  (plan about 2,214) because of row 24's boot code.
+- Final stack figures (`stack_check.py --check-doc`, after #454): control
+  4,384 of 5,120 bytes, main 5,440 of 7,168, `runlog` 3,408 of 3,584.
+- The host suite builds 155 binaries (plan 123 to about 155).
+  `esc_parity` is not registered in a build configured by `coverage.py`,
+  by design: its cases follow Python's random module.
 
-Next: wave 2 (PRs 4 to 8, 13 to 15, 17, 29), which may run in parallel.
+## Follow-ups (owner, 2026-10-17)
+
+- `servo_link.c` stays at 1,393 lines: one state machine that carries the
+  release a HOLD owes (#455). No second cut.
+- CI runs cppcheck 2.17, the version run locally, in place of Ubuntu's
+  2.13. 2.17 reads `cppcheck-suppress-macro`, so the whole-file
+  `.cppcheck-suppress` entry for `panel_update.c` can shrink to `CU_LEN`.
+- `--check-doc` holds two more figures: the PSRAM `.bss` table and its
+  total (`ram_budget.py`; on main the build places 35,400 bytes of
+  `log_viewer_screen` and 162,904 in all, the doc says 35,328 and 162,832)
+  and the coprocessor's count of calls through a register (`stack_iomcu.py`;
+  CI prints 133, the doc says 137).
+- `tools/check_sizes.py --check` holds the lists of files over 1,000 lines
+  below.
+- #462: the `IOBoard.md` citations by name, the comment at the
+  `s_servo_minor` store in `servo_link_came_up()`, `limrun_stage_t` and
+  `prog_stage_t`, and a host suite that holds the telemetry age in
+  `outputs_hw.c` across the 2^32 ms wrap.
+
+Next: row 18, in the PR right after the next release.
 
 ## Rules for every PR of the plan
 
@@ -94,7 +204,7 @@ Next: wave 2 (PRs 4 to 8, 13 to 15, 17, 29), which may run in parallel.
 5. Test rig headers hold only `static inline` helpers. A file-scope variable
    that no header function uses fails `-Werror=unused-variable` in a suite
    that does not touch it; it gets `__attribute__((unused))` or stays in the
-   suite.
+   suite. A variable every includer uses needs neither (`kst_prog_fix.h`).
 6. No new upward include. Protocol cores stay portable.
 7. One author and one adversarial reviewer per PR, and green CI on a head
    that contains current main. Merges go one at a
@@ -104,7 +214,7 @@ Next: wave 2 (PRs 4 to 8, 13 to 15, 17, 29), which may run in parallel.
 
 | PR | Change | Size |
 | --- | --- | --- |
-| 0a | Hardware-doc line citations become function or symbol names: 6 panel `main.c`, 32 coprocessor `main.c`, 32 `link_pages.h`, 12 `out_bind.c`, 7 `settings.c`, `ui_text.def`/`programmer_screen.c` in `hardware/docs/IOBoard.md`, `hardware/STATUS.md`, `docs/Control.md`. Several already point at wrong lines. `Research.md` stays untouched (F21) | about 100 lines of docs |
+| 0a | Hardware-doc line citations become function or symbol names: 6 panel `main.c`, 32 coprocessor `main.c`, 32 `link_pages.h`, 12 `out_bind.c`, 7 `settings.c`, `ui_text.def`/`programmer_screen.c` in `hardware/docs/IOBoard.md`, `hardware/STATUS.md`, `hardware/docs/Control.md`. Several already point at wrong lines. `Research.md` stays untouched (F21) | about 100 lines of docs |
 | 0b | `stack_check.py`: the shared ELF part (`Elf`, `Graph`, `call_args`, `die`, `doc_rows`, `sext`, `ROOT`) into `stack_elf.py`; the coprocessor half (573 lines) into `stack_iomcu.py`; `stack_check.py` stays the entry point (old PR 27, F4). Also `PORT_CALLS` follows `cu_port_exchange` (a gap found on the way); this may change a measured depth, so it goes first and alone if it does | 573 moved / about 40 |
 
 ## Wave 1: logic out of firmware main.c, under host test
@@ -134,10 +244,10 @@ Next: wave 2 (PRs 4 to 8, 13 to 15, 17, 29), which may run in parallel.
 
 | PR | Change | Moved / real |
 | --- | --- | --- |
-| 9 | `test_servo.c` (220 cases): `servo_rig.h` (about 200 lines, also taken by `test_servo_arm.c`) + `servo_bench_rig.h` (about 430) (F8); `test_servo_settings.c` 48 cases; `test_servo_test_panel.c` 21; `test_servo_limit_panel.c` 7; 144 stay (about 5,660 lines) | about 3,780 / 100 |
+| 9 | `test_servo.c` (220 cases): `servo_rig.h` (about 200 lines; `test_servo_arm.c` keeps its own fixture, since taking the header rewrites it) + `servo_bench_rig.h` (about 430) (F8); `test_servo_settings.c` 48 cases; `test_servo_test_panel.c` 21; `test_servo_limit_panel.c` 7; 144 stay (about 5,660 lines) | about 3,780 / 100 |
 | 10 | `test_programmer.c` (71): `programmer_rig.h` (about 85) + `test_esc_stick_panel.c` 58 cases; 13 stay | 3,650 / 70 |
 | 11 | `test_kst_panel.c` (125): rig header (about 300) + files 17, no card 14, the servo limit run 12 cases in three suites; 82 stay (3,814 lines) | about 2,630 / 40 |
-| 12 | `test_kst_prog.c` (153): `kst_prog_fix.h` (563) + `test_kst_prog_card.c` 46 cases; 107 stay (4,557 lines) | 2,680 / 80 |
+| 12 | `test_kst_prog.c` (153): `kst_prog_fix.h` (512 on main) + `test_kst_prog_card.c` with the cases whose subject is a card operation: a call of `kst_prog_save()`, `kst_prog_files()` or `kst_prog_load()` as the thing under test, or an assert on the file saved before the first write. A case that only uses a card as fixture stays. On main 31 cases move, measured with `gcov` on `kst_prog_card.c`, and 122 stay (5,401 lines); the estimate was 46 and 107 (4,557 lines) | 2,680 / 80 |
 | 16 | `test_servo_test.c` into 4 suites over `servo_test_rig.h` (13 + 19 + 4 + 23 cases); `test_servo_test_win.c` into 3 over its own rig (15 + 6 + 9) | about 4,100 / 40 |
 | 30 | `test_settings.c` (100) into 5 suites over `settings_rig.h` (364 lines): 20 + 23 + 20 + 16 + 21 cases (F16) | about 3,700 / 40 |
 
@@ -157,18 +267,20 @@ measured.
 
 | PR | Change | Moved / real |
 | --- | --- | --- |
-| 22 | Panel servo link client into `shared/bench/servo_link.c` behind `link_port_t`: servo section less the pin-display statics, `servo_let_go`, `servo_service` (up to 916 lines); `s_servo_hz_sent` gets a getter; `test_servo_link.c` with cases for the sweep version gate, the refusal while a release is owed and the rate retry | about 916 / real not measured |
+| 22 | Panel servo link client into `shared/outputs/servo_link.c`, beside `bind_link.c`, behind `link_port_t` and a `servo_link_ctx_t`: the link host, the port, the PROG page and 6 callbacks into the panel (armed, stopped, alert, disarm, stop count, arm surfaces). Each callback and the port's clock is called from one `noinline` helper (`sl_*`), which `stack_check.py` follows through `SERVO_CALLS`. `servo_cmd_t` and the `servo_rate_*` declarations move from `servo_screen.h`/`.c` into `shared/outputs/include/servo_cmd.h` and `servo_cmd.c`. The cut takes the servo section less the pin-display statics, `servo_let_go`, `servo_service`, `apply_servo_cmd` and the servo parts of `link_came_up`, `prog_link_service`, the link-loss edge and `read_outputs_binding` (owner, 2026-10-17). Not `shared/bench`: the client needs `servo_cmd.h` and the outputs types, and `shared/outputs` and `shared/ui` depend on `shared/bench`, so a file there closes an include cycle (rule 6). `s_servo_hz_sent` gets the getter `servo_link_hz_sent()`; `test_servo_link.c` has cases for the sweep version gate, the refusal while a release is owed and the rate retry. On main: `servo_link.c` 1,393, `servo_cmd.c` 53, `servo_link.h` 211, `servo_cmd.h` 181, `test_servo_link.c` 1,003 lines | about 1,100 / real not measured |
 | 23 | Coprocessor `main.c` into 7 files + `iomcu.h`: pages + PROG 436, KST 165, core 1 288, tap 302, BIND 287, heartbeat + CAN 246; `main.c` keeps 843; 27 statics become `extern` | 1,723 / about 150 |
 | 24 | Panel `main.c`: `panel.h` + `panel_card.c` (930) + `panel_log.c` (710); `ram_budget.py` reads `panel.h` for the queue macros (F3, about 10 lines and one test case) | 1,640 / about 150 |
 | 25 | Panel: `panel_link.c` (726) + `panel_poll.c` (807) + `panel_services.c` (604) | 2,137 / about 120 |
 | 26 | Panel: `panel_supply.c` (723) + `panel_arm.c` (814) + `panel_render.c` (481) + `panel_art.c` (277 + 65 drawing statics) | 2,360 / about 150 |
 | 27 | Panel: `panel_update.c` (876; coprocessor update, Wi-Fi, GitHub update, `cu_render_service`) (F2) | 876 / about 60 |
 
-After PRs 22 to 27, panel `main.c` keeps about 2,214 lines: plumbing 965 and
-`app_main` 740 are one web of queues and atomics. 177 statics become `extern`
-in `panel.h` (F25); 29 move to their one user. Each PR also adds its files to
-the `ci.yml` cppcheck pass for `main.c` (lines 304-331) and builds the
-injector image.
+After PRs 22 to 27, panel `main.c` keeps about 2,214 lines (2,422 on
+main): plumbing 965 and `app_main` 740 are one web of queues and atomics.
+On main `panel.h` declares 143 `extern` statics (F25; estimated at 177):
+row 22 takes the 16 servo variables into `servo_link.c`, and row 24 moves
+37 to their one user. The `ci.yml` cppcheck pass takes
+`git ls-files 'firmware/**/*.c'`, so a new file needs no line there. Each
+PR builds the injector image.
 
 ## Timed with a release
 
@@ -186,11 +298,14 @@ injector image.
 
 ## Left whole, with the reason
 
-- **Screens:** `kst_panel.c` 3,134 (no section over 913 lines, F9),
-  `supply_screen.c` 2,014, `log_viewer_screen.c` 1,952, `motor_screen.c`
-  1,503, `picker_screen.c` 1,290, `settings_screen.c` 1,115: one screen each;
+Figures on main 14337c92.
+
+- **Screens:** `kst_panel.c` 3,588 (largest section 963 lines, F9),
+  `log_viewer_screen.c` 2,245, `supply_screen.c` 2,079, `motor_screen.c`
+  1,504, `picker_screen.c` 1,303, `settings_screen.c` 1,117,
+  `wifi_screen.c` 1,002 (988 at the base; #422's text): one screen each;
   a cut is a design change.
-- **Tables:** `ui_text.def` 1,505, `ui_text_de.c` 2,103 (a split needs
+- **Tables:** `ui_text.def` 1,508, `ui_text_de.c` 2,107 (a split needs
   `check_docs.py` and `check_formats.py` to follow includes, and it collides
   with #400; F10); `link_pages.h` 1,960 and `test_link_pages.c` 1,674 (one
   register map).
@@ -199,28 +314,66 @@ injector image.
   1,072 (owner answer), `settings.c` 1,021 (21 over; 3 `check_docs.py` paths,
   and a move edits `Research.md`; F19), `wifi_access.c` 1,712 (one state
   struct used 275 times; macros read by path).
-- **Tools:** `check_docs.py` 1,473, `sense_trace.py` 1,456,
+- **Tools:** `check_docs.py` 1,475, `sense_trace.py` 1,456,
   `test_sense_trace_tool.py` 2,552, `help_site.py` 1,193,
-  `test_check_protocols.py` 1,999, `render_screen.c` 3,021 (F11).
+  `test_check_protocols.py` 1,999, `render_screen.c` 3,126 (F11).
 - **Configurator:** `catalogue.ts` 2,432 (largest table 696 lines),
   `check.ts` 1,120.
-- **Docs:** `Screens.md`/`-de` 2,975/3,237 (F20), `ServoProgrammer.md`/`-de`,
-  `Servo.md`/`-de` 1,181/1,195, `FirstRun-de.md` 1,044, `Research.md` 1,028.
+- **Docs:** `Screens.md`/`-de` 3,062/3,337 (F20), `ServoProgrammer.md`/`-de`
+  1,192/1,320, `Servo.md`/`-de` 1,182/1,195, `FirstRun-de.md` 1,042,
+  `Research.md` 1,028 (F21), `Link.md`/`-de` 1,397/1,516 (F23: the firmware
+  update sections stay on the page).
 - **Tests with no cut that lands both halves under 1,000** (F14):
   `test_kst_port` 4,182, `test_kst_session` 2,985, `test_kst_link` 2,652,
-  `test_pdmini` 3,008, `test_link_update` 2,319, `test_nav` 2,997,
-  `test_sense_sched` 1,990, `test_arming` 1,727, `test_safety_gate` 1,667,
-  `test_esc_profiles` 1,564, `test_logwriter` 1,400, `test_gfx` 1,029, and
-  the KST, tone, outputs, sense-page, bind-link, outbind-rest, screen and
-  widget suites listed in the group reports.
+  `test_pdmini` 3,008, `test_link_update` 2,319, `test_nav` 3,139,
+  `test_sense_sched` 1,990, `test_arming` 2,005, `test_safety_gate` 1,700,
+  `test_esc_profiles` 1,564, `test_logwriter` 1,411, `test_gfx` 1,029,
+  `test_bench` 1,030 (row 3's cases), and the suites of the group reports:
+  `test_logview` 3,510, `test_supply_screen` 2,304, `test_tone` 2,214,
+  `test_bind_link` 2,137, `test_outputs` 2,090, `test_motor` 2,018,
+  `test_kst_file` 2,017, `test_tone_link` 1,999, `test_picker_screen`
+  1,893, `test_outputs_screen` 1,854, `test_sense_page` 1,777,
+  `test_kst_plan` 1,760, `test_kst_reg` 1,394, `test_servo_arm` 1,173,
+  `test_widgets` 1,164, `test_servo_page` 1,158, `test_kst_pio` 1,096,
+  `test_prog_port` 1,079, `test_wa_session` 1,028, `test_wa_fetch` 1,014.
 
 ## What stays over 1,000 lines after the plan
 
-Panel `main.c` about 2,214; `servo_screen.c` 4,291 (the sweep core reads 98
-fields of the state); `esc_stick_panel.c` 3,364 (new; its 16 drawers, about
-1,470 lines, can go to `esc_stick_draw.c` later); `kst_prog.c` 2,414;
-`programmer_screen.c` 1,125; `servo_limrun.c` 1,065; and the files left
-whole above.
+`wc -l` over the tracked files on main 14337c92, outside
+`hardware/research/`, JSON files and test fixtures, gives 91 files over
+1,000 lines.
+
+Generated files do not count: `shared/esc/esc_profiles_gen.c` 4,948
+(`gen_esc_profiles.py --check`), `shared/gfx/gfx_font16x28.c` 2,987 and
+`shared/gfx/gfx_font8x16.c` 1,763 (`gen_font.py --check`). CI holds each to
+its generator, so a split by hand is overwritten by the next run.
+
+Of the other 88, 67 are the files left whole above. The other 21 are the
+parts the rows leave:
+
+- **Sources a row splits:** panel `main.c` 2,422 (plumbing and `app_main`
+  are one web; row 24's boot code stays); `servo_screen.c` 3,613 (the sweep
+  core reads 98 fields of the state); `esc_stick_panel.c` 3,451 (its 16
+  drawers, about 1,470 lines, stay, F24); `kst_prog.c` 2,407 (what row 7
+  leaves); `servo_limrun.c` 1,044 (what F18 leaves).
+- **Sources a row creates:** `servo_link.c` 1,393 (row 22; one state
+  machine with the release a HOLD owes, no second cut: owner, 2026-10-17);
+  `servo_settings_panel.c` 1,341 (row 20; one overlay with its drawers).
+- **Test suites, one per module (F14):** `test_servo.c` 5,681 (144 cases
+  after row 9), `test_kst_prog.c` 5,401 (122 cases after row 12),
+  `test_kst_panel.c` 3,793 (89 cases after row 11), `test_esc_stick_panel.c`
+  3,707 (row 10's 60 cases), `test_servo_settings.c` 1,635 and
+  `test_servo_test_panel.c` 1,110 (row 9, one panel each),
+  `test_kst_prog_card.c` 1,355 (row 12's 31 card cases),
+  `test_servo_test_win.c` 1,073 (row 16's 15 window cases on one rig),
+  `test_servo_link.c` 1,003 (row 22's module).
+- **Docs and the configurator:** `CHANGELOG.md` 3,467 (the archive trigger
+  is 5,000 lines, F22), `CHANGELOG-0.9.md` 1,482 (row 32's archive; it does
+  not grow), `catalogue.test.ts` 1,210 (what row 33 leaves).
+- **Row 18, after the next release:** `out_bind.c` 1,123 and
+  `test_outbind.c` 2,154.
+
+`programmer_screen.c` ends at 992 lines (row 19) and is under 1,000.
 
 ## Size of the job
 
@@ -229,7 +382,7 @@ whole above.
 | PRs | 35 (wave 0: 2, wave 1: 3, wave 2: 10, wave 3: 6, wave 4: 4, wave 5: 6, release-timed: 1, wave 6: 3) |
 | Code moved | about 57,000 lines |
 | Real change | about 3,000 lines (estimate), of which about 900 are new tests |
-| New test binaries | about 32 (123 to about 155) |
+| New test binaries | about 32 (123 to about 155); 155 on main |
 | Authors | 4 in parallel; 1 reviewer per PR; at most 6 at a time |
 | Merges | one at a time; each PR merges current main and regenerates the coverage tables first |
 
@@ -237,6 +390,11 @@ Order: wave 0, then waves 1 and 2 in parallel. Wave 3 PR 12 after PR 7.
 Wave 4: PR 19 after PR 10; PR 20 after PR 9; PRs 21 and 31 after PR 20.
 Wave 5: PR 22 after PR 2; PR 23 after PRs 1 and 3; PRs 24 to 27 after PR 22,
 in that order. PR 18 right after the next release. Wave 6 at any time.
+On main wave 5 merged as 24, 25, 22, 26, 27. Row 22 waited for the owner's
+choice of its home (the include cycle in the row), and the owner let rows
+24 to 27 start before it, one at a time (2026-10-17). Row 25 declares the
+servo section's statics in `panel.h`; row 22 then re-applies its edits in
+`panel_link.c`, `panel_poll.c` and `panel_services.c`.
 
 Each split PR adds one line to lists #400 also edits (`test/host/CMakeLists.txt`,
 `coverage.py`, `render_ui.py`, STATUS.md). #400 rebases when it resumes.
@@ -271,4 +429,4 @@ A yes takes every recommendation below. Name a fork to choose otherwise.
 | F22 | CHANGELOG archive | Now (PR 32), 146 lines before the 5,000-line trigger |
 | F23 | Optional doc pages (Link.md firmware update, Servo.md automatic test, `link_pages.h` update page) | Not now |
 | F24 | `esc_stick_panel.c` 3,364: second cut of the drawers | Not now |
-| F25 | Panel `main.c` statics: `extern` in `panel.h` or a state struct | `extern` (177 one-line edits); a struct is a rewrite |
+| F25 | Panel `main.c` statics: `extern` in `panel.h` or a state struct | `extern` (estimated at 177 one-line edits, 143 on main); a struct is a rewrite |
