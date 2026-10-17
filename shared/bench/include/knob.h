@@ -29,7 +29,12 @@
  *   the poll reads 0x03, 0x04 and 0x03 again and takes the angle only when
  *   both 0x03 bytes agree: a high byte that changed between them can belong
  *   to another sample than the low byte, off by up to 64 counts.  A poll
- *   whose two 0x03 bytes differ moves nothing and keeps the reference.
+ *   whose two 0x03 bytes differ moves nothing and keeps the reference.  A
+ *   high byte that changes and changes back between the two 0x03 reads is
+ *   accepted, so a still knob whose noise sits on a 64-count boundary can
+ *   still give one step of up to 64 counts at a slider end stop (0.52 % of
+ *   the span at 270 deg): the check narrows that case, it does not remove
+ *   it.  How often it happens is not measured.
  * - The I2C registers carry no field-strength or status bit.  The
  *   magnet-too-strong, too-weak, push and loss-of-track bits Mg[3:0] are in
  *   the SSI (synchronous serial interface) frame only (section 7.8).  An

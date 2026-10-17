@@ -455,7 +455,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
   benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede
-  Transaktion eines Polls: ein Probe, solange er keine Referenz hat, dann drei
+  Transaktion eines Polls: eine Adressprobe, solange er keine Referenz hat, dann drei
   Lesezugriffe. Eine fehlgeschlagene Transaktion kostet dazu die Erholung des
   Treibers, einen Reset des Controllers und ein Freiräumen des Busses, das bis
   zu 50 ms länger wartet, solange SDA low gehalten wird. Ein Sensor, der SDA

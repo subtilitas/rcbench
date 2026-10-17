@@ -1993,7 +1993,10 @@ across a third of its travel from -travel to +travel.
   timeout; a NACK or a timeout on any counts as no answer. While the knob
   has no reference, a probe of 0x06 (the address byte alone) comes first,
   and the reads follow only when it is acknowledged. A poll whose two 0x03
-  bytes differ moves nothing and keeps the reference. The sensor reports no
+  bytes differ moves nothing and keeps the reference. A high byte that
+  changes and changes back between the two 0x03 reads is accepted, so one
+  step of up to 64 counts (0.52 % of the span at 270 deg) at a slider end
+  stop remains possible; how often is not measured. The sensor reports no
   magnet status over I2C, so an answer is a reading. A step of more than
   90 deg between two readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it

@@ -162,6 +162,11 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
 - Die I2C-Register tragen keinen Feldstatus: Die Bits für zu schwaches und
   zu starkes Feld stehen nur im SSI-Rahmen. Ein Sensor ohne Magnet darüber
   antwortet trotzdem mit einem Winkel, und das Panel nimmt ihn als Messwert.
+- Jede Abfrage liest 0x03, 0x04 und noch einmal 0x03 und verwirft eine
+  Abfrage, deren zwei 0x03-Bytes sich unterscheiden. Ein High-Byte, das sich
+  dazwischen ändert und wieder zurückändert, wird angenommen; ein Schritt von
+  bis zu 64 Zählern (0,52 % des Wegs bei 270 deg) an einem Reglerende bleibt
+  also möglich; wie oft, ist nicht gemessen.
 - Drehrichtung: Beim MT6701CT-STD mit DIR (Register 0x29 Bit 1, im EEPROM)
   auf seinem Standard 0 steigt der Winkel gegen den Uhrzeigersinn, von der
   Chipoberseite gesehen. Das Panel zählt umgekehrt, also erhöht mit dem

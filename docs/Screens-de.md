@@ -2188,10 +2188,13 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 - Der Sensor wird alle 10 ms gelesen, und alle 100 ms, solange er nicht
   antwortet. Eine Abfrage sind drei Lesezugriffe, 0x03, 0x04 und noch einmal
   0x03, jeder mit 5 ms Bus-Timeout; ein NACK oder ein Timeout bei einem davon
-  gilt als keine Antwort. Solange der Knopf keine Referenz hat, geht ein Probe
-  von 0x06 voraus (nur das Adressbyte), und die Lesezugriffe folgen nur, wenn
-  er bestätigt wird. Eine Abfrage, deren zwei 0x03-Bytes sich unterscheiden,
-  bewegt nichts und behält die Referenz. Der Sensor meldet über I2C keinen
+  gilt als keine Antwort. Solange der Knopf keine Referenz hat, geht eine
+  Adressprobe an 0x06 voraus (nur das Adressbyte), und die Lesezugriffe folgen
+  nur, wenn sie bestätigt wird. Eine Abfrage, deren zwei 0x03-Bytes sich
+  unterscheiden, bewegt nichts und behält die Referenz. Ein High-Byte, das sich
+  zwischen den zwei 0x03-Lesezugriffen ändert und wieder zurückändert, wird
+  angenommen; ein Schritt von bis zu 64 Zählern (0,52 % des Wegs bei 270 deg)
+  an einem Reglerende bleibt also möglich; wie oft, ist nicht gemessen. Der Sensor meldet über I2C keinen
   Magnetstatus, also ist eine Antwort ein Messwert. Ein Sprung von mehr als 90 deg zwischen zwei Messungen
   gilt als Störung und wird verworfen.
 - Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
@@ -2222,8 +2225,8 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   0x20 bis 0x27, 0x30 bis 0x3F und 0x5D, oder auf eine, die die
   I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F. Bei 0x20 bis
   0x27 und 0x30 bis 0x3F erreicht ein Zugriff den Expander CH422G als Befehl.
-  Ohne Sensor sendet `Drehknopf` EIN alle 100 ms einen unbestätigten Probe an
-  0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
+  Ohne Sensor sendet `Drehknopf` EIN alle 100 ms eine unbestätigte
+  Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.

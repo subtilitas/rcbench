@@ -156,6 +156,10 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
 - The I2C registers carry no field status: the magnet-too-weak and
   too-strong bits are in the SSI frame only. A sensor with no magnet over it
   still answers with an angle, and the panel takes it as a reading.
+- Each poll reads 0x03, 0x04 and 0x03 again and drops a poll whose two 0x03
+  bytes differ. A high byte that changes and changes back between them is
+  accepted, so one step of up to 64 counts (0.52 % of the span at 270 deg)
+  at a slider end stop remains possible; how often is not measured.
 - Direction: on the MT6701CT-STD with DIR (register 0x29 bit 1, in EEPROM)
   at its default 0, the angle rises counter-clockwise seen from the chip's
   top. The panel counts the other way, so with the magnet above the chip's
