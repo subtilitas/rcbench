@@ -2602,6 +2602,11 @@ int main(int argc, char **argv)
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
         ui_router_goto(SCREEN_OUTPUTS);
+        if (strcmp(view, "outputs-off") != 0) {
+            /* Every visit opens on the overview, OFF; the views of a
+             * protocol being edited pick it, as the operator does. */
+            outputs_screen_select(b.proto);
+        }
         if (strcmp(view, "outputs-full") == 0) {
             /*
              * PPM with servo pins already bound: the whole board greyed and
@@ -2623,17 +2628,8 @@ int main(int argc, char **argv)
             ui_router_event(&d);
             ui_router_event(&u);
         }
-        if (strcmp(view, "outputs-protocol") == 0
-            || strcmp(view, "outputs-off") == 0) {
+        if (strcmp(view, "outputs-protocol") == 0) {
             /* Tap the dropdown open. */
-            touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
-            touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
-            ui_router_event(&d);
-            ui_router_event(&u);
-        }
-        if (strcmp(view, "outputs-off") == 0) {
-            /* And OFF picked in it, the first row: every bound pin says
-             * which protocol holds it. */
             touch_event_t d = { TOUCH_EVENT_DOWN, { 0, 100, 48 + 70, 40 }, 0u };
             touch_event_t u = { TOUCH_EVENT_UP,   { 0, 100, 48 + 70, 40 }, 0u };
             ui_router_event(&d);
@@ -2733,6 +2729,11 @@ int main(int argc, char **argv)
                                             NULL);
         }
         ui_router_goto(SCREEN_PICKER);
+        /* Every visit opens on OFF; the protocol is picked after, as the
+         * panel's follow of the Outputs screen brings one. */
+        if (strcmp(view, "picker-off") != 0) {
+            picker_screen_follow(b.proto, picker_screen_editable());
+        }
         if (strcmp(view, "picker-prog") == 0) {
             /* GP28 tapped: slice 6 is the port's, so the line under the
              * count says why it is held. */

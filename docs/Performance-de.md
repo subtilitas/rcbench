@@ -234,7 +234,7 @@ Untergrenze:
   den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers,
   denen der Startprüfung nach einem Update und den Callbacks des Links des
   SERVO-Bildschirms in das Panel, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 220
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 221
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

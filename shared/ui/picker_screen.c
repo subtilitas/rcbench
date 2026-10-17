@@ -893,6 +893,11 @@ static void draw_head(gfx_canvas_t *c)
  * pad number printed on the board beside each. */
 static void draw_mine(gfx_canvas_t *c)
 {
+    /* OFF holds no pin, so a table of its pins says nothing, as the count
+     * on the Outputs screen. */
+    if (outbind_protos()[proto_shown()].max_pins == 0u) {
+        return;
+    }
     const int tx = PINS_X;
     int ty = PINS_Y;
 
@@ -1114,7 +1119,11 @@ static void event(const touch_event_t *evt)
             touched();
             return;
         }
-        const int b = s.unread ? -1 : button_under(x, y);
+        /* A binding that is not confirmed takes no press on a key, and
+         * neither does OFF, which binds none, as on the Outputs screen.
+         * OFF's keys are grey, and a grey key draws no pressed face. */
+        const bool off = outbind_protos()[proto_shown()].max_pins == 0u;
+        const int b = (s.unread || off) ? -1 : button_under(x, y);
         if (b >= 0) {
             s.hit_kind = HIT_BUTTON;
             s.hit = b;
@@ -1179,12 +1188,23 @@ static void reset(void)
     touched();
 }
 
+/*
+ * Every visit opens on the overview, as the Outputs screen's does: OFF
+ * selected here for the first frame, and on the Outputs screen through the
+ * select hook, which this screen follows every frame.  Without the hook the
+ * next follow puts the Outputs screen's protocol back; without the line
+ * here the first frame shows the protocol before.
+ */
 static void enter(void)
 {
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.refused = -1;
     s.open = false;
+    outbind_set_proto(&s.bind, 0u);
+    if (s.select != NULL) {
+        s.select(0u);
+    }
     /* Asked on the way in, so a drawing that arrived since the last visit
      * is the one shown, and one for a board that has been swapped is not. */
     if (s.source != NULL) {
@@ -1198,17 +1218,6 @@ static void leave(void)
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.open = false;
-    /*
-     * OFF picked here ends with the visit, as it does on the Outputs
-     * screen.  Kept there, the next frame's follow would select it here
-     * again, and the next visit would open on a board where no key adds a
-     * pin.
-     */
-    outputs_screen_end_off();
-    if (s.bind.proto == 0u) {
-        outbind_set_proto(&s.bind, outbind_wire_proto(&s.bind));
-        touched();
-    }
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)

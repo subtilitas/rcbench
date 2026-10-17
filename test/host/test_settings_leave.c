@@ -5,6 +5,8 @@
  */
 #include "settings_rig.h"
 
+#include "outputs_screen.h"
+
 /* -------------------------------------------- the stored copy and leaving */
 
 /*
@@ -652,6 +654,77 @@ TEST_CASE(a_tool_tile_is_no_way_out)
     }
 }
 
+static int s_out_applied;
+
+static void count_apply(const outbind_t *b)
+{
+    (void)b;
+    ++s_out_applied;
+}
+
+/* The OUTPUTS tile's slot: after the categories. */
+#define OUTPUTS_TILE SET_CAT_SETUP_COUNT
+
+/*
+ * The OUTPUTS tile opens the overview, and nothing about it is a setting:
+ * opening it and a tap on a pin write no binding, and neither they nor a
+ * pin ticked and unticked leave anything unsaved or warn on leaving
+ * SETUP.  A value changed after the visit still holds the home tag.
+ */
+TEST_CASE(the_outputs_overview_leaves_nothing_unsaved)
+{
+    fresh_hub();
+    outputs_screen_set_apply(count_apply);
+    s_out_applied = 0;
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
+    outbind_set_proto(&b, 1u);                       /* SERVO PWM */
+    CHECK(outbind_toggle(&b, outbind_index_of(OUTBIND_BOARD_PICO_HEADER, 2)));
+    outputs_screen_set_binding(&b);
+
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    CHECK(!settings_dirty());
+    /* GP4, column 0 row 4 of the grid: no protocol, no write.  The same
+     * tap with SERVO PWM picked ticks it, so the tap is on the pin. */
+    const int gp4_x = 288 + 60, gp4_y = UI_BAND_H + 16 + 4 * 57 + 26;
+    tap(gp4_x, gp4_y);
+    CHECK_EQ(s_out_applied, 0);
+    CHECK_EQ((int)outbind_chosen_total(outputs_screen_binding()), 1);
+    ui_router_render(&s_c, 0);
+    outputs_screen_select(1u);
+    tap(gp4_x, gp4_y);
+    CHECK_EQ(s_out_applied, 1);
+    tap(gp4_x, gp4_y);
+    CHECK_EQ(s_out_applied, 2);
+    CHECK(!settings_dirty());
+    outputs_screen_select(0u);
+
+    tap(home_x(), home_y());
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK(!settings_screen_warning());
+    tap(home_x(), home_y());
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    CHECK(!settings_screen_warning());
+    CHECK(!settings_dirty());
+    CHECK_EQ(s_out_applied, 2);
+
+    /* The guard still holds a real change made after the visit. */
+    ui_router_goto(SCREEN_SETUP);
+    tap(tile_x(OUTPUTS_TILE), tile_y(OUTPUTS_TILE));
+    CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+    tap(home_x(), home_y());
+    settings_set(SET_PACK_CELLS, 4.0f);
+    tap(home_x(), home_y());
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK(settings_screen_warning());
+    CHECK_EQ(warn_lines(), 1);
+    CHECK_EQ(s_out_applied, 2);
+    outputs_screen_set_apply(NULL);
+}
+
 int main(void)
 {
     RUN(an_edit_back_to_the_stored_value_is_no_change);
@@ -675,5 +748,6 @@ int main(void)
     RUN(discard_is_refused_while_armed);
     RUN(a_route_the_application_takes_is_never_held);
     RUN(a_tool_tile_is_no_way_out);
+    RUN(the_outputs_overview_leaves_nothing_unsaved);
     return test_summary("settings_leave");
 }

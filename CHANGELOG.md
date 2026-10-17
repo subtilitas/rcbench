@@ -126,6 +126,17 @@ history is in git.
   and takes each file's size from the directory entry. The 48 `stat`
   calls a LOG VIEWER listing made are gone; on a card of 999 runs each of
   them read up to 63 directory sectors.
+- OUTPUTS and PICK A PIN open on the overview on every visit: OFF selected,
+  every bound pin named by its protocol in full-brightness text. A tap on a
+  pin changes nothing and writes nothing until a protocol is picked in the
+  list; picking OFF goes back to the overview. The line under the list reads
+  `CHOOSE A PROTOCOL, THEN TAP PINS` (German
+  `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`). OUTPUTS shows no pin count and PICK
+  A PIN no PINS table on OFF. OFF stays selected across leaving the screen
+  and read-backs. A change of board, such as a coprocessor that answers or
+  is swapped during the visit, selects OFF whatever was selected, so a
+  protocol picked before is not carried to it. Opening either screen writes
+  nothing to the coprocessor.
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save
