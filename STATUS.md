@@ -140,8 +140,8 @@ Directories only. `git ls-files <directory>` lists the files of one.
 
 ```
 rcbench/
-  README.md  README-de.md  STATUS.md  CHANGELOG.md  CONTRIBUTING.md
-  SECURITY.md  LICENSE  NOTICE  .gitattributes  .gitignore
+  README.md  README-de.md  STATUS.md  CHANGELOG.md  CHANGELOG-0.9.md
+  CONTRIBUTING.md  SECURITY.md  LICENSE  NOTICE  .gitattributes  .gitignore
   .clang-tidy  .cppcheck-suppress  ruff.toml  codecov.yml
   .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
