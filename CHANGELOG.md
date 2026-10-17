@@ -207,8 +207,8 @@ history is in git.
   function on it twice, whatever the functions' addresses. The check kept
   a depth cut short where a chain met a function already on it, and gave
   that depth to every later caller, so a chain through a cycle read up to
-  416 bytes low: `main_task` 5,008 bytes for 5,424, `control_task` 4,016
-  for 4,432, `log_task` 2,992 for 3,408. The check splits the call graph
+  416 bytes low: `main_task` 5,024 bytes for 5,440, `control_task` 4,032
+  for 4,448, `fetch_task` 2,400 for 2,816, `log_task` 2,992 for 3,408. The check splits the call graph
   into its strongly connected components, keeps the depth of each function
   entered from outside its component, and tries every way through a
   component. The `runlog` task's stack is 4,608 bytes, 256 more: its

@@ -204,9 +204,9 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 024 | 2 144 |
-| `control` | `control_task` | 6 144 | 4 032 | 1 088 |
-| `runlog` | `log_task` | 4 352 | 2 992 | 336 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 440 | 1 728 |
+| `control` | `control_task` | 6 144 | 4 448 | 672 |
+| `runlog` | `log_task` | 4 608 | 3 408 | 176 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 360 | 688 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 808 | 1 264 |
 | `wifi_ctl` | `worker`, startet und stoppt den Funk und den Server der Seite (`components/wifi_access`) | 5 120 | 3 360 | 736 |
@@ -365,13 +365,13 @@ Kartenübertragung, solange das WLAN läuft.
 | --- | --- | ---: |
 | `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 127 064 |
 | `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 298 920 |
-| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 104 776 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 194 144 |
+| `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 105 032 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 193 888 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 90 984 |
+| `left` | übriger Heap mit dem größten Modus | 90 728 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm
