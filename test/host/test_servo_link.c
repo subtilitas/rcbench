@@ -40,6 +40,7 @@ static struct {
     uint32_t exchange_ms;   /* the clock an exchange takes                 */
     bool     quiet;         /* nothing answers                             */
     bool     quiet_rate;    /* nothing answers a FRAME_HZ write            */
+    bool     quiet_channels;/* nothing answers a CHANNELS write            */
     bool     nack_rate;     /* a FRAME_HZ write of a rate is refused       */
     bool     nack_resume;   /* a SWEEP write of LINK_SV_RESUME is refused  */
     /* Called after the frame numbered @p n (from 1) is logged. */
@@ -77,7 +78,8 @@ static bool port_exchange(void *ctx, link_host_t *h, const link_msg_t *req,
     if (bus.after != NULL) {
         bus.after(bus.n);
     }
-    if (bus.quiet || (bus.quiet_rate && is_rate(req))) {
+    if (bus.quiet || (bus.quiet_rate && is_rate(req))
+        || (bus.quiet_channels && req->page == LINK_PAGE_CHANNELS)) {
         link_host_abandon(h);
         return false;
     }
@@ -417,6 +419,32 @@ TEST_CASE(a_sweep_waits_while_a_release_is_owed_and_cannot_be_paid)
     CHECK_EQ(servo_link_sweep_start().from, SERVO_SWEEP_FROM_REST);
 }
 
+TEST_CASE(a_sweep_waits_for_an_unpaid_release_over_a_known_binding)
+{
+    up(6u, 0x01u);
+    servo_link_apply(pos(1800u), true, 0u);
+    servo_link_let_go();
+    clear_log();
+    bus.quiet_channels = true;   /* the centre write goes unanswered */
+    servo_link_apply(sweep(1u, false), true, 0u);
+    CHECK(servo_link_release_owed());
+    CHECK(!servo_link_take_sweep_start());
+    CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_SWEEP_MOVES), 0u);
+    CHECK_EQ(frames_to(LINK_PAGE_SERVO, LINK_SV_SWEEP), 0u);
+
+    /* The far end answers again: the refresh pays the release first. */
+    bus.quiet_channels = false;
+    clear_log();
+    s_now += 100u;
+    servo_link_service(true);
+    CHECK(!servo_link_release_owed());
+    const frame_t *centre = last_to(LINK_PAGE_CHANNELS);
+    CHECK(centre != NULL);
+    if (centre != NULL) {
+        CHECK_EQ(centre->regs[0], LINK_CH_SPAN / 2u);
+    }
+}
+
 TEST_CASE(an_arm_onto_an_unknown_binding_leaves_the_release_owed)
 {
     reset_at(1000u);
@@ -616,6 +644,9 @@ TEST_CASE(a_held_position_is_said_again_at_100_ms_and_not_before)
         servo_link_apply(pos(1500u), true, 0u);
         CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 1u);
         const uint32_t at = s_now;
+        s_now = at + 50u;    /* across the wrap: next has wrapped, now not */
+        servo_link_service(true);
+        CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 1u);
         s_now = at + 99u;
         servo_link_service(true);
         CHECK_EQ(frames_to(LINK_PAGE_CHANNELS, 0u), 1u);
@@ -861,6 +892,7 @@ int main(void)
     RUN(a_resume_from_4_6_is_one_register_and_carries_the_phase_on);
     RUN(a_refused_resume_starts_the_curve_over_and_says_so);
     RUN(a_sweep_waits_while_a_release_is_owed_and_cannot_be_paid);
+    RUN(a_sweep_waits_for_an_unpaid_release_over_a_known_binding);
     RUN(an_arm_onto_an_unknown_binding_leaves_the_release_owed);
     RUN(a_release_over_no_surface_is_paid_at_once);
     RUN(a_link_up_puts_each_slot_back_at_its_own_rate);
