@@ -1625,6 +1625,18 @@ static void check_top(int run)
     CHECK_EQ(top_row_run(), run);
 }
 
+/* Nothing selected: OPEN opens nothing, and DELETE asks nothing, so the
+ * confirm under it removes nothing. */
+static void check_nothing_selected(void)
+{
+    const int removes = g_remove_calls;
+    tap(OPEN_X, FOOT_CY);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_BROWSE);
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, removes);
+}
+
 static void runs_card(int runs)
 {
     fresh();
@@ -1701,7 +1713,11 @@ TEST_CASE(ninety_six_and_ninety_seven_runs_page_at_48)
     next_page();
     check_tab(97, 97, 97);
     check_newest(1);
+    /* 48 ahead of the last page is a whole page: PREV shows page 2, not
+     * the first. */
     prev_page();
+    check_tab(49, 96, 97);
+    check_newest(49);
     prev_page();
     check_tab(1, 48, 97);
     check_newest(97);
@@ -1717,12 +1733,22 @@ TEST_CASE(a_full_card_is_reached_to_its_oldest_run_a_walk_a_page)
         const int calls = g_list_calls;
         next_page();
         CHECK_EQ(g_list_calls, calls + 1);
+        const int a = p * LOG_VIEWER_MAX_FILES + 1;
+        const int b = (a + LOG_VIEWER_MAX_FILES - 1 < LOG_RUN_LAST)
+                      ? a + LOG_VIEWER_MAX_FILES - 1 : LOG_RUN_LAST;
+        check_tab(a, b, LOG_RUN_LAST);
     }
     const int first = (pages - 1) * LOG_VIEWER_MAX_FILES + 1;
     check_tab(first, LOG_RUN_LAST, LOG_RUN_LAST);
     check_newest(LOG_RUN_LAST - first + 1);
-    for (int p = 1; p < pages; ++p) {
+    /* Back one page at a time, each page where NEXT found it. */
+    for (int p = pages - 2; p >= 0; --p) {
+        const int calls = g_list_calls;
         prev_page();
+        CHECK_EQ(g_list_calls, calls + 1);
+        const int a = p * LOG_VIEWER_MAX_FILES + 1;
+        check_tab(a, a + LOG_VIEWER_MAX_FILES - 1, LOG_RUN_LAST);
+        check_newest(LOG_RUN_LAST - a + 1);
     }
     check_tab(1, 48, LOG_RUN_LAST);
     check_newest(LOG_RUN_LAST);
@@ -1757,9 +1783,10 @@ TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
     tap(DELETE_X, FOOT_CY);
     tap(DQ_DELETE_X, DQ_CY);
     CHECK(g_run_gone[1]);
-    /* 48 left, one page: FILES, and the newest run selected. */
+    /* 48 left, one page: FILES, nothing selected, the newest run on top. */
     check_tab(0, 0, 0);
-    check_newest(49);
+    check_nothing_selected();
+    CHECK_EQ(top_row_run(), 49);
 
     /* Two on the last page: one deleted, the page stays. */
     runs_card(98);
@@ -1770,7 +1797,44 @@ TEST_CASE(deleting_the_last_pages_only_file_shows_the_page_before)
     tap(DQ_DELETE_X, DQ_CY);
     CHECK(g_run_gone[2]);
     check_tab(97, 97, 97);
-    check_newest(1);
+    check_nothing_selected();
+    CHECK_EQ(top_row_run(), 1);
+}
+
+TEST_CASE(after_delete_nothing_is_selected_and_the_scroll_stays)
+{
+    /*
+     * Page 2 of 150 runs, scrolled to its bottom: rows 60 to 55 show.  The
+     * page's newest run, BENCH102, is off screen above them.  DELETE of
+     * BENCH055 leaves nothing selected, so DELETE and OPEN act on nothing
+     * and the next deletion needs a row chosen in sight.
+     */
+    runs_card(150);
+    next_page();
+    tap(BAR_X, BAR_TOP + BAR_H - 2);
+    tap(400, BR_ROW_Y(BR_ROWS_SEEN - 1));
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "BENCH055.CSV");
+    check_nothing_selected();
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK(!g_run_gone[102]);
+    /* The page is read again from BENCH102: 102 to 56, then 54.  The
+     * scroll is the one before, 42, so the top row is the 43rd: 60. */
+    check_tab(49, 96, 149);
+    CHECK_EQ(top_row_run(), 60);
+
+    /* The first page: the same, the scroll at its top. */
+    runs_card(60);
+    tap(400, BR_ROW_Y(2));
+    tap(DELETE_X, FOOT_CY);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK(g_run_gone[58]);
+    check_nothing_selected();
+    CHECK_EQ(g_remove_calls, 1);
+    check_tab(1, 48, 59);
+    CHECK_EQ(top_row_run(), 60);
 }
 
 TEST_CASE(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card)
@@ -3209,6 +3273,7 @@ int main(void)
     RUN(a_full_card_is_reached_to_its_oldest_run_a_walk_a_page);
     RUN(files_the_bench_did_not_write_follow_the_runs_and_are_counted);
     RUN(deleting_the_last_pages_only_file_shows_the_page_before);
+    RUN(after_delete_nothing_is_selected_and_the_scroll_stays);
     RUN(rescan_on_page_three_reads_that_page_and_follows_a_shrunk_card);
     RUN(prev_reads_the_first_page_from_the_top_whatever_changed_ahead);
     RUN(a_card_swapped_mid_page_opens_on_its_first_page);

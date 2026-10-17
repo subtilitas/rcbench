@@ -478,8 +478,9 @@ static void read_page(log_page_dir_t dir, const char *key)
     s.listed = 1;
     /*
      * The run just recorded is the one an operator re-reads the card for, so
-     * the list opens on it: the highest run number on the page, scrolled into
-     * view.  A page with no numbered run keeps no selection.
+     * the list opens on it: the highest run number on the page.  Runs rank
+     * ahead of everything the panel lists, so it is the top row and the
+     * scroll stays at 0.  A page with no numbered run keeps no selection.
      */
     int best = -1;
     for (int i = 0; i < s.n_files; ++i) {
@@ -491,9 +492,6 @@ static void read_page(log_page_dir_t dir, const char *key)
         }
     }
     s.sel = best;
-    if (best >= BR_ROWS) {
-        s.scroll = best - BR_ROWS + 1;
-    }
     log_viewer_invalidate();
 }
 
@@ -1595,10 +1593,13 @@ static void delete_doomed(void)
     }
     /* Re-read rather than drop the row here: the card says what is on it.
      * The page stays, or is the last one when the file was the last page's
-     * only entry.  The selection goes with the file, so a second DELETE needs
-     * a second choice; the scroll stays near the gap. */
+     * only entry.  The selection goes with the file: the re-read's own
+     * choice, the newest run, is the top row and can be scrolled out of
+     * sight, so nothing is selected and a second DELETE needs a second
+     * choice.  The scroll stays near the gap. */
     const int scroll = s.scroll;
     rescan();
+    s.sel = -1;
     s.scroll = scroll;
     clamp_scroll(&s.scroll, s.n_files, BR_ROWS);
     set_message(TR(LOG_DELETED), name);

@@ -119,6 +119,9 @@ history is in git.
   200`) on a card of more than one page.
 - The LOG VIEWER draws the rows of a page newest run first, the order the
   pages run in, where it drew them by name.
+- After DELETE the LOG VIEWER keeps the scroll and selects nothing, so
+  DELETE and OPEN are grey until a row is chosen; it selected the page's
+  newest run, which can be out of sight.
 - The panel's directory walk reads a directory through FatFs `f_readdir`
   and takes each file's size from the directory entry. The 48 `stat`
   calls a LOG VIEWER listing made are gone; on a card of 999 runs each of
