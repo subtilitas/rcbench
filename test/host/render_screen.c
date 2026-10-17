@@ -1341,7 +1341,7 @@ static void stick_step(stick_rig_t *r)
 
 /*
  * Type @p text on the ESC STICK search keyboard, docked where
- * programmer_screen.c docks it (SP_DOCK_X 352, below the crumb row): the
+ * esc_stick_panel.c docks it (SP_DOCK_X 352, below the crumb row): the
  * key rects come from a keyboard opened for a search over the same area.
  */
 static void stick_type(const char *text)
@@ -1381,7 +1381,7 @@ static void stick_supply_off(void)
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * programmer_screen.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
+ * esc_stick_panel.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
  * v at 723 and 761 on the crumb row. */
 static void stick_tap_row(int at)
 {
@@ -1969,8 +1969,9 @@ int main(int argc, char **argv)
     if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
         /*
          * The ESC STICK class, walked by pressing.  Geometry from
-         * programmer_screen.c: the third tile, the makers and their models
-         * (hobbywing-flyfun-8item, by id), and the item rows' + steppers.
+         * programmer_screen.c, the third tile, and esc_stick_panel.c, the
+         * makers and their models (hobbywing-flyfun-8item, by id), and the
+         * item rows' + steppers.
          */
         const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
         supply_screen_set_caps(&caps);
