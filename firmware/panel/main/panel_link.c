@@ -1,5 +1,5 @@
 /*
- * The link to the coprocessor: exchange(), through which every request to
+ * The link to the IOmcu: exchange(), through which every request to
  * the far end goes, and the control page, which carries ARM, THROTTLE, the
  * pole count, CLEAR and the throttle's endpoints.  The link report is here
  * too.  Control task only, and app_main before that task exists.
@@ -191,7 +191,7 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
 
 /*
  * ARM and THROTTLE travel together, offset 0 and count 2, at every poll while
- * the link is up: the coprocessor's throttle channel goes to its rest, which
+ * the link is up: the IOmcu's throttle channel goes to its rest, which
  * for a throttle is stopped, after OUT_DEFAULT_TIMEOUT_MS (500 ms) without a
  * write, so the panel keeps writing while armed.  The write that arms is
  * the same window widened to three, taking MOTOR_POLES (register 2) with
@@ -208,8 +208,8 @@ uint16_t s_arm_value;
 
 /*
  * The ARM value for the roles the policy asked for: the screen's own role
- * (MOTOR and the PROGRAMMER stick run the throttle, SERVO the surfaces).  A
- * coprocessor older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
+ * (MOTOR and the PROGRAMMER stick run the throttle, SERVO the surfaces).  An
+ * IOmcu older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
  * arms its whole bank on it.
  */
 static uint16_t arm_value_wanted(void)
@@ -231,8 +231,8 @@ static uint16_t arm_value_wanted(void)
  * right: the run started on the value that went out, and the poll corrects
  * it.  A write that does not land gives the debt back if one was taken, so
  * the next poll pays it.  The count cannot refuse an arm on its own: every
- * value the setting allows is inside the range the page takes, and a
- * coprocessor whose page differs never links up (see probe_identity()).
+ * value the setting allows is inside the range the page takes, and an
+ * IOmcu whose page differs never links up (see probe_identity()).
  */
 bool control_arm(link_msg_t *reply)
 {
@@ -262,7 +262,7 @@ bool control_arm(link_msg_t *reply)
  * A bidirectional DShot ESC (electronic speed controller) reports electrical
  * periods and has no idea what it is bolted to, so this is the one number the
  * far end cannot work out and the near end already has, in the Motor poles
- * setting.  Until it arrives the coprocessor reports no speed at all rather
+ * setting.  Until it arrives the IOmcu reports no speed at all rather
  * than a speed derived from a guess.
  */
 static bool control_write_poles(link_msg_t *reply)
@@ -282,7 +282,7 @@ static bool control_write_poles(link_msg_t *reply)
  * A write nobody answered is put back and costs one more poll.  A write the
  * far end refused is not: the same request refused once is refused every
  * time, and a debt that stands through a refusal is a control write on every
- * 50 ms poll for as long as the link is up, against a coprocessor that has
+ * 50 ms poll for as long as the link is up, against an IOmcu that has
  * already said no -- the missing-register case link_came_up() names is
  * exactly that. A refusal waits for a new edit or the next link-up edge.
  *
@@ -334,7 +334,7 @@ bool poles_service(void)
  *
  * The same refusal rules as poles_service(): a write nobody answered is
  * owed again, one the far end refused is reported and waits for a new edit.
- * The hold ends with every outcome but a missing answer, so a coprocessor
+ * The hold ends with every outcome but a missing answer, so an IOmcu
  * that refuses the page is armed on its own range rather than never.
  */
 void endpoints_service(bool far_disarmed)
@@ -444,7 +444,7 @@ void arm_write_failed(uint32_t quiet_before, const char *alert)
  * poll_far_end(); under an armed bench or a waiting arm the stop is latched
  * here as well, where the exchange ended, so the bank and the heartbeat do
  * not wait for the poll.  With the link down it was a probe, and a bank
- * armed with no coprocessor -- the simulated bench -- runs on through it.
+ * armed with no IOmcu -- the simulated bench -- runs on through it.
  * Only memory is touched; nothing here sends.
  */
 static void exchange_unanswered(void)

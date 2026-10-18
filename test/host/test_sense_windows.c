@@ -1,6 +1,6 @@
 /*
  * The INA3221's CH1 windows from the part to the panel: the modelled part,
- * the coprocessor's schedule and pages, and the panel's sense_link, run by
+ * the IOmcu's schedule and pages, and the panel's sense_link, run by
  * sense_chain.h on one clock.
  *
  * Under test: every window number handed over once and in order with polls
@@ -9,12 +9,12 @@
  * numbers missing; each
  * window under its own number; a reply lost on the link losing nothing; the
  * window number across 65535 to 0 and every timer across the 2^32 ms tick
- * wrap; a ring that starts again -- a set-up written, a coprocessor
+ * wrap; a ring that starts again -- a set-up written, an IOmcu
  * restart seen and one not seen -- handing over nothing twice and nothing
- * invented; numbers the coprocessor skipped neither handed over nor
+ * invented; numbers the IOmcu skipped neither handed over nor
  * counted; a link lost and back; windows nobody takes kept to the ring's
  * depth and counted beyond; a part that resets itself; a clipped window
- * and a negative current as plain readings; a coprocessor of protocol 4.10
+ * and a negative current as plain readings; an IOmcu of protocol 4.10
  * sent nothing on SERVO_WIN, and one that names 4.11 and refuses the page
  * asked once; CH2 and CH3 on the row of their window; and the CAN frames
  * of a poll.
@@ -396,7 +396,7 @@ TEST_CASE(a_setup_written_starts_the_windows_at_number_0)
     CHECK(tl.n >= 60u);
 }
 
-/* The coprocessor restarts and the link does not notice.  A read before
+/* The IOmcu restarts and the link does not notice.  A read before
  * its first window closes shows the ring empty; a read after shows a
  * newest number behind the cursor.  Either way the new windows are handed
  * over from number 0, once. */
@@ -419,7 +419,7 @@ TEST_CASE(a_coprocessor_restart_starts_the_windows_again)
     }
 }
 
-/* A coprocessor tick late by more than a window: the numbers it skipped
+/* An IOmcu tick late by more than a window: the numbers it skipped
  * never closed.  They are not handed over, and while they are in the ring
  * at the next read they are not counted lost.  A number that left the
  * ring before a read is counted, closed or not: the page no longer says
@@ -449,7 +449,7 @@ TEST_CASE(a_number_the_coprocessor_skipped_is_no_window)
 
 /* ------------------------------------------------------------- the link */
 
-/* The link lost and back, the coprocessor running on: what the ring holds
+/* The link lost and back, the IOmcu running on: what the ring holds
  * at the first read may have been handed over before, so the hand-over
  * starts after it.  No number comes twice and none is counted lost. */
 TEST_CASE(a_link_lost_and_back_hands_no_window_over_twice)
@@ -482,7 +482,7 @@ TEST_CASE(a_link_lost_and_back_hands_no_window_over_twice)
     }
 }
 
-/* The coprocessor restarted while the link was down: its numbers start
+/* The IOmcu restarted while the link was down: its numbers start
  * again, and the panel hands over its windows and none of its own making. */
 TEST_CASE(a_link_back_to_a_restarted_coprocessor_invents_nothing)
 {
@@ -550,7 +550,7 @@ TEST_CASE(windows_not_taken_wait_and_those_past_the_ring_are_counted)
 
 /* -------------------------------------------------------- the readings */
 
-/* A part that resets itself is found by the coprocessor, which counts it
+/* A part that resets itself is found by the IOmcu, which counts it
  * in RESETS and sets the part up again 1000 ms later.  The windows of that
  * time close without samples: each is handed over under its number, empty,
  * and the count shows in the meter's facts. */
@@ -673,9 +673,9 @@ TEST_CASE(a_clipped_window_and_a_negative_current_are_plain_readings)
     sense_link_win_bench(&chain.sl, &w, NULL);
 }
 
-/* ------------------------------------------------- the older coprocessor */
+/* ------------------------------------------------- the older IOmcu */
 
-/* A 4.10 coprocessor has no SERVO_WIN: nothing is sent there, the status
+/* A 4.10 IOmcu has no SERVO_WIN: nothing is sent there, the status
  * read ends at register 25, and the log has SERVO_SENSE's last window. */
 TEST_CASE(nothing_is_sent_to_servo_win_on_a_4_10_coprocessor)
 {

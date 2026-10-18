@@ -177,7 +177,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
     assert.equal(power('esc.POS'), 1, `power wires on esc.POS for ${where}`);
     assert.equal(power('esc.NEG'), 1, `power wires on esc.NEG for ${where}`);
   }
-  // A servo the bench feeds returns through wire 8 to the coprocessor GND alone.
+  // A servo the bench feeds returns through wire 8 to the IOmcu GND alone.
   const benchFed = setup.wires.some((w) => [59, 60, 61, 62].includes(w.n));
   if (present.has('servo')) {
     // The signal on the standard outputs, wire 7, or on the programming port, wire 64.

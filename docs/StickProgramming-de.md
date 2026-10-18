@@ -38,7 +38,7 @@ Was sie nicht weiß:
    OUTPUTS mit der Rolle Throttle gebunden ist. Ein Lauf steuert jeden als
    Throttle gebundenen Kanal, wie der Bildschirm MOTOR. START wird
    abgelehnt, solange die Bindung keinen Pin als Throttle bindet (`Kein Gas-Pin zugeordnet. Auf der Seite OUTPUTS zuordnen.`) und solange das Panel
-   die Bindung nicht vom Koprozessor gelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
+   die Bindung nicht vom IOmcu gelesen hat (`Ausgangszuordnung nicht ausgelesen. Gas-Pin unbekannt.`).
 4. Die Versorgungsleitungen des ESCs an den Ausgang des Netzteils legen.
    Das Netzteil ist der PD mini: ist der PD mini auf SETUP abgeschaltet,
    tritt das Netzteilmodell des Panels an seine Stelle und schaltet nichts,
@@ -710,9 +710,9 @@ Liste.
 | --- | --- | --- |
 | FERTIG | jede Auswahl getroffen | aus |
 | STOP | STOP gedrückt, im Band oder auf einer Seite, während des Laufs | aus |
-| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Schalten auf ARMED, oder die Ablehnung oder der Failsafe des Koprozessors; das Band nennt, welcher | an |
+| PRÜFSTAND GESTOPPT | ein Stopp, den der Prüfstand während des Laufs selbst auslöste: Touch 500 ms ohne Antwort, Touch-Ereignisse verloren unter einem STOP-Druck oder unter dem Schalten auf ARMED, oder die Ablehnung oder der Failsafe des IOmcu; das Band nennt, welcher | an |
 | SAFE | der Prüfstand wurde auf SAFE geschaltet | an |
-| VERBINDUNG VERLOREN | der Koprozessor antwortete irgendwann während des Laufs und hörte auf | an |
+| VERBINDUNG VERLOREN | der IOmcu antwortete irgendwann während des Laufs und hörte auf | an |
 | NETZTEIL AUS | der Ausgang ging aus: eine Abschaltung, oder ein ON, das das Netzteil fallen ließ | an |
 | NETZTEIL ANTWORTET NICHT | das Netzteil antwortet nicht mehr | an |
 | KEINE MESSWERTE | der Messwertzähler 1000 ms unverändert | an |
@@ -748,7 +748,7 @@ seine eigene Warnung wieder auf ARMED.
 ## Die Leserate
 
 Ein Messwert ist neu, wenn der Messwertzähler des Netzteils weiterläuft:
-beim PD mini SAMPLES auf der SUPPLY-Page, der Zähler des Koprozessors für
+beim PD mini SAMPLES auf der SUPPLY-Page, der Zähler des IOmcu für
 die Ausgangsmessungen, die das Modul beantwortet hat. Seine Zeit ist die
 Page-Lesung, die den Zähler zuerst zeigte. Das PD mini liest seinen Ausgang
 alle 100 ms (`PDMINI_DISPLAY_MS`), und das Panel liest die Page alle 100 ms

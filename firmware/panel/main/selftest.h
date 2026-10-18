@@ -4,7 +4,7 @@
  *
  * It runs at every start-up, before the bench is usable.  The fault it
  * reports is invisible from every other screen -- a bus that does not carry
- * frames looks exactly like a coprocessor that is not there, and both look
+ * frames looks exactly like an IOmcu that is not there, and both look
  * like a bench that simply shows no numbers -- so the panel says so itself
  * rather than leaving it to be worked out.
  *

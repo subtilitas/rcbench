@@ -1,7 +1,7 @@
-// The panel drawing of the coprocessor board: the parts of `copro.svg` as flat
+// The panel drawing of the IOmcu board: the parts of `copro.svg` as flat
 // shapes on the real pad grid of the board, for the PICK A PIN screen of the
 // panel. tools/gen_board_drawing.py turns `panel.json` into the table the
-// coprocessor serves over the link.
+// IOmcu serves over the link.
 //
 // Units: 0.01 mm (cmm). Origin: the top-left corner of the board outline seen
 // from the component side, pad 1 at the bottom left. X runs along the board,
@@ -226,7 +226,7 @@ export function panelGroups(): PanelGroup[] {
   return groups;
 }
 
-/** The panel drawing of the RP2350-CAN board for the catalogue pads of the coprocessor. */
+/** The panel drawing of the RP2350-CAN board for the catalogue pads of the IOmcu. */
 export function panelDrawing(pads: ReadonlyArray<Pad>): PanelDrawing {
   return {
     board: PANEL_SHAPE.board, name: 'RP2350-CAN', width: W, height: H,

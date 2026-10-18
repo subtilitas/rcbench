@@ -2264,7 +2264,7 @@ bool kst_panel_has_press(uint8_t id)
 }
 
 /* The supply's own controls follow the port: while one is out of PWM the
- * coprocessor takes an OFF and nothing else (supply_page.h), and SUPPLY and
+ * IOmcu takes an OFF and nothing else (supply_page.h), and SUPPLY and
  * the SERVO screen's SET row offer no more than that. */
 static void supply_sync(void)
 {

@@ -10,7 +10,7 @@ A decoder for the Futaba S.BUS protocol: 16 channels in a frame of 25 bytes.
 The module has no pin driver. The wire is an inverted 8E2 UART (universal
 asynchronous receiver-transmitter) at 100 kbaud; a PIO (programmable
 input/output) receiver that produces the bytes is not written. The core is
-linked into the panel image and the host tests, not into the coprocessor
+linked into the panel image and the host tests, not into the IOmcu
 image, and no firmware calls it.
 
 ## Constraints

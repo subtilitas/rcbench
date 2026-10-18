@@ -185,7 +185,7 @@ function render(focusId?: string): void {
   const ownOpen = own ? own.open : false;
   const chooseTop = choose.scrollTop;
   const before = byId('pan');
-  // First drawing: the box opens on the wires between the panel and the coprocessor.
+  // First drawing: the box opens on the wires between the panel and the IOmcu.
   // A hidden box has no scroll position: the last one read from the shown box stays.
   if (before && before.clientWidth > 0) panLeft = before.scrollLeft;
 

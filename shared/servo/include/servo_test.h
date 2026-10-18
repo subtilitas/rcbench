@@ -12,7 +12,7 @@
  * configuration names (cfg.meter.kind):
  *
  *   PD mini   the supply's own readings (servo_test_reading()), about 10 a
- *             second.  The model stands in for it with no coprocessor.
+ *             second.  The model stands in for it with no IOmcu.
  *   INA3221   the 50 ms windows of the INA3221's CH1
  *             (servo_test_window()), 20 a second: each one's mean current
  *             and mean bus voltage are the reading, its highest and lowest
@@ -93,7 +93,7 @@
  *            command: the angle has stayed within SERVO_TEST_ENC_TOL_COUNTS
  *            counts (1.05 degrees) of an anchor for that long.  The travel
  *            time is the start of that stillness minus the command, which
- *            the coprocessor's 2 ms sample interval resolves whatever the
+ *            the IOmcu's 2 ms sample interval resolves whatever the
  *            polling interval.  It includes the command's way from the
  *            panel to the pin, up to one poll interval and one PWM frame,
  *            not measured;
@@ -250,7 +250,7 @@ extern "C" {
 /** The most moves a step makes, LENGTH BY TIME included. */
 #define SERVO_TEST_MOVES_MAX         1000u
 
-/* The output encoder's constants.  The tolerance is the coprocessor's
+/* The output encoder's constants.  The tolerance is the IOmcu's
  * SENSE_ENC_STILL_TOL, test_as5600 holds the two equal. */
 #define SERVO_TEST_ENC_TOL_COUNTS    12u
 /** The same in degrees: 12 counts of 360 / 4096. */
@@ -277,7 +277,7 @@ typedef enum {
  *  condition of servo_source.h that does not hold. */
 typedef enum {
     SERVO_TEST_INA_NONE = 0,    /**< not on in SETUP, or it is the meter */
-    SERVO_TEST_INA_OLD,         /**< the coprocessor is older than 4.11  */
+    SERVO_TEST_INA_OLD,         /**< the IOmcu is older than 4.11  */
     SERVO_TEST_INA_NOT_HELD,    /**< it does not hold the set-up         */
     SERVO_TEST_INA_SILENT,      /**< the part does not answer            */
     SERVO_TEST_INA_NO_WINDOW,   /**< no fresh window with current        */
@@ -423,7 +423,7 @@ typedef enum {
     SERVO_TEST_AB_INA_RESET,    /**< the part reset itself               */
     SERVO_TEST_AB_INA_SILENT,   /**< it stopped answering                */
     SERVO_TEST_AB_INA_NO_WINDOW,/**< its windows hold no current         */
-    SERVO_TEST_AB_INA_SETUP,    /**< the coprocessor no longer holds its
+    SERVO_TEST_AB_INA_SETUP,    /**< the IOmcu no longer holds its
                                      set-up, or it is off in SETUP       */
     SERVO_TEST_AB_INA_METER,    /**< it stopped being the meter, the
                                      condition not known                 */

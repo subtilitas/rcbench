@@ -45,7 +45,7 @@ extern "C" {
 #define LOG_CADENCE_MODEL_MS     50u
 
 /**
- * The longest step the model is given, in ms.  A probe for the coprocessor
+ * The longest step the model is given, in ms.  A probe for the IOmcu
  * can hold the loop for its whole timeout; the model then advances by this
  * much and no more.  Equal to BENCH_TOTALS_MAX_STEP_S.
  */

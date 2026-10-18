@@ -105,7 +105,7 @@ static void touched(void)
 
 static const outbind_proto_t *chosen_proto(void);
 
-/* The GPIO the coprocessor's programming port is bound to, or none. */
+/* The GPIO the IOmcu's programming port is bound to, or none. */
 static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
 
 void outputs_screen_set_prog_pin(uint8_t gpio)
@@ -118,7 +118,7 @@ void outputs_screen_set_prog_pin(uint8_t gpio)
 
 /* Whether the programming port has pin @p index: it is the port's and no
  * protocol holds it.  A pin a stored slot holds is that slot's -- the
- * coprocessor gives the port no pin then -- and can be unticked. */
+ * IOmcu gives the port no pin then -- and can be unticked. */
 static bool prog_taken(uint8_t index)
 {
     return g_prog_gpio != OUTPUTS_NO_PIN
@@ -127,7 +127,7 @@ static bool prog_taken(uint8_t index)
            && outbind_group_of(&s.bind, index) == 0u;
 }
 
-/* Whether the coprocessor would refuse pin @p index to the protocol being
+/* Whether the IOmcu would refuse pin @p index to the protocol being
  * edited: the programming port's slice, or a bound PWM pin's compare
  * register.  The port's own pin is prog_taken(), not this. */
 static bool clashes(uint8_t index)
@@ -182,7 +182,7 @@ void outputs_screen_set_binding(const outbind_t *b)
      * pin index means a different pin in another catalogue, which is why
      * outbind_set_board() clears the selection.  The selection goes to OFF,
      * picked, whatever it was: a board that answers during a visit -- the
-     * first link-up, a swapped coprocessor -- must not hand the next tap a
+     * first link-up, a swapped IOmcu -- must not hand the next tap a
      * protocol nobody picked for it, the wire's or the one before.
      */
     const bool named = (b->proto != outbind_wire_proto(b));
@@ -807,7 +807,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
     const bool on = (held != 0u && held == proto);
     /* Held by a protocol that is not the one being edited.  That is a choice
      * somebody made and can undo from the other protocol, so it is drawn
-     * grey; the coprocessor's reserved pins stay red. */
+     * grey; the IOmcu's reserved pins stay red. */
     const bool elsewhere = (held != 0u && held != proto);
     const bool down = (s.hit_kind == HIT_CELL && s.hit_index == i);
     /*

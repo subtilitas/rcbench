@@ -12,7 +12,7 @@ screen.
 | S.BUS | inverted 8E2 UART (universal asynchronous receiver-transmitter), 100 kbaud, one pin | decoder built and tested; the PIO (programmable input/output) program that converts the inverted line into bytes is not written |
 | iBUS, SUMD, CRSF, SRXL2, JETI EX Bus | UART, normal or inverted, one pin each | planned |
 
-Every bus is one signal wire plus ground into a coprocessor pin. No external
+Every bus is one signal wire plus ground into an IOmcu pin. No external
 parts are needed.
 
 ## States

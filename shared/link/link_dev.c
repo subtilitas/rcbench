@@ -136,8 +136,8 @@ bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,
     }
 
     /* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
-     * coprocessor's own vocabulary; one arriving here means another node is
-     * transmitting on the coprocessor's behalf. */
+     * IOmcu's own vocabulary; one arriving here means another node is
+     * transmitting on the IOmcu's behalf. */
     refuse(reply, req, LINK_NACK_BAD_VALUE);
     return true;
 }

@@ -1,9 +1,9 @@
 # Servo procedures: what a servo does when it is installed, rather than on a
 # desk.  Pure state machines fed measurements, so the host suite runs them
-# against a modelled servo and the coprocessor runs the same code against a
+# against a modelled servo and the IOmcu runs the same code against a
 # real one (not wired in).  The automatic test (servo_test) is stepped by the
 # panel against the supply SUPPLY drives; its move rules (servo_move) also
-# judge the coprocessor's 1 kHz move capture (shared/sense/sense_sched.c).
+# judge the IOmcu's 1 kHz move capture (shared/sense/sense_sched.c).
 # The limit run (servo_limrun) is stepped by the panel too: the limit search
 # against the INA3221's windows, then the servo's own LEFT and RIGHT ANGLE
 # through the programmer.

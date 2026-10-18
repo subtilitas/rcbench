@@ -235,9 +235,9 @@ static const char *const k_str[SERVO_STR_COUNT] = {
                                    "it at the range; the set point is not "
                                    "raised for it",
     [SERVO_STR_R_INA_UNUSED]     = "INA3221:        not used: %s",
-    [SERVO_STR_R_INA_OLD]        = "the coprocessor is older than link "
+    [SERVO_STR_R_INA_OLD]        = "the IOmcu is older than link "
                                    "protocol 4.11",
-    [SERVO_STR_R_INA_NOT_HELD]   = "the coprocessor does not hold its set-up",
+    [SERVO_STR_R_INA_NOT_HELD]   = "the IOmcu does not hold its set-up",
     [SERVO_STR_R_INA_SILENT]     = "it does not answer",
     [SERVO_STR_R_INA_NO_WINDOW]  = "no window with current in the last 200 "
                                    "ms",

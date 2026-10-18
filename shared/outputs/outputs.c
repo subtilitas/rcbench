@@ -396,7 +396,7 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
          * Truncating each step on its own stops a slew slower than one unit
          * a step from ever moving.  Rounding each step up instead delivers at
          * least one unit per call whatever slew_per_s says, and the
-         * coprocessor's loop steps about once a millisecond, so every rate
+         * IOmcu's loop steps about once a millisecond, so every rate
          * under 1000 units a second rendered as 1000 -- SPEED on the servo
          * screen is 2 * OUT_SPAN * pct / 100, so every setting from 1% to 49%
          * moved the horn at the same rate as 50%.
@@ -438,7 +438,7 @@ void outputs_step(outputs_t *o, uint32_t now_ms)
          * command, so any longer interval than that arrives all the same, and
          * the remainder is cleared on arrival by the branch above.  What the
          * cap buys is a product that stays inside a uint32_t without a 64-bit
-         * divide in the coprocessor's loop: slew_per_s * cap is at most
+         * divide in the IOmcu's loop: slew_per_s * cap is at most
          * 1000 * OUT_SPAN + slew_per_s.
          */
         const uint32_t cap = (1000u * (uint32_t)OUT_SPAN) / c->slew_per_s + 1u;

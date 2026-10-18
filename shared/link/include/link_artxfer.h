@@ -9,7 +9,7 @@
  *
  * Blocks are therefore taken strictly in order, one at a time, and anything
  * else is refused rather than placed.  The whole payload is checked against
- * the CRC (cyclic redundancy check) and the hash the coprocessor declared
+ * the CRC (cyclic redundancy check) and the hash the IOmcu declared
  * before any of it counts as the board's drawing.
  *
  * Nothing here talks to the wire.  It is fed register windows and says which
@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-/** What the coprocessor says its drawing is, off the ARTWORK page. */
+/** What the IOmcu says its drawing is, off the ARTWORK page. */
 typedef struct {
     uint16_t blocks;
     uint16_t width;    /**< outline, 0.01 mm                               */
@@ -88,7 +88,7 @@ bool link_artxfer_take(link_artxfer_t *x, const uint16_t *data);
 bool link_artxfer_complete(const link_artxfer_t *x);
 
 /**
- * And they are: the payload matches the CRC and the hash the coprocessor
+ * And they are: the payload matches the CRC and the hash the IOmcu
  * declared.
  *
  * Separate from complete() because they fail differently. Incomplete is a
@@ -97,7 +97,7 @@ bool link_artxfer_complete(const link_artxfer_t *x);
  */
 bool link_artxfer_verify(const link_artxfer_t *x);
 
-/* --------------------------------------------- the coprocessor's side */
+/* --------------------------------------------- the IOmcu's side */
 
 /**
  * The LINK_AW_COUNT registers ARTWORK answers for @p bytes of payload, with

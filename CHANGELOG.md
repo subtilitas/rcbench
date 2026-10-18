@@ -117,20 +117,29 @@ history is in git.
   tolerance of 100 for six of them. It fails on an unlisted file over
   1,000 lines, a listed file at or under 1,000 and a count outside its
   tolerance. CI runs it with the tree checks.
-- SETUP > UPDATES has a coprocessor section under its buttons: the version
-  the coprocessor runs, the version of the image the panel carries, a line
+- SETUP > UPDATES has an IOmcu section under its buttons: the version
+  the IOmcu runs, the version of the image the panel carries, a line
   of state and `HOLD 2 s: UPDATE IOMCU`. The 2 s hold starts the
   update the link-up's question starts, also after that question was
   declined, and the progress returns to UPDATES. It takes what the question
   takes: another build, SAFE, the supply output off, the Wi-Fi radio wholly
   off and no panel install. Otherwise it is grey and the line names the
   first of 11 reasons that holds. After an image found on trial is kept,
-  the panel compares the coprocessor's build with its own again, and after
-  an update of a coprocessor of another protocol major ends, its next
+  the panel compares the IOmcu's build with its own again, and after
+  an update of an IOmcu of another protocol major ends, its next
   answer to the 1 s identity probe starts that comparison.
 
 ### Changed
 
+- The RP2350 board is named IOmcu (German `der IOmcu`) in the panel texts,
+  the help pages, the configurator and the documentation. It was called the
+  coprocessor (German `Koprozessor`). Upper-case texts read `IOMCU`, for
+  example `IOMCU UPDATE`. Identifiers, file names, CAN page names and the
+  entries of released versions keep their wording.
+- The alert for an IOmcu on another build names the place of the update:
+  `IOmcu runs a different build. Update it under SETUP > UPDATES.` (German
+  `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`). It said
+  that an update is available in the menu.
 - Band titles follow their tiles: SETUP (was SETTINGS), LOGS (was LOG
   VIEWER) and WI-FI (was FILES & UPDATE), English in both languages.
 - SETUP has a WI-FI tile between PICK A PIN and UPDATES, line `NETWORK,
@@ -163,7 +172,7 @@ history is in git.
   `SERVOnnn.TXT` for the automatic servo test and the limit run,
   `ESCnnn.CSV` for a switch of the throttle outputs to ARMED (MOTOR & ESC, a
   stick run on PROGRAMMER), `BENCHnnn.CSV` for a switch of the surfaces to
-  ARMED from SERVO and for a SUPPLY run. With a coprocessor older than
+  ARMED from SERVO and for a SUPPLY run. With an IOmcu older than
   protocol 4.18 every switch to ARMED covers the throttle outputs, so a
   switch to ARMED from SERVO writes `ESCnnn.CSV`. The numbers 001 to 999 are
   one series across the three names: a run takes one above the highest
@@ -195,10 +204,10 @@ history is in git.
   `CHOOSE A PROTOCOL, THEN TAP PINS` (German
   `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`). OUTPUTS shows no pin count and PICK
   A PIN no PINS table on OFF. OFF stays selected across leaving the screen
-  and read-backs. A change of board, such as a coprocessor that answers or
+  and read-backs. A change of board, such as an IOmcu that answers or
   is swapped during the visit, selects OFF whatever was selected, so a
   protocol picked before is not carried to it. Opening either screen writes
-  nothing to the coprocessor.
+  nothing to the IOmcu.
 - A value stepped back to the one stored is no change: SAVE returns to
   `SAVED`, and a write asked for and not yet taken is dropped. After a
   refused save the label stays `NOT SAVED` or `SAVE` until a save
@@ -268,7 +277,7 @@ history is in git.
 - `hardware/docs/IOBoard.md` cites `STATUS.md` by section and item name
   instead of by line, so a coverage table that grows does not move the
   citations. Its capability-word rows state that the panel reads the word
-  at bring-up, at each link-up and after a SENSE set-up the coprocessor
+  at bring-up, at each link-up and after a SENSE set-up the IOmcu
   takes.
 - SETUP, APPLICATION, Rotary knob ON no longer blanks the panel. 0.20.0's
   knob read an AS5600 at 0x36 on the panel's I2C (Inter-Integrated Circuit)
@@ -302,14 +311,14 @@ history is in git.
   repeats left unanswered with the link up, led there. The far end's
   500 ms channel timeout rested the surfaces either way.
 - OUTPUTS and PICK A PIN no longer offer a SERVO PWM or MOTOR PWM pin that
-  the coprocessor's slice and compare-register rules refuse, which ended in
+  the IOmcu's slice and compare-register rules refuse, which ended in
   `LAST WRITE: REFUSED` with no reason.
   A pin on the programming port's PWM slice (GP28 while the port holds
   GP13, both slice 6) and a pin on the compare register of a pin bound as
   PWM (GP16 beside GP0, and the pairs GP1/17, GP2/18, GP4/20, GP5/21,
   GP6/22) are held: grey, the cell `SLICE OF GP13` or `PWM CH OF GP0`, and
   a tap puts `GP28: PWM SLICE OF PROG PORT GP13` or `GP16: SAME PWM CHANNEL
-  AS GP0` under the protocol. The panel decides with the coprocessor's own
+  AS GP0` under the protocol. The panel decides with the IOmcu's own
   `out_pwm_same_slice()` and `out_pwm_same_compare()`
   (`outbind_pwm_clash()`). DShot and PPM are offered both pins.
 - The LOG VIEWER's footer buttons are reachable while an alert shows. They
@@ -366,7 +375,7 @@ history is in git.
   place. The console logs each restart as
   `display: scan restarted, N since start`.
 - `tools/stack_check.py` counts the chain through `cu_port_exchange()` in
-  the control task's depth. The coprocessor update's requests go through
+  the control task's depth. The IOmcu update's requests go through
   that port, which recovers the bus and then calls `exchange()`; the
   check followed only `port_exchange()` and counted the other call as
   followed (`PORT_CALLS`).
@@ -681,7 +690,7 @@ erase and write.
   Bindings are read from the old store at 0x3FE000 until the first save. On
   an RP2350 of stepping A2 the load can erase 0x3FF000, the old store's
   second sector. Later coprocessor images come over CAN. See
-  [First run](docs/FirstRun.md#the-coprocessors-partition-table).
+  [First run](docs/FirstRun.md#the-iomcus-partition-table).
 - The bench configurator describes release 0.18.0. Every repository source
   of its data is a file and line at the tag `v0.18.0`; 28 sources carry the
   line of that tag. The sources of the logger, of the arm decision and of the
@@ -1926,7 +1935,7 @@ measured.
   job, and each pass of core 0's main loop runs 1 slice. A write command
   reaches 1,304 bytes of stack and a pass that plans 1,016. The time of a
   pass is not measured on hardware.
-  ([Performance](docs/Performance.md#the-coprocessor))
+  ([Performance](docs/Performance.md#the-iomcu))
 - **The write planner for KST and Chaservo servos takes 488 bytes of
   stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
@@ -1938,7 +1947,7 @@ measured.
   cost table. Every plan is the same byte for byte: `test_kst_plan` pins a
   digest over the result, the violated rules and the whole plan of
   495,068 planner calls. No function signature differs.
-  ([Performance](docs/Performance.md#the-coprocessor))
+  ([Performance](docs/Performance.md#the-iomcu))
 - **`kst_session_write()` takes 56 bytes of stack, down from 256.** The
   session builds the planner's plan for the comparison into its own copy
   of the running plan, which no operation reads at that time, and holds no

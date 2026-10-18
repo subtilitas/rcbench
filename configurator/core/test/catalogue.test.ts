@@ -577,7 +577,7 @@ function causes(cond: unknown): string[] {
   return [...(c.all ?? []), ...(c.any ?? [])].flatMap(causes);
 }
 
-/** The part ids at the ends of a wire. A pad of the coprocessor is no part. */
+/** The part ids at the ends of a wire. A pad of the IOmcu is no part. */
 const partsOn = (w: Catalogue['wires'][number]): string[] =>
   [w.a, w.b].filter((e): e is string => e !== null && !/^(pad|can)\./.test(e)).map((e) => e.split('.')[0]!);
 
@@ -981,7 +981,7 @@ test('tree: the firmware parsers read the table formats of the release', () => {
   ]);
   const settings = [
     '    [SET_SENSE_SDA] = {',
-    '        "sns_sda", "Sensor SDA", "Coprocessor GPIO; -1: no sensor bus", "GPIO",',
+    '        "sns_sda", "Sensor SDA", "IOmcu GPIO; -1: no sensor bus", "GPIO",',
     '        SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },',
   ].join('\n');
   assert.deepEqual(parseSettingDefault(settings, 'SET_SENSE_SDA'), { def: 16, line: 1 });

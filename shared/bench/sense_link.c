@@ -67,7 +67,7 @@ void sense_link_lost(sense_link_t *s)
     s->caps_owed     = false;
     s->pending       = SENSE_LINK_OP_NONE;
     s->was_faults    = 0u;
-    /* What the coprocessor that went said, and not yet shown, is about a
+    /* What the IOmcu that went said, and not yet shown, is about a
      * page nobody reads now; what the settings say stands. */
     s->events &= (uint32_t)(SENSE_LINK_EV_PINS_UNSET
                             | SENSE_LINK_EV_SAME_ADDR);
@@ -154,7 +154,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
     if (!moved) {
         return;
     }
-    /* A part enabled now, with a coprocessor answering that cannot read
+    /* A part enabled now, with an IOmcu answering that cannot read
      * it: said now, not at the next link-up. */
     const bool grew = (w->i228 && !s->want_i228)
                       || (w->i3221 && !s->want_i3221);
@@ -204,7 +204,7 @@ void sense_link_want(sense_link_t *s, const sense_setup_t *w,
 
 /* The bus frame as it is to be written: the pins asked and the parts
  * whose own frames the page has not refused.  The encoder's bit goes only
- * to a coprocessor that has it. */
+ * to an IOmcu that has it. */
 static void bus_frame(const sense_link_t *s, uint16_t *out)
 {
     uint16_t en = s->want[LINK_SN_ENABLE];
@@ -741,7 +741,7 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
     }
     if ((op == SENSE_LINK_OP_WIN || op == SENSE_LINK_OP_WIN_ALL)
         && (result != SENSE_LINK_ACK || regs == NULL)) {
-        /* SERVO_WIN refused by a coprocessor that names 4.11: nothing
+        /* SERVO_WIN refused by an IOmcu that names 4.11: nothing
          * more is sent to that page until the link comes up again, and
          * the windows are SERVO_SENSE's. */
         s->win_page = false;
@@ -751,7 +751,7 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
         return;
     }
     if (result != SENSE_LINK_ACK || regs == NULL) {
-        /* A read refused: a coprocessor that names 4.7 and has not the
+        /* A read refused: an IOmcu that names 4.7 and has not the
          * page.  Nothing more is sent to it until the link comes up
          * again. */
         s->page = false;
@@ -869,7 +869,7 @@ void sense_link_event_back(sense_link_t *s, uint32_t ev)
         return;
     }
     /* What the settings say holds whatever answers; the rest is about the
-     * coprocessor that answers now, and a link gone since took it. */
+     * IOmcu that answers now, and a link gone since took it. */
     const uint32_t settings = (uint32_t)(SENSE_LINK_EV_PINS_UNSET
                                          | SENSE_LINK_EV_SAME_ADDR);
     if (!s->up && (ev & ~settings) != 0u) {

@@ -4,7 +4,7 @@
  *
  * The drivers (ina228.h, ina3221.h) reach the wire through two callbacks,
  * a register read and a register write, each answering with an error code.
- * The coprocessor supplies them from its I2C block; the host suite supplies
+ * The IOmcu supplies them from its I2C block; the host suite supplies
  * a fake that answers as each part does.  Both parts send the most
  * significant byte first (INA228 SLYS021A §7.5.1, INA3221 SBOS576C §8.2)
  * and keep the register pointer between transactions, so a read is the

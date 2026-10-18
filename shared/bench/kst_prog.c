@@ -153,7 +153,7 @@ static bool flag(const kst_prog_t *p, uint16_t f)
 }
 
 /* The session no longer stands: the port is in PWM, the link went, or the
- * coprocessor started again. */
+ * IOmcu started again. */
 static void session_gone(kst_prog_t *p)
 {
     p->have_servo = false;
@@ -880,7 +880,7 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
     if (is_write(op)
         && !(o->kind == KST_LINK_OUT_DONE && o->result == KST_SES_OK)) {
         if (write_failed(p, o)) {
-            /* The coprocessor says no register was written: dropped
+            /* The IOmcu says no register was written: dropped
              * before the command went, refused, ended before its first
              * step, or rolled back to the image it started from and read
              * there.  The fields are the servo's as they were, and so are
@@ -969,7 +969,7 @@ static void outcome(kst_prog_t *p, const kst_link_outcome_t *o)
 
 /*
  * Whether an outcome is taken.  The one of the operation awaited is, by
- * its number.  A coprocessor that started again ends whatever is awaited.
+ * its number.  An IOmcu that started again ends whatever is awaited.
  * The late end of a write given up is taken while nothing else is on its
  * way; with another operation asked for, it is left out: the servo is in
  * doubt already, and the operation asked for is not that outcome's.
@@ -1056,7 +1056,7 @@ static void unanswered(kst_prog_t *p, unsigned id)
 }
 
 /*
- * A coprocessor below link 4.15 has no LEAVE.  Its one command from
+ * An IOmcu below link 4.15 has no LEAVE.  Its one command from
  * PROGRAMMING to PWM is POWER_CYCLED, and with a PD mini answering the port
  * cycles the supply on it: it is sent only where no PD mini answers, where
  * it changes nothing but the port's state, and its end says that no wait
@@ -1163,7 +1163,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
             leave_old(p);
         } else {
             if (is_write(p->op)) {
-                /* The coprocessor refused it: no field was written. */
+                /* The IOmcu refused it: no field was written. */
                 p->wrote = p->wrote_before;
             }
             kst_prog_not_started(p,
@@ -1217,7 +1217,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f)
                && ((uint32_t)(f->now_ms - p->wait_ms) >= KST_PROG_RUN_MS
                    || (uint32_t)(f->now_ms - p->run_ms)
                           >= KST_PROG_RUN_MAX_MS)) {
-        /* The operation may still end on the coprocessor, a read with an
+        /* The operation may still end on the IOmcu, a read with an
          * image this side never takes: nothing is edited or written
          * before a read that ends. */
         doubt(p);
@@ -1452,7 +1452,7 @@ bool kst_prog_no_file(const kst_prog_t *p)
 
 /* Whether the servo may hold other values than the session found: after
  * a write that went with no card, and in a session whose writes this model
- * did not all see, one the coprocessor kept over a link loss or a start of
+ * did not all see, one the IOmcu kept over a link loss or a start of
  * the panel.  The session's backup holds the servo as found then. */
 static bool maybe_written(const kst_prog_t *p)
 {
@@ -2151,7 +2151,7 @@ kst_prog_msg_id_t kst_prog_restore_plan(kst_prog_t *p, kst_prog_from_t from,
     }
     if (from == KST_PROG_FROM_SESSION) {
         if (!p->have_servo || kst_prog_in_doubt(p)) {
-            /* What the servo holds is not known: the coprocessor plans,
+            /* What the servo holds is not known: the IOmcu plans,
              * and the operator confirms a result that is not checked. */
             out->writes = 0xFFu;
             out->unchecked = true;
@@ -2351,8 +2351,8 @@ void kst_prog_forget(kst_prog_t *p)
  *
  * LEAVE (link 4.15) sends no frame and switches nothing: the port holds the
  * line low for pwm_wait_ms and then gives the pin back to the PWM generator.
- * This is the one place a session is ended from; leave_old() is what a
- * coprocessor without LEAVE gets.
+ * This is the one place a session is ended from; leave_old() is what an
+ * IOmcu without LEAVE gets.
  *
  * The port refuses a LEAVE while it asks for a read or holds a servo in
  * doubt.  With a PD mini answering the refusal is the message and STOP,

@@ -156,7 +156,7 @@
  * that is taken is acknowledged, and what became of it is on the page:
  * LINK_KS_RESULT's high byte says why it started nothing, or 0.
  *
- * Nothing here is kept over a restart of the coprocessor: after one the
+ * Nothing here is kept over a restart of the IOmcu: after one the
  * port is in PWM with LINK_KS_F_IN_MODE clear, whatever mode the servo is
  * in, and the SUPPLY page starts with the PD mini asked off.
  *

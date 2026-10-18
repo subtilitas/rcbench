@@ -1,6 +1,6 @@
 /*
  * CAN (Controller Area Network) bit timing for the two controllers on the
- * link: the MCP2515-compatible XL2515 on the coprocessor and the ESP32-S3's
+ * link: the MCP2515-compatible XL2515 on the IOmcu and the ESP32-S3's
  * TWAI (Two-Wire Automotive Interface) controller on the panel.
  *
  * Wrong timing does not fail cleanly: a node a fraction of a percent off
@@ -111,7 +111,7 @@ TEST_CASE(the_module_reaches_every_standard_rate_on_its_16_mhz_crystal)
 }
 
 /*
- * Both ends sample the bit in the same place.  The coprocessor has one way to
+ * Both ends sample the bit in the same place.  The IOmcu has one way to
  * make 1 Mbit/s from 16 MHz, eight quanta, so its sample point is fixed at
  * 75% and the panel, which has slack, is solved to match.  Solved
  * independently, the panel lands at 87.5% with a phase 2 of one quantum and a

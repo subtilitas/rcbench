@@ -209,7 +209,7 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
          */
         if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE) {
             /* The firmware write likewise: the bench is SAFE and the
-             * coprocessor in failsafe while the panel writes its flash. */
+             * IOmcu in failsafe while the panel writes its flash. */
             ui_router_goto((ui_screen_id_t)id);
             CHECK(!ui_router_stop_live());
             (void)ui_router_take_stop();
@@ -934,7 +934,7 @@ TEST_CASE(a_second_contact_cannot_take_the_alert)
     const int x = alert_band_x_over_a_tile();
     CHECK(x >= 0);
     to_overview();
-    ui_router_set_alert("coprocessor refused the pulse range");
+    ui_router_set_alert("IOmcu refused the pulse range");
     touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
     touch(x, H - 10, TOUCH_EVENT_DOWN, 2);
     touch(x, 200, TOUCH_EVENT_MOVE, 2);
@@ -973,11 +973,11 @@ TEST_CASE(a_lift_clears_only_the_alert_it_was_pressed_on)
 {
     fresh();
     to_overview();
-    ui_router_set_alert("coprocessor refused to arm");
+    ui_router_set_alert("IOmcu refused to arm");
     touch(400, H - 10, TOUCH_EVENT_DOWN, 1);
-    ui_router_set_alert("coprocessor disarmed -- arm again");
+    ui_router_set_alert("IOmcu disarmed -- arm again");
     touch(400, H - 10, TOUCH_EVENT_UP, 1);
-    CHECK_STR_EQ(ui_router_alert(), "coprocessor disarmed -- arm again");
+    CHECK_STR_EQ(ui_router_alert(), "IOmcu disarmed -- arm again");
     ui_router_set_alert(NULL);
 }
 
@@ -1497,7 +1497,7 @@ TEST_CASE(an_unknown_screen_id_falls_back_to_the_overview)
 
 /*
  * The menu says what the bench can do, not what it has screens for.  The
- * marks derive from the capability bits the coprocessor reports, not from a
+ * marks derive from the capability bits the IOmcu reports, not from a
  * preference: a capability corrects itself when the part is fitted, and until
  * then the screen says its numbers are modelled.
  */
@@ -1532,7 +1532,7 @@ TEST_CASE(the_menu_marks_what_is_not_fitted)
     /* But the two that have no screen still say so. */
     CHECK(full > 0);
 
-    /* SUPPLY is marked whatever the coprocessor reports -- until SETUP
+    /* SUPPLY is marked whatever the IOmcu reports -- until SETUP
      * enables the PD mini, and again once it is disabled. */
     overview_screen_set_supply_real(true);
     ui_router_render(&cv, 0);
@@ -3188,7 +3188,7 @@ TEST_CASE(the_armed_bubble_follows_the_roles)
 }
 
 /*
- * The LINK bubble carries the coprocessor's refused frames as MOTOR & ESC's
+ * The LINK bubble carries the IOmcu's refused frames as MOTOR & ESC's
  * header strip has them, ui_link_refused_label()'s line, while the link is
  * up and the count is above 0.
  */

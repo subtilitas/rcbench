@@ -35,7 +35,7 @@ What it does not know:
    the OUTPUTS screen. A run commands every channel bound as a throttle, as
    the MOTOR screen does. RUN is refused while the binding binds no pin as
    a throttle (`No throttle pin assigned. Assign one on OUTPUTS.`) and while the
-   panel has not read the binding from the coprocessor (`Output assignment not read. Throttle pin unknown.`).
+   panel has not read the binding from the IOmcu (`Output assignment not read. Throttle pin unknown.`).
 4. Connect the ESC's power leads to the supply output. The supply is the PD
    mini: with the PD mini disabled on SETUP the panel's supply model takes
    its place and switches nothing, and RUN is refused with `Supply is simulated. RUN needs a PD mini.`. A reason that arises while the warning
@@ -638,10 +638,10 @@ A profile corrected on the SD card is listed with its correction.
 | --- | --- | --- |
 | DONE | every selection made | dark |
 | STOP | STOP pressed, in the band or on a screen, while the run was under way | dark |
-| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the switch to ARMED, or the coprocessor's refusal or failsafe; the band names which | lit |
+| BENCH STOPPED | a stop the bench raised itself while the run was under way: touch silent for 500 ms, touch events lost under a STOP press or under the switch to ARMED, or the IOmcu's refusal or failsafe; the band names which | lit |
 | SAFE | the bench was switched to SAFE during the run | lit |
 | STILL SAFE | the bench did not report ARMED within 3000 ms | lit |
-| LINK LOST | the coprocessor answered at some time during the run and stopped answering | lit |
+| LINK LOST | the IOmcu answered at some time during the run and stopped answering | lit |
 | SUPPLY OFF | the output went off: a trip, or an ON the supply let go | lit |
 | SUPPLY NOT ANSWERING | the supply stopped answering | lit |
 | NO READINGS | the reading count unmoved for 1000 ms | lit |
@@ -674,7 +674,7 @@ run switches to ARMED again from its own warning.
 ## The read rate
 
 A reading is new when the supply's reading count moves: for the PD mini,
-SAMPLES on the SUPPLY page, the coprocessor's count of output readings the
+SAMPLES on the SUPPLY page, the IOmcu's count of output readings the
 module answered. Its time is the page read that first showed the count. The
 PD mini reads its output every 100 ms (`PDMINI_DISPLAY_MS`), and the panel
 reads the page every 100 ms (`SUPPLY_LINK_READ_MS`) on its 50 ms poll, so

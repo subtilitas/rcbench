@@ -530,7 +530,7 @@ TEST_CASE(the_reminder_yields_unanswered_and_comes_back)
         if (way == 0) {
             g_feed.unsafe = true;           /* ARMED, an arm waiting */
         } else if (way == 1) {
-            g_feed.coproc = true;           /* the coprocessor's offer */
+            g_feed.coproc = true;           /* the IOmcu's offer */
         } else {
             g_feed.newer = false;           /* another check ran */
         }
@@ -692,7 +692,7 @@ TEST_CASE(the_startup_check_starts_once_when_the_bench_allows)
     CHECK(!upd_startup_due(&g_drv, &g_feed));     /* FILES & UPDATE */
     g_feed.files_open = false;
     g_feed.coproc = true;
-    CHECK(!upd_startup_due(&g_drv, &g_feed));     /* the coprocessor's */
+    CHECK(!upd_startup_due(&g_drv, &g_feed));     /* the IOmcu's */
     g_feed.coproc = false;
     CHECK(upd_startup_due(&g_drv, &g_feed));
     CHECK(!upd_startup_due(&g_drv, &g_feed));     /* once */

@@ -40,7 +40,7 @@ in [Safety](docs/Safety.md).
   value. A command outside its range is clamped.
 - **A stop latches.** Nothing switches back to ARMED on its own, including the link coming
   back.
-- **The coprocessor does not ask permission** to protect hardware. It acts and
+- **The IOmcu does not ask permission** to protect hardware. It acts and
   reports afterwards.
 
 ## What CI checks
@@ -76,7 +76,7 @@ python3 tools/stack_check.py firmware/panel/build --check-doc
 # After a panel build, on ESP-IDF v5.4 for --check-doc: internal RAM with
 # the largest Wi-Fi mode up, and its table in docs/Performance.md.
 python3 tools/ram_budget.py firmware/panel/build --check-doc
-# After a coprocessor build: the stacks of its two cores, and core 0's row
+# After an IOmcu build: the stacks of its two cores, and core 0's row
 # in docs/Performance.md.
 python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
@@ -126,7 +126,7 @@ A change fails if:
 - drawing code exceeds its cache-line ceiling
   ([Performance](docs/Performance.md));
 - a panel task's deepest call chain exceeds its stack less 1024 bytes, or
-  a coprocessor core's deepest chain, one interrupt and 256 bytes exceed
+  an IOmcu core's deepest chain, one interrupt and 256 bytes exceed
   its stack ([Performance](docs/Performance.md#stacks)), or a stack figure
   or a count of calls not followed that Performance or `STATUS.md` gives
   differs from the build;
@@ -219,7 +219,7 @@ and the artifacts `mutation-full-0` to `mutation-full-5`.
 
 - `shared/` is pure C with no vendor SDK (software development kit): no ESP-IDF
   (Espressif Internet-of-Things Development Framework), no pico-sdk, no
-  FreeRTOS types. It compiles into the panel firmware, the coprocessor firmware
+  FreeRTOS types. It compiles into the panel firmware, the IOmcu firmware
   and the host suite from one directory. Everything that decides something
   belongs there, so it is tested on the host.
 - `protocols/` holds one module per interface to external hardware: a

@@ -6,7 +6,7 @@
 import type { Text } from '../contract.ts';
 import { CARD, Dwg, INK, SILK } from './lib.ts';
 
-// ---------------------------------------------------------------- coprocessor
+// ---------------------------------------------------------------- IOmcu
 // The RP2350-CAN board in local coordinates 0..280 by 0..720, USB-C at the top:
 // x runs across the board, y along it. The placements are data so that the
 // panel drawing (panel.ts) maps the same parts onto the pad grid of the board.
@@ -508,7 +508,7 @@ function tap(d: Dwg): void {
   d.add(d.pin('IN', 42, 66, 'W', 22, 40, { f: INK, sz: 12.5 }));
   d.add(d.pin('OUT', 258, 66, 'E', 278, 104, { f: INK, sz: 12.5, a: 'end' }));
   // The zener diode of the phase tap is a wire of the data file (kind 'component')
-  // between 2 coprocessor pads. It is not part of this drawing.
+  // between 2 IOmcu pads. It is not part of this drawing.
 }
 
 // ---------------------------------------------------------------- AS5600

@@ -49,14 +49,14 @@ auslöst, statt eine Leiterbahn zu verbrennen.
 Was eine Bench für 0.20.0 über USB (Universal Serial Bus) lädt, hängt vom
 Release ab, das sie hat:
 
-| Bench hat | Koprozessor | Panel |
+| Bench hat | IOmcu | Panel |
 | --- | --- | --- |
 | nichts (eine neue Bench), oder 0.18.0 und älter | über USB, [Schritt 2](#aus-den-release-assets) | über USB, [Schritt 3](#aus-den-release-assets) |
 | 0.19.0 | über CAN (Controller Area Network) vom Panel ([Ab 0.19.0](#ab-0190)) | über USB, [Schritt 3](#aus-den-release-assets) |
 | 0.20.0 und neuer | über CAN vom Panel | über WLAN |
 
 Das USB-Laden einer neuen Bench, oder einer mit 0.18.0 und älter, bringt
-die Partitionstabelle des Koprozessors und die zwei Anwendungs-Slots des
+die Partitionstabelle des IOmcu und die zwei Anwendungs-Slots des
 Panels an ihren Platz, und keins von beiden kommt über den Link. Ein Panel
 mit 0.19.0 nimmt kein Image über WLAN: WLAN-HOTSPOT endet beim Drücken mit
 `WLAN konnte nicht starten.`, und nach der Schätzung des internen RAM
@@ -64,26 +64,26 @@ mit 0.19.0 nimmt kein Image über WLAN: WLAN-HOTSPOT endet beim Drücken mit
 endet MIT HEIMNETZ VERBINDEN genauso. Ab 0.20.0 installiert das Panel ein
 Release über WLAN ([Bildschirme:
 WLAN](Screens-de.md#wlan)) oder lädt es von GitHub
-([Bildschirme: Updates](Screens-de.md#updates)), und der Koprozessor bekommt
+([Bildschirme: Updates](Screens-de.md#updates)), und der IOmcu bekommt
 sein Image vom Panel über CAN.
 
 ### Aus den Release-Assets
 
 | Asset | Enthält | Für |
 | --- | --- | --- |
-| `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des Koprozessors: `rcbench-iomcu-install.uf2` |
+| `rcbench-iomcu-vX.Y.Z.zip` | `rcbench-iomcu-install.uf2`, `rcbench-iomcu.uf2`, `rcbench-iomcu-pt.uf2`, `rcbench-iomcu.bin`, `rcbench-iomcu.elf` | das USB-Laden des IOmcu: `rcbench-iomcu-install.uf2` |
 | `rcbench-panel-vX.Y.Z.zip` | `flash_args`, `bootloader/bootloader.bin`, `partition_table/partition-table.bin`, `ota_data_initial.bin`, `rcbench-panel.bin`, `rcbench-panel-merged.bin`, `rcbench-panel.elf` | den USB-Flash des Panels |
-| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem Koprozessor-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.20.0 oder neuer; nicht für USB |
+| `rcbench-panel-vX.Y.Z.bin` | die Anwendung des Panels allein, mit dem IOmcu-Image, das es über CAN anbietet | ein Update über WLAN auf einem Panel mit 0.20.0 oder neuer; nicht für USB |
 | `SHA256SUMS` | die SHA-256 (Secure Hash Algorithm) der drei Dateien oben | die Prüfung in Schritt 1 |
 
-Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
+Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den IOmcu,
 `esptool.py` für das Panel (`pip install esptool`; ESP-IDF bringt es mit).
 `/dev/ttyACM0` unten heißt unter Windows `COMx`.
 
 1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
    Dateien `OK` aus.
-2. **Koprozessor.** `rcbench-iomcu-vX.Y.Z.zip` entpacken. BOOTSEL halten,
-   während die USB-Buchse des Koprozessors angeschlossen wird, sodass das
+2. **IOmcu.** `rcbench-iomcu-vX.Y.Z.zip` entpacken. BOOTSEL halten,
+   während die USB-Buchse des IOmcu angeschlossen wird, sodass das
    Modul sein Laufwerk `RP2350` zeigt. `rcbench-iomcu-install.uf2` auf das
    Laufwerk kopieren, oder:
 
@@ -93,7 +93,7 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
 
    Das Modul startet neu in Slot A. Seine Konsole gibt alle 3 s
    `rcbench-iomcu: running from slot A` aus
-   ([unten](#die-partitionstabelle-des-koprozessors)).
+   ([unten](#die-partitionstabelle-des-iomcu)).
 3. **Panel.** `rcbench-panel-vX.Y.Z.zip` entpacken und die USB-C-Buchse des
    Panels anschließen (gebrückte Buchse: Schalter auf `UART1`,
    [§0](#0-vor-dem-einschalten)). Im entpackten Ordner, auf einer Bench,
@@ -113,7 +113,7 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
    ESP Web Tool, nimmt `rcbench-panel-merged.bin` bei 0x0, mit derselben
    Wirkung wie der zweite Befehl.
 4. Beide Platinen mit verdrahtetem Link einschalten. Das Panel findet auf
-   dem Koprozessor den Build, den es trägt, und bietet kein Update an. Es
+   dem IOmcu den Build, den es trägt, und bietet kein Update an. Es
    lädt die Zeichnung der Platine neu
    ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)).
 
@@ -122,18 +122,18 @@ Werkzeuge: das Laufwerk `RP2350` oder `picotool` für den Koprozessor,
 | Einstellungen und WLAN-Einstellungen des Panels, im NVS (non-volatile storage, 24 KiB bei 0x9000) | bleiben | gelöscht; das Panel startet mit den Standardwerten |
 | Gespeicherte Platinenzeichnung des Panels | einmal verloren; beim Link-Aufbau neu geladen | einmal verloren; beim Link-Aufbau neu geladen |
 
-Der Koprozessor behält seine Bindungen, die Verdrahtung der Versorgung und
+Der IOmcu behält seine Bindungen, die Verdrahtung der Versorgung und
 die Einrichtung der Strommonitore, mit der Ausnahme für einen RP2350 der
-Stepping A2, die [unten](#die-partitionstabelle-des-koprozessors) steht.
+Stepping A2, die [unten](#die-partitionstabelle-des-iomcu) steht.
 
 Das Panel darf zuerst kommen. Ein Panel mit 0.19.0 oder neuer an einem
-Koprozessor ohne Partitionstabelle zeigt `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, bis Schritt 2 erledigt ist; der Link läuft
+IOmcu ohne Partitionstabelle zeigt `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, bis Schritt 2 erledigt ist; der Link läuft
 solange.
 
 ### Ab 0.19.0
 
 Eine Bench mit 0.19.0 lädt das Panel über USB, und nur das Panel. Der
-Koprozessor hat die Partitionstabelle vom USB-Laden für 0.19.0 und bekommt
+IOmcu hat die Partitionstabelle vom USB-Laden für 0.19.0 und bekommt
 0.20.0 über CAN aus dem Image, das das neue Panel mitbringt. Das
 Link-Protokoll bleibt 4.22, also verbinden sich beide Platinen vor und nach
 dem Update.
@@ -146,15 +146,15 @@ dem Update.
    `rcbench-panel-merged.bin` bei 0x0, mit `esptool.py` oder dem
    Browser-Flasher, um mit den Standardeinstellungen zu beginnen.
 3. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
-   vergleicht das Panel das laufende Image des Koprozessors per SHA-256 mit
+   vergleicht das Panel das laufende Image des IOmcu per SHA-256 mit
    dem Image, das es mitbringt, findet einen anderen Build, und das Band
-   meldet `Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.`.
-4. **Koprozessor.** Die Frage öffnet sich auf dem Menü, solange die Bench
+   meldet `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`.
+4. **IOmcu.** Die Frage öffnet sich auf dem Menü, solange die Bench
    SAFE ist, der Ausgang der Versorgung aus und der Funk des Panels aus. Sie
-   nennt 0.19.0 auf dem Koprozessor und 0.20.0 im Panel. START 2 s halten.
+   nennt 0.19.0 auf dem IOmcu und 0.20.0 im Panel. START 2 s halten.
    Der Fortschritt füllt den Bildschirm ([Bildschirme:
-   Koprozessor-Update](Screens-de.md#koprozessor-update)), und zurück auf
-   dem Menü meldet das Band `Koprozessor auf 0.20.0 aktualisiert.`.
+   IOmcu-Update](Screens-de.md#iomcu-update)), und zurück auf
+   dem Menü meldet das Band `IOmcu auf 0.20.0 aktualisiert.`.
 
 | Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
 | --- | --- | --- |
@@ -162,27 +162,27 @@ dem Update.
 | Gespeicherte Platinenzeichnung des Panels, `boardart` bei 0x7E0000 | bleibt: das letzte Teil endet mit der Anwendung, etwa 2,1 MB ab 0x0 | bleibt: das Image endet mit der Anwendung, etwa 2,1 MB ab 0x0 |
 
 Das Panel zeigt die gespeicherte Zeichnung wieder, wenn die ARTWORK-Seite
-des Koprozessors dieselbe Zeichnung nennt, und lädt sie sonst neu
+des IOmcu dieselbe Zeichnung nennt, und lädt sie sonst neu
 ([§4](#4-erster-link-aufbau-die-zeichnung-der-platine)). Die Einstellung
 ERINNERUNG BEIM START ist neu in 0.20.0 und steht auf EIN.
 
-Das Update des Koprozessors schreibt den Slot, aus dem er nicht läuft.
+Das Update des IOmcu schreibt den Slot, aus dem er nicht läuft.
 Seine Bindungen, die Verdrahtung der Versorgung und die Einrichtung der
 Strommonitore bleiben: sie liegen in der Store-Partition bei 0x3FC000, oder
 vor deren erstem Speichern im alten Store bei 0x3FE000, und das Update
-schreibt keins von beiden. CANCEL auf der Frage lässt den Koprozessor auf
+schreibt keins von beiden. CANCEL auf der Frage lässt den IOmcu auf
 0.19.0; das Panel fragt nach seinem nächsten Start wieder. Fällt während des
 Updates der Strom aus, läuft das alte Image weiter, und der nächste
-Link-Aufbau bietet das Update wieder an. Ein Koprozessor, der das USB-Laden
+Link-Aufbau bietet das Update wieder an. Ein IOmcu, der das USB-Laden
 für 0.19.0 verpasst hat, hat keine Partitionstabelle: das Band meldet
-`Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, und er
+`IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, und er
 bekommt [Schritt 2](#aus-den-release-assets). Die Dauer des Updates über CAN
 ist nicht gemessen.
 
 ### Aus einem Quellbaum
 
 ```bash
-# Koprozessor — erzeugt rcbench-iomcu-install.uf2 und rcbench-iomcu.uf2
+# IOmcu — erzeugt rcbench-iomcu-install.uf2 und rcbench-iomcu.uf2
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
@@ -192,7 +192,7 @@ idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor
 ```
 
-Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
+Der IOmcu-Build gibt seine eigene Größenprüfung aus:
 
     -- rcbench: image 191808 bytes, 9% of the 2084864 bytes of one slot
 
@@ -201,17 +201,17 @@ Der Koprozessor-Build gibt seine eigene Größenprüfung aus:
 angibt. Der Linker misst gegen 16 MB und warnt nicht. Die Zeile oben ist das
 Einzige, was es tut — also lesen.
 
-### Die Partitionstabelle des Koprozessors
+### Die Partitionstabelle des IOmcu
 
-Der Flash des Koprozessors trägt eine Partitionstabelle: zwei Image-Slots
+Der Flash des IOmcu trägt eine Partitionstabelle: zwei Image-Slots
 von je 2036 KiB und eine eigene 8-KiB-Partition für den Ausgangsspeicher
 ([Link](Link-de.md#firmware-update-über-den-link) zeigt die Aufteilung).
-Spätere Koprozessor-Images schickt das Panel über CAN in den Slot, der nicht
-läuft. Ein neues Modul und ein Koprozessor mit 0.18.0 oder älter (einem Image des
+Spätere IOmcu-Images schickt das Panel über CAN in den Slot, der nicht
+läuft. Ein neues Modul und ein IOmcu mit 0.18.0 oder älter (einem Image des
 Protokolls 4.21 oder älter) haben keine Tabelle und bekommen Tabelle und
 erstes Image einmal über USB.
 
-Die USB-Buchse des Koprozessors angeschlossen und BOOTSEL beim Einschalten
+Die USB-Buchse des IOmcu angeschlossen und BOOTSEL beim Einschalten
 gehalten, sodass das Modul sein Laufwerk `RP2350` zeigt:
 
 ```bash
@@ -222,7 +222,7 @@ picotool load -v -x firmware/iomcu/build/rcbench-iomcu-install.uf2
 picotool partition info
 ```
 
-**Gut:** die Konsole des Koprozessors gibt alle 3 s `rcbench-iomcu: running
+**Gut:** die Konsole des IOmcu gibt alle 3 s `rcbench-iomcu: running
 from slot A` aus. Die Bindungen, die Verdrahtung der Versorgung und die
 Einrichtung der Strommonitore kommen aus dem alten Speicher bei 0x3FE000, bis
 das erste Speichern den neuen schreibt. `no partition table -- firmware
@@ -324,10 +324,10 @@ und der Multiplexer wählt eines aus:
 | | |
 |---|---|
 | Panel-Seite | **GPIO6**, an **J8** (dreipolige Stiftleiste mit 3V3, GND, GPIO6) |
-| Koprozessor-Seite | **GP3** |
-| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der Koprozessor gesund ist: Er schaltet nach 150 ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der Koprozessor nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
+| IOmcu-Seite | **GP3** |
+| Dazwischen | das retriggerbare Monoflop, sobald es eines gibt. Es ist auf keiner Platine, der Aufbau-Prüfstand fährt daher eine direkte Leitung und hat keine Hardware-Rückfallebene. Die Leitung deckt ein Panel ab, das aufhört zu schlagen, solange der IOmcu gesund ist: Er schaltet nach 150 ms Stille auf SAFE. Unabgedeckt bleibt ein Panel, das aufhört zu schlagen, während der IOmcu nicht handeln kann -- dann nimmt nichts die Ausgänge weg, und genau das täte das Monoflop ohne jede Firmware |
 
-Ohne diesen Draht verweigert der Koprozessor jedes Schalten auf ARMED, und das ist die
+Ohne diesen Draht verweigert der IOmcu jedes Schalten auf ARMED, und das ist die
 Verriegelung, die arbeitet — kein Fehler.
 
 **Die Zahlen, an denen er gemessen wird:**
@@ -341,7 +341,7 @@ Verriegelung, die arbeitet — kein Fehler.
 Die Leitung muss also rund **80 ms** flanken, bevor ein Arm gelingen kann.
 
 **Am Oszilloskop, an GP3:** ein Rechteck, Flanke zu Flanke 20 ms.
-Überschreitet die Lücke je 150 ms, verwirft der Koprozessor sie und das
+Überschreitet die Lücke je 150 ms, verwirft der IOmcu sie und das
 nächste Schalten auf ARMED wird verweigert.
 
 **Woher die Flanken kommen:** aus der Control-Task des Panels, innerhalb
@@ -352,12 +352,12 @@ deshalb darf dort nichts Langes laufen.
 
 ## 4. Erster Link-Aufbau: die Zeichnung der Platine
 
-Der Koprozessor trägt eine 1 560 Bytes große Zeichnung seiner eigenen
+Der IOmcu trägt eine 1 560 Bytes große Zeichnung seiner eigenen
 Platine. Das Panel holt sie beim ersten Link-Aufbau und behält sie im Flash.
 
 Auf der Panel-Konsole, in dieser Reihenfolge:
 
-    I (…) rcbench: coprocessor answered
+    I (…) rcbench: IOmcu answered
     I (…) rcbench: hardware 1 says where its pads are
     I (…) rcbench: hardware 1 says which pads are grounds and rails
     I (…) rcbench: fetching hardware 1's drawing: 1560 bytes, hash 8f99cd48
@@ -388,13 +388,13 @@ Auf der Panel-Konsole, in dieser Reihenfolge:
   aufschreiben.
 
 Beim nächsten Link-Aufbau liest das Panel Länge, CRC (zyklische
-Redundanzprüfung) und Hash der Zeichnung vom Koprozessor und zeigt die
+Redundanzprüfung) und Hash der Zeichnung vom IOmcu und zeigt die
 behaltene Kopie, wenn alle drei übereinstimmen:
 
     I (…) rcbench: hardware 1's drawing is kept: 1560 bytes, hash 8f99cd48
 
-Ein Koprozessor, der mit einer anderen Zeichnung geflasht wurde, meldet einen
-anderen Hash, und das Panel holt die Zeichnung neu. Ein Koprozessor mit
+Ein IOmcu, der mit einer anderen Zeichnung geflasht wurde, meldet einen
+anderen Hash, und das Panel holt die Zeichnung neu. Ein IOmcu mit
 Protokoll 4.19 oder älter liefert keine Zeichnung; das Panel schreibt
 `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its
 shape` ins Log und zeichnet die Platine aus ihrem Umriss.
@@ -407,14 +407,14 @@ Noch ist nichts an einem Output verdrahtet. Dieser Schritt prüft die
 Verriegelung, nicht einen Pin.
 
 1. **Heartbeat-Draht abgezogen** → Das Schalten auf ARMED muss **verweigert** werden. Der
-   Koprozessor antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt die
+   IOmcu antwortet `NOT_ARMED`, weil `!beat.alive`. Das Panel zeigt die
    Verweigerung.
-2. **Heartbeat-Draht gesteckt, Panel ARMED** → der Koprozessor nimmt es an.
+2. **Heartbeat-Draht gesteckt, Panel ARMED** → der IOmcu nimmt es an.
 3. **Heartbeat-Draht in ARMED ziehen** → muss binnen **150 ms**
    auf SAFE fallen.
 4. **STOP drücken** → rastet ein. Es zu verlassen braucht ein ausdrückliches
    Arm, keinen Link, der sich erholt.
-5. **CAN-Draht in ARMED ziehen** → der Koprozessor gibt nach
+5. **CAN-Draht in ARMED ziehen** → der IOmcu gibt nach
    **200 ms** auf; das Panel eskaliert nach **1 s**.
 6. **Touch abdecken / sterben lassen** → nach **500 ms** Stille ist Armen
    gesperrt.
@@ -430,7 +430,7 @@ den das Oszilloskop am leichtesten liest.
 
 **Freie Pins für einen Output:** GP0, GP1, GP2, GP4, GP5, GP6, GP7, GP13 bis
 GP22 und GP26 bis GP28. GP13 ist der Pin des Programmierports an einem
-Koprozessor, der keinen gespeichert hat, und wird für einen Output
+IOmcu, der keinen gespeichert hat, und wird für einen Output
 verweigert, bis der Pin des Ports verlegt ist
 ([Link](Link-de.md#die-programmierports)).
 **Reserviert und verweigert:** GP3 (Heartbeat), GP8–GP12 (CAN), GP23, GP24, GP25
@@ -465,7 +465,7 @@ unbestätigte Fläche im Baum.
 **Danach:** bestätigen, dass der Servo-Bildschirm loslässt, wenn man es ihm
 sagt, und nur dann. Den Finger zu heben stoppt den Ausgang nicht: der
 Bildschirm hält die gegebene Stellung und wiederholt sie alle **100 ms**
-(`SERVO_HOLD_MS`) gegen die **500 ms** des Koprozessors
+(`SERVO_HOLD_MS`) gegen die **500 ms** des IOmcu
 (`OUT_DEFAULT_TIMEOUT_MS`), ein Servo bleibt also stehen, wo es hingestellt
 wurde. **FREIGEBEN** führt die Ruderflächen auf die Mitte zurück; es löscht den
 Slot nicht, und der Pin pulst weiter. Beendet werden die Flanken durch
@@ -492,14 +492,14 @@ Code baut. Für jede einen echten Wert aufschreiben:
   wartet.
 - **Die erweiterten Telemetrie-Frametypen** und ihre Einheiten.
 - **Der PPM-DMA-Ring**, der einen Frame abspielt.
-- **Das Flash-Löschfenster** auf dem Koprozessor, und ob der Heartbeat über
+- **Das Flash-Löschfenster** auf dem IOmcu, und ob der Heartbeat über
   ein Speichern hinweg wieder greift.
 
 ---
 
 ## 8. Strommonitore (INA228, INA3221)
 
-Core 1 des Koprozessors liest einen INA228 im Leistungspfad des ESC und
+Core 1 des IOmcu liest einen INA228 im Leistungspfad des ESC und
 einen INA3221 an der Servoversorgung über I2C (Inter-Integrated Circuit) mit
 400 kHz, jede 1 ms. Jeder Schritt unten
 sagt, wie gut aussieht; alles andere ist ein Befund zum Aufschreiben.
@@ -525,7 +525,7 @@ cmake -S firmware/iomcu -B firmware/iomcu/build-sense -DIOMCU_SENSE_BRINGUP=ON
 cmake --build firmware/iomcu/build-sense
 ```
 
-**Verdrahten** (alles Pads des Koprozessors auf dem Modul RP2350-CAN):
+**Verdrahten** (alles Pads des IOmcu auf dem Modul RP2350-CAN):
 
 | Draht | Von | Nach |
 |---|---|---|
@@ -537,12 +537,12 @@ cmake --build firmware/iomcu/build-sense
 
 Die Firmware schaltet die eigenen Pull-ups und Pull-downs der Pads an beiden
 Pins ab: der Bus läuft auf den Pull-ups der Module und den beiden 2,2 kΩ.
-**Bevor der Koprozessor angeschlossen wird**, die Module versorgen und SDA
+**Bevor der IOmcu angeschlossen wird**, die Module versorgen und SDA
 und SCL gegen GND messen: beide dürfen höchstens 3,3 V zeigen. Auf welche
 Spannung das MATEK hochzieht, ist nicht bekannt.
 
 **Die Konsole.** Alle 3 s, solange ein Bauteil freigegeben ist, druckt der
-Koprozessor zwei Zeilen:
+IOmcu zwei Zeilen:
 
 ```
 rcbench-iomcu: sense flags 0x0133 present 0x0021 ids 0x2281 0x3220 errors 0 | bench 1680 cV 1200 cA 33 mAh 6 dWh flags 0x63 | temp 254 dC
@@ -571,7 +571,7 @@ antwortet 0x238x und wird abgewiesen (Flag 0x0004). Ein DAOKAI-Exemplar, das
 
 ### 8.2 Der Bus am Oszilloskop
 
-SDA und SCL am Koprozessor abgreifen.
+SDA und SCL am IOmcu abgreifen.
 
 **Gut:** SCL mit 400 kHz (2,5 µs je Takt); Anstiegszeit, 30 % bis 70 %,
 höchstens 300 ns; eine Lesung von Register 0x01 des INA3221 alle 1,0 ms;
@@ -655,7 +655,7 @@ und am Shunt wartet darauf.
 
 ### 8.9 Die 1-ms-Samples von CH1 auf der Konsole
 
-Ein Koprozessor-Image, das mit `-DSENSE_TRACE=ON` gebaut ist, druckt die
+Ein IOmcu-Image, das mit `-DSENSE_TRACE=ON` gebaut ist, druckt die
 1-ms-Samples von INA3221 CH1 als Text auf seine USB-Konsole (Universal
 Serial Bus). Der Link überträgt nur 50-ms-Fenster; dieser Build ist der
 einzige Weg zu den einzelnen Samples. Er ist ein Debug-Build: ein
@@ -760,7 +760,7 @@ des Servos, die zu messenden Servos und einen Windows-PC mit PuTTY. Teil A
 braucht keinen Encoder. Teil B braucht einen AS5600 auf der Welle des
 Servos.
 
-**Das Terminal.** Die Konsole ist die USB-C-Buchse des Koprozessor-Moduls
+**Das Terminal.** Die Konsole ist die USB-C-Buchse des IOmcu-Moduls
 selbst, über die auch das Image geflasht wird, nicht die des Panels. Im
 Windows-Geräte-Manager steht sie unter "Anschlüsse (COM & LPT)" als
 "Serielles USB-Gerät (COMn)", Hardware-ID `VID_2E8A`. Einstellungen in
@@ -773,7 +773,7 @@ PuTTY:
 | Session, Logging | "All session output", für jeden Lauf ein neuer Dateiname |
 
 Der Port ist USB CDC (Communications Device Class): die Geschwindigkeit
-wird nicht benutzt, jeder Wert geht. Der Koprozessor druckt nur, solange
+wird nicht benutzt, jeder Wert geht. Der IOmcu druckt nur, solange
 das Terminal DTR (Data Terminal Ready) hält; PuTTY tut das, solange der
 Port offen ist. Keine Zeitstempel im Mitschnitt: in einem Trace ist eine
 Zeile, vor der etwas steht, ein Schaden, und keine Bewegung dieses Trace
@@ -843,10 +843,10 @@ lesen sich als Werte.
 
 **Was das Tool ablehnt.** Zwischen der Zeile `$T` und der Zeile `$Z` eines
 Trace ist jede Zeile eine ganze Zeile des Formats oder eine eigene
-Konsolenzeile des Koprozessors, die mit `rcbench-iomcu:` beginnt. Ganz ist
+Konsolenzeile des IOmcu, die mit `rcbench-iomcu:` beginnt. Ganz ist
 eine Zeile mit jedem Feld ihres Typs in seiner Reihenfolge, mit nichts
 vor, zwischen oder hinter den Feldern und mit jeder Zahl in dem Bereich,
-in dem der Koprozessor sie hält: eine Zeile `$C` oder `$D` hat `ch=` und
+in dem der IOmcu sie hält: eine Zeile `$C` oder `$D` hat `ch=` und
 `us=`, eine Zeile `$D` danach `cmd=`, eine Zeile `$E` oder `$K` keines von
 beiden. Das Tool liest die Formatversionen 3 und 2 (`$T v=`). Eine Zeile
 `$D` der Version 2 hat kein `cmd=`, und das Tool beendet mit ihr das
@@ -966,7 +966,7 @@ gewählt, nicht gemessen.
   Kommandos über die Abstände der Bewegungen zu; ordnen zwei Versätze
   gleich viele Zeilen zu, aber nicht dieselben Zeilen denselben
   Bewegungen, sagt es das, endet mit 1 und nimmt `--csv-offset`.
-- Ein Mitschnitt mit einem Neustart des Koprozessors darin hat eine Uhr je
+- Ein Mitschnitt mit einem Neustart des IOmcu darin hat eine Uhr je
   Boot. Das Tool nimmt eine Zeile `$T` als Neustart, wenn ihr
   Millisekunden-Tick vor dem der letzten liegt oder ihre Trace-Nummer
   nicht hinter der letzten; fehlende Nummern sind Traces, die keine
@@ -1008,7 +1008,7 @@ gewählt, nicht gemessen.
 | Link steht, Bildschirm bietet keine Pins an | Der Katalog der Platine kam nicht an. Die Konsole sagt, welche Page scheiterte. |
 | Heartbeat fällt beim ersten Link-Aufbau aus | **Die Übertragung der Zeichnung oder der Flash-Keeper.** Siehe §4. |
 | Display friert kurz ein | Ein Flash-Schreiben. Erwartet, solange die Zeichnung der Platine abgelegt wird, einmal pro Flash-Operation, 4 für die Zeichnung des RP2350-CAN. |
-| Koprozessor bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
+| IOmcu bootet nach dem Flashen nicht | Image über 4 MB. Die Größenzeile aus §1 prüfen. |
 | Panel bootet, aber keine `boardart`-Partition | Nur die App über eine alte Tabelle geflasht. Merge-bin bei Offset 0. |
 | Output geht nach ½ s in die Mitte | Arbeitet wie vorgesehen — in diesen Kanal hat nichts geschrieben, also ist er in seine Ruhelage gegangen: Mitte beim Servo, null beim Motor. Die Impulse laufen weiter, solange der Prüfstand ARMED ist |
 | Impulse hören ganz auf | Nicht der Timeout. Etwas hat den Pin freigegeben, auf SAFE geschaltet oder den Prüfstand gestoppt |
@@ -1024,7 +1024,7 @@ neuesten und am wenigsten bewährten Dinge nur vom Compiler geprüft:
 - die **Run-Log-Task** (`runlog`), der jeder Schreibzugriff auf die SD-Karte
   (Secure Digital) gehört.
 
-Die ersten beiden sind bei einem Koprozessor, der keine Zeichnung meldet, wirkungslos —
+Die ersten beiden sind bei einem IOmcu, der keine Zeichnung meldet, wirkungslos —
 das ist der schnellste Weg, sie auszuschließen. Die dritte ist ohne Karte im
 Schacht wirkungslos. Mit Karte hängt sie bei jedem Fehler eine Zeile an
 `RCBENCH.LOG`, ob ARMED oder nicht; die Lauf-Datei wartet auf das Schalten auf

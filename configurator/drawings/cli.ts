@@ -17,7 +17,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 /** Folder of the SVG files. Vite copies `public/` into the page. */
 export const SVG_DIR = join(here, '..', 'public', 'drawings');
 export const ANCHORS_FILE = join(here, 'anchors.json');
-/** The panel drawing of the coprocessor board; tools/gen_board_drawing.py reads it. */
+/** The panel drawing of the IOmcu board; tools/gen_board_drawing.py reads it. */
 export const PANEL_FILE = join(here, 'panel.json');
 
 /** The committed panel drawing against the output of the generator. */

@@ -38,7 +38,7 @@ The radio goes off on its own, and the card names the reason in one line:
 | `Wi-Fi switched off after 16 wrong access codes.` | 16 wrong codes on the page |
 | `Wi-Fi could not start.` | the radio failed to start |
 
-Leaving the screen switches the radio off as well. The link to the coprocessor and the heartbeat run as on every other screen.
+Leaving the screen switches the radio off as well. The link to the IOmcu and the heartbeat run as on every other screen.
 
 ## ACCESS POINT
 
@@ -121,7 +121,7 @@ The page uses the panel's language.
 
 ![A newer image waits](view:wifi-question)
 
-An image the page received waits on the panel as a question with both versions. INSTALL is a 2 s hold, `HOLD 2 s: INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no coprocessor update running.
+An image the page received waits on the panel as a question with both versions. INSTALL is a 2 s hold, `HOLD 2 s: INSTALL`; the browser cannot start it. CANCEL drops the image. The install needs the bench SAFE, the supply output off, no log run open, no board drawing being fetched or kept and no IOmcu update running.
 
 ![An older image, and a drawing being kept](view:wifi-older)
 

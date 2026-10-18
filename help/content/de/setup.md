@@ -16,7 +16,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kate
 |---|---|---|
 | ANWENDUNG | `10 EINSTELLUNGEN` | die Liste von ANWENDUNG |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
-| OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes Koprozessor-Pins, als Liste |
+| OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): die Dateien der Karte und ein Upload der Panel-Firmware im Browser, und das Heimnetz |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): die Suche nach einem neueren Release der Panel-Firmware und den Schalter der Erinnerung |
@@ -82,7 +82,7 @@ Das Home-Tag auf den Kacheln führt zum Menü. Solange die Speichertaste `SPEICH
 | VERWERFEN | stellt jeden genannten Wert auf den gespeicherten zurück, wie ein Schritt von Hand, und öffnet dann das Menü |
 | SPEICHERN | fordert das Schreiben an wie die Speichertaste und öffnet dann das Menü |
 
-- VERWERFEN schickt einen Pin oder einen Port sofort zurück an den Koprozessor. Eine zurückgestellte Verdrahtung des PD mini schaltet den Netzteilausgang ab, wie eine Änderung von Hand.
+- VERWERFEN schickt einen Pin oder einen Port sofort zurück an den IOmcu. Eine zurückgestellte Verdrahtung des PD mini schaltet den Netzteilausgang ab, wie eine Änderung von Hand.
 - Bei ARMED ist VERWERFEN abgeblendet und tut nichts; die Zeile `VERWERFEN wartet, bis der Prüfstand SAFE ist.` sagt das. BLEIBEN und SPEICHERN wirken.
 - PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der Servo-Programmierer den Servo-Port hält; sie bleiben ungespeichert.
 - Bei mehr als 10 Änderungen zeigen sich 9 Zeilen, und die letzte Zeile lautet bei 12 `und 3 weitere`.

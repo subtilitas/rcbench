@@ -6,7 +6,7 @@ order: 63
 
 # Pin-Auswahl
 
-PICK A PIN zeigt die Platine des Koprozessors, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md). Jeder Besuch öffnet mit OFF gewählt: Keine Taste bindet oder löst einen Pin, bis ein Protokoll in der Liste gewählt ist, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`.
+PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md). Jeder Besuch öffnet mit OFF gewählt: Keine Taste bindet oder löst einen Pin, bis ein Protokoll in der Liste gewählt ist, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`.
 
 ## Die Platine und ihre Tasten
 
@@ -64,7 +64,7 @@ Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Prot
 
 ## Die Platinenzeichnung
 
-Der Koprozessor trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01 mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
+Der IOmcu trägt eine Zeichnung von sich selbst: Umriss, Bauteile und jedes Pad, maßstäblich in 0,01 mm. Das Panel lädt sie über den Link, hält sie im Flash und zeigt sie nur, wenn sie zu Form und Pin-Katalog der Platine passt.
 
 ![Die Pin-Auswahl, allein aus der Form gezeichnet](view:picker-drawn)
 

@@ -33,7 +33,7 @@ typedef struct {
     ui_text_id_t   line;
     ui_icon_fn     icon;
     uint16_t       needs;   /**< the hardware it needs, as link_cap_t     */
-    /** Modelled on the panel whatever the coprocessor reports: no link
+    /** Modelled on the panel whatever the IOmcu reports: no link
      *  capability names the hardware.  SUPPLY's holds only until SETUP
      *  enables the PD mini; see overview_screen_set_supply_real(). */
     bool           model_only;
@@ -53,7 +53,7 @@ static const tile_t k_tiles[] = {
     { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,
       LINK_CAP_RECEIVER, false },
     { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
-      0, false },   /* the card is on the panel; nothing needed from the coprocessor */
+      0, false },   /* the card is on the panel; nothing needed from the IOmcu */
     { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders,
       0, false },
     { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery,

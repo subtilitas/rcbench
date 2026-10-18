@@ -77,8 +77,8 @@ With the phase tap enabled on SETUP, INTERFACES, the page adds a read-only reado
 |---|---|
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture overran since the tap was enabled |
-| `WAITING` | no link, or no fresh answer from the coprocessor's tone page in the last 500 ms |
-| `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
+| `WAITING` | no link, or no fresh answer from the IOmcu's tone page in the last 500 ms |
+| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
 | `PIN NOT FREE` | the tap's pin is bound elsewhere |
 | `NOT RUNNING` | enabled, and the set-up was refused or is not written yet |
 

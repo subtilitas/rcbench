@@ -1,6 +1,6 @@
 /*
- * What the sense_link suites share: the coprocessor's end of the link (the
- * real SENSE page code, or a 4.6 coprocessor that refuses the pages), the
+ * What the sense_link suites share: the IOmcu's end of the link (the
+ * real SENSE page code, or a 4.6 IOmcu that refuses the pages), the
  * panel's end under test, a clock, and the helpers that poll and set the
  * far end's registers.  Functions are static inline: a suite uses some of
  * them.
@@ -21,10 +21,10 @@
 #include "sense_page.h"
 
 static outputs_t    o;
-static sense_page_t pg;      /* the coprocessor's end */
+static sense_page_t pg;      /* the IOmcu's end */
 static sense_link_t sl;      /* the panel's end */
 static uint32_t     now;
-static uint16_t     minor;   /* the coprocessor's protocol minor */
+static uint16_t     minor;   /* the IOmcu's protocol minor */
 static unsigned     writes, reads, to_sense, idents;
 static bool         idle;
 static unsigned     last_status_n;    /* the registers of the last status read */
@@ -56,7 +56,7 @@ static inline void fresh(uint16_t m)
 }
 
 /*
- * One exchange as the coprocessor answers it.  A 4.6 coprocessor has no
+ * One exchange as the IOmcu answers it.  A 4.6 IOmcu has no
  * SENSE or SERVO_SENSE page and refuses both with BAD_PAGE.
  */
 static inline int far_exchange(const sense_link_op_t *op, uint16_t *regs)
@@ -136,7 +136,7 @@ static inline void far_enc(uint16_t flags, uint16_t raw, uint16_t samples,
 
 #define ENC_OK (LINK_SN_ENC_ONLINE | LINK_SN_ENC_MD | LINK_SN_ENC_VALID)
 
-/* The encoder asked for on a coprocessor of minor @p m, the set-up
+/* The encoder asked for on an IOmcu of minor @p m, the set-up
  * written. */
 static inline void enc_wanted(uint16_t m)
 {

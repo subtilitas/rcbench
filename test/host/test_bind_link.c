@@ -1,10 +1,10 @@
 /*
  * A binding on the link: the panel's write and read sequences
  * (shared/outputs/bind_link.c, shared/link/link_port.c) against the
- * coprocessor's page rules and its prepared pages (shared/outputs/
+ * IOmcu's page rules and its prepared pages (shared/outputs/
  * outputs_pages.c, out_stage.c), over a modelled bus.
  *
- * The model is the part of the bench the defect lives in.  The coprocessor's
+ * The model is the part of the bench the defect lives in.  The IOmcu's
  * CAN (Controller Area Network) controller holds 2 received frames and is
  * read from a polled loop; a frame that arrives with both taken is lost.  A
  * frame is 125 us here (about 130 us at 1 Mbit/s), the loop takes every
@@ -41,7 +41,7 @@
 
 #define BOARD ((uint16_t)OUTBIND_BOARD_PICO_HEADER)
 
-/* ------------------------------------------------------- the coprocessor */
+/* ------------------------------------------------------- the IOmcu */
 
 typedef struct {
     uint16_t cfg[LINK_CC_COUNT];        /* CHAN_CFG in force            */
@@ -101,7 +101,7 @@ static void slots_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     window(((far_t *)ctx)->slots, off, n, out);
 }
 
-/* The coprocessor's bank: the channels' roles, commands and outputs. */
+/* The IOmcu's bank: the channels' roles, commands and outputs. */
 static outputs_t s_bank;
 
 /* The two pages' whole-page rules, as firmware/iomcu/src/iomcu_pages.c orders
@@ -224,7 +224,7 @@ static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-/* A 4.10 coprocessor serves all six; a 4.9 one the first three. */
+/* A 4.10 IOmcu serves all six; a 4.9 one the first three. */
 static const link_page_t k_pages[] = {
     { LINK_PAGE_SERVO,    LINK_SV_COUNT, servo_read, servo_write },
     { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg_read,   cfg_write },
@@ -456,7 +456,7 @@ static bool far_saved(const pages_t *p)
 
 static pages_t s_old, s_new;
 
-/* A coprocessor of protocol 4.@p minor holding the bench binding, saved. */
+/* An IOmcu of protocol 4.@p minor holding the bench binding, saved. */
 static void fresh_at(uint16_t minor, uint32_t ms0)
 {
     memset(&far, 0, sizeof(far));
@@ -674,7 +674,7 @@ TEST_CASE(a_write_that_cannot_be_built_sends_nothing)
  * The write as 0.14.0 sends it: one request of 32 registers, 8 frames back
  * to back.  With the loop taking frames every 125 us nothing is lost.  With
  * one 20 ms deaf window over the burst, 6 of the 8 find both buffers full:
- * the host waits its 1000 ms, the coprocessor latches at 200 ms, and the
+ * the host waits its 1000 ms, the IOmcu latches at 200 ms, and the
  * page is left with 2 of its 8 entries written.
  */
 TEST_CASE(frames_sent_back_to_back_are_lost_to_a_deaf_window)
@@ -752,7 +752,7 @@ TEST_CASE(an_older_coprocessor_is_written_page_by_page)
     /* In force entry by entry: 16 takes. */
     CHECK_EQ(far.takes, 16u);
 
-    /* And a 4.0 coprocessor has no SERVO page to reset. */
+    /* And a 4.0 IOmcu has no SERVO page to reset. */
     fresh(0u);
     CHECK_EQ(bind_link_write(&host, &k_port, 0u, s_new.cfg, s_new.slots,
                              &rate), BIND_WRITTEN);
@@ -764,7 +764,7 @@ TEST_CASE(an_older_coprocessor_is_written_page_by_page)
 /*
  * One 20 ms deaf window, opened at every 125 us of the sequence and at
  * every loop pass time from 125 us to 5 ms.  A frame waits in the buffer;
- * none is lost, no exchange times out and the coprocessor does not latch.
+ * none is lost, no exchange times out and the IOmcu does not latch.
  */
 TEST_CASE(a_deaf_window_anywhere_delays_the_sequence_and_loses_nothing)
 {
@@ -808,7 +808,7 @@ TEST_CASE(a_deaf_window_anywhere_delays_the_sequence_and_loses_nothing)
 }
 
 /*
- * A sequence spread over many passes does not starve the coprocessor's
+ * A sequence spread over many passes does not starve the IOmcu's
  * silence watchdog: it counts from the last request heard, and every frame
  * of the sequence is one.  The loop here takes frames once in 22 ms, so the
  * 20 exchanges take about 440 ms, twice the 200 ms limit.
@@ -892,7 +892,7 @@ static bind_read_t settle_and_read(bind_reading_t *r)
 
 /*
  * A request frame lost at each of the 18 positions.  The exchange ends
- * unanswered, the coprocessor latches its silence failsafe as it does for
+ * unanswered, the IOmcu latches its silence failsafe as it does for
  * any lost frame, and the binding in force and the binding saved are the
  * ones from before the edit, whole.
  */
@@ -960,7 +960,7 @@ TEST_CASE(a_lost_frame_is_timed_the_same_across_the_tick_wrap)
         CHECK(took <= LINK_HOST_TIMEOUT_MS + 3u);
         CHECK(now_ms() < 0x80000000u);          /* it did wrap */
         CHECK(bus.latched);
-        /* 200 ms after the last request the coprocessor heard. */
+        /* 200 ms after the last request the IOmcu heard. */
         CHECK_EQ((uint32_t)(bus.latched_ms - bus.last_dispatch_ms),
                  LINK_DEV_SILENCE_MS);
         CHECK(far_holds(&s_old));
@@ -977,7 +977,7 @@ TEST_CASE(a_lost_frame_is_timed_the_same_across_the_tick_wrap)
 }
 
 /*
- * An older coprocessor has no prepared pages, so a frame lost part way
+ * An older IOmcu has no prepared pages, so a frame lost part way
  * leaves the entries before it in force.  The pages are then read as what
  * they are: a binding, or pages no binding describes, and never as nothing
  * bound.
@@ -1035,7 +1035,7 @@ TEST_CASE(a_refused_rate_reset_is_refused_and_writes_no_page)
     CHECK_EQ(bus.exchanges, 0u);
 }
 
-/* A commit the coprocessor refuses changes neither page: the OUTPUTS page
+/* A commit the IOmcu refuses changes neither page: the OUTPUTS page
  * refused after the CHAN_CFG page was taken puts that one back. */
 TEST_CASE(a_refused_commit_leaves_both_pages_as_they_were)
 {
@@ -1134,7 +1134,7 @@ TEST_CASE(a_refused_commit_leaves_each_channels_command_as_it_was)
 }
 
 /*
- * A coprocessor that restarts part way holds its pages in force prepared
+ * An IOmcu that restarts part way holds its pages in force prepared
  * again, not the frames sent before it restarted.  The commit names a CRC
  * (cyclic redundancy check) it does not hold and is refused.
  */
@@ -1338,7 +1338,7 @@ TEST_CASE(a_reading_is_one_of_four_things)
     const unsigned sent = bus.exchanges;
     CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_NONE);
     CHECK_EQ(bus.exchanges, sent);
-    /* A coprocessor that refuses a page. */
+    /* An IOmcu that refuses a page. */
     fresh(10u);
     link_dev_init(&dev, k_pages, 1u, &far, now_ms());      /* SERVO only */
     CHECK_EQ(bind_link_read(&host, &k_port, BOARD, &r), BIND_READ_NONE);
@@ -1513,7 +1513,7 @@ static const char *reason(void)
     return buf;
 }
 
-/* A panel with the link up on a 4.@p minor coprocessor, the bench binding
+/* A panel with the link up on a 4.@p minor IOmcu, the bench binding
  * read, the Outputs screen entered on its overview (OFF), and SERVO PWM
  * picked there. */
 static void panel_fresh(uint16_t minor)
@@ -1668,7 +1668,7 @@ TEST_CASE(a_write_whose_last_acknowledgement_is_lost_is_read_back_whole)
 }
 
 /* Pages no binding describes: one pin in two slots, as a write that landed
- * in part on a 4.9 coprocessor leaves them. */
+ * in part on a 4.9 IOmcu leaves them. */
 static void far_gets_odd_pages(void)
 {
     far.slots[1u * LINK_OS_STRIDE + LINK_OS_PIN] =
@@ -1837,7 +1837,7 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     CHECK_EQ(panel.applied, 0);
 }
 
-/* A 4.9 coprocessor, a frame lost part way, pages left that no binding
+/* A 4.9 IOmcu, a frame lost part way, pages left that no binding
  * describes: shown as such, no tap writes, and UNBIND ALL PINS recovers. */
 TEST_CASE(an_older_coprocessor_left_mixed_is_not_overwritten_by_a_tap)
 {
@@ -2025,7 +2025,7 @@ TEST_CASE(the_pin_picker_follows_a_pick_that_wrote_nothing)
 
 /*
  * Opening the Outputs screen lands on the overview and sends nothing: no
- * exchange on the bus, the coprocessor's pages as they were.  A tap on a
+ * exchange on the bus, the IOmcu's pages as they were.  A tap on a
  * pin there, on the grid or on PICK A PIN following it, calls no apply.
  * Left with OFF, both screens stay on it; PICK A PIN opens on it as well,
  * after a protocol picked on the Outputs screen too, and its tap writes

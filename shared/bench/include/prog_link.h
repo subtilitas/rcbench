@@ -4,7 +4,7 @@
  *
  * The SERVO screen's tester drives one of two things: the standard servo
  * outputs, or a programming port.  Which one is a register of the
- * coprocessor (LINK_PG_TARGET), and whether the port renders a pulse is
+ * IOmcu (LINK_PG_TARGET), and whether the port renders a pulse is
  * another (its bit in LINK_PG_PWM).  This module holds what the page last
  * read, what the screen wants, and names the one write that brings the page
  * to it.
@@ -22,7 +22,7 @@
  *   - While the servo programmer has a port, nothing is written to the
  *     page and the tester commands no port.
  *
- * A coprocessor older than protocol 4.13 has no page: nothing is read or
+ * An IOmcu older than protocol 4.13 has no page: nothing is read or
  * written and the target is the standard outputs.
  *
  * From protocol 4.19 the SERVO page's frame rate is the target's, and a
@@ -52,7 +52,7 @@ extern "C" {
 /** prog_link_drive()'s target while the page is there and not known: where
  *  the commands would go is not known, and the tester sends none. */
 #define PROG_LINK_TARGET_UNKNOWN 0xFEu
-/** prog_link_drive()'s target with no coprocessor answering. */
+/** prog_link_drive()'s target with no IOmcu answering. */
 #define PROG_LINK_TARGET_NO_LINK 0xFFu
 /** The registers prog_link_cfg() fills: SLEW, MIN_US, MAX_US of a port. */
 #define PROG_LINK_CFG_REGS 3u
@@ -68,8 +68,8 @@ typedef enum {
 #define PROG_LINK_SEEN_NONE 0xFFu
 
 typedef struct {
-    bool     up;                   /**< a coprocessor answers              */
-    bool     page;                 /**< the coprocessor has the page       */
+    bool     up;                   /**< an IOmcu answers              */
+    bool     page;                 /**< the IOmcu has the page       */
     bool     target_rate;          /**< from 4.19: a TARGET change sets the
                                         SERVO rate to 0                    */
     uint8_t  seen;                 /**< the TARGET last known, or
@@ -93,7 +93,7 @@ typedef struct {
 /** No link, no page, nothing wanted. */
 void prog_link_init(prog_link_t *p);
 
-/** A coprocessor answered with protocol minor @p minor.  What is wanted
+/** An IOmcu answered with protocol minor @p minor.  What is wanted
  *  stays; the page is unknown. */
 void prog_link_came_up(prog_link_t *p, uint16_t minor);
 
@@ -137,7 +137,7 @@ bool prog_link_next(const prog_link_t *p, bool quiet, prog_link_write_t *w);
 
 /**
  * The port @p w switches its pulse on for, as 1 + n, or 0 for a write that
- * switches none on.  A coprocessor from protocol 4.16 refuses that write
+ * switches none on.  An IOmcu from protocol 4.16 refuses that write
  * while the port's range is longer than the frame it runs at (1784 us at
  * 560 Hz), so the panel states the range the screen names to the port
  * first: a range kept from an earlier profile would keep it refused.
@@ -149,16 +149,16 @@ uint8_t prog_link_pulse_on(const prog_link_t *p, const prog_link_write_t *w);
 void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack);
 
 /** The target the screen can have: what is wanted, or 0 when the page has
- *  no such port or the port has no bound pin -- the coprocessor refuses
+ *  no such port or the port has no bound pin -- the IOmcu refuses
  *  such a target.  0 while the page is unknown or absent. */
 uint8_t prog_link_wanted(const prog_link_t *p);
 
-/** Whether prog_link_target() is the coprocessor's: there is no page, or
+/** Whether prog_link_target() is the IOmcu's: there is no page, or
  *  the page is read.  A release goes to the target that holds the pulse,
  *  so it waits for this and not for prog_link_settled(). */
 bool prog_link_ready(const prog_link_t *p);
 
-/** The target as the coprocessor holds it; 0 without a page or a read. */
+/** The target as the IOmcu holds it; 0 without a page or a read. */
 uint8_t prog_link_target(const prog_link_t *p);
 
 /** Whether a target change waits: the page is known and its target is not
@@ -194,7 +194,7 @@ prog_link_rate_t prog_link_rate(prog_link_t *p);
 bool prog_link_pwm(const prog_link_t *p);
 
 /** The GPIO port @p port is bound to, or PROG_LINK_NO_PIN: no page, no
- *  read, no such port, no pin, or a pin the coprocessor refused. */
+ *  read, no such port, no pin, or a pin the IOmcu refused. */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);
 
 /** What the tester drives: the target, and with a port its pin and pulse. */
@@ -210,16 +210,16 @@ typedef struct {
 /**
  * Where the tester's commands go now, for the SERVO screen's TARGET row.
  *
- * PROG_LINK_TARGET_NO_LINK with no coprocessor answering (before the first
+ * PROG_LINK_TARGET_NO_LINK with no IOmcu answering (before the first
  * prog_link_came_up() and after prog_link_lost()), PROG_LINK_TARGET_UNKNOWN
  * while the page is there and not known (not read yet, a read not
  * answered, a write not acknowledged).  The tester sends no command in
  * either: nothing crosses a link that is down, and prog_link_command() is
- * false while the page is not known.  A coprocessor without the page has
+ * false while the page is not known.  An IOmcu without the page has
  * target 0.
  *
  * While the servo programmer holds the port (prog_link_hold(true)) the
- * target is unchanged: the line keeps naming the target the coprocessor
+ * target is unchanged: the line keeps naming the target the IOmcu
  * holds, a port or the standard outputs.  The programmer drives the port
  * and the tester sends nothing.
  *

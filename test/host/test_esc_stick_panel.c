@@ -177,7 +177,7 @@ static int drain_cmds(motor_cmd_kind_t want)
     return n;
 }
 
-/* The modelled bench a run goes to, as the panel's without a coprocessor:
+/* The modelled bench a run goes to, as the panel's without an IOmcu:
  * the arm and the supply follow what is asked, the supply is read every
  * 50 ms, and the simulated ESC draws the current. */
 typedef struct {
@@ -305,7 +305,7 @@ TEST_CASE(a_profile_the_engine_cannot_run_goes_no_further)
 }
 
 
-/* The servo programmer's port as the coprocessor's page gives it. */
+/* The servo programmer's port as the IOmcu's page gives it. */
 static void kst_port(link_kst_state_t st)
 {
     kst_prog_feed_t f;

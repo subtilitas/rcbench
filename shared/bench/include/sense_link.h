@@ -4,9 +4,9 @@
  * from the three pages and how often, and what a read means for the
  * operator.
  *
- * The coprocessor reads the two current monitors and the output encoder (an
+ * The IOmcu reads the two current monitors and the output encoder (an
  * AS5600 angle sensor); the panel sets them up from SETUP INTERFACES and
- * reads what they measured.  A coprocessor whose protocol minor is below
+ * reads what they measured.  An IOmcu whose protocol minor is below
  * SENSE_LINK_MINOR has neither page, and nothing is sent to it: not a write
  * and not a read.  One below SENSE_LINK_ENC_MINOR has no encoder: ENABLE
  * bit 2 is not written, SENSE 26 to 31 are not read, and an encoder enabled
@@ -29,7 +29,7 @@
  *
  * Writes go out only while the caller says the bank is idle -- the page
  * refuses any change while it drives -- and only once the set-up has rested
- * SENSE_LINK_SETTLE_MS since its last edit, because the coprocessor keeps
+ * SENSE_LINK_SETTLE_MS since its last edit, because the IOmcu keeps
  * each change in flash.  A frame the page refuses is not written again
  * until the set-up changes -- except a bus frame whose SDA and SCL are one
  * I2C block's pair, refused for pins something else holds, which is
@@ -48,7 +48,7 @@
  * enabled and not answering, a part that answers with another identity,
  * the bus stuck, and a reading clipped at the top of its range.
  *
- * The window ring.  While the page of a 4.11 coprocessor enables the
+ * The window ring.  While the page of a 4.11 IOmcu enables the
  * INA3221 with CH1, SERVO_WIN's registers 0 to 15 -- the header and the two
  * newest windows -- are read every SENSE_LINK_WIN_MS, and SENSE's status
  * read goes to register 31 for RESETS, as it does with the encoder.  Each CH1 window number is handed
@@ -63,7 +63,7 @@
  *     hands nothing over and asks for the whole page in the same poll;
  *   - a number more than LINK_SW_RING behind the newest has left the ring
  *     and is counted (sense_link_win_lost());
- *   - an entry whose CLOSED bit is clear is a number the coprocessor
+ *   - an entry whose CLOSED bit is clear is a number the IOmcu
  *     skipped: nothing is handed over for it and nothing is counted.  A
  *     skipped number that left the ring before a read is counted as a
  *     window is: the page no longer says which it was;
@@ -105,7 +105,7 @@ extern "C" {
 
 /** How long a set-up rests after its last edit before it is written: a held
  *  + or - on SETUP steps a value about 30 times a second, and each write is
- *  a flash save at the coprocessor. */
+ *  a flash save at the IOmcu. */
 #define SENSE_LINK_SETTLE_MS 500u
 
 /** SENSE's read-only registers are due this long after the last read,
@@ -140,7 +140,7 @@ extern "C" {
 #define SENSE_LINK_WIN_ALL_MS 100u
 
 /** A part enabled and not online this long after its set-up was taken, or
- *  first read, is said not to answer: the coprocessor scans the bus again
+ *  first read, is said not to answer: the IOmcu scans the bus again
  *  every 1000 ms while a part is missing. */
 #define SENSE_LINK_GRACE_MS 2500u
 
@@ -173,7 +173,7 @@ typedef enum {
 typedef struct {
     bool     i228, i3221;     /**< enabled                              */
     bool     as5600;          /**< the output encoder, enabled          */
-    int8_t   sda, scl;        /**< coprocessor GPIO; -1 not set         */
+    int8_t   sda, scl;        /**< IOmcu GPIO; -1 not set         */
     uint8_t  i228_addr;       /**< 0x40 to 0x4F                         */
     uint16_t i228_uohm;       /**< shunt, uOhm                          */
     uint16_t i228_max_da;     /**< the current its range is set for, 0.1 A */
@@ -184,7 +184,7 @@ typedef struct {
 
 /** Things the caller tells the operator about, each once. */
 enum {
-    /** A part is enabled and the coprocessor has no SENSE page. */
+    /** A part is enabled and the IOmcu has no SENSE page. */
     SENSE_LINK_EV_NO_PAGE       = 0x0001,
     /** A part is enabled with SDA or SCL unset: none is enabled. */
     SENSE_LINK_EV_PINS_UNSET    = 0x0002,
@@ -202,16 +202,16 @@ enum {
     /** Something answers at the INA228's address with another identity. */
     SENSE_LINK_EV_I228_WRONG    = 0x0100,
     SENSE_LINK_EV_I3221_WRONG   = 0x0200,
-    /** SDA held low; the coprocessor clocks it free. */
+    /** SDA held low; the IOmcu clocks it free. */
     SENSE_LINK_EV_STUCK         = 0x0400,
     /** The INA228's current read at the end of its range. */
     SENSE_LINK_EV_I228_CLIPPED  = 0x0800,
     /** An INA3221 channel read 163.8 mV across its shunt; see
      *  sense_link_clipped_channel(). */
     SENSE_LINK_EV_I3221_CLIPPED = 0x1000,
-    /** STATUS fault bit 6: the coprocessor saves nothing this boot. */
+    /** STATUS fault bit 6: the IOmcu saves nothing this boot. */
     SENSE_LINK_EV_STORE_OFF     = 0x2000,
-    /** The encoder is enabled and the coprocessor is older than 4.9. */
+    /** The encoder is enabled and the IOmcu is older than 4.9. */
     SENSE_LINK_EV_ENC_OLD       = 0x4000,
     /** The encoder is enabled and does not answer at 0x36, or something
      *  answers there that is not an AS5600. */
@@ -247,7 +247,7 @@ typedef struct {
     uint16_t regs[4];         /**< a write's registers                 */
 } sense_link_op_t;
 
-/** One window of the coprocessor's, in ms: SENSE_WINDOW_MS. */
+/** One window of the IOmcu's, in ms: SENSE_WINDOW_MS. */
 #define SENSE_LINK_WINDOW_MS 50u
 
 /** One 50 ms window of INA3221 CH1, as SERVO_WIN carries it.  A clipped
@@ -275,7 +275,7 @@ typedef struct {
 /** What the servo rail's meter is chosen from (servo_source.h), as of the
  *  last exchange. */
 typedef struct {
-    bool     page;        /**< the coprocessor has SENSE                  */
+    bool     page;        /**< the IOmcu has SENSE                  */
     bool     wanted;      /**< SETUP has the INA3221 on with CH1          */
     /** SENSE's registers 0 to 11 are the set-up asked, with the INA3221
      *  enabled on CH1: no write owed and no frame refused. */
@@ -295,8 +295,8 @@ typedef struct {
 } sense_link_meter_t;
 
 typedef struct {
-    bool     up;              /**< a coprocessor answers               */
-    bool     page;            /**< the coprocessor has SENSE (4.7)     */
+    bool     up;              /**< an IOmcu answers               */
+    bool     page;            /**< the IOmcu has SENSE (4.7)     */
     bool     enc_page;        /**< and the encoder (4.9)               */
     bool     win_page;        /**< and SERVO_WIN and RESETS (4.11)     */
 
@@ -381,13 +381,13 @@ void sense_link_init(sense_link_t *s);
 void sense_link_lost(sense_link_t *s);
 
 /**
- * A coprocessor answered with protocol minor @p minor.  Below
+ * An IOmcu answered with protocol minor @p minor.  Below
  * SENSE_LINK_MINOR it has neither page and nothing is sent to it, and a
  * part enabled on SETUP raises SENSE_LINK_EV_NO_PAGE.
  */
 void sense_link_came_up(sense_link_t *s, uint16_t minor, uint32_t now_ms);
 
-/** The set-up SETUP names now.  A part enabled while a coprocessor without
+/** The set-up SETUP names now.  A part enabled while an IOmcu without
  *  the page answers raises SENSE_LINK_EV_NO_PAGE.  A set-up with a value
  *  outside the page's range -- a zeroed snapshot -- is ignored: nothing is
  *  asked, and nothing is written for it. */
@@ -434,7 +434,7 @@ uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms);
  * Put back an event sense_link_event() handed out that never reached the
  * band -- another alert replaced it first -- with what it was raised
  * with, so it is handed out again after the gap.  A clipped event takes
- * its channel back.  An event about a coprocessor is not put back once the
+ * its channel back.  An event about an IOmcu is not put back once the
  * link has gone.
  */
 void sense_link_event_back(sense_link_t *s, uint32_t ev);
@@ -463,10 +463,10 @@ enum {
  * SENSE_LINK_SETTLE_MS and waits for an idle bank -- one the page
  * refused, and a part that is on in the settings and off on the page
  * because its frame was refused, its pins are unset, both monitors share
- * an address or the coprocessor is older than the part.  The comparison
+ * an address or the IOmcu is older than the part.  The comparison
  * is want against held, the two this module writes from.  0 while no
- * coprocessor answers and before the page has been read: nothing is
- * known to compare with.  A coprocessor without the page holds no part,
+ * IOmcu answers and before the page has been read: nothing is
+ * known to compare with.  An IOmcu without the page holds no part,
  * and the parts that are on are named.
  */
 uint16_t sense_link_unheld(const sense_link_t *s);
@@ -478,7 +478,7 @@ bool sense_link_take_caps(sense_link_t *s, uint16_t *caps);
 /** FLAGS as last read, 0 before any read. */
 uint16_t sense_link_flags(const sense_link_t *s);
 
-/** Whether the INA3221's windows come from SERVO_WIN: the coprocessor has
+/** Whether the INA3221's windows come from SERVO_WIN: the IOmcu has
  *  the page and its SENSE page enables the INA3221 with CH1. */
 bool sense_link_win_on(const sense_link_t *s);
 
@@ -489,7 +489,7 @@ bool sense_link_win_on(const sense_link_t *s);
 bool sense_link_take_win(sense_link_t *s, sense_link_win_t *out);
 
 /** Window numbers that left the ring before a read took them, since init,
- *  modulo 2^32: the windows lost, and with them any number the coprocessor
+ *  modulo 2^32: the windows lost, and with them any number the IOmcu
  *  skipped that was out of the ring by the read.  A caller that compares
  *  two counts has those of the time in between. */
 uint32_t sense_link_win_lost(const sense_link_t *s);

@@ -59,7 +59,7 @@ TEST_CASE(a_heli_type_waits_for_the_warning_held_two_seconds)
 }
 
 /*
- * Every profile's endpoints are a range the coprocessor takes: one it
+ * Every profile's endpoints are a range the IOmcu takes: one it
  * refused would leave the panel driving a range the profile never named.
  * HELI TAIL 760's end of travel, 410 us, is the narrowest of them.
  */
@@ -569,7 +569,7 @@ TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
 
 /*
  * The OUTPUT page says whether the frame rate reached the pins, and in the
- * warning colour when it did not: refused by the binding, or a coprocessor
+ * warning colour when it did not: refused by the binding, or an IOmcu
  * that takes none.  News about another rate is not news about this one.
  */
 TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
@@ -605,8 +605,8 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
 }
 
 /*
- * What an acknowledged rate reaches depends on the coprocessor.  From 4.19
- * the TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
+ * What an acknowledged rate reaches depends on the IOmcu.  From 4.19
+ * the TARGET alone runs at it; a 4.1 to 4.18 IOmcu runs every PWM
  * surface at it, whatever the target, and the note says that instead in
  * its first line.  Both are news, not a warning.
  */
@@ -709,7 +709,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
 }
 
 /* The states the note is held to: the TARGET setting, the drive the
- * coprocessor holds, the English lines it must give and the warning colour. */
+ * IOmcu holds, the English lines it must give and the warning colour. */
 typedef struct {
     int         setting;    /* SET_SERVO_TARGET */
     uint8_t     target;     /* the drive: 0, 1 + n, _UNKNOWN or _NO_LINK */
@@ -744,13 +744,13 @@ static const note_state_t k_note[] = {
       "PORT PWM is OFF. The port sends no pulses.", true },
     { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, true,
       "Active rate: 50 Hz. Target unknown.", PPM_LINE, true },
-    /* No link: the coprocessor may have restarted, so no rate is named. */
+    /* No link: the IOmcu may have restarted, so no rate is named. */
     { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, true,
       "No link. The active frame rate is unknown.", PPM_LINE, true },
 };
 #define NOTE_N ((int)(sizeof(k_note) / sizeof(k_note[0])))
 
-/* The note on the OUTPUT page follows the target the coprocessor holds, not
+/* The note on the OUTPUT page follows the target the IOmcu holds, not
  * the TARGET setting: the outputs, the port with its pin, the port
  * without one, and a target not known.  The warning colour marks a setting
  * the drive does not follow, a port without a pin or with its pulse off,
@@ -845,7 +845,7 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
 /* The note carries the rate the screen runs, not 50 Hz: HELI TAIL 760's
  * 560 Hz on the port's pin as drawn, and in the lines for a target not
  * known and for a port with no pin.  No link names no rate at all, also
- * for a coprocessor before 4.19 whose note says "every PWM surface". */
+ * for an IOmcu before 4.19 whose note says "every PWM surface". */
 TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
 {
     fresh();
@@ -874,7 +874,7 @@ TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
     CHECK(both_whole());
     CHECK(note_matches("No link. The active frame rate is unknown.", PPM_LINE,
                        true));
-    /* A 4.1 to 4.18 coprocessor's "every PWM surface" line too. */
+    /* A 4.1 to 4.18 IOmcu's "every PWM surface" line too. */
     servo_screen_rate(servo_rate_in_force(18u), 560u);
     CHECK(both_whole());
     CHECK(note_matches("No link. The active frame rate is unknown.", PPM_LINE,
@@ -888,7 +888,7 @@ TEST_CASE(the_in_force_note_carries_the_rate_and_names_none_without_a_link)
 }
 
 /* The note and the drive come from the same record: PROG PORT set with no
- * pin bound to port 0 leaves the coprocessor on the standard outputs, and
+ * pin bound to port 0 leaves the IOmcu on the standard outputs, and
  * the note says OUTPUTS in the warning colour; with GP13 bound the TARGET
  * write lands and the note names the port's pin. */
 TEST_CASE(the_in_force_note_follows_the_prog_page_not_the_setting)

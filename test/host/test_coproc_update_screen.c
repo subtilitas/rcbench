@@ -1,5 +1,5 @@
 /*
- * The coprocessor update's screen: the START hold, CANCEL, the two latches
+ * The IOmcu update's screen: the START hold, CANCEL, the two latches
  * the application reads, the version comparison behind the word "older",
  * and the band the router draws over each view.
  *

@@ -23,7 +23,7 @@
  * that burst is timed here: this file turns a captured sample stream into
  * bits, bits into a value, and a value into rpm (revolutions per minute).
  * The capture itself is a PIO (programmable input/output) program on the
- * coprocessor.
+ * IOmcu.
  *
  * What is written from the published description and has not been confirmed
  * against an ESC on this bench: the extended-telemetry frame types and their

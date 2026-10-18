@@ -1,5 +1,5 @@
 /*
- * The coprocessor application.
+ * The IOmcu application.
  *
  * Answers polls and never transmits unsolicited: every transmission here
  * follows a decoded request.
@@ -13,7 +13,7 @@
  *
  * Nothing here models a reading.  A number this end publishes came off a
  * wire or a sensor, and a quantity nothing measures is left at zero with its
- * valid bit clear.  The panel models when no coprocessor answers at all,
+ * valid bit clear.  The panel models when no IOmcu answers at all,
  * which is the only case where a modelled number cannot be mistaken for a
  * measured one.
  *
@@ -230,7 +230,7 @@ static void can_report(uint32_t now)
  * SENSE page.  A quantity nothing measured is zero with its valid bit
  * clear, and the panel draws that field empty.
  *
- * LINK_BN_SIMULATED is never set here.  A coprocessor that is answering is
+ * LINK_BN_SIMULATED is never set here.  An IOmcu that is answering is
  * reporting what it can see; the panel models only when nothing answers at
  * all, and marks that itself.
  */
@@ -303,7 +303,7 @@ static void sample(void)
     s_state.status[LINK_ST_UPTIME_MS_HI] = (uint16_t)(up >> 16);
 
     /* What this end has seen of the wire.  The panel compares these against
-     * its own, and the comparison is what tells a dead coprocessor apart from
+     * its own, and the comparison is what tells a dead IOmcu apart from
      * a return path that never releases. */
     s_state.status[LINK_ST_FRAMES_LO] = (uint16_t)(s_frames & 0xFFFFu);
     s_state.status[LINK_ST_FRAMES_HI] = (uint16_t)(s_frames >> 16);
@@ -388,7 +388,7 @@ int main(void)
      * that are not fitted -- a shunt, a cell monitor, an accelerometer -- or
      * a program that is not written, and each is set by the thing arriving.
      *
-     * These say the coprocessor can, not that anything is connected.  An ESC
+     * These say the IOmcu can, not that anything is connected.  An ESC
      * that does not answer is an ESC that does not answer, and the BENCH
      * page's valid bits are where that shows.  The current monitors add
      * pack sense and servo sense for the parts the SENSE set-up enables,
@@ -699,7 +699,7 @@ int main(void)
         }
 
         /*
-         * Arming is the coprocessor's judgement: the panel asks and this end
+         * Arming is the IOmcu's judgement: the panel asks and this end
          * decides, recomputed every pass from what only this end knows.
          * outputs_arm() is idempotent and does not stamp the clock, so
          * calling it every pass does not keep a channel alive.  Commands are

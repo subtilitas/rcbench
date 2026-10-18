@@ -133,7 +133,7 @@ test('a part or a board without a drawing is a finding', () => {
   const orphan = anchors();
   orphan.files['ina228.svg'] = { ...structuredClone(orphan.files['ina228--matek.svg']!), variant: null };
   has(checkPins(CATALOGUE, orphan), 'no-drawing', /ina228\.svg: part ina228 has the board matek by default/);
-  // The coprocessor has pads by default, which is no named board: its drawing without board stays.
+  // The IOmcu has pads by default, which is no named board: its drawing without board stays.
   assert.deepEqual(checkPins(CATALOGUE, anchors()), []);
   const lone = anchors();
   lone.files['ina228.svg'] = { ...structuredClone(lone.files['ina228--matek.svg']!), variant: null };

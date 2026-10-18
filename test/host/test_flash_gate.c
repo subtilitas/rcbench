@@ -1,6 +1,6 @@
 /*
  * When the panel may write its own flash, the board drawing's keep under
- * that rule, and when the coprocessor may not write its own.
+ * that rule, and when the IOmcu may not write its own.
  *
  * A flash operation on the panel stalls both cores, the control task's STOP,
  * OUTPUT OFF and the supply's trips with them, so a write starts only on a
@@ -8,7 +8,7 @@
  * keep the way the control task does -- one step a pass, the gate taken from
  * the arming policy and the supply in the same pass -- and holds it to
  * pausing on an arm and resuming on the disarm.  The last case is the
- * coprocessor's rule, which holds its store and its firmware update.
+ * IOmcu's rule, which holds its store and its firmware update.
  *
  * The arming policy is the real one (arming.c); the flash is memory.
  *
@@ -266,10 +266,10 @@ TEST_CASE(an_arm_and_the_supply_both_hold_it_until_both_are_gone)
     CHECK_EQ(pass(), ART_KEEP_RUNNING);
 }
 
-/* ------------------------------------------------ the coprocessor's rule */
+/* ------------------------------------------------ the IOmcu's rule */
 
 /*
- * The coprocessor's flash is busy while any one of its four inputs holds,
+ * The IOmcu's flash is busy while any one of its four inputs holds,
  * and free only with all four clear:
  *
  *     driving  supply on  PD on  KST session  busy

@@ -1,5 +1,5 @@
 /*
- * The coprocessor's half of the firmware update.  See link_update_dev.h and
+ * The IOmcu's half of the firmware update.  See link_update_dev.h and
  * the update section of link_pages.h.
  *
  * SPDX-License-Identifier: MIT
@@ -42,7 +42,7 @@ void link_update_dev_init(link_update_dev_t *u, const link_update_io_t *io,
     }
     u->state = LINK_UPD_IDLE;
     /* A bought image with an image in the other slot: a BUY whose erase
-     * did not happen before the coprocessor stopped, or the image a
+     * did not happen before the IOmcu stopped, or the image a
      * trial came from.  Either way a normal boot would choose. */
     if (usable && (slot & LINK_UPD_SLOT_TRIAL) == 0u) {
         for (uint32_t i = 0; i < LINK_UPD_SECTOR_BYTES; ++i) {

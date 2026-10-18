@@ -6,7 +6,7 @@ order: 2
 
 # Statusband und STOP
 
-Das Statusband sind die oberen 48 px jedes Bildschirms außer dem Splash, dem Busfehler-Bildschirm, PANEL UPDATE und dem Fortschritt eines Koprozessor-Updates. Es nennt den Bildschirm, zeigt den Zustand des Prüfstands und trägt STOP.
+Das Statusband sind die oberen 48 px jedes Bildschirms außer dem Splash, dem Busfehler-Bildschirm, PANEL UPDATE und dem Fortschritt eines IOmcu-Updates. Es nennt den Bildschirm, zeigt den Zustand des Prüfstands und trägt STOP.
 
 ## Was das Band zeigt
 
@@ -14,9 +14,9 @@ Von links: das Home-Tag mit dem Namen des Bildschirms, dann die Chips, dann STOP
 
 | Chip | Zeigt |
 |---|---|
-| VERBINDUNG, KEINE VERBINDUNG | ob der Koprozessor auf dem CAN-Bus (Controller Area Network) antwortet |
-| BENCH, SIM | BENCH, solange der Koprozessor antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
-| FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der Koprozessor meldet; fehlt, solange keiner anliegt |
+| VERBINDUNG, KEINE VERBINDUNG | ob der IOmcu auf dem CAN-Bus (Controller Area Network) antwortet |
+| BENCH, SIM | BENCH, solange der IOmcu antwortet und die Bildschirme seine Ausgänge ansteuern; SIM, solange das Panel sein eigenes Modell rechnet |
+| FEHLER 01 bis FEHLER 7F | ein Fehlercode, den der IOmcu meldet; fehlt, solange keiner anliegt |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED | was das Schalten auf ARMED treibt |
 | Laufzeituhr | die Dauer des laufenden Laufs ab dem Schalten auf ARMED, in Minuten und Sekunden; bei SAFE hält sie den letzten Lauf |
 
@@ -29,7 +29,7 @@ Das Home-Tag führt zum [Menü](overview.md).
 | SAFE | keine |
 | ARMED MOTOR | die Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
 | ARMED SERVO | die Servo-Ausgänge und ein pulsender PROG PORT, von SERVO |
-| ARMED | jeder gebundene Ausgang, an einem Koprozessor älter als Protokoll 4.18 |
+| ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
 
 Ein Kanal ohne Befehl seit 500 ms steht bei ARMED in Ruhe: ein Throttle auf 0 %, ein Servo in der Mitte seines Wegs.
 
@@ -52,7 +52,7 @@ Ein Tipp auf einen Chip öffnet einen Kasten unter dem Band. Er sagt, was der Zu
 
 ![VERBINDUNG mit 37 abgelehnten Link-Frames](view:band-link-refused)
 
-Hat der Koprozessor seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten von VERBINDUNG mit ihrer Zahl, zum Beispiel `Abgelehnte Verbindungsframes: 37`.
+Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, endet der Kasten von VERBINDUNG mit ihrer Zahl, zum Beispiel `Abgelehnte Verbindungsframes: 37`.
 
 ## FEHLER-Codes
 
@@ -62,13 +62,13 @@ Der Kasten von FEHLER reicht über das Panel, 784 px, mit einem Absatz je gesetz
 
 | Code | Name | In diesem Release gesetzt, wenn |
 |---|---|---|
-| 01 | LINK_SILENT | der Koprozessor 200 ms keine Anfrage gehört und auf SAFE geschaltet hat; bleibt bis zum nächsten ARM |
+| 01 | LINK_SILENT | der IOmcu 200 ms keine Anfrage gehört und auf SAFE geschaltet hat; bleibt bis zum nächsten ARM |
 | 02 | OVERCURRENT | nie |
 | 04 | OVERTEMP | nie |
 | 08 | STALL | nie |
 | 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht: nach jedem STOP bis zum nächsten ARM, bei gedrücktem Not-Aus oder offener Heartbeat-Leitung |
 | 20 | VERSION | nie |
-| 40 | STORE_OFF | der Koprozessor kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
+| 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
 
 Bei einem Bit, das dieses Release nie setzt, sagt der Kasten, beide Platinen mit demselben Release zu flashen.
 

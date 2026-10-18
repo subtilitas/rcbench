@@ -1,5 +1,5 @@
 /*
- * The TONE link page at the coprocessor: the phase tap that hears an ESC's
+ * The TONE link page at the IOmcu: the phase tap that hears an ESC's
  * (electronic speed controller) beeps on one motor phase.  The registers
  * are in link_pages.h (LINK_TN_*).
  *
@@ -113,7 +113,7 @@ void tone_page_refuse(tone_page_t *p);
 
 /** No capture runs this boot (core 1 did not start): an enabled set-up is
  *  refused as tone_page_refuse() does, and every later write that enables
- *  the tap is refused with LINK_NACK_BAD_VALUE until the coprocessor
+ *  the tap is refused with LINK_NACK_BAD_VALUE until the IOmcu
  *  restarts.  A write with ENABLE clear is taken. */
 void tone_page_no_capture(tone_page_t *p);
 

@@ -1,6 +1,6 @@
 /*
  * When the bench is allowed to be armed, and what the panel must tell the
- * coprocessor about it.
+ * IOmcu about it.
  *
  * The policy only: no touch driver, no link, no task.  The panel's control
  * loop feeds it what happened and acts on what it returns, and the host suite
@@ -10,7 +10,7 @@
  *
  *   - A stop latches.  Only an explicit arm clears it.
  *   - The heartbeat is suppressed while a stop is latched, and the
- *     coprocessor refuses to arm while the heartbeat is not trusted.  An arm
+ *     IOmcu refuses to arm while the heartbeat is not trusted.  An arm
  *     therefore clears the latch FIRST and waits for the line to settle
  *     before the write, or the two conditions deadlock each other.
  *   - A stop during that wait wins.  The arm is abandoned, not queued.
@@ -252,7 +252,7 @@ uint8_t arming_roles(const arming_t *a);
 void arming_request_disarm(arming_t *a);
 
 /**
- * The coprocessor refused the arm. The latch stays clear: a heartbeat that
+ * The IOmcu refused the arm. The latch stays clear: a heartbeat that
  * is running is the truth about a loop that is running, and the operator can
  * ask again.
  */
@@ -384,7 +384,7 @@ arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
  */
 bool arming_stop_unserved(const arming_t *a, uint32_t *served);
 
-/** The coprocessor disarmed us: a NACK on a control write, or a failsafe. */
+/** The IOmcu disarmed us: a NACK on a control write, or a failsafe. */
 void arming_stop_from_far_end(arming_t *a);
 
 /**
@@ -437,7 +437,7 @@ bool arming_link_lost(arming_t *a, bool bank_armed);
  */
 bool arming_link_found(arming_t *a, bool bank_armed);
 
-/** Advance, and say what the link owes the coprocessor. */
+/** Advance, and say what the link owes the IOmcu. */
 arming_action_t arming_step(arming_t *a, uint32_t now_ms);
 
 /** Whether the heartbeat may edge. */

@@ -110,7 +110,7 @@ One German word per English concept, on every screen and in the report.
 | refused | abgelehnt |
 | screen (a page of the interface) | Seite |
 | screen (the display) | Anzeige |
-| coprocessor | Koprozessor |
+| IOmcu | IOmcu |
 | emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread (between cells) | Akku, Zelle, Unterschied |
@@ -159,7 +159,7 @@ One German word per English concept, on every screen and in the report.
 | verify (a servo against what was read) | prüfen |
 | locked (a value shown and not written) | gesperrt |
 | speed, speed limit (of a programmed servo) | Tempo, Tempogrenze |
-| link (to the coprocessor), NO LINK | Verbindung, KEINE VERBINDUNG |
+| link (to the IOmcu), NO LINK | Verbindung, KEINE VERBINDUNG |
 | binding (a pin's role), bind | Zuordnung, zuordnen |
 | frame rate (of a servo) | Pulsrate |
 | throttle | Gas |

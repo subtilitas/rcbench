@@ -3,7 +3,7 @@
  *
  * link_host_write() builds one request, and the CAN (Controller Area
  * Network) mapping renders a request wider than LINK_CAN_REGS_PER_FRAME (4)
- * registers as several frames sent back to back.  The coprocessor's
+ * registers as several frames sent back to back.  The IOmcu's
  * controller buffers 2 received frames and is read from a polled loop, so
  * the 8 frames of a 32-register page arrive faster than a loop that is busy
  * for one pass can take them, and the frame that finds both buffers full is

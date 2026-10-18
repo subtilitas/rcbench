@@ -23,11 +23,11 @@
  * those four and every number from GP30 up are refused.  The pad numbers are the ones printed on the board so an operator
  * counting pads and an operator reading GPIOs arrive at the same pin.
  *
- * The reserved six are the coprocessor's: GP3 carries the safety heartbeat
+ * The reserved six are the IOmcu's: GP3 carries the safety heartbeat
  * in from the panel, and GP8 to GP12 are the CAN (Controller Area Network)
  * controller's interrupt and its SPI (Serial Peripheral Interface) bus.
  * firmware/iomcu/include/iomcu_pins.h assigns the same pins for the drivers
- * that use them; the coprocessor reserves the union of both, so the two
+ * that use them; the IOmcu reserves the union of both, so the two
  * disagreeing costs a pin rather than the safety line.
  */
 static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
@@ -67,7 +67,7 @@ static const outbind_pin_t k_pico_pins[OUTBIND_PINS] = {
  * The Pico form factor: 51.00 x 21.00 mm, forty pads on 2.54 mm, twenty a
  * side, pad 1 at the bottom left with the numbers running away from it.
  *
- * The outline's own numbers.  The board drawing the coprocessor serves
+ * The outline's own numbers.  The board drawing the IOmcu serves
  * places its pads on the same grid, and the picker refuses a drawing that
  * does not (board_drawing_agrees()).
  */
@@ -107,7 +107,7 @@ static const outbind_board_t k_boards[] = {
 };
 
 /*
- * One board learned over the link, for a coprocessor this build ships no
+ * One board learned over the link, for an IOmcu this build ships no
  * catalogue for.  The name is formatted rather than carried: a name is a
  * string and the page is registers, and the identity is what the operator
  * needs to match against the board in front of them.
@@ -237,7 +237,7 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
 
     /*
      * Formatted by hand rather than with snprintf().  out_bind.c is linked
-     * into the coprocessor too, and it has no other reason to pull in the
+     * into the IOmcu too, and it has no other reason to pull in the
      * printf machinery for a name only the panel ever draws.
      */
     {
@@ -262,7 +262,7 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
     s_learned.fixed = false;
     /*
      * A shape belongs to the board it came with.  Learning a board drops it,
-     * so a new coprocessor is not drawn with the last one's outline while
+     * so a new IOmcu is not drawn with the last one's outline while
      * its own shape page has yet to be read.
      */
     s_learned.shape     = NULL;
@@ -557,7 +557,7 @@ uint64_t outbind_reserved_mask(uint16_t board)
  * PPM runs at 40 Hz because eight channels do not fit in a 50 Hz frame.  A
  * channel is at most OUT_CEILING_US (2500 us), and the frame also carries
  * the mark and a sync gap of at least PPM_SYNC_MIN_US, so eight of them need
- * 8 x 2500 + 300 + 3000 = 23,300 us and 50 Hz gives 20,000.  The coprocessor
+ * 8 x 2500 + 300 + 3000 = 23,300 us and 50 Hz gives 20,000.  The IOmcu
  * refuses the bind and leaves the slot unbound, having acknowledged the page
  * that asked for it, so the screen shows a binding the bench does not have.
  * 40 Hz gives 25,000 us and binds.
@@ -798,7 +798,7 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
     if (outbind_chosen(b) >= cap_of(p)) {
         return false;
     }
-    /* A compare register drives one pulse width, and the coprocessor binds
+    /* A compare register drives one pulse width, and the IOmcu binds
      * it to one pin. */
     if (outbind_pwm_clash(b, index, OUTBIND_NO_GPIO, NULL)
         != OUTBIND_CLASH_NONE) {

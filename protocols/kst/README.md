@@ -27,7 +27,7 @@ hardware: no frame of this code has been sent to a servo.
   -mthumb -Os`) and 872 bytes with gcc on x86-64.
   A plan is 208 bytes, a planner job 176 bytes, a capture 200 bytes, a
   frame 18 bytes.
-- The planner does not recurse. Stack in the RP2350 coprocessor image of
+- The planner does not recurse. Stack in the RP2350 IOmcu image of
   this repository, built with ARM GNU 14.2: `kst_plan_step()` and what it
   calls 208 bytes, `kst_plan_edit_begin()` 312, `kst_session_edit()` 352,
   `kst_session_restore()` 192 and `kst_session_step()` 528. That image

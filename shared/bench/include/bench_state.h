@@ -112,13 +112,13 @@ static inline bool bench_state_simulated(const bench_state_t *b)
 void bench_state_from_regs(bench_state_t *b, const uint16_t *regs,
                            uint8_t offset, uint8_t count);
 
-/** Encode into a BENCH page, for the coprocessor and for round-trip tests. */
+/** Encode into a BENCH page, for the IOmcu and for round-trip tests. */
 void bench_state_to_regs(const bench_state_t *b, uint16_t *regs);
 
 /**
  * A run starts: the totals of the last one go, in @p b and in the BENCH
  * page @p regs built from it -- charge and energy 0 and LINK_BN_TOTALS_OK
- * clear -- and every other register stays.  For the coprocessor, on the
+ * clear -- and every other register stays.  For the IOmcu, on the
  * edge into driving: it rebuilds the page at its 50 Hz sample, and until
  * the next one a panel reading the page would see the last run's totals
  * marked as this run's.  Either pointer may be NULL.
@@ -195,7 +195,7 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
  * A run's charge and energy, counted by the panel.
  *
  * One count, of what the panel shows, whichever source that came from: the
- * coprocessor's readings while the link is up -- the ESC's own, over
+ * IOmcu's readings while the link is up -- the ESC's own, over
  * extended DShot telemetry -- and the panel's model while it is down.  The
  * count does not change hands when the source does, so a run's totals never
  * go back within one log, and they outlast the run until the next arm
@@ -220,8 +220,8 @@ typedef struct {
 } bench_totals_t;
 
 /**
- * How long into a run the INA228's totals are not taken, in seconds.  A
- * coprocessor builds the BENCH page from its 50 Hz sample, so one that does
+ * How long into a run the INA228's totals are not taken, in seconds.  An
+ * IOmcu builds the BENCH page from its 50 Hz sample, so one that does
  * not clear the page on the arm (bench_state_run_starts()) can carry the
  * last run's totals with LINK_BN_TOTALS_OK for up to 20 ms after it; the
  * panel counts on its own until five such samples have passed.
@@ -285,7 +285,7 @@ typedef struct {
 } bench_edt_reading_t;
 
 /**
- * The ESC's telemetry as the coprocessor reads it at a sample: raw, with
+ * The ESC's telemetry as the IOmcu reads it at a sample: raw, with
  * each reading's age and whether there is one.
  */
 typedef struct {
@@ -300,7 +300,7 @@ typedef struct {
 
 /**
  * The live readings of @p b and their valid bits from @p t, for the
- * coprocessor's sample.  voltage, current, power, rpm, temp_esc,
+ * IOmcu's sample.  voltage, current, power, rpm, temp_esc,
  * temp_motor and flags are rebuilt; the peaks and every other field stay.
  *
  * rpm with LINK_BN_RPM_OK from a speed no older than BENCH_RPM_STALE_MS

@@ -37,7 +37,7 @@ static void make_source(void)
                        link_fnv1a32(LINK_FNV_INIT, g_src, BYTES));
 }
 
-/* The window the coprocessor answers with for one block. */
+/* The window the IOmcu answers with for one block. */
 static void serve(uint16_t block, uint16_t *out)
 {
     link_artserve_block(out, g_src, BYTES, block);
@@ -117,14 +117,14 @@ TEST_CASE(metadata_that_cannot_describe_a_drawing_is_refused_before_the_wait)
     link_artxfer_t x;
     uint16_t m[LINK_AW_COUNT];
 
-    /* No drawing at all, which is the ordinary answer from a coprocessor
+    /* No drawing at all, which is the ordinary answer from an IOmcu
      * that carries none. */
     memcpy(m, g_meta, sizeof(m));
     m[LINK_AW_BLOCKS] = 0u;
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));
 
     /* A format this build cannot read: an unknown one, and the photograph
-     * a coprocessor of minor 19 or older serves. */
+     * an IOmcu of minor 19 or older serves. */
     memcpy(m, g_meta, sizeof(m));
     m[LINK_AW_FORMAT] = 99u;
     CHECK(!link_artxfer_begin(&x, m, got, sizeof(got)));

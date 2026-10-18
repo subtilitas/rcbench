@@ -8,8 +8,8 @@
  * its edit to the acknowledgement, across a lost link and a restart; the
  * ESC's figures and the totals while the read is fresh; the store off said
  * once per link; and the output
- * encoder (protocol 4.9): ENABLE bit 2 and SENSE 26 to 31 sent only to a
- * coprocessor that names 4.9, the operator told once when one older is
+ * encoder (protocol 4.9): ENABLE bit 2 and SENSE 26 to 31 sent only to an
+ * IOmcu that names 4.9, the operator told once when one older is
  * asked for it, the status read taken to 31 only while the
  * page enables it, its angle handed over while the read is fresh and the
  * part answers, and its two events -- not answering, a magnet missing, weak
@@ -149,7 +149,7 @@ TEST_CASE(a_row_stays_unheld_while_the_bank_drives)
 /*
  * Pins the page refuses stay unheld, with the part that is off for them,
  * for as long as they are asked: across the retries, a link that goes and
- * comes back and a coprocessor that starts again.  No coprocessor
+ * comes back and an IOmcu that starts again.  No IOmcu
  * answering, nothing is known and nothing is marked.
  */
 TEST_CASE(refused_pins_stay_unheld_across_a_lost_link_and_a_restart)
@@ -178,7 +178,7 @@ TEST_CASE(refused_pins_stay_unheld_across_a_lost_link_and_a_restart)
     polls(20);
     CHECK_EQ(sense_link_unheld(&sl), refused);
 
-    /* The coprocessor starts again at its defaults. */
+    /* The IOmcu starts again at its defaults. */
     sense_page_init(&pg);
     sense_link_lost(&sl);
     sense_link_came_up(&sl, minor, now);
@@ -260,7 +260,7 @@ TEST_CASE(a_part_the_page_cannot_enable_is_unheld)
     polls(14);
     CHECK_EQ(sense_link_unheld(&sl), 0u);
 
-    /* A 4.8 coprocessor has no encoder; a 4.6 one no page. */
+    /* A 4.8 IOmcu has no encoder; a 4.6 one no page. */
     fresh(8u);
     w = setup_default();
     w.as5600 = true;

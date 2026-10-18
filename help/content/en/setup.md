@@ -16,7 +16,7 @@ SETUP holds the panel's bench-wide settings in two categories: APPLICATION and I
 |---|---|---|
 | APPLICATION | `10 SETTINGS` | the list of APPLICATION |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
-| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each coprocessor pin, as a list |
+| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
@@ -82,7 +82,7 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 | DISCARD | sets every listed value back to its stored one, as a step by hand would, then opens the menu |
 | SAVE | asks for a write, as the save button does, then opens the menu |
 
-- DISCARD sends a pin or a port back to the coprocessor at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
+- DISCARD sends a pin or a port back to the IOmcu at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
 - While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits until the bench is SAFE.` says so. STAY and SAVE work.
 - PWM target and Port PWM are not set back while the servo programmer holds the servo port; they stay unsaved.
 - With more than 10 changes, 9 lines show and the last line reads `and 3 more` for 12.

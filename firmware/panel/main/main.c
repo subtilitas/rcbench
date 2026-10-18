@@ -107,7 +107,7 @@
  * this bank, which is the modelled bench: the value it slews to is read by
  * telemetry_sim_step() and by nothing else, and only while the link is down.
  *
- * A coprocessor that is answering renders the raw command instead.  The
+ * An IOmcu that is answering renders the raw command instead.  The
  * CONTROL page carries what the slider asked for, and outbind_to_chan_cfg()
  * writes no LINK_CC_SLEW for any channel, so a pin bound as a throttle steps
  * to it.  That is by decision, recorded in STATUS.md under Not planned: the
@@ -148,7 +148,7 @@ static const char *TAG = "rcbench";
 
 /* Used during bring-up as well as in the loop, so file scope. */
 link_host_t    s_host;
-/* A link_cap_t bitmap from the coprocessor's identity page.  Zero until
+/* A link_cap_t bitmap from the IOmcu's identity page.  Zero until
  * something answers, which is also what it stays if nothing is fitted.
  * Read at bring-up, at every link-up edge and after a SENSE write is taken
  * (bits 3 and 4 follow the SENSE set-up), by the control task; the render
@@ -249,7 +249,7 @@ static void heartbeat_init(void)
 /* ------------------------------------------------------------ die temperature */
 
 /*
- * The panel's own die, not the coprocessor's.  The two boards sit in
+ * The panel's own die, not the IOmcu's.  The two boards sit in
  * different air and run different loads, and this is the one the ESP32-S3
  * can measure without a wire.  Read once a second; the sensor is slow and
  * nothing on the screen changes faster.
@@ -325,12 +325,12 @@ static char        s_boot_alert[ALERT_MAX];
 atomic_int s_outputs_result;
 
 /*
- * What the coprocessor says its outputs are.
+ * What the IOmcu says its outputs are.
  *
  * Read from the far end rather than remembered here.  A binding describes
  * wiring, and this board is not the one the wires are in: a panel that kept a
  * configuration and pushed it would be applying it to whatever is on the
- * bench now.  The coprocessor keeps it in its own flash, and this asks.
+ * bench now.  The IOmcu keeps it in its own flash, and this asks.
  */
 bind_reading_t s_outputs_read;
 bool           s_outputs_read_fresh;    /* both under s_snap_lock */
@@ -340,10 +340,10 @@ bool           s_outputs_read_fresh;    /* both under s_snap_lock */
  * (bind_link_may_write()).  BIND_READ_NONE until the first read.
  */
 bind_read_t    s_bind_read = BIND_READ_NONE;
-/* The coprocessor serves BIND_CFG, BIND_OUT and BIND (protocol 4.10). */
+/* The IOmcu serves BIND_CFG, BIND_OUT and BIND (protocol 4.10). */
 uint16_t       s_far_minor;
 
-/* The coprocessor's board identity, from the identity page at bring-up. */
+/* The IOmcu's board identity, from the identity page at bring-up. */
 uint16_t  s_board;
 
 /* Fetching the board's drawing, and keeping it: panel_art.c. */
@@ -498,7 +498,7 @@ atomic_bool s_supply_real;
 /* The PD mini's input in mV as its page last read, 0 while not known: the
  * screen keeps the voltage under it (PDMINI_CAP_MV). */
 atomic_uint s_supply_vin_mv;
-/* The PD mini's UART rate in baud as the coprocessor last reported it, for
+/* The PD mini's UART rate in baud as the IOmcu last reported it, for
  * the SUPPLY screen's header; 0 while not known. */
 atomic_uint s_supply_baud;
 /*
@@ -548,7 +548,7 @@ uint32_t           s_arm_gen;
 arm_watch_t        s_arm_watch;
 
 /*
- * The pole count the coprocessor holds, and whether it is current.
+ * The pole count the IOmcu holds, and whether it is current.
  *
  * Nothing refreshes the register: the far end keeps whatever it was last
  * handed until something writes it again.  So a change to the setting is a
@@ -577,7 +577,7 @@ atomic_uint s_poles_value;
  *
  * The settings screen runs on app_main and the link belongs to the control
  * task, so this publishes the value and records the debt; the write goes out
- * from there.  Motor poles is the only setting the coprocessor holds a copy
+ * from there.  Motor poles is the only setting the IOmcu holds a copy
  * of.
  *
  * The value is stored before the flag, so a control task that sees the debt
@@ -592,7 +592,7 @@ static void publish_poles(void)
 
 /*
  * The throttle's pulse endpoints, Idle pulse and Full pulse, on their way to
- * the coprocessor.
+ * the IOmcu.
  *
  * Published the way the pole count is, and for the same reason: the settings
  * screen writes the model from app_main and the control task owns the link,
@@ -610,7 +610,7 @@ atomic_bool s_endpoints_owed;
  * Raised at a link-up edge, control task only: the far end is held disarmed
  * until its throttle endpoints have been brought to the settings.  A bench
  * armed with no link -- the simulator, or a cable pulled mid-run -- would
- * otherwise arm a coprocessor that has just answered on whatever range it
+ * otherwise arm an IOmcu that has just answered on whatever range it
  * kept in flash, and keep that range for the whole run.
  */
 bool        s_endpoints_hold;
@@ -762,7 +762,7 @@ bool s_pump_live;
  * Called from the top of the control task and again from inside the wait in
  * exchange(), because that wait runs for up to LINK_HOST_TIMEOUT_MS (1000 ms)
  * and the heartbeat's ceiling is HEARTBEAT_MAX_GAP_MS (150 ms).  Without this
- * a single unanswered CAN reply drops the coprocessor's outputs and latches
+ * a single unanswered CAN reply drops the IOmcu's outputs and latches
  * its failsafe.  The loop that owns STOP really is still running during that
  * wait; this is what makes the line say so.
  */
@@ -896,7 +896,7 @@ void control_pump(void)
                  * is blocked.  arming_stop() takes effect in the same pass:
                  * arming_heartbeat() is false while stopped, so the beat at
                  * the end of this function stops asserting the line and the
-                 * coprocessor fails safe within HEARTBEAT_MAX_GAP_MS
+                 * IOmcu fails safe within HEARTBEAT_MAX_GAP_MS
                  * (150 ms) whatever this task is waiting for.
                  *
                  * The rest of a stop -- the bank, the throttle, the servo's
@@ -945,7 +945,7 @@ void control_pump(void)
      * exchanges, and a loss in that time would leave the arm driving until
      * the pass ended.  Undone the way a STOP is undone from here, because a
      * disarm writes the far end and this runs inside an exchange:
-     * arming_stop() drops the heartbeat now, the coprocessor fails safe
+     * arming_stop() drops the heartbeat now, the IOmcu fails safe
      * within HEARTBEAT_MAX_GAP_MS (150 ms) whatever this task is waiting
      * for, and service_arming() lets go of the rest when the loop is free.
      * A queued drive command carries the old stop count and is dropped.
@@ -1024,12 +1024,12 @@ static void pump(void)
 
 
 /*
- * Ask the coprocessor who it is, repeatedly, for IDENTITY_WAIT_MS.
+ * Ask the IOmcu who it is, repeatedly, for IDENTITY_WAIT_MS.
  *
  * The two boards do not finish booting at the same instant, and a first frame
  * onto a bus whose far end is not listening is retransmitted in silicon until
- * it is acknowledged, so a single attempt can miss a working coprocessor.
- * The wait is bounded: a bench with no coprocessor attached must not sit on
+ * it is acknowledged, so a single attempt can miss a working IOmcu.
+ * The wait is bounded: a bench with no IOmcu attached must not sit on
  * the splash for ever.
  */
 static bool poll_identity(link_host_t *host, link_msg_t *reply)
@@ -1051,7 +1051,7 @@ static bool bring_up(void)
 
     /* The panel's own build, on the first line it draws.  It is the host, so
      * it publishes no identity page; without this the only version anywhere
-     * on the bench would be the coprocessor's.
+     * on the bench would be the IOmcu's.
      *
      * "panel fw" and not "fw": the CH422G beside it is the I2C expander, a
      * fixed-function part with no firmware of its own, and a line reading
@@ -1080,7 +1080,7 @@ static bool bring_up(void)
     const settings_store_t *store = settings_nvs_store();
     settings_set_store(store);
     /* Installed before the load, so the count the store returns is owed to
-     * the coprocessor the same way an edit made later is. */
+     * the IOmcu the same way an edit made later is. */
     settings_set_observer(settings_changed);
     settings_init();
     /* And once unconditionally, whatever settings_init() told the observer:
@@ -1208,7 +1208,7 @@ static bool bring_up(void)
      * an identity that never answers.
      *
      * It runs at every start-up.  A bus that does not carry frames looks
-     * exactly like a coprocessor that is not fitted, and both look like a
+     * exactly like an IOmcu that is not fitted, and both look like a
      * bench that shows no numbers; nothing else the panel does separates
      * them, and an operator with no console cannot.
      */
@@ -1278,7 +1278,7 @@ static bool bring_up(void)
             ok = ok && speaks_ours;
         } else {
             /*
-             * Not a failure: the bench runs without a coprocessor.  The two
+             * Not a failure: the bench runs without an IOmcu.  The two
              * words name the kind of silence: nothing arriving and a reply
              * that is rejected are different faults, and the poller counts
              * which happened.
@@ -1385,7 +1385,7 @@ void log_post(log_row_t *row)
 /* The bench's own state, the arm watch, the bench's totals, the latched
  * stop and the arming policy's act: panel_arm.c. */
 
-/* The outputs screen's choice, onto the coprocessor's two output pages:
+/* The outputs screen's choice, onto the IOmcu's two output pages:
  * write_output_binding(), panel_arm.c. */
 
 /* The GPIOs of the slots of the channels the horn drives
@@ -1550,7 +1550,7 @@ void log_follow_runs(void)
  * of the far end, poll_far_end(): panel_poll.c. */
 
 
-/* The coprocessor's update, cu_service(): panel_update.c. */
+/* The IOmcu's update, cu_service(): panel_update.c. */
 
 /*
  * Everything the bench does, at a fixed 5 ms on the core the renderer does
@@ -1581,7 +1581,7 @@ static void control_task(void *arg)
         /*
          * An install about to write the flash: this loop stands still.  No
          * poll and no exchange starts, and the heartbeat is withheld on
-         * purpose, so the coprocessor goes to failsafe as it does at any
+         * purpose, so the IOmcu goes to failsafe as it does at any
          * restart of the panel.  A flash erase stalls this core anyway; the
          * failsafe then comes from a decision rather than from the stall.
          */
@@ -1681,7 +1681,7 @@ static void control_task(void *arg)
 
 /* ------------------------------------------------------------------ main */
 
-/* The coprocessor update's screen, cu_render_service(): panel_update.c. */
+/* The IOmcu update's screen, cu_render_service(): panel_update.c. */
 
 void app_main(void)
 {
@@ -2102,7 +2102,7 @@ void app_main(void)
          * OLDEST entry rather than this one: the newest throttle position and
          * a disarm both matter more than a stale step.
          */
-        /* What the coprocessor says its outputs are, and what became of the
+        /* What the IOmcu says its outputs are, and what became of the
          * last write.  Screen state stays app_main's; the control task only
          * leaves values behind. */
         /* The flag is read inside the lock that guards the value it refers
@@ -2263,7 +2263,7 @@ void app_main(void)
         }
 
         /*
-         * The coprocessor's update.  The question opens on the menu, on a
+         * The IOmcu's update.  The question opens on the menu, on a
          * bench that is SAFE with the supply off, the panel's radio wholly
          * off and no install of the panel under way, once per offer; START
          * and CANCEL go to the control task.  SETUP > UPDATES' hold starts
@@ -2271,7 +2271,7 @@ void app_main(void)
          * shows its progress, and the menu comes back when it has ended --
          * the alert says how.
          */
-        /* The release reminder first: it yields to the coprocessor's
+        /* The release reminder first: it yields to the IOmcu's
          * question, which comes first. */
         upd_remind_service(armed || arm_wanted_now,
                            armed || arm_wanted_now || supply_now

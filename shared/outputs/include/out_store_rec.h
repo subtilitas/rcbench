@@ -1,5 +1,5 @@
 /*
- * What a record in the coprocessor's output store carries, and how a record
+ * What a record in the IOmcu's output store carries, and how a record
  * an earlier build wrote is read.
  *
  * firmware/iomcu/src/out_store.c puts the record in flash; this file is the

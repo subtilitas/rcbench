@@ -328,11 +328,11 @@ def sdk_tree(tree, **change):
         "docs/Building.md":
             "| pico-sdk | 2.0 or newer | CI builds 2.3.0 |\n"
             "CI builds v5.4 and v5.5\n"
-            "coprocessor build on pico-sdk 2.3.0 with\n",
+            "IOmcu build on pico-sdk 2.3.0 with\n",
         "docs/Building-de.md":
             "| pico-sdk | 2.0 oder neuer | CI baut 2.3.0 |\n"
             "CI baut v5.4 und v5.5\n"
-            "Koprozessor-Build mit pico-sdk 2.3.0 mit\n",
+            "IOmcu-Build mit pico-sdk 2.3.0 mit\n",
         "docs/Performance.md": "the image CI builds, pico-sdk 2.3.0 with\n",
         "docs/Performance-de.md": "Image, das CI baut, pico-sdk 2.3.0 mit\n",
     }

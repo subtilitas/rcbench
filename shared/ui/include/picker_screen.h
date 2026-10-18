@@ -20,7 +20,7 @@
  * pad as confidently as the right one; its pins are still offered on the
  * outputs screen.
  *
- * The coprocessor's drawing of its board is optional in the same way. With
+ * The IOmcu's drawing of its board is optional in the same way. With
  * one, the board on screen shows the parts of the board in the operator's
  * hands, to scale; without one, its outline and pads are drawn from the
  * shape. The drawing is checked against the catalogue before it is shown
@@ -88,10 +88,10 @@ void picker_screen_set_select(picker_select_fn fn);
 #define PICKER_NO_PIN 0xFFu
 
 /**
- * The GPIO the coprocessor's programming port is bound to, as its page reads
+ * The GPIO the IOmcu's programming port is bound to, as its page reads
  * it, or PICKER_NO_PIN (the start value).  While no protocol holds that pin
  * its button is drawn held, a tap on it does nothing, and IN USE lists it
- * first under PROG PORT.  A pin a slot holds is that slot's: the coprocessor
+ * first under PROG PORT.  A pin a slot holds is that slot's: the IOmcu
  * gives the port no pin then.  It stays across a reset of the screen.
  */
 void picker_screen_set_prog_pin(uint8_t gpio);
@@ -113,7 +113,7 @@ typedef enum {
                                no more pins; the reason line says why         */
     PICKER_PIN_LOCKED,    /**< grey: the binding is not confirmed, or the
                                board's pins are soldered                      */
-    PICKER_PIN_RESERVED,  /**< no button: the coprocessor's own, crossed red
+    PICKER_PIN_RESERVED,  /**< no button: the IOmcu's own, crossed red
                                on the pad                                     */
 } picker_pin_t;
 
@@ -216,7 +216,7 @@ typedef void (*picker_apply_fn)(const outbind_t *b);
 void picker_screen_set_apply(picker_apply_fn fn);
 
 /**
- * The coprocessor's drawing of the board the binding names (LINK_ART_DRAWING
+ * The IOmcu's drawing of the board the binding names (LINK_ART_DRAWING
  * bytes, link_drawing.h), or NULL to draw its outline instead.
  *
  * Parsed and checked against the board's catalogue, pads and shape here;
@@ -244,7 +244,7 @@ void picker_screen_set_drawing_source(picker_drawing_fn fn);
  */
 void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
 
-/** Whether the board is drawn from the coprocessor's drawing. */
+/** Whether the board is drawn from the IOmcu's drawing. */
 bool picker_screen_has_drawing(void);
 
 /** Whether this board can be drawn at all: it has a catalogue, and a

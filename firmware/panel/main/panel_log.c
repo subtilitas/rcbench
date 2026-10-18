@@ -28,11 +28,11 @@ static const char *TAG = "rcbench";
  * viewer reads, and a host test writes a run and parses it back.
  *
  * The control task touches no file.  It beats the safety line, its ceiling is
- * HEARTBEAT_MAX_GAP_MS (150 ms) and the coprocessor calls the link silent
+ * HEARTBEAT_MAX_GAP_MS (150 ms) and the IOmcu calls the link silent
  * after 200 ms, while the SD (Secure Digital) specification allows a card
  * 250 ms to finish a single-block write before a host may give it up.  How
  * long this board's card takes is not measured.  A card write on that task is
- * therefore a dropped heartbeat and a coprocessor that fails safe, not a late
+ * therefore a dropped heartbeat and an IOmcu that fails safe, not a late
  * row -- so rows cross to a task of its own and every fopen, fwrite, fsync
  * and fclose happens there.
  *

@@ -16,11 +16,11 @@ the programming protocol, never both. Whether a KST or Chaservo servo in
 programming mode follows PWM pulses is not measured. A standard servo port
 is no programming port and a command that names one is refused.
 
-The session runs on the coprocessor with the module's planner and limits.
+The session runs on the IOmcu with the module's planner and limits.
 The panel writes an operation and the images it needs. It reads the state,
 the result and the servo's 32 registers. It sends no register write.
 `shared/outputs/kst_port.c` holds the rules. Nothing is kept in flash: after
-a restart of the coprocessor the port is in PWM with no session and bit 4 of
+a restart of the IOmcu the port is in PWM with no session and bit 4 of
 register 0 clear, whatever mode the servo is in, and the supply is asked
 off.
 
@@ -47,9 +47,9 @@ locked, and the next WRITE is taken without a READ_ALL. The costliest
 request found takes 120,136 units, 1,202 passes at most and 397 to 647 ms
 of planner time. The times are computed in an emulator from the
 instructions executed at 150 MHz
-([Performance](Performance.md#the-coprocessor)) and not measured on
+([Performance](Performance.md#the-iomcu)) and not measured on
 hardware. The time of a pass with the rest of the main loop in it is not
-measured, so the planning time on a bench is not known. A 4.13 coprocessor
+measured, so the planning time on a bench is not known. A 4.13 IOmcu
 runs the whole search inside the command's frame and answers a request
 without an order of writes with the refusal PLAN_NO_PATH.
 
@@ -72,7 +72,7 @@ a PWM command (the panel, the sweep, the automatic test) ends at the port's
 bank channel, so none reaches the pin; PROG and SERVO still take such a
 command. The port's `PWM` bit and `TARGET` stay as written through a
 session, and the pulse is back when the port is in PWM again. The
-coprocessor writes no flash while the port is out of PWM.
+IOmcu writes no flash while the port is out of PWM.
 
 ## The supply
 
@@ -88,7 +88,7 @@ the lower of it and the voltage of an output that is on; under 4800 mV
 ENTER is refused with SUPPLY_LOW (since 4.15) and the supply is not
 touched. The panel holds the same floor on its side: it sends no ENTER
 while it reads a PD mini output that is on and set under 4800 mV, whatever
-the coprocessor does with that ENTER. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
+the IOmcu does with that ENTER. 4800 mV is `KST_PORT_SUPPLY_MIN_MV`; the supply
 voltage a servo needs to store a register is not measured. In LOW the port
 then does one of two things:
 
@@ -137,7 +137,7 @@ pass and ends the operation. An output the PD mini switches off by itself
 is not delayed. The time the PD mini's output takes to fall after the
 command is not measured.
 
-The coprocessor does not switch the bank to ARMED while a programming port is out of
+The IOmcu does not switch the bank to ARMED while a programming port is out of
 PWM: the ARM register is taken and the bank stays SAFE until the port
 is in PWM again. ENTER is refused with BUSY while the bank is ARMED (both
 since 4.15).
@@ -172,7 +172,7 @@ port does the same. POWER_CYCLED and REBOOT stay as they are.
 A LEAVE that is taken puts the port in LEAVING. The wire driver holds the
 pin low for the wait in write register 28 (`LEAVE_MS`), 0 to 10,000 ms,
 counted from the command. The wait is 100 ms until a panel writes the
-register, and the register keeps what was written until the coprocessor
+register, and the register keeps what was written until the IOmcu
 restarts. The register takes every value: a LEAVE that finds more than 10,000 in it is refused with LEAVE_MS,
 the port stays in PROGRAMMING, and the value is not clamped. A write to the
 register while the port waits is for the next LEAVE. After the wait the
@@ -267,14 +267,14 @@ is sent again as it was. After an abort at the panel it is not sent
 again: the panel reads registers 0 to 3. The `SEQ` before the command
 means it was not taken, and the request counts as dropped. The command's
 `SEQ` means it was taken only together with its operation in `OP` or a
-refusal in `RESULT`'s high byte. Any other `SEQ` is a coprocessor that
-started again. A coprocessor that starts again reads `SEQ` 0, operation 0
+refusal in `RESULT`'s high byte. Any other `SEQ` is an IOmcu that
+started again. An IOmcu that starts again reads `SEQ` 0, operation 0
 and no refusal. Operation 0 after a read that named an operation is a
 restart at any `SEQ`, the command's and the one before it included: a
 fresh page's `SEQ` 0 is the command's after `SEQ` 0xFFFF and the one
 before it after `SEQ` 0, and a fresh page takes a command with `SEQ` 1
 sent again as its own next command. The panel then reports a restart and
-no result. A coprocessor that has taken no command since it started reads
+no result. An IOmcu that has taken no command since it started reads
 `SEQ` 0 and operation 0 before and after a start: when it starts again
 between its first command and that read, the request counts as dropped.
 Of such first commands only ENTER and REBOOT start an operation; every
@@ -337,7 +337,7 @@ given before PLAN_RULES, PLAN_R00 and PLAN_PAIRING (since 4.14): a locked
 session answers a WRITE with result 9 whatever the target is. NO_ENABLE is
 checked before every other
 reason. The panel sends the key only while its switch ENABLE WRITE TO SERVO
-is on, so a command that reaches the coprocessor without it writes nothing
+is on, so a command that reaches the IOmcu without it writes nothing
 in any state of the port. No screen holds that switch in this build.
 
 A programming port is bidirectional by definition: its pin is a bare GPIO
@@ -352,7 +352,7 @@ the time the heartbeat is not trusted or the link is silent. The third is
 the supply: SUPPLY switches the PD mini off when the heartbeat stops, and
 the panel writes SUPPLY's output off at every STOP.
 
-The panel's STOP is therefore three things at the coprocessor: a switch to SAFE of
+The panel's STOP is therefore three things at the IOmcu: a switch to SAFE of
 a bank in ARMED, SUPPLY's output written 0, and the command ABORT from
 `kst_link_abort()`.
 
@@ -392,15 +392,15 @@ that had no power for 2000 ms has left programming mode if 2000 ms is
 enough, which is not measured. The panel switches the supply on again on
 SUPPLY.
 
-| Panel | Coprocessor | Servo programming page (`KST`, 0x32) |
+| Panel | IOmcu | Servo programming page (`KST`, 0x32) |
 | --- | --- | --- |
 | 4.15 or newer | 4.15 or newer | served |
-| 4.15 or newer | 4.14 | served without LEAVE. A 4.14 coprocessor refuses operation 10 with BAD_VALUE and a write to register 28 with READ_ONLY: the panel's module sends neither and answers the request with `KST_LINK_START_NO_OP`. POWER_CYCLED and REBOOT are the ways out |
+| 4.15 or newer | 4.14 | served without LEAVE. A 4.14 IOmcu refuses operation 10 with BAD_VALUE and a write to register 28 with READ_ONLY: the panel's module sends neither and answers the request with `KST_LINK_START_NO_OP`. POWER_CYCLED and REBOOT are the ways out |
 | 4.14 | 4.15 or newer | served. The panel sends no operation 10 and no register 28, and the port is never in LEAVING |
-| 4.14 or newer | 4.13 | served, from 4.15 without LEAVE as above. The coprocessor plans inside the command's frame: the panel's module never reports PLANNING, and a request without an order of writes is the refusal PLAN_NO_PATH |
+| 4.14 or newer | 4.13 | served, from 4.15 without LEAVE as above. The IOmcu plans inside the command's frame: the panel's module never reports PLANNING, and a request without an order of writes is the refusal PLAN_NO_PATH |
 | 4.13 | 4.14 or newer | served. The panel's module reads an operation that plans as one that runs, and results 33 and 34 as results it has no name for |
 | 4.13 or newer | 4.12 | the page names an output channel there; the panel's module reads the minor at link-up and sends nothing below 13, not a write and not a read |
-| 4.13 or newer | 4.11 or older | no page: the coprocessor answers a request to 0x32 with BAD_PAGE, and the panel sends none |
+| 4.13 or newer | 4.11 or older | no page: the IOmcu answers a request to 0x32 with BAD_PAGE, and the panel sends none |
 | 4.12 | 4.13 or newer | a 4.12 command has bit 6 clear and is refused with PORT; a write to register 26 or 27 never comes. The port stays in PWM |
 | 4.11 or older | 4.13 or newer | the panel never reads or writes 0x32; the port stays in PWM |
 
@@ -420,8 +420,8 @@ above: a page off the panel's `SEQ`, or with operation 0 after a read that
 named one, ends the operation that runs as restarted, never as done. An
 ABORT refused with BAD_VALUE goes again after the read, with the page's
 `SEQ`. A read of registers 0 to 3 refused with BAD_PAGE
-means a coprocessor without the page; refused with any other code it counts
-as unanswered and is sent again. A coprocessor without the page keeps, for
+means an IOmcu without the page; refused with any other code it counts
+as unanswered and is sent again. An IOmcu without the page keeps, for
 the caller, whether the port was out of PWM at the last read that answered.
 Each request has a number, and its outcome carries that number. It refuses WRITE, RESTORE and RELEASE without the
 caller's switch before anything is sent. `shared/bench/supply_link.c` takes
@@ -447,4 +447,4 @@ ABORT, a switch to SAFE, a lost heartbeat and a supply switched off in the wait.
 against the port: whole sessions, a write from PLANNING to its end, results
 33 and 34, an abort and a stop while it plans, a LEAVE with its wait and
 one aborted in the wait, lost answers, a stale `SEQ`, a restart of
-the coprocessor and a 4.14, a 4.13, a 4.12 and a 4.11 coprocessor.
+the IOmcu and a 4.14, a 4.13, a 4.12 and a 4.11 IOmcu.

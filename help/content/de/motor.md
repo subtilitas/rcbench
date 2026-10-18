@@ -59,7 +59,7 @@ ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hi
 
 ## Ein Lauf
 
-![Ein Lauf bei ARMED ohne Koprozessor: SIM und das Wasserzeichen SIMULATION](view:motor)
+![Ein Lauf bei ARMED ohne IOmcu: SIM und das Wasserzeichen SIMULATION](view:motor)
 
 1. ARM 2 s halten. Die Füllung geht von Grün nach Rot über; der Prüfstand schaltet auf ARMED, wenn der Übergang vollständig ist. Früheres Loslassen schaltet nichts.
 2. Den Throttle ziehen. Er bewegt sich um den Weg des Fingers, nicht dorthin, wo der Finger aufsetzt. `-1` und `+1` ändern um einen Prozentpunkt.
@@ -78,7 +78,7 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 
 Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0 %.
 
-Solange kein Koprozessor antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
+Solange kein IOmcu antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
 
 ## Ein gehaltener Lauf
 
@@ -100,7 +100,7 @@ Auf LIVE trägt die Zeile unter der Leiste GRAFIK und TABELLE, die Abfragerate, 
 
 TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze. Ein Kanal, für den nichts geantwortet hat, zeigt `--`.
 
-- Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des Koprozessors, gelesen mit 20 Hz. Die Überschrift nennt `INA228`.
+- Ist der INA228 unter SETUP, ANSCHLÜSSE eingeschaltet und antwortet er, stammen Spannung, Strom und Leistung vom INA228: die Mittelwerte des letzten 50-ms-Fensters des IOmcu, gelesen mit 20 Hz. Die Überschrift nennt `INA228`.
 - `ÜBERSTEUERT` folgt der Überschrift, solange ein Strom das Ende des Messbereichs erreicht hat: Strom und Leistung sind dann Grenzen, keine Werte.
 - `ESC MELDET` listet Spannung und Strom aus der eigenen Telemetrie des ESC, und `Abw.` ist der Wert des ESC minus dem des INA228.
 - Ohne INA228 sind die Kanäle die Telemetrie des ESC, und `ESC MELDET` fehlt.

@@ -1,8 +1,8 @@
 # Pin map
 
 **Status: draft, 2026-09-30.** The GPIO (general-purpose input/output) of the
-IO board's two RP2354B, the main and the measurement coprocessor
-([IOBoard](IOBoard.md#two-coprocessors)). [ioboard-pinmap-draft.json](ioboard-pinmap-draft.json) holds the
+IO board's two RP2354B, the main and the measurement IOmcu
+([IOBoard](IOBoard.md#two-iomcus)). [ioboard-pinmap-draft.json](ioboard-pinmap-draft.json) holds the
 same map for tools. The file is the draft of the planned IO board, not of a
 board that exists; the tables below follow it. The schematic's routing can move
 a signal to another pin with the same function.
@@ -23,26 +23,26 @@ python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json
 
 | Chip | GPIO used | Free |
 | --- | --- | --- |
-| Main coprocessor | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
-| Measurement coprocessor | 32 of 48 | 16 |
+| Main IOmcu | 44 of 48 | 4: GPIO 15, 35, 39, 47 |
+| Measurement IOmcu | 32 of 48 | 16 |
 
 ## Owner decisions
 
 - The rotation inputs (encoder A, B and index, the phase-wire clip, the
-  magnetic pickup) and the receiver input sit on the measurement coprocessor.
-  The main coprocessor's motor stall action gets its rpm over the inter-chip
+  magnetic pickup) and the receiver input sit on the measurement IOmcu.
+  The main IOmcu's motor stall action gets its rpm over the inter-chip
   link (owner, 2026-09-30).
 - The external CAN (Controller Area Network) controller stays on the main
-  coprocessor. It shares the display link controller's SPI bus, with its own
+  IOmcu. It shares the display link controller's SPI bus, with its own
   chip select and interrupt (owner, 2026-09-30).
 - The inter-chip link is a UART, 2 pins a side (owner, 2026-09-30). With the
-  link and the lines for VESC controllers on the main coprocessor's two hardware
+  link and the lines for VESC controllers on the main IOmcu's two hardware
   UARTs, the UART socket runs as a PIO UART on 1 pin.
 - The TX and RX lines for VESC controllers pass 2 of the 3 spare channels of the two SN74CBTLV3126PWR,
   whose enable is the heartbeat enable node, so they stop with the other
   outputs (owner, 2026-09-30; Control.md, R4).
 
-## Main coprocessor
+## Main IOmcu
 
 | GPIO | Function | Signal | Connector |
 | --- | --- | --- | --- |
@@ -91,7 +91,7 @@ python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json
 | 45 | SIO | external CAN controller CS, SIO, pulled up |  |
 | 46 | SIO | external CAN controller INT, active low, pulled up |  |
 
-## Measurement coprocessor
+## Measurement IOmcu
 
 | GPIO | Function | Signal | Connector |
 | --- | --- | --- | --- |
@@ -130,7 +130,7 @@ python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json
 
 ## I/O expanders
 
-Three MCP23017 on the main coprocessor's I²C bus, at 0x20, 0x21 and 0x22, reset
+Three MCP23017 on the main IOmcu's I²C bus, at 0x20, 0x21 and 0x22, reset
 together from GPIO 14. They carry 33 lines: the 20 port switch enables, the 5
 bias selectors of the multiprotocol ports and the UART socket, the 5 converter
 enables (4 TPS55285 and the TPS55288), the hardware latch read-back, and two
@@ -153,21 +153,21 @@ expander follows from that; it takes no GPIO.
   about 10 kΩ. In SPI mode 0 the RP2350's SPI block raises its own chip select
   between frames, which breaks an MCP2518FD instruction, and RP2350 pads come
   out of reset pulled down, 32 to 86 kΩ, which would select every chip while
-  its coprocessor resets.
-- The measurement coprocessor's SPI1 carries parts in different SPI modes: the
+  its IOmcu resets.
+- The measurement IOmcu's SPI1 carries parts in different SPI modes: the
   ADS1235 in mode 1, the MAX31856 in mode 1 and the ADBMS1818 in mode 3 at
   1 MHz at most. The firmware switches the format between transactions with
   every chip select high.
 - The MCP2518FD limits its SPI clock to 0.85 × SYSCLK / 2, so the 10 MHz the
   link uses needs its 40 MHz clock.
 - The MLX90614, an SMBus part at 100 kHz at most, and the TCA9548A of the Qwiic
-  ports sit on a third I²C bus that the measurement coprocessor makes with PIO.
+  ports sit on a third I²C bus that the measurement IOmcu makes with PIO.
   Sensor buses A and B then run faster, and a Qwiic device cannot collide with
   the internal addresses 0x18 to 0x1F, 0x40 to 0x4F and 0x74 to 0x75.
 - The encoder, at up to 5 MHz (F4), runs on R11's two-state-machine decoder:
   a pico-examples quadrature decoder reads at most one step every 10 system
   clocks.
-- The measurement coprocessor samples its copy of the optical index with PIO,
+- The measurement IOmcu samples its copy of the optical index with PIO,
   on the timebase of the two accelerometer ADCs (ADCS7476, one an axis), which share SPI0's data and clock with a chip select each.
 - USB VBUS reaches GPIO 37 through a divider, so the USB pull-up follows the
   cable.
@@ -199,4 +199,4 @@ the drafts, which read the datasheets. Round 1's records do not verify them.
 - The TPS55288's bus: the map puts it on the main I²C bus, provisionally; the
   IO board specification leaves the main bus or a third measurement bus open.
 - The MCP2518FD clock source, the inter-chip UART's rate and silence limit, and
-  the measurement coprocessor's load and debug route.
+  the measurement IOmcu's load and debug route.

@@ -21,7 +21,7 @@
  * and marginal on it rather than fail at its first transaction.  The
  * pad's pull-down, on at reset, would only fight the external pull-ups.
  * The modules carry pull-ups (the DAOKAI INA3221 10 kOhm to VS) and the
- * build guide adds 2.2 kOhm to 3V3 at the coprocessor.
+ * build guide adds 2.2 kOhm to 3V3 at the IOmcu.
  *
  * What a transaction comes to (sense_err_t):
  *

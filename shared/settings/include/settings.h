@@ -235,12 +235,12 @@ void settings_set(setting_id_t id, float value);
 void settings_adjust(setting_id_t id, int steps);
 
 /**
- * Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or a
- * coprocessor GPIO the sensor bus can have its SDA on with SCL on the GPIO
+ * Whether Sensor SDA takes @p gpio: -1, the bus's pins not set, or an
+ * IOmcu GPIO the sensor bus can have its SDA on with SCL on the GPIO
  * after it.  That is one I2C block's pair, link_sn_pins_pair() -- the rule
- * the coprocessor's SENSE page judges a write by -- on two pins the
+ * the IOmcu's SENSE page judges a write by -- on two pins the
  * RP2350-CAN brings out and does not reserve, outbind_reserved_mask(): the
- * mask the coprocessor reserves at boot.  0, 4, 6, 14, 16, 18, 20 and 26.
+ * mask the IOmcu reserves at boot.  0, 4, 6, 14, 16, 18, 20 and 26.
  * A pin an output, the supply or the phase tap holds is not known here;
  * the page refuses it and SETUP marks the row.
  */
@@ -332,7 +332,7 @@ bool settings_save_failed(void);
  * and stalls both cores: the task that beats the safety line does not run
  * for its duration. So the operator says when they want it kept and the
  * application says when that is survivable, which is the same split the
- * coprocessor's own store already makes.
+ * IOmcu's own store already makes.
  */
 void settings_request_save(void);
 

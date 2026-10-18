@@ -250,7 +250,7 @@ TEST_CASE(a_write_is_acknowledged_with_what_was_stored)
  * died.
  */
 /*
- * The transport the coprocessor actually is.
+ * The transport the IOmcu actually is.
  *
  * exchange() above keeps one reply, which is what a request of a single
  * frame produces. firmware/iomcu/src/iomcu_can.c decodes every frame it receives
@@ -347,7 +347,7 @@ TEST_CASE(a_write_wider_than_a_frame_is_answered_by_its_pieces)
  * Pins that the refusal answers the transaction and carries its reason back.
  * The request goes out as eight frames at offsets 0, 4 ... 28; this far end
  * takes the first four and answers BAD_RANGE at offsets 16, 20, 24 and 28,
- * which is what a coprocessor whose page is 16 registers wide does to a
+ * which is what an IOmcu whose page is 16 registers wide does to a
  * panel that thinks it is 32.  Matching a refusal only against the
  * transaction's own offset drops it, and the transaction then runs to
  * LINK_HOST_TIMEOUT_MS (1000 ms) with the reason lost:

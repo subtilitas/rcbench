@@ -1,5 +1,5 @@
 /*
- * The SUPPLY link page at the coprocessor.
+ * The SUPPLY link page at the IOmcu.
  *
  * Under test: wiring refused on pins the board or an output holds, on one
  * pin for both, and while the output is on; an ON only with the supply
@@ -82,7 +82,7 @@ TEST_CASE(wiring_is_refused_on_pins_that_are_not_free)
 
 TEST_CASE(wiring_is_refused_on_the_pins_the_module_keeps_or_lacks)
 {
-    /* The mask the coprocessor boots with, not a hand-made one. */
+    /* The mask the IOmcu boots with, not a hand-made one. */
     outputs_init(&o, 0u);
     outputs_reserve_pins(&o, outbind_reserved_mask(
                                  (uint16_t)OUTBIND_BOARD_PICO_HEADER));

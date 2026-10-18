@@ -4,7 +4,7 @@
  *
  * An ESC beeps by driving the motor windings at the tone frequency, often
  * chopped by its PWM (pulse-width modulation) carrier at 8 to 48 kHz.  One
- * phase reaches a coprocessor input through a series resistor and a zener
+ * phase reaches an IOmcu input through a series resistor and a zener
  * clamp, so the input is a logic level: high while the phase is driven
  * high, or floats above the input threshold, and low otherwise.  A PIO
  * (programmable input/output) state machine stamps each edge on a counter;

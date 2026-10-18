@@ -819,8 +819,8 @@ static void measure(servo_test_t *t, const sample_t *m)
 static void count_step(servo_test_t *t, uint16_t was, uint16_t now)
 {
     const uint16_t step = (uint16_t)(now - was);
-    /* A step of half the range or more is the count starting again after a
-     * coprocessor restart, not readings taken: counted as one. */
+    /* A step of half the range or more is the count starting again after an
+     * IOmcu restart, not readings taken: counted as one. */
     const bool restarted = step >= 0x8000u;
     t->module_samples += restarted ? 1u : step;
     /* Readings the meter took between two the test saw: not measured, and

@@ -52,7 +52,7 @@ Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
 | `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
 | `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 
-An einem Koprozessor älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.
+An einem IOmcu älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.
 
 Die Nummern sind eine Reihe über alle drei Namen: ein neuer Lauf nimmt eins über der höchsten Nummer auf der Karte, gleich unter welchem Namen. Eine Lücke, die eine gelöschte Datei hinterlässt, wird nicht gefüllt. Eine Karte mit einer Nummer 999 nimmt keinen weiteren Lauf an, ob niedrigere Nummern frei sind oder nicht. Eine Karte, die nur `BENCHnnn`-Dateien trägt, zählt über ihren Nummern weiter. Firmware 0.20.0 und älter nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder auf einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird überschrieben: Die beiden Dateien haben verschiedene Namen. Die Liste zeigt die `.TXT`-Berichte nicht, und LÖSCHEN auf einem Lauf entfernt auch seinen Bericht. Die Läufe stehen nach Nummer, der neueste zuerst, über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann `BENCH041.CSV`.
 

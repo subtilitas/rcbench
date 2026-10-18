@@ -98,7 +98,7 @@ TEST_CASE(stopping_the_bench_wins_arbitration_against_reading_it)
              LINK_CAN_PRIO_NORMAL);
 
     /* A firmware update's blocks lose arbitration to everything else, the
-     * coprocessor's answers included. */
+     * IOmcu's answers included. */
     CHECK_EQ(link_can_priority(LINK_PAGE_UPDATE_DATA, LINK_OP_WRITE),
              LINK_CAN_PRIO_BULK);
     CHECK_EQ(link_can_priority(LINK_PAGE_UPDATE_CTL, LINK_OP_ACK),
@@ -304,7 +304,7 @@ TEST_CASE(every_op_and_count_survives_the_round_trip)
 }
 
 /*
- * The coprocessor's refusal count: a frame link_can_decode() refuses adds 1,
+ * The IOmcu's refusal count: a frame link_can_decode() refuses adds 1,
  * a frame it takes adds nothing.  The DLC 8 READ is the frame an ESP-IDF
  * v5.5.0 or v5.5.1 panel sends in place of a DLC 0 one.
  */

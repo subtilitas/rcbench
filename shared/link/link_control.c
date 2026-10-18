@@ -72,7 +72,7 @@ uint8_t link_control_write(uint16_t *regs, uint8_t off, uint8_t n,
                     && in[i] != regs[LINK_CT_ARM]))) {
             return LINK_NACK_BAD_VALUE;
         }
-        /* Refusing to arm while in failsafe is the coprocessor's decision:
+        /* Refusing to arm while in failsafe is the IOmcu's decision:
          * the panel is not the authority on whether it is safe here. */
         if (reg == LINK_CT_ARM && in[i] != 0u && !may_arm) {
             return LINK_NACK_NOT_ARMED;

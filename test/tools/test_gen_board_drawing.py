@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: MIT
-"""tools/gen_board_drawing.py: the board drawing the coprocessor serves is
+"""tools/gen_board_drawing.py: the board drawing the IOmcu serves is
 the configurator's panel drawing, laid out as link_pages.h says, and a
 drawing the panel would refuse is refused here with the generator's own
 error."""

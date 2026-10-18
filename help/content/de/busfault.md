@@ -6,7 +6,7 @@ order: 110
 
 # Busfehler
 
-Der Busfehler-Bildschirm sagt, warum Panel und Koprozessor nicht über den CAN-Bus (Controller Area Network) miteinander reden. Er öffnet von selbst, in zwei Fällen: Der CAN-Selbsttest beim Start schlägt fehl, oder ein Link, der stand, ist seit 4 s weg. Er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+Der Busfehler-Bildschirm sagt, warum Panel und IOmcu nicht über den CAN-Bus (Controller Area Network) miteinander reden. Er öffnet von selbst, in zwei Fällen: Der CAN-Selbsttest beim Start schlägt fehl, oder ein Link, der stand, ist seit 4 s weg. Er belegt den ganzen Bildschirm: kein Band und kein STOP. Hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 
 ## Der Selbsttest beim Start
 

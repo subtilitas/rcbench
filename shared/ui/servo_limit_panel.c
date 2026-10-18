@@ -136,7 +136,7 @@ const char *lim_prog_why(void)
     }
     /* No PD mini to set: an external supply, or the model.  The servo
      * rail as the INA3221's last window read it holds the same 4.8 V the
-     * coprocessor asks of a PD mini, which it cannot check here.  At the
+     * IOmcu asks of a PD mini, which it cannot check here.  At the
      * start only: the rail is the run's to watch after it. */
     if (!servo_limrun_running(&s.lim) && !lim_pd_answers()
         && (!s.win.voltage || s.win.mean_mv < KST_PORT_SUPPLY_MIN_MV)) {

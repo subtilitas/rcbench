@@ -30,16 +30,16 @@ before a write is relied on.
 
 ## Constraints
 
-- The coprocessor runs protocol 4.13 or later. With an older one the overlay
-  says `Unavailable: the coprocessor has no programming port.` and
-  `Update the coprocessor to version 4.13 or later.`, and every control but
+- The IOmcu runs protocol 4.13 or later. With an older one the overlay
+  says `Unavailable: the IOmcu has no programming port.` and
+  `Update the IOmcu to version 4.13 or later.`, and every control but
   **CLOSE** is off.
-- **LEAVE** with its wait needs protocol 4.15 on the coprocessor. An older
-  one is [named and handled without it](#a-coprocessor-older-than-link-version-415).
+- **LEAVE** with its wait needs protocol 4.15 on the IOmcu. An older
+  one is [named and handled without it](#an-iomcu-older-than-link-version-415).
 
-  ![A coprocessor without the port](img/servo-kst-nopage.png)
+  ![An IOmcu without the port](img/servo-kst-nopage.png)
 
-- The servo is on the coprocessor's programming port, port 1: GP13, pad 17
+- The servo is on the IOmcu's programming port, port 1: GP13, pad 17
   of the bring-up module, unless another pin is stored for it. The port is
   no output channel and no slot of OUTPUTS.
 - The SERVO screen's **TARGET** is **PROG PORT**
@@ -68,7 +68,7 @@ before a write is relied on.
   a written value into effect nor to follow PWM after programming. Neither
   is measured ([limitations](#limitations)).
 - Whether a given hardware carries the servo's reply back to the pin is not
-  known to the coprocessor. A servo on a port that does not ends **CONNECT**
+  known to the IOmcu. A servo on a port that does not ends **CONNECT**
   with `No servo responds. Check the plug, supply and port.`
 
 ## The target
@@ -87,16 +87,16 @@ or `SERVO PWM GP4` for the pins bound as SERVO PWM.
 **TARGET** changes only
 with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
-coprocessor for the other target. **PORT PWM** goes on under the same
+IOmcu for the other target. **PORT PWM** goes on under the same
 rule. It goes off with the port not in programming, no sweep and no test
 running, with the bench ARMED as with the bench SAFE: **STOP** and **DISARM**
 end a sweep or a test. With **OUTPUTS** as target **PORT PWM** is locked.
 
 While the programmer has the port neither row changes: from **CONNECT** to
 the port back in PWM after **LEAVE**, during every operation, and for as
-long as the coprocessor reports the port out of PWM. Both rows are drawn
+long as the IOmcu reports the port out of PWM. Both rows are drawn
 locked, a reset of the settings leaves the two values, the panel writes
-nothing to the coprocessor's page of the port, and the tester sends the
+nothing to the IOmcu's page of the port, and the tester sends the
 port no command and no release. A release owed to the port goes out once
 the port is back in PWM.
 
@@ -119,8 +119,8 @@ With the standard outputs as target the programmer shows `Use the programming po
 | Programming, the supply read | `Port 1 in programming mode. PWM off. 5.00 V, 37 mA.` | frames only |
 | Working | `Operation in progress: 12 frames.` | frames of the running operation |
 | Working, a write of values | `Writing 3 registers. Frames sent: 94.`, or `Writing 1 register. Frames sent: 31.` | frames of the write; the count is the registers the write sets |
-| Working, a restore of the session's backup or a pairing release | `Writing. Frames sent: 12.` | frames of the write; the coprocessor plans it alone, and the panel has no count |
-| Working, the coprocessor plans | `Preparing the write order. No frames sent yet.` | nothing: a coprocessor of link version 4.14 plans a write or a restore before its first frame |
+| Working, a restore of the session's backup or a pairing release | `Writing. Frames sent: 12.` | frames of the write; the IOmcu plans it alone, and the panel has no count |
+| Working, the IOmcu plans | `Preparing the write order. No frames sent yet.` | nothing: an IOmcu of link version 4.14 plans a write or a restore before its first frame |
 | Leaving | `Leaving programming mode. PWM is still off.` | the line low for **WAIT BEFORE PWM**; no pulse until the port reports PWM |
 
 **CONNECT** takes the port out of PWM, sets the supply where a PD mini
@@ -148,13 +148,13 @@ the overlay is open again on PROGRAM at the next entry.
 | **CONNECT** ends with | Meaning |
 | --- | --- |
 | `No pin assigned to the programming port. Nothing sent.` | a slot of OUTPUTS holds the port's pin |
-| `This programming port does not exist on the coprocessor.` | the coprocessor has fewer ports than the one asked for |
+| `This programming port does not exist on the IOmcu.` | the IOmcu has fewer ports than the one asked for |
 | `Programming voltage or current exceeds the SUPPLY limits.` and `Lower the value under MORE, or raise the limit. Nothing was applied.` | PROGRAMMING VOLTAGE is above the SUPPLY screen's voltage limit, or CURRENT LIMIT above its current limit; nothing is sent |
-| `Tap DISARM first. The port cannot be taken over while ARMED.` | the bench is ARMED or asked to arm; the coprocessor refuses the same on its own with `Port busy. Try again.` |
+| `Tap DISARM first. The port cannot be taken over while ARMED.` | the bench is ARMED or asked to arm; the IOmcu refuses the same on its own with `Port busy. Try again.` |
 | `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4 V, the current limit outside 50 to 3000 mA, or the voltage the session runs at less than 0.7 V under the input voltage of the PD mini; the supply is not changed |
-| `Supply below 4.8 V. Programming requires at least 4.8 V.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the coprocessor |
+| `Supply below 4.8 V. Programming requires at least 4.8 V.` | the programming voltage, or the voltage of an output that is on, is under 4.8 V; the supply is not changed. With an output that is on and set under 4.8 V the panel sends nothing to the IOmcu |
 | `The supply did not switch within 3000 ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
-| `The coprocessor has not yet accepted the link. Try again.` | the coprocessor does not trust the heartbeat, or the link was silent |
+| `The IOmcu has not yet accepted the link. Try again.` | the IOmcu does not trust the heartbeat, or the link was silent |
 
 ![A port without a pin](img/servo-kst-nopin.png)
 
@@ -163,15 +163,15 @@ the overlay is open again on PROGRAM at the next entry.
 The servo's signal pin is a microcontroller GPIO (general-purpose
 input/output). The high level of its reply is at most 5 V and typically
 3.3 V. The level is not measured. GP13 is rated 5.5 V while the
-coprocessor's IOVDD (input/output supply) is at 3.3 V
+IOmcu's IOVDD (input/output supply) is at 3.3 V
 (`hardware/docs/IOBoard.md`, pin ratings), so the port has no level shifter
 and no clamp.
 
-With the coprocessor unpowered GP13 is rated 3.63 V. A servo that drives
-the wire at 5 V while the coprocessor is off exceeds that rating. What the
+With the IOmcu unpowered GP13 is rated 3.63 V. A servo that drives
+the wire at 5 V while the IOmcu is off exceeds that rating. What the
 servo's pin does at idle with the bench off is not measured.
 
-Power the coprocessor before the servo's supply, or do not feed the servo
+Power the IOmcu before the servo's supply, or do not feed the servo
 from an external supply while the bench is off.
 
 ## The supply
@@ -203,7 +203,7 @@ operator raises it first. A PD mini whose input voltage is under 5.5 V cannot gi
 4.8 V, and no session starts on it.
 
 While the port is out of PWM the supply's set points are the port's. The
-coprocessor refuses every change of the voltage and of the current limit
+IOmcu refuses every change of the voltage and of the current limit
 and every ON; it takes an OFF. The SUPPLY screen and the SET row of the
 right card show the same: the set points, the sliders, the steps and
 **OUTPUT ON** are dimmed and take no press, **OUTPUT OFF** and
@@ -248,7 +248,7 @@ the port set.
 
 Without a PD mini the voltage and the current limit are stored and not
 applied. **WAIT BEFORE PWM** is applied at [leaving](#leaving) with and
-without a PD mini by a coprocessor of link version 4.15 or later.
+without a PD mini by an IOmcu of link version 4.15 or later.
 
 ## SERVO tab
 
@@ -277,7 +277,7 @@ is in doubt.
 
 ### A servo of unknown layout
 
-The coprocessor compares the image with the layout of the known servo, its
+The IOmcu compares the image with the layout of the known servo, its
 fingerprint. An image that fails is shown and never written: the edit rows
 and the write switch are off and take no tap, the tab keeps `Read only. This servo type is unknown.`, and **RELEASE PAIRING** is refused. **READ ALL**, a save to a file and
 **VERIFY** work. A file is not loaded.
@@ -428,7 +428,7 @@ nothing, and the next tap on **WRITE n VALUES** opens the write page.
 The switch goes off:
 
 - at every entry of the SERVO screen,
-- when the link to the coprocessor goes or the coprocessor starts again,
+- when the link to the IOmcu goes or the IOmcu starts again,
 - at **STOP** and at every stop the bench latches,
 - with every **CONNECT** and every **LEAVE**,
 - when a read finds another image than the one held,
@@ -438,14 +438,14 @@ The switch goes off:
 - when a read finds a servo that fits the record of an interrupted write.
 
 With the switch off the panel sends no write, no restore and no pairing
-release, and the coprocessor refuses one that arrives without the switch's
+release, and the IOmcu refuses one that arrives without the switch's
 key. Reading, **VERIFY**, saving to a file and loading a file work with
 the switch off.
 
 The switch takes its tap with a servo read. Where it does not, **OFF** is
 drawn off: without a servo read, with a servo that fails the fingerprint,
 while an operation runs and while the panel asks whether the servo is the
-one of an interrupted write. A session the coprocessor has
+one of an interrupted write. A session the IOmcu has
 locked after an interrupted write takes it with no servo read as well, once
 the panel holds the session's backup: this is the state of a panel that
 starts under such a session. The switch then opens one write, the restore
@@ -491,7 +491,7 @@ starting is not that first write: the lines stay for the next one.
    leave and the port: with a card in `KST/KST.TXT`, without one in memory.
    The page says which. With a card that takes no file within 3 s the write
    is not sent: `Could not save the file to the card. Nothing was written to the servo.`
-3. The panel sends the target image. The coprocessor checks it against the
+3. The panel sends the target image. The IOmcu checks it against the
    same limits, plans the register writes and runs them.
 4. Every register written is read back. A write that does not take is
    undone.
@@ -526,7 +526,7 @@ done: `Register 03. 1 write completed.`
 
 | Backup | Held by | Lives until |
 | --- | --- | --- |
-| Of the session | the coprocessor: the first image read after **CONNECT** | **LEAVE**, a power cycle of the servo, a restart of the coprocessor |
+| Of the session | the IOmcu: the first image read after **CONNECT** | **LEAVE**, a power cycle of the servo, a restart of the IOmcu |
 | The session's file | the card: the servo's 32 registers as they stand before the session's first write. None while no card is mounted | the file is removed from the card |
 | Before a write | the panel, in `KST/KST.TXT` or in memory | the write ends verified, or the record is discarded |
 
@@ -652,8 +652,8 @@ hold released before 2 s sends nothing.
 ![The write page without a card](img/servo-kst-write-nocard.png)
 
 After such a write the SERVO tab shows `No card, no backup file. Restore is available only within this session.` in place of the file's name. The only copy of the servo as
-found is the session's backup in the coprocessor: **LEAVE**, a restart of
-the coprocessor and a power loss of the bench end it, and the values the
+found is the session's backup in the IOmcu: **LEAVE**, a restart of
+the IOmcu and a power loss of the bench end it, and the values the
 servo held before the write are then not recoverable from the bench.
 
 ![The SERVO tab after a write without a card](img/servo-kst-nofile.png)
@@ -661,9 +661,9 @@ servo held before the write are then not recoverable from the bench.
 | Case | Result |
 | --- | --- |
 | A card is mounted later in the session | the next write, restore or pairing release saves the backup file first. The file holds the session's backup, the image read before the first write. The line on the SERVO tab changes to the file's name |
-| The link goes and comes back, or the panel starts, under a session the coprocessor keeps | the writes of the session are not known to the panel. The next write, restore or pairing release saves the backup file first, and the file holds the session's backup, not the servo as last read. A save through **FILES** counts as the backup file only while the servo equals the session's backup |
+| The link goes and comes back, or the panel starts, under a session the IOmcu keeps | the writes of the session are not known to the panel. The next write, restore or pairing release saves the backup file first, and the file holds the session's backup, not the servo as last read. A save through **FILES** counts as the backup file only while the servo equals the session's backup |
 | The servo may hold written values and the panel does not hold the session's backup | the write goes without a file, and its page carries the three lines above: the servo as last read is not saved as the backup file |
-| The coprocessor starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
+| The IOmcu starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
 | A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
 | The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2 s sends the write |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
@@ -748,11 +748,11 @@ the write switch and a 2 s hold.
 
 | Source | Written back | Not restored |
 | --- | --- | --- |
-| `Backup of the first settings read in this session.` | every register that differs, by the coprocessor from the image it holds itself; without the limit checks, and the page says so. A register that differs and that no write of the session changed ends the restore before its first write | nothing |
+| `Backup of the first settings read in this session.` | every register that differs, by the IOmcu from the image it holds itself; without the limit checks, and the page says so. A register that differs and that no write of the session changed ends the restore before its first write | nothing |
 | `Settings before the interrupted write.` | the editable fields, as a write with every limit check | the locked fields, register 00 and the pairing value |
 | `Settings before the limit run.` | LEFT ANGLE, RIGHT ANGLE, PULSE LOWER and PULSE UPPER as the [limit run](#the-limit-run)'s first session read them, as a write with every limit check. Offered while the servo read differs from them in those four fields and in no other | every other field: it is the same as the run found it |
 
-A restore from the panel's image is an ordinary write: the coprocessor
+A restore from the panel's image is an ordinary write: the IOmcu
 accepts an unchecked restore only of the backup it holds itself, and that
 check is not weakened. The page counts the locked values that differ and
 stay: `2 locked values differ. They will not be changed.`, or `1 locked value differs. It will not be changed.` A servo file is not
@@ -774,12 +774,12 @@ change is another servo: `This is a different servo. The session backup does not
 switch goes off, the restore list does not hold the session's backup, and
 no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
-A write that the card, a stop or the coprocessor keeps from starting, or
-that the coprocessor ends with no register written, counts as no write: its
+A write that the card, a stop or the IOmcu keeps from starting, or
+that the IOmcu ends with no register written, counts as no write: its
 fields still tell the servos apart. So does a write that is undone and
 read back with no write counted done.
 
-The coprocessor makes the comparison again, register by register, on the
+The IOmcu makes the comparison again, register by register, on the
 read that precedes the first write of a restore of the session's backup.
 It holds the set of registers that the writes of the session changed. A
 servo that differs from the backup in any other register is not the
@@ -860,7 +860,7 @@ and the programmer opens on the left card.
 
 ## An interrupted write
 
-A write counts as interrupted when the link goes, the coprocessor or the
+A write counts as interrupted when the link goes, the IOmcu or the
 panel starts again, **ABORT** or a stop ends it, or no result arrives
 [in time](#stops-and-losses). The record made before the write then stands, on the card
 across a power cycle of the bench.
@@ -917,7 +917,7 @@ while no card is mounted is written to a card that is mounted later.
 Max. Duty lies in registers 01 and 02. A write cut between those two
 leaves an image that breaks a hard limit, and the panel's restore, which is
 a checked write, does not start from such an image. The restore of the
-session's backup does. After a restart of the coprocessor in that state the
+session's backup does. After a restart of the IOmcu in that state the
 programmer reads the servo and writes nothing to it.
 
 ## Leaving
@@ -965,7 +965,7 @@ read.
 
 **WAIT BEFORE PWM** is 0 to 10 000 ms, 100 ms by default. The keypad takes
 no value above 10 000 ms, and no leave is sent with one. A wait of 0 ms
-ends at the coprocessor's next pass. The time left of a running wait is not
+ends at the IOmcu's next pass. The time left of a running wait is not
 shown. The wait a servo needs is not measured.
 
 | During the wait | Effect |
@@ -993,16 +993,16 @@ Without a PD mini it changes the port's state only: no frame, no wait, and
 the servo's supply is whatever feeds it. The record of an interrupted write
 stays for the next session.
 
-### A coprocessor older than link version 4.15
+### An IOmcu older than link version 4.15
 
 Link versions 4.13 and 4.14 have no LEAVE. The panel sends none to them.
 
 | A PD mini answers | The panel | Lines |
 | --- | --- | --- |
-| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `Coprocessor firmware older than 4.15. PWM starts without a delay.` |
-| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires coprocessor firmware 4.15 or later.` and `STOP ends the session and switches the supply off.` |
+| no | sends POWER_CYCLED, which changes the port's state only; the port is in PWM without a wait | `The port is back in tester mode.` and `IOmcu firmware older than 4.15. PWM starts without a delay.` |
+| yes | sends nothing: both operations these versions have for the step cycle the supply. The session stays | `Leaving with a PD mini requires IOmcu firmware 4.15 or later.` and `STOP ends the session and switches the supply off.` |
 
-With a PD mini on such a coprocessor, **STOP** or the supply's output
+With a PD mini on such an IOmcu, **STOP** or the supply's output
 switched off ends the session: the supply stays off for 2000 ms and the
 port is in PWM again.
 
@@ -1013,14 +1013,14 @@ port is in PWM again.
 | **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12 ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. A PD mini's output is switched off, and the port is in PWM again 2000 ms after it reads off |
 | **ABORT** | the same, without the latch |
 | The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
-| The coprocessor starts again | its session and backup are gone; `Coprocessor restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
+| The IOmcu starts again | its session and backup are gone; `IOmcu restarted. Tap CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
 | The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then tap CONNECT.` An operation that ended in the same reading keeps its own line |
-| The panel's control task takes no command for 2 s | nothing is sent; `No result from the coprocessor. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
-| The coprocessor refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
-| 3 exchanges with the coprocessor in a row stay unanswered | `No response from the coprocessor. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
-| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning, or for 120 s from its start however long the port reports it running | the operation is aborted; `No result from the coprocessor. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
+| The panel's control task takes no command for 2 s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
+| The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
+| 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
+| No result of an operation for 30 s, counted from the last time the port reported the operation running or planning, or for 120 s from its start however long the port reports it running | the operation is aborted; `No result from the IOmcu. Tap READ ALL.`; the values on the panel are not edited, saved or written before a **READ ALL** that ends; a write is [interrupted](#an-interrupted-write) |
 | The result of an operation the programmer no longer waits for arrives | it ends no other operation: an outcome counts for the request whose number it carries. **ABORT** reaches an operation the port still reports running |
-| The coprocessor reports a result, a refusal or an outcome this panel has no line for | `The coprocessor reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
+| The IOmcu reports a result, a refusal or an outcome this panel has no line for | `The IOmcu reports code 255. This panel does not recognise it.`, with the code's number; a result is handled as a failed operation |
 
 Every refusal of the port and every result of the session has its own
 line. [The link page](LinkKST.md) lists the codes.
@@ -1041,7 +1041,7 @@ line. [The link page](LinkKST.md) lists the codes.
 - The time a mount attempt without a card holds the screen is not measured.
 - The limits and trip settings of the SUPPLY screen are not held while the
   programmer has the port; the set points and **OUTPUT ON** are.
-- With the coprocessor unpowered and the servo fed from another supply, a
+- With the IOmcu unpowered and the servo fed from another supply, a
   servo that drives the signal wire above 3.63 V exceeds the rating of
   GP13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
@@ -1059,12 +1059,12 @@ line. [The link page](LinkKST.md) lists the codes.
   drives the port with PWM afterwards.
 - Whether a written value acts before the servo's next power-up is not
   measured. The programmer treats a value that reads back as in effect.
-- With a PD mini answering and a coprocessor older than link version 4.15,
+- With a PD mini answering and an IOmcu older than link version 4.15,
   the port is not left from the programmer: **STOP** or the supply's output
   switched off ends the session, with the supply off.
 - With a PD mini answering, a port that holds a servo in doubt is left by
   **RESTORE** and **LEAVE**, or by **STOP** with the supply off.
-- **WAIT BEFORE PWM** is not applied by a coprocessor older than link
+- **WAIT BEFORE PWM** is not applied by an IOmcu older than link
   version 4.15, and not on the leave of a port in doubt without a PD mini.
   The wait a servo needs is not measured. The time left of a running
   wait is not shown.
@@ -1080,8 +1080,8 @@ line. [The link page](LinkKST.md) lists the codes.
   files in front of it. The time this takes is not measured; the panel
   waits 5 s for a page.
 - A write without a card leaves no backup file. The session's backup is
-  then the only copy of the servo as found and ends with **LEAVE**, a
-  coprocessor restart or a power loss of the bench.
+  then the only copy of the servo as found and ends with **LEAVE**, an
+  IOmcu restart or a power loss of the bench.
 - A session's first write with a mounted card needs free space on it.
 - A servo file carries the servo type, V6 or V8, and no other identity.
   A file of one V8 servo loads into any V8 servo.
@@ -1163,12 +1163,12 @@ None of these is done.
 
 `test_prog_link` runs the panel's side of the target and of the port's
 pulse switch: a port without a pin, a target that waits for a bench at
-rest, a coprocessor that starts again, and a programmer that has the port
+rest, an IOmcu that starts again, and a programmer that has the port
 for each of the 16 pairs of page and wanted values. `test_settings_screen`
 runs a held setting against every call that changes one, and `test_servo` the
 two rows of the DUT tab. `test_kst_card` runs the card's side
 of the files on a card held in memory. `test_kst_prog` and `test_kst_prog_card` run the model and
-`test_kst_panel` the overlay, both against the coprocessor's port, a supply
+`test_kst_panel` the overlay, both against the IOmcu's port, a supply
 model and the servo model through the link's dispatcher: the supply's
 ranges at their ends and one step outside, the wait at 0 ms, 10 000 ms and
 10 001 ms as the leave's wait, an abort, a switch to SAFE and a supply that goes

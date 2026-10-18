@@ -1,5 +1,5 @@
 /*
- * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the coprocessor: the
+ * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu: the
  * I2C bus of the two current monitors and the output encoder, its set-up
  * and what they last read, the servo rail's channels with a move capture,
  * and CH1's last four windows.  The registers are in
@@ -116,7 +116,7 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm);
  *
  * @p taken is the pins another page holds: the SUPPLY page's,
  * supply_page_pins().  The bank's reservation covers them on the
- * coprocessor as well; they are named here so the page refuses them by
+ * IOmcu as well; they are named here so the page refuses them by
  * itself.
  *
  * A set-up taken clears every register core 1 fills -- FLAGS, PRESENT,
@@ -152,7 +152,7 @@ uint8_t sense_servo_write(sense_page_t *p, uint8_t off, uint8_t n,
                           const uint16_t *in, const outputs_t *o);
 
 /** Which output slots the silicon bound (bit n slot n): a capture arms
- *  only on a PWM slot that renders frames.  The coprocessor says so after
+ *  only on a PWM slot that renders frames.  The IOmcu says so after
  *  every change of the bindings; until it does, no slot counts as bound. */
 void sense_page_bound(sense_page_t *p, uint8_t slots);
 

@@ -1,6 +1,6 @@
 /*
  * The safety line, both ends: the generator on the panel and the monitor on
- * the coprocessor.  The monitor does three things a monostable cannot: refuse
+ * the IOmcu.  The monitor does three things a monostable cannot: refuse
  * a line that edges too fast to be a panel, refuse one that has gone quiet,
  * and refuse to trust either again on the strength of a single edge.
  *

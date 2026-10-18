@@ -75,9 +75,9 @@ TEST_CASE(silence_is_reported_as_silence_and_not_as_timeouts)
 }
 
 /*
- * The diagnosis only both ends together can make.  The coprocessor decoded
+ * The diagnosis only both ends together can make.  The IOmcu decoded
  * every request; the panel heard no answers.  Nothing in the panel's own
- * counters distinguishes this from a dead coprocessor, and the two want
+ * counters distinguishes this from a dead IOmcu, and the two want
  * completely different things done about them.
  */
 TEST_CASE(requests_landing_without_answers_is_the_return_path)
@@ -89,13 +89,13 @@ TEST_CASE(requests_landing_without_answers_is_the_return_path)
     CHECK_EQ(link_bringup_diagnose(&b), LINK_DIAG_REPLIES_LOST);
     CHECK(link_diag_hint(LINK_DIAG_REPLIES_LOST)[0] != '\0');
 
-    /* Without the coprocessor's status the same panel counters are an
+    /* Without the IOmcu's status the same panel counters are an
      * intermittent link, not a return-path fault. */
     b.have_status = false;
     CHECK(link_bringup_diagnose(&b) != LINK_DIAG_REPLIES_LOST);
 }
 
-/* A coprocessor that decoded nothing either is not a return-path fault --
+/* An IOmcu that decoded nothing either is not a return-path fault --
  * that is a link that is down in both directions. */
 TEST_CASE(neither_end_hearing_anything_is_not_a_return_path_fault)
 {
@@ -106,7 +106,7 @@ TEST_CASE(neither_end_hearing_anything_is_not_a_return_path_fault)
 }
 
 /*
- * The partial case: when the coprocessor misses requests too, the outbound
+ * The partial case: when the IOmcu misses requests too, the outbound
  * direction is failing and the return path is not the fault.  Reported as
  * intermittent (both directions working sometimes).
  */
@@ -265,7 +265,7 @@ TEST_CASE(every_diagnosis_has_text_and_a_hint)
 /* ------------------------------------------------------------ status page */
 
 /*
- * A coprocessor's STATUS page, as wide as its minor makes it, and the refusal
+ * An IOmcu's STATUS page, as wide as its minor makes it, and the refusal
  * count it keeps the way the firmware keeps it: in the registers before each
  * read.
  */
@@ -307,7 +307,7 @@ static void copro(bool old)
 
 /*
  * A read of @p count STATUS registers, over CAN frames both ways.  Each
- * request frame goes through the coprocessor's counted decode, so a frame
+ * request frame goes through the IOmcu's counted decode, so a frame
  * it refuses is in the count the reply carries.
  */
 static bool status_over_can(uint8_t count, link_msg_t *got)
@@ -354,7 +354,7 @@ TEST_CASE(the_status_read_is_as_long_as_the_coprocessors_page)
 /*
  * The count crosses the link whole: both halves, low first, from 0x0001FFFF
  * where a half read alone would be wrong, and on to the 2^32 wrap.  A frame
- * the coprocessor refuses on the way is in the next answer.
+ * the IOmcu refuses on the way is in the next answer.
  */
 TEST_CASE(the_refusal_count_crosses_the_link_and_wraps)
 {
@@ -406,9 +406,9 @@ TEST_CASE(the_refusal_count_crosses_the_link_and_wraps)
 }
 
 /*
- * A 4.20 coprocessor has 8 STATUS registers.  The 10-register read is
+ * A 4.20 IOmcu has 8 STATUS registers.  The 10-register read is
  * refused whole, which is why the panel asks by minor; the 8 it has carry
- * every counter but the refusals, and no count from an earlier coprocessor
+ * every counter but the refusals, and no count from an earlier IOmcu
  * survives.
  */
 TEST_CASE(an_older_coprocessor_is_read_without_the_count)
@@ -416,7 +416,7 @@ TEST_CASE(an_older_coprocessor_is_read_without_the_count)
     copro(true);
     link_bringup_t b;
     memset(&b, 0, sizeof(b));
-    b.have_refused = true;      /* the coprocessor that answered before */
+    b.have_refused = true;      /* the IOmcu that answered before */
     b.dev_refused  = 9u;
     link_msg_t st;
     memset(&st, 0, sizeof(st));

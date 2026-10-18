@@ -73,7 +73,7 @@ and the line under it says why.
 | --- | --- |
 | `ARM FIRST` | the bench is SAFE |
 | `LAST REPORT STILL WRITING` | an automatic test or a limit run is under way, or its report is still going to the card |
-| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | INA3221 or its CH1 off in SETUP, a coprocessor older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | INA3221 or its CH1 off in SETUP, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
 | `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
@@ -573,13 +573,13 @@ threshold.
 ### Time resolution
 
 A reading counts once. For the PD mini the count is the SUPPLY page's
-SAMPLES register: the coprocessor's count of the module's output readings
+SAMPLES register: the IOmcu's count of the module's output readings
 that answered. A page read whose SAMPLES has not moved brings no new reading,
-whatever voltage and current it carries -- a display read on the coprocessor
+whatever voltage and current it carries -- a display read on the IOmcu
 that was slow (up to 400 ms, `PDMINI_REPLY_MS`) or failed leaves the last
 ones standing -- and a run with no new reading for 1.5 s ends. A reading is
 stamped with the panel's time of the first page read that showed its count;
-the model counts and stamps its own steps. The coprocessor reads the PD
+the model counts and stamps its own steps. The IOmcu reads the PD
 mini's output every 100 ms (`PDMINI_DISPLAY_MS`) and the panel reads the page
 every 100 ms (`SUPPLY_LINK_READ_MS`), so a new reading reaches the test every
 100 ms at best; the model gives one every 50 ms. When SAMPLES steps by more
@@ -639,7 +639,7 @@ the panel names it when the run starts
 | The supply's voltage and current | every figure and every row | not used and not logged |
 | The supply's state: answering, output, trip, set point read back, mode | read | read |
 
-On the INA3221 the panel times a move from the windows. The coprocessor's
+On the INA3221 the panel times a move from the windows. The IOmcu's
 move capture, which times a move at 1 ms from the PWM frame, is not used by
 the run.
 
@@ -652,8 +652,8 @@ the run.
   sample 1.637 A. A run on the PD mini goes on with it when the INA3221
   becomes the meter under it.
 - **Why not the INA3221.** A run on the PD mini with the INA3221 on in
-  SETUP has the report line `INA3221: not used: <reason>`: `the coprocessor
-  is older than link protocol 4.11`, `the coprocessor does not hold its
+  SETUP has the report line `INA3221: not used: <reason>`: `the IOmcu
+  is older than link protocol 4.11`, `the IOmcu does not hold its
   set-up`, `it does not answer`, `no window with current in the last 200
   ms`, `it reset itself`, `it has worked for less than 1 s`, or `the supply
   is the panel's model`.
@@ -715,13 +715,13 @@ held it for 0.43 s twice during healthy moves, at 0.004 to 0.342 A.
 ### The output encoder
 
 An AS5600 magnetic angle sensor on the servo's output shaft, set up under
-SETUP, INTERFACES, AS5600 (default OFF) and read by the coprocessor
+SETUP, INTERFACES, AS5600 (default OFF) and read by the IOmcu
 ([Link](Link.md), SENSE registers 26 to 31), adds the horn's angle to a run.
 The current's results are unchanged and the angle decides nothing: it is not
 part of the verdict and has no limit. Without AS5600 on, the run, its CSV and
-its report are as without the part. The coprocessor takes the SENSE set-up
+its report are as without the part. The IOmcu takes the SENSE set-up
 only while the bank is SAFE. A run uses the angle only when the
-coprocessor holds AS5600 on: AS5600 switched on while ARMED gives a run
+IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
@@ -768,8 +768,8 @@ For each move, from its command to the next command (constants in
 | unmoved | the angle never left the 2.0 degrees |
 | late | it moved and was not still for 100 ms before the next command |
 
-The tolerance is the coprocessor's `SENSE_ENC_STILL_TOL`; `test_as5600` holds
-the two equal. The still time is kept on the coprocessor at its 2 ms sample
+The tolerance is the IOmcu's `SENSE_ENC_STILL_TOL`; `test_as5600` holds
+the two equal. The still time is kept on the IOmcu at its 2 ms sample
 interval, so the travel time does not depend on how often the panel reads the
 page (every 40 ms). It starts at the command as the test issues it and so
 includes the command's way to the pin: the render loop, the control task,
@@ -841,7 +841,7 @@ left as they are.
 | --- | --- |
 | `STOP` | STOP on the band |
 | `bench SAFE` | DISARM, or anything else that switched the bench to SAFE |
-| `link lost` | the link to the coprocessor went down during the run |
+| `link lost` | the link to the IOmcu went down during the run |
 | `SERVO screen left` | another screen opened |
 | `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, a programmer opened from PROGRAM's list |
 | `servo settings changed` | the type, frame rate, pulses, trim, travel, reverse or SPEED changed |
@@ -859,7 +859,7 @@ left as they are.
 | `INA3221 reset itself` | a run on the INA3221: the part's reset count moved |
 | `INA3221 not answering` | a run on the INA3221: no SENSE read in 200 ms shows the part online and identified on a bus that is not stuck |
 | `INA3221 window without current` | a run on the INA3221: the newest window holds no current samples, or its number has stood for 200 ms |
-| `INA3221 set-up not held` | a run on the INA3221: the coprocessor no longer holds the set-up, or SETUP has the INA3221 off |
+| `INA3221 set-up not held` | a run on the INA3221: the IOmcu no longer holds the set-up, or SETUP has the INA3221 off |
 | `INA3221 no longer the meter` | a run on the INA3221: the meter changed and the panel did not name the condition |
 
 The six reasons of a run on the INA3221 are the conditions under which the
@@ -1078,7 +1078,7 @@ it, and the CSV read back by the log viewer's parser. Not measured: the PD
 mini's averaging, and the command's delay to the pin.
 
 `test_servo_test_win`, `test_servo_test_win_read` and `test_servo_test_win_chain` run the test on the INA3221 as meter on the host: the modelled INA3221 carries `servo_sim`'s current, the
-coprocessor's schedule and pages turn it into windows, `sense_link` takes
+IOmcu's schedule and pages turn it into windows, `sense_link` takes
 each once and `servo_source` names the meter, beside a model of the PD mini
 read every 104 ms. Two recordings from a bench on 0.14.0 are replayed: an
 MS24's whole CSV on the PD mini (`servo-ms24-pdmini.csv`), with its two
@@ -1110,7 +1110,7 @@ which is while a pin follows it.
 | HELI CYCLIC | 820 to 2220 us | 1520 us |
 
 The rest is `outputs_role_rest()` in `shared/outputs/outputs.c`, the value
-the coprocessor renders on a channel in ARMED that nobody commands, put through the
+the IOmcu renders on a channel in ARMED that nobody commands, put through the
 range the screen's commands carry. That range is centred on PULSE CENTRE, so
 a PULSE CENTRE set off the middle of PULSE MIN and MAX is the value at the
 switch to ARMED. TRIM moves commanded positions and not the rest: with TRIM +20 the switch to ARMED
@@ -1147,7 +1147,7 @@ square is limited at every SPEED below 100 %. The dwell does not enter: it
 adds time at the ends, not to the motion. The line follows the settings,
 before SWEEP is pressed and while it runs. `sweep_slew_limited()` in
 `shared/servo/servo_sweep.c` decides it, in the command units the
-coprocessor slews in.
+IOmcu slews in.
 
 | SWEEP page | A | Fastest change | Clears at SPEED |
 | --- | ---: | ---: | ---: |
@@ -1164,8 +1164,8 @@ shown.
 
 PAUSE, the sweep button while a sweep runs, holds the output where it has
 got to, and the button reads PAUSED, filled in the warning colour. A tap on
-PAUSED carries the sweep on from the phase it was paused at, on a
-coprocessor speaking protocol 4.6; an older one starts the curve over. A
+PAUSED carries the sweep on from the phase it was paused at, on an
+IOmcu speaking protocol 4.6; an older one starts the curve over. A
 paused sweep is the moment to raise SPEED: the pause stays, and the resume
 runs at the new rate.
 
@@ -1178,7 +1178,7 @@ automatic test reads the INA3221 or the PD mini, or runs on the panel's
 supply model. Programming LEFT ANGLE and RIGHT ANGLE needs the programming
 port ([Servo programmer](ServoProgrammer.md)).
 
-The pulses themselves exist: the coprocessor's PWM (pulse-width modulation)
+The pulses themselves exist: the IOmcu's PWM (pulse-width modulation)
 driver is written, and [DShot and the output drivers](DShot.md) describes it.
 The order of work is in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

@@ -34,7 +34,7 @@ static outbind_t   s_last;
 static gfx_color_t s_px[800 * 432];
 
 /* firmware/iomcu/src/board_drawing_rp2350_can.c: the drawing the
- * coprocessor serves for this board. */
+ * IOmcu serves for this board. */
 extern const uint8_t  board_drawing_rp2350_can[];
 extern const uint32_t board_drawing_rp2350_can_bytes;
 
@@ -599,7 +599,7 @@ TEST_CASE(a_board_that_does_not_say_which_pads_are_ground_still_draws)
      * lead placed by reading the outline.
      *
      * The board this build knows does say, so this learns one that does not:
-     * a catalogue and a shape and no pad list, which is what a coprocessor
+     * a catalogue and a shape and no pad list, which is what an IOmcu
      * built before the page answers with.
      */
     const uint16_t bare = 7777u;
@@ -692,7 +692,7 @@ TEST_CASE(the_picker_follows_the_protocol_chosen_on_the_outputs_screen)
     outbind_set_proto(&picked, 4u);              /* DSHOT600 */
     outputs_screen_set_binding(&picked);
 
-    /* What the coprocessor answers with an empty store: OFF, nothing bound. */
+    /* What the IOmcu answers with an empty store: OFF, nothing bound. */
     outbind_t empty;
     outbind_init(&empty);
     outbind_set_board(&empty, BOARD);
@@ -885,7 +885,7 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
         CHECK_EQ(outbind_group_of(picker_screen_binding(), idx(13u)),
                  proto_named("SERVO PWM"));
 
-        /* A slot that holds the pin keeps it -- the coprocessor gives the
+        /* A slot that holds the pin keeps it -- the IOmcu gives the
          * port no pin then -- and it can be unticked, after which the port
          * has it again. */
         picker_screen_set_prog_pin(13u);
@@ -911,7 +911,7 @@ static bool ends_with(const char *s, const char *tail)
 }
 
 /*
- * The picker meets the coprocessor's two PWM refusals as OUTPUTS does: a PWM
+ * The picker meets the IOmcu's two PWM refusals as OUTPUTS does: a PWM
  * pin on the programming port's slice (GP28 beside GP13, slice 6), and one
  * on the compare register of a pin bound as PWM (GP16 beside GP0).  Each is
  * held with the pin that holds it named, a tap writes nothing, and the line
@@ -983,7 +983,7 @@ TEST_CASE(a_pwm_pin_the_coprocessor_would_refuse_is_held_and_named)
 
 /*
  * Every button against everything else on the screen, with the
- * coprocessor's drawing and with the board drawn from its shape (both 205 px
+ * IOmcu's drawing and with the board drawn from its shape (both 205 px
  * tall): inside the
  * screen, centred on its own pad unless the screen edge stops it, clear of
  * every other button, of every marker inside the board and of the text
@@ -1400,7 +1400,7 @@ TEST_CASE(a_tap_on_every_key_on_off_writes_nothing)
 
 /*
  * A board that answers during a visit, on a panel that booted with the
- * coprocessor off, or one swapped for another: the picker stays on OFF.
+ * IOmcu off, or one swapped for another: the picker stays on OFF.
  * It takes what the Outputs screen made of the reading, as the panel's
  * loop hands it, and follows its selection.
  */
@@ -1452,7 +1452,7 @@ TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_picker_on_off)
         tap_rect(r);
         CHECK_EQ(s_applied, 0);
 
-        /* Picked here, then the coprocessor is swapped for another board
+        /* Picked here, then the IOmcu is swapped for another board
          * and back: OFF again, and a key writes nothing. */
         pick("SERVO PWM");
         outbind_t gone;
@@ -1539,7 +1539,7 @@ TEST_CASE(off_draws_no_pins_table_and_no_pressed_key)
  * over the 6 protocols that take one channel a pin.  Every pin is listed
  * once under its own protocol, and every line is inside the table and the
  * canvas, clear of every other line, key, marker and text area, and drawn
- * on -- with the coprocessor's drawing and with the board drawn from its
+ * on -- with the IOmcu's drawing and with the board drawn from its
  * shape, in both languages.
  */
 TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)

@@ -1,5 +1,5 @@
-# The panel-to-coprocessor protocol, compiled by all three build systems: the
-# panel polls with it, the coprocessor answers with it, and the host suite
+# The panel-to-IOmcu protocol, compiled by all three build systems: the
+# panel polls with it, the IOmcu answers with it, and the host suite
 # runs both ends against each other over a bus the suite controls.
 #
 # link_crc serves OpenYGE, which uses the same polynomial with a different

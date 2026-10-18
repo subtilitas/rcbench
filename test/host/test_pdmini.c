@@ -1267,7 +1267,7 @@ TEST_CASE(live_set_points_that_will_not_take_switch_the_output_off)
     CHECK(m.output);
     m.ignore_data = true;
     for (int k = 0; k < 40; ++k) {             /* asked every pass, as the */
-        pdmini_want(&d, true, 5000u, 1000u);   /* coprocessor does         */
+        pdmini_want(&d, true, 5000u, 1000u);   /* IOmcu does         */
         run(50u, false);
     }
     CHECK(!m.output);
@@ -2318,7 +2318,7 @@ TEST_CASE(a_read_under_way_does_not_answer_a_later_asking)
 }
 
 /* The SUPPLY page and this driver on the modelled module: a pass of the
- * coprocessor's loop, one millisecond at a time. */
+ * IOmcu's loop, one millisecond at a time. */
 static outputs_t     po;
 static supply_page_t pg;
 

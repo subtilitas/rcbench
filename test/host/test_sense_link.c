@@ -1,9 +1,9 @@
 /*
  * The panel's half of the SENSE and SERVO_SENSE pages, against the
- * coprocessor's half (shared/outputs/sense_page.c) and against a
- * coprocessor that speaks protocol 4.6: what is sent and when.
+ * IOmcu's half (shared/outputs/sense_page.c) and against an
+ * IOmcu that speaks protocol 4.6: what is sent and when.
  *
- * Under test: nothing sent to a coprocessor older than 4.7, and the
+ * Under test: nothing sent to an IOmcu older than 4.7, and the
  * operator told once when a part is enabled for one; the page read before
  * anything is written and only what differs written; both parts off before
  * a part's frame changes while both are on, so two enabled parts never
@@ -28,7 +28,7 @@ TEST_CASE(nothing_is_sent_to_a_4_6_coprocessor)
     sense_setup_t w = setup_default();
     w.i228 = true;
     w.i3221 = true;
-    /* A part enabled with a coprocessor up that cannot read it is said at
+    /* A part enabled with an IOmcu up that cannot read it is said at
      * once, */
     want(&w);
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_NO_PAGE);
@@ -54,7 +54,7 @@ TEST_CASE(nothing_is_sent_to_a_4_6_coprocessor)
     polls(10);
     CHECK_EQ(to_sense, 0u);
 
-    /* And the same panel on a 4.7 coprocessor reads the page. */
+    /* And the same panel on a 4.7 IOmcu reads the page. */
     fresh(7u);
     polls(1);
     CHECK(to_sense > 0u);
@@ -485,7 +485,7 @@ TEST_CASE(a_lost_link_reads_the_page_again)
     sense_link_op_t op;
     CHECK(!sense_link_next(&sl, now, true, &op));
     CHECK_EQ(sense_link_flags(&sl), 0u);
-    /* A coprocessor that kept the set-up in flash is not written again. */
+    /* An IOmcu that kept the set-up in flash is not written again. */
     sense_link_came_up(&sl, 7u, now);
     CHECK(sense_link_next(&sl, now, true, &op));
     CHECK_EQ(op.kind, SENSE_LINK_OP_READ_SETUP);
@@ -510,7 +510,7 @@ TEST_CASE(a_part_that_does_not_answer_is_said_once)
     /* Written at 10500 ms, so the wait ends at 13000 ms. */
     polls(12);
     far_flags(LINK_SN_BUS_OPEN);
-    /* Not while the coprocessor may still be finding it. */
+    /* Not while the IOmcu may still be finding it. */
     polls(40);
     CHECK(now <= 10500u + SENSE_LINK_GRACE_MS);
     CHECK_EQ(sense_link_events(&sl), 0u);
@@ -671,7 +671,7 @@ TEST_CASE(simultaneous_events_are_handed_out_one_at_a_time)
     CHECK_EQ(sense_link_event(&sl, t + 2u * SENSE_LINK_EVENT_GAP_MS),
              SENSE_LINK_EV_STORE_OFF);
 
-    /* A lost link drops what its coprocessor said and keeps what the
+    /* A lost link drops what its IOmcu said and keeps what the
      * settings say. */
     sl.events = (uint16_t)(SENSE_LINK_EV_I228_SILENT
                            | SENSE_LINK_EV_PINS_UNSET);

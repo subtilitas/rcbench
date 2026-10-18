@@ -10,18 +10,18 @@ steht unter [Der Link](Link-de.md).
 
 Der Selbsttest beantwortet eine Frage: kommen Frames unversehrt über den Bus?
 Er benutzt kein Page-Protokoll. Das Panel sendet einen Testframe, der
-Koprozessor schickt ihn zurück, und das Panel vergleicht Byte für Byte.
+IOmcu schickt ihn zurück, und das Panel vergleicht Byte für Byte.
 Besteht der Test und der Link funktioniert nicht, liegt der Fehler oberhalb
 der Leitung.
 
-### Koprozessor
+### IOmcu
 
-Nichts zu konfigurieren. Der Koprozessor startet CAN beim Boot, gibt aus, ob
+Nichts zu konfigurieren. Der IOmcu startet CAN beim Boot, gibt aus, ob
 der Controller geantwortet hat, und beantwortet Probes dauerhaft. Das Echo
 kostet einen Registerzugriff je Schleifendurchlauf und beantwortet nur Frames
 an eine Page, die die Page Map nicht benutzt.
 
-Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des Koprozessors,
+Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3 s wiederholt:
 
     rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00
@@ -66,7 +66,7 @@ Debug-Bridge des ESP32-S3) als Zweitkonsole. Ausgegeben wird:
     I (…) rcbench:   panel  tx_err 0 rx_err 0 bus_err 0
     I (…) rcbench:   iomcu  CAN up, 2024 echoes, 0 overflow(s), tx_err 0 rx_err 0 flags 0x00
 
-Die letzte Zeile ist der eigene Status des Koprozessors, vor und nach der
+Die letzte Zeile ist der eigene Status des IOmcu, vor und nach der
 Echophase über den Bus abgefragt. Die Differenz der beiden Ablesungen ist die
 Zahl der Echos, die er während des Tests gesendet hat; das Panel vergleicht
 sie mit der Zahl, die es empfangen hat.
@@ -78,7 +78,7 @@ sie mit der Zahl, die es empfangen hat.
 | `Kein Testframe kam zurück.` (Konsole: `no probe came back`) | nichts kommt durch | CANH/CANL vertauscht; Gegenseite versorgt; gleiche Bitrate an beiden Enden; Abschlusswiderstände an beiden Enden |
 | `Testframes kamen mit veränderten Daten zurück.` (Konsole: `probes come back altered`) | Frames kommen durch und kommen falsch an | Sample Point oder Bit Timing; ein fehlender Abschluss reflektiert |
 | `Einige Testframes gingen verloren.` (Konsole: `probes cross, and not all of them`) | grenzwertiger Bus | Timing, ein Abschluss, oder ein für die Rate zu langer Bus |
-| `Testframes gingen ohne Busfehler verloren.` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des Koprozessors vergleichen |
+| `Testframes gingen ohne Busfehler verloren.` (Konsole: `probes go missing without a bus error`) | Frames kamen unversehrt an und wurden nicht rechtzeitig gelesen | ein Empfangspuffer ist übergelaufen; kein Verdrahtungsfehler. Mit dem Overflow-Zähler des IOmcu vergleichen |
 | `Alle Testframes kamen korrekt zurück.` (Konsole: `every probe came back intact`) | die Leitung ist in Ordnung | ein verbleibender Fehler liegt oberhalb der Leitung |
 
 Die Konsole schreibt die englischen Urteile. Startbildschirm und
@@ -95,7 +95,7 @@ unversehrt an und wurden von einem Empfänger verworfen, der nicht rechtzeitig
 gelesen hat.
 
 Erreicht der Sendefehlerzähler während des Tests 128, quittiert kein anderer
-Knoten: der Koprozessor ist gar nicht auf dem Bus. Der Test meldet das
+Knoten: der IOmcu ist gar nicht auf dem Bus. Der Test meldet das
 einmal, bevor der Durchlauf vorbei ist.
 
 ### Der Bus-Fehler-Bildschirm
@@ -103,7 +103,7 @@ einmal, bevor der Durchlauf vorbei ist.
 Ein anderes Urteil als `Alle Testframes kamen korrekt zurück.` wird auf dem Panel vor
 dem Menü gezeigt, denn der Fehler ist von jedem anderen Bildschirm aus
 unsichtbar: ein Bus, der keine Frames trägt, sieht genauso aus wie ein
-Koprozessor, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
+IOmcu, der nicht bestückt ist, und beides sieht aus wie ein Prüfstand,
 der einfach keine Zahlen zeigt.
 
 ![Frames kommen verändert an](img/de/busfault.png)
@@ -133,7 +133,7 @@ Bus scheitert.
 ## Link-Bericht
 
 Nach der Inbetriebnahme pollt das Panel jede Sekunde die Identity-Page des
-Koprozessors, bis er antwortet, dann die Bench-Page mit 20 Hz und die
+IOmcu, bis er antwortet, dann die Bench-Page mit 20 Hz und die
 Status-Page alle 500 ms. Alle 5 s, solange der Link ausgefallen ist, und einmal
 pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
@@ -145,24 +145,24 @@ pro Minute, solange er läuft, gibt das Panel eine Diagnose aus:
 
 | Diagnose | Bedeutung |
 | --- | --- |
-| `no reply to any poll` | Koprozessor versorgt; CANH/CANL; Bitrate; Abschlusswiderstände |
+| `no reply to any poll` | IOmcu versorgt; CANH/CANL; Bitrate; Abschlusswiderstände |
 | `answering, wrong protocol` | beide Enden aus demselben Baum flashen |
 | `requests land, answers do not` | die Gegenseite hört das Panel, das Panel hört sie nicht: ihr Sendepfad |
 | `frames arrive corrupt` | Bit Timing oder Sample Point zwischen den beiden Enden uneinig |
 | `answers arrive too late` | eine Antwort langsamer als der Poll-Timeout, oder eine hängende Gegenseite |
 | `works, and not every time` | grenzwertiges Timing, oder eine Pollperiode enger als die Umlaufzeit |
 
-Die Spalten `crc` und `resync` der Koprozessorzeile tragen den Empfangs- und
+Die Spalten `crc` und `resync` der IOmcu-Zeile tragen den Empfangs- und
 den Sendefehlerzähler des XL2515 (Statusregister `LINK_ST_CRC_ERRORS` und
 `LINK_ST_RESYNCS`). Die letzte Zahl der Zeile ist die der CAN-Frames, die der
-Koprozessor seit dem Einschalten empfangen und nicht dekodiert hat
+IOmcu seit dem Einschalten empfangen und nicht dekodiert hat
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`, Protokoll 4.21; 0 von einem
-älteren Koprozessor). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).
+älteren IOmcu). Siehe [Abgelehnte Frames](Link-de.md#abgelehnte-frames).
 
 ## Was festzuhalten ist
 
 Die Umlaufzeit, die Fehlerzähler beider Enden und der Overflow-Zähler des
-Koprozessors. Die Umlaufzeit legt fest, was eine Pollperiode schaffen muss;
+IOmcu. Die Umlaufzeit legt fest, was eine Pollperiode schaffen muss;
 die Zähler sagen, ob der Bus oder die Software die Grenze setzt.
 
 Bei beiden Platinen unter Spannung außerdem am Oszilloskop bestätigen, dass

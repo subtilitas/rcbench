@@ -49,7 +49,7 @@ typedef enum {
      * menu: nothing on the bench runs, so it carries no band either. */
     SCREEN_UPDATE,
     /* Not reachable from the menu either: the panel opens it to offer the
-     * coprocessor an update, and shows the update's progress on it. */
+     * IOmcu an update, and shows the update's progress on it. */
     SCREEN_COPROC_UPDATE,
     /* UPDATES, from SETUP: the check for a newer release on GitHub, the
      * reminder's switch, and the download. */
@@ -211,7 +211,7 @@ typedef struct {
      * The numbers are modelled, not measured.
      *
      * Set when the bench numbers come from the panel's own simulator, which
-     * runs only while no coprocessor answers.  A coprocessor that answers
+     * runs only while no IOmcu answers.  An IOmcu that answers
      * reports what it can see and nothing else, so the flag it sends
      * (LINK_BN_SIMULATED) is never set by this firmware; the field it has no
      * source for is empty instead.  The router draws SIMULATION across the
@@ -220,28 +220,28 @@ typedef struct {
     bool simulated;
 
     /*
-     * A link_cap_t bitmap from the coprocessor's identity page.  Zero means
+     * A link_cap_t bitmap from the IOmcu's identity page.  Zero means
      * nothing is fitted or nothing answered; the menu treats both the same.
      */
     uint16_t capabilities;
 
     /**
-     * Link errors since boot: the coprocessor's CRC (cyclic redundancy
+     * Link errors since boot: the IOmcu's CRC (cyclic redundancy
      * check) failures and resyncs added together.  Zero is a clean bus.
      */
     uint32_t link_errors;
 
     /**
-     * CAN frames the coprocessor refused to decode since its power-up,
-     * modulo 2^32: STATUS registers 8 and 9, protocol 4.21.  0 for a
-     * coprocessor older than 4.21, which does not count them, and until the
+     * CAN frames the IOmcu refused to decode since its power-up,
+     * modulo 2^32: STATUS registers 8 and 9, protocol 4.21.  0 for an
+     * IOmcu older than 4.21, which does not count them, and until the
      * first status read after a link-up.
      */
     uint32_t link_refused;
 
     /**
      * The panel's own die temperature in degrees Celsius, or NAN when it is
-     * not read.  The panel's, not the coprocessor's: the two boards run at
+     * not read.  The panel's, not the IOmcu's: the two boards run at
      * different temperatures and this one is the display's.
      */
     float mcu_temp_c;

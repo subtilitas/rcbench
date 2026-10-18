@@ -1,6 +1,6 @@
 /*
  * The programmable supply, on the control task: the PD (USB Power
- * Delivery) mini over the coprocessor's SUPPLY page, or the panel's model,
+ * Delivery) mini over the IOmcu's SUPPLY page, or the panel's model,
  * its steps at the sample cadence, its run's rows for the log, and its page.
  *
  * SPDX-License-Identifier: MIT
@@ -31,7 +31,7 @@
 /*
  * The programmable supply.
  *
- * The PD mini, driven by the coprocessor over the SUPPLY page (protocol 4.3)
+ * The PD mini, driven by the IOmcu over the SUPPLY page (protocol 4.3)
  * when one answers that speaks it and SETUP INTERFACES enables the module;
  * the panel's model, supply_sim_t, otherwise, so the screen, the log and the
  * rules here are the same either way.  s_supply_on is what the operator
@@ -63,14 +63,14 @@ atomic_uint        s_supply_adopt_done;
  * the model's current the simulated ESC's, so the run counts beeps from the
  * same samples the PD mini would give it.  The ESC sees the throttle the
  * control page carries -- the raw command, as a pin bound on the
- * coprocessor does -- and no signal while the bank is disarmed.
+ * IOmcu does -- and no signal while the bank is disarmed.
  */
 atomic_uintptr_t        s_escsim_profile;
 atomic_uint             s_escsim_runs;
 static esc_sim_t        s_escsim;          /* control task only */
 static unsigned         s_escsim_runs_seen;
 static bool             s_escsim_live;
-/* The coprocessor that answered speaks protocol 4.3: it has the page. */
+/* The IOmcu that answered speaks protocol 4.3: it has the page. */
 bool s_supply_page;
 /* And speaks 4.4: AUTO baud and the BAUD_FOUND register. */
 bool s_supply_auto;
@@ -188,7 +188,7 @@ void supply_follow_set(void)
     const unsigned imax = atomic_load(&s_supply_imax_ma);
     /* A programming port holds the supply: the set points are the port's,
      * and neither the screen's nor a limit that moved is written over
-     * them.  The coprocessor refuses it too (supply_page.h). */
+     * them.  The IOmcu refuses it too (supply_page.h). */
     if (s_kst_taken) {
         return;
     }
@@ -237,7 +237,7 @@ void apply_supply_cmd(const panel_cmd_t *pc)
     }
     if (c->module_reset && s_supply_is_real) {
         supply_switch(false);
-        /* RESET is a 4.4 register: an older coprocessor would refuse it
+        /* RESET is a 4.4 register: an older IOmcu would refuse it
          * unseen, so the operator is told instead. */
         if (s_supply_auto) {
             supply_link_reset(&s_supply_link);
@@ -292,7 +292,7 @@ static void supply_queue_sample(void)
 
 /*
  * Which supply the screen drives: the PD mini whenever SETUP INTERFACES
- * enables it -- not answering while no coprocessor that speaks the SUPPLY
+ * enables it -- not answering while no IOmcu that speaks the SUPPLY
  * page does -- and the model otherwise.  A change switches the output off.
  * No exchange here: called from the step, inside the pump.  Returns the
  * wiring word it followed, so a write chosen after it is chosen for that
@@ -462,7 +462,7 @@ static void supply_watch_service(void)
  * exchange's wait, which can last LINK_HOST_TIMEOUT_MS (1000 ms) a time.  A
  * stop, an OFF and a touch loss cut the output here, and the supply is
  * stepped, logged and published every 1/PANEL_SAMPLE_HZ whatever the link is
- * doing -- the supply is the panel's own and an unanswered coprocessor is
+ * doing -- the supply is the panel's own and an unanswered IOmcu is
  * no reason for its plot or its log to thin out.
  */
 void supply_pump(void)
@@ -530,7 +530,7 @@ static void supply_link_alerts(void)
                           : TR(ALERT_SUPPLY_REFUSED_ON));
     }
     if ((ev & SUPPLY_LINK_EV_SAGGED) != 0u) {
-        /* Switched off at the coprocessor for an input under the set point
+        /* Switched off at the IOmcu for an input under the set point
          * and the headroom: the input and the set point it was read with. */
         supply_switch(false);
         uint16_t vin = 0u;
@@ -563,7 +563,7 @@ static void supply_link_alerts(void)
  * The SUPPLY page: what is owed written -- an OFF first -- and the page read
  * every SUPPLY_LINK_READ_MS.  From poll_bench(), outside the pump: the pump
  * runs inside an exchange and switches the supply by asking
- * (supply_switch()), which this pays.  A coprocessor without the page is
+ * (supply_switch()), which this pays.  An IOmcu without the page is
  * left alone, and the PD mini reads as not answering.
  */
 void supply_link_service(void)
@@ -585,7 +585,7 @@ void supply_link_service(void)
          */
         w = wiring_of(supply_real_follow());
         if (w.baud >= SUPPLY_LINK_BAUD_AUTO && !s_supply_auto) {
-            w.baud = 1u;   /* a 4.3 coprocessor has no AUTO: the as-shipped 19200 */
+            w.baud = 1u;   /* a 4.3 IOmcu has no AUTO: the as-shipped 19200 */
         }
         supply_link_wire(&s_supply_link, &w);
         uint8_t off = 0u;
@@ -614,7 +614,7 @@ void supply_link_service(void)
     if ((w.en || !supply_link_settled(&s_supply_link))
         && supply_link_read_due(&s_supply_link, now_ms())) {
         link_msg_t reply = { 0 };
-        /* A 4.3 coprocessor's page ends before BAUD_FOUND. */
+        /* A 4.3 IOmcu's page ends before BAUD_FOUND. */
         const bool read = poll_page(&s_host, LINK_PAGE_SUPPLY,
                                     s_supply_auto ? (uint8_t)LINK_SP_COUNT
                                                   : (uint8_t)LINK_SP_BAUD_FOUND,
@@ -645,7 +645,7 @@ void supply_link_service(void)
         if (read) {
             atomic_store(&s_supply_vin_mv, reply.regs[LINK_SP_VIN_MV]);
             /* 0 for a rate still being looked for: no rate in the header.
-             * A 4.3 coprocessor has no BAUD_FOUND and runs at the BAUD it
+             * A 4.3 IOmcu has no BAUD_FOUND and runs at the BAUD it
              * holds, which is what it accepted, not what was last sent: a
              * refused wiring write leaves the old rate in place. */
             atomic_store(&s_supply_baud,

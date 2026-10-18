@@ -1,5 +1,5 @@
 /*
- * When the panel may write its own flash, and when the coprocessor may not
+ * When the panel may write its own flash, and when the IOmcu may not
  * write its own.
  *
  * CONFIG_SPI_FLASH_AUTO_SUSPEND is off on the panel, so an erase or a write
@@ -16,7 +16,7 @@
  * drawing's keeper before each sector.  A write that is not allowed waits;
  * arming and the supply are never refused for one.
  *
- * The coprocessor's rule is flash_gate_busy(), for its output store and its
+ * The IOmcu's rule is flash_gate_busy(), for its output store and its
  * firmware update alike.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
@@ -47,7 +47,7 @@ extern "C" {
 bool flash_gate_open(bool armed, bool supply);
 
 /**
- * Whether the coprocessor's flash may not be written now, for the store and
+ * Whether the IOmcu's flash may not be written now, for the store and
  * for the firmware update alike.  The bank driving: a window stops this core
  * and steps no output.  The supply asked on or perhaps on: its UART replies
  * would overrun the 8-byte FIFO in a 19 ms window, and an OFF asked over the

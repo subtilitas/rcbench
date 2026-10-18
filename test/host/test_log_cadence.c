@@ -300,7 +300,7 @@ TEST_CASE(a_pass_writes_one_row_for_each_window_and_one_without)
 
 #define PASS_MS        5u      /* the loop's delay, on a 1 ms tick          */
 #define POLL_MS        50u     /* the poll gate with the link up            */
-#define EXCH_MIN_US    1000u   /* one exchange with the coprocessor         */
+#define EXCH_MIN_US    1000u   /* one exchange with the IOmcu         */
 #define EXCH_MAX_US    3000u
 #define QUEUE_ROWS     64u     /* the logger's queue                        */
 #define TEN_MINUTES_MS 600000u

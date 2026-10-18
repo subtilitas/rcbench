@@ -49,7 +49,7 @@ static bool     g_abort_in_flight;  /* kst_link_abort() while the next
 static unsigned g_op_cmds[16];      /* command frames by their operation   */
 static uint8_t  g_nack_stage;       /* the answer to a staged window, or 0 */
 
-/* ------------------------------------------------------------- coprocessor */
+/* ------------------------------------------------------------- IOmcu */
 
 /* The PD mini: it reads back what it was asked for at once. */
 static supply_port_view_t g_supply;
@@ -591,7 +591,7 @@ TEST_CASE(a_write_without_the_switch_sends_nothing)
 }
 
 /*
- * A 4.12 coprocessor has the page and takes an output channel where this
+ * A 4.12 IOmcu has the page and takes an output channel where this
  * panel names a port; a 4.11 one has no page.  Neither is sent anything.
  */
 TEST_CASE(nothing_is_sent_to_a_coprocessor_before_protocol_4_13)
@@ -627,7 +627,7 @@ TEST_CASE(nothing_is_sent_to_a_coprocessor_before_protocol_4_13)
         CHECK_EQ(g_port.seq, 0);
     }
 
-    /* The same panel on a 4.13 coprocessor. */
+    /* The same panel on a 4.13 IOmcu. */
     kst_link_came_up(&g_k, KST_LINK_MINOR);
     CHECK(kst_link_has_page(&g_k));
     until_phase(KST_LINK_READY);
@@ -635,7 +635,7 @@ TEST_CASE(nothing_is_sent_to_a_coprocessor_before_protocol_4_13)
 
 /*
  * The other way round: the command of a 4.12 panel, an operation and an
- * output channel, on this coprocessor.  The page takes the frame and
+ * output channel, on this IOmcu.  The page takes the frame and
  * starts nothing.
  */
 TEST_CASE(the_command_of_a_4_12_panel_starts_nothing)
@@ -841,7 +841,7 @@ TEST_CASE(the_page_says_why_a_command_started_nothing)
     fresh();
     link_up();
     r = request(LINK_KST_OP_ENTER);
-    /* A port the model has and this coprocessor does not. */
+    /* A port the model has and this IOmcu does not. */
     r.port = 1u;
     out = run(&r);
     CHECK_EQ(out.kind, KST_LINK_OUT_REFUSED);
@@ -935,7 +935,7 @@ TEST_CASE(three_exchanges_without_an_answer_give_the_operation_up)
     CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
 
     /* The command taken and every answer after it lost: the operation
-     * runs at the coprocessor, and the page says so when it is read. */
+     * runs at the IOmcu, and the page says so when it is read. */
     CHECK_EQ(kst_link_start(&g_k, &(kst_link_request_t){
                  .op = LINK_KST_OP_READ_ALL, .port = CH }),
              KST_LINK_START_OK);
@@ -1229,7 +1229,7 @@ TEST_CASE(an_abort_after_the_silence_latch_drops_the_command_unrefused)
     kst_link_outcome_t out;
 
     /* The frame is lost, the panel waits 1000 ms for its answer, and the
-     * coprocessor latches its failsafe in that silence. */
+     * IOmcu latches its failsafe in that silence. */
     up();
     r = small_write();
     g_cmds = 0;
@@ -1519,7 +1519,7 @@ static void up_at_seq(uint16_t last)
 }
 
 /* After SEQ @p last: a WRITE whose command frame is lost, an abort, and
- * the coprocessor starting again before the page is read.  The fresh page
+ * the IOmcu starting again before the page is read.  The fresh page
  * has SEQ 0, operation NONE and no refusal. */
 static void lost_write_and_restart(uint16_t last)
 {
@@ -1629,7 +1629,7 @@ static void write_taken_at_seq_1(void)
     CHECK_EQ(g_port.seq, 1);
 }
 
-/* The servo has a write of the command the old coprocessor took. */
+/* The servo has a write of the command the old IOmcu took. */
 static void until_servo_written(void)
 {
     for (unsigned i = 0; i < 30000u && g_sim.n_writes == 0u; ++i) {
@@ -1638,7 +1638,7 @@ static void until_servo_written(void)
     CHECK(g_sim.n_writes > 0u);
 }
 
-/* The coprocessor that took the WRITE starts again: no outcome may say
+/* The IOmcu that took the WRITE starts again: no outcome may say
  * that nothing of it ran. */
 static void restarted_after_the_write(const kst_link_outcome_t *out)
 {
@@ -1721,7 +1721,7 @@ TEST_CASE(an_abort_refused_by_a_restart_under_a_running_write_is_no_done)
     kst_link_request_t r;
     kst_link_outcome_t out;
 
-    /* The coprocessor starts again between two status reads while the
+    /* The IOmcu starts again between two status reads while the
      * write runs; the abort reaches the fresh page before the next read
      * and is refused with BAD_VALUE for its SEQ. */
     up();
@@ -1746,7 +1746,7 @@ TEST_CASE(an_abort_after_the_deciding_read_refused_by_a_restart_is_no_done)
     kst_link_outcome_t out;
 
     /* The write's answer is lost and the abort puts it in doubt.  The read
-     * that decides says taken, and the coprocessor starts again before the
+     * that decides says taken, and the IOmcu starts again before the
      * abort goes. */
     up();
     r = small_write();
@@ -1900,7 +1900,7 @@ TEST_CASE(a_leave_with_a_wait_above_10_000_ms_sends_nothing)
     CHECK_EQ(out.result, KST_SES_ERR_ABORTED);
 }
 
-/* A coprocessor of 4.13 or 4.14 has the page, answers operation 10 with a
+/* An IOmcu of 4.13 or 4.14 has the page, answers operation 10 with a
  * NACK and has no register 28. */
 TEST_CASE(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15)
 {
@@ -1927,7 +1927,7 @@ TEST_CASE(nothing_of_a_leave_is_sent_to_a_coprocessor_before_4_15)
         /* The range is checked first. */
         r = leave_after(LINK_KST_LEAVE_MS_MAX + 1u);
         CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_ARG);
-        /* The exits a 4.13 coprocessor has stay. */
+        /* The exits a 4.13 IOmcu has stay. */
         out = run_op(LINK_KST_OP_POWER_CYCLED);
         CHECK_EQ(out.kind, KST_LINK_OUT_DONE);
         CHECK_EQ(out.result, KST_SES_OK);
@@ -1965,7 +1965,7 @@ TEST_CASE(the_page_says_why_a_leave_started_nothing)
     CHECK_EQ(out.refusal, LINK_KST_REF_NOT_PROGRAMMING);
     CHECK_EQ(run_op(LINK_KST_OP_ENTER).result, KST_SES_OK);
     CHECK_EQ(run_op(LINK_KST_OP_READ_ALL).result, KST_SES_OK);
-    /* A stop at the coprocessor between operations: the read first. */
+    /* A stop at the IOmcu between operations: the read first. */
     g_stop = true;
     ms();
     g_stop = false;
@@ -2024,7 +2024,7 @@ TEST_CASE(an_abort_ends_a_leave_that_waits)
     CHECK_EQ(kst_link_phase(&g_k), KST_LINK_READY);
     CHECK_EQ(g_last_cmd[LINK_KS_W_CMD] & 0xFu, LINK_KST_OP_ABORT);
 
-    /* A stop at the coprocessor in the wait shows as aborted, and the
+    /* A stop at the IOmcu in the wait shows as aborted, and the
      * read comes first. */
     CHECK_EQ(kst_link_start(&g_k, &r), KST_LINK_START_OK);
     until_phase(KST_LINK_RUNNING);
@@ -2043,7 +2043,7 @@ TEST_CASE(an_abort_ends_a_leave_that_waits)
     conduct();
 }
 
-/* --- a write the coprocessor plans (4.14) --------------------------------------- */
+/* --- a write the IOmcu plans (4.14) --------------------------------------- */
 
 /* An edit of 86,312 units of planning, as test_kst_session has it: 864
  * passes of the port, 86 ms here. */
@@ -2215,7 +2215,7 @@ TEST_CASE(an_abort_ends_an_operation_that_plans)
     sv = servo();
     CHECK(same(&sv, &a));
 
-    /* A stop at the coprocessor, the same way. */
+    /* A stop at the IOmcu, the same way. */
     out = run_op(LINK_KST_OP_READ_ALL);
     CHECK_EQ(out.result, KST_SES_OK);
     frames = g_sim.n_frames;
@@ -2266,7 +2266,7 @@ TEST_CASE(an_abort_after_a_lost_answer_ends_the_write_the_page_plans)
 
 /*
  * The phase is the page's word: BUSY with LINK_KST_RESULT_PLANNING in the
- * result.  A 4.13 coprocessor never has it, and a result that ended is
+ * result.  A 4.13 IOmcu never has it, and a result that ended is
  * never it.
  */
 TEST_CASE(planning_is_shown_from_the_page_and_only_while_it_runs)
@@ -2382,7 +2382,7 @@ TEST_CASE(a_panel_that_starts_on_a_held_port_fetches_what_the_page_has)
     kst_image_t img, sv;
 
     up();
-    /* The panel started again; the coprocessor did not. */
+    /* The panel started again; the IOmcu did not. */
     kst_link_init(&g_k);
     link_up();
     kst_link_readout(&g_k, &ro);

@@ -22,7 +22,7 @@
  *   - a step small enough that one step cannot cross from free to bound
  *
  * The search is a state machine fed measurements, not a loop that sleeps,
- * so it runs on the host against a modelled servo.  The coprocessor image
+ * so it runs on the host against a modelled servo.  The IOmcu image
  * does not call it yet; a real servo needs no change here.
  *
  * SPDX-License-Identifier: MIT

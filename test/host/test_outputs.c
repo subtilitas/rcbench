@@ -105,7 +105,7 @@ TEST_CASE(one_quiet_channel_does_not_stop_the_others)
 }
 
 /*
- * Arming is idempotent: the coprocessor recomputes whether driving is allowed
+ * Arming is idempotent: the IOmcu recomputes whether driving is allowed
  * every pass, and an arm call that stamped the clock would hold every channel
  * alive and defeat the timeout.
  */
@@ -256,7 +256,7 @@ TEST_CASE(a_long_step_is_not_truncated)
  *
  * Rounding each step up on its own would deliver at least one unit per call,
  * so 200 units a second rendered as 1000 whenever the caller stepped every
- * millisecond -- which is what the coprocessor's loop does, and what made
+ * millisecond -- which is what the IOmcu's loop does, and what made
  * every SPEED from 1% to 49% on the servo screen move the horn at 50%.
  */
 TEST_CASE(the_slew_rate_does_not_follow_the_step_cadence)
@@ -797,7 +797,7 @@ TEST_CASE(an_impossible_endpoint_is_refused_atomically)
 
 TEST_CASE(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone)
 {
-    /* A page read back from the coprocessor: a motor on channel 0, a servo on
+    /* A page read back from the IOmcu: a motor on channel 0, a servo on
      * channel 1 whose range the SERVO screen named, the rest untouched. */
     fresh_pages();
     chan_cfg[0 * LINK_CC_STRIDE + LINK_CC_ROLE]   = LINK_CC_ROLE_THROTTLE;
@@ -822,7 +822,7 @@ TEST_CASE(the_throttle_range_reaches_throttles_and_leaves_surfaces_alone)
         }
     }
 
-    /* And the result is a page the coprocessor accepts. */
+    /* And the result is a page the IOmcu accepts. */
     uint16_t copy[LINK_CC_COUNT];
     memcpy(copy, chan_cfg, sizeof(copy));
     CHECK_EQ(outputs_chan_cfg_write(chan_cfg, 0, LINK_CC_COUNT, copy), 0u);
@@ -1015,10 +1015,10 @@ TEST_CASE(a_channel_range_outside_the_page_is_refused_rather_than_wrapped)
 /*
  * The slice and channel each GPIO reaches, stated rather than recomputed.
  * These are the numbers the pico-sdk's PWM_GPIO_SLICE_NUM produces, and the
- * coprocessor's PWM driver decides from them which pins may be bound at once.
+ * IOmcu's PWM driver decides from them which pins may be bound at once.
  */
 /*
- * The coprocessor's boot order, in the calls firmware/iomcu/src/main.c makes:
+ * The IOmcu's boot order, in the calls firmware/iomcu/src/main.c makes:
  * the pages get their defaults, the bank is initialised, the configuration is
  * applied, and the channels page is filled from the bank rather than applied
  * to it.  A surface nobody has commanded is then asked for its centre, and
@@ -1173,7 +1173,7 @@ TEST_CASE(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel)
 /*
  * The pairs that share one compare register, which is one pulse width.
  *
- * Every pair named here is two free pins of the coprocessor's own header, so
+ * Every pair named here is two free pins of the IOmcu's own header, so
  * an operator ticking pins on the OUTPUTS page can reach all six.
  */
 TEST_CASE(two_header_pins_sixteen_apart_are_one_compare_register)
@@ -1927,7 +1927,7 @@ TEST_CASE(an_arm_value_maps_to_its_roles_and_back)
 }
 
 /*
- * The ARM value the panel writes: 1 to a coprocessor older than minor 18,
+ * The ARM value the panel writes: 1 to an IOmcu older than minor 18,
  * else the named roles, and 1 again when no role is named.
  */
 TEST_CASE(the_panel_writes_the_arm_value_its_coprocessor_understands)

@@ -899,7 +899,7 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
 
     /* The band already carries the output mode, so this strip does not
      * repeat it: what it adds is the poll rate and the link's error count,
-     * and while the coprocessor has refused a frame, how many. */
+     * and while the IOmcu has refused a frame, how many. */
     if (on_live) {
         char line[64];
         snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
@@ -919,7 +919,7 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
 
     /*
      * The protocol carries a flag per channel for exactly this: a bench whose
-     * coprocessor has no temperature sensor sends zero, and "ESC 0C" is a
+     * IOmcu has no temperature sensor sends zero, and "ESC 0C" is a
      * reading rather than a gap.
      */
     const bool temp_ok = s.bench.valid

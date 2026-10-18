@@ -1,5 +1,5 @@
 /*
- * The coprocessor's own pages and the output pages: IDENTITY, STATUS,
+ * The IOmcu's own pages and the output pages: IDENTITY, STATUS,
  * CONTROL, BENCH, CHANNELS, CHAN_CFG, OUTPUTS, SERVO and PROG, and the
  * glue that makes the silicon agree with the bank.  The rules are in
  * shared/outputs and shared/safety; see iomcu.h for the other files.
@@ -61,7 +61,7 @@ void bench_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
  *
  * The rules (clamp, arm, slew, refuse an impossible range, refuse an unknown
  * driver) live in shared/outputs, so this end and the host end cannot hold
- * different opinions.  The coprocessor supplies the one thing only it knows,
+ * different opinions.  The IOmcu supplies the one thing only it knows,
  * whether it is safe to drive at all, by arming the bank rather than by
  * gating each write.
  *
@@ -491,7 +491,7 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
 {
     iomcu_state_t *s = (iomcu_state_t *)ctx;
     /*
-     * No ARM while the coprocessor's own firmware is being written or waits
+     * No ARM while the IOmcu's own firmware is being written or waits
      * for its BUY: the flash windows of the update stop this core for 19 ms
      * at a time.  Refused before the page's rules run, so nothing of the
      * frame is stored; a disarm is always taken.
@@ -505,7 +505,7 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      * register of the frame is validated before any is stored, so a refused
      * write leaves the page as it was and lifts no latch, and a CLEAR
      * releases the failsafe and the arm latch.  The decision is the
-     * coprocessor's, not the panel's.
+     * IOmcu's, not the panel's.
      */
     const uint8_t nack = safety_gate_control_write(s->control, off, n, in,
                                                    &s_beat, &s_dev);

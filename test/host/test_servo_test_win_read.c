@@ -118,9 +118,9 @@ TEST_CASE(a_run_on_the_pd_mini_reads_no_window)
         servo_test_ina_t why;
         const char      *text;
     } k_why[] = {
-        { SERVO_TEST_INA_OLD, "the coprocessor is older than link protocol "
+        { SERVO_TEST_INA_OLD, "the IOmcu is older than link protocol "
                               "4.11" },
-        { SERVO_TEST_INA_NOT_HELD, "the coprocessor does not hold its "
+        { SERVO_TEST_INA_NOT_HELD, "the IOmcu does not hold its "
                                    "set-up" },
         { SERVO_TEST_INA_SILENT, "it does not answer" },
         { SERVO_TEST_INA_NO_WINDOW, "no window with current in the last "

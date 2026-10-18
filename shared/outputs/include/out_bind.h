@@ -14,7 +14,7 @@
  * is channel 0 whichever protocol holds it, and a bench wired to one protocol
  * writes the page it always wrote.
  *
- * The pin catalogue is the coprocessor's header, not its silicon.  A GPIO
+ * The pin catalogue is the IOmcu's header, not its silicon.  A GPIO
  * (general-purpose input/output) the module does not bring out to a pad
  * cannot be wired to anything, so it is not offered; GP23 to GP25 are absent
  * for that reason rather than because anything reserves them.
@@ -44,7 +44,7 @@ extern "C" {
 /* ------------------------------------------------------------ the boards */
 
 /*
- * Which coprocessor is on the other end.
+ * Which IOmcu is on the other end.
  *
  * There is one today and there will be more: a custom board carries its
  * outputs on pins that are soldered, not chosen, and knows a different set of
@@ -69,7 +69,7 @@ typedef enum {
 typedef struct {
     uint8_t     gpio;
     uint8_t     pad;        /**< the number printed on the board            */
-    bool        reserved;   /**< the coprocessor refuses it                 */
+    bool        reserved;   /**< the IOmcu refuses it                 */
     const char *held_by;    /**< what has it, or NULL when it is free       */
 } outbind_pin_t;
 
@@ -116,7 +116,7 @@ typedef struct {
     /**
      * The outputs are soldered, not chosen.
      *
-     * The coprocessor configures itself and the panel shows what it reads
+     * The IOmcu configures itself and the panel shows what it reads
      * back without offering to change it.  A screen that let an operator
      * re-bind pins that are not on connectors would be offering a choice the
      * board cannot honour.
@@ -154,7 +154,7 @@ void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
 /**
  * Learn the board a catalogue page describes, replacing any previous one.
  *
- * There is room for exactly one: the panel talks to one coprocessor, and a
+ * There is room for exactly one: the panel talks to one IOmcu, and a
  * second learned board would be a pin map for hardware that is not on the
  * bench.  Refuses a page that cannot be a board -- no pins, a GPIO past
  * OUT_MAX_PIN, pins out of GPIO order, or the same GPIO twice -- and learns
@@ -162,8 +162,8 @@ void outbind_board_to_regs(const outbind_board_t *board, uint16_t *regs);
  * that disagrees with the board sending it.
  *
  * Refuses an identity the compiled table already has: that board is
- * described here already, and letting the wire replace it would let a
- * coprocessor rename the pin holding the safety line.
+ * described here already, and letting the wire replace it would let an
+ * IOmcu rename the pin holding the safety line.
  */
 bool outbind_learn_board(uint16_t id, const uint16_t *regs);
 
@@ -251,7 +251,7 @@ uint8_t outbind_index_of(uint16_t board, uint8_t gpio);
  *
  * That is the catalogue's reserved pins, plus every pin the catalogue does
  * not list: the pins the board uses without bringing them out and the
- * numbers the part does not have.  The coprocessor hands this mask to
+ * numbers the part does not have.  The IOmcu hands this mask to
  * outputs_reserve_pins(), which the OUTPUTS and SUPPLY pages both consult,
  * and the panel greys the catalogue's reserved pins, so the two ends cannot
  * disagree about which pins exist to be given away.  An unknown board
@@ -312,7 +312,7 @@ void outbind_init(outbind_t *b);
  * Which protocol holds @p index, or 0 (OFF) when nothing does.
  *
  * A pin refused because another protocol holds it is a different fact from
- * one the coprocessor reserves: the first is a choice the operator can undo
+ * one the IOmcu reserves: the first is a choice the operator can undo
  * by going to that protocol, the second is the wiring.  A screen that drew
  * them alike would offer to free the heartbeat line.
  */
@@ -407,7 +407,7 @@ typedef enum {
 } outbind_clash_t;
 
 /**
- * Whether the coprocessor refuses catalogue entry @p index for the protocol
+ * Whether the IOmcu refuses catalogue entry @p index for the protocol
  * being edited, beside @p prog_gpio and the pins @p b binds as PWM.
  *
  * Applies to a protocol on OUT_DRIVER_PWM and a pin that is not reserved
@@ -419,10 +419,10 @@ typedef enum {
  *    protocol holds @p prog_gpio: a slot on that pin leaves the port without
  *    one.  OUTBIND_NO_GPIO, or any GPIO past OUT_MAX_PIN, is no port.
  *  - OUTBIND_CLASH_COMPARE: the pin shares a compare register with a pin a
- *    PWM protocol holds (out_pwm_bind() in the coprocessor).
+ *    PWM protocol holds (out_pwm_bind() in the IOmcu).
  *
  * Both are out_pwm_same_slice() and out_pwm_same_compare(), the helpers the
- * coprocessor decides with.  @p with, when not NULL, gets the GPIO the pin
+ * IOmcu decides with.  @p with, when not NULL, gets the GPIO the pin
  * clashes with, or OUTBIND_NO_GPIO for OUTBIND_CLASH_NONE.
  */
 outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
@@ -447,7 +447,7 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 /**
  * Read a selection back out of an OUTPUTS page.
  *
- * The coprocessor holds the configuration, so the panel asks it what is
+ * The IOmcu holds the configuration, so the panel asks it what is
  * driving rather than remembering: a binding is a description of wiring, and
  * a panel that reapplied a remembered one would be applying it to whatever is
  * on the bench now.

@@ -1,7 +1,7 @@
 /*
  * A servo swept through a curve: square, sine or triangle about its centre.
  *
- * The curve runs where the pins are, on the coprocessor, so its timing does
+ * The curve runs where the pins are, on the IOmcu, so its timing does
  * not depend on the link: a 5 Hz sine over a CAN round trip of tens of
  * milliseconds would be a staircase.  The panel computes the same curve with
  * the same code to draw the horn.

@@ -14,7 +14,7 @@
 static prog_link_t g_p;
 static uint16_t g_page[LINK_PG_REGS];
 
-/* A coprocessor with 1 port on GP13, target the standard outputs, no
+/* An IOmcu with 1 port on GP13, target the standard outputs, no
  * pulse, as it starts. */
 static void page_fresh(void)
 {
@@ -39,7 +39,7 @@ static void read_at(uint32_t ms)
     prog_link_read(&g_p, g_page, ms);
 }
 
-/* Carry out every write that is due as the coprocessor would; the count. */
+/* Carry out every write that is due as the IOmcu would; the count. */
 static int run(bool quiet)
 {
     prog_link_write_t w;
@@ -143,7 +143,7 @@ TEST_CASE(the_port_becomes_the_target_and_then_renders_its_pulse)
 
 /*
  * The write that switches a port's pulse on names the port, so the panel
- * can state the port's range before it: a coprocessor from protocol 4.16
+ * can state the port's range before it: an IOmcu from protocol 4.16
  * refuses the pulse while the range is longer than the frame.  The target
  * write, a write that switches the pulse off, a write naming no new port,
  * and any write on an unknown page name none.
@@ -227,7 +227,7 @@ TEST_CASE(a_port_the_page_does_not_have_is_no_target)
     CHECK_EQ(prog_link_wanted(&g_p), 0u);
     prog_link_want(&g_p, 255u, true);
     CHECK_EQ(run(true), 0);
-    /* The last port a page can have, without a pin: the coprocessor
+    /* The last port a page can have, without a pin: the IOmcu
      * refuses it as a target, so it is not asked. */
     g_page[LINK_PG_COUNT] = LINK_PG_PORTS_MAX;
     read_at(1u);
@@ -413,7 +413,7 @@ TEST_CASE(a_count_above_the_ports_the_page_holds_names_no_pin)
 }
 
 /* While the servo programmer holds the port, the drive does not change: it
- * keeps the target the coprocessor holds, a port or the standard outputs;
+ * keeps the target the IOmcu holds, a port or the standard outputs;
  * the programmer drives the port and the tester sends nothing. */
 TEST_CASE(the_drive_keeps_its_target_while_the_programmer_holds_the_port)
 {
@@ -454,7 +454,7 @@ TEST_CASE(the_drive_names_the_target_and_the_port_pin)
     CHECK_EQ(d.target, 0u);
     CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
     CHECK(!d.pwm);
-    /* No coprocessor has answered yet: no link. */
+    /* No IOmcu has answered yet: no link. */
     prog_link_init(&g_p);
     d = prog_link_drive(&g_p);
     CHECK_EQ(d.target, PROG_LINK_TARGET_NO_LINK);
@@ -539,7 +539,7 @@ TEST_CASE(the_drive_names_the_target_and_the_port_pin)
     CHECK_EQ(d.target, PROG_LINK_TARGET_NO_LINK);
     CHECK_EQ(d.pin, PROG_LINK_NO_PIN);
     CHECK(!d.pwm);
-    /* Back up against a coprocessor that still holds the port: not known
+    /* Back up against an IOmcu that still holds the port: not known
      * until read, then the port. */
     prog_link_came_up(&g_p, LINK_MINOR_PROG);
     d = prog_link_drive(&g_p);
@@ -554,7 +554,7 @@ TEST_CASE(the_drive_names_the_target_and_the_port_pin)
     CHECK_EQ(prog_link_drive(&g_p).target, PROG_LINK_TARGET_UNKNOWN);
 }
 
-/* A write the coprocessor does not acknowledge leaves the page unknown, and
+/* A write the IOmcu does not acknowledge leaves the page unknown, and
  * the drive with it: the port it holds is not named the outputs while the
  * tester sends nothing, however often the write is refused. */
 TEST_CASE(a_write_not_acknowledged_leaves_the_drive_unknown)
@@ -645,7 +645,7 @@ TEST_CASE(no_object_is_no_fault)
 }
 
 
-/* The page as the coprocessor holds it differs from what is wanted in
+/* The page as the IOmcu holds it differs from what is wanted in
  * every way a write could mend: nothing is written while the programmer
  * has a port, on a quiet bench or not, and no pulse is switched off. */
 TEST_CASE(nothing_is_written_while_the_programmer_has_a_port)
@@ -727,7 +727,7 @@ TEST_CASE(nothing_is_written_while_the_programmer_has_a_port)
  * acknowledged TARGET write that changes it, and a read that finds it
  * changed, say RESET once; an unanswered TARGET write says UNKNOWN; the
  * stronger of the two is kept until asked.  The first TARGET known after a
- * link-up, a write of the TARGET in force and a coprocessor below 4.19 say
+ * link-up, a write of the TARGET in force and an IOmcu below 4.19 say
  * KEPT; below 4.19 a changed TARGET read and an unanswered TARGET write
  * too.
  */
@@ -748,7 +748,7 @@ TEST_CASE(a_target_change_returns_the_servo_rate_to_0_from_4_19)
     CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
     read_at(500u);
     CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_KEPT);
-    /* The coprocessor gives the target back itself (the port lost its
+    /* The IOmcu gives the target back itself (the port lost its
      * pin): the read says RESET. */
     g_page[LINK_PG_TARGET] = 0u;
     g_page[LINK_PG_FLAGS]  = 0u;

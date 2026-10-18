@@ -1,5 +1,5 @@
 /*
- * What both ends of the coprocessor update need to know about an RP2350
+ * What both ends of the IOmcu update need to know about an RP2350
  * image: where its TBYB (try before you buy) flag is, and the hash that
  * names a build whatever that flag says.
  *
@@ -11,7 +11,7 @@
  * clear, so the flag can be set after the build without breaking the hash.
  *
  * No image this build makes carries the flag.  The panel sets it in the copy
- * it sends, and the boot ROM clears it in flash when the coprocessor buys
+ * it sends, and the boot ROM clears it in flash when the IOmcu buys
  * the image.  A build is therefore named by the SHA-256 of its bytes with
  * that one bit read as clear: the image in the release, the copy on trial
  * and the copy bought all hash the same.

@@ -4,7 +4,7 @@
 
 Three builds read one source tree: the host test suite, the panel firmware
 (ESP-IDF (Espressif Internet-of-Things Development Framework)) and the
-coprocessor firmware (pico-sdk).
+IOmcu firmware (pico-sdk).
 
 ## The tree
 
@@ -23,7 +23,7 @@ rcbench/
     artwork/              the panel's cache of board drawings
     bench/                bench_state · telemetry simulator · log writer · rotary knob decode
     outputs/              channels · driver table · the ARMED state, slew and staleness
-    safety/               heartbeat generator (panel) and monitor (coprocessor)
+    safety/               heartbeat generator (panel) and monitor (IOmcu)
     servo/                limit and synchronisation searches · servo model
     can/                  bit timing for both controllers · MCP2515 registers · echo self-test
     esc/                  ESC programming profiles, their JSON reader and registry
@@ -69,7 +69,7 @@ endif()
 ```
 
 The panel sets `EXTRA_COMPONENT_DIRS` to `shared/` and to each module under
-`protocols/` it names; the coprocessor and the host suite use
+`protocols/` it names; the IOmcu and the host suite use
 `add_subdirectory()` for the modules they need. A module with an `rp2350/`
 folder adds its pin driver as the INTERFACE library `rcbench_<module>_rp2350`
 in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
@@ -86,7 +86,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 
 | | Version | Notes |
 | --- | --- | --- |
-| ESP-IDF | v5.4 or newer | the RGB (parallel red-green-blue) panel's `on_frame_buf_complete` event, which the framebuffer swap waits on, exists from v5.4. Neither v5.5.0 nor v5.5.1 compiles: their TWAI (two-wire automotive interface) driver sends a CAN frame with DLC (data length code) 0 as DLC 8, and the coprocessor refuses every link read sent that way. CI (continuous integration) builds v5.4 and v5.5.3 |
+| ESP-IDF | v5.4 or newer | the RGB (parallel red-green-blue) panel's `on_frame_buf_complete` event, which the framebuffer swap waits on, exists from v5.4. Neither v5.5.0 nor v5.5.1 compiles: their TWAI (two-wire automotive interface) driver sends a CAN frame with DLC (data length code) 0 as DLC 8, and the IOmcu refuses every link read sent that way. CI (continuous integration) builds v5.4 and v5.5.3 |
 | pico-sdk | 2.0 or newer | RP2350 support; CI builds 2.3.0 |
 | ARM GNU toolchain | 14.2 | any `arm-none-eabi` release targeting Cortex-M33 |
 
@@ -184,8 +184,8 @@ idf.py -C firmware/panel set-target esp32s3
 idf.py -C firmware/panel build
 idf.py -C firmware/panel -p /dev/ttyACM0 flash monitor    # COMx on Windows
 
-# panel carrying the coprocessor image it offers over CAN; build the
-# coprocessor first
+# panel carrying the IOmcu image it offers over CAN; build the
+# IOmcu first
 idf.py -C firmware/panel -D RCBENCH_IOMCU_BIN=$PWD/firmware/iomcu/build/rcbench-iomcu.bin build
 
 # panel for the measurement bench: also reads a touch injector at 0x14
@@ -197,21 +197,21 @@ idf.py -C firmware/panel merge-bin -o rcbench-panel-merged.bin
 esptool.py -p /dev/ttyACM0 write_flash 0x0 \
     firmware/panel/build/rcbench-panel-merged.bin
 
-# coprocessor
+# IOmcu
 export PICO_SDK_PATH=/path/to/pico-sdk
 cmake -S firmware/iomcu -B firmware/iomcu/build
 cmake --build firmware/iomcu/build
 
-# coprocessor, debug build that prints INA3221 CH1's 1 ms samples
+# IOmcu, debug build that prints INA3221 CH1's 1 ms samples
 cmake -S firmware/iomcu -B firmware/iomcu/build-trace -DSENSE_TRACE=ON
 cmake --build firmware/iomcu/build-trace
 ```
 
-The coprocessor build produces three UF2 (USB Flashing Format) files:
+The IOmcu build produces three UF2 (USB Flashing Format) files:
 
 | File | Holds | For |
 | --- | --- | --- |
-| `rcbench-iomcu-install.uf2` | the partition table at 0x0 and the image in slot A | a module without the table: the one USB load of [First run](FirstRun.md#the-coprocessors-partition-table) |
+| `rcbench-iomcu-install.uf2` | the partition table at 0x0 and the image in slot A | a module without the table: the one USB load of [First run](FirstRun.md#the-iomcus-partition-table) |
 | `rcbench-iomcu.uf2` | the image alone | a module with the table; the boot ROM writes it into the slot that is not running |
 | `rcbench-iomcu-pt.uf2` | the partition table alone | `picotool` |
 
@@ -219,7 +219,7 @@ Copy one to the module's mass-storage drive while the module is held in
 BOOTSEL. `rcbench-iomcu.bin` is the image the panel carries: the panel build
 option `RCBENCH_IOMCU_BIN` takes its path, and the panel then offers it over
 CAN ([Link](Link.md#firmware-update-over-the-link)). A panel built without
-the option offers no coprocessor update.
+the option offers no IOmcu update.
 
 `PICO_BOARD` defaults to `pimoroni_pico_plus2_rp2350`. The module used for
 bring-up is a Waveshare RP2350-CAN (RP2350A, 4 MB flash), which has no board
@@ -242,10 +242,10 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/gen_font.py` | regenerates the three embedded fonts from DejaVu Sans Mono, the two text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
 | `tools/frame_cost.py` | measures cache-line fills per frame under cachegrind; `--check-doc` holds the table in [Performance](Performance.md) |
-| `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the coprocessor image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the coprocessor table, the count of calls through a register reachable from `main` in both Performance pages and core 0's sentence in `STATUS.md`; the ELF reader and the call graph are in `tools/stack_elf.py`, the coprocessor's half in `tools/stack_iomcu.py` |
+| `tools/stack_check.py` | reads every panel task's deepest call chain out of the built ELF (Executable and Linkable Format) file and fails when one exceeds its stack less 1024 bytes; takes the build directory, default `firmware/panel/build`; `-v` prints each deepest chain and every call it cannot follow; `--check-doc` holds the task table in [Performance](Performance.md#stacks) to the build; `--iomcu` reads the IOmcu image instead and fails when a core's deepest chain, one interrupt and 256 bytes exceed its stack; with `--check-doc` it holds core 0's row of the IOmcu table, the count of calls through a register reachable from `main` in both Performance pages and core 0's sentence in `STATUS.md`; the ELF reader and the call graph are in `tools/stack_elf.py`, the IOmcu's half in `tools/stack_iomcu.py` |
 | `tools/ram_budget.py` | reads the internal heap a panel build leaves, subtracts every task stack, queue and buffer the panel allocates at run time and what each Wi-Fi mode allocates on top, and fails when the largest mode leaves under 32,768 bytes; takes the build directory, default `firmware/panel/build`; `-v` lists every allocation; `--check-doc` holds the internal RAM (random-access memory) table in [Performance](Performance.md#internal-ram) to the build, and the PSRAM table to the build's map file: each object `firmware/panel/main/psram_bss.lf` names, their count and total, and the bytes of ESP-IDF's own libraries |
 | `tools/check_sizes.py` | counts the lines of every file git tracks and holds the files over 1,000 lines to `tools/check_sizes.txt`, which gives each one's reason to stay whole and, for some, a line count with a tolerance; `--check` fails on a file over 1,000 that the list does not name, a listed file at or under 1,000, a count outside its tolerance and an exclusion that covers nothing; a file whose head names the `tools/gen_*.py` that generates it, when CI runs that generator with `--check`, is not listed |
-| `tools/sense_trace.py` | reads a captured console of a coprocessor built with `-DSENSE_TRACE=ON`: reads each line against the line format and each trace of INA3221 CH1's 1 ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; `--servo-csv` adds the arrival less the AS5600's travel time, `--loaded-channel` names the output channels with a servo connected and leaves the commands of the others out ([First run](FirstRun.md#89-ch1s-1-ms-samples-on-the-console)) |
+| `tools/sense_trace.py` | reads a captured console of an IOmcu built with `-DSENSE_TRACE=ON`: reads each line against the line format and each trace of INA3221 CH1's 1 ms samples against its end line, writes one CSV (comma-separated values) file per trace, and replays every move through `shared/servo/servo_move.c` with the filter at 1, 4 and 8 samples and the band at 0.02, 0.05 and 0.10 A; `--servo-csv` adds the arrival less the AS5600's travel time, `--loaded-channel` names the output channels with a servo connected and leaves the commands of the others out ([First run](FirstRun.md#89-ch1s-1-ms-samples-on-the-console)) |
 | `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/ioboard-pinmap-draft.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | generate the checked-in board drawings and ESC profile tables from their JSON sources (the board drawing from the configurator's `configurator/drawings/panel.json`); `--check` fails if the committed tables differ |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
@@ -264,7 +264,7 @@ into `build-trace/` unless `--replay` names a built one.
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, frame-cost, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5.3, each with the task stack check and the internal RAM budget, v5.4 with the stack table and the internal RAM table of this wiki; coprocessor build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; on v5.4 a panel build with `RCBENCH_TOUCH_INJECTOR=ON`, with the stack check and the internal RAM budget, failing when the default image holds an injector symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | host suite; the same suite under AddressSanitizer and UBSan (UndefinedBehaviorSanitizer); coverage floors and Codecov upload, which fails the job when it fails; font, docs, web help, wiki-link, frame-cost, screenshot and research-script checks; the protocol module check; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff; the tools' pytest cases; on a pull request the mutation check of the changed lines, which reports and does not fail on a survivor; panel build on ESP-IDF v5.4 and v5.5.3, each with the task stack check and the internal RAM budget, v5.4 with the stack table and the internal RAM table of this wiki; IOmcu build on pico-sdk 2.3.0 with the pin map check and the stack check of its two cores, and once more with `-DSENSE_TRACE=ON`, with the same stack check, failing when the default image holds a trace symbol; on v5.4 a panel build with `RCBENCH_TOUCH_INJECTOR=ON`, with the stack check and the internal RAM budget, failing when the default image holds an injector symbol; the touch injector build on pico-sdk 2.3.0 for `waveshare_rp2350_zero`, not uploaded; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit and, when it passed, mirrors `docs/` to the GitHub wiki |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (3032 mutants) in 6 parallel shards of files, no mutant limit, no mutant started after 18000 s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums and creates a release; beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |

@@ -3,7 +3,7 @@
  * and reading them back.
  *
  * Both run over a link_port_t, so the sequences the panel sends are the
- * ones the host suite runs against the coprocessor's page rules and a
+ * ones the host suite runs against the IOmcu's page rules and a
  * modelled bus.
  *
  * SPDX-License-Identifier: MIT
@@ -35,7 +35,7 @@ typedef enum {
 
 /** What became of the SERVO rate reset that leads a binding. */
 typedef enum {
-    BIND_RATE_NOT_SENT = 0, /**< the coprocessor has no SERVO page (4.0)   */
+    BIND_RATE_NOT_SENT = 0, /**< the IOmcu has no SERVO page (4.0)   */
     BIND_RATE_LANDED,
     BIND_RATE_REFUSED,
     BIND_RATE_NO_ANSWER,
@@ -45,12 +45,12 @@ typedef enum {
  * Write a CHAN_CFG page @p cfg and an OUTPUTS page @p slots, each frame its
  * own acknowledged exchange (link_write_acked()).
  *
- * First, to a coprocessor of minor 1 or later, SERVO's FRAME_HZ = 0: each
+ * First, to an IOmcu of minor 1 or later, SERVO's FRAME_HZ = 0: each
  * slot back at its own rate.  A refusal ends the sequence BIND_REFUSED and
  * no answer ends it BIND_NO_LINK, with no page written.  @p rate, when not
  * NULL, takes what became of it.
  *
- * Then, to a coprocessor whose protocol minor @p minor is LINK_MINOR_BIND
+ * Then, to an IOmcu whose protocol minor @p minor is LINK_MINOR_BIND
  * (10) or later: 8 frames to BIND_CFG, 8 to BIND_OUT, and LINK_BD_COMMIT
  * with the CRC (cyclic redundancy check) of the two pages, 17 exchanges.
  * The pages in force change at the commit and not before, both or neither,
@@ -59,7 +59,7 @@ typedef enum {
  * acknowledgement alone is lost ends BIND_NO_LINK with the binding written,
  * whole.
  *
- * To an older coprocessor: 8 frames to CHAN_CFG and 8 to OUTPUTS, 16
+ * To an older IOmcu: 8 frames to CHAN_CFG and 8 to OUTPUTS, 16
  * exchanges, each in force as it is acknowledged.  A sequence that stops
  * part way leaves the frames before it applied.
  *
@@ -97,13 +97,13 @@ typedef struct {
 
 /**
  * Whether a binding @p b may be written while the last reading is @p last
- * and the coprocessor answering is board @p board.  Never a binding made
+ * and the IOmcu answering is board @p board.  Never a binding made
  * for another board: a pin index belongs to one board's catalogue.
  *
  * BIND_READ_OK: yes.  BIND_READ_ODD: only a binding that holds no pin, the
  * one way out of pages no binding describes.  BIND_READ_NONE and
  * BIND_READ_NO_BOARD: no -- a binding built on pages nobody read would
- * replace whatever the coprocessor holds with what a screen happened to
+ * replace whatever the IOmcu holds with what a screen happened to
  * show.
  */
 bool bind_link_may_write(bind_read_t last, uint16_t board,

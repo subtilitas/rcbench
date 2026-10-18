@@ -103,7 +103,7 @@ typedef enum {
     WA_WHY_RUN,        /**< a log run open                              */
     WA_WHY_STOP,
     WA_WHY_FILES,      /**< WI-FI opened: it takes the radio   */
-    WA_WHY_COPROC,     /**< the coprocessor's update runs               */
+    WA_WHY_COPROC,     /**< the IOmcu's update runs               */
     WA_WHY_INSTALL,    /**< a panel install runs                        */
     WA_WHY_CANCEL,     /**< the operator cancelled                      */
     WA_WHY_BUSY,       /**< a job runs already                          */

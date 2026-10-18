@@ -26,7 +26,7 @@ export type Options = {
   servoPower: 'external' | 'bench';
   /**
    * The pin of the servo signal: a pad bound under OUTPUTS, or the
-   * programming port of the coprocessor. No visitor choice and no hash
+   * programming port of the IOmcu. No visitor choice and no hash
    * token: the function that programs a servo forces it.
    */
   servoPort: 'outputs' | 'prog';

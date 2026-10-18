@@ -1,5 +1,5 @@
 /*
- * Where a saved output binding goes in the coprocessor's flash.
+ * Where a saved output binding goes in the IOmcu's flash.
  *
  * The rules under test decide two things the bench feels: how often a save
  * costs a sector erase, and what a power cut in the middle of one leaves
@@ -227,7 +227,7 @@ TEST_CASE(a_store_with_nowhere_left_erases_the_first_sector)
 
 /*
  * With one sector there is no other sector to keep the live record in, and
- * the erase takes it.  This is why the coprocessor configures two: the case
+ * the erase takes it.  This is why the IOmcu configures two: the case
  * is here so the cost of one is written down rather than assumed away.
  */
 TEST_CASE(one_sector_erases_the_sector_the_live_record_is_in)
@@ -261,7 +261,7 @@ TEST_CASE(a_geometry_with_no_slots_is_refused)
     CHECK_EQ(out_store_map_stale(recs, SECTORS, 0u), -1);
 }
 
-/* One save, the way the coprocessor takes it: the erase on one pass and the
+/* One save, the way the IOmcu takes it: the erase on one pass and the
  * record on the next.  Returns whether it had to erase. */
 static bool save(uint32_t *seq_written)
 {
@@ -297,7 +297,7 @@ static bool save(uint32_t *seq_written)
 /*
  * Sixty-four saves with nothing erased ahead of time.  The store fills both
  * sectors from erased once and erases one sector per sector-full after that,
- * which at the coprocessor's 2 x 16 slots is one erase per sixteen saves.
+ * which at the IOmcu's 2 x 16 slots is one erase per sixteen saves.
  * Every other save is a page program.
  */
 TEST_CASE(the_store_erases_once_per_sector_of_saves)
@@ -369,7 +369,7 @@ TEST_CASE(a_power_cut_during_a_save_leaves_the_record_before_it)
 /*
  * A power cut during an erase leaves that sector unreadable and the live
  * record where it was.  Half an erased record can read as valid only if its
- * checksum still agrees, which is why the coprocessor's checksum covers the
+ * checksum still agrees, which is why the IOmcu's checksum covers the
  * sequence number: an erase lifts bits towards 0xFF and could otherwise make
  * an old record outrank the live one.
  */

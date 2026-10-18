@@ -49,20 +49,20 @@ typedef enum {
     FW_GATE_SUPPLY,   /**< the supply's output is on or an ON is queued   */
     FW_GATE_RUN,      /**< a run's log, or a servo test's, is still open  */
     FW_GATE_DRAWING,  /**< the board's drawing is being fetched or kept   */
-    FW_GATE_COPROC,   /**< the coprocessor's update runs, or its BUY      */
+    FW_GATE_COPROC,   /**< the IOmcu's update runs, or its BUY      */
 } fw_gate_t;
 
 /**
  * flash_gate_open()'s rule, and three more: no file the logger writes is
  * open, the board drawing's transfer and keep are not running, and no
- * update of the coprocessor runs (@p coproc).  The first reason that holds,
+ * update of the IOmcu runs (@p coproc).  The first reason that holds,
  * in the order above.
  */
 fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing,
                   bool coproc);
 
 /**
- * The other direction: whether the coprocessor's update may start.  Only
+ * The other direction: whether the IOmcu's update may start.  Only
  * with the panel's radio wholly off (@p radio_down) and no install of a
  * panel image under way (@p installing), from the moment INSTALL's hold
  * completes until the write has failed.

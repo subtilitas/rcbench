@@ -130,7 +130,7 @@ void arming_request_arm_roles(arming_t *a, uint32_t now_ms, uint8_t roles)
     a->roles = roles;
     /*
      * The latch clears here, before the write, so the heartbeat resumes and
-     * the coprocessor can come to trust it.  Clearing it only after a
+     * the IOmcu can come to trust it.  Clearing it only after a
      * successful write deadlocks: the write needs the line, the line needs
      * the latch cleared.
      */

@@ -1,5 +1,5 @@
 /*
- * The coprocessor's sensor service.  See sense_svc.h.
+ * The IOmcu's sensor service.  See sense_svc.h.
  *
  * SPDX-License-Identifier: MIT
  */

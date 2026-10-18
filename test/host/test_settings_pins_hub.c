@@ -7,7 +7,7 @@
 
 /* ------------------------------------------------ the sensor bus's pins */
 
-/* Whether the coprocessor's page, on a bank reserved as the firmware
+/* Whether the IOmcu's page, on a bank reserved as the firmware
  * reserves it at boot, takes a part enabled on @p sda and the GPIO after. */
 static bool page_takes(unsigned sda)
 {

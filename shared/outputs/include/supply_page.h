@@ -1,5 +1,5 @@
 /*
- * The SUPPLY link page at the coprocessor: a PD mini on a PIO UART, its
+ * The SUPPLY link page at the IOmcu: a PD mini on a PIO UART, its
  * wiring, what it is to do and what it last said.  The registers are in
  * link_pages.h (LINK_SP_*).
  *
@@ -13,7 +13,7 @@
  * on only with a live heartbeat from the panel and goes off when that
  * stops, so a panel that dies leaves no supply running.
  *
- * Host-tested; the coprocessor is wiring: it runs the PIO UART, feeds the
+ * Host-tested; the IOmcu is wiring: it runs the PIO UART, feeds the
  * driver and calls supply_page_step() every pass.
  *
  * SPDX-License-Identifier: MIT

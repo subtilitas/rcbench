@@ -1,12 +1,12 @@
 /*
- * SETUP > UPDATES' coprocessor section: the state coproc_update_section()
+ * SETUP > UPDATES' IOmcu section: the state coproc_update_section()
  * names, in its order; the line each state draws, in both languages and in
  * two lines of the left column; the hold at 1.99 s and 2.00 s, slid off,
  * cancelled and left; a link lost under it; a second hold while one runs;
  * the progress the driver opens for it and the way back to UPDATES, after
  * the update, after a START the control task spent and across a snapshot
  * that shows the START taken before the update active; a mismatched
- * coprocessor's build check owed again after an update; and the question's
+ * IOmcu's build check owed again after an update; and the question's
  * gate on the radio and a panel install.
  *
  * SPDX-License-Identifier: MIT
@@ -31,7 +31,7 @@
 #define START_X  536
 #define BTN_Y    282
 /* Mirrored from upd_screen.c, in the body's coordinates: REMINDER AT
- * START and HOLD 2 s: UPDATE COPROCESSOR. */
+ * START and HOLD 2 s: UPDATE IOMCU. */
 #define BTN_X    196
 #define REMIND_Y 112
 #define UPD_CU_X 196
@@ -163,7 +163,7 @@ static void offer(void)
     (void)frame();
 }
 
-/* A coprocessor on 0.17.0 that answers and runs another build than the
+/* An IOmcu on 0.17.0 that answers and runs another build than the
  * 0.18.0 this panel carries: the section is READY. */
 static void feed_ready(void)
 {
@@ -287,12 +287,12 @@ TEST_CASE(the_driver_hands_updates_its_section_every_frame)
     CHECK(v->have_image);
     CHECK_EQ(v->running.minor, 17u);
     CHECK_EQ(v->carried.minor, 18u);
-    /* No link: the version a coprocessor named is not known any more. */
+    /* No link: the version an IOmcu named is not known any more. */
     g_feed.reachable = false;
     (void)frame();
     CHECK_EQ(v->sec, CU_SEC_NO_LINK);
     CHECK(!v->known);
-    /* A coprocessor of another protocol major: reachable, the link down. */
+    /* An IOmcu of another protocol major: reachable, the link down. */
     g_feed.reachable = true;
     g_feed.check = CU_CHECK_NONE;
     (void)frame();
@@ -462,7 +462,7 @@ TEST_CASE(a_start_seen_taken_before_active_still_returns_to_updates)
 }
 
 /*
- * A coprocessor of another protocol major answers every probe while the
+ * An IOmcu of another protocol major answers every probe while the
  * link stays down.  Its check is owed once per mismatch, and again after
  * an update that ended with the old image still answering, so UPDATES does
  * not wait for a check that never comes.
@@ -495,7 +495,7 @@ TEST_CASE(a_mismatched_coprocessor_is_checked_again_after_an_update)
     CHECK(!link_uph_mismatch_answers(NULL));
     link_uph_mismatch_rearm(NULL);
 
-    /* UPDATES through it: a mismatched coprocessor's update failed, the
+    /* UPDATES through it: a mismatched IOmcu's update failed, the
      * check owed again runs and finds the other build: the hold is back. */
     on_updates();
     g_feed.check = CU_CHECK_NONE;      /* the failed update's end */

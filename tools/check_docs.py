@@ -583,7 +583,7 @@ def check_shared_modules(problems: list[str]) -> None:
 # --- the compile table -------------------------------------------------------
 
 # The host suite spells the path "${SHARED}/gfx" or "${PROTOCOLS}/ppm", the
-# coprocessor ".../../shared/link": the last path element is the module
+# IOmcu ".../../shared/link": the last path element is the module
 # either way.
 MODULE_DIR_RE = re.compile(r'add_subdirectory\(\s*"[^"]*?/(\w+)"')
 # A REQUIRES list runs to the closing parenthesis, over several lines.
@@ -734,7 +734,7 @@ VERSION_H = REPO / "shared" / "link" / "include" / "rcbench_version.h"
 def check_version(problems: list[str]) -> None:
     """The version on the wire is the version in the changelog.
 
-    The coprocessor publishes these three numbers on its identity page, so a
+    The IOmcu publishes these three numbers on its identity page, so a
     release cut without moving them ships a board that misreports what it is
     running -- and nobody notices until one is asked in the field.
     """
@@ -1045,9 +1045,9 @@ FACTS = [
     ("docs/Safety-de.md", rf"alle {N} ms auf dem Kern läuft, der nicht",
      ("CONTROL_PERIOD_MS",)),
     # The link's two time limits.
-    ("docs/Safety.md", rf"Coprocessor silence watchdog, {N} ms",
+    ("docs/Safety.md", rf"IOmcu silence watchdog, {N} ms",
      ("LINK_DEV_SILENCE_MS",)),
-    ("docs/Safety-de.md", rf"Stille-Watchdog des Koprozessors, {N} ms",
+    ("docs/Safety-de.md", rf"Stille-Watchdog des IOmcu, {N} ms",
      ("LINK_DEV_SILENCE_MS",)),
     ("docs/Safety.md", rf"\| Link silence \| {N} ms without a request",
      ("LINK_DEV_SILENCE_MS",)),
@@ -1068,9 +1068,9 @@ FACTS = [
      ("PANEL_HEARTBEAT_PIN",)),
     ("docs/Safety-de.md", rf"Die Sicherheitsleitung ist GPIO{N} ",
      ("PANEL_HEARTBEAT_PIN",)),
-    ("docs/Safety.md", rf"coprocessor's GP{N} by a direct wire",
+    ("docs/Safety.md", rf"IOmcu's GP{N} by a direct wire",
      ("IOMCU_HEARTBEAT_PIN",)),
-    ("docs/Safety-de.md", rf"den GP{N} des Koprozessors",
+    ("docs/Safety-de.md", rf"den GP{N} des IOmcu",
      ("IOMCU_HEARTBEAT_PIN",)),
     ("STATUS.md", rf"control task drives GPIO{N} \(J8\)",
      ("PANEL_HEARTBEAT_PIN",)),
@@ -1299,12 +1299,12 @@ def check_ceilings(problems: list[str], ci_text: str | None = None,
 # --- the IO board's pin count ------------------------------------------------
 
 PINMAP = HARDWARE / "docs" / "ioboard-pinmap-draft.json"
-PIN_ROWS = {"main": "Main coprocessor", "measurement":
-            "Measurement coprocessor"}
+PIN_ROWS = {"main": "Main IOmcu", "measurement":
+            "Measurement IOmcu"}
 
 
 def check_pin_counts(problems: list[str]) -> None:
-    """Pins.md's count of the GPIO each coprocessor uses is the number of
+    """Pins.md's count of the GPIO each IOmcu uses is the number of
     pins the draft pin map gives it, and STATUS.md repeats the same two."""
     import json
     chips = {c.get("chip"): len(c.get("pins", []))
@@ -1359,9 +1359,9 @@ def check_sdk_tags(problems: list[str]) -> None:
         "'Coprocessor (pico-sdk X)' job name in ci.yml",
         r"name: Coprocessor \(pico-sdk ([\d.]+)\)", ci)))
     for page, build_on, build_by in (
-            ("Building.md", r"[Cc]oprocessor build on pico-sdk ([\d.]+)",
+            ("Building.md", r"IOmcu build on pico-sdk ([\d.]+)",
              r"CI builds ([\d.]+) \|"),
-            ("Building-de.md", r"Koprozessor-Build mit pico-sdk ([\d.]+)",
+            ("Building-de.md", r"IOmcu-Build mit pico-sdk ([\d.]+)",
              r"CI baut ([\d.]+) \|")):
         text = read(REPO / "docs" / page)
         found.append((f"{page} CI row", first(

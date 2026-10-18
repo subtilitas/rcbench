@@ -3,7 +3,7 @@
  * written to it, in what order, and what a read of it means for the supply
  * the screen shows.
  *
- * The coprocessor drives the PD mini; the panel asks.  Two things are
+ * The IOmcu drives the PD mini; the panel asks.  Two things are
  * written: the wiring (ENABLE to BAUD, from SETUP INTERFACES) and the
  * command (OUTPUT to SET_MA, from the SUPPLY screen).  The order is fixed:
  *
@@ -15,12 +15,12 @@
  *
  * A refused wiring is not written again until the settings change.  A
  * wiring acknowledged is taken as the page's only once a read shows the
- * page holding it: a 4.5 coprocessor holds a change while a module has
+ * page holding it: a 4.5 IOmcu holds a change while a module has
  * answered until a state read of it shows the output off (FLAGS bit 8),
  * and refuses it when that read shows it on or fails (bit 9), which is
  * taken as a refusal and said as one (SUPPLY_LINK_EV_WIRING_LIVE).
  * Nothing else is written while it waits.  A read that shows the page
- * holding other than what was written -- a coprocessor that restarted
+ * holding other than what was written -- an IOmcu that restarted
  * between two polls, or one that switched the output off when the
  * heartbeat stopped -- makes everything owed again, and an ON the page no
  * longer holds is lost.
@@ -62,7 +62,7 @@ extern "C" {
 
 /** A reading older than this is not the supply answering: longer than one
  *  exchange's 1000 ms timeout, so one lost frame is not a supply gone, and
- *  about the 3 failed transactions the coprocessor's driver takes. */
+ *  about the 3 failed transactions the IOmcu's driver takes. */
 #define SUPPLY_LINK_STALE_MS 1500u
 /** A reading count that has stood this long is a supply no trip can
  *  watch: 2 x SUPPLY_LINK_STALE_MS, so the readings have been marked not
@@ -71,13 +71,13 @@ extern "C" {
 /** How often the page is read while the supply is in use. */
 #define SUPPLY_LINK_READ_MS  100u
 
-/** The baud setting that asks the coprocessor to find the rate (4.4). */
+/** The baud setting that asks the IOmcu to find the rate (4.4). */
 #define SUPPLY_LINK_BAUD_AUTO 7u
 
 /** Where the PD mini is wired, as SETUP INTERFACES has it. */
 typedef struct {
     bool    en;
-    int8_t  tx, rx;   /**< coprocessor GPIO; -1 not set          */
+    int8_t  tx, rx;   /**< IOmcu GPIO; -1 not set          */
     uint8_t baud;     /**< the module's UART Baudrate, 0 to 6, 7 AUTO */
 } supply_wiring_t;
 
@@ -135,7 +135,7 @@ typedef struct {
     uint32_t asked_ms;       /* when the last read was asked for        */
     /* The module's readings: SAMPLES as last read, and the page read that
      * first showed it.  A page read whose SAMPLES did not move brings no
-     * new reading -- a display read on the coprocessor that was slow or
+     * new reading -- a display read on the IOmcu that was slow or
      * failed -- however fresh the page itself is. */
     uint16_t samples_seen;
     uint32_t sample_ms;
@@ -197,7 +197,7 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
 /**
  * The supply as the page last said, into @p st: readings, set points read
  * back from the module, the mode -- OFF while the module reads its output
- * off -- the module's reading count (SAMPLES, the coprocessor's count of
+ * off -- the module's reading count (SAMPLES, the IOmcu's count of
  * output readings the module answered) and the time of the page read that
  * first showed that count, and online only for a page read younger than
  * SUPPLY_LINK_STALE_MS from a module the page drives.  The readings are
@@ -235,7 +235,7 @@ uint16_t supply_link_events(supply_link_t *s);
 
 /** The input and the set point in mV that SUPPLY_LINK_EV_SAGGED was read
  *  with: the page's VIN_MV and SET_MV_RB on the read that first showed
- *  FLAGS bit 10.  An input reading taken between the coprocessor's cut and
+ *  FLAGS bit 10.  An input reading taken between the IOmcu's cut and
  *  that read replaces the one that cut. */
 void supply_link_sag(const supply_link_t *s, uint16_t *vin_mv,
                      uint16_t *set_mv);

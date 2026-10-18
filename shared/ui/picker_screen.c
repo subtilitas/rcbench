@@ -119,7 +119,7 @@ static struct {
     picker_apply_fn   apply;
     picker_select_fn  select;
     picker_drawing_fn source;
-    /* The coprocessor's drawing, for the board drawing_board names; it
+    /* The IOmcu's drawing, for the board drawing_board names; it
      * agreed with that board's catalogue when it was set. */
     link_drawing_t    drawing;
     uint16_t          drawing_board;
@@ -136,7 +136,7 @@ static struct {
     bool     chrome_valid[MAX_FBS];
 } s;
 
-/* The GPIO the coprocessor's programming port is bound to, or none.  Kept
+/* The GPIO the IOmcu's programming port is bound to, or none.  Kept
  * out of `s` so a reset of the screen does not forget it. */
 static uint8_t g_prog_gpio = PICKER_NO_PIN;
 
@@ -320,7 +320,7 @@ static void board_box(int *x, int *y, int *w, int *h)
     *y = (SCREEN_H - *h) / 2;
 }
 
-/* The board itself: the coprocessor's drawing, or its outline and pads. */
+/* The board itself: the IOmcu's drawing, or its outline and pads. */
 static void draw_board(gfx_canvas_t *c)
 {
     int bx, by, bw, bh;
@@ -574,7 +574,7 @@ bool picker_screen_list_open(void) { return s.open; }
 
 /* Whether the programming port has pin @p index: it is the port's and no
  * protocol holds it.  A pin a stored slot holds is that slot's -- the
- * coprocessor gives the port no pin then -- and can be unticked. */
+ * IOmcu gives the port no pin then -- and can be unticked. */
 static bool prog_taken(uint8_t index)
 {
     return g_prog_gpio != PICKER_NO_PIN
@@ -633,7 +633,7 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
     }
     /* Free and offered, and the PWM generator cannot take it beside what it carries:
      * held by the pin it clashes with.  outbind_pwm_clash() takes the port's
-     * pin as the coprocessor reads it, PICKER_NO_PIN being no pin. */
+     * pin as the IOmcu reads it, PICKER_NO_PIN being no pin. */
     if (outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
         != OUTBIND_CLASH_NONE) {
         if (holder != NULL) {
@@ -770,7 +770,7 @@ static void draw_pads_that_are_not_pins(gfx_canvas_t *c)
         if (pads[i].kind == (uint8_t)LINK_PAD_OTHER) {
             /* Neither a ground nor a rail, and not what anybody is looking
              * for: crossed dim, which says "not this one" without the red
-             * of a pin the coprocessor keeps. */
+             * of a pin the IOmcu keeps. */
             cross(c, px, py, GFX_RGB(120, 124, 132), 6, 2);
             continue;
         }

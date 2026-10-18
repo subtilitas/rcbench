@@ -70,7 +70,7 @@ minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167 Hz, die eine
 IMU (Inertial Measurement Unit, Trägheitssensor), die fusionierte Lagedaten
 mit 100 Hz liefert, nicht auflösen kann. Einen analogen Sensor (Piezo oder
 analoger Beschleunigungssensor) an den ADC (Analog-Digital-Wandler) des
-Koprozessors anschließen.
+IOmcu anschließen.
 
 Mit Indeximpuls halbiert sich die Zahl der Läufe, und nur die Schwankung der
 Sensorverzögerung zählt; ein konstanter Anteil kürzt sich heraus, weil der
@@ -80,7 +80,7 @@ Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000 rpm.
 
 ## Was die Messung braucht
 
-Einen Beschleunigungssensor und optional einen Indexsensor am Koprozessor.
+Einen Beschleunigungssensor und optional einen Indexsensor am IOmcu.
 Keiner von beiden ist bestückt; der Bildschirm arbeitet deshalb aus dem Modell
 und trägt die Marke SIMULIERT. Einrichtung, Blattumrechnung und beide
 Platzierungsanleitungen funktionieren ohne die Sensoren.

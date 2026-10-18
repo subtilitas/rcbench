@@ -36,7 +36,7 @@ Der Master hört seine eigene Sendung mit: ein Sender verwirft so viele
 empfangene Bytes, wie er gesendet hat. Die Verbindung ist eine einzelne
 Leitung mit zusammengeführtem TX (Sendeleitung) und RX (Empfangsleitung).
 
-Das Protokoll braucht auf dem Koprozessor einen eigenen UART: einen
+Das Protokoll braucht auf dem IOmcu einen eigenen UART: einen
 Hardware-UART mit über einen Widerstand verbundenem TX und RX und verworfenem
 Echo, oder einen Soft-UART in PIO (Programmable Input/Output). Den Panel-Link
 kann es nicht mitbenutzen; der ist CAN (Controller Area Network); siehe [Der
@@ -390,14 +390,14 @@ hinter Rauschen mit einem plausiblen Sync ankommt.
 
 ## 9. Stand in rcbench
 
-Keines der beiden Boards führt das Protokoll aus: das Koprozessor-Image bindet das
+Keines der beiden Boards führt das Protokoll aus: das IOmcu-Image bindet das
 Modul ein, das Panel-Image nicht, und nichts ruft es auf. Der Entwurf legt es auf den
-Koprozessor: eine Anfrage-Antwort-Schleife mit 20 Hz, einer
+IOmcu: eine Anfrage-Antwort-Schleife mit 20 Hz, einer
 Umschaltzeit im Mikrosekundenbereich und einem Timeout, das feuert, ob Bytes
 kommen oder nicht. Das Panel sähe das Ergebnis als `bench_state` über das
 Page-Protokoll; kein OpenYGE-Frame überquerte den Panel-Link. Ein Gaskommando
 reiste als Schreiben auf die Control-Page hinter dem Heartbeat und dem Failsafe
-des Koprozessors ([Sicherheit](Safety-de.md)).
+des IOmcu ([Sicherheit](Safety-de.md)).
 
 Ein YGE-ESC meldet Spannung, Strom, Verbrauch, eRPM und vier Temperaturen
 selbst, sodass jedes modellierte Feld von `bench_state` eine Quelle hat, bevor

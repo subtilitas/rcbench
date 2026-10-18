@@ -393,9 +393,9 @@ TEST_CASE(nothing_is_counted_while_disarmed_or_unmeasured)
 TEST_CASE(one_count_runs_through_a_change_of_source)
 {
     /*
-     * The coprocessor's readings for 10 s, the panel's model for 2 s while
-     * the link is down, then the coprocessor again for 3 s.  Each source
-     * writes its own charge over the field -- the coprocessor its empty
+     * The IOmcu's readings for 10 s, the panel's model for 2 s while
+     * the link is down, then the IOmcu again for 3 s.  Each source
+     * writes its own charge over the field -- the IOmcu its empty
      * register -- and the count is shown over it every time.  It never goes
      * back, and the model's seconds are in it.
      */
@@ -500,7 +500,7 @@ TEST_CASE(the_ina228_counts_while_its_totals_are_the_runs)
 }
 
 /*
- * The coprocessor's edge into driving: the last run's totals leave the
+ * The IOmcu's edge into driving: the last run's totals leave the
  * BENCH page at once, so a poll before its next 50 Hz sample reads no
  * totals rather than the last run's marked as this one's.  The live
  * readings, the peaks and every other flag stay.
@@ -814,7 +814,7 @@ TEST_CASE(a_window_only_row_carries_the_window_and_no_sample)
     bench_state_log_row(&b, false, NULL);
 }
 
-/* ---------------------------------------- the coprocessor's ESC telemetry */
+/* ---------------------------------------- the IOmcu's ESC telemetry */
 
 /* A speed, a voltage, a current and a temperature, all fresh: 14 magnets,
  * 7 pole pairs; 100 counts of 250 mV, 30 A, 45 C. */

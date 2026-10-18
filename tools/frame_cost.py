@@ -98,7 +98,7 @@ SOURCES = [
     "shared/ui/outputs_screen.c",
     "shared/ui/picker_screen.c",
     "shared/ui/board_drawing.c",
-    # The board drawing the coprocessor serves, which the picker draws.
+    # The board drawing the IOmcu serves, which the picker draws.
     "firmware/iomcu/src/board_drawing_rp2350_can.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",

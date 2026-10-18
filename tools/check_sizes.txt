@@ -99,7 +99,7 @@ test/host/test_tone.c | none | F14: one source, tone.c
 test/host/test_tone_link.c | none | F14: one source, tone_link.c
 test/host/test_outputs.c | none | F14: every section calls the outputs_* interface
 test/host/test_sense_page.c | none | F14: one source, sense_page.c
-test/host/test_bind_link.c | none | F14: the panel sections use 30 symbols of the coprocessor fixture
+test/host/test_bind_link.c | none | F14: the panel sections use 30 symbols of the IOmcu fixture
 test/host/test_outbind.c | none | row 18 moves the board suite out with out_board.c; 1,457 lines stay
 test/host/test_supply_screen.c | none | F14: one screen; the largest section is 599 lines
 test/host/test_logview.c | none | F14: one screen; the largest section is 637 lines
