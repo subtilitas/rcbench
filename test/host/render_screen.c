@@ -1521,9 +1521,9 @@ static void pose_splash(void)
     splash_screen_set(SPLASH_STEP_IOMCU,    SPLASH_OK,   iomcu);
 }
 
-/* ------------------------------------------------- FILES & UPDATE */
+/* ------------------------------------------------- WI-FI */
 
-/* A key of the Wi-Fi keyboard as FILES & UPDATE opens it, tapped. */
+/* A key of the Wi-Fi keyboard as WI-FI opens it, tapped. */
 static void wifi_key(int key)
 {
     ui_textkey_t probe;
@@ -1554,7 +1554,7 @@ static void wifi_type(const char *text)
 #define EX_NEWER   "0.19.0"
 #define EX_OLDER   "0.17.0"
 
-/* The views of FILES & UPDATE, reached as an operator reaches them: the
+/* The views of WI-FI, reached as an operator reaches them: the
  * application's view handed in, the controls tapped. */
 static void pose_wifi(const char *view)
 {

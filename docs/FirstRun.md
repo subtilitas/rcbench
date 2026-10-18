@@ -59,7 +59,7 @@ Wi-Fi: ACCESS POINT stops with `Wi-Fi could not start.` as it is pressed, and
 by the estimate of internal RAM (random-access memory) in
 [Performance](Performance.md#internal-ram) JOIN HOME NETWORK stops the same
 way. From 0.20.0 on, the panel installs a release over Wi-Fi ([Screens:
-Files & update](Screens.md#files--update)) or downloads it from GitHub
+Wi-Fi](Screens.md#wi-fi)) or downloads it from GitHub
 ([Screens: Updates](Screens.md#updates)), and the coprocessor takes its
 image over CAN from the panel.
 
@@ -236,8 +236,8 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 ### The panel's application slots
 
 The panel's flash holds two application slots of 4,063,232 bytes, `ota_0`
-and `ota_1`, so it can update itself over Wi-Fi ([Screens: Files &
-update](Screens.md#files--update)). A panel flashed with 0.18.0 or older
+and `ota_1`, so it can update itself over Wi-Fi ([Screens:
+Wi-Fi](Screens.md#wi-fi)). A panel flashed with 0.18.0 or older
 has one 3 MiB `factory` slot and reaches the new layout with one flash over
 USB:
 

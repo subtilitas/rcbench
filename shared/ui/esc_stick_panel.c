@@ -1440,6 +1440,81 @@ uint32_t esc_stick_panel_showing(uint32_t h)
     return h;
 }
 
+/* BACK on the list climbs a level: a maker's models to the makers, with
+ * the makers' scroll and the search kept; the makers to the classes.  The
+ * keyboard closes, the search as typed. */
+static void sp_list_up(void)
+{
+    stick_t *t = &s.st;
+    sp_find_close();
+    if (t->level == 1) {
+        t->level = 0;
+        t->scroll = t->bscroll;
+        sp_build_list(true);
+    } else {
+        pg.stage = STAGE_CLASS;
+    }
+    ++pg.rev;
+}
+
+/* BACK on a profile's page: the list it was picked from, its scroll kept. */
+static void sp_to_list(void)
+{
+    s.st.shown = false;
+    pg.stage = STAGE_PROTOCOL;
+    sp_build_list(true);
+    ++pg.rev;
+}
+
+/* TIMING closes; what it changed is asked to be saved. */
+static void sp_timing_close(void)
+{
+    s.st.timing = false;
+    if (settings_dirty()) {
+        settings_request_save();
+    }
+    ++pg.rev;
+}
+
+/*
+ * The home tag, one step at a time.  What covers the page closes first:
+ * the manual steps' pop-up as OK closes it, the RUN warning as CANCEL.  A
+ * run under way ends as ABORT ends it, and the page stays.  Otherwise the
+ * class climbs a level as BACK does: TIMING to the profile's page, the
+ * page to the list, a maker's models to the makers, the makers to the
+ * classes.
+ */
+bool esc_stick_panel_back(void)
+{
+    stick_t *t = &s.st;
+    if (t->hand_open) {
+        t->hand_open = false;
+        t->warn_read = t->warn_read || t->warn;
+        ++pg.rev;
+        return true;
+    }
+    if (t->warn) {
+        t->warn = false;
+        sp_end_hold();
+        ++pg.rev;
+        return true;
+    }
+    if (pg.stage == STAGE_PROTOCOL) {
+        sp_list_up();
+        return true;
+    }
+    if (esc_stick_running(&t->run)) {
+        sp_end_run(ESC_STICK_R_USER);
+        return true;
+    }
+    if (t->timing) {
+        sp_timing_close();
+        return true;
+    }
+    sp_to_list();
+    return true;
+}
+
 bool esc_stick_panel_down(const touch_event_t *evt)
 {
     stick_t *t = &s.st;
@@ -1485,18 +1560,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
             return true;
         }
         if (hit(pg.back, px, py)) {
-            /* BACK climbs a level: a maker's models to the makers, with
-             * the makers' scroll and the search kept; the makers to the
-             * classes. */
-            sp_find_close();
-            if (t->level == 1) {
-                t->level = 0;
-                t->scroll = t->bscroll;
-                sp_build_list(true);
-            } else {
-                pg.stage = STAGE_CLASS;
-            }
-            ++pg.rev;
+            sp_list_up();
             return true;
         }
         if (!t->tk.open && t->find[0] != '\0'
@@ -1602,13 +1666,10 @@ bool esc_stick_panel_down(const touch_event_t *evt)
             ++pg.rev;
             return true;
         }
-        const bool back = hit(pg.back, px, py);
-        if (back || hit(pg.write_btn, px, py)) {
+        if (hit(pg.back, px, py)) {
+            sp_to_list();
+        } else if (hit(pg.write_btn, px, py)) {
             t->shown = false;               /* OK: back to the menu */
-            if (back) {
-                pg.stage = STAGE_PROTOCOL;
-                sp_build_list(true);
-            }
             ++pg.rev;
         }
         return true;
@@ -1616,11 +1677,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
     if (t->timing) {
         if (hit(pg.back, px, py)
             || hit(pg.write_btn, px, py)) {
-            t->timing = false;              /* CLOSE */
-            if (settings_dirty()) {
-                settings_request_save();
-            }
-            ++pg.rev;
+            sp_timing_close();              /* CLOSE */
             return true;
         }
         if (hit(pg.read_btn, px, py)) {
@@ -1656,9 +1713,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
     }
 
     if (hit(pg.back, px, py)) {
-        pg.stage = STAGE_PROTOCOL;
-        sp_build_list(true);
-        ++pg.rev;
+        sp_to_list();
         return true;
     }
     if (t->p->manual_count > 0u && hit(t->hand_btn, px, py)) {

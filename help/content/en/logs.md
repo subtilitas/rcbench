@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files in the card's root, shows what the import found in one, and plots up to 4 of its columns. It opens from the LOGS tile on the [menu](overview.md); the band names it LOG VIEWER. WI-FI, at the bottom left, opens [Files and update](wifi.md).
+LOGS reads the panel's SD (Secure Digital) card: it lists the CSV (comma-separated values) files in the card's root, shows what the import found in one, and plots up to 4 of its columns. It opens from the LOGS tile on the [menu](overview.md). WI-FI, at the bottom left, opens [Wi-Fi](wifi.md). The home tag climbs one level, as BACK does: the plot to the import view, the import view to the file list, the file list to the menu. Over the DELETE question it is CANCEL.
 
 ## No card
 
@@ -24,7 +24,7 @@ The header names the card by its volume label; a card without one shows the name
 |---|---|
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
-| WI-FI | opens [Files and update](wifi.md) |
+| WI-FI | opens [Wi-Fi](wifi.md) |
 | DELETE | asks, then removes the selected file; grey with nothing selected |
 | OPEN | opens the selected file in the import view; grey with nothing selected |
 
@@ -113,5 +113,5 @@ DELETE opens a question that names the file and its size. Only its own DELETE, p
 
 ## Related pages
 
-- [Files and update](wifi.md): download the card's files in a browser.
+- [Wi-Fi](wifi.md): download the card's files in a browser.
 - [Motor and ESC](motor.md), [Supply](supply.md) and [Servo](servo.md): the runs these files hold.

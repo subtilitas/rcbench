@@ -1,5 +1,5 @@
 /*
- * FILES & UPDATE: the panel's Wi-Fi, for two jobs in a browser -- every file
+ * WI-FI: the panel's Wi-Fi, for two jobs in a browser -- every file
  * on the card to download, and a panel firmware image to upload -- and the
  * screen that writes an uploaded image (PANEL UPDATE).
  *

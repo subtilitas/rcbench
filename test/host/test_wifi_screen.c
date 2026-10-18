@@ -1,5 +1,5 @@
 /*
- * FILES & UPDATE and PANEL UPDATE: what the screens ask for, and when.
+ * WI-FI and PANEL UPDATE: what the screens ask for, and when.
  *
  * Under test: which control asks for what with and without a kept home
  * network, with the radio's gate shut, the home network picked from a scan
@@ -676,7 +676,7 @@ TEST_CASE(the_write_screen_closes_only_after_a_failure)
     update_screen_set(&w);
     u->render(&full, 1);
     CHECK_STR_EQ(u->title, "PANEL UPDATE");
-    CHECK_STR_EQ(scr()->title, "FILES & UPDATE");
+    CHECK_STR_EQ(scr()->title, "WI-FI");
 }
 
 /* WF_JOBS_1 and WF_JOBS_2 are one sentence: wrapped as one, it takes the

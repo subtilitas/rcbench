@@ -1667,7 +1667,7 @@ void wifi_access_fetch_tick(wa_why_t abort)
     if (off) {
         atomic_store(&s.fetch_stop, true);
         if (s.w.mode == WA_MODE_FETCH) {
-            wa_close(&s.w, WA_OFF_ASKED);   /* not FILES & UPDATE's session */
+            wa_close(&s.w, WA_OFF_ASKED);   /* not WI-FI's session */
         }
     }
     if (run) {

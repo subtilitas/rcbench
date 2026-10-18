@@ -801,7 +801,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 }
 
 static const ui_screen_t k_screen = {
-    .title  = "FILES & UPDATE",
+    .title  = "WI-FI",
     .reset  = reset,
     .enter  = enter,
     .leave  = leave,

@@ -1,12 +1,12 @@
 ---
 screen: WIFI
-title: Dateien und Update
+title: WLAN
 order: 51
 ---
 
-# Dateien und Update
+# WLAN
 
-FILES & UPDATE betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet aus [LOGS](logs.md), mit WLAN in der unteren Reihe. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
+WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet über die Kachel WI-FI auf [SETUP](setup.md) und über WLAN in der unteren Reihe von [LOGS](logs.md). Sein Home-Tag führt zu dem Bildschirm zurück, der ihn geöffnet hat. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
 
 ## Der Startbildschirm
 

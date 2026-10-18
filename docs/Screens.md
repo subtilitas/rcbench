@@ -55,17 +55,13 @@ A touch belongs to what it came down on until it lifts. The band is the top
   glass moves nothing on the screen the tag leads to.
 
 Current limitation: the chips stand from STOP to the left. A row that would
-reach x 274, where the widest home tag (FILES & UPDATE) ends, starts each
-label 16 px into its chip instead of 24 px. Three rows are still wider and
-reach under the home tag of some screens. A tap there acts on the home tag,
-not on the chip:
+reach x 226, where the widest home tag (MOTOR & ESC) ends, starts each label
+16 px into its chip instead of 24 px. One row is still wider and reaches
+under MOTOR & ESC's home tag: ARMED with a FAULT code, down to x 224, in
+German down to x 216. A tap there acts on the home tag, not on the chip.
 
-- ARMED with a FAULT code: down to x 216.
-- ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG, in German: down to x 234.
-- SAFE with a FAULT code and a run clock of 10 h or more, in German: x 272.
-
-The home tags end at x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
-(FILES & UPDATE) and at x 210 or less on the other screens.
+The home tags end at x 226 (MOTOR & ESC) and at x 210 or less on the other
+screens.
 
 ### Chip help
 
@@ -231,7 +227,7 @@ on the same edge.
 
 Switching to ARMED clears the plot, and a latched stop is cleared by switching to ARMED, so the trace
 of a run a STOP ended does not survive making the bench usable again. One
-switching to ARMED writes one CSV file, and the log viewer plots it.
+switching to ARMED writes one CSV file, and LOGS plots it.
 
 
 The strip above both columns carries the poll rate, the link's error count
@@ -400,8 +396,8 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 `voltage`, `current` and `power` are what the screen shows. `source` is
 `measured` on a row whose values a meter produced and `model` on a row the
 panel's model produced (the SIMULATED mark); a supply file has the same last
-column. A file without the column ends at `ch3 voltage` or `energy`, and the
-log viewer and the tools read both forms: `source` is a
+column. A file without the column ends at `ch3 voltage` or `energy`, and
+LOGS and the tools read both forms: `source` is a
 text column and is never plotted. `ina voltage` and
 `ina current` are the INA228's and are empty while it is not the source;
 `esc current` is the ESC's own telemetry current, from the SENSE page while
@@ -423,7 +419,7 @@ current. CH2 and CH3 are on the row of their window when the panel read
 both pages within that window, and empty on a row the poll caught up. With
 an older coprocessor, or with CH1 off, the columns hold the last window of
 each read: a poll longer than 50 ms skips windows, 1 in 17 at 53 ms, and a
-clipped sample is left out of the figures. The log viewer groups `ina voltage`,
+clipped sample is left out of the figures. LOGS groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
 columns under INA3221.
 
@@ -1312,8 +1308,12 @@ control. Three controls act on the press:
   finger.
 - The keys of the search keyboard, which follow their own press and lift.
 
-Going back one level closes the session. Back climbs one level at a time; the
-band's home tag leaves the screen.
+Going back one level closes the session. BACK and the band's home tag climb
+one level at a time: a device page to its protocols, a stick profile's page
+to the list, a maker's models to the makers, a list to the classes. The home
+tag leaves PROGRAMMER from the classes only. Over the RUN warning the home tag
+is CANCEL, and over the manual steps it is OK. On a stick run under way it is
+ABORT: the run ends, and its result stays on the page.
 
 ### ESC STICK
 
@@ -1376,8 +1376,8 @@ where it stored, until DONE:
 ![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
 
 While it runs, the page shows the phase, the beeps of the group under way
-and the last group. ABORT, STOP and leaving the screen end it with the
-throttle at MIN, the supply off and the bench SAFE. The stack light's
+and the last group. ABORT, the home tag, STOP and leaving the screen end it
+with the throttle at MIN, the supply off and the bench SAFE. The stack light's
 green is on while a beep is detected, for at least 150 ms:
 
 ![A run](img/programmer-stick-run.png)
@@ -1408,7 +1408,7 @@ own count and record and stay.
 
 The result stays until OK. Its red light is on when the run ended because
 something was not as expected, a stop the bench raised itself included,
-and dark on DONE, a STOP pressed, ABORT and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
+and dark on DONE, a STOP pressed, ABORT, the home tag and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
 
 ![Done](img/programmer-stick-done.png)
 
@@ -1443,6 +1443,11 @@ Browse the card, open a file, check what the import detected, then plot:
 
 ![The import view](img/logs-import.png)
 ![The plot](img/logs-plot.png)
+
+The home tag climbs one level, as BACK does: the plot to the import view,
+the import view to the file list, the file list to the menu. Over the DELETE
+question it is CANCEL. WI-FI, in the bottom row beside RESCAN, opens
+[Wi-Fi](#wi-fi).
 
 The CSV (comma-separated values) reader accepts decimal comma and decimal
 point, a units row and ragged rows; the import view shows what it decided
@@ -1615,13 +1620,16 @@ A run being written is not offered in LOGS. A file's length lives in its
 directory entry and is written when the file is closed, so a run still open
 would list at its last committed length and read as a finished one.
 
-## Files & update
+## Wi-Fi
 
-![FILES & UPDATE, no home network kept](img/wifi.png)
+![WI-FI, no home network kept](img/wifi.png)
 
-FILES & UPDATE runs the panel's Wi-Fi for two jobs in a browser: every file
-on the card to download, and a panel firmware image to upload. It opens from
-LOGS, with WI-FI in the bottom row beside RESCAN. The radio runs only while
+WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the
+card to download, and a panel firmware image to upload. It opens from the
+WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
+[LOGS](#logs). Its home tag returns to the screen that opened it, SETUP or
+LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. The
+radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
 when the screen is left, before an install writes the flash, and after
@@ -1665,7 +1673,7 @@ or a computer needs:
 | IP address | `http://192.168.4.1/` |
 | Range | not measured |
 
-1. LOGS → WI-FI → ACCESS POINT.
+1. SETUP → WI-FI → ACCESS POINT, or LOGS → WI-FI → ACCESS POINT.
 2. On the phone or the computer, join the network the screen names, with
    the password it shows.
 3. Open `http://192.168.4.1/` and enter the access code the screen shows.
@@ -1854,8 +1862,9 @@ the panel restarts.
 
 The splash shows the new version, and the band says
 `Panel firmware 0.19.0 installed.`. A write that fails changes nothing that
-starts: the running build stays, and CLOSE goes back to LOGS, or after a
-download from GitHub to where the download started.
+starts: the running build stays, and CLOSE goes back to the screen that
+opened WI-FI, SETUP or LOGS, or after a download from GitHub to where the
+download started.
 
 ![The write failed](img/panel-update-failed.png)
 
@@ -1888,9 +1897,11 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 - Three categories: ESC / BENCH, APPLICATION and INTERFACES. Each tile
   names its number of settings. A tap opens the category's list.
-- Three screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pick a pin](#pick-a-pin)) and UPDATES ([Updates](#updates)).
-- Three slots are free. A tenth entry has no slot: the page holds 9, and
+- Four screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
+  ([Updates](#updates)). The band of each names it as its tile does, and
+  the band of this page reads SETUP.
+- Two slots are free. A tenth entry has no slot: the page holds 9, and
   the build fails at the tenth.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -1916,7 +1927,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, UPDATES | the tiles |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -1925,7 +1936,7 @@ APPLICATION's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
-default and is described under the log viewer.
+default and is described under [Logs](#logs).
 
 Nine settings are stored and shown, and no part of the firmware reads them:
 Backlight, Units and Dim after under APPLICATION; Cells, Capacity and
@@ -2340,8 +2351,8 @@ the danger colour after a refused save.
 The warning holds only the home tag:
 
 - Nothing unsaved, or a save asked (`WHEN IDLE`): no warning, the menu opens.
-- OUTPUTS, PICK A PIN and UPDATES open from a tile and return to SETUP: no
-  warning on the way out or back.
+- OUTPUTS, PICK A PIN, WI-FI and UPDATES open from a tile and return to
+  SETUP: no warning on the way out or back.
 - The home tag over the warning is STAY.
 - STOP stops the bench and leaves the warning as it is.
 - A screen the panel opens by itself, such as the bus-fault screen after a
@@ -2493,7 +2504,7 @@ asks the same question once per start of the panel.
 The card names the running version and the kept home network. Both the
 check and the download need:
 
-- a home network kept on FILES & UPDATE ([Home network](#home-network)).
+- a home network kept on WI-FI ([Home network](#home-network)).
   Without one, the card says `No home network saved.` and
   `Save a network under LOGS > WI-FI.`, and CHECK FOR UPDATES is grey;
 - the bench SAFE, the supply output off and no log run open. Otherwise the
@@ -2526,13 +2537,13 @@ check:
 | --- | --- |
 | `Version 0.20.0 is available.` | The newest release is newer than the running build. The hold appears. |
 | `Up to date. Panel version: 0.19.0.` and `Latest release on GitHub: 0.19.0.` | The newest release is the running version or older. |
-| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on FILES & UPDATE. |
+| `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
 | `GitHub rejected the request: HTTP 404.` | An answer other than a redirect. |
 | `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
-| `Stopped: FILES & UPDATE is using Wi-Fi.` | FILES & UPDATE opened. |
+| `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
 | `Stopped: the coprocessor update has started.` | The coprocessor's update began. |
 | `Cancelled.` | CANCEL. |
 | `Wi-Fi could not start.` | The radio did not come up. |
@@ -2559,8 +2570,8 @@ equal and PATCH is higher.
 
 With REMINDER AT START on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
-gone, the bench SAFE, the supply output off, no log run open, FILES &
-UPDATE closed and no coprocessor update offered or running. A start-up check
+gone, the bench SAFE, the supply output off, no log run open, WI-FI closed
+and no coprocessor update offered or running. A start-up check
 that has found no such moment 10 min after the start does not run at that
 start.
 

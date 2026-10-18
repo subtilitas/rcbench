@@ -143,7 +143,7 @@ void wa_fetch_tick(wa_fetch_t *f, uint32_t now_ms, wa_why_t abort,
         return;
     }
     if (w->mode != WA_MODE_FETCH) {
-        /* Another session took the radio: FILES & UPDATE. */
+        /* Another session took the radio: WI-FI. */
         end(f, WA_GOT_ABORTED, WA_WHY_FILES);
         return;
     }

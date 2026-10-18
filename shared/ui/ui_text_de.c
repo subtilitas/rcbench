@@ -319,6 +319,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_COUNT]              = "%d EINSTELLUNGEN",
     [TX_SET_HUB_OUTPUTS]        = "PROTOKOLLE UND PINS",
     [TX_SET_HUB_PICKER]         = "AUF DER PLATINE",
+    [TX_SET_HUB_WIFI]           = "NETZWERK, DATEIEN, UPLOAD",
     [TX_SET_HUB_UPDATES]        = "VERSIONEN AUF GITHUB",
     [TX_SET_RESET]              = "KATEGORIE ZURÜCKSETZEN",
     [TX_SET_SAVED]              = "GESPEICHERT",
@@ -423,7 +424,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SUP_SET_POINTS]         = "SOLLWERTE",
     [TX_SUP_NOT_ON_YET]         = "Ausgang wurde noch nicht eingeschaltet.",
 
-    /* ------------------------------------------------------ LOG VIEWER */
+    /* ------------------------------------------------------------ LOGS */
     [TX_LOG_NO_SOURCE]          = "Keine Dateiquelle verfügbar.",
     [TX_LOG_CANNOT_OPEN]        = "%s lässt sich nicht öffnen.",
     [TX_LOG_IS_FOLDER]          = "%s ist ein Ordner.",
@@ -1370,7 +1371,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_KP_W_HIGH_DUTY_TRAVEL]   = "Hohes Duty und mehr Weg: Blockieren kann das Servo zerstören.",
     /* end of the servo programmer */
 
-    /* FILES & UPDATE, PANEL UPDATE */
+    /* WI-FI, PANEL UPDATE */
     [TX_WF_AP]                  = "WLAN-HOTSPOT",
     [TX_WF_JOIN]                = "MIT HEIMNETZ VERBINDEN",
     [TX_WF_CHOOSE]              = "HEIMNETZ WÄHLEN",
@@ -1459,7 +1460,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_WAIT_COPROC]        = "Wartet auf das Ende des Koprozessor-Updates.",
     [TX_UPD_WAIT_DRAWING]       = "Wartet: Eine Platinenzeichnung wird geladen oder gespeichert.",
     [TX_UPD_WAIT_BUSY]          = "Wartet: Eine Prüfung oder Installation läuft bereits.",
-    [TX_UPD_STOP_FILES]         = "Abgebrochen: FILES & UPDATE nutzt das WLAN.",
+    [TX_UPD_STOP_FILES]         = "Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.",
     [TX_UPD_STOP_CANCEL]        = "Abgebrochen.",
     [TX_UPD_STOP_COPROC]        = "Abgebrochen: Koprozessor-Update gestartet.",
     [TX_UPD_STOP_INSTALL]       = "Abgebrochen: Installation der Panel-Firmware gestartet.",

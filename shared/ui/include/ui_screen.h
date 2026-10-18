@@ -42,8 +42,8 @@ typedef enum {
     /* Start-up only, and not reachable from the menu: the bus self-test
      * failed and the panel says so before anything else. */
     SCREEN_BUSFAULT,
-    /* FILES & UPDATE, from LOGS: the panel's Wi-Fi for card downloads and
-     * firmware uploads. */
+    /* WI-FI, from LOGS and from SETUP: the panel's Wi-Fi for card
+     * downloads and firmware uploads. */
     SCREEN_WIFI,
     /* While the panel writes its own firmware, and not reachable from the
      * menu: nothing on the bench runs, so it carries no band either. */
@@ -85,10 +85,11 @@ typedef struct {
     void (*render)(gfx_canvas_t *c, int buffer_index);
     /**
      * The home tag was tapped.  Return true when the screen went up a level
-     * of its own, such as SETUP from a settings list to its tiles; the
-     * router has released every contact the screen owned, as at a change of
-     * screen.  False, or NULL, leaves the screen: to SETUP from a screen
-     * SETUP's tiles open, to the menu from every other.
+     * of its own, such as SETUP from a settings list to its tiles, or closed
+     * a question or a pop-up that covers it; the router has released every
+     * contact the screen owned, as at a change of screen.  False, or NULL,
+     * leaves the screen for ui_router_parent().  A level is what an
+     * in-screen BACK climbs out of, and the home tag climbs one.
      */
     bool (*back)(void);
     /**
@@ -126,6 +127,14 @@ void ui_router_init(void);
 void ui_router_goto(ui_screen_id_t id);
 
 ui_screen_id_t ui_router_current(void);
+
+/**
+ * Where the home tag of screen @p id leads when it leaves the screen.  A
+ * screen with two openers, WI-FI, returns to the one that last opened it:
+ * LOGS or SETUP.  A screen a tile of SETUP opens returns to SETUP, and
+ * every other to the menu.  WI-FI not yet opened returns to SETUP.
+ */
+ui_screen_id_t ui_router_parent(ui_screen_id_t id);
 
 /**
  * Count of navigations since ui_router_init(): every switch to a different
