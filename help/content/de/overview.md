@@ -12,19 +12,20 @@ Das Menü ist der Startbildschirm des Panels. Es öffnet nach dem Splash und hat
 
 ![Das Menü bei stehendem Link](view:overview)
 
-Neun Kacheln zu je 150 x 204 px, in zwei Reihen:
+Acht Kacheln zu je 190 x 204 px, in 4 Spalten und 2 Reihen: die Werkbänke in der ersten Reihe, die Instrumente in der zweiten, LOGS über SETUP in der letzten Spalte.
 
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|
 | MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
 | SERVO | Weg, Strom | [Servo](servo.md) |
 | SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
-| ANALYSER | Busse, Frames | [Analyser](analyser.md) |
 | LOGS | Daten aufzeichnen und ansehen | [Logs](logs.md) |
-| SETUP | Akku und Ausgang | [Setup](setup.md) |
+| ANALYSER | Busse, Frames | [Analyser](analyser.md) |
 | BATTERY | Zellen, iR, mAh | [Akku](battery.md) |
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
-| PROGRAMMER | ESC und Servo | [Programmer](programmer.md) |
+| SETUP | Akku und Ausgang | [Setup](setup.md) |
+
+Das Programmieren hat keine Kachel: ESCs werden auf [PROGRAMMIEREN](motor.md#programmieren) von MOTOR & ESC programmiert, Servos auf PROGRAMMIEREN von SERVO.
 
 Ein Tipp öffnet eine Kachel, wenn der Finger auf derselben Kachel abhebt, auf der er gedrückt hat. Ein Druck, der von der Kachel rutscht, öffnet nichts.
 
@@ -39,7 +40,7 @@ Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
 | SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist |
-| ANALYSER, BATTERY, BALANCE, PROGRAMMER | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
+| ANALYSER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 
 Ohne antwortenden IOmcu tragen MOTOR & ESC und SERVO die Marke ebenfalls. SUPPLY folgt allein der Einstellung PD mini, mit oder ohne Link.

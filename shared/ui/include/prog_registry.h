@@ -3,8 +3,9 @@
  * (and later TEST) lists of a workbench are built from.
  *
  * A row is { device, task, name, group, transport, port, needs_capability,
- * page_set }:
- *   - device and task pick the list: SERVO > PROGRAM today.
+ * page_set, full_width }:
+ *   - device and task pick the list: SERVO > PROGRAM and MOTOR & ESC >
+ *     PROGRAM.
  *   - name is the row's descriptive text ("KST and Chaservo servos"), never
  *     a screen title; a maker's name is a row label only.
  *   - group is the heading the row sits under once the list has headings.
@@ -19,9 +20,18 @@
  *     opens nothing.
  *   - page_set is the session the row opens one level down: the hooks the
  *     host screen drives it through (prog_page_set_t).
+ *   - full_width says how the host lays the session out.  Not full width,
+ *     it opens over the host's left column and the output card stays on
+ *     the right (SERVO's sessions).  Full width, it takes the whole body
+ *     under the strip row, and the host draws a one-line output strip in
+ *     that row in place of the card: what the session drives, `TARGET
+ *     DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE` (MOTOR & ESC's
+ *     sessions, ESC STICK).  The owner grants each full-width page set;
+ *     prog_reg_check() holds each device to the one layout its host draws.
  *
  * A new maker adds one row to k_rows in prog_registry.c and one page_set
- * (a session laid out for the host's left column, as kst_panel_pages is).
+ * (a session laid out for the host's left column, as kst_panel_pages is,
+ * or for the full body, as esc_stick_pages is).
  * A new maker never adds a home tile, a SETUP tile or a tab.  The Hitec
  * programmer lands here as SERVO's second PROGRAM row.  A modelled
  * protocol with no transport on the IOmcu gets no row.
@@ -78,6 +88,19 @@ typedef enum {
 #else
 #define PROG_ONE_CALL __attribute__((noinline))
 #endif
+
+/*
+ * A full-width session's layout, in the host's body coordinates (800 x 432
+ * px under the band): the output strip's line at the top, one line of the
+ * 8 x 16 face from PROG_FULL_STRIP_Y, and the session's own area from
+ * PROG_FULL_Y to the foot of the body.
+ */
+#define PROG_FULL_STRIP_X 12
+#define PROG_FULL_STRIP_Y 6
+#define PROG_FULL_STRIP_H 16
+#define PROG_FULL_Y       26
+/** The cells the output strip's line holds: 776 px of 8 px cells. */
+#define PROG_FULL_STRIP_CELLS 97
 
 /** The list rules (see the top of this file). */
 #define PROG_LIST_SEARCH_OVER   9
@@ -136,6 +159,9 @@ typedef struct {
     uint8_t                port;             /**< or PROG_REG_NO_PORT    */
     uint16_t               needs_capability; /**< link_cap_t bits        */
     const prog_page_set_t *page_set;
+    /** The session takes the whole body, the output strip above it, in
+     *  place of the left column beside the output card. */
+    bool                   full_width;
 } prog_reg_row_t;
 
 /** The table, and its row count in @p count. */
@@ -158,16 +184,53 @@ typedef enum {
     PROG_REG_NO_PAGE_SET,    /**< page_set NULL, or a hook of it NULL     */
     PROG_REG_SAME_NAME,      /**< two rows of one list with one name      */
     PROG_REG_TOO_MANY,       /**< a list over PROG_LIST_MAX rows          */
+    /** A layout the device's host does not draw: a full-width SERVO row,
+     *  or a MOTOR row that is not full width. */
+    PROG_REG_BAD_WIDTH,
 } prog_reg_fault_t;
 
 /**
  * Checks @p n rows of @p rows: every field filled and in range, names in
  * the language in force, no two rows of one list named alike, no list over
- * PROG_LIST_MAX.  The first fault found, with its row in @p at (may be
+ * PROG_LIST_MAX, each row laid out as its device's host draws it.  The first fault found, with its row in @p at (may be
  * NULL); PROG_REG_OK with @p at untouched for a sound table.
  */
 prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
                                 size_t *at);
+
+/* ------------------------------------------------- a device's sessions */
+
+/**
+ * The page sets @p device's rows open, each once in the table's order,
+ * into @p out: at most PROG_LIST_MAX.  Their count.
+ */
+int prog_reg_sets(uint8_t device, const prog_page_set_t *out[PROG_LIST_MAX]);
+
+/** Whether a row that opens @p ps is full width. */
+bool prog_reg_full_width(const prog_page_set_t *ps);
+
+/*
+ * A page set's hooks, each called from one function of its own, so
+ * tools/stack_check.py follows the call by name (PROG_CALLS there).  The
+ * hosts call a session through these and through nothing else.
+ */
+void prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area);
+void prog_ps_entry(const prog_page_set_t *ps);
+void prog_ps_open(const prog_page_set_t *ps);
+bool prog_ps_is_open(const prog_page_set_t *ps);
+void prog_ps_back(const prog_page_set_t *ps);
+bool prog_ps_holds(const prog_page_set_t *ps);
+void prog_ps_armed(const prog_page_set_t *ps, bool armed);
+void prog_ps_tick(const prog_page_set_t *ps, float dt_s);
+bool prog_ps_has_press(const prog_page_set_t *ps, uint8_t id);
+void prog_ps_event(const prog_page_set_t *ps, const touch_event_t *evt);
+void prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c);
+uint32_t prog_ps_revision(const prog_page_set_t *ps);
+uint32_t prog_ps_hold_revision(const prog_page_set_t *ps);
+gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps);
+void prog_ps_leave(const prog_page_set_t *ps);
+void prog_ps_cancel(const prog_page_set_t *ps);
+uint8_t prog_ps_pin(const prog_page_set_t *ps);
 
 /* ------------------------------------------------------- a row's state */
 

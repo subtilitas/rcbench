@@ -39,7 +39,7 @@ typedef enum {
     SUPPLY_BY_NONE = 0,     /* off, or on and asked by nobody here */
     SUPPLY_BY_SUPPLY,       /* OUTPUT ON on SUPPLY                  */
     SUPPLY_BY_SERVO,        /* SERVO: OUTPUT ON, a test, the programmer */
-    SUPPLY_BY_PROGRAMMER,   /* a stick run on ESC STICK             */
+    SUPPLY_BY_STICK,        /* a stick run on ESC STICK             */
 } supply_by_t;
 
 typedef enum {
@@ -66,6 +66,10 @@ typedef struct {
 
 /** One sample, for the readouts and, while the output is on, the plot. */
 void supply_screen_push(const supply_state_t *s);
+
+/** The newest sample supply_screen_push() took, as it took it: zeroed, so
+ *  not online, before the first. */
+const supply_state_t *supply_screen_reading(void);
 
 /**
  * Whether the supply's output is on, as the supply reports it.  That bounds

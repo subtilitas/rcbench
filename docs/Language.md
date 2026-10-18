@@ -60,7 +60,7 @@ manual beside the bench.
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
-  BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
+  BATTERY, BALANCE, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile and the band of the screen
   it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
@@ -217,7 +217,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 267 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 262 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

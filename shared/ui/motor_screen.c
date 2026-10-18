@@ -1,13 +1,16 @@
 /*
  * The motor and ESC (electronic speed controller) bench screen, a
- * workbench (ui_workbench.h) with the tasks LIVE and SETTINGS.
+ * workbench (ui_workbench.h) with the tasks LIVE, PROGRAM and SETTINGS.
  *
  * This file is the screen and LIVE's page: the plot or the table, the
  * throttle, the readouts and the CONTROL card on the right.  The strip and
- * the CONTROL card's TARGET row are motor_workbench.c's, SETTINGS' page
+ * the CONTROL card's TARGET row are motor_workbench.c's, PROGRAM's list and
+ * its sessions motor_program_page.c's, SETTINGS' page
  * motor_settings_page.c's; the layout they share is motor_screen_int.h.
  * The rail on the right, the readouts and the CONTROL card with TARGET,
- * ARM and RESET PEAKS, is the same on every task.
+ * ARM and RESET PEAKS, is the same on every task, until a session on
+ * PROGRAM opens: a full-width session takes the whole body, and the strip
+ * row shows the output strip in place of the tabs and the card.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -177,6 +180,11 @@ static struct {
     uint32_t      drawn_strip[2];
     uint32_t      drawn_page[2];
     bool          target_locked;
+    /* PROGRAM's session as each framebuffer last had it: whether it was
+     * shown, its revision, and the output strip's text (a signature). */
+    bool          drawn_sess_shown[2];
+    uint32_t      drawn_sess[2];
+    uint32_t      drawn_ostrip[2];
     /* Whether each channel's peak is a measurement: a valid live reading
      * has arrived since the run started.  Kept apart from the live flags,
      * which a source that stops answering mid-run clears while the run's
@@ -212,6 +220,10 @@ void motor_invalidate(void)
     s.drawn_strip[1] = UINT32_MAX;
     s.drawn_page[0]  = UINT32_MAX;
     s.drawn_page[1]  = UINT32_MAX;
+    s.drawn_sess[0]  = UINT32_MAX;
+    s.drawn_sess[1]  = UINT32_MAX;
+    s.drawn_ostrip[0] = UINT32_MAX;
+    s.drawn_ostrip[1] = UINT32_MAX;
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -236,6 +248,7 @@ static void reset(void)
     motor_invalidate();
     mwb_reset();
     msp_reset();
+    mpp_reset();
     ui_plot_init(&s.plot, k_series, S_COUNT,
                  (float)PLOT_W / SAMPLE_HZ);
     /* A screen that has just reset has no run behind it and no bench in
@@ -297,8 +310,8 @@ static void throttle_from_zero(void);
  * stays until the bench reports disarmed, which returns it to 0 %.
  *
  * Into LIVE: 0 %, for an arm the hold did not ask for, as for a stick run
- * on PROGRAMMER.  The hold returned the slider to zero when it asked, and
- * only the application's hook can have set it since.
+ * on PROGRAM.  The hold returned the slider to zero when it asked, and only
+ * the application's hook can have set it since.
  */
 static void value_edge(ui_value_edge_t edge, ui_value_state_t before)
 {
@@ -558,6 +571,8 @@ bool motor_screen_target_locked(void) { return target_locked(); }
 
 int motor_screen_task(void) { return (int)mwb_task(); }
 
+bool motor_screen_session_shown(void) { return mpp_shown() != NULL; }
+
 int motor_screen_pane(void) { return s.tabs.selected; }
 
 float motor_screen_throttle(void) { return s.slider.value; }
@@ -635,6 +650,7 @@ static void task_changed(void)
     end_drag();
     ui_tabs_cancel(&s.tabs);
     msp_cancel();
+    mpp_cancel_press();
     if (s.pressed == 3 || s.pressed == 4) {
         s.pressed    = 0;
         s.have_press = false;
@@ -642,6 +658,32 @@ static void task_changed(void)
     motor_invalidate();
     ++s.ctrl_rev;
     ++s.thr_rev;
+    ++s.arm_rev;
+}
+
+/*
+ * A session opened over the body: the presses the screen held go, as at a
+ * change of task -- a hold of ARM, a throttle drag, a step button, a tab --
+ * and the session's first frame is painted whole.  ARM and the throttle
+ * are out of sight under it, so a bench that is not SAFE switches to SAFE
+ * first: a DISARM held by another finger, whose release the session takes,
+ * is posted here, and no output drives under a session that hides DISARM.
+ */
+static void session_opened(void)
+{
+    if (!bench_safe()) {
+        post(MOTOR_CMD_DISARM, 0.0f);
+    }
+    end_drag();
+    ui_tabs_cancel(&s.tabs);
+    mwb_cancel();
+    if (s.pressed == 1 && !s.gate.armed) {
+        ui_hold_reset(&s.arm);
+    }
+    s.pressed    = 0;
+    s.have_press = false;
+    motor_invalidate();
+    ++s.ctrl_rev;
     ++s.arm_rev;
 }
 
@@ -663,6 +705,14 @@ static void event(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
+    /* A session on PROGRAM covers the body, the strip row and the rail with
+     * it: every press is the session's.  ARM is the session's too, through
+     * its own warning and hold. */
+    const prog_page_set_t *ps = mpp_shown();
+    if (ps != NULL) {
+        prog_ps_event(ps, evt);
+        return;
+    }
     /* The strip and the TARGET row first: a press of theirs is theirs. */
     const mwb_ev_t wb = mwb_event(evt, !msp_modal(), target_locked());
     if (wb == MWB_TASK) {
@@ -677,10 +727,16 @@ static void event(const touch_event_t *evt)
         ++s.ctrl_rev;           /* the TARGET row draws its press */
         return;
     }
-    /* SETTINGS' page has the left column; the rail stays this file's. */
+    /* SETTINGS' page or PROGRAM's list has the left column; the rail
+     * stays this file's.  A row's tap may open a session over all of it. */
     const bool on_live = mwb_task() == UI_WB_LIVE;
-    if (!on_live) {
+    if (mwb_task() == UI_WB_SETTINGS) {
         msp_event(evt, endpoints_free());
+    } else if (mwb_task() == UI_WB_PROGRAM && mpp_event(evt)) {
+        if (mpp_shown() != NULL) {
+            session_opened();
+        }
+        return;
     }
     /*
      * Each control bumps its own counter, rather than every touch bumping
@@ -845,6 +901,8 @@ static void tick(float dt_s)
         ++s.ctrl_rev;
     }
     msp_tick(endpoints_free());
+    mpp_armed(!bench_safe());
+    mpp_tick(dt_s);
 }
 
 /* ----------------------------------------------------------------- drawing */
@@ -1311,12 +1369,70 @@ static void draw_throttle(gfx_canvas_t *c, bool ctrl_moved)
               s.pressed == 4, value_live());
 }
 
+/*
+ * A session on PROGRAM, full width: the output strip in the strip row, on
+ * its text, and the session under it, on its revision.
+ */
+__attribute__((noinline))
+static void render_session(gfx_canvas_t *c, unsigned bit, int buf,
+                           const prog_page_set_t *ps)
+{
+    if ((s.drawn_mask & bit) == 0) {
+        gfx_clear(c, ui_theme_color(UI_C_BG));
+        s.drawn_mask |= bit;
+        s.drawn_sess[buf]   = UINT32_MAX;
+        s.drawn_ostrip[buf] = UINT32_MAX;
+    }
+    const uint32_t sig = mpp_strip_signature(s.thr_proto, s.thr_pins,
+                                             s.thr_pins_known, s.gate.armed);
+    if (s.drawn_ostrip[buf] != sig) {
+        s.drawn_ostrip[buf] = sig;
+        mpp_render_strip(c, s.thr_proto, s.thr_pins, s.thr_pins_known,
+                         s.gate.armed);
+    }
+    const uint32_t rev = prog_ps_revision(ps);
+    if (s.drawn_sess[buf] != rev) {
+        s.drawn_sess[buf] = rev;
+        prog_ps_render(ps, c);
+    }
+}
+
+static void render_body(gfx_canvas_t *c, unsigned bit, int buf);
+
+/*
+ * The session's way and the body's are two functions: the body's frame,
+ * 416 bytes on the panel, is not on the stack under a session's page
+ * drawers (tools/stack_check.py).
+ */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
     const int buf = buffer_index & 1;
-    const bool on_live = mwb_task() == UI_WB_LIVE;
     bind_colours();
+
+    /* A session opening or closing repaints the buffer whole. */
+    const prog_page_set_t *ps = mpp_shown();
+    if ((ps != NULL) != s.drawn_sess_shown[buf]) {
+        s.drawn_sess_shown[buf] = ps != NULL;
+        s.drawn_mask &= ~bit;
+        s.drawn_push[buf]  = UINT32_MAX;
+        s.drawn_ctrl[buf]  = UINT32_MAX;
+        s.drawn_thr[buf]   = UINT32_MAX;
+        s.drawn_arm[buf]   = UINT32_MAX;
+        s.drawn_plot[buf]  = UINT32_MAX;
+        s.drawn_title[buf] = 0xFFu;
+    }
+    if (ps != NULL) {
+        render_session(c, bit, buf, ps);
+    } else {
+        render_body(c, bit, buf);
+    }
+}
+
+__attribute__((noinline))
+static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
+{
+    const bool on_live = mwb_task() == UI_WB_LIVE;
 
     /* Chrome per framebuffer, not per frame; the rest only when its counter
      * moves.  tools/frame_cost.py measures the two cases as the `chrome` and
@@ -1383,7 +1499,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
      * than in them.
      */
     const bool data_moved = (s.drawn_push[buf] != s.plot.pushes);
-    if (!on_live) {
+    if (mwb_task() == UI_WB_PROGRAM) {
+        /* PROGRAM's list, on its own counter. */
+        if (s.drawn_page[buf] != mpp_revision()) {
+            s.drawn_page[buf] = mpp_revision();
+            mpp_render_page(c);
+        }
+    } else if (!on_live) {
         /* SETTINGS' page, on its own counter: a press, the keypad, the
          * store's state. */
         if (s.drawn_page[buf] != msp_revision()) {
@@ -1525,8 +1647,10 @@ static void leave(void)
     s.pressed    = 0;
     s.have_press = false;
     /* SETTINGS' keypad closes, what it held typed with it; the task stays
-     * for a way back from OUTPUTS (mwb_enter()). */
+     * for a way back from OUTPUTS (mwb_enter()).  PROGRAM's session closes,
+     * a run in it ending. */
     msp_leave();
+    mpp_leave();
     mwb_cancel();
     ++s.ctrl_rev;
     ++s.arm_rev;
@@ -1537,18 +1661,22 @@ static void leave(void)
 static void enter(void)
 {
     mwb_enter();
+    mpp_enter();
     motor_invalidate();
     ++s.ctrl_rev;
 }
 
 /*
  * The home tag: over SETTINGS' keypad it closes the keypad, as its CANCEL
- * does, and the page stays.  The tasks are siblings, not levels: on either
- * the tag leaves the screen, which switches the bench to SAFE (leave()).
+ * does, and the page stays.  In PROGRAM's session it climbs one level: what
+ * covers the page closes, a run ends, the profile's page goes back to the
+ * list, the models to the makers, the makers out of the session to
+ * PROGRAM's list.  The tasks are siblings, not levels: otherwise the tag
+ * leaves the screen, which switches the bench to SAFE (leave()).
  */
 static bool back(void)
 {
-    if (!msp_back()) {
+    if (!msp_back() && !mpp_back()) {
         return false;
     }
     motor_invalidate();
@@ -1602,6 +1730,7 @@ static void cancel(void)
      * same reason. */
     mwb_cancel();
     msp_cancel();
+    mpp_cancel();
     s.pressed    = 0;
     s.have_press = false;
     ++s.ctrl_rev;

@@ -520,6 +520,11 @@ void supply_screen_push(const supply_state_t *st)
     ui_plot_update_scales(&s.plot, PLOT_W);
 }
 
+const supply_state_t *supply_screen_reading(void)
+{
+    return &s.sup;
+}
+
 /* The press is over, whatever it was on. */
 static void let_go(void)
 {

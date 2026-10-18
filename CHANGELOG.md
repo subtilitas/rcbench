@@ -260,8 +260,24 @@ history is in git.
   more than 8 rows shown get group headings, and a list taller than the
   page pages with `^` and `v`. Back on SERVO with the port held, the
   programmer is open on PROGRAM.
-- MOTOR & ESC is a workbench. The strip holds LIVE and SETTINGS (German
-  `LIVE`, `OPTIONEN`), 112 px a tab; the tile opens LIVE, and LIVE keeps
+- Programming is on the workbenches: ESCs on MOTOR & ESC > PROGRAM, servos
+  on SERVO > PROGRAM. The PROGRAMMER tile and its screen are gone. The menu
+  is a grid of 4 x 2 tiles of 190 x 204 px by kind: MOTOR & ESC, SERVO,
+  SUPPLY and LOGS in the first row, ANALYSER, BATTERY, BALANCE and SETUP in
+  the second. A fourth workbench or instrument fails the build at 4
+  columns.
+- MOTOR & ESC > PROGRAM lists the ESC programmers from the table SERVO's
+  list comes from. Its one row, `ESCs by throttle stick` (German `ESCs per
+  Gasknüppel`) in the group STICK MENU (German `STICK-MENÜ`), opens ESC
+  STICK full width: over the left column, the rail and the tabs, one level
+  down. In place of the tabs the strip row holds the output strip, `TARGET
+  DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE` (German `ZIEL`,
+  `NETZTEIL`), at most 97 characters. Opening ESC STICK on a bench that
+  is not SAFE switches it to SAFE. The home tag climbs ESC STICK one
+  level at a time, then closes it to the list; leaving MOTOR & ESC ends a
+  run, switches the bench to SAFE and closes the session.
+- MOTOR & ESC is a workbench. The strip holds LIVE, PROGRAM and SETTINGS
+  (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), 112 px a tab; the tile opens LIVE, and LIVE keeps
   PLOT or TABLE across a switch. LIVE holds the plot or the table and the
   throttle; PLOT, TABLE, the poll rate and the link's errors sit on a line
   under the strip. SETTINGS holds the 8 ESC / BENCH settings under PACK,
@@ -288,6 +304,14 @@ history is in git.
 - The limit run's report and box name the output with its protocol,
   `SERVO PWM GP2`. The automatic test's report heads its limit section
   `AGAINST THE PASS/FAIL LIMITS`.
+
+### Removed
+
+- The modelled ESC and SERVO classes of the PROGRAMMER screen, with their
+  CONNECT, READ and WRITE on the panel's own copy of a device. Their
+  parameter tables for BLHeli_S, AM32, ESCape32, VESC and Hitec D-series
+  stay as data (`shared/ui/prog_models.c`); no PROGRAM list has a row for
+  them.
 
 ### Fixed
 

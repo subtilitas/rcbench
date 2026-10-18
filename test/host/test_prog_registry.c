@@ -10,6 +10,7 @@
 
 #include "greatest.h"
 
+#include "esc_stick_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "prog_registry.h"
@@ -101,15 +102,17 @@ static prog_reg_row_t row_of(ui_text_id_t name, ui_text_id_t group,
 {
     return (prog_reg_row_t){ PROG_DEV_SERVO, UI_WB_PROGRAM, name, group,
                              TX_SV_TARGET_PORT, port, LINK_CAP_SERVO_PWM,
-                             set };
+                             set, false };
 }
 
 /* ------------------------------------------------------ the table */
 
 /* The table as it ships: sound in every language, every row's name and
- * page set present, and SERVO's PROGRAM list one live row, the KST and
- * Chaservo programmer on programming port 0.  The modelled protocols
- * without a transport (the PROGRAMMER screen's Hitec class) are no row. */
+ * page set present.  SERVO's PROGRAM list is one live row, the KST and
+ * Chaservo programmer on programming port 0, over the left column.  MOTOR
+ * & ESC's is one row too, ESC STICK under STICK MENU, full width, holding
+ * no port and needing no capability.  The modelled protocols without a
+ * transport (prog_models.h) are no row. */
 TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
 {
     size_t n = 0;
@@ -145,11 +148,29 @@ TEST_CASE(the_shipped_table_is_sound_and_lists_the_kst_programmer)
     CHECK_EQ(kst->port, 0u);
     CHECK_EQ(kst->needs_capability, (uint16_t)LINK_CAP_SERVO_PWM);
     CHECK(kst->page_set == &kst_panel_pages);
+    CHECK(!kst->full_width);
     for (size_t i = 0; i < n; ++i) {
         CHECK(strstr(ui_tr(rows[i].name), "Hitec") == NULL);
     }
-    /* No list elsewhere yet: MOTOR & ESC keeps its programmer tile. */
+    /* MOTOR & ESC's list: ESC STICK alone. */
     prog_list_build(&l, rows, n, PROG_DEV_MOTOR, UI_WB_PROGRAM, NULL);
+    CHECK_EQ(l.total, 1u);
+    CHECK_EQ(l.count, 1u);
+    CHECK(!l.search);
+    CHECK(!l.headings);
+    const prog_reg_row_t *stick = &rows[l.e[0].row];
+    CHECK_EQ(stick->name, TX_PL_STICK);
+    CHECK_STR_EQ(ui_tr(stick->name), "ESCs by throttle stick");
+    CHECK_EQ(stick->group, TX_PL_GRP_STICK);
+    CHECK_STR_EQ(ui_tr(stick->group), "STICK MENU");
+    CHECK_EQ(stick->transport, TX_MO_SET_THROTTLE);
+    CHECK_EQ(stick->port, PROG_REG_NO_PORT);
+    CHECK_EQ(stick->needs_capability, 0u);
+    CHECK(stick->page_set == &esc_stick_pages);
+    CHECK(stick->full_width);
+    CHECK_EQ(prog_reg_state(rows, n, l.e[0].row, 0u), PROG_ROW_LIVE);
+    /* No TEST list yet. */
+    prog_list_build(&l, rows, n, PROG_DEV_MOTOR, UI_WB_TEST, NULL);
     CHECK_EQ(l.total, 0u);
     prog_list_build(&l, rows, n, PROG_DEV_SERVO, UI_WB_TEST, NULL);
     CHECK_EQ(l.total, 0u);
@@ -177,6 +198,7 @@ TEST_CASE(the_check_names_each_fault_and_its_row)
         { 4, PROG_REG_NO_TRANSPORT }, { 5, PROG_REG_BAD_PORT },
         { 6, PROG_REG_NO_PAGE_SET }, { 7, PROG_REG_NO_PAGE_SET },
         { 8, PROG_REG_SAME_NAME },  { 9, PROG_REG_BAD_TASK },
+        { 10, PROG_REG_BAD_WIDTH }, { 11, PROG_REG_BAD_WIDTH },
     };
     for (size_t c = 0; c < sizeof(k) / sizeof(k[0]); ++c) {
         r[0] = row_of(TX_PL_KST, TX_PL_GRP_PROG_PORT, 0u, &k_set_a);
@@ -191,7 +213,9 @@ TEST_CASE(the_check_names_each_fault_and_its_row)
         case 6: r[1].page_set = NULL; break;
         case 7: r[1].page_set = &k_set_holed; break;
         case 8: r[1].name = TX_PL_KST; break;
-        default: r[1].task = UI_WB_SETTINGS; break;
+        case 9: r[1].task = UI_WB_SETTINGS; break;
+        case 10: r[1].full_width = true; break;      /* SERVO full width */
+        default: r[1].device = PROG_DEV_MOTOR; break; /* MOTOR not so */
         }
         at = 99u;
         CHECK_EQ(prog_reg_check(r, 2, &at), k[c].f);
@@ -225,6 +249,48 @@ TEST_CASE(a_list_over_its_maximum_fails_the_check)
                     NULL);
     CHECK_EQ(l.total, (uint8_t)PROG_LIST_MAX);
     CHECK_EQ(l.rows, (uint8_t)PROG_LIST_MAX);
+}
+
+/*
+ * A device's sessions: each page set its rows open, once, in the table's
+ * order, and none of the other device's; a row that opens a set full
+ * width makes the set full width.  The shipped table: SERVO opens the KST
+ * session, MOTOR & ESC ESC STICK, full width.
+ */
+TEST_CASE(a_devices_sessions_are_each_listed_once)
+{
+    ui_text_set_language(UI_LANG_EN);
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    CHECK_EQ(prog_reg_sets(PROG_DEV_SERVO, set), 1);
+    CHECK(set[0] == &kst_panel_pages);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 1);
+    CHECK(set[0] == &esc_stick_pages);
+    CHECK(prog_reg_full_width(&esc_stick_pages));
+    CHECK(!prog_reg_full_width(&kst_panel_pages));
+    CHECK(!prog_reg_full_width(NULL));
+    CHECK_EQ(prog_reg_sets(PROG_DEVICES, set), 0);
+
+    /* Three rows: two SERVO rows on set A, one MOTOR row on set B, full
+     * width; the check is content. */
+    prog_reg_row_t r[3];
+    r[0] = row_of(TX_PL_KST, TX_PL_GRP_PROG_PORT, 0u, &k_set_a);
+    r[1] = row_of(TX_WB_LIVE, TX_PL_GRP_PROG_PORT, 0u, &k_set_a);
+    r[2] = row_of(TX_PL_STICK, TX_PL_GRP_STICK, PROG_REG_NO_PORT, &k_set_b);
+    r[2].device = PROG_DEV_MOTOR;
+    r[2].full_width = true;
+    CHECK_EQ(prog_reg_check(r, 3, NULL), PROG_REG_OK);
+    prog_registry_use(r, 3);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_SERVO, set), 1);
+    CHECK(set[0] == &k_set_a);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_MOTOR, set), 1);
+    CHECK(set[0] == &k_set_b);
+    CHECK(prog_reg_full_width(&k_set_b));
+    CHECK(!prog_reg_full_width(&k_set_a));
+    /* An empty table: no session. */
+    prog_registry_use(r, 0);
+    CHECK_EQ(prog_reg_sets(PROG_DEV_SERVO, set), 0);
+    CHECK(!prog_reg_full_width(&k_set_b));
+    prog_registry_use(NULL, 0);
 }
 
 /* ------------------------------------------------- a row's state */
@@ -677,6 +743,7 @@ int main(void)
     RUN(the_shipped_table_is_sound_and_lists_the_kst_programmer);
     RUN(the_check_names_each_fault_and_its_row);
     RUN(a_list_over_its_maximum_fails_the_check);
+    RUN(a_devices_sessions_are_each_listed_once);
     RUN(a_row_the_iomcu_lacks_is_dimmed_with_its_reason);
     RUN(two_rows_on_one_port_are_exclusive);
     RUN(search_comes_over_nine_rows_and_headings_over_eight);

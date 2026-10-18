@@ -45,13 +45,13 @@ Seven things the tree does that only an instrument can confirm:
 | OpenYGE | telemetry frames and parameter access | the frame timing and the reply latency of a real ESC |
 | KST wire | Manchester coding, half-cell 25.4 µs, 27-bit frame from the master, 11-bit reply from the servo, reply window 350 to 600 µs after a read | the half-cell of each edge, the start and length of the reply, and the reply of a servo other than the one the windows were set around |
 
-The programmer's four ESC protocols and one servo protocol are not on this
-list. The panel models them and has no transport for them, so nothing of
-them reaches a wire: the one-wire bootloader protocols of BLHeli_S firmware
-and AM32 firmware (19,200 baud), the text command line of ESCape32 firmware
-over the signal line, the framed packets of VESC firmware (115,200 baud) and
-the Hitec D-series servo protocol. The PROGRAMMER screen marks these classes
-SIMULATED.
+The four ESC protocols and one servo protocol of the modelled programming
+tables are not on this list. The panel holds them as data and has no
+transport for them, so nothing of them reaches a wire: the one-wire
+bootloader protocols of BLHeli_S firmware and AM32 firmware (19,200 baud),
+the text command line of ESCape32 firmware over the signal line, the framed
+packets of VESC firmware (115,200 baud) and the Hitec D-series servo
+protocol. No PROGRAM list offers them.
 
 ---
 

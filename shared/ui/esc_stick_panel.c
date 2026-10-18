@@ -1,14 +1,14 @@
 /*
- * ESC STICK, the programmer screen's third class: an ESC (electronic speed
- * controller) with no wire to talk on, programmed through its
+ * ESC STICK, the session MOTOR & ESC > PROGRAM opens: an ESC (electronic
+ * speed controller) with no wire to talk on, programmed through its
  * throttle-stick menu.  Its list is the ESC profiles (esc_profile.h), its
  * parameters are the profile's menu items, and its write is a run of the
  * stick programmer (esc_stick.h): the bench arms, holds the throttle at the
  * entry position, switches the supply on and counts the beeps in the
  * supply current.  A run starts only from a red warning held for two
  * seconds, as ARM and the servo's HV warning are, and every move it makes
- * goes out as the MOTOR screen's commands do, through the arming policy and
- * the output bank.
+ * goes out as the MOTOR & ESC screen's commands do, through the arming
+ * policy and the output bank.
  *
  * The profile list has two levels: the makers, alphabetical, and one
  * maker's models, by current, voltage and name, each opening its family's
@@ -24,14 +24,15 @@
  * first opening; the warning lists those due before the power-up, and a
  * run that waits for one covers the page with DONE and ABORT.
  *
- * The class draws on the screen's layout and takes its controls through
- * the screen's tap walk (programmer_screen_int.h).  The screen's
- * interface, this class's included, is programmer_screen.h.
+ * The pages draw on the session's layout, the body under MOTOR & ESC's
+ * output strip, and take their controls through the session's tap walk
+ * (esc_stick_int.h, esc_stick_pages.c).  The interface is
+ * esc_stick_panel.h.
  *
  * SPDX-License-Identifier: MIT
  */
 
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 
 #include <limits.h>
 #include <math.h>
@@ -41,7 +42,7 @@
 
 #include "esc_profile.h"
 #include "kst_panel.h"
-#include "programmer_screen_int.h"
+#include "esc_stick_int.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_text.h"
@@ -54,7 +55,7 @@
 /* The profile list: rows of SP_ROW_H from SP_ROW_Y0, SP_ROWS to a page. */
 #define SP_MAX     (128)
 #define SP_ROWS    9
-#define SP_ROW_Y0  52
+#define SP_ROW_Y0  (CRUMB_Y + 40)
 #define SP_ROW_H   36
 #define SP_QUEUE   8
 #define SP_NOTE    160
@@ -233,13 +234,12 @@ void esc_stick_panel_reset(void)
                                  STEP_W, 30 };
     s.st.list_dn = (gfx_rect_t){ (int16_t)(W - PAD - 12 - 38), CRUMB_Y,
                                  STEP_W, 30 };
-    s.st.hold_btn   = (gfx_rect_t){ PAD + 20, (int16_t)(H - PAD - 76),
-                                    260, 56 };
-    s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180),
-                                    (int16_t)(H - PAD - 76), 180, 56 };
+    s.st.hold_btn   = (gfx_rect_t){ PAD + 20, SP_PBTN_Y, 260, SP_PBTN_H };
+    s.st.cancel_btn = (gfx_rect_t){ (int16_t)(W - PAD - 20 - 180), SP_PBTN_Y,
+                                    180, SP_PBTN_H };
     /* Between HOLD TO RUN and CANCEL, on the warning. */
-    s.st.steps_btn  = (gfx_rect_t){ PAD + 20 + 260 + 24,
-                                    (int16_t)(H - PAD - 76), 266, 56 };
+    s.st.steps_btn  = (gfx_rect_t){ PAD + 20 + 260 + 24, SP_PBTN_Y, 266,
+                                    SP_PBTN_H };
     /* In the item list's header, between CHANGE and the count. */
     s.st.hand_btn   = (gfx_rect_t){ PAD + 108, (int16_t)(PARM_Y + 4), 300,
                                     24 };
@@ -267,14 +267,14 @@ static void sp_text(gfx_canvas_t *c, int x, int y, const char *text,
     gfx_text(c, x, y, buf, UI_FONT_LABEL, ink, 1);
 }
 
-int programmer_screen_wrap_lines(const char *text, int cells)
+int esc_stick_panel_wrap_lines(const char *text, int cells)
 {
     return sp_wrap_lines(text, cells, INT_MAX);
 }
 
 /* A manual step in the language showing: the profile's German where it
  * gives one and German shows, else its English. */
-const char *programmer_screen_step_text(const esc_manual_t *m)
+const char *esc_stick_panel_step_text(const esc_manual_t *m)
 {
     if (m == NULL) {
         return "";
@@ -288,7 +288,7 @@ const char *programmer_screen_step_text(const esc_manual_t *m)
 
 static const char *sp_action(const esc_manual_t *m)
 {
-    return programmer_screen_step_text(m);
+    return esc_stick_panel_step_text(m);
 }
 
 /* When a manual step is due, in the language showing. */
@@ -375,7 +375,7 @@ static const struct {
     { "menu start, rest elsewhere", TX_ESC_WHY_MENU_REST },
 };
 
-const char *programmer_screen_why_text(const char *why)
+const char *esc_stick_panel_why_text(const char *why)
 {
     if (why == NULL) {
         return TR(SP_REFUSED);
@@ -390,7 +390,7 @@ const char *programmer_screen_why_text(const char *why)
 
 static const char *sp_why_text(const char *why)
 {
-    return programmer_screen_why_text(why);
+    return esc_stick_panel_why_text(why);
 }
 
 /*
@@ -498,27 +498,6 @@ static const char *sp_model_why(const esc_profile_t *p, int model, char *buf,
         return buf;
     }
     return NULL;
-}
-
-static const char *sp_why(const esc_profile_t *p, char *buf, size_t n)
-{
-    return sp_model_why(p, -1, buf, n);
-}
-
-static bool sp_runs(const esc_profile_t *p)
-{
-    char buf[40];
-    return sp_why(p, buf, sizeof(buf)) == NULL;
-}
-
-int esc_stick_panel_runnable_count(void)
-{
-    int n = 0;
-    const size_t total = esc_profiles_count();
-    for (size_t i = 0; i < total; ++i) {
-        n += sp_runs(esc_profiles_at(i)) ? 1 : 0;
-    }
-    return n;
 }
 
 /* The two things outside the profile that decide whether it runs: VOLTAGE
@@ -683,18 +662,27 @@ static void sp_build_list(bool keep_scroll)
     t->scroll = (scroll < t->count) ? scroll : 0;
 }
 
-void esc_stick_panel_build_list(bool keep_scroll)
-{
-    sp_build_list(keep_scroll);
-}
-
 void esc_stick_panel_enter(void)
 {
     pg.tap.live = false;
-    if (pg.klass == CLASS_STICK && pg.stage != STAGE_CLASS) {
+    if (pg.stage != STAGE_CLOSED) {
         sp_build_list(true);
         ++pg.rev;
     }
+}
+
+void esc_stick_panel_open(void)
+{
+    stick_t *t = &s.st;
+    pg.tap.live = false;
+    pg.stage = STAGE_LIST;
+    t->level = 0;
+    t->maker = NULL;
+    t->shown = false;
+    t->timing = false;
+    t->bscroll = 0;
+    sp_build_list(false);
+    ++pg.rev;
 }
 
 static void sp_pick_shown(void);
@@ -987,7 +975,8 @@ static bool sp_warn_gated(void)
 /*
  * Whether the warning shows every before-power step whole: under its
  * lines (sp_draw_warning(): five, the profile, the supply and the
- * unverified line from PAD + 68 at 22 px, then the steps' label), each
+ * unverified line from the panel's top + 68 at 22 px, then the steps'
+ * label), each
  * step wrapped to two lines, and room kept for the line about later steps,
  * above HOLD TO RUN.
  */
@@ -1002,7 +991,7 @@ static bool sp_warn_steps_fit(const esc_profile_t *p)
     const int last = s.st.hold_btn.y - 20;
     const unsigned later = sp_later_steps(p);
     const int keep = (later > 0u) ? 22 : 0;
-    int y = PAD + 68 + 5 * 22 + 66 + 22;
+    int y = SP_PANEL_Y + 68 + 5 * 22 + 66 + 22;
     for (unsigned i = 0; i < p->manual_count; ++i) {
         const esc_manual_t *m = &p->manual[i];
         if (m->when == ESC_MANUAL_BEFORE_POWER) {
@@ -1076,7 +1065,7 @@ static void sp_follow(void)
         if (o->supply_on) {
             supply_screen_put((float)o->supply_mv / 1000.0f,
                               (float)o->supply_ma / 1000.0f);
-            supply_screen_ask_on(SUPPLY_BY_PROGRAMMER);
+            supply_screen_ask_on(SUPPLY_BY_STICK);
         } else {
             supply_screen_ask_off();
         }
@@ -1161,8 +1150,7 @@ static uint32_t sp_signature(void)
 void esc_stick_panel_tick(float dt_s)
 {
     stick_t *t = &s.st;
-    if (pg.klass == CLASS_STICK && pg.stage == STAGE_PROTOCOL
-        && sp_list_key() != t->built_key) {
+    if (pg.stage == STAGE_LIST && sp_list_key() != t->built_key) {
         sp_build_list(true);
         ++pg.rev;
     }
@@ -1230,8 +1218,7 @@ void esc_stick_panel_tick(float dt_s)
         }
         return;
     }
-    if (pg.klass == CLASS_STICK && pg.stage == STAGE_DEVICE && t->p != NULL
-        && !t->shown) {
+    if (pg.stage == STAGE_PAGE && t->p != NULL && !t->shown) {
         /* RUN follows the supply and the caps, which change elsewhere. */
         char was[SP_NOTE];
         memcpy(was, t->note, sizeof(was));
@@ -1253,7 +1240,7 @@ void esc_stick_panel_leave(void)
     }
     /* The run's abort asks the supply off; and whatever a run switched on
      * goes off with the screen in any case. */
-    supply_screen_left(SUPPLY_BY_PROGRAMMER);
+    supply_screen_left(SUPPLY_BY_STICK);
     /* A warning not held is a run not started.  The search keeps what was
      * typed. */
     t->warn = false;
@@ -1415,6 +1402,13 @@ static void sp_find_event(const touch_event_t *evt)
     }
 }
 
+bool esc_stick_panel_holds_press(uint8_t id)
+{
+    const stick_t *t = &s.st;
+    return (t->warn_down && t->warn_id == id)
+           || (t->tk.open && t->tk.pressed >= 0 && t->tk.press_id == id);
+}
+
 void esc_stick_panel_follow(const touch_event_t *evt)
 {
     if (s.st.tk.open) {
@@ -1441,8 +1435,8 @@ uint32_t esc_stick_panel_showing(uint32_t h)
 }
 
 /* BACK on the list climbs a level: a maker's models to the makers, with
- * the makers' scroll and the search kept; the makers to the classes.  The
- * keyboard closes, the search as typed. */
+ * the makers' scroll and the search kept; the makers close the session,
+ * back to PROGRAM's list.  The keyboard closes, the search as typed. */
 static void sp_list_up(void)
 {
     stick_t *t = &s.st;
@@ -1452,7 +1446,7 @@ static void sp_list_up(void)
         t->scroll = t->bscroll;
         sp_build_list(true);
     } else {
-        pg.stage = STAGE_CLASS;
+        pg.stage = STAGE_CLOSED;
     }
     ++pg.rev;
 }
@@ -1461,7 +1455,7 @@ static void sp_list_up(void)
 static void sp_to_list(void)
 {
     s.st.shown = false;
-    pg.stage = STAGE_PROTOCOL;
+    pg.stage = STAGE_LIST;
     sp_build_list(true);
     ++pg.rev;
 }
@@ -1480,9 +1474,9 @@ static void sp_timing_close(void)
  * The home tag, one step at a time.  What covers the page closes first:
  * the manual steps' pop-up as OK closes it, the RUN warning as CANCEL.  A
  * run under way ends as ABORT ends it, and the page stays.  Otherwise the
- * class climbs a level as BACK does: TIMING to the profile's page, the
- * page to the list, a maker's models to the makers, the makers to the
- * classes.
+ * session climbs a level as BACK does: TIMING to the profile's page, the
+ * page to the list, a maker's models to the makers, the makers out of the
+ * session to PROGRAM's list.
  */
 bool esc_stick_panel_back(void)
 {
@@ -1499,7 +1493,7 @@ bool esc_stick_panel_back(void)
         ++pg.rev;
         return true;
     }
-    if (pg.stage == STAGE_PROTOCOL) {
+    if (pg.stage == STAGE_LIST) {
         sp_list_up();
         return true;
     }
@@ -1554,7 +1548,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
         return true;
     }
 
-    if (pg.stage == STAGE_PROTOCOL) {
+    if (pg.stage == STAGE_LIST) {
         if (t->tk.open && hit_down(t->tk.area, px, py)) {
             sp_find_event(evt);
             return true;
@@ -1619,7 +1613,7 @@ bool esc_stick_panel_down(const touch_event_t *evt)
                 t->model = model;
                 t->hand_model = model;
                 sp_pick_shown();
-                pg.stage = STAGE_DEVICE;
+                pg.stage = STAGE_PAGE;
                 ++pg.rev;
             } else if (p->manual_count > 0u) {
                 /* The steps, and why this model -- not the family -- does
@@ -2999,15 +2993,16 @@ static void sp_draw_device(gfx_canvas_t *c)
 
 /*
  * The warning a run needs before it starts: in the danger colour, over the
- * whole screen, saying what the run does to the ESC and what may happen to
- * a motor on it.
+ * session's pages, saying what the run does to the ESC and what may happen
+ * to a motor on it.
  */
-/* A panel over the whole screen, edged and titled in the danger colour:
- * the warning's, the manual steps' and the prompt's.  Its area. */
+/* A panel over the session's pages, edged and titled in the danger colour:
+ * the warning's, the manual steps' and the prompt's.  The output strip
+ * above it stays in sight.  Its area. */
 static gfx_rect_t sp_panel(gfx_canvas_t *c, const char *title)
 {
-    const gfx_rect_t a = { PAD, PAD, (int16_t)(W - 2 * PAD),
-                           (int16_t)(H - 2 * PAD) };
+    const gfx_rect_t a = { PAD, SP_PANEL_Y, (int16_t)(W - 2 * PAD),
+                           SP_PANEL_H };
     const gfx_color_t red = ui_theme_color(UI_C_DANGER);
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_fill_rect(c, a.x, a.y, a.w, 52, red);
@@ -3256,7 +3251,7 @@ void esc_stick_panel_render(gfx_canvas_t *c)
         sp_draw_hand(c);
         return;
     }
-    if (pg.stage == STAGE_DEVICE && s.st.p != NULL
+    if (pg.stage == STAGE_PAGE && s.st.p != NULL
         && esc_stick_hand(&s.st.run) != NULL) {
         sp_draw_prompt(c);
         return;
@@ -3265,7 +3260,7 @@ void esc_stick_panel_render(gfx_canvas_t *c)
         sp_draw_warning(c);
         return;
     }
-    if (pg.stage == STAGE_PROTOCOL || s.st.p == NULL) {
+    if (pg.stage == STAGE_LIST || s.st.p == NULL) {
         sp_draw_list(c);
         return;
     }
@@ -3274,7 +3269,7 @@ void esc_stick_panel_render(gfx_canvas_t *c)
 
 /* ------------------------------------------- the application's side ----- */
 
-void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
+void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
                              uint32_t pressed, bool link_up)
 {
     stick_t *t = &s.st;
@@ -3294,20 +3289,20 @@ void programmer_screen_bench(uint32_t now_ms, bool armed, uint32_t stops,
     t->link_up = link_up;
 }
 
-void programmer_screen_set_throttle(bool read, uint8_t channels)
+void esc_stick_panel_set_throttle(bool read, uint8_t channels)
 {
     s.st.bind_read = read;
     s.st.throttle_mask = read ? channels : 0u;
 }
 
-void programmer_screen_tone(const tone_readout_t *r)
+void esc_stick_panel_tone(const tone_readout_t *r)
 {
     if (r != NULL) {
         s.tone = *r;
     }
 }
 
-void programmer_screen_supply(const supply_state_t *st)
+void esc_stick_panel_supply(const supply_state_t *st)
 {
     stick_t *t = &s.st;
     if (st == NULL) {
@@ -3349,7 +3344,7 @@ void programmer_screen_supply(const supply_state_t *st)
     sp_follow();        /* a reading can end the run */
 }
 
-bool programmer_screen_poll_cmd(motor_cmd_t *out)
+bool esc_stick_panel_poll_cmd(motor_cmd_t *out)
 {
     stick_t *t = &s.st;
     if (t->qn == 0 || out == NULL) {
@@ -3361,20 +3356,20 @@ bool programmer_screen_poll_cmd(motor_cmd_t *out)
     return true;
 }
 
-const esc_profile_t *programmer_screen_stick_profile(void)
+const esc_profile_t *esc_stick_panel_profile(void)
 {
     return esc_stick_running(&s.st.run) ? s.st.run.p : NULL;
 }
 
-uint32_t programmer_screen_stick_runs(void) { return s.st.runs; }
+uint32_t esc_stick_panel_runs(void) { return s.st.runs; }
 
-const esc_stick_t *programmer_screen_stick(void) { return &s.st.run; }
+const esc_stick_t *esc_stick_panel_stick(void) { return &s.st.run; }
 
-const char *programmer_screen_stick_search(void) { return s.st.find; }
+const char *esc_stick_panel_search(void) { return s.st.find; }
 
-bool programmer_screen_stick_typing(void) { return s.st.tk.open; }
+bool esc_stick_panel_typing(void) { return s.st.tk.open; }
 
-int programmer_screen_stick_listed(int *top)
+int esc_stick_panel_listed(int *top)
 {
     if (top != NULL) {
         *top = s.st.scroll;
@@ -3382,20 +3377,20 @@ int programmer_screen_stick_listed(int *top)
     return s.st.count;
 }
 
-int programmer_screen_stick_level(void) { return s.st.level; }
+int esc_stick_panel_level(void) { return s.st.level; }
 
-const char *programmer_screen_stick_maker(void)
+const char *esc_stick_panel_maker(void)
 {
     return (s.st.level == 1 && s.st.maker != NULL) ? s.st.maker : "";
 }
 
-int programmer_screen_stick_model(void)
+int esc_stick_panel_model(void)
 {
-    return (pg.klass == CLASS_STICK && pg.stage == STAGE_DEVICE) ? s.st.model
+    return (pg.stage == STAGE_PAGE) ? s.st.model
                                                                : -1;
 }
 
-const esc_profile_t *programmer_screen_stick_row(int i, int *model)
+const esc_profile_t *esc_stick_panel_row(int i, int *model)
 {
     const stick_t *t = &s.st;
     if (t->level != 1 || i < 0 || i >= t->count) {
@@ -3407,36 +3402,36 @@ const esc_profile_t *programmer_screen_stick_row(int i, int *model)
     return esc_profiles_at(t->rows_m[i].prof);
 }
 
-const char *programmer_screen_stick_row_why(int i)
+const char *esc_stick_panel_row_why(int i)
 {
     static char why[64];
     int model = -1;
-    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
+    const esc_profile_t *p = esc_stick_panel_row(i, &model);
     return (p != NULL) ? sp_model_why(p, model, why, sizeof(why)) : NULL;
 }
 
-int programmer_screen_stick_item_at(int i)
+int esc_stick_panel_item_at(int i)
 {
     return sp_item_at(i);
 }
 
-const char *programmer_screen_stick_row_warn(int i)
+const char *esc_stick_panel_row_warn(int i)
 {
     static char warn[64];
     int model = -1;
-    const esc_profile_t *p = programmer_screen_stick_row(i, &model);
-    return (p != NULL && programmer_screen_stick_row_why(i) == NULL)
+    const esc_profile_t *p = esc_stick_panel_row(i, &model);
+    return (p != NULL && esc_stick_panel_row_why(i) == NULL)
                ? sp_model_warn(p, model, warn, sizeof(warn)) : NULL;
 }
 
-const char *programmer_screen_stick_result_head(void)
+const char *esc_stick_panel_result_head(void)
 {
     static char line[128];
     sp_result_head(&s.st.run, line, sizeof(line));
     return line;
 }
 
-const char *programmer_screen_stick_result_more(void)
+const char *esc_stick_panel_result_more(void)
 {
     static char line[128];
     const unsigned shown = (s.st.run.n > 5u) ? 4u : s.st.run.n;
@@ -3447,34 +3442,34 @@ const char *programmer_screen_stick_result_more(void)
     return line;
 }
 
-const char *programmer_screen_stick_left_text(void)
+const char *esc_stick_panel_left_text(void)
 {
     return sp_left_text(&s.st.run);
 }
 
-const char *programmer_screen_stick_note(void)
+const char *esc_stick_panel_note(void)
 {
     return s.st.note;
 }
 
-const char *programmer_screen_stick_maker_at(int i)
+const char *esc_stick_panel_maker_at(int i)
 {
     const stick_t *t = &s.st;
     return (t->level == 0 && i >= 0 && i < t->count) ? t->makers[i].name
                                                      : NULL;
 }
 
-uint32_t programmer_screen_stick_entry_shown(void)
+uint32_t esc_stick_panel_entry_shown(void)
 {
     return (s.st.p != NULL) ? sp_entry_shown() : 0u;
 }
 
-bool programmer_screen_stick_supply_reads_off(void)
+bool esc_stick_panel_supply_reads_off(void)
 {
     return sp_supply_reads_off();
 }
 
-const char *programmer_screen_stick_hand_why(void)
+const char *esc_stick_panel_hand_why(void)
 {
     const stick_t *t = &s.st;
     static char why[64];
@@ -3484,18 +3479,18 @@ const char *programmer_screen_stick_hand_why(void)
     return sp_model_why(t->hand_p, t->hand_model, why, sizeof(why));
 }
 
-const esc_profile_t *programmer_screen_stick_page(void)
+const esc_profile_t *esc_stick_panel_page(void)
 {
-    return (pg.klass == CLASS_STICK && pg.stage == STAGE_DEVICE) ? s.st.p
+    return (pg.stage == STAGE_PAGE) ? s.st.p
                                                                : NULL;
 }
 
-bool programmer_screen_stick_hand_shown(void)
+bool esc_stick_panel_hand_shown(void)
 {
     return s.st.hand_open && s.st.hand_p != NULL;
 }
 
-void programmer_screen_stick_lights(bool *red, bool *green)
+void esc_stick_panel_lights(bool *red, bool *green)
 {
     if (red != NULL) {
         *red = sp_red();

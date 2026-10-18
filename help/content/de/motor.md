@@ -10,21 +10,39 @@ MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen L
 
 ## Die Leiste
 
-Die Leiste oben hält zwei Aufgaben, LIVE und OPTIONEN. Ein Tipp wechselt die Aufgabe. LIVE behält beim Wechsel seine Ansicht, GRAFIK oder TABELLE.
+Die Leiste oben hält drei Aufgaben, LIVE, PROGRAMMIEREN und OPTIONEN. Ein Tipp wechselt die Aufgabe. LIVE behält beim Wechsel seine Ansicht, GRAFIK oder TABELLE.
 
 | Aufgabe | Die linke Spalte |
 |---|---|
 | LIVE | die Grafik oder die Tabelle, und der Throttle |
+| PROGRAMMIEREN | die Liste der ESC-Programmierer ([Programmieren](#programmieren)) |
 | OPTIONEN | [Motor-Optionen](motor-settings.md): der Akku, der Motor und der Gasausgang |
 
-Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit ZIEL, ARM, den Summen und SPITZENWERTE ZURÜCKSETZEN. ARM wirkt auf beiden Aufgaben.
+Die rechte Spalte ist auf den drei Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit ZIEL, ARM, den Summen und SPITZENWERTE ZURÜCKSETZEN. ARM wirkt auf jeder. Eine Sitzung aus PROGRAMMIEREN deckt sie ab.
 
 Das Home-Tag oben links steigt eine Ebene nach der anderen:
 
 | Von | Das Home-Tag führt zu |
 |---|---|
 | dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
-| LIVE oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
+| einer Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung, dann zur Liste von PROGRAMMIEREN |
+| LIVE, der Liste von PROGRAMMIEREN oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
+
+## Programmieren
+
+![Die Liste von PROGRAMMIEREN](view:motor-program)
+
+PROGRAMMIEREN listet die ESC-Programmierer. Seine eine Zeile, `ESCs per Gasknüppel` in der Gruppe STICK-MENÜ, treibt die als Throttle gebundenen Pins und öffnet [ESC STICK](motor-stick.md). Die modellierten Tabellen für BLHeli_S-, AM32-, ESCape32- und VESC-Firmware haben keinen Transport und keine Zeile.
+
+ESC STICK öffnet über die volle Breite, über der linken und der rechten Spalte. Anstelle der Reiter zeigt die Zeile der Leiste den Ausgangsstreifen, eine Zeile:
+
+`ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE`
+
+- ZIEL: das Protokoll und die Pins, die der Lauf treibt, in der Warnfarbe, solange kein Pin gebunden oder die Bindung nicht gelesen ist.
+- NETZTEIL: der Ausgang des PD mini, wie er liest, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, solange das Netzteil nicht antwortet.
+- SAFE oder ARMED: der Prüfstand.
+
+Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet ihn auf SAFE. Das Verlassen von MOTOR & ESC beendet einen Lauf, schaltet den Prüfstand auf SAFE und schließt ESC STICK.
 
 ## Vor dem ersten Lauf
 
@@ -117,6 +135,7 @@ Jedes Schalten auf ARMED schreibt eine Datei, `ESCnnn.CSV`, auf die SD-Karte (Se
 ## Verwandte Seiten
 
 - [Motor-Optionen](motor-settings.md): der Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollpuls.
+- [ESC STICK](motor-stick.md): einen ESC über sein Gasknüppel-Menü programmieren.
 - [Ausgänge](outputs.md): welche Pins der Throttle treibt.
 - [Setup](setup.md): der Drehknopf.
 - [Anschlüsse](setup-interfaces.md): der INA228.

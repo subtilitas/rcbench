@@ -18,7 +18,7 @@ The arm chip names what the switch to ARMED drives:
 | Chip | Outputs that drive |
 | --- | --- |
 | SAFE | none |
-| ARMED MOTOR | the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER; no surface and no programming port |
+| ARMED MOTOR | the throttle outputs, from MOTOR & ESC's ARM or a stick run on its PROGRAM; no surface and no programming port |
 | ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
 | ARMED | every bound output, on an IOmcu older than protocol 4.18 |
 
@@ -139,6 +139,13 @@ bottom of the screen, ARM included, while it shows.
 
 ![The feature menu](img/overview.png)
 
+The menu is a grid of 4 columns by 2 rows, each tile 190 x 204 px with 8 px
+margins. The first row holds the workbenches, MOTOR & ESC, SERVO and
+SUPPLY; the second the instruments, ANALYSER, BATTERY and BALANCE; the last
+column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
+build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
+it is the PROGRAM task of MOTOR & ESC and of SERVO.
+
 A tile marked SIMULATED opens a screen whose source the bench does not
 report: the IOmcu reports no capability for it, or its sensor is not
 enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
@@ -152,7 +159,7 @@ enabled. Each screen names the source of its readings itself.
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
-| ANALYSER, BATTERY, BALANCE, PROGRAMMER | never in this release: no IOmcu reports these capabilities |
+| ANALYSER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | always: they hold no measurement |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
@@ -183,21 +190,24 @@ of 1.6 s; a tap skips the hold.
 
 ![Motor and ESC](img/motor.png)
 
-MOTOR & ESC is a workbench: a strip of tasks at the top, LIVE and SETTINGS,
-each 112 x 24 px, and a page under it. The menu's tile always opens LIVE. A
-tap on a tab switches the task; a switch is no navigation level and leaves
-LIVE's view, PLOT or TABLE, as it was.
+MOTOR & ESC is a workbench: a strip of tasks at the top, LIVE, PROGRAM and
+SETTINGS (German `LIVE`, `PROGRAMMIEREN`, `OPTIONEN`), each 112 x 24 px, and
+a page under it. The menu's tile always opens LIVE. A tap on a tab switches
+the task; a switch is no navigation level and leaves LIVE's view, PLOT or
+TABLE, as it was.
 
 | Task | The left column, 546 px |
 | --- | --- |
 | LIVE | the plot or the table over the throttle |
+| PROGRAM | the list of ESC programmers; a row opens its session over the whole body ([PROGRAM](#program)) |
 | SETTINGS | the 8 ESC settings under PACK, MOTOR and THROTTLE OUTPUT ([Settings](#motor--esc-settings)) |
 
 Two columns. The page takes the left, the four readouts and the CONTROL card
 take a rail of 236 px on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen. The rail is the same
-on both tasks, and ARM works on both. With the rotary knob on, turning it
-moves the throttle on LIVE ([the knob](#application-the-rotary-knob)); on
+on LIVE, PROGRAM's list and SETTINGS, and ARM works on all three; a session
+opened from PROGRAM covers it. With the rotary knob on, turning it moves the
+throttle on LIVE ([the knob](#application-the-rotary-knob)); on PROGRAM and
 SETTINGS a turn moves nothing.
 
 The home tag climbs one level at a time:
@@ -205,7 +215,8 @@ The home tag climbs one level at a time:
 | From | The home tag leads to |
 | --- | --- |
 | the keypad on SETTINGS | SETTINGS; the value is not changed |
-| LIVE or SETTINGS | the menu; the bench switches to SAFE |
+| a session on PROGRAM | one level up in the session; from its top, PROGRAM's list ([PROGRAM](#program)) |
+| LIVE, PROGRAM's list or SETTINGS | the menu; the bench switches to SAFE |
 
 ### TARGET names the protocol and the pins
 
@@ -302,7 +313,7 @@ STOP, a lost link, a touch controller that stops answering, or leaving the
 screen. The slider, the readout and the `-1` and `+1` steps then stay at
 0.0 % until the next switch to ARMED, so the first `+1` after a switch to ARMED asks for 1.0 % and
 the first 1 % turn of the knob asks for 1.0 %. A bench switched to ARMED without the ARM
-hold, by a stick run on PROGRAMMER, starts from 0 % as well. A throttle the
+hold, by a stick run on PROGRAM, starts from 0 % as well. A throttle the
 screen has posted and the panel has not sent when the bench switches to SAFE is not
 sent. A finger on the track when the bench switches to ARMED or to SAFE moves nothing
 until it lifts and presses again.
@@ -507,6 +518,181 @@ own. The line under the rows names the store's state:
 | `SAVE PENDING` | a write is asked and waits for a quiet bench |
 | `NOT SAVED` | the last write was refused |
 | `SETUP CHANGES NOT SAVED` | values are unsaved and no write is asked; the next change here writes them |
+
+### PROGRAM
+
+![PROGRAM's list](img/motor-program.png)
+
+PROGRAM in the strip shows the list of ESC programmers in the page area, from
+the table SERVO's list comes from (`shared/ui/prog_registry.c`,
+[Programmer](#programmer) on SERVO). The list has one row, `ESCs by throttle
+stick` (German `ESCs per Gasknüppel`), in the group STICK MENU (German
+`STICK-MENÜ`); a list draws its group headings only above 8 rows. The row's
+right side reads `THROTTLE OUTPUT >`: it drives the pins bound as throttle,
+not a programming port, and needs no IOmcu capability. The output card stays
+on the right while the list shows.
+
+A tap on the row opens ESC STICK, one level down. ESC STICK is a full-width
+session: it covers the left column, the rail and the strip's tabs, and no
+press reaches ARM or a tab while it is open. Opening it on a bench that is
+not SAFE switches the bench to SAFE, a DISARM held by another finger
+included. The strip row holds the output
+strip in their place, one line of 16 px from x 12:
+
+![ESC STICK under the output strip](img/motor-stick.png)
+
+```
+TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE
+```
+
+| Part | Shows |
+| --- | --- |
+| `TARGET` (German `ZIEL`) | the protocol and the pins bound as throttle, as the CONTROL card's TARGET row names them, in at most 26 characters; in the warning colour while no pin is bound or the binding is not read |
+| `SUPPLY` (German `NETZTEIL`) | the PD mini's output as it reads: `SUPPLY 7.60 V  1.00 A`; `SUPPLY ON` while it is on without a voltage and a current reading; `SUPPLY OFF`; `SUPPLY --` while the supply does not answer |
+| `SAFE` or `ARMED` | the bench; ARMED in the danger colour |
+
+The strip is at most 97 characters, 776 px, in English and in German. It is
+repainted when its text changes.
+
+From ESC STICK's makers the home tag closes the session to PROGRAM's list;
+from the list it leaves for the menu. Leaving MOTOR & ESC from any level ends
+a stick run, switches off the supply output the run switched on, switches the
+bench to SAFE and closes ESC STICK. Back on MOTOR & ESC, PROGRAM shows its
+list.
+
+The parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware
+and for Hitec D-series servos are a model in the firmware
+(`shared/ui/prog_models.c`). No transport carries their protocols, and no
+PROGRAM list has a row for them. The bench identifies and drives ESCs with
+BLHeli_32 firmware and sends the DShot special commands, but cannot read
+their parameters: [Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
+
+### ESC STICK
+
+ESC STICK programs an ESC through its throttle-stick menu, from an ESC
+profile; [Stick programming](StickProgramming.md) describes the runs.
+
+Every control on ESC STICK takes a tap. It acts when the finger lifts
+inside the control it pressed, no more than 8 px from the press in x and in
+y. A finger that comes down on a control and travels on presses nothing, and
+neither does one that crosses a control. One finger at a time presses a
+control. Three controls act on the press:
+
+- HOLD TO RUN: its 2 s hold starts at the press.
+- ABORT of a stick run, on the run's page and on a manual step's prompt. It
+  stops a motor, so it does not wait for the lift, and it answers a second
+  finger.
+- The keys of the search keyboard, which follow their own press and lift.
+
+BACK and the band's home tag climb one level at a time: a stick profile's
+page to the list, a maker's models to the makers, the makers to PROGRAM's
+list. Over the RUN warning the home tag is CANCEL, and over the manual steps
+it is OK. On a stick run under way it is ABORT: the run ends, and its result
+stays on the page.
+
+The list shows the makers first, alphabetical, each with how many of its
+models run:
+
+![The makers](img/motor-stick.png)
+
+A maker opens its models, one row a model, by current, then voltage, then
+name, each with its family and what the profile is or why it does not run.
+A model opens its family's profile:
+
+![Kontronik's models](img/motor-stick-hand-list.png)
+
+SEARCH filters the level showing. Its keyboard docks on the right, the rows
+narrow beside it, and every key filters at once. A model is found when the
+text appears in its maker and family read as one text, or in its maker and
+its own name; a maker shows when any of its models is found. Case does not
+matter, and `*` stands for any run of characters:
+
+![Typing a search](img/motor-stick-find.png)
+
+OK keeps the search on both levels, X clears it:
+
+![A search applied, Hobbywing's models](img/motor-stick-found.png)
+
+A profile's items start at KEEP. The steppers pick a value; RUN counts the
+values picked:
+
+![Two values picked](img/motor-stick-items.png)
+
+RUN opens a warning over the whole screen, PROPELLER REMOVED? MOTOR SECURED?: a
+motor on the ESC must be mounted solid and carry no propeller, or a
+resistor load takes its place. The run starts after HOLD TO RUN is held
+for 2 s:
+
+![The warning](img/motor-stick-warning.png)
+
+RUN opens nothing, and the line beside it names the reason, while no pin
+is bound as a throttle, while the output binding is not read, and while
+the supply is the panel's model; such a reason closes a warning that is
+open ([Before a run](StickProgramming.md#before-a-run)).
+
+A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
+button pressed -- carries a red MANUAL tag in the list and MANUAL
+INTERVENTION REQUIRED in red on its page. The button shows the steps and
+when each is due; so does the first opening of the profile. The warning
+lists the steps due before the power-up, and the run stops for each later
+step with DONE and ABORT, waiting at most 60 s
+([Manual steps](StickProgramming.md#manual-steps)):
+
+![A profile with manual steps](img/motor-stick-hand.png)
+
+![The run waiting for the jumper](img/motor-stick-hand-prompt.png)
+
+A Kontronik ESC that locks itself when its supply goes off before it has
+confirmed the stored mode holds the run powered after the store, the stick
+where it stored, until DONE:
+
+![The run waiting for the ESC's confirmation](img/motor-stick-hand-end.png)
+
+While it runs, the page shows the phase, the beeps of the group under way
+and the last group. ABORT, the home tag, STOP and leaving the screen end it
+with the throttle at MIN, the supply off and the bench SAFE. The stack light's
+green is on while a beep is detected, for at least 150 ms:
+
+![A run](img/motor-stick-run.png)
+
+While the phase tap is enabled on SETUP the run's page adds a read-only
+readout under the current line: the tap's state, the pitch of its last 8 ms
+window, the counts of beeps the IOmcu lost and beeps the panel did not
+read, and the last four
+beeps with their number, length in ms and mean pitch in Hz. The run still
+counts its beeps from the supply current.
+
+![A run with the phase tap running](img/motor-stick-tone.png)
+
+| State | Meaning |
+| --- | --- |
+| `RUNNING` | the capture runs |
+| `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
+| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
+| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
+| `PIN NOT FREE` | the IOmcu holds the tap off: its pin is bound elsewhere, or the IOmcu runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the IOmcu |
+| `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
+
+PITCH and LOST are the page's values from the last status read. They read
+`--`, and OVERRUN is not shown, while no read younger than 500 ms gives the
+state: in `WAITING`, in `NO TONE PAGE`, and in `NOT RUNNING` while the
+set-up the page holds has the tap off. MISSED and the beeps are the panel's
+own count and record and stay.
+
+The result stays until OK. Its red light is on when the run ended because
+something was not as expected, a stop the bench raised itself included,
+and dark on DONE, a STOP pressed, ABORT, the home tag and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
+
+![Done](img/motor-stick-done.png)
+
+![Stopped](img/motor-stick-aborted.png)
+
+![Ended by the supply](img/motor-stick-failed.png)
+
+TIMING holds the beep timings and the supply settings. None of them is
+measured:
+
+![Timing](img/motor-stick-timing.png)
 
 ## Servo
 
@@ -949,8 +1135,8 @@ tab. A list of more than 9 rows gets a SEARCH box that opens the keyboard,
 `*` for any text; a list showing more than 8 rows draws them under their
 group headings; a list taller than the page area pages with `^` and `v`. A
 list holds 48 rows at most. With one row none of these is drawn. Modelled
-protocols without a transport on the IOmcu, such as the Hitec class on
-PROGRAMMER, have no row.
+protocols without a transport on the IOmcu, the Hitec D-series servos among
+them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
 The KST and Chaservo programmer takes the IOmcu's programming port, GP13 on
 pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
@@ -1418,183 +1604,6 @@ In FAILSAFE the receiver is sending well-formed values it has generated itself;
 every trace is drawn red. Treat FAILSAFE as a stop, not as sixteen valid
 channels. [Receiver buses](Receivers.md) describes the states.
 
-## Programmer
-
-The sequence is: device class, protocol, connect. ESC STICK, the third
-class, lists ESC profiles instead of protocols and programs an ESC through
-its throttle-stick menu; it has a page of its own,
-[Stick programming](StickProgramming.md).
-
-![Device class](img/programmer.png)
-
-The ESC and SERVO classes are a model on the panel. No transport carries
-their protocols: CONNECT, READ and WRITE change the panel's own copy of a
-device and send nothing on a wire. The device named after CONNECT is the
-model's, not an answer from hardware, and a WRITE reaches no device. Every
-page of the two classes carries the SIMULATED mark: on the class tile, on
-each protocol row and on the device line, where it takes the place of a
-connection's dot. The mark's dot is amber while a session is open and grey
-while none is; it never turns green. Under the parameters the page says
-that no device is reached. ESC STICK carries no mark: a stick run goes out
-through the arming policy and the output bank, as the MOTOR screen's
-commands do.
-
-Every protocol row names its transport. There is no autodetection:
-
-![The protocols of a class](img/programmer-protocols.png)
-
-The ESC list has no entry for ESCs with BLHeli_32 firmware. The bench
-identifies and drives these ESCs and sends the DShot special commands, but
-cannot read their parameters:
-[Parameters of ESCs with BLHeli_32 firmware](BLHeli32.md).
-
-Nothing is editable until CONNECT opens a modelled session:
-
-![Nothing has answered](img/programmer-idle.png)
-
-With a session open, the parameters are shown in groups with the selected
-row's help under the list:
-
-![A session open](img/programmer-params.png)
-
-The settings of each firmware appear in its own units. The table for BLHeli_S
-firmware shows timing as named steps; the others show degrees of advance:
-
-![Degrees rather than named steps](img/programmer-am32.png)
-
-A changed value is not written to the model until WRITE is pressed. Staged
-changes carry a mark and their own colour, and the WRITE button shows how many
-are staged:
-
-![Two staged edits](img/programmer-dirty.png)
-
-Steppers stop at the ends of a list; they do not wrap.
-
-Every control on PROGRAMMER takes a tap. It acts when the finger lifts
-inside the control it pressed, no more than 8 px from the press in x and in
-y. A finger that comes down on a control and travels on presses nothing, and
-neither does one that crosses a control. One finger at a time presses a
-control. Three controls act on the press:
-
-- HOLD TO RUN: its 2 s hold starts at the press.
-- ABORT of a stick run, on the run's page and on a manual step's prompt. It
-  stops a motor, so it does not wait for the lift, and it answers a second
-  finger.
-- The keys of the search keyboard, which follow their own press and lift.
-
-Going back one level closes the session. BACK and the band's home tag climb
-one level at a time: a device page to its protocols, a stick profile's page
-to the list, a maker's models to the makers, a list to the classes. The home
-tag leaves PROGRAMMER from the classes only. Over the RUN warning the home tag
-is CANCEL, and over the manual steps it is OK. On a stick run under way it is
-ABORT: the run ends, and its result stays on the page.
-
-### ESC STICK
-
-The list shows the makers first, alphabetical, each with how many of its
-models run:
-
-![The makers](img/programmer-stick.png)
-
-A maker opens its models, one row a model, by current, then voltage, then
-name, each with its family and what the profile is or why it does not run.
-A model opens its family's profile:
-
-![Kontronik's models](img/programmer-stick-hand-list.png)
-
-SEARCH filters the level showing. Its keyboard docks on the right, the rows
-narrow beside it, and every key filters at once. A model is found when the
-text appears in its maker and family read as one text, or in its maker and
-its own name; a maker shows when any of its models is found. Case does not
-matter, and `*` stands for any run of characters:
-
-![Typing a search](img/programmer-stick-find.png)
-
-OK keeps the search on both levels, X clears it:
-
-![A search applied, Hobbywing's models](img/programmer-stick-found.png)
-
-A profile's items start at KEEP. The steppers pick a value; RUN counts the
-values picked:
-
-![Two values picked](img/programmer-stick-items.png)
-
-RUN opens a warning over the whole screen, PROPELLER REMOVED? MOTOR SECURED?: a
-motor on the ESC must be mounted solid and carry no propeller, or a
-resistor load takes its place. The run starts after HOLD TO RUN is held
-for 2 s:
-
-![The warning](img/programmer-stick-warning.png)
-
-RUN opens nothing, and the line beside it names the reason, while no pin
-is bound as a throttle, while the output binding is not read, and while
-the supply is the panel's model; such a reason closes a warning that is
-open ([Before a run](StickProgramming.md#before-a-run)).
-
-A profile whose ESC needs a person at it -- a jumper fitted and pulled, a
-button pressed -- carries a red MANUAL tag in the list and MANUAL
-INTERVENTION REQUIRED in red on its page. The button shows the steps and
-when each is due; so does the first opening of the profile. The warning
-lists the steps due before the power-up, and the run stops for each later
-step with DONE and ABORT, waiting at most 60 s
-([Manual steps](StickProgramming.md#manual-steps)):
-
-![A profile with manual steps](img/programmer-stick-hand.png)
-
-![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
-
-A Kontronik ESC that locks itself when its supply goes off before it has
-confirmed the stored mode holds the run powered after the store, the stick
-where it stored, until DONE:
-
-![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
-
-While it runs, the page shows the phase, the beeps of the group under way
-and the last group. ABORT, the home tag, STOP and leaving the screen end it
-with the throttle at MIN, the supply off and the bench SAFE. The stack light's
-green is on while a beep is detected, for at least 150 ms:
-
-![A run](img/programmer-stick-run.png)
-
-While the phase tap is enabled on SETUP the run's page adds a read-only
-readout under the current line: the tap's state, the pitch of its last 8 ms
-window, the counts of beeps the IOmcu lost and beeps the panel did not
-read, and the last four
-beeps with their number, length in ms and mean pitch in Hz. The run still
-counts its beeps from the supply current.
-
-![A run with the phase tap running](img/programmer-stick-tone.png)
-
-| State | Meaning |
-| --- | --- |
-| `RUNNING` | the capture runs |
-| `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
-| `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
-| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
-| `PIN NOT FREE` | the IOmcu holds the tap off: its pin is bound elsewhere, or the IOmcu runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the IOmcu |
-| `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
-
-PITCH and LOST are the page's values from the last status read. They read
-`--`, and OVERRUN is not shown, while no read younger than 500 ms gives the
-state: in `WAITING`, in `NO TONE PAGE`, and in `NOT RUNNING` while the
-set-up the page holds has the tap off. MISSED and the beeps are the panel's
-own count and record and stay.
-
-The result stays until OK. Its red light is on when the run ended because
-something was not as expected, a stop the bench raised itself included,
-and dark on DONE, a STOP pressed, ABORT, the home tag and leaving the screen ([the list](StickProgramming.md#how-a-run-ends)):
-
-![Done](img/programmer-stick-done.png)
-
-![Stopped](img/programmer-stick-aborted.png)
-
-![Ended by the supply](img/programmer-stick-failed.png)
-
-TIMING holds the beep timings and the supply settings. None of them is
-measured:
-
-![Timing](img/programmer-stick-timing.png)
-
 ## Battery
 
 ![Cell divergence](img/battery.png)
@@ -1644,7 +1653,7 @@ directory under the name of the writer and a number from 001 to 999:
 | --- | --- |
 | `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
 
 With an IOmcu older than protocol 4.18, every switch to ARMED covers the
@@ -2424,7 +2433,7 @@ numbered 1 to 65535 and then 1 again, and a read does not remove one, so a
 reply lost on the link loses no beep. A beep that left the ring before it
 was read, or that the ring moved past while the panel was more than 64
 behind, is counted as missed. The last 8 beeps are kept for the screen; the
-run page of ESC STICK shows 4 of them ([Programmer](#programmer)).
+run page of ESC STICK shows 4 of them ([ESC STICK](#esc-stick)).
 
 The band says what the tap reports, each once and one at a time, as for the
 current monitors:

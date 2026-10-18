@@ -18,7 +18,7 @@
 #include "esc_profile.h"
 #include "esc_stick.h"
 #include "gfx.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 #include "servo_test.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -523,7 +523,7 @@ TEST_CASE(every_stick_refusal_is_translated)
         const char *why = NULL;
         if (esc_stick_kind(esc_profiles_at(i), &why) == ESC_STICK_KIND_NONE) {
             ++refused;
-            if (strcmp(programmer_screen_why_text(why), why) == 0) {
+            if (strcmp(esc_stick_panel_why_text(why), why) == 0) {
                 T_FAIL("\"%s\" has no German", why);
             }
         }
@@ -532,7 +532,7 @@ TEST_CASE(every_stick_refusal_is_translated)
     /* And the run's own refusals. */
     const char *why = NULL;
     CHECK(!esc_stick_check(NULL, NULL, 0, NULL, &why));
-    CHECK(strcmp(programmer_screen_why_text(why), why) != 0);
+    CHECK(strcmp(esc_stick_panel_why_text(why), why) != 0);
     esc_stick_timing_t tm;
     esc_stick_timing_defaults(&tm);
     const esc_profile_t *p = NULL;
@@ -543,14 +543,14 @@ TEST_CASE(every_stick_refusal_is_translated)
     }
     CHECK(p != NULL);
     CHECK(!esc_stick_check(p, NULL, 0, NULL, &why));
-    CHECK(strcmp(programmer_screen_why_text(why), why) != 0);
+    CHECK(strcmp(esc_stick_panel_why_text(why), why) != 0);
     CHECK(!esc_stick_check(p, NULL, 0, &tm, &why));
-    CHECK(strcmp(programmer_screen_why_text(why), why) != 0);
-    CHECK_STR_EQ(programmer_screen_why_text(NULL), "abgelehnt");
-    CHECK_STR_EQ(programmer_screen_why_text("not a refusal"),
+    CHECK(strcmp(esc_stick_panel_why_text(why), why) != 0);
+    CHECK_STR_EQ(esc_stick_panel_why_text(NULL), "abgelehnt");
+    CHECK_STR_EQ(esc_stick_panel_why_text("not a refusal"),
                  "not a refusal");
     ui_text_set_language(UI_LANG_EN);
-    CHECK_STR_EQ(programmer_screen_why_text("no profile"), "no profile");
+    CHECK_STR_EQ(esc_stick_panel_why_text("no profile"), "no profile");
 }
 
 /* The bus-fault verdicts, as the screen heads them. */
@@ -566,10 +566,9 @@ TEST_CASE(every_bus_verdict_has_a_heading)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The servo row of the programmer's protocol list says whose servos the
- * protocol is for: the maker and a noun, never the maker alone.  The crumb
- * joins it to the class name in 64 bytes, "SERVO  >  " taking 10 of them
- * and the terminator 1. */
+/* The modelled servo protocol's name (prog_model_name()) says whose
+ * servos it is for: the maker and a noun, never the maker alone, in at most
+ * 53 bytes. */
 TEST_CASE(a_makers_row_names_the_product)
 {
     for (int l = 0; l < UI_LANG_COUNT; ++l) {

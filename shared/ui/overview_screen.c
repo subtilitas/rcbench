@@ -16,12 +16,12 @@
 #define H (480 - UI_BAND_H)   /* the router owns the band */
 
 /*
- * Five columns by two rows: ten 150 x 204 px tiles with 8 px margins under
- * the 48 px band.  A tile's line holds 18 characters of the 8 x 16 font,
- * 144 of its 150 px, on each of two rows: the second ends 8 px above the
- * SIMULATED badge.
+ * Four columns by two rows: eight 190 x 204 px tiles with 8 px margins
+ * under the 48 px band.  A tile's line holds 23 characters of the 8 x 16
+ * font, 184 of its 190 px, on each of two rows: the second ends 8 px above
+ * the SIMULATED badge.
  */
-#define COLS 5
+#define COLS 4
 #define ROWS 2
 #define M    8
 #define TW   ((W - (COLS + 1) * M) / COLS)
@@ -40,31 +40,88 @@ typedef struct {
 } tile_t;
 
 /*
- * Tiles in order of expected use.  "iR" (internal resistance) rather
+ * The tiles by kind, each in a fixed place.  Row 1, the first COLS - 1
+ * columns: the workbenches, which drive outputs and can ARM.  Row 2, the
+ * same columns: the instruments, which only read.  The last column: LOGS
+ * over SETUP, data and setup.  A maker, a protocol, a run or a setting
+ * never adds a tile; only a new device class or instrument does, with the
+ * owner's word, and it sets COLS to 5.  "iR" (internal resistance) rather
  * than "IR", which reads as infrared.
  */
-static const tile_t k_tiles[] = {
+static const tile_t k_workbenches[] = {
     { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,
       LINK_CAP_ESC_DRIVE | LINK_CAP_PACK_SENSE, false },
     { SCREEN_SERVO,      "SERVO",       TX_OV_SERVO,         ui_icon_servo,
       LINK_CAP_SERVO_PWM, false },
     { SCREEN_SUPPLY,     "SUPPLY",      TX_OV_SUPPLY,        ui_icon_supply,
       0, true },   /* modelled unless SETUP enables the PD mini */
+};
+
+static const tile_t k_instruments[] = {
     { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,
       LINK_CAP_RECEIVER, false },
-    { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
-      0, false },   /* the card is on the panel; nothing needed from the IOmcu */
-    { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders,
-      0, false },
     { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery,
       LINK_CAP_CELLS, false },
     { SCREEN_BALANCE,    "BALANCE",     TX_OV_BALANCE,       ui_icon_balance,
       LINK_CAP_VIBRATION, false },
-    { SCREEN_PROGRAMMER, "PROGRAMMER",  TX_OV_PROGRAMMER,    ui_icon_chip,
-      LINK_CAP_PROGRAM, false },
 };
 
-#define TILE_COUNT ((int)(sizeof(k_tiles) / sizeof(k_tiles[0])))
+/* The last column, top down. */
+static const tile_t k_last_column[] = {
+    { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
+      0, false },   /* the card is on the panel; nothing needed from the IOmcu */
+    { SCREEN_SETUP,      "SETUP",       TX_OV_SETUP,         ui_icon_sliders,
+      0, false },
+};
+
+#define N_OF(a) ((int)(sizeof(a) / sizeof((a)[0])))
+
+_Static_assert(N_OF(k_workbenches) <= COLS - 1,
+               "a workbench past column COLS - 1 needs COLS 5 (owner's word)");
+_Static_assert(N_OF(k_instruments) <= COLS - 1,
+               "an instrument past column COLS - 1 needs COLS 5 (owner's word)");
+_Static_assert(N_OF(k_last_column) == ROWS,
+               "the last column holds LOGS over SETUP");
+
+#define SLOTS (COLS * ROWS)
+
+/* The tile in slot @p i (row by row from the top left), or NULL for a slot
+ * its kind leaves empty. */
+static const tile_t *tile_in(int i)
+{
+    if (i < 0 || i >= SLOTS) {
+        return NULL;
+    }
+    const int col = i % COLS;
+    const int row = i / COLS;
+    if (col == COLS - 1) {
+        return &k_last_column[row];
+    }
+    if (row == 0) {
+        return (col < N_OF(k_workbenches)) ? &k_workbenches[col] : NULL;
+    }
+    return (col < N_OF(k_instruments)) ? &k_instruments[col] : NULL;
+}
+
+ui_screen_id_t overview_screen_tile(int slot)
+{
+    const tile_t *t = tile_in(slot);
+    return (t != NULL) ? t->id : SCREEN_COUNT;
+}
+
+const char *overview_screen_tile_name(int slot)
+{
+    const tile_t *t = tile_in(slot);
+    return (t != NULL) ? t->name : NULL;
+}
+
+const char *overview_screen_tile_line(int slot)
+{
+    const tile_t *t = tile_in(slot);
+    return (t != NULL) ? ui_tr(t->line) : NULL;
+}
+
+int overview_screen_columns(void) { return COLS; }
 
 static struct {
     unsigned drawn_mask;
@@ -105,10 +162,12 @@ static gfx_rect_t tile_rect(int i)
     return r;
 }
 
+gfx_rect_t overview_screen_tile_rect(int slot) { return tile_rect(slot); }
+
 static int tile_at(int x, int y)
 {
-    for (int i = 0; i < TILE_COUNT; ++i) {
-        if (gfx_rect_contains(tile_rect(i), x, y)) {
+    for (int i = 0; i < SLOTS; ++i) {
+        if (tile_in(i) != NULL && gfx_rect_contains(tile_rect(i), x, y)) {
             return i;
         }
     }
@@ -140,7 +199,7 @@ static void event(const touch_event_t *evt)
         /* A press that slid off its tile is not a tap on that tile, and
          * neither is a release the finger did not make. */
         if (was >= 0 && hit == was && touch_event_is_tap_up(evt)) {
-            ui_router_goto(k_tiles[was].id);
+            ui_router_goto(tile_in(was)->id);
         }
     }
 }
@@ -155,8 +214,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     gfx_clear(c, ui_theme_color(UI_C_BG));
 
-    for (int i = 0; i < TILE_COUNT; ++i) {
-        const tile_t *t = &k_tiles[i];
+    for (int i = 0; i < SLOTS; ++i) {
+        const tile_t *t = tile_in(i);
+        if (t == NULL) {
+            continue;
+        }
         const gfx_rect_t r = tile_rect(i);
         const bool down = (i == s.pressed);
 

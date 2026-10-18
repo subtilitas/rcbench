@@ -7,8 +7,8 @@ throttle-stick menu. The bench powers the ESC from the PD mini supply, with
 a resistor load in place of the motor or a motor mounted solid with no
 propeller. It moves the throttle to the positions the
 [ESC profile](EscProfiles.md) names, and counts the menu's beeps as pulses
-in the supply current. On the screen it is the ESC STICK class of the
-PROGRAMMER screen.
+in the supply current. On the screen it is ESC STICK, the STICK MENU row of
+MOTOR & ESC > PROGRAM ([PROGRAM](Screens.md#program)).
 
 What it does not know:
 
@@ -54,11 +54,13 @@ What it does not know:
 
 ## On the screen
 
-PROGRAMMER, then ESC STICK:
+MOTOR & ESC, then PROGRAM, then the row `ESCs by throttle stick`:
 
-![Device class](img/programmer.png)
+![PROGRAM's list](img/motor-program.png)
 
-The list has two levels.
+ESC STICK opens full width, under the output strip, which names the pins the
+run drives, the supply and the bench:
+`TARGET DSHOT300 GP0   SUPPLY --   SAFE`. The list has two levels.
 
 - **Makers.** One row a maker, alphabetical with case folded: its name, how
   many of its models run of all it lists (`10 OF 82 CAN RUN`), and the red
@@ -89,9 +91,9 @@ The line under the rows says no profile is verified, and the count at its
 right counts the level: `1-9 of 20 makers, 6 can run` -- the makers with a
 model that runs -- or `1-9 of 82, 40 can run` for a maker's models.
 
-![The makers](img/programmer-stick.png)
+![The makers](img/motor-stick.png)
 
-![Kontronik's models, tagged MANUAL](img/programmer-stick-hand-list.png)
+![Kontronik's models, tagged MANUAL](img/motor-stick-hand-list.png)
 
 ### Search
 
@@ -126,9 +128,9 @@ the field clears the search. The search stays through both levels, a
 profile's page and back and when the screen is left, and is empty after a
 restart.
 
-![Typing a search on the makers](img/programmer-stick-find.png)
+![Typing a search on the makers](img/motor-stick-find.png)
 
-![A search applied, Hobbywing's models](img/programmer-stick-found.png)
+![A search applied, Hobbywing's models](img/motor-stick-found.png)
 
 Case folding covers the letters A to Z only. Ä, Ö and Ü in a profile from
 the card match only the same letter in the same case, and the keyboard has
@@ -157,7 +159,7 @@ the last check (`3 Cutoff mode is not available on this model.`). A page with no
 picked, which only a card profile without models opens, lists the items
 every model has.
 
-![Two values picked](img/programmer-stick-items.png)
+![Two values picked](img/motor-stick-items.png)
 
 ### The power-up position
 
@@ -202,7 +204,7 @@ with the next frame's commands; a STOP or a lost touch event before then
 takes it back and ends the run, so it cannot clear a stop that came after
 it.
 
-![The warning](img/programmer-stick-warning.png)
+![The warning](img/motor-stick-warning.png)
 
 During the run the page shows the phase, the beeps in the group under way,
 the last group and whether it was in order, and the current against its
@@ -211,7 +213,7 @@ and leaving the screen. The home tag ends it as ABORT does, and the result
 stays on the page. BACK and TIMING are not offered. The stack light beside the beep
 count is described [below](#the-stack-light).
 
-![A run counting item groups, a beep under way](img/programmer-stick-run.png)
+![A run counting item groups, a beep under way](img/motor-stick-run.png)
 
 With the phase tap enabled on SETUP under INTERFACES the page adds a
 read-only readout of the tap under the current line: its state, the pitch of
@@ -220,21 +222,21 @@ last four beeps with their number, length in ms and pitch in Hz ([the tap's rows
 run counts its beeps from the supply current as before; it does not use the
 tap's beeps.
 
-![A run with the phase tap running](img/programmer-stick-tone.png)
+![A run with the phase tap running](img/motor-stick-tone.png)
 
 The result stays until OK: which selections were made, and for an aborted
 run the reason. Past five changes the last line counts the rest.
 
-![Done](img/programmer-stick-done.png)
+![Done](img/motor-stick-done.png)
 
-![Stopped: STOP, red dark](img/programmer-stick-aborted.png)
+![Stopped: STOP, red dark](img/motor-stick-aborted.png)
 
-![Ended by the supply: SUPPLY OFF, red lit](img/programmer-stick-failed.png)
+![Ended by the supply: SUPPLY OFF, red lit](img/motor-stick-failed.png)
 
 TIMING opens the settings below. CLOSE asks for them to be saved; the save
 is taken while the bench is SAFE and the supply's output is off.
 
-![The timing settings](img/programmer-stick-timing.png)
+![The timing settings](img/motor-stick-timing.png)
 
 ### Manual steps
 
@@ -260,9 +262,9 @@ each is due, what it is, and whether the run asks for it. They open by
 themselves the first time the profile is opened after a start; OK closes
 them.
 
-![A profile with manual steps](img/programmer-stick-hand.png)
+![A profile with manual steps](img/motor-stick-hand.png)
 
-![Its manual steps](img/programmer-stick-hand-info.png)
+![Its manual steps](img/motor-stick-hand-info.png)
 
 The warning before a run lists the steps due before the power-up, and says
 when the run will stop for more. It lists them, and HOLD TO RUN counts, only
@@ -275,7 +277,7 @@ for no step at an unpowered ESC, until its own readings say the same; the
 result and the steps after a run say not to touch the ESC while the supply
 does not read off.
 
-![The warning with a step before power-up](img/programmer-stick-hand-warning.png)
+![The warning with a step before power-up](img/motor-stick-hand-warning.png)
 
 Steps that do not all fit the warning whole -- each wrapped to two lines,
 above HOLD TO RUN -- are not shown cut: the warning counts them and offers
@@ -283,7 +285,7 @@ ALL STEPS beside HOLD TO RUN. HOLD TO RUN counts only once ALL STEPS has
 been opened over this warning and closed with OK, so the hold attests to
 every step; a new warning asks for them again.
 
-![Four steps before power-up, read under ALL STEPS (an example profile)](img/programmer-stick-hand-steps.png)
+![Four steps before power-up, read under ALL STEPS (an example profile)](img/motor-stick-hand-steps.png)
 
 A step asked during the run covers the page: the step, where the supply
 and the stick are, and how long the run waits. DONE goes on; it is dark for
@@ -296,7 +298,7 @@ the run keeps every rule it keeps elsewhere: a powered wait watches the
 supply and its readings, and every end sets the throttle to MIN, switches
 the supply off and switches to SAFE.
 
-![The run waiting for the jumper](img/programmer-stick-hand-prompt.png)
+![The run waiting for the jumper](img/motor-stick-hand-prompt.png)
 
 **Before the supply goes off.** A Kontronik ESC confirms a stored mode
 by repeating it as tones (the manuals' control output, "Kontrollausgabe"),
@@ -329,9 +331,9 @@ the five, KONTROL-X runs; the others show the step on their list of
 steps. The other Kontronik manuals name no lock for a power-off during the
 repeat.
 
-![The run waiting for the ESC's confirmation](img/programmer-stick-hand-end.png)
+![The run waiting for the ESC's confirmation](img/motor-stick-hand-end.png)
 
-![No DONE: the ESC may be locked](img/programmer-stick-hand-locked.png)
+![No DONE: the ESC may be locked](img/motor-stick-hand-locked.png)
 
 **The action that starts the menu.** A profile marks the step whose
 action starts the mode series with `"starts_menu": true`; a step without it
@@ -389,7 +391,7 @@ themselves, every one of them, also when a tap in the same frame has
 already closed the result, and MANUAL INTERVENTION
 REQUIRED in the result's header opens them again.
 
-![Four steps after programming, over the result (an example profile)](img/programmer-stick-hand-after.png)
+![Four steps after programming, over the result (an example profile)](img/motor-stick-hand-after.png)
 
 After an aborted run of a profile with a step before or at the power-up,
 the result says to check the ESC: a jumper fitted for the run may still be in place.

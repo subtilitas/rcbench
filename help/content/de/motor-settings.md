@@ -6,7 +6,7 @@ order: 11
 
 # Motor-Optionen
 
-OPTIONEN, der zweite Reiter der Leiste von [MOTOR & ESC](motor.md), hält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in der linken Spalte unter drei Überschriften: AKKU, MOTOR und GASAUSGANG. Die rechte Spalte bleibt an ihrem Platz und wirkt: die Anzeigen, ZIEL, ARM, die Summen und SPITZENWERTE ZURÜCKSETZEN.
+OPTIONEN, der dritte Reiter der Leiste von [MOTOR & ESC](motor.md), hält die 8 ESC-Einstellungen (Electronic Speed Controller) des Prüfstands in der linken Spalte unter drei Überschriften: AKKU, MOTOR und GASAUSGANG. Die rechte Spalte bleibt an ihrem Platz und wirkt: die Anzeigen, ZIEL, ARM, die Summen und SPITZENWERTE ZURÜCKSETZEN.
 
 ![OPTIONEN](view:motor-settings)
 

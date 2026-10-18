@@ -78,7 +78,7 @@ The phase tap hears an ESC's beeps on one motor phase. One IOmcu GPIO reads the 
 | Tap gap | 1 to 100 ms | 3 | the silence that ends a beep |
 | Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
 
-The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an output, and a pin the sensor bus or the PD mini holds. The run page of [ESC STICK](programmer-stick.md) shows the beeps.
+The IOmcu refuses an ADC (analog-to-digital converter) pin, a pin bound to an output, and a pin the sensor bus or the PD mini holds. The run page of [ESC STICK](motor-stick.md) shows the beeps.
 
 ## Vibration and the optical tacho
 
