@@ -215,7 +215,8 @@ channels; a failed open claims nothing and leaves the pin as it was.
 The IOmcu image of this repository compiles the driver under its `-Werror`
 and holds `hitec_line.pio` to `test/host/fixtures/hitec_line_words.txt`.
 Nothing in the image calls the driver yet, so the linker drops it: the
-image is 190 200 bytes with and without it.
+image has the same size with and without it (191 128 bytes for
+`rcbench-iomcu.bin` with arm-none-eabi-gcc 14.2).
 
 ### Clock
 
