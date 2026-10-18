@@ -119,7 +119,7 @@ history is in git.
   tolerance. CI runs it with the tree checks.
 - SETUP > UPDATES has a coprocessor section under its buttons: the version
   the coprocessor runs, the version of the image the panel carries, a line
-  of state and `HOLD 2 s: UPDATE COPROCESSOR`. The 2 s hold starts the
+  of state and `HOLD 2 s: UPDATE IOMCU`. The 2 s hold starts the
   update the link-up's question starts, also after that question was
   declined, and the progress returns to UPDATES. It takes what the question
   takes: another build, SAFE, the supply output off, the Wi-Fi radio wholly

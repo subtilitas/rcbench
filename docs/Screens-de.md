@@ -2742,7 +2742,7 @@ pro Start des Panels.
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
-| `2 s HALTEN: KOPROZESSOR AKTUALISIEREN` | Startet das Update des Koprozessors aus dem Image, das dieses Panel mitbringt ([Der Koprozessor](#der-koprozessor)). |
+| `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des Koprozessors aus dem Image, das dieses Panel mitbringt ([Der Koprozessor](#der-koprozessor)). |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
@@ -2814,7 +2814,7 @@ beide gleich und PATCH größer.
 Unter den Tasten zeigt UPDATES das Update des Koprozessors: die Version, die
 der Koprozessor laufen hat (`Läuft: 0.17.0`), die Version des Images, das
 dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`), eine Zeile Zustand und
-`2 s HALTEN: KOPROZESSOR AKTUALISIEREN`. Das Halten startet das Update, das
+`2 s HALTEN: IOMCU AKTUALISIEREN`. Das Halten startet das Update, das
 die Frage beim Link-up startet, mit demselben Fortschritt
 ([Koprozessor-Update](#koprozessor-update)). Es startet es auch, nachdem
 diese Frage abgelehnt wurde. Endet das Update, oder verfiel der START ohne
@@ -2828,14 +2828,14 @@ Reihenfolge:
 
 | Zeile | Bedingung |
 | --- | --- |
-| `Dieses Panel enthält keine Koprozessor-Firmware.` | Das Panel ist ohne das Image des Koprozessors gebaut. `Auf diesem Panel: unbekannt`. |
+| `Dieses Panel enthält keine IOmcu-Firmware.` | Das Panel ist ohne das Image des Koprozessors gebaut. `Auf diesem Panel: unbekannt`. |
 | `Wartet auf das Ende des Koprozessor-Updates.` | Ein Update läuft, ein Image auf Probe wird übernommen, oder ein START ist noch nicht angenommen. |
-| `Kein Koprozessor antwortet.` | Keine Verbindung, und kein Koprozessor einer anderen Protokoll-Hauptversion antwortet. `Läuft: unbekannt`. |
-| `Wartet auf die Build-Prüfung des Koprozessors.` | Ein Koprozessor antwortet; sein Build ist noch nicht verglichen. |
-| `Build des Koprozessors wird geprüft.` | Der SHA-256-Vergleich läuft. |
+| `Kein IOmcu antwortet.` | Keine Verbindung, und kein Koprozessor einer anderen Protokoll-Hauptversion antwortet. `Läuft: unbekannt`. |
+| `Wartet auf die Build-Prüfung des IOmcu.` | Ein Koprozessor antwortet; sein Build ist noch nicht verglichen. |
+| `Build des IOmcu wird geprüft.` | Der SHA-256-Vergleich läuft. |
 | `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | Der Vergleich endete ohne Antwort. |
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | Der Koprozessor hat keine Update-Pages oder keine Partitionstabelle. |
-| `Koprozessor nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
+| `Der IOmcu nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an oder schaltet ein. |
 | `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder der Bildschirm WI-FI hat den Funk an, oder er schaltet noch ab. |
 | `Wartet: Die Installation der Panel-Firmware läuft.` | Eine Panel-Installation ist im Gang. |

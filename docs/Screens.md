@@ -2501,7 +2501,7 @@ asks the same question once per start of the panel.
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
-| `HOLD 2 s: UPDATE COPROCESSOR` | Starts the coprocessor's update from the image this panel carries ([The coprocessor](#the-coprocessor)). |
+| `HOLD 2 s: UPDATE IOMCU` | Starts the coprocessor's update from the image this panel carries ([The coprocessor](#the-coprocessor)). |
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -2571,7 +2571,7 @@ equal and PATCH is higher.
 Under the buttons, UPDATES shows the coprocessor's update: the version the
 coprocessor runs (`Running: 0.17.0`), the version of the image this panel
 carries (`Carried: 0.18.0`), one line of state, and
-`HOLD 2 s: UPDATE COPROCESSOR`. The hold starts the update that the
+`HOLD 2 s: UPDATE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([Coprocessor update](#coprocessor-update)). It also starts it after that
 question was declined. When the update ends, or the START was spent
@@ -2584,14 +2584,14 @@ grey, and the line names the first reason that holds, in this order:
 
 | Line | Condition |
 | --- | --- |
-| `This panel carries no coprocessor firmware.` | The panel was built without the coprocessor's image. `Carried: not known`. |
+| `This panel carries no IOmcu firmware.` | The panel was built without the coprocessor's image. `Carried: not known`. |
 | `Waiting for the coprocessor update to finish.` | An update runs, an image found on trial is being kept, or a START is not taken yet. |
-| `No coprocessor is responding.` | No link, and no coprocessor of another protocol major answers. `Running: not known`. |
-| `Waiting for the coprocessor's build check.` | A coprocessor answers; its build was not compared yet. |
-| `Checking the coprocessor's build.` | The SHA-256 comparison runs. |
+| `No IOmcu is responding.` | No link, and no coprocessor of another protocol major answers. `Running: not known`. |
+| `Waiting for the IOmcu's build check.` | A coprocessor answers; its build was not compared yet. |
+| `Checking the IOmcu's build.` | The SHA-256 comparison runs. |
 | `Build check failed. It runs again at the next link-up.` | The comparison ended without an answer. |
 | `No update over CAN. Install firmware once via USB.` | The coprocessor has no update pages or no partition table. |
-| `Coprocessor runs the build this panel carries.` | The digests are equal: there is nothing to send. |
+| `IOmcu runs the build this panel carries.` | The digests are equal: there is nothing to send. |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on or switching on. |
 | `Waiting for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on, or it is still switching off. |
 | `Waiting: panel firmware installation is running.` | A panel install is under way. |
