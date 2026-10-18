@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "motor_screen.h"
 #include "settings.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
