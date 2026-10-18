@@ -61,8 +61,6 @@
  */
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
-/* PROGRAM: 13 cells of its label, in the strip's row over the right card. */
-#define PROGB_W   108
 /* The CURRENT row, whose value is repainted by itself. */
 #define CUR_Y     92
 #define TAG_Y     118
@@ -172,7 +170,7 @@ typedef struct {
 enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
        OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
        OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
-       OP_PROGRAM, OP_LIM_START, OP_RUN_SET };
+       OP_LIM_START, OP_RUN_SET };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -287,9 +285,8 @@ typedef struct {
     uint32_t   drawn_arm[2];
 
     gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn;
-    gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
-    bool       kst_shown;        /* the programmer had the left card    */
-    bool       kst_held;         /* and the port: ARM takes no press    */
+    bool       kst_shown;        /* a session had the left column      */
+    bool       kst_held;         /* and a port: ARM takes no press      */
     bool       sup_held;         /* the port holds the supply: SET is dim */
     uint32_t   drawn_kst[2], drawn_kst_hold[2];
     ui_slider_t speed;
@@ -362,15 +359,18 @@ typedef struct {
     uint32_t stops;
 
     /*
-     * The task strip (ui_workbench.h): LIVE, TEST, SETTINGS.  A tile opens
-     * LIVE; each task keeps its own state for the session: SETTINGS its
-     * page (tabs), TEST the run whose settings are open (run_list).  The
-     * strip's own count of changes, so a buffer repaints it when it moved.
+     * The task strip (ui_workbench.h): LIVE, TEST, PROGRAM, SETTINGS.  A
+     * tile opens LIVE; each task keeps its state for the session: SETTINGS
+     * its page (tabs), TEST the run whose settings are open (run_list),
+     * PROGRAM its list.  The strip's count of changes repaints it.
      */
     ui_wb_strip_t wb;
     uint8_t      run_list;      /* RL_*: a run's settings open on TEST    */
     uint32_t     strip_rev;
     uint32_t     drawn_strip[2];
+    /* PROGRAM's list (prog_registry.h): its view, and the rows last drawn. */
+    prog_view_t  prog_view;
+    uint32_t     prog_sig;
     /* Whether a panel or the programmer covered the left column when the
      * buffer was last drawn: a change repaints it whole. */
     bool         drawn_cover[2];

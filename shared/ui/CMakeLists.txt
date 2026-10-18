@@ -14,6 +14,7 @@ set(SRCS
     ui_tabs.c
     ui_workbench.c
     ui_target_row.c
+    prog_registry.c
     ui_keypad.c
     ui_textkey.c
     ui_pinlist.c

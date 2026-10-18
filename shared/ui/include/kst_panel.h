@@ -1,6 +1,7 @@
 /*
- * The programmer for KST and Chaservo servos on the SERVO screen: an
- * overlay over the screen's left card, opened with PROGRAM.
+ * The programmer for KST and Chaservo servos on the SERVO screen: a
+ * session over the screen's left column, opened from its row on SERVO >
+ * PROGRAM (prog_registry.h) one level down.
  *
  * The overlay draws kst_prog.h's model and turns touches into its calls.  It
  * holds no rule of its own: ranges, limits and warnings come from the model,
@@ -30,6 +31,7 @@
 
 #include "gfx.h"
 #include "kst_prog.h"
+#include "prog_registry.h"
 #include "touch_types.h"
 #include "ui_keypad.h"
 #include "ui_textkey.h"
@@ -64,8 +66,22 @@ bool kst_panel_is_open(void);
  */
 void kst_panel_close(void);
 
+/**
+ * The home tag or BACK in the session: an editor open in it (keypad,
+ * list, warning, keyboard) closes as its CANCEL does; otherwise as
+ * kst_panel_close(), so a port in programming asks for LEAVE first.
+ */
+void kst_panel_back(void);
+
 /** The port is in programming, or moves: the overlay is shown. */
 bool kst_panel_holds_port(void);
+
+/** The GPIO the port the overlay works on drives, as the feed says, or
+ *  PROG_REG_NO_PIN. */
+uint8_t kst_panel_pin(void);
+
+/** The session's hooks for its row on SERVO > PROGRAM. */
+extern const prog_page_set_t kst_panel_pages;
 
 /** The screen is left: presses, holds and editors go; the port stays. */
 void kst_panel_leave(void);

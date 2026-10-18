@@ -1621,8 +1621,8 @@ const char *servo_screen_commanded_text(void)
 {
     static char text[16];
 
-    if (kst_panel_holds_port()) {
-        /* The programmer holds the port: no pulse is on it. */
+    if (prog_holds()) {
+        /* A session holds the port: no pulse is on it. */
         return "---";
     }
     snprintf(text, sizeof(text), "%u us",
@@ -1769,7 +1769,7 @@ static void reset(void)
     s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
     wb_init();
-    kst_panel_init(overlay_area());
+    prog_init();
     servo_limrun_init(&s.lim);
     s.lim_sig = lim_signature();
 
@@ -1949,7 +1949,7 @@ void servo_screen_set_bench_armed(bool armed)
  * an armed bench are exclusive.  DISARM is always taken. */
 static bool arm_locked(void)
 {
-    return (kst_panel_holds_port() || servo_limrun_running(&s.lim))
+    return (prog_holds() || servo_limrun_running(&s.lim))
            && !s.gate.armed;
 }
 
@@ -2064,17 +2064,18 @@ static void event_body(const touch_event_t *evt)
     if (evt == NULL) {
         return;
     }
-    kst_panel_bench_armed(bench_arming());
+    prog_armed(bench_arming());
     const int px = evt->point.x, py = evt->point.y;
+    const prog_page_set_t *ps = prog_shown_set();
 
-    /* The strip's and the TARGET row's own presses, the programmer's, then
-     * the pages' and the panels'. */
+    /* The strip's, the TARGET row's and PROGRAM's list's own presses, the
+     * session's, then the pages' and the panels'. */
     if (evt->type != TOUCH_EVENT_DOWN && wb_rest(evt)) {
         return;
     }
-    if (kst_panel_has_press(evt->point.id)
+    if (ps != NULL && prog_ps_has_press(ps, evt->point.id)
         && evt->type != TOUCH_EVENT_DOWN) {
-        kst_panel_event(evt);
+        prog_ps_event(ps, evt);
         return;
     }
     /* The overlay's own press: its moves and its release are its. */
@@ -2108,23 +2109,19 @@ static void event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (kst_panel_is_open() && gfx_rect_contains(overlay_area(), px, py)) {
+        if (ps != NULL && gfx_rect_contains(overlay_area(), px, py)) {
             if (!s.ov_have) {
-                kst_panel_event(evt);
+                prog_ps_event(ps, evt);
             }
             return;
         }
-        if (gfx_rect_contains(s.prog_btn, px, py)) {
-            if (!s.ov_have) {
-                ov_take(evt, OP_PROGRAM, -1);
-            }
-            return;
-        }
-        if (!kst_panel_is_open() && wb_task() != UI_WB_LIVE
+        if (ps == NULL && wb_task() != UI_WB_LIVE
             && gfx_rect_contains(page_area(), px, py)) {
             if (!s.ov_have) {
                 if (rows_page() >= 0) {
                     ov_down(evt);
+                } else if (wb_task() == UI_WB_PROGRAM) {
+                    prog_page_down(evt);
                 } else {
                     test_page_down(evt);
                 }
@@ -2876,13 +2873,6 @@ static void draw_right(gfx_canvas_t *c, bool power)
                       pr.h, ui_theme_color(UI_C_PANEL));
     }
 
-    /* PROGRAM, in the strip's row over this card: the programmer opens
-     * over the whole left column. */
-    ui_button(c, s.prog_btn, TR(KP_PROGRAM),
-              kst_panel_is_open() ? ui_theme_color(UI_C_ACCENT)
-                                  : ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_PROGRAM, true);
-
     char buf[24];
     row(c, 44, TR(SV_COMMANDED), servo_screen_commanded_text());
     /* The horn's angle from the encoder where one reads.  With the encoder
@@ -2952,23 +2942,24 @@ static void remember_shown(void)
 
 static void tick_body(float dt_s)
 {
-    /* The programmer: its holds and repeats, and the left card while the
-     * port is in programming.  PWM and programming are exclusive states of
-     * that port, so the way back is asked for there and nowhere else. */
+    /* PROGRAM's sessions: their holds and repeats, and the left column
+     * while a port is in programming.  PWM and programming are exclusive
+     * states of that port, so the way back is asked for there and nowhere
+     * else.  The KST session's voltage follows HV SERVO. */
     kst_panel_set_hv(s.test_hv);
-    kst_panel_bench_armed(bench_arming());
-    kst_panel_tick(dt_s);
+    prog_armed(bench_arming());
+    prog_tick(dt_s);
     /* Not while a limit run holds the port: its box stays on the left
      * card, and the run gives the port back itself. */
     lim_leave_follow();
-    if (kst_panel_holds_port() && !kst_panel_is_open()
-        && !servo_limrun_running(&s.lim) && !s.lim_leaving) {
-        kst_panel_open();
+    if (!servo_limrun_running(&s.lim) && !s.lim_leaving) {
+        prog_follow_hold();
     }
-    if (kst_panel_holds_port() != s.kst_held) {
-        s.kst_held = kst_panel_holds_port();
+    if (prog_holds() != s.kst_held) {
+        s.kst_held = prog_holds();
         ++s.arm_rev;
     }
+    prog_page_follow();
     /* A PD mini the programmer's CONNECT switched on, through the
      * coprocessor rather than through SUPPLY, is this screen's. */
     if (supply_screen_port_held()) {
@@ -2988,8 +2979,8 @@ static void tick_body(float dt_s)
         s.model_shown = supply_screen_model();
         ++s.power_rev;
     }
-    if (kst_panel_is_open() != s.kst_shown) {
-        s.kst_shown = kst_panel_is_open();
+    if (prog_shown() != s.kst_shown) {
+        s.kst_shown = prog_shown();
         servo_invalidate();
         ++s.ctrl_rev;
     }
@@ -3238,13 +3229,25 @@ static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
     c->clip = old_clip;
 }
 
+/* The same for a session, drawn through its own function (PROG_CALLS). */
+static void clipped_session(gfx_canvas_t *c, gfx_rect_t box,
+                            const prog_page_set_t *ps)
+{
+    gfx_rect_t old_clip = c->clip;
+    if (gfx_clip_set(c, box)) {
+        prog_ps_render(ps, c);
+    }
+    c->clip = old_clip;
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
     const int buf = buffer_index & 1;
-    /* A panel or the programmer over the left column, the strip's tabs
-     * with it: one that opens or goes repaints the buffer whole. */
-    const bool cover = modal_open() || kst_panel_is_open();
+    /* A panel or a session over the left column, the strip's tabs with
+     * it: one that opens or goes repaints the buffer whole. */
+    const prog_page_set_t *ps = prog_shown_set();
+    const bool cover = modal_open() || ps != NULL;
     if (cover != s.drawn_cover[buf]) {
         s.drawn_mask &= ~bit;
     }
@@ -3283,16 +3286,18 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_test[buf]  = s.test_rev;
         s.drawn_save[buf]  = save_state();
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
-        s.drawn_kst[buf]   = kst_panel_revision();
-        s.drawn_kst_hold[buf] = kst_panel_hold_revision();
+        s.drawn_kst[buf]   = (ps != NULL) ? prog_ps_revision(ps) : 0u;
+        s.drawn_kst_hold[buf] = (ps != NULL) ? prog_ps_hold_revision(ps) : 0u;
         if (modal_open()) {
             draw_overlay(c);
-        } else if (kst_panel_is_open()) {
-            kst_panel_render(c);
+        } else if (ps != NULL) {
+            prog_ps_render(ps, c);
         } else if (wb_task() == UI_WB_LIVE) {
             draw_left(c);
         } else if (rows_page() >= 0) {
             draw_rows_page(c);
+        } else if (wb_task() == UI_WB_PROGRAM) {
+            draw_prog_page(c);
         } else {
             draw_test_page(c);
         }
@@ -3340,15 +3345,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
         return;
     }
-    if (kst_panel_is_open()) {
-        /* The programmer, when it changed; of a hold only its button. */
-        if (s.drawn_kst[buf] != kst_panel_revision()) {
-            s.drawn_kst[buf] = kst_panel_revision();
-            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
-            clipped(c, overlay_area(), kst_panel_render);
-        } else if (s.drawn_kst_hold[buf] != kst_panel_hold_revision()) {
-            s.drawn_kst_hold[buf] = kst_panel_hold_revision();
-            clipped(c, kst_panel_apply_rect(), kst_panel_render);
+    if (ps != NULL) {
+        /* The session, when it changed; of a hold only its button. */
+        if (s.drawn_kst[buf] != prog_ps_revision(ps)) {
+            s.drawn_kst[buf] = prog_ps_revision(ps);
+            s.drawn_kst_hold[buf] = prog_ps_hold_revision(ps);
+            clipped_session(c, overlay_area(), ps);
+        } else if (s.drawn_kst_hold[buf] != prog_ps_hold_revision(ps)) {
+            s.drawn_kst_hold[buf] = prog_ps_hold_revision(ps);
+            clipped_session(c, prog_ps_hold_rect(ps), ps);
         }
         return;
     }
@@ -3436,9 +3441,9 @@ static void leave(void)
     wb_leave();
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
-    /* The programmer's presses and pages go; the port stays as it is, and
-     * the screen shows it again while it holds the port. */
-    kst_panel_leave();
+    /* The sessions' presses and pages go; a port stays as it is, and the
+     * screen shows its session again while it holds the port. */
+    prog_leave();
     /* And a supply this screen switched on goes off.  While the port holds
      * it, the OFF waits for the port to let go: an OFF now would end the
      * session and cut a write on the wire. */
@@ -3453,7 +3458,7 @@ static void leave(void)
 static void enter(void)
 {
     wb_enter();
-    kst_panel_screen_entry();
+    prog_entry();
     supply_screen_entered(SUPPLY_BY_SERVO);
 }
 
@@ -3514,7 +3519,7 @@ static void cancel(void)
     s.dragging = false;
     /* And the overlay's press: the warning's hold above all, which must not
      * complete on a contact that may have gone. */
-    kst_panel_cancel();
+    prog_cancel();
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
     ui_tabs_cancel(&s.tabs);

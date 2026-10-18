@@ -3,12 +3,16 @@
  * the band, TEST's page of run cards, and the output card's TARGET row.
  *
  * The strip shows LIVE (the dial, SWEEP, CENTRE, RELEASE), TEST (the
- * AUTOMATIC TEST and LIMIT RUN cards) and SETTINGS (OUTPUT, SWEEP, DUT).
- * A tile opens LIVE; each task keeps its own state for the session --
- * SETTINGS its page, TEST the run whose settings are open -- and a tab
- * switch is no navigation level.  A run card's SETTINGS opens that run's
- * settings in the page area, one level down: the home tag climbs from
- * there back to TEST (wb_back()), and from TEST to the menu.
+ * AUTOMATIC TEST and LIMIT RUN cards), PROGRAM (the registry's SERVO rows,
+ * prog_registry.h) and SETTINGS (OUTPUT, SWEEP, DUT).  A tile opens LIVE;
+ * each task keeps its own state for the session -- SETTINGS its page, TEST
+ * the run whose settings are open, PROGRAM its list's page and search --
+ * and a tab switch is no navigation level.  A run card's SETTINGS opens
+ * that run's settings in the page area, one level down: the home tag
+ * climbs from there back to TEST (wb_back()), and from TEST to the menu.
+ * A live row on PROGRAM opens its session over the left column, one level
+ * down: the home tag and the session's CLOSE climb back to the list, and
+ * a session whose port is in programming asks for LEAVE first.
  *
  * The TARGET row reads what the tester drives as `protocol pins` and is
  * the control that picks it: a tap opens the choice OUTPUTS / PROG PORT,
@@ -25,6 +29,7 @@
 
 #include "kst_panel.h"
 #include "servo_limrun.h"
+#include "prog_registry.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_target_row.h"
@@ -37,9 +42,337 @@
  * included after it may meet. */
 #include "servo_screen_int.h"
 
-/* SERVO's tasks.  PROGRAM joins when the programmer becomes a page. */
+/* SERVO's tasks. */
 #define SERVO_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_TEST) \
-                     | UI_WB_HAS(UI_WB_SETTINGS))
+                     | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_SETTINGS))
+
+/* ---------------------------------------------------- PROGRAM's sessions */
+
+/*
+ * Each hook of a page set is called from one function of its own, so
+ * tools/stack_check.py follows the call by name (PROG_CALLS there) as it
+ * follows the screens' tables.
+ */
+#define PS_ONE PROG_ONE_CALL
+
+PS_ONE void prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area)
+{
+    ps->init(area);
+}
+
+PS_ONE void prog_ps_entry(const prog_page_set_t *ps)
+{
+    ps->entry();
+}
+
+PS_ONE void prog_ps_open(const prog_page_set_t *ps)
+{
+    ps->open();
+}
+
+PS_ONE bool prog_ps_is_open(const prog_page_set_t *ps)
+{
+    return ps->is_open();
+}
+
+PS_ONE void prog_ps_back(const prog_page_set_t *ps)
+{
+    ps->back();
+}
+
+PS_ONE bool prog_ps_holds(const prog_page_set_t *ps)
+{
+    return ps->holds_port();
+}
+
+PS_ONE void prog_ps_armed(const prog_page_set_t *ps, bool armed)
+{
+    ps->armed(armed);
+}
+
+PS_ONE void prog_ps_tick(const prog_page_set_t *ps, float dt_s)
+{
+    ps->tick(dt_s);
+}
+
+PS_ONE bool prog_ps_has_press(const prog_page_set_t *ps, uint8_t id)
+{
+    return ps->has_press(id);
+}
+
+PS_ONE void prog_ps_event(const prog_page_set_t *ps, const touch_event_t *evt)
+{
+    ps->event(evt);
+}
+
+PS_ONE void prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c)
+{
+    ps->render(c);
+}
+
+PS_ONE uint32_t prog_ps_revision(const prog_page_set_t *ps)
+{
+    return ps->revision();
+}
+
+PS_ONE uint32_t prog_ps_hold_revision(const prog_page_set_t *ps)
+{
+    return ps->hold_revision();
+}
+
+PS_ONE gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps)
+{
+    return ps->hold_rect();
+}
+
+PS_ONE void prog_ps_leave(const prog_page_set_t *ps)
+{
+    ps->leave();
+}
+
+PS_ONE void prog_ps_cancel(const prog_page_set_t *ps)
+{
+    ps->cancel();
+}
+
+PS_ONE uint8_t prog_ps_pin(const prog_page_set_t *ps)
+{
+    return ps->pin();
+}
+
+/* The registry's SERVO sessions, each distinct page set once, whichever
+ * rows open it: at most PROG_LIST_MAX.  Their count. */
+static int servo_sets(const prog_page_set_t *out[PROG_LIST_MAX])
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    int k = 0;
+    for (size_t i = 0; i < n && k < PROG_LIST_MAX; ++i) {
+        if (rows[i].device != PROG_DEV_SERVO || rows[i].page_set == NULL) {
+            continue;
+        }
+        bool seen = false;
+        for (int j = 0; j < k; ++j) {
+            seen = seen || out[j] == rows[i].page_set;
+        }
+        if (!seen) {
+            out[k++] = rows[i].page_set;
+        }
+    }
+    return k;
+}
+
+const prog_page_set_t *prog_shown_set(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        if (prog_ps_is_open(set[i])) {
+            return set[i];
+        }
+    }
+    return NULL;
+}
+
+bool prog_holds(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        if (prog_ps_holds(set[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void prog_init(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_init(set[i], overlay_area());
+    }
+}
+
+void prog_entry(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_entry(set[i]);
+    }
+}
+
+void prog_leave(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_leave(set[i]);
+    }
+    prog_view_cancel(&s.prog_view);
+}
+
+void prog_cancel(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_cancel(set[i]);
+    }
+    prog_view_cancel(&s.prog_view);
+}
+
+void prog_armed(bool armed)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_armed(set[i], armed);
+    }
+}
+
+void prog_tick(float dt_s)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        prog_ps_tick(set[i], dt_s);
+    }
+}
+
+/* The IOmcu's capabilities, which the rows' states follow. */
+static uint16_t caps_now(void)
+{
+    return ui_router_status()->capabilities;
+}
+
+/* PROGRAM's list as it stands: SERVO's PROGRAM rows, the search applied. */
+static void prog_list_now(prog_list_t *l)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    prog_list_build(l, rows, n, PROG_DEV_SERVO, UI_WB_PROGRAM,
+                    s.prog_view.query);
+}
+
+/* A session that holds its port and is not shown, with no limit run of
+ * the screen's owning it, shows again: on PROGRAM, over the list.  The
+ * way back to PWM is asked there and nowhere else. */
+void prog_follow_hold(void)
+{
+    const prog_page_set_t *set[PROG_LIST_MAX];
+    const int k = servo_sets(set);
+    for (int i = 0; i < k; ++i) {
+        if (prog_ps_holds(set[i]) && !prog_ps_is_open(set[i])) {
+            if (ui_wb_strip_select(&s.wb, UI_WB_PROGRAM)) {
+                ++s.strip_rev;
+            }
+            prog_ps_open(set[i]);
+        }
+    }
+}
+
+/* What PROGRAM's rows show, as one number: a change repaints the page. */
+static uint32_t prog_signature(void)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    const uint16_t caps = caps_now();
+    uint32_t sig = (uint32_t)caps * 2654435761u;
+    for (size_t i = 0; i < n; ++i) {
+        const uint8_t pin = (rows[i].page_set != NULL)
+                                ? prog_ps_pin(rows[i].page_set)
+                                : PROG_REG_NO_PIN;
+        sig = sig * 31u + (uint32_t)prog_reg_state(rows, n, i, caps) * 257u
+              + pin;
+    }
+    return sig;
+}
+
+void prog_page_follow(void)
+{
+    if (wb_task() != UI_WB_PROGRAM || prog_shown()) {
+        return;
+    }
+    const uint32_t sig = prog_signature();
+    if (sig != s.prog_sig) {
+        s.prog_sig = sig;
+        ++s.ctrl_rev;
+    }
+}
+
+/* Row @p i tapped: a live row's session opens over the left column, one
+ * level down; a dimmed row opens nothing, its reason drawn beside it. */
+static void prog_row_open(uint8_t i)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    if (i >= n || prog_reg_state(rows, n, i, caps_now()) != PROG_ROW_LIVE) {
+        return;
+    }
+    /* A run would go on behind the session, stepping the rail and the
+     * position of the port CONNECT takes. */
+    test_end_now(SERVO_TEST_AB_OPERATOR);
+    close_panels();
+    prog_ps_open(rows[i].page_set);
+    servo_invalidate();
+}
+
+void prog_page_down(const touch_event_t *evt)
+{
+    prog_list_t l;
+    prog_list_now(&l);
+    (void)prog_view_event(&s.prog_view, &l, evt, NULL);
+    ++s.ctrl_rev;
+}
+
+/* The rest of a press on PROGRAM's list. */
+static bool prog_page_rest(const touch_event_t *evt)
+{
+    if (s.prog_view.pressed == PROG_VIEW_P_NONE
+        || evt->point.id != s.prog_view.id) {
+        return false;
+    }
+    prog_list_t l;
+    prog_list_now(&l);
+    uint8_t row = 0;
+    const prog_view_ev_t r = prog_view_event(&s.prog_view, &l, evt, &row);
+    if (r == PROG_VIEW_ROW && wb_task() == UI_WB_PROGRAM && !modal_open()
+        && !prog_shown()) {
+        prog_row_open(row);
+    } else if (r == PROG_VIEW_SEARCH && wb_task() == UI_WB_PROGRAM) {
+        ui_textkey_open_search(&s.tk, overlay_area(), TR(SP_FIND_TITLE),
+                               s.prog_view.query, PROG_LIST_QUERY_MAX);
+        servo_invalidate();
+    }
+    ++s.ctrl_rev;
+    return true;
+}
+
+void prog_search_done(const char *text)
+{
+    snprintf(s.prog_view.query, sizeof(s.prog_view.query), "%s",
+             (text != NULL) ? text : "");
+    prog_view_top(&s.prog_view);
+    servo_invalidate();
+}
+
+void draw_prog_page(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = page_area();
+    gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
+                  ui_theme_color(UI_C_PANEL));
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    prog_list_t l;
+    prog_list_now(&l);
+    prog_view_render(&s.prog_view, &l, rows, n, caps_now(),
+                     s.prog_view.query, c);
+}
+
+/* ------------------------------------------------------------ the strip */
 
 void wb_init(void)
 {
@@ -48,9 +381,7 @@ void wb_init(void)
     ++s.strip_rev;
     ui_target_row_init(&s.trow, (gfx_rect_t){ RC_X, TARGET_Y, RC_W,
                                               TARGET_H });
-    /* PROGRAM in the strip's row, flush with the right card's edge. */
-    s.prog_btn = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - PROGB_W),
-                               UI_WB_STRIP_Y, PROGB_W, UI_WB_STRIP_H };
+    prog_view_init(&s.prog_view, page_area());
 }
 
 void wb_enter(void)
@@ -63,6 +394,7 @@ void wb_enter(void)
 void wb_leave(void)
 {
     s.run_list = RL_NONE;
+    prog_view_cancel(&s.prog_view);
     ui_wb_strip_cancel(&s.wb);
     ui_target_row_cancel(&s.trow);
     ++s.strip_rev;
@@ -78,9 +410,15 @@ void wb_cancel(void)
 bool wb_back(void)
 {
     /* Over a panel the tag closes the panel, as its CANCEL does, and the
-     * page under it stays; from a run's settings it climbs to TEST. */
+     * page under it stays.  In a session it is the session's back: an
+     * editor closes, the session closes to PROGRAM's list, or a port in
+     * programming asks for LEAVE and the session stays.  From a run's
+     * settings it climbs to TEST. */
+    const prog_page_set_t *ps = prog_shown_set();
     if (modal_open()) {
         close_panels();
+    } else if (ps != NULL) {
+        prog_ps_back(ps);
     } else if (wb_task() == UI_WB_TEST && s.run_list != RL_NONE) {
         s.run_list = RL_NONE;
     } else {
@@ -114,6 +452,7 @@ gfx_rect_t lim_start_rect(void)
 static void task_changed(void)
 {
     ov_let_go();
+    prog_view_cancel(&s.prog_view);
     ui_hold_reset(&s.test_hold);
     s.test_down = false;
     ui_hold_reset(&s.lim_hold);
@@ -126,8 +465,8 @@ static void task_changed(void)
 bool wb_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
-    /* The strip, unless a panel or the programmer covers it. */
-    if (!modal_open() && !kst_panel_is_open()
+    /* The strip, unless a panel or a session covers it. */
+    if (!modal_open() && !prog_shown()
         && gfx_rect_contains(strip_area(), x, y)) {
         if (!ui_wb_strip_pressed(&s.wb)) {
             (void)ui_wb_strip_event(&s.wb, evt);
@@ -145,6 +484,9 @@ bool wb_down(const touch_event_t *evt)
 
 bool wb_rest(const touch_event_t *evt)
 {
+    if (prog_page_rest(evt)) {
+        return true;
+    }
     if (ui_wb_strip_pressed(&s.wb) && evt->point.id == s.wb.tabs.press_id) {
         if (evt->type == TOUCH_EVENT_UP) {
             const bool changed = ui_wb_strip_event(&s.wb, evt);

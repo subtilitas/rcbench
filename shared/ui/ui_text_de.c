@@ -25,6 +25,10 @@ static const char *const k_text[TX_COUNT] = {
     [TX_CANCEL]                 = "ABBRECHEN",
     [TX_SPACE]                  = "LEERZEICHEN",
     [TX_WB_LIVE]                = "LIVE",
+    [TX_PL_KST]                 = "KST- und Chaservo-Servos",
+    [TX_PL_GRP_PROG_PORT]       = "SERVOS AM PROG-PORT",
+    [TX_PL_NO_CAP]              = "IOMCU OHNE %s",
+    [TX_PL_PORT_BUSY]           = "PORT BELEGT",
 
     /* ---------------------------------------------------------- the band */
     [TX_BAND_SAFE]              = "SAFE",

@@ -10,15 +10,16 @@ SERVO drives a servo, measures its current on the servo rail, runs an automatic 
 
 ## The workbench
 
-The strip under the band holds SERVO's tasks: LIVE, TEST and SETTINGS. A tab switch is no level: the home tag goes home from every task, and climbs one level only from a run's settings back to TEST. Each task keeps its page and selection until the panel restarts. Leaving SERVO switches the bench to SAFE.
+The strip under the band holds SERVO's tasks: LIVE, TEST, PROGRAM and SETTINGS. A tab switch is no level: the home tag goes home from every task, and climbs one level only from a run's settings back to TEST and from a programmer back to PROGRAM's list. Each task keeps its page and selection until the panel restarts. Leaving SERVO switches the bench to SAFE.
 
 | Task | Left card |
 |---|---|
 | LIVE | the dial, and a run's box over it |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, each with its SETTINGS, a summary line, its start hold, the last result and its file; SUPPLY's caps, read-only |
+| PROGRAM | the list of programmers; a row opens its programmer over the left column ([Servo programmer](servo-programmer.md)) |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT ([Servo settings](servo-settings.md)) |
 
-The right card is the output card, the same on every task: the readings, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. PROGRAM, in the strip's row over the right card, opens the [servo programmer](servo-programmer.md). The rotary knob moves the horn on LIVE only.
+The right card is the output card, the same on every task: the readings, the supply line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. The rotary knob moves the horn on LIVE only.
 
 ## At rest
 
@@ -244,5 +245,5 @@ The report is a `SERVOnnn.TXT` of its own, written whatever REPORT says. It hold
 ## Related pages
 
 - [Servo settings](servo-settings.md): type, frame rate, pulses, the sweep, each run's settings and the target.
-- [Servo programmer](servo-programmer.md): PROGRAM, for KST and Chaservo servos.
+- [Servo programmer](servo-programmer.md): PROGRAM's row for KST and Chaservo servos.
 - [Supply](supply.md) and [Interfaces](setup-interfaces.md): the PD mini, the INA3221 and the AS5600.

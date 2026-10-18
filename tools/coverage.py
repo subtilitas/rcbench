@@ -71,6 +71,7 @@ TRACKED = [
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_workbench.c",
     "shared/ui/ui_target_row.c",
+    "shared/ui/prog_registry.c",
     "shared/ui/ui_text.c",
     "shared/ui/ui_router.c",
     "shared/ui/splash_screen.c",

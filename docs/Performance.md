@@ -217,9 +217,10 @@ bound for that reason:
 - calls through a function pointer, except the router's calls into a screen,
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks, the start check's after
-  an update and the SERVO screen link's callbacks into the panel, which it
-  follows by name
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 221 such
+  an update, the SERVO screen link's callbacks into the panel and the
+  hooks of the programmers SERVO > PROGRAM opens, which it follows by name
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
+  `PROG_CALLS`): 221 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
@@ -382,7 +383,7 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
-163,016 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,048 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
@@ -390,7 +391,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35,400 |
-| `servo_screen` | ui | 29,477 |
+| `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,412 |
 | `motor_screen` | ui | 19,968 |

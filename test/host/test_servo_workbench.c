@@ -15,12 +15,15 @@
 #include "greatest.h"
 
 #include "kst_panel.h"
+#include "link_pages.h"
+#include "prog_registry.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
+#include "ui_textkey.h"
 #include "ui_workbench.h"
 #include "ui_theme.h"
 
@@ -399,18 +402,212 @@ TEST_CASE(the_knob_moves_the_horn_on_live_alone)
     CHECK(last_cmd().kind != SERVO_CMD_POSITION);
     CHECK(knob_moves());
 
-    /* The programmer over LIVE. */
-    tap(SV_PROGRAM_X, SV_TAB_Y);
+    /* PROGRAM's list, and the programmer opened from it. */
+    open_program();
+    CHECK(!knob_moves());
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
     CHECK(!knob_moves());
-    tap(SV_PROGRAM_X, SV_TAB_Y);
+    close_kst();
     CHECK(!kst_panel_is_open());
+    CHECK(!knob_moves());
+    close_settings();
     CHECK(knob_moves());
+}
+
+/* ----------------------------------------------------------- PROGRAM */
+
+/* The strip reads LIVE, TEST, PROGRAM, SETTINGS from the left, 112 px a
+ * tab; a tap on each selects it, and PROGRAM shows its list with no
+ * session open. */
+TEST_CASE(the_strip_reads_live_test_program_settings)
+{
+    fresh();
+    scr->enter();
+    static const struct { int x; ui_wb_task_t task; } k[] = {
+        { SV_TAB_TEST_X, UI_WB_TEST },
+        { SV_TAB_PROGRAM_X, UI_WB_PROGRAM },
+        { SV_TAB_SETTINGS_X, UI_WB_SETTINGS },
+        { SV_TAB_LIVE_X, UI_WB_LIVE },
+        { SV_TAB_PROGRAM_X, UI_WB_PROGRAM },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        tap(k[i].x, SV_TAB_Y);
+        CHECK_EQ(servo_screen_task(), (int)k[i].task);
+        CHECK(!kst_panel_is_open());
+    }
+    /* The tabs in order, 116 px apart from x 9. */
+    for (int t = 0; t < (int)UI_WB_TASKS; ++t) {
+        CHECK_EQ(SV_TAB_LIVE_X + 116 * t,
+                 (t == 0) ? SV_TAB_LIVE_X : (t == 1) ? SV_TAB_TEST_X
+                 : (t == 2) ? SV_TAB_PROGRAM_X : SV_TAB_SETTINGS_X);
+    }
+    /* PROGRAM's page draws in both languages; a tile opens LIVE again. */
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        servo_invalidate();
+        scr->render(&cv, 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    scr->leave();
+    scr->enter();
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+}
+
+/* With no SERVO PWM reported (no IOmcu answering, or one without the
+ * bank) the KST row is drawn dimmed with its reason, and a tap on it opens
+ * nothing; once reported it opens the session. */
+TEST_CASE(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing)
+{
+    fresh();
+    scr->enter();
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = 0u;
+    ui_router_set_status(&st);
+    open_program();
+    scr->render(&cv, 0);
+    /* The reason, in the warning colour, inside the row. */
+    const gfx_color_t warn = ui_theme_color(UI_C_WARN);
+    int warned = 0;
+    for (int y = SV_PROG_ROW_Y(0) - 17; y < SV_PROG_ROW_Y(0) + 17; ++y) {
+        for (int x = 16; x < 484; ++x) {
+            warned += fb[y * W + x] == warn;
+        }
+    }
+    CHECK(warned > 0);
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+
+    /* Reported: the page repaints on its own and the row opens. */
+    st.capabilities = LINK_CAP_SERVO_PWM;
+    ui_router_set_status(&st);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    close_kst();
+    CHECK(!kst_panel_is_open());
+}
+
+/* The session is a level below PROGRAM's list: the home tag closes it to
+ * the list, the next one leaves the screen.  (An editor in the session and
+ * a port in programming: test_kst_panel.c.) */
+TEST_CASE(the_home_tag_climbs_from_the_session_to_the_list_and_leaves)
+{
+    fresh();
+    scr->enter();
+    open_kst();
+    CHECK(kst_panel_is_open());
+    CHECK(home_tag());
+    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK(!home_tag());
+
+    /* Leaving with the session open closes it; the tile opens LIVE. */
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    scr->leave();
+    CHECK(!kst_panel_is_open());
+    scr->enter();
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+}
+
+/* A key of the search keyboard, where PROGRAM opens it over the left
+ * column. */
+static void search_key(int k)
+{
+    ui_textkey_t probe;
+    memset(&probe, 0, sizeof(probe));
+    ui_textkey_open_search(&probe, (gfx_rect_t){ 6, 6, 488, 420 }, "", "",
+                           16);
+    const gfx_rect_t r = ui_textkey_key_rect(&probe, k);
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/* SEARCH's box, a row under the bar, and a row under the bar and a
+ * heading, in the page area. */
+#define SEARCH_X 126
+#define SEARCH_Y 63
+#define BARRED_ROW_Y(r) (103 + 40 * (r))
+#define HEADED_ROW_Y(r) (131 + 40 * (r))
+
+/*
+ * A list of more than 9 rows on the screen (a table handed in): SEARCH
+ * opens the keyboard, a search narrows the rows, a narrowed row opens its
+ * programmer, and the home tag over the keyboard closes the keyboard and
+ * keeps the search.
+ */
+TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
+{
+    static prog_reg_row_t rows[12];
+    for (int i = 0; i < 12; ++i) {
+        rows[i] = (prog_reg_row_t){ PROG_DEV_SERVO, UI_WB_PROGRAM,
+                                    (i == 11) ? TX_PL_KST : TX_WB_LIVE,
+                                    TX_PL_GRP_PROG_PORT, TX_SV_TARGET_PORT,
+                                    PROG_REG_NO_PORT, LINK_CAP_SERVO_PWM,
+                                    &kst_panel_pages };
+    }
+    prog_registry_use(rows, 12);
+    fresh();
+    scr->enter();
+    open_program();
+    scr->render(&cv, 0);
+    /* Twelve rows under their heading: a tap on the heading opens
+     * nothing, one on a row its programmer. */
+    tap(SV_PROG_ROW_X, BARRED_ROW_Y(0) - 5);
+    CHECK(!kst_panel_is_open());
+    tap(SV_PROG_ROW_X, HEADED_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    close_kst();
+
+    /* SEARCH: the keyboard; K, S, T and OK narrow the list to the KST
+     * row, now the first under the bar. */
+    tap(SEARCH_X, SEARCH_Y);
+    scr->render(&cv, 0);
+    search_key(27);                                     /* K */
+    search_key(21);                                     /* S */
+    search_key(14);                                     /* T */
+    search_key(UI_TK_OK);
+    scr->render(&cv, 0);
+    tap(SV_PROG_ROW_X, BARRED_ROW_Y(1));                /* nothing there */
+    CHECK(!kst_panel_is_open());
+    tap(SV_PROG_ROW_X, BARRED_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    close_kst();
+
+    /* The home tag over the keyboard closes it and keeps the search; the
+     * next one leaves. */
+    tap(SEARCH_X, SEARCH_Y);
+    CHECK(home_tag());
+    search_key(UI_TK_OK);                               /* no keyboard */
+    tap(SV_PROG_ROW_X, BARRED_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    close_kst();
+    CHECK(!home_tag());
+
+    /* An empty search is no search: all twelve again, under the
+     * heading. */
+    tap(SEARCH_X, SEARCH_Y);
+    search_key(UI_TK_CLR);
+    search_key(UI_TK_OK);
+    tap(SV_PROG_ROW_X, HEADED_ROW_Y(1));
+    CHECK(kst_panel_is_open());
+    close_kst();
+    scr->leave();
+    prog_registry_use(NULL, 0);
+    size_t n = 0;
+    (void)prog_registry(&n);
+    CHECK_EQ(n, 1u);
 }
 
 int main(void)
 {
     RUN(a_tile_opens_live_and_each_task_keeps_its_place);
+    RUN(the_strip_reads_live_test_program_settings);
+    RUN(a_row_the_iomcu_lacks_is_dimmed_and_opens_nothing);
+    RUN(the_home_tag_climbs_from_the_session_to_the_list_and_leaves);
+    RUN(program_offers_search_over_nine_rows_and_narrows_the_list);
     RUN(the_home_tag_closes_a_panel_climbs_from_a_runs_settings_and_leaves);
     RUN(a_tab_switch_drops_a_start_hold);
     RUN(the_target_row_locks_for_each_condition);
