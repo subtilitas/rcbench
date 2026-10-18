@@ -183,7 +183,7 @@ not used.
 | Stop bit sample | 151 to 153 cycles after the edge, 9.44 to 9.56 bit times |
 | Answer | an open-drain line changes the direction for its start bit 160 cycles after the sample that saw the first byte's start bit: 10.0 to 10.13 bit times after that edge, 520.8 to 527.3 us at 19 200 bit/s. The programmers send theirs 0.52 to 0.55 ms after it. A push-pull line changes the level 1 cycle later |
 | Lead before the first start bit | the transaction's lead, rounded up to 2 cycles, or 8 cycles plus the bit times that pad the front of the stream to a word, whichever is longer: a D read is driven low 117.2 us, a D write 89.0 us |
-| Window end to idle | 5 cycles |
+| Window end to idle | 7 cycles: the drain empties the output shift register, which drops an answer no byte called for |
 | Push-pull | the level moves 1 cycle after the direction would: the bits on the wire sit 1 cycle late, and the release cuts the last stop bit to 15 cycles |
 
 A receiver that samples once in the middle of each bit takes a sender
@@ -201,7 +201,7 @@ reference circuit, or push-pull.
 | Resource | Use |
 |---|---|
 | PIO state machines | 1 per open line, in a PIO block that reaches the pin |
-| PIO program space | 27 of 32 words; lines in one block share the program |
+| PIO program space | 29 of 32 words per open line: every line loads its own copy, so a block holds 1 line and the RP2350's 3 blocks hold up to 3 |
 | DMA (direct memory access) channels | 2 per open line: the words of a transaction and the received bytes |
 | Interrupts, PIO interrupt flags | none |
 | Memory | 1 `hitec_line_t` per line, held by the caller; no static state |
@@ -266,7 +266,11 @@ Limits:
   back keeps the receiver from its window; a receive with a byte count ends
   at the count.
 - A receive that reaches `max_rx` ends at the next `poll()`; until then the
-  receiver takes further bytes and drops them.
+  receiver takes further bytes and drops them. With an answer and a
+  `max_rx` of 1 the end waits until the answer is out
+  (`hitec_pio_answer_due()`).
+- A restart, an abort and the open put the state machine at the drain,
+  which empties the output shift register before the next stream.
 - The answer follows the first byte received, also one with a bad stop bit
   or a byte made by a glitch.
 - The system clock must not change while a line is open.
@@ -347,9 +351,9 @@ Not measured:
   it high in some 20 s windows and low in others.
 - The electrical items above.
 - On a chip: that autopull refills the output shift register before the
-  `jmp !osre` after the last count, that a restarted state machine starts
-  with that register empty, and the DMA handshakes. The host suite models
-  them.
+  `jmp !osre` after the last count, that `mov osr, null` and
+  `out null, 32` leave it empty with autopull on and the FIFO empty, and
+  the DMA handshakes. The host suite models them.
 
 ## Trademarks
 
@@ -367,7 +371,7 @@ notice is in the repository's
 `test/host/test_hitec_wire.c` (11 cases) runs the core: the sums, the
 transactions, every refusal of each decoder with its limits at both
 edges, and the clock helpers across the wrap, with frames and reply times
-read off bench captures. `test/host/test_hitec_pio.c` (20 cases) assembles
+read off bench captures. `test/host/test_hitec_pio.c` (22 cases) assembles
 `hitec_line.pio` with its own assembler for the instructions the program
 uses, runs the words in a model of the state machine
 (`test/host/hitec_pio_model.h`), holds them to

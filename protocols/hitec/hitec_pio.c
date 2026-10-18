@@ -83,6 +83,19 @@ uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles)
     return ns > 0xFFFFFFFFu ? 0xFFFFFFFFu : (uint32_t)ns;
 }
 
+/* @p cycles state machine cycles of @p clock, in us, rounded up and held
+ * at UINT32_MAX.  The seconds come apart from the rest, so no product
+ * leaves 64 bits for any count a uint64_t holds times a divider. */
+static uint32_t cycles_us_up(const hitec_pio_clock_t *clock, uint64_t cycles)
+{
+    const uint64_t q = cycles * clock->div256;   /* system cycles x 256 */
+    const uint64_t den = (uint64_t)clock->sys_hz * 256u;
+    const uint64_t us = q / den * 1000000u
+                        + ((q % den) * 1000000u + den - 1u) / den;
+
+    return us > 0xFFFFFFFFu ? 0xFFFFFFFFu : (uint32_t)us;
+}
+
 /* @p us as state machine cycles of @p clock, rounded to nearest, or up
  * with @p up. */
 static uint64_t us_cycles(const hitec_pio_clock_t *clock, uint32_t us,
@@ -212,7 +225,7 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
     words[n++] = (uint32_t)window;
     words[n++] = bits;
     for (unsigned w = 0; w < bits / 16u; ++w) {
-        words[n++] = pair_word(&pairs[w * 16u]);
+        words[n++] = pair_word(pairs + (size_t)w * 16u);
     }
     if (xfer->kind == HITEC_XFER_LISTEN && xfer->answer != 0u) {
         uint8_t a[HITEC_PIO_ANSWER_BITS];
@@ -235,15 +248,28 @@ unsigned hitec_pio_tx(const hitec_pio_clock_t *clock, uint8_t drive,
         clock, 2u * lead_count + HITEC_PIO_LEAD_CYCLES
                    + (uint64_t)bits * HITEC_PIO_CYCLES_PER_BIT);
     /* The hand-over and the pulls, the lead and the bits, the waiting with
-     * a transition per byte, the bytes, the answer, one bit of slack. */
+     * a transition per byte, the bytes, the answer, the drain, one bit of
+     * slack.  In us straight from the cycles: a lead and a window of 4 s
+     * each are more ns than a uint32_t holds. */
     span = 4u + 2u * lead_count + HITEC_PIO_LEAD_CYCLES
            + (uint64_t)bits * HITEC_PIO_CYCLES_PER_BIT
            + HITEC_PIO_TICK_CYCLES * (window + 2u)
            + (uint64_t)xfer->max_rx * (HITEC_PIO_BYTE_CYCLES + 2u)
            + (run->answer != 0u ? HITEC_PIO_ANSWER_CYCLES : 0u)
-           + HITEC_PIO_CYCLES_PER_BIT;
-    run->span_us = (hitec_pio_cycles_ns(clock, span) + 999u) / 1000u;
+           + HITEC_PIO_DRAIN_CYCLES + HITEC_PIO_CYCLES_PER_BIT;
+    run->span_us = cycles_us_up(clock, span);
     return n;
+}
+
+bool hitec_pio_answer_due(const hitec_pio_run_t *run, unsigned n,
+                          unsigned pc)
+{
+    if (run == NULL || run->answer == 0u || n != 1u) {
+        return false;
+    }
+    return pc == HITEC_PIO_ASK_PC || pc == HITEC_PIO_ANSWER_PC
+           || pc == HITEC_PIO_ANSWER_PC + 1u
+           || (pc >= HITEC_PIO_BIT_PC && pc < HITEC_PIO_RELEASE_PC);
 }
 
 void hitec_pio_capture(const hitec_pio_clock_t *clock,

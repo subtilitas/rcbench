@@ -14,11 +14,11 @@ history is in git.
   inverted, `96`/`69` frames with a byte sum): frame builders, transactions
   to send, listen with an answer to the first byte, or hold a level, and
   reply decoders with one result code per failed check. `rp2350/` holds the
-  pin driver: one PIO program of 27 words for both families, 16 cycles a
+  pin driver: one PIO program of 29 words for both families, 16 cycles a
   bit from the clock divider, open drain or, for the D series, push-pull,
   2 DMA channels. Nothing calls it yet; the IOmcu image compiles it and
   holds its words to the host test's. `test_hitec_wire` and
-  `test_hitec_pio`, 31 cases, run the core and the program in a model of
+  `test_hitec_pio`, 33 cases, run the core and the program in a model of
   the state machine. No byte has been on a wire.
   ([README](protocols/hitec/README.md))
 - The LOG VIEWER reaches every file on the card in pages of 48, newest

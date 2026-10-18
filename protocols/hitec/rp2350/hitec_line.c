@@ -17,9 +17,6 @@
 
 #include "hitec_line.pio.h"
 
-/* The instruction the state machine stalls on between transactions. */
-#define IDLE_PC 1u
-
 /* A transfer count's low 28 bits are the count; the rest is the mode. */
 #define DMA_COUNT_MASK 0x0FFFFFFFu
 
@@ -45,12 +42,13 @@ static bool line_idle(const hitec_line_t *l)
 
     return !dma_channel_is_busy((uint)l->dma_tx)
            && pio_sm_is_tx_fifo_empty(pio, l->sm)
-           && pio_sm_get_pc(pio, l->sm) == l->offset + IDLE_PC;
+           && pio_sm_get_pc(pio, l->sm) == l->offset + HITEC_PIO_IDLE_PC;
 }
 
-/* Put the state machine at the start of the program with the pad
- * released, whatever it was doing.  The output shift register is empty
- * after the restart, so the next stream starts at its first word. */
+/* Put the state machine at the program's drain with the pad released,
+ * whatever it was doing.  The drain empties the output shift register,
+ * whatever the restart left in it, so the next stream starts at its first
+ * word. */
 static void line_restart(hitec_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -61,7 +59,7 @@ static void line_restart(hitec_line_t *l)
     dma_channel_abort((uint)l->dma_rx);
     pio_sm_clear_fifos(pio, l->sm);
     pio_sm_restart(pio, l->sm);
-    pio_sm_exec(pio, l->sm, pio_encode_jmp(l->offset));
+    pio_sm_exec(pio, l->sm, pio_encode_jmp(l->offset + HITEC_PIO_DRAIN_PC));
     pio_sm_set_enabled(pio, l->sm, true);
 }
 
@@ -144,7 +142,7 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
     sm_config_set_in_shift(&c, true, false, 32);
     sm_config_set_clkdiv_int_frac8(&c, clock.div256 >> 8,
                                    (uint8_t)(clock.div256 & 0xFFu));
-    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_init(pio, sm, offset + HITEC_PIO_DRAIN_PC, &c);
 
     /* The state machine's latch low and its direction an input before the
      * pad is its: the pad goes from whatever it was to a released input,
@@ -272,6 +270,14 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
     } else {
         n = l->run.max_rx > 0u ? rx_count(l) : 0u;
         full = l->run.max_rx > 0u && n >= l->run.max_rx;
+        /* A count of 1 is reached before the answer goes out: the restart
+         * waits for it. */
+        if (full
+            && hitec_pio_answer_due(&l->run, n,
+                                    pio_sm_get_pc(line_pio(l), l->sm)
+                                        - l->offset)) {
+            full = false;
+        }
         if (!full && !line_idle(l)) {
             if (!hitec_due(time_us_32(), l->t_start_us,
                            l->run.span_us + HITEC_LINE_GRACE_US)) {

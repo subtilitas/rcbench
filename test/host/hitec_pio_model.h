@@ -23,8 +23,8 @@
 #include "hitec_wire.h"
 
 #define MAX_PROG 32u
-#define IDLE_PC  1u
-#define REL_PC   11u     /* set pindirs, 0 after the bit times */
+#define IDLE_PC  HITEC_PIO_IDLE_PC
+#define REL_PC   HITEC_PIO_RELEASE_PC  /* set pindirs, 0 after the bits */
 
 /* ---------------------------------------------------------- the assembler */
 
@@ -140,8 +140,11 @@ static bool assemble(const char *path)
                 return false;
             }
             w = ((unsigned)cond << 5) | (unsigned)target;
+        } else if (n == 3u && !strcmp(tok[0], "mov")
+                   && !strcmp(tok[1], "osr") && !strcmp(tok[2], "null")) {
+            w = 0xA0E3u;                     /* MOV OSR, NULL */
         } else if (n == 3u && !strcmp(tok[0], "out")) {
-            const int dest = reg_code(tok[1]);
+            const int dest = !strcmp(tok[1], "null") ? 3 : reg_code(tok[1]);
             const unsigned bits = (unsigned)atoi(tok[2]);
 
             if (dest < 0 || bits == 0u || bits > 32u) {
@@ -204,6 +207,9 @@ typedef struct {
     bool ext0;                /* the released wire before the first change */
     unsigned rx_room;         /* words the receive channel takes */
     uint64_t abort_at;        /* 0: none; else the cycle of a restart */
+    /* Set: due_end is the first cycle after the first push that
+     * hitec_pio_answer_due() gives false for. */
+    const hitec_pio_run_t *due_run;
     /* what the run leaves */
     pad_t pad[MAX_PAD];
     unsigned n_pad;
@@ -215,6 +221,8 @@ typedef struct {
     uint64_t end;             /* the cycle the machine stalled for a stream */
     bool finished;
     unsigned answers;         /* passes through the answer */
+    unsigned pushes;
+    uint64_t due_end;
 } model_t;
 
 static uint64_t t_of(const model_t *m, uint64_t cyc)
@@ -297,6 +305,8 @@ static void run_model(model_t *m, uint64_t max_cycles)
     m->end = 0;
     m->finished = false;
     m->answers = 0;
+    m->pushes = 0;
+    m->due_end = 0;
     m->pad[m->n_pad].cyc = 0;
     m->pad[m->n_pad].dir = false;
     m->pad[m->n_pad].latch = false;
@@ -307,17 +317,20 @@ static void run_model(model_t *m, uint64_t max_cycles)
         const bool was_latch = latch;
 
         if (m->abort_at != 0u && cyc == m->abort_at) {
-            /* The driver's restart: released, FIFOs and counters cleared,
-             * the machine at the start of the program. */
+            /* The driver's restart: released, FIFOs and the input side
+             * cleared, the machine at the drain.  The output shift
+             * register is left full of ones, the worst a restart can
+             * leave: the drain has to empty it. */
             dir = false;
             n_txf = 0;
             n_rxf = 0;
             tx_at = m->n_tx;
-            osr_count = 32;
+            osr = 0xFFFFFFFFu;
+            osr_count = 0;
             isr = 0;
             isr_count = 0;
             delay = 0;
-            pc = 0;
+            pc = HITEC_PIO_DRAIN_PC;
             if (!m->released) {
                 m->release = cyc;
                 m->released = true;
@@ -333,6 +346,10 @@ static void run_model(model_t *m, uint64_t max_cycles)
             --n_rxf;
         }
 
+        if (m->due_run != NULL && m->pushes > 0u && m->due_end == 0u
+            && !hitec_pio_answer_due(m->due_run, m->pushes, pc)) {
+            m->due_end = cyc;
+        }
         if (delay > 0u) {
             --delay;
         } else {
@@ -402,7 +419,9 @@ static void run_model(model_t *m, uint64_t max_cycles)
                     --n_txf;
                     osr_count = 0;
                 }
-                if (sel == 0u) {
+                if (sel == 3u) {
+                    /* null: discarded */
+                } else if (sel == 0u) {
                     latch = (data & 1u) != 0u;
                 } else if (sel == 1u) {
                     x = data;
@@ -413,7 +432,12 @@ static void run_model(model_t *m, uint64_t max_cycles)
                 }
                 break;
             }
+            case 5:                                    /* MOV OSR, NULL */
+                osr = 0;
+                osr_count = 0;
+                break;
             case 4:                                             /* PUSH */
+                m->pushes++;
                 if (n_rxf < 4u) {
                     rxf[n_rxf++] = isr;
                 } else {
@@ -430,7 +454,7 @@ static void run_model(model_t *m, uint64_t max_cycles)
                 } else {
                     latch = (arg & 1u) != 0u;
                 }
-                if (pc == 24u) {
+                if (pc == HITEC_PIO_ANSWER_PC) {
                     m->answers++;
                 }
                 if (pc == REL_PC && !m->released) {

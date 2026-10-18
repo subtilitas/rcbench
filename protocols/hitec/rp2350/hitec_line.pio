@@ -23,11 +23,17 @@
 ; for the idle level, then for a start bit.  A start bit seen, the 8 data
 ; bits are sampled 23 to 135 cycles after the sample that saw it, the stop
 ; bit at 151, and the byte, its stop bit and X go to the receive FIFO as one
-; word.  When X runs out the program returns to `idle`.
+; word.  When X runs out the program goes to `drain` and on to `idle`.
 ;
 ; Answer.  After a byte, an answer word still in the output shift register
 ; is sent: 16 bit times from the 160th cycle after the start bit was seen.
 ; The answer empties the register, so only the first byte is answered.
+;
+; Drain.  `drain` fills the output shift register with zeros and shifts all
+; 32 out, which leaves it empty whatever it held: an answer word no byte
+; called for at the end of the window, or what a restart left in it.  The
+; transmit FIFO is empty there, so autopull does not refill it.  The driver
+; restarts the machine at `drain`.
 ;
 ; test/host/test_hitec_pio.c assembles this file, runs the words in a model
 ; of the state machine and holds them to fixtures/hitec_line_words.txt,
@@ -58,7 +64,7 @@ more:
 wait_hi:
     jmp pin, wait_lo
     jmp x--, wait_hi
-    jmp idle                ; the window is over
+    jmp drain               ; the window is over
 wait_lo:
     jmp pin, lo_next
     set y, 7 [21]           ; a start bit: on to the middle of data bit 0
@@ -75,4 +81,7 @@ answer:
     jmp bit
 lo_next:
     jmp x--, wait_lo
+drain:                      ; the window is over, or a restart
+    mov osr, null
+    out null, 32
 .wrap

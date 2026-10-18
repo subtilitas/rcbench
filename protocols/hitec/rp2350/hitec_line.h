@@ -8,11 +8,11 @@
  * is a name or trademark of its owner; it is used here only to say which
  * servos this module works with (README.md, "Legal notice and disclaimer").
  *
- * Resources.  hitec_line_open() claims 1 state machine, 27 words of program
+ * Resources.  hitec_line_open() claims 1 state machine, 29 words of program
  * space in a PIO block that reaches the pin, and 2 DMA channels;
- * hitec_line_close() gives all of them back.  A second line shares the
- * program when its state machine is in the same block.  No interrupt and no
- * PIO interrupt flag is used.
+ * hitec_line_close() gives all of them back.  Every open line loads its own
+ * copy of the program, so a block of 32 words holds 1 line and the RP2350's
+ * 3 blocks hold up to 3.  No interrupt and no PIO interrupt flag is used.
  *
  * Clock.  The divider is computed from clock_get_hz(clk_sys) at the open,
  * 16 state machine cycles a bit.  The open is refused when the divider would

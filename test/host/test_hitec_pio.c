@@ -6,9 +6,10 @@
  * The program is assembled from its source by a small assembler for
  * the instructions it uses, and run by a model of the state machine that
  * steps one state machine cycle at a time: JMP always, on X--, Y--, the pin
- * and !OSRE; OUT to the pins, the pin directions, X and Y with autopull at
- * 32 bits, shifting right; IN from the pins and X, shifting right; PUSH
- * noblock; SET of the pin directions and Y; delays; the wrap.  A DMA (direct
+ * and !OSRE; OUT to the pins, the pin directions, X, Y and NULL with
+ * autopull at 32 bits, shifting right; MOV OSR, NULL; IN from the pins and
+ * X, shifting right; PUSH noblock; SET of the pin directions and Y; delays;
+ * the wrap.  A DMA (direct
  * memory access) channel fills the 4-word transmit FIFO and another drains
  * the 4-word receive FIFO into a buffer of a given length.  A cycle lasts
  * the divider's system clock cycles, fraction included, and the pin is read
@@ -79,12 +80,18 @@ TEST_CASE(the_words_are_the_ones_the_firmware_build_checks)
     }
     fclose(f);
     CHECK_EQ(n, prog_len);
-    CHECK_EQ(prog_len, 27u);
+    CHECK_EQ(prog_len, HITEC_PIO_PROGRAM_WORDS);
     CHECK_EQ(wrap_target, 0u);
-    CHECK_EQ(wrap_at, 26u);
+    CHECK_EQ(wrap_at, HITEC_PIO_PROGRAM_WORDS - 1u);
     /* The instructions the model and the driver name by address. */
-    CHECK_EQ(prog[IDLE_PC], 0x6001u);      /* out pins, 1 */
-    CHECK_EQ(prog[REL_PC], 0xE080u);       /* set pindirs, 0 */
+    CHECK_EQ(prog[HITEC_PIO_IDLE_PC], 0x6001u);       /* out pins, 1 */
+    CHECK_EQ(prog[HITEC_PIO_BIT_PC], 0x6081u);        /* out pindirs, 1 */
+    CHECK_EQ(prog[HITEC_PIO_RELEASE_PC], 0xE080u);    /* set pindirs, 0 */
+    CHECK_EQ(prog[HITEC_PIO_ASK_PC], 0x00F8u);        /* jmp !osre, answer */
+    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC], 0xE34Fu);     /* set y, 15 [3] */
+    CHECK_EQ(prog[HITEC_PIO_ANSWER_PC + 1u], 0x0008u);  /* jmp bit */
+    CHECK_EQ(prog[HITEC_PIO_DRAIN_PC], 0xA0E3u);      /* mov osr, null */
+    CHECK_EQ(prog[HITEC_PIO_DRAIN_PC + 1u], 0x6060u); /* out null, 32 */
 }
 
 TEST_CASE(a_classic_command_is_16_cycles_a_bit_and_never_drives_high)
@@ -121,7 +128,7 @@ TEST_CASE(a_classic_command_is_16_cycles_a_bit_and_never_drives_high)
     /* No reply: the window's waiting, 1.5 ms, and the machine waits again. */
     CHECK_EQ(run.window_ticks, 231u);
     CHECK_NEAR(cyc_ns(2u * run.window_ticks), 1.5e6, cyc_ns(2));
-    CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u);
+    CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u + HITEC_PIO_DRAIN_CYCLES);
     CHECK_EQ(m.n_rx, 0u);
     /* The time the driver allows covers the run. */
     CHECK(cyc_ns(m.end) < (double)run.span_us * 1000.0);
@@ -243,7 +250,7 @@ TEST_CASE(a_d_read_drives_low_88_us_then_sends_back_to_back_and_releases)
     CHECK_EQ(m.release, last_drive_end + 16u);
     CHECK_EQ(next_dir(last_drive_end, true), 0u);
     /* Nothing came: the window's 25 ms of waiting. */
-    CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u);
+    CHECK_EQ(m.end - m.release, 2u * run.window_ticks + 5u + HITEC_PIO_DRAIN_CYCLES);
     CHECK_NEAR(cyc_ns(2u * run.window_ticks), 25e6, cyc_ns(2));
 }
 
@@ -421,8 +428,10 @@ TEST_CASE(a_listen_without_an_answer_never_drives)
     CHECK_EQ(cap.answered, 0);
     check_at(cap.byte[0].at_ns, 12000.0);
     check_at(cap.byte[1].at_ns, 3000000.0);
-    /* The window counts the waiting only: 500 ms and the 2 bytes. */
-    CHECK_NEAR(cyc_ns(m.end - m.release), 500e6 + 2 * cyc_ns(157),
+    /* The window counts the waiting only: 500 ms and the 2 bytes, then
+     * the drain. */
+    CHECK_NEAR(cyc_ns(m.end - m.release),
+               500e6 + 2 * cyc_ns(157) + cyc_ns(HITEC_PIO_DRAIN_CYCLES),
                3 * cyc_ns(2));
 }
 
@@ -502,7 +511,8 @@ TEST_CASE(the_window_takes_a_byte_just_inside_it_and_not_one_just_after)
     ext_clear(false);                       /* idle: low on the wire */
     CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 1, 0));
     CHECK(m.finished);
-    end_ns = cyc_ns(m.end - m.release);
+    /* The receiver stops sampling where the drain starts. */
+    end_ns = cyc_ns(m.end - m.release - HITEC_PIO_DRAIN_CYCLES);
     CHECK_NEAR(end_ns, 1e6, 3 * cyc_ns(2));
 
     memset(&m, 0, sizeof(m));
@@ -821,6 +831,91 @@ TEST_CASE(the_stream_pads_its_front_to_a_word_and_refuses_what_it_cannot_run)
     CHECK_EQ(hitec_pio_tx(&clk, 0, &x, w, &run), 0u);
 }
 
+TEST_CASE(an_answer_no_byte_called_for_is_drained_at_the_window_end)
+{
+    /* Classic open drain, the servo holding the line high; D series
+     * push-pull, the line low on the wire. */
+    static const struct {
+        uint8_t family;
+        uint8_t drive;
+        uint8_t answer;
+        bool idle;
+    } c[] = {
+        { HITEC_CLASSIC, HITEC_DRIVE_OPEN_DRAIN, HITEC_C_ACK, true },
+        { HITEC_D, HITEC_DRIVE_PUSH_PULL, 0x96, false },
+    };
+
+    for (unsigned i = 0; i < sizeof(c) / sizeof(c[0]); ++i) {
+        hitec_xfer_t x;
+        hitec_capture_t cap;
+
+        CHECK(hitec_listen_xfer(c[i].family, 2000u, 2, true, c[i].answer,
+                                &x));
+        memset(&m, 0, sizeof(m));
+        ext_clear(c[i].idle);
+        CHECK(transact(150000000u, c[i].drive, &x, 2, 0));
+        /* At idle, waiting for the next stream: the answer word is gone,
+         * not taken for a lead. */
+        CHECK(m.finished);
+        CHECK_EQ(m.answers, 0u);
+        CHECK_EQ(m.n_rx, 0u);
+        CHECK_EQ(next_dir(m.release, true), 0u);
+        CHECK(!pad_ever_high(m.release));
+        captured(&cap, false);
+        CHECK_EQ(cap.n, 0);
+        CHECK_EQ(cap.answered, 0);
+        CHECK_EQ(cap.overflow, 0);
+    }
+}
+
+TEST_CASE(a_one_byte_listen_holds_its_restart_until_the_answer_is_out)
+{
+    hitec_xfer_t x;
+    uint8_t got[4] = { 0 };
+    uint64_t at[4] = { 0 };
+    uint64_t edge;
+
+    CHECK(hitec_listen_xfer(HITEC_CLASSIC, 20000u, 1, true, HITEC_C_ACK,
+                            &x));
+    memset(&m, 0, sizeof(m));
+    m.due_run = &run;
+    ext_clear(true);
+    ext_byte(HITEC_CLASSIC, 1000000.0, bit_ns(HITEC_CLASSIC), 0x2B, true);
+    CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 1, 0));
+    CHECK_EQ(m.answers, 1u);
+    CHECK_EQ(m.n_rx, 1u);
+    /* The channel has its 1 byte at the push; the driver's restart waits
+     * until hitec_pio_answer_due() is false.  By then the pad has made
+     * its last change and the whole answer is on the wire. */
+    edge = next_dir(m.release, true);
+    CHECK(edge > 0u);
+    CHECK(m.due_end > edge);
+    CHECK(m.pad[m.n_pad - 1u].cyc < m.due_end);
+    CHECK_EQ(wire_bytes(edge - 1u, m.due_end, false, got, at, 4), 1u);
+    CHECK_EQ(got[0], HITEC_C_ACK);
+    /* And it turns false at the release after the answer's 16 bit
+     * times, not later. */
+    CHECK(m.due_end <= edge + HITEC_PIO_ANSWER_BITS * 16u + 2u);
+
+    /* The addresses it answers for, and the refusals. */
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC));
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC));
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 1u));
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_BIT_PC));
+    CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_RELEASE_PC - 1u));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_BIT_PC - 1u));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_RELEASE_PC));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC + 1u));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ANSWER_PC + 2u));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_IDLE_PC));
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_DRAIN_PC));
+    CHECK(!hitec_pio_answer_due(&run, 0, HITEC_PIO_ASK_PC));
+    CHECK(!hitec_pio_answer_due(&run, 2, HITEC_PIO_ASK_PC));
+    CHECK(!hitec_pio_answer_due(NULL, 1, HITEC_PIO_ASK_PC));
+    run.answer = 0;
+    CHECK(!hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC));
+}
+
 TEST_CASE(the_span_covers_every_run_of_the_model)
 {
     static const uint8_t a[] = { 0x69, 0x00, 0x0C, 0x02, 0x00, 0x20, 0x2E };
@@ -849,6 +944,27 @@ TEST_CASE(the_span_covers_every_run_of_the_model)
     CHECK(m.finished);
     CHECK(cyc_ns(m.end) < (double)run.span_us * 1000.0);
     CHECK((double)run.span_us * 1000.0 < cyc_ns(m.end) + 2e6);
+    /* The longest lead and the longest window: more ns than 32 bits hold,
+     * so the span is counted in us from the cycles. */
+    {
+        uint32_t w[HITEC_PIO_TX_WORDS];
+
+        hitec_d_read_xfer(0x00, 0x0C, &x);
+        x.lead_us = HITEC_TIME_MAX_US;
+        x.window_us = HITEC_TIME_MAX_US;
+        CHECK(hitec_pio_clock(150000000u, HITEC_D, &clk));
+        CHECK(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run) > 0u);
+        CHECK(run.span_us >= 2u * HITEC_TIME_MAX_US);
+        CHECK(run.span_us < 2u * HITEC_TIME_MAX_US + 2000u);
+        /* At 1.2282 MHz, the lowest clock classic takes, too. */
+        hitec_c_xfer(HITEC_C_READ_EEPROM, 0x05, 0x00, &x);
+        x.lead_us = HITEC_TIME_MAX_US;
+        x.window_us = HITEC_TIME_MAX_US;
+        CHECK(hitec_pio_clock(1228200u, HITEC_CLASSIC, &clk));
+        CHECK(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, w, &run) > 0u);
+        CHECK(run.span_us >= 2u * HITEC_TIME_MAX_US);
+        CHECK(run.span_us < 2u * HITEC_TIME_MAX_US + 60000u);
+    }
 }
 
 int main(void)
@@ -876,6 +992,8 @@ int main(void)
     RUN(other_system_clocks_give_the_bit_within_0_05_percent);
     RUN(a_clock_below_4_cycles_a_state_machine_cycle_is_refused);
     RUN(the_stream_pads_its_front_to_a_word_and_refuses_what_it_cannot_run);
+    RUN(an_answer_no_byte_called_for_is_drained_at_the_window_end);
+    RUN(a_one_byte_listen_holds_its_restart_until_the_answer_is_out);
     RUN(the_span_covers_every_run_of_the_model);
     return test_summary("hitec_pio");
 }
