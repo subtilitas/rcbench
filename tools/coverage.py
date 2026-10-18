@@ -195,6 +195,7 @@ TRACKED = [
     "shared/bench/servo_source.c",
     "shared/bench/tone_link.c",
     "shared/bench/knob.c",
+    "shared/bench/panel_i2c.c",
     "shared/bench/log_writer.c",
     "shared/bench/log_cadence.c",
     "shared/sense/sense_bus.c",

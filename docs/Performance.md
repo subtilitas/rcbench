@@ -192,7 +192,7 @@ and fails when a task's depth exceeds its stack less 1024 bytes.
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 5,440 | 1,728 |
 | `control` | `control_task` | 6,144 | 4,384 | 736 |
 | `runlog` | `log_task` | 4,608 | 3,408 | 176 |
-| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,360 | 688 |
+| `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,328 | 720 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,808 | 1,264 |
 | `wifi_ctl` | `worker`, which starts and stops the radio and the page's server (`components/wifi_access`) | 5,120 | 3,360 | 736 |
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,808 | 1,264 |
@@ -338,15 +338,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,064 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,920 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,072 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,912 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 105,032 |
-| `before` | heap left with the panel up and the radio off | 193,888 |
+| `before` | heap left with the panel up and the radio off | 193,880 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 90,728 |
+| `left` | heap left with the largest mode up | 90,720 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

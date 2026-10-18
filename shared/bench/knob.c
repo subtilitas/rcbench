@@ -6,19 +6,38 @@
 
 #include <stddef.h>
 
-bool knob_decode(uint8_t status, const uint8_t raw[KNOB_WORD_LEN],
-                 const uint8_t magnitude[KNOB_WORD_LEN], knob_reading_t *out)
+const uint8_t knob_poll_regs[KNOB_POLL_READS] = {
+    KNOB_REG_ANGLE_HI,      /* first, as the datasheet asks */
+    KNOB_REG_ANGLE_LO,
+    KNOB_REG_ANGLE_HI,      /* again: the high byte did not move meanwhile */
+};
+
+uint16_t knob_decode(uint8_t hi, uint8_t lo)
 {
-    knob_reading_t r;
-    r.magnet     = (status & KNOB_STATUS_MD) != 0u;
-    r.too_weak   = (status & KNOB_STATUS_ML) != 0u;
-    r.too_strong = (status & KNOB_STATUS_MH) != 0u;
-    r.raw = (uint16_t)((((unsigned)raw[0] & 0x0Fu) << 8) | raw[1]);
-    r.magnitude = (uint16_t)((((unsigned)magnitude[0] & 0x0Fu) << 8) | magnitude[1]);
-    if (out != NULL) {
-        *out = r;
-    }
-    return r.magnet && !r.too_weak && !r.too_strong && r.magnitude != 0u;
+    return (uint16_t)(((unsigned)hi << 6) | ((unsigned)lo >> 2));
+}
+
+uint16_t knob_clockwise(uint16_t angle)
+{
+    return (uint16_t)((KNOB_COUNTS - (unsigned)angle) & (KNOB_COUNTS - 1u));
+}
+
+bool knob_attach(knob_t *k, unsigned addr)
+{
+    knob_reset(k);
+    k->attached = !panel_i2c_addr_reserved(addr);
+    k->addr = k->attached ? (uint8_t)addr : 0u;
+    return k->attached;
+}
+
+int knob_poll_addr(const knob_t *k)
+{
+    return k->attached ? (int)k->addr : -1;
+}
+
+bool knob_poll_probe_first(const knob_t *k)
+{
+    return k->attached && !k->have_ref;
 }
 
 void knob_reset(knob_t *k)
@@ -50,6 +69,18 @@ int knob_feed(knob_t *k, bool usable, uint16_t raw)
         return 0;
     }
     return d;
+}
+
+int knob_poll_done(knob_t *k, bool answered,
+                   const uint8_t bytes[KNOB_POLL_READS])
+{
+    if (!k->attached || !answered || bytes == NULL) {
+        return knob_feed(k, false, 0);
+    }
+    if (bytes[0] != bytes[2]) {
+        return 0;               /* torn: no reading, the reference stays */
+    }
+    return knob_feed(k, true, knob_clockwise(knob_decode(bytes[0], bytes[1])));
 }
 
 float knob_span_fraction(int steps, int scale_deg)
