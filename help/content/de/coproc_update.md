@@ -17,7 +17,7 @@ Die Frage öffnet aus dem [Menü](overview.md), mit UPDATE im Band, solange der 
 | Bedienelement | Was es tut |
 |---|---|
 | 2 s HALTEN ZUM STARTEN | startet das Update nach einem Halten von 2 s, mit der Geste und dem Übergang von ARM |
-| ABBRECHEN | schließt die Frage; das Panel fragt für diese Version bis zu seinem Neustart nicht erneut |
+| ABBRECHEN | schließt die Frage; das Panel fragt für diese Version bis zu seinem Neustart nicht erneut, und [Updates](updates.md#der-koprozessor) startet das Update weiterhin |
 
 Ein anderes Verlassen der Frage lehnt sie ab wie ABBRECHEN.
 
@@ -43,7 +43,7 @@ Die Übertragungsdauer ist nicht gemessen.
 
 ## Wie es endete
 
-Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, und das Alert-Band sagt, wie:
+Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, oder zu [Updates](updates.md#der-koprozessor), wenn dessen Halten das Update gestartet hat, und das Alert-Band sagt, wie:
 
 | Alert | Bedeutung |
 |---|---|

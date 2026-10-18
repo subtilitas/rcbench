@@ -25,6 +25,15 @@
 #define RX      400
 #define RW      384
 
+/* The coprocessor section, in the left column under the third button's
+ * row: its heading, the two versions, up to two lines of state, and the
+ * hold in the sixth row, which ends 20 px above the body's foot. */
+#define CU_HEAD_Y  228
+#define CU_RUN_Y   252
+#define CU_CAR_Y   272
+#define CU_LINE_Y  300
+#define CU_ROW     5
+
 /* The reminder: a box with the title in its header, two taps side by side,
  * the hold under them. */
 #define R_BOX     gfx_rect_make(80, 24, 640, 384)
@@ -39,18 +48,24 @@ enum {
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
+    HIT_COPROC,         /* HOLD 2 s: UPDATE COPROCESSOR */
 };
 
 /* What both screens show, and what they ask for. */
 static upd_view_t s_v;
 static unsigned   s_req;
 
+/* UPDATES' coprocessor section, and its hold's latch. */
+static upd_cu_view_t s_cu;
+static bool          s_cu_req;
+
 /* UPDATES. */
 static struct {
     int       hit;
     uint8_t   press_id;
     bool      have_press;
-    ui_hold_t hold;
+    ui_hold_t hold;       /* DOWNLOAD & INSTALL */
+    ui_hold_t cu_hold;    /* UPDATE COPROCESSOR */
     unsigned  drawn_mask;
 } s;
 
@@ -104,9 +119,16 @@ static bool cancel_allowed(void)
     return upd_busy(&s_v) && s_v.job == UPD_JOB_CHECK;
 }
 
+static bool coproc_allowed(void) { return s_cu.sec == CU_SEC_READY; }
+
 /* A press on a hold the model took away under it ends here. */
 static void drop_holds_if_gone(void)
 {
+    if (!coproc_allowed() && s.have_press && s.hit == HIT_COPROC) {
+        (void)ui_hold_left(&s.cu_hold);
+        s.hit = HIT_NONE;
+        s.have_press = false;
+    }
     if (!download_allowed()) {
         if (s.have_press && s.hit == HIT_DOWNLOAD) {
             (void)ui_hold_left(&s.hold);
@@ -134,6 +156,26 @@ void upd_screen_set(const upd_view_t *v)
 }
 
 const upd_view_t *upd_screen_view(void) { return &s_v; }
+
+void upd_screen_set_coproc(const upd_cu_view_t *v)
+{
+    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
+    if (v == NULL || memcmp(v, &s_cu, sizeof(s_cu)) == 0) {
+        return;
+    }
+    s_cu = *v;
+    drop_holds_if_gone();
+    touched();
+}
+
+const upd_cu_view_t *upd_screen_coproc(void) { return &s_cu; }
+
+bool upd_screen_take_coproc(void)
+{
+    const bool was = s_cu_req;
+    s_cu_req = false;
+    return was;
+}
 
 unsigned upd_screen_take(void)
 {
@@ -387,6 +429,9 @@ static int hit_at(int x, int y)
     if (download_allowed() && gfx_rect_contains(btn(2), x, y)) {
         return HIT_DOWNLOAD;
     }
+    if (coproc_allowed() && gfx_rect_contains(btn(CU_ROW), x, y)) {
+        return HIT_COPROC;
+    }
     return HIT_NONE;
 }
 
@@ -412,6 +457,9 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     ui_hold_reset(&s.hold);
+    ui_hold_reset(&s.cu_hold);
+    memset(&s_cu, 0, sizeof(s_cu));
+    s_cu_req = false;
 }
 
 static void event(const touch_event_t *evt)
@@ -430,6 +478,8 @@ static void event(const touch_event_t *evt)
             s.press_id = evt->point.id;
             if (s.hit == HIT_DOWNLOAD) {
                 ui_hold_begin(&s.hold);
+            } else if (s.hit == HIT_COPROC) {
+                ui_hold_begin(&s.cu_hold);
             }
         }
         touched();
@@ -440,8 +490,10 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off the hold abandons it, as on every held control. */
-        if (s.hit == HIT_DOWNLOAD && !gfx_rect_contains(btn(2), x, y)
-            && ui_hold_leave(&s.hold)) {
+        if ((s.hit == HIT_DOWNLOAD && !gfx_rect_contains(btn(2), x, y)
+             && ui_hold_leave(&s.hold))
+            || (s.hit == HIT_COPROC && !gfx_rect_contains(btn(CU_ROW), x, y)
+                && ui_hold_leave(&s.cu_hold))) {
             s.hit = HIT_NONE;
             s.have_press = false;
             touched();
@@ -460,6 +512,10 @@ static void event(const touch_event_t *evt)
         (void)ui_hold_end(&s.hold);
         return;
     }
+    if (hit == HIT_COPROC) {
+        (void)ui_hold_end(&s.cu_hold);
+        return;
+    }
     if (touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
         act(hit);
     }
@@ -468,12 +524,19 @@ static void event(const touch_event_t *evt)
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
-    if (s.hold.down || s.hold.flash_left > 0) {
+    if (s.hold.down || s.hold.flash_left > 0 || s.cu_hold.down
+        || s.cu_hold.flash_left > 0) {
         touched();             /* the fill follows the hold */
     }
     if (download_allowed() && ui_hold_tick(&s.hold, dt_s)) {
         s_req |= UPD_REQ_DOWNLOAD;
         ui_hold_reached(&s.hold);
+    }
+    if (coproc_allowed() && ui_hold_tick(&s.cu_hold, dt_s)) {
+        /* coproc_update_drive() takes it next frame and opens the
+         * progress. */
+        s_cu_req = true;
+        ui_hold_reached(&s.cu_hold);
     }
 }
 
@@ -481,6 +544,8 @@ static void cancel(void)
 {
     if (s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&s.hold);
+    } else if (s.hit == HIT_COPROC) {
+        (void)ui_hold_left(&s.cu_hold);
     }
     s.hit = HIT_NONE;
     s.have_press = false;
@@ -490,6 +555,7 @@ static void cancel(void)
 static void enter(void)
 {
     ui_hold_reset(&s.hold);
+    ui_hold_reset(&s.cu_hold);
     touched();
 }
 
@@ -498,6 +564,78 @@ static void leave(void)
     s.hit = HIT_NONE;
     s.have_press = false;
     ui_hold_reset(&s.hold);
+    ui_hold_reset(&s.cu_hold);
+}
+
+void upd_cu_text(const upd_cu_view_t *v, const char **line,
+                 gfx_color_t *col)
+{
+    *col = UI_WARN;
+    switch (v->sec) {
+    case CU_SEC_NO_IMAGE: *line = TR(UPD_CU_NO_IMAGE); *col = UI_TEXT_DIM;
+                          break;
+    case CU_SEC_BUSY:     *line = TR(UPD_WAIT_COPROC);  break;
+    case CU_SEC_NO_LINK:  *line = TR(UPD_CU_NO_LINK);   break;
+    case CU_SEC_UNKNOWN:  *line = TR(UPD_CU_UNKNOWN); *col = UI_TEXT; break;
+    case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
+    case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
+    case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
+    case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
+    case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
+    case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;
+    case CU_SEC_INSTALL:  *line = TR(UPD_CU_INSTALL);   break;
+    case CU_SEC_READY:
+    default:
+        /* As the question says it: an older image in the warning colour,
+         * the same number of another build plainly, else what the update
+         * does to the bench. */
+        if (coproc_update_older(v->running, v->carried)) {
+            *line = TR(CU_Q_OLDER);
+        } else if (v->running.major == v->carried.major
+                   && v->running.minor == v->carried.minor
+                   && v->running.patch == v->carried.patch) {
+            *line = TR(CU_Q_SAME);
+            *col = UI_TEXT_DIM;
+        } else {
+            *line = TR(CU_Q_WHAT);
+            *col = UI_TEXT_DIM;
+        }
+        break;
+    }
+}
+
+static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
+{
+    if (known) {
+        snprintf(out, n, "%u.%u.%u", (unsigned)v.major, (unsigned)v.minor,
+                 (unsigned)v.patch);
+    } else {
+        snprintf(out, n, "%s", TR(UPD_CU_NOT_KNOWN));
+    }
+}
+
+/* The coprocessor section: heading, versions, state, hold. */
+static void render_coproc(gfx_canvas_t *c)
+{
+    char ver[24], line[96];
+    text_in(c, BX, CU_HEAD_Y, BW, TR(UPD_CU_HEAD), UI_FONT_LABEL,
+            UI_TEXT_DIM);
+    cu_version_text(ver, sizeof(ver), s_cu.known, s_cu.running);
+    snprintf(line, sizeof(line), TR(UPD_CU_RUNNING), ver);
+    text_in(c, BX, CU_RUN_Y, BW, line, UI_FONT_LABEL, UI_TEXT);
+    cu_version_text(ver, sizeof(ver), s_cu.have_image, s_cu.carried);
+    snprintf(line, sizeof(line), TR(UPD_CU_CARRIED), ver);
+    text_in(c, BX, CU_CAR_Y, BW, line, UI_FONT_LABEL, UI_TEXT);
+
+    const char *state = "";
+    gfx_color_t col = UI_TEXT;
+    upd_cu_text(&s_cu, &state, &col);
+    (void)para(c, BX, CU_LINE_Y, BW, state, col);
+
+    const gfx_color_t fill = coproc_allowed() ? hold_fill(&s.cu_hold)
+                                              : UI_PANEL_HI;
+    ui_button(c, btn(CU_ROW), TR(UPD_CU_HOLD), fill, false,
+              coproc_allowed());
 }
 
 static void render(gfx_canvas_t *c, int buffer_index)
@@ -520,6 +658,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         ui_button(c, btn(2), TR(UPD_HOLD_DL), hold_fill(&s.hold), false,
                   download_allowed());
     }
+    render_coproc(c);
 
     /* What is kept, what runs, what last happened. */
     ui_card(c, gfx_rect_make(RX, 16, RW, 400), UI_PANEL);
@@ -571,8 +710,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
              UI_TEXT_DIM);
     (void)para(c, x, y, w, TR(UPD_ABOUT_2), UI_TEXT_DIM);
 
-    if (s.hold.flash_left > 0) {
+    if (s.hold.flash_left > 0 || s.cu_hold.flash_left > 0) {
         ui_hold_flash_step(&s.hold);
+        ui_hold_flash_step(&s.cu_hold);
         s.drawn_mask = 0u;
     } else {
         s.drawn_mask |= bit;
