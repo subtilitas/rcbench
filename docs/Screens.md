@@ -2679,7 +2679,7 @@ console at all.
 A panel built with the IOmcu's image carries it and offers it when the
 IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `IOmcu runs a different build. An update is available in the menu.`, and the question opens on the menu while the bench is SAFE, the
+build raises the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`, and the question opens on the menu while the bench is SAFE, the
 supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START given while either holds is spent,
 and the question opens again once both have ended.
