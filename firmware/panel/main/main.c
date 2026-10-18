@@ -1315,6 +1315,12 @@ log_cadence_t s_log_cad;
 
 /* The model's gate is the sample rate's period, and its longest step the
  * totals' longest. */
+_Static_assert(PROG_LINK_COUNT_UNKNOWN == OUTPUTS_PORTS_UNKNOWN
+               && (PROG_PORTS_NONE & 0xFFu) == PROG_LINK_COUNT_UNKNOWN
+               && PROG_LINK_NO_PIN == OUTPUTS_NO_PIN
+               && PROG_LINK_NO_PIN == PICKER_NO_PIN,
+               "the PROG page's unknown count and missing pin reach the "
+               "OUTPUTS screen and the pin picker unchanged");
 _Static_assert((uint32_t)(1000.0f / PANEL_SAMPLE_HZ) == LOG_CADENCE_MODEL_MS,
                "the model's period is 1/PANEL_SAMPLE_HZ");
 _Static_assert((uint32_t)(BENCH_TOTALS_MAX_STEP_S * 1000.0f)
@@ -1970,7 +1976,20 @@ void app_main(void)
                          settings_get_bool(SET_SERVO_PORT_PWM));
             const uint8_t prog_pin = (uint8_t)atomic_load(&s_prog_pin);
             outputs_screen_set_prog_pin(prog_pin);
-            picker_screen_set_prog_pin(prog_pin);
+            {
+                const unsigned ports = atomic_load(&s_prog_ports);
+                uint8_t pins[LINK_PG_PORTS_MAX];
+                pins[0] = prog_pin;
+                for (unsigned n = 1; n < LINK_PG_PORTS_MAX; ++n) {
+                    pins[n] = (uint8_t)(ports >> (8u * n));
+                }
+                const uint8_t count = (uint8_t)(ports & 0xFFu);
+                outputs_screen_set_prog_ports(count, pins);
+                /* While the count is not known the picker holds port 0's
+                 * pin, as the PIN register reads it. */
+                picker_screen_set_prog_ports(
+                    (count == OUTPUTS_PORTS_UNKNOWN) ? 1u : count, pins);
+            }
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
             motor_screen_set_throttle_protocol(

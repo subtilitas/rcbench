@@ -559,6 +559,13 @@ extern prog_link_t    s_prog_link;
 extern atomic_uint    s_prog_want_target;
 extern atomic_bool    s_prog_want_pwm;
 extern atomic_uint    s_prog_pin;
+/* The ports the PROG page reports (prog_link_count(), 0xFF while not
+ * known) in bits 0 to 7, and the pins of ports 1, 2 and 3 in bits 8 to 15,
+ * 16 to 23 and 24 to 31, for the OUTPUTS screen's PROG PORT entries and
+ * the pin picker; one word, so the screens never read one page's count
+ * with another's pins. */
+#define PROG_PORTS_NONE 0xFFFFFFFFu
+extern atomic_uint    s_prog_ports;
 /* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target

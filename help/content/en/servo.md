@@ -38,7 +38,7 @@ The right card, from the top:
 | meter line and plot | voltage, current and power of the rail, plotted over the last 13 s |
 | SET | the supply's voltage and current limit, and its output switch |
 | SPEED | the rate the bench may move the output, 100 % passes the command straight through |
-| TARGET | what the tester drives, `protocol pins`: `SERVO PWM GP2`, `PROG PORT GP13`, or a warning; a tap picks it ([the TARGET row](servo-settings.md#the-target-row)) |
+| TARGET | what the tester drives, `protocol pins`: `SERVO PWM GP2`, `PROG PORT GP13`, or a warning; a tap opens Outputs, where it is picked ([the TARGET row](servo-settings.md#the-target-row)) |
 
 ## ARMED
 

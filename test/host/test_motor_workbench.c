@@ -14,6 +14,8 @@
 #include <string.h>
 
 #include "greatest.h"
+
+#include "outputs_screen.h"
 #include "touch_feed.h"
 
 #include "gfx.h"
@@ -734,6 +736,43 @@ TEST_CASE(the_target_row_opens_outputs_and_the_tag_comes_back)
     CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
 }
 
+/*
+ * OUTPUTS opens on the protocol the throttle's pins are bound as; on the
+ * overview (OFF) while they are bound as several or none is known.  Once:
+ * the same screen from SETUP's tile opens on the overview, and so does the
+ * next row tap after the protocol is no longer known.
+ */
+TEST_CASE(the_target_row_opens_outputs_on_the_throttle_protocol)
+{
+    const outbind_proto_t *k = outbind_protos();
+    for (uint8_t p = 1; p < OUTBIND_PROTOS; ++p) {
+        if (k[p].role != OUT_ROLE_THROTTLE) {
+            continue;
+        }
+        fresh();
+        motor_screen_set_throttle_protocol(p);
+        feed_tap(FEED_LONE, TARGET_X, TARGET_Y);
+        CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+        CHECK_EQ((int)outputs_screen_binding()->proto, (int)p);
+        CHECK_EQ(outputs_screen_port_shown(), -1);
+        home_tag();
+        CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+        /* From SETUP's tile: the overview. */
+        ui_router_goto(SCREEN_SETUP);
+        ui_router_goto(SCREEN_OUTPUTS);
+        CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+    }
+    static const uint8_t none[] = { 0u, MOTOR_PROTO_MIXED, OUTBIND_PROTOS };
+    for (size_t i = 0; i < sizeof(none); ++i) {
+        fresh();
+        motor_screen_set_throttle_protocol(none[i]);
+        feed_tap(FEED_LONE, TARGET_X, TARGET_Y);
+        CHECK_EQ(ui_router_current(), SCREEN_OUTPUTS);
+        CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+        CHECK_EQ(outputs_screen_port_shown(), -1);
+    }
+}
+
 /* ------------------------------------------------------- the home tag */
 
 /* Over SETTINGS' keypad the tag closes it, typed digits with it, and the
@@ -808,6 +847,7 @@ int main(void)
     RUN(the_pulse_rows_lock_while_arm_is_held);
     RUN(the_target_row_locks_for_each_condition);
     RUN(the_target_row_opens_outputs_and_the_tag_comes_back);
+    RUN(the_target_row_opens_outputs_on_the_throttle_protocol);
     RUN(the_home_tag_closes_the_keypad_then_leaves);
     RUN(the_save_line_follows_the_store);
     free(fb);

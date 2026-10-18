@@ -905,6 +905,46 @@ TEST_CASE(a_write_to_another_register_leaves_the_target_record)
     CHECK_EQ(prog_link_rate(&g_p), PROG_LINK_RATE_RESET);
 }
 
+TEST_CASE(the_port_count_is_the_page_s_up_to_the_ports_it_holds)
+{
+    /* Not known: no object, no link, the page not read yet. */
+    CHECK_EQ(prog_link_count(NULL), PROG_LINK_COUNT_UNKNOWN);
+    prog_link_init(&g_p);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
+    fresh();
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
+    read_at(0u);
+    CHECK_EQ(prog_link_count(&g_p), 1u);
+    /* A page that reports no port: known, 0. */
+    g_page[LINK_PG_COUNT] = 0u;
+    read_at(1u);
+    CHECK_EQ(prog_link_count(&g_p), 0u);
+    g_page[LINK_PG_COUNT] = LINK_PG_PORTS_MAX;
+    read_at(2u);
+    CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
+    /* A count past the page's ports is the ports the page holds. */
+    g_page[LINK_PG_COUNT] = LINK_PG_PORTS_MAX + 1u;
+    read_at(3u);
+    CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
+    g_page[LINK_PG_COUNT] = 0xFFFFu;
+    read_at(4u);
+    CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
+    /* A read gone stale, and a lost link: not known again. */
+    prog_link_stale(&g_p);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
+    read_at(5u);
+    CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
+    prog_link_lost(&g_p);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
+    /* An IOmcu older than the page: no port, known at the link-up. */
+    prog_link_init(&g_p);
+    prog_link_came_up(&g_p, LINK_MINOR_PROG - 1u);
+    CHECK_EQ(prog_link_count(&g_p), 0u);
+    page_fresh();
+    read_at(6u);
+    CHECK_EQ(prog_link_count(&g_p), 0u);
+}
+
 int main(void)
 {
     RUN(nothing_is_written_while_the_programmer_has_a_port);
@@ -921,6 +961,7 @@ int main(void)
     RUN(a_write_that_is_not_acknowledged_makes_the_page_unknown);
     RUN(a_port_names_its_pin_unless_it_has_none_or_was_refused);
     RUN(a_count_above_the_ports_the_page_holds_names_no_pin);
+    RUN(the_port_count_is_the_page_s_up_to_the_ports_it_holds);
     RUN(the_drive_keeps_its_target_while_the_programmer_holds_the_port);
     RUN(the_drive_names_the_target_and_the_port_pin);
     RUN(a_write_not_acknowledged_leaves_the_drive_unknown);

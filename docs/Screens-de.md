@@ -250,7 +250,7 @@ Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 64 px, und
 einem Wertefeld von 18 Zeichen, das nennt, was das Gas treibt, das Protokoll
 und dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die als MOTOR PWM
 oder als DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
-SETUP > AUSGÄNGE, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
+SETUP > OUTPUTS, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
 Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
 DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
 
@@ -265,7 +265,9 @@ DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
 Das Gas bewegt sich in den beiden Warnzuständen weiter. ARM schaltet die
 ganze Bank auf ARMED, nicht nur die hier genannten Pins.
 
-Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs). Das Verlassen schaltet den
+Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs) auf dem Protokoll, an das die
+Gas-Pins gebunden sind, auf der Übersicht, solange sie an mehrere gebunden
+sind oder keines bekannt ist. Das Verlassen schaltet den
 Prüfstand auf SAFE, wie jeder Weg vom Bildschirm. Das Home-Tag auf OUTPUTS
 führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde; ein
 anderer Bildschirm dazwischen macht den nächsten Eintritt zu dem einer
@@ -860,7 +862,7 @@ Was jedes Bedienelement auf einem Prüfstand in SAFE tut:
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | OPTIONEN > AUSGANG: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
-| ZIEL | ein Tippen öffnet AUSGÄNGE / PROG-PORT | gesperrt; nennt das Ziel |
+| ZIEL | ein Tippen öffnet SETUP > OUTPUTS | gesperrt; nennt das Ziel |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
 
@@ -1273,8 +1275,8 @@ keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
 IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
 und liest und schreibt die Einstellungen des Servos über dessen
-Signalleitung. Er verbindet nur, wenn ZIEL auf der rechten Karte auf
-PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+Signalleitung. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
+PROG-PORT steht; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
@@ -1323,7 +1325,6 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
-| OPTIONEN > PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit ZIEL auf AUSGÄNGE; EIN nach der Regel von ZIEL, AUS in ARMED wie in SAFE, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
 AS5600, der Ausgangsencoder, wird nur auf SETUP > ANSCHLÜSSE ein- und
 ausgeschaltet ([der Ausgangsencoder](#anschlüsse-der-ausgangsencoder)); der
@@ -1340,9 +1341,19 @@ A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
 
 Die Zeile ZIEL der Ausgangskarte, zwischen TEMPO und ZENTRIEREN, nennt, was
 der Tester treibt, als `Protokoll Pins`, mittig in ihrem Wertfeld, und ist
-das Bedienelement, das es wählt. Ein Tippen auf das Feld öffnet die Liste
-AUSGÄNGE / PROG-PORT, die Einstellung ZIEL, im NVS (Non-Volatile Storage)
-gespeichert. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
+das Bedienelement, das es wählt, wie die Zeile ZIEL von MOTOR & ESC. Ein
+Tippen auf das Feld öffnet SETUP > OUTPUTS auf dem, was die Zeile zeigt,
+wohin der IOmcu die Befehle jetzt schickt, nicht auf der Einstellung ZIEL:
+auf dem Eintrag PROG-PORT, solange er den Port treibt, auf SERVO PWM,
+solange er die Ausgänge treibt, und auf der Übersicht, solange das Ziel
+nicht bekannt ist oder kein IOmcu antwortet ([Outputs](#outputs)). Ein
+noch ausstehender Schreibvorgang von ZIEL oder PROG-PORT ohne Pin am Port
+öffnet auf dem, was getrieben wird. Dort wählt SERVO-TESTER OUTPUTS oder PROG-PORT, die
+Einstellung ZIEL, und PORT-PWM den Puls des Ports, beide im NVS
+(Non-Volatile Storage) gespeichert. Das Verlassen von SERVO schaltet den
+Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf
+OUTPUTS führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile angetippt
+wurde. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
 nimmt keinen Druck --, solange der Prüfstand ARMED ist, während eines
 Sweeps (laufend oder pausiert), eines automatischen Tests oder eines
 Endlagenlaufs und solange der Servo-Programmierer den Port hält; das Ziel
@@ -1350,9 +1361,7 @@ nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
 Tastenfeldern und dem Servo-Programmierer sichtbar, die Zeile nennt den Pin
 also auch, während einer davon die linke Spalte bedeckt.
 
-![Die Auswahl des Ziels](img/de/servo-target-choice.png)
-
-Mit AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen
+Mit OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
 so viele Pins, wie in die 23 Zeichen des Werts passen, dann `+N`: 8 Pins ab
 GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
@@ -1376,7 +1385,7 @@ IOmcu hält, einen Port oder die Ausgänge; der Programmer treibt den
 Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein
 IOmcu ohne diese Seite (Protokoll älter als 4.13) hat die
 Standardausgänge als Ziel. Die Zeile folgt dem Ziel, das der IOmcu
-hält, nicht der Einstellung: eine Änderung von ZIEL wartet auf einen
+hält, nicht der Einstellung: eine Änderung von SERVO-TESTER wartet auf einen
 ruhigen Prüfstand und erscheint in der Zeile, sobald der IOmcu sie
 übernommen hat.
 
@@ -1416,7 +1425,7 @@ anderes gedacht war.
 ![Die Warnung](img/de/servo-warning.png)
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des IOmcu
-(Protokoll 4.1). Sie gilt nur für das ZIEL. Mit AUSGÄNGE, den Standard-Servoports,
+(Protokoll 4.1). Sie gilt nur für das ZIEL. Mit OUTPUTS, den Standard-Servoports,
 als Ziel ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat; ein
 PPM-Ausgang behält seinen eigenen Frame. Mit PROG-PORT als Ziel ist es der Pin
 des Programmierports, und jeder Slot behält seine eigene Rate (Protokoll
@@ -1436,7 +1445,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
@@ -2383,7 +2392,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -3254,14 +3263,21 @@ Aktuelle Einschränkungen:
 
 ## Outputs
 
-Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
-Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
-wählen, und der Bildschirm bleibt.
-Die Protokolle, die an die
-Pins des IOmcu gebunden sind, und welche Pins jedes davon treibt. Der
-Bildschirm öffnet auf der [Übersicht](#die-übersicht-off): OFF gewählt,
-jeder gebundene Pin mit seinem Protokoll benannt, und kein Pin änderbar, bis
-ein Protokoll gewählt ist.
+Hinter der Kachel OUTPUTS auf SETUP und hinter den Zeilen ZIEL von
+MOTOR & ESC und SERVO; das Home-Tag führt zu dem Bildschirm zurück, der ihn
+geöffnet hat. Über der offenen Protokollliste schließt das Home-Tag die
+Liste, ohne zu wählen, und der Bildschirm bleibt. Die Protokolle, die an die
+Pins des IOmcu gebunden sind, welche Pins jedes davon treibt, und die
+Programmierports des IOmcu. Von SETUP aus öffnet der Bildschirm auf der
+[Übersicht](#die-übersicht-off): OFF gewählt, jeder gebundene Pin mit seinem
+Protokoll benannt, und kein Pin änderbar, bis ein Protokoll gewählt ist. Von
+einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
+
+| Geöffnet von | Öffnet auf |
+| --- | --- |
+| der Kachel OUTPUTS auf SETUP | der Übersicht, OFF |
+| der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`) oder keines bekannt ist |
+| der Zeile ZIEL von SERVO | dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist |
 
 ![Outputs](img/de/outputs.png)
 
@@ -3337,6 +3353,38 @@ Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
 
+### Der Eintrag PROG-PORT
+
+Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport,
+den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4. Solange die
+Anzahl nicht bekannt ist (keine Verbindung, die Seite seit dem Aufbau der
+Verbindung nicht gelesen), hält die Liste einen Eintrag, für Port 1. Ein
+IOmcu älter als Protokoll 4.13 hat keinen Programmierport, und die Liste
+hält keinen Eintrag.
+Bei mehr als einem heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`. Ein
+Programmierport ist ein Ausgang eigener Art, kein Slot und kein Protokoll
+([Link](Link-de.md#die-programmierports)). Sein Eintrag zeigt:
+
+- die Pins, wie die Übersicht sie benennt, den eigenen Pin des Ports
+  hervorgehoben; kein Pin nimmt einen Haken an, und der Pin des Ports ist
+  nur lesbar;
+- `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe;
+- was der Port trägt: `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`.
+  Der IOmcu gibt auf einem Port kein Gas-Protokoll aus: kein MOTOR PWM,
+  kein DShot;
+- auf Port 1 SERVO-TESTER (OUTPUTS | PROG-PORT) und PORT-PWM (EIN | AUS),
+  zwei Segmente unter ihren Beschriftungen, mit dem Grund darunter, solange
+  eines gesperrt ist ([das Ziel](ServoProgrammer-de.md#das-ziel)). Der
+  SERVO-Tester treibt nur Port 1; der Eintrag eines anderen Ports sagt
+  `DER SERVO-TESTER STEUERT NUR PROG-PORT 1 AN`.
+
+![Der Eintrag PROG-PORT](img/de/outputs-port.png)
+
+Keines der beiden Segmente schreibt von diesem Bildschirm eine Seite: die
+Einstellung wird im NVS gehalten, und das Panel bringt sie bei einem
+Prüfstand in Ruhe zum IOmcu. Das Wählen des Eintrags schreibt nichts, und
+LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt.
+
 SERVO PWM und MOTOR PWM laufen auf den PWM-Slices, und der IOmcu lehnt
 dort zwei Bindungen ab ([Servo-PWM](DShot-de.md#servo-pwm)). Unter diesen
 beiden Einträgen hält der Bildschirm einen solchen Pin, wie er einen Pin
@@ -3345,7 +3393,7 @@ Pin, mit dem er kollidiert.
 
 | Zelle | Zeile nach einem Tippen darauf | Regel |
 | --- | --- | --- |
-| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin des Programmierports, solange der Port ihn hält; GP13 und GP28 sind Slice 6 |
+| `SLICE VON GP13` | `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` | der Pin teilt sich einen Slice mit dem Pin eines Programmierports, solange der Port ihn hält, geprüft gegen jeden Port, den der IOmcu meldet; GP13 und GP28 sind Slice 6 |
 | `KANAL VON GP0` | `GP16: GLEICHER PWM-KANAL WIE GP0` | der Pin teilt sich ein Compare-Register mit einem als SERVO PWM oder MOTOR PWM gebundenen Pin: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22 |
 
 Die Zeile steht in Bernstein unter dem Protokoll bis zur nächsten Auswahl,
@@ -3420,7 +3468,8 @@ reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
 ### Die Übersicht: OFF
 
-Jeder Besuch des Bildschirms öffnet mit OFF gewählt. OFF ist der erste
+Jeder Besuch von SETUP aus öffnet mit OFF gewählt; eine Zeile ZIEL öffnet
+den Bildschirm auf dem, was ihre Werkbank treibt. OFF ist der erste
 Eintrag der Liste und bindet nichts: er nimmt 0 Pins, darum steht unter ihm
 keine Pin-Zählung. Mit OFF gewählt zeigt jeder gebundene Pin den
 Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
@@ -3531,7 +3580,7 @@ Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
 Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
 schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
 nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
-dem Outputs-Bildschirm: keine Taste bindet oder löst einen Pin, bis ein
+dem Outputs-Bildschirm von SETUP aus: keine Taste bindet oder löst einen Pin, bis ein
 Protokoll gewählt ist, und die Zeile unter der Liste sagt
 `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
 gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
@@ -3567,7 +3616,10 @@ jeden gebundenen Pin.
 
 Der Pin des Programmierports des IOmcu, ab Werk GP13 (Pad 17), ist grau
 gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
-nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal. Ein
+nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal.
+Jeder Port, den der IOmcu meldet, höchstens 4, hält seinen Pin so, jeder
+einmal unter dem einen Namen `PROG-PORT` geführt, und die Slice-Regel
+unten wird gegen jeden geprüft. Ein
 Protokoll, dessen gespeicherte Bindung diesen Pin hält, behält ihn, der
 IOmcu gibt dem Port dann keinen Pin, und die Taste gehört diesem
 Protokoll wie jede andere.

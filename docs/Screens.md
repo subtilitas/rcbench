@@ -251,7 +251,9 @@ With GP0 to GP7 bound as DSHOT300 it reads `DSHOT300 GP0 +7`.
 The throttle still moves in the two warning states. ARM switches the whole
 bank to ARMED, not only the pins named here.
 
-A tap on TARGET opens [OUTPUTS](#outputs). Leaving switches the bench to SAFE,
+A tap on TARGET opens [OUTPUTS](#outputs) on the protocol the throttle's
+pins are bound as, on the overview while they are bound as several or none
+is known. Leaving switches the bench to SAFE,
 as every way off the screen does. The home tag on OUTPUTS returns to MOTOR &
 ESC on the task TARGET was tapped on; any other screen opened in between
 makes the next entry a tile's, on LIVE. TARGET takes no tap, and is drawn
@@ -787,7 +789,7 @@ What each control does while the bench is SAFE:
 | RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
 | SETTINGS > OUTPUT: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
-| TARGET | a tap opens OUTPUTS / PROG PORT | locked; names the target |
+| TARGET | a tap opens SETUP > OUTPUTS | locked; names the target |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
@@ -1155,10 +1157,10 @@ them, have no row ([PROGRAM](#program) on MOTOR & ESC).
 
 The KST and Chaservo programmer takes the IOmcu's programming port, GP13 on
 pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
-the servo's settings on its signal wire. It connects only with TARGET on
-the right card set to PROG PORT; with OUTPUTS it shows `Use the programming
-port to program a servo.` and `Set TARGET on the right card to PROG PORT.`,
-and CONNECT is locked. While it holds the port it stays open: CLOSE and the
+the servo's settings on its signal wire. It connects only with SERVO
+TESTER on SETUP > OUTPUTS set to PROG PORT; with OUTPUTS it shows `Use the
+programming port to program a servo.` and `Set SERVO TESTER to PROG PORT on
+SETUP > OUTPUTS.`, and CONNECT is locked. While it holds the port it stays open: CLOSE and the
 home tag open LEAVE PROGRAMMING, and while the port moves into or out of
 programming they do nothing. Leaving SERVO leaves the port as it is; back
 on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled and
@@ -1206,7 +1208,6 @@ the name opens a keyboard.
 | SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
 | SETTINGS > DUT | REPORT | a text report beside each test's log |
 | SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
-| SETTINGS > DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with TARGET on OUTPUTS; ON under the rule of TARGET, OFF ARMED or not but not during a sweep or a test, and neither while the programmer holds the port |
 
 AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
 alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
@@ -1223,16 +1224,23 @@ SETTINGS.
 
 The TARGET row of the output card, between SPEED and CENTRE, names what
 the tester drives as `protocol pins`, centred in its value box, and is the
-control that picks it. A tap on the box opens the list OUTPUTS / PROG PORT,
-the TARGET setting, kept in NVS (non-volatile storage). The row is locked
+control that picks it, as MOTOR & ESC's TARGET row is. A tap on the box
+opens SETUP > OUTPUTS on what the row shows, where the IOmcu sends the
+commands now, not on the TARGET setting: on the PROG PORT entry while it
+drives the port, on SERVO PWM while it drives the outputs, and on the
+overview while the target is not known or no IOmcu answers
+([OUTPUTS](#outputs)). A TARGET write still pending, or PROG PORT asked
+for with no pin on the port, opens on what is driven. There SERVO TESTER
+picks OUTPUTS or PROG PORT, the TARGET setting, and PORT PWM the port's
+pulse, both kept in NVS (non-volatile storage). Leaving SERVO switches the
+bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back
+to SERVO on the task the row was tapped on. The row is locked
 -- outlined, its value dimmed, and it takes no press -- while the bench is
 ARMED, during a sweep (running or paused), an automatic test or a limit
 run, and while the servo programmer holds the port; it names the target all
 the same. The output card stays in sight under the pages, their keypads and
 the servo programmer, so the row names the pin while any of them covers the
 left column.
-
-![The choice of target](img/servo-target-choice.png)
 
 With OUTPUTS the row names the GPIOs bound as SERVO PWM in the binding the
 tester drives: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`; as many pins as fit
@@ -1257,7 +1265,7 @@ naming the target the IOmcu holds, a port or the outputs; the
 programmer drives the port and the tester sends nothing. The page is read
 every 500 ms. An IOmcu without that page (protocol older than 4.13) has
 the standard outputs as target. The row follows the target the IOmcu
-holds, not the setting: a TARGET change waits for a quiet bench and
+holds, not the setting: a SERVO TESTER change waits for a quiet bench and
 reaches the row once the IOmcu has taken it.
 
 ![The TARGET row with PROG PORT](img/servo-target.png)
@@ -2168,7 +2176,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC goes back to MOTOR & ESC. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -2980,13 +2988,20 @@ Current limitations:
 
 ## Outputs
 
-Behind the OUTPUTS tile on SETUP; its home tag leads back there. Over
-the open protocol list the home tag closes the list, choosing nothing, and
-the screen stays. The
-protocols bound to the
-IOmcu's pins, and which pins each one drives. It opens on the
+Behind the OUTPUTS tile on SETUP, and behind the TARGET rows of MOTOR & ESC
+and SERVO; its home tag leads back to the screen that opened it. Over the
+open protocol list the home tag closes the list, choosing nothing, and the
+screen stays. The protocols bound to the IOmcu's pins, which pins each one
+drives, and the IOmcu's programming ports. From SETUP it opens on the
 [overview](#the-overview-off): OFF selected, every bound pin named by its
-protocol, and no pin editable until a protocol is picked.
+protocol, and no pin editable until a protocol is picked. From a TARGET row
+it opens on what that workbench drives:
+
+| Opened from | Opens on |
+| --- | --- |
+| SETUP's OUTPUTS tile | the overview, OFF |
+| MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the overview while they are bound as several (`MIXED`) or none is known |
+| SERVO's TARGET row | what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known |
 
 ![Outputs](img/outputs.png)
 
@@ -3057,6 +3072,35 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
+### The PROG PORT entry
+
+The protocol list ends in one PROG PORT entry per programming port the
+IOmcu reports: 1 on the bring-up build, at most 4. While the count is
+not known (no link, the page not read since the link came up) the list
+holds one entry, for port 1. An IOmcu older than protocol 4.13 has no
+programming port, and the list holds no entry. With more than one the entries are
+named `PROG PORT 1` to `PROG PORT 4`. A programming port is an output of
+its own kind, no slot and no protocol
+([Link](Link.md#the-programming-ports)). Its entry shows:
+
+- the pins as the overview names them, the port's own pin lit; no pin takes
+  a tick, and the port's pin is read-only;
+- `PIN GP13`, or `NO PIN KNOWN` in the warning colour;
+- what the port carries: `CARRIES SERVO PWM AND KST/CHASERVO PROGRAMMING`.
+  The IOmcu renders no throttle protocol on a port: no MOTOR PWM, no
+  DShot;
+- on port 1, SERVO TESTER (OUTPUTS | PROG PORT) and PORT PWM (ON | OFF),
+  two segments under their labels, with the reason under them while one is
+  locked ([the target](ServoProgrammer.md#the-target)). The SERVO tester
+  drives port 1 alone; another port's entry says `THE SERVO TESTER DRIVES
+  PROG PORT 1 ONLY`.
+
+![The PROG PORT entry](img/outputs-port.png)
+
+Neither segment writes a page from this screen: the setting is kept in NVS,
+and the panel takes it to the IOmcu on a bench at rest. Picking the entry
+writes nothing, and LAST WRITE is not shown on it.
+
 SERVO PWM and MOTOR PWM run on the PWM slices, and the IOmcu refuses
 two bindings there ([Servo PWM](DShot.md#servo-pwm)). Under those two
 entries the screen holds such a pin, as it holds a pin of another protocol:
@@ -3064,7 +3108,7 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
+| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with a programming port's pin while the port holds it, checked against every port the IOmcu reports; GP13 and GP28 are slice 6 |
 | `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
 The line stands under the protocol, in amber, until the next pick, the next
@@ -3136,7 +3180,8 @@ free and showing its pad number.
 
 ### The overview: OFF
 
-Every visit to the screen opens with OFF selected. OFF is the first entry of
+Every visit from SETUP opens with OFF selected; a TARGET row opens the
+screen on what its workbench drives. OFF is the first entry of
 the list and binds nothing: it takes 0 pins, so no pin count is shown under
 it. With OFF selected, every bound pin shows the name of the
 protocol that holds it in full-brightness text, so the whole binding and
@@ -3240,7 +3285,7 @@ names the selected protocol. A tap opens it over the board; a pick selects
 the protocol a tap on a key joins, on this screen and on the Outputs screen,
 and writes nothing. A tap outside the open list closes it and picks nothing.
 Every visit opens with OFF selected, on this screen and on the Outputs
-screen: no key binds or unbinds a pin until a protocol is picked, and the
+screen from SETUP: no key binds or unbinds a pin until a protocol is picked, and the
 line under the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. OFF stays
 selected across read-backs until a protocol is picked, and a change of
 board selects OFF, whatever was selected.
@@ -3273,9 +3318,11 @@ count and IN USE stay, and IN USE then lists every bound pin.
 
 The pin of the IOmcu's programming port, GP13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN
-USE lists it first under `PROG PORT`, without a channel. A protocol whose
-stored binding holds that pin keeps it, the IOmcu gives the port no pin
-then, and the key is that protocol's like any other.
+USE lists it first under `PROG PORT`, without a channel. Every port the
+IOmcu reports, at most 4, holds its pin so, each listed once under the
+one `PROG PORT` name, and the slice rule below is checked against each.
+A protocol whose stored binding holds that pin keeps it, the IOmcu gives
+the port no pin then, and the key is that protocol's like any other.
 
 Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
 is grey too, as on the Outputs screen: GP28 while the port holds GP13, and

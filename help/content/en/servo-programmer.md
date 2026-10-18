@@ -24,7 +24,7 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 
 - An IOmcu of protocol 4.13 or later; LEAVE needs 4.15.
 - The servo on the IOmcu's programming port, port 1: GP13, pad 17, unless another pin is stored for it.
-- TARGET on the right card set to PROG PORT ([the TARGET row](servo-settings.md#the-target-row)).
+- SERVO TESTER on the PROG PORT entry of Outputs set to PROG PORT; a tap on the TARGET row opens it ([the TARGET row](servo-settings.md#the-target-row)).
 - The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
 
 ![An IOmcu without the programming port](view:servo-kst-nopage)

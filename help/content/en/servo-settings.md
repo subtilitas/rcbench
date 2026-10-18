@@ -108,17 +108,16 @@ The voltage and current caps the set points and a run's steps stay inside show r
 | NAME | the device under test, up to 23 characters; it heads each report |
 | REPORT | a text report, `SERVOnnn.TXT`, beside each test's log |
 | ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
-| PORT PWM | ON or OFF: the pulse on the programming port while it is the target |
 
-AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alone.
+AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alone. PORT PWM, the pulse on the programming port, is set on the PROG PORT entry of [Outputs](outputs.md#the-prog-port-entry) alone.
 
 ## The TARGET row
 
 ![The TARGET row with PROG PORT](view:servo-target)
 
-The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it: a tap opens OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. It stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
+The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it, as on MOTOR & ESC: a tap opens [Outputs](outputs.md#the-prog-port-entry), on what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. There SERVO TESTER picks OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. Leaving SERVO switches the bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back to SERVO on the same task. The row stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
 
-![The choice of target](view:servo-target-choice)
+![The PROG PORT entry of OUTPUTS](view:outputs-port)
 
 | Row | Meaning |
 |---|---|

@@ -107,7 +107,12 @@ void ui_tabs_cancel(ui_tabs_t *t)
 
 void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
 {
-    if (t == NULL || c == NULL) {
+    ui_tabs_render_locked(t, c, false);
+}
+
+void ui_tabs_render_locked(const ui_tabs_t *t, gfx_canvas_t *c, bool locked)
+{
+    if (t == NULL || c == NULL || t->count <= 0) {
         return;
     }
     /*
@@ -122,19 +127,30 @@ void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c)
     gfx_fill_round_rect(c, x, first.y - 3, w, first.h + 6, UI_R_CTL + 2,
                         ui_theme_color(UI_C_PANEL_SUNK));
 
+    if (locked) {
+        /* A control that takes no press, as ui_button() draws one: the
+         * trough outlined, the selection still legible, no accent. */
+        gfx_draw_round_rect(c, x, first.y - 3, w, first.h + 6, UI_R_CTL + 2,
+                            UI_EDGE);
+    }
+
     for (int i = 0; i < t->count; ++i) {
         const bool on = (t->selected == i);
         const gfx_rect_t r = t->rect[i];
         if (on) {
             gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CHIP,
                                 ui_theme_color(UI_C_PANEL_HI));
-        } else if (t->pressed == i) {
+        } else if (t->pressed == i && !locked) {
             gfx_fill_round_rect(c, r.x, r.y, r.w, r.h, UI_R_CHIP,
                                 ui_theme_color(UI_C_PANEL));
         }
-        gfx_text_in(c, r, ui_tabs_label(t, i), UI_FONT_LABEL,
-                    on ? ui_theme_color(UI_C_ACCENT)
-                       : ui_theme_color(UI_C_TEXT_DIM),
-                    1, GFX_ALIGN_CENTER);
+        gfx_color_t ink = on ? ui_theme_color(UI_C_ACCENT)
+                             : ui_theme_color(UI_C_TEXT_DIM);
+        if (locked) {
+            ink = on ? ui_theme_color(UI_C_TEXT_DIM)
+                     : ui_theme_color(UI_C_TEXT_FAINT);
+        }
+        gfx_text_in(c, r, ui_tabs_label(t, i), UI_FONT_LABEL, ink, 1,
+                    GFX_ALIGN_CENTER);
     }
 }
