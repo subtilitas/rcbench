@@ -75,6 +75,8 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 #define MO_TAB_PROGRAM_X 181
 #define MO_TAB_Y         18
 #define MO_STICK_ROW_X   279
+/* SUPPLY's SETTINGS tab, the second of its strip, LIVE | SETTINGS. */
+#define SU_TAB_SETTINGS_X 181
 #define MO_STICK_ROW_Y   65
 
 static gfx_color_t fb[W * H];
@@ -2100,14 +2102,16 @@ int main(int argc, char **argv)
             supply_screen_push(&st);
         }
         /*
-         * The overlays, opened the way a finger opens them.  Geometry from
-         * supply_screen.c and ui_keypad.c, offset by the band: SETTINGS at
-         * the strip's right end, the VOLT card at the top of the rail, and
-         * the keypad's 7, point and 4.
+         * The tasks and the overlays, opened the way a finger opens them.
+         * Geometry from ui_workbench.h, supply_screen.c and ui_keypad.c,
+         * offset by the band: SETTINGS, the strip's second tab, the VOLT
+         * card at the top of the rail, and the keypad's 7, point and 4 from
+         * a probe opened where the screen opens its own, over the left
+         * column under the strip.
          */
         if (strcmp(view, "supply-settings") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(746, UI_BAND_H + 11);
+            tap(SU_TAB_SETTINGS_X, UI_BAND_H + MO_TAB_Y);
         } else if (strcmp(view, "supply-confirm") == 0) {
             /* +0.1 V on a live output: the question, as the settings'
              * default asks it. */
@@ -2115,10 +2119,16 @@ int main(int argc, char **argv)
             tap(519, UI_BAND_H + 335);
         } else if (strcmp(view, "supply-keypad") == 0) {
             ui_router_goto(SCREEN_SUPPLY);
-            tap(676, UI_BAND_H + 52);
-            tap(78, UI_BAND_H + 153);
-            tap(212, UI_BAND_H + 381);
-            tap(78, UI_BAND_H + 229);
+            tap(676, UI_BAND_H + 65);
+            ui_keypad_t kp;
+            memset(&kp, 0, sizeof(kp));
+            ui_keypad_open(&kp, (gfx_rect_t){ 6, 38, 546, 388 }, "", "",
+                           0.0f, 0.0f, 1.0f, 2);
+            const ui_key_t k[] = { UI_KEY_7, UI_KEY_DOT, UI_KEY_4 };
+            for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+                const gfx_rect_t r = ui_keypad_key_rect(&kp, k[i]);
+                tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+            }
         } else if (strncmp(view, "supply-trip-", 12) == 0) {
             /* The fit check's: the output switched off by either trip. */
             st.output = false;

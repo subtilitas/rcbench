@@ -139,8 +139,8 @@ history is in git.
   from SERVO on what the row shows (the PROG PORT entry while the IOmcu
   drives the port, SERVO PWM while it drives the outputs, the overview
   while the target is not known), not on the TARGET setting; from SETUP's
-  tile on the overview. The row keeps its locks: ARMED, a sweep or a run, the servo
-  programmer holding the port.
+  tile on the overview. The row keeps its locks: ARMED, a sweep or a run,
+  the servo programmer holding the port.
 - OUTPUTS lists the IOmcu's programming ports as outputs: its protocol
   list ends in one PROG PORT entry per port the IOmcu reports (1 today, at
   most 4; one while the count is not known; none for an IOmcu older than
@@ -154,6 +154,19 @@ history is in git.
   locked line reads `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`.
   OUTPUTS and PICK A PIN hold every reported port's pin and check the PWM
   slice rule against each, as the IOmcu does.
+- SUPPLY is a workbench with the LIVE | SETTINGS strip (German `LIVE`,
+  `OPTIONEN`) of MOTOR & ESC and SERVO, two tabs of 112 x 24 px at the top
+  left. The SETTINGS button at the top right and the overlay's CLOSE are
+  gone: SETTINGS is a tab, its page takes the left column under the strip,
+  and the menu's tile opens LIVE. A tab switch closes an open keypad
+  unchanged; while the question about a live output is open, the strip
+  takes no tap. The header (source, ONLINE or NOT ANSWERING, the range)
+  is the row right of the strip and stays in sight on both tasks and under
+  the keypad and the question. PLOT | TABLE sit under the strip on LIVE,
+  and the rail's four cards are 54 px high from y 38. The title SUPPLY
+  SETTINGS (German `NETZTEIL-OPTIONEN`) is removed. A frame of the
+  `supply` mode costs 8,034 cache-line fills (8,580 before), a full repaint
+  30,543 (31,606).
 - The menu tile ANALYSER and the title of its screen read RECEIVER, in
   English and in German. The SETUP category and tile APPLICATION read PANEL
   (German `ANWENDUNG` reads `PANEL`). The identifiers `SCREEN_ANALYSER` and
@@ -359,7 +372,8 @@ history is in git.
 - The home tag on SUPPLY, WI-FI, OUTPUTS and PICK A PIN climbs one level a
   tap, as on MOTOR & ESC, SERVO, SETUP and LOGS. On SUPPLY it drops the
   change a question holds, as CANCEL does, then closes a keypad with the
-  value unchanged, then SETTINGS. On WI-FI it climbs from a keyboard to the
+  value unchanged; SETTINGS is a task of its strip, no level, and the tag
+  leaves from it as from LIVE. On WI-FI it climbs from a keyboard to the
   network list, keeping nothing typed, and from the list to the buttons;
   over the question about an uploaded image it is CANCEL, and a second tap
   while the image is still there leaves. On OUTPUTS

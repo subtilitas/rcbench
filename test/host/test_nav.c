@@ -772,8 +772,14 @@ TEST_CASE(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu)
  * What the four tool screens open over themselves, in panel coordinates
  * (supply_screen.c, wifi_screen.c, outputs_screen.c, picker_screen.c).
  */
-static void open_supply_settings(void) { tap(746, UI_BAND_H + 11); }
-static void open_supply_keypad(void)   { tap(676, UI_BAND_H + 52); }
+static void open_supply_settings(void) { tap(181, UI_BAND_H + 18); }
+static void open_supply_keypad(void)   { tap(676, UI_BAND_H + 65); }
+/* SETTINGS, then VOLTAGE MAX's keypad over its page. */
+static void open_supply_settings_keypad(void)
+{
+    open_supply_settings();
+    tap(144, UI_BAND_H + 94);
+}
 static void open_wifi_list(void)       { tap(196, UI_BAND_H + 180); }
 static void open_wifi_keyboard(void)
 {
@@ -835,7 +841,8 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
  * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent, for
- * OUTPUTS the workbench whose TARGET row opened it.
+ * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
+ * a task of its strip, no level: the tag leaves from it.
  */
 TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
 {
@@ -845,8 +852,9 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         void         (*open)(void);
         int            levels;
     } k_cases[] = {
-        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings, 1 },
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings, 0 },
         { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_keypad,   1 },
+        { SCREEN_SUPPLY,  SCREEN_OVERVIEW, open_supply_settings_keypad, 1 },
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_list,       1 },
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_keyboard,   2 },
         { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list,    1 },

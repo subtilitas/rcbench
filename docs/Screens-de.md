@@ -1501,6 +1501,24 @@ in der Kopfzeile. Ist der PD mini abgeschaltet, rechnet das Panel an seiner Stel
 Netzteils: die Kopfzeile sagt SIMULIERTES NETZTEIL, und die Kachel im Menü trägt
 SIMULIERT.
 
+SUPPLY ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und OPTIONEN,
+je 112 x 24 px, und darunter eine Seite. Die Kachel im Menü öffnet immer
+LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist keine
+Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE, wie
+sie war.
+
+| Aufgabe | Die linke Spalte, 546 px |
+| --- | --- |
+| LIVE | der Plot oder die Tabelle über den Sollwerten |
+| OPTIONEN | die 9 Einstellungen des Netzteils unter OBERGRENZEN, NACH DEM NEUSTART, ABSCHALTUNGEN und RÜCKFRAGE IM BETRIEB ([Netzteil, Optionen](#netzteil-optionen)) |
+
+Die Kopfzeile ist die Zeile rechts neben der Leiste: das Modul und seine
+Pins, ONLINE oder ANTWORTET NICHT und am rechten Ende der Bereich, den die
+Sollwerte annehmen können, zum Beispiel `3.3-8.4 V  0.50-5.00 A`. Sie bleibt
+auf beiden Aufgaben und unter der Tastatur und der Frage sichtbar. Die
+Leiste rechts, die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN, ist
+auf beiden Aufgaben dieselbe.
+
 Das Layout ist das von MOTOR & ESC. Der Plot zeigt Spannung, Strom und
 Leistung der letzten 27 s. Die Leiste rechts zeigt die Messwerte, die
 niedrigste Spannung des Laufs und seinen höchsten Strom und seine höchste
@@ -1574,7 +1592,8 @@ der Port loslässt (siehe SERVO). Ein Servo wird von SERVO versorgt, ein ESC von
 ESC STICK. MOTOR & ESC schaltet keine Versorgung; ein ESC, der dort läuft, wird
 aus seiner eigenen Quelle versorgt. Ein Ausgang, den ein anderer Bildschirm
 eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Das Tastenfeld,
-die Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
+die Frage, die übrigen Overlays von SUPPLY und ein Wechsel der Aufgabe sind
+kein Verlassen. Der
 Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
 solange der Ausgang an ist.
 
@@ -1584,9 +1603,11 @@ bleibt dabei, wie er ist:
 | Von | Das Home-Tag führt zu |
 | --- | --- |
 | der Frage | dem, was darunter liegt; die Änderung wird verworfen, wie ABBRECHEN sie verwirft |
-| einer Tastatur | dem, was darunter liegt, SUPPLY oder OPTIONEN; der Wert bleibt unverändert |
-| OPTIONEN | SUPPLY |
-| SUPPLY | dem Menü; ein Ausgang, den SUPPLY eingeschaltet hat, geht aus |
+| einer Tastatur | dem, was darunter liegt, LIVE oder OPTIONEN; der Wert bleibt unverändert |
+| LIVE oder OPTIONEN | dem Menü; ein Ausgang, den SUPPLY eingeschaltet hat, geht aus |
+
+Die Aufgaben sind Geschwister, keine Ebenen, wie bei MOTOR & ESC und SERVO:
+Das Home-Tag steigt nie von OPTIONEN zu LIVE.
 
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der IOmcu schaltet den Ausgang selbst ab,
@@ -1670,17 +1691,22 @@ gewählt: ob ein eingeschaltetes Modul bei einbrechender Eingangsspannung in ERR
 ist nicht gemessen, also kann die Regel einen Lauf abbrechen, der
 durchgehalten hätte.
 
-AUSGANG EIN und AUS, SPITZENWERTE ZURÜCKSETZEN und die Messwerte bleiben unter der Tastatur,
-der Frage und OPTIONEN bedienbar. Ein Finger zur Zeit: solange einer ein
+AUSGANG EIN und AUS, SPITZENWERTE ZURÜCKSETZEN und die Messwerte bleiben auf
+OPTIONEN und unter der Tastatur und der Frage bedienbar. Ein Finger zur Zeit: solange einer ein
 Bedienelement hält, bewirkt ein zweiter Finger nirgends auf dem Bildschirm
 etwas.
 
-### Einstellungen
+### Netzteil, Optionen
 
-OPTIONEN, rechts in der Leiste über beiden Spalten, öffnet die Einstellungen
-des Netzteils über der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
-des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur, ein
-Schalter kippt beim Tippen. Jede Änderung wird im nächsten Frame geschrieben,
+OPTIONEN, der zweite Reiter der Leiste, zeigt die Einstellungen des
+Netzteils in der linken Spalte. Jede liegt im NVS (Non-Volatile Storage)
+des Panels und übersteht einen Neustart. Ein Wert öffnet die Tastatur über
+der Seite, ein Schalter kippt beim Tippen. Ein Tipp auf LIVE bei offener
+Tastatur schließt sie, und die Einstellung behält ihren Wert, wie ABBRECHEN
+ihn lässt. Dasselbe gilt für die Tastatur eines Sollwerts und einen Tipp auf
+OPTIONEN. Solange die Frage zu einem eingeschalteten Ausgang offen ist,
+nimmt die Leiste keinen Tipp an, bis ÜBERNEHMEN oder ABBRECHEN sie
+beantwortet. Jede Änderung wird im nächsten Frame geschrieben,
 in dem der Prüfstand SAFE ist und kein Schalten auf ARMED wartet, der Ausgang
 des Netzteils aus ist und kein ON eingereiht ist und die Zeichnung der Platine
 weder geladen noch abgelegt wird, und mit ihr jede ungespeicherte Änderung

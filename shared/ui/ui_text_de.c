@@ -429,7 +429,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SUP_SETTINGS]           = "OPTIONEN",
     [TX_SUP_MODE]               = "MODUS",
     [TX_SUP_TABLE_HEAD]         = "KANAL          SOLL           JETZT",
-    [TX_SUP_OV_TITLE]           = "NETZTEIL-OPTIONEN",
     [TX_SUP_CLOSE]              = "SCHLIESSEN",
     [TX_SUP_RESET_PDMINI]       = "PD MINI ZURÜCKSETZEN",
     [TX_SUP_CAPS]               = "OBERGRENZEN",
