@@ -25,6 +25,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
 
 #define W 800
 #define H (480 - UI_BAND_H)   /* the router owns the band */
@@ -37,15 +38,30 @@
 #define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
 #define RIGHT_W   (W - PAD - RIGHT_X)
 
-#define HDR_Y     2
+/*
+ * The task strip at the top (ui_workbench.h), LIVE | SETTINGS, as on MOTOR
+ * & ESC and SERVO.  To its right on the same row the line that says where
+ * the numbers come from, and the range the set points may take: in sight
+ * on both tasks and under the keypad and the question.
+ */
+#define TASKS     (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_SETTINGS))
+#define INFO_X    (UI_WB_STRIP_X + 2 * UI_WB_TAB_W + UI_WB_TAB_GAP + 3 + 12)
+#define INFO_Y    (UI_WB_STRIP_Y + 4)
+
+/* Under the strip, on LIVE: PLOT | TABLE, over the plot. */
+#define HDR_Y     UI_WB_PAGE_Y
 #define HDR_H     18
 
-#define UP_Y      24
-#define UP_H      242
+#define UP_Y      (HDR_Y + HDR_H + 4)
+#define UP_H      (LO_Y - 6 - UP_Y)
+/* The rail's four cards, from the page's top down to the plot's foot. */
+#define RAIL_Y    UI_WB_PAGE_Y
 #define CARD_GAP  4
-#define CARD_H    ((UP_H - 3 * CARD_GAP) / 4)
+#define CARD_H    ((UP_Y + UP_H - RAIL_Y - 3 * CARD_GAP) / 4)
 
-#define LO_Y      (UP_Y + UP_H + 6)
+/* The lower row: the set points on the left, the CONTROL card on the right,
+ * at the height MOTOR & ESC puts its throttle and CONTROL card. */
+#define LO_Y      272
 #define LO_H      (H - LO_Y - PAD)
 
 #define TITLE_H   20
@@ -83,21 +99,15 @@
 #define TAB_H     HDR_H
 #define TAB_W     124
 
-/* SETTINGS, at the right end of the strip above both columns. */
-#define SETB_W    96
-#define SETB_X    (W - PAD - SETB_W)
-#define SETB_Y    1
-#define SETB_H    21
-
 /*
- * The overlay: the settings and the keypad both cover the left column, plot
- * and set points, and leave the right column -- the readings and OUTPUT
- * OFF -- where it is and working.
+ * The keypad, the question and SETTINGS' page all take the left column under
+ * the strip, plot and set points, and leave the right column -- the readings
+ * and OUTPUT OFF -- where it is and working.
  */
 #define OV_X      LEFT_X
-#define OV_Y      UP_Y
+#define OV_Y      UI_WB_PAGE_Y
 #define OV_W      LEFT_W
-#define OV_H      (H - UP_Y - PAD)
+#define OV_H      (H - OV_Y - PAD)
 #define OV_ROW_H  36
 #define OV_VAL_W  100
 /* The caps and start values on the left, 210 px; the trips, their help and
@@ -132,8 +142,7 @@ static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
 /* What a press is on.  One contact holds the screen at a time. */
 enum { P_NONE = 0, P_OUTPUT, P_RESET, P_V_DOWN, P_V_UP, P_I_DOWN, P_I_UP,
        P_V_SLIDER, P_I_SLIDER, P_TABS, P_CARD_V, P_CARD_I, P_TEXT_V,
-       P_TEXT_I, P_SETTINGS, P_CLOSE, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD,
-       P_MODRESET };
+       P_TEXT_I, P_STRIP, P_ROW, P_KEYPAD, P_APPLY, P_DISCARD, P_MODRESET };
 
 /* Where a set point change came from, for the question it may need. */
 enum { FROM_SLIDER = 0, FROM_KEYPAD };
@@ -142,8 +151,8 @@ enum { FROM_SLIDER = 0, FROM_KEYPAD };
 enum { KP_NONE = 0, KP_SET_V, KP_SET_I, KP_SETTING };
 
 /*
- * The settings the overlay edits, in two columns.  A start value is capped
- * like the set point it starts, and a trip of 0 is off.
+ * The settings SETTINGS' page edits, in two columns.  A start value is
+ * capped like the set point it starts, and a trip of 0 is off.
  */
 typedef struct {
     setting_id_t id;
@@ -154,21 +163,24 @@ typedef struct {
 } limit_row_t;
 
 static const limit_row_t k_rows[] = {
-    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 78,  2 },
-    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 120, 2 },
-    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 196, 2 },
-    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 238, 2 },
-    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 78,  2 },
-    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 120, 2 },
-    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 162, 0 },
-    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 300, 0 },
-    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 344, 0 },
+    { SET_SUPPLY_V_MAX,   TX_SUP_ROW_V_MAX,   0, 38,  2 },
+    { SET_SUPPLY_I_MAX,   TX_SUP_ROW_I_MAX,   0, 80,  2 },
+    { SET_SUPPLY_V_START, TX_SUP_ROW_V_START, 0, 156, 2 },
+    { SET_SUPPLY_I_START, TX_SUP_ROW_I_START, 0, 198, 2 },
+    { SET_SUPPLY_TRIP_I,  TX_SUP_ROW_TRIP_I,  1, 38,  2 },
+    { SET_SUPPLY_TRIP_V,  TX_SUP_ROW_TRIP_V,  1, 80,  2 },
+    { SET_SUPPLY_TRIP_MS, TX_SUP_ROW_TRIP_MS, 1, 122, 0 },
+    { SET_SUPPLY_CONFIRM_SLIDE, TX_SUP_ROW_CONFIRM_SLIDE, 1, 260, 0 },
+    { SET_SUPPLY_CONFIRM_KEYS,  TX_SUP_ROW_CONFIRM_KEYS,  1, 304, 0 },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
 static struct {
     ui_plot_t       plot;
-    ui_tabs_t       tabs;
+    ui_wb_strip_t   wb;       /* LIVE | SETTINGS                        */
+    uint32_t        strip_rev;
+    uint32_t        drawn_strip[2];
+    ui_tabs_t       tabs;     /* PLOT | TABLE, on LIVE                  */
     ui_slider_t     v_slider;
     ui_slider_t     i_slider;
     supply_caps_t   caps;     /* what the supply can be set to          */
@@ -231,11 +243,8 @@ static struct {
     ui_hold_t       hold;
     gfx_rect_t      out_rect;
     gfx_rect_t      reset_rect;
-    gfx_rect_t      modreset_btn;   /* RESET PD MINI, in SETTINGS */
-    gfx_rect_t      set_btn;
-    gfx_rect_t      close_btn;
+    gfx_rect_t      modreset_btn;   /* RESET PD MINI, on SETTINGS */
     gfx_rect_t      v_down, v_up, i_down, i_up;
-    bool            settings_open;
     ui_keypad_t     kp;
     int             kp_target;
     setting_id_t    kp_setting;
@@ -256,6 +265,7 @@ static void forget_drawn(void)
         s.drawn_out[b]   = UINT32_MAX;
         s.drawn_ov[b]    = UINT32_MAX;
         s.drawn_kp[b]    = UINT32_MAX;
+        s.drawn_strip[b] = UINT32_MAX;
         s.drawn_title[b] = 0xFFu;
         s.drawn_save[b]  = 0xFFu;
     }
@@ -308,8 +318,21 @@ static gfx_rect_t set_text_rect(int row)
 
 static gfx_rect_t card_rect(int i)
 {
-    return (gfx_rect_t){ RIGHT_X, (int16_t)(UP_Y + i * (CARD_H + CARD_GAP)),
+    return (gfx_rect_t){ RIGHT_X, (int16_t)(RAIL_Y + i * (CARD_H + CARD_GAP)),
                          RIGHT_W, CARD_H };
+}
+
+/* The strip's row with its trough's 3 px around it. */
+static gfx_rect_t strip_area(void)
+{
+    const gfx_rect_t r = ui_wb_strip_rect(&s.wb);
+    return (gfx_rect_t){ (int16_t)(r.x - 3), (int16_t)(r.y - 3),
+                         (int16_t)(r.w + 6), (int16_t)(r.h + 6) };
+}
+
+static bool on_live(void)
+{
+    return ui_wb_strip_task(&s.wb) == UI_WB_LIVE;
 }
 
 static gfx_rect_t overlay_area(void)
@@ -416,6 +439,7 @@ static void reset(void)
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     ui_plot_init(&s.plot, k_series, S_COUNT, (float)PLOT_W / SAMPLE_HZ);
     ui_plot_set_running(&s.plot, false);
+    ui_wb_strip_init(&s.wb, TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
     ui_tabs_init_text(&s.tabs, k_tab_labels, SUPPLY_PANE_COUNT,
                  (gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H });
     /* Where the panel's model starts, so a screen and its model agree before
@@ -431,15 +455,14 @@ static void reset(void)
                                  (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
     s.reset_rect = (gfx_rect_t){ (int16_t)(RIGHT_X + INNER), RESET_Y,
                                  (int16_t)(RIGHT_W - 2 * INNER), BTN_H };
-    s.set_btn    = (gfx_rect_t){ SETB_X, SETB_Y, SETB_W, SETB_H };
-    s.close_btn  = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 110),
-                                 (int16_t)(OV_Y + 8), 110, 34 };
-    s.modreset_btn = (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + 300),
+    s.modreset_btn = (gfx_rect_t){ (int16_t)(OV_X + 10), (int16_t)(OV_Y + 260),
                                    (int16_t)OV_COL_W, 36 };
-    s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), (int16_t)(OV_Y + 290),
+    /* The question's buttons stand clear of its last line: SUP_ASK_OFF
+     * takes two rows in German, from OV_H - 44. */
+    s.apply_btn   = (gfx_rect_t){ (int16_t)(OV_X + 40), (int16_t)(OV_Y + 270),
                                   210, 60 };
     s.discard_btn = (gfx_rect_t){ (int16_t)(OV_X + OV_W - 40 - 210),
-                                  (int16_t)(OV_Y + 290), 210, 60 };
+                                  (int16_t)(OV_Y + 270), 210, 60 };
     s.pressed = P_NONE;
     s.kp.pressed = -1;
     bind_colours();
@@ -1036,8 +1059,12 @@ static void down(const touch_event_t *evt)
         }
         return;
     }
-    if (gfx_rect_contains(s.set_btn, x, y)) {
-        take(evt, P_SETTINGS);
+    /* The strip, over the keypad too: a tap on the other task takes the
+     * keypad with it (task_changed()). */
+    if (gfx_rect_contains(strip_area(), x, y)) {
+        take(evt, P_STRIP);
+        (void)ui_wb_strip_event(&s.wb, evt);
+        ++s.strip_rev;
         return;
     }
     if (gfx_rect_contains(card_rect(0), x, y)) {
@@ -1060,11 +1087,7 @@ static void down(const touch_event_t *evt)
         }
         return;
     }
-    if (s.settings_open) {
-        if (gfx_rect_contains(s.close_btn, x, y)) {
-            take(evt, P_CLOSE);
-            return;
-        }
+    if (!on_live()) {
         if (!s.model && gfx_rect_contains(s.modreset_btn, x, y)) {
             take(evt, P_MODRESET);
             return;
@@ -1079,7 +1102,7 @@ static void down(const touch_event_t *evt)
         return;
     }
 
-    /* Nothing over the left column: its own controls. */
+    /* LIVE, nothing over the left column: its own controls. */
     if (gfx_rect_contains((gfx_rect_t){ LEFT_X, TAB_Y, TAB_W, TAB_H }, x, y)) {
         take(evt, P_TABS);
         (void)ui_tabs_event(&s.tabs, evt);
@@ -1150,23 +1173,6 @@ static void released(int was, int row, int x, int y)
     case P_TEXT_I:
         if (gfx_rect_contains(set_text_rect(1), x, y)) {
             open_keypad(KP_SET_I, SETTING_COUNT);
-        }
-        break;
-    case P_SETTINGS:
-        if (gfx_rect_contains(s.set_btn, x, y)) {
-            /* SETTINGS opens the overlay and closes it, and takes a keypad
-             * that was open with it, typed or not. */
-            const bool was_open = s.settings_open || s.kp.open;
-            ui_keypad_close(&s.kp);
-            s.kp_target = KP_NONE;
-            s.settings_open = !was_open;
-            supply_invalidate();
-        }
-        break;
-    case P_CLOSE:
-        if (gfx_rect_contains(s.close_btn, x, y)) {
-            s.settings_open = false;
-            supply_invalidate();
         }
         break;
     case P_MODRESET:
@@ -1240,10 +1246,27 @@ static void drop_press(void)
     }
     ui_hold_reset(&s.hold);
     ui_tabs_cancel(&s.tabs);
+    ui_wb_strip_cancel(&s.wb);
+    ++s.strip_rev;
     ui_keypad_cancel_press(&s.kp);
     let_go();
     ++s.ctrl_rev;
     ++s.out_rev;
+}
+
+/*
+ * The strip switched the task.  A keypad open goes with the task it was
+ * opened on, typed or not, as its CANCEL does; PLOT | TABLE and the set
+ * points keep what they were.  A tab switch is no navigation level.
+ */
+static void task_changed(void)
+{
+    ui_keypad_close(&s.kp);
+    s.kp_target = KP_NONE;
+    ui_tabs_cancel(&s.tabs);
+    ++s.set_rev;
+    ++s.ov_rev;
+    supply_invalidate();
 }
 
 static void event(const touch_event_t *evt)
@@ -1307,6 +1330,15 @@ static void event(const touch_event_t *evt)
         }
         return;
     }
+    case P_STRIP:
+        if (up) {
+            let_go();
+            if (ui_wb_strip_event(&s.wb, evt)) {
+                task_changed();
+            }
+            ++s.strip_rev;
+        }
+        return;
     case P_TABS:
         if (ui_tabs_event(&s.tabs, evt)) {
             supply_invalidate();
@@ -1508,30 +1540,33 @@ void supply_screen_header_text(char *out, size_t size)
              s.sup.online ? TR(SUP_ONLINE) : TR(SUP_NOT_ANSWERING), rate);
 }
 
-/* The strip above both columns: where the numbers come from, the range the
- * set points may take, and SETTINGS. */
+/* The row right of the strip: where the numbers come from, and the range
+ * the set points may take. */
 static void draw_header(gfx_canvas_t *c)
 {
-    const int x0 = LEFT_X + TAB_W + 10;
-    const int x1 = SETB_X - 8;
-    gfx_fill_rect(c, x0, 0, W - x0, UP_Y - 1, ui_theme_color(UI_C_BG));
+    const int x0 = INFO_X;
+    const int x1 = W - PAD;
+    gfx_fill_rect(c, x0, 0, W - x0, OV_Y - 1, ui_theme_color(UI_C_BG));
     char line[80];
     supply_screen_header_text(line, sizeof(line));
-    gfx_text(c, x0, HDR_Y + 1, line, &gfx_font_8x16,
+    gfx_text(c, x0, INFO_Y, line, &gfx_font_8x16,
              s.sup.online ? ui_theme_color(UI_C_TEXT_DIM)
                           : ui_theme_color(UI_C_WARN), 1);
     char range[64];
     snprintf(range, sizeof(range), "%.1f-%.1f V  %.2f-%.2f A",
              (double)s.eff.v_min, (double)s.eff.v_max,
              (double)s.eff.i_min, (double)s.eff.i_max);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, HDR_Y + 1, (int16_t)(x1 - x0),
+    gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, INFO_Y, (int16_t)(x1 - x0),
                                  16 },
                 range, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1,
                 GFX_ALIGN_RIGHT);
-    ui_button(c, s.set_btn, TR(SUP_SETTINGS),
-              s.settings_open ? ui_theme_color(UI_C_ACCENT)
-                              : ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_SETTINGS, true);
+}
+
+static void draw_strip(gfx_canvas_t *c)
+{
+    const gfx_rect_t a = strip_area();
+    gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_BG));
+    ui_wb_strip_render(&s.wb, c);
 }
 
 /* One card of the rail, as MOTOR & ESC draws them, with the set point in
@@ -1632,12 +1667,12 @@ static void draw_cards(gfx_canvas_t *c)
          * A trip says why in a sentence the card's width does not hold
          * beside the mode in the double size: the mode goes on the label's
          * row in the single size, and the sentence takes the card's width
-         * in up to two rows under it.
+         * in up to two rows under it, which the card's 54 px hold.
          */
         gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + 8), (int16_t)(r.y + 6),
                                      (int16_t)(r.w - 16), 16 },
                     mode_text(), &gfx_font_8x16, mc, 1, GFX_ALIGN_RIGHT);
-        (void)wrap_rows(c, r.x + 8, r.y + 23, 16, mode_line(),
+        (void)wrap_rows(c, r.x + 8, r.y + 22, 16, mode_line(),
                         (r.w - 16) / 8, ui_theme_color(UI_C_TEXT_FAINT));
         return;
     }
@@ -1785,15 +1820,13 @@ static void row_value_text(int i, char *buf, size_t n)
     }
 }
 
+/* SETTINGS' page: the caps, the start values, the trips and the questions,
+ * in the left column under the strip. */
 static void draw_settings(gfx_canvas_t *c)
 {
     const gfx_rect_t a = overlay_area();
     gfx_fill_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_PANEL));
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
-    gfx_text(c, a.x + 10, a.y + 17, TR(SUP_OV_TITLE), &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT), 1);
-    ui_button(c, s.close_btn, TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_SUNK),
-              s.pressed == P_CLOSE, true);
     if (!s.model) {
         /* A module in ERR -- a set point over its input -- comes back only
          * with a restart. */
@@ -1804,13 +1837,13 @@ static void draw_settings(gfx_canvas_t *c)
 
     const int lx = a.x + 10;
     const int rx = OV_COL1_X;
-    gfx_text(c, lx, a.y + 56, TR(SUP_CAPS), &gfx_font_8x16,
+    gfx_text(c, lx, a.y + 16, TR(SUP_CAPS), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, lx, a.y + 174, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
+    gfx_text(c, lx, a.y + 134, TR(SUP_AFTER_RESTART), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 56, TR(SUP_TRIPS), &gfx_font_8x16,
+    gfx_text(c, rx, a.y + 16, TR(SUP_TRIPS), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
-    gfx_text(c, rx, a.y + 278, TR(SUP_CONFIRM_ON), &gfx_font_8x16,
+    gfx_text(c, rx, a.y + 238, TR(SUP_CONFIRM_ON), &gfx_font_8x16,
              ui_theme_color(UI_C_ACCENT), 1);
     for (int i = 0; i < ROW_COUNT; ++i) {
         const gfx_rect_t r = row_rect(i);
@@ -1825,7 +1858,7 @@ static void draw_settings(gfx_canvas_t *c)
         TX_SUP_HELP_1, TX_SUP_HELP_2, TX_SUP_HELP_3,
     };
     for (size_t i = 0; i < sizeof(help) / sizeof(help[0]); ++i) {
-        gfx_text(c, rx, a.y + 214 + (int)i * 18, ui_tr(help[i]),
+        gfx_text(c, rx, a.y + 174 + (int)i * 18, ui_tr(help[i]),
                  &gfx_font_8x16,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
@@ -1904,8 +1937,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const int buf = buffer_index & 1;
     bind_colours();
 
-    /* The keypad, the question or the settings over the left column. */
-    const bool covered = s.kp.open || s.confirm_open || s.settings_open;
+    /* The left column shows LIVE's plot and set points unless the keypad
+     * or the question covers it, or SETTINGS' page has it. */
+    const bool covered = s.kp.open || s.confirm_open || !on_live();
     const uint8_t tag = output_tag();
     char tag_buf[48];
     if ((s.drawn_mask & bit) == 0) {
@@ -1922,6 +1956,11 @@ static void render(gfx_canvas_t *c, int buffer_index)
                  TR(MO_CONTROL), ui_theme_color(UI_C_ACCENT));
         s.drawn_mask |= bit;
         s.drawn_title[buf] = tag;
+        s.drawn_strip[buf] = UINT32_MAX;
+    }
+    if (s.drawn_strip[buf] != s.strip_rev) {
+        s.drawn_strip[buf] = s.strip_rev;
+        draw_strip(c);
     }
     if (!covered && s.drawn_title[buf] != tag) {
         s.drawn_title[buf] = tag;
@@ -1936,7 +1975,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     const bool out_moved  = (s.drawn_out[buf] != s.out_rev);
 
     if (ctrl_moved || data_moved) {
-        ui_tabs_render(&s.tabs, c);
+        if (!covered) {
+            ui_tabs_render(&s.tabs, c);
+        }
         draw_header(c);
     }
 
@@ -1950,7 +1991,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
             s.drawn_ov[buf] = s.ov_rev;
             draw_confirm(c);
         }
-    } else if (s.settings_open) {
+    } else if (!on_live()) {
         const uint8_t st = save_state();
         if (s.drawn_ov[buf] != s.ov_rev || s.drawn_save[buf] != st) {
             s.drawn_ov[buf]   = s.ov_rev;
@@ -2021,10 +2062,10 @@ static void render(gfx_canvas_t *c, int buffer_index)
  * Leaving switches off an output this screen switched on: a screen that is
  * not visible must not hold a supply live that no other screen names.  An
  * output another screen switched on stays as it is.  The keypads, the
- * settings and the question are this screen's own and are no leave.  The
+ * question and a switch of task are this screen's own and are no leave.  The
  * press this screen was routing goes, for the reason MOTOR & ESC's leave()
- * gives, and so do the keypad and the settings: the screen comes back
- * showing the plot.
+ * gives, and so do the keypad and the question; the screen is entered on
+ * LIVE (enter()).
  */
 static void leave(void)
 {
@@ -2039,9 +2080,10 @@ static void leave(void)
     ui_slider_release(&s.i_slider);
     ui_hold_reset(&s.hold);
     ui_tabs_cancel(&s.tabs);
+    ui_wb_strip_cancel(&s.wb);
+    ++s.strip_rev;
     ui_keypad_close(&s.kp);
     s.kp_target     = KP_NONE;
-    s.settings_open = false;
     /* A change waiting for its question is dropped: nobody is there to
      * answer it. */
     s.confirm_open  = false;
@@ -2054,11 +2096,17 @@ static void leave(void)
     supply_invalidate();
 }
 
-/* Back on the screen whose output it is: no OFF is owed for the leave. */
+/* The menu's tile opens LIVE, as on every workbench.  Back on the screen
+ * whose output it is, no OFF is owed for the leave. */
 static void enter(void)
 {
+    ui_wb_strip_open(&s.wb);
+    ++s.strip_rev;
+    supply_invalidate();
     supply_screen_entered(SUPPLY_BY_SUPPLY);
 }
+
+int supply_screen_task(void) { return (int)ui_wb_strip_task(&s.wb); }
 
 /*
  * Touch events were lost.  The press is dropped as drop_press() drops it:

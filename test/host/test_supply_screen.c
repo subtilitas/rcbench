@@ -22,6 +22,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
 
 #define W 800
 #define H 480
@@ -85,35 +86,37 @@ static void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define TRACK_W   414
 #define TABLE_X   99           /* the TABLE tab */
 #define PLOT_TAB_X 37          /* the PLOT tab */
-#define TABLE_Y   11
+#define TABLE_Y   47
 #define OFF_X     300          /* the plot, clear of every control */
 #define OFF_Y     120
 
-/* The overlays, from supply_screen.c: SETTINGS at the strip's right end,
- * CLOSE, the settings' value rows, the rail's cards, the set points' values,
- * and the question's two buttons. */
-#define SETB_X    746
-#define SETB_Y    11
-#define CLOSE_X   487
-#define CLOSE_Y   49
+/* The task strip, from ui_workbench.h: LIVE x 9..121, SETTINGS x 125..237,
+ * y 6..30.  Then SETTINGS' value rows, the rail's cards, the set points'
+ * values, and the question's two buttons, from supply_screen.c. */
+#define LIVE_TAB_X 65
+#define SET_TAB_X 181
+#define STRIP_Y   18
 #define ROW_L_X   144          /* the left column's rows */
 #define ROW_R_X   413          /* the right column's */
-#define VMAX_Y    120
-#define VSTART_Y  238
-#define ISTART_Y  280
-#define TRIPI_Y   120
-#define CONF_SL_Y 342
-#define CONF_KP_Y 386
+#define VMAX_Y    94
+#define VSTART_Y  212
+#define ISTART_Y  254
+#define TRIPI_Y   94
+#define CONF_SL_Y 316
+#define CONF_KP_Y 360
 #define CARD_X    676
-#define CARD_V_Y  52
-#define CARD_I_Y  113
+#define CARD_V_Y  65
+#define CARD_I_Y  123
 #define TEXT_X    412
 #define TEXT_V_Y  305
 #define TEXT_I_Y  367
 #define APPLY_X   151
 #define DISCARD_X 407
-#define ASK_Y     365
-#define MODRESET_Y 342         /* RESET PD MINI, left column, SETTINGS */          /* inside both, and on no control without them */
+#define ASK_Y     353          /* inside both, and on no LIVE control */
+#define MODRESET_Y 316         /* RESET PD MINI, left column, SETTINGS */
+
+static int header_differs(void);
+static supply_state_t reading(float v, float i);
 
 #define TICK_S     0.05f
 #define HOLD_TICKS ((int)(UI_HOLD_S / TICK_S) + 5)
@@ -130,7 +133,7 @@ static void key(ui_key_t k)
 {
     ui_keypad_t probe;
     memset(&probe, 0, sizeof(probe));
-    ui_keypad_open(&probe, (gfx_rect_t){ 6, 24, 546, 402 }, "", "", 0.0f,
+    ui_keypad_open(&probe, (gfx_rect_t){ 6, 38, 546, 388 }, "", "", 0.0f,
                    0.0f, 1.0f, 2);
     const gfx_rect_t r = ui_keypad_key_rect(&probe, k);
     tap(r.x + r.w / 2, r.y + r.h / 2);
@@ -472,9 +475,9 @@ TEST_CASE(the_overlays_of_supply_are_no_leave)
     hold_on();
     drain();
     supply_screen_set_output(true);
-    tap(SETB_X, SETB_Y);                 /* SETTINGS open */
+    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
     tick_for(4);
-    tap(SETB_X, SETB_Y);                 /* and closed */
+    tap(LIVE_TAB_X, STRIP_Y);            /* and LIVE again */
     tap(V_UP_X, V_ROW_Y);                /* a question on a live output */
     tick_for(4);
     tap(DISCARD_X, ASK_Y);               /* answered CANCEL */
@@ -809,28 +812,223 @@ TEST_CASE(new_caps_pull_the_set_points_into_range)
     CHECK(!supply_screen_poll_cmd(NULL));     /* caps are not a command */
 }
 
-/* ------------------------------------------------- settings and keypad */
+/* ------------------------------------------------------- the task strip */
 
-TEST_CASE(the_settings_overlay_sets_a_cap_the_set_points_obey)
+/* Pixels that differ between the two buffers inside a rectangle. */
+static int differ_box(int x0, int y0, int x1, int y1)
+{
+    int n = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = x0; x < x1; ++x) {
+            n += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    return n;
+}
+
+/*
+ * LIVE | SETTINGS: a tap on the other tab switches, a tap on the tab shown
+ * changes nothing, and a tile's entry opens LIVE whatever was shown when
+ * the screen was left.  A press that slides off its tab, one dropped by a
+ * touch loss and one whose release the finger did not make switch nothing.
+ */
+TEST_CASE(the_strip_switches_the_task_and_a_tile_opens_live)
 {
     fresh();
-    tap(SETB_X, SETB_Y);                 /* SETTINGS */
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+
+    /* Off the tab before the release. */
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SET_TAB_X, STRIP_Y + 120, TOUCH_EVENT_MOVE, 1);
+    ev(SET_TAB_X, STRIP_Y + 120, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    /* Touch events lost under the press. */
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
+    scr->cancel();
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    /* Left under the press, and entered again. */
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 1);
+    scr->leave();
+    scr->enter();
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 1);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+
+    /* SETTINGS when left: the next entry is LIVE. */
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    scr->leave();
+    scr->enter();
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* The release the tracker makes for a contact that jumps switches no task:
+ * it is not a tap. */
+TEST_CASE(a_release_the_finger_did_not_make_switches_no_task)
+{
+    fresh();
+    feed_reset();
+    feed_to_screen(scr);
+    finger(FEED_LONE, SET_TAB_X, STRIP_Y + UI_BAND_H);
+    finger(FEED_LONE, OFF_X, OFF_Y + UI_BAND_H);
+    CHECK_EQ(feed_ups, 1);
+    lift(FEED_LONE);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    feed_tap(FEED_LONE, SET_TAB_X, STRIP_Y + UI_BAND_H);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+}
+
+/*
+ * A tap on the other tab takes an open keypad with it, typed or not, as its
+ * CANCEL does: the set point or the setting stays as it was.  The keypad is
+ * the task's it was opened on; the task shown is the tab's.
+ */
+TEST_CASE(a_tab_switch_takes_the_keypad_with_it)
+{
+    fresh();
+    tap(CARD_X, CARD_V_Y);                    /* VOLTAGE's keypad, on LIVE */
+    key(UI_KEY_9);
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);                     /* no keypad over the step */
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+
+    tap(SET_TAB_X, STRIP_Y);
+    tap(ROW_L_X, VMAX_Y);                     /* VOLTAGE MAX's, on SETTINGS */
+    key(UI_KEY_8);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK(!settings_save_asked());
+    tap(SET_TAB_X, STRIP_Y);                  /* the page, no keypad on it */
+    tap(ROW_L_X, VMAX_Y);
+    keys("9");
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 9.0f, 1e-4f);
+
+    /* A tap on the tab shown keeps the keypad and what it holds. */
+    tap(LIVE_TAB_X, STRIP_Y);
+    tap(CARD_X, CARD_V_Y);
+    key(UI_KEY_7);
+    tap(LIVE_TAB_X, STRIP_Y);
+    key(UI_KEY_OK);
+    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
+}
+
+/*
+ * A card's keypad works on SETTINGS too, and a change to a live output asks
+ * there as on LIVE.  The strip waits for the answer; once answered the page
+ * is back.
+ */
+TEST_CASE(a_question_on_settings_holds_the_strip_until_answered)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(SET_TAB_X, STRIP_Y);
+    tap(CARD_X, CARD_V_Y);
+    keys("7");                                /* asked: the output is on */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 7.0f, 1e-4f);
+    /* The page answers again. */
+    const bool was = settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE);
+    tap(ROW_R_X, CONF_SL_Y);
+    CHECK_EQ(settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE), !was);
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    CHECK(supply_screen_output_on());
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/* One contact holds the screen: a second finger on the strip while OUTPUT
+ * OFF is held switches nothing, and the OFF is the first finger's. */
+TEST_CASE(a_second_finger_on_the_strip_switches_nothing_while_off_is_held)
+{
+    fresh();
+    supply_screen_set_output(true);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_DOWN, 2);
+    ev(SET_TAB_X, STRIP_Y, TOUCH_EVENT_UP, 2);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
+}
+
+/*
+ * The line right of the strip -- the source, ONLINE or NOT ANSWERING, the
+ * range -- is drawn the same on LIVE, on SETTINGS and under the keypad: it
+ * says where the numbers come from wherever the left column is.  The strip
+ * shows the task.
+ */
+TEST_CASE(the_source_line_stays_in_sight_on_every_task)
+{
+    fresh();
+    supply_screen_set_model(false);
+    supply_screen_set_pins(12, 13);
+    supply_state_t st = reading(6.0f, 1.0f);
+    supply_screen_push(&st);
+    supply_invalidate();
+    scr->render(&cv, 0);
+    tap(SET_TAB_X, STRIP_Y);
+    supply_invalidate();
+    scr->render(&cv2, 0);
+    CHECK_EQ(header_differs(), 0);
+    CHECK(differ_box(6, 3, 240, 34) > 0);     /* the strip says SETTINGS */
+    tap(ROW_L_X, VMAX_Y);                     /* the keypad over the page */
+    supply_invalidate();
+    scr->render(&cv2, 0);
+    CHECK_EQ(header_differs(), 0);
+    CHECK(differ_box(6, 3, 240, 34) > 0);
+    /* And the line itself is there: not the background. */
+    int ink = 0;
+    const gfx_color_t bg = ui_theme_color(UI_C_BG);
+    for (int y = 0; y < 34; ++y) {
+        for (int x = 252; x < 600; ++x) {
+            ink += (fb2[y * W + x] != bg) ? 1 : 0;
+        }
+    }
+    CHECK(ink > 0);
+}
+
+/* ------------------------------------------------- settings and keypad */
+
+TEST_CASE(the_settings_page_sets_a_cap_the_set_points_obey)
+{
+    fresh();
+    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
     tap(ROW_L_X, VMAX_Y);                /* VOLTAGE MAX */
     keys("8.4");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 8.4f, 1e-4f);
     CHECK_NEAR(supply_screen_limits().v_max, 8.4f, 1e-4f);
     CHECK(settings_save_asked());
-    /* The set point's controls are under the overlay. */
+    /* The set point's controls are LIVE's, out of sight on SETTINGS. */
     tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    tap(CLOSE_X, CLOSE_Y);
+    tap(LIVE_TAB_X, STRIP_Y);
     for (int k = 0; k < 40; ++k) {
         tap(V_UP_X, V_ROW_Y);
     }
     CHECK_NEAR(supply_screen_set_v(), 8.4f, 1e-4f);
-    /* SETTINGS opens and closes. */
-    tap(SETB_X, SETB_Y);
-    tap(SETB_X, SETB_Y);
+    /* A tap on the tab shown changes nothing; the other tab switches. */
+    tap(LIVE_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
+    tap(SET_TAB_X, STRIP_Y);
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_SETTINGS);
+    tap(LIVE_TAB_X, STRIP_Y);
     tap(V_DOWN_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 8.3f, 1e-4f);
     CHECK(!supply_screen_poll_cmd(NULL));
@@ -839,16 +1037,16 @@ TEST_CASE(the_settings_overlay_sets_a_cap_the_set_points_obey)
 TEST_CASE(a_lowered_cap_brings_the_set_point_and_the_start_down)
 {
     fresh();
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, VSTART_Y);
     keys("12");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_START), 12.0f, 1e-4f);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);   /* at a restart only */
-    tap(CLOSE_X, CLOSE_Y);
+    tap(LIVE_TAB_X, STRIP_Y);
     tap(CARD_X, CARD_V_Y);
     keys("12");
     CHECK_NEAR(supply_screen_set_v(), 12.0f, 1e-4f);
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, VMAX_Y);
     keys("8");
     CHECK_NEAR(supply_screen_set_v(), 8.0f, 1e-4f);
@@ -867,7 +1065,7 @@ TEST_CASE(a_lowered_cap_brings_the_set_point_and_the_start_down)
 TEST_CASE(a_switch_in_the_settings_flips_on_a_tap)
 {
     fresh();
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_R_X, CONF_SL_Y);
     CHECK(!settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE));
     CHECK(settings_get_bool(SET_SUPPLY_CONFIRM_KEYS));
@@ -898,12 +1096,12 @@ TEST_CASE(a_start_value_read_over_its_cap_is_corrected_and_kept)
     CHECK(settings_save_asked());
 }
 
-TEST_CASE(the_overlay_tells_an_unsaved_setup_change_from_a_waiting_save)
+TEST_CASE(the_page_tells_an_unsaved_setup_change_from_a_waiting_save)
 {
     /* A change left on SETUP without SAVE is not a save waiting: nothing
      * will write it.  The overlay's bottom line says which. */
     fresh();
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     settings_set(SET_PACK_CELLS, 4.0f);          /* SETUP's, no save asked */
     supply_invalidate();
     scr->render(&cv, 0);
@@ -1125,7 +1323,7 @@ TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
 TEST_CASE(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip)
 {
     fresh();
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, VMAX_Y);
     keys("12.01");
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 12.0f, 1e-4f);
@@ -1180,21 +1378,22 @@ TEST_CASE(the_output_switch_works_under_every_overlay)
     supply_cmd_t c;
     fresh();
     supply_screen_set_output(true);
-    tap(SETB_X, SETB_Y);                 /* the settings */
+    tap(SET_TAB_X, STRIP_Y);             /* SETTINGS */
     tap(OUT_X, OUT_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.off);
     tap(CARD_X, CARD_V_Y);               /* the keypad */
     tap(OUT_X, OUT_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.off);
     key(UI_KEY_CANCEL);
-    tap(SETB_X, SETB_Y);
+    tap(LIVE_TAB_X, STRIP_Y);
     tap(V_UP_X, V_ROW_Y);                /* the question */
     tap(OUT_X, OUT_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.off);
     tap(RESET_X, RESET_Y);
     CHECK(supply_screen_poll_cmd(&c) && c.reset);
-    /* While a question is asked, SETTINGS and the cards wait for it. */
-    tap(SETB_X, SETB_Y);
+    /* While a question is asked, the strip and the cards wait for it. */
+    tap(SET_TAB_X, STRIP_Y);
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     tap(CARD_X, CARD_V_Y);
     tap(APPLY_X, ASK_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
@@ -1222,10 +1421,12 @@ TEST_CASE(leaving_drops_the_question_and_the_overlays)
     scr->leave();
     tap(APPLY_X, ASK_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     scr->leave();
+    scr->enter();                        /* a tile's entry: LIVE */
+    CHECK_EQ(supply_screen_task(), (int)UI_WB_LIVE);
     settings_set(SET_SUPPLY_CONFIRM_SLIDE, 0.0f);
-    tap(V_UP_X, V_ROW_Y);                /* the overlay is gone */
+    tap(V_UP_X, V_ROW_Y);
     CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
     tap(CARD_X, CARD_V_Y);
     scr->leave();
@@ -1233,13 +1434,13 @@ TEST_CASE(leaving_drops_the_question_and_the_overlays)
     CHECK_NEAR(supply_screen_set_v(), 6.2f, 1e-4f);
 }
 
-/* Pixels that differ in the header strip, y 0..23, between the two
- * buffers. */
+/* Pixels that differ in the header, right of the task strip, y 0..33,
+ * between the two buffers. */
 static int header_differs(void)
 {
     int differ = 0;
-    for (int y = 0; y < 24; ++y) {
-        for (int x = 0; x < W; ++x) {
+    for (int y = 0; y < 34; ++y) {
+        for (int x = 240; x < W; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
     }
@@ -1310,9 +1511,9 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
     supply_screen_push(&st);
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The MODE card, the rail's fourth: x 558..794, y 207..264. */
+    /* The MODE card, the rail's fourth: x 558..794, y 212..266. */
     int differ = 0;
-    for (int y = 207; y < 264; ++y) {
+    for (int y = 212; y < 266; ++y) {
         for (int x = 558; x < 794; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
@@ -1325,7 +1526,7 @@ TEST_CASE(a_trip_shows_on_the_mode_card)
     supply_invalidate();
     scr->render(&cv2, 0);
     differ = 0;
-    for (int y = 207; y < 264; ++y) {
+    for (int y = 212; y < 266; ++y) {
         for (int x = 558; x < 794; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
@@ -1470,7 +1671,7 @@ TEST_CASE(a_port_that_takes_the_supply_ends_what_was_under_way)
 
     /* A settings keypad is not the supply's command and stays. */
     fresh();
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, VMAX_Y);
     supply_screen_set_port_held(true);
     keys("12");
@@ -1583,9 +1784,9 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_screen_push(&st);
     supply_invalidate();
     scr->render(&cv2, 0);
-    /* The upper panel's title tag: x 6..130, y 24..44. */
+    /* The upper panel's title tag: x 6..130, y 60..80. */
     int differ = 0;
-    for (int y = 24; y < 44; ++y) {
+    for (int y = 60; y < 80; ++y) {
         for (int x = 6; x < 130; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
@@ -1598,7 +1799,7 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_invalidate();
     scr->render(&cv2, 0);                /* TABLE, after the run */
     int same = 0, total = 0;
-    for (int y = 24; y < 44; ++y) {
+    for (int y = 60; y < 80; ++y) {
         for (int x = 6; x < 130; ++x) {
             same += (fb[y * W + x] == fb2[y * W + x]) ? 1 : 0;
             ++total;
@@ -1609,7 +1810,7 @@ TEST_CASE(the_heading_says_what_the_output_does_on_either_pane)
     supply_invalidate();
     scr->render(&cv2, 0);                /* PLOT, holding the run */
     differ = 0;
-    for (int y = 24; y < 44; ++y) {
+    for (int y = 60; y < 80; ++y) {
         for (int x = 6; x < 130; ++x) {
             differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
         }
@@ -1748,7 +1949,7 @@ static void b_table_then_set(void)
     tap(V_DOWN_X, I_ROW_Y);
     drain();
 }
-static void b_settings(void) { tap(SETB_X, SETB_Y); }
+static void b_settings(void) { tap(SET_TAB_X, STRIP_Y); }
 static void b_keypad(void)   { tap(CARD_X, CARD_V_Y); key(UI_KEY_7); }
 static void b_question(void)
 {
@@ -1765,9 +1966,31 @@ static void b_question_new_caps(void)
 }
 static void b_closed(void)
 {
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     scr->render(&cv, 0);
-    tap(CLOSE_X, CLOSE_Y);
+    tap(LIVE_TAB_X, STRIP_Y);
+}
+static void b_settings_keypad(void)
+{
+    tap(SET_TAB_X, STRIP_Y);
+    scr->render(&cv, 0);
+    tap(ROW_L_X, VMAX_Y);
+    key(UI_KEY_7);
+}
+static void b_keypad_to_settings(void)
+{
+    tap(CARD_X, CARD_V_Y);
+    key(UI_KEY_7);
+    scr->render(&cv, 0);
+    tap(SET_TAB_X, STRIP_Y);
+}
+static void b_settings_question(void)
+{
+    supply_screen_set_output(true);
+    tap(SET_TAB_X, STRIP_Y);
+    scr->render(&cv, 0);
+    tap(CARD_X, CARD_V_Y);
+    keys("7");
 }
 static void b_hold_half(void)
 {
@@ -1788,6 +2011,9 @@ TEST_CASE(a_redraw_leaves_no_stale_pixels)
     check_redraw(b_keypad);
     check_redraw(b_question);
     check_redraw(b_closed);
+    check_redraw(b_settings_keypad);
+    check_redraw(b_keypad_to_settings);
+    check_redraw(b_settings_question);
     check_redraw(b_question_new_caps);
 }
 
@@ -1854,14 +2080,14 @@ TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
 {
     fresh();
     supply_screen_set_model(true);
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, MODRESET_Y);
     supply_cmd_t c;
     CHECK(!supply_screen_poll_cmd(&c));
-    tap(SETB_X, SETB_Y);                     /* closed again */
+    tap(LIVE_TAB_X, STRIP_Y);                /* LIVE again */
 
     supply_screen_set_model(false);
-    tap(SETB_X, SETB_Y);
+    tap(SET_TAB_X, STRIP_Y);
     tap(ROW_L_X, MODRESET_Y);
     CHECK(supply_screen_poll_cmd(&c));
     CHECK(c.module_reset);
@@ -2103,8 +2329,8 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
     feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
     CHECK(supply_screen_poll_cmd(&c) && c.reset);
 
-    /* SETTINGS: not opened, so the plot's tab row still answers. */
-    finger(FEED_LONE, SETB_X, P(SETB_Y));
+    /* SETTINGS: not switched to, so the plot's controls still answer. */
+    finger(FEED_LONE, SET_TAB_X, P(STRIP_Y));
     finger(FEED_LONE, OFF_X, P(OFF_Y));
     lift(FEED_LONE);
     feed_tap(FEED_LONE, RESET_X, P(RESET_Y));
@@ -2112,7 +2338,7 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off)
 
     /* A switch among the settings: not flipped by the tracker's release.
      * The contact is not lifted where it is next reported. */
-    feed_tap(FEED_LONE, SETB_X, P(SETB_Y));
+    feed_tap(FEED_LONE, SET_TAB_X, P(STRIP_Y));
     const bool was = settings_get_bool(SET_SUPPLY_CONFIRM_SLIDE);
     finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y));
     finger(FEED_LONE, ROW_R_X, P(CONF_SL_Y) - 200);
@@ -2255,11 +2481,17 @@ int main(void)
     RUN(the_fine_steps_move_a_set_point_by_a_tenth);
     RUN(a_tap_on_a_track_sets_a_value_the_supply_takes);
     RUN(new_caps_pull_the_set_points_into_range);
-    RUN(the_settings_overlay_sets_a_cap_the_set_points_obey);
+    RUN(the_strip_switches_the_task_and_a_tile_opens_live);
+    RUN(a_release_the_finger_did_not_make_switches_no_task);
+    RUN(a_tab_switch_takes_the_keypad_with_it);
+    RUN(a_question_on_settings_holds_the_strip_until_answered);
+    RUN(a_second_finger_on_the_strip_switches_nothing_while_off_is_held);
+    RUN(the_source_line_stays_in_sight_on_every_task);
+    RUN(the_settings_page_sets_a_cap_the_set_points_obey);
     RUN(a_lowered_cap_brings_the_set_point_and_the_start_down);
     RUN(a_switch_in_the_settings_flips_on_a_tap);
     RUN(a_start_value_read_over_its_cap_is_corrected_and_kept);
-    RUN(the_overlay_tells_an_unsaved_setup_change_from_a_waiting_save);
+    RUN(the_page_tells_an_unsaved_setup_change_from_a_waiting_save);
     RUN(the_set_points_start_at_the_start_values);
     RUN(a_card_or_a_value_opens_the_keypad_for_its_set_point);
     RUN(a_change_to_a_live_output_waits_for_the_question);

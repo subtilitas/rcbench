@@ -6,7 +6,18 @@ order: 30
 
 # Netzteil
 
-SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
+SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md), immer auf LIVE.
+
+## Die Leiste
+
+Die Leiste oben trägt zwei Aufgaben, LIVE und OPTIONEN. Ein Tipp wechselt die Aufgabe. LIVE behält seine Ansicht, GRAFIK oder TABELLE, über einen Wechsel.
+
+| Aufgabe | Die linke Spalte |
+|---|---|
+| LIVE | die Grafik oder die Tabelle und die Sollwerte |
+| OPTIONEN | die Obergrenzen, die Startwerte, die Abschaltungen und die Rückfragen ([OPTIONEN](#optionen)) |
+
+Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN. Die Kopfzeile ist die Zeile rechts neben der Leiste: das Netzteil, sein Zustand und der Bereich, den die Sollwerte annehmen können. Sie bleibt auf beiden Aufgaben und unter dem Tastenfeld und der Rückfrage sichtbar. Das Home-Tag verlässt SUPPLY von beiden Aufgaben zum Menü.
 
 ## Das Netzteilmodell
 
@@ -45,7 +56,7 @@ Die Grafik zeigt Spannung, Strom und Leistung über die letzten 27 s, jeden Soll
 | SPANNUNG | 3,3 bis 21 V, Schritte von 20 mV | 1 bis 20 V, Schritte von 10 mV | 0,1 V |
 | STROMBEGRENZUNG | 0,5 bis 5 A, Schritte von 50 mA | 0,05 bis 3 A, Schritte von 10 mA | 0,1 A |
 
-Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt nicht mehr ab, als er bekommt: Seine Spannung ist auf 0,7 V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5 V erlaubt höchstens 4,3 V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht rechts im Streifen.
+Die Bereiche des PD mini stammen von der Seite des Herstellers und sind nicht gemessen. Der PD mini gibt nicht mehr ab, als er bekommt: Seine Spannung ist auf 0,7 V unter der Eingangsspannung begrenzt, die er meldet; ein Eingang von 5 V erlaubt höchstens 4,3 V. Die Obergrenzen in OPTIONEN engen beide Bereiche ein, und der gültige Bereich steht am rechten Ende der Kopfzeile.
 
 - Einen Schieberegler ziehen oder auf seine Spur tippen, um den Wert unter dem Finger zu setzen.
 - `-0.1` und `+0.1` ändern den Wert schrittweise.
@@ -79,7 +90,7 @@ Das Band nennt den Grund. Ein Ausgang, den ein anderer Bildschirm eingeschaltet 
 
 ![Die Optionen des Netzteils](view:supply-settings)
 
-OPTIONEN, rechts im Streifen, öffnet die Optionen über der linken Spalte. Ein Wert öffnet das Tastenfeld; ein Schalter schaltet beim Tipp um.
+OPTIONEN, der zweite Reiter der Leiste, zeigt die Optionen in der linken Spalte. Ein Wert öffnet das Tastenfeld; ein Schalter schaltet beim Tipp um. Ein Tipp auf LIVE bei offenem Tastenfeld schließt es und lässt den Wert, wie ABBRECHEN. Solange die Rückfrage zu einem eingeschalteten Ausgang offen ist, wartet die Leiste auf ÜBERNEHMEN oder ABBRECHEN.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|

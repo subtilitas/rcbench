@@ -6,12 +6,17 @@
  * the plot and the output switch beside them.  The output comes on with a
  * hold, as ARM does, and goes off with a tap.
  *
+ * A workbench (ui_workbench.h): the strip at the top shows LIVE, the plot
+ * and the set points, and SETTINGS, the operator's limits in the same
+ * column -- caps on the set points, the set points after a restart, the
+ * trips and the questions -- kept in the settings model.  The menu's tile
+ * opens LIVE; a tab switch is no navigation level.
+ *
  * A set point is shown beside its reading everywhere: in brackets on the
  * rail's cards and dashed in the plot.  A tap on a card or on a set point's
- * value opens a keypad over the left column.  SETTINGS, top right, opens the
- * operator's limits over the same column -- caps on the set points, the set
- * points after a restart, and the trips -- kept in the settings model.  The
- * right column stays live under both, so OUTPUT OFF is always a tap away.
+ * value opens a keypad over the left column.  The right column stays live
+ * on both tasks and under the keypad and the question, so OUTPUT OFF is
+ * always a tap away.
  *
  * Owns no hardware and performs no I/O (input/output): it is handed a
  * supply_state_t and touch events, and commands are read back out.
@@ -63,6 +68,12 @@ typedef struct {
     bool reset;        /**< start the extremes again              */
     bool module_reset; /**< restart the PD mini                   */
 } supply_cmd_t;
+
+/**
+ * The task shown, a ui_wb_task_t: LIVE or SETTINGS.  A tile opens LIVE; a
+ * tap on the other tab switches, and takes an open keypad with it.
+ */
+int supply_screen_task(void);
 
 /** One sample, for the readouts and, while the output is on, the plot. */
 void supply_screen_push(const supply_state_t *s);

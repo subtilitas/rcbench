@@ -6,7 +6,18 @@ order: 30
 
 # Supply
 
-SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right.
+SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md), always on LIVE.
+
+## The strip
+
+The strip at the top holds two tasks, LIVE and SETTINGS. A tap switches the task. LIVE keeps its view, PLOT or TABLE, across a switch.
+
+| Task | The left column |
+|---|---|
+| LIVE | the plot or the table, and the set points |
+| SETTINGS | the caps, the start values, the trips and the questions ([SETTINGS](#settings)) |
+
+The right column is the same on both tasks: the readings, OUTPUT ON and RESET PEAKS. The header is the row right of the strip: the supply, its state and the range the set points may take. It stays in sight on both tasks and under the keypad and the question. The home tag leaves SUPPLY for the menu from either task.
 
 ## The supply model
 
@@ -45,7 +56,7 @@ The plot shows voltage, current and power over the last 27 s, with each set poin
 | VOLTAGE | 3.3 to 21 V, 20 mV steps | 1 to 20 V, 10 mV steps | 0.1 V |
 | CURRENT LIMIT | 0.5 to 5 A, 50 mA steps | 0.05 to 3 A, 10 mA steps | 0.1 A |
 
-The PD mini's ranges are from the vendor's page, not measured. The PD mini gives no more than it is fed: its voltage is capped 0.7 V under the input voltage it reports, so a 5 V input allows at most 4.3 V. The caps in SETTINGS narrow both ranges, and the range in use shows at the right of the strip.
+The PD mini's ranges are from the vendor's page, not measured. The PD mini gives no more than it is fed: its voltage is capped 0.7 V under the input voltage it reports, so a 5 V input allows at most 4.3 V. The caps in SETTINGS narrow both ranges, and the range in use shows at the right end of the header.
 
 - Drag a slider, or tap its track to set the value under the finger.
 - `-0.1` and `+0.1` step the value.
@@ -79,7 +90,7 @@ The band names the reason. An output another screen switched on stays as it is w
 
 ![The supply's settings](view:supply-settings)
 
-SETTINGS, at the right of the strip, opens the settings over the left column. A value opens the keypad; a switch flips on the tap.
+SETTINGS, the strip's second tab, shows the settings in the left column. A value opens the keypad; a switch flips on the tap. A tap on LIVE while the keypad is open closes it and keeps the value, as CANCEL does. While the question about a live output is open, the strip waits for APPLY or CANCEL.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|

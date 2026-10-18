@@ -37,8 +37,8 @@ overview           963      120 KiB      3.2      39.0
 servo           14,680     1835 KiB     48.2      19.5
 servo-grip        2,988      374 KiB      9.8      39.0
 servo-current        4,006      501 KiB     13.1      39.0
-supply           8,580     1072 KiB     28.2      19.5
-supply-chrome       31,606     3951 KiB    103.7       7.8
+supply           8,034     1004 KiB     26.4      19.5
+supply-chrome       30,543     3818 KiB    100.2       9.8
 analyser           901      113 KiB      3.0      39.0
 logs               878      110 KiB      2.9      39.0
 settings           896      112 KiB      2.9      39.0
