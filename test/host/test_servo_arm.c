@@ -1117,7 +1117,7 @@ TEST_CASE(a_press_on_the_dial_drives_a_released_servo_again)
 
 /*
  * The programmer keeps off the port while the bench is armed for the motor,
- * though this screen's surfaces are not armed: the coprocessor refuses a
+ * though this screen's surfaces are not armed: the IOmcu refuses a
  * session on any arm, and the panel says so before asking.
  */
 TEST_CASE(the_programmer_sees_an_arm_for_the_motor)

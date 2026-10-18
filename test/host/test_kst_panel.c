@@ -2,7 +2,7 @@
  * The overlay of the programmer for KST and Chaservo servos
  * (shared/ui/kst_panel.c): what a touch does in each state, what each page
  * asks for, and what the operator is told.  The bench under it is
- * kst_panel_rig.h on kst_rig.h: the simulated servo, the coprocessor's port,
+ * kst_panel_rig.h on kst_rig.h: the simulated servo, the IOmcu's port,
  * link dispatch and the panel's link module.  The servo files, the cases with
  * no card and the limit run are test_kst_panel_files.c,
  * test_kst_panel_nocard.c and test_kst_panel_limrun.c.
@@ -1856,7 +1856,7 @@ TEST_CASE(a_coprocessor_that_restarts_ends_the_session_and_says_so)
     tap(kst_panel_tab_rect(PG_TUNE));
     tap(val(PG_TUNE, 1, 0));
     CHECK_EQ(kst_panel_editor(), 1);
-    /* The coprocessor starts again: the port is back in PWM. */
+    /* The IOmcu starts again: the port is back in PWM. */
     rig_link_lost();
     CHECK_EQ(kst_panel_editor(), 0);
     rig_port_fresh();
@@ -2146,7 +2146,7 @@ static void texts_in(ui_lang_t lang)
     CHECK_EQ(kst_panel_message_lines(&m, t), 2);
     CHECK_STR_EQ(t[0], TR(KP_M_SESSION_ENDED));
     CHECK_STR_EQ(t[1], TR(KP_M_SESSION_ENDED_2));
-    /* A coprocessor that started again: the servo is in its mode still. */
+    /* An IOmcu that started again: the servo is in its mode still. */
     m.id = KST_PROG_MSG_OUT + KST_LINK_OUT_RESTARTED;
     CHECK_EQ(kst_panel_message_lines(&m, t), 2);
     CHECK_STR_EQ(t[0], TR(KP_O_RESTARTED));
@@ -2506,7 +2506,7 @@ TEST_CASE(a_write_that_runs_says_writing_and_not_interrupted)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* A write of one register, and one whose order the coprocessor plans. */
+/* A write of one register, and one whose order the IOmcu plans. */
 TEST_CASE(the_writing_line_has_a_singular_and_a_form_without_a_count)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
@@ -2535,7 +2535,7 @@ TEST_CASE(the_writing_line_has_a_singular_and_a_form_without_a_count)
         CHECK(one);
         settle();
         CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
-        /* RELEASE PAIRING: the coprocessor's own plan, no count here. */
+        /* RELEASE PAIRING: the IOmcu's own plan, no count here. */
         if (!kst_prog_write_enabled(M)) {
             enable();
         }

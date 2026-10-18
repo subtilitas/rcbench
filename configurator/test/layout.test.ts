@@ -64,7 +64,7 @@ test('a wire number names the same connection in every selection', () => {
   for (const w of CATALOGUE.wires) assert.equal(ends.get(w.n), `${w.a}>${w.b ?? 'open'}`, `wire ${w.n}`);
 });
 
-test('the width is 970 px and the height holds the coprocessor in every drawing', () => {
+test('the width is 970 px and the height holds the IOmcu in every drawing', () => {
   for (const s of samples) {
     const l = layout(s.setup, CATALOGUE, 'en');
     assert.equal(l.width, 970);

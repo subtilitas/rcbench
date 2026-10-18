@@ -2,7 +2,7 @@
  * Keeping a board's drawing in the panel's flash.
  *
  * The failure under test is a drawing that survives a write it should not
- * have survived, or one shown for a coprocessor that serves another.  What
+ * have survived, or one shown for an IOmcu that serves another.  What
  * is kept is kept for as long as the board is known; a slot that became
  * findable while it was half written would hand out a wrong drawing until
  * somebody wired a lead by it.
@@ -717,7 +717,7 @@ TEST_CASE(a_keep_erases_the_sectors_it_uses_and_leaves_the_rest_of_the_slot)
 TEST_CASE(a_kept_drawing_is_read_only_for_the_page_that_describes_it)
 {
     /*
-     * The board ID alone is not the key: a coprocessor flashed with another
+     * The board ID alone is not the key: an IOmcu flashed with another
      * drawing under the same ID would be shown the old one.  read_same()
      * hands the kept bytes out only when every field of the ARTWORK page
      * equals what was kept.

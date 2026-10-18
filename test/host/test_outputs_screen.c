@@ -431,7 +431,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
         tap_pin(13);
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 1);
 
-        /* A slot that holds the pin keeps it -- the coprocessor gives the
+        /* A slot that holds the pin keeps it -- the IOmcu gives the
          * port no pin then -- and it can be unticked. */
         outputs_screen_set_prog_pin(13u);
         CHECK_EQ(outputs_screen_cell(idx(13), l, sizeof(l)),
@@ -449,7 +449,7 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
 
 /*
  * A PWM pin on the programming port's slice is not offered.  The
- * coprocessor's prog_port_slots_check() refuses a PWM slot that shares a
+ * IOmcu's prog_port_slots_check() refuses a PWM slot that shares a
  * slice with a port's pin, and GP28 is slice 6 with GP13.  The cell names
  * the port's pin, a tap writes nothing, and the line under the protocol
  * names both pins.  DShot runs on PIO, not on a slice, and takes the pin.
@@ -518,7 +518,7 @@ TEST_CASE(a_pwm_pin_on_the_programming_ports_slice_is_not_offered)
 }
 
 /*
- * GP0 and GP16 are one compare register on two pads, and the coprocessor's
+ * GP0 and GP16 are one compare register on two pads, and the IOmcu's
  * out_pwm_bind() refuses the second pin of the pair.  Beside a pin bound as
  * PWM in either PWM protocol, its partner is not offered to a PWM protocol;
  * the cell names the bound pin, and a refused tap names both under the
@@ -897,10 +897,10 @@ TEST_CASE(a_change_of_board_takes_the_protocol_with_it)
 }
 
 /*
- * A protocol picked while the coprocessor is not there -- the list works
+ * A protocol picked while the IOmcu is not there -- the list works
  * with the link down -- is not carried to the board that then answers: the
- * selection goes to OFF, and the next tap writes nothing.  The same for a
- * coprocessor swapped for another board after a pick.
+ * selection goes to OFF, and the next tap writes nothing.  The same for an
+ * IOmcu swapped for another board after a pick.
  */
 TEST_CASE(a_pick_made_for_one_board_is_not_carried_to_another)
 {
@@ -1490,8 +1490,8 @@ TEST_CASE(off_stays_until_another_entry_is_picked)
 }
 
 /*
- * The panel boots with the coprocessor off: the screen knows no board, and
- * opens on the overview.  The coprocessor comes up and its first reading
+ * The panel boots with the IOmcu off: the screen knows no board, and
+ * opens on the overview.  The IOmcu comes up and its first reading
  * names a board and a binding.  Nobody picked a protocol, so a tap still
  * writes nothing -- the overview must not hand the next tap the lowest
  * protocol the reading holds.
@@ -1531,7 +1531,7 @@ TEST_CASE(a_board_that_answers_during_a_visit_keeps_the_overview)
     CHECK_EQ(outbind_group_of(&s_last, idx(4)), proto_row("SERVO PWM"));
 }
 
-/* A coprocessor swapped for another board type while the screen is open:
+/* An IOmcu swapped for another board type while the screen is open:
  * the overview stays, and a tap writes nothing. */
 TEST_CASE(a_board_swapped_during_a_visit_keeps_the_overview)
 {

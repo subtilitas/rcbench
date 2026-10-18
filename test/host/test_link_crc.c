@@ -31,7 +31,7 @@ TEST_CASE(empty_input_leaves_the_accumulator_alone)
  * arrive rather than buffering a frame it may be about to reject. */
 TEST_CASE(folding_in_pieces_equals_folding_at_once)
 {
-    static const char msg[] = "the coprocessor never speaks unsolicited";
+    static const char msg[] = "the IOmcu never speaks unsolicited";
     const size_t len = sizeof(msg) - 1;
 
     const uint16_t whole = link_crc(LINK_CRC_INIT, msg, len);

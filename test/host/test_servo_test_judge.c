@@ -257,7 +257,7 @@ TEST_CASE(a_meters_lag_widens_the_window_and_a_stuck_move_is_late)
 }
 
 /* A supply whose reading count stops while its page goes on answering --
- * display reads on the coprocessor that are slow or fail -- shows the same
+ * display reads on the IOmcu that are slow or fail -- shows the same
  * current over and over.  None of it is a new reading: no row is logged,
  * nothing is measured, and 1.5 s on the run ends as STALE. */
 TEST_CASE(a_frozen_current_is_no_reading)
@@ -303,7 +303,7 @@ TEST_CASE(skipped_readings_are_reported)
     CHECK(strstr(g.report, want) != NULL);
 }
 
-/* A count that starts again, as after a coprocessor restart, is one
+/* A count that starts again, as after an IOmcu restart, is one
  * reading, not tens of thousands skipped. */
 TEST_CASE(a_count_starting_again_is_not_readings_skipped)
 {

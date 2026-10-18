@@ -262,7 +262,7 @@ typedef struct {
 
     /*
      * Arming, which this screen needs as much as MOTOR & ESC does: until the
-     * bench is armed the coprocessor writes a pulse of length zero to every
+     * bench is armed the IOmcu writes a pulse of length zero to every
      * PWM pin, so dragging the horn moves nothing and shows nothing on a
      * scope.  The gesture is ui_widgets' -- the same two seconds and the same
      * fade as the other screen's, because it is the same control.
@@ -411,9 +411,9 @@ typedef struct {
     servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
     uint16_t           rate_hz;
 
-    /* The sweep: the same curve the coprocessor runs, on this screen's own
+    /* The sweep: the same curve the IOmcu runs, on this screen's own
      * clock, to draw the horn by. */
-    bool        sweep_able;      /* the coprocessor speaks 4.2 or later  */
+    bool        sweep_able;      /* the IOmcu speaks 4.2 or later  */
     /*
      * The pause whose HOLD what the screen expects of the far end rests on,
      * or 0.  Set by a PAUSE of a sweep the far end is known to run.  Kept
@@ -531,7 +531,7 @@ typedef struct {
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
     bool      have_now;
     bool      link_up;
-    bool      enc_held;      /**< the coprocessor holds the encoder on,
+    bool      enc_held;      /**< the IOmcu holds the encoder on,
                                   servo_screen_set_enc_held()           */
     int       test_note;     /**< servo_str_t the engine refused a START
                                   with, 0 none; test_blocked() is live  */
@@ -745,7 +745,7 @@ static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
 /*
  * The range a command carries: the narrowest one centred on CENTRE that
- * holds MIN and MAX.  The coprocessor knows a channel only by its two
+ * holds MIN and MAX.  The IOmcu knows a channel only by its two
  * endpoints and rests a surface at their midpoint -- on RELEASE, before an
  * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTRE
  * is not midway between them away from its centre.  Commands never leave

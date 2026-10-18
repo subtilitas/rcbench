@@ -9,7 +9,7 @@
  *
  * The reminder (SCREEN_UPD_REMIND): the start-up check found a newer
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
- * off, and never over the coprocessor's update question or its progress,
+ * off, and never over the IOmcu's update question or its progress,
  * which come first.  IGNORE NOW closes it until the next start; NEVER
  * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2 s:
  * DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
@@ -187,7 +187,7 @@ typedef struct {
     bool     have_net;
     bool     gate_open;    /**< SAFE, supply off, no log run, nothing else */
     bool     files_open;   /**< FILES & UPDATE is open                     */
-    bool     coproc;       /**< the coprocessor's update is offered or runs */
+    bool     coproc;       /**< the IOmcu's update is offered or runs */
     bool     unsafe;       /**< ARMED, an arm waiting, the supply on        */
     bool     newer;        /**< the start-up check found a newer release   */
 } upd_feed_t;
@@ -202,7 +202,7 @@ typedef struct {
 /**
  * Whether the start-up check starts now: once per start, with the reminder
  * on, a home network kept, Wi-Fi available, the gate open, FILES & UPDATE
- * closed, the coprocessor's update neither offered nor running, the router
+ * closed, the IOmcu's update neither offered nor running, the router
  * past the splash, and within UPD_START_WAIT_MS of the first drive.  True
  * once; the caller starts the check.
  */
@@ -212,7 +212,7 @@ bool upd_startup_due(upd_driver_t *d, const upd_feed_t *f);
  * The reminder, once a frame, whichever screen is current.  Opens it on
  * OVERVIEW when the start-up check found a newer release, the reminder is
  * on, it was not answered at this start, and the bench is not unsafe and
- * the coprocessor's update not offered or running.  Takes it down again,
+ * the IOmcu's update not offered or running.  Takes it down again,
  * unanswered, for any of those changing under it.  Drains its answers.
  */
 void upd_remind_drive(upd_driver_t *d, const upd_feed_t *f);

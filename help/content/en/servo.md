@@ -24,7 +24,7 @@ The right card is the output card, the same on every task: the readings, the sup
 
 ![SERVO while SAFE](view:servo)
 
-While the bench is SAFE the horn is drawn dimmed and LIVE's left card reads `ARM FIRST`. The dial takes no position. The coprocessor writes a pulse of length zero to every servo PWM (pulse-width modulation) pin.
+While the bench is SAFE the horn is drawn dimmed and LIVE's left card reads `ARM FIRST`. The dial takes no position. The IOmcu writes a pulse of length zero to every servo PWM (pulse-width modulation) pin.
 
 The right card, from the top:
 
@@ -60,7 +60,7 @@ ARMED SERVO drives the servo outputs and a pulsing PROG PORT. Throttle outputs g
 | SPEED | set | set; a held position is sent again at the new rate |
 | START TEST | refused: `ARM FIRST` | starts the automatic test after its hold |
 
-The switch to ARMED sets the commanded value to the rest, the midpoint of the channel's end points, without TRIM. The first drag or knob turn starts from there. SWEEP is grey without a bound surface, without the link, or with a coprocessor older than protocol 4.2.
+The switch to ARMED sets the commanded value to the rest, the midpoint of the channel's end points, without TRIM. The first drag or knob turn starts from there. SWEEP is grey without a bound surface, without the link, or with an IOmcu older than protocol 4.2.
 
 ## The servo rail's meter
 
@@ -74,7 +74,7 @@ The line over the plot names the meter of the servo rail:
 ![The INA3221 as the rail's meter](view:servo-ina)
 ![A clipped window, in the warning colour](view:servo-clipped)
 
-The INA3221 becomes the meter 1000 ms after its conditions hold: it is enabled on SETUP, INTERFACES with CH1, the coprocessor speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638 A on a 0.1 ohm shunt, shows in the warning colour: its mean is then a bound.
+The INA3221 becomes the meter 1000 ms after its conditions hold: it is enabled on SETUP, INTERFACES with CH1, the IOmcu speaks protocol 4.11, and windows with current samples arrive. A window in which a sample hit the end of the range, 1.638 A on a 0.1 ohm shunt, shows in the warning colour: its mean is then a bound.
 
 ![The panel's supply model as the meter, with the SIMULATED pill](view:servo-model)
 
@@ -96,7 +96,7 @@ Standard servos are rated for 4.8 to 6.0 V. A voltage raised from 6.0 V or below
 
 ## SWEEP and PAUSE
 
-SWEEP moves the servo along SETTINGS > SWEEP's CURVE (square, sine or triangle) at its SPEED, 0.05 to 5 Hz, across RANGE, 10 to 100 % of the travel. The coprocessor times the curve, so the link's timing does not shape it. While a sweep runs the button reads PAUSE. A tap holds the servo where it is and the button reads PAUSED; a tap on PAUSED carries the sweep on from that point.
+SWEEP moves the servo along SETTINGS > SWEEP's CURVE (square, sine or triangle) at its SPEED, 0.05 to 5 Hz, across RANGE, 10 to 100 % of the travel. The IOmcu times the curve, so the link's timing does not shape it. While a sweep runs the button reads PAUSE. A tap holds the servo where it is and the button reads PAUSED; a tap on PAUSED carries the sweep on from that point.
 
 ![A paused sweep](view:servo-paused)
 
@@ -239,7 +239,7 @@ The report is a `SERVOnnn.TXT` of its own, written whatever REPORT says. It hold
 
 - On the panel's supply model the test's currents are the model's load, not the servo's.
 - The unit of LEFT ANGLE and RIGHT ANGLE is not known. The limit run takes the travel as linear in the pulse; that is not measured.
-- Until the screen sends a position, the pins run at the rate the coprocessor holds, 50 Hz after a restart.
+- Until the screen sends a position, the pins run at the rate the IOmcu holds, 50 Hz after a restart.
 
 ## Related pages
 

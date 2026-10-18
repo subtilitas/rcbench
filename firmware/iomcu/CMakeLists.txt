@@ -1,4 +1,4 @@
-# The coprocessor firmware: protocol timing, capture, sampling and the power
+# The IOmcu firmware: protocol timing, capture, sampling and the power
 # path.  Everything with a deadline runs here.
 cmake_minimum_required(VERSION 3.13)
 
@@ -131,7 +131,7 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
 
-# The coprocessor's own sources are held to the same warnings as the host
+# The IOmcu's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
 # -Wconversion is off here: the SDK's register macros trip it, and the shared
 # arithmetic that needs it is held to it by the host suite.

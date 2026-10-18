@@ -1,7 +1,7 @@
 /*
- * The updates: the coprocessor's over CAN (Controller Area Network) from
+ * The updates: the IOmcu's over CAN (Controller Area Network) from
  * the image this panel carries, the panel's own from WI-FI or
- * from GitHub, and the coprocessor update's screen on the render side.
+ * from GitHub, and the IOmcu update's screen on the render side.
  * cu_service() runs on the control task; the rest runs on app_main.
  *
  * SPDX-License-Identifier: MIT
@@ -47,13 +47,13 @@ static const char *TAG = "rcbench";
  * The panel's own update.  An install about to write the flash asks the
  * control task to stand still (s_fw_quiet_req) and waits for it to say so
  * (s_fw_quiet_ack): no polls, no exchanges, and the heartbeat withheld on
- * purpose, so the coprocessor goes to failsafe as it does at any restart of
+ * purpose, so the IOmcu goes to failsafe as it does at any restart of
  * the panel.  A write that fails lets it go again.
  */
 atomic_bool s_fw_quiet_req;
 atomic_bool s_fw_quiet_ack;
 /*
- * An install and the coprocessor's update exclude each other.  An install
+ * An install and the IOmcu's update exclude each other.  An install
  * says so from INSTALL's hold until its write has failed (s_fw_installing);
  * the control task says so for an update, and for the BUY of an image on
  * trial (s_cu_busy).  Each side stores its own flag before it reads the
@@ -69,10 +69,10 @@ bool        s_wifi_ok;
 static ui_screen_id_t s_update_back = SCREEN_LOGS;
 
 
-/* -------------------------------------------- the coprocessor's update */
+/* -------------------------------------------- the IOmcu's update */
 
 /*
- * The coprocessor image this panel carries: the release's own, embedded by
+ * The IOmcu image this panel carries: the release's own, embedded by
  * the build option RCBENCH_IOMCU_BIN (main/CMakeLists.txt).  A build without
  * it carries none and offers no update.
  */
@@ -144,8 +144,8 @@ static cu_version_t cu_carried(void)
 }
 
 /*
- * The update's own wire: exchange() after the bus has been asked back.  A
- * coprocessor that restarts answers nothing for a few hundred milliseconds,
+ * The update's own wire: exchange() after the bus has been asked back.  An
+ * IOmcu that restarts answers nothing for a few hundred milliseconds,
  * and a transmitter nobody acknowledges is off the bus in about 4 ms and
  * does not come back on its own (probe_identity()).  Asked only after an
  * exchange went unanswered, so a block costs no status read.
@@ -208,9 +208,9 @@ static void cu_publish_progress(bool active)
 }
 
 /*
- * A coprocessor answered its identity: a link-up, or a probe from a
- * coprocessor of another major.  Its build is checked against the carried
- * image, whatever was decided for the coprocessor before it.
+ * An IOmcu answered its identity: a link-up, or a probe from an
+ * IOmcu of another major.  Its build is checked against the carried
+ * image, whatever was decided for the IOmcu before it.
  */
 void cu_link_up(const link_msg_t *reply)
 {
@@ -261,19 +261,19 @@ static void cu_checked(void)
 {
     switch (s_cu.result) {
     case LINK_UPH_SAME:
-        ESP_LOGI(TAG, "coprocessor runs the build this panel carries");
+        ESP_LOGI(TAG, "IOmcu runs the build this panel carries");
         cu_enter(CU_IDLE);
         break;
     case LINK_UPH_DIFFERENT:
         if (s_cu_declined
             && memcmp(&s_cu_declined_for, &s_cu_running,
                       sizeof(s_cu_running)) == 0) {
-            ESP_LOGI(TAG, "coprocessor runs another build; its update was "
+            ESP_LOGI(TAG, "IOmcu runs another build; its update was "
                           "declined");
             cu_enter(CU_DECLINED);
             break;
         }
-        ESP_LOGI(TAG, "coprocessor %u.%u.%u runs another build; %u.%u.%u "
+        ESP_LOGI(TAG, "IOmcu %u.%u.%u runs another build; %u.%u.%u "
                       "offered", (unsigned)s_cu_running.major,
                  (unsigned)s_cu_running.minor, (unsigned)s_cu_running.patch,
                  (unsigned)RCBENCH_VERSION_MAJOR,
@@ -286,17 +286,17 @@ static void cu_checked(void)
     case LINK_UPH_TRIAL:
         /* A new image runs on trial, and answered: that is the condition
          * for keeping it (link_pages.h), whichever panel sent it. */
-        ESP_LOGI(TAG, "coprocessor runs an image on trial; buying it");
+        ESP_LOGI(TAG, "IOmcu runs an image on trial; buying it");
         link_uph_confirm(&s_cu, now_ms());
         cu_enter(CU_CONFIRMING);
         break;
     case LINK_UPH_NEEDS_USB:
-        ESP_LOGW(TAG, "coprocessor takes no update over CAN");
+        ESP_LOGW(TAG, "IOmcu takes no update over CAN");
         control_alert(TR(ALERT_CU_USB));
         cu_enter(CU_IDLE);
         break;
     default:
-        ESP_LOGW(TAG, "coprocessor build check ended %u, error %u",
+        ESP_LOGW(TAG, "IOmcu build check ended %u, error %u",
                  (unsigned)s_cu.result, (unsigned)s_cu.error);
         cu_enter(CU_IDLE);
         break;
@@ -304,13 +304,13 @@ static void cu_checked(void)
 }
 
 /* The update has ended: the link goes back to the poll, which finds the
- * coprocessor again by its identity.  A frame of its own: inlined, its
+ * IOmcu again by its identity.  A frame of its own: inlined, its
  * alert buffers sit in cu_service()'s frame, above poll_far_end() on the
  * control task's deepest chain. */
 static __attribute__((noinline)) void cu_ended(void)
 {
     if (s_cu.result == LINK_UPH_UPDATED) {
-        ESP_LOGI(TAG, "coprocessor updated to %u.%u.%u",
+        ESP_LOGI(TAG, "IOmcu updated to %u.%u.%u",
                  (unsigned)RCBENCH_VERSION_MAJOR,
                  (unsigned)RCBENCH_VERSION_MINOR,
                  (unsigned)RCBENCH_VERSION_PATCH);
@@ -323,7 +323,7 @@ static __attribute__((noinline)) void cu_ended(void)
     } else if (s_cu.result == LINK_UPH_NEEDS_USB) {
         control_alert(TR(ALERT_CU_USB));
     } else {
-        ESP_LOGW(TAG, "coprocessor update ended %u, error %u, block %u of %u",
+        ESP_LOGW(TAG, "IOmcu update ended %u, error %u, block %u of %u",
                  (unsigned)s_cu.result, (unsigned)s_cu.error,
                  (unsigned)s_cu.block, (unsigned)s_cu.blocks);
         cu_alert_failed();
@@ -332,7 +332,7 @@ static __attribute__((noinline)) void cu_ended(void)
     s_cu_took_down = false;
     s_cu_missed = false;
     /* The link-lost screen counts from here, not from the update's start:
-     * the poll finds the coprocessor inside its LINK_LOST_SCREEN_MS. */
+     * the poll finds the IOmcu inside its LINK_LOST_SCREEN_MS. */
     if (atomic_load(&s_link_lost_ms) != 0u) {
         atomic_store(&s_link_lost_ms, now_ms());
     }
@@ -346,7 +346,7 @@ static __attribute__((noinline)) void cu_ended(void)
  * The check and the BUY of an image on trial share the link with the poll,
  * one step a pass.  An update takes the link down first -- the poll's own
  * edge, with everything that ends there: the arm, the supply, the pages'
- * state -- and then runs alone for CU_SLICE_MS a pass.  The coprocessor
+ * state -- and then runs alone for CU_SLICE_MS a pass.  The IOmcu
  * refuses ARM for the whole session, and the panel shows no band.
  */
 bool cu_service(bool *link_up, bench_state_t *bench,
@@ -374,7 +374,7 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         /* A decline counts for the offer it was given on only: one that
          * crossed a newer link-up's check is for an offer gone. */
         if (atomic_load(&s_cu_declined_gen) == s_cu_offer_gen) {
-            ESP_LOGI(TAG, "coprocessor update declined");
+            ESP_LOGI(TAG, "IOmcu update declined");
             cu_enter(CU_DECLINED);
             s_cu_declined = true;
             s_cu_declined_for = s_cu_running;
@@ -391,13 +391,13 @@ bool cu_service(bool *link_up, bench_state_t *bench,
             /* The panel's radio is up or an install of the panel has
              * begun: the START is spent and the offer made again, so the
              * question opens once both have ended. */
-            ESP_LOGW(TAG, "coprocessor update refused: the radio is on or "
+            ESP_LOGW(TAG, "IOmcu update refused: the radio is on or "
                           "the panel installs");
             atomic_store(&s_cu_busy, false);
             cu_publish_offer(true);
             return false;
         }
-        ESP_LOGI(TAG, "coprocessor update: %lu bytes",
+        ESP_LOGI(TAG, "IOmcu update: %lu bytes",
                  (unsigned long)CU_LEN);
         cu_publish_offer(false);
         link_uph_update(&s_cu, CU_IMG, CU_LEN, now_ms());
@@ -704,9 +704,9 @@ void wifi_service(bool armed, uint32_t stops_now)
  * wifi_access's fetch jobs (wa_fetch.h).
  *
  * A check needs what the radio needs: SAFE, the supply off, no log run,
- * and neither a panel install nor the coprocessor's update.  A download
+ * and neither a panel install nor the IOmcu's update.  A download
  * needs what an install needs (fw_gate_now()): it is one, from its hold
- * on, and says so in s_fw_installing before it reads the coprocessor's
+ * on, and says so in s_fw_installing before it reads the IOmcu's
  * flag.  Each frame a running job is ended for STOP, for WI-FI
  * opening, for CANCEL, and for its gate closing.
  */
@@ -759,7 +759,7 @@ static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
 }
 
 /*
- * The reminder, before the coprocessor's question is served: it yields to
+ * The reminder, before the IOmcu's question is served: it yields to
  * that question in the same frame the question may open.
  */
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
@@ -909,7 +909,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     s_upd_dl = false;
     if (f.got == WA_GOT_STAGED) {
         /* The installer's own flag from here: it sets it before it reads
-         * the coprocessor's again. */
+         * the IOmcu's again. */
         atomic_store(&s_fw_installing, false);
         ESP_LOGI(TAG, "GitHub: %s downloaded and checked", v.found);
         fw_install_run();
@@ -923,7 +923,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
 }
 
 /*
- * The coprocessor update's screen, once a frame on the render side:
+ * The IOmcu update's screen, once a frame on the render side:
  * coproc_update_drive() moves the router and drains the screen's latches,
  * and its STARTs and decline go to the control task.
  * @p unsafe: armed, an arm waiting, or the supply's output on or coming.

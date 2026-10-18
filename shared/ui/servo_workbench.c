@@ -283,7 +283,7 @@ bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
     if (out == NULL || size == 0u) {
         return false;
     }
-    /* No link, or the coprocessor's page not known: the tester sends
+    /* No link, or the IOmcu's page not known: the tester sends
      * nothing, and where it would go is not known. */
     if (target == SERVO_SCREEN_TARGET_NO_LINK) {
         snprintf(out, size, "%s", TR(SV_TARGET_NO_LINK));

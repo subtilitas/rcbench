@@ -1156,7 +1156,7 @@ TEST_CASE(a_poll_that_brings_three_windows_writes_three_rows)
     CHECK_EQ(g_mem.len, len);
 }
 
-/* The coprocessor's next snapshot: window @p number of CH1 closed with
+/* The IOmcu's next snapshot: window @p number of CH1 closed with
  * @p n_i current samples of @p ma and @p n_v voltage samples of @p mv,
  * published into its pages as core 0 does. */
 static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
@@ -1187,7 +1187,7 @@ static void far_window(uint16_t number, uint16_t n_i, int32_t ma,
  * A window that holds current samples and no voltage sample, or the other
  * way round, writes the cells it has and leaves the others empty: a
  * quantity nothing measured is not a 0 in the file.  From the
- * coprocessor's page through the panel's read into the row.
+ * IOmcu's page through the panel's read into the row.
  */
 TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
 {
@@ -1204,7 +1204,7 @@ TEST_CASE(a_window_without_voltage_samples_has_an_empty_voltage_cell)
         chain_cycle(53u);
         (void)log_pass(&w, &cad, &bench, true, false);
     }
-    /* From here the coprocessor's snapshots are written by hand: its
+    /* From here the IOmcu's snapshots are written by hand: its
      * schedule stands, and the exchanges take no time. */
     chain.exch_ms = 0u;
     chain_far_late(50u);

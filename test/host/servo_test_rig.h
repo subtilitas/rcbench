@@ -61,7 +61,7 @@ typedef struct {
     bool     off_asked;
     /* The output encoder: the horn's angle at enc_deg_per_us from 1500 us,
      * read from a count with its centre at ENC_CENTRE_COUNT, every
-     * enc_every ms, with the coprocessor's still time (a 12-count anchor)
+     * enc_every ms, with the IOmcu's still time (a 12-count anchor)
      * kept at the frame rate. */
     bool     enc_model_on;
     float    enc_deg_per_us;
@@ -259,7 +259,7 @@ static inline servo_test_reading_t reading(float amps)
     return r;
 }
 
-/* The horn's count now, and the still time as the coprocessor keeps it. */
+/* The horn's count now, and the still time as the IOmcu keeps it. */
 static inline void enc_model(void)
 {
     const float deg = (g.servo.position_us - 1500.0f) * g.enc_deg_per_us;

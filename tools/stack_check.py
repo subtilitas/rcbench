@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hold the panel's task stacks, and the coprocessor's two, to their
+"""Hold the panel's task stacks, and the IOmcu's two, to their
 deepest call chain.
 
 A task that runs past the end of its stack trips FreeRTOS's stack check and
@@ -70,7 +70,7 @@ name and a number, when another xTaskCreate*() variant appears, when a
 screen table cannot be read, or when a router function in SCREEN_CALLS
 makes no indirect call.
 
-The coprocessor.  With --iomcu the tool reads the RP2350 image instead.
+The IOmcu.  With --iomcu the tool reads the RP2350 image instead.
 Core 0 runs main() on the pico-sdk's main stack, __StackBottom to __StackTop
 in the ELF, and core 1 runs core1_main() on the array its launch passes;
 neither has a guard, and a chain past the end of core 0's stack writes into
@@ -96,7 +96,7 @@ and recursion are counted and named, as for the panel.
     tools/stack_check.py [BUILD] -v     and print each task's deepest chain
                                         and every call not followed
     tools/stack_check.py --iomcu [BUILD]
-                                        the coprocessor's two cores; BUILD
+                                        the IOmcu's two cores; BUILD
                                         defaults to firmware/iomcu/build
     tools/stack_check.py [BUILD] --check-doc
                                         and hold the panel's table in
@@ -104,12 +104,12 @@ and recursion are counted and named, as for the panel.
                                         page to this build
     tools/stack_check.py --iomcu [BUILD] --check-doc
                                         and hold core 0's row of the
-                                        coprocessor table in the same pages,
+                                        IOmcu table in the same pages,
                                         its count of calls through a
                                         register there, and core 0's
                                         sentence in STATUS.md
 
-The coprocessor's half is tools/stack_iomcu.py.  The ELF reader and the
+The IOmcu's half is tools/stack_iomcu.py.  The ELF reader and the
 call graph both halves use are tools/stack_elf.py.
 
 SPDX-License-Identifier: MIT
@@ -156,9 +156,9 @@ SCREEN_CALLS = {
 }
 
 # The link_port_t callbacks shared/link calls: the functions the panel puts
-# in its two ports, k_port and the coprocessor update's k_cu_port, whose
+# in its two ports, k_port and the IOmcu update's k_cu_port, whose
 # exchange, cu_port_exchange(), asks for the bus back and then calls
-# exchange().  A request to the coprocessor waits in exchange(), which runs
+# exchange().  A request to the IOmcu waits in exchange(), which runs
 # the safety loop, so this is the control task's deepest chain and it is
 # followed by name.  A function listed here that makes no indirect call, or
 # a callback that is not one function in the ELF, fails the check.
@@ -603,10 +603,10 @@ def main() -> int:
     ap.add_argument("build", nargs="?")
     ap.add_argument("-v", "--verbose", action="store_true")
     ap.add_argument("--iomcu", action="store_true",
-                    help="BUILD is a coprocessor build: check its two cores")
+                    help="BUILD is an IOmcu build: check its two cores")
     ap.add_argument("--check-doc", action="store_true",
                     help="also fail when the panel's task table, or with "
-                         "--iomcu core 0's row of the coprocessor table and "
+                         "--iomcu core 0's row of the IOmcu table and "
                          "its count of calls through a register, in "
                          "docs/Performance.md or docs/Performance-de.md, or "
                          "core 0's sentence in STATUS.md, differs from this "

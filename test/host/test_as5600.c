@@ -462,7 +462,7 @@ TEST_CASE(the_still_time_counts_up_inside_the_tolerance)
     ticks(50u);
     CHECK(sense_sched_enc_still_ms(&s) >= 198u);
     CHECK_EQ(SENSE_ENC_STILL_TOL, 12u);
-    /* The servo test judges "settled" by the tolerance the coprocessor
+    /* The servo test judges "settled" by the tolerance the IOmcu
      * keeps the still time to. */
     CHECK_EQ(SENSE_ENC_STILL_TOL, SERVO_TEST_ENC_TOL_COUNTS);
 }

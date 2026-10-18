@@ -117,7 +117,7 @@ test('the 2 pads of channel 1 of the INA3221 carry their print: VIN1+ takes the 
   const label = (id: string) => ina.pins.find((p) => p.id === id)!.label;
   assert.deepEqual(label('C1A'), { en: 'VIN1+', de: 'VIN1+' });
   assert.deepEqual(label('C1B'), { en: 'VIN1-', de: 'VIN1-' });
-  // The supply side: the PD mini output, the servo supply or the 5 V pad of the coprocessor. The load side: the plus of the servo.
+  // The supply side: the PD mini output, the servo supply or the 5 V pad of the IOmcu. The load side: the plus of the servo.
   const on = (pin: string) => CATALOGUE.wires.filter((w) => w.b === `ina3221.${pin}`).map((w) => [w.n, w.a]);
   assert.deepEqual(on('C1A'), [[28, 'pdmini.OP'], [29, 'ssup.POS'], [60, 'pad.40']]);
   assert.deepEqual(on('C1B'), [[30, 'servo.POS']]);

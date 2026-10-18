@@ -2,10 +2,10 @@
  * The panel's half of the KST (0x32) link page, protocol 4.13 to 4.15:
  * the programming ports for KST and Chaservo servos.
  *
- * The session with the servo runs at the coprocessor
+ * The session with the servo runs at the IOmcu
  * (shared/outputs/kst_port.h).  The panel names an operation, and for a
  * write the image the servo is to hold; it reads back where the port is,
- * how the operation ended and the servo's 32 registers.  A coprocessor
+ * how the operation ended and the servo's 32 registers.  An IOmcu
  * whose protocol minor is below KST_LINK_MINOR has no programming port
  * (minor 12 has the page and takes an output channel where this module
  * names a port) and nothing is sent to it: not a write and not a read.
@@ -22,7 +22,7 @@
  *   3. registers 0 to 3 are read: the command started the operation or the
  *      page says why not;
  *   4. registers 0 to 3 are read every KST_LINK_POLL_MS until the operation
- *      has ended.  A 4.14 coprocessor plans a WRITE and a RESTORE first,
+ *      has ended.  A 4.14 IOmcu plans a WRITE and a RESTORE first,
  *      for 2,161 of its passes at most: the phase is KST_LINK_PLANNING
  *      while the page says so, and KST_LINK_RUNNING after it;
  *   5. registers 4 to 15 are read, the backup when the page holds one, and
@@ -30,7 +30,7 @@
  *
  * kst_link_outcome() then hands out how it went, once.
  *
- * A request with no order of writes ends differently by the coprocessor's
+ * A request with no order of writes ends differently by the IOmcu's
  * minor.  4.14: KST_LINK_OUT_DONE with the result LINK_KST_RESULT_NO_PATH,
  * or LINK_KST_RESULT_TOO_COMPLEX when the planner's work was spent before
  * it knew.  4.13: KST_LINK_OUT_REFUSED with LINK_KST_REF_PLAN_NO_PATH.
@@ -38,14 +38,14 @@
  *
  * A LEAVE takes the port from PROGRAMMING to PWM without a supply cycle
  * (LINK_MINOR_KST_LEAVE, 4.15).  The request carries the wait with the line
- * low, leave_ms.  While the coprocessor waits the port reads
+ * low, leave_ms.  While the IOmcu waits the port reads
  * LINK_KST_LEAVING and the phase is KST_LINK_RUNNING; the page has no
- * register for the time left.  To a coprocessor below 4.15 nothing of a
+ * register for the time left.  To an IOmcu below 4.15 nothing of a
  * LEAVE is sent: kst_link_start() answers KST_LINK_START_NO_OP.
  *
  * A write to the servo is sent only with write_enabled set in the request:
  * the state of the switch ENABLE WRITE TO SERVO.  Without it the request
- * is refused here and nothing is sent.  The coprocessor refuses a write
+ * is refused here and nothing is sent.  The IOmcu refuses a write
  * without the key on its own.
  *
  * kst_link_abort() is for STOP and for the operator's cancel: a request
@@ -95,14 +95,14 @@ extern "C" {
 
 /** Where the module is. */
 typedef enum {
-    KST_LINK_DOWN = 0,   /**< no coprocessor answers                      */
-    KST_LINK_NO_PAGE,    /**< the coprocessor has no KST page             */
+    KST_LINK_DOWN = 0,   /**< no IOmcu answers                      */
+    KST_LINK_NO_PAGE,    /**< the IOmcu has no KST page             */
     KST_LINK_SYNC,       /**< the page has not been read yet              */
     KST_LINK_READY,      /**< kst_link_start() is taken                   */
     KST_LINK_SENDING,    /**< the staged registers and the command go out */
-    KST_LINK_RUNNING,    /**< the operation runs at the coprocessor       */
+    KST_LINK_RUNNING,    /**< the operation runs at the IOmcu       */
     KST_LINK_FETCHING,   /**< the results and the images are read         */
-    KST_LINK_PLANNING,   /**< the operation runs at the coprocessor and has
+    KST_LINK_PLANNING,   /**< the operation runs at the IOmcu and has
                               sent no frame yet: its plan is being built.
                               KST_LINK_RUNNING follows                    */
 } kst_link_phase_t;
@@ -110,14 +110,14 @@ typedef enum {
 /** What kst_link_start() and kst_link_fetch() answer. */
 typedef enum {
     KST_LINK_START_OK = 0,
-    KST_LINK_START_DOWN,       /**< no coprocessor answers                */
-    KST_LINK_START_NO_PAGE,    /**< the coprocessor has no KST page       */
+    KST_LINK_START_DOWN,       /**< no IOmcu answers                */
+    KST_LINK_START_NO_PAGE,    /**< the IOmcu has no KST page       */
     KST_LINK_START_BUSY,       /**< the phase is not KST_LINK_READY       */
     KST_LINK_START_ARG,        /**< no such operation or port             */
     KST_LINK_START_NO_ENABLE,  /**< a write with write_enabled clear      */
     KST_LINK_START_NO_IMAGE,   /**< a write or a release with no image
                                     read to plan from                     */
-    KST_LINK_START_NO_OP,      /**< the coprocessor's minor does not have
+    KST_LINK_START_NO_OP,      /**< the IOmcu's minor does not have
                                     the operation: a LEAVE below 4.15     */
 } kst_link_start_t;
 
@@ -155,7 +155,7 @@ typedef enum {
                                   or the link went                        */
     KST_LINK_OUT_RESTARTED,  /**< the page's SEQ is not the panel's, or
                                   its operation went back to NONE: the
-                                  coprocessor started again               */
+                                  IOmcu started again               */
     KST_LINK_OUT_DROPPED,    /**< kst_link_abort() before the page took
                                   the command; nothing of it ran */
 } kst_link_outcome_kind_t;
@@ -217,7 +217,7 @@ typedef struct {
 typedef struct {
     bool     up;
     bool     page;
-    uint16_t minor;            /**< the coprocessor's protocol minor      */
+    uint16_t minor;            /**< the IOmcu's protocol minor      */
     bool     known;            /**< status was read since the link came up */
     uint8_t  phase;            /**< kst_link_phase_t, never
                                     KST_LINK_PLANNING: that is
@@ -280,11 +280,11 @@ void kst_link_init(kst_link_t *k);
  *  stay. */
 void kst_link_lost(kst_link_t *k);
 
-/** A coprocessor answered with protocol minor @p minor.  Below
+/** An IOmcu answered with protocol minor @p minor.  Below
  *  KST_LINK_MINOR it has no page and nothing is sent to it. */
 void kst_link_came_up(kst_link_t *k, uint16_t minor);
 
-/** Whether the coprocessor has the page: false while none answers. */
+/** Whether the IOmcu has the page: false while none answers. */
 bool kst_link_has_page(const kst_link_t *k);
 
 /**
@@ -294,9 +294,9 @@ bool kst_link_has_page(const kst_link_t *k);
  * A LEAVE with leave_ms above LINK_KST_LEAVE_MS_MAX is
  * KST_LINK_START_ARG: the value is refused, not clamped.
  *
- * A WRITE and a RELEASE are planned at the coprocessor from the image it
+ * A WRITE and a RELEASE are planned at the IOmcu from the image it
  * read.  The request names the image the panel last fetched by its CRC
- * (cyclic redundancy check), and the coprocessor refuses with
+ * (cyclic redundancy check), and the IOmcu refuses with
  * LINK_KST_REF_START when it holds another.
  */
 kst_link_start_t kst_link_start(kst_link_t *k, const kst_link_request_t *r);
@@ -309,14 +309,14 @@ kst_link_start_t kst_link_fetch(kst_link_t *k);
  *  is dropped (KST_LINK_OUT_DROPPED).  A command that went without an
  *  answer is not sent again: a read of registers 0 to 3 follows.  A page
  *  at the SEQ before the command did not take it, which drops the request
- *  too; any other SEQ is a coprocessor that started again
+ *  too; any other SEQ is an IOmcu that started again
  *  (KST_LINK_OUT_RESTARTED).  A page took it when
  *  it shows the command's SEQ and either the command's operation in
  *  LINK_KS_OP or a refusal.  The command's SEQ with operation NONE and no
- *  refusal is a coprocessor that started again, at SEQ 0 after 0xFFFF:
+ *  refusal is an IOmcu that started again, at SEQ 0 after 0xFFFF:
  *  KST_LINK_OUT_RESTARTED, never KST_LINK_OUT_DONE.  So is operation NONE
  *  at any SEQ after a status read that named an operation: the page keeps
- *  the last operation started until the coprocessor starts again.  A page
+ *  the last operation started until the IOmcu starts again.  A page
  *  that has taken no command reads SEQ 0 and NONE before and after a
  *  start, and its first command counts as dropped.  A page that took it
  *  runs the operation, and the ABORT ends it with KST_SES_ERR_ABORTED.
@@ -352,7 +352,7 @@ void kst_link_readout(const kst_link_t *k, kst_link_readout_t *r);
 /** The servo's registers as last fetched; false while there are none. */
 bool kst_link_image(const kst_link_t *k, kst_image_t *out);
 
-/** The backup the coprocessor's session holds, as last fetched. */
+/** The backup the IOmcu's session holds, as last fetched. */
 bool kst_link_backup(const kst_link_t *k, kst_image_t *out);
 
 #ifdef __cplusplus

@@ -17,7 +17,7 @@ SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION a
 | ESC / BENCH | `8 SETTINGS` | the list of ESC / BENCH |
 | APPLICATION | `10 SETTINGS` | the list of APPLICATION |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
-| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each coprocessor pin, as a list |
+| OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
@@ -83,7 +83,7 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 | DISCARD | sets every listed value back to its stored one, as a step by hand would, then opens the menu |
 | SAVE | asks for a write, as the save button does, then opens the menu |
 
-- DISCARD sends a pin or a port back to the coprocessor at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
+- DISCARD sends a pin or a port back to the IOmcu at once. A PD mini wiring set back switches the supply output off, as a change by hand does.
 - While the bench is ARMED, DISCARD is dimmed and does nothing; the line `DISCARD waits until the bench is SAFE.` says so. STAY and SAVE work.
 - PWM target and Port PWM are not set back while the servo programmer holds the servo port; they stay unsaved.
 - With more than 10 changes, 9 lines show and the last line reads `and 3 more` for 12.
@@ -104,9 +104,9 @@ No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or
 | Rated kV | 0 to 10000 rpm/V, steps of 10 | 0 | the kV on [MOTOR & ESC](motor.md#kv-rpm-v-and-eff); 0 leaves it empty |
 | Idle pulse | 800 to 1600 us, steps of 10 | 1000 | the PWM (pulse-width modulation) width at 0 % throttle |
 | Full pulse | 1400 to 2400 us, steps of 10 | 2000 | the PWM width at 100 % throttle |
-| Ramp limit | 5 to 300 %/s, steps of 5 | 55 | the throttle slew of the panel's model, used while no coprocessor answers |
+| Ramp limit | 5 to 300 %/s, steps of 5 | 55 | the throttle slew of the panel's model, used while no IOmcu answers |
 
-Idle pulse and Full pulse go to the coprocessor at link-up and on every change. The coprocessor ramps no throttle: a bound pin steps to the command.
+Idle pulse and Full pulse go to the IOmcu at link-up and on every change. The IOmcu ramps no throttle: a bound pin steps to the command.
 
 ## APPLICATION
 

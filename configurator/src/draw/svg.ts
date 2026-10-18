@@ -1,5 +1,5 @@
 // The wiring drawing as SVG markup, built from the geometry of layout.ts.
-// Draw order: modules, coprocessor, wires in ascending number, dots, pills.
+// Draw order: modules, IOmcu, wires in ascending number, dots, pills.
 
 import type { Catalogue, Lang, Setup, SignalClass } from '../../contract.ts';
 import { esc } from '../i18n.ts';

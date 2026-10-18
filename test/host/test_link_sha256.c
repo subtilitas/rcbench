@@ -1,5 +1,5 @@
 /*
- * SHA-256 (Secure Hash Algorithm) as the coprocessor update uses it at both
+ * SHA-256 (Secure Hash Algorithm) as the IOmcu update uses it at both
  * ends, held to the test vectors of FIPS (Federal Information Processing
  * Standard) 180-2 appendix B and to the padding boundaries: 55 bytes is the
  * longest message whose length fits its last block, 56 the shortest that

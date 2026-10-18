@@ -4,10 +4,10 @@
  *
  * The mapping validates a driver number this build knows, an endpoint a
  * servo can take and a channel range that fits.  It is host-tested, and the
- * coprocessor is wiring.
+ * IOmcu is wiring.
  *
  * Each page has three entry points:
- *   _defaults  puts the register array into the state a coprocessor holds
+ *   _defaults  puts the register array into the state an IOmcu holds
  *              before anybody has configured it.
  *   _write     validates a register window and stores it, refusing
  *              atomically: a rejected write leaves the page as it was.
@@ -43,14 +43,14 @@ uint8_t outputs_arm_roles_of(uint16_t arm);
 
 /**
  * The CONTROL ARM value that arms @p roles, OUT_ROLE_BIT()s: a set of
- * LINK_ARM_ROLES, or 0 for no role.  A coprocessor older than
+ * LINK_ARM_ROLES, or 0 for no role.  An IOmcu older than
  * LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL and nothing narrower.
  */
 uint16_t outputs_arm_value_of(uint8_t roles);
 
 /**
- * The ARM value the panel writes to arm @p roles, OUT_ROLE_BIT()s, at a
- * coprocessor of protocol minor @p far_minor: LINK_ARM_ALL below
+ * The ARM value the panel writes to arm @p roles, OUT_ROLE_BIT()s, at an
+ * IOmcu of protocol minor @p far_minor: LINK_ARM_ALL below
  * LINK_MINOR_ARM_ROLE, else outputs_arm_value_of(@p roles), and LINK_ARM_ALL
  * when no role of OUT_ROLES_ALL is named.  Never 0.
  */

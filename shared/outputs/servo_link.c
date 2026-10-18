@@ -93,7 +93,7 @@ static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
 
 /* A pulse in microseconds as a proportion of the servo's own travel, which is
  * what the CHANNELS page carries.  Clamped, not wrapped, below the range, as
- * the coprocessor's conversion is. */
+ * the IOmcu's conversion is. */
 static uint16_t us_to_span(uint16_t us, uint16_t min_us, uint16_t max_us)
 {
     if (max_us <= min_us || us <= min_us) {
@@ -304,7 +304,7 @@ static void servo_cfg(const servo_cmd_t *sv, uint16_t *cfg)
 
 /*
  * The sweep on the SERVO page (protocol 4.2).  While one runs the
- * coprocessor commands the surfaces itself every pass, so a centre or a
+ * IOmcu commands the surfaces itself every pass, so a centre or a
  * position written under it would last one pass: anything but a sweep stops
  * it first.  Not known after the link comes up: then the next command, a
  * sweep included, writes a stop first, which also clears a finished sweep
@@ -358,7 +358,7 @@ static bool write_servo(const servo_cmd_t sv)
      * page is read, because whose pulse it would be is not known.  A release
      * goes to the target in force, which is where the position was written;
      * every other command waits until that target is the one the screen
-     * asks for (servo_link_prog_service()).  A coprocessor without the page
+     * asks for (servo_link_prog_service()).  An IOmcu without the page
      * has the standard outputs.
      */
     if (!prog_link_command(s_ctx->prog, sv.kind == SERVO_CMD_RELEASE)) {
@@ -382,7 +382,7 @@ static bool write_servo(const servo_cmd_t sv)
     if (sv.kind == SERVO_CMD_HOLD) {
         /*
          * The far end freezes every surface where its output is and keeps
-         * it there while this is repeated.  A coprocessor that cannot sweep
+         * it there while this is repeated.  An IOmcu that cannot sweep
          * has nothing to hold.
          */
         if (!s_servo_sweep_page) {
@@ -577,7 +577,7 @@ static bool write_servo(const servo_cmd_t sv)
         return true;
     } else {
         /*
-         * Configuration and command, sent whole every time.  The coprocessor
+         * Configuration and command, sent whole every time.  The IOmcu
          * may have reset since the last write, so the range the pulse is
          * clamped against is restated with each pulse.
          */
@@ -626,7 +626,7 @@ static bool write_servo(const servo_cmd_t sv)
                                         sv.sweep_span, sv.sweep_dwell_ms };
             /*
              * A resume of the sweep held there carries it on from its phase
-             * (4.6).  An older coprocessor, or one that refuses -- the hold
+             * (4.6).  An older IOmcu, or one that refuses -- the hold
              * ended there, or the curve changed -- gets the curve whole and
              * starts it over, and the operator is told once it has.
              */
@@ -817,12 +817,12 @@ static bool write_servo(const servo_cmd_t sv)
 /*
  * The SERVO page: the frame rate of the PWM target -- every PWM output
  * rendering a surface for the standard target, the one programming port
- * for a port target (protocol 4.19).  A coprocessor before protocol 4.1 has
+ * for a port target (protocol 4.19).  An IOmcu before protocol 4.1 has
  * no such page and runs each slot at its binding's rate, 50 Hz for a servo.
  * From 4.19 a TARGET change sets the page back to 0; prog_link_rate() says
  * so and servo_link_rate_reset_note() records it here.
  *
- * The rate is written with every held position, not once: a coprocessor that
+ * The rate is written with every held position, not once: an IOmcu that
  * restarts between two polls goes back to each slot's own rate without the
  * link ever going down, and only a write that lands says what the pins run
  * at.  A refusal is the binding's answer, not the wire's -- a surface sharing
@@ -1218,8 +1218,8 @@ void servo_link_init(const servo_link_ctx_t *ctx)
 void servo_link_came_up(uint16_t minor)
 {
     /*
-     * Whether it takes a frame rate, and each slot back at its own.  A
-     * coprocessor that only went quiet, or a panel that restarted, can leave
+     * Whether it takes a frame rate, and each slot back at its own.  An
+     * IOmcu that only went quiet, or a panel that restarted, can leave
      * the far end holding a heli rate the screen no longer shows; a servo
      * plugged in since would meet it on the next arm.  The screen sends its
      * rate again with its next position.

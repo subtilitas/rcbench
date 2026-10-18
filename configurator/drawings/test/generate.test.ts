@@ -203,7 +203,7 @@ test('the 2 parts outside the catalogue are drawn and marked as not wired', () =
   assert.deepEqual(Object.values(out.anchors.files).filter((r) => r.part === null).length, 2);
 });
 
-test('the coprocessor carries 40 pads and the 2 poles of the CAN terminal, with the print of each board', () => {
+test('the IOmcu carries 40 pads and the 2 poles of the CAN terminal, with the print of each board', () => {
   const copro = part('copro');
   const bare = cataloguePins(CATALOGUE, copro, null);
   const carrier = cataloguePins(CATALOGUE, copro, 'osoyoo');
@@ -235,7 +235,7 @@ test('the generator refuses a catalogue pin that no drawing shows', () => {
   assert.throws(() => generate(c), /servo: pins not drawn: EXTRA/);
 });
 
-test('a pin in the pin list of the coprocessor is a pin the drawings owe: the generator refuses it, the check reports it', () => {
+test('a pin in the pin list of the IOmcu is a pin the drawings owe: the generator refuses it, the check reports it', () => {
   assert.deepEqual(part('copro').pins, []);
   const c = clone();
   const copro = c.parts.find((p) => p.id === 'copro')!;

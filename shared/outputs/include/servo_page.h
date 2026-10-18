@@ -1,5 +1,5 @@
 /*
- * The SERVO link page at the coprocessor: the frame rate of the tester's
+ * The SERVO link page at the IOmcu: the frame rate of the tester's
  * target and the sweep that drives it through a curve.
  *
  * Register 0 is the target's frame rate (protocol 4.19).  With the standard
@@ -37,7 +37,7 @@
  * pass, and the CHANNELS page is not what drives them.
  *
  * Nothing on the page is kept across a restart.  Host-tested; the
- * coprocessor is wiring.
+ * IOmcu is wiring.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -139,8 +139,8 @@ bool servo_page_target(servo_page_t *p, outputs_t *o, uint8_t first,
 typedef enum {
     SERVO_RESUME_CURVE,      /**< the curve whole, as any sweep           */
     SERVO_RESUME_WRITE,      /**< LINK_SV_RESUME alone                    */
-    SERVO_RESUME_TOO_OLD,    /**< the curve whole, from its beginning: a
-                                  coprocessor older than 4.6 has no resume */
+    SERVO_RESUME_TOO_OLD,    /**< the curve whole, from its beginning: an
+                                  IOmcu older than 4.6 has no resume */
     SERVO_RESUME_REFUSED,    /**< the curve whole, from its beginning: the
                                   resume was refused                      */
     SERVO_RESUME_UNTIMED,    /**< the curve whole, from its beginning: the

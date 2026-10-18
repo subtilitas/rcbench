@@ -1,5 +1,5 @@
 /*
- * The panel's half of the coprocessor update.  See link_update_host.h.
+ * The panel's half of the IOmcu update.  See link_update_host.h.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -165,7 +165,7 @@ static bool wait_gate(link_uph_t *u, uint32_t now_ms)
     return true;
 }
 
-/* The coprocessor lost the session: from block 0 again, or give up. */
+/* The IOmcu lost the session: from block 0 again, or give up. */
 static void start_over(link_uph_t *u, uint32_t now_ms)
 {
     if (++u->restarts > LINK_UPH_RESTARTS) {
@@ -446,7 +446,7 @@ static void step_send(link_uph_t *u, link_host_t *h, const link_port_t *port,
 }
 
 /*
- * Where the coprocessor stands, after an exchange went unanswered or a
+ * Where the IOmcu stands, after an exchange went unanswered or a
  * command was refused: carry on from the block it expects, check what it
  * has, or start over from block 0 when it lost the session.
  */
@@ -614,7 +614,7 @@ static void step_activate(link_uph_t *u, link_host_t *h,
         return;
     }
     /* Taken, or unanswered: an ACTIVATE that went in restarts the
-     * coprocessor 20 ms after it, and its acknowledgement may be what was
+     * IOmcu 20 ms after it, and its acknowledgement may be what was
      * lost.  The restart says which. */
     heard(u);
     u->busy = false;
@@ -634,7 +634,7 @@ static void step_restarting(link_uph_t *u, link_host_t *h,
         done(u, LINK_UPH_NOT_STARTED);
         return;
     }
-    /* Who answers: the identity first, as for any coprocessor. */
+    /* Who answers: the identity first, as for any IOmcu. */
     link_msg_t r;
     if (read_regs(h, port, LINK_PAGE_IDENTITY, 0u, LINK_ID_COUNT, &r)
         != X_OK) {

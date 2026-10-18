@@ -50,7 +50,7 @@ export function fileOf(part: string, variant: string | null): string {
 /**
  * Pins of a part as the catalogue names them for one drawing: pin id to label.
  * A pin whose `only` names another board than the drawing shows is left out.
- * The coprocessor carries its 40 pads and the 2 poles of the CAN terminal.
+ * The IOmcu carries its 40 pads and the 2 poles of the CAN terminal.
  */
 export function cataloguePins(catalogue: Catalogue, part: Part, variant: string | null): Record<string, Text> {
   const out: Record<string, Text> = {};
@@ -64,7 +64,7 @@ export function cataloguePins(catalogue: Catalogue, part: Part, variant: string 
         if (end !== null && end.startsWith('can.') && !(end in out)) out[end] = { ...wire.signal };
       }
     }
-    // A pin in the pin list of the coprocessor joins the pads and the CAN poles below: the drawing shows it,
+    // A pin in the pin list of the IOmcu joins the pads and the CAN poles below: the drawing shows it,
     // or the generator refuses the data file as for every other part.
   }
   const key = part.variantName?.option;

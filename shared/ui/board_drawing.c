@@ -1,5 +1,5 @@
 /*
- * The coprocessor's drawing of its own board, on a screen.
+ * The IOmcu's drawing of its own board, on a screen.
  * See board_drawing.h.
  *
  * SPDX-License-Identifier: MIT

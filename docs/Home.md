@@ -7,8 +7,8 @@ on every push to `main`. Edit the files, not the wiki.</sub>
 
 rcbench is a motor, ESC (electronic speed controller) and servo test bench
 built from two processors: an ESP32-S3 touch panel (user interface, settings,
-SD card) and an RP2350 coprocessor (measurement, outputs, and every protocol
-with timing requirements). The two are connected over CAN (Controller Area
+SD card) and an RP2350 IOmcu (IO microcontroller: measurement, outputs,
+and every protocol with timing requirements). The two are connected over CAN (Controller Area
 Network) at 1 Mbit/s.
 
 ## Using the bench

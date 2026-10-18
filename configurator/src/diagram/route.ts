@@ -73,7 +73,7 @@ export type Diagram = {
   undrawn: number[];
   /** Part ids per column, left to right. */
   columns: string[][];
-  /** Index of the coprocessor column. */
+  /** Index of the IOmcu column. */
   centre: number;
   /** Pairs of wire numbers whose lines overlap in a channel because no order of its tracks separates them. */
   clashes: Array<[number, number]>;

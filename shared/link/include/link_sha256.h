@@ -2,8 +2,8 @@
  * SHA-256 (Secure Hash Algorithm, 256-bit digest), as FIPS (Federal
  * Information Processing Standard) 180-4 section 6.2 states it.
  *
- * The coprocessor update checks an image with it at both ends: the panel
- * over the image it sends, the coprocessor over what it wrote to flash.  One
+ * The IOmcu update checks an image with it at both ends: the panel
+ * over the image it sends, the IOmcu over what it wrote to flash.  One
  * routine in shared/link, so the two ends and the host suite compute the
  * same function and the suite holds it to the standard's test vectors.
  *

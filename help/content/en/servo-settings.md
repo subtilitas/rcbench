@@ -43,10 +43,10 @@ The OUTPUT page says what became of the rate:
 
 | Note | Meaning |
 |---|---|
-| `Active: OUTPUTS run at 330 Hz.` | the coprocessor runs the rate on the target it holds |
-| `The frame rate will be sent to the coprocessor with the next position command.` | not written yet |
+| `Active: OUTPUTS run at 330 Hz.` | the IOmcu runs the rate on the target it holds |
+| `The frame rate will be sent to the IOmcu with the next position command.` | not written yet |
 | `REFUSED: ...` | a pulse is longer than the frame, or a pin shares a PWM slice at another rate; the pins keep their rate |
-| `No link. The active frame rate is unknown.` | no coprocessor answers |
+| `No link. The active frame rate is unknown.` | no IOmcu answers |
 
 ## SWEEP
 
@@ -116,7 +116,7 @@ AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alo
 
 ![The TARGET row with PROG PORT](view:servo-target)
 
-The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it: a tap opens OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. It stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
+The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it: a tap opens OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the IOmcu's programming port. It stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
 
 ![The choice of target](view:servo-target-choice)
 
@@ -127,10 +127,10 @@ The TARGET row of the output card names what the tester drives now as `protocol 
 | `PROG PORT GP13 PWM OFF` | the port is the target and renders no pulse |
 | `NO SERVO PWM PIN` | no pin is bound as SERVO PWM |
 | `PINS NOT READ` | no binding has been read |
-| `UNKNOWN` | the coprocessor's programming-port page is not read |
-| `NO LINK` | no coprocessor answers; the tester sends nothing |
+| `UNKNOWN` | the IOmcu's programming-port page is not read |
+| `NO LINK` | no IOmcu answers; the tester sends nothing |
 
-The row follows the target the coprocessor holds, not the setting. A TARGET change waits for a quiet bench.
+The row follows the target the IOmcu holds, not the setting. A TARGET change waits for a quiet bench.
 
 ## Keeping the values
 

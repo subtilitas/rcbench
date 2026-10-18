@@ -6,7 +6,7 @@
  * say which receivers this module works with (NOTICE, "Trademarks").
  *
  * The wire is an inverted 8E2 UART (universal asynchronous
- * receiver-transmitter) at 100 kbaud, produced by the coprocessor's PIO
+ * receiver-transmitter) at 100 kbaud, produced by the IOmcu's PIO
  * (programmable input/output); this file decodes the bytes.
  *
  * S.BUS has no checksum and no escaping.  A frame is a header byte, a

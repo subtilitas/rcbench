@@ -1,10 +1,10 @@
 /*
- * The panel's half of the SUPPLY link page, against the coprocessor's half.
+ * The panel's half of the SUPPLY link page, against the IOmcu's half.
  *
  * Under test: an OFF first, alone; the wiring only once a read shows the
  * page's output off and nothing on it that may be on; a refused wiring not
  * written again until it changes; an ON refused, or let go at the far end,
- * reported once and not asked for again; a coprocessor that started again
+ * reported once and not asked for again; an IOmcu that started again
  * between two reads written again from the start; the readings, stale ones
  * and a module the page does not drive taken as not answering; a wiring
  * change the far end holds for a state read waited for, and its refusal
@@ -28,7 +28,7 @@
 #include "tick_wrap.h"
 
 static outputs_t     o;
-static supply_page_t pg;    /* the coprocessor's end */
+static supply_page_t pg;    /* the IOmcu's end */
 static pdmini_t      drv;   /* its driver, told what to say */
 static supply_link_t sl;    /* the panel's end */
 static uint32_t      now;
@@ -47,11 +47,11 @@ static void fresh(void)
     writes = 0u;
 }
 
-/* The coprocessor's pass, then a read of its page by the panel. */
+/* The IOmcu's pass, then a read of its page by the panel. */
 static void far_step_and_read(bool beat)
 {
     supply_page_step(&pg, beat, supply_page_enabled(&pg) ? &drv : NULL);
-    /* A wiring change its state read cleared, taken as the coprocessor
+    /* A wiring change its state read cleared, taken as the IOmcu
      * takes it. */
     uint16_t w[4];
     if (supply_page_wire_ready(&pg, w)) {
@@ -77,7 +77,7 @@ static void pump(bool beat)
             }
         }
         ++writes;
-        /* What the driver says now, as the coprocessor takes it first. */
+        /* What the driver says now, as the IOmcu takes it first. */
         supply_page_follow(&pg, supply_page_enabled(&pg) ? &drv : NULL);
         const uint8_t nack = supply_page_write(&pg, off, n, regs, &o, beat);
         supply_link_written(&sl, nack == 0u ? SUPPLY_LINK_ACK : (int)nack);
@@ -436,7 +436,7 @@ TEST_CASE(set_points_refused_under_a_port_leave_the_output_on)
     CHECK(!sl.judge);
 }
 
-/* A coprocessor that started again between two reads holds nothing: its
+/* An IOmcu that started again between two reads holds nothing: its
  * page is written again from the start, and the ON it held is lost. */
 TEST_CASE(a_restarted_far_end_is_written_again)
 {
@@ -545,7 +545,7 @@ TEST_CASE(the_state_is_what_the_page_says)
     CHECK_EQ(st.samples, (uint16_t)(70001u & 0xFFFFu));
     CHECK_EQ(st.taken_ms, now);
 
-    /* A display read on the coprocessor that is slow or fails leaves
+    /* A display read on the IOmcu that is slow or fails leaves
      * SAMPLES where it was, and the current on the page with it: later
      * page reads are the same reading, stamped when it first came. */
     const uint32_t first = now;

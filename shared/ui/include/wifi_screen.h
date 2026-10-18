@@ -104,7 +104,7 @@ typedef enum {
     WIFI_GATE_SUPPLY,
     WIFI_GATE_RUN,
     WIFI_GATE_DRAWING,      /**< a board drawing is fetched or kept      */
-    WIFI_GATE_COPROC,       /**< the coprocessor's update runs           */
+    WIFI_GATE_COPROC,       /**< the IOmcu's update runs           */
 } wifi_gate_t;
 
 typedef struct {

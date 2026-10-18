@@ -75,9 +75,9 @@ static inline uint32_t now_ms(void)
 /* The control task's period; see "the two loops' plumbing" in main.c. */
 #define CONTROL_PERIOD_MS 5u
 
-/* The link to the coprocessor, used during bring-up and in the loop. */
+/* The link to the IOmcu, used during bring-up and in the loop. */
 extern link_host_t    s_host;
-/* A link_cap_t bitmap from the coprocessor's identity page; see main.c. */
+/* A link_cap_t bitmap from the IOmcu's identity page; see main.c. */
 extern atomic_uint    s_capabilities;
 extern link_bringup_t s_bring;
 
@@ -91,12 +91,12 @@ extern uint32_t    s_recoveries_total;
 /* The panel's die temperature, read by the control task. */
 extern float s_mcu_c;
 
-/* What the coprocessor says its outputs are, both under s_snap_lock; the
+/* What the IOmcu says its outputs are, both under s_snap_lock; the
  * state of the last reading, for the control task alone. */
 extern bind_reading_t s_outputs_read;
 extern bool           s_outputs_read_fresh;
 extern bind_read_t    s_bind_read;
-/* The coprocessor's protocol minor, and its board identity. */
+/* The IOmcu's protocol minor, and its board identity. */
 extern uint16_t       s_far_minor;
 extern uint16_t       s_board;
 
@@ -119,8 +119,8 @@ extern QueueHandle_t     s_win_q;     /**< control task -> app_main */
 extern SemaphoreHandle_t s_snap_lock;
 
 /*
- * The coprocessor's update as the render side needs it: an offer, numbered,
- * with the version the coprocessor runs; while an update runs, its step and
+ * The IOmcu's update as the render side needs it: an offer, numbered,
+ * with the version the IOmcu runs; while an update runs, its step and
  * blocks; and the STARTs the control task has taken, so a progress screen
  * whose START was spent leaves.
  */
@@ -176,7 +176,7 @@ typedef struct {
     uint32_t      servo_win_lost;
     /* What the servo programmer's model is fed; see kst_publish(). */
     kst_prog_feed_t kst;
-    /* The coprocessor's update; see cu_service(). */
+    /* The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
 extern panel_snap_t s_snap;
@@ -231,11 +231,11 @@ extern atomic_uint s_supply_baud;
 /* Which arm, for the render side's ack. */
 extern uint32_t    s_arm_gen;
 
-/* The pole count the coprocessor holds, and whether it is current. */
+/* The pole count the IOmcu holds, and whether it is current. */
 extern atomic_bool s_poles_owed;
 extern atomic_uint s_poles_value;
 
-/* The throttle endpoints the coprocessor holds: owed, held disarmed at a
+/* The throttle endpoints the IOmcu holds: owed, held disarmed at a
  * link-up, and the time of the last edit.  The debt is paid once the value
  * has rested for ENDPOINTS_SETTLE_MS. */
 #define ENDPOINTS_SETTLE_MS 300u
@@ -481,7 +481,7 @@ extern uint16_t s_arm_value;
  * to convert.  Kept apart so a count the far end refuses -- or one that has
  * not changed -- never stands between the throttle and the wire.
  *
- * True when the coprocessor acknowledged; a NACK (negative acknowledge) or
+ * True when the IOmcu acknowledged; a NACK (negative acknowledge) or
  * no answer is false.
  */
 static inline bool control_write(bool armed, link_msg_t *reply)
@@ -536,7 +536,7 @@ void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
 /*
- * The seam between measured and modelled numbers.  When the coprocessor
+ * The seam between measured and modelled numbers.  When the IOmcu
  * answers, its numbers are used, and the LINK_BN_SIMULATED flag travels with
  * them.  When it does not, the panel models locally and sets the same flag.
  * Nothing above this function knows the difference.
@@ -570,7 +570,7 @@ extern atomic_uint    s_prog_pin;
 /* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target
- * with another's pin or pulse.  No link until a coprocessor answers. */
+ * with another's pin or pulse.  No link until an IOmcu answers. */
 #define DRIVE_PWM_BIT (1u << 16)
 extern atomic_uint    s_drive;
 /* Whether the servo programmer has a port, or an operation under way. */
@@ -605,7 +605,7 @@ static inline void prog_drive_publish(void)
 extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
 
-/* The OUTPUTS page as the coprocessor holds it; the OUTPUTS screen's write
+/* The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
  * asks for one straight afterwards. */
 void read_outputs_binding(void);
 void post_no_reading(void);
@@ -862,18 +862,18 @@ extern atomic_bool s_fw_quiet_req;
 extern atomic_bool s_fw_quiet_ack;
 extern bool        s_wifi_ok;
 
-/* Whether the coprocessor's update may start: see fw_coproc_may_start().
+/* Whether the IOmcu's update may start: see fw_coproc_may_start().
  * From any task. */
 bool cu_may_start(void);
-/* The coprocessor update's check, for a coprocessor that just answered. */
+/* The IOmcu update's check, for an IOmcu that just answered. */
 void cu_link_up(const link_msg_t *reply);
-/* One pass of the coprocessor's update, before the poll: true while the
+/* One pass of the IOmcu's update, before the poll: true while the
  * update holds the link.  Control task. */
 bool cu_service(bool *link_up, bench_state_t *bench,
                 uint32_t *last_poll, uint32_t *last_status);
 
 /* Once a frame on app_main: WI-FI, the reminder, SETUP > UPDATES
- * and the coprocessor update's screen. */
+ * and the IOmcu update's screen. */
 void wifi_service(bool armed, uint32_t stops_now);
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,

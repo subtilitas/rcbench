@@ -1,9 +1,9 @@
 /*
- * The output configuration, kept in the coprocessor's own flash.
+ * The output configuration, kept in the IOmcu's own flash.
  *
  * It lives here rather than on the panel because a binding describes wiring,
  * and this is the board the wires are in.  A panel that remembered one would
- * reapply it to whatever is on the bench now; a coprocessor that remembers
+ * reapply it to whatever is on the bench now; an IOmcu that remembers
  * one reapplies it to the leads still plugged into it.
  *
  * Restoring at boot configures the slots.  It does not drive them: every

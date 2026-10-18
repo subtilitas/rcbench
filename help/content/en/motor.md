@@ -31,7 +31,7 @@ ARM switches the whole bank of throttle outputs to ARMED, not only the pins name
 
 ## A run
 
-![A run while ARMED, with no coprocessor: SIM and the SIMULATION watermark](view:motor)
+![A run while ARMED, with no IOmcu: SIM and the SIMULATION watermark](view:motor)
 
 1. Hold ARM for 2 s. The fill fades from green to red; the bench switches to ARMED when the fade completes. Letting go earlier switches nothing.
 2. Drag the throttle. It moves by how far the finger travels, not to where it lands. `-1` and `+1` step one percentage point.
@@ -50,7 +50,7 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 
 Leaving the screen, a lost link or a touch controller that stops answering also switches to SAFE and returns the throttle to 0 %.
 
-While no coprocessor answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model.
+While no IOmcu answers, the band shows SIM and SIMULATION is drawn across the screen: every value is the panel's model.
 
 ## A held run
 
@@ -62,7 +62,7 @@ The readouts, the TABLE pane, the totals and the temperature strip stay live at 
 
 ## The strip above the plot
 
-The strip carries the poll rate, the link's error count and three temperatures: ESC and MOT from the coprocessor's bench page, MCU from the panel's own ESP32-S3 die. While the coprocessor has refused link frames since its power-up, the strip adds the count.
+The strip carries the poll rate, the link's error count and three temperatures: ESC and MOT from the IOmcu's bench page, MCU from the panel's own ESP32-S3 die. While the IOmcu has refused link frames since its power-up, the strip adds the count.
 
 ![37 refused link frames on the strip](view:motor-refused)
 
@@ -72,7 +72,7 @@ The strip carries the poll rate, the link's error count and three temperatures: 
 
 TABLE lists voltage, current, power and rpm, each with its peak. A channel nothing answered for reads `--`.
 
-- With the INA228 enabled on SETUP, INTERFACES and answering, voltage, current and power are the INA228's: the means of the coprocessor's last 50 ms window, read at 20 Hz. The heading names `INA228`.
+- With the INA228 enabled on SETUP, INTERFACES and answering, voltage, current and power are the INA228's: the means of the IOmcu's last 50 ms window, read at 20 Hz. The heading names `INA228`.
 - `CLIPPED` follows the heading while a current read the end of the part's range: current and power are then bounds, not values.
 - `ESC SAYS` lists the ESC's own telemetry voltage and current, and `diff` is the ESC's figure less the INA228's.
 - Without the INA228 the channels are the ESC's telemetry, and `ESC SAYS` is not shown.

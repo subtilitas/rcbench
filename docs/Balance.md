@@ -65,7 +65,7 @@ method does not measure phase, so a constant sensor delay does not affect it.
 It needs bandwidth: at 10,000 rpm (revolutions per minute) the fundamental is
 167 Hz, which an IMU (inertial measurement unit) streaming fused orientation at
 100 Hz cannot resolve. Use an analogue sensor (piezo or analogue accelerometer)
-into the coprocessor's ADC (analogue-to-digital converter).
+into the IOmcu's ADC (analogue-to-digital converter).
 
 With an index pulse the number of runs halves, and only the variation of the
 sensor delay matters; a constant delay cancels because the trial run measures
@@ -75,6 +75,6 @@ specified, which is 300° at 10,000 rpm.
 
 ## What the measurement needs
 
-An accelerometer and, optionally, an index sensor on the coprocessor. Neither
+An accelerometer and, optionally, an index sensor on the IOmcu. Neither
 is fitted, so the screen runs from the model and carries the SIMULATED mark. The
 setup, the blade arithmetic and both placement guides work without them.

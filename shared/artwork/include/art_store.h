@@ -3,10 +3,10 @@
  * link comes up.
  *
  * The drawing is written to a partition of the panel's own flash with the
- * identity the coprocessor reports and everything its ARTWORK page says
+ * identity the IOmcu reports and everything its ARTWORK page says
  * about the payload: format, outline, length, CRC (cyclic redundancy check)
  * and hash.  The kept drawing is the board's only while all of those still
- * match the page, so a coprocessor flashed with another drawing under the
+ * match the page, so an IOmcu flashed with another drawing under the
  * same board ID is fetched again instead of shown from the cache.
  *
  * Fixed slots rather than a packed heap. A slot is erased, filled, and only

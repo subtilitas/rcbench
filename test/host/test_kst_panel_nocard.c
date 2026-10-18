@@ -280,7 +280,7 @@ static void other_20k(kst_image_t *img)
 }
 
 /* The record's lines name the GPIO the write went through; a record of
- * version 1, one with no pin and one whose pin no coprocessor has name the
+ * version 1, one with no pin and one whose pin no IOmcu has name the
  * port.  In every language, in the message and in the lines that stand. */
 TEST_CASE(the_record_names_its_pin_and_its_port_without_one)
 {

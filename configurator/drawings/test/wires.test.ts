@@ -188,7 +188,7 @@ test('neighbours are mutual and end at 1.6 times the distance to the nearest pin
   assert.deepEqual(neighbours(record({})), {});
 });
 
-test('neighbouring pads of the coprocessor are the pads above and below', () => {
+test('neighbouring pads of the IOmcu are the pads above and below', () => {
   const n = neighbours(anchors.files['copro.svg']!);
   assert.deepEqual(n['pad.5'], ['pad.4', 'pad.6']);
   assert.deepEqual(n['pad.1'], ['pad.2']);

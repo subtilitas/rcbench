@@ -62,7 +62,7 @@ export const FUNCTION_HELP: Readonly<Partial<Record<FunctionId, Text>>> = Object
     'Schreibt ein Log jedes Laufs auf die microSD-Karte, solange der Prüfstand ARMED ist oder bei SAFE der Ausgang des Netzteils an ist. Der Log-Viewer des Panels liest diese Dateien.',
   ),
   estop: t(
-    'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',
-    'Ein rastender Taster im Heartbeat-Draht. Gedrückt öffnet sein Öffner (NC) den Draht; nach 150 ms ohne Heartbeat-Flanke schaltet der Koprozessor den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus. Der Taster trennt keine Versorgungsleitung: ein ESC-Akku oder eine eigene Servoversorgung bleibt angeschlossen.',
+    'A latching button in the heartbeat wire. Pressed, its NC contact opens the wire; after 150 ms without a heartbeat edge the IOmcu switches the bench to SAFE: its outputs and the output of the PD mini go off. The button breaks no power line: an ESC battery or a servo supply of your own stays connected.',
+    'Ein rastender Taster im Heartbeat-Draht. Gedrückt öffnet sein Öffner (NC) den Draht; nach 150 ms ohne Heartbeat-Flanke schaltet der IOmcu den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus. Der Taster trennt keine Versorgungsleitung: ein ESC-Akku oder eine eigene Servoversorgung bleibt angeschlossen.',
   ),
 });

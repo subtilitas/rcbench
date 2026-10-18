@@ -2,7 +2,7 @@
  * The bench's arm on the control task: the state the loop starts from, the
  * watch on an arm until the render side has seen it, the run's totals, the
  * latched stop and the act the arming policy asks for, the OUTPUTS screen's
- * binding onto the coprocessor's output pages, disarming wherever it was
+ * binding onto the IOmcu's output pages, disarming wherever it was
  * asked for, one motor command, and the screens' commands in their order.
  *
  * SPDX-License-Identifier: MIT
@@ -87,9 +87,9 @@ void control_setup(telemetry_sim_t *sim, bench_state_t *bench)
     telemetry_sim_init(sim, NULL);
     /*
      * The panel's throttle is a channel in an output bank, under the same
-     * arming and staleness rules as the coprocessor's outputs.  The slew is
+     * arming and staleness rules as the IOmcu's outputs.  The slew is
      * not shared: this bank takes the `Ramp limit` setting and a bound
-     * throttle channel on the coprocessor takes none, so the two ends do
+     * throttle channel on the IOmcu takes none, so the two ends do
      * answer that one differently.  Only this bank's answer is read, and
      * only while the link is down.
      */
@@ -175,7 +175,7 @@ void arm_watch_service(bool link_up)
  * The latched stop, and then the act the arming policy asks for.
  *
  * link_up is passed in because an arm and a disarm are written to the
- * coprocessor's control page only while the link is up.  The flag is the
+ * IOmcu's control page only while the link is up.  The flag is the
  * control loop's own and is published nowhere this could read it.
  */
 /*
@@ -232,7 +232,7 @@ void service_arming(bool link_up)
 {
     /*
      * STOP latches rather than clearing on the next frame: a stop that lasts
-     * one frame is one the coprocessor may never see, and its monostable holds
+     * one frame is one the IOmcu may never see, and its monostable holds
      * for longer than a frame.  Only an explicit arm clears it.
      *
      * This is the router's backstop for a press the pump's own hit test
@@ -322,7 +322,7 @@ void service_arming(bool link_up)
          * rather than hoped for.  ARM and THROTTLE travel in one
          * transaction, so a command left over from before the disarm is the
          * first thing the far end acts on -- and it steps straight to it.
-         * The coprocessor's throttle is bank channel 8, off the CHAN_CFG
+         * The IOmcu's throttle is bank channel 8, off the CHAN_CFG
          * page that addresses channels 0 to 7, so its slew is never
          * configured and stays at the zero outputs_init() left: there is no
          * ramp on that channel at any time.
@@ -357,7 +357,7 @@ void service_arming(bool link_up)
              * Only while there is a link.  With none, the debt cannot be paid
              * by anybody and nothing at the far end is being armed either, so
              * refusing would leave the panel unable to arm its own bank --
-             * the simulator included -- until a coprocessor answered again.
+             * the simulator included -- until an IOmcu answered again.
              * What the far end must not do meanwhile is arm; see
              * poll_far_end().
              */
@@ -452,7 +452,7 @@ void service_arming(bool link_up)
 }
 
 /*
- * The outputs screen's choice, onto the coprocessor's two output pages.
+ * The outputs screen's choice, onto the IOmcu's two output pages.
  *
  * Leaves what became of it in s_outputs_result, which app_main hands to the
  * screen; screen state is app_main's alone.  True when a page may have been
@@ -466,8 +466,8 @@ static bool write_output_binding(const outbind_t *bind)
     (void)outbind_to_slots(bind, slots);
 
     /*
-     * The sequence is bind_link_write()'s: prepared and committed whole on a
-     * coprocessor speaking 4.10, page by page on an older one.
+     * The sequence is bind_link_write()'s: prepared and committed whole on an
+     * IOmcu speaking 4.10, page by page on an older one.
      *
      * A write that got no answer and one that was refused are different things
      * to be told.  REFUSED sends the operator back to the pins they chose; NO

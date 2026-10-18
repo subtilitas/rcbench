@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Read the console log of a coprocessor built with SENSE_TRACE.
+"""Read the console log of an IOmcu built with SENSE_TRACE.
 
 The SENSE_TRACE build prints INA3221 CH1's 1 ms samples on the USB console
 (shared/sense/sense_trace.h has the line format).  This tool takes a
@@ -8,7 +8,7 @@ terminal capture of that console and, for each trace in it:
 
   1. reads every line against the format, and checks the lines against
      the trace's end line: sample lines, voltage lines, trigger lines and
-     the records the coprocessor says it dropped;
+     the records the IOmcu says it dropped;
   2. writes one CSV file, `<log>-trace-<n>.csv`: time in ms from the
      trigger, current in A, the bus voltage in V on the samples that have
      one, and `clipped`: 1 for a sample at or past the top of the range,
@@ -51,12 +51,12 @@ statement: an output named as not loaded that draws current puts it into
 the moves of the others.
 A line of a trace is a whole line of its trace's version, 3 or 2: every
 field of its type, in its order, nothing before, between or after them,
-each number in the range the coprocessor holds it in and written as the
-coprocessor writes it.  Version 3's $D line ends `cmd=` with its command's
+each number in the range the IOmcu holds it in and written as the
+IOmcu writes it.  Version 3's $D line ends `cmd=` with its command's
 $C time; version 2's has no `cmd=`, and a $D line of the other version's
 form is damage.
 A line ends LF or CR LF.  Between a trace's $T and $Z line stand its lines
-and the coprocessor's other console lines, which start `rcbench-iomcu:`;
+and the IOmcu's other console lines, which start `rcbench-iomcu:`;
 anything else there is damage.  So are a second $H line, a line other than
 $L before the $H line, a trace length or sample period its version does
 not write, a sample timed before the one before it, a second voltage for one
@@ -123,7 +123,7 @@ themselves: the one that pairs the most rows with a
 command, each within --pair-ms.  Equally spaced moves pair equally well
 one move along; the tool says so when two offsets pair as many rows and
 not the same rows with the same moves, and --csv-offset sets it by hand.
-A log with a restart of the coprocessor in it has a clock for each boot:
+A log with a restart of the IOmcu in it has a clock for each boot:
 each boot's moves are paired on their own, and the rows of a later boot
 lie after those of an earlier one.  Where they do not, no row is paired
 and the tool says so.  A restart is a $T line whose millisecond tick
@@ -211,7 +211,7 @@ OFFSET_MAX_S = 1e9
 # length by its trigger, and the sample period.
 TRACE_MS = {"cmd": 4000, "edge": 4000, "key": 10000}
 PERIOD_US = 1000
-# The coprocessor's other console lines start with this; one can stand
+# The IOmcu's other console lines start with this; one can stand
 # between two lines of a trace.
 CONSOLE = "rcbench-iomcu:"
 
@@ -223,7 +223,7 @@ INT = r"(0|-?[1-9][0-9]*)"
 U16 = (0, 0xFFFF)
 U32 = (0, 0xFFFFFFFF)
 I32 = (-(1 << 31), (1 << 31) - 1)
-# The kind, the line, and each number's range as the coprocessor holds it
+# The kind, the line, and each number's range as the IOmcu holds it
 # (None: text).  A sample's code is the 13-bit range.  The ranges keep
 # every line within the 62 characters the console writes before CR LF.
 GRAMMAR = (
@@ -250,7 +250,7 @@ GRAMMAR = (
       (0, 9999), None)),
 )
 
-# A capital letter: the coprocessor wrote a line without having seen its
+# A capital letter: the IOmcu wrote a line without having seen its
 # sampling core past that line's time.
 END_WORDS = {"t": "its time", "s": "a changed set-up", "k": "the console"}
 
@@ -291,7 +291,7 @@ class Trace:
         self.trig = trig
         self.t0 = t0                # as printed, modulo 2^32
         self.t0_abs = t0_abs        # 0.1 ms, unwrapped across the log
-        self.boot = 0               # restarts of the coprocessor before it
+        self.boot = 0               # restarts of the IOmcu before it
         self.ms = ms
         self.length = length
         self.version = FORMAT
@@ -351,7 +351,7 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
     (line number, text) of the lines of a trace that stand outside one.
 
     A line ends LF or CR LF.  Inside a trace a line is a whole line of the
-    format, or one of the coprocessor's other console lines, or it is
+    format, or one of the IOmcu's other console lines, or it is
     counted as damage in Trace.bad; nothing is taken off a line before it
     is read."""
     traces: list[Trace] = []
@@ -443,7 +443,7 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.have_setup = True
             cur.state = (cur.online, cur.resets)
             continue
-        # The coprocessor writes the $H line when the set-up records at
+        # The IOmcu writes the $H line when the set-up records at
         # the trace's start are read, and a $L line for the records
         # missing before one of them: no other line stands before it.
         if not cur.have_setup and kind != "L":
@@ -455,7 +455,7 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.t.append(prev + f[0])
             cur.code.append(f[1])
         elif kind == "v":
-            # The coprocessor keeps a voltage only behind the sample of
+            # The IOmcu keeps a voltage only behind the sample of
             # its tick: one a sample.
             cur.n_volts += 1
             if cur.t:
@@ -473,7 +473,7 @@ def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
             cur.lost += f[0]
             cur.gaps.append(len(cur.t))
         elif kind == "S":
-            # The coprocessor writes the line for a state record that
+            # The IOmcu writes the line for a state record that
             # differs from the last state record it read, the one its last
             # $H or $S line says.  A state record that is missing was never
             # read: behind a $L line too, a $S line says another state than
@@ -1294,7 +1294,7 @@ def main() -> int:
     ap.add_argument("--servo-csv", type=pathlib.Path,
                     help="a servo test's CSV file with `travel angle (ms)`")
     ap.add_argument("--csv-offset", type=float,
-                    help="coprocessor time less CSV time, s, for the "
+                    help="IOmcu time less CSV time, s, for the "
                          "log's first boot (default: found from the "
                          "moves)")
     ap.add_argument("--pair-ms", type=float, default=150.0,
@@ -1374,7 +1374,7 @@ def main() -> int:
         if not args.no_csv and tr.shunt_uohm != 0:
             name = f"{args.log.stem}-trace-{tr.number}"
             names[name] = names.get(name, 0) + 1
-            if names[name] > 1:         # the coprocessor restarted
+            if names[name] > 1:         # the IOmcu restarted
                 name += f"-{names[name]}"
             csv = out_dir / f"{name}.csv"
             try:
@@ -1391,7 +1391,7 @@ def main() -> int:
     ambiguous = False
     if args.servo_csv is not None:
         n_rows = len(rows)
-        # Each boot of the coprocessor has a clock of its own: its moves
+        # Each boot of the IOmcu has a clock of its own: its moves
         # are paired on their own, each boot with every row.  The file's
         # rows and the log's boots are both in the order of time, so a
         # later boot's rows lie after an earlier boot's; where they do
@@ -1415,7 +1415,7 @@ def main() -> int:
             paired = 0
         have_horn = paired > 0
         if len(boots) > 1:
-            out.append(f"the coprocessor restarted {len(boots) - 1} time(s) "
+            out.append(f"the IOmcu restarted {len(boots) - 1} time(s) "
                        "in the log: each boot is paired on its own clock")
         out.append(f"{args.servo_csv}: {n_rows} travel time(s), "
                    f"{paired} paired with a move")

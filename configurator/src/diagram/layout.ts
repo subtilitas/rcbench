@@ -77,8 +77,8 @@ const byOrder = (p: ScenePart, q: ScenePart): number => p.order - q.order || (p.
 const tall = (list: ScenePart[]): number => list.reduce((n, p) => n + up(CAP + p.h), 0);
 
 /**
- * Columns from left to right. The coprocessor column is `centre`. A side has 2
- * columns when it holds parts without a wire to the coprocessor column: those
+ * Columns from left to right. The IOmcu column is `centre`. A side has 2
+ * columns when it holds parts without a wire to the IOmcu column: those
  * stand in the outer column. A part without a wire joins the shorter column.
  *
  * A part with `between` whose 2 neighbours stand on its side makes a side of 3

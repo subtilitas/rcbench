@@ -1,5 +1,5 @@
 /*
- * The link modules' services, one page of the coprocessor each: the current
+ * The link modules' services, one page of the IOmcu each: the current
  * monitors (SENSE and SERVO_SENSE), the phase tap (TONE), the programmer for
  * KST and Chaservo servos (KST) and the programming ports (PROG).  Each runs
  * from the poll (panel_poll.c), on the control task.
@@ -123,7 +123,7 @@ static uint32_t s_sense_alert_ev;
  *
  * An event is taken only into a free slot, and followed until a frame has
  * taken it.  Any other alert replaces it -- a NACKed control write's
- * "coprocessor disarmed" in the same pass, say -- and one replaced before
+ * "IOmcu disarmed" in the same pass, say -- and one replaced before
  * a frame took it goes back to the queue (sense_link_event_back()): its
  * read will not raise it again.
  */
@@ -343,14 +343,14 @@ static void servo_source_alerts(void)
  * rates (sense_link.h).  Then the servo rail's meter is chosen from what
  * was read (servo_source.h).  From poll_bench(), after the control write,
  * so @p idle -- the bank disarmed here and ARM written 0 there -- is this
- * pass's.  A coprocessor older than 4.7 is sent nothing, and one older
+ * pass's.  An IOmcu older than 4.7 is sent nothing, and one older
  * than 4.11 nothing on SERVO_WIN.
  *
  * With the INA228 as BENCH's source, @p bench gets the ESC's own figures
  * from the last SENSE read, the INA228's clipped flag, and its totals in
  * SENSE's finer steps while that read is younger than two polls.
  */
-/* The INTERFACES rows the coprocessor does not hold, for SETUP's marks:
+/* The INTERFACES rows the IOmcu does not hold, for SETUP's marks:
  * sense_link_unheld() and tone_link_unheld() as of the last poll, and 0
  * with the link down.  Control task writes, app_main reads. */
 atomic_uint s_sense_unheld;
@@ -478,7 +478,7 @@ void tone_link_alerts(void)
 /*
  * The phase tap's page: the set-up SETUP names written when it differs
  * from what TONE holds, registers 8 to 23 read at 20 Hz and the beeps
- * taken by number (tone_link.h).  From poll_bench(); a coprocessor older
+ * taken by number (tone_link.h).  From poll_bench(); an IOmcu older
  * than 4.8 is sent nothing.  A tap change is taken armed or not, so no
  * idle gate.
  */
@@ -521,7 +521,7 @@ void tone_link_service(void)
  * And STOP.  Every stop this end latches, pressed or the bench's own, ends
  * an operation: kst_link_abort() drops a command not sent yet, sends no
  * command again that went without an answer, and sends ABORT for one the
- * coprocessor runs.  After the commands, so a start queued before the stop
+ * IOmcu runs.  After the commands, so a start queued before the stop
  * is dropped by it.
  */
 __attribute__((noinline)) void kst_commands(void)
@@ -560,7 +560,7 @@ __attribute__((noinline)) void kst_commands(void)
  * an operation runs and every KST_LINK_IDLE_MS (500 ms) otherwise, a
  * request's staged registers and command written, the results and the
  * images read (kst_link.h).  From poll_bench(), at most 4 exchanges a pass;
- * a coprocessor older than 4.12 is sent nothing.
+ * an IOmcu older than 4.12 is sent nothing.
  */
 __attribute__((noinline)) void kst_link_service(void)
 {
@@ -600,7 +600,7 @@ static __attribute__((noinline)) void prog_page_read(void)
 /*
  * The programming ports' page: read every PROG_LINK_POLL_MS (500 ms), and
  * at most 1 write a pass towards what the SERVO screen wants (prog_link.h).
- * From poll_bench(); a coprocessor older than 4.13 is sent nothing.
+ * From poll_bench(); an IOmcu older than 4.13 is sent nothing.
  *
  * A pulse bit goes off whatever the bench does.  The target changes, and a
  * pulse comes on, only on a bench at rest: disarmed, no sweep, no hold, no

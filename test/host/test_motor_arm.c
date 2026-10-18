@@ -746,7 +746,7 @@ TEST_CASE(a_disarm_during_the_arm_flash_leaves_the_button_green)
 
 /* --------------------------------------- a port the programmer holds */
 
-/* The servo programmer's port as the coprocessor's page gives it. */
+/* The servo programmer's port as the IOmcu's page gives it. */
 static void kst_port(link_kst_state_t st)
 {
     kst_prog_feed_t f;

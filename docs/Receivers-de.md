@@ -12,7 +12,7 @@ Analyser-Bildschirm lesen.
 | S.BUS | invertierter 8E2-UART (UART: Universal Asynchronous Receiver-Transmitter), 100 kBaud, ein Pin | Decoder gebaut und getestet; das PIO-Programm (PIO: Programmable Input/Output), das die invertierte Leitung in Bytes umsetzt, ist nicht geschrieben |
 | iBUS, SUMD, CRSF, SRXL2, JETI EX Bus | UART, normal oder invertiert, je ein Pin | geplant |
 
-Jeder Bus ist eine Signalleitung plus Masse an einen Pin des Koprozessors.
+Jeder Bus ist eine Signalleitung plus Masse an einen Pin des IOmcu.
 Externe Bauteile sind nicht nötig.
 
 ## Zustände

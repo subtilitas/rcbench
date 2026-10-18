@@ -81,7 +81,7 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | --- | --- |
 | `ZUERST ARM` | der Prüfstand ist SAFE |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | INA3221 oder sein CH1 in SETUP aus, ein Koprozessor älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
+| `INA3221 NICHT ZUR SERVOSTROMMESSUNG EINGERICHTET` | INA3221 oder sein CH1 in SETUP aus, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000 ms gehalten, oder kein Fenster mit Strom in den letzten 200 ms |
 | `SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0 V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0 V liegen unter den 4,8 V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
@@ -626,13 +626,13 @@ unter der Schwelle bewegen.
 
 Ein Messwert zählt einmal. Beim PD mini ist der Zähler das Register SAMPLES
 der SUPPLY-Seite: die Zahl der beantworteten Ausgangsmessungen des Moduls,
-vom Koprozessor gezählt. Ein Lesen der Seite, bei dem SAMPLES stehen
+vom IOmcu gezählt. Ein Lesen der Seite, bei dem SAMPLES stehen
 geblieben ist, bringt keinen neuen Messwert, gleich welche Spannung und
-welchen Strom es trägt -- ein Display-Lesen auf dem Koprozessor, das langsam
+welchen Strom es trägt -- ein Display-Lesen auf dem IOmcu, das langsam
 war (bis 400 ms, `PDMINI_REPLY_MS`) oder fehlschlug, lässt die letzten stehen
 --, und ein Lauf ohne neuen Messwert über 1,5 s endet. Ein Messwert trägt die
 Panelzeit des ersten Lesens der Seite, das seinen Zählerstand zeigte; das
-Modell zählt und stempelt seine eigenen Schritte. Der Koprozessor liest den
+Modell zählt und stempelt seine eigenen Schritte. Der IOmcu liest den
 Ausgang des PD mini alle 100 ms (`PDMINI_DISPLAY_MS`), das Panel die Seite
 alle 100 ms (`SUPPLY_LINK_READ_MS`); ein neuer Messwert erreicht den Test
 also bestenfalls alle 100 ms, beim Modell alle 50 ms. Springt SAMPLES
@@ -696,7 +696,7 @@ Messgerät der Servo-Schiene, wie das Panel es beim Start des Laufs nennt
 | Zustand des Netzteils: antwortet, Ausgang, Abschaltung, zurückgelesener Sollwert, Modus | gelesen | gelesen |
 
 Am INA3221 misst das Panel eine Bewegung aus den Fenstern. Die
-Bewegungsaufzeichnung des Koprozessors, die eine Bewegung in 1 ms ab dem
+Bewegungsaufzeichnung des IOmcu, die eine Bewegung in 1 ms ab dem
 PWM-Frame misst, verwendet der Lauf nicht.
 
 - **Bis zum Ende gehalten.** Ein Lauf am INA3221 endet ABGEBROCHEN, wenn der
@@ -710,7 +710,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
   mini läuft mit ihm weiter, wenn der INA3221 unter ihm zum Messgerät wird.
 - **Warum nicht der INA3221.** Ein Lauf am PD mini, bei dem der INA3221 in
   SETUP an ist, hat die Berichtszeile `INA3221: nicht verwendet: <Grund>`:
-  `der Koprozessor ist älter als Link-Protokoll 4.11`, `der Koprozessor hält
+  `der IOmcu ist älter als Link-Protokoll 4.11`, `der IOmcu hält
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strom in
   den letzten 200 ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
   als 1 s` oder `das Netzteil ist vom Panel simuliert`.
@@ -777,12 +777,12 @@ bis 0,342 A.
 ### Der Ausgangsencoder
 
 Ein magnetischer Winkelsensor AS5600 auf der Ausgangswelle des Servos, in
-SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom Koprozessor
+SETUP, ANSCHLÜSSE unter AS5600 eingestellt (Standard AUS) und vom IOmcu
 gelesen ([Link](Link-de.md), SENSE-Register 26 bis 31), fügt einem Lauf den
 Winkel des Horns hinzu. Die Ergebnisse aus dem Strom bleiben, wie sie sind,
 und der Winkel entscheidet nichts: er geht nicht ins Urteil ein und hat keine
 Grenze. Ohne AS5600 sind der Lauf, seine CSV und sein Bericht wie ohne das
-Bauteil. Der Coprozessor übernimmt das SENSE-Setup nur bei einer Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der Coprozessor AS5600 als
+Bauteil. Der IOmcu übernimmt das SENSE-Setup nur bei einer Bank in SAFE. Ein Lauf nutzt den Winkel nur, wenn der IOmcu AS5600 als
 eingeschaltet hält: wird AS5600 bei einer Bank in ARMED eingeschaltet, hat der Lauf
 keine Winkelspalten, bis das Setup in SAFE übernommen ist.
 
@@ -831,8 +831,8 @@ Für jede Bewegung, vom Befehl bis zum nächsten Befehl (Konstanten in
 | unbewegt | der Winkel verließ die 2,0 Grad nie |
 | spät | er bewegte sich und war vor dem nächsten Befehl keine 100 ms ruhig |
 
-Die Toleranz ist `SENSE_ENC_STILL_TOL` des Koprozessors; `test_as5600` hält
-beide gleich. Die Ruhezeit führt der Koprozessor in seinem 2-ms-Messintervall,
+Die Toleranz ist `SENSE_ENC_STILL_TOL` des IOmcu; `test_as5600` hält
+beide gleich. Die Ruhezeit führt der IOmcu in seinem 2-ms-Messintervall,
 die Stellzeit hängt also nicht davon ab, wie oft das Panel die Page liest (alle
 40 ms). Sie beginnt beim Befehl, wie der Test ihn ausgibt, und enthält den
 Weg des Befehls zum Pin: die Render-Schleife, den Control Task, den Link und
@@ -911,7 +911,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | --- | --- |
 | `STOP` | STOP in der Leiste |
 | `Prüfstand SAFE` | DISARM oder alles andere, was den Prüfstand auf SAFE geschaltet hat |
-| `Link verloren` | der Link zum Koprozessor ging während des Laufs verloren |
+| `Link verloren` | der Link zum IOmcu ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
 | `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, PROGRAMMIEREN |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
@@ -929,7 +929,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich bewegt |
 | `INA3221 antwortet nicht` | ein Lauf am INA3221: kein Lesen von SENSE in 200 ms zeigt den Baustein online und erkannt an einem Bus, der nicht hängt |
 | `INA3221-Fenster ohne Strom` | ein Lauf am INA3221: das neueste Fenster enthält keine Strommesswerte, oder seine Nummer steht seit 200 ms |
-| `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der Koprozessor hält die Einstellung nicht mehr, oder SETUP hat den INA3221 aus |
+| `INA3221-Einstellung fehlt` | ein Lauf am INA3221: der IOmcu hält die Einstellung nicht mehr, oder SETUP hat den INA3221 aus |
 | `INA3221 misst nicht mehr` | ein Lauf am INA3221: das Messgerät wechselte, und das Panel nannte die Bedingung nicht |
 
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
@@ -1084,7 +1084,7 @@ Log-Ansicht zurückgelesen. Nicht gemessen: die Mittelung des PD mini und die
 Verzögerung des Befehls bis zum Pin.
 
 `test_servo_test_win`, `test_servo_test_win_read` und `test_servo_test_win_chain` fahren den Test mit dem INA3221 als Messgerät auf dem Host: der modellierte INA3221 führt den Strom von `servo_sim`,
-Zeitplan und Seiten des Koprozessors machen daraus Fenster, `sense_link`
+Zeitplan und Seiten des IOmcu machen daraus Fenster, `sense_link`
 nimmt jedes einmal und `servo_source` nennt das Messgerät, neben einem
 Modell des PD mini, das alle 104 ms gelesen wird. Zwei Aufzeichnungen von
 einem Prüfstand auf 0.14.0 werden wiedergegeben: die ganze CSV eines MS24 am
@@ -1118,7 +1118,7 @@ Prüfstand ARMED ist, also solange ein Pin ihr folgt.
 | HELI CYCLIC | 820 bis 2220 us | 1520 us |
 
 Die Ruhelage ist `outputs_role_rest()` in `shared/outputs/outputs.c`, der
-Wert, den der Koprozessor auf einem Kanal in ARMED ausgibt, den niemand
+Wert, den der IOmcu auf einem Kanal in ARMED ausgibt, den niemand
 kommandiert, umgerechnet über den Bereich, den die Kommandos des Bildschirms
 tragen. Dieser Bereich ist auf PULS MITTE zentriert; ein PULS MITTE abseits
 der Mitte zwischen PULS MIN und MAX ist also der Wert beim ARM. TRIMMUNG
@@ -1159,7 +1159,7 @@ nichts wird begrenzt. Ein Rechteck ist bei jedem TEMPO unter 100 %
 begrenzt. HALTEZEIT zählt nicht: es fügt Zeit an den Enden hinzu, nicht zur
 Bewegung. Die Zeile folgt den Einstellungen, vor dem Druck auf SWEEP und
 während er läuft. `sweep_slew_limited()` in `shared/servo/servo_sweep.c`
-entscheidet das, in den Befehlseinheiten, in denen der Koprozessor die Rampe
+entscheidet das, in den Befehlseinheiten, in denen der IOmcu die Rampe
 fährt.
 
 | Seite SWEEP | A | Schnellste Änderung | Verschwindet ab TEMPO |
@@ -1178,7 +1178,7 @@ Ruderhorn, daher wird das nicht angezeigt.
 PAUSE, der Sweep-Knopf während ein Sweep läuft, hält den Ausgang dort, wo
 er gerade steht, und der Knopf heißt PAUSIERT, gefüllt in der Warnfarbe.
 Ein Tippen auf PAUSIERT setzt den Sweep ab der Phase fort, an der er
-angehalten wurde, bei einem Koprozessor mit Protokoll 4.6; ein älterer
+angehalten wurde, bei einem IOmcu mit Protokoll 4.6; ein älterer
 startet die Kurve von vorn. Ein angehaltener Sweep ist der Moment, TEMPO zu
 erhöhen: die Pause bleibt, und das Fortsetzen läuft mit der neuen Rate.
 
@@ -1192,6 +1192,6 @@ Netzteilmodell des Panels. Das Programmieren von LEFT ANGLE und RIGHT ANGLE
 braucht den Programmierport ([Servo-Programmierer](ServoProgrammer-de.md)).
 
 Die Pulse selbst gibt es: der PWM-Treiber (Pulsweitenmodulation) des
-Koprozessors ist geschrieben, [DShot und die Output-Treiber](DShot-de.md)
+IOmcu ist geschrieben, [DShot und die Output-Treiber](DShot-de.md)
 beschreibt ihn. Die Reihenfolge der Arbeiten steht in
 [STATUS.md](https://github.com/subtilitas/rcbench/blob/main/STATUS.md).

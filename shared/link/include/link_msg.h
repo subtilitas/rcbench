@@ -23,9 +23,9 @@ extern "C" {
 typedef enum {
     LINK_OP_READ  = 0x01, /**< host asks for COUNT registers from PAGE:OFFS  */
     LINK_OP_WRITE = 0x02, /**< host sets them                                */
-    LINK_OP_DATA  = 0x03, /**< coprocessor answers a read                    */
-    LINK_OP_ACK   = 0x04, /**< coprocessor accepted a write                  */
-    LINK_OP_NACK  = 0x05, /**< coprocessor refused it; regs[0] says why      */
+    LINK_OP_DATA  = 0x03, /**< IOmcu answers a read                    */
+    LINK_OP_ACK   = 0x04, /**< IOmcu accepted a write                  */
+    LINK_OP_NACK  = 0x05, /**< IOmcu refused it; regs[0] says why      */
 } link_op_t;
 
 /** Reasons a NACK (negative acknowledge) carries. */
@@ -38,7 +38,7 @@ typedef enum {
     /** The value is good and something else holds what it names: a pin
      *  another page or an output has, or a resource the wiring needs.
      *  Freed, the same write is taken.  TONE only, since 4.17
-     *  (LINK_MINOR_TONE_BUSY); an older coprocessor says BAD_VALUE. */
+     *  (LINK_MINOR_TONE_BUSY); an older IOmcu says BAD_VALUE. */
     LINK_NACK_BUSY       = 6,
 } link_nack_t;
 

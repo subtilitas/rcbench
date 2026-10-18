@@ -2,7 +2,7 @@
  * The panel's half of the link: poll, match the reply to the question, and
  * escalate when the answers stop.
  *
- * One request outstanding at a time, which is the protocol: the coprocessor
+ * One request outstanding at a time, which is the protocol: the IOmcu
  * transmits only when asked, so there is one request in flight and nothing
  * to arbitrate.
  *
@@ -24,7 +24,7 @@ extern "C" {
 
 /**
  * How long the panel tolerates silence before it escalates: five times the
- * coprocessor's 200 ms, so the end holding the outputs gives up first.
+ * IOmcu's 200 ms, so the end holding the outputs gives up first.
  */
 #define LINK_HOST_TIMEOUT_MS 1000u
 

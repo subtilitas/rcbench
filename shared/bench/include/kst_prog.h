@@ -3,12 +3,12 @@
  * what is read from a servo, what the operator has changed, and what may
  * be written.
  *
- * The session with the servo runs at the coprocessor and the panel's link
+ * The session with the servo runs at the IOmcu and the panel's link
  * module (kst_link.h) carries its operations.  This file sits between that
  * module and the screen:
  *
  *   - It holds the servo's image as last read, a draft the operator edits,
- *     the backup the coprocessor's session holds, and the journal of a
+ *     the backup the IOmcu's session holds, and the journal of a
  *     write.
  *   - An edit goes through the field table and the limits of protocols/kst:
  *     a value that breaks a hard rule is not taken, a value that breaks a
@@ -18,7 +18,7 @@
  *     again for a value further from that image.
  *   - A write is sent with the switch ENABLE WRITE TO SERVO on only.  The
  *     switch goes off at every entry of the screen, when the link goes, when
- *     the coprocessor starts again, at STOP, and with every servo
+ *     the IOmcu starts again, at STOP, and with every servo
  *     connected.
  *   - Every answer of kst_link_start(), every outcome kind, every refusal
  *     of the port and every result of the session becomes one message
@@ -93,7 +93,7 @@ extern "C" {
 #define KST_PROG_WAIT_MAX_MS 10000u
 /** The file text's size, with its terminator. */
 #define KST_PROG_FILE_MAX 400u
-/** The highest GPIO of the coprocessor (GP0 to GP47), and the pin that is
+/** The highest GPIO of the IOmcu (GP0 to GP47), and the pin that is
  *  not known. */
 #define KST_PROG_PIN_LAST 47u
 #define KST_PROG_NO_PIN   0xFFu
@@ -123,8 +123,8 @@ extern "C" {
 
 /** Where the programmer is. */
 typedef enum {
-    KST_PROG_DOWN = 0,     /**< no coprocessor answers                    */
-    KST_PROG_NO_PAGE,      /**< the coprocessor has no such page         */
+    KST_PROG_DOWN = 0,     /**< no IOmcu answers                    */
+    KST_PROG_NO_PAGE,      /**< the IOmcu has no such page         */
     KST_PROG_SYNC,         /**< the page has not been read yet            */
     KST_PROG_PWM,          /**< the tester has the output                 */
     KST_PROG_ENTERING,     /**< the output leaves PWM                     */
@@ -213,12 +213,12 @@ enum {
     KST_PROG_MSG_LOADED_UNTYPED,  /**< and for one that names no servo type */
     KST_PROG_MSG_NEED_TARGET,     /**< the SERVO screen's target is not the
                                        programming port                     */
-    KST_PROG_MSG_LEAVE_SUPPLY,    /**< a PD mini answers and the coprocessor
+    KST_PROG_MSG_LEAVE_SUPPLY,    /**< a PD mini answers and the IOmcu
                                        is below link 4.15: the port has no
                                        way back to PWM that leaves the
                                        supply on                            */
-    KST_PROG_MSG_LEFT_NO_WAIT,    /**< the port is back in PWM by a
-                                       coprocessor below link 4.15: no wait
+    KST_PROG_MSG_LEFT_NO_WAIT,    /**< the port is back in PWM by an
+                                       IOmcu below link 4.15: no wait
                                        was applied                          */
     KST_PROG_MSG_LEFT_DOUBT,      /**< the port is back in PWM from a
                                        session in doubt, no PD mini
@@ -233,7 +233,7 @@ enum {
                                        backup is not restored to it         */
     KST_PROG_MSG_SESSION_ENDED,   /**< the port is in PWM and no command of
                                        this model put it there: the supply
-                                       went off or the coprocessor started
+                                       went off or the IOmcu started
                                        again.  The session's values are
                                        gone                                 */
     KST_PROG_MSG_UNKNOWN,         /**< a result, a refusal or an outcome the
@@ -275,7 +275,7 @@ typedef enum {
 /** Where a restore takes its image from. */
 typedef enum {
     KST_PROG_FROM_NONE = 0,
-    KST_PROG_FROM_SESSION,  /**< the backup of the coprocessor's session */
+    KST_PROG_FROM_SESSION,  /**< the backup of the IOmcu's session */
     KST_PROG_FROM_JOURNAL,  /**< the image recorded before a write       */
     KST_PROG_FROM_RUN,      /**< the servo before a limit run's first
                                  write (kst_prog_run_hold())             */
@@ -448,7 +448,7 @@ typedef struct {
     bool armed;                /**< the panel's outputs are armed */
     bool card;                 /**< a card takes the file */
     uint8_t target;            /**< what the SERVO screen's tester drives
-                                    as the coprocessor reads it: 0 the
+                                    as the IOmcu reads it: 0 the
                                     standard servo ports, 1 + n
                                     programming port n */
     uint8_t port_pin[LINK_PG_PORTS_MAX]; /**< the GPIO programming port n
@@ -621,10 +621,10 @@ link_kst_op_t kst_prog_op(const kst_prog_t *p);
  *  model: the record of it is no interrupted write yet. */
 bool kst_prog_writing(const kst_prog_t *p);
 /** The registers that write writes, as this model planned it; 0 when no
- *  write runs or the coprocessor alone plans it (a restore with no checked
+ *  write runs or the IOmcu alone plans it (a restore with no checked
  *  order, a release).  The register under way is not on the link page. */
 unsigned kst_prog_write_steps(const kst_prog_t *p);
-/** The coprocessor plans the order of a write's or a restore's writes: no
+/** The IOmcu plans the order of a write's or a restore's writes: no
  *  frame goes to the servo yet. */
 bool kst_prog_planning(const kst_prog_t *p);
 /** The last message. */
@@ -731,7 +731,7 @@ kst_prog_edit_t kst_prog_step(kst_prog_t *p, kst_field_id_t id, int dir);
  *  the value last confirmed for that field, or to its other side.  A value
  *  the servo holds counts as confirmed. */
 kst_rules_t kst_prog_soft_rules(const kst_prog_t *p);
-/** The image the soft rules compare with: the backup of the coprocessor's
+/** The image the soft rules compare with: the backup of the IOmcu's
  *  session, the servo as the session first read it.  The servo as last
  *  read while that backup is not held or is another servo's
  *  (kst_prog_backup_other()). */
@@ -787,7 +787,7 @@ void kst_prog_supply_caps(kst_prog_t *p, uint16_t max_mv, uint16_t max_ma);
  *  never raises it: kst_prog_connect() is KST_PROG_MSG_REF +
  *  LINK_KST_REF_SUPPLY_LOW and asks nothing while the feed reads an output
  *  that is on (supply_read) and set (set_mv) under @p min_mv.  The port of
- *  link version 4.15 refuses the same ENTER by that name; a coprocessor
+ *  link version 4.15 refuses the same ENTER by that name; an IOmcu
  *  built before the refusal takes it, so the panel holds the floor for
  *  every peer.  None after kst_prog_init(). */
 void kst_prog_supply_floor(kst_prog_t *p, uint16_t min_mv);

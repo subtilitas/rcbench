@@ -118,11 +118,11 @@ const char *can_selftest_hint(can_selftest_verdict_t v);
 /* ----------------------------------------------- the far end's own numbers */
 
 /*
- * The coprocessor's view of the bus, carried across the bus in one 8-byte
+ * The IOmcu's view of the bus, carried across the bus in one 8-byte
  * frame on the self-test page at the lowest priority, so one console shows
  * both ends of a fault.
  *
- * It is polled: the coprocessor transmits only in answer to a request.
+ * It is polled: the IOmcu transmits only in answer to a request.
  */
 typedef struct {
     bool     up;          /**< the controller answered on SPI (Serial
@@ -154,7 +154,7 @@ bool can_selftest_status_parse(const link_can_frame_t *in,
  * late and altered echoes included, since those crossed the return path too.
  *
  * Only the difference of the two samples is meaningful.  The far end's
- * counter runs from its own boot, and a coprocessor powered through several
+ * counter runs from its own boot, and an IOmcu powered through several
  * panel reboots is tens of thousands ahead of the panel's count.  The counter
  * is 16 bits and wraps; unsigned subtraction handles that.
  *

@@ -29,17 +29,17 @@ bevor man sich auf ein Schreiben verlässt.
 
 ## Randbedingungen
 
-- Der Koprozessor spricht Protokoll 4.13 oder neuer. Mit einem älteren sagt
-  das Overlay `Nicht verfügbar: Der Koprozessor hat keinen Programmierport.` und
-  `Koprozessor auf Version 4.13 oder neuer aktualisieren.`, und jedes
+- Der IOmcu spricht Protokoll 4.13 oder neuer. Mit einem älteren sagt
+  das Overlay `Nicht verfügbar: Der IOmcu hat keinen Programmierport.` und
+  `IOmcu auf Version 4.13 oder neuer aktualisieren.`, und jedes
   Bedienelement außer **SCHLIESSEN** ist aus.
 - **VERLASSEN** mit seinem Warten braucht Protokoll 4.15 auf dem
-  Koprozessor. Ein älterer wird
-  [benannt und ohne es behandelt](#ein-koprozessor-vor-link-version-415).
+  IOmcu. Ein älterer wird
+  [benannt und ohne es behandelt](#ein-iomcu-vor-link-version-415).
 
-  ![Ein Koprozessor ohne den Port](img/de/servo-kst-nopage.png)
+  ![Ein IOmcu ohne den Port](img/de/servo-kst-nopage.png)
 
-- Das Servo hängt am Programmierport des Koprozessors, Port 1: GP13, Pad 17
+- Das Servo hängt am Programmierport des IOmcu, Port 1: GP13, Pad 17
   des Bring-up-Moduls, solange kein anderer Pin dafür gespeichert ist. Der
   Port ist kein Ausgangskanal und kein Slot von OUTPUTS.
 - **ZIEL** des SERVO-Bildschirms steht auf **PROG-PORT**
@@ -73,7 +73,7 @@ bevor man sich auf ein Schreiben verlässt.
   Programmieren PWM zu folgen. Keines von beidem ist gemessen
   ([Einschränkungen](#einschränkungen)).
 - Ob eine gegebene Hardware die Antwort des Servos zum Pin zurückführt,
-  weiß der Koprozessor nicht. Ein Servo an einem Port, der es nicht tut,
+  weiß der IOmcu nicht. Ein Servo an einem Port, der es nicht tut,
   beendet **VERBINDEN** mit
   `Kein Servo antwortet. Stecker, Versorgung und Port prüfen.`
 
@@ -91,7 +91,7 @@ Beide werden mit den SERVO-Einstellungen gehalten. Die Zeile ZIEL nennt das
 aktive Ziel mit Protokoll und Pins: `PROG-PORT GP13` in der Warnfarbe oder
 `SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. **ZIEL** wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
-Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
+Panel gibt eine gehaltene Stellung frei, bevor es den IOmcu um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
 aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
 läuft, in ARMED wie in SAFE: **STOP** und
@@ -100,10 +100,10 @@ ist **PORT-PWM** gesperrt.
 
 Solange der Programmierer den Port hat, ändert sich keine der beiden
 Zeilen: von **VERBINDEN** bis der Port nach **VERLASSEN** wieder in PWM
-ist, während jedes Vorgangs und solange der Koprozessor den Port außerhalb
+ist, während jedes Vorgangs und solange der IOmcu den Port außerhalb
 von PWM meldet. Beide Zeilen sind gesperrt gezeichnet, ein Zurücksetzen der
 Einstellungen lässt die zwei Werte stehen, das Panel schreibt nichts in die
-Seite des Ports im Koprozessor, und der Tester sendet dem Port kein
+Seite des Ports im IOmcu, und der Tester sendet dem Port kein
 Kommando und keine Freigabe. Eine dem Port geschuldete Freigabe geht
 hinaus, sobald der Port wieder in PWM ist.
 
@@ -129,8 +129,8 @@ Bedienelement außer **SCHLIESSEN** ist aus.
 | Programmieren, die Versorgung gelesen | `Port 1 im Programmiermodus. PWM aus. 5.00 V, 37 mA.` | nur Frames |
 | Arbeiten | `Vorgang läuft: 12 Frames.` | die Frames des laufenden Vorgangs |
 | Arbeiten, ein Schreiben von Werten | `3 Register werden geschrieben. Gesendete Frames: 94.` oder `1 Register wird geschrieben. Gesendete Frames: 31.` | die Frames des Schreibens; die Zahl nennt die Register, die das Schreiben setzt |
-| Arbeiten, ein Zurückspielen des Backups der Sitzung oder ein Lösen des Pairings | `Schreibvorgang läuft. Gesendete Frames: 12.` | die Frames des Schreibens; der Koprozessor plant es allein, und das Panel hat keine Zahl |
-| Arbeiten, der Koprozessor plant | `Schreibreihenfolge wird vorbereitet. Noch kein Frame gesendet.` | nichts: ein Koprozessor der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
+| Arbeiten, ein Zurückspielen des Backups der Sitzung oder ein Lösen des Pairings | `Schreibvorgang läuft. Gesendete Frames: 12.` | die Frames des Schreibens; der IOmcu plant es allein, und das Panel hat keine Zahl |
+| Arbeiten, der IOmcu plant | `Schreibreihenfolge wird vorbereitet. Noch kein Frame gesendet.` | nichts: ein IOmcu der Link-Version 4.14 plant ein Schreiben oder ein Zurückspielen vor seinem ersten Frame |
 | Verlassen | `Programmiermodus wird verlassen. PWM ist noch aus.` | die Leitung auf Low für **WARTEZEIT VOR PWM**; kein Puls, bis der Port PWM meldet |
 
 **VERBINDEN** nimmt den Port aus PWM, stellt die Versorgung, wo ein PD mini
@@ -158,13 +158,13 @@ Overlay wieder offen.
 | **VERBINDEN** endet mit | Bedeutung |
 | --- | --- |
 | `Dem Programmierport ist kein Pin zugeordnet. Nichts gesendet.` | ein Slot von OUTPUTS hält den Pin des Ports |
-| `Diesen Programmierport gibt es auf dem Koprozessor nicht.` | der Koprozessor hat weniger Ports als den angefragten |
+| `Diesen Programmierport gibt es auf dem IOmcu nicht.` | der IOmcu hat weniger Ports als den angefragten |
 | `Programmierspannung oder -strom überschreitet die SUPPLY-Grenzen.` und `Wert unter WEITERES senken oder Grenze erhöhen. Nichts übernommen.` | PROGRAMMIERSPANNUNG liegt über der Spannungsgrenze des SUPPLY-Bildschirms oder STROMBEGRENZUNG über seiner Stromgrenze; nichts wird gesendet |
-| `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` | ARMED gilt oder ist angefragt; der Koprozessor lehnt dasselbe von sich aus mit `Port belegt. Erneut versuchen.` ab |
+| `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` | ARMED gilt oder ist angefragt; der IOmcu lehnt dasselbe von sich aus mit `Port belegt. Erneut versuchen.` ab |
 | `Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.` | die Spannung liegt über 8,4 V, die Stromgrenze außerhalb 50 bis 3000 mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7 V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
-| `Versorgung unter 4.8 V. Programmieren benötigt mindestens 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den Koprozessor |
+| `Versorgung unter 4.8 V. Programmieren benötigt mindestens 4.8 V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8 V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8 V gesetzt ist, sendet das Panel nichts an den IOmcu |
 | `Versorgung hat nicht innerhalb von 3000 ms geschaltet. Versorgung prüfen.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
-| `Koprozessor hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der Koprozessor vertraut dem Heartbeat nicht, oder der Link war still |
+| `IOmcu hat die Verbindung noch nicht freigegeben. Erneut versuchen.` | der IOmcu vertraut dem Heartbeat nicht, oder der Link war still |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
@@ -173,16 +173,16 @@ Overlay wieder offen.
 Der Signalpin des Servos ist ein GPIO (General-Purpose Input/Output) eines
 Mikrocontrollers. Der High-Pegel seiner Antwort ist höchstens 5 V und
 typisch 3,3 V. Der Pegel ist nicht gemessen. GP13 ist für 5,5 V
-spezifiziert, solange IOVDD (die Ein-/Ausgangsversorgung) des Koprozessors
+spezifiziert, solange IOVDD (die Ein-/Ausgangsversorgung) des IOmcu
 auf 3,3 V liegt (`hardware/docs/IOBoard.md`, Pin ratings); der Port hat
 deshalb keinen Pegelwandler und keine Klemmung.
 
-Ohne Versorgung des Koprozessors ist GP13 für 3,63 V spezifiziert. Ein
-Servo, das die Leitung mit 5 V treibt, während der Koprozessor aus ist,
+Ohne Versorgung des IOmcu ist GP13 für 3,63 V spezifiziert. Ein
+Servo, das die Leitung mit 5 V treibt, während der IOmcu aus ist,
 überschreitet diesen Wert. Was der Pin des Servos im Leerlauf bei
 ausgeschaltetem Prüfstand tut, ist nicht gemessen.
 
-Den Koprozessor vor der Versorgung des Servos einschalten, oder das Servo
+Den IOmcu vor der Versorgung des Servos einschalten, oder das Servo
 nicht aus einer externen Versorgung speisen, während der Prüfstand aus
 ist.
 
@@ -219,7 +219,7 @@ ihn zuerst an. Ein PD mini, dessen Eingangsspannung unter 5,5 V liegt, gibt kein
 4,8 V, und an ihm beginnt keine Sitzung.
 
 Solange der Port nicht in PWM ist, gehören die Sollwerte der Versorgung dem
-Port. Der Koprozessor lehnt jede Änderung der Spannung und der Stromgrenze
+Port. Der IOmcu lehnt jede Änderung der Spannung und der Stromgrenze
 und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
 SUPPLY-Bildschirm und die Zeile SOLL der rechten Karte zeigen dasselbe: die
 Sollwerte, die Schieber, die Schritte und **AUSGANG EIN** sind gedimmt und
@@ -267,7 +267,7 @@ folgen dem, was der Port gestellt hat.
 ![Die Versorgung im Programmiermodus](img/de/servo-kst-supplied.png)
 
 Ohne PD mini werden die Spannung und die Stromgrenze gespeichert und nicht
-angewendet. **WARTEZEIT VOR PWM** wendet ein Koprozessor ab Link-Version 4.15
+angewendet. **WARTEZEIT VOR PWM** wendet ein IOmcu ab Link-Version 4.15
 beim [Verlassen](#verlassen) an, mit und ohne PD mini.
 
 ## Reiter SERVO
@@ -302,7 +302,7 @@ ist.
 
 ### Ein Servo mit unbekanntem Layout
 
-Der Koprozessor vergleicht das Abbild mit dem Layout des bekannten Servos,
+Der IOmcu vergleicht das Abbild mit dem Layout des bekannten Servos,
 seinem Fingerprint. Ein Abbild, das nicht passt, wird gezeigt und nie
 geschrieben: die Zeilen zum Ändern und der Schreibschalter sind aus und
 nehmen keinen Tipp an, der Reiter behält `Nur Auslesen möglich. Dieser Servotyp ist unbekannt.`, und **PAIRING LÖSEN** wird abgelehnt. **ALLES AUSLESEN**, das Speichern in eine Datei und
@@ -458,7 +458,7 @@ schaltet ihn nach 2 s ein. Ein Tipp auf **EIN** schaltet ihn sofort aus.
 Der Schalter geht aus:
 
 - bei jedem Aufruf des SERVO-Bildschirms,
-- wenn der Link zum Koprozessor wegfällt oder der Koprozessor neu startet,
+- wenn der Link zum IOmcu wegfällt oder der IOmcu neu startet,
 - bei **STOP** und bei jedem Stopp, den der Prüfstand hält,
 - mit jedem **VERBINDEN** und jedem **VERLASSEN**,
 - wenn ein Lesen ein anderes Abbild findet als das gehaltene,
@@ -470,7 +470,7 @@ Der Schalter geht aus:
   Schreibens passt.
 
 Bei ausgeschaltetem Schalter sendet das Panel kein Schreiben, kein
-Zurückspielen und kein Lösen des Pairings, und der Koprozessor lehnt eines
+Zurückspielen und kein Lösen des Pairings, und der IOmcu lehnt eines
 ab, das ohne den Schlüssel des Schalters ankommt. Lesen, **PRÜFEN**, das
 Speichern in eine Datei und das Laden einer Datei arbeiten bei
 ausgeschaltetem Schalter.
@@ -480,7 +480,7 @@ nicht annimmt, ist **AUS** abgedunkelt: ohne gelesenes Servo, mit einem
 Servo, das nicht zum Fingerprint passt, solange ein Vorgang läuft und
 solange das Panel fragt, ob das Servo das eines unterbrochenen Schreibens
 ist. Eine Sitzung,
-die der Koprozessor nach einem unterbrochenen Schreiben gesperrt hat, nimmt
+die der IOmcu nach einem unterbrochenen Schreiben gesperrt hat, nimmt
 ihn auch ohne gelesenes Servo an, sobald das Panel das Backup der Sitzung
 hält: das ist der Zustand eines Panels, das unter einer solchen Sitzung
 startet. Der Schalter öffnet dann ein Schreiben, das Zurückspielen des
@@ -530,7 +530,7 @@ erste Schreiben: die Zeilen bleiben für das nächste.
    ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
    die binnen 3 s keine Datei annimmt, wird das Schreiben nicht gesendet:
    `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.`
-3. Das Panel sendet das Zielabbild. Der Koprozessor prüft es gegen dieselben
+3. Das Panel sendet das Zielabbild. Der IOmcu prüft es gegen dieselben
    Limits, plant die Registerschreibvorgänge und führt sie aus.
 4. Jedes geschriebene Register wird zurückgelesen. Ein Schreibvorgang, der
    nicht übernommen wird, wird rückgängig gemacht.
@@ -566,7 +566,7 @@ Zahl der erfolgten Schreibvorgänge: `Register 03. 1 Schreibvorgang abgeschlosse
 
 | Backup | Gehalten von | Lebt bis |
 | --- | --- | --- |
-| Der Sitzung | dem Koprozessor: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Aus- und Einschalten des Servos, ein Neustart des Koprozessors |
+| Der Sitzung | dem IOmcu: das erste nach **VERBINDEN** gelesene Abbild | **VERLASSEN**, ein Aus- und Einschalten des Servos, ein Neustart des IOmcu |
 | Die Datei der Sitzung | der Karte: die 32 Register des Servos, wie sie vor dem ersten Schreiben der Sitzung stehen. Keine, solange keine Karte eingehängt ist | die Datei wird von der Karte entfernt |
 | Vor einem Schreiben | dem Panel, in `KST/KST.TXT` oder im RAM | das Schreiben endet geprüft, oder der Vermerk wird verworfen |
 
@@ -705,8 +705,8 @@ nicht verlangt. Ein vor 2 s losgelassenes Halten sendet nichts.
 Nach einem solchen Schreiben zeigt der Reiter SERVO
 `Keine Karte, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` anstelle des
 Dateinamens. Die einzige Kopie des Servos, wie es vorgefunden wurde, ist
-das Backup der Sitzung im Koprozessor: **VERLASSEN**, ein Neustart des
-Koprozessors und ein Stromausfall des Prüfstands beenden es, und die Werte,
+das Backup der Sitzung im IOmcu: **VERLASSEN**, ein Neustart des
+IOmcu und ein Stromausfall des Prüfstands beenden es, und die Werte,
 die das Servo vor dem Schreiben hielt, sind dann aus dem Prüfstand nicht
 wiederherstellbar.
 
@@ -715,9 +715,9 @@ wiederherstellbar.
 | Fall | Ergebnis |
 | --- | --- |
 | Eine Karte wird später in der Sitzung eingehängt | das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei. Die Datei hält das Backup der Sitzung, das vor dem ersten Schreiben gelesene Abbild. Die Zeile im Reiter SERVO wechselt zum Dateinamen |
-| Der Link fällt weg und kommt wieder, oder das Panel startet, unter einer Sitzung, die der Koprozessor hält | die Schreiben der Sitzung sind dem Panel nicht bekannt. Das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei, und die Datei hält das Backup der Sitzung, nicht das Servo, wie es zuletzt gelesen wurde. Ein Speichern über **DATEIEN** zählt nur als Backup-Datei, solange das Servo dem Backup der Sitzung gleicht |
+| Der Link fällt weg und kommt wieder, oder das Panel startet, unter einer Sitzung, die der IOmcu hält | die Schreiben der Sitzung sind dem Panel nicht bekannt. Das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei, und die Datei hält das Backup der Sitzung, nicht das Servo, wie es zuletzt gelesen wurde. Ein Speichern über **DATEIEN** zählt nur als Backup-Datei, solange das Servo dem Backup der Sitzung gleicht |
 | Das Servo kann geschriebene Werte halten, und das Panel hält das Backup der Sitzung nicht | das Schreiben geht ohne Datei, und seine Seite trägt die drei Zeilen oben: das Servo, wie es zuletzt gelesen wurde, wird nicht als Backup-Datei gespeichert |
-| Der Koprozessor startet neu | seine Sitzung und das Backup der Sitzung sind weg. **VERBINDEN** beginnt eine Sitzung, und ihr erstes Schreiben speichert das Servo, wie diese Sitzung es vorfindet |
+| Der IOmcu startet neu | seine Sitzung und das Backup der Sitzung sind weg. **VERBINDEN** beginnt eine Sitzung, und ihr erstes Schreiben speichert das Servo, wie diese Sitzung es vorfindet |
 | Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
 | Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2 s sendet das Schreiben |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
@@ -808,12 +808,12 @@ Jedes Zurückspielen braucht den Schreibschalter und 2 s Halten.
 
 | Quelle | Zurückgeschrieben | Nicht zurückgespielt |
 | --- | --- | --- |
-| `Backup der zuerst in dieser Sitzung ausgelesenen Werte.` | jedes abweichende Register, vom Koprozessor aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
+| `Backup der zuerst in dieser Sitzung ausgelesenen Werte.` | jedes abweichende Register, vom IOmcu aus dem Abbild, das er selbst hält; ohne die Limit-Prüfungen, und die Seite sagt es. Ein abweichendes Register, das kein Schreiben der Sitzung geändert hat, beendet das Zurückspielen vor seinem ersten Schreiben | nichts |
 | `Werte vor dem unterbrochenen Schreibvorgang.` | die änderbaren Felder, als Schreiben mit jeder Limit-Prüfung | die gesperrten Felder, Register 00 und der Pairing-Wert |
 | `Werte vor dem Endlagenlauf.` | LEFT ANGLE, RIGHT ANGLE, PULSE LOWER und PULSE UPPER, wie die erste Sitzung des [Endlagenlaufs](#der-endlagenlauf) sie las, als Schreiben mit jeder Limit-Prüfung. Angeboten, solange das gelesene Servo sich in diesen vier Feldern und in keinem anderen davon unterscheidet | jedes andere Feld: es ist so, wie der Lauf es vorfand |
 
 Ein Zurückspielen aus dem Abbild des Panels ist ein gewöhnliches
-Schreiben: der Koprozessor nimmt ein ungeprüftes Zurückspielen nur für das
+Schreiben: der IOmcu nimmt ein ungeprüftes Zurückspielen nur für das
 Backup an, das er selbst hält, und diese Prüfung wird nicht abgeschwächt.
 Die Seite zählt die gesperrten Werte, die abweichen und bleiben:
 `2 gesperrte Werte weichen ab. Sie bleiben unverändert.` oder
@@ -837,14 +837,14 @@ Sitzung ändern sollte, ist ein anderes Servo: `Das ist ein anderes Servo. Das B
 enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
-Backup zurück. Ein Schreiben, das die Karte, ein Stopp oder der Koprozessor
-nicht starten lässt oder das der Koprozessor beendet, ohne dass ein Register
+Backup zurück. Ein Schreiben, das die Karte, ein Stopp oder der IOmcu
+nicht starten lässt oder das der IOmcu beendet, ohne dass ein Register
 geschrieben ist, zählt nicht als Schreiben: seine Felder unterscheiden
 die Servos weiterhin. Dasselbe gilt für ein Schreiben, das rückgängig
 gemacht und zurückgelesen ist, ohne dass ein Schreiben als erledigt
 gezählt ist.
 
-Der Koprozessor vergleicht noch einmal, Register für Register, bei der
+Der IOmcu vergleicht noch einmal, Register für Register, bei der
 Lesung vor dem ersten Schreiben eines Zurückspielens des Backups der
 Sitzung. Er hält die Menge der Register, die die Schreibvorgänge der
 Sitzung geändert haben. Ein Servo, das in einem anderen Register vom Backup
@@ -941,7 +941,7 @@ Karte.
 ## Ein unterbrochenes Schreiben
 
 Ein Schreiben gilt als unterbrochen, wenn der Link wegfällt, der
-Koprozessor oder das Panel neu startet, **ABBRECHEN** oder ein Stopp es
+IOmcu oder das Panel neu startet, **ABBRECHEN** oder ein Stopp es
 beendet oder kein Ergebnis [rechtzeitig](#stopps-und-ausfälle) kommt. Der
 Vermerk von vor dem
 Schreiben bleibt dann stehen, auf der Karte auch über ein Aus- und
@@ -1002,7 +1002,7 @@ Max. Duty liegt in den Registern 01 und 02. Ein Schreiben, das zwischen
 diesen beiden abreißt, hinterlässt ein Abbild, das ein hartes Limit
 verletzt, und das Zurückspielen des Panels, ein geprüftes Schreiben,
 startet von einem solchen Abbild nicht. Das Zurückspielen des Backups der
-Sitzung tut es. Nach einem Neustart des Koprozessors in diesem Zustand
+Sitzung tut es. Nach einem Neustart des IOmcu in diesem Zustand
 liest der Programmierer das Servo und schreibt nichts darauf.
 
 ## Verlassen
@@ -1057,7 +1057,7 @@ mit **ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
 **WARTEZEIT VOR PWM** ist 0 bis 10 000 ms, ab Werk 100 ms. Der Ziffernblock
 nimmt keinen Wert über 10 000 ms an, und mit einem solchen wird kein
 Verlassen gesendet. Ein Warten von 0 ms endet beim nächsten Durchlauf des
-Koprozessors. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
+IOmcu. Die Restzeit eines laufenden Wartens wird nicht angezeigt.
 Das Warten, das ein Servo braucht, ist nicht gemessen.
 
 | Während des Wartens | Wirkung |
@@ -1085,17 +1085,17 @@ Ohne PD mini ändert er nur den Zustand des Ports: kein Frame, kein Warten,
 und die Versorgung des Servos ist die, die es speist. Der Datensatz eines
 unterbrochenen Schreibens bleibt für die nächste Sitzung.
 
-### Ein Koprozessor vor Link-Version 4.15
+### Ein IOmcu vor Link-Version 4.15
 
 Die Link-Versionen 4.13 und 4.14 haben kein LEAVE. Das Panel sendet ihnen
 keines.
 
 | Ein PD mini antwortet | Das Panel | Zeilen |
 | --- | --- | --- |
-| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Port ist wieder im Testermodus.` und `Koprozessor-Firmware älter als 4.15. PWM startet ohne Wartezeit.` |
-| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini erfordert Koprozessor-Firmware ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
+| nein | sendet POWER_CYCLED, das nur den Zustand des Ports ändert; der Port ist ohne Warten in PWM | `Der Port ist wieder im Testermodus.` und `IOmcu-Firmware älter als 4.15. PWM startet ohne Wartezeit.` |
+| ja | sendet nichts: beide Vorgänge dieser Versionen für den Schritt schalten die Versorgung aus und wieder ein. Die Sitzung bleibt | `Verlassen mit PD mini erfordert IOmcu-Firmware ab 4.15.` und `STOP beendet die Sitzung und schaltet die Versorgung aus.` |
 
-Mit einem PD mini an einem solchen Koprozessor beendet **STOP** oder der
+Mit einem PD mini an einem solchen IOmcu beendet **STOP** oder der
 ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 2000 ms aus, und der Port ist wieder in PWM.
 
@@ -1106,14 +1106,14 @@ ausgeschaltete Ausgang der Versorgung die Sitzung: die Versorgung bleibt
 | **STOP**, ein gehaltener Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12 ms; der Schalter geht aus; `STOP: der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Der Ausgang eines PD mini wird ausgeschaltet, und der Port ist 2000 ms, nachdem er aus liest, wieder in PWM |
 | **ABBRECHEN** | dasselbe, ohne den gehaltenen Stopp |
 | Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
-| Der Koprozessor startet neu | seine Sitzung und sein Backup sind weg; `Koprozessor neu gestartet. VERBINDEN, dann ALLES AUSLESEN tippen.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
+| Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. VERBINDEN, dann ALLES AUSLESEN tippen.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
 | Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Servoversorgung aus- und einschalten, dann VERBINDEN tippen.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
-| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom Koprozessor. ALLES AUSLESEN tippen.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
-| Der Koprozessor lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 3 Austausche mit dem Koprozessor in Folge bleiben unbeantwortet | `Keine Antwort vom Koprozessor. ALLES AUSLESEN tippen.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
-| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120 s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom Koprozessor. ALLES AUSLESEN tippen.`; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| Die Control-Task des Panels nimmt 2 s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom IOmcu. ALLES AUSLESEN tippen.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
+| Der IOmcu lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
+| 3 Austausche mit dem IOmcu in Folge bleiben unbeantwortet | `Keine Antwort vom IOmcu. ALLES AUSLESEN tippen.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben |
+| 30 s kein Ergebnis eines Vorgangs, gezählt ab der letzten Meldung des Ports, dass der Vorgang läuft oder plant, oder 120 s ab seinem Start, wie lange der Port ihn auch als laufend meldet | der Vorgang wird abgebrochen; `Kein Ergebnis vom IOmcu. ALLES AUSLESEN tippen.`; die Werte auf dem Panel werden vor einem **ALLES AUSLESEN**, das endet, nicht geändert, gespeichert oder geschrieben; ein Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Das Ergebnis eines Vorgangs kommt, auf den der Programmierer nicht mehr wartet | es beendet keinen anderen Vorgang: ein Ergebnis zählt für die Anfrage, deren Nummer es trägt. **ABBRECHEN** erreicht einen Vorgang, den der Port noch als laufend meldet |
-| Der Koprozessor meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `Koprozessor meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
+| Der IOmcu meldet ein Ergebnis, eine Ablehnung oder einen Ausgang, für den dieses Panel keine Zeile hat | `IOmcu meldet Code 255. Dieses Panel kennt ihn nicht.`, mit der Nummer des Codes; ein Ergebnis wird als fehlgeschlagener Vorgang behandelt |
 
 Jede Ablehnung des Ports und jedes Ergebnis der Sitzung hat seine eigene
 Zeile. [Die Link-Page](LinkKST-de.md) listet die
@@ -1137,7 +1137,7 @@ Codes.
   Datensatz ersetzt ihn.
 - Eine Karte, die im Betrieb entnommen und wieder eingesteckt wird, wird
   nicht erneut eingebunden.
-- Ist der Koprozessor ohne Versorgung und das Servo aus einer anderen
+- Ist der IOmcu ohne Versorgung und das Servo aus einer anderen
   Versorgung gespeist, überschreitet ein Servo, das die Signalleitung über
   3,63 V treibt, den für GP13 spezifizierten Wert
   ([der Signalpegel](#der-signalpegel)).
@@ -1163,14 +1163,14 @@ Codes.
 - Ob ein geschriebener Wert vor dem nächsten Einschalten des Servos wirkt,
   ist nicht gemessen. Der Programmierer behandelt einen Wert, der sich
   zurücklesen lässt, als wirksam.
-- Antwortet ein PD mini an einem Koprozessor vor Link-Version 4.15, wird
+- Antwortet ein PD mini an einem IOmcu vor Link-Version 4.15, wird
   der Port nicht aus dem Programmierer verlassen: **STOP** oder der
   ausgeschaltete Ausgang der Versorgung beendet die Sitzung, mit
   ausgeschalteter Versorgung.
 - Antwortet ein PD mini, wird ein Port mit einem unklaren Servo durch
   **ZURÜCKSPIELEN** und **VERLASSEN** verlassen, oder durch **STOP** mit
   ausgeschalteter Versorgung.
-- **WARTEZEIT VOR PWM** wird von einem Koprozessor vor Link-Version 4.15 nicht
+- **WARTEZEIT VOR PWM** wird von einem IOmcu vor Link-Version 4.15 nicht
   angewendet, und nicht beim Verlassen eines unklaren Ports ohne PD mini.
   Das Warten, das ein Servo braucht, ist nicht gemessen. Die Restzeit
   eines laufenden Wartens wird nicht angezeigt.
@@ -1189,7 +1189,7 @@ Codes.
   das Panel wartet 5 s auf eine Seite.
 - Ein Schreiben ohne Karte hinterlässt keine Backup-Datei. Das Backup der
   Sitzung ist dann die einzige Kopie des Servos, wie es vorgefunden wurde,
-  und endet mit **VERLASSEN**, einem Neustart des Koprozessors oder einem
+  und endet mit **VERLASSEN**, einem Neustart des IOmcu oder einem
   Stromausfall des Prüfstands.
 - Das erste Schreiben einer Sitzung mit eingehängter Karte braucht freien
   Platz auf ihr.
@@ -1279,13 +1279,13 @@ Keine davon ist erfolgt.
 
 `test_prog_link` fährt die Panelseite des Ziels und des Pulsschalters des
 Ports: einen Port ohne Pin, ein Ziel, das auf einen Prüfstand in Ruhe
-wartet, einen Koprozessor, der neu startet, und einen Programmierer, der
+wartet, einen IOmcu, der neu startet, und einen Programmierer, der
 den Port hat, für jedes der 16 Paare aus Seite und gewünschten Werten.
 `test_settings_screen` fährt eine gehaltene Einstellung gegen jeden Aufruf, der
 eine ändert, und `test_servo` die zwei Zeilen des Reiters PRÜFLING.
 `test_kst_card` fährt die Kartenseite der Dateien auf einer Karte im Arbeitsspeicher. `test_kst_prog` und `test_kst_prog_card`
 fahren das Modell und `test_kst_panel` das Overlay, beide gegen den Port des
-Koprozessors, ein Versorgungsmodell und das Servomodell durch den
+IOmcu, ein Versorgungsmodell und das Servomodell durch den
 Dispatcher des Links: die Bereiche der Versorgung an ihren Enden und einen
 Schritt außerhalb, das Warten bei 0 ms, 100 ms, 10 000 ms und 10 001 ms als
 Warten des Verlassens, ein Abbruch, ein Wechsel auf SAFE und eine Versorgung, die im

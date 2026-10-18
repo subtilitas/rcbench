@@ -4,7 +4,7 @@
  * The panel runs the echo self-test once, before the bench is usable, and
  * shows this instead of the menu when the test does not pass.  It exists
  * because the fault it reports is not visible from any other screen: a bus
- * that does not carry frames looks exactly like a coprocessor that is not
+ * that does not carry frames looks exactly like an IOmcu that is not
  * there, and both look like a bench that simply shows no numbers.
  *
  * What it puts on the panel is the verdict, the counts behind it, and the
@@ -87,7 +87,7 @@ typedef struct {
     uint32_t       polls;      /**< requests this panel has sent           */
     uint32_t       timeouts;   /**< and how many got no answer             */
 
-    bool     have_remote; /**< the coprocessor answered a status request */
+    bool     have_remote; /**< the IOmcu answered a status request */
     bool     remote_up;   /**< and said its own controller came up       */
     uint8_t  remote_tx_errors;
     uint8_t  remote_rx_errors;

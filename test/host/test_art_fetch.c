@@ -82,7 +82,7 @@ static bool dev_read(void *ctx, uint8_t page, uint8_t count, uint16_t *regs)
     if (page != (uint8_t)LINK_PAGE_ART_DATA) { return false; }
     const uint16_t block = (g_serve_instead >= 0) ? (uint16_t)g_serve_instead
                                                   : g_selected;
-    /* The coprocessor's own code serves the block. */
+    /* The IOmcu's own code serves the block. */
     uint16_t full[LINK_AD_COUNT];
     link_artserve_block(full, g_src, BYTES, block);
     for (uint8_t i = 0; i < count; ++i) { regs[i] = full[i]; }
@@ -269,7 +269,7 @@ TEST_CASE(a_fetch_abandoned_mid_way_and_begun_again_starts_from_block_0)
     CHECK_EQ(art_fetch_step(&f, &t, 3u), ART_FETCH_RUNNING);
     CHECK_EQ(link_artxfer_next(&f.x), 3);
 
-    /* Meanwhile the coprocessor was flashed with another drawing. */
+    /* Meanwhile the IOmcu was flashed with another drawing. */
     fx_draw_shape(g_src, PADS, 0, (uint8_t)LINK_DRAW_RECT, 0u, 0xF800u,
                   400u, 50u, 60u, 40u);
     describe_source();
@@ -346,8 +346,8 @@ TEST_CASE(a_drawing_that_arrives_whole_and_wrong_is_not_done)
 TEST_CASE(a_malformed_drawing_with_good_checksums_is_refused_by_the_reader)
 {
     /*
-     * The transfer checks that the bytes are the ones the coprocessor
-     * meant; it does not read them.  A coprocessor that serves a drawing
+     * The transfer checks that the bytes are the ones the IOmcu
+     * meant; it does not read them.  An IOmcu that serves a drawing
      * with a shape off its outline delivers it whole and DONE, and
      * link_drawing_parse() is what refuses it.
      */
@@ -410,7 +410,7 @@ TEST_CASE(the_three_ways_there_is_no_drawing_are_told_apart)
     CHECK(strcmp(a, c) != 0);
     CHECK(strcmp(b, c) != 0);
 
-    /* A photograph from a coprocessor of minor 19 is the third kind: a page
+    /* A photograph from an IOmcu of minor 19 is the third kind: a page
      * this build cannot use. */
     fresh();
     g_meta[LINK_AW_FORMAT] = (uint16_t)LINK_ART_RGB565;
@@ -453,7 +453,7 @@ TEST_CASE(the_key_of_a_drawing_is_every_field_of_its_page)
 
 TEST_CASE(a_board_with_no_drawing_is_not_a_failure)
 {
-    /* The ordinary answer from a coprocessor that carries none, and from one
+    /* The ordinary answer from an IOmcu that carries none, and from one
      * built before the page: neither is a fault, and neither starts a
      * transfer. */
     fresh();

@@ -26,7 +26,7 @@ Together, ° and section 8 are everything on this page that is uncertain.
 The master hears its own transmission: a sender discards as many received bytes
 as it sent. The connection is a single wire with TX and RX commoned.
 
-The protocol needs a UART of its own on the coprocessor: a hardware UART with
+The protocol needs a UART of its own on the IOmcu: a hardware UART with
 TX and RX tied through a resistor and the echo discarded, or a PIO
 (programmable input/output) soft UART. It cannot share the panel link, which is
 CAN (Controller Area Network); see [The link](Link.md).
@@ -369,13 +369,13 @@ plausible sync.
 
 ## 9. Status in rcbench
 
-Neither board runs the protocol yet: the coprocessor image links the module,
-the panel image does not, and nothing calls it. The design puts it on the coprocessor: a 20 Hz request and
+Neither board runs the protocol yet: the IOmcu image links the module,
+the panel image does not, and nothing calls it. The design puts it on the IOmcu: a 20 Hz request and
 response loop with a turnaround in microseconds and a timeout that fires
 whether or not bytes arrive. The panel would see the result as a `bench_state`
 through the page protocol; no OpenYGE frame would cross the panel link. A
 throttle command would travel as a control-page write behind the heartbeat and
-the coprocessor's failsafe ([Safety](Safety.md)).
+the IOmcu's failsafe ([Safety](Safety.md)).
 
 A YGE ESC reports voltage, current, consumption, eRPM and four temperatures
 itself, so every modelled field of `bench_state` has a source before the

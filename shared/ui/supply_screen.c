@@ -184,7 +184,7 @@ static struct {
     /* An ON this screen has asked for and not yet seen applied: the output
      * is treated as live from the moment it is asked; see confirm_needed(). */
     bool            on_asked;
-    /* A servo programming port is out of PWM: the coprocessor takes an OFF
+    /* A servo programming port is out of PWM: the IOmcu takes an OFF
      * and nothing else, so this screen offers nothing else; see
      * supply_screen_set_port_held(). */
     bool            port_held;

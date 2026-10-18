@@ -12,7 +12,7 @@ PANEL UPDATE writes a new panel firmware image into the panel's flash. It opens 
 
 ![Writing the image](view:panel-update)
 
-The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the coprocessor holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64 KiB, and shows the bytes written and the percentage. The display may flicker while flash memory is erased. Do not switch off the panel.
+The hold switches the radio off first. The panel then stops its polls and withholds the heartbeat, so the IOmcu holds its outputs in failsafe, as at any restart of the panel. The screen writes the slot that is not running, in pieces of 64 KiB, and shows the bytes written and the percentage. The display may flicker while flash memory is erased. Do not switch off the panel.
 
 How long the erase and the write take is not measured.
 

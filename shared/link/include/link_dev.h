@@ -1,5 +1,5 @@
 /*
- * The coprocessor's half of the link: answer polls, and fail safe when they
+ * The IOmcu's half of the link: answer polls, and fail safe when they
  * stop.
  *
  * Pure C with the clock passed in as a millisecond count.  No timers, no
@@ -23,15 +23,15 @@ extern "C" {
 #endif
 
 /**
- * Silence after which the coprocessor fills failsafe values on its own
+ * Silence after which the IOmcu fills failsafe values on its own
  * authority.  The ratio follows ArduPilot's IOMCU (I/O microcontroller): the
- * coprocessor gives up after 200 ms and the host escalates after 1 s, so the
+ * IOmcu gives up after 200 ms and the host escalates after 1 s, so the
  * processor holding the outputs is the more suspicious of the two.
  */
 #define LINK_DEV_SILENCE_MS 200u
 
 /**
- * One page, as the coprocessor sees it.
+ * One page, as the IOmcu sees it.
  *
  * `read` is not optional: a page nobody can read is a page nobody can check
  * against what they wrote.  `write` being NULL is what makes a page read-only,
@@ -70,7 +70,7 @@ typedef struct {
      * Set by link_dev_init(), on the silence edge and by
      * link_dev_latch_arm(); cleared by link_dev_clear_failsafe() and by
      * nothing else.  It is not `failsafe`: that flag says the link went
-     * silent, gates the supply and is reported on STATUS, and a coprocessor
+     * silent, gates the supply and is reported on STATUS, and an IOmcu
      * that has just started has had no silence.  What a start and a silence
      * share is that the ARM register the host goes on writing is older than
      * the event, so neither may arm on it.
@@ -92,7 +92,7 @@ void link_dev_init(link_dev_t *d, const link_page_t *pages, uint8_t page_count,
  * (negative acknowledge) says.  No transport is visible from here.
  *
  * False only on a null argument.  Every request produces exactly one reply,
- * refusals included: silence means a coprocessor that is not there, and must
+ * refusals included: silence means an IOmcu that is not there, and must
  * not also mean a declined request.
  */
 bool link_dev_dispatch(link_dev_t *d, const link_msg_t *req,

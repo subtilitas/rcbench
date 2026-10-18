@@ -1,8 +1,8 @@
 /*
- * The page dispatcher: what the coprocessor answers, and what it refuses.
+ * The page dispatcher: what the IOmcu answers, and what it refuses.
  *
  * The refusals are the interesting half.  Every one of them has to produce a
- * frame, because silence on this link already means "the coprocessor is not
+ * frame, because silence on this link already means "the IOmcu is not
  * there" and must never also mean "I heard you and declined".
  *
  * SPDX-License-Identifier: MIT
@@ -23,7 +23,7 @@
 #include "sense_page.h"
 #include "tone_page.h"
 
-/* A stand-in for the coprocessor's own state. */
+/* A stand-in for the IOmcu's own state. */
 typedef struct {
     uint16_t identity[LINK_ID_COUNT];
     uint16_t control[LINK_CT_COUNT];
@@ -51,7 +51,7 @@ static void control_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     memcpy(out, f->control + off, (size_t)n * sizeof(uint16_t));
 }
 
-/* The coprocessor's handler is this: the page's rules from shared/, and a
+/* The IOmcu's handler is this: the page's rules from shared/, and a
  * clear acted on when the rules say the frame carried one. */
 static uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
                              const uint16_t *in)
@@ -403,7 +403,7 @@ static bool write_control(uint8_t off, uint8_t count, const uint16_t *regs,
     return ask(&w, reply);
 }
 
-/* Whether the bench may arm is the coprocessor's answer, not the panel's:
+/* Whether the bench may arm is the IOmcu's answer, not the panel's:
  * while the link is in failsafe or the heartbeat is not trusted, ARM is
  * refused with its own reason, and nothing in the frame beside it lands. */
 TEST_CASE(arm_is_refused_with_not_armed_while_the_bench_may_not_arm)
@@ -466,7 +466,7 @@ TEST_CASE(a_pole_count_is_zero_or_even_and_within_range)
 }
 
 /* DATA, ACK (acknowledge) and NACK (negative acknowledge) are the
- * coprocessor's own vocabulary.  Receiving one means something is talking
+ * IOmcu's own vocabulary.  Receiving one means something is talking
  * that should be listening. */
 TEST_CASE(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice)
 {
@@ -482,7 +482,7 @@ TEST_CASE(the_coprocessor_refuses_to_be_spoken_to_in_its_own_voice)
 }
 
 /* Every request produces a reply, refusals included: silence on this link
- * already means the coprocessor is not there. */
+ * already means the IOmcu is not there. */
 TEST_CASE(every_request_is_answered)
 {
     fresh();
@@ -499,7 +499,7 @@ TEST_CASE(every_request_is_answered)
 }
 
 /*
- * The version the coprocessor publishes on its identity page.  check_docs.py
+ * The version the IOmcu publishes on its identity page.  check_docs.py
  * holds the numbers to the changelog; this holds the string to the numbers,
  * because they are two spellings of one fact and the string is the one a
  * person reads off a splash screen.
@@ -627,7 +627,7 @@ TEST_CASE(servo_win_extends_the_map_without_moving_it)
 
 /* Two flags join BENCH at the bits that were free, and none of the old
  * ones changes: a 4.6 panel reads the same voltage, current and validity
- * from a 4.7 coprocessor and ignores what it does not know. */
+ * from a 4.7 IOmcu and ignores what it does not know. */
 TEST_CASE(the_bench_flags_add_bits_5_and_6_and_move_none)
 {
     CHECK_EQ(LINK_BN_VOLTAGE_OK, 0x01u);
@@ -642,7 +642,7 @@ TEST_CASE(the_bench_flags_add_bits_5_and_6_and_move_none)
     CHECK_EQ(LINK_BN_ENERGY_DWH, 7);
 }
 
-/* The coprocessor's SENSE handler is the page's rules and nothing more. */
+/* The IOmcu's SENSE handler is the page's rules and nothing more. */
 static sense_page_t s_sense;
 static outputs_t    s_out;
 
@@ -754,8 +754,8 @@ TEST_CASE(the_sense_pages_are_served_and_refuse_whole)
 }
 
 /*
- * A 4.7 panel and a 4.6 coprocessor.  The link comes up and the bench arms
- * on the major alone; the 4.6 coprocessor has no SENSE page and says so
+ * A 4.7 panel and a 4.6 IOmcu.  The link comes up and the bench arms
+ * on the major alone; the 4.6 IOmcu has no SENSE page and says so
  * with BAD_PAGE, which is why the panel sends nothing there below minor 7.
  */
 TEST_CASE(a_4_6_coprocessor_links_and_arms_without_the_sense_pages)
@@ -788,8 +788,8 @@ TEST_CASE(a_4_6_coprocessor_links_and_arms_without_the_sense_pages)
 }
 
 /*
- * A 4.6 panel and a 4.7 coprocessor.  The panel never writes SENSE; the
- * coprocessor's identity and CONTROL answer as before, and the bench arms.
+ * A 4.6 panel and a 4.7 IOmcu.  The panel never writes SENSE; the
+ * IOmcu's identity and CONTROL answer as before, and the bench arms.
  */
 TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
 {
@@ -804,7 +804,7 @@ TEST_CASE(a_4_6_panel_links_and_arms_on_a_4_7_coprocessor)
     CHECK_EQ(g.control[LINK_CT_ARM], 1u);
 }
 
-/* The coprocessor's TONE handler is the page's rules and nothing more. */
+/* The IOmcu's TONE handler is the page's rules and nothing more. */
 static tone_page_t s_tone;
 
 static void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -813,7 +813,7 @@ static void servo_win_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     sense_win_read(&s_sense, off, n, out);
 }
 
-/* A 4.11 coprocessor: the 4.7 pages and SERVO_WIN, read only. */
+/* A 4.11 IOmcu: the 4.7 pages and SERVO_WIN, read only. */
 static const link_page_t k_pages_411[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, identity_read, NULL },
     { LINK_PAGE_CONTROL,  LINK_CT_COUNT, control_read,  control_write },
@@ -875,7 +875,7 @@ TEST_CASE(servo_win_is_served_read_only)
 }
 
 /*
- * A 4.11 panel and a 4.10 or older coprocessor.  The coprocessor has no
+ * A 4.11 panel and a 4.10 or older IOmcu.  The IOmcu has no
  * SERVO_WIN page and answers BAD_PAGE, which is why a panel sends nothing
  * there below minor 11; SENSE's register 31 reads 0, and SERVO_SENSE is
  * where it was.
@@ -1059,7 +1059,7 @@ TEST_CASE(the_kst_staged_check_tells_a_change_a_swap_and_a_length)
 }
 
 /*
- * A panel of 4.12 or later and a 4.11 coprocessor.  The coprocessor has no KST page and
+ * A panel of 4.12 or later and a 4.11 IOmcu.  The IOmcu has no KST page and
  * answers BAD_PAGE to a read and to a command, which is why a panel sends
  * nothing there below minor 12; SERVO_WIN is where it was.
  */
@@ -1081,7 +1081,7 @@ TEST_CASE(a_4_11_coprocessor_has_no_kst_page_and_says_so)
     CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
     CHECK(ask_read(LINK_PAGE_SERVO_WIN, 0, LINK_SW_COUNT, &r));
     CHECK_EQ(r.op, LINK_OP_DATA);
-    /* Nor a PROG page, as every coprocessor before 4.13. */
+    /* Nor a PROG page, as every IOmcu before 4.13. */
     CHECK(ask_read(LINK_PAGE_PROG, 0, LINK_PG_PORT0, &r));
     CHECK_EQ(r.op, LINK_OP_NACK);
     CHECK_EQ(r.regs[0], LINK_NACK_BAD_PAGE);
@@ -1166,7 +1166,7 @@ TEST_CASE(the_tone_page_is_served_in_frames_and_refuses_whole)
 }
 
 /*
- * A 4.8 panel and a 4.7 coprocessor.  The coprocessor has no TONE page and
+ * A 4.8 panel and a 4.7 IOmcu.  The IOmcu has no TONE page and
  * answers BAD_PAGE, which is why the panel sends nothing there below
  * minor 8.
  */
@@ -1187,9 +1187,9 @@ TEST_CASE(a_4_7_coprocessor_has_no_tone_page_and_says_so)
 }
 
 /*
- * A 4.7 panel and a 4.8 coprocessor.  The panel never reads or writes
+ * A 4.7 panel and a 4.8 IOmcu.  The panel never reads or writes
  * TONE; the identity and CONTROL answer as before, the bench arms, and a
- * tap kept in the coprocessor's flash is still there for a 4.8 panel.
+ * tap kept in the IOmcu's flash is still there for a 4.8 panel.
  */
 TEST_CASE(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor)
 {
@@ -1566,7 +1566,7 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
 /*
  * Frozen across majors (link_pages.h): the identity registers a panel reads
  * before it compares majors, and the two update pages, keep their numbers
- * and their layout.  A change here is a coprocessor no later panel can move
+ * and their layout.  A change here is an IOmcu no later panel can move
  * to its own image over the link.
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)

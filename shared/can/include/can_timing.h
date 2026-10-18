@@ -10,7 +10,7 @@
  *
  * The arithmetic is here, in pure C with tests, rather than in a table of
  * register values.  Two controllers use it: the panel's TWAI (Two-Wire
- * Automotive Interface, the ESP32-S3's CAN controller) and the coprocessor's
+ * Automotive Interface, the ESP32-S3's CAN controller) and the IOmcu's
  * XL2515.  They have different clocks and segment limits and the same
  * arithmetic.
  *
@@ -73,10 +73,10 @@ typedef struct {
 /**
  * The sample point this link uses, at both ends.
  *
- * The coprocessor's XL2515 has one way to make 1 Mbit/s from a 16 MHz
+ * The IOmcu's XL2515 has one way to make 1 Mbit/s from a 16 MHz
  * crystal: the smallest divisor and 8 quanta per bit, the fewest a bit may
  * have, which puts the sample point at 75%.  The panel has slack and matches
- * the coprocessor, so both ends sample the bit in the same place.
+ * the IOmcu, so both ends sample the bit in the same place.
  */
 #define CAN_SAMPLE_POINT_LINK 750
 
@@ -95,7 +95,7 @@ uint32_t can_timing_max_bitrate(const can_timing_limits_t *lim);
 
 /* ------------------------------------------------- the two controllers */
 
-/** The coprocessor's XL2515 (MCP2515-compatible), given its crystal. */
+/** The IOmcu's XL2515 (MCP2515-compatible), given its crystal. */
 void can_timing_limits_mcp2515(can_timing_limits_t *out, uint32_t crystal_hz);
 
 /** The panel's TWAI, off the 80 MHz APB (advanced peripheral bus) clock. */

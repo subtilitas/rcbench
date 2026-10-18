@@ -52,7 +52,7 @@ export const MINUS = 'black';
 
 /**
  * Nets of supply plus: battery, PD supply, servo supply, the 2 shunt outputs, 3.3 V and VBUS of the
- * coprocessor, the V pin of a strip of the Osoyoo breakout board and the plus of its DC input.
+ * IOmcu, the V pin of a strip of the Osoyoo breakout board and the plus of its DC input.
  */
 export const PLUS_NETS: ReadonlySet<string> = new Set([
   'batt_pos', 'pd_in', 'pd_out', 'servo_v', 'servo_shunt', 'esc_shunt', '3v3', 'vbus', 'strip_v', 'osoyoo_vin',
@@ -132,7 +132,7 @@ export type EndPoint = { file: string; pin: string };
 
 /**
  * Anchor points of a wire end in every drawing of its part. An end on `pad.N` or
- * `can.X` lies on the coprocessor. A drawing with a `catalogueMap` leads from the
+ * `can.X` lies on the IOmcu. A drawing with a `catalogueMap` leads from the
  * catalogue pin to the pins of the board; a pin mapped to null has no wire point.
  */
 export function endPoints(end: string, anchors: Anchors): EndPoint[] {

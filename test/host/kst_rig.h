@@ -1,6 +1,6 @@
 /*
  * A bench for the overlay that programs KST and Chaservo servos (kst_panel.h): the
- * simulated servo of kst_sim.h, the coprocessor's programming port, link
+ * simulated servo of kst_sim.h, the IOmcu's programming port, link
  * dispatch and the panel's link module, with rig_frame() as the panel's
  * control task and its card.
  *
@@ -139,7 +139,7 @@ static const link_page_t k_rig_pages[] = {
     { LINK_PAGE_KST, LINK_KS_COUNT, rig_page_read, rig_page_write },
 };
 
-/* The coprocessor starts: the port forgets, the servo stays as it is. */
+/* The IOmcu starts: the port forgets, the servo stays as it is. */
 static inline void rig_port_fresh(void)
 {
     kst_port_hw_t hw;
@@ -231,7 +231,7 @@ static inline void rig_feed_now(kst_prog_feed_t *f)
     f->set_mv = f->supply_read ? g_rig.sup_mv : 0u;
 }
 
-/* 1 ms: the coprocessor, one exchange, the control task and the card. */
+/* 1 ms: the IOmcu, one exchange, the control task and the card. */
 static inline void rig_frame(void)
 {
     kst_prog_cmd_t cmd;
@@ -316,7 +316,7 @@ static inline bool rig_settle(void)
     return rig_at_rest();
 }
 
-/* A coprocessor answers with protocol minor @p minor. */
+/* An IOmcu answers with protocol minor @p minor. */
 static inline bool rig_link_up(uint16_t minor)
 {
     kst_link_came_up(&g_rig.link, minor);

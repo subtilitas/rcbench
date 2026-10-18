@@ -1,7 +1,7 @@
 /*
  * The synthetic console log tools/sense_trace.py is tested on: the servo
  * model of servo_sim.h on the modelled INA3221 of fake_ina.h, read by the
- * coprocessor's sensor service and written out by sense_trace.c as the
+ * IOmcu's sensor service and written out by sense_trace.c as the
  * SENSE_TRACE build writes it, one core 1 tick and one core 0 pass a
  * millisecond.
  *
@@ -17,14 +17,14 @@
  * A changed pulse reaches the servo at the next 20 ms frame, which is the
  * time its trigger line carries.  The servo draws servo_sim's travel
  * current until its horn arrives, 1.2 µs of pulse a millisecond; the rail
- * sags 0.4 V an ampere under 6.0 V.  Two lines of the coprocessor's other
+ * sags 0.4 V an ampere under 6.0 V.  Two lines of the IOmcu's other
  * console output stand between the trace's lines.
  *
  * With a second argument, a servo test CSV file as the panel writes one
  * with the output encoder on: the header, and for each move a row with
  * `travel angle (ms)`, the time from the frame to the horn coming within
  * 12 µs of pulse of its end, on a row 100 ms to 150 ms after it and a
- * clock 12.345 s behind the coprocessor's.
+ * clock 12.345 s behind the IOmcu's.
  *
  *   sense_trace_gen LOG [CSV]
  *

@@ -463,7 +463,7 @@ TEST_CASE(save_on_the_warning_asks_and_leaves)
 
 /*
  * DISCARD puts the PD mini's pins back by the observer, the path the
- * panel sends a pin to the coprocessor by, and the language back into the
+ * panel sends a pin to the IOmcu by, and the language back into the
  * interface, as edits by hand would; then it leaves for the menu.
  */
 TEST_CASE(discard_on_the_warning_reverts_by_the_edit_path_and_leaves)

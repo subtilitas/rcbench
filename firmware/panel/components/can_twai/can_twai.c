@@ -19,7 +19,7 @@
  * DLC 8 with eight zero bytes: the legacy twai_transmit() hands the HAL
  * (hardware abstraction layer) a buffer length of 8, and the HAL takes the
  * length from the buffer when the DLC is 0.  Every link read is DLC 0, the
- * coprocessor refuses a read that carries data, and the panel never links.
+ * IOmcu refuses a read that carries data, and the panel never links.
  * v5.5.2 passes the DLC through.
  */
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 5, 0) \
@@ -173,8 +173,8 @@ bool can_twai_errors(uint32_t *tx_err, uint32_t *rx_err, uint32_t *bus_err,
  *
  * A CAN transmitter that gets no acknowledgement retransmits on its own and
  * adds 8 to its error counter each time; at 1 Mbit/s a frame nobody answers
- * reaches the bus-off threshold of 256 in about four milliseconds.  So a
- * coprocessor that is not on the bus yet, has reset, or has stopped
+ * reaches the bus-off threshold of 256 in about four milliseconds.  So an
+ * IOmcu that is not on the bus yet, has reset, or has stopped
  * answering for a moment leaves the panel's controller in TWAI_STATE_BUS_OFF
  * -- and there it stays.  Recovery is not automatic on this peripheral: every
  * twai_transmit() returns ESP_ERR_INVALID_STATE, the link never comes back,

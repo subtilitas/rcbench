@@ -110,7 +110,7 @@ bool touch_inject_read(touch_point_t *pts, int *count, uint32_t now_ms)
      * glass alone decides touch age, so the heartbeat comes back.  Touch
      * read as dead 300 ms before this at the latest (200 ms to lose touch in
      * main.c, then ARMING_TOUCH_DEAD_MS), which counted a stop and disarmed
-     * (shared/safety/arming.c:259-274).  The coprocessor latched its arm
+     * (shared/safety/arming.c:259-274).  The IOmcu latched its arm
      * when the heartbeat stopped (shared/safety/safety_gate.c:43-46), and
      * only a new ARM written by the panel releases it; nothing here writes
      * one.

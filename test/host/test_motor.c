@@ -195,7 +195,7 @@ TEST_CASE(a_press_that_disarmed_the_bench_does_not_then_arm_it)
 {
     /*
      * The bench disarms under a finger that is still down: a failsafe, a
-     * STOP, or the coprocessor dropping the outputs. tick() asks only
+     * STOP, or the IOmcu dropping the outputs. tick() asks only
      * whether a press is held, so a press left standing would start its two
      * seconds the moment armed went false and arm the bench again -- from
      * the very contact the operator made to stop it.
@@ -619,7 +619,7 @@ TEST_CASE(the_rated_kv_prefers_the_esc_over_the_entered_value)
  *
  * A press used to command the value under it, so touching the right-hand end
  * of the track asked for full travel in one contact.  Nothing bounds how fast
- * the motor follows that: a throttle channel bound on the coprocessor carries
+ * the motor follows that: a throttle channel bound on the IOmcu carries
  * no slew, so the command went to 100 and the next pass rendered it, with
  * nothing to confirm.
  */

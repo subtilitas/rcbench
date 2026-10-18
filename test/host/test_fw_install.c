@@ -277,7 +277,7 @@ TEST_CASE(the_gate_names_the_first_reason_that_holds)
     CHECK_EQ(fw_gate(false, false, false, true, true), FW_GATE_DRAWING);
 }
 
-/* The coprocessor's update and the panel's install exclude each other:
+/* The IOmcu's update and the panel's install exclude each other:
  * one running closes the other's gate, in both directions. */
 TEST_CASE(a_coprocessor_update_and_a_panel_install_exclude_each_other)
 {
@@ -285,7 +285,7 @@ TEST_CASE(a_coprocessor_update_and_a_panel_install_exclude_each_other)
     CHECK(!fw_coproc_may_start(false, false));   /* radio up or going down */
     CHECK(!fw_coproc_may_start(true, true));     /* an install under way   */
     CHECK(!fw_coproc_may_start(false, true));
-    /* and a coprocessor update closes the install's gate whatever else
+    /* and an IOmcu update closes the install's gate whatever else
      * holds open */
     CHECK(fw_gate(false, false, false, false, true) != FW_GATE_OPEN);
 }

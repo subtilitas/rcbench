@@ -77,8 +77,8 @@ Ist der Phasenabgriff unter SETUP, ANSCHLÜSSE eingeschaltet, fügt die Seite ei
 |---|---|
 | `LÄUFT` | die Erfassung läuft |
 | `ÜBERLAUF` | sie läuft, und die Erfassung ist seit dem Einschalten des Abgriffs übergelaufen |
-| `WARTET` | kein Link, oder in den letzten 500 ms keine frische Antwort der Tone-Page des Koprozessors |
-| `KEINE TONE-PAGE` | der Koprozessor spricht ein Protokoll älter als 4.8 |
+| `WARTET` | kein Link, oder in den letzten 500 ms keine frische Antwort der Tone-Page des IOmcu |
+| `KEINE TONE-PAGE` | der IOmcu spricht ein Protokoll älter als 4.8 |
 | `PIN BELEGT` | der Pin des Abgriffs ist anderweitig gebunden |
 | `LÄUFT NICHT` | eingeschaltet, und die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
 

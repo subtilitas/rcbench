@@ -2,7 +2,7 @@
 
 <sub>**English** · [Deutsch](DShot-de.md)</sub>
 
-What the coprocessor puts on an output pin, and what comes back. Four drivers:
+What the IOmcu puts on an output pin, and what comes back. Four drivers:
 servo PWM (pulse-width modulation), PPM (pulse-position modulation), DShot, and
 bidirectional DShot.
 
@@ -12,12 +12,12 @@ This page is about the wire.
 
 ## Which board
 
-More than one coprocessor will exist. The one the bring-up runs on is a
+More than one IOmcu will exist. The one the bring-up runs on is a
 Pico-form-factor module wired by hand; a later board carries its outputs on
 pins that are soldered rather than chosen. They do not have the same pins, and
 a pin index on one means a different pin -- or no pin -- on the other.
 
-The coprocessor therefore says which board it is, in the hardware register of
+The IOmcu therefore says which board it is, in the hardware register of
 the [identity page](Link.md#page-map), and the panel offers that board's pins
 and no other. Changing board clears any selection, because a pin index on one
 board means a different pin on another.
@@ -28,8 +28,8 @@ change under a running bench.
 
 A board the panel has never heard of describes its own pins, on the
 [catalogue page](Link.md#page-map): which GPIOs it brings out, the pad number
-printed beside each, and what holds the ones an output may not have. So a
-coprocessor newer than the panel is usable rather than blank.
+printed beside each, and what holds the ones an output may not have. So an
+IOmcu newer than the panel is usable rather than blank.
 
 A board that also serves the [shape page](Link.md#page-map) says where its
 pads are -- the outline, the pitch, and which corner pad 1 sits at -- so the
@@ -39,14 +39,14 @@ picture drawn from a guessed shape would point at the wrong pad with the same
 confidence as the right one, which on a screen whose job is "find this pad on
 the board in front of you" is the failure worth avoiding.
 
-What a board cannot do is make one of its pins safe. The coprocessor reserves
+What a board cannot do is make one of its pins safe. The IOmcu reserves
 its own set at its own end whatever the catalogue page says, so a catalogue
 that is wrong costs a pin rather than the safety line. A board that neither
 describes itself nor is known offers nothing: guessing a pin map is how an
 output ends up on the safety line.
 
 A board whose outputs are soldered is shown rather than offered. The
-coprocessor configures itself and the panel displays what it reads back
+IOmcu configures itself and the panel displays what it reads back
 without letting it be edited, because a screen that re-bound pins which are
 not on connectors would be offering a choice the board cannot honour.
 
@@ -56,7 +56,7 @@ On a board that is wired by hand, no output pin is fixed in the firmware. A slot
 page](Link.md#page-map) carries its pin number, so the pin is a setting rather
 than a build.
 
-The coprocessor refuses a pin it must not drive: GP3 (the safety heartbeat),
+The IOmcu refuses a pin it must not drive: GP3 (the safety heartbeat),
 GP8 to GP12 (the CAN (Controller Area Network) controller's SPI (Serial
 Peripheral Interface) and interrupt), the four pins the bring-up module uses
 and does not bring out — GP23 (the MODE pin of the module's power converter),
@@ -130,7 +130,7 @@ the second pin of such a pair is refused rather than bound: binding it would
 mux it onto the first pin's pulse width, and one lead would follow the other
 with nothing on any screen to say so.
 
-Six of those pairs are both free on the header the coprocessor offers: GP0 and
+Six of those pairs are both free on the header the IOmcu offers: GP0 and
 GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22.
 Either pin of a pair may be used; the two together may not.
 
@@ -216,7 +216,7 @@ set up for one protocol ignores the other rather than acting on it. It is a
 separate driver number on the [OUTPUTS page](Link.md#page-map), not a flag: the
 two are different wires, not one wire with a setting.
 
-After each frame the coprocessor releases the line and the ESC answers on it,
+After each frame the IOmcu releases the line and the ESC answers on it,
 about 30 µs later, with 21 bits at five quarters of the DShot rate. The
 turnaround happens inside the PIO block — the transmitter releases the pin and
 raises a flag, and the receiver starts on that flag — because 30 µs is not a
@@ -259,7 +259,7 @@ nothing else in the driver would notice losing it.
 
 ### The reply is sampled, not timed
 
-The coprocessor samples the line at five times the reply's bit rate and decodes
+The IOmcu samples the line at five times the reply's bit rate and decodes
 in software. The ESC's bit rate comes from its own crystal, a percent or two
 from the bench's, and 21 bits is long enough for that to walk a fixed sample
 point off the end of a bit — so the decoder resets its phase at every
@@ -273,19 +273,19 @@ a bit.
 An ESC reports electrical periods and has no idea what it is bolted to, so
 mechanical rpm (revolutions per minute) needs the motor's magnet count. That is
 the one number the wire does not carry. The panel sends it from the `Motor
-poles` setting when a coprocessor starts answering, again whenever the setting
+poles` setting when an IOmcu starts answering, again whenever the setting
 changes, and again before the write that switches to ARMED if a change is still owed, on
 the [CONTROL page](Link.md#page-map). A write nobody answers stays owed and
-goes out again at the next 50 ms poll; one the coprocessor refuses is not
+goes out again at the next 50 ms poll; one the IOmcu refuses is not
 retried, and waits for the next edit or link-up edge.
 
-Until it arrives the coprocessor reports no speed at all. A speed derived from a
+Until it arrives the IOmcu reports no speed at all. A speed derived from a
 guessed pole count is a plausible number with nothing to mark it as wrong, which
 is worse than an empty field.
 
 That covers zero only. Any even count between 2 and 42 is accepted and sets the
 rpm valid bit -- an odd one is refused, because a typo that reached the far end
-would put a plausible wrong speed on the screen -- so a coprocessor holding an
+would put a plausible wrong speed on the screen -- so an IOmcu holding an
 out-of-date count reports the actual speed times the motor's poles over the
 count it holds. Fitting a 12-pole motor to a bench still holding 14 reads
 14.3 % low; leaving 12 in place for a 14-pole motor reads 16.7 % high. The
@@ -355,7 +355,7 @@ that normalises its exponent never sends. An ESC that does not normalise is
 the case this cannot survive, and no such ESC has been tried.
 
 Temperature, voltage and current reach the bench numbers from here and from
-nowhere else: there is no measurement front end on the coprocessor. Each keeps
+nowhere else: there is no measurement front end on the IOmcu. Each keeps
 its own staleness window of 2000 ms, against 200 ms for speed, because the
 extended frames are interleaved a few a second while a period comes back on
 every frame. Power is the product of voltage and current, and stays empty

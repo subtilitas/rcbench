@@ -1,17 +1,17 @@
 /*
  * The safety heartbeat: the panel's signal that it is running, and the
- * coprocessor's judgement of whether to believe it.
+ * IOmcu's judgement of whether to believe it.
  *
  * A level cannot carry this.  A GPIO (general-purpose input/output) held
  * high is also what a crashed processor, a shorted pin and an unpowered
  * board produce.  A running panel is one whose output changes, so the safety
- * line carries edges and the coprocessor's outputs sit behind a
+ * line carries edges and the IOmcu's outputs sit behind a
  * retriggerable monostable that stays energised only while edges keep
  * arriving.
  *
  * The monostable is a backstop, not the mechanism.  It cannot tell a
  * heartbeat from noise: anything that edges fast enough retriggers it, and a
- * shorted or ringing line edges fast.  So the coprocessor checks the period
+ * shorted or ringing line edges fast.  So the IOmcu checks the period
  * in firmware too.  Both ends live in one file because they share the
  * numbers.
  *
@@ -102,7 +102,7 @@ void heartbeat_gen_init(heartbeat_gen_t *g);
  */
 bool heartbeat_gen_step(heartbeat_gen_t *g, uint32_t now_ms, bool alive);
 
-/* ------------------------------------------------ the coprocessor's end */
+/* ------------------------------------------------ the IOmcu's end */
 
 typedef struct {
     uint32_t last_edge_ms;

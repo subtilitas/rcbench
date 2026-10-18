@@ -18,9 +18,9 @@ Die Erinnerung meldet, dass ein neueres Release der Panel-Firmware auf GitHub li
 
 ## Wann die Suche läuft
 
-Mit eingeschalteter Erinnerung und einem gespeicherten Heimnetz sucht das Panel einmal nach jedem Start. Die Suche wartet, bis der Splash vorbei ist, der Prüfstand SAFE, der Netzteilausgang aus, kein Log-Lauf offen, WI-FI geschlossen und kein Update des Koprozessors angeboten oder im Gang ist. Findet sie 10 min nach dem Start keinen solchen Moment, läuft sie bei diesem Start nicht.
+Mit eingeschalteter Erinnerung und einem gespeicherten Heimnetz sucht das Panel einmal nach jedem Start. Die Suche wartet, bis der Splash vorbei ist, der Prüfstand SAFE, der Netzteilausgang aus, kein Log-Lauf offen, WI-FI geschlossen und kein Update des IOmcu angeboten oder im Gang ist. Findet sie 10 min nach dem Start keinen solchen Moment, läuft sie bei diesem Start nicht.
 
-Die Erinnerung öffnet sich nicht, solange der Prüfstand ARMED ist oder ein Schalten auf ARMED wartet, solange der Netzteilausgang an ist und solange die Frage oder der Fortschritt des Koprozessor-Updates zu sehen ist. Sie öffnet sich, sobald diese vorbei sind und das Menü zu sehen ist.
+Die Erinnerung öffnet sich nicht, solange der Prüfstand ARMED ist oder ein Schalten auf ARMED wartet, solange der Netzteilausgang an ist und solange die Frage oder der Fortschritt des IOmcu-Updates zu sehen ist. Sie öffnet sich, sobald diese vorbei sind und das Menü zu sehen ist.
 
 Findet die Suche kein neueres Release oder scheitert sie, zeigt sie nichts; ihr Ergebnis steht unter [Updates](updates.md).
 

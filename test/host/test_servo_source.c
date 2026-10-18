@@ -1,7 +1,7 @@
 /*
  * Which meter measures the servo rail (servo_source.h): the conditions on
  * their own, against facts written by hand, and through the whole chain of
- * sense_chain.h -- the modelled INA3221, the coprocessor's schedule and
+ * sense_chain.h -- the modelled INA3221, the IOmcu's schedule and
  * pages, and the panel's sense_link.
  *
  * Under test: the INA3221 the meter only while every condition holds and
@@ -11,7 +11,7 @@
  * number fresh at 199 ms and not at 200 and 201 ms; the reset count moving
  * between two reads with the part online in both, and across 255 to 0; a
  * set-up taken starting the count again without a reset said; the model
- * while no coprocessor answers; a coprocessor older than 4.11 never the
+ * while no IOmcu answers; an IOmcu older than 4.11 never the
  * INA3221's, said once per link and once per switching on, and not said
  * for one without SENSE; the events one at a time, 5000 ms apart, put back
  * when the band never showed them; every timer across the 2^32 ms tick
@@ -92,7 +92,7 @@ TEST_CASE(a_change_of_meter_is_counted_once)
     servo_source_init(&src);
     CHECK_EQ(servo_source_changes(&src), 0u);
     CHECK_EQ(servo_source_changes(NULL), 0u);
-    /* No coprocessor: the model stays. */
+    /* No IOmcu: the model stays. */
     (void)servo_source_step(&src, 0u, false, 11u, NULL);
     (void)servo_source_step(&src, 50u, false, 11u, NULL);
     CHECK_EQ(servo_source_changes(&src), 0u);
@@ -362,7 +362,7 @@ TEST_CASE(a_read_is_fresh_for_199_ms_and_not_for_200)
 
 /* The count moves once: one step on the PD mini, one event.  It moves
  * again, across 255 to 0: again.  A set-up taken starts the count at 0 at
- * the coprocessor, which is no reset. */
+ * the IOmcu, which is no reset. */
 TEST_CASE(a_reset_count_that_moves_is_said_once_each_time)
 {
     settled(20000u);
@@ -419,7 +419,7 @@ TEST_CASE(a_reset_count_that_moves_is_said_once_each_time)
     CHECK_EQ(servo_source_event(&src, 80000u), 0u);
 }
 
-/* ------------------------------------------------ the older coprocessor */
+/* ------------------------------------------------ the older IOmcu */
 
 TEST_CASE(an_older_coprocessor_is_said_once_per_link_and_per_switching_on)
 {
@@ -468,7 +468,7 @@ TEST_CASE(an_older_coprocessor_is_said_once_per_link_and_per_switching_on)
         CHECK_EQ(servo_source_event(&src, 1000u),
                  (minor < 11u) ? SERVO_SOURCE_EV_OLD : 0u);
     }
-    /* A coprocessor without SENSE: sense_link says that one. */
+    /* An IOmcu without SENSE: sense_link says that one. */
     servo_source_init(&src);
     m = good(1000u);
     m.page = false;
@@ -483,7 +483,7 @@ TEST_CASE(an_older_coprocessor_is_said_once_per_link_and_per_switching_on)
     CHECK_EQ(servo_source_event(&src, 1000u), 0u);
 }
 
-/* One event a turn, the older coprocessor first, the next 5000 ms later
+/* One event a turn, the older IOmcu first, the next 5000 ms later
  * and not 4999 ms; across the tick wrap.  One the band never showed goes
  * back, and not once the link has gone. */
 TEST_CASE(events_are_handed_out_one_at_a_time_5000_ms_apart)
@@ -653,7 +653,7 @@ TEST_CASE(a_stuck_bus_drops_to_the_pd_mini)
 }
 
 /* The part resets itself.  Polled throughout, the panel sees it offline
- * for 1000 ms.  With the panel's loop held for 1300 ms the coprocessor
+ * for 1000 ms.  With the panel's loop held for 1300 ms the IOmcu
  * finds the reset, repairs it and has the part online again before the
  * next read: only the count shows it.  Either way the PD mini, the reset
  * said once, and the INA3221 again after 1000 ms of good readings. */
@@ -769,7 +769,7 @@ TEST_CASE(reads_that_age_past_200_ms_drop_to_the_pd_mini)
     CHECK_EQ(dropped, 2u);
 }
 
-/* The coprocessor's schedule stops: the window number stands while every
+/* The IOmcu's schedule stops: the window number stands while every
  * read is answered.  The PD mini from 200 ms on, and still 2^32 ms later,
  * when the tick has come round to within 200 ms of the last move. */
 TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
@@ -810,7 +810,7 @@ TEST_CASE(a_window_number_that_stands_stays_stale_across_the_tick_wrap)
     CHECK(n >= 18u && n <= 22u);
 }
 
-/* A 4.10 coprocessor: the PD mini is read, nothing is sent to SERVO_WIN,
+/* A 4.10 IOmcu: the PD mini is read, nothing is sent to SERVO_WIN,
  * and the operator is told once.  Again after a link lost and back. */
 TEST_CASE(a_4_10_coprocessor_is_never_the_ina3221s_and_is_said_once)
 {

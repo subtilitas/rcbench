@@ -6,7 +6,7 @@ order: 110
 
 # Bus fault
 
-The bus-fault screen says why the panel and the coprocessor do not talk over the CAN (Controller Area Network) bus. It opens on its own, in two cases: the CAN self-test at start fails, or a link that was up has been gone for 4 s. It takes the whole screen: no band and no STOP. The bench cannot switch to ARMED behind it.
+The bus-fault screen says why the panel and the IOmcu do not talk over the CAN (Controller Area Network) bus. It opens on its own, in two cases: the CAN self-test at start fails, or a link that was up has been gone for 4 s. It takes the whole screen: no band and no STOP. The bench cannot switch to ARMED behind it.
 
 ## The self-test at start
 

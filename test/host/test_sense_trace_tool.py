@@ -14,7 +14,7 @@ and arrived at every setting, each arrival at the model's own, the
 difference to the horn's travel time and its median; the CSV files; a log
 with CR LF and with LF line ends; a log cut off inside a trace, with a
 sample line missing, with a trace starting inside another, with records
-the coprocessor dropped, with no trace, with another format version and
+the IOmcu dropped, with no trace, with another format version and
 with a trace that has no shunt; times across the 2^32 wrap of the 0.1 ms
 count; clipped samples and their mark in the CSV file; edge lines with
 the command line nearest to each, a command line with no edge line and an
@@ -1509,7 +1509,7 @@ def a_restart_of_the_coprocessor_is_a_clock_of_its_own() -> None:
     check(r.returncode == 0, f"exit {r.returncode}: {r.stdout[:400]}")
     check("6 travel time(s), 6 paired with a move" in r.stdout,
           r.stdout.splitlines()[1])
-    check("the coprocessor restarted 1 time(s) in the log" in r.stdout,
+    check("the IOmcu restarted 1 time(s) in the log" in r.stdout,
           "said")
     total = setting_rows(r.stdout, "all traces, 6 move(s):")
     check(total[(1, "0.05")][:3] == ["6/6", "6/6", "+23.0"],
@@ -1879,7 +1879,7 @@ def a_line_that_is_no_line_of_a_trace_is_damage() -> None:
     r = tool(str(work("long.log", with_line(fixture_log(), move, "x" * 90))),
              "--no-csv")
     check(f"line {move + 1}: '{'x' * 40}...'" in r.stdout, r.stdout[-900:])
-    # The coprocessor's own console line inside a trace is none of the
+    # The IOmcu's own console line inside a trace is none of the
     # trace's and no damage.
     r = tool(str(work("console.log", with_line(
         synthetic(1000, [(0, 1900)]), 30, "rcbench-iomcu: CAN up"))),
@@ -1965,7 +1965,7 @@ def a_trace_has_one_set_up_line_before_its_records() -> None:
           f"late: exit {r.returncode}")
     check("no move of this trace is replayed" in r.stdout, "not replayed")
     # Records missing before a set-up record at the trace's start: the
-    # coprocessor writes their $L line before the $H line.  The trace is
+    # IOmcu writes their $L line before the $H line.  The trace is
     # whole, and the records are missing at the start of its samples.
     for n_lost in (1, 2):
         ahead = counted([lines[0]] + ["$L n=3"] * n_lost + lines[1:],
@@ -2056,7 +2056,7 @@ def a_state_line_that_changes_nothing_is_damage() -> None:
         text, 400, "$S on=0 rst=0", "$S on=0 rst=0"))), "--no-csv")
     check(r.returncode == 1 and "$S line(s) that change nothing" in r.stdout,
           f"exit {r.returncode}")
-    # Records missing between the two: the coprocessor compares a state
+    # Records missing between the two: the IOmcu compares a state
     # record with the last one it read, so the second line is none of its.
     lines = text.splitlines()
     gap = counted(lines[:400] + ["$S on=0 rst=0", "$L n=2", "$S on=0 rst=0"]

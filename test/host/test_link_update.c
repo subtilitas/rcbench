@@ -1,12 +1,12 @@
 /*
- * The coprocessor firmware update, both ends over the real link layer.
+ * The IOmcu firmware update, both ends over the real link layer.
  *
  * The panel's engine (link_update_host) talks through a link_port_t to a
- * simulated coprocessor: the real link_dev dispatch and link_update_dev
+ * simulated IOmcu: the real link_dev dispatch and link_update_dev
  * behind CAN (Controller Area Network) frames encoded and decoded by
  * link_can, a NOR flash of two slots, and a model of the boot ROM's A/B
  * choice with its TBYB (try before you buy) watchdog.  Frames can be lost,
- * corrupted or met by a coprocessor that restarts, and the flash can fail.
+ * corrupted or met by an IOmcu that restarts, and the flash can fail.
  *
  * What is under test is what a bench sees afterwards: which image runs,
  * whether it is bought, and that no failure leaves a slot the boot ROM
@@ -37,7 +37,7 @@
 #define SLOT_SMALL    (16u * SECTOR)
 /* The slot of firmware/iomcu/partitions.json: 2036 KiB. */
 #define SLOT_FULL     (2036u * 1024u)
-/* The v0.18.0 coprocessor image, in bytes. */
+/* The v0.18.0 IOmcu image, in bytes. */
 #define IMAGE_V018    184872u
 
 #define MARKER_START  0xffffded3u
@@ -117,7 +117,7 @@ static uint32_t now_ms(void)
 
 static uint8_t g_flash[2][SLOT_FULL];
 
-/* -------------------------------------------------------- the coprocessor */
+/* -------------------------------------------------------- the IOmcu */
 
 /* RP2350 boot ROM: the TBYB watchdog, 16.7 s (datasheet 5.1.17). */
 #define TBYB_MS       16700u
@@ -184,7 +184,7 @@ static struct {
 
 static void cp_boot_now(void);
 
-/* One pass of the coprocessor's main loop. */
+/* One pass of the IOmcu's main loop. */
 static void cp_pass(void)
 {
     if (!cp.up) {
@@ -357,7 +357,7 @@ static const link_page_t k_pages_new[] = {
     { LINK_PAGE_UPDATE_CTL, LINK_UPD_COUNT, rd_ctl, wr_ctl },
     { LINK_PAGE_UPDATE_DATA, LINK_UPD_DATA_COUNT, rd_data, wr_data },
 };
-/* A coprocessor of 4.21 or older: no update pages. */
+/* An IOmcu of 4.21 or older: no update pages. */
 static const link_page_t k_pages_old[] = {
     { LINK_PAGE_IDENTITY, LINK_ID_COUNT, rd_identity, NULL },
     { LINK_PAGE_CONTROL, LINK_CT_COUNT, rd_control, wr_control },
@@ -420,7 +420,7 @@ static void cp_boot_now(void)
     memset(cp.control, 0, sizeof(cp.control));
 }
 
-/* A dead coprocessor's watchdog: the boot ROM restarts it. */
+/* A dead IOmcu's watchdog: the boot ROM restarts it. */
 static void dead_watchdog(void)
 {
     if (!cp.up && cp.boot_at_us == UINT64_MAX && cp.trial
@@ -434,7 +434,7 @@ static void dead_watchdog(void)
 
 /*
  * One exchange of a kind, in one phase of the panel's engine, made to go
- * wrong: the request lost, the reply lost, a refusal in the coprocessor's
+ * wrong: the request lost, the reply lost, a refusal in the IOmcu's
  * place, a register of the reply changed, the gate shut or the main loop
  * stalled from it on.
  */
@@ -583,7 +583,7 @@ static bool port_exchange(void *ctx, link_host_t *h, const link_msg_t *req,
         }
     }
     if (!answered) {
-        /* The panel waits out its timeout, the coprocessor runs on. */
+        /* The panel waits out its timeout, the IOmcu runs on. */
         link_host_abandon(h);
         advance_us((uint64_t)LINK_HOST_TIMEOUT_MS * 1000u);
         dead_watchdog();
@@ -602,10 +602,10 @@ static const link_port_t k_port = { port_exchange, port_now, NULL, NULL };
 
 /* ------------------------------------------------------------- the bench */
 
-static uint8_t g_old[SLOT_FULL];   /* what the coprocessor runs */
+static uint8_t g_old[SLOT_FULL];   /* what the IOmcu runs */
 static uint8_t g_new[SLOT_FULL];   /* what the panel carries     */
 
-/* A coprocessor of @p slot_bytes slots, running @p old_len bytes of g_old
+/* An IOmcu of @p slot_bytes slots, running @p old_len bytes of g_old
  * from slot A, bought; the clock at @p start_ms. */
 static void bench(uint32_t slot_bytes, uint32_t old_len, uint32_t start_ms)
 {
@@ -1202,7 +1202,7 @@ TEST_CASE(a_block_that_never_passes_its_crc_ends_the_update)
 }
 
 /* The acknowledgement of a COMMIT lost: the panel asks where it stands and
- * goes on from the block the coprocessor expects. */
+ * goes on from the block the IOmcu expects. */
 TEST_CASE(a_lost_acknowledgement_resumes_without_a_restart)
 {
     for (long drop = 3; drop < 40; drop += 9) {
@@ -1284,7 +1284,7 @@ static void drop_link_at_block(const link_uph_t *u)
 
 TEST_CASE(a_link_drop_mid_transfer)
 {
-    /* Shorter than the coprocessor's 5 s: the session goes on. */
+    /* Shorter than the IOmcu's 5 s: the session goes on. */
     bench(SLOT_SMALL, 30000u, 0u);
     const uint32_t len = 30000u;
     make_image(g_new, len, 2u, 19u, 0u, 0u);
@@ -1297,7 +1297,7 @@ TEST_CASE(a_link_drop_mid_transfer)
     CHECK_EQ(u.restarts, 0u);
     check_runs_new(len);
 
-    /* Longer than the panel's 4 s: the panel gives up, the coprocessor's
+    /* Longer than the panel's 4 s: the panel gives up, the IOmcu's
      * session ends at 5 s, and the next update starts from block 0. */
     bench(SLOT_SMALL, 30000u, 0u);
     make_image(g_new, len, 2u, 19u, 0u, 0u);
@@ -1513,7 +1513,7 @@ static bool arm_taken(void)
     return ok;
 }
 
-/* An update stepped until the coprocessor's session is in @p state, then
+/* An update stepped until the IOmcu's session is in @p state, then
  * left: the panel that ran it restarted. */
 static bool leave_session_in(uint8_t state, uint32_t len)
 {
@@ -1536,7 +1536,7 @@ static bool leave_session_in(uint8_t state, uint32_t len)
 
 /*
  * A panel that restarts within LINK_UPD_SILENCE_MS of a transfer finds the
- * coprocessor's session from before, with its own ordinary poll running.
+ * IOmcu's session from before, with its own ordinary poll running.
  * The check ends that session with ABORT, completes, and ARM is taken
  * again; without the ABORT, HASH_RUNNING is refused and the session holds
  * ARM.
@@ -1617,7 +1617,7 @@ TEST_CASE(ordinary_polling_does_not_keep_a_session_alive)
     CHECK(arm_taken());
 }
 
-/* A panel that restarts while the coprocessor's restart is due waits for
+/* A panel that restarts while the IOmcu's restart is due waits for
  * it and finds the image on trial; a restart that never comes is refused
  * after LINK_UPH_HASH_MS. */
 TEST_CASE(a_check_that_finds_a_restart_due_waits_for_it)
@@ -1765,7 +1765,7 @@ TEST_CASE(a_failed_erase_after_buy_is_owed_until_it_holds)
     cp.boot_at_us = g_us;
     advance_us(1000u);
     if (!cp.up) {
-        T_FAIL("the coprocessor did not start again");
+        T_FAIL("the IOmcu did not start again");
         return;
     }
     CHECK_EQ(cp.running, 1u);
@@ -1848,7 +1848,7 @@ TEST_CASE(a_buy_the_boot_rom_refuses_is_reported)
     check_runs_old();
 }
 
-/* A coprocessor of 4.21 or older answers both pages with BAD_PAGE. */
+/* An IOmcu of 4.21 or older answers both pages with BAD_PAGE. */
 TEST_CASE(an_old_coprocessor_needs_usb)
 {
     bench(SLOT_SMALL, 30000u, 0u);
@@ -1865,7 +1865,7 @@ TEST_CASE(an_old_coprocessor_needs_usb)
     cp_boot_now();
     CHECK_EQ(check(20000u), LINK_UPH_NEEDS_USB);
     CHECK_EQ(update(20000u, NULL), LINK_UPH_NEEDS_USB);
-    /* No coprocessor at all. */
+    /* No IOmcu at all. */
     bench(SLOT_SMALL, 30000u, 0u);
     bus.dead = true;
     bus.dead_until_us = UINT64_MAX;
@@ -1938,7 +1938,7 @@ TEST_CASE(the_engine_refuses_nothing_to_send)
 enum { RUN_CHECK, RUN_UPDATE };
 
 /* One request frame lost at block 10: the engine reads where the
- * coprocessor stands (RESYNC), which the RESYNC cases make go wrong. */
+ * IOmcu stands (RESYNC), which the RESYNC cases make go wrong. */
 static bool g_lost_one;
 
 static void lose_one_request(const link_uph_t *u)
@@ -2105,7 +2105,7 @@ static const scenario_t k_scenarios[] = {
         .nack = LINK_NACK_BAD_VALUE, .times = 100u },
       .want = LINK_UPH_REFUSED },
 
-    /* The coprocessor's hash. */
+    /* The IOmcu's hash. */
     { .name = "update: the verify read lost",
       .mode = RUN_UPDATE,
       .f = { F(F_LOSE, LINK_UPH_VERIFY, CTL, RD, -1) },
@@ -2115,7 +2115,7 @@ static const scenario_t k_scenarios[] = {
       .f = { F(F_NACK, LINK_UPH_VERIFY, CTL, RD, -1),
         .nack = LINK_NACK_BAD_RANGE },
       .want = LINK_UPH_REFUSED },
-    { .name = "update: the coprocessor's hash never ends",
+    { .name = "update: the IOmcu's hash never ends",
       .mode = RUN_UPDATE,
       .f = { F(F_STALL, LINK_UPH_FINISH, CTL, WR, LINK_UPD_CMD_FINISH),
         .ms = LINK_UPH_HASH_MS + 2000u },

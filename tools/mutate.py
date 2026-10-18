@@ -70,13 +70,13 @@ from dataclasses import asdict, dataclass
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
 # What the host build reads: the code under test, the suite, the
-# coprocessor's pin header and PIO program, which two tests read, the touch
+# IOmcu's pin header and PIO program, which two tests read, the touch
 # injector's core, which the host build compiles and tests, and the
 # profile generator, which the esc_parity test holds the card reader to.
 COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",
           "testbench/touch-injector/core", "tools/gen_esc_profiles.py")
 # Where a mutant is made, and the folder under it where none is: a pin
-# driver is compiled by the coprocessor build only.
+# driver is compiled by the IOmcu build only.
 MUTATED = ("shared", "protocols")
 NOT_MUTATED = "/rp2350/"
 SUFFIXES = (".c", ".h")

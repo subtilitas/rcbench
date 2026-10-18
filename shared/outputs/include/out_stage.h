@@ -1,12 +1,12 @@
 /*
  * A binding prepared beside the one in force, and taken whole.
  *
- * The coprocessor's half of the BIND_CFG, BIND_OUT and BIND pages (protocol
+ * The IOmcu's half of the BIND_CFG, BIND_OUT and BIND pages (protocol
  * 4.10; see link_pages.h).  A CHAN_CFG and an OUTPUTS page are written here
  * a frame at a time and change nothing; a commit that names their CRC
  * (cyclic redundancy check) puts both in force or neither.
  *
- * The rules that judge a page in force are the coprocessor's and need its
+ * The rules that judge a page in force are the IOmcu's and need its
  * bank and its silicon, so the commit calls them through out_stage_ops_t.
  * The order, the comparison and what is put back after a refusal are here
  * and host-tested.
@@ -53,7 +53,7 @@ void out_stage_slots_read(const out_stage_t *st, uint8_t off, uint8_t n,
  * The CRC a commit names: CRC-16/CCITT-FALSE (polynomial 0x1021, seed
  * 0xFFFF, link_crc()) over the 32 CHAN_CFG registers and then the 32
  * OUTPUTS registers, each as its low byte and then its high byte.  The
- * panel computes it over the pages it sent, the coprocessor over what it
+ * panel computes it over the pages it sent, the IOmcu over what it
  * holds prepared.
  */
 uint16_t out_stage_crc(const uint16_t *cfg, const uint16_t *slots);
@@ -62,7 +62,7 @@ uint16_t out_stage_crc(const uint16_t *cfg, const uint16_t *slots);
 uint16_t out_stage_held_crc(const out_stage_t *st);
 
 /**
- * What the coprocessor does with a page once the commit has matched.
+ * What the IOmcu does with a page once the commit has matched.
  *
  * take_cfg and take_slots judge a whole page by the rules of a CHAN_CFG and
  * an OUTPUTS write and put it in force: 0, or a link_nack_t with the page in

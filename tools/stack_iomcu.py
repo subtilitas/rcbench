@@ -1,4 +1,4 @@
-"""The coprocessor half of tools/stack_check.py: with --iomcu it reads the
+"""The IOmcu half of tools/stack_check.py: with --iomcu it reads the
 RP2350 image, decodes its Thumb code, and holds core 0's and core 1's
 stacks to their deepest call chain and one interrupt.  stack_check.py's
 docstring says how; the ELF reader and the call graph are in stack_elf.py.
@@ -16,7 +16,7 @@ from stack_elf import (ROOT, STT_FUNC, STT_OBJECT, Elf, Graph, call_args,
                        die, doc_rows, sext)
 
 
-# ------------------------------------------------------ the coprocessor --
+# ------------------------------------------------------ the IOmcu --
 
 IOMCU_DIR = ROOT / "firmware" / "iomcu"
 IOMCU_ELF = "rcbench-iomcu.elf"
@@ -346,12 +346,12 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
 
 
 def iomcu_check(build: Path, verbose: bool) -> tuple:
-    """(rows, fails, lines to print) for the coprocessor image: one row per
+    """(rows, fails, lines to print) for the IOmcu image: one row per
     core, (name, entry, stack, depth, interrupt, spare, calls and jumps
     through a register reachable from the entry)."""
     path = build / IOMCU_ELF
     if not path.exists():
-        die(f"{path} not found; build the coprocessor first")
+        die(f"{path} not found; build the IOmcu first")
     sys.setrecursionlimit(20000)
     elf = Elf(path)
     if elf.data[0x12:0x14] != b"\x28\x00":
@@ -564,7 +564,7 @@ def iomcu_check(build: Path, verbose: bool) -> tuple:
 
 # ------------------------------------------------- the table in the docs --
 
-# The coprocessor's table in each language and the name of core 0's row.
+# The IOmcu's table in each language and the name of core 0's row.
 # Core 0's row is held: stack, deepest chain, one interrupt, spare.  Core
 # 1's is not: its chain moves with the compiler, 640 bytes with
 # arm-none-eabi-gcc 13.2.1 and 644 with 14.2.
@@ -630,7 +630,7 @@ def check_iomcu_prose(core0: dict) -> list:
 
 
 def check_iomcu_doc(rows: list) -> list:
-    """Core 0's row of the coprocessor table in Performance.md and its
+    """Core 0's row of the IOmcu table in Performance.md and its
     German page, and the sentences of IOMCU_PROSE, against iomcu_check()'s
     rows."""
     measured = [r for r in rows if r[0] == CORE0[0]]
@@ -642,10 +642,10 @@ def check_iomcu_doc(rows: list) -> list:
     for page, header, name in IOMCU_PERFORMANCE:
         said = doc_rows(page.read_text(encoding="utf-8"), header)
         if said is None or name not in said:
-            out.append(f"{page.name}: no coprocessor table with a row for "
+            out.append(f"{page.name}: no IOmcu table with a row for "
                        f"{name}")
         elif said[name] != want:
-            out.append(f"{page.name}: the coprocessor table gives {name} "
+            out.append(f"{page.name}: the IOmcu table gives {name} "
                        f"as {said[name]}; measured {want}")
     out += check_iomcu_prose({"stack": stack, "depth": depth,
                               "interrupt": irq, "spare": spare,

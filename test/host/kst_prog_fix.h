@@ -76,7 +76,7 @@ static unsigned g_starts_at_file;   /* g_starts when the file was written */
 static fake_card_t g_fc;            /* the servo files */
 static unsigned g_starts_at_save;   /* g_starts when a save was asked */
 
-/* ------------------------------------------------------------- coprocessor */
+/* ------------------------------------------------------------- IOmcu */
 
 static inline uint8_t hw_pin(void *ctx, uint8_t port)
 {
@@ -223,7 +223,7 @@ static inline void exchange(void)
         return;
     }
     if (g_nack_at >= 0 && g_nack_at-- == 0) {
-        /* The coprocessor refuses this one frame. */
+        /* The IOmcu refuses this one frame. */
         g_nacked = true;
         kst_link_done(&g_k, LINK_NACK_BAD_VALUE, NULL);
         return;
@@ -276,7 +276,7 @@ static inline void publish(void)
     kst_prog_feed(&g_p, &f);
 }
 
-/* 1 ms: the coprocessor, one exchange, the control task, the screen's
+/* 1 ms: the IOmcu, one exchange, the control task, the screen's
  * frame and the card. */
 static inline void frame(void)
 {

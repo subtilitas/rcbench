@@ -143,7 +143,7 @@ static inline void observer(setting_id_t id)
     s_last_observed = id;
 }
 
-/* The pole count is the one setting the coprocessor keeps a copy of, so a
+/* The pole count is the one setting the IOmcu keeps a copy of, so a
  * notification for it is what the panel turns into a write.  Counted apart
  * from the rest, because settings_init() notifies every id in one sweep. */
 static int s_poles_seen;

@@ -1,6 +1,6 @@
 /*
  * Both watchdogs, driven through their transitions against a mock clock.
- * The coprocessor fails safe at 200 ms and the host escalates at 1000 ms, so
+ * The IOmcu fails safe at 200 ms and the host escalates at 1000 ms, so
  * the end holding the outputs is the more suspicious of the two.
  *
  * SPDX-License-Identifier: MIT
@@ -47,7 +47,7 @@ static const link_page_t k_pages[] = {
 };
 
 /*
- * A coprocessor that has heard the panel, which is what every case below
+ * An IOmcu that has heard the panel, which is what every case below
  * means by "the link was up".  The watchdog does not run before the first
  * request arrives -- see silence_before_the_first_request_is_not_silence --
  * so a fixture that only initialised would be testing a link that had never
@@ -73,7 +73,7 @@ static void poll_at(uint32_t now)
     link_dev_dispatch(&dev, &req, &reply, now);
 }
 
-/* ------------------------------------------------- the coprocessor's 200 ms */
+/* ------------------------------------------------- the IOmcu's 200 ms */
 
 TEST_CASE(the_coprocessor_fails_safe_after_two_hundred_milliseconds)
 {
@@ -193,7 +193,7 @@ TEST_CASE(the_host_escalates_after_one_second)
 
 TEST_CASE(the_host_is_the_more_patient_of_the_two)
 {
-    /* The ordering is the design: a host stricter than the coprocessor would
+    /* The ordering is the design: a host stricter than the IOmcu would
      * invert the argument for two watchdogs. */
     CHECK(LINK_DEV_SILENCE_MS < LINK_HOST_TIMEOUT_MS);
     CHECK_EQ(LINK_HOST_TIMEOUT_MS / LINK_DEV_SILENCE_MS, 5);
@@ -484,7 +484,7 @@ TEST_CASE(the_host_watchdog_survives_the_millisecond_wrap)
 /* ------------------------------------------------------------ both together */
 
 /*
- * End to end: when the wire dies, the coprocessor fails safe at 200 ms,
+ * End to end: when the wire dies, the IOmcu fails safe at 200 ms,
  * 800 ms before the panel escalates.
  */
 TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
@@ -511,7 +511,7 @@ TEST_CASE(the_coprocessor_gives_up_long_before_the_panel_does)
 TEST_CASE(silence_before_the_first_request_is_not_silence)
 {
     /*
-     * The coprocessor is awake a few hundred milliseconds before the panel
+     * The IOmcu is awake a few hundred milliseconds before the panel
      * starts polling.  Counting that as a fault lit the panel's indicator
      * from power-on, on every bench, before anything had happened -- and a
      * warning that is always on is one nobody reads.
@@ -537,7 +537,7 @@ TEST_CASE(silence_before_the_first_request_is_not_silence)
 /*
  * A start is not a silence.  The device comes up out of failsafe, so STATUS
  * reports no link fault and the supply's ON is taken, and with its arm
- * latch set, so the ARM a panel goes on writing across a coprocessor
+ * latch set, so the ARM a panel goes on writing across an IOmcu
  * restart arms nothing.
  */
 TEST_CASE(a_start_sets_the_arm_latch_and_not_the_failsafe)

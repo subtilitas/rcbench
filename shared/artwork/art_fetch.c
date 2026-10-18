@@ -29,7 +29,7 @@ bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
         reason = "there is no link to ask on";
     } else if (!t->read_page(t->ctx, (uint8_t)LINK_PAGE_ARTWORK,
                              (uint8_t)LINK_AW_COUNT, meta_regs)) {
-        /* No such page, or nothing answered. A coprocessor built before the
+        /* No such page, or nothing answered. An IOmcu built before the
          * page refuses it by design, every time the link comes up. */
         reason = "it does not answer the artwork page";
     } else if (meta_regs[LINK_AW_BLOCKS] == 0u) {
@@ -37,7 +37,7 @@ bool art_fetch_meta(const art_transport_t *t, uint16_t *meta_regs,
     } else {
         link_art_meta_t m;
         if (!link_artxfer_meta_ok(meta_regs, &m)) {
-            /* Worth saying out loud: this one is a coprocessor disagreeing
+            /* Worth saying out loud: this one is an IOmcu disagreeing
              * with itself, not a board that has no drawing. */
             reason = "it describes a drawing that cannot be one";
         } else {

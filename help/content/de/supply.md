@@ -6,7 +6,7 @@ order: 30
 
 # Netzteil
 
-SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der Koprozessor über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
+SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
 
 ## Das Netzteilmodell
 
@@ -16,14 +16,14 @@ Ist der PD mini unter SETUP, ANSCHLÜSSE abgeschaltet, rechnet das Panel ein Mod
 
 ## Der PD mini
 
-![Der PD mini eingeschaltet, kein Koprozessor liest ihn: ANTWORTET NICHT](view:supply-offline)
+![Der PD mini eingeschaltet, kein IOmcu liest ihn: ANTWORTET NICHT](view:supply-offline)
 
-Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des Koprozessors, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des Koprozessors alle 100 ms.
+Ist der PD mini eingeschaltet, nennt der Kopf das Modul und die Pins des IOmcu, die es tragen, zum Beispiel `PD MINI TX GP12 RX GP13`, aus den Einstellungen PD mini TX und PD mini RX. Ist einer der Pins nicht gesetzt, lautet er `PD MINI OHNE PINS`. Das Panel liest die SUPPLY-Seite des IOmcu alle 100 ms.
 
 | Kopf | Bedeutung |
 |---|---|
 | `ONLINE 38400` | das Modul antwortet; die Zahl ist die verwendete Baudrate |
-| `ANTWORTET NICHT` | kein Koprozessor mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500 ms; ein eingeschalteter Ausgang wird abgeschaltet |
+| `ANTWORTET NICHT` | kein IOmcu mit Protokoll 4.3 antwortet, oder die Messwerte sind älter als 1500 ms; ein eingeschalteter Ausgang wird abgeschaltet |
 
 Vor dem ersten Einschalten zeigt die Grafik `Ausgang wurde noch nicht eingeschaltet.`, und die Karten zeigen Striche, bis ein Messwert ankommt.
 

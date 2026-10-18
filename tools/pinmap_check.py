@@ -2,7 +2,7 @@
 
 Usage: pinmap_check.py PINMAP.json [--sdk PICO_SDK_PATH]
 
-PINMAP.json holds one object per coprocessor:
+PINMAP.json holds one object per IOmcu:
 
     {"chips": [{"chip": "main", "pins": [
         {"gpio": 2, "signal": "link CAN SCLK", "function": "SPI0_SCLK",

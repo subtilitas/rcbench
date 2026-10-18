@@ -1,12 +1,12 @@
 /*
- * The coprocessor's firmware update, as the panel offers and shows it.
+ * The IOmcu's firmware update, as the panel offers and shows it.
  *
- * Two views.  The question: which version the coprocessor runs, which one
+ * Two views.  The question: which version the IOmcu runs, which one
  * this panel carries, whether that one is older, CANCEL and START.  START
  * takes the 2 s hold (UI_HOLD_S), the ARM gesture.  The progress: a full
  * screen without the band, like the bus-fault screen, with the step under
  * way and the blocks sent.  The bench cannot be armed while it shows: the
- * coprocessor refuses ARM for the whole update session.
+ * IOmcu refuses ARM for the whole update session.
  *
  * The screen decides nothing about the update.  The application offers it,
  * takes START or CANCEL from the latches, reports the step, and moves the
@@ -36,7 +36,7 @@ typedef enum {
 typedef enum {
     CU_STEP_PREPARE = 0,  /**< hashing the image before the first block */
     CU_STEP_SEND,         /**< blocks going out                          */
-    CU_STEP_VERIFY,       /**< the coprocessor hashes what it wrote      */
+    CU_STEP_VERIFY,       /**< the IOmcu hashes what it wrote      */
     CU_STEP_RESTART,      /**< it restarts into the new slot             */
     CU_STEP_BUY,          /**< and this panel keeps the new image        */
 } cu_step_t;
@@ -53,7 +53,7 @@ typedef struct {
 bool coproc_update_older(cu_version_t running, cu_version_t carried);
 
 /**
- * Offer the update: the question view, with the version the coprocessor
+ * Offer the update: the question view, with the version the IOmcu
  * runs and the one this panel carries.  Clears both latches.
  */
 void coproc_update_screen_offer(cu_version_t running, cu_version_t carried);
@@ -81,7 +81,7 @@ typedef struct {
     uint16_t     block;
     uint16_t     blocks;
     uint32_t     starts_taken;  /**< STARTs the update side has taken      */
-    cu_version_t running;       /**< the version the coprocessor runs       */
+    cu_version_t running;       /**< the version the IOmcu runs       */
     cu_version_t carried;       /**< the version this panel carries         */
 } cu_feed_t;
 

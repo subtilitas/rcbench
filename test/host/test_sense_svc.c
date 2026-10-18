@@ -1,5 +1,5 @@
 /*
- * The coprocessor's sensor service (sense_svc.h): core 1's step, against
+ * The IOmcu's sensor service (sense_svc.h): core 1's step, against
  * the modelled INA228 and INA3221 of fake_ina.h, a bus that opens and
  * closes on pins, and a clock the suite moves 1 ms a step.
  *

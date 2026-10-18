@@ -1,5 +1,5 @@
 /*
- * The SERVO link page at the coprocessor: the frame rate and the sweep.
+ * The SERVO link page at the IOmcu: the frame rate and the sweep.
  *
  * Under test: a sweep starts only on an armed bench and only whole; it keeps
  * its curve while the panel repeats it and starts over when the curve
@@ -736,7 +736,7 @@ TEST_CASE(resume_is_refused_with_no_sweep_held)
 }
 
 /*
- * The coprocessor serves a pass's writes before its step.  A sweep left
+ * The IOmcu serves a pass's writes before its step.  A sweep left
  * unwritten for longer than OUT_DEFAULT_TIMEOUT_MS has stopped even when
  * the pass that stops it has not run yet: a HOLD then keeps no phase, and a
  * repeat of the same curve starts it over rather than carrying it on --
@@ -960,7 +960,7 @@ TEST_CASE(a_position_after_a_let_go_hold_needs_the_stop_first)
 
 /*
  * The host's choice: RESUME for a resume of a hold in force on 4.6; the
- * curve over, and saying so, on an older coprocessor or after a refusal;
+ * curve over, and saying so, on an older IOmcu or after a refusal;
  * the curve as usual for anything else, a resumed sweep's repeats included.
  */
 TEST_CASE(the_host_resumes_on_4_6_and_starts_over_otherwise)
@@ -988,7 +988,7 @@ TEST_CASE(the_host_resumes_on_4_6_and_starts_over_otherwise)
              SERVO_RESUME_CURVE);
 }
 
-/* A 4.5 coprocessor's answer to RESUME, as the page refused 5 before it
+/* A 4.5 IOmcu's answer to RESUME, as the page refused 5 before it
  * meant anything: BAD_VALUE, so the host's fallback is the same either way. */
 TEST_CASE(the_curve_over_a_hold_starts_from_its_beginning)
 {

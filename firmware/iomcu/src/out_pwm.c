@@ -108,7 +108,7 @@ bool out_pwm_bind(uint8_t pin, uint16_t rate_hz)
         /*
          * A channel is one compare register, and a compare register is one
          * pulse width.  GP0 and GP16 are both slice 0 channel A, and the
-         * header this coprocessor offers leaves five more such pairs free:
+         * header this IOmcu offers leaves five more such pairs free:
          * GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and
          * GP22.  Binding the second pin of a pair muxes it onto the first
          * pin's pulse width -- two leads, one number, and nothing on any

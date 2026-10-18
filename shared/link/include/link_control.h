@@ -1,8 +1,8 @@
 /*
- * The CONTROL page as the coprocessor stores it: what a write may carry, and
+ * The CONTROL page as the IOmcu stores it: what a write may carry, and
  * the one side effect a write has.
  *
- * The page's rules are here rather than in the coprocessor's handler so the
+ * The page's rules are here rather than in the IOmcu's handler so the
  * host suite runs them.  The handler is wiring: it answers the question of
  * whether the bench may arm, hands the frame in, and acts on the clear.
  *

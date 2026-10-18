@@ -1,10 +1,10 @@
 /*
- * The coprocessor's drawing of its board against the panel's catalogue, and
+ * The IOmcu's drawing of its board against the panel's catalogue, and
  * on a canvas.
  *
- * The drawing under test is the one the coprocessor image carries
+ * The drawing under test is the one the IOmcu image carries
  * (firmware/iomcu/src/board_drawing_rp2350_can.c, generated from the
- * configurator), served by the coprocessor's own code and assembled by the
+ * configurator), served by the IOmcu's own code and assembled by the
  * panel's.  The failure under test is a drawing that shows one board while
  * the picker binds another: a GPIO on the wrong pad, a pad off the grid the
  * catalogue places its keys on, a board the build does not know.
@@ -118,7 +118,7 @@ TEST_CASE(the_served_drawing_agrees_with_the_catalogue_pad_for_pad)
     CHECK_EQ(d.pads - gpio, board->pad_count);
 }
 
-/* Assembled the way the panel does, from the way the coprocessor serves. */
+/* Assembled the way the panel does, from the way the IOmcu serves. */
 static bool dev_read(void *ctx, uint8_t page, uint8_t count, uint16_t *regs)
 {
     const uint16_t *selected = ctx;

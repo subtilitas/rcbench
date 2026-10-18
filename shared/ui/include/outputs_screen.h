@@ -42,7 +42,7 @@ void outputs_screen_invalidate(void);
 const outbind_t *outputs_screen_binding(void);
 
 /**
- * A binding read from the coprocessor, or one the screen is posed with.
+ * A binding read from the IOmcu, or one the screen is posed with.
  * The screen then holds a confirmed binding and takes edits.  A binding for
  * another board than the one shown selects OFF, whatever was selected,
  * unless @p b names a protocol its pins do not.
@@ -84,7 +84,7 @@ void outputs_screen_set_apply(outputs_apply_fn fn);
 /** What became of the last write: the text is shown under the protocol. */
 typedef enum {
     OUTPUTS_IDLE = 0,   /**< nothing written yet, or a write not sent     */
-    OUTPUTS_OK,         /**< the coprocessor took it                      */
+    OUTPUTS_OK,         /**< the IOmcu took it                      */
     OUTPUTS_NO_LINK,    /**< nothing answered                             */
     OUTPUTS_REFUSED,    /**< it answered and would not have it            */
 } outputs_result_t;
@@ -97,9 +97,9 @@ typedef enum {
     OUTPUTS_CELL_FREE,      /**< bound to nothing: "PAD n"                  */
     OUTPUTS_CELL_TICKED,    /**< bound in the selected protocol: "PAD n"    */
     OUTPUTS_CELL_HELD,      /**< bound in another protocol: its name; or a
-                                 PWM pin the coprocessor refuses: the pin
+                                 PWM pin the IOmcu refuses: the pin
                                  it clashes with (outputs_clash_label())   */
-    OUTPUTS_CELL_RESERVED,  /**< the coprocessor's own: what holds it       */
+    OUTPUTS_CELL_RESERVED,  /**< the IOmcu's own: what holds it       */
 } outputs_cell_t;
 
 /**
@@ -112,7 +112,7 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
 #define OUTPUTS_NO_PIN 0xFFu
 
 /**
- * The GPIO the coprocessor's programming port is bound to, as its page reads
+ * The GPIO the IOmcu's programming port is bound to, as its page reads
  * it, or OUTPUTS_NO_PIN (the start value).  While no protocol holds that pin
  * its cell reads OUTPUTS_CELL_RESERVED with the port's name and takes no
  * tick, and a PWM protocol is not offered the other pin of its slice.  It
@@ -138,7 +138,7 @@ bool outputs_screen_reason(char *buf, size_t cap);
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
 /**
- * The line under a pin's GPIO name for a pin the coprocessor refuses the
+ * The line under a pin's GPIO name for a pin the IOmcu refuses the
  * PWM generator (outbind_pwm_clash() with @p prog_gpio): "SLICE OF GP13"
  * beside the programming port's pin, "PWM CH OF GP0" beside a pin bound as
  * PWM.  An empty string and false for any other pin.  The pin picker names

@@ -129,7 +129,7 @@ bool link_can_decode(const link_can_frame_t *f, link_msg_t *out);
  *
  * A refused frame adds 1 to @p refused, modulo 2^32; NULL counts nothing.
  * A NULL frame or message is not a frame received and is not counted.  The
- * coprocessor publishes the count on the STATUS page (LINK_ST_REFUSED_LO
+ * IOmcu publishes the count on the STATUS page (LINK_ST_REFUSED_LO
  * and _HI, protocol 4.21).
  */
 bool link_can_decode_counted(const link_can_frame_t *f, link_msg_t *out,

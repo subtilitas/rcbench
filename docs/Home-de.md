@@ -8,7 +8,7 @@ auf `main` überschrieben. Die Dateien bearbeiten, nicht das Wiki.</sub>
 rcbench ist ein Prüfstand für Motoren, ESCs (Electronic Speed Controller,
 Motorregler) und Servos, aufgebaut aus zwei Prozessoren: einem
 ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen, SD-Karte) und einem
-RP2350-Koprozessor (Messung, Ausgänge und jedes Protokoll mit
+RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen). Beide sind über CAN (Controller Area Network) mit
 1 Mbit/s verbunden.
 

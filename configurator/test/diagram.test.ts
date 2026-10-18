@@ -61,14 +61,14 @@ function breaks(d: Diagram, setup: Setup): string[] {
     }
   }
 
-  // Columns: the coprocessor column lies between the left and the right parts.
-  if (!d.columns[d.centre]?.includes('copro')) out.push('the coprocessor is not in the centre column');
+  // Columns: the IOmcu column lies between the left and the right parts.
+  if (!d.columns[d.centre]?.includes('copro')) out.push('the IOmcu is not in the centre column');
   const column = new Map(setup.parts.map((r) => [r.part.id, r.part.slot.column]));
   d.columns.forEach((ids, i) => {
     for (const id of ids) {
       const c = column.get(id);
-      if (c === 'L' && i >= d.centre) out.push(`${id}: left part right of the coprocessor`);
-      if (c === 'R' && i <= d.centre) out.push(`${id}: right part left of the coprocessor`);
+      if (c === 'L' && i >= d.centre) out.push(`${id}: left part right of the IOmcu`);
+      if (c === 'R' && i <= d.centre) out.push(`${id}: right part left of the IOmcu`);
     }
   });
 
@@ -353,7 +353,7 @@ test('every part of a picture has a drawn connection, apart from the parts the d
   }
 });
 
-test('every component of the data file is in the picture of every setup that holds it, on both boards of the coprocessor', () => {
+test('every component of the data file is in the picture of every setup that holds it, on both boards of the IOmcu', () => {
   const components = CATALOGUE.wires.filter((w) => w.kind === 'component');
   assert.deepEqual(components.map((w) => w.n), [53]);
   const seen = new Map<number, Set<string>>();
@@ -502,7 +502,7 @@ test('a component between 2 parts has its body on the longest run, and one acros
   assert.deepEqual(baselines(100, 0, 12, 13), []);
 });
 
-test('the base setup is the panel beside the coprocessor with 4 wires', () => {
+test('the base setup is the panel beside the IOmcu with 4 wires', () => {
   const setup = resolve(CATALOGUE, { functions: [], owned: [], options: { ...DEFAULT_OPTIONS } });
   const d = diagramOf(sceneOf(setup, ANCHORS));
   assert.deepEqual(d.wires.map((w) => w.n), [1, 2, 3, 4]);

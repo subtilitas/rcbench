@@ -832,15 +832,15 @@ TEST_CASE(a_run_on_the_pd_mini_goes_on_when_the_ina3221_becomes_the_meter)
 
     /* Each condition the panel names for the INA3221 not being the meter,
      * as the report of a run on the PD mini states it; the ones that are
-     * no reason of the part's -- it is off, or no coprocessor answers --
+     * no reason of the part's -- it is off, or no IOmcu answers --
      * write no line. */
     static const struct {
         servo_source_why_t why;
         const char        *text;
     } k_why[] = {
-        { SERVO_SOURCE_WHY_OLD, "the coprocessor is older than link "
+        { SERVO_SOURCE_WHY_OLD, "the IOmcu is older than link "
                                 "protocol 4.11" },
-        { SERVO_SOURCE_WHY_NOT_HELD, "the coprocessor does not hold its "
+        { SERVO_SOURCE_WHY_NOT_HELD, "the IOmcu does not hold its "
                                      "set-up" },
         { SERVO_SOURCE_WHY_SILENT, "it does not answer" },
         { SERVO_SOURCE_WHY_NO_WINDOW, "no window with current in the last "

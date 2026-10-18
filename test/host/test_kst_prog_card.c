@@ -801,7 +801,7 @@ TEST_CASE(a_card_put_in_after_a_write_takes_the_servo_as_the_session_found_it)
     CHECK_EQ(g_fc.saves, 2);
 }
 
-/* The link goes and comes back under a session the coprocessor keeps. */
+/* The link goes and comes back under a session the IOmcu keeps. */
 static void link_gap(void)
 {
     kst_link_lost(&g_k);
@@ -814,7 +814,7 @@ static void link_gap(void)
     frames(600);
 }
 
-/* A first write with no card, a link loss the coprocessor's session
+/* A first write with no card, a link loss the IOmcu's session
  * survives, a read, a card: the file the next write saves holds the servo
  * as the session found it, not the written one. */
 TEST_CASE(a_session_kept_over_a_link_loss_saves_the_servo_as_found)
@@ -885,7 +885,7 @@ TEST_CASE(a_save_by_hand_after_a_link_loss_is_the_backup_of_an_unwritten_servo)
     CHECK(!kst_prog_save_first(&g_p));
 }
 
-/* The coprocessor starts again in the gap: its session and its backup are
+/* The IOmcu starts again in the gap: its session and its backup are
  * gone, and the session that follows saves the servo as it finds it. */
 TEST_CASE(a_session_that_ended_over_a_link_loss_is_followed_by_one_with_its_own_file)
 {

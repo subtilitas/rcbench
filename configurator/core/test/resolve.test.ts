@@ -169,7 +169,7 @@ test('every single part you own resolves to itself, what it needs, and the locke
     assert.equal(part(setup, id).derived, false);
     assert.equal(part(setup, id).ownedTick, true);
     assert.deepEqual(setup.ignored, []);
-    // Every wire of the setup ends on a part of the setup or on the coprocessor.
+    // Every wire of the setup ends on a part of the setup or on the IOmcu.
     for (const wire of setup.wires) {
       for (const end of [wire.a, wire.b]) {
         if (end === null || end.startsWith('pad.') || end.startsWith('can.')) continue;
@@ -682,7 +682,7 @@ test('the servo programmer: the 2 boards, the servo on GP13 at pad 17, and the P
   const w64 = CATALOGUE.wires.find((w) => w.n === 64);
   assert.deepEqual([w64?.a, w64?.b, w64?.net, w64?.pin], ['pad.17', 'servo.SIG', 'servo_sig', 'default']);
 
-  // Without the PD mini: the panel, the coprocessor and the servo with its own supply.
+  // Without the PD mini: the panel, the IOmcu and the servo with its own supply.
   const own = resolve(CATALOGUE, select(['servoprog']));
   assert.deepEqual(partIds(own), [...LOCKED, 'servo', 'ssup']);
   assert.deepEqual(wireNumbers(own), [1, 2, 3, 4, 8, 9, 10, 64]);

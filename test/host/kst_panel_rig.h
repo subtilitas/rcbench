@@ -3,7 +3,7 @@
  * link down or on the SERVO screen, touches and ticks fed through either,
  * the helpers that drive a connection, an edit, a write, the file list and
  * the keyboards, and the readers of what the overlay shows.  The servo, the
- * coprocessor's port, the link dispatch and the panel's link module are
+ * IOmcu's port, the link dispatch and the panel's link module are
  * kst_rig.h.
  *
  * For test_kst_panel.c, test_kst_panel_files.c, test_kst_panel_nocard.c and

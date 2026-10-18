@@ -8,8 +8,8 @@ integration)](https://github.com/subtilitas/rcbench/actions/workflows/ci.yml/bad
 
 A motor, ESC (electronic speed controller) and servo test bench on two
 processors: an ESP32-S3 touch panel (user interface, settings, SD card) and an
-RP2350 coprocessor (measurement, outputs, and every protocol with timing
-requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
+RP2350 IOmcu (IO microcontroller: measurement, outputs, and every
+protocol with timing requirements), connected over CAN (Controller Area Network) at 1 Mbit/s.
 
 **Status: under construction.** The project is under development and its
 functions are not verified on hardware. The panel boots and every screen
@@ -34,8 +34,8 @@ hold completes rather than when the finger lifts. DISARM and STOP are a
 single press.
 
 Three stop mechanisms are designed in: a heartbeat whose absence removes the
-outputs, the coprocessor's own link watchdog, and a STOP command over the link.
-The line between the panel's J8 and the coprocessor's GP3 is fitted on the
+outputs, the IOmcu's own link watchdog, and a STOP command over the link.
+The line between the panel's J8 and the IOmcu's GP3 is fitted on the
 bring-up bench. The heartbeat's retriggerable
 monostable is on no board, so firmware at both ends is the only thing gating
 the outputs and there is no hardware backstop behind it.
@@ -49,9 +49,9 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 
 | Screen | Function | State |
 | --- | --- | --- |
-| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry; simulated values while no coprocessor answers |
-| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the coprocessor; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report; a [programmer for KST and Chaservo servos](docs/ServoProgrammer.md) with backup, limit checks and a write switch | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured; the limit search and the synchronisation are host-tested against a modelled servo and run on no board; the programmer is host-tested, no frame sent to a servo |
-| Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the coprocessor drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
+| Motor & ESC | voltage, current, consumption, RPM (revolutions per minute) and temperatures plotted live | screen built; speed, voltage, current and ESC temperature from an ESC's bidirectional DShot telemetry; simulated values while no IOmcu answers |
+| Servo | commanded and measured position; installed-limit search; two-servo synchronisation; servo types with their frame rates, a warning for those that can destroy a servo; a sweep through a square, sine or triangle run by the IOmcu; the supply's live power; an automatic test stepping the supply's voltage, with a CSV and a text report; a [programmer for KST and Chaservo servos](docs/ServoProgrammer.md) with backup, limit checks and a write switch | screen built and commanding over the link; drives the pins bound as surfaces, timing unmeasured; the limit search and the synchronisation are host-tested against a modelled servo and run on no board; the programmer is host-tested, no frame sent to a servo |
+| Supply | the PD mini, a USB-PD (USB Power Delivery) supply: voltage and current limit set, output switched, V, A and W plotted and logged | screen built; the IOmcu drives the PD mini on a PIO (programmable input/output) UART (universal asynchronous receiver-transmitter) when SETUP enables it, and the panel runs a model otherwise |
 | Analyser | sixteen receiver channels with history, the digital channels, LIVE / FRAME LOST / FAILSAFE / NO SIGNAL | S.BUS decoder built; PIO (programmable input/output) receiver not written |
 | Programmer | parameter tables for ESCs with BLHeli_S, AM32, ESCape32 and VESC firmware and for Hitec servos; [ESC programming profiles](docs/EscProfiles.md) for throttle-stick menus: 72 families, 451 models | screen built; no protocol on a wire. Profiles built in and read from `/ESC/` on the card. [Stick programming](docs/StickProgramming.md) runs 24 of them from the PROGRAMMER screen, asking for a Kontronik ESC's jumper or button at its moment, against the panel's simulated ESC |
 | Balance | blade count, correction mass and angle, sensor placement guides | screen built; sensors not fitted |
@@ -70,7 +70,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 The panel firmware needs ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.4 or newer; the coprocessor firmware needs pico-sdk 2.0 or newer.
+Framework) v5.4 or newer; the IOmcu firmware needs pico-sdk 2.0 or newer.
 [Building](https://github.com/subtilitas/rcbench/wiki/Building) has the
 toolchains, the commands and the CI gates.
 

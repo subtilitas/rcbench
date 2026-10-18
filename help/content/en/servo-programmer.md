@@ -16,12 +16,12 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 
 ![The programmer with the tester holding the port](view:servo-kst)
 
-- A coprocessor of protocol 4.13 or later; LEAVE needs 4.15.
-- The servo on the coprocessor's programming port, port 1: GP13, pad 17, unless another pin is stored for it.
+- An IOmcu of protocol 4.13 or later; LEAVE needs 4.15.
+- The servo on the IOmcu's programming port, port 1: GP13, pad 17, unless another pin is stored for it.
 - TARGET on the right card set to PROG PORT ([the TARGET row](servo-settings.md#the-target-row)).
 - The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
 
-![A coprocessor without the programming port](view:servo-kst-nopage)
+![An IOmcu without the programming port](view:servo-kst-nopage)
 ![The standard outputs are the target](view:servo-kst-target)
 
 Without these, every control but CLOSE is off and the tab says what is missing.
@@ -111,7 +111,7 @@ WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6 us`
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
 2. The panel records the write in `KST/KST.TXT`, or in memory without a card.
-3. The coprocessor checks the values against the same limits, plans the register writes and runs them.
+3. The IOmcu checks the values against the same limits, plans the register writes and runs them.
 4. Every register written is read back. A write that does not take is undone.
 
 ![A write running: do not unplug](view:servo-kst-writing)

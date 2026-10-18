@@ -106,9 +106,9 @@ link_diag_t link_bringup_diagnose(const link_bringup_t *b)
     }
 
     /*
-     * The comparison only both ends together can make: the coprocessor
+     * The comparison only both ends together can make: the IOmcu
      * decoded the requests and the panel did not hear the answers.  That is
-     * the return path (the coprocessor's transmit path or the panel's
+     * the return path (the IOmcu's transmit path or the panel's
      * receiver), which the panel's own numbers cannot show.
      */
     if (b->have_status && !well_short(b->dev_frames, b->polls)

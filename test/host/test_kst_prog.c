@@ -430,7 +430,7 @@ TEST_CASE(the_first_write_of_every_session_is_the_first_again)
     CHECK(kst_prog_first_write(&g_p));
     CHECK(!kst_prog_write_enabled(&g_p));
 
-    /* The coprocessor starts again between two operations. */
+    /* The IOmcu starts again between two operations. */
     up_written();
     port_fresh();
     frames(600);
@@ -767,7 +767,7 @@ TEST_CASE(a_write_that_was_not_taken_or_was_refused_leaves_no_field_written)
     g_deaf = false;
     duty_swapped_is_another_servo();
 
-    /* The coprocessor refuses the start. */
+    /* The IOmcu refuses the start. */
     up_enabled();
     g_card = false;
     frame();
@@ -968,7 +968,7 @@ TEST_CASE(the_bench_takes_no_arm_while_a_port_is_out_of_pwm)
     kst_link_readout_t rd;
 
     memset(&rd, 0, sizeof(rd));
-    /* No coprocessor, or one with no page: nothing holds a port. */
+    /* No IOmcu, or one with no page: nothing holds a port. */
     rd.phase = KST_LINK_DOWN;
     CHECK(!kst_prog_port_taken(&rd));
     rd.phase = KST_LINK_NO_PAGE;
@@ -1166,7 +1166,7 @@ TEST_CASE(a_link_lost_in_a_write_leaves_the_servo_in_doubt)
     CHECK(!kst_prog_write_enabled(&g_p));
     CHECK(!kst_prog_have_servo(&g_p));
 
-    /* The coprocessor stopped the write when the link went silent, and
+    /* The IOmcu stopped the write when the link went silent, and
      * its session takes the restore only. */
     frames(200);
     g_safe = true;
@@ -1784,7 +1784,7 @@ TEST_CASE(the_operators_abort_ends_an_operation_that_runs)
     CHECK_EQ(g_aborts, 1);
 }
 
-/* A write whose command was taken and that the coprocessor ends with no
+/* A write whose command was taken and that the IOmcu ends with no
  * register written leaves no field written; one that reached the servo, or
  * may have, keeps them. */
 TEST_CASE(a_taken_write_that_wrote_nothing_leaves_no_field_written)
@@ -2292,7 +2292,7 @@ static void read_never_ends(uint32_t t0, bool verify)
     CHECK(kst_prog_editable(&g_p));
 }
 
-/* A read or a verify the link gave up on may have run on the coprocessor:
+/* A read or a verify the link gave up on may have run on the IOmcu:
  * the image here is not the one there. */
 static void read_gets_no_answer(bool verify)
 {
@@ -3009,7 +3009,7 @@ TEST_CASE(the_journal_records_the_pin_of_its_port_at_the_write)
 }
 
 /* The bounds of the pin the feed gives: GP47 is recorded, GP48 and above
- * are not a pin of the coprocessor and the record stands by its port. */
+ * are not a pin of the IOmcu and the record stands by its port. */
 TEST_CASE(the_journal_records_a_pin_up_to_gp47_only)
 {
     static const struct { int pin; uint8_t want; const char *line; } k[] = {
@@ -3223,7 +3223,7 @@ TEST_CASE(a_connect_sets_the_supply_it_was_given)
     CHECK_EQ(g_sup_mv, 0u);
 }
 
-/* The floor is the panel's too: a coprocessor built before the port's
+/* The floor is the panel's too: an IOmcu built before the port's
  * refusal takes the ENTER and leaves an output that is on where it is. */
 TEST_CASE(an_output_on_under_the_floor_is_refused_before_the_port_is_asked)
 {
@@ -3675,7 +3675,7 @@ TEST_CASE(the_wait_before_pwm_keeps_its_limits)
 
 /* ------------------------------------- what an operation leaves behind */
 
-/* What a write that ended with @p r wrote when the coprocessor counted no
+/* What a write that ended with @p r wrote when the IOmcu counted no
  * step done.  A result added to kst_ses_t does not compile here until it
  * has a row. */
 typedef enum { LEFT_OK, LEFT_NOTHING, LEFT_DOUBT } left_t;
@@ -4707,7 +4707,7 @@ TEST_CASE(a_record_is_held_against_the_servo_whenever_the_card_comes)
         len = record_text(text, (uint8_t)(who == 1u ? CH + 1u : CH), &img,
                           &target);
         CHECK(len != 0u);
-        /* The panel starts under the session the coprocessor keeps. */
+        /* The panel starts under the session the IOmcu keeps. */
         prog_fresh();
         if (!late) {
             CHECK(kst_prog_file_load(&g_p, text, len));
@@ -5233,7 +5233,7 @@ TEST_CASE(a_restore_counts_its_registers_where_its_order_is_checked)
     CHECK_EQ(kst_prog_write_steps(&g_p), plan.writes);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_RESTORED);
-    /* A release is planned by the coprocessor alone. */
+    /* A release is planned by the IOmcu alone. */
     if (kst_prog_release(&g_p) == KST_PROG_MSG_NONE) {
         CHECK(kst_prog_writing(&g_p));
         CHECK_EQ(kst_prog_write_steps(&g_p), 0);

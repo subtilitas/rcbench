@@ -13,21 +13,21 @@ hardware.
 | Mechanism | Covers | State |
 | --- | --- | --- |
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
-| Coprocessor silence watchdog, 200 ms | the link is dead in either direction | built and tested |
+| IOmcu silence watchdog, 200 ms | the link is dead in either direction | built and tested |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
 
 A pressed STOP stops the heartbeat, switches the panel's own output model to SAFE
 and writes ARM = 0 to the control page. While the link is up the panel
 writes ARM and THROTTLE at every 50 ms poll; an explicit switch to ARMED waits until the
-coprocessor reports the heartbeat trusted, writes CLEAR (0x5AFE) on its own,
+IOmcu reports the heartbeat trusted, writes CLEAR (0x5AFE) on its own,
 then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK (negative
-acknowledge) from the coprocessor to either leaves the panel SAFE.
+acknowledge) from the IOmcu to either leaves the panel SAFE.
 
 ## Required external circuit: the monostable
 
 The safety line is panel GPIO6 (general-purpose input/output pin 6) on
 header J8 (3V3, GND, GPIO6). It carries
-edges, not a level. The coprocessor's output enable and the servo and ESC
+edges, not a level. The IOmcu's output enable and the servo and ESC
 (electronic speed controller) power path must be gated by a retriggerable
 monostable that stays energised only while edges keep arriving. A crash, a
 wedged task, a reset, a brown-out and an unplugged cable then all produce the
@@ -36,23 +36,23 @@ same result: no edges, no output, independent of firmware at both ends.
 Monostable window: about 150 ms. The heartbeat comes from the panel's control
 task, which runs every 5 ms on the core that does not draw, so its period does
 not depend on what a frame costs. The window stays at 150 ms, inside the
-coprocessor's 200 ms link failsafe, rather than tightening to the new period:
+IOmcu's 200 ms link failsafe, rather than tightening to the new period:
 the margin is what survives a task that is late, and nothing is gained by
 removing it.
 
 The monostable is on no board. On the bring-up bench the edges reach the
-coprocessor's GP3 by a direct wire from J8, which is what lets that bench switch to ARMED.
+IOmcu's GP3 by a direct wire from J8, which is what lets that bench switch to ARMED.
 
 The monostable is retriggered by the panel's edges and removes the outputs
 when they stop. What it adds over the direct wire is that it does this without
-the coprocessor's firmware doing anything. Three cases, and the middle one is
+the IOmcu's firmware doing anything. Three cases, and the middle one is
 the gap:
 
 | | Direct wire and firmware | With the monostable |
 |---|---|---|
-| The panel stops beating, the coprocessor is healthy | switches to SAFE after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
-| The panel stops beating and the coprocessor cannot act -- wedged, or not servicing its monitor | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
-| The panel is healthy and the coprocessor misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
+| The panel stops beating, the IOmcu is healthy | switches to SAFE after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
+| The panel stops beating and the IOmcu cannot act -- wedged, or not servicing its monitor | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
+| The panel is healthy and the IOmcu misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
 
 The third row is not a case the monostable is for, and no hardware in this
 design covers it. Until the part is fitted, the second row is uncovered too,
@@ -60,7 +60,7 @@ and firmware at both ends is the whole of the interlock.
 
 ## Heartbeat monitor
 
-The coprocessor also checks the heartbeat in firmware, because a monostable
+The IOmcu also checks the heartbeat in firmware, because a monostable
 cannot distinguish a heartbeat from noise. Constants from
 [`heartbeat.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/heartbeat.h):
 
@@ -71,7 +71,7 @@ cannot distinguish a heartbeat from noise. Constants from
 | Good intervals before the line is trusted | 4 | 80 ms at the panel's rate |
 
 The check is asymmetric: four good intervals before the line is trusted, one
-bad interval or one silent window to distrust it. The coprocessor refuses to
+bad interval or one silent window to distrust it. The IOmcu refuses to
 switch to ARMED while the line is not trusted, and switches its outputs to SAFE and sets its arm
 latch when it stops.
 
@@ -82,18 +82,18 @@ stopped drawing can still be stopped. The touch controller is read by a task
 of its own, priority 5 on core 0, the core that draws. The control task takes
 that task's events from a queue and judges the controller by the time since
 it last answered: 500 ms without an answer switches the bench to SAFE and stops the
-heartbeat. The coprocessor's input is pulled down, so an unpowered or
+heartbeat. The IOmcu's input is pulled down, so an unpowered or
 unplugged panel reads as a line that is not edging.
 
 ## Arm latch
 
-The coprocessor holds an arm latch. While it is set, a write of ARM is
+The IOmcu holds an arm latch. While it is set, a write of ARM is
 refused with NOT_ARMED and the bank stays SAFE whatever the ARM register
 holds.
 
 | Sets the latch | Condition |
 | --- | --- |
-| A coprocessor start | power-on, a reset, the RUN pin, a reflash |
+| An IOmcu start | power-on, a reset, the RUN pin, a reflash |
 | Link silence | 200 ms without a request, together with the link failsafe |
 | The heartbeat is distrusted | one interval under 4 ms or over 150 ms, or 150 ms without an edge |
 | A refused ARM | an ARM answered NOT_ARMED, so a CLEAR followed by a refused ARM leaves the latch set |
@@ -101,15 +101,15 @@ holds.
 One thing clears it: a write of 0x5AFE to CLEAR on the control page. The
 panel writes CLEAR in one place, the switch to ARMED an operator completes by holding
 ARM for 2 s. The ARM the panel writes at every 50 ms poll while the
-bench is ARMED carries no CLEAR, so it never brings a latched coprocessor back.
+bench is ARMED carries no CLEAR, so it never brings a latched IOmcu back.
 
 The latch is separate from the link failsafe. The supply's ON and the STATUS
 page read the failsafe and the heartbeat and not the latch: after a start
 STATUS reads idle with no fault bit, and a supply ON is taken before the
-first switch to ARMED. The latch is not on STATUS. A latched coprocessor shows as the
-refused ARM, which the panel reports as `Coprocessor switched to SAFE. Hold ARM again.`.
+first switch to ARMED. The latch is not on STATUS. A latched IOmcu shows as the
+refused ARM, which the panel reports as `IOmcu switched to SAFE. Hold ARM again.`.
 
-The panel has its own rule for the same events. When the coprocessor stops
+The panel has its own rule for the same events. When the IOmcu stops
 answering while the bench is ARMED, or while a switch to ARMED is waiting for the line,
 the panel latches a stop on that poll: its own bank is switched to SAFE, the throttle
 goes to zero, a held servo position is let go and the heartbeat stops. A
@@ -121,37 +121,37 @@ status read. One that ends unanswered takes the link down on the control
 task's next pass, and until then the panel sends nothing more on it. While
 the bench is ARMED or a switch to ARMED is waiting, the stop is latched as that
 exchange ends, without waiting for the pass. A bank
-in ARMED with no coprocessor connected, the simulated bench, is stopped the
-same way on the poll where a coprocessor first answers, before any ARM is
+in ARMED with no IOmcu connected, the simulated bench, is stopped the
+same way on the poll where an IOmcu first answers, before any ARM is
 written to it.
 
-### A coprocessor restart during a run
+### An IOmcu restart during a run
 
-The coprocessor restores its output binding from flash and starts latched,
+The IOmcu restores its output binding from flash and starts latched,
 with no command. The panel's bank is still ARMED for up to 1000 ms. Two
 cases:
 
 - The panel notices the outage. It latches a stop and writes ARM = 0 from
   then on.
 - The panel does not notice it, because the request was retransmitted until
-  the restarted coprocessor answered. Its next write of ARM is refused
+  the restarted IOmcu answered. Its next write of ARM is refused
   with NOT_ARMED, and the panel latches a stop on that answer.
 
 In both the outputs stay off until an operator holds ARM. Host-tested in
 `test_safety_gate` for outages of 5, 30, 50, 60, 300, 1000 and 5000 ms at 55
 reset phases each and three models of the wire. How long
-the coprocessor takes from reset to its first answered frame is not measured.
+the IOmcu takes from reset to its first answered frame is not measured.
 
 ### The first switch to ARMED after a stop
 
 The heartbeat is withheld while a stop is latched. A switch to ARMED clears the panel's
-latch, the heartbeat resumes, and the coprocessor's monitor needs five edges
+latch, the heartbeat resumes, and the IOmcu's monitor needs five edges
 before it trusts the line: 100 to 125 ms at the control task's 5 ms period.
 The panel waits 100 ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that switches to ARMED. If the bit has not cleared 300 ms after the hold completed, the
-panel gives the switch up with `The coprocessor refused to switch to ARMED.` and writes nothing,
-so the coprocessor's latch stays set. An answer that comes back later than
+panel gives the switch up with `The IOmcu refused to switch to ARMED.` and writes nothing,
+so the IOmcu's latch stays set. An answer that comes back later than
 those 300 ms is not used, whatever it says.
 
 The same 300 ms hold through the writes that follow. The panel asks the
@@ -159,12 +159,12 @@ deadline again before CLEAR and before the frame that switches to ARMED, because
 servo release ahead of them and the CLEAR itself can be answered late. Past
 the deadline before CLEAR, the switch is given up as above with nothing
 written. Past it after an acknowledged CLEAR, no frame is written and the
-panel latches a stop: the CLEAR released the coprocessor's latch and no
+panel latches a stop: the CLEAR released the IOmcu's latch and no
 register sets it again, so the stop withholds the heartbeat and the
-coprocessor sets its latch when it stops trusting the line, within 150 ms.
+IOmcu sets its latch when it stops trusting the line, within 150 ms.
 The limit of the bound is the frame that switches to ARMED itself. It is written at or
 before the deadline, and its acknowledgement can arrive up to the 1000 ms
-exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the coprocessor has then
+exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the IOmcu has then
 switched the role it was asked for to ARMED, at rest: throttle 0 for MOTOR & ESC and
 PROGRAMMER, surfaces centred for SERVO. The panel does not
 undo it. An exchange of the switch that nobody
@@ -172,7 +172,7 @@ answers -- the STATUS read, the servo release, CLEAR or the frame that switches 
 -- has waited the 1000 ms exchange timeout or did not reach the wire: that is
 the link going quiet under a switch to ARMED, and the panel latches a stop as above. A
 refusal is an answer and leaves the panel SAFE with no stop. With no
-coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
+IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
 
 ## Deliberate behaviours
 
@@ -184,9 +184,9 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
 - The PD mini's wiring (SETUP INTERFACES) changes, once the module has
   answered, only on a state read sent after the change that shows the output
   off. A module that switched itself on in the 500 ms between two reads keeps
-  its pins and so its OFF path; the coprocessor switches it off.
+  its pins and so its OFF path; the IOmcu switches it off.
 - A live PD mini output whose input reads under the set point plus 0.5 V on
-  2 input reads in a row is switched off by the coprocessor, which tells the
+  2 input reads in a row is switched off by the IOmcu, which tells the
   panel afterwards. A conservative rule chosen without a measurement: it may
   cut a run that would have survived. Set points are capped 0.7 V under the
   input voltage, 0.2 V above that line, so an input voltage dropping less
@@ -323,7 +323,7 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   only when it began ARMED and found the stream whole. The control task
   looks inside every link exchange's wait, not only once a pass, and stops
   the bench from there as it does for STOP: the heartbeat drops at once and
-  the coprocessor fails safe within 150 ms, however long the exchange
+  the IOmcu fails safe within 150 ms, however long the exchange
   backlog behind the ARM. A frame that
   began before the ARM was published cancels screens that still believe the
   bench is SAFE, which posts no DISARM, so the control task has to.
@@ -414,27 +414,27 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   0x08 to 0x77.
 - If the touch controller stops answering for 500 ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
-- After a link failsafe the coprocessor does not switch back to ARMED when traffic returns.
+- After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.
   Leaving the failsafe takes a write of a defined value (0x5AFE) to the control
-  page. The same holds after a coprocessor start and after a distrusted
+  page. The same holds after an IOmcu start and after a distrusted
   heartbeat: see [Arm latch](#arm-latch).
 - A link lost while ARMED is a stop at the panel. It latches like STOP and is
   cleared by the next switch to ARMED.
-- While the bench is ARMED the coprocessor refuses, with BAD_VALUE, an OUTPUTS
+- While the bench is ARMED the IOmcu refuses, with BAD_VALUE, an OUTPUTS
   write that changes a slot and a CHAN_CFG write that changes a channel's
   role or anything of a throttle channel. A surface's slew and pulse range are
   taken while ARMED: the SERVO screen writes them with every position. The panel
   writes a binding and the throttle's pulse range only while SAFE.
-- The coprocessor acts on overcurrent, over-temperature, stall timeout and a
+- The IOmcu acts on overcurrent, over-temperature, stall timeout and a
   lost link on its own authority and reports the fault at the next poll.
 - A switch to ARMED names the roles it drives ([Link, An arm for one
   role](Link.md#an-arm-for-one-role)). MOTOR & ESC and a PROGRAMMER stick
   run switch the throttle outputs to ARMED, ARM 0x0002. SERVO switches the surfaces and the
   PROG PORT pin to ARMED, ARM 0x0004. A pin of a role the ARM does not name sends no
-  pulse, as while SAFE. A coprocessor older than protocol 4.18
+  pulse, as while SAFE. An IOmcu older than protocol 4.18
   takes any non-zero ARM as the whole bank, so on it every bound pin drives.
 - A switch to ARMED for the other role goes through SAFE. The panel writes ARM = 0,
-  waits at least 100 ms, then writes the new roles; the coprocessor refuses
+  waits at least 100 ms, then writes the new roles; the IOmcu refuses
   a change from one non-zero ARM to another with BAD_VALUE.
 - STOP, the heartbeat stopping, link silence and a switch to SAFE each zero the
   whole ARM, whatever roles it named, and every output stops.
@@ -463,8 +463,8 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   driving, and a switch to SAFE is what stops it.
 - The `Ramp limit` setting, 5 to 300 %/s, governs the panel's own throttle
   bank. That bank is the modelled bench: its slewed value is read by the
-  telemetry simulator and by nothing else, and only while the link is down. A
-  coprocessor that is answering is sent the raw command instead, and
+  telemetry simulator and by nothing else, and only while the link is down. An
+  IOmcu that is answering is sent the raw command instead, and
   `outbind_to_chan_cfg()` writes no slew for any channel, so a pin bound as a
   throttle steps to it on the next 1 ms pass. The physical throttle is not
   ramped, by decision: the bank ramps a throttle upward only, so a ramp on

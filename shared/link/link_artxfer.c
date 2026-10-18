@@ -50,7 +50,7 @@ bool link_artxfer_meta_ok(const uint16_t *meta, link_art_meta_t *out)
         return false;
     }
     /*
-     * The block count has to be the one the length implies.  A coprocessor
+     * The block count has to be the one the length implies.  An IOmcu
      * that disagrees with itself is one whose blocks would run out early or
      * late, and either way the drawing is not what it says it is.
      */

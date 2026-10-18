@@ -7,7 +7,7 @@
 
 Ein Motor-, ESC- (Electronic Speed Controller, Motorregler) und Servoprüfstand
 auf zwei Prozessoren: ein ESP32-S3-Touchpanel (Bedienoberfläche, Einstellungen,
-SD-Karte) und ein RP2350-Koprozessor (Messung, Ausgänge und jedes Protokoll mit
+SD-Karte) und ein RP2350-IOmcu (IO-Mikrocontroller: Messung, Ausgänge und jedes Protokoll mit
 Zeitanforderungen), verbunden über CAN (Controller Area Network) mit 1 Mbit/s.
 
 **Stand: im Aufbau.** Das Projekt ist in Entwicklung, und seine Funktionen
@@ -35,9 +35,9 @@ das Kommando abgeht, wenn das Halten durchgelaufen ist, und nicht wenn der
 Finger abhebt. Das Schalten auf SAFE und STOP sind ein einzelner Druck.
 
 Drei Stoppmechanismen sind vorgesehen: ein Heartbeat, dessen Ausbleiben die
-Ausgänge abschaltet, der Link-Watchdog des Koprozessors und ein STOP-Kommando
+Ausgänge abschaltet, der Link-Watchdog des IOmcu und ein STOP-Kommando
 über den Link. Die Leitung zwischen J8 des Panels und GP3 des
-Koprozessors ist auf dem Aufbau-Prüfstand bestückt. Das retriggerbare Monoflop des Heartbeats ist auf keiner
+IOmcu ist auf dem Aufbau-Prüfstand bestückt. Das retriggerbare Monoflop des Heartbeats ist auf keiner
 Platine vorhanden, die Ausgänge hängen also allein an der Firmware an beiden
 Enden, ohne Hardware-Rückfallebene dahinter.
 [Sicherheit](https://github.com/subtilitas/rcbench/wiki/Safety-de) spezifiziert
@@ -50,9 +50,9 @@ warranty of any kind" der MIT-Lizenz gilt.
 
 | Bildschirm | Funktion | Stand |
 | --- | --- | --- |
-| Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein Coprozessor antwortet |
-| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom Koprozessor gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche und der Abgleich sind auf dem Host gegen ein Servomodell getestet und laufen auf keiner Platine; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
-| Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der Koprozessor steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
+| Motor & ESC | Spannung, Strom, Verbrauch, Drehzahl und Temperaturen live geplottet | Bildschirm gebaut; Drehzahl, Spannung, Strom und ESC-Temperatur aus der bidirektionalen DShot-Telemetrie eines ESC; simulierte Werte, solange kein IOmcu antwortet |
+| Servo | befohlene und gemessene Stellung; Suche nach der eingebauten Endlage; Abgleich zweier Servos; Servotypen mit ihren Bildwiederholraten, eine Warnung vor denen, die ein Servo zerstören können; ein Sweep durch Rechteck, Sinus oder Dreieck, vom IOmcu gefahren; die Leistung des Netzteils live; ein automatischer Test, der die Spannung des Netzteils stuft, mit CSV und Textbericht; ein [Programmierer für KST- und Chaservo-Servos](docs/ServoProgrammer-de.md) mit Backup, Limitprüfung und Schreibschalter | Bildschirm gebaut und steuert über den Link; treibt die als Ruderflächen gebundenen Pins, Timing ungemessen; die Endlagensuche und der Abgleich sind auf dem Host gegen ein Servomodell getestet und laufen auf keiner Platine; der Programmierer ist auf dem Host getestet, kein Frame an ein Servo gesendet |
+| Netzteil | der PD mini, ein USB-PD-Netzteil (USB Power Delivery): Spannung und Strombegrenzung einstellen, Ausgang schalten, V, A und W plotten und loggen | Bildschirm gebaut; der IOmcu steuert den PD mini über einen PIO-UART (Programmable Input/Output, Universal Asynchronous Receiver-Transmitter), wenn SETUP ihn einschaltet, sonst rechnet das Panel ein Modell |
 | Analyser | sechzehn Empfängerkanäle mit Verlauf, die Digitalkanäle, LIVE / FRAME LOST / FAILSAFE / KEIN SIGNAL | S.BUS-Decoder gebaut; PIO-Empfänger (Programmable Input/Output) nicht geschrieben |
 | Programmierer | Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und VESC-Firmware und für Hitec-Servos; [ESC-Programmierprofile](docs/EscProfiles-de.md) für Gasknüppel-Menüs: 72 Familien, 451 Modelle | Bildschirm gebaut; kein Protokoll auf einer Leitung. Profile eingebaut und aus `/ESC/` auf der Karte gelesen. Die [Stick-Programmierung](docs/StickProgramming-de.md) führt 24 davon vom Bildschirm PROGRAMMER aus und fragt dabei zur rechten Zeit nach Jumper oder Taster eines Kontronik-ESC, gegen den simulierten ESC des Panels |
 | Auswuchten | Blattzahl, Korrekturmasse und -winkel, Anleitungen zur Sensorplatzierung | Bildschirm gebaut; Sensoren nicht bestückt |
@@ -71,7 +71,7 @@ ctest --test-dir test/host/build --output-on-failure
 ```
 
 Die Panel-Firmware braucht ESP-IDF (Espressif Internet-of-Things Development
-Framework) v5.4 oder neuer, die Koprozessor-Firmware pico-sdk 2.0 oder neuer
+Framework) v5.4 oder neuer, die IOmcu-Firmware pico-sdk 2.0 oder neuer
 (SDK, Software Development Kit).
 [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de) beschreibt
 Toolchains, Befehle und die CI-Gates (Continuous Integration).

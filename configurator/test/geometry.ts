@@ -133,9 +133,9 @@ export function findings(l: Layout, setup: Setup): string[] {
     if (m.y + 31 + (m.sub.length - 1) * 13 > m.y + (m.pins.length > 0 ? 36 : m.h - 5)) out.push(`sub lines of ${m.id} leave the header`);
     for (const p of m.pins) if (p.drawn && p.label.length * 6.6 > room) out.push(`pin label ${m.id}.${p.id} is wider than the module`);
   });
-  if (l.copro.y + l.copro.h > l.height - g.bottom) out.push('coprocessor leaves the canvas');
-  if (l.copro.sub.length * SUB_CHAR > g.coproW - 16) out.push('sub line of the coprocessor is wider than its box');
-  if (l.copro.title.length * 7.6 > g.coproW - 16) out.push('title of the coprocessor is wider than its box');
+  if (l.copro.y + l.copro.h > l.height - g.bottom) out.push('IOmcu leaves the canvas');
+  if (l.copro.sub.length * SUB_CHAR > g.coproW - 16) out.push('sub line of the IOmcu is wider than its box');
+  if (l.copro.title.length * 7.6 > g.coproW - 16) out.push('title of the IOmcu is wider than its box');
   return out;
 }
 

@@ -1,7 +1,7 @@
 /*
  * Moves replayed through the move rules of shared/servo/servo_move.c, for
  * tools/sense_trace.py: the samples of a trace in, what the rules make of
- * each move out.  The rules are the ones the coprocessor's capture runs,
+ * each move out.  The rules are the ones the IOmcu's capture runs,
  * linked here and not written again, and the samples are fed as the
  * capture feeds them (sense_sched.c, cap_step()): each sample judged,
  * then the clock moved to it.

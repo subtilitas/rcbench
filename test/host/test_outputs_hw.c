@@ -1,5 +1,5 @@
 /*
- * The age of an ESC's last reading, as the coprocessor's output layer
+ * The age of an ESC's last reading, as the IOmcu's output layer
  * (firmware/iomcu/src/outputs_hw.c) reports it, across the wrap of the
  * 32-bit millisecond clock at 2^32 ms (49.7 days).
  *

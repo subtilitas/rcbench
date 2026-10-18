@@ -113,7 +113,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         SET_CAT_APP, SET_TYPE_INT, 90, 720, 10, 270, NULL, 0 },
 
     /*
-     * The current monitors, on the coprocessor's I2C (Inter-Integrated
+     * The current monitors, on the IOmcu's I2C (Inter-Integrated
      * Circuit) bus and written to its SENSE page by the panel (protocol
      * 4.7).  The ranges are the page's: an INA228 shunt of 50 to 20000 uOhm
      * and a range of 1.0 to 300.0 A, an INA3221 shunt of 5 mOhm to 1 Ohm.
@@ -150,15 +150,15 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "ina3221_ch", "INA3221 channels", "CH1 the servo test, CH2+3 a pair", "",
         SET_CAT_IFACE, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(k_ina3221_ch) },
     /*
-     * The bus's pins: coprocessor GPIO, one I2C block's SDA and SCL.
+     * The bus's pins: IOmcu GPIO, one I2C block's SDA and SCL.
      * Sensor SDA takes the values settings_sense_sda_valid() does and no
-     * other: -1, the pins not set, and the SDA pins the coprocessor's page
+     * other: -1, the pins not set, and the SDA pins the IOmcu's page
      * can take.  Sensor SCL is derived: the GPIO after SDA, and -1 with
      * it.  Its key is kept and saved with the value derived, so a panel
      * build that reads both keys reads a pair.
      */
     [SET_SENSE_SDA] = {
-        "sns_sda", "Sensor SDA", "Coprocessor GPIO; -1: no sensor bus", "GPIO",
+        "sns_sda", "Sensor SDA", "IOmcu GPIO; -1: no sensor bus", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, -1, 47, 1, 16, NULL, 0 },
     [SET_SENSE_SCL] = {
         "sns_scl", "Sensor SCL", "Follows Sensor SDA: the GPIO after", "GPIO",
@@ -177,7 +177,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "enc_centre", "AS5600 centre", "Count at neutral; 4096 a turn", "",
         SET_CAT_IFACE, SET_TYPE_INT, 0, 4095, 1, 0, NULL, 0 },
     /*
-     * The phase tap, written to the coprocessor's TONE page (protocol
+     * The phase tap, written to the IOmcu's TONE page (protocol
      * 4.8): one GPIO that reads an ESC's beeps off one motor phase.  The
      * ranges and defaults are the page's (LINK_TN_*): the pin GP22 (pad 29),
      * tones from 400 to 6500 Hz, a new beep when the pitch moves 8 %, a
@@ -188,7 +188,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         "tone_en", "Phase tap", "ESC beeps heard on one motor phase", "",
         SET_CAT_IFACE, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_TONE_PIN] = {
-        "tone_pin", "Tap pin", "Coprocessor GPIO; GP22 is pad 29", "GPIO",
+        "tone_pin", "Tap pin", "IOmcu GPIO; GP22 is pad 29", "GPIO",
         SET_CAT_IFACE, SET_TYPE_INT, 0, 47, 1, 22, NULL, 0 },
     [SET_TONE_F_MIN] = {
         "tone_fmin", "Tap lowest tone", "Lower tones are not beeps", "Hz",
@@ -216,7 +216,7 @@ static const setting_def_t k_defs[SETTING_COUNT] = {
         SET_CAT_IFACE, SET_TYPE_INT, -1, 48, 1, -1, NULL, 0 },
     /*
      * The PD mini's UART: the module's DM is its RX and DP its TX, at 3.3 V.
-     * Coprocessor GPIO, written to its SUPPLY page by the panel; the pins
+     * IOmcu GPIO, written to its SUPPLY page by the panel; the pins
      * are -1 until the module is wired, and the page drives nothing then.
      */
     [SET_PDMINI_EN] = {

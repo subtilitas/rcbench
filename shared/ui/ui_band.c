@@ -219,7 +219,7 @@ static char s_line[400];
 
 /* The link_fault_t bits by name.  `never` marks a bit no firmware of this
  * release sets: STATUS's bitmap is written in one place on the
- * coprocessor, from safety_gate_status() and the flash store, which set
+ * IOmcu, from safety_gate_status() and the flash store, which set
  * LINK_SILENT, HEARTBEAT and STORE_OFF and nothing else. */
 static const struct {
     uint16_t     bit;
@@ -287,7 +287,7 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
         return fault_para(st->faults, i);
     case UI_BAND_CHIP_LINK:
         ids[n++] = st->link_up ? TX_BH_LINK_UP : TX_BH_NO_LINK;
-        /* The frames the coprocessor refused, as MOTOR & ESC's header strip
+        /* The frames the IOmcu refused, as MOTOR & ESC's header strip
          * has them, while the link is up and there are any. */
         if (i == n && ui_link_refused_label(st, s_para, sizeof(s_para))) {
             return true;

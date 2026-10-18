@@ -145,7 +145,7 @@ TEST_CASE(centre_and_release_post_their_own_commands)
 /*
  * The gesture is the same two seconds as MOTOR & ESC's, because it is the
  * same control: a press that is held arms, and a press that is not does
- * nothing.  A servo cannot be driven without it -- the coprocessor writes a
+ * nothing.  A servo cannot be driven without it -- the IOmcu writes a
  * pulse of length zero to every PWM pin while the bench is not armed.
  */
 TEST_CASE(a_hold_on_arm_asks_to_arm_exactly_once)
@@ -877,8 +877,8 @@ static void ack_resume(uint32_t kept_ms, uint32_t ago_ms)
     acked(kept_ms + ago_ms, SERVO_SWEEP_RESUMED, ago_ms);
 }
 
-/* SWEEP asks the coprocessor for the TEST page's curve, and only on an armed
- * bench and a coprocessor that sweeps: anything else would refuse it. */
+/* SWEEP asks the IOmcu for the TEST page's curve, and only on an armed
+ * bench and an IOmcu that sweeps: anything else would refuse it. */
 TEST_CASE(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps)
 {
     fresh();
@@ -902,8 +902,8 @@ TEST_CASE(a_sweep_needs_an_armed_bench_and_a_coprocessor_that_sweeps)
     CHECK(servo_screen_sweeping());
 }
 
-/* The horn follows the curve the coprocessor runs; PAUSE asks the
- * coprocessor to hold the output where it is, and the drawing stops there. */
+/* The horn follows the curve the IOmcu runs; PAUSE asks the
+ * IOmcu to hold the output where it is, and the drawing stops there. */
 TEST_CASE(the_horn_follows_the_sweep_and_hold_keeps_it_where_it_is)
 {
     fresh();
@@ -1028,7 +1028,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
     choose_type(1);                            /* not driving: a rest */
     CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
 
-    /* And a coprocessor that cannot sweep any more: what the panel holds is
+    /* And an IOmcu that cannot sweep any more: what the panel holds is
      * ended with a release. */
     fresh();
     servo_screen_set_armed(true);
@@ -1041,7 +1041,7 @@ TEST_CASE(a_sweep_ends_on_the_dial_centre_release_disarm_and_leave)
 }
 
 /* A setting changed while it runs starts the sweep over with it, as the
- * coprocessor's does when it is written. */
+ * IOmcu's does when it is written. */
 TEST_CASE(a_changed_setting_starts_the_sweep_over)
 {
     fresh();
@@ -1184,7 +1184,7 @@ static int sweep_btn_pixels(gfx_color_t col)
 /*
  * PAUSE pauses a running sweep with the link's HOLD and reads PAUSED, filled
  * in the warning colour rather than the accent; a second tap starts the
- * curve again, from its beginning, as the coprocessor does.  In both themes.
+ * curve again, from its beginning, as the IOmcu does.  In both themes.
  */
 TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
 {
@@ -1241,7 +1241,7 @@ TEST_CASE(pause_holds_the_sweep_and_a_second_tap_resumes_it)
 /*
  * The horn goes on from the phase it was paused at, however long the pause:
  * the 0.5 Hz sine paused a quarter of a second in is at its peak a quarter
- * of a second after PAUSED.  A coprocessor that started the curve over
+ * of a second after PAUSED.  An IOmcu that started the curve over
  * instead (older than 4.6, or refusing) is followed: drawn from the curve's
  * beginning.  One that resumed later than the tap is followed too.
  */
@@ -2441,7 +2441,7 @@ TEST_CASE(speed_100_is_immediate_in_the_drawing_and_the_replay)
  * PAUSED does not move the horn: the far end stays held until the RESUME
  * reaches it.  Acknowledged 300 ms after it did, the drawn output is worked
  * on from the held point for those 300 ms at SPEED, as the far end's
- * output slews -- the bank the coprocessor runs, fed the same curve.
+ * output slews -- the bank the IOmcu runs, fed the same curve.
  */
 TEST_CASE(a_resume_is_drawn_from_its_acknowledgement)
 {
@@ -2518,7 +2518,7 @@ static void paused_sweep(void)
 
 /*
  * A pause ends as a hold did: CENTRE, RELEASE, a finger on the dial, a
- * disarm, STOP, leaving the screen, a coprocessor that stops sweeping, a
+ * disarm, STOP, leaving the screen, an IOmcu that stops sweeping, a
  * hold the panel had to let go of, and a changed profile, which says the
  * position again.  The button reads SWEEP after each.
  */
@@ -2575,10 +2575,10 @@ TEST_CASE(a_pause_ends_where_a_hold_ended)
 
 /*
  * Without feedback the horn is drawn where the far end's output is, slewing
- * as the coprocessor slews -- in its command units -- so the horn PAUSE
- * leaves drawn is where the coprocessor holds the servo, with CENTRE off
+ * as the IOmcu slews -- in its command units -- so the horn PAUSE
+ * leaves drawn is where the IOmcu holds the servo, with CENTRE off
  * the middle as well.  The far end
- * here is the bank the coprocessor runs, fed the same sweep.
+ * here is the bank the IOmcu runs, fed the same sweep.
  */
 TEST_CASE(hold_without_feedback_matches_the_far_ends_slew)
 {
@@ -4121,7 +4121,7 @@ TEST_CASE(a_run_with_the_encoder_off_writes_the_old_columns)
 }
 
 /* The SENSE set-up is written only while the bank is disarmed: an AS5600
- * switched on while armed is not in the coprocessor, and a run started then
+ * switched on while armed is not in the IOmcu, and a run started then
  * has no angles to log. */
 TEST_CASE(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns)
 {
@@ -4647,7 +4647,7 @@ TEST_CASE(the_rail_line_names_the_pd_mini_and_a_modelled_supply)
     /* A new sample repaints the plot, and the pill with it. */
     rail_supply(6.0f, 0.5f);
     CHECK(pill_reads("SIMULATED"));
-    /* No coprocessor: the supply's sample, still under PD MINI. */
+    /* No IOmcu: the supply's sample, still under PD MINI. */
     meter(SERVO_SOURCE_MODEL);
     scr->tick(1.0f / 39.0f);
     CHECK(pill_reads("SIMULATED"));

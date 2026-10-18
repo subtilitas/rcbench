@@ -1,5 +1,5 @@
 /*
- * The coprocessor's half of the firmware update: the UPDATE_CTL and
+ * The IOmcu's half of the firmware update: the UPDATE_CTL and
  * UPDATE_DATA pages (link_pages.h) and what they write.
  *
  * Pure C.  The flash, the store's gate, the boot ROM's BUY and the restart

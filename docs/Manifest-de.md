@@ -25,9 +25,9 @@ Die ursprüngliche Anforderungsliste:
 
 | Anforderung | Umsetzung |
 | --- | --- |
-| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-Koprozessors, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. |
+| Externe Stromsensoren über I²C (Inter-Integrated Circuit) | An den I²C-Bussen des Mess-IOmcu, des zweiten der beiden RP2354B des IO-Boards (hardware/docs/IOBoard.md). Der I²C-Bus des Panels ist für den Touch-Controller und den I/O-Expander reserviert. |
 | ESC-Programmierer (ESCs mit AM32- und BLHeli_S-Firmware gefordert) | One-Wire-Bootloader-Protokoll, Half Duplex, 19 200 Baud, auf einer PIO-State-Machine (PIO: Programmable Input/Output) |
-| Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am Koprozessor, auf einer gemeinsamen Zeitbasis abgetastet |
+| Auswuchten mit Beschleunigungs- und Indexsensor | Beide Sensoren am IOmcu, auf einer gemeinsamen Zeitbasis abgetastet |
 | Servotester mit S.BUS und weiteren Protokollen | PWM-Ausgänge (PWM: Pulsweitenmodulation) in Hardware; ein PIO-Programm je serielles Protokoll |
 | Servoprogrammierung | Das Protokoll der Hitec-D-Serie ist veröffentlicht; andere Hersteller brauchen ein Programmiergerät zum Mitschneiden |
 | Logviewer für mehrere Formate | `shared/logfile`: ein CSV-Reader (CSV: Comma-Separated Values), der Dezimalkomma und Dezimalpunkt, eine Einheitenzeile und unvollständige Zeilen akzeptiert |

@@ -3,7 +3,7 @@
  *
  * Under test: the threshold from the idle noise; movement, arrival and
  * arrival at an end held harder than the servo moves, at the PD mini's 10
- * readings a second and at the coprocessor's 1 kHz, the latter against the
+ * readings a second and at the IOmcu's 1 kHz, the latter against the
  * servo model; a reading before the command; the window with the meter's
  * lag, late and unseen; a clock before the command; the filter and its
  * delay; clipped samples, which decide only what their bound decides; a
@@ -207,7 +207,7 @@ TEST_CASE(a_sample_at_the_window_end_is_never_the_arrival)
     CHECK(!servo_move_moved(&m));
 }
 
-/* The coprocessor stamps the edge ahead of the time it is told: a clock
+/* The IOmcu stamps the edge ahead of the time it is told: a clock
  * before the command decides nothing. */
 TEST_CASE(a_clock_before_the_command_decides_nothing)
 {
