@@ -530,8 +530,8 @@ ESC und die Spalten des Fensters unter INA3221.
 
 ![OPTIONEN](img/de/motor-settings.png)
 
-OPTIONEN hält die 8 Einstellungen der Kategorie ESC / PRÜFSTAND
-(`SET_CAT_ESC`) in der Reihenfolge des Schemas, unter drei Überschriften:
+OPTIONEN hält die 8 Einstellungen von Akku, Motor und Gasausgang
+(`SET_CAT_ESC` im Einstellungsschema) in der Reihenfolge des Schemas, unter drei Überschriften:
 
 | Überschrift | Einstellungen |
 | --- | --- |
@@ -1566,6 +1566,16 @@ die HV-Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
 Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
 solange der Ausgang an ist.
 
+**Das Home-Tag führt eine Ebene nach der anderen zurück.** Der Ausgang
+bleibt dabei, wie er ist:
+
+| Von | Das Home-Tag führt zu |
+| --- | --- |
+| der Frage | dem, was darunter liegt; die Änderung wird verworfen, wie ABBRECHEN sie verwirft |
+| einer Tastatur | dem, was darunter liegt, SUPPLY oder OPTIONEN; der Wert bleibt unverändert |
+| OPTIONEN | SUPPLY |
+| SUPPLY | dem Menü; ein Ausgang, den SUPPLY eingeschaltet hat, geht aus |
+
 **Mit dem PD mini** geht ein OFF vor allem anderen an die SUPPLY-Page, was
 das Panel ihr schuldet, und der IOmcu schaltet den Ausgang selbst ab,
 wenn der Heartbeat des Panels ausbleibt. Ein eingeschalteter PD mini zeigt
@@ -2016,7 +2026,11 @@ der Karte zum Herunterladen und ein Panel-Firmware-Image zum Hochladen. Der
 Bildschirm öffnet über die Kachel WI-FI auf [SETUP](#setup) und über WLAN in
 der unteren Reihe von [LOGS](#logs). Sein Home-Tag führt zu dem Bildschirm
 zurück, der ihn geöffnet hat, SETUP oder LOGS; ebenso SCHLIESSEN auf PANEL
-UPDATE, nachdem die Installation eines Uploads scheiterte. Der Funk läuft nur, solange dieser Bildschirm offen ist,
+UPDATE, nachdem die Installation eines Uploads scheiterte. Über der
+Netzwerkliste oder einer Tastatur führt das Home-Tag zuerst eine Ebene
+zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu
+behalten, und von der Liste zu den Tasten. Über der Frage zu einem
+hochgeladenen Image verlässt es den Bildschirm, und das Image wird verworfen. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
@@ -2303,8 +2317,8 @@ Namen.
 
 - Zwei Kategorien: PANEL und ANSCHLÜSSE, die Einstellungen für den
   ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
-  Tippen öffnet die Liste der Kategorie. Die Einstellungen von
-  ESC / PRÜFSTAND stehen unter MOTOR & ESC
+  Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
   ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
@@ -2337,7 +2351,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC. Eine Liste oder eine Tastatur, die auf einem davon offen ist, schließt zuerst ([Outputs](#outputs), [Pin auswählen](#pin-auswählen), [WLAN](#wlan)) |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -3167,6 +3181,8 @@ Aktuelle Einschränkungen:
 ## Outputs
 
 Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
+Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
+wählen, und der Bildschirm bleibt.
 Die Protokolle, die an die
 Pins des IOmcu gebunden sind, und welche Pins jedes davon treibt. Der
 Bildschirm öffnet auf der [Übersicht](#die-übersicht-off): OFF gewählt,
@@ -3408,6 +3424,8 @@ hinterlassen hat.
 ### Pin auswählen
 
 Hinter der Kachel PICK A PIN auf SETUP; das Home-Tag führt dorthin zurück.
+Über der offenen Protokollliste schließt das Home-Tag die Liste, ohne zu
+wählen, und der Bildschirm bleibt.
 Dieselbe Bindung,
 die der Outputs-Bildschirm hält. Die Liste beantwortet „welcher GPIO ist
 gebunden“; dieser beantwortet „wo stecke ich das Kabel an“.

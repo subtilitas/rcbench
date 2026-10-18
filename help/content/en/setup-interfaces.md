@@ -6,7 +6,7 @@ order: 61
 
 # Interfaces
 
-INTERFACES, the third category on [SETUP](setup.md), wires the parts the IOmcu reads: two current monitors and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, and the PD mini supply. Its 26 settings stand in four sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS and SUPPLY; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
+INTERFACES, the second category on [SETUP](setup.md), wires the parts the IOmcu reads: two current monitors and an output encoder on one I2C (Inter-Integrated Circuit) bus, the phase tap, and the PD mini supply. Its 26 settings stand in four sections under the headings I2C BUS, PHASE TAP, BALANCE SENSORS and SUPPLY; a heading is a row of its own with no keys. The settings are kept and saved like every other setting on SETUP. The panel writes each set-up to the IOmcu 500 ms after the last edit, and only what differs from what the IOmcu holds.
 
 ## The current monitors
 

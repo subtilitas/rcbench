@@ -455,6 +455,29 @@ static void enter(void)
     touched();
 }
 
+/*
+ * The home tag climbs one level, as CANCEL does: from a keyboard to the
+ * network list, keeping nothing typed, and from the list to the buttons.
+ * Over the question about a staged image the tag leaves the screen, and
+ * the leave drops the image.
+ */
+static bool back(void)
+{
+    if (staged()) {
+        return false;
+    }
+    if (s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS) {
+        ui_textkey_close(&s.tk);
+        s.sub = SUB_SCAN;
+    } else if (s.sub == SUB_SCAN) {
+        s.sub = SUB_MAIN;
+    } else {
+        return false;
+    }
+    touched();
+    return true;
+}
+
 static void leave(void)
 {
     /* Wi-Fi is on only while the screen is open.  An image the hold sent
@@ -809,6 +832,7 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *wifi_screen(void) { return &k_screen; }

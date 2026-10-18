@@ -6,7 +6,7 @@ order: 30
 
 # Netzteil
 
-SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte.
+SUPPLY stellt, schaltet und zeichnet ein programmierbares Netzteil auf: den PD mini, einen USB-PD-Trigger (USB Power Delivery), den der IOmcu über einen UART (Universal Asynchronous Receiver-Transmitter) an zwei seiner Pins ansteuert. Der Bildschirm öffnet über die Kachel SUPPLY im [Menü](overview.md). Die Grafik und die Sollwerte belegen die linke Spalte; die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN die rechte. Das Home-Tag führt eine Ebene nach der anderen zurück: Über der Rückfrage verwirft es die Änderung, wie ABBRECHEN; über einem Tastenfeld schließt es das Tastenfeld und behält den Wert; über den OPTIONEN schließt es sie. Von SUPPLY selbst führt es zum Menü.
 
 ## Das Netzteilmodell
 

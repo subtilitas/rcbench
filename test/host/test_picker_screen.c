@@ -1804,6 +1804,27 @@ TEST_CASE(queries_past_the_end_answer_nothing)
 }
 
 /*
+ * The home tag over the open list (ui_screen_t.back) closes it choosing
+ * nothing and keeps the screen; with no list open the tag leaves.
+ */
+TEST_CASE(the_home_tag_closes_the_pickers_list_first)
+{
+    fresh();
+    CHECK(!scr()->back());                       /* nothing open */
+    tap_rect(picker_screen_list_face());
+    CHECK(picker_screen_list_open());
+    CHECK(scr()->back());
+    CHECK(!picker_screen_list_open());
+    CHECK_EQ(s_applied, 0);
+    /* A button acts again: the list no longer takes the tap. */
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(7u), &r));
+    tap_rect(r);
+    CHECK_EQ(s_applied, 1);
+    CHECK(!scr()->back());
+}
+
+/*
  * The reason under the protocol list: 35 cells under the count, and what
  * does not fit there on a second line of at most 17 cells, which ends left
  * of the widest board (150 px).  Every reason the picker shows, in every
@@ -1889,5 +1910,6 @@ int main(void)
     RUN(a_tall_board_is_drawn_to_scale_and_not_stretched);
     RUN(queries_past_the_end_answer_nothing);
     RUN(every_reason_ends_left_of_the_board);
+    RUN(the_home_tag_closes_the_pickers_list_first);
     return test_summary("picker_screen");
 }

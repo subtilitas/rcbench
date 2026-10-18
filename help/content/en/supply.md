@@ -6,7 +6,7 @@ order: 30
 
 # Supply
 
-SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right.
+SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right. The home tag climbs one level at a time: over the question it drops the change, as CANCEL does; over a keypad it closes the keypad and keeps the value; over SETTINGS it closes them. From SUPPLY itself it goes to the menu.
 
 ## The supply model
 

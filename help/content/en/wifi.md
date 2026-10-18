@@ -6,7 +6,7 @@ order: 51
 
 # Wi-Fi
 
-WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. The radio runs only while this screen is open. It is off at every start of the panel.
+WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. Over the network list or a keyboard it climbs one level first, as CANCEL does: from a keyboard to the list, keeping nothing typed, and from the list to the buttons. Over the question about an uploaded image it leaves the screen, and the image is dropped. The radio runs only while this screen is open. It is off at every start of the panel.
 
 ## The start screen
 
