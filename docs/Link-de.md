@@ -1393,7 +1393,7 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update im Menü verfügbar.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
 | BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
 

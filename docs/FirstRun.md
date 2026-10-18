@@ -136,7 +136,7 @@ protocol stays 4.22, so the two boards link before and after the update.
    `esptool.py` or the browser flasher, to start from the default settings.
 3. Power both boards with the link wired. At link-up the panel compares the
    IOmcu's running image with the image it carries by SHA-256, finds
-   another build, and the band says `IOmcu runs a different build. An update is available in the menu.`.
+   another build, and the band says `IOmcu runs a different build. Update it under SETUP > UPDATES.`.
 4. **IOmcu.** The question opens on the menu while the bench is SAFE,
    the supply's output is off and the panel's Wi-Fi radio is off. It names
    0.19.0 on the IOmcu and 0.20.0 in the panel. Hold START for 2 s.

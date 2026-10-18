@@ -1283,7 +1283,7 @@ with the IOmcu's HASH_RUNNING over the same number of bytes.
 | Result | Panel |
 | --- | --- |
 | same | nothing |
-| different | the alert `IOmcu runs a different build. An update is available in the menu.`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
+| different | the alert `IOmcu runs a different build. Update it under SETUP > UPDATES.`; the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
 | an image on trial | writes BUY at once and says `New IOmcu firmware kept.` |
 | BAD_PAGE or no slots | the alert `IOmcu cannot update over CAN. Install firmware once via USB.` |
 

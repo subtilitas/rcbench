@@ -1046,7 +1046,7 @@ UI_TEXT(ALERT_TONE_PIN,            94, "Phase tap on GP%u, %u to %u Hz rejected.
 UI_TEXT(ALERT_TONE_SETUP,          94, "Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.")
 UI_TEXT(ALERT_TONE_BUSY,           94, "Phase tap pin GP%u is in use. Capture not running.")
 UI_TEXT(ALERT_TONE_OVERRUN,        94, "Phase tap capture overflow. Beeps are incomplete.")
-UI_TEXT(ALERT_CU_OFFER,            94, "IOmcu runs a different build. An update is available in the menu.")
+UI_TEXT(ALERT_CU_OFFER,            94, "IOmcu runs a different build. Update it under SETUP > UPDATES.")
 UI_TEXT(ALERT_CU_USB,              94, "IOmcu cannot update over CAN. Install firmware once via USB.")
 UI_TEXT(ALERT_CU_DONE,             94, "IOmcu updated to %u.%u.%u.")
 UI_TEXT(ALERT_CU_KEPT,             94, "New IOmcu firmware kept.")

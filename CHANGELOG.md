@@ -136,6 +136,10 @@ history is in git.
   coprocessor (German `Koprozessor`). Upper-case texts read `IOMCU`, for
   example `IOMCU UPDATE`. Identifiers, file names, CAN page names and the
   entries of released versions keep their wording.
+- The alert for an IOmcu on another build names the place of the update:
+  `IOmcu runs a different build. Update it under SETUP > UPDATES.` (German
+  `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`). It said
+  that an update is available in the menu.
 - Band titles follow their tiles: SETUP (was SETTINGS), LOGS (was LOG
   VIEWER) and WI-FI (was FILES & UPDATE), English in both languages.
 - SETUP has a WI-FI tile between PICK A PIN and UPDATES, line `NETWORK,

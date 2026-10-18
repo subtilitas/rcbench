@@ -148,7 +148,7 @@ dem Update.
 3. Beide Platinen mit verdrahtetem Link einschalten. Beim Link-Aufbau
    vergleicht das Panel das laufende Image des IOmcu per SHA-256 mit
    dem Image, das es mitbringt, findet einen anderen Build, und das Band
-   meldet `IOmcu nutzt einen anderen Build. Update im Menü verfügbar.`.
+   meldet `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`.
 4. **IOmcu.** Die Frage öffnet sich auf dem Menü, solange die Bench
    SAFE ist, der Ausgang der Versorgung aus und der Funk des Panels aus. Sie
    nennt 0.19.0 auf dem IOmcu und 0.20.0 im Panel. START 2 s halten.
