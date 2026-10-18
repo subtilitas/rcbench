@@ -14,6 +14,7 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | REMINDER AT START: ON / OFF | switches the check at start and its reminder; kept with SAVE on [Setup](setup.md#keeping-the-values); on by default |
+| RELEASES: USABLE / TESTING | sets which releases a check offers, see [The check](#the-check); kept with SAVE on [Setup](setup.md#keeping-the-values); USABLE by default; a switch hides the last result, and a release found on the other setting is not offered |
 | HOLD 2 s: DOWNLOAD & INSTALL | shown once a check found a newer release; downloads, checks and installs it |
 | HOLD 2 s: UPDATE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 
@@ -31,10 +32,20 @@ The download also needs no board drawing being fetched or kept.
 
 ![A check under way](view:updates-checking)
 
-The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request to `https://github.com/subtilitas/rcbench/releases/latest` and reads the newest release's tag from the `Location` header of the answer. Then the radio goes off. The join, the address and the request take 30 s at most, together. The card shows the step and the seconds left.
+An odd minor number is a testing release, published on GitHub as a pre-release (0.21.x). An even minor number is a usable release (0.22.x).
+
+The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Security) request and reads the newest release's tag from the answer. Then the radio goes off. The join, the address and the request take 30 s at most, together. The card shows the step and the seconds left.
+
+| RELEASES | Request | What is read |
+|---|---|---|
+| USABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1` | `tag_name` of the newest release, testing or usable, from the JSON (JavaScript Object Notation) answer; read up to the tag in pieces of 4096 bytes, 16384 bytes at most, and not stored |
+
+On both settings only a release newer than the running build is offered. A panel on testing release 0.21.0 with USABLE is not offered usable release 0.20.0.
 
 ![A newer release](view:updates-newer)
 ![Up to date](view:updates-current)
+![A testing release found with TESTING](view:updates-testing)
 
 | Card | Meaning |
 |---|---|
@@ -43,8 +54,10 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | the join failed, as on Files and update |
 | `No response within 30 s.` | the 30 s ran out |
 | `No connection to GitHub.` | the name lookup, the connection or the certificate check failed |
-| `GitHub rejected the request: HTTP 404.` | an answer other than a redirect |
-| `Unexpected answer from GitHub.` | the `Location` is missing or out of form; a second line says which |
+| `GitHub rejected the request: HTTP 404.` | an answer other than a redirect, or with TESTING other than 200 |
+| `GitHub's request limit is reached: HTTP 403.` | TESTING: GitHub answered 403 or 429; it takes 60 API requests an hour per address without an account |
+| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` | the running build's version does not parse; nothing is offered |
+| `Unexpected answer from GitHub.` | the `Location`, or with TESTING the answer, is missing or out of form; a second line says which |
 | `Wi-Fi switched off: bench ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
 | `Stopped: ...` | WI-FI, the IOmcu's update or CANCEL ended the check |
 
@@ -96,5 +109,7 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 ## Current limitations
 
 - How long the check and the download take on a real network is not measured.
+- TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
+- TESTING reads the release GitHub lists first, by date. Releases published out of version order, for example a 0.20.1 after a 0.21.0, are untested.
 - No certificate's dates are checked: the panel has no clock.
 - A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

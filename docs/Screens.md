@@ -2750,6 +2750,7 @@ asks the same question once per start of the panel.
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
+| `RELEASES: USABLE` / `TESTING` | Sets which releases a check offers ([The check](#the-check)). Kept with SAVE on SETUP. `USABLE` by default. A switch hides the last check's result: a release found on the other setting is not offered. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
 | `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
@@ -2769,12 +2770,30 @@ kept.
 
 ### The check
 
+Releases are numbered by kind. An odd minor number is a testing release,
+published on GitHub as a pre-release (0.21.x). An even minor number is a
+usable release (0.22.x).
+
 The panel joins the home network, sends one HTTPS (HTTP over transport layer
-security) request to `https://github.com/subtilitas/rcbench/releases/latest`
-and reads the `Location` header of the answer, which names the newest
-release's tag (`.../releases/tag/v0.20.0`). The answer's body is not read.
+security) request and reads the newest release's tag from the answer.
+RELEASES sets the request:
+
+| RELEASES | Request | What is read |
+| --- | --- | --- |
+| `USABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` of the first release in the JSON (JavaScript Object Notation) answer: the newest release, testing or usable. The answer is read in pieces of 4096 bytes up to the tag, and is not stored. The rest is not read. |
+
 Then the radio goes off. The join, the address and the request take 30 s at
-most, together.
+most, together. On either setting only a release newer than the running
+build is offered: a panel on testing release 0.21.0 with `USABLE` is not
+offered usable release 0.20.0.
+
+Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
+each public IP (Internet Protocol) address without an account, and the
+devices behind one address share them. Each check is one request, and the
+panel sends no retry. The release read is the one GitHub lists first, in
+GitHub's order by date, not by version number. Releases published out of
+version order, for example a 0.20.1 after a 0.21.0, are untested.
 
 ![A check under way](img/updates-checking.png)
 
@@ -2784,6 +2803,7 @@ check:
 
 ![A newer release](img/updates-newer.png)
 ![Up to date](img/updates-current.png)
+![A testing release found with RELEASES on TESTING](img/updates-testing.png)
 
 | Card | Meaning |
 | --- | --- |
@@ -2792,8 +2812,10 @@ check:
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15 s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
 | `No response within 30 s.` | The 30 s ran out. |
 | `No connection to GitHub.` | The name lookup, the connection or the certificate check failed. |
-| `GitHub rejected the request: HTTP 404.` | An answer other than a redirect. |
-| `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
+| `GitHub rejected the request: HTTP 404.` | An answer other than a redirect (`USABLE`) or other than 200 (`TESTING`). |
+| `GitHub's request limit is reached: HTTP 403.` and `GitHub allows 60 API requests an hour per address.` | `TESTING`: GitHub answered 403 or 429, its limit for requests without an account. |
+| `The panel's own version is not MAJOR.MINOR.PATCH: no update offered.` and `Latest release on GitHub: 0.21.0.` | The running build's version does not parse. No release is offered. |
+| `Unexpected answer from GitHub.` | The `Location` (`USABLE`) or the API's answer (`TESTING`) is missing or out of form; a second line says which (tables below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
 | `Stopped: the IOmcu update has started.` | The IOmcu's update began. |
@@ -2814,6 +2836,25 @@ equal and PATCH is higher.
 | `The address is too long.` | A `Location` longer than 69 bytes: the tag address and 18 bytes. |
 | `A byte is outside printable ASCII.` | A space, a control character or a byte above 126. |
 | `The address is in an unexpected location.` | Not `https://github.com/subtilitas/rcbench/releases/tag/...`. |
+| `The version text has an invalid format.` | The tag fails the rule above. |
+
+The API's answer under `TESTING` is read as strictly. It needs status 200
+and a `Content-Length` from 1 to 262,144 bytes, not chunked. Of the answer,
+only the first release's own `tag_name` counts: one in a nested object, in a
+later release or inside a string is passed over. The scan reads the first
+16384 bytes at most; `tag_name` of v0.20.0's answer starts at byte 1503.
+
+| Second line | Meaning |
+| --- | --- |
+| `The response does not specify a size.` | No `Content-Length`, or a chunked answer. |
+| `The response is empty.` | A `Content-Length` of 0. |
+| `The download is too large for the panel.` | A `Content-Length` over 262,144 bytes. |
+| `Received less data than expected.` | The answer ended before its `Content-Length`. |
+| `Received more data than expected.` | A read returned more bytes than asked for. |
+| `The answer names no tag_name.` | The first release has no `tag_name`, there is no release, or the answer ended before the tag did. |
+| `The tag_name is too long.` | A `tag_name` over 18 bytes. |
+| `The answer is not in the expected JSON form.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
+| `No tag_name in the first 16384 bytes.` | The scan's bound. |
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
 ### The IOmcu

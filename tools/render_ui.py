@@ -465,6 +465,8 @@ SCREENS = {
     "updates-newer": ("updates-newer.png", "updates", "dark"),
     "updates-current": ("updates-current.png", "updates", "dark"),
     "updates-failed": ("updates-failed.png", "updates", "dark"),
+    # RELEASES on TESTING, and the testing release it found.
+    "updates-testing": ("updates-testing.png", "updates", "dark"),
     # Its IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
     "updates-coproc": ("updates-coproc.png", "updates", "dark"),
@@ -561,6 +563,10 @@ FIT_ONLY = {
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
+    # TESTING at GitHub's request limit, and a running version that did
+    # not parse.
+    "updates-limit":    (None, "updates", "dark"),
+    "updates-unversioned": (None, "updates", "dark"),
     # Every other state of UPDATES' IOmcu section.
     "updates-cu-older":    (None, "updates", "dark"),
     "updates-cu-rebuilt":  (None, "updates", "dark"),

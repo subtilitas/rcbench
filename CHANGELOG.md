@@ -8,6 +8,30 @@ history is in git.
 
 ### Added
 
+- SETUP > UPDATES has RELEASES: USABLE | TESTING (German `NUTZBAR` |
+  `TEST`, setting `upd_channel`, USABLE by default), kept with SAVE on
+  SETUP. USABLE keeps the check on
+  `https://github.com/subtilitas/rcbench/releases/latest`, which never names
+  a pre-release. TESTING asks
+  `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1`
+  with `Accept: application/vnd.github+json` and
+  `X-GitHub-Api-Version: 2022-11-28`, and reads the newest release's
+  `tag_name`, testing or usable, by a scan of at most 16384 of the answer's
+  bytes that keeps nothing but the tag. The answer needs status 200 and a
+  `Content-Length` from 1 to 262144 bytes. A `tag_name` that is missing,
+  over 18 bytes, not a plain JSON (JavaScript Object Notation) string, or
+  not `v` and MAJOR.MINOR.PATCH, and a tag past the scan's bound, each have
+  their own second line under `Unexpected answer from GitHub.` A 403 or 429
+  answer is `GitHub's request limit is reached: HTTP 403.`, with no retry.
+  The same 30 s budget for the join, the address and the request applies.
+  The start-up check and its reminder follow RELEASES. A switch of RELEASES
+  hides the last check's result, so a release found on the other setting is
+  not offered.
+- On both settings a check offers only a release newer than the running
+  build: a panel on testing release 0.21.0 with USABLE is not offered
+  0.20.0. A running build whose version does not parse is offered nothing
+  (`The panel's own version is not MAJOR.MINOR.PATCH: no update offered.`).
+
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
   runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
   row turn the page; they show only on a card of more than 48 files.

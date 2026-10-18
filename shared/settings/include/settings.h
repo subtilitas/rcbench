@@ -29,7 +29,8 @@ typedef enum {
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_SERVO,       /**< the SERVO screen's test and its limits  */
     SET_CAT_STICK,       /**< stick programming: supply and timing    */
-    SET_CAT_UPDATE,      /**< the release reminder, on SETUP's UPDATES */
+    SET_CAT_UPDATE,      /**< the release reminder and the releases a
+                              check offers, on SETUP's UPDATES          */
     SET_CAT_COUNT
 } setting_cat_t;
 
@@ -147,6 +148,7 @@ typedef enum {
     SET_STICK_HYST,
     /* --- updates --------------------------------------------------------- */
     SET_UPD_REMIND,
+    SET_UPD_CHANNEL,
 
     SETTING_COUNT
 } setting_id_t;

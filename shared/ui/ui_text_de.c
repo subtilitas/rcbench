@@ -1448,6 +1448,8 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_CHECK]              = "NACH UPDATES SUCHEN",
     [TX_UPD_REMIND_ON]          = "ERINNERUNG BEIM START: EIN",
     [TX_UPD_REMIND_OFF]         = "ERINNERUNG BEIM START: AUS",
+    [TX_UPD_CHAN_USABLE]        = "RELEASES: NUTZBAR",
+    [TX_UPD_CHAN_TESTING]       = "RELEASES: TEST",
     [TX_UPD_HOLD_DL]            = "2 s HALTEN: LADEN & INSTALLIEREN",
     [TX_UPD_KEEP_NET]           = "Speichere ein Netzwerk unter SETUP > WI-FI.",
     [TX_UPD_CU_HEAD]            = "IOMCU",
@@ -1467,6 +1469,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_CU_INSTALL]         = "Wartet: Die Installation der Panel-Firmware läuft.",
     [TX_UPD_ABOUT_1]            = "Mit Erinnerung prüft das Panel beim Start auf GitHub.",
     [TX_UPD_ABOUT_2]            = "WLAN bleibt dabei höchstens 30 s eingeschaltet.",
+    [TX_UPD_ABOUT_3]            = "TEST bietet auch Test-Releases an: ungerade Minor-Nummern.",
     [TX_UPD_ASKING]             = "GitHub wird geprüft.",
     [TX_UPD_LEFT]               = "noch %u s",
     [TX_UPD_NEWER]              = "Version %s ist verfügbar.",
@@ -1489,6 +1492,9 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_FAIL_HASH]          = "SHA-256-Prüfsumme stimmt nicht mit SHA256SUMS überein.",
     [TX_UPD_FAIL_IMAGE]         = "Die Firmware hat die Prüfungen des Panels nicht bestanden.",
     [TX_UPD_FAIL_MEMORY]        = "Nicht genug Speicher für die Firmware.",
+    [TX_UPD_FAIL_LIMIT]         = "GitHub-Anfragelimit erreicht: HTTP %d.",
+    [TX_UPD_LIMIT_2]            = "GitHub erlaubt 60 API-Anfragen pro Stunde und Adresse.",
+    [TX_UPD_UNVERSIONED]        = "Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.",
     [TX_UPD_REL_MISSING]        = "In der Antwort fehlt der Location-Header.",
     [TX_UPD_REL_LONG]           = "Die Adresse ist zu lang.",
     [TX_UPD_REL_CHAR]           = "Ein Byte liegt außerhalb von druckbarem ASCII.",
@@ -1506,6 +1512,10 @@ static const char *const k_text[TX_COUNT] = {
     [TX_UPD_REL_SUMS_BAD]       = "Eine Prüfsummenzeile hat ein ungültiges Format.",
     [TX_UPD_REL_SUMS_NONE]      = "Kein Prüfsummeneintrag für diese Firmware.",
     [TX_UPD_REL_SUMS_TWICE]     = "Zwei Prüfsummeneinträge für diese Firmware.",
+    [TX_UPD_REL_TAG_NONE]       = "Die Antwort nennt keinen tag_name.",
+    [TX_UPD_REL_TAG_LONG]       = "Der tag_name ist zu lang.",
+    [TX_UPD_REL_TAG_FORM]       = "Die Antwort hat nicht die erwartete JSON-Form.",
+    [TX_UPD_REL_SCAN_LONG]      = "Kein tag_name in den ersten 16384 Bytes.",
     [TX_UPD_R_TITLE]            = "PANEL-UPDATE VERFÜGBAR",
     [TX_UPD_R_VERSIONS]         = "Version %s ist verfügbar. Auf diesem Panel läuft %s.",
     [TX_UPD_R_WHAT_1]           = "Halte die Taste, um die Firmware von GitHub zu laden und zu prüfen.",
@@ -1621,6 +1631,7 @@ static const char *const k_label[SETTING_COUNT] = {
     [SET_STICK_THRESHOLD]     = "Schwelle",
     [SET_STICK_HYST]          = "Hysterese",
     [SET_UPD_REMIND]          = "Erinnerung beim Start",
+    [SET_UPD_CHANNEL]         = "Releases",
 };
 
 static const char *const k_help[SETTING_COUNT] = {
@@ -1715,6 +1726,7 @@ static const char *const k_help[SETTING_COUNT] = {
     [SET_STICK_THRESHOLD]     = "Über dem Ruhestrom: ein Piepton",
     [SET_STICK_HYST]          = "Unter der Schwelle minus diesem Wert: Stille",
     [SET_UPD_REMIND]          = "Beim Start des Panels GitHub nach einem neueren Release fragen",
+    [SET_UPD_CHANNEL]         = "NUTZBAR bietet nur nutzbare Releases an, TEST auch Test-Releases",
 };
 
 static const char *const k_theme[]  = { "DUNKEL", "HELL" };
@@ -1722,6 +1734,7 @@ static const char *const k_units[]  = { "METRISCH", "IMPERIAL" };
 static const char *const k_curve[]  = { "RECHTECK", "SINUS", "DREIECK" };
 static const char *const k_len_by[] = { "ZEIT", "BEWEGUNGEN" };
 static const char *const k_target[] = { "AUSGÄNGE", "PROG-PORT" };
+static const char *const k_channel[] = { "NUTZBAR", "TEST" };
 
 /* The language names each its own; the INA228's and the INA3221's
  * addresses, the INA3221's channels and the baud rates are the same words
@@ -1732,6 +1745,7 @@ static const char *const *const k_options[SETTING_COUNT] = {
     [SET_SERVO_CURVE]         = k_curve,
     [SET_SERVO_LEN_BY]        = k_len_by,
     [SET_SERVO_TARGET]        = k_target,
+    [SET_UPD_CHANNEL]         = k_channel,
 };
 
 static const char *const k_category[SET_CAT_COUNT] = {
