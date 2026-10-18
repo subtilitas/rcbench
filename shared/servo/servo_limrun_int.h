@@ -23,7 +23,7 @@ typedef enum {
     ST_OVERSET_SEARCH,/* written; the side's search follows              */
     ST_FINAL,         /* the final value is to be written                */
     ST_DONE,          /* the final value is written                      */
-} stage_t;
+} limrun_stage_t;
 
 /* servo_limrun_span(). */
 static inline int32_t limrun_span(const servo_limrun_servo_t *sv,

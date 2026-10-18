@@ -59,7 +59,7 @@
 
 enum { CLASS_ESC = 0, CLASS_SERVO, CLASS_STICK, CLASS_COUNT };
 
-typedef enum { STAGE_CLASS = 0, STAGE_PROTOCOL, STAGE_DEVICE } stage_t;
+typedef enum { STAGE_CLASS = 0, STAGE_PROTOCOL, STAGE_DEVICE } prog_stage_t;
 
 /*
  * A control on this screen is a tap: its press arms it and its release
@@ -89,7 +89,7 @@ enum { PASS_PRESS = 0, PASS_TAP };
  * screen's controls in their places: BACK, READ and WRITE at the foot, the
  * page keys, and the rows with their steppers. */
 typedef struct {
-    stage_t stage;
+    prog_stage_t stage;
     int  klass;
 
     gfx_rect_t back, read_btn, write_btn;

@@ -180,6 +180,11 @@ history is in git.
 
 ### Fixed
 
+- `hardware/docs/IOBoard.md` cites `STATUS.md` by section and item name
+  instead of by line, so a coverage table that grows does not move the
+  citations. Its capability-word rows state that the panel reads the word
+  at bring-up, at each link-up and after a SENSE set-up the coprocessor
+  takes.
 - SETUP, APPLICATION, Rotary knob ON no longer blanks the panel. 0.20.0's
   knob read an AS5600 at 0x36 on the panel's I2C (Inter-Integrated Circuit)
   bus, and 0x36 is one of the CH422G I/O expander's command addresses: the
