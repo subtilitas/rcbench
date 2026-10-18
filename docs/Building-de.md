@@ -110,7 +110,7 @@ diese Datei gewinnt: nach einer Änderung der Defaults löschen, sonst wirkt die
 
 ## Verdrahtung des Drehknopfs
 
-Der Drehknopf ist ein magnetischer Winkelsensor AS5600 am I2C-Anschluss
+Der Drehknopf ist ein magnetischer Winkelsensor MT6701 am I2C-Anschluss
 (I2C: Inter-Integrated Circuit) des Panels, der 4-poligen PH2.0-Buchse des
 Waveshare ESP32-S3-Touch-LCD-7. Der Anschluss ist GPIO8 (SDA) und GPIO9 (SCL),
 der Bus von Touch-Controller und CH422G-Expander, über den Pegelumsetzer der
@@ -118,23 +118,65 @@ Platine. Pinbelegung aus dem Text des Platinenschaltplans, nicht gemessen:
 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Vor dem Anschließen mit einem Multimeter
 prüfen.
 
-| AS5600-Pin | Anschluss an |
-| --- | --- |
-| VDD3V3 und VDD5V | 3,3 V von I2C_VCC, beide Pins verbunden, was die 3,3-V-Versorgung des Datenblatts ist. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3; ein Breakout mit eigenem Regler nimmt seinen Versorgungspin von I2C_VCC mit 3,3 V |
-| GND | GND |
-| SDA, SCL | SDA, SCL |
-| DIR | GND oder VCC, nie offen. GND: Der Winkel steigt, wenn der Magnet von der Chipoberseite gesehen im Uhrzeigersinn dreht (Datenblatt; hier nicht geprüft). VCC kehrt es um |
-| PGO | GND |
-| OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
+Der Sensor muss in seinem I2C/SSI-Modus sein (SSI: Synchronous Serial
+Interface), MODE high. MODE low wählt die ABZ-Encoderausgänge, und der Sensor
+antwortet dann nicht über I2C. Eine EEPROM-Einstellung (EEPROM: Electrically
+Erasable Programmable Read-Only Memory) ist nicht nötig. Pins des MT6701CT im
+SOP-8-Gehäuse, aus dem
+[Datenblatt MagnTek MT6701, Version 1.9](https://atta.szlcsc.com/upload/public/pdf/source/20260616/FEB700C1922508565884FF0A90656B50.pdf)
+(2024-05), Abschnitt 1 und Abbildung 17:
 
-Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip. Der
-AS5600 meldet ein zu schwaches oder zu starkes Feld im STATUS-Register, und
-das Panel behandelt beides als keine Antwort. Der Sensor liest unter 0x36, was
-fest ist. Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der
-I/O-Expander CH422G an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F,
-darunter 0x36; ein AS5600 lässt sich an diesem Bus daher nicht lesen. Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet
-wird. [Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er
-tut.
+| MT6701-Pin | Anschluss an |
+| --- | --- |
+| 1 VDD | 3,3 V von I2C_VCC. Die Versorgung des Datenblatts ist 3,3 bis 5,0 V. Die Lötbrücke der Platine speist I2C_VCC ab Werk aus 3V3 |
+| 2 MODE | VDD. Ein interner Pull-up von 200 kOhm hält einen offenen Pin high; Abbildung 17 legt ihn an VDD. Nie GND |
+| 3 OUT | nicht angeschlossen; das Panel liest den Winkel über I2C |
+| 4 GND | GND |
+| 5 PUSH | nicht angeschlossen |
+| 6 A/SDA | SDA |
+| 7 B/SCL | SCL |
+| 8 Z/CSN | VDD, wie Abbildung 17 |
+
+Ein Breakout führt weniger Pins heraus. Dort prüfen, dass MODE an VDD liegt
+(ein Pin, eine Brücke oder ein Pull-up) und dass sein Versorgungspin 3,3 V
+nimmt. Die I2C-Schaltung des Datenblatts hat Pull-ups von 4,7 kOhm an SDA und
+SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
+3,3 V.
+
+- Adresse: 0x06, die Voreinstellung des Datenblatts. Das Panel liest nur
+  0x06. Eine EEPROM-Programmierung kann die Adresse auf 0x46 legen (Version
+  1.9; Version 0.1 des Datenblatts nennt 0x26); ein so umgestellter Sensor
+  wird nicht gelesen.
+- Die Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F
+  und 0x5D (CH422G und GT911). Das Panel legt kein anderes Gerät auf diese
+  Adressen und auch keines auf 0x00 bis 0x03 und 0x78 bis 0x7F, die die
+  I2C-Spezifikation reserviert (`shared/bench/include/panel_i2c.h`). 0x06
+  liegt außerhalb. Es ist einer der Hs-Mode-Mastercodes (Hs: High-Speed) der
+  Spezifikation, 0x04 bis 0x07, die kein Gerät an diesem Bus benutzt. Der
+  eine Busscan der Platine umfasste 0x08 bis 0x77; dass sonst nichts auf
+  0x06 antwortet, ist also nicht gemessen.
+- Bustakt: 400 kHz. Das Datenblatt erlaubt eine SCL-Periode (SCL: Serial
+  Clock) ab 1 us und Anstiegs- und Abfallzeiten von höchstens 150 ns. Die
+  Anstiegszeit am Anschluss ist nicht gemessen.
+- Der Magnet ist eine diametral magnetisierte Scheibe, mittig über dem Chip.
+- Die I2C-Register tragen keinen Feldstatus: Die Bits für zu schwaches und
+  zu starkes Feld stehen nur im SSI-Rahmen. Ein Sensor ohne Magnet darüber
+  antwortet trotzdem mit einem Winkel, und das Panel nimmt ihn als Messwert.
+- Jede Abfrage liest 0x03, 0x04 und noch einmal 0x03 und verwirft eine
+  Abfrage, deren zwei 0x03-Bytes sich unterscheiden. Ein High-Byte, das sich
+  dazwischen ändert und wieder zurückändert, wird angenommen; ein Schritt von
+  bis zu 64 Zählern (0,52 % des Wegs bei 270 deg) an einem Reglerende bleibt
+  also möglich; wie oft, ist nicht gemessen.
+- Drehrichtung: Beim MT6701CT-STD mit DIR (Register 0x29 Bit 1, im EEPROM)
+  auf seinem Standard 0 steigt der Winkel gegen den Uhrzeigersinn, von der
+  Chipoberseite gesehen. Das Panel zählt umgekehrt, also erhöht mit dem
+  Magneten über der Chipoberseite eine Drehung im Uhrzeigersinn den
+  Throttle. Ein MT6701CT-STV, dessen Winkel im Uhrzeigersinn steigt, ein
+  Teil mit DIR = 1 oder ein von unten gesehen montierter Sensor dreht den
+  Knopf andersherum.
+
+Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet wird.
+[Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er tut.
 
 ## Befehle
 
@@ -245,8 +287,14 @@ Host-Tests werden mit den Flags der Bibliotheken gebaut: `-Wall -Wextra
 -Werror -Wshadow -Wconversion -Wno-sign-conversion`; `test/host/.clang-tidy`
 listet die für sie abgeschalteten Checks, jeweils mit Grund.
 
-CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5, pytest 9.1.1 und
-cppcheck 2.17.1 (das PyPI-Wheel `cppcheck` 1.5.1) in genau diesen Versionen. Jeder Job hat ein `timeout-minutes`-Limit: 100 min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400 s, 90 min), 10 bis 60 min für die übrigen. ctest
+CI installiert pillow 12.3.0, gcovr 8.6, ruff 0.16.5 und pytest 9.1.1 in
+genau diesen Versionen und cppcheck 2.17.1, gebaut aus dem offiziellen
+Quellarchiv des Tags (`tools/install_cppcheck.sh` prüft dessen SHA-256 gegen
+den Wert in `ci.yml` und bricht bei Abweichung ab; der Build wird nach Version
+und Hash gecacht). Das cppcheck der Distribution ist älter (2.13 unter Ubuntu
+24.04) und meldet anders; lokal 2.17.1 mit `tools/install_cppcheck.sh 2.17.1
+<SHA-256 aus ci.yml> ~/cppcheck-2.17.1` oder aus einem Distributionspaket von
+2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100 min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400 s, 90 min), 10 bis 60 min für die übrigen. ctest
 bricht einen Test nach 120 s ab. Ist die Umgebungsvariable `CI` gesetzt,
 lässt ein fehlender C++-Compiler den CMake-Configure-Schritt der Host-Suite
 fehlschlagen, und ein fehlendes `git`, `cmake` oder `cc` lässt die

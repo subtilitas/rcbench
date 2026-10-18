@@ -1966,7 +1966,7 @@ Two limits:
 
 ### APPLICATION: the rotary knob
 
-An AS5600 magnetic angle sensor on the panel's I2C terminal (I2C:
+An MT6701 magnetic angle sensor at 0x06 on the panel's I2C terminal (I2C:
 Inter-Integrated Circuit) turns the slider of the bench screen on top: the
 throttle on MOTOR & ESC, the horn on SERVO. Wiring:
 [Building](Building.md#rotary-knob-wiring). Other screens ignore it.
@@ -1989,9 +1989,16 @@ across a third of its travel from -travel to +travel.
   answering set a reference and move nothing, so a knob that comes back
   turned does not jump the slider.
 - The sensor is read every 10 ms, and every 100 ms while it does not answer.
-  A reading with no magnet detected, a magnet too weak or too strong, or a
-  magnitude of 0 counts as no answer. A step of more than 90 deg between two
-  readings counts as a glitch and is dropped.
+  A poll is three reads, 0x03, 0x04 and 0x03 again, each with a 5 ms bus
+  timeout; a NACK or a timeout on any counts as no answer. While the knob
+  has no reference, a probe of 0x06 (the address byte alone) comes first,
+  and the reads follow only when it is acknowledged. A poll whose two 0x03
+  bytes differ moves nothing and keeps the reference. A high byte that
+  changes and changes back between the two 0x03 reads is accepted, so one
+  step of up to 64 counts (0.52 % of the span at 270 deg) at a slider end
+  stop remains possible; how often is not measured. The sensor reports no
+  magnet status over I2C, so an answer is a reading. A step of more than
+  90 deg between two readings counts as a glitch and is dropped.
 - A finger on the throttle track or on the SERVO dial owns the value while it
   is down, and for the whole frame in which it touched the control, also when
   it lifts in that frame. On SERVO the knob does not take the horn from a running or paused
@@ -2011,7 +2018,16 @@ across a third of its travel from -travel to +travel.
   MOTOR & ESC a turn while the bench is SAFE moves nothing and is not
   kept either; the switch to SAFE returns the slider to 0 %, and the next turn after
   a switch to ARMED counts from there.
-- Known limitation: On the Waveshare ESP32-S3 Touch LCD 7 panel the board's CH422G I/O expander answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus. The Rotary knob setting is OFF by default.
+- The panel never puts the knob, or another device of the builder's, at an
+  address the board answers at on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F
+  and 0x5D, or at one the I2C specification reserves, 0x00 to 0x03 and 0x78
+  to 0x7F. At 0x20 to 0x27 and 0x30 to 0x3F a transaction would reach the
+  CH422G expander as a command. With no sensor fitted, Rotary knob ON sends
+  one unacknowledged probe to 0x06 every 100 ms. In the host tests' model of
+  the bus that changes nothing else. On the panel it is not measured: 0x00
+  to 0x07 have not been scanned on this board.
+- The knob is not measured on hardware: its direction, its noise and its
+  behaviour with no magnet over it.
 
 ### INTERFACES: the current monitors
 

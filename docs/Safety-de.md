@@ -428,7 +428,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   erste Eingabe danach beginnt bei der Ruhelage. Die Freigabe, mit der ein
   Lauf des automatischen Tests endet, tut dasselbe.
 - Das Verlassen eines Prüfstandsbildschirms schaltet auf SAFE.
-- Der Drehknopf (ein Winkelsensor AS5600; SETUP, ANWENDUNG, `Drehknopf`,
+- Der Drehknopf (ein Winkelsensor MT6701 unter 0x06; SETUP, ANWENDUNG, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
   Regeln. Er schaltet nie auf ARMED: Das einzige Schalten auf ARMED ist der ARM-Hold. Auf beiden
@@ -437,8 +437,8 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   von 0 % aus weiter und auf SERVO von der Ruhelage aus. Das Verlassen des
   Bildschirms schaltet auf SAFE. Die
   erste Messung nach dem
-  Einschalten, eine Messung, die der Sensor markiert (kein Magnet, zu
-  schwach, zu stark, Magnitude 0), eine Messung, die nicht eintrifft, und ein
+  Einschalten, eine Messung, die nicht eintrifft (ein NACK oder ein
+  Timeout von 5 ms), und ein
   Sprung über 90 deg zwischen zwei Messungen setzen jeweils die Referenz neu
   und bewegen nichts; ein Knopf, der nicht mehr antwortet, trägt also nichts
   mehr bei, und kein letzter Wert bleibt als Kommando stehen. Ein Finger auf
@@ -454,15 +454,28 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   vollendetes Schalten auf ARMED, ein Schalten auf SAFE, ein Freigeben und ein Zurücksetzen
   der Spitzen bleiben stehen, und seine Bewegung wird verworfen.
   Der Knopf wird von einer eigenen Task auf dem Kern gelesen, den der Renderer
-  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede der drei
-  Transaktionen eines Polls; ein Sensor, der den gemeinsamen I2C-Bus
-  festhält, verzögert das Lesen des Touch also um höchstens 15 ms je Poll.
+  benutzt, nie von der Control-Task, mit 5 ms Bus-Timeout für jede
+  Transaktion eines Polls: eine Adressprobe, solange er keine Referenz hat, dann drei
+  Lesezugriffe. Eine fehlgeschlagene Transaktion kostet dazu die Erholung des
+  Treibers, einen Reset des Controllers und ein Freiräumen des Busses, das bis
+  zu 50 ms länger wartet, solange SDA low gehalten wird. Ein Sensor, der SDA
+  low hält, verzögert das Lesen des Touch also um etwa 55 ms je Transaktion.
+  Das liegt unter dem eigenen Bus-Timeout des Touch-Lesens von 100 ms
+  (`GT911_I2C_TIMEOUT_MS`), und ein Touch-Controller, der 500 ms schweigt,
+  schaltet den Prüfstand auf SAFE (`ARMING_TOUCH_DEAD_MS`).
   Das Lesen des Touch liegt nicht auf dem Weg des Heartbeats: die
-  Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Auf dem Waveshare
-  ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G an den
-  I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse
-  0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht
-  lesen.
+  Control-Task erzeugt den Heartbeat und benutzt den I2C-Bus nicht. Die
+  Platine antwortet an diesem Bus auf 0x14, 0x20 bis 0x27, 0x30 bis 0x3F und
+  0x5D, und der I/O-Expander CH422G nimmt einen Zugriff auf seine Adressen als
+  Befehl: Bei 0x30 bis 0x3F wird das geschriebene Byte sein Ausgangsbyte, das
+  die Hintergrundbeleuchtung, den Touch-Reset und die USB/CAN-Auswahl (USB:
+  Universal Serial Bus, CAN: Controller Area Network) hält. Das Panel legt
+  weder den Knopf noch ein anderes selbst angeschlossenes Gerät auf diese
+  Adressen oder auf die, die die I2C-Spezifikation reserviert, 0x00 bis 0x03
+  und 0x78 bis 0x7F (`shared/bench/include/panel_i2c.h`). Dass auf der
+  Platine nichts auf der Adresse 0x06 des Knopfs antwortet, beruht auf der
+  dokumentierten Adressierung von CH422G und GT911: Der eine Busscan der
+  Platine umfasste 0x08 bis 0x77.
 - Antwortet der Touch-Controller 500 ms lang nicht, schaltet der Prüfstand auf SAFE
   und verweigert das Schalten auf ARMED. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.

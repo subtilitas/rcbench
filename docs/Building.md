@@ -107,7 +107,7 @@ on the image.
 
 ## Rotary knob wiring
 
-The rotary knob is an AS5600 magnetic angle sensor on the panel's I2C
+The rotary knob is an MT6701 magnetic angle sensor on the panel's I2C
 (Inter-Integrated Circuit) terminal, the 4-pin PH2.0 connector on the
 Waveshare ESP32-S3-Touch-LCD-7. The terminal is GPIO8 (SDA) and GPIO9 (SCL),
 the bus the touch controller and the CH422G expander use, through the
@@ -115,23 +115,60 @@ board's level translator. Pin order from the board schematic's text, not
 measured: 1 I2C_VCC, 2 GND, 3 SDA, 4 SCL. Check it with a meter before
 connecting.
 
-| AS5600 pin | Connect to |
-| --- | --- |
-| VDD3V3 and VDD5V | 3.3 V from I2C_VCC, both pins tied together, which is the datasheet's 3.3 V supply. The board's solder jumper feeds I2C_VCC from 3V3 as shipped; a breakout with its own regulator takes its supply pin from I2C_VCC at 3.3 V |
-| GND | GND |
-| SDA, SCL | SDA, SCL |
-| DIR | GND or VCC, never open. GND: the angle rises when the magnet turns clockwise seen from the chip's top (datasheet; not checked here). VCC reverses it |
-| PGO | GND |
-| OUT | not connected; the panel reads the angle over I2C |
+The sensor has to be in its I2C/SSI (synchronous serial interface) mode,
+MODE high. MODE low selects the ABZ encoder outputs, and the sensor then does
+not answer on I2C. No EEPROM (electrically erasable programmable read-only
+memory) setting is needed. Pins of the SOP-8 MT6701CT, from the
+[MagnTek MT6701 datasheet, version 1.9](https://atta.szlcsc.com/upload/public/pdf/source/20260616/FEB700C1922508565884FF0A90656B50.pdf)
+(2024-05), section 1 and figure 17:
 
-The magnet is a diametrically magnetised disc centred over the chip. The
-AS5600 reports a field too weak or too strong in its STATUS register, and the
-panel treats either as no answer. The sensor reads at 0x36, which is fixed.
-On the Waveshare ESP32-S3 Touch LCD 7 the CH422G I/O expander answers at I2C
-addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes 0x36, so an AS5600
-cannot be read on that bus. The knob is off until SETUP, APPLICATION, Rotary
-knob is switched on. [Screens](Screens.md#application-the-rotary-knob)
-describes what it does.
+| MT6701 pin | Connect to |
+| --- | --- |
+| 1 VDD | 3.3 V from I2C_VCC. The datasheet's supply is 3.3 to 5.0 V. The board's solder jumper feeds I2C_VCC from 3V3 as shipped |
+| 2 MODE | VDD. An internal 200 kOhm pull-up holds an open pin high; figure 17 ties it to VDD. Never GND |
+| 3 OUT | not connected; the panel reads the angle over I2C |
+| 4 GND | GND |
+| 5 PUSH | not connected |
+| 6 A/SDA | SDA |
+| 7 B/SCL | SCL |
+| 8 Z/CSN | VDD, as figure 17 |
+
+A breakout board brings out fewer pins. On one, check that MODE is at VDD
+(a pin, a jumper or a pull-up) and that its supply pin takes 3.3 V. The
+datasheet's I2C circuit has 4.7 kOhm pull-ups on SDA and SCL to VDD; a
+breakout's own pull-ups go to its VDD, here 3.3 V.
+
+- Address: 0x06, the datasheet's default. The panel reads 0x06 only. EEPROM
+  programming can move the address to 0x46 (version 1.9; version 0.1 of the
+  datasheet gives 0x26); a sensor moved there is not read.
+- The board answers at 0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on this bus
+  (the CH422G and the GT911). The panel refuses to put any other device at
+  those addresses, or at 0x00 to 0x03 and 0x78 to 0x7F, which the I2C
+  specification reserves (`shared/bench/include/panel_i2c.h`). 0x06 is
+  outside them. It is one of the specification's Hs-mode (high-speed mode)
+  master codes, 0x04 to 0x07, which no device on this bus uses. The board's
+  one bus scan covered 0x08 to 0x77, so that nothing else answers at 0x06
+  is not measured.
+- Bus clock: 400 kHz. The datasheet allows an SCL (serial clock) period down
+  to 1 us and a rise and fall time of 150 ns at most. The rise time on the
+  terminal is not measured.
+- The magnet is a diametrically magnetised disc centred over the chip.
+- The I2C registers carry no field status: the magnet-too-weak and
+  too-strong bits are in the SSI frame only. A sensor with no magnet over it
+  still answers with an angle, and the panel takes it as a reading.
+- Each poll reads 0x03, 0x04 and 0x03 again and drops a poll whose two 0x03
+  bytes differ. A high byte that changes and changes back between them is
+  accepted, so one step of up to 64 counts (0.52 % of the span at 270 deg)
+  at a slider end stop remains possible; how often is not measured.
+- Direction: on the MT6701CT-STD with DIR (register 0x29 bit 1, in EEPROM)
+  at its default 0, the angle rises counter-clockwise seen from the chip's
+  top. The panel counts the other way, so with the magnet above the chip's
+  top face a clockwise turn raises the throttle. An MT6701CT-STV, whose
+  angle rises clockwise, a part with DIR = 1, or a sensor mounted to be seen
+  from below turns the knob the other way.
+
+The knob is off until SETUP, APPLICATION, Rotary knob is switched on.
+[Screens](Screens.md#application-the-rotary-knob) describes what it does.
 
 ## Commands
 
@@ -239,8 +276,13 @@ are built with the library flags `-Wall -Wextra -Werror -Wshadow -Wconversion
 -Wno-sign-conversion`; `test/host/.clang-tidy` lists the checks that are off
 for them, each with its reason.
 
-CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5, pytest 9.1.1 and cppcheck
-2.17.1 (the PyPI wheel `cppcheck` 1.5.1) at these exact versions. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a
+CI installs pillow 12.3.0, gcovr 8.6, ruff 0.16.5 and pytest 9.1.1 at these
+exact versions, and cppcheck 2.17.1 built from the official source archive of
+the tag (`tools/install_cppcheck.sh` checks its SHA-256 against the value in
+`ci.yml` and fails on a mismatch; the build is cached on version and hash). The
+distribution's cppcheck is older (2.13 on Ubuntu 24.04) and reports differently;
+install 2.17.1 locally with `tools/install_cppcheck.sh 2.17.1 <SHA-256 from
+ci.yml> ~/cppcheck-2.17.1` or from a distribution package of 2.17.1. Every job has a `timeout-minutes` limit: 100 min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400 s, 90 min), 10 to 60 min for the others. ctest stops a
 test after 120 s. With the environment variable `CI` set, a missing C++
 compiler fails the CMake configure step of the host suite, and a missing `git`, `cmake` or `cc`
 fails the end-to-end cases of `tools/mutate.py`. `tools/check_docs.py` holds
