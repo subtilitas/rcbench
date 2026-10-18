@@ -214,8 +214,9 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
-    # The limit run from TEST's LIMIT RUN card (servo_limrun.h) against the simulated KST
-    # servo on the programming port: SEARCH+PROG chosen, a run partway, run
+    # The limit run from TEST's LIMIT RUN card (servo_limrun.h) against
+    # the simulated KST servo on the programming port: SEARCH+PROG chosen,
+    # a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100 us

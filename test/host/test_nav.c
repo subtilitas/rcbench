@@ -33,6 +33,7 @@
 #include "ui_theme.h"
 #include "ui_watermark.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
 
 #include "servo_spots.h"
 
@@ -604,6 +605,39 @@ TEST_CASE(the_home_tag_climbs_the_programmer_one_level_at_a_time)
     CHECK_EQ(programmer_screen_stick_level(), 0);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_PROGRAMMER);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * SERVO through the router's home tag: over a list it closes the list and
+ * SERVO stays on SETTINGS; from a run's settings it climbs to TEST; from a
+ * task it goes to the menu, and the tile opens LIVE again.
+ */
+TEST_CASE(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves)
+{
+    fresh();
+    to_overview();
+    ui_router_goto(SCREEN_SERVO);
+    tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
+    tap(100, UI_BAND_H + SV_ROW_Y(0));                 /* TYPE's list */
+    const uint32_t nav = ui_router_navigations();
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK_EQ(ui_router_navigations(), nav);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    ui_router_goto(SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+    tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
@@ -3310,6 +3344,7 @@ int main(void)
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
     RUN(the_home_tag_climbs_the_programmer_one_level_at_a_time);
+    RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
     RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);
