@@ -26,7 +26,7 @@ Current limitations:
   The alert held for a touch controller that did not answer at start is
   raised in the language kept in NVS and stays until restart; without touch
   the language cannot change meanwhile.
-- The message line of LOG VIEWER (a file that cannot be opened or deleted,
+- The message line of LOGS (a file that cannot be opened or deleted,
   a deleted file) keeps its language until the next file opened or deleted
   replaces or clears it.
 - The title of a keypad or a choice list already open keeps its language
@@ -60,8 +60,9 @@ manual beside the bench.
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
-  SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
-  CAN BUS FAULT, LINK LOST, FILES & UPDATE, PANEL UPDATE. A note that names a screen names it by its
+  BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
+  CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile and the band of the screen
+  it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
 - Protocol and mode names: DShot, PWM (pulse-width modulation), PPM
   (pulse-position modulation), OneShot, S.BUS, CAN (Controller Area

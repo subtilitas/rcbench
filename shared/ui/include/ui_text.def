@@ -322,6 +322,7 @@ UI_TEXT(BAL_NOTE_3,                 0, "An index pulse halves the runs.")
 UI_TEXT(SET_COUNT,                  0, "%d SETTINGS")
 UI_TEXT(SET_HUB_OUTPUTS,            0, "PROTOCOLS AND PINS")
 UI_TEXT(SET_HUB_PICKER,             0, "ON THE BOARD DRAWING")
+UI_TEXT(SET_HUB_WIFI,               0, "NETWORK, FILES, UPLOAD")
 UI_TEXT(SET_HUB_UPDATES,            0, "RELEASES ON GITHUB")
 UI_TEXT(SET_RESET,                  0, "RESET CATEGORY")
 UI_TEXT(SET_SAVED,                  0, "SAVED")
@@ -426,7 +427,7 @@ UI_TEXT(SUP_TAG_IDLE,               0, "OUTPUT IDLE")
 UI_TEXT(SUP_SET_POINTS,             0, "SET POINTS")
 UI_TEXT(SUP_NOT_ON_YET,            60, "Output has not been switched on yet.")
 
-/* ---------------------------------------------------------- LOG VIEWER */
+/* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE,             36, "No file source available.")
 UI_TEXT(LOG_CANNOT_OPEN,           28, "Cannot open %s.")
 UI_TEXT(LOG_IS_FOLDER,             26, "%s is a folder.")
@@ -1373,7 +1374,7 @@ UI_TEXT(KP_W_NARROW_BAND_GAIN,    116, "Narrow dead band and higher gain can cau
 UI_TEXT(KP_W_HIGH_DUTY_TRAVEL,    116, "High duty and more travel: a stall can destroy the servo.")
 /* --------------------- end of the servo programmer */
 
-/* --------------------------------------------- FILES & UPDATE, PANEL UPDATE */
+/* ------------------------------------------------- WI-FI, PANEL UPDATE */
 UI_TEXT(WF_AP,                       0, "ACCESS POINT")
 UI_TEXT(WF_JOIN,                     0, "JOIN HOME NETWORK")
 UI_TEXT(WF_CHOOSE,                   0, "CHOOSE HOME NETWORK")
@@ -1462,7 +1463,7 @@ UI_TEXT(UPD_STAGED,                  88, "Download checked. Installing now.")
 UI_TEXT(UPD_WAIT_COPROC,             74, "Waiting for the coprocessor update to finish.")
 UI_TEXT(UPD_WAIT_DRAWING,            74, "Waiting: a board drawing is being downloaded or saved.")
 UI_TEXT(UPD_WAIT_BUSY,               74, "Waiting: a check or installation is already running.")
-UI_TEXT(UPD_STOP_FILES,              74, "Stopped: FILES & UPDATE is using Wi-Fi.")
+UI_TEXT(UPD_STOP_FILES,              74, "Stopped: the WI-FI screen is using Wi-Fi.")
 UI_TEXT(UPD_STOP_CANCEL,             88, "Cancelled.")
 UI_TEXT(UPD_STOP_COPROC,             88, "Stopped: the coprocessor update has started.")
 UI_TEXT(UPD_STOP_INSTALL,            88, "Stopped: panel firmware installation has started.")

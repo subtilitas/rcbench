@@ -31,6 +31,7 @@ void ui_icon_balance(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color)
 void ui_icon_supply(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_list(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+void ui_icon_wifi(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 
 #ifdef __cplusplus
 }

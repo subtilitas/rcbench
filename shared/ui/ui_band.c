@@ -112,13 +112,13 @@ static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
  * Chips stand 6 px apart and each takes the 3 px beside it for a tap, so
  * the strips meet without overlapping.  A label starts UI_PILL_INSET px
  * into its chip and ends 4 px short of its right edge, LINK's 18 px.  A row
- * that would reach CHIPS_MIN_X, where FILES & UPDATE's home tag, the widest
+ * that would reach CHIPS_MIN_X, where MOTOR & ESC's home tag, the widest
  * (test_nav measures every screen's), ends, starts its labels 16 px in.
- * Rows wider than that still reach under the tags: ARMED with a FAULT code
- * down to x 216, ARMED MOTOR or ARMED SERVO with KEINE VERBINDUNG to 234,
- * and in German SAFE with a FAULT code and a clock of 10 hours to 272.
+ * One row is wider than that still and reaches under MOTOR & ESC's tag:
+ * ARMED with a FAULT code, down to x 224, in German to x 216.  Every other
+ * tag ends at x 210 or less.
  */
-#define CHIPS_MIN_X    274
+#define CHIPS_MIN_X    226
 #define CHIP_INSET_TIGHT 16
 static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_CLOCK, UI_BAND_CHIP_ARMED, UI_BAND_CHIP_FAULT,

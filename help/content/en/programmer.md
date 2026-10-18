@@ -55,7 +55,7 @@ With a session open, the device line names the modelled firmware and chip, for e
 - `-` and `+` step a value. Steppers stop at the ends of a list; they do not wrap.
 - `^` and `v` scroll the list; the counter shows the rows in view, `1-7 of 8`.
 - READ takes the model's values again and discards staged edits.
-- BACK climbs one level and closes the session. The band's home tag leaves the screen.
+- BACK climbs one level and closes the session. The band's home tag does the same, and leaves the screen from the classes only.
 
 ![Degrees of advance on AM32](view:programmer-am32)
 

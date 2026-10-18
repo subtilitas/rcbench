@@ -206,8 +206,9 @@ it.
 
 During the run the page shows the phase, the beeps in the group under way,
 the last group and whether it was in order, and the current against its
-floor. ABORT ends the run, and so does STOP in the band or leaving the
-screen. BACK and TIMING are not offered. The stack light beside the beep
+floor. ABORT ends the run, and so do the band's home tag, STOP in the band
+and leaving the screen. The home tag ends it as ABORT does, and the result
+stays on the page. BACK and TIMING are not offered. The stack light beside the beep
 count is described [below](#the-stack-light).
 
 ![A run counting item groups, a beep under way](img/programmer-stick-run.png)
@@ -430,7 +431,8 @@ things, drawn as a signal tower: red over green on a light grey base.
 - **Red** is lit on a result whose run ended because something was not as
   expected, and stays on until OK. The reasons are listed under
   [How a run ends](#how-a-run-ends). It stays dark on DONE and on the ends
-  an operator chooses: STOP pressed, ABORT and leaving the screen. A stop
+  an operator chooses: STOP pressed, ABORT or the home tag, and leaving the
+  screen. A stop
   the bench raises itself, BENCH STOPPED, lights it.
 
 A change of either light repaints both screen buffers.
@@ -651,7 +653,7 @@ A profile corrected on the SD card is listed with its correction.
 | CURRENT STAYS HIGH | one pulse longer than twice LONG MAX | lit |
 | TIMEOUT | no wanted group acted on within TIMEOUT | lit |
 | NOT CONFIRMED | no DONE for a manual step within 60 s | lit |
-| ABORTED | ABORT | dark |
+| ABORTED | ABORT, or the home tag during the run | dark |
 | SCREEN LEFT | the screen was left | dark |
 
 The red light's column is `esc_stick_reason_is_fault()` in

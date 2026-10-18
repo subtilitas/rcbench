@@ -669,7 +669,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
         { ui_icon_chip, "PROGRAMMER" },   { ui_icon_list, "OUTPUTS" },
-        { ui_icon_board, "PICK A PIN" },
+        { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
     /* The menu's tile: 150 x 202 px, the icon 64 px down. */
     for (size_t i = 0; i < sizeof(menu) / sizeof(menu[0]); ++i) {
@@ -679,10 +679,10 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         icon_over_name(r, 64, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: the categories, then OUTPUTS,
-     * PICK A PIN and UPDATES.  The icon's box starts 16 px down. */
+     * PICK A PIN, WI-FI and UPDATES.  The icon's box starts 16 px down. */
     static const ui_screen_id_t screens[] = { SCREEN_OUTPUTS, SCREEN_PICKER,
-                                              SCREEN_UPDATES };
-    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 3);
+                                              SCREEN_WIFI, SCREEN_UPDATES };
+    CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + 4);
     ui_router_render(&s_c, 0);
     for (int i = 0; i < settings_hub_tiles(); ++i) {
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);

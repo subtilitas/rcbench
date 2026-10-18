@@ -190,7 +190,7 @@ CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 # Wi-Fi ---------------------------------------------------------------------
 #
-# The radio runs only while FILES & UPDATE asks for it, and while the panel
+# The radio runs only while WI-FI asks for it, and while the panel
 # asks GitHub for a release (SETUP > UPDATES and the start-up check).  Its
 # buffers and lwIP's (lightweight IP stack) come from PSRAM where the driver
 # allows, so internal RAM keeps what the display and the bench need.

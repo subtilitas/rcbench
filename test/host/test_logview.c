@@ -3424,8 +3424,77 @@ TEST_CASE(every_warning_and_file_message_takes_two_lines_at_most)
     ui_text_set_language(UI_LANG_EN);
 }
 
+
+/*
+ * The home tag climbs one level, as each view's own way back: BACK from
+ * the plot to the import, BACK from the import to the file list, CANCEL
+ * over the DELETE question.  The view after back() looks as the view after the
+ * tap.  On the file list back() climbs nothing: the router leaves the
+ * screen.
+ */
+TEST_CASE(the_home_tag_climbs_as_each_views_way_back)
+{
+    static const control_t k_ways[] = {
+        { "plot",     at_plot,     100, FOOT_PLOT_CY },
+        { "import",   at_import,   BACK_X, IM_BTN_CY },
+        { "question", at_question, DQ_CANCEL_X, DQ_CY },
+    };
+    for (size_t i = 0; i < sizeof(k_ways) / sizeof(k_ways[0]); ++i) {
+        const control_t *w = &k_ways[i];
+        g_list_calls = 0;                   /* each build lists the card */
+        w->page();
+        const uint32_t before = look();
+        tap(w->x, w->y);
+        const uint32_t want = look();
+        if (want == before) {
+            T_FAIL("%s: the way back changed nothing", w->name);
+        }
+        g_list_calls = 0;
+        w->page();
+        if (!screen()->back()) {
+            T_FAIL("%s: the home tag left the screen", w->name);
+        }
+        if (look() != want) {
+            T_FAIL("%s: the home tag did not do what the way back does",
+                   w->name);
+        }
+    }
+    CHECK_EQ(g_remove_calls, 0);
+
+    at_list();
+    const uint32_t was = look();
+    CHECK(!screen()->back());
+    CHECK_EQ(look(), was);
+
+    /* Through the router: plot, import, list, then the menu. */
+    ui_router_init();
+    at_plot();
+    ui_router_goto(SCREEN_LOGS);
+    CHECK_EQ(log_viewer_view(), LOG_VIEW_PLOT);
+    const log_viewer_view_t k_climb[] = { LOG_VIEW_IMPORT, LOG_VIEW_BROWSE };
+    const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_LOGS));
+    for (size_t i = 0; i < 2; ++i) {
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 4, .x = (int16_t)(home.x + 20),
+                                       .y = (int16_t)(home.y + 10) } };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+        CHECK_EQ(ui_router_current(), SCREEN_LOGS);
+        CHECK_EQ(log_viewer_view(), k_climb[i]);
+    }
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 4, .x = (int16_t)(home.x + 20),
+                                   .y = (int16_t)(home.y + 10) } };
+    ui_router_event(&e);
+    e.type = TOUCH_EVENT_UP;
+    ui_router_event(&e);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
 int main(void)
 {
+    RUN(the_home_tag_climbs_as_each_views_way_back);
     RUN(every_view_draws_something);
     RUN(a_file_that_vanished_between_listing_and_opening);
     RUN(with_no_io_at_all_the_screen_still_works);
