@@ -30,10 +30,11 @@
 ; The answer empties the register, so only the first byte is answered.
 ;
 ; Drain.  `drain` fills the output shift register with zeros and shifts all
-; 32 out, which leaves it empty whatever it held: an answer word no byte
-; called for at the end of the window, or what a restart left in it.  The
-; transmit FIFO is empty there, so autopull does not refill it.  The driver
-; restarts the machine at `drain`.
+; 32 out, which leaves it empty whatever it held: at the end of the window,
+; an answer word no byte called for.  The transmit FIFO is empty there, so
+; autopull does not refill it.  The driver runs the same 2 instructions on
+; a stopped machine at the open and at a restart, then puts it on the first
+; `out` of `idle`.
 ;
 ; test/host/test_hitec_pio.c assembles this file, runs the words in a model
 ; of the state machine and holds them to fixtures/hitec_line_words.txt,
@@ -81,7 +82,7 @@ answer:
     jmp bit
 lo_next:
     jmp x--, wait_lo
-drain:                      ; the window is over, or a restart
+drain:                      ; the window is over
     mov osr, null
     out null, 32
 .wrap

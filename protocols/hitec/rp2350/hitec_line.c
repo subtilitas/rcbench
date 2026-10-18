@@ -50,10 +50,20 @@ static bool line_idle(const hitec_line_t *l)
            && pio_sm_get_pc(pio, l->sm) == l->offset + HITEC_PIO_IDLE_PC;
 }
 
-/* Put the state machine at the program's drain with the pad released,
- * whatever it was doing.  The drain empties the output shift register,
- * whatever the restart left in it, so the next stream starts at its first
- * word. */
+/* Run the program's drain on the stopped machine and put it on the `out`
+ * it stalls on between transactions: the output shift register is empty,
+ * whatever a restart left in it, and line_idle() holds from the moment the
+ * machine runs again.  The transmit FIFO is empty, so autopull takes
+ * nothing. */
+static void line_ready(PIO pio, uint sm, uint offset)
+{
+    pio_sm_exec(pio, sm, pio_encode_mov(pio_osr, pio_null));
+    pio_sm_exec(pio, sm, pio_encode_out(pio_null, 32));
+    pio_sm_exec(pio, sm, pio_encode_jmp(offset + HITEC_PIO_IDLE_PC));
+}
+
+/* Put the state machine at idle with the pad released, whatever it was
+ * doing. */
 static void line_restart(hitec_line_t *l)
 {
     const PIO pio = line_pio(l);
@@ -64,7 +74,7 @@ static void line_restart(hitec_line_t *l)
     dma_channel_abort((uint)l->dma_rx);
     pio_sm_clear_fifos(pio, l->sm);
     pio_sm_restart(pio, l->sm);
-    pio_sm_exec(pio, l->sm, pio_encode_jmp(l->offset + HITEC_PIO_DRAIN_PC));
+    line_ready(pio, l->sm, l->offset);
     pio_sm_set_enabled(pio, l->sm, true);
 }
 
@@ -173,7 +183,7 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
     sm_config_set_in_shift(&c, true, false, 32);
     sm_config_set_clkdiv_int_frac8(&c, clock.div256 >> 8,
                                    (uint8_t)(clock.div256 & 0xFFu));
-    pio_sm_init(pio, sm, offset + HITEC_PIO_DRAIN_PC, &c);
+    pio_sm_init(pio, sm, offset + HITEC_PIO_IDLE_PC, &c);
 
     /* The state machine's latch low and its direction an input before the
      * pad is its: the pad goes from whatever it was to a released input,
@@ -184,6 +194,7 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
     gpio_set_inover(pin, family == HITEC_D ? GPIO_OVERRIDE_INVERT
                                            : GPIO_OVERRIDE_NORMAL);
     pio_gpio_init(pio, pin);
+    line_ready(pio, sm, offset);
     pio_sm_set_enabled(pio, sm, true);
     line->open = 1;
     return HITEC_LINE_OK;

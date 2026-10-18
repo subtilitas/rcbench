@@ -319,9 +319,10 @@ static void run_model(model_t *m, uint64_t max_cycles)
 
         if (m->abort_at != 0u && cyc == m->abort_at) {
             /* The driver's restart: released, FIFOs and the input side
-             * cleared, the machine at the drain.  The output shift
-             * register is left full of ones, the worst a restart can
-             * leave: the drain has to empty it. */
+             * cleared, the drain's 2 instructions, then idle; the model
+             * starts the machine at the drain for the same.  The output
+             * shift register is left full of ones, the worst a restart
+             * can leave: the drain has to empty it. */
             m->abort_pc = pc;
             dir = false;
             n_txf = 0;

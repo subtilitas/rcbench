@@ -107,7 +107,7 @@ extern "C" {
  *  machine stalls on between transactions.  BIT to RELEASE - 1: the bit
  *  times.  RELEASE: the release before the receiver.  ASK: the `jmp !osre`
  *  after a byte.  ANSWER and ANSWER + 1: the way into the answer's bit
- *  times.  DRAIN: the end of the window, and where a restart starts. */
+ *  times.  DRAIN: the end of the window. */
 #define HITEC_PIO_IDLE_PC    1u
 #define HITEC_PIO_BIT_PC     8u
 #define HITEC_PIO_RELEASE_PC 11u

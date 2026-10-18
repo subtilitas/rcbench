@@ -272,8 +272,9 @@ Limits:
   (`hitec_pio_answer_due()`). An abort or a restart past the
   transaction's time that comes while the answer goes out cuts it; the
   capture's `answered` is then 0.
-- A restart, an abort and the open put the state machine at the drain,
-  which empties the output shift register before the next stream.
+- The open, a restart and an abort run the drain's 2 instructions on the
+  stopped state machine and return with it stalled at idle: the output
+  shift register is empty and `start()` takes a transaction at once.
 - The answer follows the first byte received, also one with a bad stop bit
   or a byte made by a glitch.
 - The system clock must not change while a line is open.
