@@ -6,7 +6,7 @@ order: 22
 
 # Servo programmer
 
-The servo programmer reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servos of the two brands share one protocol and one register set. PROGRAM, at the top of the right card of [SERVO](servo.md), opens it over the left card. PROGRAM ends a running automatic test.
+The servo programmer reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servos of the two brands share one protocol and one register set. PROGRAM, in the strip's row over the right card of [SERVO](servo.md), opens it over the left column, the strip's tabs with it; PROGRAM again closes it to the task it covered. PROGRAM ends a running automatic test.
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench is not affiliated with, endorsed by or sponsored by them. The names say which servos the programmer works with.
 
@@ -18,7 +18,7 @@ The register layout and timing come from 1 KST Tool Card #2 and 1 Chaservo servo
 
 - A coprocessor of protocol 4.13 or later; LEAVE needs 4.15.
 - The servo on the coprocessor's programming port, port 1: GP13, pad 17, unless another pin is stored for it.
-- PWM TARGET set to PROG PORT on the [servo settings](servo-settings.md#dut).
+- TARGET on the right card set to PROG PORT ([the TARGET row](servo-settings.md#the-target-row)).
 - The bench SAFE. CONNECT is refused while ARMED with `Tap DISARM first. The port cannot be taken over while ARMED.` While the port is held, no screen switches the bench to ARMED.
 
 ![A coprocessor without the programming port](view:servo-kst-nopage)

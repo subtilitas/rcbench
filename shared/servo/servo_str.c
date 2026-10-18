@@ -154,7 +154,7 @@ static const char *const k_str[SERVO_STR_COUNT] = {
     [SERVO_STR_R_BO_RULE]        = "No movement: no reading of a move more "
                                    "than Thresh, %.3f A at %.2f V, from the "
                                    "level before it.",
-    [SERVO_STR_R_LIM_HEAD]       = "AGAINST THE LIMITS PAGE",
+    [SERVO_STR_R_LIM_HEAD]       = "AGAINST THE PASS/FAIL LIMITS",
     [SERVO_STR_R_LIM_IDLE]       = "Idle current     highest %.3f A, limit "
                                    "%s: %s",
     [SERVO_STR_R_LIM_HOLD]       = "Holding current  highest %.3f A, limit "

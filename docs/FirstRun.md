@@ -745,7 +745,8 @@ pressed, with no Enter.
    Close PuTTY; this log is `noise.log`.
 5. Servo at rest: new log file. Connect the servo, press ARM, leave it at the
    centre, supply on at 4.80 V. Press `t` and wait for the `$Z` line.
-6. Moves, in the same log: on the SERVO screen's TEST page set TEST LENGTH BY
+6. Moves, in the same log: on the SERVO screen's TEST task, in the
+   AUTOMATIC TEST card's SETTINGS, set TEST LENGTH BY
    to MOVEMENTS, MOVEMENTS 20, DWELL TIME 1000 ms, STEP 4.8 V on and every
    other step and BROWN-OUT off. START TEST. The trace runs from the first
    move to 4 s after the last; wait for its `$Z` line, then close PuTTY.
@@ -866,7 +867,7 @@ answer whether an arrival is the horn's.
 **Part B: with the AS5600.** The same moves with the encoder on the shaft.
 
 1. SETUP → INTERFACES: `AS5600` ON, with the bank SAFE. On the SERVO
-   screen's DUT page, with the servo at its neutral, tap ENC CENTRE.
+   screen's SETTINGS > DUT, with the servo at its neutral, tap ENC CENTRE.
 2. Repeat part A's steps 5 to 7.
 3. Keep each log together with its test's `SERVOnnn.CSV` from the SD card.
 4. On the host, for each pair:

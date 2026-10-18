@@ -23,13 +23,16 @@
  * the bench image's PULSE LOWER and UPPER 900 and 2100 us: a run with
  * SERVO PULSES at KEEP is refused after the read, one at 1000-2000 runs.
  */
-#define LR_SETB_X  734
-#define LR_TAB_X   216          /* LIMITS */
-#define LR_TAB_Y   27
-#define LR_MODE_X  100          /* LIMIT RUN, row 5 across both columns */
-#define LR_START_X 369          /* START LIMIT RUN, the right column's */
-#define LR_ROW6_Y  323
-#define LR_ROW5_Y  281          /* LIMIT RUN; SERVO PULSES is row 6's left */
+#define LR_MODE_X  100          /* the LIMIT RUN settings' left column */
+#define LR_MODE_Y  SV_LIST_ROW_Y(0)   /* LIMIT RUN, across both columns */
+#define LR_PULSE_Y SV_LIST_ROW_Y(1)   /* SERVO PULSES, the left column */
+
+/* TEST, and the LIMIT RUN card's own settings opened. */
+static void lr_run_list(void)
+{
+    screen_tap(SV_TAB_TEST_X, BTN_Y);
+    screen_tap(SV_RUN_SET_X, SV_RUN_SET_Y(1));
+}
 
 static struct {
     servo_sim_t sv;
@@ -176,20 +179,28 @@ static void lr_fresh(bool reversion)
     lr_ms(400u);
 }
 
-/* SETTINGS, LIMITS, LIMIT RUN to SEARCH+PROG, SERVO PULSES to 1000-2000
- * where @p pulses, and START LIMIT RUN held for 2.3 s. */
+/* TEST, and START LIMIT RUN on its card held for 2.3 s. */
+static void lr_hold_start(void)
+{
+    screen_tap(SV_TAB_TEST_X, BTN_Y);
+    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_DOWN, 1);
+    lr_ms(2300u);
+    ev(SV_START_X, SV_START_Y(1), TOUCH_EVENT_UP, 1);
+    lr_ms(20u);
+}
+
+/* The LIMIT RUN settings: LIMIT RUN to SEARCH+PROG, SERVO PULSES to
+ * 1000-2000 where @p pulses; the home tag back to TEST, and START LIMIT
+ * RUN held for 2.3 s. */
 static void lr_start_with(bool pulses)
 {
-    screen_tap(LR_SETB_X, BTN_Y);
-    screen_tap(LR_TAB_X, LR_TAB_Y);
-    screen_tap(LR_MODE_X, LR_ROW5_Y);
+    lr_run_list();
+    screen_tap(LR_MODE_X, LR_MODE_Y);
     if (pulses) {
-        screen_tap(LR_MODE_X, LR_ROW6_Y);
+        screen_tap(LR_MODE_X, LR_PULSE_Y);
     }
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
-    lr_ms(2300u);
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
-    lr_ms(20u);
+    CHECK(scr->back());
+    lr_hold_start();
 }
 
 static void lr_start(void)
@@ -518,13 +529,10 @@ TEST_CASE(servo_pulses_is_not_offered_for_a_pwm_pin)
     servo_screen_set_pins((uint64_t)1u << 2, true);
     settings_set(SET_SERVO_TARGET, 0.0f);
     lr_ms(40u);
-    screen_tap(LR_SETB_X, BTN_Y);
-    screen_tap(LR_TAB_X, LR_TAB_Y);
-    screen_tap(LR_MODE_X, LR_ROW6_Y);       /* where SERVO PULSES would be */
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
-    lr_ms(2300u);
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
-    lr_ms(20u);
+    lr_run_list();
+    screen_tap(LR_MODE_X, LR_PULSE_Y);      /* where SERVO PULSES would be */
+    CHECK(scr->back());
+    lr_hold_start();
     CHECK(servo_screen_limit_running());
     lr_run_out();
     CHECK(strstr(lr.report, "search only, nothing") != NULL);
@@ -616,12 +624,7 @@ TEST_CASE(a_later_run_names_its_own_backup_when_its_first_write_is_lost)
     lr.len = 0u;
     lr_ms(1000u);
     /* SEARCH+PROG stays chosen from the first run. */
-    screen_tap(LR_SETB_X, BTN_Y);
-    screen_tap(LR_TAB_X, LR_TAB_Y);
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_DOWN, 1);
-    lr_ms(2300u);
-    ev(LR_START_X, LR_ROW6_Y, TOUCH_EVENT_UP, 1);
-    lr_ms(20u);
+    lr_hold_start();
     CHECK(servo_screen_limit_running());
     bool cut = false;
     for (int i = 0; i < 400000 && servo_screen_limit_running(); ++i) {

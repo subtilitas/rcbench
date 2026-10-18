@@ -28,6 +28,8 @@
 #include "ui_screen.h"
 #include "ui_theme.h"
 
+#include "servo_spots.h"
+
 #define W 800
 #define H 480
 
@@ -88,22 +90,19 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
                                        ev(x, y, TOUCH_EVENT_UP, 1); }
 
 /*
- * The SETTINGS overlay, mirrored from servo_screen.c and
- * servo_settings_panel.c: the button at the top of the right card, then over
- * the left card its tabs, CLOSE, the rows of a
- * page (left column at x 16, right at x 255, 42 px apart from y 54), the
- * list a row opens (two columns of five, 46 px apart from y 54) and the
- * warning's HOLD TO APPLY and CANCEL.
+ * The workbench, from servo_spots.h: the strip's tabs, SETTINGS' page tabs
+ * and rows (left column at x 16, right at x 255, 40 px apart from y 82),
+ * TEST's run cards and a run's settings' rows (from y 68); then the panels
+ * over the left column, mirrored from servo_settings_panel.c: the list a
+ * row opens (two columns of five, 46 px apart from y 54) and the warning's
+ * HOLD TO APPLY and CANCEL.
  */
-#define SETB_X   734
-#define SETB_Y   24
-#define CLOSE_X  439
-#define CLOSE_Y  27
-#define TAB_X(i) (56 + 80 * (i))
-#define TAB_Y    27
+#define TAB_X(i) SV_PAGE_X(i)
+#define TAB_Y    SV_PAGE_Y
 #define ROW_L_X  100
 #define ROW_R_X  330
-#define ROW_Y(r) (71 + 42 * (r))
+#define ROW_Y(r) SV_ROW_Y(r)
+#define LROW_Y(r) SV_LIST_ROW_Y(r)
 #define TRIM_DN_X 399
 #define TRIM_UP_X 469
 #define CH_X(i)  (130 + 239 * ((i) / 5))
@@ -113,9 +112,23 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 #define WARN_APPLY_X  146
 #define WARN_CANCEL_X 384
 #define WARN_Y        378
+/* SETTINGS' pages. */
+#define PAGE_OUTPUT 0
+#define PAGE_SWEEP  1
+#define PAGE_DUT    2
 
-static inline void open_settings(void)  { tap(SETB_X, SETB_Y); }
-static inline void close_settings(void) { tap(CLOSE_X, CLOSE_Y); }
+/* The strip: SETTINGS, LIVE, TEST. */
+static inline void open_settings(void)  { tap(SV_TAB_SETTINGS_X, SV_TAB_Y); }
+static inline void close_settings(void) { tap(SV_TAB_LIVE_X, SV_TAB_Y); }
+static inline void open_test(void)      { tap(SV_TAB_TEST_X, SV_TAB_Y); }
+/* A run card's SETTINGS on TEST: the run's settings, one level down. */
+static inline void open_run_settings(int k)
+{
+    open_test();
+    tap(SV_RUN_SET_X, SV_RUN_SET_Y(k));
+}
+/* The home tag, as the router asks the screen: whether it climbed. */
+static inline bool home_tag(void) { return scr->back != NULL && scr->back(); }
 
 /* Hold the warning's HOLD TO APPLY for @p s seconds and let go. */
 static inline void hold_apply(float secs)

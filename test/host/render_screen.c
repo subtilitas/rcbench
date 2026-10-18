@@ -51,6 +51,7 @@
 #include "supply_screen.h"
 #include "supply_link.h"
 #include "kst_rig.h"
+#include "servo_spots.h"
 #include "ui_band.h"
 #include "ui_keypad.h"
 #include "ui_text.h"
@@ -658,14 +659,14 @@ static void kst_view(const char *view)
                              : LINK_PROTOCOL_MINOR);
     ui_router_goto(SCREEN_SERVO);
     if (strcmp(v, "-hv") == 0) {
-        /* HV SERVO on the TEST tab of SETTINGS, which the programmer's
-         * voltage follows. */
-        tap(734, UI_BAND_H + 24);
-        tap(136, UI_BAND_H + 27);
-        tap(330, UI_BAND_H + 155);
-        tap(439, UI_BAND_H + 27);
+        /* HV SERVO in the AUTOMATIC TEST card's settings on TEST, which
+         * the programmer's voltage follows. */
+        tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+        tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
+        tap(330, UI_BAND_H + SV_LIST_ROW_Y(2));        /* HV SERVO */
+        tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     }
-    tap(632, UI_BAND_H + 24);                       /* PROGRAM */
+    tap(SV_PROGRAM_X, UI_BAND_H + SV_TAB_Y);        /* PROGRAM */
     ui_router_tick(0.02f);
     if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
         || strcmp(v, "-supply") == 0) {
@@ -896,10 +897,10 @@ static void servo_run_view(bool to_the_end, bool ina)
         servo_screen_source(SERVO_SOURCE_INA3221, 2u);
     }
     uint16_t win_number = 0u;
-    tap(136, UI_BAND_H + 27);                       /* TEST */
+    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);       /* TEST */
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = 369,
-                                   .y = (int16_t)(UI_BAND_H + 323),
+                        .point = { .id = 1, .x = SV_START_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(0)),
                                    .strength = 40 } };
     ui_router_event(&e);                            /* START TEST, held */
     for (int i = 0; i < 115; ++i) {
@@ -928,6 +929,8 @@ static void servo_run_view(bool to_the_end, bool ina)
     }
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+    /* LIVE: the run's box over the dial. */
+    tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     const int frames = to_the_end ? 4000 : 660;
     int after = 50;               /* frames once it is over: the OFF lands */
     for (int i = 0; i < frames; ++i) {
@@ -1155,26 +1158,37 @@ static void limrun_view(const char *view)
     ui_router_goto(SCREEN_SERVO);
     s_lr.win_end = g_rig.ms + 50u;
     limrun_ms(400u);
-    tap(734, UI_BAND_H + 24);                   /* SETTINGS */
-    tap(216, UI_BAND_H + 27);                   /* LIMITS */
+    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);   /* TEST */
+    tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(1));     /* its SETTINGS */
     if (s_lr.prog) {
-        tap(100, UI_BAND_H + 281);              /* LIMIT RUN: SEARCH+PROG */
+        tap(100, UI_BAND_H + SV_LIST_ROW_Y(0)); /* LIMIT RUN: SEARCH+PROG */
         if (strcmp(v, "-range") != 0) {
-            tap(100, UI_BAND_H + 323);          /* SERVO PULSES: 1000-2000 */
+            tap(100, UI_BAND_H + SV_LIST_ROW_Y(1)); /* SERVO PULSES */
         }
+    }
+    {
+        /* The home tag: back to TEST's cards. */
+        const gfx_rect_t home = ui_home_tag_rect(ui_router_title(SCREEN_SERVO));
+        if (strcmp(v, "-settings") == 0) {
+            limrun_ms(100u);                    /* the list, left open */
+            return;
+        }
+        tap(home.x + home.w / 2, home.y + home.h / 2);
     }
     limrun_ms(100u);
     if (strcmp(v, "-ready") == 0) {
         return;
     }
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = 369,
-                                   .y = (int16_t)(UI_BAND_H + 323),
+                        .point = { .id = 1, .x = SV_START_X,
+                                   .y = (int16_t)(UI_BAND_H + SV_START_Y(1)),
                                    .strength = 40 } };
     ui_router_event(&e);                        /* START LIMIT RUN, held */
     limrun_ms(2300u);
     e.type = TOUCH_EVENT_UP;
     ui_router_event(&e);
+    /* LIVE: the run's box over the dial. */
+    tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     if (v[0] == '\0') {
         /* A probe of the third writing session, partway out. */
         unsigned sessions = 0u;
@@ -1243,6 +1257,9 @@ static void limrun_view(const char *view)
         return;
     }
     limrun_ms(20u);
+    if (strcmp(v, "-card") == 0) {
+        tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);   /* TEST: the card */
+    }
 }
 
 /*
@@ -2918,25 +2935,46 @@ int main(int argc, char **argv)
                    && strcmp(view, "servo-model") != 0
                    && strcmp(view, "servo-clipped") != 0) {
             ui_router_goto(SCREEN_SERVO);
-            tap(734, UI_BAND_H + 24);
+        }
+        /* The strip's tabs, a run card's SETTINGS, SETTINGS' own page tabs
+         * and rows, and the TARGET row: SV_* in servo_rig.h's terms. */
+        const bool on_settings = strcmp(view, "servo-settings") == 0
+                                 || strcmp(view, "servo-sweep-page") == 0
+                                 || strcmp(view, "servo-warning") == 0
+                                 || strcmp(view, "servo-encoder") == 0
+                                 || strcmp(view, "servo-name") == 0
+                                 || strncmp(view, "servo-rate-", 11) == 0;
+        if (on_settings) {
+            tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
         }
         if (strcmp(view, "servo-test") == 0) {
-            tap(136, UI_BAND_H + 27);
-        } else if (strcmp(view, "servo-limits") == 0) {
-            tap(216, UI_BAND_H + 27);
+            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+        } else if (strcmp(view, "servo-test-settings") == 0
+                   || strcmp(view, "servo-limits") == 0) {
+            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+            tap(SV_RUN_SET_X,
+                UI_BAND_H + SV_RUN_SET_Y(strcmp(view, "servo-limits") == 0));
+        } else if (strcmp(view, "servo-target-choice") == 0) {
+            tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
         } else if (strcmp(view, "servo-warning") == 0) {
-            tap(100, UI_BAND_H + 71);
-            tap(130, UI_BAND_H + 212);
+            tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
+            tap(130, UI_BAND_H + 212);                /* HELI CYCLIC */
+        } else if (strcmp(view, "servo-sweep-page") == 0) {
+            tap(SV_PAGE_X(1), UI_BAND_H + SV_PAGE_Y); /* SWEEP */
         } else if (strcmp(view, "servo-encoder") == 0) {
-            tap(296, UI_BAND_H + 27);                 /* DUT */
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y); /* DUT */
         } else if (strcmp(view, "servo-name") == 0) {
-            tap(296, UI_BAND_H + 27);
-            tap(100, UI_BAND_H + 71);
+            tap(SV_PAGE_X(2), UI_BAND_H + SV_PAGE_Y);
+            tap(100, UI_BAND_H + SV_ROW_Y(0));        /* NAME */
         } else if (strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
                    || strcmp(view, "servo-result-ina") == 0) {
             servo_run_view(strcmp(view, "servo-run") != 0,
                            strcmp(view, "servo-result-ina") == 0);
+        } else if (strcmp(view, "servo-test-done") == 0) {
+            settings_set(SET_SERVO_LEN_BY, 1.0f);     /* by movements */
+            servo_run_view(true, false);
+            tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y); /* TEST: the cards */
         }
     }
 
@@ -2961,6 +2999,7 @@ int main(int argc, char **argv)
                    || strcmp(view, "servo-run") == 0
                    || strcmp(view, "servo-result") == 0
                    || strcmp(view, "servo-result-ina") == 0
+                   || strcmp(view, "servo-test-done") == 0
                    || strcmp(view, "servo-sweep") == 0
                    || strcmp(view, "servo-paused") == 0
                    || (strncmp(view, "servo-limrun", 12) == 0

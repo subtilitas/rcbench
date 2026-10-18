@@ -1,11 +1,11 @@
 /*
- * The SERVO screen's automatic test: START TEST, on the TEST page of the
- * settings, runs it (servo_test.h).  This file hands the run the steps, the
+ * The SERVO screen's automatic test: START TEST, on TEST's AUTOMATIC TEST
+ * card, runs it (servo_test.h).  This file hands the run the steps, the
  * servo's profile and ends, the meter and the supply's caps; does what the
  * run asks -- the servo's position, SUPPLY's set points and output --
  * through the same paths a finger uses; puts SUPPLY's set points back after
- * it; and draws its box on the left card and its button and lines on the
- * TEST page.  It also serves the card writer the outbox of both runs, the
+ * it; and draws its box on LIVE's card and its button and lines on the
+ * AUTOMATIC TEST card.  It also serves the card writer the outbox of both runs, the
  * automatic test's first, then the limit run's.
  *
  * The screen is servo_screen.c; the state and the layout both share are
@@ -66,7 +66,8 @@ void test_meter_follow(servo_source_id_t id, uint32_t changes)
 
 /* --------------------------------------------------------- the automatic test */
 
-/* The steps the TEST page names: 7.4 and 8.4 V only while HV SERVO is on. */
+/* The steps the run's settings name: 7.4 and 8.4 V only while HV SERVO is
+ * on. */
 static uint8_t test_steps(float *v)
 {
     static const struct { setting_id_t id; float v; bool hv; } k[] = {
@@ -103,7 +104,7 @@ float test_top_v(void)
     return top;
 }
 
-/* What the run is told: the TEST and LIMITS pages, the servo's profile, and
+/* What the run is told: its settings and SWEEP's, the servo's profile, and
  * its ends -- the sweep's, RANGE of the travel either side of PULSE CENTRE. */
 static void test_ends(uint16_t *end_lo, uint16_t *end_hi)
 {
@@ -329,8 +330,8 @@ int test_blocked(void)
     return 0;
 }
 
-/* START TEST's hold, or the HV warning's, completed: the run starts, and
- * the settings close so the left card shows it. */
+/* START TEST's hold, or the HV warning's, completed: the run starts.  A
+ * panel open closes; TEST's card and LIVE's box show the run. */
 void test_begin(void)
 {
     /* The hold that started it is spent, whatever comes of it: a press
@@ -377,8 +378,6 @@ void test_begin(void)
     s.test_report  = false;
     s.test_box     = true;
     s.lim_box      = false;
-    s.ov_open      = false;
-    s.kp_alone     = false;
     close_panels();
     servo_invalidate();
     ++s.ctrl_rev;
@@ -561,32 +560,64 @@ void draw_test_start(gfx_canvas_t *c)
               running || test_blocked() == 0);
 }
 
-/* Under START TEST: what a run would do, and what the last one did or why
- * one did not start. */
-void draw_test_lines(gfx_canvas_t *c)
+/* The steps a run would take, as the card says them: "4.8 6.0 V
+ * BROWN-OUT", or NO STEP CHOSEN. */
+static void test_plan(char *plan, size_t size)
 {
-    const int x = OV_X + 20 + OV_COL_W;
-    const int y = OV_ROW0 + 7 * OV_PITCH + 2;
     float v[SERVO_TEST_STEPS_MAX];
     const uint8_t n = test_steps(v);
-    char plan[40] = "";
-    int k = 0;
-    for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < sizeof(plan); ++j) {
-        k += snprintf(plan + k, sizeof(plan) - (size_t)k, "%.1f ", (double)v[j]);
+    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
+        snprintf(plan, size, "%s", ui_servo_str(SERVO_STR_START_NO_STEPS));
+        return;
     }
-    if (k >= 0 && (size_t)k < sizeof(plan)) {
-        snprintf(plan + k, sizeof(plan) - (size_t)k, "%s%s",
+    plan[0] = '\0';
+    int k = 0;
+    for (uint8_t j = 0; j < n && k >= 0 && (size_t)k < size; ++j) {
+        k += snprintf(plan + k, size - (size_t)k, "%.1f ", (double)v[j]);
+    }
+    if (k >= 0 && (size_t)k < size) {
+        snprintf(plan + k, size - (size_t)k, "%s%s",
                  (n > 0u) ? "V" : "",
                  settings_get_bool(SET_SERVO_BROWNOUT)
                      ? ((n > 0u) ? " BROWN-OUT" : "BROWN-OUT") : "");
     }
-    if (n == 0u && !settings_get_bool(SET_SERVO_BROWNOUT)) {
-        snprintf(plan, sizeof(plan), "%s",
-                 ui_servo_str(SERVO_STR_START_NO_STEPS));
-    }
-    gfx_text(c, x, y, plan, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
+}
 
-    char line[64];
+/* A STALL AT the run's readings cannot pass, in the warning colour: the
+ * current limit first, then the meter's range.  Nothing when it can. */
+void draw_test_stall(gfx_canvas_t *c, int x, int y)
+{
+    servo_test_cfg_t tc;
+    test_cfg(&tc);
+    char note[96];
+    if (servo_test_stall_note(&tc, note, sizeof(note))) {
+        gfx_text(c, x, y, note, &gfx_font_8x16, ui_theme_color(UI_C_WARN), 1);
+    }
+}
+
+/*
+ * The AUTOMATIC TEST card's lines: over START TEST the steps and the
+ * length of each, and under it why a run cannot start or what it does now,
+ * the last result and its file, and a STALL AT no reading can pass.
+ */
+void draw_test_lines(gfx_canvas_t *c)
+{
+    const gfx_rect_t k = run_card_rect(0);
+    const int x = k.x + 10;
+    char plan[40];
+    test_plan(plan, sizeof(plan));
+    char line[96];
+    if (settings_get_int(SET_SERVO_LEN_BY) != 0) {
+        snprintf(line, sizeof(line), TR(SV_SUM_MOVES), plan,
+                 (unsigned)settings_get_int(SET_SERVO_LEN_MOVES));
+    } else {
+        snprintf(line, sizeof(line), TR(SV_SUM_TIME), plan,
+                 (unsigned)settings_get_int(SET_SERVO_LEN_S));
+    }
+    gfx_text(c, x, k.y + 34, line, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    const int y = k.y + RUN_LINE_DY;
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
     const int blocked = servo_test_running(&s.test) ? 0 : test_blocked();
     if (blocked != 0 || s.test_note != 0) {
@@ -598,33 +629,28 @@ void draw_test_lines(gfx_canvas_t *c)
         snprintf(line, sizeof(line), TR(SV_RUNNING),
                  servo_test_step_now(&s.test),
                  servo_test_steps_planned(&s.test));
-    } else if (s.test.state == SERVO_TEST_DONE) {
-        char f[LOG_RUN_NAME_MAX + 4];
-        test_file_name(f, sizeof(f));
-        snprintf(line, sizeof(line), TR(SV_LAST),
-                 ui_servo_str(servo_test_verdict_str(servo_test_verdict(
-                     &s.test))), f);
-    } else if (test_blocked() != 0) {
-        snprintf(line, sizeof(line), "%s",
-                 ui_servo_str((servo_str_t)test_blocked()));
     } else {
         snprintf(line, sizeof(line), "%s",
                  test_needs_hv() ? TR(SV_TAP_HV) : TR(SV_HOLD_START));
     }
-    gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
+    gfx_text(c, x, y, line, &gfx_font_8x16, col, 1);
 
-    /* A STALL AT the run's readings cannot pass, across the card under
-     * both columns: the current limit first, then the meter's range. */
-    servo_test_cfg_t tc;
-    test_cfg(&tc);
-    char note[96];
-    if (servo_test_stall_note(&tc, note, sizeof(note))) {
-        gfx_text(c, OV_X + 10, y + 36, note, &gfx_font_8x16,
-                 ui_theme_color(UI_C_WARN), 1);
+    if (s.test.state == SERVO_TEST_DONE && !servo_test_running(&s.test)) {
+        char f[LOG_RUN_NAME_MAX + 4];
+        test_file_name(f, sizeof(f));
+        char name[LOG_RUN_NAME_MAX + 12];
+        snprintf(name, sizeof(name), "%s%s", f,
+                 (s.test_file > 0 && s.test_report) ? " + .TXT" : "");
+        snprintf(line, sizeof(line), TR(SV_CARD_LAST),
+                 ui_servo_str(servo_test_verdict_str(
+                     servo_test_verdict(&s.test))), name);
+        gfx_text(c, x, y + 18, line, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
     }
+    draw_test_stall(c, x, y + 36);
 }
 
-/* What the box and the TEST page show of the run, as one number. */
+/* What the box and the AUTOMATIC TEST card show of the run, as one number. */
 uint32_t test_signature(void)
 {
     const servo_test_t *t = &s.test;
@@ -666,7 +692,7 @@ void test_tick(void)
         s.test_note = 0;
         ++s.test_rev;
     }
-    /* The box and the TEST page say the step, the phase and the move. */
+    /* The box and the card say the step, the phase and the move. */
     const uint32_t sig = test_signature();
     if (sig != s.test_sig) {
         s.test_sig = sig;

@@ -103,7 +103,7 @@ One German word per English concept, on every screen and in the report.
 | report | Bericht |
 | reading | Messwert |
 | setting (a SETUP entry) | Einstellung |
-| SETTINGS (a screen's own overlay) | OPTIONEN |
+| SETTINGS (a screen's own settings) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
@@ -217,7 +217,7 @@ its English.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 243 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 249 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,

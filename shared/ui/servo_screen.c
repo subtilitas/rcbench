@@ -5,22 +5,23 @@
  * the arm is drawn at the measured position, so a servo that is slow, stuck
  * or fighting a linkage lags the finger by that much.
  *
- * SETTINGS, top right, opens the servo's settings over the left card: its
- * type, frame rate and pulse widths, the automatic test, its limits and the
- * device under test.  A type or a frame rate that can destroy a servo not
+ * A workbench (ui_workbench.h): the strip under the band shows LIVE, the
+ * dial; TEST, the run cards; SETTINGS, the servo's type, frame rate and
+ * pulse widths, the sweep and the device under test.  The right card is
+ * the output card on every task.  The strip, the TEST page and the TARGET
+ * row are servo_workbench.c; the pages of rows and the panels they open
+ * are servo_settings_panel.c; the state and the layout the files share are
+ * servo_screen_int.h.  A type or a frame rate that can destroy a servo not
  * made for it -- a heli profile, anything above 60 Hz -- is applied only
  * after a warning held for two seconds, and is never kept past a restart.
- * The overlay is servo_settings_panel.c; the state and the layout the
- * files share are servo_screen_int.h.
  *
- * START TEST, on the TEST page, runs the automatic test (servo_test.h): the
- * screen hands it the supply's samples and the clock, and does what it asks
- * -- the servo's position, SUPPLY's set points and output -- through the
- * same paths a finger uses.  Its progress and result are on the left card.
- * The run's code is servo_test_panel.c.
- *
- * START LIMIT RUN, on the LIMITS page, runs the limit run
- * (servo_limrun.h) the same way; its code is servo_limit_panel.c.
+ * START TEST, on TEST's AUTOMATIC TEST card, runs the automatic test
+ * (servo_test.h): the screen hands it the supply's samples and the clock,
+ * and does what it asks -- the servo's position, SUPPLY's set points and
+ * output -- through the same paths a finger uses.  The run's code is
+ * servo_test_panel.c.  START LIMIT RUN, on the LIMIT RUN card, runs the
+ * limit run (servo_limrun.h) the same way; its code is
+ * servo_limit_panel.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -112,9 +113,9 @@ const servo_type_t k_types[] = {
 _Static_assert(sizeof(k_types) / sizeof(k_types[0]) == TYPE_COUNT,
                "TYPE_COUNT in servo_screen_int.h counts k_types");
 
-/* The overlay's pages' names. */
+/* SETTINGS' pages' names. */
 static const ui_text_id_t k_pages[PG_COUNT] = {
-    TX_SV_PG_OUTPUT, TX_SV_PG_TEST, TX_SV_PG_LIMITS, TX_SV_PG_DUT,
+    TX_SV_PG_OUTPUT, TX_SV_PG_SWEEP, TX_SV_PG_DUT,
 };
 
 /* The power plot's series: the servo rail's voltage, current and power. */
@@ -378,7 +379,7 @@ void post(servo_cmd_kind_t kind, uint16_t us)
 /* ------------------------------------------------------------------- sweep */
 
 /*
- * The sweep the TEST page describes, under the profile in force: CURVE,
+ * The sweep the SWEEP page describes, under the profile in force: CURVE,
  * SPEED and DWELL as they are, and RANGE as a share of the travel the
  * servo may make -- TRAVEL, and the nearer of PULSE MIN and MAX, so a sweep
  * about the centre reaches neither end it may not.  In the command units of
@@ -1513,8 +1514,8 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
     const bool was_ina = (s.source == SERVO_SOURCE_INA3221);
     const bool now_ina = (id == SERVO_SOURCE_INA3221);
     s.source = id;
-    if (was_ina != now_ina && s.ov_open) {
-        ++s.ctrl_rev;           /* the line under START TEST names a range */
+    if (was_ina != now_ina && wb_task() != UI_WB_LIVE) {
+        ++s.ctrl_rev;           /* the STALL AT line names a range */
     }
     if (was_ina != now_ina || skipped) {
         /* The two meters do not agree, and the label names one of them:
@@ -1642,7 +1643,7 @@ void servo_screen_rate(servo_rate_state_t st, uint16_t hz)
     }
     s.rate_st = st;
     s.rate_hz = hz;
-    if (s.ov_open) {
+    if (wb_task() == UI_WB_SETTINGS) {
         ++s.ctrl_rev;   /* the OUTPUT page's note says it */
     }
 }
@@ -1767,10 +1768,7 @@ static void reset(void)
     s.arm_btn     = (gfx_rect_t){ RC_X, 388, RC_W, 32 };
     s.out_btn     = (gfx_rect_t){ SUP_OUT_X, SUP_Y,
                                   (int16_t)(RC_X + RC_W - SUP_OUT_X), SUP_H };
-    s.set_btn     = (gfx_rect_t){ (int16_t)(RCARD_X + RCARD_W - 12 - SETB_W),
-                                  12, SETB_W, 24 };
-    s.prog_btn    = (gfx_rect_t){ (int16_t)(s.set_btn.x - 6 - PROGB_W),
-                                  12, PROGB_W, 24 };
+    wb_init();
     kst_panel_init(overlay_area());
     servo_limrun_init(&s.lim);
     s.lim_sig = lim_signature();
@@ -1983,7 +1981,7 @@ static bool on_the_dial(int px, int py, float *deg)
 /* Latches that something other than the knob holds the horn. */
 static void knob_note_owner(void)
 {
-    if (s.ov_open || kst_panel_is_open() || servo_test_running(&s.test)
+    if (!live_shown() || servo_test_running(&s.test)
         || s.sweeping || s.paused) {
         s.knob_owned = true;
     }
@@ -2069,7 +2067,11 @@ static void event_body(const touch_event_t *evt)
     kst_panel_bench_armed(bench_arming());
     const int px = evt->point.x, py = evt->point.y;
 
-    /* The programmer's own press first, then the overlay's. */
+    /* The strip's and the TARGET row's own presses, the programmer's, then
+     * the pages' and the panels'. */
+    if (evt->type != TOUCH_EVENT_DOWN && wb_rest(evt)) {
+        return;
+    }
     if (kst_panel_has_press(evt->point.id)
         && evt->type != TOUCH_EVENT_DOWN) {
         kst_panel_event(evt);
@@ -2096,8 +2098,11 @@ static void event_body(const touch_event_t *evt)
         }
         s.dragging = false;
         ui_slider_release(&s.speed);
-        if (s.ov_open && gfx_rect_contains(overlay_area(), px, py)) {
-            /* One press at a time in the overlay. */
+        if (wb_down(evt)) {
+            return;
+        }
+        if (modal_open() && gfx_rect_contains(overlay_area(), px, py)) {
+            /* One press at a time in the panels and the pages. */
             if (!s.ov_have) {
                 ov_down(evt);
             }
@@ -2115,9 +2120,14 @@ static void event_body(const touch_event_t *evt)
             }
             return;
         }
-        if (gfx_rect_contains(s.set_btn, px, py)) {
+        if (!kst_panel_is_open() && wb_task() != UI_WB_LIVE
+            && gfx_rect_contains(page_area(), px, py)) {
             if (!s.ov_have) {
-                ov_take(evt, OP_SETTINGS, -1);
+                if (rows_page() >= 0) {
+                    ov_down(evt);
+                } else {
+                    test_page_down(evt);
+                }
             }
             return;
         }
@@ -2163,7 +2173,7 @@ static void event_body(const touch_event_t *evt)
                 return;
             }
         }
-        if (s.lim_box && !s.ov_open && !kst_panel_is_open()
+        if (s.lim_box && live_shown()
             && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP RUN ends the limit run on the press; CLOSE puts the
              * result away. */
@@ -2176,7 +2186,7 @@ static void event_body(const touch_event_t *evt)
             ++s.ctrl_rev;
             return;
         }
-        if (s.test_box && !s.ov_open && !kst_panel_is_open()
+        if (s.test_box && live_shown()
             && gfx_rect_contains(test_btn_rect(), px, py)) {
             /* STOP TEST ends the run on the press, as a stop does; CLOSE
              * puts the result away. */
@@ -2189,7 +2199,7 @@ static void event_body(const touch_event_t *evt)
             return;
         }
         float deg;
-        if (!s.ov_open && !kst_panel_is_open() && on_the_dial(px, py, &deg)) {
+        if (live_shown() && on_the_dial(px, py, &deg)) {
             /* Refused while the value is not live: the press is the dial's
              * and takes no drag, so a bench armed under it moves nothing
              * until the next press. */
@@ -2572,60 +2582,11 @@ int wrap_text(gfx_canvas_t *c, int x, int y, int pitch,
     return lines;
 }
 
-/* Characters the TARGET row's value holds: 188 px of the 8x16 face. */
-#define TARGET_CELLS 23u
-
-bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
-                       bool pwm, uint64_t pins, bool known)
-{
-    if (out == NULL || size == 0u) {
-        return false;
-    }
-    /* No link, or the coprocessor's page not known: the tester sends
-     * nothing, and where it would go is not known. */
-    if (target == SERVO_SCREEN_TARGET_NO_LINK) {
-        snprintf(out, size, "%s", TR(SV_TARGET_NO_LINK));
-        return true;
-    }
-    if (target == SERVO_SCREEN_TARGET_UNKNOWN) {
-        snprintf(out, size, "%s", TR(SV_TARGET_UNKNOWN));
-        return true;
-    }
-    /* The target the drive uses, not the setting: a change waits for a
-     * quiet bench.  A port target is the port whether or not its pin is
-     * known: the commands go there and do not reach the SERVO PWM outputs.
-     * With its pulse off the port renders none, and the line says so. */
-    if (target != 0u) {
-        if (gpio == SERVO_SCREEN_NO_PIN) {
-            snprintf(out, size, "%s",
-                     pwm ? TR(SV_TARGET_PORT) : TR(SV_TARGET_PORT_OFF));
-        } else {
-            snprintf(out, size,
-                     pwm ? TR(SV_TARGET_PORT_PIN) : TR(SV_TARGET_PORT_PIN_OFF),
-                     (unsigned)gpio);
-        }
-        return true;
-    }
-    if (!known) {
-        snprintf(out, size, "%s", TR(SV_TARGET_UNREAD));
-        return true;
-    }
-    if (pins == 0u) {
-        snprintf(out, size, "%s", TR(SV_TARGET_NONE));
-        return true;
-    }
-    /* As many pins as the value holds, then "+N" (ui_pinlist()). */
-    char list[UI_PINLIST_PINS * 5u];
-    ui_pinlist(list, sizeof(list), pins, TARGET_CELLS);
-    snprintf(out, size, "%s", list);
-    return false;
-}
-
 static void draw_left(gfx_canvas_t *c)
 {
     /* Everything that moves lives in this rectangle, so this is what gets
      * cleared -- the case and the dial below it are chrome. */
-    gfx_fill_rect(c, PAD + 1, PAD + 1, LCARD_W - 2, H - 2 * PAD - 2,
+    gfx_fill_rect(c, PAD + 1, CARD_Y + 1, LCARD_W - 2, CARD_H - 2,
                   ui_theme_color(UI_C_PANEL));
     draw_dial(c);
     /* The case first: the horn bolts to the top of it and must be drawn over
@@ -2893,29 +2854,6 @@ static void draw_tag(gfx_canvas_t *c)
 }
 
 /*
- * What the tester drives, on the right card, which the settings, their
- * keypads and the servo programmer leave in sight.  The programming port is
- * the rare case and takes the warning colour: the tester's commands then do
- * not reach the SERVO PWM outputs, which an armed bank holds at their rest.
- * No pin, a binding not read, a target not known and no link take it too.
- */
-static void draw_target_row(gfx_canvas_t *c)
-{
-    char line[32];
-    const bool warn = servo_target_line(line, sizeof(line), s.drive_target,
-                                        s.drive_pin, s.drive_pwm, s.pins,
-                                        s.pins_known);
-    const gfx_color_t col = warn ? ui_theme_color(UI_C_WARN)
-                                 : ui_theme_color(UI_C_TEXT_DIM);
-    gfx_text(c, RC_X, TARGET_Y + 5, TR(SV_TARGET), UI_FONT_LABEL, col, 1);
-    gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 80), (int16_t)(TARGET_Y + 5),
-                                 (int16_t)(RC_W - 80), 16 },
-                line, UI_FONT_LABEL,
-                warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
-                1, GFX_ALIGN_RIGHT);
-}
-
-/*
  * The right card.  The power plot only when @p power: a drag of the horn
  * repaints this card every frame for the COMMANDED line, and the plot
  * beside it has not moved -- its own samples repaint it, clipped.
@@ -2924,12 +2862,12 @@ static void draw_right(gfx_canvas_t *c, bool power)
 {
     const gfx_rect_t pr = power_rect();
     if (power) {
-        gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2, H - 2 * PAD - 2,
+        gfx_fill_rect(c, RCARD_X + 1, CARD_Y + 1, RCARD_W - 2, CARD_H - 2,
                       ui_theme_color(UI_C_PANEL));
     } else {
         /* Around the plot, which keeps what it shows. */
-        gfx_fill_rect(c, RCARD_X + 1, PAD + 1, RCARD_W - 2,
-                      pr.y - PAD - 1, ui_theme_color(UI_C_PANEL));
+        gfx_fill_rect(c, RCARD_X + 1, CARD_Y + 1, RCARD_W - 2,
+                      pr.y - CARD_Y - 1, ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, RCARD_X + 1, pr.y + pr.h, RCARD_W - 2,
                       H - PAD - 1 - (pr.y + pr.h), ui_theme_color(UI_C_PANEL));
         gfx_fill_rect(c, RCARD_X + 1, pr.y, pr.x - RCARD_X - 1, pr.h,
@@ -2938,13 +2876,8 @@ static void draw_right(gfx_canvas_t *c, bool power)
                       pr.h, ui_theme_color(UI_C_PANEL));
     }
 
-    gfx_text(c, RC_X, 18, "SERVO", UI_FONT_LABEL,
-             ui_theme_color(UI_C_ACCENT), 1);
-    ui_button(c, s.set_btn, TR(SUP_SETTINGS),
-              s.ov_open ? ui_theme_color(UI_C_ACCENT)
-                        : ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_SETTINGS,
-              !kst_panel_holds_port());
+    /* PROGRAM, in the strip's row over this card: the programmer opens
+     * over the whole left column. */
     ui_button(c, s.prog_btn, TR(KP_PROGRAM),
               kst_panel_is_open() ? ui_theme_color(UI_C_ACCENT)
                                   : ui_theme_color(UI_C_PANEL_SUNK),
@@ -2984,7 +2917,7 @@ static void draw_right(gfx_canvas_t *c, bool power)
     s.speed.color = ui_theme_color(UI_C_ACCENT);
     ui_slider_render(&s.speed, c);
 
-    draw_target_row(c);
+    draw_target(c);
 
     /* CENTRE sets a position, so it is dimmed with SWEEP while the bench
      * is disarmed. */
@@ -3305,27 +3238,34 @@ static void clipped(gfx_canvas_t *c, gfx_rect_t box, void (*fn)(gfx_canvas_t *))
     c->clip = old_clip;
 }
 
-static bool page_shown(void)
-{
-    return s.ov_open && !s.warn.open && !s.kp.open && !s.tk.open && !s.ch.open
-           && !s.ask.open;
-}
-
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
     const int buf = buffer_index & 1;
+    /* A panel or the programmer over the left column, the strip's tabs
+     * with it: one that opens or goes repaints the buffer whole. */
+    const bool cover = modal_open() || kst_panel_is_open();
+    if (cover != s.drawn_cover[buf]) {
+        s.drawn_mask &= ~bit;
+    }
 
     if ((s.drawn_mask & bit) == 0) {
         gfx_clear(c, ui_theme_color(UI_C_BG));
-        ui_card(c, (gfx_rect_t){ PAD, PAD, LCARD_W, (int16_t)(H - 2 * PAD) },
+        ui_card(c, page_area(), ui_theme_color(UI_C_PANEL));
+        ui_card(c, (gfx_rect_t){ RCARD_X, CARD_Y, RCARD_W, CARD_H },
                 ui_theme_color(UI_C_PANEL));
-        ui_card(c, (gfx_rect_t){ RCARD_X, PAD, RCARD_W,
-                                 (int16_t)(H - 2 * PAD) },
-                ui_theme_color(UI_C_PANEL));
+        if (!cover) {               /* under a cover, the cover's */
+            draw_strip(c);
+        }
         s.drawn_mask |= bit;
+        s.drawn_cover[buf] = cover;
+        s.drawn_strip[buf] = s.strip_rev;
         s.drawn_ctrl[buf]  = UINT32_MAX;
         s.drawn_power[buf] = UINT32_MAX;
+    }
+    if (!cover && s.drawn_strip[buf] != s.strip_rev) {
+        s.drawn_strip[buf] = s.strip_rev;
+        clipped(c, strip_area(), draw_strip);
     }
 
     /* The keypad and the keyboard keep their own counts of what changed. */
@@ -3345,12 +3285,16 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_pulse[buf] = (int)(s.pulse * 8.0f);
         s.drawn_kst[buf]   = kst_panel_revision();
         s.drawn_kst_hold[buf] = kst_panel_hold_revision();
-        if (s.ov_open) {
+        if (modal_open()) {
             draw_overlay(c);
         } else if (kst_panel_is_open()) {
             kst_panel_render(c);
-        } else {
+        } else if (wb_task() == UI_WB_LIVE) {
             draw_left(c);
+        } else if (rows_page() >= 0) {
+            draw_rows_page(c);
+        } else {
+            draw_test_page(c);
         }
         draw_right(c, power);
         if (s.arm.flash_left > 0) {
@@ -3362,9 +3306,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /*
      * Otherwise only what moved on its own, each clipped to itself: ARM's
      * fade, the warning's hold, the power plot, the CURRENT row, the save
-     * line and the grip.  The right card is 292 x 420 and the fades run for two seconds:
-     * asking for whole cards every frame would spend most of the panel's
-     * bandwidth on a button.
+     * line, the START holds and the grip.  The right card is 292 x 388 and
+     * the fades run for two seconds: asking for whole cards every frame
+     * would spend most of the panel's bandwidth on a button.
      */
     if (s.drawn_arm[buf] != s.arm_rev) {
         s.drawn_arm[buf] = s.arm_rev;
@@ -3385,30 +3329,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_sup[buf] = s.sup_rev;
         clipped(c, sup_row_rect(), draw_sup_row);
     }
-    if (s.ov_open && s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
-        s.drawn_warn[buf] = s.warn.rev;
-        clipped(c, warn_apply_rect(), draw_warn_apply);
-    }
-    if (s.ov_open && s.ask.open && s.ask.hv
-        && s.drawn_ask[buf] != s.ask.rev) {
-        s.drawn_ask[buf] = s.ask.rev;
-        clipped(c, warn_apply_rect(), draw_ask_apply);
-    }
-    if (page_shown() && s.tabs.selected == PG_TEST
-        && s.drawn_test[buf] != s.test_rev) {
-        s.drawn_test[buf] = s.test_rev;
-        clipped(c, test_start_rect(), draw_test_start);
-    }
-    if (page_shown() && s.tabs.selected == PG_LIMITS
-        && s.drawn_test[buf] != s.test_rev) {
-        s.drawn_test[buf] = s.test_rev;
-        clipped(c, test_start_rect(), draw_lim_start);
-    }
-    if (page_shown() && s.drawn_save[buf] != save_state()) {
-        s.drawn_save[buf] = save_state();
-        clipped(c, save_line_rect(), draw_save_line);
-    }
-    if (s.ov_open) {
+    if (modal_open()) {
+        if (s.warn.open && s.drawn_warn[buf] != s.warn.rev) {
+            s.drawn_warn[buf] = s.warn.rev;
+            clipped(c, warn_apply_rect(), draw_warn_apply);
+        }
+        if (s.ask.open && s.ask.hv && s.drawn_ask[buf] != s.ask.rev) {
+            s.drawn_ask[buf] = s.ask.rev;
+            clipped(c, warn_apply_rect(), draw_ask_apply);
+        }
         return;
     }
     if (kst_panel_is_open()) {
@@ -3423,10 +3352,26 @@ static void render(gfx_canvas_t *c, int buffer_index)
         }
         return;
     }
+    if (rows_page() >= 0) {
+        if (s.drawn_save[buf] != save_state()) {
+            s.drawn_save[buf] = save_state();
+            clipped(c, save_line_rect(), draw_save_line);
+        }
+        return;
+    }
+    if (wb_task() == UI_WB_TEST) {
+        /* START TEST's and START LIMIT RUN's fades. */
+        if (s.drawn_test[buf] != s.test_rev) {
+            s.drawn_test[buf] = s.test_rev;
+            clipped(c, test_start_rect(), draw_test_start);
+            clipped(c, lim_start_rect(), draw_lim_start);
+        }
+        return;
+    }
 
     /*
      * The grip, only while it breathes.  Clipped to the tip: repainting the
-     * 488x418 card at the frame rate to animate a ring of 36 px radius would
+     * 488x386 card at the frame rate to animate a ring of 36 px radius would
      * cost most of the panel's bandwidth.
      */
     const int grip_r = 36;
@@ -3486,10 +3431,9 @@ static void leave(void)
     s.toggle_live = false;
     s.sw.running  = false;
     s.sw.paused   = false;
-    s.ov_open = false;
-    s.kp_alone = false;
     close_panels();
     ui_tabs_cancel(&s.tabs);
+    wb_leave();
     s.ov_have = false;
     s.ov_pressed = OP_NONE;
     /* The programmer's presses and pages go; the port stays as it is, and
@@ -3508,6 +3452,7 @@ static void leave(void)
  * screen's again. */
 static void enter(void)
 {
+    wb_enter();
     kst_panel_screen_entry();
     supply_screen_entered(SUPPLY_BY_SERVO);
 }
@@ -3573,6 +3518,7 @@ static void cancel(void)
     ui_keypad_cancel_press(&s.kp);
     ui_textkey_cancel_press(&s.tk);
     ui_tabs_cancel(&s.tabs);
+    wb_cancel();
     ui_hold_reset(&s.warn.hold);
     s.warn.down = false;
     ++s.warn.rev;
@@ -3599,6 +3545,13 @@ static void event(const touch_event_t *evt)
     knob_note_owner();
 }
 
+/* The home tag: over a panel it closes the panel, from a run's settings it
+ * climbs to TEST; otherwise it leaves, switching to SAFE. */
+static bool back(void)
+{
+    return wb_back();
+}
+
 static const ui_screen_t k_screen = {
     .title  = "SERVO",
     .reset  = reset,
@@ -3608,6 +3561,7 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *servo_screen(void) { return &k_screen; }

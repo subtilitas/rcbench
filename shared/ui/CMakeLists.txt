@@ -12,6 +12,8 @@ set(SRCS
     ui_plot.c
     ui_slider.c
     ui_tabs.c
+    ui_workbench.c
+    ui_target_row.c
     ui_keypad.c
     ui_textkey.c
     ui_pinlist.c
@@ -26,6 +28,7 @@ set(SRCS
     servo_settings_panel.c
     servo_test_panel.c
     servo_limit_panel.c
+    servo_workbench.c
     kst_panel.c
     analyser_screen.c
     balance_screen.c
