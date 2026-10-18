@@ -351,8 +351,9 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
  * value holds.
  *
  * The row is the control that picks the target: a tap opens SETUP >
- * OUTPUTS on the PROG PORT entry while the TARGET setting names the port,
- * on SERVO PWM otherwise, where SERVO TESTER sets it.  It takes no press
+ * OUTPUTS on what the row shows -- the PROG PORT entry while the IOmcu
+ * drives the port, SERVO PWM while it drives the outputs, the overview
+ * while the target is not known -- where SERVO TESTER sets it.  It takes no press
  * while servo_screen_target_locked().
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,

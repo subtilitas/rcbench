@@ -88,11 +88,13 @@ von **SETUP** > **OUTPUTS**:
 
 | Bedienelement | Werte | Wirkung |
 | --- | --- | --- |
-| SERVO-TESTER | **AUSGÄNGE**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
+| SERVO-TESTER | **OUTPUTS**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
 | PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
 Ein Tippen auf die Zeile ZIEL der rechten Karte öffnet **OUTPUTS** auf dem
-Eintrag PROG-PORT, solange der Port das Ziel ist, sonst auf SERVO PWM. Die
+Eintrag PROG-PORT, solange der IOmcu den Port treibt, auf SERVO PWM, solange
+er die Ausgänge treibt, und auf der Übersicht, solange das Ziel nicht
+bekannt ist. Die
 Home-Tag dort führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile
 angetippt wurde. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
 und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
@@ -107,7 +109,7 @@ und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den IOmcu um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
 aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
-läuft, in ARMED wie in SAFE. Mit **AUSGÄNGE** als Ziel ist **PORT-PWM**
+läuft, in ARMED wie in SAFE. Mit **OUTPUTS** als Ziel ist **PORT-PWM**
 gesperrt. Ein gesperrtes Segment ist umrandet und ohne Akzentfarbe
 gezeichnet, und die Zeile darunter nennt den Grund:
 
@@ -115,7 +117,7 @@ gezeichnet, und die Zeile darunter nennt den Grund:
 | --- | --- |
 | `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der Programmierer hat den Port |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED oder soll es werden, oder ein Sweep oder ein Test läuft |
-| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** mit **AUSGÄNGE** als Ziel |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** mit **OUTPUTS** als Ziel |
 
 Die Zeile ZIEL auf der rechten Karte nimmt kein Tippen an, solange der
 Prüfstand ARMED ist, ein Sweep oder ein Test läuft oder der Programmierer

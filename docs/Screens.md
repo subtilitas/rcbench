@@ -789,7 +789,7 @@ What each control does while the bench is SAFE:
 | RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
 | SETTINGS > OUTPUT: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
-| TARGET | a tap opens OUTPUTS / PROG PORT | locked; names the target |
+| TARGET | a tap opens SETUP > OUTPUTS | locked; names the target |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
@@ -1225,8 +1225,12 @@ SETTINGS.
 The TARGET row of the output card, between SPEED and CENTRE, names what
 the tester drives as `protocol pins`, centred in its value box, and is the
 control that picks it, as MOTOR & ESC's TARGET row is. A tap on the box
-opens SETUP > OUTPUTS on the PROG PORT entry while the port is the tester's
-target, and on SERVO PWM otherwise ([OUTPUTS](#outputs)). There SERVO TESTER
+opens SETUP > OUTPUTS on what the row shows, where the IOmcu sends the
+commands now, not on the TARGET setting: on the PROG PORT entry while it
+drives the port, on SERVO PWM while it drives the outputs, and on the
+overview while the target is not known or no IOmcu answers
+([OUTPUTS](#outputs)). A TARGET write still pending, or PROG PORT asked
+for with no pin on the port, opens on what is driven. There SERVO TESTER
 picks OUTPUTS or PROG PORT, the TARGET setting, and PORT PWM the port's
 pulse, both kept in NVS (non-volatile storage). Leaving SERVO switches the
 bench to SAFE and ends a sweep or a test; the home tag on OUTPUTS comes back
@@ -2935,7 +2939,7 @@ it opens on what that workbench drives:
 | --- | --- |
 | SETUP's OUTPUTS tile | the overview, OFF |
 | MOTOR & ESC's TARGET row | the protocol the throttle's pins are bound as; the overview while they are bound as several (`MIXED`) or none is known |
-| SERVO's TARGET row | the PROG PORT entry while SERVO TESTER is PROG PORT; SERVO PWM otherwise |
+| SERVO's TARGET row | what the row shows: the PROG PORT entry while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known |
 
 ![Outputs](img/outputs.png)
 

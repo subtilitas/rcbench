@@ -1794,6 +1794,32 @@ TEST_CASE(unbind_all_pins_is_held_two_seconds_and_writes_an_empty_binding)
     CHECK_EQ(panel.applied, 0);
     outputs_screen()->enter();
 
+    /* PROG PORT entries 2 to 4 draw no UNBIND ALL PINS and have no
+     * segment there: a press where it would be holds nothing. */
+    {
+        static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u, 28u };
+        static const uint8_t none_pin[1] = { OUTPUTS_NO_PIN };
+        const uint8_t was = outputs_screen_binding()->proto;
+        outputs_screen_set_prog_ports(4u, four);
+        for (uint8_t n = 1u; n < LINK_PG_PORTS_MAX; ++n) {
+            outputs_screen_select_port(n);
+            CHECK_EQ(outputs_screen_port_shown(), (int)n);
+            hold_clear(3.0f, 0.25f);
+            lift_clear();
+            CHECK_EQ(panel.applied, 0);
+        }
+        /* A hold under way when an entry is shown is dropped. */
+        outputs_screen_select(was);
+        hold_clear(1.75f, 0.25f);
+        outputs_screen_select_port(1u);
+        outputs_screen()->tick(0.25f);
+        outputs_screen()->tick(0.25f);
+        CHECK_EQ(panel.applied, 0);
+        lift_clear();
+        outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, none_pin);
+        outputs_screen_select(was);
+    }
+
     /* 2.0 s: one call, with no pin, and it does not repeat. */
     hold_clear(1.75f, 0.25f);
     CHECK_EQ(panel.applied, 0);

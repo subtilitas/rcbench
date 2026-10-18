@@ -265,8 +265,8 @@ TEST_CASE(the_target_row_locks_for_each_condition)
 
 /*
  * Through the router, as the panel runs: a tap on TARGET leaves SERVO for
- * SETUP > OUTPUTS -- on SERVO PWM with the outputs as the TARGET setting,
- * on the PROG PORT entry with the port -- and the home tag there comes back
+ * SETUP > OUTPUTS -- on SERVO PWM with the outputs driven, on the PROG
+ * PORT entry with the port -- and the home tag there comes back
  * to SERVO on the task the row was tapped on.  A screen between the two
  * makes the next entry a tile's, which opens LIVE; OUTPUTS from SETUP's
  * tile opens on the overview and goes back to SETUP.
@@ -279,6 +279,7 @@ TEST_CASE(the_target_row_opens_outputs_on_what_the_tester_drives)
             ui_router_init();
             ui_router_goto(SCREEN_SERVO);
             settings_set(SET_SERVO_TARGET, (float)target);
+            servo_screen_set_drive((uint8_t)target, 13u, true);
             if (task == 1) {
                 open_settings();
             }
@@ -317,6 +318,58 @@ TEST_CASE(the_target_row_opens_outputs_on_what_the_tester_drives)
     CHECK_EQ(outputs_screen_port_shown(), -1);
     CHECK_EQ((int)outputs_screen_binding()->proto, 0);
     CHECK_EQ(ui_router_parent(SCREEN_OUTPUTS), SCREEN_SETUP);
+    settings_set(SET_SERVO_TARGET, 0.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+}
+
+/*
+ * TARGET opens OUTPUTS on what the row shows, where the IOmcu sends the
+ * commands now, and not on the TARGET setting: a write still pending, or
+ * PROG PORT asked for with no pin on the port (the IOmcu keeps the
+ * outputs), open on what is driven.  A port without a pin as the drive
+ * opens its entry; a target not known, no link, or a port the list does
+ * not hold open the overview.
+ */
+TEST_CASE(the_target_row_opens_on_the_drive_not_the_setting)
+{
+    enum { PWM = -2, OVERVIEW = -1 };
+    static const struct {
+        int     setting;
+        uint8_t target, gpio;
+        int     opens;            /* a port entry, PWM or OVERVIEW */
+    } k[] = {
+        { 1, 0u, 13u, PWM },                       /* write pending */
+        { 1, 0u, SERVO_SCREEN_NO_PIN, PWM },       /* port without a pin */
+        { 0, 1u, 13u, 0 },                         /* write back pending */
+        { 1, 1u, SERVO_SCREEN_NO_PIN, 0 },         /* the port, no pin */
+        { 1, SERVO_SCREEN_TARGET_UNKNOWN, 13u, OVERVIEW },
+        { 0, SERVO_SCREEN_TARGET_NO_LINK, 13u, OVERVIEW },
+        { 1, 2u, 26u, OVERVIEW },                  /* port 2, one entry */
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        fresh();
+        ui_router_init();
+        ui_router_goto(SCREEN_SERVO);
+        settings_set(SET_SERVO_TARGET, (float)k[i].setting);
+        servo_screen_set_drive(k[i].target, k[i].gpio, true);
+        tap(SV_TARGET_X, SV_TARGET_Y);
+        if (ui_router_current() != SCREEN_OUTPUTS) {
+            T_FAIL("case %u: no OUTPUTS", (unsigned)i);
+        }
+        const int port = outputs_screen_port_shown();
+        const char *name =
+            outbind_protos()[outputs_screen_binding()->proto].name;
+        if (k[i].opens >= 0) {
+            CHECK_EQ(port, k[i].opens);
+        } else if (k[i].opens == PWM) {
+            CHECK_EQ(port, -1);
+            CHECK_STR_EQ(name, "SERVO PWM");
+        } else {
+            CHECK_EQ(port, -1);
+            CHECK_EQ((int)outputs_screen_binding()->proto, 0);
+        }
+        CHECK_EQ(settings_get_int(SET_SERVO_TARGET), k[i].setting);
+    }
     settings_set(SET_SERVO_TARGET, 0.0f);
     ui_router_goto(SCREEN_OVERVIEW);
 }
@@ -677,6 +730,7 @@ int main(void)
     RUN(a_tab_switch_drops_a_start_hold);
     RUN(the_target_row_locks_for_each_condition);
     RUN(the_target_row_opens_outputs_on_what_the_tester_drives);
+    RUN(the_target_row_opens_on_the_drive_not_the_setting);
     RUN(the_run_cards_say_what_their_start_needs);
     RUN(the_supply_caps_show_read_only_with_their_home);
     RUN(the_as5600_lives_on_interfaces);

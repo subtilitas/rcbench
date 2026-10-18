@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on the [PROG PORT entry](#the-prog-port-entry) while the programming port is the tester's target and on SERVO PWM otherwise. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on what that row shows: the [PROG PORT entry](#the-prog-port-entry) while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -77,7 +77,7 @@ The protocol list ends in one PROG PORT entry per programming port the IOmcu rep
 - every pin as the overview names it, the port's pin lit. No pin takes a tick; the port's pin is read-only.
 - `PIN GP13`, or `NO PIN KNOWN` in the warning colour.
 - `CARRIES SERVO PWM AND KST/CHASERVO PROGRAMMING`: the IOmcu renders no MOTOR PWM and no DShot on the port.
-- SERVO TESTER, OUTPUTS or PROG PORT: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the port is the target.
+- SERVO TESTER, OUTPUTS or PROG PORT: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port.
 - PORT PWM, ON or OFF: the port's pulse while it is the tester's target.
 
 | Line under the two | Condition |

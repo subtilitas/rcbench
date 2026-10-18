@@ -41,6 +41,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "link_pages.h"
 #include "out_bind.h"
 #include "ui_screen.h"
 
@@ -160,16 +161,17 @@ typedef struct {
 bool picker_screen_row(uint8_t k, picker_row_t *out);
 
 /**
- * A line of the IN USE table, right of the board: the programming port's
- * pin first, then each other protocol's pins under its name, groups in the
- * order their first pin falls.
+ * A line of the IN USE table, right of the board: the programming ports'
+ * pins first, under one PROG PORT name, then each other protocol's pins
+ * under its name, groups in the order their first pin falls.
  *
  * Every line is drawn.  The rows are 20 px for a name and 28 px for a pin,
  * with the GPIO in the head face; when that runs past the table's foot, as
  * with OFF selected, the port listed and 8 pins over 6 protocols, every pin
- * row is 20 px with the GPIO in the label face.  At 20 px the largest
- * table any binding gives -- the port, 7 names, 8 pins -- is 340 px of the
- * 360 the table has under its heading.
+ * row is 20 px with the GPIO in the label face, and 16 px where 20 px
+ * still runs past it, as with 4 ports beside that binding.  At 16 px the
+ * most lines PICKER_USE_MAX allows -- 8 names and 12 pins -- are 352 px of
+ * the 360 the table has under its heading.
  */
 typedef enum {
     PICKER_USE_NAME = 0,  /**< a protocol's name, or PROG PORT              */
@@ -179,15 +181,19 @@ typedef enum {
 /** The group of the programming port's lines, in picker_use_t.proto. */
 #define PICKER_USE_PROG 0xFFu
 
-/** The most lines the table can have: the port's two, 7 names, 8 pins. */
-#define PICKER_USE_MAX  17u
+/** The most lines the table can have: the PROG PORT name and a pin for
+ *  each port, a name for each protocol but OFF, and a pin for each slot.
+ *  No binding reaches it: PPM's one pin takes all 8 channels, so at most 6
+ *  protocols share the slots, and 4 ports beside them make 19 lines. */
+#define PICKER_USE_MAX                                                   \
+    (1u + LINK_PG_PORTS_MAX + (OUTBIND_PROTOS - 1u) + LINK_OUT_SLOTS)
 
 typedef struct {
     picker_use_kind_t kind;
     uint8_t    proto;    /**< the group: a protocol, or PICKER_USE_PROG     */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
     int8_t     channel;  /**< PICKER_USE_PIN: its channel, -1 for the port  */
-    bool       compact;  /**< drawn in the 20 px pin rows                   */
+    bool       compact;  /**< drawn in the 20 or 16 px pin rows             */
     gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
 } picker_use_t;
 

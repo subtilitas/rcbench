@@ -136,9 +136,10 @@ history is in git.
   comes back to the workbench on the task the row was tapped on. From
   MOTOR & ESC OUTPUTS opens on the protocol the throttle's pins are bound
   as (the overview while they are bound as several or none is known),
-  from SERVO on the PROG PORT entry while the programming port is the
-  tester's target and on SERVO PWM otherwise; from SETUP's tile on the
-  overview. The row keeps its locks: ARMED, a sweep or a run, the servo
+  from SERVO on what the row shows (the PROG PORT entry while the IOmcu
+  drives the port, SERVO PWM while it drives the outputs, the overview
+  while the target is not known), not on the TARGET setting; from SETUP's
+  tile on the overview. The row keeps its locks: ARMED, a sweep or a run, the servo
   programmer holding the port.
 - OUTPUTS lists the IOmcu's programming ports as outputs: its protocol
   list ends in one PROG PORT entry per port the IOmcu reports (1 today, at

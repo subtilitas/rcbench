@@ -92,7 +92,8 @@
  * The IN USE table, right of the board.  Its lines start under the heading,
  * the rule and the BY OTHERS line, and end at the area's foot.  A name is
  * 20 px; a pin is 28 px with the GPIO in the head face, or 20 px with it in
- * the label face when the 28 px rows run past the foot.
+ * the label face when the 28 px rows run past the foot, and 16 px when the
+ * 20 px rows do.
  */
 #define USE_X       (SCREEN_W - 132)
 #define USE_Y       8
@@ -102,10 +103,15 @@
 #define USE_NAME_H  20
 #define USE_PIN_H   28
 #define USE_PIN_H_C 20
+#define USE_PIN_H_D 16      /* where 20 px rows still pass the foot */
 
-/* The largest table, at 20 px a line, is under the heading. */
-_Static_assert(USE_TOP + (int)PICKER_USE_MAX * USE_PIN_H_C <= USE_FOOT,
-               "the IN USE table cannot hold every line");
+/* The most lines fit at the densest rows: every name and every pin. */
+_Static_assert(USE_TOP
+                   + (1 + (int)OUTBIND_PROTOS - 1) * USE_NAME_H
+                   + ((int)LINK_PG_PORTS_MAX + (int)LINK_OUT_SLOTS)
+                         * USE_PIN_H_D
+                   <= USE_FOOT,
+               "the IN USE table holds PICKER_USE_MAX lines");
 
 #define IVORY GFX_RGB(236, 235, 228)
 #define EBONY GFX_RGB(22, 23, 28)
@@ -958,7 +964,7 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
                        uint8_t proto, uint8_t gpio, int8_t channel)
 {
     if (n >= PICKER_USE_MAX) {
-        return n;               /* no binding gives more; kept in bounds */
+        return n;               /* no binding gives more (PICKER_USE_MAX) */
     }
     t[n].kind    = kind;
     t[n].proto   = proto;
@@ -1006,16 +1012,20 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
         }
     }
 
-    /* 28 px pin rows while they reach no further than the foot. */
-    int full = 0;
+    /* 28 px pin rows while they reach no further than the foot, then 20,
+     * then 16. */
+    int names = 0, pins_n = 0;
     for (uint8_t i = 0; i < k; ++i) {
-        full += (t[i].kind == PICKER_USE_PIN) ? USE_PIN_H : USE_NAME_H;
+        if (t[i].kind == PICKER_USE_PIN) { ++pins_n; } else { ++names; }
     }
-    const bool compact = (USE_TOP + full > USE_FOOT);
+    const int room = USE_FOOT - USE_TOP - names * USE_NAME_H;
+    const bool compact = pins_n * USE_PIN_H > room;
+    const int pin_h = !compact ? USE_PIN_H
+                      : (pins_n * USE_PIN_H_C > room) ? USE_PIN_H_D
+                                                      : USE_PIN_H_C;
     int y = USE_TOP;
     for (uint8_t i = 0; i < k; ++i) {
-        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H
-                      : (compact ? USE_PIN_H_C : USE_PIN_H);
+        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H : pin_h;
         t[i].compact = compact;
         t[i].rect = gfx_rect_make(USE_X, y, USE_W, h);
         y += h;
@@ -1061,7 +1071,8 @@ static void draw_theirs(gfx_canvas_t *c)
             continue;
         }
         /* The port has no channel, so no CH. */
-        const int label_y = t[i].compact ? (r.y + 2) : (r.y + 6);
+        /* The label face's 16 px centred in a 20 or 16 px row. */
+        const int label_y = t[i].compact ? (r.y + (r.h - 16) / 2) : (r.y + 6);
         if (t[i].channel >= 0) {
             snprintf(row, sizeof(row), "CH%d", t[i].channel);
             gfx_text(c, r.x + 4, label_y, row, UI_FONT_LABEL, UI_TEXT_FAINT,

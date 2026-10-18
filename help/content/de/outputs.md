@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der Programmierport das Ziel des Testers ist, sonst auf SERVO PWM. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem, was diese Zeile zeigt: dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 
@@ -77,14 +77,14 @@ Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der
 - jeden Pin, wie die Übersicht ihn benennt, den Pin des Ports hervorgehoben. Kein Pin nimmt einen Haken an; der Pin des Ports ist nur lesbar.
 - `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe.
 - `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`: der IOmcu gibt auf dem Port kein MOTOR PWM und kein DShot aus.
-- SERVO-TESTER, AUSGÄNGE oder PROG-PORT: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der Port das Ziel ist.
+- SERVO-TESTER, OUTPUTS oder PROG-PORT: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der IOmcu den Port treibt.
 - PORT-PWM, EIN oder AUS: der Puls des Ports, solange er das Ziel des Testers ist.
 
 | Zeile unter den beiden | Bedingung |
 |---|---|
 | `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat den Port |
 | `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
-| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM mit AUSGÄNGE als Ziel des Testers |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM mit OUTPUTS als Ziel des Testers |
 
 Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`; der Tester treibt nur Port 1.
 

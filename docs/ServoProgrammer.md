@@ -83,7 +83,8 @@ programming port. Two controls set it, on the PROG PORT entry of
 | PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
 A tap on the TARGET row of the right card opens **OUTPUTS** on the PROG
-PORT entry while the port is the target, and on SERVO PWM otherwise. The
+PORT entry while the IOmcu drives the port, on SERVO PWM while it drives
+the outputs, and on the overview while the target is not known. The
 home tag there goes back to SERVO on the task the row was tapped on.
 Leaving SERVO switches the bench to SAFE and ends a sweep or a test, as
 every way out of the screen does.

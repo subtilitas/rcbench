@@ -377,16 +377,24 @@ static void task_changed(void)
 }
 
 /*
- * The TARGET row tapped: SETUP > OUTPUTS, on the PROG PORT entry while the
- * TARGET setting names the port, on SERVO PWM otherwise.  The router
- * leaves this screen for it, which switches the bench to SAFE and ends a
- * sweep or a test as any way out does (leave()); the row takes the tap
- * only under the TARGET setting's lock.
+ * The TARGET row tapped: SETUP > OUTPUTS, on what the row shows -- where
+ * the IOmcu sends the tester's commands now (s.drive_target), not the
+ * TARGET setting, which a write still pending or a port without a pin
+ * leaves apart from it.  Programming port n: its PROG PORT entry, the
+ * overview where the list has no such entry.  The standard outputs: SERVO
+ * PWM.  A target not known or no link: the overview, as the row names
+ * none.  The router leaves this screen for it, which switches the bench to
+ * SAFE and ends a sweep or a test as any way out does (leave()); the row
+ * takes the tap only under the TARGET setting's lock.
  */
 static void open_outputs(void)
 {
-    if (settings_get_int(SET_SERVO_TARGET) != 0) {
-        outputs_screen_open_on_port(0u);
+    const uint8_t target = s.drive_target;
+    if (target == SERVO_SCREEN_TARGET_UNKNOWN
+        || target == SERVO_SCREEN_TARGET_NO_LINK) {
+        outputs_screen_open_on(0u);
+    } else if (target != 0u) {
+        outputs_screen_open_on_port((uint8_t)(target - 1u));
     } else {
         const outbind_proto_t *p = outbind_protos();
         for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {

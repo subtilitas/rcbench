@@ -208,7 +208,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_OUT_PORT_NO_PIN]        = "KEIN PIN BEKANNT",
     [TX_OUT_PORT_CARRIES]       = "TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG",
     [TX_OUT_PORT_TESTER]        = "SERVO-TESTER",
-    [TX_OUT_TESTER_OUTPUTS]     = "AUSGÄNGE",
+    [TX_OUT_TESTER_OUTPUTS]     = "OUTPUTS",
     [TX_OUT_PORT_PWM]           = "PORT-PWM",
     [TX_OUT_PORT_HELD]          = "GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT",
     [TX_OUT_PORT_LOCKED]        = "GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT",
@@ -1732,7 +1732,7 @@ static const char *const k_theme[]  = { "DUNKEL", "HELL" };
 static const char *const k_units[]  = { "METRISCH", "IMPERIAL" };
 static const char *const k_curve[]  = { "RECHTECK", "SINUS", "DREIECK" };
 static const char *const k_len_by[] = { "ZEIT", "BEWEGUNGEN" };
-static const char *const k_target[] = { "AUSGÄNGE", "PROG-PORT" };
+static const char *const k_target[] = { "OUTPUTS", "PROG-PORT" };
 
 /* The language names each its own; the INA228's and the INA3221's
  * addresses, the INA3221's channels and the baud rates are the same words

@@ -250,7 +250,7 @@ Die Karte STEUERUNG beginnt mit der Zeile ZIEL: der Beschriftung, 64 px, und
 einem Wertefeld von 18 Zeichen, das nennt, was das Gas treibt, das Protokoll
 und dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die als MOTOR PWM
 oder als DShot-Protokoll gebunden sind, gelesen aus denselben Pages unter
-SETUP > AUSGÄNGE, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
+SETUP > OUTPUTS, die auch die Gas-Rolle des IOmcu liest. Die Pins stehen in
 Pin-Reihenfolge; die nicht passen, werden gezählt. Sind GP0 bis GP7 als
 DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
 
@@ -862,7 +862,7 @@ Was jedes Bedienelement auf einem Prüfstand in SAFE tut:
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
 | OPTIONEN > AUSGANG: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
-| ZIEL | ein Tippen öffnet AUSGÄNGE / PROG-PORT | gesperrt; nennt das Ziel |
+| ZIEL | ein Tippen öffnet SETUP > OUTPUTS | gesperrt; nennt das Ziel |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
 
@@ -1276,7 +1276,7 @@ Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
 IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
 und liest und schreibt die Einstellungen des Servos über dessen
 Signalleitung. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
-PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+PROG-PORT steht; mit OUTPUTS zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
@@ -1342,9 +1342,13 @@ A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
 Die Zeile ZIEL der Ausgangskarte, zwischen TEMPO und ZENTRIEREN, nennt, was
 der Tester treibt, als `Protokoll Pins`, mittig in ihrem Wertfeld, und ist
 das Bedienelement, das es wählt, wie die Zeile ZIEL von MOTOR & ESC. Ein
-Tippen auf das Feld öffnet SETUP > OUTPUTS auf dem Eintrag PROG-PORT,
-solange der Port das Ziel des Testers ist, sonst auf SERVO PWM
-([Outputs](#outputs)). Dort wählt SERVO-TESTER AUSGÄNGE oder PROG-PORT, die
+Tippen auf das Feld öffnet SETUP > OUTPUTS auf dem, was die Zeile zeigt,
+wohin der IOmcu die Befehle jetzt schickt, nicht auf der Einstellung ZIEL:
+auf dem Eintrag PROG-PORT, solange er den Port treibt, auf SERVO PWM,
+solange er die Ausgänge treibt, und auf der Übersicht, solange das Ziel
+nicht bekannt ist oder kein IOmcu antwortet ([Outputs](#outputs)). Ein
+noch ausstehender Schreibvorgang von ZIEL oder PROG-PORT ohne Pin am Port
+öffnet auf dem, was getrieben wird. Dort wählt SERVO-TESTER OUTPUTS oder PROG-PORT, die
 Einstellung ZIEL, und PORT-PWM den Puls des Ports, beide im NVS
 (Non-Volatile Storage) gespeichert. Das Verlassen von SERVO schaltet den
 Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf
@@ -1357,7 +1361,7 @@ nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
 Tastenfeldern und dem Servo-Programmierer sichtbar, die Zeile nennt den Pin
 also auch, während einer davon die linke Spalte bedeckt.
 
-Mit AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen
+Mit OUTPUTS nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
 so viele Pins, wie in die 23 Zeichen des Werts passen, dann `+N`: 8 Pins ab
 GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
@@ -1421,7 +1425,7 @@ anderes gedacht war.
 ![Die Warnung](img/de/servo-warning.png)
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des IOmcu
-(Protokoll 4.1). Sie gilt nur für das ZIEL. Mit AUSGÄNGE, den Standard-Servoports,
+(Protokoll 4.1). Sie gilt nur für das ZIEL. Mit OUTPUTS, den Standard-Servoports,
 als Ziel ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat; ein
 PPM-Ausgang behält seinen eigenen Frame. Mit PROG-PORT als Ziel ist es der Pin
 des Programmierports, und jeder Slot behält seine eigene Rate (Protokoll
@@ -1441,7 +1445,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der IOmcu hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt OUTPUTS das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem IOmcu vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher IOmcu fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein IOmcu, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser IOmcu nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
@@ -3205,7 +3209,7 @@ einer Zeile ZIEL aus öffnet er auf dem, was diese Werkbank treibt:
 | --- | --- |
 | der Kachel OUTPUTS auf SETUP | der Übersicht, OFF |
 | der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`) oder keines bekannt ist |
-| der Zeile ZIEL von SERVO | dem Eintrag PROG-PORT, solange SERVO-TESTER auf PROG-PORT steht; sonst SERVO PWM |
+| der Zeile ZIEL von SERVO | dem, was die Zeile zeigt: dem Eintrag PROG-PORT, solange der IOmcu den Port treibt, SERVO PWM, solange er die Ausgänge treibt, der Übersicht, solange das Ziel nicht bekannt ist |
 
 ![Outputs](img/de/outputs.png)
 
@@ -3300,7 +3304,7 @@ Programmierport ist ein Ausgang eigener Art, kein Slot und kein Protokoll
 - was der Port trägt: `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`.
   Der IOmcu gibt auf einem Port kein Gas-Protokoll aus: kein MOTOR PWM,
   kein DShot;
-- auf Port 1 SERVO-TESTER (AUSGÄNGE | PROG-PORT) und PORT-PWM (EIN | AUS),
+- auf Port 1 SERVO-TESTER (OUTPUTS | PROG-PORT) und PORT-PWM (EIN | AUS),
   zwei Segmente unter ihren Beschriftungen, mit dem Grund darunter, solange
   eines gesperrt ist ([das Ziel](ServoProgrammer-de.md#das-ziel)). Der
   SERVO-Tester treibt nur Port 1; der Eintrag eines anderen Ports sagt

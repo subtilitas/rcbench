@@ -317,6 +317,13 @@ static gfx_rect_t clear_rect(void)
     return gfx_rect_make(COL_X, CLR_Y, COL_W, CLR_H);
 }
 
+/* UNBIND ALL PINS is drawn, and so takes a hold: a binding read that is
+ * not one, and a protocol's column, not a PROG PORT entry's. */
+static bool clear_offered(void)
+{
+    return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
+}
+
 static gfx_rect_t cell_rect(int i)
 {
     const int col = i / GRID_ROWS, row = i % GRID_ROWS;
@@ -413,7 +420,7 @@ static void tick(float dt_s)
     if (s.hit_kind != HIT_CLEAR) {
         return;
     }
-    if (s.read != BIND_READ_ODD) {
+    if (!clear_offered()) {
         drop_clear_hold();
         touched();
         return;
@@ -449,7 +456,7 @@ static void event(const touch_event_t *evt)
         if (inside(dd_rect(), x, y)) {
             s.hit_kind = HIT_DD; touched(); return;
         }
-        if (s.read == BIND_READ_ODD && inside(clear_rect(), x, y)) {
+        if (clear_offered() && inside(clear_rect(), x, y)) {
             s.hit_kind = HIT_CLEAR; ui_hold_begin(&s.clear); touched();
             return;
         }
