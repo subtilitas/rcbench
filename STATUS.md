@@ -161,7 +161,7 @@ rcbench/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
-    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/
+    dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/ hitec/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
@@ -175,7 +175,7 @@ rcbench/
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `sbus` | ✔ | | ✔ |
 | `link` · `bench` · `outputs` · `servo` · `safety` · `can` | ✔ | ✔ | ✔ |
 | `artwork` · `esc` · `fwupdate` · `webaccess` | ✔ | | ✔ |
-| `openyge` · `ppm` | | ✔ | ✔ |
+| `openyge` · `ppm` · `hitec` | | ✔ | ✔ |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `dshot` | ✔ | ✔ | ✔ |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -210,7 +210,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 164 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 166 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -225,7 +225,7 @@ The host suite is 164 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_wa_session`, `test_wa_fetch`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_card`, `test_prog_link`, `test_hitec_wire`, `test_hitec_pio`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_wa_session`, `test_wa_fetch`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -276,6 +276,13 @@ fills and is removed, and `test_prog_link` the panel's module for the
 ports' page. ctest also
 builds and runs `kst_headers_cxx`, which calls the module through its 7
 headers from C++11, when the host has a C++ compiler.
+`test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both
+wire families, the transactions and every refusal of the reply decoders,
+with frames and reply times read off bench captures. `test_hitec_pio` runs
+the pin driver's arithmetic and its PIO program in a model of the state
+machine, as `test_kst_pio` does; the IOmcu build fails when the assembled
+program differs from the words the test runs. No servo is connected.
+`hitec_headers_cxx` calls the module through its 2 headers from C++11.
 ctest runs one case more that is not a binary of the suite:
 `sense_trace_tool`, `tools/sense_trace.py` on a synthetic console log
 (`test/host/test_sense_trace_tool.py`).
@@ -397,6 +404,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `protocols/kst/kst_session.c` | 584 | 583 | 99.8% |
 | `protocols/kst/kst_pio.c` | 83 | 83 | 100.0% |
 | `protocols/kst/kst_file.c` | 589 | 589 | 100.0% |
+| `protocols/hitec/hitec_wire.c` | 245 | 245 | 100.0% |
+| `protocols/hitec/hitec_pio.c` | 149 | 149 | 100.0% |
 | `shared/logfile/kst_store.c` | 209 | 209 | 100.0% |
 | `shared/outputs/kst_port.c` | 614 | 613 | 99.8% |
 | `shared/outputs/prog_port.c` | 313 | 313 | 100.0% |
@@ -479,7 +488,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **45795** | **44677** | **97.6%** |
+| **total** | **46189** | **45071** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

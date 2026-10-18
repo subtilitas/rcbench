@@ -1,0 +1,78 @@
+;
+; One Hitec transaction on one pin: a lead, bit times out, the pad released,
+; bytes received with a stamp each, an optional answer to the first byte.
+; Both wire families run it: classic at 19 200 bit/s, the D series at
+; 115 200 bit/s.
+;
+; The pad is the state machine's OUT, SET, IN and JMP pin.  The clock
+; divider makes one bit 16 cycles.  Autopull at 32 bits, the output shift
+; register shifting right; the input shift register shifting right, no
+; autopush.  For the D series the pad's input override inverts the pin, so
+; the program reads the idle level as 1 in both families.  The words come
+; from the transmit FIFO in the order hitec_pio.h gives
+; (protocols/hitec/include): lead, window, bits, bit times, answer.
+; Between transactions the machine stalls on the first `out` with the pad
+; released.
+;
+; Transmit.  A bit time is `out pindirs`, `out pins` and `jmp y--`: 16
+; cycles.  Open drain moves the direction and keeps the level low, push-pull
+; keeps the direction and moves the level.  The release (`set pindirs, 0`)
+; follows the last bit time by 16 cycles.
+;
+; Receive.  X counts ticks of 2 cycles down while the receiver waits: first
+; for the idle level, then for a start bit.  A start bit seen, the 8 data
+; bits are sampled 23 to 135 cycles after the sample that saw it, the stop
+; bit at 151, and the byte, its stop bit and X go to the receive FIFO as one
+; word.  When X runs out the program returns to `idle`.
+;
+; Answer.  After a byte, an answer word still in the output shift register
+; is sent: 16 bit times from the 160th cycle after the start bit was seen.
+; The answer empties the register, so only the first byte is answered.
+;
+; test/host/test_hitec_pio.c assembles this file, runs the words in a model
+; of the state machine and holds them to fixtures/hitec_line_words.txt,
+; which a firmware build holds pioasm's output to.
+;
+; SPDX-License-Identifier: MIT
+;
+
+.program hitec_line
+
+.wrap_target
+idle:
+    set pindirs, 0          ; release
+    out pins, 1             ; the lead's level; stalls here between transactions
+    out pindirs, 1          ; and its direction
+    out x, 30               ; lead count
+lead:
+    jmp x--, lead [1]
+    out x, 32               ; window
+    out y, 32               ; bit times
+    jmp more
+bit:
+    out pindirs, 1
+    out pins, 1 [13]
+more:
+    jmp y--, bit
+    set pindirs, 0          ; release: the receiver starts
+wait_hi:
+    jmp pin, wait_lo
+    jmp x--, wait_hi
+    jmp idle                ; the window is over
+wait_lo:
+    jmp pin, lo_next
+    set y, 7 [21]           ; a start bit: on to the middle of data bit 0
+rbit:
+    in pins, 1 [14]
+    jmp y--, rbit
+    in pins, 1              ; the stop bit
+    in x, 23
+    push noblock
+    jmp !osre, answer
+    jmp wait_hi
+answer:
+    set y, 15 [3]
+    jmp bit
+lo_next:
+    jmp x--, wait_lo
+.wrap

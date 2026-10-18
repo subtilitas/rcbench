@@ -63,6 +63,7 @@ add_subdirectory("${PROTOCOLS}/ppm"      ppm)
 add_subdirectory("${PROTOCOLS}/pdmini"   pdmini)
 add_subdirectory("${PROTOCOLS}/phase_tap" phase_tap)
 add_subdirectory("${PROTOCOLS}/kst"      kst)
+add_subdirectory("${PROTOCOLS}/hitec"    hitec)
 add_subdirectory("${SHARED}/esc"      esc)
 add_subdirectory("${SHARED}/sense"    sense)
 add_subdirectory("${SHARED}/fwupdate" fwupdate)
@@ -94,6 +95,7 @@ set(UNDER_TEST
     rcbench_esc
     rcbench_sense
     rcbench_kst
+    rcbench_hitec
     rcbench_fwupdate
     rcbench_webaccess
     rcbench_touch_injector
@@ -117,7 +119,7 @@ set(FAKES "")
 set(DART_TESTING_TIMEOUT 120 CACHE STRING "Default timeout of a test, in s")
 include(CTest)
 
-foreach(suite gfx touch_map nav widgets workbench prog_registry keypad pinlist bench supply supply_screen pdmini motor motor_arm motor_workbench motor_program value_state logview log_name logwriter log_cadence settings settings_screen settings_gesture settings_pins_hub settings_leave log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo servo_settings servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel balance battery esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_prog_card kst_panel kst_panel_files kst_panel_nocard kst_panel_limrun wifi_screen fw_image fw_install fw_upload fw_release wa_session wa_fetch upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen upd_coproc touch_merge inj_line_id inj_emu servo_limrun servo_limrun_abort servo_limrun_report)
+foreach(suite gfx touch_map nav widgets workbench prog_registry keypad pinlist bench supply supply_screen pdmini motor motor_arm motor_workbench motor_program value_state logview log_name logwriter log_cadence settings settings_screen settings_gesture settings_pins_hub settings_leave log_numbers log_reader log_csv link_crc link_can link_pages link_watchdog link_loopback link_bringup link_artxfer link_drawing art_store art_fetch outputs outputs_hw outstore heartbeat arming safety_gate flash_gate touch_loss servo_arm servo_limit servo_sync servo_sweep servo_move servo_test servo_test_judge servo_test_replay servo_test_enc servo_test_win servo_test_win_read servo_test_win_chain servo_page supply_page sense_page supply_link sense_link sense_link_view sense_windows servo_source openyge_frame openyge_status openyge_params can_timing can_selftest mcp2515 sbus dshot_frame dshot_telem dshot_edt ppm outbind outputs_screen picker_screen board_drawing busfault_screen text servo servo_settings servo_test_panel servo_limit_panel servo_workbench analyser prog_models esc_stick_panel balance battery esc_profiles esc_det esc_stick_rules esc_stick esc_stick_hand esc_stick_entry ina228 ina3221 as5600 sense_sched sense_svc sense_trace sense_trace_feed sense_trace_next sense_trace_setup sense_trace_lines tone edge_ring tone_svc tone_page tone_pio tone_link endpoints_link knob panel_i2c bind_link servo_link fuzz_engines kst_wire kst_reg kst_plan kst_session kst_pio kst_port kst_link prog_port kst_file kst_store kst_card prog_link kst_prog kst_prog_card kst_panel kst_panel_files kst_panel_nocard kst_panel_limrun hitec_wire hitec_pio wifi_screen fw_image fw_install fw_upload fw_release wa_session wa_fetch upd_screen wa_text wa_walk wa_send wa_zip wa_page wa_mdns link_sha256 link_update coproc_update_screen upd_coproc touch_merge inj_line_id inj_emu servo_limrun servo_limrun_abort servo_limrun_report)
     add_executable(test_${suite} test_${suite}.c)
     target_link_libraries(test_${suite} PRIVATE ${UNDER_TEST})
     target_include_directories(test_${suite} PRIVATE
@@ -182,6 +184,10 @@ target_compile_definitions(test_tone_pio PRIVATE
 target_compile_definitions(test_kst_pio PRIVATE
     "KST_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/kst/rp2350/kst_line.pio\""
     "KST_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/kst_line_words.txt\"")
+# The Hitec line's PIO program, the same way.
+target_compile_definitions(test_hitec_pio PRIVATE
+    "HITEC_LINE_PIO=\"${CMAKE_CURRENT_SOURCE_DIR}/../../protocols/hitec/rp2350/hitec_line.pio\""
+    "HITEC_LINE_WORDS=\"${CMAKE_CURRENT_SOURCE_DIR}/fixtures/hitec_line_words.txt\"")
 
 # The ZIP archives test_wa_zip writes, opened by Python's zipfile and by
 # unzip(1): an archive the panel sends has to open in programs other than
@@ -212,11 +218,18 @@ if(CMAKE_CXX_COMPILER)
     set_target_properties(kst_headers_cxx PROPERTIES
         CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
     add_test(NAME kst_headers_cxx COMMAND kst_headers_cxx)
+    # The headers of protocols/hitec, the same way.
+    add_executable(hitec_headers_cxx hitec_headers.cpp)
+    target_link_libraries(hitec_headers_cxx PRIVATE rcbench_hitec)
+    target_compile_options(hitec_headers_cxx PRIVATE -Wall -Wextra -Werror)
+    set_target_properties(hitec_headers_cxx PROPERTIES
+        CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON)
+    add_test(NAME hitec_headers_cxx COMMAND hitec_headers_cxx)
 elseif(DEFINED ENV{CI})
     message(FATAL_ERROR
-        "No C++ compiler and CI is set: the KST headers cannot be checked")
+        "No C++ compiler and CI is set: the KST and Hitec headers cannot be checked")
 else()
-    message(STATUS "No C++ compiler: the KST headers are not checked as C++")
+    message(STATUS "No C++ compiler: the KST and Hitec headers are not checked as C++")
 endif()
 
 # tools/sense_trace.py, the host side of the IOmcu's SENSE_TRACE

@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- `protocols/hitec/`: the signal-wire layer for programming Hitec servos,
+  both wire families. Classic (HS-5xxx, HS-7xxx: 19 200 bit/s, normal
+  polarity, 4-byte commands that sum to 0) and D series (115 200 bit/s,
+  inverted, `96`/`69` frames with a byte sum): frame builders, transactions
+  to send, listen with an answer to the first byte, or hold a level, and
+  reply decoders with one result code per failed check. `rp2350/` holds the
+  pin driver: one PIO program of 27 words for both families, 16 cycles a
+  bit from the clock divider, open drain or, for the D series, push-pull,
+  2 DMA channels. Nothing calls it yet; the IOmcu image compiles it and
+  holds its words to the host test's. `test_hitec_wire` and
+  `test_hitec_pio`, 31 cases, run the core and the program in a model of
+  the state machine. No byte has been on a wire.
+  ([README](protocols/hitec/README.md))
 - The LOG VIEWER reaches every file on the card in pages of 48, newest
   runs first. PREV and NEXT (German `VORIGE` and `NÄCHSTE`) in the header
   row turn the page; they show only on a card of more than 48 files.

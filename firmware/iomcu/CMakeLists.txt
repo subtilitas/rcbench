@@ -48,6 +48,11 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/openyge" openyge)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/pdmini"  pdmini)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/phase_tap" phase_tap)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/kst"     kst)
+# The Hitec wire's core and pin driver.  Nothing in this image calls them
+# yet: the driver compiles here under the target's -Werror and its PIO
+# program is assembled and checked below, and --gc-sections drops both from
+# the image.
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../protocols/hitec"   hitec)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../../shared/can"     can)
 
 add_executable(rcbench-iomcu
@@ -130,6 +135,16 @@ add_custom_command(TARGET rcbench-iomcu PRE_LINK
             -DTEST=test_kst_pio
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
     VERBATIM)
+# The Hitec line program, the same way (test/host/test_hitec_pio.c,
+# fixtures/hitec_line_words.txt).
+add_custom_command(TARGET rcbench-iomcu PRE_LINK
+    COMMAND ${CMAKE_COMMAND}
+            -DHEADER=${CMAKE_CURRENT_BINARY_DIR}/hitec/rp2350/hitec_line.pio.h
+            -DWORDS=${CMAKE_CURRENT_LIST_DIR}/../../test/host/fixtures/hitec_line_words.txt
+            -DNAME=hitec_line
+            -DTEST=test_hitec_pio
+            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/pio_words.cmake"
+    VERBATIM)
 
 # The IOmcu's own sources are held to the same warnings as the host
 # build, scoped to this target so the SDK's headers are not judged by them.
@@ -162,6 +177,8 @@ target_link_libraries(rcbench-iomcu
     rcbench_phase_tap_rp2350
     rcbench_kst
     rcbench_kst_rp2350
+    rcbench_hitec
+    rcbench_hitec_rp2350
     rcbench_bench
     rcbench_safety
     rcbench_servo

@@ -150,6 +150,8 @@ TRACKED = [
     "protocols/kst/kst_session.c",
     "protocols/kst/kst_pio.c",
     "protocols/kst/kst_file.c",
+    "protocols/hitec/hitec_wire.c",
+    "protocols/hitec/hitec_pio.c",
     "shared/logfile/kst_store.c",
     "shared/outputs/kst_port.c",
     "shared/outputs/prog_port.c",
