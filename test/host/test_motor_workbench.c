@@ -596,6 +596,50 @@ TEST_CASE(the_pulse_rows_change_on_a_safe_bench_only)
     motor_screen_set_armed(false);
 }
 
+/*
+ * ARM held locks the pulse rows too.  An endpoint edit waits 300 ms before
+ * it goes to the IOmcu and the switch to ARMED sends no CHAN_CFG, so an OK
+ * under a held ARM could be overtaken by the arm.  OK on an open keypad
+ * while ARM is down changes nothing, the next frame closes the keypad, and
+ * a pulse box takes no tap until ARM is let go.
+ */
+TEST_CASE(the_pulse_rows_lock_while_arm_is_held)
+{
+    fresh();
+    open_settings();
+    tap_box(row_of(SET_OUT_MIN_US));
+    CHECK_EQ(motor_screen_keypad_setting(), (int)SET_OUT_MIN_US);
+    key(UI_KEY_1);
+    key(UI_KEY_2);
+    key(UI_KEY_0);
+    key(UI_KEY_0);
+    finger(1, ARM_X, ARM_Y);                  /* ARM down, second finger */
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_OUT_MIN_US), 1000);
+    CHECK(!settings_save_asked());
+
+    tap_box(row_of(SET_OUT_MAX_US));
+    CHECK_EQ(motor_screen_keypad_setting(), -1);
+    tap_box(row_of(SET_PACK_CELLS));          /* the pack is not locked */
+    CHECK_EQ(motor_screen_keypad_setting(), (int)SET_PACK_CELLS);
+    key(UI_KEY_CANCEL);
+
+    /* A keypad open for an endpoint when ARM goes down closes at the next
+     * frame. */
+    lift(1);
+    drain();
+    tap_box(row_of(SET_OUT_MAX_US));
+    CHECK_EQ(motor_screen_keypad_setting(), (int)SET_OUT_MAX_US);
+    finger(1, ARM_X, ARM_Y);
+    frames(1);
+    CHECK_EQ(motor_screen_keypad_setting(), -1);
+    lift(1);
+    drain();
+    frames(1);
+    tap_box(row_of(SET_OUT_MAX_US));
+    CHECK_EQ(motor_screen_keypad_setting(), (int)SET_OUT_MAX_US);
+}
+
 /* ------------------------------------------------------- the TARGET row */
 
 /* Locked while the bench is not SAFE or ARM is held, and while the servo
@@ -758,6 +802,7 @@ int main(void)
     RUN(a_typed_value_lands_on_its_step_and_asks_a_save);
     RUN(the_idle_write_takes_setups_pending_changes);
     RUN(the_pulse_rows_change_on_a_safe_bench_only);
+    RUN(the_pulse_rows_lock_while_arm_is_held);
     RUN(the_target_row_locks_for_each_condition);
     RUN(the_target_row_opens_outputs_and_the_tag_comes_back);
     RUN(the_home_tag_closes_the_keypad_then_leaves);

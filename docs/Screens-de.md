@@ -527,11 +527,14 @@ Home-Tag schließen es, und der Wert bleibt unverändert.
 ![Das Tastenfeld über OPTIONEN](img/de/motor-settings-keypad.png)
 
 Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert
-an: Der IOmcu übernimmt die Endpunkte, solange er entschärft ist. Solange der
-Prüfstand ARMED ist oder ein ARM oder ein DISARM auf seine Antwort wartet,
-lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und das
-Feld nimmt keinen Tipp an; ein offenes Tastenfeld für einen von beiden
-schließt, wenn der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen
+an: Der IOmcu übernimmt die Endpunkte, solange er entschärft ist, 300 ms
+nach der letzten Änderung, und das Schalten auf ARMED sendet keine. Solange
+der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf
+seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in
+der Warnfarbe, und das Feld nimmt keinen Tipp an; ein offenes Tastenfeld für
+einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE
+verlässt. Das Halten von ARM über 2 s lässt einer Änderung vor dem Druck die
+Zeit, den IOmcu zu erreichen. Die anderen 6 Zeilen nehmen
 jederzeit einen Wert an.
 
 Die Einstellungen sind ein Speicher. Jeder Wert, den OK setzt, gilt sofort

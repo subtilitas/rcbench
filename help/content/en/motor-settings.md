@@ -29,7 +29,7 @@ A row shows the setting, a help line and its value with its unit. A tap on the v
 
 Idle pulse and Full pulse go to the IOmcu at link-up and on every change. The IOmcu ramps no throttle: a bound pin steps to the command.
 
-Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is ARMED, or an ARM or a DISARM waits for its answer, their help line reads `Set on a SAFE bench only` in the warning colour and the value takes no tap. A keypad open for one of them closes when the bench leaves SAFE. The other 6 rows take a value at any time.
+Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is ARMED, ARM is held, or an ARM or a DISARM waits for its answer, their help line reads `Set on a SAFE bench only` in the warning colour and the value takes no tap. A keypad open for one of them closes when ARM is pressed or the bench leaves SAFE. The other 6 rows take a value at any time.
 
 ## Keeping the values
 

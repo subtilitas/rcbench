@@ -29,7 +29,7 @@ Eine Zeile zeigt die Einstellung, eine Hilfezeile und ihren Wert mit Einheit. Ei
 
 Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den IOmcu. Der IOmcu fährt keine Throttle-Rampe: Ein gebundener Pin springt auf den Befehl.
 
-Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
+Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
 
 ## Die Werte behalten
 

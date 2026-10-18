@@ -270,8 +270,8 @@ history is in git.
   the panel makes when the bench is SAFE and idle; the write takes every
   unsaved value, SETUP's included. A line under the rows names the store's
   state: `SAVED`, `SAVE PENDING`, `NOT SAVED` or `SETUP CHANGES NOT SAVED`.
-  Idle pulse and Full pulse take a value on a SAFE bench only, `Set on a
-  SAFE bench only`. Over the keypad the home tag closes it; otherwise it
+  Idle pulse and Full pulse take a value only on a SAFE bench with ARM not
+  held, `Set on a SAFE bench only`. Over the keypad the home tag closes it; otherwise it
   leaves and the bench switches to SAFE. The rotary knob moves the throttle
   on LIVE only.
 - ESC / BENCH leaves the SETUP hub, which holds APPLICATION, INTERFACES,

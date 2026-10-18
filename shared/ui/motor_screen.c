@@ -535,6 +535,17 @@ static bool bench_safe(void)
     return ui_value_state(&s.gate) == UI_VALUE_OFF && !s.bench_armed;
 }
 
+/* Whether Idle pulse and Full pulse may change: SAFE, and ARM not held.  An
+ * endpoint edit waits ENDPOINTS_SETTLE_MS on the panel before it goes to the
+ * IOmcu, and the switch to ARMED sends no CHAN_CFG; an edit made under a
+ * held ARM could be overtaken by the arm and run on the old range.  With ARM
+ * down the keypad of an endpoint closes, and the 2 s hold leaves an edit
+ * made before it the time to go out. */
+static bool endpoints_free(void)
+{
+    return bench_safe() && s.pressed != 1;
+}
+
 /* The TARGET row takes no press while the bench is not SAFE or ARM is held,
  * and while the servo programmer holds its port, which locks ARM too: what
  * the throttle drives changes only on a bench at rest. */
@@ -669,7 +680,7 @@ static void event(const touch_event_t *evt)
     /* SETTINGS' page has the left column; the rail stays this file's. */
     const bool on_live = mwb_task() == UI_WB_LIVE;
     if (!on_live) {
-        msp_event(evt, bench_safe());
+        msp_event(evt, endpoints_free());
     }
     /*
      * Each control bumps its own counter, rather than every touch bumping
@@ -833,7 +844,7 @@ static void tick(float dt_s)
         s.target_locked = target_locked();
         ++s.ctrl_rev;
     }
-    msp_tick(bench_safe());
+    msp_tick(endpoints_free());
 }
 
 /* ----------------------------------------------------------------- drawing */
@@ -1377,7 +1388,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
          * store's state. */
         if (s.drawn_page[buf] != msp_revision()) {
             s.drawn_page[buf] = msp_revision();
-            msp_render(c, bench_safe());
+            msp_render(c, endpoints_free());
             /* The keypad covers the strip's row; with the page shown the
              * row is cleared and the strip drawn again. */
             s.drawn_strip[buf] = UINT32_MAX;

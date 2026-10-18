@@ -129,12 +129,13 @@ bool msp_modal(void);
 /* The home tag: the keypad closes, as its CANCEL does.  Whether it did. */
 bool msp_back(void);
 /* A touch event on the page.  @p safe: the bench is SAFE, nothing asked of
- * it (ui_value_gate.h's OFF); the pulse rows take a press only then. */
+ * it (ui_value_gate.h's OFF), and ARM is not held; the pulse rows take a
+ * press, and their keypad's OK, only then. */
 void msp_event(const touch_event_t *evt, bool safe);
 /* Whether a press of the page's is under way. */
 bool msp_pressed(void);
-/* A frame: a keypad for a pulse row closes on a bench that is no longer
- * SAFE, and the save line follows the store. */
+/* A frame: a keypad for a pulse row closes once @p safe is false, and the
+ * save line follows the store. */
 void msp_tick(bool safe);
 /* Bumped when the page's look changes. */
 uint32_t msp_revision(void);

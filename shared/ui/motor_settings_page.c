@@ -15,8 +15,9 @@
  *
  * Idle pulse and Full pulse are the throttle's endpoints, which the IOmcu
  * (the RP2350 board) takes only on a disarmed bench.  They take a press
- * only while the bench is SAFE; otherwise their help line says so, and a
- * keypad open for one closes as the bench leaves SAFE.
+ * only while the bench is SAFE and ARM is not held (motor_screen.c's
+ * endpoints_free()); otherwise their help line says so, and a keypad open
+ * for one closes.
  *
  * SPDX-License-Identifier: MIT
  */

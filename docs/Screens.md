@@ -481,10 +481,12 @@ unchanged.
 ![The keypad over SETTINGS](img/motor-settings-keypad.png)
 
 Idle pulse and Full pulse take a value on a SAFE bench only: the IOmcu takes
-the endpoints while it is disarmed. While the bench is ARMED, or an ARM or a
-DISARM waits for its answer, their help line reads `Set on a SAFE bench only`
-in the warning colour and the box takes no tap; a keypad open for one closes
-as the bench leaves SAFE. The other 6 rows take a value at any time.
+the endpoints while it is disarmed, 300 ms after the last edit, and the
+switch to ARMED sends none. While the bench is ARMED, ARM is held, or an ARM
+or a DISARM waits for its answer, their help line reads `Set on a SAFE bench
+only` in the warning colour and the box takes no tap; a keypad open for one
+closes when ARM is pressed or the bench leaves SAFE. The 2 s hold of ARM
+leaves an edit made before the press the time to reach the IOmcu. The other 6 rows take a value at any time.
 
 The settings are one store. Every value OK sets is in force at once and asks
 for a write; the panel writes the whole store on the first frame with the
