@@ -259,6 +259,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
+| `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `usable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
 | `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
@@ -278,7 +279,7 @@ gebautes Programm nennt.
 | `ci.yml` | Push, Pull Request, Tag `v*`, manuell | Host-Suite; dieselbe Suite unter AddressSanitizer und UBSan (UndefinedBehaviorSanitizer); Coverage-Untergrenzen und Codecov-Upload, dessen Fehlschlag den Job fehlschlagen lässt; Font-, Docs-, Webhilfe-, Wiki-Link-, Frame-Cost-, Screenshot- und Research-Skript-Prüfungen; die Prüfung der Protokollmodule; clang-tidy und cppcheck über `shared/`, die Kerne unter `protocols/` und `test/host/`, die Klassen warning, performance und portability von cppcheck über `firmware/` und die Pin-Treiber unter `protocols/`, und ruff; die pytest-Fälle der Werkzeuge; bei einem Pull Request die Mutationsprüfung der geänderten Zeilen, die meldet und bei einem Überlebenden nicht fehlschlägt; Panel-Build mit ESP-IDF v5.4 und v5.5.3, jeweils mit der Prüfung der Task-Stacks und dem Budget des internen RAM, v5.4 mit der Stack-Tabelle und der Tabelle des internen RAM dieses Wikis; IOmcu-Build mit pico-sdk 2.3.0 mit der Prüfung der Pinbelegung und der Stacks seiner zwei Kerne, und ein zweiter mit `-DSENSE_TRACE=ON` und derselben Stack-Prüfung, der fehlschlägt, wenn das Standard-Image ein Trace-Symbol enthält; mit v5.4 ein Panel-Build mit `RCBENCH_TOUCH_INJECTOR=ON` mit der Stack-Prüfung und dem Budget des internen RAM, der fehlschlägt, wenn das Standard-Image ein Injector-Symbol enthält; der Build des Touch-Injectors mit pico-sdk 2.3.0 für `waveshare_rp2350_zero`, nicht hochgeladen; Firmware-Artefakte einschließlich eines zusammengeführten Panel-Images für Offset 0 |
 | `docs.yml` | Push auf `main`, der `docs/` berührt, manuell | wartet auf den CI-Lauf desselben Commits und spiegelt, wenn er bestanden hat, `docs/` ins GitHub-Wiki |
 | `mutation.yml` | sonntags 03:17 UTC, manuell | jede Mutante der Zeilen von `shared/safety` und `shared/outputs` (3032 Mutanten) in 6 parallelen Shards von Dateien, ohne Obergrenze der Mutantenzahl, nach 18000 s startet in einem Shard keine mehr, die übrigen werden als nicht gelaufen gemeldet; schlägt bei einer überlebenden Mutante nicht fehl; das Ergebnis sind die Artifacts `mutation-full-0` bis `mutation-full-5` und die Job-Zusammenfassungen |
-| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release; daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
+| `release.yml` | Tag `v*`, manuell für einen Tag | wartet auf den CI-Lauf des getaggten Commits und baut, wenn er bestanden hat, beide Images, packt sie mit Prüfsummen und erstellt ein Release, ein Pre-Release bei ungerader Minor-Nummer ([Releases](#releases)); daneben, ohne das Release aufzuhalten, läuft die Prüfung der Konfigurator-Daten (`configurator/core/tools/check-annotate.sh --warn-only`) und zeigt jede Warnung, etwa einen Release-Tag neuer als die Daten des Konfigurators, als Annotation und in der Zusammenfassung des Laufs |
 | `pages.yml` | Pull Request und Push auf `main`, der `configurator/`, `help/`, `docs/img/` oder den Hilfe-Generator berührt | Typprüfung, Tests, Datenprüfung, Größenbudget und Browser-Tests des Configurators; der Bau der Webhilfe mit `tools/help_site.py`; bei einem Push auf `main` veröffentlicht es die gebaute Seite auf GitHub Pages, mit der Webhilfe unter `help/` |
 
 clang-tidy läuft nicht über `firmware/`: es kompiliert jede Datei und braucht
@@ -310,3 +311,35 @@ listet die Befehle.
 Das Wiki muss vor dem ersten Lauf von `docs.yml` mindestens eine Seite
 enthalten; sonst existiert das Wiki-Repository nicht und der Clone schlägt
 fehl.
+
+## Releases
+
+Ein Release ist ein Tag `vMAJOR.MINOR.PATCH` auf `main`. Seine
+Minor-Nummer nennt seine Art:
+
+| Minor-Nummer | Art | Auf GitHub | Beispiele |
+| --- | --- | --- | --- |
+| ungerade | Test-Release | Pre-Release, nie als Latest markiert | 0.21.0, 0.21.3, 0.23.0, 1.3.0 |
+| gerade | nutzbares Release | volles Release, als Latest markiert | 0.22.0, 0.22.3, 1.4.0 |
+
+Die Patch-Nummer trägt Korrekturen in beiden Arten: 0.21.1 korrigiert das
+Test-Release 0.21.0, 0.22.1 das nutzbare Release 0.22.0.
+
+`release.yml` liest die Art mit `tools/release_kind.py`, bevor es auf CI
+(Continuous Integration) wartet. Ein Tag außerhalb der Form lässt den Job
+fehlschlagen, und nichts wird gebaut:
+
+```bash
+python3 tools/release_kind.py v0.21.0   # kind=testing prerelease=true latest=false
+python3 tools/release_kind.py v0.22.0   # kind=usable prerelease=false latest=true
+```
+
+`https://github.com/subtilitas/rcbench/releases/latest` nennt das neueste
+nutzbare Release. Das Panel bietet ein Test-Release nur an, wenn RELEASES
+auf SETUP > UPDATES auf TESTING steht; mit USABLE, dem Standard, bietet es
+nutzbare Releases an. Ein Test-Release lässt sich auch von Hand laden: seine
+`rcbench-panel-vX.Y.Z.bin` über die Browser-Seite des Panels, oder seine
+Archive über USB (Universal Serial Bus), wie in
+[Erster Lauf, §1](FirstRun-de.md#1-beide-platinen-flashen). Das
+`rcbench-iomcu-vX.Y.Z.zip` des Releases und das Image, das das Panel
+trägt, stammen aus demselben Commit.

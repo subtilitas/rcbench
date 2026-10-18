@@ -10,6 +10,13 @@ name: Release
 # checks on the docs have passed on that commit, and nothing at all when
 # they fail.  A manual run for a tag is held to the same rule.
 #
+# The minor number of the tag names the kind of release
+# (tools/release_kind.py): an odd minor number is a testing release,
+# published as a pre-release and never marked latest; an even minor number
+# is a usable release, published as a full release and marked latest.
+# github.com/.../releases/latest, which the panel's update check reads by
+# default, names the newest usable release.
+#
 # The configurator-data job runs beside the others and gates nothing: it
 # shows a release tag newer than the configurator data as a warning.
 
@@ -56,6 +63,8 @@ jobs:
     # because each checks the version in the commit it happened to get.
     outputs:
       sha: ${{ steps.pin.outputs.sha }}
+      prerelease: ${{ steps.kind.outputs.prerelease }}
+      latest: ${{ steps.kind.outputs.latest }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -102,8 +111,20 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: gate
-          sparse-checkout: tools/ci_gate.py
+          sparse-checkout: |
+            tools/ci_gate.py
+            tools/release_kind.py
           sparse-checkout-cone-mode: false
+
+      # Testing or usable, from the tag's minor number.  A tag out of form
+      # fails here, before the wait for CI and before anything is built.
+      - name: Release kind
+        id: kind
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          python3 gate/tools/release_kind.py "$TAG" | tee -a "$GITHUB_OUTPUT"
+          exit "${PIPESTATUS[0]}"
 
       # ci_gate.py waits up to 5400 s for the CI run on the pinned commit
       # and fails unless one passed.  The image jobs and the publish job
@@ -294,6 +315,8 @@ jobs:
           TAG: ${{ inputs.tag || github.ref_name }}
           REPO: ${{ github.repository }}
           SHA: ${{ needs.version.outputs.sha }}
+          PRERELEASE: ${{ needs.version.outputs.prerelease }}
+          LATEST: ${{ needs.version.outputs.latest }}
         run: |
           # The pin holds for every checkout and not for the tag itself: a tag
           # force-moved after the version job leaves these images built from
@@ -347,6 +370,22 @@ jobs:
 
           assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
 
+          # A testing release is a pre-release and never the latest; a
+          # usable release is a full release and the latest.  The draft
+          # carries the pre-release mark; the latest mark goes with the
+          # publish, since a draft cannot be the latest.
+          if [ "$PRERELEASE" = true ] && [ "$LATEST" = false ]; then
+            kind=(--prerelease)
+            latest=(--prerelease --latest=false)
+          elif [ "$PRERELEASE" = false ] && [ "$LATEST" = true ]; then
+            kind=(--prerelease=false)
+            latest=(--prerelease=false --latest)
+          else
+            echo "::error::release kind not known: prerelease=$PRERELEASE latest=$LATEST"
+            exit 1
+          fi
+          echo "draft: ${kind[*]}; publish: ${latest[*]}"
+
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
           # would attach these images to whatever main happened to be.
@@ -355,11 +394,12 @@ jobs:
             --title "$TAG" \
             --verify-tag \
             --generate-notes \
+            "${kind[@]}" \
             --draft
 
           # The assets are up.  If the tag moved while they were uploading the
           # trap takes the draft away; the tag itself is left alone, because
           # where it should point is the operator's decision.
           check_tag
-          gh release edit "$TAG" --repo "$REPO" --draft=false
+          gh release edit "$TAG" --repo "$REPO" --draft=false "${latest[@]}"
           published=1

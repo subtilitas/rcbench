@@ -46,14 +46,14 @@ auslöst, statt eine Leiterbahn zu verbrennen.
 
 ## 1. Beide Platinen flashen
 
-Was eine Bench für 0.20.0 über USB (Universal Serial Bus) lädt, hängt vom
-Release ab, das sie hat:
+Was eine Bench für 0.21.0 lädt, und wie, hängt vom Release ab, das sie hat:
 
 | Bench hat | IOmcu | Panel |
 | --- | --- | --- |
-| nichts (eine neue Bench), oder 0.18.0 und älter | über USB, [Schritt 2](#aus-den-release-assets) | über USB, [Schritt 3](#aus-den-release-assets) |
+| nichts (eine neue Bench), oder 0.18.0 und älter | über USB (Universal Serial Bus), [Schritt 2](#aus-den-release-assets) | über USB, [Schritt 3](#aus-den-release-assets) |
 | 0.19.0 | über CAN (Controller Area Network) vom Panel ([Ab 0.19.0](#ab-0190)) | über USB, [Schritt 3](#aus-den-release-assets) |
-| 0.20.0 und neuer | über CAN vom Panel | über WLAN |
+| 0.20.0 | über CAN vom Panel ([Ab 0.20.0](#ab-0200)) | über WLAN mit der deutschen Browser-Seite; über USB mit gespeichertem Drehknopf EIN |
+| 0.21.0 und neuer | über CAN vom Panel | über WLAN |
 
 Das USB-Laden einer neuen Bench, oder einer mit 0.18.0 und älter, bringt
 die Partitionstabelle des IOmcu und die zwei Anwendungs-Slots des
@@ -66,6 +66,11 @@ Release über WLAN ([Bildschirme:
 WLAN](Screens-de.md#wlan)) oder lädt es von GitHub
 ([Bildschirme: Updates](Screens-de.md#updates)), und der IOmcu bekommt
 sein Image vom Panel über CAN.
+
+0.21.0 ist ein Test-Release ([Bauen: Releases](Building-de.md#releases)).
+CHECK FOR UPDATES eines Panels mit 0.20.0 liest `releases/latest`, das das
+neueste nutzbare Release nennt, und bietet 0.21.0 nicht an; das Panel
+nimmt es als Upload auf seiner Browser-Seite ([Ab 0.20.0](#ab-0200)).
 
 ### Aus den Release-Assets
 
@@ -134,13 +139,13 @@ solange.
 
 Eine Bench mit 0.19.0 lädt das Panel über USB, und nur das Panel. Der
 IOmcu hat die Partitionstabelle vom USB-Laden für 0.19.0 und bekommt
-0.20.0 über CAN aus dem Image, das das neue Panel mitbringt. Das
+0.21.0 über CAN aus dem Image, das das neue Panel mitbringt. Das
 Link-Protokoll bleibt 4.22, also verbinden sich beide Platinen vor und nach
 dem Update.
 
 1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
    Dateien `OK` aus.
-2. **Panel.** `rcbench-panel-v0.20.0.zip` wie in
+2. **Panel.** `rcbench-panel-v0.21.0.zip` wie in
    [Schritt 3](#aus-den-release-assets) oben flashen: `write_flash
    @flash_args`, um die Einstellungen zu behalten, oder
    `rcbench-panel-merged.bin` bei 0x0, mit `esptool.py` oder dem
@@ -151,10 +156,10 @@ dem Update.
    meldet `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`.
 4. **IOmcu.** Die Frage öffnet sich auf dem Menü, solange die Bench
    SAFE ist, der Ausgang der Versorgung aus und der Funk des Panels aus. Sie
-   nennt 0.19.0 auf dem IOmcu und 0.20.0 im Panel. START 2 s halten.
+   nennt 0.19.0 auf dem IOmcu und 0.21.0 im Panel. START 2 s halten.
    Der Fortschritt füllt den Bildschirm ([Bildschirme:
    IOmcu-Update](Screens-de.md#iomcu-update)), und zurück auf
-   dem Menü meldet das Band `IOmcu auf 0.20.0 aktualisiert.`.
+   dem Menü meldet das Band `IOmcu auf 0.21.0 aktualisiert.`.
 
 | Was | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
 | --- | --- | --- |
@@ -178,6 +183,71 @@ für 0.19.0 verpasst hat, hat keine Partitionstabelle: das Band meldet
 `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.`, und er
 bekommt [Schritt 2](#aus-den-release-assets). Die Dauer des Updates über CAN
 ist nicht gemessen.
+
+### Ab 0.20.0
+
+Eine Bench mit 0.20.0 lädt das Panel über WLAN, mit der deutschen Fassung
+der Browser-Seite des Panels, und den IOmcu über CAN aus dem Image, das das
+neue Panel mitbringt. Drei Fehler von 0.20.0 bestimmen den Weg:
+
+| Fehler von 0.20.0 | Wirkung | Weg darum herum |
+| --- | --- | --- |
+| Das Skript der englischen Browser-Seite lässt sich nicht parsen: der Text `The file is larger than the panel's slot.` beendet seinen String am Apostroph. | Upload schickt das Formular ohne die Datei, an `/?`. | Die Seite folgt der Sprache des Panels; die deutsche Seite nimmt den Upload. |
+| Ein Abbruch der Auth-Klasse beendet ein Verbinden. | HEIMNETZ VERBINDEN kann mit `Verbinden scheiterte: Passwort abgelehnt.` enden, auch bei richtigem Passwort. | ACCESS POINT verbindet sich mit keinem Netz. |
+| Drehknopf EIN fragt einen AS5600 bei 0x36 ab, eine der Befehlsadressen des I/O-Expanders CH422G. | Das Panel wird bei der ersten Abfrage des Drehknopfs nach jedem Start dunkel, CAN fällt vom Link, und der Touch-Controller kann im Reset bleiben. | Ein Panel mit gespeichertem Drehknopf EIN lädt über USB. |
+
+1. Im Download-Ordner gibt `sha256sum -c SHA256SUMS` für jede der drei
+   Dateien `OK` aus.
+2. **Sprache.** Ein Panel auf Englisch: SETUP > APPLICATION, Language
+   `DEUTSCH`. Sie gilt sofort; nicht speichern, dann startet der Neustart
+   in Schritt 4 0.21.0 in der gespeicherten Sprache. Ein Panel auf Deutsch
+   lässt den Schritt aus.
+3. **WLAN.** Mit der Bench SAFE, dem Ausgang der Versorgung aus und keinem
+   offenen Log-Lauf: LOGS > WLAN > ACCESS POINT. Auf einem Telefon oder
+   einem Computer das Netz verbinden, das der Bildschirm nennt, `rcbench-`
+   und 4 Hex-Ziffern, mit dem 8-stelligen Passwort, das er zeigt.
+   `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
+   Bildschirm zeigt.
+4. **Panel.** Unter `Panel-Firmware` `rcbench-panel-v0.21.0.bin` wählen
+   und `Hochladen` drücken. Das Panel prüft das ganze Image und fragt
+   `PANEL-FIRMWARE INSTALLIEREN?` mit beiden Versionen. `2 s HALTEN:
+   INSTALL` halten. Das Panel schaltet den Funk aus, schreibt den Slot, aus
+   dem es nicht läuft, prüft ihn und startet neu in ihn. 0.21.0 startet auf
+   Probe und bleibt, sobald Anzeige und Touch laufen; ein Start, der nicht
+   so weit kommt, geht zurück zu 0.20.0.
+5. **IOmcu.** Beim Link-Aufbau vergleicht das Panel das laufende Image des
+   IOmcu per SHA-256 (Secure Hash Algorithm) mit dem Image, das es
+   mitbringt, findet einen anderen Build, und das Band meldet `IOmcu nutzt
+   einen anderen Build. Update unter SETUP > UPDATES.`. Die Frage öffnet
+   sich auf dem Menü, solange die Bench SAFE ist, der Ausgang der
+   Versorgung aus und der Funk des Panels aus. Sie nennt 0.20.0 auf dem
+   IOmcu und 0.21.0 im Panel. START 2 s halten, oder nach CANCEL `2 s
+   HALTEN: IOMCU AKTUALISIEREN` auf SETUP > UPDATES. Der Fortschritt füllt
+   den Bildschirm ([Bildschirme: IOmcu-Update](Screens-de.md#iomcu-update)),
+   und danach meldet das Band `IOmcu auf 0.21.0 aktualisiert.`.
+
+Ein Panel mit gespeichertem Drehknopf EIN, oder eine Bench ohne Telefon
+oder Computer mit WLAN, flasht `rcbench-panel-v0.21.0.zip` über USB wie in
+[Schritt 3](#aus-den-release-assets) oben, und Schritt 5 folgt. Die
+Einzelteile, `write_flash @flash_args`, behalten die Einstellungen mit
+Drehknopf EIN: 0.21.0 liest den Drehknopf als MT6701 bei 0x06 und setzt
+kein Gerät auf 0x36. Das zusammengeführte Image bei 0x0 löscht die
+Einstellungen, und der Drehknopf startet AUS.
+
+| Was | Installation über WLAN | Einzelteile (`@flash_args`) | Zusammengeführtes Image bei 0x0 |
+| --- | --- | --- | --- |
+| Einstellungen und WLAN-Einstellungen des Panels, im NVS (non-volatile storage, 24 KiB bei 0x9000) | bleiben | bleiben | gelöscht; das Panel startet mit den Standardwerten |
+| Gespeicherte Platinenzeichnung des Panels, `boardart` bei 0x7E0000 | bleibt: die Installation schreibt nur den Anwendungs-Slot | bleibt | bleibt |
+| Bindungen des IOmcu, Verdrahtung der Versorgung, Einrichtung der Strommonitore | bleiben: das Update schreibt den Slot, aus dem der IOmcu nicht läuft | bleiben | bleiben |
+
+Das Link-Protokoll bleibt 4.22, also verbinden sich beide Platinen vor und
+nach dem Update des IOmcu. CANCEL auf der Frage lässt den IOmcu auf
+0.20.0; das Panel fragt nach seinem nächsten Start wieder, und SETUP >
+UPDATES startet das Update solange. Ein IOmcu, der das USB-Laden für
+0.19.0 verpasst hat, hat keine Partitionstabelle: das Band meldet `IOmcu
+kann nicht über CAN aktualisiert werden. Firmware einmal über USB
+installieren.`, und er bekommt [Schritt 2](#aus-den-release-assets). Die
+Dauer des Uploads und des Updates über CAN ist nicht gemessen.
 
 ### Aus einem Quellbaum
 
