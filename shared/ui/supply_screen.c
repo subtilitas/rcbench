@@ -1297,7 +1297,13 @@ static void event(const touch_event_t *evt)
         }
         if (up) {
             let_go();
-            propose(FROM_SLIDER);
+            /* A release the finger did not make -- the router's, at the
+             * home tag or a change of screen, or the tracker's for a jump
+             * -- asks no question: the drag ends as drop_press() ends one,
+             * with what it already gave the supply live and nothing more. */
+            if (touch_event_is_tap_up(evt)) {
+                propose(FROM_SLIDER);
+            }
             /* The drag is over, so the slider can be written: it shows the
              * set point it was snapped to, or, while a question is open,
              * the one the supply keeps until it is answered. */
@@ -2070,6 +2076,27 @@ static void cancel(void)
     drop_press();
 }
 
+/*
+ * The home tag climbs one level: the question first, answered CANCEL, then
+ * a keypad, closed with nothing typed kept, then the settings.  Only with
+ * none of them open is the screen left.  Nothing here touches the output.
+ */
+static bool back(void)
+{
+    if (s.confirm_open) {
+        confirm_close(false);
+    } else if (s.kp.open) {
+        ui_keypad_close(&s.kp);
+        s.kp_target = KP_NONE;
+    } else if (s.settings_open) {
+        s.settings_open = false;
+    } else {
+        return false;
+    }
+    supply_invalidate();
+    return true;
+}
+
 static const ui_screen_t k_screen = {
     .title  = "SUPPLY",
     .reset  = reset,
@@ -2079,6 +2106,7 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *supply_screen(void) { return &k_screen; }

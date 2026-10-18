@@ -270,6 +270,25 @@ TEST_CASE(an_open_list_can_be_left_without_choosing)
 }
 
 /*
+ * The home tag over the open list (ui_screen_t.back) closes it choosing
+ * nothing and keeps the screen; with no list open the tag leaves.
+ */
+TEST_CASE(the_home_tag_closes_the_open_list_first)
+{
+    fresh();
+    choose_named("SERVO PWM");
+    const int was = s_applied;
+    CHECK(!scr()->back());                              /* nothing open */
+    tap(DD_X + DD_W / 2, DD_Y + DD_H / 2);              /* open */
+    CHECK(scr()->back());
+    CHECK_EQ(outputs_screen_binding()->proto, 1);
+    CHECK_EQ(s_applied, was);
+    tap_pin(0);                                         /* the grid again */
+    CHECK_EQ(s_applied, was + 1);
+    CHECK(!scr()->back());
+}
+
+/*
  * A cell press applies its binding change on the release, so a press left
  * latched after a lost event is a change waiting for any release that lands
  * on the cell.  The GT911 reuses track ids, so that release need not belong
@@ -1833,6 +1852,7 @@ int main(void)
     RUN(a_pick_made_for_one_board_is_not_carried_to_another);
     RUN(the_protocol_list_opens_and_a_choice_closes_it);
     RUN(an_open_list_can_be_left_without_choosing);
+    RUN(the_home_tag_closes_the_open_list_first);
     RUN(a_release_away_from_the_press_does_nothing);
     RUN(ticking_a_pin_applies_once_and_unticking_applies_again);
     RUN(a_reserved_pin_never_reaches_the_apply_seam);

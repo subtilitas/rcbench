@@ -375,6 +375,19 @@ static void leave(void)
     drop_clear_hold();
 }
 
+/* The home tag closes an open protocol list without choosing; with none
+ * open it leaves the screen. */
+static bool back(void)
+{
+    if (!s.open) {
+        return false;
+    }
+    s.open = false;
+    s.hit_kind = HIT_NONE;
+    touched();
+    return true;
+}
+
 /* UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for
  * while the pages read describe no binding, because it is the way out of
  * that state.  It binds nothing, so it cannot drive a pin. */
@@ -939,6 +952,7 @@ static const ui_screen_t s_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *outputs_screen(void) { return &s_screen; }
