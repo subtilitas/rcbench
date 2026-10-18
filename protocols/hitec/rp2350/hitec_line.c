@@ -20,8 +20,9 @@
 /* A transfer count's low 28 bits are the count; the rest is the mode. */
 #define DMA_COUNT_MASK 0x0FFFFFFFu
 
-/* Reads of the receive FIFO an idle line waits at most for the channel to
- * take the words still in it: 4 words, each a few system clock cycles. */
+/* Reads of the receive FIFO a poll or an abort makes at most while the
+ * channel takes the words still in it: 4 words, each a few system clock
+ * cycles. */
 #define RX_SETTLE_SPINS 64u
 
 static PIO line_pio(const hitec_line_t *l)
@@ -90,6 +91,16 @@ static bool rx_settled(const hitec_line_t *l)
 {
     return l->run.max_rx == 0u || pio_sm_is_rx_fifo_empty(line_pio(l), l->sm)
            || rx_count(l) >= l->run.max_rx;
+}
+
+/* Wait up to RX_SETTLE_SPINS FIFO reads for the channel to take the words
+ * still in the receive FIFO.  The caller has made sure the machine pushes
+ * nothing more. */
+static void rx_settle(const hitec_line_t *l)
+{
+    for (unsigned i = 0; i < RX_SETTLE_SPINS && !rx_settled(l); ++i) {
+        tight_loop_contents();
+    }
 }
 
 void hitec_line_init(hitec_line_t *line)
@@ -230,8 +241,11 @@ void hitec_line_abort(hitec_line_t *line)
     if (!hitec_line_busy(line) || line->aborted != 0u) {
         return;
     }
-    /* The bytes so far stay in the buffer; the count is read now, before
-     * the restart stops the channel. */
+    /* The bytes so far stay in the buffer.  The machine stops first, so it
+     * pushes nothing more; the channel takes what is still in the FIFO;
+     * the count is read before the restart stops the channel. */
+    pio_sm_set_enabled(line_pio(line), line->sm, false);
+    rx_settle(line);
     line->aborted = 1;
     line->kept = line->run.max_rx > 0u ? (uint8_t)rx_count(line) : 0u;
     line->cut = answer_due(line, line->kept) ? 1u : 0u;
@@ -318,9 +332,7 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
         } else {
             /* The last bytes may still be in the FIFO: the channel takes
              * them before the count is read and the channel stopped. */
-            for (unsigned i = 0; i < RX_SETTLE_SPINS && !rx_settled(l); ++i) {
-                tight_loop_contents();
-            }
+            rx_settle(l);
             n = l->run.max_rx > 0u ? rx_count(l) : 0u;
             full = l->run.max_rx > 0u && n >= l->run.max_rx;
             dma_channel_abort((uint)l->dma_rx);
