@@ -236,7 +236,7 @@ Untergrenze:
   SERVO-Bildschirms in das Panel und den Hooks der Programmierer, die
   SERVO > PROGRAMMIEREN öffnet, denen es nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`): 222
+  `PROG_CALLS`): 221
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in

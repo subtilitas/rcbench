@@ -220,7 +220,7 @@ bound for that reason:
   an update, the SERVO screen link's callbacks into the panel and the
   hooks of the programmers SERVO > PROGRAM opens, which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`): 222 such
+  `PROG_CALLS`): 221 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in
