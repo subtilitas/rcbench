@@ -345,7 +345,7 @@ typedef struct {
     uint16_t moves;
     uint16_t time_s;
 
-    /* The LIMITS page; 0 is not checked, and STALL AT always is. */
+    /* The pass/fail limits; 0 is not checked, and STALL AT always is. */
     float    idle_max_a, hold_max_a;
     uint16_t travel_max_ms;
     float    stall_a;

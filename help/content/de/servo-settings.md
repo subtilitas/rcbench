@@ -6,7 +6,7 @@ order: 21
 
 # Servo-Optionen
 
-OPTIONEN, oben auf der rechten Karte von [SERVO](servo.md), öffnet die Optionen des Servos über der linken Karte. Vier Seiten: AUSGANG, TEST, GRENZEN und PRÜFLING. ARM, ZENTRIEREN, FREIGEBEN und STOP bleiben an ihrem Platz und wirken. Ein Wert öffnet das Tastenfeld, eine Liste öffnet eine Liste, ein Schalter schaltet beim Tipp um, und NAME öffnet eine Tastatur.
+OPTIONEN, der dritte Reiter der Leiste von [SERVO](servo.md), zeigt die Optionen des Servos im Seitenbereich auf drei Seiten: AUSGANG, SWEEP und PRÜFLING. Die Optionen jedes Laufs öffnen sich von seiner Karte auf TEST: OPTIONEN auf der Karte zeigt sie als Liste eine Ebene tiefer, und das Home-Tag führt zurück zu den Karten. Die Ausgangskarte rechts bleibt an ihrem Platz und wirkt. Ein Wert öffnet das Tastenfeld, eine Liste öffnet eine Liste, ein Schalter schaltet beim Tipp um, und NAME öffnet eine Tastatur.
 
 ## AUSGANG
 
@@ -48,44 +48,55 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 | `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
 | `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein Koprozessor antwortet |
 
-## TEST
+## SWEEP
 
-![Die Seite TEST](view:servo-test)
+![Die Seite SWEEP](view:servo-sweep-page)
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | KURVE | RECHTECK, SINUS, DREIECK | SINUS | die Kurve von SWEEP und der Bewegungen des Tests |
 | TEMPO | 0,05 bis 5 Hz | 0,5 Hz | Kurven pro Sekunde |
 | BEREICH | 10 bis 100 % | 80 % | der Anteil des Wegs, der durchfahren wird |
-| TESTDAUER NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
-| TESTZEIT | 5 bis 3600 s | 60 s | die Dauer einer Stufe |
-| BEWEGUNGEN | 1 bis 1000 | 20 | die Bewegungen einer Stufe |
-| HALTEZEIT | 0 bis 5000 ms | 200 ms | an jedem Ende gehalten |
-| EINSCHWINGZEIT | 0 bis 10000 ms | 500 ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
-| STUFE 4.8 V, STUFE 6.0 V | EIN, AUS | EIN | die Netzteilstufen |
-| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4 V und STUFE 8.4 V hinzu; bei jedem Neustart aus |
-| BROWN-OUT | EIN, AUS | EIN | ab 5,0 V abwärts, bis das Servo stehen bleibt |
-| TEST STARTEN | | | der automatische Test: ein Halten von 2 s bei ARMED |
 
-![HV-SERVO eingeschaltet](view:servo-hv)
+## Die Optionen des automatischen Tests
 
-Ist HV-SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STARTEN zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+![Die Optionen der Karte AUTOMATISCHER TEST](view:servo-test-settings)
 
-## GRENZEN
-
-![Die Seite GRENZEN](view:servo-limits)
+OPTIONEN auf der Karte AUTOMATISCHER TEST öffnet sie.
 
 | Option | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
-| SPANNUNG MAX, STROM MAX | wie auf SUPPLY | 21,00 V, 5,00 A | die Obergrenzen der Seite SUPPLY, dieselben Einstellungen |
+| TESTDAUER NACH | ZEIT, BEWEGUNGEN | ZEIT | wie jede Netzteilstufe bemessen wird |
+| TESTZEIT | 5 bis 3600 s | 60 s | die Dauer einer Stufe |
+| BEWEGUNGEN | 1 bis 1000 | 20 | die Bewegungen einer Stufe |
+| HALTEZEIT | 0 bis 5000 ms | 200 ms | an jedem Ende gehalten, im Test und bei SWEEP |
+| EINSCHWINGZEIT | 0 bis 10000 ms | 500 ms | Wartezeit nach einer Netzteilstufe vor dem Messen |
 | BLOCKIERT AB | 0,1 bis 5,0 A | 2,00 A | über diesem Strom gilt das Servo als blockiert |
 | RUHESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert in Ruhe |
 | HALTESTROM | 0 bis 5,00 A | 0, nicht geprüft | nicht bestanden über diesem Wert beim Halten eines Endes |
+| STUFE 4.8 V, STUFE 6.0 V | EIN, AUS | EIN | die Netzteilstufen |
+| HV-SERVO | EIN, AUS | AUS | fügt STUFE 7.4 V und STUFE 8.4 V hinzu; bei jedem Neustart aus |
+| BROWN-OUT | EIN, AUS | EIN | ab 5,0 V abwärts, bis das Servo stehen bleibt |
 | STELLZEIT | 0 bis 5000 ms | 0, nicht geprüft | nicht bestanden über diesem Wert von Ende zu Ende |
-| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
-| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit PWM-ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0 us |
 
-ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-endlagenlauf) mit einem Halten von 2 s bei ARMED. Die Zeile darunter nennt Ausgang und Messgerät oder den Grund, warum der Lauf nicht starten kann.
+![HV-SERVO eingeschaltet](view:servo-hv)
+
+Ist HV-SERVO eingeschaltet und eine Stufe über 6,0 V gewählt, öffnet TEST STARTEN auf der Karte zuerst NUR HV-SERVOS und nennt die höchste Stufe.
+
+## Die Optionen des Endlagenlaufs
+
+![Die Optionen der Karte ENDLAGENLAUF](view:servo-limits)
+
+OPTIONEN auf der Karte ENDLAGENLAUF öffnet sie.
+
+| Option | Bereich | Vorgabe | Was sie tut |
+|---|---|---|---|
+| ENDLAGENLAUF | NUR SUCHE, SUCHEN + PROGRAMMIEREN | NUR SUCHE | was ENDLAGENLAUF STARTEN tut: die Enden suchen oder zusätzlich LEFT ANGLE und RIGHT ANGLE programmieren |
+| SERVOPULSE | BEHALTEN, 1000-2000 | BEHALTEN | nur mit ZIEL auf PROG-PORT angezeigt: 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos vor der Suche auf 1000,0 und 2000,0 us |
+
+## Die Grenzen von SUPPLY
+
+Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und auf PRÜFLING: `Grenzen 21.00 V 5.00 A: SUPPLY > OPTIONEN`, die geltenden Werte. Eingestellt werden sie auf [SUPPLY](supply.md) > OPTIONEN.
 
 ## PRÜFLING
 
@@ -96,22 +107,22 @@ ENDLAGENLAUF STARTEN unter der Tabelle startet den [Endlagenlauf](servo.md#der-e
 |---|---|
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
 | BERICHT | ein Textbericht, `SERVOnnn.TXT`, neben dem Log jedes Tests |
-| AS5600 | der Winkelsensor an der Hornwelle, dieselbe Einstellung wie unter [Anschlüsse](setup-interfaces.md) |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
-| PWM-ZIEL | AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, der Programmierport des Koprozessors |
 | PORT-PWM | EIN oder AUS: der Puls auf dem Programmierport, solange er das Ziel ist |
 
-PWM-ZIEL ist gesperrt bei ARMED, während eines Sweeps oder Tests und solange der Servo-Programmierer den Port hält.
+AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet.
 
 ## Die Zeile ZIEL
 
 ![Die Zeile ZIEL mit PROG-PORT](view:servo-target)
 
-Die Zeile ZIEL der rechten Karte nennt die Pins, die der Tester jetzt treibt. Sie bleibt unter den Optionen und dem Servo-Programmierer sichtbar.
+Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protokoll Pins`, und wählt es: ein Tipp öffnet AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. Sie bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
+
+![Die Auswahl des Ziels](view:servo-target-choice)
 
 | Zeile | Bedeutung |
 |---|---|
-| `GP4`, `GP2 GP4` | die als SERVO PWM gebundenen GPIOs (General-Purpose Inputs/Outputs); was nicht passt, steht als `+2` |
+| `SERVO PWM GP4`, `SERVO PWM GP2 GP4` | die als SERVO PWM gebundenen GPIOs (General-Purpose Inputs/Outputs); was nicht passt, steht als `+2` |
 | `PROG-PORT GP13` | der Pin des Programmierports, in der Warnfarbe |
 | `PROG-PORT GP13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
 | `KEIN SERVO-PWM-PIN` | kein Pin ist als SERVO PWM gebunden |
@@ -119,8 +130,8 @@ Die Zeile ZIEL der rechten Karte nennt die Pins, die der Tester jetzt treibt. Si
 | `UNBEKANNT` | die Programmierport-Seite des Koprozessors ist nicht gelesen |
 | `KEINE VERBINDUNG` | kein Koprozessor antwortet; der Tester sendet nichts |
 
-Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung. Eine Änderung von PWM-ZIEL wartet auf einen ruhenden Prüfstand.
+Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
 
 ## Die Werte behalten
 
-AUSGANG, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. TEST, der Rest von GRENZEN und PRÜFLING werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.
+AUSGANG, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für die Sitzung. SWEEP, die Optionen des automatischen Tests, PRÜFLING und ZIEL werden im NVS (nichtflüchtiger Speicher) gehalten und wie die Netzteil-Optionen geschrieben: im nächsten Frame mit dem Prüfstand SAFE und abgeschaltetem Netzteilausgang.

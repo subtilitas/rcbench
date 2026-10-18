@@ -29,14 +29,16 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+#include "servo_spots.h"
+
 #define W 800
 #define H 480
 
 /*
  * Geometry in panel coordinates, mirrored from servo_screen.c with the
  * band's height added: the shaft, the three buttons of the right card with
- * ARM under them, SPEED's track, and the SETTINGS overlay's rows (from
- * servo_settings_panel.c).
+ * ARM under them, SPEED's track, and the strip's SETTINGS and LIVE with the
+ * OUTPUT page's rows (servo_spots.h).
  */
 #define P(y)        (UI_BAND_H + (y))
 #define SHAFT_X     300
@@ -48,12 +50,12 @@
 #define ARM_X       648
 #define ARM_Y       P(404)
 #define SPEED_Y     P(307)
-#define SETB_X      734
-#define SETB_Y      P(24)
-#define CLOSE_X     439
-#define CLOSE_Y     P(27)
+#define SETB_X      SV_TAB_SETTINGS_X
+#define SETB_Y      P(SV_TAB_Y)
+#define CLOSE_X     SV_TAB_LIVE_X
+#define CLOSE_Y     P(SV_TAB_Y)
 #define ROW_L_X     100
-#define ROW_Y(r)    P(71 + 42 * (r))
+#define ROW_Y(r)    P(SV_ROW_Y(r))
 #define TRIM_UP_X   469
 #define CH_X(i)     (130 + 239 * ((i) / 5))
 #define CH_Y(i)     P(74 + 46 * ((i) % 5))

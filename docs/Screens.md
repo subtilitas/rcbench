@@ -431,7 +431,27 @@ columns under INA3221.
 
 ![Servo](img/servo.png)
 
-While the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
+SERVO is a workbench. The strip under the band holds its tasks, **LIVE**,
+**TEST** and **SETTINGS** (German `LIVE`, `TEST`, `OPTIONEN`), 112 px a
+tab. The tile opens LIVE. A tab switch is no navigation level: the home tag
+goes home from every task, and climbs one level only from a run's settings
+back to TEST. Each task keeps its page and what is selected on it until the
+panel restarts. Leaving SERVO switches the bench to SAFE, from any task.
+
+| Task | Left card, the page area |
+| --- | --- |
+| LIVE | the dial, and a run's box over it while a run is under way or its result is shown |
+| TEST | the AUTOMATIC TEST and LIMIT RUN cards, and SUPPLY's caps, read-only |
+| SETTINGS | the pages OUTPUT, SWEEP and DUT |
+
+The right card is the output card, the same on every task: the readings,
+the SET line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM.
+PROGRAM sits in the strip's row over the right card. A panel -- a keypad,
+the keyboard, a list, a warning, the question or the servo programmer --
+covers the whole left column, the strip's tabs with it, and is answered or
+closed before the task changes.
+
+On LIVE, while the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
 servo's own lag. The rings around the tip pulse while the servo is being
 driven. Lifting the finger does not let go: the screen keeps saying the last
@@ -439,7 +459,10 @@ position every SERVO_HOLD_MS, so a servo stays where it was put. **RELEASE**,
 the button, is what returns the surfaces to centre -- and even that leaves the
 pins bound and driving, at the middle of their travel. A switch to SAFE, or leaving
 the screen, which switches to SAFE, is what stops the edges. With the rotary knob on,
-turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)).
+turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)),
+on LIVE alone: on TEST, on SETTINGS, under a panel and under the servo
+programmer the dial is out of sight and a turn moves nothing. A turn in the
+frame in which LIVE comes back moves nothing either; the next one does.
 
 One finger drags the dial. A press by a second finger anywhere on the screen
 ends the drag, as it ends a drag on SPEED: the horn stays where it was
@@ -479,11 +502,12 @@ What each control does while the bench is SAFE:
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release; the value shown stays | centres the surfaces; the value shown becomes the rest |
 | SPEED | set; sends nothing | set; a held position is sent again at the new rate |
-| SETTINGS: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
+| SETTINGS > OUTPUT: TYPE, FRAME RATE, PULSE MIN, CENTRE and MAX, TRIM, TRAVEL, REVERSE | set; send nothing | set; a held position or the rest is sent again under them |
+| TARGET | a tap opens OUTPUTS / PROG PORT | locked; names the target |
 | SET, OUTPUT ON, OUTPUT OFF | as on SUPPLY | as on SUPPLY |
 | START TEST | refused: `ARM FIRST` | starts the run after its hold |
 
-While SAFE, the horn is drawn dimmed and the left card reads `ARM FIRST`. The
+While SAFE, the horn is drawn dimmed and LIVE's left card reads `ARM FIRST`. The
 horn and COMMANDED show the position last driven; after a restart, PULSE
 CENTRE. A pulse-width setting changed while SAFE changes the
 microseconds COMMANDED shows for that angle, and TRAVEL does not clamp it.
@@ -632,9 +656,9 @@ the change on both.
   left is sent as the OFF it was.
 
 **SWEEP drives the servo through a curve** on the coprocessor, where its
-timing does not depend on the link: the TEST page's CURVE (square, sine or
-triangle), SPEED (0.05 to 5 cycles a second) and DWELL TIME (the hold at each
-end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
+timing does not depend on the link: SETTINGS > SWEEP's CURVE (square, sine
+or triangle) and SPEED (0.05 to 5 cycles a second), and the automatic test's
+DWELL TIME (the hold at each end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
@@ -673,7 +697,7 @@ the output, and the resume goes on from there. The coprocessor
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
 SPEED's rate, at once at 100 %, and is normally already there. A curve
-changed on the TEST page while paused starts as a new sweep instead. A
+changed on SETTINGS > SWEEP while paused starts as a new sweep instead. A
 coprocessor older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
@@ -721,25 +745,27 @@ for. SPEED then shapes the motion instead of CURVE: a square, a sine and a
 triangle all move as ramps at SPEED's rate and look alike, and the output
 can turn back before it reaches an end. The line follows the settings, so it
 shows before SWEEP is pressed as well as while a sweep runs. Raise SPEED, or
-lower the TEST page's SPEED (the rate in Hz) or RANGE, to clear it. A square
+lower SETTINGS > SWEEP's SPEED (the rate in Hz) or RANGE, to clear it. A square
 jumps between its ends, so it shows at every SPEED below 100 %. With the
-TEST page's defaults (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it
+SWEEP page's defaults (sine, 0.5 Hz, RANGE 80 %) and TRAVEL +/-90 deg it
 clears at SPEED 63 %, and for a triangle at 40 %.
 [Servo procedures](Servo.md#sweep-and-speed) gives the rule.
 
 ![SPEED limiting a sweep](img/servo-sweep.png)
 
-**START TEST runs the automatic test** on the TEST page: the servo stepped
+**START TEST runs the automatic test** from TEST's AUTOMATIC TEST card: the servo stepped
 through the supply voltages chosen there, its current measured at rest,
 moving and holding, its travel timed, and the voltage at which it stops
 moving. [Servo procedures](Servo.md#automatic-test) gives the method and the
-files. START TEST needs the bench in ARMED and a supply that answers; the line
-under it says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
+files. The card holds the run's name and its SETTINGS, a summary line
+(`4.8 6.0 V BROWN-OUT, 60 s EACH`, or `..., 20 MOVEMENTS EACH`), START
+TEST, the state line, the last result with its files
+(`LAST: PASS SERVO004.CSV + .TXT`) and the STALL AT note. START TEST needs
+the bench in ARMED and a supply that answers; the state line says ARM FIRST, NO STEP CHOSEN, SUPPLY NOT ANSWERING, RANGE TOO
 SMALL (the ends RANGE and TRAVEL give land on PULSE CENTRE), A STEP IS
 OUTSIDE THE CAPS (a chosen step above the voltage cap in force, checked
 before any warning opens) or LAST REPORT STILL WRITING, and follows the
-bench and the settings as they change. A third line, across the card under
-both columns, says when no reading can pass STALL AT: `STALL AT 2.00 A
+bench and the settings as they change. The note under the last result says when no reading can pass STALL AT: `STALL AT 2.00 A
 cannot be reached: current limit 2.00 A` while STALL AT is at or above the
 SET line's current limit, else `STALL AT 2.00 A cannot be reached: INA3221
 range 1.638 A` while the INA3221 is the rail's meter and STALL AT is at or
@@ -752,12 +778,13 @@ SERVOS ONLY instead, naming the highest step, and the run starts only after
 its HOLD TO APPLY is held for 2 s. HV SERVO is for the session: every restart
 turns it off.
 
-The settings close as the run starts, and its step and phase show at the top
-of the left card, with the meter the run reads beside STOP TEST: `PD mini`,
+TEST stays shown as the run starts, and the card's state line reads the
+step. LIVE shows the run's box at the top of the left card: its step and
+phase, with the meter the run reads beside STOP TEST: `PD mini`,
 `INA3221 CH1` or `SIMULATION`. It is the servo rail's meter at START TEST, and
 the run reads it to its end ([The meter](Servo.md#the-meter)). The run owns
 the servo and SUPPLY's set points and switch until it ends. It ends early, the output switched off and the servo released
-to its centre, on STOP TEST (on the left card or the TEST page), STOP, a
+to its centre, on STOP TEST (in LIVE's box or on the card), STOP, a
 switch to SAFE, the link going, leaving the screen, a finger on the dial, CENTRE,
 SWEEP, RELEASE, a tap on a set point, a change to the servo's type, pulses,
 trim, travel, reverse or SPEED, touch events going missing, and on the
@@ -772,8 +799,8 @@ left as they are.
 
 ![A run](img/servo-run.png)
 
-The result stays on the left card until CLOSE: PASS, FAIL or ABORTED and
-why, the longest travel time and the highest holding current, and the files
+The result stays in LIVE's box until CLOSE, and on the card's LAST line
+until the next run: PASS, FAIL or ABORTED and why, the longest travel time and the highest holding current, and the files
 the card took: `SERVOnnn.CSV`, and `+ .TXT` once the card has taken the
 report whole.
 
@@ -784,7 +811,7 @@ plot does:
 
 ![A result on the INA3221](img/servo-result-ina.png)
 
-**START LIMIT RUN runs the limit search** on the LIMITS page: the servo
+**START LIMIT RUN runs the limit search** from TEST's LIMIT RUN card: the servo
 stepped outward in 10 us steps until its current shows the linkage bound,
 and, with LIMIT RUN on SEARCH + PROGRAM, a KST or Chaservo servo's LEFT ANGLE
 and RIGHT ANGLE lowered until neither end binds. On a SERVO PWM pin the
@@ -792,10 +819,13 @@ search runs from PULSE CENTRE to PULSE MIN and PULSE MAX; on PROG PORT a
 read session comes first, and the search runs from the servo's NEUTRAL to
 its own PULSE LOWER and PULSE UPPER. [Servo procedures](Servo.md#installed-mechanical-limit)
 gives the method, the protections and the report. It is a 2 s hold while
-the bench is ARMED and the INA3221 is the servo rail's meter; the line
-under it names the output it drives and the meter, `OUTPUT PROG PORT GP13,
-CURRENT INA3221 CH1`, and the next line says why it cannot start. The
-settings close as the run starts. Its box on the left card shows the
+the bench is ARMED and the INA3221 is the servo rail's meter. Over it the
+card's summary names the mode, `SEARCH ONLY` or `SEARCH + PROGRAM`, and
+SERVO PULSES while the run reads the port. Under it a line names the
+output it drives and the meter, `OUTPUT PROG PORT GP13, CURRENT INA3221
+CH1` or `OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1`, the next line says why
+it cannot start or what it does now, then the last result and its report.
+TEST stays shown as the run starts. Its box on LIVE's left card shows the
 values written of 8, the phase with the side and the pulse, and the output
 it drives, with STOP RUN; after the run, the verdict, the values or the
 ends, and `SERVOnnn.TXT` until CLOSE. The run switches the bench to SAFE and
@@ -809,12 +839,15 @@ automatic test's reasons end it with the output off.
 
 ### Programmer
 
-PROGRAM, beside SETTINGS, opens the programmer for KST and Chaservo servos
-over the left card. It takes the coprocessor's programming port, GP13 on
-pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
-the servo's settings on its signal wire. It connects only with PWM TARGET
-on the DUT page set to PROG PORT; with OUTPUTS it shows `Use the programming port to program a servo.` and CONNECT is locked. While it holds the port the
-overlay stays open and SETTINGS is off; ARM is drawn disabled and takes no
+PROGRAM, in the strip's row over the right card, opens the programmer for
+KST and Chaservo servos over the left column, the strip's tabs with it;
+PROGRAM again closes it to the task it covered. It takes the coprocessor's
+programming port, GP13 on pad 17 by default, out of PWM (pulse-width
+modulation) and reads and writes the servo's settings on its signal wire.
+It connects only with TARGET on the right card set to PROG PORT; with
+OUTPUTS it shows `Use the programming port to program a servo.` and `Set
+TARGET on the right card to PROG PORT.`, and CONNECT is locked. While it
+holds the port it stays open and a tap on PROGRAM closes nothing; ARM is drawn disabled and takes no
 press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
 tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
@@ -828,51 +861,71 @@ describes it.
 
 ### Settings
 
-SETTINGS, at the top of the right card, opens the servo's settings over the
-left card. ARM, CENTRE, RELEASE and STOP stay where they are and work. A value
-opens the keypad, a list opens a list, a switch flips on the tap, and the
-name opens a keyboard.
+SETTINGS in the strip shows the servo's settings in the page area, on three
+pages under their own tabs: OUTPUT, SWEEP and DUT (German `AUSGANG`,
+`SWEEP`, `PRÜFLING`). Each run's own settings open from its card's
+SETTINGS on TEST, as a list in the page area one level down; the home tag
+or another task closes them. The output card stays where it is and works. A
+value opens the keypad, a list opens a list, a switch flips on the tap, and
+the name opens a keyboard.
 
 ![The servo's settings](img/servo-settings.png)
+![The SWEEP page](img/servo-sweep-page.png)
 
-| Page | Setting | What it does |
+| Where | Setting | What it does |
 | --- | --- | --- |
-| OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
-| OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
-| OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
-| OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
-| OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
-| OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
-| TEST | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
-| TEST | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
-| TEST | DWELL TIME, SETTLING TIME | held at each end; waited after a supply step before measuring |
-| TEST | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
-| TEST | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
-| TEST | START TEST | the automatic test: a 2 s hold while the bench is ARMED; STOP TEST while it runs |
-| LIMITS | VOLTAGE MAX, CURRENT MAX | the SUPPLY screen's caps, the same settings |
-| LIMITS | STALL AT | above this current the servo counts as stalled |
-| LIMITS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
-| LIMITS | LIMIT RUN | SEARCH ONLY or SEARCH + PROGRAM, a tap switches; SEARCH + PROGRAM is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under START LIMIT RUN otherwise. For the session |
-| LIMITS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with PWM TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us in the run's read session, before the search. KEEP by default; for the session |
-| LIMITS | START LIMIT RUN | the limit search: a 2 s hold while the bench is ARMED and the INA3221 is the servo rail's meter; STOP RUN while it runs |
-| DUT | NAME | the device under test, up to 23 characters, for the report |
-| DUT | REPORT | a text report beside each test's log |
-| DUT | AS5600 | the output encoder, the same setting as SETUP, INTERFACES, AS5600: adds the horn's angle to the MEASURED row and to a run's CSV and report ([Servo](Servo.md#the-output-encoder)) |
-| DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
-| DUT | PWM TARGET | what the tester drives: OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. PROG PORT is what the programmer needs. Locked while ARMED, during a sweep or a test, and while the programmer holds the port ([the target](ServoProgrammer.md#the-target)) |
-| DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with PWM TARGET on OUTPUTS; ON under the rule of PWM TARGET, OFF ARMED or not but not during a sweep or a test, and neither while the programmer holds the port |
+| SETTINGS > OUTPUT | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
+| SETTINGS > OUTPUT | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
+| SETTINGS > OUTPUT | PULSE MIN, CENTRE, MAX | the pulse widths the travel maps onto, 400 to 2500 us: -90 deg is MIN, 0 is CENTRE, +90 deg is MAX, and RELEASE rests at CENTRE. An end lies no further from CENTRE than CENTRE lies from 400 us or 2500 us |
+| SETTINGS > OUTPUT | TRIM | added to the centre, 5 us a step, up to 200 us either way |
+| SETTINGS > OUTPUT | TRAVEL | how far the horn may go each way, 10 to 90 degrees |
+| SETTINGS > OUTPUT | REVERSE | the direction the horn's angle maps onto the pulse |
+| SETTINGS > SWEEP | CURVE, SPEED, RANGE | the movement of SWEEP: square, sine or triangle, 0.05 to 5 Hz, 10 to 100 % of the travel. The automatic test moves in steps between the ends RANGE gives |
+| AUTOMATIC TEST > SETTINGS | TEST LENGTH BY, TEST TIME, MOVEMENTS | how long each supply step runs: a time, or a number of movements |
+| AUTOMATIC TEST > SETTINGS | DWELL TIME, SETTLING TIME | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
+| AUTOMATIC TEST > SETTINGS | STEP 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | the supply steps, and the brown-out run from 5.0 V down; 7.4 and 8.4 V run only with HV SERVO on |
+| AUTOMATIC TEST > SETTINGS | HV SERVO | adds the 7.4 and 8.4 V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
+| AUTOMATIC TEST > SETTINGS | STALL AT | above this current the servo counts as stalled |
+| AUTOMATIC TEST > SETTINGS | IDLE CURRENT, HOLD CURRENT, TRAVEL TIME | pass/fail limits; 0 is not checked |
+| LIMIT RUN > SETTINGS | LIMIT RUN | SEARCH ONLY or SEARCH + PROGRAM, a tap switches; SEARCH + PROGRAM is offered for a servo on the programming port only, and the row reads SEARCH ONLY with the reason under it otherwise. For the session |
+| LIMIT RUN > SETTINGS | SERVO PULSES | KEEP or 1000-2000, a tap switches; shown with TARGET on PROG PORT only. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us in the run's read session, before the search. KEEP by default; for the session |
+| SETTINGS > DUT | NAME | the device under test, up to 23 characters, for the report |
+| SETTINGS > DUT | REPORT | a text report beside each test's log |
+| SETTINGS > DUT | ENC CENTRE | a tap takes the live count as the centre, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, INTERFACES, AS5600 centre |
+| SETTINGS > DUT | PORT PWM | the pulse on the programming port, ON or OFF. Locked with TARGET on OUTPUTS; ON under the rule of TARGET, OFF ARMED or not but not during a sweep or a test, and neither while the programmer holds the port |
+
+AS5600, the output encoder, is switched on and off on SETUP > INTERFACES
+alone ([the output encoder](#interfaces-the-output-encoder)); DUT's note
+says so. It adds the horn's angle to the MEASURED row and to a run's CSV
+and report ([Servo](Servo.md#the-output-encoder)).
+
+SUPPLY's caps, the voltage and current the set points and a run's steps stay
+inside, show read-only under TEST's cards and on DUT, with their home and
+the caps in force: `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS` (German
+`Grenzen 21.00 V 5.00 A: SUPPLY > OPTIONEN`). They are set on SUPPLY >
+SETTINGS.
 
 ![The DUT page with the output encoder on](img/servo-encoder.png)
 
-The active PWM TARGET is the TARGET row of the right card, between SPEED and
-CENTRE. The right card stays in sight under the settings, their keypads and
+The TARGET row of the output card, between SPEED and CENTRE, names what
+the tester drives as `protocol pins`, centred in its value box, and is the
+control that picks it. A tap on the box opens the list OUTPUTS / PROG PORT,
+the TARGET setting, kept in NVS (non-volatile storage). The row is locked
+-- outlined, its value dimmed, and it takes no press -- while the bench is
+ARMED, during a sweep (running or paused), an automatic test or a limit
+run, and while the servo programmer holds the port; it names the target all
+the same. The output card stays in sight under the pages, their keypads and
 the servo programmer, so the row names the pin while any of them covers the
-left card. With OUTPUTS the row names the GPIOs bound as SERVO PWM in the
-binding the tester drives: `GP4`, `GP2 GP4`; as many pins as fit the 23
-characters of the value, then `+N`: 6 pins from GP40 on read
-`GP40 GP41 GP42 GP43 +2`. The value is right-aligned beside the label. The row is in the warning colour, label and value, with no
-such pin (`NO SERVO PWM PIN`) and before a binding has been read
-(`PINS NOT READ`). With PROG PORT the row reads `PROG PORT GP13` in the
+left column.
+
+![The choice of target](img/servo-target-choice.png)
+
+With OUTPUTS the row names the GPIOs bound as SERVO PWM in the binding the
+tester drives: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`; as many pins as fit
+the 23 characters of the value, then `+N`: 8 pins from GP40 read
+`SERVO PWM GP40 GP41 +6`. The row is in the warning colour, label and
+value, with no such pin (`NO SERVO PWM PIN`) and before a binding has been
+read (`PINS NOT READ`). With PROG PORT the row reads `PROG PORT GP13` in the
 warning colour; the pin is the GPIO the coprocessor reports for the
 programming port. The tester's commands then do not reach the SERVO PWM
 outputs; while the bank is ARMED they hold their rest pulse, the centre
@@ -890,7 +943,7 @@ naming the target the coprocessor holds, a port or the outputs; the
 programmer drives the port and the tester sends nothing. The page is read
 every 500 ms. A coprocessor without that page (protocol older than 4.13) has
 the standard outputs as target. The row follows the target the coprocessor
-holds, not the setting: a PWM TARGET change waits for a quiet bench and
+holds, not the setting: a TARGET change waits for a quiet bench and
 reaches the row once the coprocessor has taken it.
 
 ![The TARGET row with PROG PORT](img/servo-target.png)
@@ -926,14 +979,14 @@ another one.
 ![The warning](img/servo-warning.png)
 
 **The frame rate reaches the pins** through the coprocessor's SERVO page
-(protocol 4.1). It applies to the PWM TARGET alone. With OUTPUTS, the standard
+(protocol 4.1). It applies to the TARGET alone. With OUTPUTS, the standard
 servo ports, as target that is every PWM output whose first channel is a surface; a
 PPM output keeps its own frame. With PROG PORT as target it is the
 programming port's pin, and every slot keeps its own rate (protocol 4.19).
 Every other programming port runs at 50 Hz. A port whose pin shares its PWM
 slice with another programming port's pin runs at 50 Hz only: the RP2350
 gives both pins of a slice one divider and one wrap, so a faster rate there
-is refused. A change of PWM TARGET puts the rate back to 0, each output at
+is refused. A change of TARGET puts the rate back to 0, each output at
 its own rate, and the screen sends its rate again with the next position. It goes with every held position,
 and a profile changed while the servo rests ARMED restates the rest with it;
 one changed while a switch to ARMED is on its way is the one that switch uses.
@@ -944,7 +997,7 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the PWM TARGET setting (second line `The PWM TARGET setting is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the PWM TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
 | This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
@@ -954,17 +1007,21 @@ back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
-does not switch to ARMED, from any screen, while the rate the PWM TARGET runs at is not
+does not switch to ARMED, from any screen, while the rate the TARGET runs at is not
 known: the switch to ARMED is refused with `Servo frame rate unknown. Hold ARM again.`, and
 a switch to ARMED made while the link was down reaches the coprocessor only once the
 reset has landed.
 
-The OUTPUT settings and HV SERVO are kept for the session; the rest of the
-TEST, LIMITS and DUT settings are kept in NVS (non-volatile storage) and
-written as on SUPPLY.
+The OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the
+session; SWEEP's, the automatic test's and DUT's settings and TARGET are
+kept in NVS. A change asks for the write at once; the store takes it at
+the first frame the bench is idle ([Keeping the values](#keeping-the-values)).
+The save line at the foot of each page says `SAVED`, `SAVE PENDING`,
+`NOT SAVED` or `SETUP CHANGES NOT SAVED`.
 
-![The automatic test's settings](img/servo-test.png)
-![The limits](img/servo-limits.png)
+![TEST and its two run cards](img/servo-test.png)
+![The automatic test's settings](img/servo-test-settings.png)
+![The limit run's settings](img/servo-limits.png)
 ![The name](img/servo-name.png)
 
 Current limitations:

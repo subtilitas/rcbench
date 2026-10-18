@@ -2717,20 +2717,24 @@ TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
     CHECK_EQ(kst_panel_editor(), 0);
     screen_tap(PROG_X, BTN_Y);
     CHECK(!kst_panel_is_open());
-    /* SETTINGS takes its place. */
+    /* The programmer covers the strip with the left card: a tap where
+     * SETTINGS is goes to the programmer (its own page tabs), and the
+     * task stays. */
     screen_tap(PROG_X, BTN_Y);
     CHECK(kst_panel_is_open());
     screen_tap(SETB_X, BTN_Y);
+    CHECK(kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    screen_tap(PROG_X, BTN_Y);
     CHECK(!kst_panel_is_open());
+    /* Over SETTINGS it opens the same, and closes back to SETTINGS. */
     screen_tap(SETB_X, BTN_Y);
-    /* And PROGRAM takes the settings' place. */
-    screen_tap(SETB_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
     screen_tap(PROG_X, BTN_Y);
     CHECK(kst_panel_is_open());
-    tap(val(PG_SERVO, 2, 1));
-    CHECK_EQ(kst_panel_editor(), 2);
-    tap(kst_panel_choice_cancel_rect());
-    CHECK_EQ(kst_panel_editor(), 0);
+    screen_tap(PROG_X, BTN_Y);
+    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
 }
 
 /* Every call that changes a setting, on the tester's target and the port's
@@ -2908,7 +2912,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
-    /* SETTINGS does not cover it. */
+    /* A tap where the strip's SETTINGS is does not uncover it. */
     ev(SETB_X, BTN_Y, TOUCH_EVENT_DOWN, 1);
     ev(SETB_X, BTN_Y, TOUCH_EVENT_UP, 1);
     CHECK(kst_panel_is_open());
@@ -2937,11 +2941,13 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     screen_tap(PROG_X, BTN_Y);
     CHECK(!kst_panel_is_open());
-    /* The tester's controls answer: ARM is asked for. */
+    /* The tester's controls answer: the strip switches tasks. */
     while (servo_screen_take(&junk)) { }
     screen_tap(SETB_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
     scr->render(&cv, 0);
-    screen_tap(SETB_X, BTN_Y);
+    screen_tap(LIVE_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     CHECK(!kst_panel_is_open());
 }
 

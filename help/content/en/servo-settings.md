@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS, at the top of the right card of [SERVO](servo.md), opens the servo's settings over the left card. Four pages: OUTPUT, TEST, LIMITS and DUT (device under test). ARM, CENTRE, RELEASE and STOP stay in place and work. A value opens the keypad, a list opens a list, a switch flips on the tap, and NAME opens a keyboard.
+SETTINGS, the third tab of [SERVO](servo.md)'s strip, shows the servo's settings in the page area on three pages: OUTPUT, SWEEP and DUT (device under test). Each run's own settings open from its card on TEST: the card's SETTINGS shows them as a list one level down, and the home tag goes back to the cards. The output card on the right stays in place and works. A value opens the keypad, a list opens a list, a switch flips on the tap, and NAME opens a keyboard.
 
 ## OUTPUT
 
@@ -48,44 +48,55 @@ The OUTPUT page says what became of the rate:
 | `REFUSED: ...` | a pulse is longer than the frame, or a pin shares a PWM slice at another rate; the pins keep their rate |
 | `No link. The active frame rate is unknown.` | no coprocessor answers |
 
-## TEST
+## SWEEP
 
-![The TEST page](view:servo-test)
+![The SWEEP page](view:servo-sweep-page)
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | CURVE | SQUARE, SINE, TRIANGLE | SINE | the curve of SWEEP and of the test's moves |
 | SPEED | 0.05 to 5 Hz | 0.5 Hz | curves a second |
 | RANGE | 10 to 100 % | 80 % | the share of the travel moved through |
-| TEST LENGTH BY | TIME, MOVES | TIME | how each supply step is measured |
-| TEST TIME | 5 to 3600 s | 60 s | the length of a step |
-| MOVEMENTS | 1 to 1000 | 20 | the moves of a step |
-| DWELL TIME | 0 to 5000 ms | 200 ms | held at each end |
-| SETTLING TIME | 0 to 10000 ms | 500 ms | waited after a supply step before measuring |
-| STEP 4.8 V, STEP 6.0 V | ON, OFF | ON | the supply steps |
-| HV SERVO | ON, OFF | OFF | adds STEP 7.4 V and STEP 8.4 V; off at every restart |
-| BROWN-OUT | ON, OFF | ON | from 5.0 V down until the servo stops moving |
-| START TEST | | | the automatic test: a 2 s hold while ARMED |
 
-![HV SERVO on](view:servo-hv)
+## The automatic test's settings
 
-With HV SERVO on and a step above 6.0 V chosen, START TEST opens HV SERVOS ONLY first, naming the highest step.
+![The AUTOMATIC TEST card's settings](view:servo-test-settings)
 
-## LIMITS
-
-![The LIMITS page](view:servo-limits)
+SETTINGS on the AUTOMATIC TEST card opens them.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
-| VOLTAGE MAX, CURRENT MAX | as on SUPPLY | 21.00 V, 5.00 A | the SUPPLY screen's caps, the same settings |
+| TEST LENGTH BY | TIME, MOVES | TIME | how each supply step is measured |
+| TEST TIME | 5 to 3600 s | 60 s | the length of a step |
+| MOVEMENTS | 1 to 1000 | 20 | the moves of a step |
+| DWELL TIME | 0 to 5000 ms | 200 ms | held at each end, by the test and by SWEEP |
+| SETTLING TIME | 0 to 10000 ms | 500 ms | waited after a supply step before measuring |
 | STALL AT | 0.1 to 5.0 A | 2.00 A | above this current the servo counts as stalled |
 | IDLE CURRENT | 0 to 5.00 A | 0, not checked | fail above this at rest |
 | HOLD CURRENT | 0 to 5.00 A | 0, not checked | fail above this holding an end |
+| STEP 4.8 V, STEP 6.0 V | ON, OFF | ON | the supply steps |
+| HV SERVO | ON, OFF | OFF | adds STEP 7.4 V and STEP 8.4 V; off at every restart |
+| BROWN-OUT | ON, OFF | ON | from 5.0 V down until the servo stops moving |
 | TRAVEL TIME | 0 to 5000 ms | 0, not checked | fail above this from end to end |
-| LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
-| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with PWM TARGET on PROG PORT only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us before the search |
 
-START LIMIT RUN, under the table, starts the [limit run](servo.md#the-limit-run) with a 2 s hold while ARMED. The line under it names the output and the meter, or why the run cannot start.
+![HV SERVO on](view:servo-hv)
+
+With HV SERVO on and a step above 6.0 V chosen, START TEST on the card opens HV SERVOS ONLY first, naming the highest step.
+
+## The limit run's settings
+
+![The LIMIT RUN card's settings](view:servo-limits)
+
+SETTINGS on the LIMIT RUN card opens them.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| LIMIT RUN | SEARCH ONLY, SEARCH + PROGRAM | SEARCH ONLY | what START LIMIT RUN does: search the ends, or also program LEFT ANGLE and RIGHT ANGLE |
+| SERVO PULSES | KEEP, 1000-2000 | KEEP | shown with TARGET on PROG PORT only: 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0 us before the search |
+
+## SUPPLY's caps
+
+The voltage and current caps the set points and a run's steps stay inside show read-only under TEST's cards and on DUT: `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS`, the caps in force. They are set on [SUPPLY](supply.md) > SETTINGS.
 
 ## DUT
 
@@ -96,22 +107,22 @@ START LIMIT RUN, under the table, starts the [limit run](servo.md#the-limit-run)
 |---|---|
 | NAME | the device under test, up to 23 characters; it heads each report |
 | REPORT | a text report, `SERVOnnn.TXT`, beside each test's log |
-| AS5600 | the output encoder, the same setting as on [Interfaces](setup-interfaces.md) |
 | ENC CENTRE | a tap takes the live count, 0 to 4095, as the centre, with the servo at neutral |
-| PWM TARGET | OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port |
 | PORT PWM | ON or OFF: the pulse on the programming port while it is the target |
 
-PWM TARGET is locked while ARMED, during a sweep or a test, and while the servo programmer holds the port.
+AS5600, the output encoder, is switched on [Interfaces](setup-interfaces.md) alone.
 
 ## The TARGET row
 
 ![The TARGET row with PROG PORT](view:servo-target)
 
-The TARGET row of the right card names the pins the tester drives now. It stays in sight under the settings and the servo programmer.
+The TARGET row of the output card names what the tester drives now as `protocol pins`, and picks it: a tap opens OUTPUTS, the pins bound as SERVO PWM, or PROG PORT, the coprocessor's programming port. It stays in sight on every task, under the pages and under the servo programmer. It is locked while ARMED, during a sweep, an automatic test or a limit run, and while the servo programmer holds the port.
+
+![The choice of target](view:servo-target-choice)
 
 | Row | Meaning |
 |---|---|
-| `GP4`, `GP2 GP4` | the GPIOs (general-purpose inputs/outputs) bound as SERVO PWM; more than fit read `+2` |
+| `SERVO PWM GP4`, `SERVO PWM GP2 GP4` | the GPIOs (general-purpose inputs/outputs) bound as SERVO PWM; more than fit read `+2` |
 | `PROG PORT GP13` | the programming port's pin, in the warning colour |
 | `PROG PORT GP13 PWM OFF` | the port is the target and renders no pulse |
 | `NO SERVO PWM PIN` | no pin is bound as SERVO PWM |
@@ -119,8 +130,8 @@ The TARGET row of the right card names the pins the tester drives now. It stays 
 | `UNKNOWN` | the coprocessor's programming-port page is not read |
 | `NO LINK` | no coprocessor answers; the tester sends nothing |
 
-The row follows the target the coprocessor holds, not the setting. A PWM TARGET change waits for a quiet bench.
+The row follows the target the coprocessor holds, not the setting. A TARGET change waits for a quiet bench.
 
 ## Keeping the values
 
-OUTPUT, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the session. TEST, the rest of LIMITS, and DUT are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.
+OUTPUT, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the session. SWEEP, the automatic test's settings, DUT and TARGET are kept in NVS (non-volatile storage) and written as the SUPPLY settings are: on the next frame with the bench SAFE and the supply output off.

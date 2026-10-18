@@ -33,6 +33,8 @@
 #include "ui_watermark.h"
 #include "ui_widgets.h"
 
+#include "servo_spots.h"
+
 #define W 800
 #define H 480
 
@@ -2292,15 +2294,14 @@ TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
     motor_screen_set_armed(false);
 }
 
-/* SERVO: SETTINGS and the overlay's CLOSE lie 24 px and 27 px under the
- * band.  Carried into it, they are released for the screen where they were
- * pressed, and neither acts. */
-TEST_CASE(servo_settings_and_close_carried_into_the_band_do_nothing)
+/* SERVO: the strip's SETTINGS and LIVE tabs lie 18 px under the band.
+ * Carried into it, they are released for the screen where they were
+ * pressed, and neither switches the task. */
+TEST_CASE(servo_strip_tabs_carried_into_the_band_do_nothing)
 {
-    /* Mirrored from servo_screen.c (SETTINGS) and servo_settings_panel.c
-     * (CLOSE). */
-    const int set_x = 734, set_y = UI_BAND_H + 24;
-    const int close_x = 439, close_y = UI_BAND_H + 27;
+    /* Mirrored from ui_workbench.h (servo_spots.h). */
+    const int set_x = SV_TAB_SETTINGS_X, set_y = UI_BAND_H + SV_TAB_Y;
+    const int close_x = SV_TAB_LIVE_X, close_y = UI_BAND_H + SV_TAB_Y;
     fresh();
     to_overview();
     ui_router_goto(SCREEN_SERVO);
@@ -3114,7 +3115,7 @@ int main(void)
     RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
     RUN(a_release_made_for_the_finger_activates_nothing_but_stop);
     RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
-    RUN(servo_settings_and_close_carried_into_the_band_do_nothing);
+    RUN(servo_strip_tabs_carried_into_the_band_do_nothing);
     RUN(the_armed_chip_names_the_role);
     RUN(the_band_renders_the_role_of_the_arm);
     RUN(a_tap_on_each_chip_opens_its_bubble);

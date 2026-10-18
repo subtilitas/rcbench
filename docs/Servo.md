@@ -32,7 +32,7 @@ reports that pulse width as the endpoint.
 On the bench the limit run (`shared/servo/servo_limrun.c`) searches the low
 side first, then the high side. Where depends on the target:
 
-| PWM TARGET | Read first | Search |
+| TARGET | Read first | Search |
 | --- | --- | --- |
 | a SERVO PWM pin on OUTPUTS | nothing | PULSE CENTRE out to PULSE MIN and PULSE MAX |
 | PROG PORT | a read session of the [programmer](ServoProgrammer.md) | the servo's NEUTRAL out to its own PULSE LOWER and PULSE UPPER, never past them |
@@ -47,19 +47,21 @@ Duration: the host test holds a full search against the modelled servo to under
 
 ### Running it
 
-The LIMITS page of the SERVO screen's settings holds the run. **LIMIT RUN**
+The LIMIT RUN card on the SERVO screen's TEST task holds the run; its
+**SETTINGS** opens the run's settings one level down. There **LIMIT RUN**
 chooses SEARCH ONLY or SEARCH + PROGRAM with a tap. **SERVO PULSES**, shown with
-PWM TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
-starts at KEEP. **START LIMIT RUN** starts the run with a 2 s hold, as START
-TEST does; a tap or a shorter hold starts nothing.
+TARGET on PROG PORT only, chooses KEEP or 1000-2000 with a tap; it
+starts at KEEP. The home tag goes back to the card. **START LIMIT RUN** on
+the card starts the run with a 2 s hold, as START TEST does; a tap or a
+shorter hold starts nothing.
 
 ![The limit run, ready](img/servo-limrun-ready.png)
 
 The line under the button names what the run drives and reads, the whole
-time: `OUTPUT PROG PORT GP13, CURRENT INA3221 CH1`, or the GPIOs bound as
-SERVO PWM with PWM TARGET on OUTPUTS. While the run goes on, the left card
-shows its box: the phase, the side and the pulse commanded, and the output
-again on its third line. The right card's TARGET row stays in sight as well.
+time: `OUTPUT PROG PORT GP13, CURRENT INA3221 CH1`, or
+`OUTPUT SERVO PWM GP2, CURRENT INA3221 CH1` with TARGET on OUTPUTS. While
+the run goes on, LIVE's left card shows its box: the phase, the side and the pulse commanded, and the output
+again on its third line. The output card's TARGET row stays in sight as well.
 
 ![The limit run, programming](img/servo-limrun.png)
 
@@ -75,19 +77,19 @@ and the line under it says why.
 | `INA3221 OFFLINE` | no link, the part not answering, or its reset count moved |
 | `NO INA3221 MEASUREMENT WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000 ms, or no window with current in the last 200 ms |
 | `SERVO SUPPLY BELOW 3.0 V OR NOT READ` | the last INA3221 window holds no rail voltage, or its mean is under 3.0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0 V, and a search there would find two free ends on a servo that never moved. 3.0 V lies under the 4.8 V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured |
-| `PORT PWM OFF. NO PULSES ON THIS PORT.` | PWM TARGET on PROG PORT with PORT PWM off |
-| `NO SERVO PWM PIN`, `PINS NOT READ` | PWM TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
+| `PORT PWM OFF. NO PULSES ON THIS PORT.` | TARGET on PROG PORT with PORT PWM off |
+| `NO SERVO PWM PIN`, `PINS NOT READ` | TARGET on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the TARGET row's own words |
 | `CENTRE MUST BE BETWEEN PULSE MIN AND MAX` | PULSE CENTRE is not between PULSE MIN and PULSE MAX |
 
 ### Programming the servo's travel limits
 
-SEARCH + PROGRAM is offered for a servo on the programming port: PWM TARGET on
+SEARCH + PROGRAM is offered for a servo on the programming port: TARGET on
 PROG PORT, the port in PWM, and a supply of 4.8 V or more. With a PD mini
 answering, its output must be on and its set point counts; without one, the servo rail's mean in the
 INA3221's last window. On the bench's outputs the run searches only, the
-row reads SEARCH ONLY, and the third line reads `PROGRAMMING REQUIRES A SERVO ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
+row reads SEARCH ONLY, and the note under it in the run's settings reads `PROGRAMMING REQUIRES A SERVO ON THE PROG PORT`. On PROG PORT every run starts with a read session, so
 the other conditions stop SEARCH ONLY as well: the button stays grey and the
-third line names the condition.
+card's state line names the condition.
 
 | Line | Condition |
 | --- | --- |
@@ -107,7 +109,7 @@ switches the bench to ARMED. Nothing is driven before that.
   port did not finish`, where CONNECT or its read does not complete; FAIL,
   `no KST or Chaservo servo read`, where the servo read holds values the
   hard rules do not take. A servo that is no KST or Chaservo is searched
-  with PWM TARGET on a SERVO PWM pin.
+  with TARGET on a SERVO PWM pin.
 - NEUTRAL not between PULSE LOWER and PULSE UPPER ends it as FAIL,
   `NEUTRAL outside LOWER/UPPER`.
 - PULSE LOWER to PULSE UPPER not inside the bench's PULSE MIN to PULSE MAX
@@ -126,7 +128,7 @@ back. NEUTRAL is not written. A servo that holds those values already gets
 no write. NEUTRAL outside the new range ends the run as FAIL before
 anything is driven, with RESTORE offered. The setting works with SEARCH
 ONLY and with SEARCH + PROGRAM; with SEARCH ONLY the pulses are the only write,
-and the third line says `SEARCH ONLY: SETS PULSE LOWER/UPPER ONLY`.
+and the note in the run's settings says `SEARCH ONLY: SETS PULSE LOWER/UPPER ONLY`.
 
 #### The registers and the model
 
@@ -272,7 +274,7 @@ a modelled servo; neither firmware image calls it.
 
 ### What ends a limit run
 
-STOP, STOP RUN on the box or the LIMITS page, a switch to SAFE by the
+STOP, STOP RUN in LIVE's box or on the LIMIT RUN card, a switch to SAFE by the
 operator, link loss, leaving the screen, the operator taking the servo, a
 change to the servo's settings, lost touch events, the INA3221 no longer the
 meter, and a supply that stops answering, trips, switches off or has its set
@@ -324,7 +326,7 @@ and the report's file name until CLOSE.
 ![The servo's pulses outside PULSE MIN and PULSE MAX](img/servo-limrun-range.png)
 
 The report is a `SERVOnnn.TXT` of its own, with no CSV file beside it, under
-the next free number, written whatever the DUT page's REPORT says. During a
+the next free number, written whatever DUT's REPORT says. During a
 run neither the bench log nor the supply log writes a row; the supply
 log's time runs on through the run, as its totals do. From the run's start
 until the card has closed the report it counts as an open log run: Wi-Fi and
@@ -438,13 +440,13 @@ and its numbers are simulated. While the INA3221 is the servo rail's meter
 at START TEST and the supply is the PD mini, the run reads the INA3221's
 CH1 instead, in 50 ms windows: see [The meter](#the-meter).
 
-START TEST on the SERVO screen's TEST page starts it:
+START TEST on the AUTOMATIC TEST card of the SERVO screen's TEST task starts it:
 [Screens](Screens.md#servo) describes the controls. The engine is
 `shared/servo/servo_test.c`; the constants below are in `servo_test.h`.
 
 ### Method
 
-The voltage steps are the TEST page's STEP 4.8 V and STEP 6.0 V, and with HV
+The voltage steps are the run's STEP 4.8 V and STEP 6.0 V (the card's SETTINGS), and with HV
 SERVO on, STEP 7.4 V and STEP 8.4 V. HV SERVO is off at every restart. A run
 with a step above 6.0 V starts only through the HV SERVOS ONLY warning held for
 2 s. The current limit through the run is the one on the SET line.
@@ -454,7 +456,7 @@ Each step runs these phases:
 | Phase | The servo | Ends |
 | --- | --- | --- |
 | SET | at PULSE CENTRE; the voltage asked; the first step switches the output on | the supply reads the set point back within 0.05 V, at most 3000 ms |
-| SETTLING TIME | at PULSE CENTRE | after the TEST page's SETTLING TIME |
+| SETTLING TIME | at PULSE CENTRE | after the run's SETTLING TIME |
 | IDLE | at PULSE CENTRE: the idle current is the mean of the readings, the idle noise their standard deviation | after 1000 ms |
 | MOVE | a step command to one end, with no slew: SPEED does not apply | at the arrival, or after 3000 ms plus the meter's lag (3300 ms on the PD mini): late with movement seen, unseen without |
 | HOLD | at that end: the holding current is the mean of the readings | after DWELL TIME, at least 600 ms |
@@ -682,8 +684,8 @@ the run.
 | STALL AT for 1 s | readings above STALL AT for 1000 ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1 s` |
 | Constant current for 1 s | the supply reports constant current (CC) in every reading for 1000 ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1 s`, whatever STALL AT is |
 | Constant current for less than 1 s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
-| STALL AT at or above the current limit | at START TEST | the run starts. The TEST page and the report say `STALL AT 3.00 A cannot be reached: current limit 2.00 A` |
-| STALL AT at or above the INA3221's range | at START TEST with the INA3221 as the meter | the run starts. The TEST page and the report say `STALL AT 2.00 A cannot be reached: INA3221 range 1.638 A` |
+| STALL AT at or above the current limit | at START TEST | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00 A cannot be reached: current limit 2.00 A` |
+| STALL AT at or above the INA3221's range | at START TEST with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00 A cannot be reached: INA3221 range 1.638 A` |
 
 - Every comparison of a current with IDLE CURRENT, HOLD CURRENT and STALL AT
   is made in whole mA, in the verdict and in the report alike: a reading of
@@ -723,7 +725,7 @@ coprocessor holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the centre count (AS5600 centre,
-or ENC CENTRE on the DUT page, which takes the live count with the servo at
+or ENC CENTRE on SETTINGS > DUT, which takes the live count with the servo at
 its neutral), in degrees from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
@@ -894,7 +896,7 @@ MEASURABLE, not FAIL. With no move arrived there is no longest travel time,
 and the `Travel time` line reads `longest --` and `not measured, no move
 arrived`, on any meter.
 
-A LIMITS value of 0 is not checked; STALL AT always is. A current is
+A pass/fail limit of 0 is not checked; STALL AT always is. A current is
 compared by its magnitude and in whole mA: see
 [Stall and constant current](#stall-and-constant-current).
 
@@ -902,7 +904,7 @@ compared by its magnitude and in whole mA: see
 
 A run takes the next run number on the card, as a bench in ARMED does, and the
 SD card's own task writes its files: `SERVOnnn.CSV`, one row per reading of
-the run's meter, and with the DUT page's REPORT on, `SERVOnnn.TXT`. The
+the run's meter, and with DUT's REPORT on, `SERVOnnn.TXT`. The
 number belongs to one series with the `BENCHnnn.CSV` and `ESCnnn.CSV` runs
 on the card ([Logs](Screens.md#logs)). A run is
 one CSV: the run log of a bench in ARMED writes no row while a run is under
@@ -1000,7 +1002,7 @@ BROWN-OUT
 Moved at every step down to 3.00 V; lower not tested.
 No movement: no reading of a move more than Thresh, 0.023 A at 3.00 V, from the level before it.
 
-AGAINST THE LIMITS PAGE
+AGAINST THE PASS/FAIL LIMITS
 Idle current     highest 0.004 A, limit OFF: not checked
 Holding current  highest 0.001 A, limit OFF: not checked
 Travel time      longest 989 ms, limit 800 ms: upper bound, not checked against the limit
@@ -1124,13 +1126,13 @@ is not measured.
 
 ## Sweep and SPEED
 
-SWEEP on the SERVO screen drives the servo through the TEST page's curve.
+SWEEP on the SERVO screen drives the servo through SETTINGS > SWEEP's curve.
 SPEED on the right card limits how fast the output may move. When SPEED is
 slower than the fastest change the curve asks for, SPEED shapes the motion
 instead of the curve, and SPEED's row reads SPEED LIMITS THE SWEEP in the
 warning colour ([Screens](Screens.md#servo)).
 
-The fastest change, with f the TEST page's rate in Hz and A the amplitude in
+The fastest change, with f SWEEP's rate in Hz and A the amplitude in
 degrees (RANGE of the travel either side of PULSE CENTRE):
 
 | CURVE | Fastest change | Where |
@@ -1147,13 +1149,13 @@ before SWEEP is pressed and while it runs. `sweep_slew_limited()` in
 `shared/servo/servo_sweep.c` decides it, in the command units the
 coprocessor slews in.
 
-| TEST page | A | Fastest change | Clears at SPEED |
+| SWEEP page | A | Fastest change | Clears at SPEED |
 | --- | ---: | ---: | ---: |
 | sine, 0.5 Hz, RANGE 80 %, TRAVEL +/-90 deg | 72 deg | 226 deg/s | 63 % |
 | triangle, 0.5 Hz, RANGE 80 %, TRAVEL +/-90 deg | 72 deg | 144 deg/s | 40 % |
 | square, any | any | a jump | 100 % |
 
-To clear the line, raise SPEED, or lower the TEST page's SPEED (the rate) or
+To clear the line, raise SPEED, or lower SWEEP's SPEED (the rate) or
 RANGE.
 
 The line compares the curve with SPEED only. A servo slower than both limits

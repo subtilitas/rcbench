@@ -24,6 +24,7 @@
 #include "supply_screen.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_target_row.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -1151,7 +1152,7 @@ TEST_CASE(speed_says_when_it_limits_the_sweep)
     CHECK_EQ(speed_row_pixels(ui_theme_color(UI_C_DANGER)), 0);
 
     open_settings();
-    tap(TAB_X(1), TAB_Y);                      /* TEST */
+    tap(TAB_X(PAGE_SWEEP), TAB_Y);             /* SWEEP */
     tap(ROW_L_X, ROW_Y(1));                    /* SPEED, the rate */
     keys("0.05");
     scr->render(&cv, 0);
@@ -3044,8 +3045,7 @@ TEST_CASE(start_test_starts_a_second_run)
     bench_frames(1000u);
     settle_drawn();
     two_buffers();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     CHECK(both_whole());
     CHECK_EQ(fb[(START_Y + UI_BAND_H * 0) * W + START_X - 60],
              fb1[(START_Y + UI_BAND_H * 0) * W + START_X - 60]);
@@ -3067,8 +3067,7 @@ TEST_CASE(the_start_line_follows_the_report_being_taken)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     servo_screen_test_files(12, true);
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     two_buffers();
     /* Frames that keep the report back from the card. */
     for (int i = 0; i < 120 && servo_screen_testing(); ++i) {
@@ -3124,8 +3123,7 @@ TEST_CASE(arm_first_goes_once_the_bench_is_armed)
 {
     fresh();
     memset(&bench, 0, sizeof(bench));
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     tap(START_X, START_Y);                       /* ARM FIRST */
     two_buffers();
     gfx_color_t *was = malloc(FB_BYTES);
@@ -3147,9 +3145,9 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
     short_runs();
     settings_set(SET_SUPPLY_V_MAX, 8.0f);
     supply_screen_limits_changed();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_run_settings(0);
     tap(ROW_R_X, HV_ROW_Y);                      /* HV SERVO on */
+    CHECK(home_tag());                           /* back to the cards */
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);
@@ -3162,9 +3160,9 @@ TEST_CASE(a_run_outside_the_caps_is_refused_before_the_warning)
      * while it stands: the hold starts nothing. */
     bench_fresh();
     short_runs();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_run_settings(0);
     tap(ROW_R_X, HV_ROW_Y);
+    CHECK(home_tag());
     tap(START_X, START_Y);
     scr->tick(0.02f);
     scr->render(&cv, 0);
@@ -3232,8 +3230,7 @@ TEST_CASE(a_refusal_goes_with_the_edit_that_answers_it)
         bench_fresh();
         settings_set(SET_SERVO_STEP_60, 0.0f);
         settings_set(SET_SERVO_BROWNOUT, 0.0f);
-        open_settings();
-        tap(TAB_X(1), TAB_Y);
+        open_test();
         scr->tick(0.02f);
         servo_invalidate();
         scr->render(&cv, 0);
@@ -3430,60 +3427,67 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     free(row_b);
 }
 
-TEST_CASE(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest)
+/* The TARGET row on the right card picks what the tester drives, on a
+ * bench at rest: a tap opens OUTPUTS / PROG PORT, the TARGET setting.
+ * PORT PWM stays on SETTINGS' DUT page, its row at the right column's
+ * row 1. */
+TEST_CASE(the_target_row_sets_what_the_tester_drives_on_a_bench_at_rest)
 {
     fresh();
     open_settings();
-    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     /* With the outputs as target PORT PWM has no port to switch. */
-    tap(ROW_R_X, ROW_Y(2));
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
-    tap(ROW_R_X, ROW_Y(1));                    /* TARGET */
+    CHECK(!servo_screen_target_locked());
+    tap(SV_TARGET_X, SV_TARGET_Y);             /* TARGET */
     tap(CH_X(1), CH_Y(1));                     /* PROG PORT */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     CHECK(settings_save_asked());
-    tap(ROW_R_X, ROW_Y(2));
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
-    tap(ROW_R_X, ROW_Y(2));
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
-    /* Armed: the target stays, and no list opens over the page -- the row
-     * under where its first entry would be still takes its tap. */
+    /* Armed: the target stays, and no list opens over the page -- REPORT,
+     * under where the list's PROG PORT would be, still takes its tap. */
     servo_screen_set_armed(true);
-    tap(ROW_R_X, ROW_Y(1));
-    CHECK(!settings_get_bool(SET_ENC_EN));
-    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 */
-    CHECK(settings_get_bool(SET_ENC_EN));
+    CHECK(servo_screen_target_locked());
+    const bool report = settings_get_bool(SET_SERVO_REPORT);
+    tap(SV_TARGET_X, SV_TARGET_Y);
+    tap(ROW_L_X, ROW_Y(1));                    /* REPORT */
+    CHECK_EQ(settings_get_bool(SET_SERVO_REPORT), !report);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     /* The pulse goes off under an armed bench and does not come back. */
-    tap(ROW_R_X, ROW_Y(2));
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
-    tap(ROW_R_X, ROW_Y(2));
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     /* Disarmed it does, and the target goes back. */
     servo_screen_set_armed(false);
-    tap(ROW_R_X, ROW_Y(2));
-    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK(!servo_screen_target_locked());
     tap(ROW_R_X, ROW_Y(1));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    tap(SV_TARGET_X, SV_TARGET_Y);
     tap(CH_X(0), CH_Y(0));
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
 }
 
 /*
  * The TARGET row of the right card, as the pixels of its box: the row at
- * y 322 between the SPEED slider, whose knob reaches down to y 324, and
- * CENTRE (from y 350), the label at x 514 and the value right-aligned in
- * the 188 px from x 594.
+ * y 326 to 348, between the SPEED slider, whose thumb and its shadow paint
+ * down to y 324, and CENTRE (from y 350); the label at x 514 and the value
+ * box from x 578.
  */
 #define TGT_X 514
-#define TGT_Y 325
+#define TGT_Y 326
 #define TGT_W 268
-#define TGT_H 25
+#define TGT_H 22
 #define TGT_ROW_Y 322
-#define TGT_VAL_DX 80
+#define TGT_VAL_DX UI_TARGET_LABEL_W
 
 /* The target line's box at the foot of the left card before the TARGET
  * row: left 6 + 200, top (H - UI_BAND_H) - 6 - 36, 278 x 26 px. */
@@ -3545,37 +3549,40 @@ static const tgt_state_t k_tgt[] = {
 /* The exact text of each k_tgt state's value, in English and in German,
  * written out here and not taken from servo_target_line(). */
 static const char *const k_tgt_txt[2][TGT_N] = {
-    { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+    { "SERVO PWM GP2", "SERVO PWM GP4", "SERVO PWM GP2 GP4",
+      "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
+      "SERVO PWM GP2 GP4 +4", "SERVO PWM GP40 GP41 +6",
       "NO SERVO PWM PIN",
       "PINS NOT READ", "PROG PORT", "PROG PORT GP13",
       "PROG PORT GP63 PWM OFF", "PROG PORT PWM OFF", "UNKNOWN", "NO LINK" },
-    { "GP2", "GP4", "GP2 GP4", "GP2 GP4 GP5", "GP12 GP13 GP14 GP15",
-      "GP2 GP4 GP5 GP6 GP7 GP8", "GP40 GP41 GP42 GP43 +4",
+    { "SERVO PWM GP2", "SERVO PWM GP4", "SERVO PWM GP2 GP4",
+      "SERVO PWM GP2 GP4 GP5", "SERVO PWM GP12 GP13 +2",
+      "SERVO PWM GP2 GP4 +4", "SERVO PWM GP40 GP41 +6",
       "KEIN SERVO-PWM-PIN",
       "PINS NICHT AUSGELESEN", "PROG-PORT", "PROG-PORT GP13",
       "PROG-PORT GP63 PWM AUS", "PROG-PORT PWM AUS", "UNBEKANNT",
       "KEINE VERBINDUNG" },
 };
 
-/* The box a label and a value give, drawn over the screen's with the
- * screen's font, colours and rectangles: the label at x 514, the value
- * right-aligned in 188 px from x 594, both in the warning colour for
- * @p warn. */
-static void target_reference(gfx_color_t *out, const char *label,
-                             const char *text, bool warn)
+/* The row a label and a value give, drawn over the screen's by the row
+ * widget (ui_target_row.h, whose own pixels test_widgets holds) at the
+ * row's place: the label at x 514, the value in the box from x 578, both in
+ * the warning colour for @p warn, the box drawn locked for @p locked. */
+static void target_reference_as(gfx_color_t *out, const char *label,
+                                const char *text, bool warn, bool locked)
 {
     gfx_fill_rect(&cv, TGT_X, TGT_Y, TGT_W, TGT_H,
                   ui_theme_color(UI_C_PANEL));
-    gfx_text(&cv, TGT_X, TGT_ROW_Y + 5, label, UI_FONT_LABEL,
-             warn ? ui_theme_color(UI_C_WARN)
-                  : ui_theme_color(UI_C_TEXT_DIM), 1);
-    gfx_text_in(&cv, (gfx_rect_t){ TGT_X + TGT_VAL_DX, TGT_ROW_Y + 5,
-                                   TGT_W - TGT_VAL_DX, 16 },
-                text, UI_FONT_LABEL,
-                warn ? ui_theme_color(UI_C_WARN) : ui_theme_color(UI_C_TEXT),
-                1, GFX_ALIGN_RIGHT);
+    ui_target_row_t row;
+    ui_target_row_init(&row, (gfx_rect_t){ TGT_X, TGT_Y, TGT_W, TGT_H });
+    ui_target_row_render(&row, &cv, label, text, warn, locked);
     target_box(out);
+}
+
+static void target_reference(gfx_color_t *out, const char *label,
+                             const char *text, bool warn)
+{
+    target_reference_as(out, label, text, warn, false);
 }
 
 static int warn_pixels(const gfx_color_t *bx)
@@ -3591,9 +3598,9 @@ static int warn_pixels(const gfx_color_t *bx)
  * languages: the pins bound as SERVO PWM for OUTPUTS, the programming port
  * with its pin, and the warning colour for the port, for no pin, for a
  * binding not read, for a target not known and for no link.  Every state
- * reads differently, and no value runs into the label: the longest are
- * six pins filling the 23 cells, two-digit pins with a count in 22, and the
- * port on a two-digit pin with its pulse off, 22 of the 23 cells. */
+ * reads differently, and no value runs out of its box: the longest are the
+ * protocol with two two-digit pins and a count, 22 of the 23 cells, and
+ * the port on a two-digit pin with its pulse off, 22 as well. */
 TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
 {
     gfx_color_t *box[2 * TGT_N];
@@ -3618,14 +3625,9 @@ TEST_CASE(the_servo_screen_names_the_pins_the_tester_drives)
             target_reference(want_box, lang == 0 ? "TARGET" : "ZIEL",
                              k_tgt_txt[lang][i], st->warn);
             CHECK_EQ(memcmp(want_box, bx, sizeof(want_box)), 0);
-            /* The value fits its 188 px and leaves 3 px before it. */
+            /* The value fits the 23 cells of its box. */
             CHECK(gfx_text_width(UI_FONT_LABEL, k_tgt_txt[lang][i], 1)
-                  <= TGT_W - TGT_VAL_DX - 3);
-            for (int y = 0; y < TGT_H; ++y) {
-                for (int x = TGT_VAL_DX; x < TGT_VAL_DX + 3; ++x) {
-                    CHECK_EQ(bx[y * TGT_W + x], ui_theme_color(UI_C_PANEL));
-                }
-            }
+                  <= 23 * 8);
             /* The foot of the left card carries no second target line. */
             CHECK_EQ(fb[(OLD_TGT_Y + 2) * W + OLD_TGT_X + 4],
                      ui_theme_color(UI_C_PANEL));
@@ -3743,7 +3745,7 @@ TEST_CASE(the_target_row_stays_in_sight_under_the_settings_and_a_keypad)
     servo_screen_set_pins(PIN(4), true);
     scr->render(&cv, 0);
     target_box(want);
-    target_reference(got, "TARGET", "GP4", false);
+    target_reference(got, "TARGET", "SERVO PWM GP4", false);
     CHECK_EQ(memcmp(want, got, sizeof(want)), 0);
 
     open_settings();
@@ -3789,38 +3791,40 @@ static void check_line(uint8_t target, uint8_t gpio, bool pwm, uint64_t pins,
 TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
 {
     ui_text_set_language(UI_LANG_EN);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "GP2", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), true, "SERVO PWM GP2",
+               false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "GP2 GP4 GP5", false);
+               "SERVO PWM GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(12) | PIN(13) | PIN(14) | PIN(15), true,
-               "GP12 GP13 GP14 GP15", false);
+               "SERVO PWM GP12 GP13 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7), true,
-               "GP2 GP4 GP5 GP6 GP7", false);
-    /* The list ends exactly at the 23 cells: no count. */
+               "SERVO PWM GP2 GP4 +3", false);
+    /* The list ends exactly at the 23 cells, the protocol's 10 and 13 of
+     * pins: no count. */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8), true,
-               "GP2 GP4 GP5 GP6 GP7 GP8", false);
-    /* One pin more overflows it: 5 pins and " +2". */
+               PIN(2) | PIN(10) | PIN(11), true,
+               "SERVO PWM GP2 GP10 GP11", false);
+    /* One pin more overflows it: 2 pins and " +2". */
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
-               PIN(2) | PIN(4) | PIN(5) | PIN(6) | PIN(7) | PIN(8) | PIN(9),
-               true, "GP2 GP4 GP5 GP6 GP7 +2", false);
-    /* Five two-digit pins are 24 cells: 4 pins and " +1". */
+               PIN(2) | PIN(10) | PIN(11) | PIN(12), true,
+               "SERVO PWM GP2 GP10 +2", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false,
                PIN(10) | PIN(11) | PIN(12) | PIN(13) | PIN(14), true,
-               "GP10 GP11 GP12 GP13 +1", false);
+               "SERVO PWM GP10 GP11 +3", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "GP40 GP41 GP42 GP43 +4", false);
+               "SERVO PWM GP40 GP41 +6", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, ~0ull, true,
-               "GP0 GP1 GP2 GP3 GP4 +59", false);
-    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true, "GP63", false);
+               "SERVO PWM GP0 GP1 +62", false);
+    check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(63), true,
+               "SERVO PWM GP63", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "NO SERVO PWM PIN", true);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2), false,
                "PINS NOT READ", true);
     /* With the outputs as target a port pin names nothing. */
-    check_line(0u, 13u, false, PIN(2), true, "GP2", false);
+    check_line(0u, 13u, false, PIN(2), true, "SERVO PWM GP2", false);
     /* A port target is the port, its pin known or not, pins bound or not. */
     check_line(1u, 13u, true, PIN(2), true, "PROG PORT GP13", true);
     check_line(1u, SERVO_SCREEN_NO_PIN, true, PIN(2), true, "PROG PORT",
@@ -3843,10 +3847,11 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     check_line(SERVO_SCREEN_TARGET_NO_LINK, SERVO_SCREEN_NO_PIN, false, 0u,
                false, "NO LINK", true);
     ui_text_set_language(UI_LANG_DE);
+    /* The protocol is a name: the same in German. */
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PIN(2) | PIN(4) | PIN(5), true,
-               "GP2 GP4 GP5", false);
+               "SERVO PWM GP2 GP4 GP5", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, PINS_40_47, true,
-               "GP40 GP41 GP42 GP43 +4", false);
+               "SERVO PWM GP40 GP41 +6", false);
     check_line(0u, SERVO_SCREEN_NO_PIN, false, 0u, true,
                "KEIN SERVO-PWM-PIN", true);
     check_line(1u, 13u, true, PIN(2), true, "PROG-PORT GP13", true);
@@ -3868,10 +3873,10 @@ TEST_CASE(the_target_line_lists_the_pins_that_fit_and_counts_the_rest)
     memset(small, 'x', sizeof(small));
     CHECK(!servo_target_line(small, sizeof(small), 0u, SERVO_SCREEN_NO_PIN,
                              false, PINS_40_47, true));
-    CHECK_STR_EQ(small, "GP40 GP");
+    CHECK_STR_EQ(small, "SERVO P");
     CHECK(!servo_target_line(NULL, 8u, 1u, 13u, true, 0u, true));
     CHECK(!servo_target_line(small, 0u, 1u, 13u, true, 0u, true));
-    CHECK_STR_EQ(small, "GP40 GP");
+    CHECK_STR_EQ(small, "SERVO P");
 }
 
 /* A test or a sweep under way keeps the port's pulse: switched off, the run
@@ -3887,8 +3892,8 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     tap(SWEEP_X, BTN_Y);
     CHECK(servo_screen_sweeping());
     open_settings();
-    tap(TAB_X(3), TAB_Y);                      /* DUT */
-    tap(ROW_R_X, ROW_Y(2));                    /* PORT PWM */
+    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
+    tap(ROW_R_X, ROW_Y(1));                    /* PORT PWM */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_sweeping());
 
@@ -3899,16 +3904,16 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     open_settings();
-    tap(TAB_X(3), TAB_Y);
-    tap(ROW_R_X, ROW_Y(2));
+    tap(TAB_X(PAGE_DUT), TAB_Y);
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_testing());
     /* The run over, armed still: the pulse goes off. */
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     tap(START_X, START_Y);                     /* STOP */
     CHECK(!servo_screen_testing());
-    tap(TAB_X(3), TAB_Y);
-    tap(ROW_R_X, ROW_Y(2));
+    open_settings();                           /* DUT, kept */
+    tap(ROW_R_X, ROW_Y(1));
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     settings_set(SET_SERVO_TARGET, 0.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
@@ -3922,10 +3927,10 @@ static bool port_hold(setting_id_t id)
         && (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM);
 }
 
-/* While the programmer has the port, the DUT page changes neither what the
- * tester drives nor the port's pulse -- the pulse is not switched off
- * either -- and a list opened before takes no choice. */
-TEST_CASE(the_dut_page_leaves_target_and_pulse_while_the_port_is_held)
+/* While the programmer has the port, neither the TARGET row nor the DUT
+ * page changes what the tester drives or the port's pulse -- the pulse is
+ * not switched off either -- and a list opened before takes no choice. */
+TEST_CASE(the_target_row_and_pulse_stay_while_the_port_is_held)
 {
     for (int pwm = 0; pwm < 2; ++pwm) {
         for (int target = 0; target < 2; ++target) {
@@ -3934,66 +3939,68 @@ TEST_CASE(the_dut_page_leaves_target_and_pulse_while_the_port_is_held)
             s_port_held = false;
             settings_set(SET_SERVO_TARGET, (float)target);
             settings_set(SET_SERVO_PORT_PWM, (float)pwm);
-            settings_set(SET_ENC_EN, 0.0f);
+            settings_set(SET_SERVO_REPORT, 0.0f);
             open_settings();
-            tap(TAB_X(3), TAB_Y);                  /* DUT */
+            tap(TAB_X(PAGE_DUT), TAB_Y);           /* DUT */
             s_port_held = true;
-            /* No list opens over the page: the row under where its first
-             * entry would be takes its tap. */
-            tap(ROW_R_X, ROW_Y(1));                /* TARGET */
-            tap(ROW_L_X, ROW_Y(2));                /* AS5600 */
-            CHECK(settings_get_bool(SET_ENC_EN));
-            tap(ROW_R_X, ROW_Y(2));                /* PORT PWM */
-            tap(ROW_R_X, ROW_Y(2));
-            tap(ROW_R_X, ROW_Y(2));
+            CHECK(servo_screen_target_locked());
+            /* No list opens over the page: REPORT, under where its second
+             * entry would be, takes its tap. */
+            tap(SV_TARGET_X, SV_TARGET_Y);         /* TARGET */
+            tap(ROW_L_X, ROW_Y(1));                /* REPORT */
+            CHECK(settings_get_bool(SET_SERVO_REPORT));
+            tap(ROW_R_X, ROW_Y(1));                /* PORT PWM */
+            tap(ROW_R_X, ROW_Y(1));
+            tap(ROW_R_X, ROW_Y(1));
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
             CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), pwm);
             /* A list that was open when the port was taken. */
             s_port_held = false;
-            tap(ROW_R_X, ROW_Y(1));
+            tap(SV_TARGET_X, SV_TARGET_Y);
             s_port_held = true;
             tap(CH_X(1 - target), CH_Y(1 - target));
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
-            /* The hold over, both rows take their taps. */
+            /* The hold over, both take their taps. */
             s_port_held = false;
-            tap(ROW_R_X, ROW_Y(1));
+            CHECK(!servo_screen_target_locked());
+            tap(SV_TARGET_X, SV_TARGET_Y);
             tap(CH_X(1), CH_Y(1));
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
-            tap(ROW_R_X, ROW_Y(2));
+            tap(ROW_R_X, ROW_Y(1));
             CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), 1 - pwm);
             settings_set_hold(NULL);
         }
     }
 }
 
+/* ENC CENTRE on SETTINGS' DUT page, row 2: the AS5600 is switched on
+ * SETUP > INTERFACES, its one home, and the DUT page holds no AS5600 row. */
 TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
 {
     fresh();
     open_settings();
-    tap(TAB_X(3), TAB_Y);                      /* DUT */
-    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 */
-    CHECK(settings_get_bool(SET_ENC_EN));
-    tap(ROW_L_X, ROW_Y(2));
+    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
+    /* Where AS5600 was, nothing: the encoder stays off. */
+    tap(ROW_L_X, ROW_Y(3));
     CHECK(!settings_get_bool(SET_ENC_EN));
-    tap(ROW_L_X, ROW_Y(2));
-    CHECK(settings_get_bool(SET_ENC_EN));
+    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > INTERFACES */
 
     /* No reading yet: the tap sets nothing. */
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
-    tap(ROW_L_X, ROW_Y(3));                    /* ENC CENTRE */
+    tap(ROW_L_X, ROW_Y(2));                    /* ENC CENTRE */
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 0);
 
     /* A live count is the centre. */
     const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
     servo_screen_encoder(&e);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
     /* A sensor that answers and sees no magnet has no live count. */
     const servo_test_enc_t dark = { .valid = false, .raw = 777u,
                                     .taken_ms = 5020u, .no_magnet = true };
     servo_screen_encoder(&dark);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 
     /* A reading that has gone sets nothing; with the encoder off in SETUP
@@ -4001,7 +4008,7 @@ TEST_CASE(the_dut_page_sets_the_encoders_centre_from_the_live_count)
     const servo_test_enc_t e2 = { true, 100u, 0u, 5040u, false, false, false, false };
     servo_screen_encoder(&e2);
     settings_set(SET_ENC_EN, 0.0f);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 2871);
 }
 
@@ -4009,32 +4016,31 @@ TEST_CASE(a_link_that_goes_down_takes_the_encoders_angle_with_it)
 {
     fresh();
     open_settings();
-    tap(TAB_X(3), TAB_Y);                      /* DUT */
-    tap(ROW_L_X, ROW_Y(2));                    /* AS5600 on */
-    CHECK(settings_get_bool(SET_ENC_EN));
+    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
+    settings_set(SET_ENC_EN, 1.0f);            /* SETUP > INTERFACES */
     settings_set(SET_ENC_CENTRE, 1000.0f);
     const servo_test_enc_t e = { true, 2871u, 0u, 5000u, false, false, false, false };
     servo_screen_encoder(&e);
 
     /* The link drops: ENC CENTRE takes nothing from the last count. */
     servo_screen_set_link(false);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
 
     /* A reading queued before the drop and drained after it is not used
      * either. */
     servo_screen_encoder(&e);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
 
     /* The link back and no reading yet: still nothing; a reading that
      * arrives with the link is the live count. */
     servo_screen_set_link(true);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1000);
     const servo_test_enc_t f = { true, 1500u, 0u, 6000u, false, false, false, false };
     servo_screen_encoder(&f);
-    tap(ROW_L_X, ROW_Y(3));
+    tap(ROW_L_X, ROW_Y(2));
     CHECK_EQ(settings_get_int(SET_ENC_CENTRE), 1500);
 }
 
@@ -5536,14 +5542,14 @@ int main(void)
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
-    RUN(the_dut_page_sets_what_the_tester_drives_on_a_bench_at_rest);
+    RUN(the_target_row_sets_what_the_tester_drives_on_a_bench_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
     RUN(the_target_row_stays_in_sight_under_the_settings_and_a_keypad);
     RUN(the_tag_row_carries_the_pulse_range);
     RUN(the_rail_line_names_the_pd_mini_and_a_modelled_supply);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
-    RUN(the_dut_page_leaves_target_and_pulse_while_the_port_is_held);
+    RUN(the_target_row_and_pulse_stay_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);

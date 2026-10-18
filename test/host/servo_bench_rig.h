@@ -29,16 +29,17 @@
 #include "ui_widgets.h"
 
 /*
- * START TEST, mirrored from servo_screen_int.h: under the TEST page's right
- * column, row 6; the box on the left card and its button, from the same
- * header; HV SERVO at the right column's row 2, from
- * servo_settings_panel.c.
+ * START TEST on TEST's AUTOMATIC TEST card and START LIMIT RUN on the card
+ * under it (servo_spots.h); the box on LIVE's card and its button, from
+ * servo_screen_int.h; HV SERVO at the right column's row 2 of the AUTOMATIC
+ * TEST card's settings, from servo_settings_panel.c.
  */
-#define START_X  369
-#define START_Y  323
+#define START_X  SV_START_X
+#define START_Y  SV_START_Y(0)
+#define LIM_START_Y SV_START_Y(1)
 #define BOXBTN_X 91
-#define BOXBTN_Y 124
-#define HV_ROW_Y ROW_Y(2)
+#define BOXBTN_Y 156
+#define HV_ROW_Y LROW_Y(2)
 
 /* A bench for the screen's run: the servo model on the output, SUPPLY's
  * switch and set points as the panel would carry them, and a reading every
@@ -286,11 +287,11 @@ static inline bool both_whole_in(int x0, int y0, int w, int h)
 
 /* Hold the button at START TEST's place for @p secs on the page @p tab,
  * which is opened first. */
-static inline void hold_start_on(int tab, float secs)
+static inline void hold_start_on(int card, float secs)
 {
-    open_settings();
-    tap(TAB_X(tab), TAB_Y);
-    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
+    open_test();
+    const int y = SV_START_Y(card);
+    ev(START_X, y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < (int)(secs * 50.0f + 0.5f); ++i) {
         if (bench.ina) {
             /* The INA3221's windows go on under the finger, as on the
@@ -303,13 +304,14 @@ static inline void hold_start_on(int tab, float secs)
         servo_screen_clock(bench.now);
         scr->tick(0.02f);
     }
-    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+    ev(START_X, y, TOUCH_EVENT_UP, 1);
 }
 
-/* Hold START TEST for @p secs on the TEST page, which is opened first. */
+/* Hold START TEST for @p secs on TEST's AUTOMATIC TEST card, TEST shown
+ * first. */
 static inline void hold_start(float secs)
 {
-    hold_start_on(1, secs);
+    hold_start_on(0, secs);
 }
 
 /* Short runs: two movements a step. */

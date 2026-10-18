@@ -6,13 +6,25 @@ order: 20
 
 # Servo
 
-SERVO steuert ein Servo, misst seinen Strom auf der Servoschiene, führt einen automatischen Test über mehrere Versorgungsspannungen aus und sucht die Weggrenzen des eingebauten Servos. Der Bildschirm öffnet über die Kachel SERVO im [Menü](overview.md). Das Zifferblatt belegt die linke Karte; die Messwerte, die Netzteilzeile, TEMPO, das Ziel und die Tasten belegen die rechte.
+SERVO steuert ein Servo, misst seinen Strom auf der Servoschiene, führt einen automatischen Test über mehrere Versorgungsspannungen aus und sucht die Weggrenzen des eingebauten Servos. Der Bildschirm öffnet über die Kachel SERVO im [Menü](overview.md), auf LIVE.
+
+## Die Werkbank
+
+Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST und OPTIONEN. Ein Wechsel des Reiters ist keine Ebene: das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den Optionen eines Laufs eine Ebene zurück zu TEST. Jede Aufgabe behält ihre Seite und Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
+
+| Aufgabe | Linke Karte |
+|---|---|
+| LIVE | das Zifferblatt, darüber der Kasten eines Laufs |
+| TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF, jede mit ihren OPTIONEN, einer Zusammenfassung, ihrem Start-Halten, dem letzten Ergebnis und seiner Datei; die Grenzen von SUPPLY, nur lesbar |
+| OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING ([Servo-Optionen](servo-settings.md)) |
+
+Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwerte, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte, öffnet den [Servo-Programmierer](servo-programmer.md). Der Drehknopf bewegt das Horn nur auf LIVE.
 
 ## In Ruhe
 
 ![SERVO bei SAFE](view:servo)
 
-Solange der Prüfstand SAFE ist, ist das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST ARM`. Das Zifferblatt nimmt keine Position an. Der Koprozessor schreibt auf jeden Servo-PWM-Pin (Pulsweitenmodulation) einen Puls der Länge null.
+Solange der Prüfstand SAFE ist, ist das Horn gedimmt gezeichnet, und die linke Karte von LIVE zeigt `ZUERST ARM`. Das Zifferblatt nimmt keine Position an. Der Koprozessor schreibt auf jeden Servo-PWM-Pin (Pulsweitenmodulation) einen Puls der Länge null.
 
 Die rechte Karte, von oben:
 
@@ -25,14 +37,14 @@ Die rechte Karte, von oben:
 | Messzeile und Grafik | Spannung, Strom und Leistung der Schiene, aufgetragen über die letzten 13 s |
 | SOLL | Spannung und Strombegrenzung des Netzteils und sein Ausgangsschalter |
 | TEMPO | die Rate, mit der der Prüfstand den Ausgang bewegen darf; 100 % gibt den Befehl unverändert weiter |
-| ZIEL | die Pins, die der Tester treibt: `GP2`, `PROG-PORT GP13` oder eine Warnung |
+| ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT GP13` oder eine Warnung; ein Tipp wählt es ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
 
 ## ARMED
 
 ![SERVO bei ARMED SERVO](view:servo-armed)
 
 1. ARM 2 s halten. Das Band zeigt dann ARMED SERVO, und die Taste lautet DISARM.
-2. Irgendwo auf dem Bogen ziehen, um eine Position zu befehlen. Der volle Arm ist die gemessene Position, der blasse Arm die befohlene.
+2. Auf LIVE irgendwo auf dem Bogen ziehen, um eine Position zu befehlen. Der volle Arm ist die gemessene Position, der blasse Arm die befohlene.
 3. Das Abheben des Fingers gibt nicht frei: Der Bildschirm wiederholt die letzte Position, das Servo bleibt, wo es hingestellt wurde.
 4. DISARM tippen, STOP drücken oder den Bildschirm verlassen, um auf SAFE zu schalten.
 
@@ -84,41 +96,46 @@ Standardservos sind für 4,8 bis 6,0 V ausgelegt. Eine Spannung, die von 6,0 V o
 
 ## SWEEP und PAUSE
 
-SWEEP bewegt das Servo entlang der KURVE der Seite TEST (Rechteck, Sinus oder Dreieck) mit deren TEMPO, 0,05 bis 5 Hz, über den BEREICH, 10 bis 100 % des Wegs. Der Koprozessor taktet die Kurve; das Timing des Links formt sie nicht. Solange ein Sweep läuft, lautet die Taste PAUSE. Ein Tipp hält das Servo, wo es steht, und die Taste lautet PAUSIERT; ein Tipp auf PAUSIERT setzt den Sweep von dieser Stelle fort.
+SWEEP bewegt das Servo entlang der KURVE von OPTIONEN > SWEEP (Rechteck, Sinus oder Dreieck) mit deren TEMPO, 0,05 bis 5 Hz, über den BEREICH, 10 bis 100 % des Wegs. Der Koprozessor taktet die Kurve; das Timing des Links formt sie nicht. Solange ein Sweep läuft, lautet die Taste PAUSE. Ein Tipp hält das Servo, wo es steht, und die Taste lautet PAUSIERT; ein Tipp auf PAUSIERT setzt den Sweep von dieser Stelle fort.
 
 ![Ein angehaltener Sweep](view:servo-paused)
 
 ![TEMPO BEGRENZT DEN SWEEP](view:servo-sweep)
 
-`TEMPO BEGRENZT DEN SWEEP` ersetzt in der Warnfarbe die Beschriftung von TEMPO, solange TEMPO langsamer ist als die schnellste Änderung, die die Kurve verlangt. Die Kurve läuft dann als Rampen. TEMPO erhöhen oder TEMPO bzw. BEREICH der Seite TEST senken. Mit den Vorgaben der Seite TEST (Sinus, 0,5 Hz, BEREICH 80 %) und WEG 90 deg je Richtung verschwindet die Warnung bei TEMPO 63 %.
+`TEMPO BEGRENZT DEN SWEEP` ersetzt in der Warnfarbe die Beschriftung von TEMPO, solange TEMPO langsamer ist als die schnellste Änderung, die die Kurve verlangt. Die Kurve läuft dann als Rampen. TEMPO erhöhen oder TEMPO bzw. BEREICH von OPTIONEN > SWEEP senken. Mit den Vorgaben der Seite SWEEP (Sinus, 0,5 Hz, BEREICH 80 %) und WEG 90 deg je Richtung verschwindet die Warnung bei TEMPO 63 %.
 
 Ein Finger auf dem Zifferblatt, ZENTRIEREN, FREIGEBEN, STOP, ein Schalten auf SAFE und das Verlassen des Bildschirms beenden einen Sweep.
 
 ## Der automatische Test
 
-TEST STARTEN auf der Seite TEST führt das Servo durch die dort gewählten Versorgungsspannungen. Auf jeder Stufe misst er den Strom in Ruhe, in Bewegung und beim Halten, misst die Stellzeit und sucht die Spannung, bei der das Servo stehen bleibt. TEST STARTEN ist ein Halten von 2 s. Es braucht den Prüfstand bei ARMED und ein Netzteil, das antwortet; sonst nennt die Zeile darunter den Grund: `ZUERST ARM`, `KEINE STUFE GEWÄHLT`, `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE ÜBER DEN OBERGRENZEN` oder `LETZTER BERICHT SCHREIBT NOCH`.
+TEST STARTEN auf der Karte AUTOMATISCHER TEST von TEST führt das Servo durch die in den Optionen der Karte gewählten Versorgungsspannungen. Auf jeder Stufe misst er den Strom in Ruhe, in Bewegung und beim Halten, misst die Stellzeit und sucht die Spannung, bei der das Servo stehen bleibt. TEST STARTEN ist ein Halten von 2 s. Es braucht den Prüfstand bei ARMED und ein Netzteil, das antwortet; sonst nennt die Zustandszeile der Karte den Grund: `ZUERST ARM`, `KEINE STUFE GEWÄHLT`, `NETZTEIL ANTWORTET NICHT`, `BEREICH ZU KLEIN`, `STUFE ÜBER DEN OBERGRENZEN` oder `LETZTER BERICHT SCHREIBT NOCH`.
+
+![TEST mit seinen zwei Laufkarten](view:servo-test)
+
+Die Zusammenfassung der Karte nennt die Stufen und die Länge jeder Stufe, `4.8 6.0 V BROWN-OUT, JE 60 s`. Unter TEST STARTEN folgen die Zustandszeile, dann das letzte Ergebnis und seine Dateien, `ZULETZT: BESTANDEN SERVO004.CSV + .TXT`.
 
 ![Ein Testlauf](view:servo-run)
 
-Die Optionen schließen beim Start des Laufs. Stufe und Phase stehen oben auf der linken Karte, das Messgerät neben TEST BEENDEN: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
+TEST bleibt beim Start des Laufs zu sehen, und die Zustandszeile der Karte nennt die Stufe. LIVE zeigt Stufe und Phase oben auf der linken Karte, das Messgerät neben TEST BEENDEN: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Der Lauf endet vorzeitig, mit abgeschaltetem Ausgang und freigegebenem Servo, bei TEST BEENDEN, STOP, einem Schalten auf SAFE, einem verlorenen Link, dem Verlassen des Bildschirms, einem Finger auf dem Zifferblatt, ZENTRIEREN, SWEEP, FREIGEBEN, einem Tipp auf einen Sollwert oder einer Änderung an den Servo-Optionen. Ein Lauf am INA3221 endet auch, wenn der INA3221 nicht mehr das Messgerät ist oder 200 ms lang (4 Fenster zu 50 ms) kein Fenster mit Strom und Spannung kommt: `0.2 s kein INA3221-Fenster`.
 
 ![Ein Ergebnis](view:servo-result)
 ![Ein Ergebnis, vom INA3221 gemessen](view:servo-result-ina)
 
-Das Ergebnis bleibt bis SCHLIESSEN: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `SERVOnnn.CSV` und `+ .TXT` für den Bericht.
+Das Ergebnis bleibt bis SCHLIESSEN im Kasten auf LIVE und bis zum nächsten Lauf in der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN und warum, die längste Stellzeit, der höchste Haltestrom und die Dateien, die die Karte aufgenommen hat, `SERVOnnn.CSV` und `+ .TXT` für den Bericht.
 
 ## Der Endlagenlauf
 
-Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläuft. Danach kann er LEFT ANGLE und RIGHT ANGLE des Servos senken, sodass das Servo vor der Stelle anhält, an der es anläuft. Er liegt auf der [Seite GRENZEN](servo-settings.md#grenzen) der Optionen.
+Der Endlagenlauf sucht, wo das eingebaute Servo an jedem Ende seines Wegs anläuft. Danach kann er LEFT ANGLE und RIGHT ANGLE des Servos senken, sodass das Servo vor der Stelle anhält, an der es anläuft. Er ist die Karte ENDLAGENLAUF auf TEST; OPTIONEN auf der Karte öffnet [seine Optionen](servo-settings.md#die-optionen-des-endlagenlaufs).
 
 ![Der Endlagenlauf, bereit](view:servo-limrun-ready)
 
-1. ENDLAGENLAUF antippen und NUR SUCHE oder SUCHEN + PROGRAMMIEREN wählen.
-2. Mit PWM-ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
-3. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
-4. Die Optionen schließen. Der Kasten auf der linken Karte zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
+1. OPTIONEN auf der Karte antippen, dann ENDLAGENLAUF und NUR SUCHE oder SUCHEN + PROGRAMMIEREN wählen.
+2. Mit ZIEL auf PROG-PORT SERVOPULSE antippen und BEHALTEN oder 1000-2000 wählen. Es beginnt bei BEHALTEN.
+3. Das Home-Tag antippen, zurück zu den Karten.
+4. ENDLAGENLAUF STARTEN 2 s halten, während der Prüfstand ARMED ist. Ein Tipp oder ein kürzeres Halten startet nichts.
+5. TEST bleibt zu sehen. Der Kasten auf der linken Karte von LIVE zeigt die Phase, die Seite und den Puls sowie den Ausgang, den er treibt.
 
-Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG PORT GP13, STROM INA3221 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
+Die Zeile unter der Taste nennt die ganze Zeit Ausgang und Messgerät: `AUSGANG PROG-PORT GP13, STROM INA3221 CH1` oder `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Die Zeile ZIEL bleibt ebenfalls sichtbar.
 
 Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät der Servoschiene bleibt ENDLAGENLAUF STARTEN grau, und die Zeile nennt den Grund:
 
@@ -129,8 +146,8 @@ Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät d
 | `INA3221 NICHT ERREICHBAR` | kein Link, oder der INA3221 antwortet nicht |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät |
 | `SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster hat keine Schienenspannung oder weniger als 3,0 V: ein ausgeschalteter Ausgang liest 0 V |
-| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | PWM-ZIEL ist PROG-PORT und PORT-PWM ist aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PWM-ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
+| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL ist PROG-PORT und PORT-PWM ist aus |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL sind die Ausgänge des Prüfstands, und kein Ausgang ist als SERVO PWM gebunden, oder die Bindung ist noch nicht gelesen |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | der Pulsbereich enthält PULS MITTE nicht |
 | `LETZTER BERICHT SCHREIBT NOCH` | ein Test oder ein Lauf ist im Gang, oder sein Bericht geht noch auf die Karte |
 
@@ -138,7 +155,7 @@ Der Lauf liest nur INA3221 CH1. Mit dem PD mini oder dem Modell als Messgerät d
 
 Die Suche geht von der Mitte nach außen, zuerst die untere Seite, 10 us je Schritt. Jede Stellung dauert 250 ms: 120 ms Einschwingen, dann das Mittel der nächsten Fenster. Ein Ende läuft an, wenn der Strom über dem 1,8-Fachen des freien Stroms liegt und ihn um mindestens 0,15 A übersteigt. Der Endpunkt wird 25 us vor der Stellung gemeldet, an der das Servo anläuft. PULS MIN und PULS MAX des Prüfstands bleiben unverändert.
 
-| PWM-ZIEL | Suche |
+| ZIEL | Suche |
 |---|---|
 | ein SERVO-PWM-Pin | von PULS MITTE bis PULS MIN und PULS MAX; nichts wird gelesen oder geschrieben |
 | PROG-PORT | zuerst eine Lesesitzung, dann von NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
@@ -157,7 +174,7 @@ SERVOPULSE auf 1000-2000 schreibt in der Lesesitzung PULSE LOWER 1000,0 us und P
 
 ### LEFT ANGLE und RIGHT ANGLE programmieren
 
-SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: PWM-ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und die dritte Zeile nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die dritte Zeile nennt die Bedingung.
+SUCHEN + PROGRAMMIEREN braucht ein KST- oder Chaservo-Servo am Programmierport: ZIEL auf PROG-PORT, den Port in PWM und 4,8 V oder mehr. Mit einem PD mini muss dessen Ausgang eingeschaltet sein, und sein Sollwert zählt; ohne ihn zählt die Servoschiene im letzten Fenster des INA3221. An den Ausgängen des Prüfstands zeigt ENDLAGENLAUF NUR SUCHE, und der Hinweis in den Optionen nennt den Grund. Am PROG-PORT beginnt jeder Lauf mit einer Lesesitzung: ein Port nicht in PWM, ein ausgeschalteter Ausgang des PD mini oder eine Versorgung unter 4,8 V hält die Schaltfläche auch für NUR SUCHE grau, und die Zustandszeile der Karte nennt die Bedingung.
 
 ![Der Endlagenlauf beim Programmieren](view:servo-limrun)
 
@@ -203,7 +220,7 @@ Nach einem Schreiben behält das Servo die zuletzt geschriebenen Werte. Der Kast
 
 ### Das Ergebnis
 
-Der Kasten bleibt bis SCHLIESSEN. Er zeigt das Urteil, den Grund oder die Werte und den Dateinamen des Berichts.
+Der Kasten auf LIVE bleibt bis SCHLIESSEN, die Zeile ZULETZT der Karte bis zum nächsten Lauf. Der Kasten zeigt das Urteil, den Grund oder die Werte und den Dateinamen des Berichts.
 
 | Urteil | Bedeutung |
 |---|---|
@@ -226,6 +243,6 @@ Der Bericht ist eine eigene `SERVOnnn.TXT`, geschrieben unabhängig von BERICHT.
 
 ## Verwandte Seiten
 
-- [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Test, die Grenzen und das Ziel.
+- [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Sweep, die Optionen jedes Laufs und das Ziel.
 - [Servo-Programmierer](servo-programmer.md): PROGRAMMIEREN, für KST- und Chaservo-Servos.
 - [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini, der INA3221 und der AS5600.

@@ -1,11 +1,13 @@
 /*
  * The SERVO screen's private seam between servo_screen.c, the screen,
- * servo_settings_panel.c, its settings overlay, servo_test_panel.c, its
- * automatic test, and servo_limit_panel.c, its limit run: the layout they
- * draw on, the profiles, the overlay's pages, rows and presses, the state
- * they read and write, the functions each calls of the others, and the
- * small helpers they inline.  Nothing outside shared/ui includes this
- * header; the screen's interface is servo_screen.h.
+ * servo_workbench.c, its task strip, TEST page and TARGET row
+ * (servo_workbench_int.h), servo_settings_panel.c, its settings pages and
+ * the panels they open, servo_test_panel.c, its automatic test, and
+ * servo_limit_panel.c, its limit run: the layout they draw on, the
+ * profiles, the pages' rows and presses, the state they read and write,
+ * the functions each calls of the others, and the small helpers they
+ * inline.  Nothing outside shared/ui includes this header; the screen's
+ * interface is servo_screen.h.
  *
  * The state is one object, `s`, defined in servo_screen.c, so its .bss
  * stays where psram_bss.lf puts servo_screen's.  The helpers below are
@@ -35,8 +37,10 @@
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_textkey.h"
+#include "ui_target_row.h"
 #include "ui_value_gate.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
 
 #define W 800
 #define H (480 - UI_BAND_H)
@@ -45,6 +49,10 @@
 #define LCARD_W 488
 #define RCARD_X (PAD + LCARD_W + 8)
 #define RCARD_W (W - RCARD_X - PAD)
+/* Both cards start under the task strip (ui_workbench.h): the page area
+ * on the left, the output card, the same on every task, on the right. */
+#define CARD_Y  UI_WB_PAGE_Y
+#define CARD_H  (H - CARD_Y - PAD)
 
 /*
  * The right card, top to bottom: the readings, the type and frame rate in
@@ -53,8 +61,7 @@
  */
 #define RC_X      (RCARD_X + 12)
 #define RC_W      (RCARD_W - 24)
-#define SETB_W    108
-/* PROGRAM: 13 cells of its label, as wide as SETTINGS. */
+/* PROGRAM: 13 cells of its label, in the strip's row over the right card. */
 #define PROGB_W   108
 /* The CURRENT row, whose value is repainted by itself. */
 #define CUR_Y     92
@@ -74,9 +81,11 @@
 #define SUP_VAL_X (RC_X + 32)
 #define SUP_VAL_W 66
 #define SUP_OUT_X (SUP_VAL_X + 2 * (SUP_VAL_W + 4))
-/* The row naming what the tester drives, between SPEED's slider and
- * CENTRE. */
-#define TARGET_Y  322
+/* The TARGET row, what the tester drives and the control that picks it,
+ * between SPEED's slider, whose thumb and its shadow paint down to y 324,
+ * and CENTRE, from y 350. */
+#define TARGET_Y  326
+#define TARGET_H  22
 /* The top of a standard servo's rating.  A set point raised past it is
  * applied only after the HV warning is held for two seconds. */
 #define STD_SERVO_V_MAX 6.0f
@@ -84,20 +93,27 @@ _Static_assert(KST_PANEL_STD_MV == 6000,
                "the programmer's standard-servo ceiling is STD_SERVO_V_MAX");
 
 /*
- * The overlay: the settings and the keypad, keyboard, list and warning they
- * open all cover the left card.  The right card -- ARM, CENTRE, RELEASE and
- * the readings -- stays where it is and works.
+ * The panels: the keypad, keyboard, list, warnings, question and the servo
+ * programmer cover the whole left column, the strip's tabs with it, so a
+ * panel is answered before the task changes.  The right card -- ARM,
+ * CENTRE, RELEASE and the readings -- stays where it is and works.
  */
 #define OV_X      PAD
 #define OV_Y      PAD
 #define OV_W      LCARD_W
 #define OV_H      (H - 2 * PAD)
-#define OV_TAB_Y  (OV_Y + 8)
+/*
+ * The pages of rows, in the page area under the strip: SETTINGS' pages
+ * under their own tabs (OUTPUT, SWEEP, DUT), and a run's settings, one
+ * level down from its card on TEST, under the run's name.
+ */
+#define OV_TAB_Y  (CARD_Y + 8)
 #define OV_TAB_H  26
 #define OV_TAB_W  320
-#define OV_ROW0   (OV_Y + 48)
-#define OV_PITCH  42
-#define OV_ROW_H  34
+#define OV_ROW0   (CARD_Y + 44)
+#define RL_ROW0   (CARD_Y + 30)
+#define OV_PITCH  40
+#define OV_ROW_H  32
 #define OV_COL_W  ((OV_W - 30) / 2)
 #define OV_VAL_W  100
 #define OV_NOTE_Y (OV_ROW0 + 5 * OV_PITCH + 6)
@@ -130,8 +146,13 @@ typedef struct {
 #define TYPE_COUNT 5
 extern const servo_type_t k_types[TYPE_COUNT];
 
-/* The overlay's pages. */
-enum { PG_OUTPUT = 0, PG_TEST, PG_LIMITS, PG_DUT, PG_COUNT };
+/* SETTINGS' pages, under its own tabs, and the two runs' settings, each
+ * opened from its card's SETTINGS on TEST. */
+enum { PG_OUTPUT = 0, PG_SWEEP, PG_DUT, PG_COUNT,
+       PG_AUTO = PG_COUNT, PG_LIMRUN };
+
+/* Which run's settings TEST shows, one level down from its card. */
+enum { RL_NONE = 0, RL_AUTO, RL_LIMIT };
 
 /* What a settings row edits. */
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTRE, R_MAX, R_TRIM, R_TRAVEL,
@@ -147,11 +168,11 @@ typedef struct {
     bool         wide;        /* the value takes both columns' width    */
 } ov_row_t;
 
-/* What a press is on, in the overlay and the panels it opens. */
-enum { OP_NONE = 0, OP_TAB, OP_CLOSE, OP_ROW, OP_TRIM_DN, OP_TRIM_UP,
-       OP_KEYPAD, OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY,
-       OP_WARN_CANCEL, OP_SETTINGS, OP_SUP_V, OP_SUP_I, OP_ASK_APPLY,
-       OP_ASK_CANCEL, OP_TEST_START, OP_PROGRAM, OP_LIM_START };
+/* What a press is on, in the pages and the panels they open. */
+enum { OP_NONE = 0, OP_TAB, OP_ROW, OP_TRIM_DN, OP_TRIM_UP, OP_KEYPAD,
+       OP_TEXT, OP_CHOICE, OP_CHOICE_CANCEL, OP_WARN_APPLY, OP_WARN_CANCEL,
+       OP_SUP_V, OP_SUP_I, OP_ASK_APPLY, OP_ASK_CANCEL, OP_TEST_START,
+       OP_PROGRAM, OP_LIM_START, OP_RUN_SET };
 
 /* What the list chooses, and what the keypad types. */
 enum { CH_NONE = 0, CH_TYPE, CH_RATE, CH_ENUM };
@@ -192,7 +213,7 @@ typedef struct {
     int         speed_pct;
 } start_rec_t;
 
-/* The screen's state, the overlay's with it. */
+/* The screen's state, the pages' with it. */
 typedef struct {
     /* The profile in force, for this session only: STANDARD PWM at 50 Hz
      * at every restart. */
@@ -265,7 +286,7 @@ typedef struct {
     uint32_t   arm_rev;
     uint32_t   drawn_arm[2];
 
-    gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn, set_btn;
+    gfx_rect_t arm_btn, centre_btn, sweep_btn, release_btn;
     gfx_rect_t prog_btn;         /* PROGRAM: the servo programmer      */
     bool       kst_shown;        /* the programmer had the left card    */
     bool       kst_held;         /* and the port: ARM takes no press    */
@@ -320,7 +341,6 @@ typedef struct {
     float      sup_v, sup_i;  /**< the set points as last seen           */
     uint32_t   sup_rev;
     uint32_t   drawn_sup[2];
-    bool       kp_alone;      /**< the keypad opened the overlay itself  */
     /* A set point waiting for APPLY: typed while the output is live, or a
      * voltage raised past a standard servo's rating (hv), which takes the
      * two-second hold the profile warning takes.  OUTPUT ON with a set
@@ -341,8 +361,23 @@ typedef struct {
     /* Stops seen (servo_screen_cancel_arm()), for the question above. */
     uint32_t stops;
 
-    /* The overlay and what it opens. */
-    bool         ov_open;
+    /*
+     * The task strip (ui_workbench.h): LIVE, TEST, SETTINGS.  A tile opens
+     * LIVE; each task keeps its own state for the session: SETTINGS its
+     * page (tabs), TEST the run whose settings are open (run_list).  The
+     * strip's own count of changes, so a buffer repaints it when it moved.
+     */
+    ui_wb_strip_t wb;
+    uint8_t      run_list;      /* RL_*: a run's settings open on TEST    */
+    uint32_t     strip_rev;
+    uint32_t     drawn_strip[2];
+    /* Whether a panel or the programmer covered the left column when the
+     * buffer was last drawn: a change repaints it whole. */
+    bool         drawn_cover[2];
+    /* The TARGET row on the right card: what the tester drives, and the
+     * control that opens the choice of target. */
+    ui_target_row_t trow;
+    /* SETTINGS' pages and the panels they open. */
     ui_tabs_t    tabs;
     int          ov_pressed;
     int          ov_row;
@@ -524,8 +559,8 @@ typedef struct {
      * The limit run (servo_limrun.h): the limit search on the INA3221's
      * windows, and with LIMIT RUN at SEARCH+PROG, LEFT ANGLE and RIGHT
      * ANGLE of a KST or Chaservo servo on the programming port lowered.
-     * Its START is the LIMITS page's, held 2 s; its box is the test's
-     * place on the left card.  One of the two runs at a time.
+     * Its START is the LIMIT RUN card's, held 2 s; its box is the test's
+     * place on LIVE's card.  One of the two runs at a time.
      */
     servo_limrun_t lim;
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
@@ -567,7 +602,7 @@ typedef struct {
 /* The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
-/* --- servo_screen.c's side, which the overlay and the two panels call ---- */
+/* --- servo_screen.c's side, which the other four files call -------------- */
 
 /* The profile in force (apply_profile()) and the one asked for, which
  * opens the warning first where it can destroy a servo (ask_profile()). */
@@ -599,9 +634,9 @@ void value_edge(ui_value_edge_t edge, servo_test_abort_t why);
 
 /* --- servo_settings_panel.c's side, which the screen calls --------------- */
 
-/* Every panel the overlay opens shut: the keypad, the keyboard, the list,
- * the warning and the question (close_panels()); and the overlay itself
- * where a set point's keypad opened it (close_alone()). */
+/* Every panel shut: the keypad, the keyboard, the list, the warning and the
+ * question (close_panels()); and, once a set point's keypad is done, the
+ * page under them repainted (close_alone()). */
 static inline void close_panels(void)
 {
     ui_keypad_close(&s.kp);
@@ -616,32 +651,30 @@ static inline void close_panels(void)
     ui_hold_reset(&s.ask.hold);
 }
 
-/* The overlay goes when the keypad that opened it for a set point is done:
- * the settings were not open, so there is nothing to go back to. */
+/* A set point's keypad, or the question after it, is done: the task's page
+ * shows again under the panel that went. */
 static inline void close_alone(void)
 {
-    if (s.kp_alone) {
-        s.kp_alone = false;
-        s.ov_open  = false;
-        close_panels();
-        servo_invalidate();
-    }
+    close_panels();
+    servo_invalidate();
 }
 
 /* OUTPUT ON with a set point past a standard servo's rating: the HV
  * warning.  The question or the warning answered: what it was about. */
 void ask_hv_on(void);
 void ask_apply(void);
-/* A press in the overlay: its DOWN, and its moves and its release. */
+/* A press on a page or a panel: its DOWN, and its moves and its release. */
 void ov_down(const touch_event_t *evt);
 void ov_rest(const touch_event_t *evt);
-/* The overlay, and the parts of it a frame repaints by themselves. */
+/* The panel open over the left column, and the parts a frame repaints by
+ * themselves. */
 void draw_overlay(gfx_canvas_t *c);
 void draw_save_line(gfx_canvas_t *c);
 void draw_warn_apply(gfx_canvas_t *c);
 void draw_ask_apply(gfx_canvas_t *c);
 
-/* --- servo_test_panel.c's side, which the screen and the overlay call ---- */
+
+/* --- servo_test_panel.c's side, which the other files call -------------- */
 
 /* The restore's stages: the OFF the run's end posted not yet taken; taken,
  * waiting for the next frame; waiting for a sample taken since; a sample
@@ -656,6 +689,8 @@ void test_end_now(servo_test_abort_t why);
 void ask_hv_test(void);
 void draw_test_start(gfx_canvas_t *c);
 void draw_test_lines(gfx_canvas_t *c);
+/* A STALL AT no reading can pass, at (@p x, @p y), or nothing. */
+void draw_test_stall(gfx_canvas_t *c, int x, int y);
 
 /* The run against the meter in force (test_meter_follow()); every frame
  * (test_tick()) and whichever screen is up (test_restore_service()); what
@@ -695,13 +730,14 @@ void lim_begin(void);
 void lim_tick(void);
 void lim_leave_follow(void);
 void lim_meter_follow(servo_source_id_t id, uint32_t changes);
-/* What the box and the LIMITS page show of the run, as one number. */
+/* What the box and the LIMIT RUN card show of the run, as one number. */
 uint32_t lim_signature(void);
-/* The run's box on the left card; START LIMIT RUN and the lines under it
- * on the LIMITS page. */
+/* The run's box on LIVE's card; START LIMIT RUN and its card's lines on
+ * TEST; the mode's note on the run's settings at (@p x, @p y). */
 void draw_lim_box(gfx_canvas_t *c);
 void draw_lim_start(gfx_canvas_t *c);
 void draw_lim_lines(gfx_canvas_t *c);
+void draw_lim_mode_note(gfx_canvas_t *c, int x, int y);
 
 /* --- helpers the four files inline --------------------------------------- */
 
@@ -812,14 +848,6 @@ static inline gfx_rect_t warn_apply_rect(void)
                          240, 56 };
 }
 
-/* START TEST, under the TEST page's right column. */
-static inline gfx_rect_t test_start_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + 20 + OV_COL_W),
-                         (int16_t)(OV_ROW0 + 6 * OV_PITCH), (int16_t)OV_COL_W,
-                         OV_ROW_H };
-}
-
 /* The automatic test's and the limit run's: the clock they and the
  * supply's readings share, the abort for what took the INA3221 off the
  * rail, and the box on the left card both draw in. */
@@ -854,7 +882,7 @@ static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
 #define BOX_CELLS 31
 static inline gfx_rect_t test_box_rect(void)
 {
-    return (gfx_rect_t){ PAD + 10, PAD + 10, 270, 132 };
+    return (gfx_rect_t){ PAD + 10, CARD_Y + 10, 270, 132 };
 }
 
 static inline gfx_rect_t test_btn_rect(void)
@@ -967,3 +995,6 @@ static inline bool bench_arming(void)
 {
     return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;
 }
+
+/* The workbench's own: the strip, the TARGET row, TEST's run cards. */
+#include "servo_workbench_int.h"

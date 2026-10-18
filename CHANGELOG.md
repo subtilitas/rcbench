@@ -24,8 +24,8 @@ history is in git.
   volume label, read once per mount through `f_getlabel`
   (`CONFIG_FATFS_USE_LABEL=y`). A card without a label shows the name the
   card reports of itself, as before.
-- The SERVO screen runs the installed-limit search: START LIMIT RUN on the
-  LIMITS page, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
+- The SERVO screen runs the installed-limit search: START LIMIT RUN on
+  TEST's LIMIT RUN card, a 2 s hold while ARMED. On a SERVO PWM pin it searches from
   PULSE CENTRE to PULSE MIN and to PULSE MAX; on the programming port it
   reads the KST or Chaservo servo first, in a session of the programmer,
   and searches from the servo's NEUTRAL to its own PULSE LOWER and PULSE
@@ -46,7 +46,7 @@ history is in git.
   voltage in a window`). A window without a current reading is not counted
   as a window. The supply's set points and output are held as at the start
   in every phase but the programmer's sessions.
-- SERVO PULSES on the LIMITS page, KEEP or 1000-2000, for a servo on the
+- SERVO PULSES in the LIMIT RUN card's settings, KEEP or 1000-2000, for a servo on the
   programming port: 1000-2000 writes the servo's PULSE LOWER and PULSE
   UPPER to 1000.0 and 2000.0 us in the run's read session, before anything
   is driven, and reads them back. NEUTRAL is not written. It works with
@@ -189,6 +189,26 @@ history is in git.
   wording, and `docs/Language.md` lists the German terms that change, among
   them VERBINDUNG for the link, ZUORDNUNG for a binding, GAS for the
   throttle and FIRMWARE for an image.
+- SERVO is a workbench. A strip under the band holds LIVE, TEST and
+  SETTINGS (German `LIVE`, `TEST`, `OPTIONEN`), 112 px a tab; the tile
+  opens LIVE, each task keeps its page for the session, and a tab switch is
+  no navigation level. LIVE holds the dial. TEST holds two run cards,
+  AUTOMATIC TEST and LIMIT RUN, each with a summary line, its start hold,
+  the last result and its file; the card's SETTINGS opens the run's own
+  settings one level down, and the home tag closes them. SETTINGS holds the
+  pages OUTPUT, SWEEP (CURVE, SPEED, RANGE) and DUT (NAME, REPORT, ENC
+  CENTRE, PORT PWM).
+- SERVO's TARGET row on the output card reads `protocol pins`
+  (`SERVO PWM GP2 GP4`, `PROG PORT GP13`) and is the control that picks
+  the target: a tap opens OUTPUTS / PROG PORT. It is locked while ARMED,
+  during a sweep or a run, and while the servo programmer holds the port.
+  PWM TARGET leaves the DUT page, and AS5600 leaves it for SETUP >
+  INTERFACES alone. PROGRAM moves to the strip's row over the right card.
+- SUPPLY's voltage and current caps are no longer set on SERVO. TEST and
+  DUT show them read-only, `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS`.
+- The limit run's report and box name the output with its protocol,
+  `SERVO PWM GP2`. The automatic test's report heads its limit section
+  `AGAINST THE PASS/FAIL LIMITS`.
 
 ### Fixed
 
