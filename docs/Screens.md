@@ -1363,6 +1363,22 @@ from the PD mini TX and PD mini RX settings. With either pin not set the
 header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
 
+SUPPLY is a workbench: a strip of tasks at the top, LIVE and SETTINGS
+(German `LIVE`, `OPTIONEN`), each 112 x 24 px, and a page under it. The
+menu's tile always opens LIVE. A tap on a tab switches the task; a switch
+is no navigation level and leaves LIVE's view, PLOT or TABLE, as it was.
+
+| Task | The left column, 546 px |
+| --- | --- |
+| LIVE | the plot or the table over the set points |
+| SETTINGS | the 9 supply settings under LIMITS, AFTER RESTART, TRIPS and CONFIRM WHILE ON ([Supply settings](#supply-settings)) |
+
+The header is the row right of the strip: the module and its pins, ONLINE
+or NOT ANSWERING, and at the right end the range the set points may take,
+for example `3.3-8.4 V  0.50-5.00 A`. It stays in sight on both tasks and
+under the keypad and the question. The rail on the right, the readings,
+OUTPUT ON and RESET PEAKS, is the same on both tasks.
+
 The layout is the one MOTOR & ESC uses. The plot shows voltage, current and
 power over the last 27 s. The rail shows the readings, the run's lowest
 voltage and its highest current and power. MODE says which set point the
@@ -1433,7 +1449,7 @@ servo programmer holds its port, until the port lets go (see SERVO). A servo
 is powered from SERVO and an ESC from ESC STICK. MOTOR & ESC switches no
 supply; an ESC run there is powered from its own source. An output another
 screen switched on stays as it is when SUPPLY is left. The keypad, the
-question and the other overlays of SUPPLY are no leave. The link-lost screen,
+question, the other overlays of SUPPLY and a switch of task are no leave. The link-lost screen,
 which has no STOP, does not open while the output is on.
 
 **The home tag climbs one level at a time.** The output stays as it is
@@ -1442,9 +1458,11 @@ while it climbs:
 | From | The home tag leads to |
 | --- | --- |
 | the question | what is under it; the change is dropped, as CANCEL drops it |
-| a keypad | what is under it, SUPPLY or SETTINGS; the value is not changed |
-| SETTINGS | SUPPLY |
-| SUPPLY | the menu; an output SUPPLY switched on goes off |
+| a keypad | what is under it, LIVE or SETTINGS; the value is not changed |
+| LIVE or SETTINGS | the menu; an output SUPPLY switched on goes off |
+
+The tasks are siblings, not levels, as on MOTOR & ESC and SERVO: the home
+tag never climbs from SETTINGS to LIVE.
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
 the panel owes it, and the IOmcu switches the output off itself when
@@ -1518,16 +1536,19 @@ point is not lowered to follow a falling input voltage. The rule is chosen witho
 a bench measurement: whether a live module goes to ERR when its input voltage
 sags is not measured, so the rule may cut a run that would have survived.
 
-OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the keypad,
-the question and SETTINGS. One finger at a time: while one holds a control, a
+OUTPUT ON and OFF, RESET PEAKS and the readings stay live on SETTINGS and
+under the keypad and the question. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen.
 
-### Settings
+### Supply settings
 
-SETTINGS, at the right of the strip above both columns, opens the supply's
-settings over the left column. Each is kept in the panel's NVS (non-volatile
-storage) and survives a restart. A value opens the keypad; a switch flips on
-the tap. Every change is written at the next frame the bench is SAFE with
+SETTINGS, the strip's second tab, shows the supply's settings in the left
+column. Each is kept in the panel's NVS (non-volatile storage) and survives
+a restart. A value opens the keypad over the page; a switch flips on the
+tap. A tap on LIVE while the keypad is open closes it, and the setting keeps
+its value, as CANCEL leaves it. The same holds for a set point's keypad and
+a tap on SETTINGS. While the question about a live output is open, the
+strip takes no tap until APPLY or CANCEL answers it. Every change is written at the next frame the bench is SAFE with
 no switch to ARMED waiting, the supply's output is off with no ON queued and the board's
 drawing is not being fetched or kept, and with it any change on SETUP that was not saved: a flash write stalls both
 cores, OUTPUT OFF and the trips included. The bottom line says SAVED, SAVE PENDING, NOT SAVED (the write was refused), or SETUP CHANGES NOT SAVED: a
