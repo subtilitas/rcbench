@@ -31,6 +31,8 @@ Idle pulse and Full pulse go to the IOmcu at link-up and on every change. The IO
 
 Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is ARMED, ARM is held, or an ARM or a DISARM waits for its answer, their help line reads `Set on a SAFE bench only` in the warning colour and the value takes no tap. A keypad open for one of them closes when ARM is pressed or the bench leaves SAFE. The other 6 rows take a value at any time.
 
+A change of Idle pulse or Full pulse reaches the IOmcu at the first poll 300 ms or more after the last edit. Until then, with the IOmcu connected, ARM is refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and the bench stays SAFE. Hold ARM again: the 2 s hold gives the change the time to arrive.
+
 ## Keeping the values
 
 A changed value is in force at once and asks for a write. The panel writes on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. The settings are one store: the write keeps every unsaved value, those changed on SETUP included. The line under the rows says where the store stands:

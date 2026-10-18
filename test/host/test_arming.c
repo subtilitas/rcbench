@@ -1399,6 +1399,129 @@ TEST_CASE(the_writes_before_clear_are_refused_in_order)
 }
 
 /*
+ * The throttle's pulse endpoints owed to the far end: the frame that arms
+ * carries no CHAN_CFG, so before CLEAR the arm is refused like an unpaid
+ * release, after the release and the rate and before the deadline.  With
+ * no link the panel's own bank arms and nothing is written.
+ */
+TEST_CASE(owed_endpoints_refuse_the_arm_before_clear)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+
+    arming_hs_facts_t f = clear_way();
+    f.endpoints_owed = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_ENDPOINTS);
+    /* The policy is the caller's to end, as for SERVO_HELD: answered, a
+     * refusal that leaves the bench SAFE, no stop and the line up. */
+    CHECK(a.armed);
+    CHECK(!a.stopped);
+    CHECK(!arming_write_failed(&a, true));
+    CHECK(!a.armed);
+    CHECK(!a.arming);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+    CHECK(arming_heartbeat(&a, at + 1u));
+    /* Not tried again by itself: the hold is pressed again. */
+    for (uint32_t t = at + 2u; t < at + 2000u; t += 50u) {
+        arming_touch_seen(&a, t);
+        CHECK_EQ(arming_step(&a, t), ARMING_ACT_NONE);
+        CHECK(!a.armed);
+    }
+
+    /* Unanswered exchanges before the verdict: a stop, as for SERVO_HELD. */
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_ENDPOINTS);
+    CHECK(arming_write_failed(&a, false));
+    CHECK(a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 1);
+
+    /* After the release and the rate, before the deadline. */
+    f.release_owed = true;
+    f.rate_settled = false;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_SERVO_HELD);
+    f.release_owed = false;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_SERVO_RATE);
+    f.rate_settled = true;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, dl + 700u),
+             ARMING_HS_ENDPOINTS);
+    CHECK(a.armed);
+    CHECK_EQ(arming_stop_count(&a), 0);
+
+    /* No link: this end's bank, whatever is owed. */
+    f.link_up = false;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_LOCAL);
+    CHECK(a.armed);
+
+    /* Nothing owed: CLEAR. */
+    f = clear_way();
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_GO);
+
+    /* At HANDED the debt is not this point's to say. */
+    f.endpoints_owed = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, &f, at),
+             ARMING_HS_GO);
+}
+
+/*
+ * An edit published while CLEAR was on the wire: the frame that arms is not
+ * written, and the arm is given up as a refusal.  A stop or a disarm in the
+ * same exchange is still the operator's and is told as WITHDRAWN.
+ */
+TEST_CASE(an_edit_during_clear_refuses_the_frame_that_arms)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+    arming_hs_facts_t f = clear_way();
+
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
+             ARMING_HS_GO);
+    f.endpoints_owed = true;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_ENDPOINTS);
+    CHECK(!a.armed);
+    CHECK(!a.arming);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+    CHECK(arming_heartbeat(&a, at + 2u));
+    CHECK_EQ(arming_step(&a, at + 3u), ARMING_ACT_NONE);
+
+    /* Before the deadline is asked: owed past it is still ENDPOINTS. */
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, dl + 700u),
+             ARMING_HS_ENDPOINTS);
+    CHECK(!a.stopped);
+
+    /* A stop in the same exchange comes first. */
+    handed_out(t0, at);
+    arming_stop_pressed(&a);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_WITHDRAWN);
+    CHECK(a.stopped);
+    CHECK(!arming_heartbeat(&a, at + 2u));
+
+    /* And a disarm posted. */
+    f.disarm_asked = true;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
+             ARMING_HS_WITHDRAWN);
+}
+
+/*
  * A STOP after ARMING_ACT_ARM, landing in the CLEAR's exchange: the pump
  * applies it there, and the latch alone does not take the arm back -- the
  * policy is still armed, and the deadline alone would let the frame that
@@ -1986,6 +2109,8 @@ int main(void)
     RUN(the_handshake_ends_with_whatever_ends_an_arm);
     RUN(a_programmer_holding_the_port_refuses_the_arm_unwritten);
     RUN(the_writes_before_clear_are_refused_in_order);
+    RUN(owed_endpoints_refuse_the_arm_before_clear);
+    RUN(an_edit_during_clear_refuses_the_frame_that_arms);
     RUN(a_stop_after_arm_withdraws_it_after_clear);
     RUN(after_clear_a_disarm_withdraws_and_the_deadline_stops);
     RUN(a_stop_count_that_moves_without_the_latch_disarms_on_the_next_step);

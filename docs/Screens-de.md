@@ -545,7 +545,11 @@ seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in
 der Warnfarbe, und das Feld nimmt keinen Tipp an; ein offenes Tastenfeld für
 einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE
 verlässt. Das Halten von ARM über 2 s lässt einer Änderung vor dem Druck die
-Zeit, den IOmcu zu erreichen. Die anderen 6 Zeilen nehmen
+Zeit, den IOmcu zu erreichen. Solange bei bestehendem Link eine Änderung dem
+IOmcu noch geschuldet ist, wird das Schalten auf ARMED mit `Pulsbereich noch
+nicht an den IOmcu gesendet. ARM erneut halten.` abgelehnt, und der
+Prüfstand bleibt SAFE ([Ein Pulsbereich
+unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)). Die anderen 6 Zeilen nehmen
 jederzeit einen Wert an.
 
 Die Einstellungen sind ein Speicher. Jeder Wert, den OK setzt, gilt sofort

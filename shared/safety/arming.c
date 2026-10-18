@@ -226,6 +226,11 @@ arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
         if (!f->rate_settled) {
             return ARMING_HS_SERVO_RATE;
         }
+        if (f->endpoints_owed) {
+            /* The far end may hold another pulse range, and the frame that
+             * arms would run the throttle on it. */
+            return ARMING_HS_ENDPOINTS;
+        }
         return arming_handshake_open(a, now_ms, false) ? ARMING_HS_GO
                                                        : ARMING_HS_CLOSED;
     case ARMING_HS_CLEARED:
@@ -234,6 +239,13 @@ arming_hs_t arming_handshake_step(arming_t *a, arming_hs_at_t at,
             /* Stopped or disarmed while the clear was in flight. */
             arming_refused(a);
             return ARMING_HS_WITHDRAWN;
+        }
+        if (f->endpoints_owed) {
+            /* An edit published while CLEAR was on the wire.  CLEAR only
+             * lifted the latch; with nothing armed the far end keeps its
+             * outputs SAFE, and the next poll pays the debt. */
+            arming_refused(a);
+            return ARMING_HS_ENDPOINTS;
         }
         return arming_handshake_open(a, now_ms, true) ? ARMING_HS_GO
                                                       : ARMING_HS_CLOSED;

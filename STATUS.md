@@ -210,7 +210,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 163 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 164 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -225,7 +225,7 @@ The host suite is 163 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
 `test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
-`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_wa_session`, `test_wa_fetch`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
+`test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_endpoints_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_wa_session`, `test_wa_fetch`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an
@@ -309,7 +309,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_map.c` | 106 | 106 | 100.0% |
 | `shared/touch/touch_merge.c` | 92 | 92 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
-| `shared/ui/ui_widgets.c` | 285 | 271 | 95.1% |
+| `shared/ui/ui_widgets.c` | 285 | 278 | 97.5% |
 | `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
 | `shared/ui/ui_band.c` | 241 | 229 | 95.0% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
@@ -318,16 +318,15 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 85 | 84 | 98.8% |
-| `shared/ui/prog_registry.c` | 388 | 385 | 99.2% |
+| `shared/ui/prog_registry.c` | 326 | 324 | 99.4% |
 | `shared/ui/ui_text.c` | 93 | 92 | 98.9% |
-| `shared/ui/ui_router.c` | 337 | 331 | 98.2% |
+| `shared/ui/ui_router.c` | 339 | 333 | 98.2% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
-| `shared/ui/overview_screen.c` | 95 | 93 | 97.9% |
-| `shared/ui/motor_screen.c` | 761 | 743 | 97.6% |
+| `shared/ui/overview_screen.c` | 72 | 71 | 98.6% |
+| `shared/ui/motor_screen.c` | 693 | 676 | 97.5% |
 | `shared/ui/motor_workbench.c` | 82 | 76 | 92.7% |
 | `shared/ui/motor_settings_page.c` | 168 | 158 | 94.0% |
-| `shared/ui/motor_program_page.c` | 170 | 164 | 96.5% |
-| `shared/ui/supply_screen.c` | 1123 | 1100 | 98.0% |
+| `shared/ui/supply_screen.c` | 1121 | 1098 | 98.0% |
 | `shared/ui/ui_keypad.c` | 164 | 162 | 98.8% |
 | `shared/ui/ui_textkey.c` | 236 | 229 | 97.0% |
 | `shared/ui/ui_pinlist.c` | 49 | 49 | 100.0% |
@@ -335,14 +334,13 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/servo_settings_panel.c` | 828 | 807 | 97.5% |
 | `shared/ui/servo_test_panel.c` | 413 | 398 | 96.4% |
 | `shared/ui/servo_limit_panel.c` | 400 | 357 | 89.2% |
-| `shared/ui/servo_workbench.c` | 296 | 296 | 100.0% |
+| `shared/ui/servo_workbench.c` | 351 | 348 | 99.2% |
 | `shared/ui/kst_panel.c` | 1926 | 1894 | 98.3% |
 | `shared/ui/analyser_screen.c` | 241 | 237 | 98.3% |
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 201 | 196 | 97.5% |
-| `shared/ui/prog_models.c` | 8 | 8 | 100.0% |
-| `shared/ui/esc_stick_pages.c` | 109 | 100 | 91.7% |
-| `shared/ui/esc_stick_panel.c` | 2010 | 1909 | 95.0% |
+| `shared/ui/programmer_screen.c` | 421 | 411 | 97.6% |
+| `shared/ui/esc_stick_panel.c` | 2009 | 1916 | 95.4% |
 | `shared/ui/log_viewer_screen.c` | 1198 | 1129 | 94.2% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
 | `shared/ui/settings_screen.c` | 516 | 511 | 99.0% |
@@ -360,7 +358,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/logfile/log_fields.c` | 46 | 45 | 97.8% |
 | `shared/logfile/log_name.c` | 105 | 105 | 100.0% |
 | `shared/safety/heartbeat.c` | 58 | 58 | 100.0% |
-| `shared/safety/arming.c` | 210 | 204 | 97.1% |
+| `shared/safety/arming.c` | 215 | 209 | 97.2% |
 | `shared/safety/safety_gate.c` | 55 | 55 | 100.0% |
 | `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
 | `shared/safety/touch_loss.c` | 45 | 45 | 100.0% |
@@ -380,7 +378,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/esc/esc_json_lex.c` | 292 | 285 | 97.6% |
 | `shared/esc/esc_registry.c` | 168 | 166 | 98.8% |
 | `shared/esc/esc_stick.c` | 552 | 540 | 97.8% |
-| `shared/esc/esc_stick_rules.c` | 284 | 263 | 92.6% |
+| `shared/esc/esc_stick_rules.c` | 284 | 269 | 94.7% |
 | `shared/esc/esc_det.c` | 132 | 130 | 98.5% |
 | `shared/esc/esc_stick_read.c` | 72 | 69 | 95.8% |
 | `shared/esc/esc_sim.c` | 367 | 343 | 93.5% |
@@ -449,6 +447,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/bench/sense_link_view.c` | 192 | 188 | 97.9% |
 | `shared/bench/servo_source.c` | 108 | 108 | 100.0% |
 | `shared/bench/tone_link.c` | 420 | 415 | 98.8% |
+| `shared/bench/endpoints_link.c` | 50 | 50 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
 | `shared/bench/log_writer.c` | 152 | 140 | 92.1% |
@@ -478,7 +477,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **45657** | **44533** | **97.5%** |
+| **total** | **45747** | **44649** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -487,7 +486,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 
 | Item | State | Needs |
 | --- | --- | --- |
-| The control page under measurement | the paths a session has to provoke rather than pass through are the failsafe clear, a STOP mid-throttle, the link unplugged while ARMED, an IOmcu reset while ARMED, a panel in ARMED with the IOmcu unpowered and then powered, the first switch to ARMED after a STOP, and a switch refused for each of its four reasons (a servo release still owed, the servo frame rate not known, the heartbeat not reported trusted within 300 ms, a NACK from the IOmcu). The arm latch and the panel's stop on a lost link are host-tested in `test_safety_gate` | a session with both boards that provokes them one at a time, and writes down what the band said. For the reset: a motor channel on GP0, a scope on GP0 and GP3, ARMED at 70 %, the RUN pin held low for 100 ms; pulses must not return on GP0 until ARM is held again |
+| The control page under measurement | the paths a session has to provoke rather than pass through are the failsafe clear, a STOP mid-throttle, the link unplugged while ARMED, an IOmcu reset while ARMED, a panel in ARMED with the IOmcu unpowered and then powered, the first switch to ARMED after a STOP, and a switch refused for each of its five reasons (a servo release still owed, the servo frame rate not known, the throttle's pulse range still owed, the heartbeat not reported trusted within 300 ms, a NACK from the IOmcu). The arm latch and the panel's stop on a lost link are host-tested in `test_safety_gate`, the refusal for an owed pulse range in `test_endpoints_link` | a session with both boards that provokes them one at a time, and writes down what the band said. For the reset: a motor channel on GP0, a scope on GP0 and GP3, ARMED at 70 %, the RUN pin held low for 100 ms; pulses must not return on GP0 until ARM is held again |
 | Output driver timing | no timing has been seen on an instrument. What a host test cannot reach: every bit timing, the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to its reply, and whether an ESC other than the one AM32 2.21 ESC on a tester's bench (#172) answers | an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is unconfirmed](docs/DShot.md#what-has-not-been-confirmed-on-a-wire) |
 | The flash save costs CAN frames | measured on the bring-up module: eight erase-and-program windows printed 19,174 to 19,186 us, and the XL2515's overrun count climbed from 2 to 8 while nine saves were taken. A frame at 1 Mbit/s is about 130 us and the controller holds two, so 19 ms is about 150 frame times, or seventy times over the 260 us the two buffers hold, with nobody emptying them; the bus reports no error, because the frames arrived and nobody collected them. A lost request costs the panel LINK_HOST_TIMEOUT_MS (1000 ms) of waiting, and 1000 ms of silence latches this end's 200 ms failsafe, so one lost frame is enough for `FAULT 01`. What the store does about it is above; what it does not do is get under the 260 us the two buffers hold. The 19 ms is an erase and a page program inside one window, which is what the store this replaces printed: neither half of it is measured on its own. The program is the window every save still pays, and 256 bytes against the erase's 4,096 puts it one to two orders of magnitude below 19 ms on serial NOR flash, or roughly 200 to 2,000 us against a 260 us budget | a board: the page program and erase windows from the console lines, the overrun count across sixteen saves, the heartbeat after a window, and a power cut mid-save |
 | Screens that do not name the output they drive | the rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). The SERVO screen meets it for its target: the TARGET row on its output card names the protocol and the pins or the programming port on every task and stays in sight under the pages, their keypads and the servo programmer. The MOTOR screen names its throttle pins and the SUPPLY header the PD mini's UART pins. These screens do not meet it: ARM on SERVO and MOTOR switches the whole bank to ARMED and names none of it; the servo programmer overlay names a port number instead of its pin; a PD mini output stays on after SERVO is left while the servo programmer holds its port, and no other screen names it. A user can then drive a pin other than the one they expect | ARM limited to the screen's role; the programmer naming its pin; the held output named in the status band |

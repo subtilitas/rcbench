@@ -1010,6 +1010,7 @@ UI_TEXT(ALERT_TOUCH_ARM_AGAIN,     94, "Touch signal lost while switching to ARM
 UI_TEXT(ALERT_TOUCH_STOPPED,       94, "Touchscreen stopped responding. Switched to SAFE.")
 UI_TEXT(ALERT_SERVO_NOT_RELEASED,  94, "Servo output not released. Hold ARM again.")
 UI_TEXT(ALERT_SERVO_RATE,          94, "Servo frame rate unknown. Hold ARM again.")
+UI_TEXT(ALERT_ARM_ENDPOINTS,       94, "Pulse range not yet sent to the IOmcu. Hold ARM again.")
 UI_TEXT(ALERT_ARM_REFUSED,         94, "The IOmcu refused to switch to ARMED.")
 UI_TEXT(ALERT_ARM_PROG,            94, "Cannot switch to ARMED: a port is in use by the servo programmer.")
 UI_TEXT(ALERT_SWEEP_RESUME_OLD,    94, "IOmcu firmware older than 4.6. Sweep starts again.")

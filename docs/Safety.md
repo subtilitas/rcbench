@@ -174,6 +174,50 @@ the link going quiet under a switch to ARMED, and the panel latches a stop as ab
 refusal is an answer and leaves the panel SAFE with no stop. With no
 IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
 
+### A pulse range on its way
+
+The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
+and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
+their own path: an edit, a link-up edge or the panel's start owes the IOmcu
+the pair. The panel pays the debt at a 50 ms poll whose write of ARM = 0
+was acknowledged, once 300 ms (`ENDPOINTS_SETTLE_MS`) have passed since the
+last edit. It reads CHAN_CFG, puts the pair on the throttle channels and
+writes the page when it differs. The IOmcu applies a CHAN_CFG write to its
+outputs before it acknowledges it.
+
+| Payment | The debt |
+| --- | --- |
+| the page already holds the pair | paid, nothing written |
+| the write is acknowledged | paid |
+| the read or the write is not answered | owed, sent again at the next poll |
+| the read is refused | ended, `The IOmcu did not report its pulse range.` |
+| Idle pulse is not below Full pulse | ended, nothing sent, `Idle pulse must be shorter than full-throttle pulse. Not sent.` |
+| the write is refused | ended, `The IOmcu rejected the pulse range.` |
+
+While the debt stands with the link up, the panel refuses the switch to
+ARMED with `Pulse range not yet sent to the IOmcu. Hold ARM again.`. It
+asks before CLEAR, after the servo release and the frame rate, and writes
+nothing, CLEAR included; the bench stays SAFE with the outputs at rest. It asks again after an acknowledged CLEAR, for an edit
+that arrived while CLEAR was on the wire, and then writes no frame that
+switches to ARMED. The debt is paid on the control task, the task that
+writes the switch, so the switch never runs while a payment is on the wire.
+A refused switch is not tried again by itself: ARM is held again. STOP is
+not affected.
+
+An edit at time 0 is paid at the first poll at or after 300 ms: a poll at
+299 ms leaves it owed, a poll at 300 ms pays it. The time is taken modulo
+2^32 ms, so the rest runs across the wrap of the millisecond clock. The
+SETTINGS rows for the two values lock while ARM is held, and the hold takes
+2 s, so an edit made before the press is normally paid inside the hold.
+
+A refusal ends the debt, and a switch to ARMED then runs on the pair the
+IOmcu holds; the alert says so. With no link the panel's own bank switches
+to ARMED and nothing is written. A link that comes back owes the pair again
+and holds the IOmcu SAFE until the pair is paid, so the refusal lasts until
+the first poll after the link-up. Host-tested in `test_endpoints_link` and
+`test_arming`. The panel's control task, which reads the flag and shows
+the alert, is not in the coverage figure.
+
 ## Deliberate behaviours
 
 - STOP latches. The bench stays SAFE until it is switched to ARMED again.
