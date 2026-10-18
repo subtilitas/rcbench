@@ -13,7 +13,7 @@ the two agree for the same wrong reason and the measurement proves nothing.
 frame from a throttle value and a cyclic redundancy check. The host suite can
 emit that frame as a waveform, and the decoder must read back the value and
 the check that went in. A decoder that passes that is worth pointing at the
-coprocessor; one that has not is not.
+IOmcu; one that has not is not.
 
 Nothing is written here yet, and most of it does not wait on the bench.
 

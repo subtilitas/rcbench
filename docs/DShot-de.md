@@ -2,7 +2,7 @@
 
 <sub>[English](DShot.md) · **Deutsch**</sub>
 
-Was der Coprozessor auf einen Ausgangspin legt und was zurückkommt. Vier
+Was der IOmcu auf einen Ausgangspin legt und was zurückkommt. Vier
 Treiber: Servo-PWM (Pulse-Width Modulation), PPM (Pulse-Position Modulation),
 DShot und bidirektionales DShot.
 
@@ -12,13 +12,13 @@ vier gleich. Diese Seite handelt vom Signal auf der Leitung.
 
 ## Welche Platine
 
-Es wird mehr als einen Koprozessor geben. Der, auf dem das Bring-up läuft, ist
+Es wird mehr als einen IOmcu geben. Der, auf dem das Bring-up läuft, ist
 ein Modul im Pico-Formfaktor, von Hand verkabelt; eine spätere Platine trägt
 ihre Outputs auf Pins, die gelötet und nicht gewählt sind. Sie haben nicht
 dieselben Pins, und ein Pin-Index auf der einen bedeutet auf der anderen einen
 anderen Pin — oder keinen.
 
-Der Koprozessor sagt deshalb im Hardware-Register der
+Der IOmcu sagt deshalb im Hardware-Register der
 [Identity-Page](Link-de.md#page-map), welche Platine er ist, und das Panel
 bietet die Pins dieser Platine an und keine anderen. Ein Platinenwechsel
 verwirft jede Auswahl, denn ein Pin-Index auf der einen Platine bedeutet auf
@@ -31,7 +31,7 @@ hält, und er ändert sich nicht unter einem laufenden Prüfstand.
 Eine Platine, von der das Panel noch nie gehört hat, beschreibt ihre eigenen
 Pins auf der [Catalogue-Page](Link-de.md#page-map): welche GPIOs sie
 herausführt, die daneben aufgedruckte Pad-Nummer und was die hält, die ein
-Output nicht haben darf. Ein Koprozessor, der neuer ist als das Panel, ist so
+Output nicht haben darf. Ein IOmcu, der neuer ist als das Panel, ist so
 benutzbar statt leer.
 
 Eine Platine, die auch die [Shape-Page](Link-de.md#page-map) bedient, sagt, wo
@@ -44,14 +44,14 @@ auf einem Bildschirm, dessen Aufgabe „finde diesen Pad auf der Platine vor
 dir“ ist, ist das der Fehler, den es zu vermeiden gilt.
 
 Was eine Platine nicht kann, ist einen ihrer Pins sicher machen. Der
-Koprozessor reserviert seinen eigenen Satz an seinem eigenen Ende, was die
+IOmcu reserviert seinen eigenen Satz an seinem eigenen Ende, was die
 Catalogue-Page auch sagt — ein falscher Katalog kostet also einen Pin und
 nicht die Safety-Leitung. Eine Platine, die sich weder beschreibt noch bekannt
 ist, bietet gar nichts an: eine Pin-Belegung zu raten ist der Weg, auf dem ein
 Output auf der Safety-Leitung landet.
 
 Eine Platine mit gelöteten Outputs wird gezeigt, nicht angeboten. Der
-Koprozessor konfiguriert sich selbst, und das Panel zeigt, was es zurückliest,
+IOmcu konfiguriert sich selbst, und das Panel zeigt, was es zurückliest,
 ohne es bearbeiten zu lassen: ein Bildschirm, der Pins neu bindet, die an
 keinem Stecker liegen, böte eine Wahl an, die die Platine nicht einlösen kann.
 
@@ -62,7 +62,7 @@ festgelegt. Ein Slot auf der
 [OUTPUTS-Page](Link-de.md#page-map) trägt seine Pinnummer, der Pin ist also eine
 Einstellung und kein Build.
 
-Der Coprozessor verweigert einen Pin, den er nicht treiben darf: GP3 (die
+Der IOmcu verweigert einen Pin, den er nicht treiben darf: GP3 (die
 Safety-Heartbeat-Leitung), GP8 bis GP12 (SPI (Serial Peripheral Interface) und
 Interrupt des CAN-Controllers (Controller Area Network)), die vier Pins, die das
 Bring-up-Modul belegt und nicht herausführt — GP23 (der MODE-Pin des
@@ -144,7 +144,7 @@ also verweigert statt gebunden: Ihn zu binden würde ihn auf die Pulsweite des
 ersten Pins legen, und eine Leitung folgte der anderen, ohne dass ein
 Bildschirm es sagt.
 
-Sechs dieser Paare sind auf dem Header, den der Koprozessor anbietet, beide
+Sechs dieser Paare sind auf dem Header, den der IOmcu anbietet, beide
 frei: GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21,
 GP6 und GP22. Jeder Pin eines Paars ist benutzbar, beide zusammen nicht.
 
@@ -231,7 +231,7 @@ reagieren. Es ist eine eigene Treibernummer auf der
 [OUTPUTS-Page](Link-de.md#page-map) und kein Flag: die beiden sind verschiedene
 Leitungen, nicht eine Leitung mit einer Einstellung.
 
-Nach jedem Frame gibt der Coprozessor die Leitung frei, und der ESC antwortet
+Nach jedem Frame gibt der IOmcu die Leitung frei, und der ESC antwortet
 darauf, etwa 30 µs später, mit 21 Bit bei fünf Vierteln der DShot-Rate. Der
 Turnaround geschieht im PIO-Block — der Transmitter gibt den Pin frei und setzt
 ein Flag, der Receiver startet auf dieses Flag — denn 30 µs sind keine Frist,
@@ -276,7 +276,7 @@ Polarität, und nichts sonst im Treiber würde ihren Verlust bemerken.
 
 ### Die Antwort wird abgetastet, nicht gemessen
 
-Der Coprozessor tastet die Leitung mit dem Fünffachen der Bitrate der Antwort ab
+Der IOmcu tastet die Leitung mit dem Fünffachen der Bitrate der Antwort ab
 und decodiert in Software. Die Bitrate des ESC stammt von seinem eigenen Quarz,
 ein oder zwei Prozent neben der des Prüfstands, und 21 Bit reichen aus, damit
 das einen festen Abtastpunkt aus einem Bit hinausschiebt — der Decoder setzt
@@ -290,22 +290,22 @@ gegen eine Antwort mit 4,75 und 5,25 Abtastungen je Bit.
 Ein ESC meldet elektrische Perioden und weiß nicht, woran er angeschraubt ist;
 mechanische rpm (Revolutions per Minute) brauchen also die Magnetzahl des
 Motors. Das ist die eine Zahl, die die Leitung nicht trägt. Das Panel sendet sie
-aus der Einstellung `Motorpole`, sobald ein Coprozessor zu antworten beginnt,
+aus der Einstellung `Motorpole`, sobald ein IOmcu zu antworten beginnt,
 erneut bei jeder Änderung der Einstellung und erneut vor dem Schreibvorgang,
 der auf ARMED schaltet, sofern eine Änderung noch offen ist, auf der
 [CONTROL-Page](Link-de.md#page-map). Ein
 Schreibvorgang, den niemand beantwortet, bleibt offen und geht beim nächsten
-50-ms-Poll erneut hinaus; einen, den der Coprozessor ablehnt, wiederholt sie
+50-ms-Poll erneut hinaus; einen, den der IOmcu ablehnt, wiederholt sie
 nicht, er wartet auf die nächste Änderung oder die nächste Link-up-Flanke.
 
-Bis sie eintrifft, meldet der Coprozessor überhaupt keine Drehzahl. Eine aus
+Bis sie eintrifft, meldet der IOmcu überhaupt keine Drehzahl. Eine aus
 einer geratenen Polzahl abgeleitete Drehzahl ist eine plausible Zahl ohne
 Kennzeichnung, dass sie falsch ist, und das ist schlimmer als ein leeres Feld.
 
 Das gilt nur für null. Jede gerade Zahl zwischen 2 und 42 wird angenommen und
 setzt das Gültig-Bit der Drehzahl -- eine ungerade wird abgelehnt, denn ein
 Tippfehler, der bis zum anderen Ende käme, würde eine plausible falsche
-Drehzahl auf den Bildschirm bringen. Ein Coprozessor mit einer veralteten Zahl
+Drehzahl auf den Bildschirm bringen. Ein IOmcu mit einer veralteten Zahl
 meldet
 also die tatsächliche Drehzahl mal die Polzahl des Motors geteilt durch die
 gehaltene Zahl. Ein 12-poliger Motor an einem Prüfstand, der noch 14 hält,

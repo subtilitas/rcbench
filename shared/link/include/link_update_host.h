@@ -1,16 +1,16 @@
 /*
- * The panel's half of the coprocessor update: finding out whether the
- * coprocessor runs the image the panel carries, sending it, and buying it
+ * The panel's half of the IOmcu update: finding out whether the
+ * IOmcu runs the image the panel carries, sending it, and buying it
  * once it has started.
  *
  * Stepwise.  Each link_uph_step() does one thing -- one block of 64 bytes
  * (8 data frames and a COMMIT), one read, one command, or 8 KiB of a hash --
  * and returns, so the caller runs its own loop between steps.  The wire is
  * a link_port_t, so the host suite runs every step against a simulated
- * coprocessor over the real link layer.
+ * IOmcu over the real link layer.
  *
  * Only the frozen registers are used: IDENTITY 0 to 6 and the two update
- * pages.  A coprocessor of another protocol major is checked and updated
+ * pages.  An IOmcu of another protocol major is checked and updated
  * the same way.
  *
  * SPDX-License-Identifier: MIT
@@ -34,17 +34,17 @@ extern "C" {
 /** Image bytes hashed in one step. */
 #define LINK_UPH_HASH_STEP   8192u
 /** How long exchanges may go unanswered in a row before the link counts
- *  as gone: a coprocessor that restarts answers again well inside it.  An
+ *  as gone: an IOmcu that restarts answers again well inside it.  An
  *  unanswered exchange takes LINK_HOST_TIMEOUT_MS (1000 ms) at the panel. */
 #define LINK_UPH_LOST_MS     4000u
-/** Starts from block 0 after the coprocessor lost the session (a restart,
+/** Starts from block 0 after the IOmcu lost the session (a restart,
  *  link silence) before the update gives up. */
 #define LINK_UPH_RESTARTS    3u
 /** Refusals of the same block before the update gives up. */
 #define LINK_UPH_BLOCK_TRIES 3u
 /** How long the store's gate may stay shut while a command waits for it. */
 #define LINK_UPH_BUSY_MS     10000u
-/** How long a hash at the coprocessor may take: 2036 KiB at 1 KiB a pass. */
+/** How long a hash at the IOmcu may take: 2036 KiB at 1 KiB a pass. */
 #define LINK_UPH_HASH_MS     10000u
 /** After ACTIVATE: nothing asked for this long, so the old image has
  *  restarted before identity is read. */
@@ -56,16 +56,16 @@ extern "C" {
 typedef enum {
     LINK_UPH_IDLE = 0,
     LINK_UPH_CHECK_HASH,  /**< this end's build hash                     */
-    LINK_UPH_CHECK_ASK,   /**< the coprocessor asked to hash its slot     */
+    LINK_UPH_CHECK_ASK,   /**< the IOmcu asked to hash its slot     */
     LINK_UPH_CHECK_WAIT,  /**< and its answer awaited                     */
     LINK_UPH_PREPARE,     /**< the SHA-256 of the image as it is sent     */
     LINK_UPH_BEGIN,
     LINK_UPH_SEND,        /**< a block, then its COMMIT                   */
-    LINK_UPH_RESYNC,      /**< where the coprocessor stands, after a miss */
+    LINK_UPH_RESYNC,      /**< where the IOmcu stands, after a miss */
     LINK_UPH_FINISH,
     LINK_UPH_VERIFY,
     LINK_UPH_ACTIVATE,
-    LINK_UPH_RESTARTING,  /**< the coprocessor restarts into the new slot */
+    LINK_UPH_RESTARTING,  /**< the IOmcu restarts into the new slot */
     LINK_UPH_BUY,
     LINK_UPH_DONE,        /**< result says how it ended                   */
 } link_uph_phase_t;
@@ -92,7 +92,7 @@ typedef struct {
 
     link_uph_phase_t phase;
     uint8_t  result;          /**< a link_uph_result_t                    */
-    uint8_t  error;           /**< the coprocessor's link_upd_err_t       */
+    uint8_t  error;           /**< the IOmcu's link_upd_err_t       */
     bool     missing;         /**< the last exchange went unanswered      */
     uint8_t  restarts;
     uint8_t  block_tries;
@@ -101,7 +101,7 @@ typedef struct {
 
     uint8_t  build[LINK_SHA256_BYTES];   /**< this end's build hash       */
     uint8_t  expect[LINK_SHA256_BYTES];  /**< the image as sent           */
-    uint8_t  digest[LINK_SHA256_BYTES];  /**< what the coprocessor said   */
+    uint8_t  digest[LINK_SHA256_BYTES];  /**< what the IOmcu said   */
     link_image_hash_t hash;
 
     uint16_t block;           /**< the block to send next                 */
@@ -118,11 +118,11 @@ typedef struct {
 } link_uph_t;
 
 /**
- * Find out whether the coprocessor runs the build in @p img: this end's
- * build hash, then the coprocessor's over its running slot.  Ends SAME,
+ * Find out whether the IOmcu runs the build in @p img: this end's
+ * build hash, then the IOmcu's over its running slot.  Ends SAME,
  * DIFFERENT, TRIAL, NEEDS_USB, NO_ANSWER or REFUSED.
  *
- * A session found in the coprocessor -- this panel's own, from before it
+ * A session found in the IOmcu -- this panel's own, from before it
  * restarted or lost the link -- is ended with ABORT first: nobody sends its
  * blocks any more, and it would hold ARM.  An ACTIVATE found is waited out
  * for LINK_UPH_HASH_MS: the restart it leads to ends it.
@@ -148,10 +148,10 @@ link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
 uint16_t link_uph_permille(const link_uph_t *u);
 
 /*
- * A coprocessor of another protocol major answers its identity while the
+ * An IOmcu of another protocol major answers its identity while the
  * link stays down.  Its alert and its build check are owed once per
  * mismatch, not at every probe of the 1 s the link-down probe repeats at;
- * an update that ended owes the check again, since a coprocessor that kept
+ * an update that ended owes the check again, since an IOmcu that kept
  * its old image gives no link-up edge to start one.
  */
 typedef struct {
@@ -160,14 +160,14 @@ typedef struct {
 } link_uph_mismatch_t;
 
 /**
- * One identity probe: @p mismatch whether a coprocessor of another
+ * One identity probe: @p mismatch whether an IOmcu of another
  * protocol major answered it.  True when the build check is owed now: the
- * first such answer since a probe nobody or a matching coprocessor
+ * first such answer since a probe nobody or a matching IOmcu
  * answered, or the first after link_uph_mismatch_rearm().
  */
 bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch);
 
-/** Whether the last probe was answered by a mismatched coprocessor. */
+/** Whether the last probe was answered by a mismatched IOmcu. */
 bool link_uph_mismatch_answers(const link_uph_mismatch_t *m);
 
 /** An update ended: the next mismatched answer owes the check again. */

@@ -1,7 +1,7 @@
 /*
  * The rig of the suites of the trace of CH1's 1 ms samples
  * (sense_trace.h): the modelled INA3221 of fake_ina.h read by the
- * coprocessor's sensor service, a clock the suite moves 1 ms a step, and a
+ * IOmcu's sensor service, a clock the suite moves 1 ms a step, and a
  * console that takes as many bytes a pass as the suite gives it; the
  * console's lines parsed into seen; a ring of 8 fed without a reader; a
  * console that takes nothing; a log cut after its first trace.

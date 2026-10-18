@@ -3,12 +3,12 @@
 Generator and check of the part drawings of the bench configurator.
 
 - 24 drawings: 22 of the 20 parts of the data file (`core/catalogue.ts`), 2 of
-  boards outside it. The coprocessor and the INA228 have 2 boards each.
+  boards outside it. The IOmcu and the INA228 have 2 boards each.
 - Each drawing is 1 SVG (Scalable Vector Graphics) file per language: English
   in `public/drawings/<file>.svg`, German in `public/drawings/de/<file>.svg`.
 - `anchors.json` holds the wire point of each of the 179 pins in px of the
   viewBox of its drawing.
-- `panel.json` holds the coprocessor board as flat shapes on its real pad
+- `panel.json` holds the IOmcu board as flat shapes on its real pad
   grid, for the PICK A PIN screen of the panel ([Panel drawing](#panel-drawing)).
 - The generator reads the data file and nothing else: no file, no clock, no
   random number. The same data file gives the same bytes.
@@ -50,7 +50,7 @@ The SVG files, `anchors.json` and `panel.json` are committed. They are not writt
 | `generate.ts` | `generate(catalogue)`: every SVG text and the anchor table. |
 | `wires.ts` | Wire palette, colour rules, contrast formula, anchor points of a wire end. |
 | `check.ts` | The checks as pure functions that return findings. |
-| `panel.ts` | `panelDrawing(pads)`: the panel drawing of the coprocessor board. |
+| `panel.ts` | `panelDrawing(pads)`: the panel drawing of the IOmcu board. |
 | `cli.ts` | Command line: write, `--check`, `--palette`. |
 | `anchors.json` | The anchor table. Written by the generator. |
 | `panel.json` | The panel drawing. Written by the generator. |
@@ -58,9 +58,9 @@ The SVG files, `anchors.json` and `panel.json` are committed. They are not writt
 
 ## Panel drawing
 
-`panel.json` is the coprocessor board (RP2350-CAN) of `copro.svg` as the
+`panel.json` is the IOmcu board (RP2350-CAN) of `copro.svg` as the
 panel draws it on PICK A PIN. `tools/gen_board_drawing.py` turns it into
-`firmware/iomcu/src/board_drawing_rp2350_can.c`, the drawing the coprocessor
+`firmware/iomcu/src/board_drawing_rp2350_can.c`, the drawing the IOmcu
 serves over the link ([The board drawing](../../docs/Link.md#the-board-drawing)).
 CI (continuous integration) runs `python3 tools/gen_board_drawing.py --check`,
 so the C file cannot drift from `panel.json`.
@@ -114,7 +114,7 @@ pad kinds.
 | `pins.<id>.labelId` | Id of the `<text>` element of the label in both SVG files. |
 | `catalogueMap` | For `board print`: pin id of the data file to pin ids of the drawing. `null`: the board has no wire point for the pin. |
 
-The coprocessor carries 42 pins: `pad.1` to `pad.40` and `can.H`, `can.L`.
+The IOmcu carries 42 pins: `pad.1` to `pad.40` and `can.H`, `can.L`.
 `copro.svg` labels a pad with its `name`, `copro--osoyoo.svg` with its
 `breakoutLabel`.
 

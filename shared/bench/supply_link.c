@@ -218,7 +218,7 @@ void supply_link_written(supply_link_t *s, int result)
     case SUPPLY_LINK_W_WIRING:
         if (result == SUPPLY_LINK_ACK) {
             /* The page's once a read shows it holding it: a 4.5
-             * coprocessor may hold it back for a read of the module. */
+             * IOmcu may hold it back for a read of the module. */
             s->wired     = false;
             s->wire_wait = true;
             s->page.en   = s->out[LINK_SP_ENABLE] != 0u;
@@ -302,7 +302,7 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
     const uint16_t f = regs[LINK_SP_FLAGS];
     if (s->wire_wait && (f & LINK_SP_WIRE_WAIT) == 0u) {
         /* The wiring written: held, refused on a read of the module that
-         * did not show it off, or neither -- a coprocessor that restarted
+         * did not show it off, or neither -- an IOmcu that restarted
          * since -- and owed again. */
         const bool held = regs[LINK_SP_ENABLE] == (s->page.en ? 1u : 0u)
                           && regs[LINK_SP_TX_PIN] == (uint16_t)s->page.tx
@@ -351,7 +351,7 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
                && regs[LINK_SP_OUTPUT] != (s->page_on ? 1u : 0u)) {
         if (s->page_on && s->on && regs[LINK_SP_OUTPUT] == 0u) {
             /* Switched off at the far end: the heartbeat stopped, or the
-             * coprocessor started again.  Not switched back on. */
+             * IOmcu started again.  Not switched back on. */
             s->on = false;
             s->events |= SUPPLY_LINK_EV_ON_LOST;
         }
@@ -384,7 +384,7 @@ void supply_link_read(supply_link_t *s, const uint16_t *regs,
         s->events |= SUPPLY_LINK_EV_TRIPPED;
     }
     if ((f & LINK_SP_SAGGED) != 0u && (was & LINK_SP_SAGGED) == 0u) {
-        /* The coprocessor switched it off for a sagging input: the same,
+        /* The IOmcu switched it off for a sagging input: the same,
          * with the input and set point it was read with. */
         s->on = false;
         s->events |= SUPPLY_LINK_EV_SAGGED;
@@ -418,7 +418,7 @@ void supply_link_state(const supply_link_t *s, uint32_t now_ms,
     st->p      = st->v * st->i;
     st->set_v  = (float)s->regs[LINK_SP_SET_MV_RB] / 1000.0f;
     st->set_i  = (float)s->regs[LINK_SP_SET_MA_RB] / 1000.0f;
-    /* Which reading this is, and when the panel had it: the coprocessor
+    /* Which reading this is, and when the panel had it: the IOmcu
      * counts the module's readings, and the page read that first showed
      * this count brought it -- not a later read of the same count.  A
      * count that has not moved for SUPPLY_LINK_STALE_MS is a module whose

@@ -277,7 +277,7 @@ float servo_screen_power_sample(int series, int back);
  * @p target / @p gpio / @p pwm (as servo_screen_set_drive()) and the PWM
  * TARGET setting @p setting (SET_SERVO_TARGET: 0 OUTPUTS, 1 PROG PORT, the
  * target the panel asks for).  The first line names the target the
- * coprocessor holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
+ * IOmcu holds, not the setting: "In force: OUTPUTS run at 50 Hz.",
  * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
@@ -299,7 +299,7 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
  */
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
 
-/** Whether the coprocessor can sweep: protocol 4.2 or later.  SWEEP is
+/** Whether the IOmcu can sweep: protocol 4.2 or later.  SWEEP is
  *  offered only then. */
 void servo_screen_set_sweep(bool able);
 
@@ -307,7 +307,7 @@ void servo_screen_set_sweep(bool able);
  *  is offered only then, since a sweep of nothing never starts. */
 void servo_screen_set_surfaces(bool any);
 
-/** Whether the coprocessor holds the output encoder enabled, as SENSE's
+/** Whether the IOmcu holds the output encoder enabled, as SENSE's
  *  ENABLE register was last read or written.  The SENSE set-up is written
  *  only while the bank is disarmed: a run started with the AS5600 setting on
  *  and this false has no angles, and takes no angle columns. */
@@ -315,10 +315,10 @@ void servo_screen_set_enc_held(bool held);
 
 /** The pin servo_screen_set_drive() takes for a port without a known pin. */
 #define SERVO_SCREEN_NO_PIN 0xFFu
-/** The target servo_screen_set_drive() takes while the coprocessor's page
+/** The target servo_screen_set_drive() takes while the IOmcu's page
  *  is there and not known: the tester sends no command. */
 #define SERVO_SCREEN_TARGET_UNKNOWN 0xFEu
-/** The target servo_screen_set_drive() takes with no coprocessor
+/** The target servo_screen_set_drive() takes with no IOmcu
  *  answering. */
 #define SERVO_SCREEN_TARGET_NO_LINK 0xFFu
 
@@ -395,7 +395,7 @@ bool servo_screen_paused(void);
 void servo_screen_released(uint16_t pause_seq);
 
 /**
- * The coprocessor started the sweep with its curve's phase 0 @p age_ms ago,
+ * The IOmcu started the sweep with its curve's phase 0 @p age_ms ago,
  * its output starting from @p from.  Until this, a sweep asked for is not
  * drawn: the far end is not known to move.  From it the horn is drawn along
  * the curve, and without feedback worked on from where that output was
@@ -411,7 +411,7 @@ void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
                                 servo_sweep_from_t from, uint32_t since_ms);
 
 /**
- * The coprocessor took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
+ * The IOmcu took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
  * its curve @p kept_ms in (servo_phase_held()).  The curve ran on until
  * then, so the paused phase drawn here is set to it, not to the tap's.
  * Nothing unless that pause still stands: one resumed before this arrives
@@ -448,7 +448,7 @@ void servo_screen_set_commanded(float deg);
  */
 void servo_screen_clock(uint32_t now_ms);
 
-/** Whether the link to the coprocessor is up; a run ends when it goes. */
+/** Whether the link to the IOmcu is up; a run ends when it goes. */
 void servo_screen_set_link(bool up);
 
 /** Whether a run is under way, for the application and tests. */

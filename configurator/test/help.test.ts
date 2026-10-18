@@ -157,11 +157,11 @@ test('the needs of a part are the parts it brings and the wires of its supply in
   ]);
   assert.match(needs('pdmini', DEFAULT_OPTIONS, 'de')[1]!, /^PD-Eingang: T-Stecker OUT, USB-C-Buchse\. USB-C-Kabel, /);
   assert.deepEqual(needs('sd'), ['Needs no further part of the bench.']);
-  assert.deepEqual(needs('ina3221'), ['Needs no further part of the bench.', 'Supply, 3.3 V: Coprocessor 3V3 (pad 36).']);
+  assert.deepEqual(needs('ina3221'), ['Needs no further part of the bench.', 'Supply, 3.3 V: IOmcu 3V3 (pad 36).']);
   // The INA228 board decides the supply: 5 V from VBUS for the MATEK board, 3.3 V for the XT90 board.
-  assert.equal(needs('ina228')[1], 'Supply, 5 V: Coprocessor VBUS (pad 40). The MATEK board needs 4 to 9 V.');
-  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' })[1]!, /^Supply, 3\.3 V: Coprocessor 3V3 \(pad 36\)\. /);
-  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' }, 'de')[1]!, /^Versorgung, 3,3 V: Koprozessor 3V3 \(Pad 36\)\. /);
+  assert.equal(needs('ina228')[1], 'Supply, 5 V: IOmcu VBUS (pad 40). The MATEK board needs 4 to 9 V.');
+  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' })[1]!, /^Supply, 3\.3 V: IOmcu 3V3 \(pad 36\)\. /);
+  assert.match(needs('ina228', { ...DEFAULT_OPTIONS, ina228Board: 'xt90' }, 'de')[1]!, /^Versorgung, 3,3 V: IOmcu 3V3 \(Pad 36\)\. /);
   // On the Osoyoo breakout board the supply is a terminal.
   assert.equal(needs('ina3221', { ...DEFAULT_OPTIONS, connection: 'osoyoo' })[1], 'Supply, 3.3 V: terminal 3V3.');
 });

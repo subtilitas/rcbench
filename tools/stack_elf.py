@@ -4,7 +4,7 @@ chain through a call graph, and what both read out of C source and out of
 the tables in the docs.
 
 stack_check.py holds the panel's task stacks to their deepest call chain
-and stack_iomcu.py the coprocessor's two; stack_check.py's docstring says
+and stack_iomcu.py the IOmcu's two; stack_check.py's docstring says
 how.
 
 SPDX-License-Identifier: MIT
@@ -76,7 +76,7 @@ STT_OBJECT, STT_FUNC = 1, 2
 # ---------------------------------------------------------- the decoders --
 
 # The low @p bits bits of @p v as a signed number: a branch's offset, in
-# the panel's decoder and in the coprocessor's.
+# the panel's decoder and in the IOmcu's.
 def sext(v: int, bits: int) -> int:
     return v - (1 << bits) if v & (1 << (bits - 1)) else v
 

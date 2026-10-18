@@ -705,7 +705,7 @@ static void pin_plan(pin_t *p, kst_plan_result_t r, kst_rules_t violated,
 /* --- a job in slices ------------------------------------------------------- */
 
 /* Budgets of one step call: the smallest, those around the largest piece of
- * work, around the coprocessor's slice, and ones no job outlasts. */
+ * work, around the IOmcu's slice, and ones no job outlasts. */
 static const uint32_t k_budgets[] = {
     1, 2, 3, 4, 5, 7, KST_PLAN_PIECE_UNITS - 1u, KST_PLAN_PIECE_UNITS,
     KST_PLAN_PIECE_UNITS + 1u, 13, 16, 31, 64, KST_PLAN_SLICE_UNITS - 1u,
@@ -1615,7 +1615,7 @@ TEST_CASE(two_jobs_step_side_by_side)
     CHECK(memcmp(&pb, &once, sizeof(pb)) == 0);
 }
 
-/* --- the cap of the coprocessor ---------------------------------------------- */
+/* --- the cap of the IOmcu ---------------------------------------------- */
 
 static unsigned nibble(char c)
 {
@@ -1697,7 +1697,7 @@ TEST_CASE(the_costliest_plans_found_end_below_the_work_cap)
         CHECK_EQ(units, k_worst[i].units);
         CHECK(r != KST_PLAN_OK || plan_is_consistent(&plan));
         largest = units > largest ? units : largest;
-        /* The same under the cap the coprocessor plans with. */
+        /* The same under the cap the IOmcu plans with. */
         r = k_worst[i].restore
                 ? restore_in_slices(&a, &b, &capped, KST_PLAN_SLICE_UNITS,
                                     KST_PLAN_WORK_CAP, NULL)

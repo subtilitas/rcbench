@@ -12,7 +12,7 @@ PANEL UPDATE schreibt ein neues Firmware-Image des Panels in dessen Flash. Der B
 
 ![Das Image wird geschrieben](view:panel-update)
 
-Das Halten schaltet zuerst das Funkmodul ab. Danach stellt das Panel seine Abfragen ein und hält den Heartbeat zurück; der Koprozessor hält seine Ausgänge im Failsafe, wie bei jedem Neustart des Panels. Der Bildschirm schreibt den Slot, der nicht läuft, in Stücken von 64 KiB und zeigt die geschriebenen Bytes und den Prozentwert. Die Anzeige kann beim Löschen des Flash-Speichers flackern. Schalte das Panel nicht aus.
+Das Halten schaltet zuerst das Funkmodul ab. Danach stellt das Panel seine Abfragen ein und hält den Heartbeat zurück; der IOmcu hält seine Ausgänge im Failsafe, wie bei jedem Neustart des Panels. Der Bildschirm schreibt den Slot, der nicht läuft, in Stücken von 64 KiB und zeigt die geschriebenen Bytes und den Prozentwert. Die Anzeige kann beim Löschen des Flash-Speichers flackern. Schalte das Panel nicht aus.
 
 Wie lange Löschen und Schreiben dauern, ist nicht gemessen.
 

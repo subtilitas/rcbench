@@ -18,7 +18,7 @@ committed by a bot.
 
 Every C file under shared/ and protocols/ has to be in the measurement,
 except a module's rp2350/ folder: a pin driver is compiled by the
-coprocessor build only.  A file is in
+IOmcu build only.  A file is in
 TRACKED and has counters, or is in DATA_ONLY and holds no function.  A file
 in neither list, a file the suite does not compile, a TRACKED file no test
 links (it has no counters, and is measured at 0%), and a DATA_ONLY file that

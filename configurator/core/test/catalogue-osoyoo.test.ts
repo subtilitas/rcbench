@@ -193,7 +193,7 @@ test('the Osoyoo strip: the operative text of every check, in English and German
     ['strip-plug', /strip at GP2.*wire 7.*wire 61.*wire 8/, /Leiste an GP2.*Draht 7.*Draht 61.*Draht 8/],
     ['strip-prog', /to GP13 by wire 64/, /über Draht 64 an GP13/],
     ['osoyoo-terminals', /All V pins of both sides are 1 net/, /Alle V-Pins beider Seiten sind 1 Netz/],
-    ['servo-bench-supply', /At the 5 V pin of the coprocessor board/, /Am 5-V-Pin der Koprozessor-Platine/],
+    ['servo-bench-supply', /At the 5 V pin of the IOmcu board/, /Am 5-V-Pin der IOmcu-Platine/],
   ];
   for (const [id, en, de] of rows) {
     assert.match(check(id).text.en, en, `${id} en`);
@@ -214,7 +214,7 @@ test('the Osoyoo strip: the fields and the texts of the power source and of wire
     ['strip-v', 'cons', /As delivered the jumper cap sits on the 3V3 side.*so position 5V is a change/, /Im Lieferzustand sitzt die Jumperkappe auf der Seite 3V3.*Stellung 5V ist also eine Änderung/],
     ['strip-v', 'cons', /7 to 12 V.*print 7 to 16 V, vendor limit 18 V, capacitors rated 16 V.*USB does not feed it\. Without it the V pins carry 0 V/, /7 bis 12 V.*Aufdruck 7 bis 16 V, Herstellergrenze 18 V, Kondensatoren mit 16 V.*USB speist sie nicht\. Ohne sie führen die V-Pins 0 V/],
     ['strip-v', 'cons', /2 A at 5 V and 500 mA at 3\.3 V \(vendor values\)/, /2 A bei 5 V und 500 mA bei 3,3 V \(Herstellerwerte\)/],
-    ['strip-v', 'cons', /In position 3V3 the servo draws from VSYS of the coprocessor board/, /In Stellung 3V3 zieht das Servo aus VSYS der Koprozessor-Platine/],
+    ['strip-v', 'cons', /In position 3V3 the servo draws from VSYS of the IOmcu board/, /In Stellung 3V3 zieht das Servo aus VSYS der IOmcu-Platine/],
     ['strip-v', 'cons', /In position 3V3 the servo gets 3\.3 V where the regulator is powered/, /In Stellung 3V3 bekommt das Servo 3,3 V, wo der Regler versorgt ist/],
     ['strip-v', 'unknowns', /2 A and 500 mA are vendor values/, /2 A und 500 mA sind Herstellerwerte/],
     ['strip-v', 'unknowns', /Whether position 3V3 works with USB alone/, /Ob Stellung 3V3 mit USB allein arbeitet/],
@@ -253,7 +253,7 @@ test('the Osoyoo strip: whole clauses of the readings, switch states, values and
     ['strip-print', /the 2 electrolytic capacitors beside the converter are printed 100 uF 16 V\. A supply above 16 V is outside the print and the capacitor rating/, /die 2 Elektrolytkondensatoren neben dem Wandler sind mit 100 uF 16 V bedruckt\. Eine Versorgung über 16 V liegt außerhalb des Aufdrucks und der Kondensatorangabe/],
     ['strip-regulator', /the jumper cap sits on the 3V3 side as delivered \(osoyoo\.com page; osoyoo\.store: not stated\)/, /Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 \(Seite osoyoo\.com; osoyoo\.store: nicht angegeben\)/],
     ['strip-regulator', /the vendor names a workaround: a Dupont cable from the S pin of the 3\.3 V row to a V pin\. Do not use it for the servo\./, /nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin\. Für das Servo nicht verwenden\./],
-    ['strip-regulator', /The S pin of the 3\.3 V row is the 3V3 pin of the coprocessor board \(pad 36\), the 3\.3 V supply of its logic; its current limit is not stated\./, /Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der Koprozessor-Platine \(Pad 36\), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben\./],
+    ['strip-regulator', /The S pin of the 3\.3 V row is the 3V3 pin of the IOmcu board \(pad 36\), the 3\.3 V supply of its logic; its current limit is not stated\./, /Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der IOmcu-Platine \(Pad 36\), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben\./],
     ['strip-regulator', /With the cable in place and the jumper cap on 5V, the 5 V of the converter reaches that supply\. A cable already in place comes off before the jumper cap goes back on any position\.$/, /Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5 V des Wandlers diese Versorgung\. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird\.$/],
     ['strip-servo-plus', /the servo lead connects only its signal and GND to the board, at the S pin of the strip at GP2 \(GP13 with the servo programmer\) and a G pin\./, /Das Servokabel verbindet nur Signal und GND mit der Platine, am S-Pin der Leiste an GP2 \(GP13 mit dem Servo-Programmierer\) und an einem G-Pin\./],
     ['strip-servo-plus', /Its plus wire goes to the servo supply, the external supply or the PD mini, as the drawing shows; with the INA3221 board in the setup it goes to VIN1- of that board, and the supply to VIN1\+\. The V pin of the strip stays free\./, /Seine Plusader geht an die Servoversorgung, die externe Versorgung oder den PD mini, wie die Zeichnung zeigt; mit der INA3221-Platine im Aufbau geht sie an VIN1- dieser Platine und die Versorgung an VIN1\+\. Der V-Pin der Leiste bleibt frei\./],
@@ -442,7 +442,7 @@ test('the DC supply of the Osoyoo breakout board: a modelled part with its range
   assert.deepEqual(rule.because, { en: 'servo on the V pin, jumper on 5V', de: 'Servo am V-Pin, Jumper auf 5V' });
   assert.deepEqual(rule.src, dc.pins[0]!.src);
 
-  // The 2 leads: stubs to the DC input, which is no pad of the coprocessor.
+  // The 2 leads: stubs to the DC input, which is no pad of the IOmcu.
   const leads = CATALOGUE.wires.filter((w) => w.a.startsWith('dcsup.'));
   assert.deepEqual(leads.map((w) => [w.n, w.kind, w.a, w.b, w.net, w.cls, w.stage, w.route.kind]), [
     [65, 'stub', 'dcsup.POS', null, 'osoyoo_vin', 'power', 1, 'S'],
@@ -534,8 +534,8 @@ test('the Osoyoo strip: the whole advantage, drawbacks and the USB drawback that
     de: 'Die Angabe lautet 2 A bei 5 V und 500 mA bei 3,3 V (Herstellerwerte). Ein blockiertes Servo zieht mehr, wenn sein Blockierstrom höher liegt; der Blockierstrom des Servos steht hier nicht.',
   });
   assert.deepEqual(strip.cons[3], {
-    en: 'In position 3V3 the servo draws from VSYS of the coprocessor board, the supply that also powers the logic. A current peak can drop it and reset the boards.',
-    de: 'In Stellung 3V3 zieht das Servo aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist. Eine Stromspitze kann sie einbrechen lassen und die Platinen zurücksetzen.',
+    en: 'In position 3V3 the servo draws from VSYS of the IOmcu board, the supply that also powers the logic. A current peak can drop it and reset the boards.',
+    de: 'In Stellung 3V3 zieht das Servo aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist. Eine Stromspitze kann sie einbrechen lassen und die Platinen zurücksetzen.',
   });
   assert.deepEqual(usb.cons, [{
     en: 'A servo on the 5 V pin, or on a V pin of the Osoyoo breakout board with the jumper on 3V3, draws from it.',

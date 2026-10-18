@@ -11,8 +11,8 @@ Die beiden Platinen kommunizieren über CAN (Controller Area Network) mit
 | --- | --- |
 | Bus | Classic CAN (kein CAN FD (Flexible Data Rate)), 1 Mbit/s, nur 29-Bit-Identifier |
 | Panel | TWAI-Controller (Two-Wire Automotive Interface, der CAN-Controller des ESP32-S3) auf GPIO19 (RX) und GPIO20 (TX; GPIO: General-Purpose Input/Output), über den USB/CAN-Multiplexer der Platine (USB: Universal Serial Bus) |
-| Koprozessor | XL2515 (MCP2515-kompatibel) an `spi1`: SCK GP10, MOSI GP11, MISO GP12, CS GP9, INT GP8; SPI-Takt 10 MHz (SPI: Serial Peripheral Interface) |
-| Transceiver | SIT65HVD230 (3,3 V) auf dem Koprozessormodul |
+| IOmcu | XL2515 (MCP2515-kompatibel) an `spi1`: SCK GP10, MOSI GP11, MISO GP12, CS GP9, INT GP8; SPI-Takt 10 MHz (SPI: Serial Peripheral Interface) |
+| Transceiver | SIT65HVD230 (3,3 V) auf dem IOmcu-Modul |
 | Abschluss | 120 Ω an beiden Enden |
 | Quarz | der XL2515 braucht einen 16-MHz-Quarz; 8 MHz begrenzen den Controller auf 500 kbit/s |
 
@@ -27,15 +27,15 @@ Kommen keine Frames durch: [Den Link in Betrieb nehmen](Bringup-de.md).
 
 ## Verhalten bei Linkausfall
 
-Der Koprozessor setzt nach 200 ms ohne Anfrage Failsafe-Werte; das Panel
+Der IOmcu setzt nach 200 ms ohne Anfrage Failsafe-Werte; das Panel
 eskaliert nach 1 s ohne Antwort. Das Failsafe rastet ein. Zurückkehrender
 Verkehr stoppt den Stillezähler, hebt das Failsafe aber nicht auf; verlassen
 wird es durch das Schreiben von 0x5AFE in das Register CLEAR der
 Control-Page.
 
-Der Koprozessor hält außerdem einen Arm-Latch. Er wird bei jedem Start
+Der IOmcu hält außerdem einen Arm-Latch. Er wird bei jedem Start
 gesetzt, an der Flanke in die Stille auf dem Link, wenn dem Heartbeat nicht
-mehr vertraut wird, und durch ein ARM, das der Koprozessor abweist. Solange
+mehr vertraut wird, und durch ein ARM, das der IOmcu abweist. Solange
 er gesetzt ist, wird ein Schreiben von ARM mit NOT_ARMED abgewiesen. Dasselbe
 CLEAR löst ihn. Er ist nicht das Failsafe: STATUS meldet ihn nicht, und das
 ON der Versorgung liest ihn nicht. Die Regeln stehen in
@@ -47,7 +47,7 @@ Ein CAN-Transmitter, der kein Acknowledge bekommt, wiederholt von sich aus und
 addiert je Versuch 8 auf seinen Transmit Error Counter. Bei 1 Mbit/s erreicht
 ein Frame, den niemand beantwortet, die Bus-off-Schwelle von 256 in etwa 4 ms
 — jeder Moment ohne zweiten Knoten am Bus nimmt den Controller des Panels also
-vom Bus: Koprozessor ohne Strom, nach einem Reset, oder lange genug mit
+vom Bus: IOmcu ohne Strom, nach einem Reset, oder lange genug mit
 abgeschalteten Interrupts.
 
 Der TWAI-Controller (Two-Wire Automotive Interface) des ESP32-S3 kommt nicht
@@ -75,34 +75,34 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 ## Protokoll
 
 Pages mit bis zu 32 Sechzehn-Bit-Registern, gelesen und geschrieben in
-Fenstern. Der Koprozessor sendet nur als Antwort auf eine Anfrage.
+Fenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
 Protokollversion 4.22. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
 
-Ein Koprozessor, der eine andere Protokoll-Major meldet als das Panel, gilt
+Ein IOmcu, der eine andere Protokoll-Major meldet als das Panel, gilt
 als abwesend: der Link bleibt unten, der Splash markiert den
-Koprozessor-Schritt als fehlgeschlagen neben der gemeldeten Version, das
-Panel protokolliert beide Majors und meldet `Protokollversionen passen nicht zusammen. ARMED ist gesperrt.`, und kein Write erreicht den Koprozessor. Seine Ausgänge bleiben aus,
-und das Panel läuft wie ohne angeschlossenen Koprozessor. Panel und
-Koprozessor auf verschiedenen Seiten eines Major-Sprungs werden deshalb
+IOmcu-Schritt als fehlgeschlagen neben der gemeldeten Version, das
+Panel protokolliert beide Majors und meldet `Protokollversionen passen nicht zusammen. ARMED ist gesperrt.`, und kein Write erreicht den IOmcu. Seine Ausgänge bleiben aus,
+und das Panel läuft wie ohne angeschlossenen IOmcu. Panel und
+IOmcu auf verschiedenen Seiten eines Major-Sprungs werden deshalb
 zusammen geflasht.
 
 Register 0 bis 6 von IDENTITY und die beiden Update-Pages, UPDATE_CTL (0xF0)
 und UPDATE_DATA (0xF1), sind eingefroren: sie behalten ihre Nummern, ihren
-Aufbau und ihre Bedeutung unter jeder späteren Major, und ein Koprozessor
+Aufbau und ihre Bedeutung unter jeder späteren Major, und ein IOmcu
 jeder späteren Major beantwortet sie. Eine Änderung an ihnen ist eine neue
 Page, keine Major-Änderung. Ein Panel, das auf eine andere Major trifft, liest
-deshalb trotzdem, was der Koprozessor laufen hat, und bietet sein eigenes
-Koprozessor-Image an
+deshalb trotzdem, was der IOmcu laufen hat, und bietet sein eigenes
+IOmcu-Image an
 ([Firmware-Update über den Link](#firmware-update-über-den-link)).
 
 ### Kompatibilität
 
 Verglichen wird nur die Major. Der Link kommt hoch und der Prüfstand schaltet
 auf ARMED, gleich welche Minor die beiden haben. Das Panel liest die Minor des
-Koprozessors beim Link-up und nutzt nichts, was diese Minor nicht hat: die
+IOmcu beim Link-up und nutzt nichts, was diese Minor nicht hat: die
 Frame Rate von SERVO ab 4.1, seinen Sweep ab 4.2, SUPPLY ab 4.3, RESUME des
 Sweeps ab 4.6, SENSE und SERVO_SENSE ab 4.7, TONE ab 4.8, den Ausgangsencoder von SENSE ab 4.9,
 BIND_CFG, BIND_OUT und BIND ab 4.10, SERVO_WIN, `RESETS` von SENSE und ein
@@ -111,7 +111,7 @@ Programmierports der Servo-Programmier-Page (`KST`, 0x32), Flag-Bit 11 von SUPPL
 SERVO_SENSE ab 4.13. Ab 4.14 plant der Programmierport einen Schreibauftrag über mehrere
 Durchläufe und meldet die Ergebnisse 33 bis 35; das Panel schreibt dafür
 nichts anders. Die Operation LEAVE und das Schreibregister 28 dieser Page
-werden ab 4.15 gesendet. Ab 4.16 weist der Koprozessor einen Slew über 3000
+werden ab 4.15 gesendet. Ab 4.16 weist der IOmcu einen Slew über 3000
 und einen PWM-Endpunkt ab, der länger als sein Frame ist, und das Panel schreibt einem Programmierport
 seinen Bereich vor dem Schreiben, das den Puls des Ports einschaltet
 ([Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Ab 4.17 weist die TONE-Page einen belegten Pin mit
@@ -124,24 +124,24 @@ von TARGET setzt sie auf 0; das Panel zeigt die Rate dann als nicht
 gesendet, bis es sie wieder schreibt. Ab 4.20 liefert ARTWORK die Zeichnung
 der Platine mit einem Hash über sie in Register 7 und 8, und das Panel liest
 ARTWORK erst ab 4.20 ([Die Zeichnung der Platine](#die-zeichnung-der-platine)).
-Ab 4.21 zählt STATUS in Register 8 und 9 die Frames, die der Koprozessor
+Ab 4.21 zählt STATUS in Register 8 und 9 die Frames, die der IOmcu
 abgelehnt hat, und das Panel liest sie erst ab 4.21
 ([Abgelehnte Frames](#abgelehnte-frames)). Ab 4.22 nehmen UPDATE_CTL und
-UPDATE_DATA ein neues Koprozessor-Image über den Link an; ein älterer
-Koprozessor lehnt beide mit BAD_PAGE ab, und das Panel sagt dann, dass ein
+UPDATE_DATA ein neues IOmcu-Image über den Link an; ein älterer
+IOmcu lehnt beide mit BAD_PAGE ab, und das Panel sagt dann, dass ein
 USB-Laden (Universal Serial Bus) nötig ist
 ([Firmware-Update über den Link](#firmware-update-über-den-link)).
-Der Koprozessor liest
+Der IOmcu liest
 die Minor des Panels nie; eine Page, die ein älteres Panel nicht kennt, schreibt es
 nie.
 
-| Panel | Koprozessor | Link und Schalten auf ARMED | SENSE (0x2B) und SERVO_SENSE (0x2C) |
+| Panel | IOmcu | Link und Schalten auf ARMED | SENSE (0x2B) und SERVO_SENSE (0x2C) |
 | --- | --- | --- | --- |
 | 4.7 | 4.7 | hoch, schaltet auf ARMED | bedient |
-| 4.7 | 4.6 | hoch, schaltet auf ARMED | das Panel sendet an keine der beiden Pages; der Koprozessor beantwortet beide mit BAD_PAGE. BENCH-Bits 5 und 6 lesen 0 |
-| 4.6 | 4.7 | hoch, schaltet auf ARMED | das Panel liest und schreibt keine der beiden Pages und übergeht BENCH-Bits 5 und 6. Eine Konfiguration, die ein 4.7-Panel im Flash des Koprozessors hinterlassen hat, bleibt in Kraft, und ihre zwei Pins bleiben den Ausgängen entzogen. Sobald der Koprozessor einen INA228 liest, trägt BENCH dessen Spannung und Strom in denselben Skalen, und das Panel zählt Ladung und Energie selbst aus diesem Strom |
+| 4.7 | 4.6 | hoch, schaltet auf ARMED | das Panel sendet an keine der beiden Pages; der IOmcu beantwortet beide mit BAD_PAGE. BENCH-Bits 5 und 6 lesen 0 |
+| 4.6 | 4.7 | hoch, schaltet auf ARMED | das Panel liest und schreibt keine der beiden Pages und übergeht BENCH-Bits 5 und 6. Eine Konfiguration, die ein 4.7-Panel im Flash des IOmcu hinterlassen hat, bleibt in Kraft, und ihre zwei Pins bleiben den Ausgängen entzogen. Sobald der IOmcu einen INA228 liest, trägt BENCH dessen Spannung und Strom in denselben Skalen, und das Panel zählt Ladung und Energie selbst aus diesem Strom |
 
-Der Koprozessor dieses Builds bedient beide Pages, hält die Konfiguration im
+Der IOmcu dieses Builds bedient beide Pages, hält die Konfiguration im
 Flash und hält ihre Pins. Sein Core 1 liest die freigegebenen Bauteile im
 1-ms-Takt, und Core 0 trägt ein, was Core 1 gelesen hat; die Nur-Lese-Register
 lesen 0, bis Core 1 unter der geltenden Konfiguration gelesen hat, etwa 1 ms
@@ -162,33 +162,33 @@ bis 11 von SENSE, schreibt die Einstellung aus SETUP ANSCHLÜSSE Frame für
 Frame, wo sie abweicht (`shared/bench/sense_link.c`, `test_sense_link`), und
 liest die Identity-Page erneut, nachdem ein Schreiben angenommen ist. Auf
 SERVO_SENSE schreibt es keine Messung. SERVO_WIN (0x31) liest es an einem
-Koprozessor mit 4.11: [Der Fenster-Ring](#der-fenster-ring).
+IOmcu mit 4.11: [Der Fenster-Ring](#der-fenster-ring).
 
 Die Page weist SDA und SCL, die nicht das Paar eines Blocks sind, ab, was
-auch immer ENABLE hält; ein Koprozessor von 0.15.0 oder älter nimmt sie mit
+auch immer ENABLE hält; ein IOmcu von 0.15.0 oder älter nimmt sie mit
 ENABLE 0 an und weist das danach freigegebene Bauteil ab. Das Format auf dem
 Draht und die Protokoll-Minor sind dieselben. Ein Panel von 0.15.0 oder
 älter, dessen zwei Pin-Einstellungen unabhängig sind, sieht die Abweisung bei
 der Änderung statt bei der Freigabe: sein Alert `Sensor-Pins GP15/GP17 abgelehnt. SETUP > ANSCHLÜSSE prüfen.`, einmal je Änderung und je Link-Aufbau,
 und die Page behält die Pins, die sie hatte. Seine Pins auf −1 werden als
 ENABLE 0 mit 0 für den Pin geschrieben und wie bisher angenommen. Eine
-Konfiguration im Flash des Koprozessors, deren Pins kein Paar sind, wird
+Konfiguration im Flash des IOmcu, deren Pins kein Paar sind, wird
 beim Start als Ganzes abgewiesen, und die Page beginnt mit ihren Vorgaben
 ohne freigegebenes Bauteil; ein Panel schreibt beim Link-Aufbau, was
 abweicht. Das Panel dieses Builds bietet nur Paare an.
 
 TONE (0x2D) ist eine eigene Page, und 4.8 verschiebt sonst nichts:
 
-| Panel | Koprozessor | TONE (0x2D) |
+| Panel | IOmcu | TONE (0x2D) |
 | --- | --- | --- |
 | 4.8 | 4.8 | bedient |
-| 4.8 | 4.7 | der Koprozessor beantwortet jedes Lesen und Schreiben der Page mit BAD_PAGE; ein Panel liest beim Link-up die Minor und sendet dorthin nichts |
-| 4.7 | 4.8 | das Panel liest und schreibt die Page nicht. Ein Tap, der im Flash des Koprozessors steht, startet beim Booten, läuft und wird nie gelesen; sein Pin bleibt den Ausgängen entzogen |
+| 4.8 | 4.7 | der IOmcu beantwortet jedes Lesen und Schreiben der Page mit BAD_PAGE; ein Panel liest beim Link-up die Minor und sendet dorthin nichts |
+| 4.7 | 4.8 | das Panel liest und schreibt die Page nicht. Ein Tap, der im Flash des IOmcu steht, startet beim Booten, läuft und wird nie gelesen; sein Pin bleibt den Ausgängen entzogen |
 
 Die Page hat kein Capability-Bit. Ein Panel, das die Minor liest, weiß, dass
 die Page existiert; FLAGS sagt, ob der Tap läuft.
 
-Der Koprozessor dieses Builds bedient die Page und hält die Register 0 bis 6
+Der IOmcu dieses Builds bedient die Page und hält die Register 0 bis 6
 im Flash (Speicher-Record Version 7, die Register des Taps ab Version 6; ein
 Record der Version 3 bis 5 liest mit
 ausgeschaltetem Tap auf seinen Standardwerten). Core 0 besitzt die
@@ -203,12 +203,12 @@ Der Ausgangsencoder gehört zu SENSE, und 4.9 verschiebt sonst nichts: ENABLE
 bekommt Bit 2, und die Page wächst von 26 auf 32 Register, 26 bis 30 neu und
 31 reserviert.
 
-| Panel | Koprozessor | Der Encoder (SENSE Bit 2, Register 26 bis 31) |
+| Panel | IOmcu | Der Encoder (SENSE Bit 2, Register 26 bis 31) |
 | --- | --- | --- |
 | 4.9 | 4.9 | bedient |
-| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `Koprozessor-Firmware älter als 4.9. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der Koprozessor antwortet. Die Page eines 4.8-Koprozessors hat 26 Register und weist ein Lesen darüber hinaus ab |
+| 4.9 | 4.8 oder 4.7 | das Panel schreibt ENABLE Bit 2 nicht und liest von SENSE nur die Register 12 bis 25; mit dem Encoder in SETUP freigegeben meldet es `IOmcu-Firmware älter als 4.9. AS5600 nicht ausgelesen.`, beim Link-up und wenn der Encoder freigegeben wird, während der IOmcu antwortet. Die Page eines 4.8-IOmcu hat 26 Register und weist ein Lesen darüber hinaus ab |
 | 4.9 | 4.6 oder älter | an SENSE wird nichts gesendet; dieselbe Meldung |
-| 4.8 oder 4.7 | 4.9 | das Panel schreibt Bit 2 nie und liest die Register 26 bis 31 nie. Ein Encoder, den ein 4.9-Panel im Flash des Koprozessors hinterlassen hat, bleibt freigegeben und wird gelesen; seine zwei Pins bleiben den Ausgängen entzogen |
+| 4.8 oder 4.7 | 4.9 | das Panel schreibt Bit 2 nie und liest die Register 26 bis 31 nie. Ein Encoder, den ein 4.9-Panel im Flash des IOmcu hinterlassen hat, bleibt freigegeben und wird gelesen; seine zwei Pins bleiben den Ausgängen entzogen |
 
 Der Encoder ist ein AS5600 von ams OSRAM auf der Ausgangswelle des Servos, an
 seiner festen Adresse 0x36 auf dem Bus, den SENSE schon betreibt, standardmäßig
@@ -217,7 +217,7 @@ Pins und die 400 kHz sind die des Busses. Jedes Register wird in einer
 eigenen Transaktion gelesen, da RAW ANGLE und MAGNITUDE Register sind, die das
 Bauteil besonders behandelt: der Adresszeiger läuft nicht über sie hinaus,
 und ein Lesen, das von STATUS oder AGC her durch das Weiterzählen dort
-ankommt, wird nicht vorausgesetzt. Der Koprozessor liest STATUS (1 Byte) und
+ankommt, wird nicht vorausgesetzt. Der IOmcu liest STATUS (1 Byte) und
 RAW ANGLE (2 Byte) in jedem zweiten 1-ms-Takt, 500 Hz, in den Takten ohne
 Rotationseintrag: 217,5 µs Buszeit bei 400 kHz. In einem von 25 dieser Plätze
 liest er stattdessen RAW ANGLE, AGC (1 Byte) und MAGNITUDE (2 Byte):
@@ -237,15 +237,15 @@ gerader Takt bleibt unter 690 µs. Der Encoder fügt der Buszeit einer Sekunde
 | 28 | `AS5600_MAGNITUDE` | die CORDIC-Magnitude (CORDIC: Coordinate Rotation Digital Computer), 12 Bit, mit 20 Hz gelesen; 0 bis zum ersten Lesen |
 | 29 | `AS5600_SAMPLES` | Winkellesungen modulo 65536: zwei Lesungen der Page mit demselben Zählerstand sind eine Messung |
 | 30 | `AS5600_STILL_MS` | wie lange der Winkel innerhalb von 12 Schritten (1,05 Grad) eines Ankers geblieben ist, in ms, bei 65535 gesättigt; 0 ohne Messung und solange MD nicht gesetzt ist |
-| 31 | `RESETS` | seit 4.11, und nicht vom Encoder: die Strommonitore, die zurückgesetzt gefunden wurden, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256, seit die geltende Konfiguration angenommen wurde. [Der Fenster-Ring](#der-fenster-ring) nennt die Regel. Ein Koprozessor mit 4.10 oder älter liest 0 |
+| 31 | `RESETS` | seit 4.11, und nicht vom Encoder: die Strommonitore, die zurückgesetzt gefunden wurden, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256, seit die geltende Konfiguration angenommen wurde. [Der Fenster-Ring](#der-fenster-ring) nennt die Regel. Ein IOmcu mit 4.10 oder älter liest 0 |
 
 Der Anker ist der Winkel der letzten Messung, die mehr als 12 Schritte vom
 vorigen Anker lag, auf dem Kreis über den Sprung von 4095 auf 0 gerechnet. Eine
 Bewegung, die zur Zeit t_ende endet und zur Zeit t_lesen gelesen wird, zeigt
 `AS5600_STILL_MS` = t_lesen - t_ende auf das 2-ms-Messintervall genau, das
-Panel misst das Ende einer Bewegung also in der Auflösung des Koprozessors,
+Panel misst das Ende einer Bewegung also in der Auflösung des IOmcu,
 gleich wie oft es selbst abfragt. Der eigene Fehler des Panels ist die Zeit
-zwischen dem Lesen im Koprozessor und dem Eintreffen der Antwort im Panel:
+zwischen dem Lesen im IOmcu und dem Eintreffen der Antwort im Panel:
 nicht gemessen. Fällt das Bauteil aus oder gilt eine neue Konfiguration, werden
 der Anker und die Register 26 bis 31 gelöscht.
 
@@ -288,10 +288,10 @@ zwei Arten von Gründen ab. BAD_VALUE ist ein Frame, den keine andere
 Konfiguration gut macht: ein Wert außerhalb seines Bereichs, ein
 Tonbereich, den der Detektor ablehnt, ein GPIO hinter der Bank, von der
 Platine reserviert oder ein ADC-Pin, oder, mit gesetztem ENABLE, ein
-Koprozessor, dessen Core 1 beim Booten nicht gestartet ist und der bis zu
+IOmcu, dessen Core 1 beim Booten nicht gestartet ist und der bis zu
 einem Neustart keine Erfassung ausführt. BUSY (seit 4.17) ist ein Pin, den ein
 Ausgang, SENSE, SUPPLY oder ein Programmierport hält, oder eine Erfassung,
-die der Koprozessor vorerst nicht starten kann. Derselbe Frame wird
+die der IOmcu vorerst nicht starten kann. Derselbe Frame wird
 angenommen, sobald dieser Pin oder diese State-Machine frei ist.
 
 Das Panel (`shared/bench/tone_link.c`) meldet einen abgewiesenen ersten
@@ -300,10 +300,10 @@ erneut an (`TONE_LINK_RETRY_MS`), je ein Write, und einen mit BAD_VALUE
 abgewiesenen schreibt es erst wieder, wenn sich die Konfiguration unter
 SETUP ANSCHLÜSSE ändert oder der Link wieder hochkommt.
 
-| Panel | Koprozessor | Ein abgewiesener erster Frame |
+| Panel | IOmcu | Ein abgewiesener erster Frame |
 | --- | --- | --- |
 | 4.17 | 4.17 | BUSY: alle 5 s erneut angeboten. BAD_VALUE: nach der nächsten Änderung der Konfiguration oder dem Link-up erneut geschrieben |
-| 4.17 | 4.16 oder älter | der Koprozessor sagt für beides BAD_VALUE. Das Panel bietet den Frame alle 5 s erneut an, wenn sein Tonbereich und seine Lücke solche sind, die die Page nimmt (der höchste Ton über dem tiefsten, die Lücke mindestens eine Periode des tiefsten Tons), sonst nicht. Ein Frame, der für einen GPIO hinter der Bank, einen reservierten oder einen ADC-Pin abgewiesen wurde, geht dann alle 5 s hinaus und wird jedes Mal abgewiesen |
+| 4.17 | 4.16 oder älter | der IOmcu sagt für beides BAD_VALUE. Das Panel bietet den Frame alle 5 s erneut an, wenn sein Tonbereich und seine Lücke solche sind, die die Page nimmt (der höchste Ton über dem tiefsten, die Lücke mindestens eine Periode des tiefsten Tons), sonst nicht. Ein Frame, der für einen GPIO hinter der Bank, einen reservierten oder einen ADC-Pin abgewiesen wurde, geht dann alle 5 s hinaus und wird jedes Mal abgewiesen |
 | 4.16 oder älter | 4.17 | das Panel nimmt BUSY als Abweisung und bietet den ersten Frame alle 5 s erneut an, wie bei BAD_VALUE |
 
 `test_tone_page` prüft jeden Grund gegen seinen Code und `test_link_pages`
@@ -336,8 +336,8 @@ dann die 32 von BIND_OUT, jedes als Low-Byte und dann High-Byte, 128 Bytes.
 Ein Schreiben von `COMMIT`:
 
 1. wird mit BAD_VALUE abgelehnt, wenn sein Wert nicht die CRC dessen ist, was
-   der Koprozessor vorbereitet hält. Nichts ändert sich. Ein Frame, der nicht
-   ankam, oder ein Koprozessor, der seit dem Vorbereiten neu gestartet ist,
+   der IOmcu vorbereitet hält. Nichts ändert sich. Ein Frame, der nicht
+   ankam, oder ein IOmcu, der seit dem Vorbereiten neu gestartet ist,
    endet hier;
 2. beurteilt die vorbereitete CHAN_CFG-Page nach jeder Regel eines
    CHAN_CFG-Schreibens und setzt sie in Kraft, oder lehnt mit BAD_VALUE ab
@@ -361,7 +361,7 @@ bleiben Eintrag für Eintrag beschreibbar und gelten mit jeder Bestätigung:
 so schreibt der SERVO-Bildschirm den Bereich eines Kanals und das Panel die
 Endpunkte des Throttle.
 
-| Panel | Koprozessor | Eine auf OUTPUTS oder PICK A PIN geänderte Bindung |
+| Panel | IOmcu | Eine auf OUTPUTS oder PICK A PIN geänderte Bindung |
 | --- | --- | --- |
 | 4.10 | 4.10 | vorbereitet und übernommen: SERVO `FRAME_HZ` = 0, 8 Frames an BIND_CFG, 8 an BIND_OUT, `COMMIT`, dann OUTPUTS und CHAN_CFG zurückgelesen. 20 Austausche |
 | 4.10 | 4.9 oder älter | das Panel liest die Minor beim Link-up und sendet nichts an die drei Pages. SERVO `FRAME_HZ` = 0 (ab 4.1), 8 Frames an CHAN_CFG, 8 an OUTPUTS, jeder ein eigener bestätigter Austausch und mit der Bestätigung in Kraft, dann beide Pages zurückgelesen. 19 Austausche. Ein mittendrin verlorener Frame lässt die Einträge davor in Kraft; das Panel zeigt die Pages dann, wie sie sich lesen, und schreibt nichts darüber außer einer Bindung ohne Pin |
@@ -371,7 +371,7 @@ Endpunkte des Throttle.
 Jedes Schreiben dieses Panels, das breiter als ein Frame ist, geht mit einem
 Frame von bis zu 4 Registern je Austausch hinaus, jeder bestätigt, bevor der
 nächste gesendet wird (`link_write_acked()` in `shared/link/link_port.c`). Der
-XL2515 hält 2 empfangene Frames, und der Koprozessor liest ihn aus seiner
+XL2515 hält 2 empfangene Frames, und der IOmcu liest ihn aus seiner
 Hauptschleife; mit einem Anfrage-Frame gleichzeitig unterwegs verzögert ein
 verspäteter Durchlauf einen Frame und verliert keinen an einen vollen Puffer.
 Dasselbe Schreiben als 8 Frames direkt hintereinander verliert 6 davon an
@@ -380,7 +380,7 @@ als Frames direkt hintereinander: der TWAI-Treiber des Panels puffert 16.
 
 Die Kosten einer Änderung, und woran sie gemessen werden:
 
-| | 0.14.0 | Dieser Build, Koprozessor mit 4.10 |
+| | 0.14.0 | Dieser Build, IOmcu mit 4.10 |
 | --- | ---: | ---: |
 | Austausche | 5 | 20 |
 | Anfrage-Frames | 19 | 20 |
@@ -390,7 +390,7 @@ Die Kosten einer Änderung, und woran sie gemessen werden:
 | Speicheranforderungen an den Flash-Speicher | 16 | 1 |
 
 54 Frames zu etwa 130 µs sind in beiden 7 ms Buszeit. Ein Austausch fügt den
-Schleifendurchlauf des Koprozessors und das Aufwachen der Panel-Task hinzu:
+Schleifendurchlauf des IOmcu und das Aufwachen der Panel-Task hinzu:
 [Den Link in Betrieb nehmen](Bringup-de.md) gibt für die Laufzeit eines
 Austauschs 334 bis 1400 µs aus, das legt die 20 zwischen 7 und 28 ms; die
 Folge selbst ist auf Hardware nicht gemessen. Die Control-Task des Panels
@@ -401,15 +401,15 @@ seit ihrem letzten Lauf vergangen sind, und in allen 5 ms, die auf eine
 Antwort gewartet wird. Der 50-ms-Poll mit
 seinem Schreiben von ARM und THROTTLE verspätet sich um dieselbe Zeit; eine
 Änderung wird bei einem Prüfstand in ARMED abgelehnt, kein Prüfstand in ARMED
-wartet also darauf. Die 200-ms-Stillegrenze des Koprozessors zählt ab der
+wartet also darauf. Die 200-ms-Stillegrenze des IOmcu zählt ab der
 letzten Anfrage, die er gehört hat, und jeder Austausch der Folge ist eine:
 die Folge kann sie nicht aushungern, wie lange sie insgesamt auch dauert,
-und ein einzelner Frame, den der Koprozessor 200 ms lang nicht annimmt, setzt
+und ein einzelner Frame, den der IOmcu 200 ms lang nicht annimmt, setzt
 `FEHLER 01` wie jede Anfrage. Ein Frame, der auf der Leitung verloren geht,
 beendet die Folge nach den 1000 ms seines eigenen Austauschs, der Link wird
 abgebaut, und die geltende Bindung bleibt unverändert.
 
-`shared/outputs/out_stage.c` ist die Hälfte des Koprozessors und
+`shared/outputs/out_stage.c` ist die Hälfte des IOmcu und
 `shared/outputs/bind_link.c` die des Panels, unter `test_bind_link`: die
 Folge durch ein Modell des 2-Frame-Puffers mit einem tauben Fenster von
 20 ms, geöffnet alle 125 µs, ein verlorener Frame an jeder der 18 Stellen,
@@ -446,12 +446,12 @@ mit READ_ONLY abgewiesen.
 Die Page hat 28 Register. Register 0 bis 15 sind der Kopf und die zwei
 neuesten Fenster: eine Anfrage und vier Daten-Frames, wie ein Lesen von
 BENCH. Ströme sind auf das mA gerundet und auf -32767 bis 32767 begrenzt,
-Spannungen auf 0 bis 65535 mV. Der Koprozessor liest den Strom von CH1 jede
+Spannungen auf 0 bis 65535 mV. Der IOmcu liest den Strom von CH1 jede
 1 ms und seine Busspannung alle 20 ms: ein Fenster enthält bis zu 50
 Strommessungen und 2 oder 3 Spannungsmessungen.
 
 Ein Eintrag mit gelöschtem Bit 15 liest in allen sechs Registern 0. Seine
-Nummer hat sich nie geschlossen: der 1-ms-Takt des Koprozessors lief 50 ms
+Nummer hat sich nie geschlossen: der 1-ms-Takt des IOmcu lief 50 ms
 oder mehr zu spät und keine Messung fiel in dieses Fenster, oder die Nummer
 liegt vor dem ersten Fenster der Konfiguration. Ein Eintrag mit gesetztem
 Bit 15 und gelöschten Bits 8 und 9 hat sich ohne Messung geschlossen: der
@@ -465,7 +465,7 @@ ein, und die Bits 0 bis 7 zählen sie. Der Strom war mindestens so groß; um
 wie viel größer, ist nicht bekannt. Die Register 0 bis 11 von SERVO_SENSE
 lassen eine solche Messung aus ihren Werten heraus, die beiden Pages
 unterscheiden sich also für ein Fenster mit einer Messung am Ende des
-Bereichs, und nur für ein solches. Der Koprozessor wendet auf die Zahl keine
+Bereichs, und nur für ein solches. Der IOmcu wendet auf die Zahl keine
 Regel an.
 
 `CAP_STATE`, `CAP_SEQ` und Bit 7 von `FLAGS` sind die von SERVO_SENSE, wie
@@ -473,7 +473,7 @@ jene Page im selben Durchlauf liest: ein Scharfschalten liest hier ab der
 Bestätigung des Schreibens scharf (1), und eine beendete Messung zeigt sich
 in dem Lesen, das die Fenster holt.
 
-Nichts wird gehalten: nach einem Neustart des Koprozessors liest alles 0,
+Nichts wird gehalten: nach einem Neustart des IOmcu liest alles 0,
 ebenso nach einer angenommenen SENSE-Konfiguration, bis sich unter ihr das
 erste Fenster schließt.
 
@@ -488,7 +488,7 @@ Der INA3221 wandelt alle drei Kanäle mit 1,1 ms, ein CH1-Ergebnis alle
 bis 840 µs (drei Kanäle) gibt. Der INA228 setzt sich zurück, wenn seine
 Versorgung unter etwa 1,26 V fällt (TI SLYS021A §7.4.2).
 
-Der Koprozessor liest ADC_CONFIG des INA228 und Configuration des INA3221
+Der IOmcu liest ADC_CONFIG des INA228 und Configuration des INA3221
 zurück, je einmal in 40 ms. Ein anderer Wert als der geschriebene wird im
 selben Takt ein zweites Mal gelesen, ein einzelnes verfälschtes Lesen ist
 also kein Reset. Ein Rücklesen von FFFFh wird nicht wiederholt: ein Bus, den
@@ -530,17 +530,17 @@ unverändert. Eine Rücklesung ist ein Lesen von 2 Byte, 120 µs. Ein gerader
 Takt bleibt bei 690 µs Buszeit; der Takt, in dem ein Konfigurationsregister
 ein zweites Mal gelesen wird, hat 742,5 µs.
 
-| Panel | Koprozessor | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
+| Panel | IOmcu | SERVO_WIN (0x31), `RESETS` und `CAP_HOLD_MA` |
 | --- | --- | --- |
 | 4.11 | 4.11 | bedient. Solange SENSE den INA3221 mit CH1 freigibt, liest das Panel dieses Builds SERVO_WIN bei jedem Poll und von SENSE die Register 12 bis 31, darunter `RESETS`. Es schaltet keine Messung scharf |
-| 4.11 | 4.10 oder älter | der Koprozessor beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `Koprozessor-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
+| 4.11 | 4.10 oder älter | der IOmcu beantwortet eine Anfrage an 0x31 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 11 nichts dorthin. Es nimmt die Fenster des INA3221 von SERVO_SENSE, das letzte je Lesen, liest den PD mini als Messgerät der Servo-Schiene und meldet einmal `IOmcu-Firmware älter als 4.11. Servostrom wird vom PD mini ausgelesen.`. Register 31 liest 0, und ein Bauteil, das sich zurückgesetzt hat, bleibt ONLINE mit seiner Einschalt-Konfiguration. Ein `CAP_HOLD_MA` von 32768 bis 65535 wird mit BAD_VALUE abgewiesen |
 | 4.10 oder älter | 4.11 | das Panel liest 0x31 nie und liest Register 31 als reserviertes Register, das es übergeht. Ein Haltestrom, den es schreibt, 0 bis 32767 mA, bedeutet dasselbe. Ein zurückgesetzt gefundenes Bauteil liest 1000 ms lang offline und dann wieder online |
 
 **Die Lesezugriffe des Panels.** `shared/bench/sense_link.c` nimmt jede
 Fensternummer von CH1 einmal und gibt die Fenster weiter, das älteste
-zuerst. Es liest SERVO_WIN, solange die Minor des Koprozessors 11 oder mehr
+zuerst. Es liest SERVO_WIN, solange die Minor des IOmcu 11 oder mehr
 ist und SENSE den INA3221 mit CH1 freigibt; ohne CH1 oder an einem älteren
-Koprozessor sind die Fenster die von SERVO_SENSE, das letzte je Lesen
+IOmcu sind die Fenster die von SERVO_SENSE, das letzte je Lesen
 (`shared/bench/sense_link_view.c`).
 
 - Bei jedem Poll liest es die Register 0 bis 15, den Kopf und die zwei
@@ -587,7 +587,7 @@ des INA3221 ist das Messgerät, solange alles Folgende gilt:
 | # | Bedingung |
 | ---: | --- |
 | 1 | SETUP ANSCHLÜSSE hat den INA3221 eingeschaltet, mit CH1 unter seinen Kanälen |
-| 2 | die Protokoll-Minor des Koprozessors ist 11 oder mehr |
+| 2 | die Protokoll-Minor des IOmcu ist 11 oder mehr |
 | 3 | die Register 0 bis 11 von SENSE sind die verlangte Konfiguration: kein Schreiben offen, kein Frame abgewiesen |
 | 4 | das letzte Lesen von SENSE ist jünger als 200 ms, und in seinen `FLAGS` sind die Bits 4 und 5 des INA3221 gesetzt und Bit 9 gelöscht |
 | 5 | das neueste Fenster von SERVO_WIN hält Strommessungen, und seine Nummer hat sich vor weniger als 200 ms bewegt |
@@ -596,7 +596,7 @@ des INA3221 ist das Messgerät, solange alles Folgende gilt:
 
 Das Messgerät ist der PD mini ab dem ersten Poll, in dem eine von 1 bis 6
 nicht gilt, und wieder der INA3221 1000 ms, nachdem alle gelten. Antwortet
-kein Koprozessor, ist es das Modell des Panels. Ein übersteuertes Fenster
+kein IOmcu, ist es das Modell des Panels. Ein übersteuertes Fenster
 und ein negativer Strom sind Messwerte und keine Bedingung. Das Modul zählt
 die Wechsel des Messgeräts, modulo 2^32. Die Antwort und dieser Zähler
 stehen im Snapshot der Control-Task mit der Zahl der verlorenen Fenster, und
@@ -621,21 +621,21 @@ warum der INA3221 zuletzt aufhörte, das Messgerät zu sein, mit dem Zähler
 jenes Polls (`servo_source_dropped()`) und reicht es mit jedem der drei
 weiter, damit der Bericht des Laufs die Bedingung nennt: ein Reset-Zähler,
 der sich in jenem Poll bewegte, ist der Grund, der behalten wird, weil der
-Koprozessor einen Baustein, den er zurückgesetzt findet, im selben Lesen
+IOmcu einen Baustein, den er zurückgesetzt findet, im selben Lesen
 offline nimmt. Jedes Fenster trägt den spätesten Zeitpunkt, zu dem es
 geschlossen haben kann: den Tick des Panels beim Lesen, abzüglich 50 ms für
 jedes Fenster nach ihm in diesem Lesen (`sense_link_win_t.taken_ms`).
 
 `test_sense_windows` lässt den modellierten INA3221, den Zeitplan und die
-Pages des Koprozessors und `sense_link` an einer Uhr laufen: Polls im
+Pages des IOmcu und `sense_link` an einer Uhr laufen: Polls im
 Abstand von 50, 53, 55, 100, 150, 199 und 200 ms ohne verlorenes Fenster,
 von 201 und 250 ms mit einer Zahl verlorener Fenster gleich den fehlenden
 Nummern, eine verlorene Antwort in einem, zwei und drei Polls
 hintereinander, die Fensternummer über 65535 hinweg, die Lesezugriffe über
 den Überlauf des Ticks bei 2^32 ms, eine geschriebene Konfiguration, ein
-Neustart des Koprozessors, ein verspäteter Takt des Koprozessors, ein
+Neustart des IOmcu, ein verspäteter Takt des IOmcu, ein
 verlorener und wiedergekehrter Link, ein Bauteil, das sich zurücksetzt, und
-ein Koprozessor mit 4.10. `test_servo_source` hält jede Bedingung, die
+ein IOmcu mit 4.10. `test_servo_source` hält jede Bedingung, die
 allein nicht gilt, ein Lesen, das mit 199 ms frisch ist und mit 200 und
 201 ms nicht, den INA3221 zurück bei 1000 ms und nicht bei 999 ms, einen
 zwischen zwei Lesungen behobenen Reset und jeden Timer über den Überlauf
@@ -672,7 +672,7 @@ Bring-up-Build hat 1. `shared/outputs/prog_port.c` hält die Regeln.
 | 1 | `FLAGS` | lesen | Bit n: der PWM-Generator hat den Pin von Port n. Bit 8 + n: der gespeicherte Pin von Port n war beim Start vergeben, und der Port hält ihn nicht |
 | 2 | `PWM` | lesen, schreiben | Bit n: Port n gibt seinen Puls aus, solange die Bank für die Surfaces ARMED ist. Nicht gehalten |
 | 3 | `TARGET` | lesen, schreiben | was Frame Rate, Sweep und Hold von SERVO treiben: 0 die Standard-Servoports, n + 1 Port n. Eine Änderung setzt die Frame Rate von SERVO auf 0 (seit 4.19). Nicht gehalten |
-| 4 + 5 n | `PIN` | lesen, schreiben | der Koprozessor-GPIO (General-Purpose Input/Output) von Port n, oder 0xFFFF für keinen. Gehalten |
+| 4 + 5 n | `PIN` | lesen, schreiben | der IOmcu-GPIO (General-Purpose Input/Output) von Port n, oder 0xFFFF für keinen. Gehalten |
 | 5 + 5 n | `CMD` | lesen, schreiben | das Kommando, 0 bis 1000; ein höherer Wert wird als 1000 genommen. Nicht gehalten |
 | 6 + 5 n | `SLEW` | lesen, schreiben | wie der Slew von CHAN_CFG: 0 bis 3000, ein höherer Wert wird mit BAD_VALUE abgelehnt, nichts wird gespeichert (seit 4.16). Gehalten; ein gehaltener Slew über 3000 startet als 3000 |
 | 7 + 5 n | `MIN_US` | lesen, schreiben | der Puls bei Kommando 0, 400 bis 2500 µs, Standard 1000; solange das `PWM`-Bit des Ports gesetzt ist, höchstens der Frame der Port-Rate minus 1 µs (seit 4.16). Gehalten |
@@ -735,7 +735,7 @@ der Build nicht hat, wird mit BAD_VALUE abgewiesen, ein Schreiben von
 Register 0 oder 1 mit READ_ONLY. Ein abgewiesenes Schreiben ändert nichts, auch
 nicht Frame Rate und Sweep von SERVO.
 
-Ein Koprozessor, der keinen Port gespeichert hat, hat Port 0 auf GP13, Pad
+Ein IOmcu, der keinen Port gespeichert hat, hat Port 0 auf GP13, Pad
 17 des Bring-up-Moduls, und die anderen Ports ohne Pin. Der Slice-Partner
 von GP13, GP12, ist reserviert, und der Pin mit seinem Compare-Register,
 GP29, liegt nicht auf der Stiftleiste. GP13 ist deshalb kein Pin eines
@@ -744,10 +744,10 @@ geschrieben ist. Ein gespeicherter Pin, den beim Start ein Slot, SUPPLY,
 SENSE oder TONE hält, bleibt deren: der Port hält keinen Pin, und Bit 8 + n
 von `FLAGS` ist gesetzt, bis ein anderer `PIN` geschrieben ist.
 
-| Panel | Koprozessor | PROG (0x33) |
+| Panel | IOmcu | PROG (0x33) |
 | --- | --- | --- |
 | 4.13 | 4.13 | bedient |
-| 4.13 | 4.12 oder älter | der Koprozessor beantwortet eine Anfrage an 0x33 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 13 nichts dorthin |
+| 4.13 | 4.12 oder älter | der IOmcu beantwortet eine Anfrage an 0x33 mit BAD_PAGE; das Panel liest die Minor beim Link-up und sendet unter 13 nichts dorthin |
 | 4.12 oder älter | 4.13 | das Panel liest und schreibt 0x33 nie: kein Port gibt einen Puls aus, und Port 0 hält GP13 |
 
 `test_prog_port` fährt die Page: jede Pin-Abweisung in beiden Richtungen,
@@ -824,36 +824,36 @@ Failsafe ist eine solche Nebenwirkung.
 | 0x20 | BENCH | lesen | Spannung (10 mV), Strom (10 mA), Leistung (W), Drehzahl (min⁻¹), Temperatur des ESC (Electronic Speed Controller, Motorregler) und des Motors (0,1 °C, vorzeichenbehaftet), Ladung (mAh), Energie (0,1 Wh), Minimalspannung, Maximalstrom, Maximalleistung, Maximaldrehzahl, Flags |
 | 0x21 | reserviert | | nicht vergeben; nicht wiederzuverwenden |
 | 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot, 4 bidirektionales DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für beide DShot-Treiber); acht Slots zu vier Registern |
-| 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Tausendstel der Spanne je Sekunde, 0 bis 3000, 0 = sofort; ein höherer Wert wird mit BAD_VALUE abgelehnt und nichts wird gespeichert (seit 4.16); ein Slew über 3000, den ein älterer Build im Flash des Koprozessors hinterlassen hat, startet als 3000), minimaler und maximaler Puls in µs, 400 bis 2500 und auf einem Kanal, den ein PWM-Slot ausgibt, höchstens dessen Frame minus 1 µs (seit 4.16); acht Kanäle zu vier Registern |
+| 0x23 | CHAN_CFG | lesen, schreiben | je Kanal: Rolle (0 throttle, 1 surface), Slew (Tausendstel der Spanne je Sekunde, 0 bis 3000, 0 = sofort; ein höherer Wert wird mit BAD_VALUE abgelehnt und nichts wird gespeichert (seit 4.16); ein Slew über 3000, den ein älterer Build im Flash des IOmcu hinterlassen hat, startet als 3000), minimaler und maximaler Puls in µs, 400 bis 2500 und auf einem Kanal, den ein PWM-Slot ausgibt, höchstens dessen Frame minus 1 µs (seit 4.16); acht Kanäle zu vier Registern |
 | 0x24 | CATALOGUE | lesen | die eigenen Pins der Platine, je ein Register: GPIO-Nummer (General-Purpose Input/Output) in 6 Bit, die daneben aufgedruckte Pad-Nummer in 6, was ihn hält in 4 (0 frei, 1 Heartbeat, 2 CAN, 3 Flash, 4 Debug, 5 Sensor, 15 sonstiges); 32 Slots, und eine Pad-Nummer von 0 heißt, in diesem Slot ist kein Pin |
-| 0x25 | SHAPE | lesen | wo diese Pads liegen: Umriss-Breite und -Höhe in 0,01 mm, die Ecke, an der Pad 1 sitzt, und die Pads in einer Reihe gepackt als (Ecke << 8) \| je Reihe, das Raster in 0,01 mm und der Abstand von der Kante zur Mitte einer Pad-Reihe. Zwei Reihen auf einem Raster, nummeriert von Pad 1 weg entlang seiner Kante und zurück entlang der gegenüberliegenden. Alles null, wenn der Koprozessor keine Form für seine Platine hat — dann wird sie gelistet und nicht gezeichnet |
-| 0x26 | ARTWORK | lesen | was die Zeichnung der Platine ist, 9 Register (seit 4.20; davor 7): Blöcke Nutzdaten (0, wenn der Koprozessor keine trägt), Breite und Höhe des Umrisses in 0,01 mm, Format (0 keines, 2 die Zeichnung der Platine; 1, ein RGB565-Foto, liefern nur 4.19 und älter), Nutzdatenlänge in zwei Registern, eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null und ein FNV-1a-Hash (Fowler-Noll-Vo) über sie in zwei Registern, die niederwertige Hälfte zuerst. [Die Zeichnung der Platine](#die-zeichnung-der-platine) hat das Layout |
+| 0x25 | SHAPE | lesen | wo diese Pads liegen: Umriss-Breite und -Höhe in 0,01 mm, die Ecke, an der Pad 1 sitzt, und die Pads in einer Reihe gepackt als (Ecke << 8) \| je Reihe, das Raster in 0,01 mm und der Abstand von der Kante zur Mitte einer Pad-Reihe. Zwei Reihen auf einem Raster, nummeriert von Pad 1 weg entlang seiner Kante und zurück entlang der gegenüberliegenden. Alles null, wenn der IOmcu keine Form für seine Platine hat — dann wird sie gelistet und nicht gezeichnet |
+| 0x26 | ARTWORK | lesen | was die Zeichnung der Platine ist, 9 Register (seit 4.20; davor 7): Blöcke Nutzdaten (0, wenn der IOmcu keine trägt), Breite und Höhe des Umrisses in 0,01 mm, Format (0 keines, 2 die Zeichnung der Platine; 1, ein RGB565-Foto, liefern nur 4.19 und älter), Nutzdatenlänge in zwei Registern, eine CRC (zyklische Redundanzprüfung) über die gesamten Nutzdaten mit Startwert null und ein FNV-1a-Hash (Fowler-Noll-Vo) über sie in zwei Registern, die niederwertige Hälfte zuerst. [Die Zeichnung der Platine](#die-zeichnung-der-platine) hat das Layout |
 | 0x27 | ART_DATA | lesen, schreiben | die Zeichnung selbst: Register 0 schreiben, um den Block zu nennen, dann die Page lesen. Register 0 liest den gerade bedienten Block zurück, Register 1 bis 31 tragen 62 Bytes davon. Ein Block rückt beim Lesen nicht vor, eine verlorene Antwort wird also erneut angefordert statt übersprungen |
 | 0x28 | PADS | lesen | die Pads, die keine Pins sind, je ein Register: die Pad-Nummer in 6 Bit, was es ist in 2 (0 kein Pad und die Liste endet, 1 Masse, 2 eine Versorgung, 3 keines von beiden) und die Spannung in 8 Bit zu Zehntelvolt. Null Volt bei einer Versorgung heißt, sie ist keine feste Spannung — das ist nicht dasselbe wie die 0 V einer Masse. 32 Slots, in Pad-Reihenfolge |
-| 0x29 | SERVO | lesen, schreiben | Register 0: die Frame Rate in Hz des PWM-Ziels, das `TARGET` von PROG nennt, 40 bis 560, oder 0 für seine eigene Rate. Mit den Standard-Servoports als Ziel: jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat, 0 für die eigene Rate jedes Slots aus OUTPUTS; mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte, und solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte (seit 4.1). Mit einem Programmierport als Ziel: nur der Pin dieses Ports, 0 für 50 Hz (seit 4.19, [Die Frame Rate des Ziels](#die-frame-rate-des-ziels)). Ebenso abgewiesen, wenn ein PWM-Ausgang oder ein pulsender Programmierport damit einen Endpunkt hätte, der länger als sein Frame ist (seit 4.16, [Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Eine Änderung von `TARGET` setzt Register 0 auf 0 (seit 4.19). Register 1 bis 4, ein Frame: ein Sweep der Surfaces -- Kurve (0 gestoppt, 1 Rechteck, 2 Sinus, 3 Dreieck), Geschwindigkeit in Tausendstel Zyklen je Sekunde (50 bis 5000), Amplitude in Befehlseinheiten zu jeder Seite der Mitte (0 bis 500), Haltezeit an jedem Ende in ms (0 bis 5000); ein Sweep startet oder ändert sich nur, wenn alle vier zusammen geschrieben werden, sonst mit BAD_VALUE abgewiesen, und bei einem Prüfstand in SAFE oder nur für Throttle in ARMED mit NOT_ARMED (seit 4.18); 0 in Register 1 allein hält ihn an, und 4 allein hält jede Surface dort, wo ihr Ausgang gerade ist, unter denselben Regeln für das Schalten auf SAFE und 500 ms. Ein Sweep, der beim Beginn des Haltens läuft, behält seine Phase (seit 4.6): wie weit er in der Kurve war, und damit seinen Punkt, sein Verweilen und die erreichten Enden; einer, der seine Bewegungen gemacht hat, wird in der Mitte gehalten, auf der er endete. Ein Schreiben wird an der Page gemessen, wie der nächste Durchlauf des Koprozessors sie in diesem Moment hinterließe: ein Sweep nach seiner letzten Bewegung, 500 ms ohne Schreiben oder Schalten auf SAFE ist beendet, auch wenn das Schreiben vor dem Durchlauf bedient wird, der ihn beendet. 5 allein (RESUME, seit 4.6) setzt diesen Sweep ab der behaltenen Phase fort; die Surfaces werden sofort wieder entlang der Kurve angesteuert und fahren mit ihrer eigenen Rate von dort hin, wo sie gehalten wurden. RESUME wird mit BAD_VALUE abgewiesen, wenn keine Phase behalten ist -- beim Beginn des Haltens lief kein Sweep, oder das Halten endete durch ein Schreiben von 0, eine darübergeschriebene Kurve, ein Schalten auf SAFE, 500 ms ohne Schreiben oder einen Neustart --, und wenn Register 2 bis 5 nicht mehr lesen, was der angehaltene Sweep fährt; mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED. Ein Koprozessor mit 4.5 weist 5 mit BAD_VALUE ab. Register 5: wie viele Enden ein danach gestarteter Sweep erreicht, bevor er anhält, 0 für kein Ende. Register 6, nur lesen: die Enden, die der Sweep erreicht hat. Ein Sweep hält bei einem Schreiben von 0, beim Schalten auf SAFE und wenn er 500 ms nicht geschrieben wurde an und lässt jede Surface dort, wo ihr Ausgang gerade ist; Wiederholen hält seine Kurve am Laufen, und ein Sweep, der seine Bewegungen gemacht hat, startet durch Wiederholen nicht neu (seit 4.2). Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
-| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des Koprozessors (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2 s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000 mV und 3000 mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400 ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann -- an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das nicht mehr antwortet, Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500 mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das kein OFF ist, wird mit BAD_VALUE abgewiesen (seit 4.15 jede Änderung eines Sollwerts; davor ein ON und ein Heben der Spannung), siehe [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des Koprozessors gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
-| 0x2B | SENSE | lesen, schreiben | zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem Bus auf zwei Pins des Koprozessors, ein TI INA228 im Leistungspfad des ESC und ein TI INA3221 an der Servoversorgung (seit 4.7). Register 0 bis 3, ein Frame: Freigabe (Bit 0 INA228, Bit 1 INA3221, Bit 2 der Ausgangsencoder AS5600 seit 4.9), der SDA-GPIO, der SCL-GPIO und der Takt, 400 kHz und kein anderer Wert: bei 100 kHz dauert ein Lesezugriff 480 bis 750 µs, und der 1-ms-Zeitplan des Koprozessors passt nicht. Der Zeitplan liest INA3221 CH1 mit 1000 Hz, CH2 und CH3 mit 50 Hz oder für ein synchronisiertes Paar mit 1000 Hz, Strom und Spannung des INA228 mit je 500 Hz, seine Chip-Temperatur, Mask/Enable des INA3221 und das zurückgelesene Konfigurationsregister jedes Bauteils (seit 4.11) mit je 25 Hz und alles andere mit 50 Hz. Beide Module tragen Pull-ups an SDA und SCL, und die liegen parallel: der DAOKAI-INA3221 hat 10 kΩ nach VS (3,3 V); Wert und Schiene der Pull-ups des MATEK-INA228 sind unbekannt. Der Gesamtwert muss über etwa 1 kΩ bleiben: ein I2C-Ausgang zieht 3 mA bei 0,4 V, und (3,3 V − 0,4 V) / 3 mA sind 967 Ω. Unter 10 kΩ verkürzt er die Anstiegszeit: die Grenze von 300 ns bei 400 kHz erlaubt mit 10 kΩ allein 35 pF Buskapazität, mit weniger mehr. Die GPIO-Nummer von SDA ist modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach, das Paar eines I2C-Blocks (standardmäßig GP16 und GP17). Register 4 bis 7, ein Frame: die Adresse des INA228, 0x40 bis 0x4F (Standard 0x45, die des MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41); sein Shunt in µΩ, 50 bis 20000 (Standard 200); der Strom, auf den sein Bereich eingestellt ist, in 0,1 A, 10 bis 3000 (1,0 bis 300,0 A, das Auslegungsmaximum des Prüfstands; Standard 2048). Das Maximum wählt nur ADCRANGE: 1, solange die Shuntspannung dabei höchstens 40,96 mV beträgt, 0 bis 163,84 mV, und darüber wird das Schreiben abgewiesen. CURRENT_LSB ist der Schritt des Shunt-ADC geteilt durch den Shunt (78,125 nV oder 312,5 nV durch R), damit begrenzen CURRENT und die Shuntspannung gemeinsam, und SHUNT_CAL ist in beiden Bereichen 4096. Ein Shunt, dessen Vollausschlag im gewählten Bereich 2000 A übersteigt, wird ebenfalls abgewiesen; unter 81,92 µΩ gilt also nur ADCRANGE 1. Die Regel ist die des Treibers, `ina228_calibrate()`; Register 7 reserviert. Register 8 bis 11, ein Frame: die Adresse des INA3221, 0x40 bis 0x43 (Standard 0x40); sein Shunt in 0,1 mΩ, 50 bis 10000 (5 mΩ bis 1 Ω, Standard 1000, die 0,1 Ω, die bis 1,638 A messen); die gelesenen Kanäle, Bits 0..2 für CH1 bis CH3, mindestens einer, solange er freigegeben ist (Standard CH1); Register 11 reserviert. Die reservierten Register lesen 0 und nehmen nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, SDA und SCL nicht das Paar eines Blocks, was auch immer ENABLE hält, bei freigegebenem Bauteil ein Pin, der reserviert, an einen Ausgang gebunden oder von SUPPLY gehalten ist, beide Bauteile auf einer Adresse, solange beide freigegeben sind, und jede Änderung bei einem Prüfstand in ARMED; ein Schreiben der geltenden Konfiguration wird angenommen. Ein Frame, der kein Paar ist, wird angenommen: ENABLE 0 mit SDA oder SCL 0, so schreibt ein Panel nicht gesetzte Pins. Die Pins gehören keinem Ausgang, solange eines der Bauteile freigegeben ist, und ein Schreiben auf OUTPUTS, das einen davon bindet, wird abgewiesen. Register 12 bis 25, nur lesen: Flags (Bit 0 INA228 online, Bit 1 seine letzte Identitätslesung war die eines INA228, Bit 2 an seiner Adresse antwortet etwas anderes, Bit 3 ein Strom lag im letzten 50-ms-Fenster oder seit dem Schalten des Laufs auf ARMED am Ende seines Bereichs, Strom und Leistung in BENCH oder ihre Spitzen sind dann Grenzen und keine Werte; Bits 4 bis 6 dieselben drei für den INA3221; Bit 8 der Bus ist auf seinen Pins offen, Bit 9 SDA wird low gehalten und wird freigetaktet), die Adressen, die beim letzten Scan geantwortet haben (Bit n für 0x40 + n), DEVICE_ID des INA228 und Die-ID des INA3221 wie gelesen, fehlgeschlagene Transaktionen modulo 65536, die Chiptemperatur des INA228 in 0,1 °C (vorzeichenbehaftet) und DIAG_ALRT, seine Ladung in 0,01 mAh (vorzeichenbehaftet, 32 Bit, Register 19 und 20, niederwertiges zuerst) und Energie in 0,01 Wh (32 Bit, Register 21 und 22, niederwertiges zuerst) seit dem Schalten des Laufs auf ARMED, die Telemetriespannung (10 mV) und der Telemetriestrom (10 mA) des ESC selbst und ihre Gültigkeitsbits (Bit 0 Spannung, Bit 1 Strom). Register 26 bis 30, nur lesen, seit 4.9: Flags, RAW ANGLE, MAGNITUDE, Zähler und Ruhezeit in ms des Ausgangsencoders (siehe unten). Register 31, nur lesen, seit 4.11: `RESETS`, die zurückgesetzt gefundenen Strommonitore, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256 ([Der Fenster-Ring](#der-fenster-ring)); ein Koprozessor mit 4.10 oder älter liest 0. Register 0 bis 11 werden im Flash des Koprozessors gehalten |
-| 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des Koprozessors (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8 mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung -- Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet, oder mit gesetztem Bit 11 (seit 4.13) der Programmierport in diesen Bits ([Die Programmierports](#die-programmierports)); der Haltestrom, bei dem die Bewegung endet, in mA, vorzeichenbehaftet, -32768 bis 32767 (seit 4.11; davor 0 bis 32767, ein größerer Wert abgewiesen); die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767 mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der Koprozessor gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED (seit 4.18). Ein Prüfstand, der aufhört, die Surfaces zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000 ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 antwortet nicht mehr, oder binnen 3000 ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1 ms, aufgelöst auf das Abtastintervall von CH1, 1 ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des Koprozessors steht überall 0 |
-| 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des Koprozessors, gestempelt von einer PIO-State-Machine mit 26,7 ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), von der Platine reserviert oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GP26 bis GP29 des RP2350A und GP40 bis GP47 des RP2354B, die nicht fehlertolerant sind, sowie jeder GPIO an einem Koprozessor, dessen Core 1 beim Booten nicht gestartet ist (bis zu einem Neustart läuft keine Erfassung). Mit BUSY abgewiesen (seit 4.17; davor BAD_VALUE), solange der Tap freigegeben ist: ein GPIO, der an einen Ausgang gebunden oder von SENSE, SUPPLY oder einem Programmierport gehalten ist, und eine Erfassung, die der Koprozessor vorerst nicht starten kann (Core 1 in einem Durchlauf, oder keine PIO-State-Machine und kein DMA-Kanal übrig neben den Ausgängen und der Versorgung) ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird in ARMED wie in SAFE angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8 ms), der Ton des letzten Fensters in 0,1 Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der Koprozessor hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1 ms; seine mittlere Tonhöhe in 0,1 Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500 ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8 µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des Koprozessors gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86 kΩ), und der bleibt an, solange der Tap läuft |
+| 0x29 | SERVO | lesen, schreiben | Register 0: die Frame Rate in Hz des PWM-Ziels, das `TARGET` von PROG nennt, 40 bis 560, oder 0 für seine eigene Rate. Mit den Standard-Servoports als Ziel: jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat, 0 für die eigene Rate jedes Slots aus OUTPUTS; mit BAD_VALUE abgewiesen, und nichts ändert sich, wenn ein PWM-Slice damit zwei Raten hätte, und solange sie nicht 0 ist, ebenso ein Schreiben auf CHAN_CFG oder OUTPUTS, das das täte (seit 4.1). Mit einem Programmierport als Ziel: nur der Pin dieses Ports, 0 für 50 Hz (seit 4.19, [Die Frame Rate des Ziels](#die-frame-rate-des-ziels)). Ebenso abgewiesen, wenn ein PWM-Ausgang oder ein pulsender Programmierport damit einen Endpunkt hätte, der länger als sein Frame ist (seit 4.16, [Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Eine Änderung von `TARGET` setzt Register 0 auf 0 (seit 4.19). Register 1 bis 4, ein Frame: ein Sweep der Surfaces -- Kurve (0 gestoppt, 1 Rechteck, 2 Sinus, 3 Dreieck), Geschwindigkeit in Tausendstel Zyklen je Sekunde (50 bis 5000), Amplitude in Befehlseinheiten zu jeder Seite der Mitte (0 bis 500), Haltezeit an jedem Ende in ms (0 bis 5000); ein Sweep startet oder ändert sich nur, wenn alle vier zusammen geschrieben werden, sonst mit BAD_VALUE abgewiesen, und bei einem Prüfstand in SAFE oder nur für Throttle in ARMED mit NOT_ARMED (seit 4.18); 0 in Register 1 allein hält ihn an, und 4 allein hält jede Surface dort, wo ihr Ausgang gerade ist, unter denselben Regeln für das Schalten auf SAFE und 500 ms. Ein Sweep, der beim Beginn des Haltens läuft, behält seine Phase (seit 4.6): wie weit er in der Kurve war, und damit seinen Punkt, sein Verweilen und die erreichten Enden; einer, der seine Bewegungen gemacht hat, wird in der Mitte gehalten, auf der er endete. Ein Schreiben wird an der Page gemessen, wie der nächste Durchlauf des IOmcu sie in diesem Moment hinterließe: ein Sweep nach seiner letzten Bewegung, 500 ms ohne Schreiben oder Schalten auf SAFE ist beendet, auch wenn das Schreiben vor dem Durchlauf bedient wird, der ihn beendet. 5 allein (RESUME, seit 4.6) setzt diesen Sweep ab der behaltenen Phase fort; die Surfaces werden sofort wieder entlang der Kurve angesteuert und fahren mit ihrer eigenen Rate von dort hin, wo sie gehalten wurden. RESUME wird mit BAD_VALUE abgewiesen, wenn keine Phase behalten ist -- beim Beginn des Haltens lief kein Sweep, oder das Halten endete durch ein Schreiben von 0, eine darübergeschriebene Kurve, ein Schalten auf SAFE, 500 ms ohne Schreiben oder einen Neustart --, und wenn Register 2 bis 5 nicht mehr lesen, was der angehaltene Sweep fährt; mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED. Ein IOmcu mit 4.5 weist 5 mit BAD_VALUE ab. Register 5: wie viele Enden ein danach gestarteter Sweep erreicht, bevor er anhält, 0 für kein Ende. Register 6, nur lesen: die Enden, die der Sweep erreicht hat. Ein Sweep hält bei einem Schreiben von 0, beim Schalten auf SAFE und wenn er 500 ms nicht geschrieben wurde an und lässt jede Surface dort, wo ihr Ausgang gerade ist; Wiederholen hält seine Kurve am Laufen, und ein Sweep, der seine Bewegungen gemacht hat, startet durch Wiederholen nicht neu (seit 4.2). Nichts wird gespeichert: Nach einem Neustart des IOmcu steht überall 0 |
+| 0x2A | SUPPLY | lesen, schreiben | ein WeAct PD Power Mini V1 Buck an einem PIO-UART (PIO: Programmable Input/Output) auf zwei Pins des IOmcu (seit 4.3). Register 0 bis 3, ein Frame: Freigabe, der GPIO, der sendet (zum DM des Moduls), und der, der empfängt (sein DP), und die UART-Baudrate-Einstellung des Moduls, 0 bis 6 für 9600, 19200, 38400, 57600, 115200, 230400 und 460800 Baud, oder 7 (seit 4.4), um sie zu finden: der UART versucht nach jedem WHO_AM_I ohne gültige Antwort die nächste Rate, beginnend bei 19200, bis ein Modul einmal geantwortet hat; mit BAD_VALUE abgewiesen bei einem Pin, der reserviert, an einen Ausgang gebunden oder der andere Pin ist, und bei jeder Änderung, solange der Ausgang an verlangt ist oder an sein kann (Bit 6 der Flags). Seit 4.5 wird eine Änderung, nachdem ein Modul geantwortet hat, quittiert und zurückgehalten: Register 0 bis 3 lesen die geltende Verdrahtung, und Flag-Bit 8 ist gesetzt, bis eine nach der Änderung gesendete Zustandslesung des Moduls antwortet, höchstens etwa 1,2 s; zeigt sie den Ausgang aus, wird die Änderung übernommen, zeigt sie ihn an oder schlägt sie fehl, wird sie abgewiesen, und Bit 9 ist gesetzt bis zum nächsten Schreiben von Register 0 bis 3. Eine solche Änderung kommt allein, ohne Register 4 bis 6, und ein ON wird mit BAD_VALUE abgewiesen, solange eine zurückgehalten wird. Ein Host älter als 4.5, der die Verdrahtung währenddessen noch einmal schreibt, wird quittiert, und das Zurückhalten geht weiter. Die Pins gehören keinem Ausgang, solange sie gehalten werden. Register 4 bis 6, ein Frame: Ausgang (1 an) und die Sollwerte in mV und mA, bis 20000 mV und 3000 mA; ein ON wird ohne lebenden Heartbeat mit NOT_ARMED abgewiesen, ebenso solange eine eben geschriebene Verdrahtung noch nicht im Flash ist (gespeichert wird 400 ms nach dem letzten Schreiben), und der Ausgang geht aus, wenn der Heartbeat ausbleibt. Register 7 bis 16, nur lesen: Flags (Bit 0 online, Bit 1 Ausgang an, Bits 3..2 Modus 0 normal, 1 Konstantstrom, 2 Überstrom, Bit 4 ein Ausgang, der nicht schalten wollte, Bit 5 Sollwerte, die nicht übernommen wurden, Bit 6 ein Ausgang, der an ist oder an sein kann -- an gelesen, ein ON noch nicht bestätigt oder ein OFF, das einem Modul geschuldet ist, das nicht mehr antwortet, Bit 7 ein Ausgang, den das Modul selbst abgeschaltet hat, während ON verlangt war; aus gehalten, bis OUTPUT mit 0 geschrieben wird; seit 4.5 Bit 8 eine Verdrahtungsänderung, die auf eine Zustandslesung wartet, und Bit 9 eine, die diese Lesung abgewiesen hat, Bit 10 ein Ausgang, abgeschaltet, weil der Eingang des Moduls bei 2 Lesungen hintereinander unter dem Sollwert plus 500 mV lag; aus gehalten, bis OUTPUT mit 0 geschrieben wird, seit 4.13 Bit 11 ein Programmierport hält die Register 4 bis 6: ein Schreiben, das kein OFF ist, wird mit BAD_VALUE abgewiesen (seit 4.15 jede Änderung eines Sollwerts; davor ein ON und ein Heben der Spannung), siehe [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md)), mV und mA am Ausgang, die zurückgelesenen Sollwerte, Zustand und mV des Eingangs, genommene Messungen und fehlgeschlagene Transaktionen modulo 65536, und (seit 4.4) die Rate in Gebrauch, 0 bis 6, oder 7, solange AUTO keine gefunden hat. Register 17 (seit 4.4), allein als 1 geschrieben, bei verlangtem Ausgang aus und eingeschaltetem Netzteil, startet das Modul neu (SYSTEM_RESET), sobald es geantwortet hat und sein Ausgang aus gelesen wird; es liest 0. Die Verdrahtung wird im Flash des IOmcu gehalten und beim Start mit abgeschaltetem Ausgang gefahren, damit ein Modul, das an blieb, nach einem Neustart abgeschaltet wird; der Befehl wird nicht gespeichert |
+| 0x2B | SENSE | lesen, schreiben | zwei I2C-Strommonitore (I2C: Inter-Integrated Circuit) an einem Bus auf zwei Pins des IOmcu, ein TI INA228 im Leistungspfad des ESC und ein TI INA3221 an der Servoversorgung (seit 4.7). Register 0 bis 3, ein Frame: Freigabe (Bit 0 INA228, Bit 1 INA3221, Bit 2 der Ausgangsencoder AS5600 seit 4.9), der SDA-GPIO, der SCL-GPIO und der Takt, 400 kHz und kein anderer Wert: bei 100 kHz dauert ein Lesezugriff 480 bis 750 µs, und der 1-ms-Zeitplan des IOmcu passt nicht. Der Zeitplan liest INA3221 CH1 mit 1000 Hz, CH2 und CH3 mit 50 Hz oder für ein synchronisiertes Paar mit 1000 Hz, Strom und Spannung des INA228 mit je 500 Hz, seine Chip-Temperatur, Mask/Enable des INA3221 und das zurückgelesene Konfigurationsregister jedes Bauteils (seit 4.11) mit je 25 Hz und alles andere mit 50 Hz. Beide Module tragen Pull-ups an SDA und SCL, und die liegen parallel: der DAOKAI-INA3221 hat 10 kΩ nach VS (3,3 V); Wert und Schiene der Pull-ups des MATEK-INA228 sind unbekannt. Der Gesamtwert muss über etwa 1 kΩ bleiben: ein I2C-Ausgang zieht 3 mA bei 0,4 V, und (3,3 V − 0,4 V) / 3 mA sind 967 Ω. Unter 10 kΩ verkürzt er die Anstiegszeit: die Grenze von 300 ns bei 400 kHz erlaubt mit 10 kΩ allein 35 pF Buskapazität, mit weniger mehr. Die GPIO-Nummer von SDA ist modulo 4 gleich 0 oder 2, und SCL ist der GPIO danach, das Paar eines I2C-Blocks (standardmäßig GP16 und GP17). Register 4 bis 7, ein Frame: die Adresse des INA228, 0x40 bis 0x4F (Standard 0x45, die des MATEK I2C-INA-BM ab Werk; seine Lötbrücken geben 0x44 oder 0x41); sein Shunt in µΩ, 50 bis 20000 (Standard 200); der Strom, auf den sein Bereich eingestellt ist, in 0,1 A, 10 bis 3000 (1,0 bis 300,0 A, das Auslegungsmaximum des Prüfstands; Standard 2048). Das Maximum wählt nur ADCRANGE: 1, solange die Shuntspannung dabei höchstens 40,96 mV beträgt, 0 bis 163,84 mV, und darüber wird das Schreiben abgewiesen. CURRENT_LSB ist der Schritt des Shunt-ADC geteilt durch den Shunt (78,125 nV oder 312,5 nV durch R), damit begrenzen CURRENT und die Shuntspannung gemeinsam, und SHUNT_CAL ist in beiden Bereichen 4096. Ein Shunt, dessen Vollausschlag im gewählten Bereich 2000 A übersteigt, wird ebenfalls abgewiesen; unter 81,92 µΩ gilt also nur ADCRANGE 1. Die Regel ist die des Treibers, `ina228_calibrate()`; Register 7 reserviert. Register 8 bis 11, ein Frame: die Adresse des INA3221, 0x40 bis 0x43 (Standard 0x40); sein Shunt in 0,1 mΩ, 50 bis 10000 (5 mΩ bis 1 Ω, Standard 1000, die 0,1 Ω, die bis 1,638 A messen); die gelesenen Kanäle, Bits 0..2 für CH1 bis CH3, mindestens einer, solange er freigegeben ist (Standard CH1); Register 11 reserviert. Die reservierten Register lesen 0 und nehmen nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, SDA und SCL nicht das Paar eines Blocks, was auch immer ENABLE hält, bei freigegebenem Bauteil ein Pin, der reserviert, an einen Ausgang gebunden oder von SUPPLY gehalten ist, beide Bauteile auf einer Adresse, solange beide freigegeben sind, und jede Änderung bei einem Prüfstand in ARMED; ein Schreiben der geltenden Konfiguration wird angenommen. Ein Frame, der kein Paar ist, wird angenommen: ENABLE 0 mit SDA oder SCL 0, so schreibt ein Panel nicht gesetzte Pins. Die Pins gehören keinem Ausgang, solange eines der Bauteile freigegeben ist, und ein Schreiben auf OUTPUTS, das einen davon bindet, wird abgewiesen. Register 12 bis 25, nur lesen: Flags (Bit 0 INA228 online, Bit 1 seine letzte Identitätslesung war die eines INA228, Bit 2 an seiner Adresse antwortet etwas anderes, Bit 3 ein Strom lag im letzten 50-ms-Fenster oder seit dem Schalten des Laufs auf ARMED am Ende seines Bereichs, Strom und Leistung in BENCH oder ihre Spitzen sind dann Grenzen und keine Werte; Bits 4 bis 6 dieselben drei für den INA3221; Bit 8 der Bus ist auf seinen Pins offen, Bit 9 SDA wird low gehalten und wird freigetaktet), die Adressen, die beim letzten Scan geantwortet haben (Bit n für 0x40 + n), DEVICE_ID des INA228 und Die-ID des INA3221 wie gelesen, fehlgeschlagene Transaktionen modulo 65536, die Chiptemperatur des INA228 in 0,1 °C (vorzeichenbehaftet) und DIAG_ALRT, seine Ladung in 0,01 mAh (vorzeichenbehaftet, 32 Bit, Register 19 und 20, niederwertiges zuerst) und Energie in 0,01 Wh (32 Bit, Register 21 und 22, niederwertiges zuerst) seit dem Schalten des Laufs auf ARMED, die Telemetriespannung (10 mV) und der Telemetriestrom (10 mA) des ESC selbst und ihre Gültigkeitsbits (Bit 0 Spannung, Bit 1 Strom). Register 26 bis 30, nur lesen, seit 4.9: Flags, RAW ANGLE, MAGNITUDE, Zähler und Ruhezeit in ms des Ausgangsencoders (siehe unten). Register 31, nur lesen, seit 4.11: `RESETS`, die zurückgesetzt gefundenen Strommonitore, der INA228 im Low-Byte und der INA3221 im High-Byte, je modulo 256 ([Der Fenster-Ring](#der-fenster-ring)); ein IOmcu mit 4.10 oder älter liest 0. Register 0 bis 11 werden im Flash des IOmcu gehalten |
+| 0x2C | SERVO_SENSE | lesen, schreiben | die Kanäle des INA3221 und eine Bewegung, gemessen auf dem Takt des IOmcu (seit 4.7). Register 0 bis 11, nur lesen, vier je Kanal ab CH1: mittlerer Strom (mA, vorzeichenbehaftet), höchster Strom (mA, vorzeichenbehaftet), mittlere Busspannung (mV) und niedrigste Busspannung (mV) über das letzte 50-ms-Fenster, die Spannung auf der Lastseite des Shunts. Register 12, nur lesen: die Fensternummer modulo 65536; ein Lesen beendet kein Fenster. Register 13, nur lesen: Bits 0..2 das Fenster eines Kanals enthält Messungen, Bits 4..6 eine davon lag am Ende des Bereichs (163,8 mV über dem Shunt), womit mittlerer und höchster Strom dieses Kanals Untergrenzen sind, Bit 7 dasselbe für die Messung der Bewegung. Register 14 bis 17, ein Frame: eine Messung -- Bit 7 gesetzt, der INA3221-Kanal in Bits 0..1, nur CH1 (2 und 3 werden abgewiesen; das Feld bleibt für einen Kanal, der später schnell genug gelesen wird), und in Bits 8..10 der Ausgangskanal (0 bis 7), dessen nächstes geändertes Kommando die Zeitmessung startet, oder mit gesetztem Bit 11 (seit 4.13) der Programmierport in diesen Bits ([Die Programmierports](#die-programmierports)); der Haltestrom, bei dem die Bewegung endet, in mA, vorzeichenbehaftet, -32768 bis 32767 (seit 4.11; davor 0 bis 32767, ein größerer Wert abgewiesen); die Schwelle für Bewegung und das Band für Ankunft, je 1 bis 32767 mA. Ein Scharfschalten ist der ganze Frame und startet eine laufende Messung neu. 0 in Register 14 entschärft und wird nie abgewiesen; am Anfang des Frames geschrieben, werden die anderen drei nicht gespeichert. Mit BAD_VALUE abgewiesen: jedes andere Schreiben, das nicht der ganze Frame ist, andere Bits in Register 14, ein Wert außerhalb seines Bereichs, ein anderer Kanal als CH1 oder einer, den SENSE nicht liest, und ein Ausgangskanal, der keine Surface an einem PWM-Slot ist, den der IOmcu gebunden hat (ein Pin, dessen Compare-Register ein anderer Pin hält, ist es nicht); mit NOT_ARMED bei einem Prüfstand in SAFE oder nur für Throttle in ARMED (seit 4.18). Ein Prüfstand, der aufhört, die Surfaces zu treiben, beendet eine nicht fertige Messung. Register 18 bis 24, nur lesen: der Zustand (0 idle, 1 scharf, 2 wartet auf Bewegung, 3 bewegt sich, 4 angekommen, 5 an einem Endanschlag eingeschwungen, 6 zu spät: Bewegung und keine Ankunft innerhalb von 3000 ms plus der Verzögerung des Strommessers, 7 unerkannt: keine Bewegung in dieser Zeit, 8 verloren: der INA3221 antwortet nicht mehr, oder binnen 3000 ms nach dem Scharfschalten kam keine PWM-Flanke), fertige Messungen modulo 65536, die Zeit vom PWM-Frame mit dem neuen Puls bis zur Bewegung und bis zur Ankunft in 0,1 ms, aufgelöst auf das Abtastintervall von CH1, 1 ms, höchster und mittlerer gefilterter Strom der Bewegung (mA, vorzeichenbehaftet) und die Zahl der Messungen darin. Nichts wird gespeichert: Nach einem Neustart des IOmcu steht überall 0 |
+| 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des IOmcu, gestempelt von einer PIO-State-Machine mit 26,7 ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), von der Platine reserviert oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GP26 bis GP29 des RP2350A und GP40 bis GP47 des RP2354B, die nicht fehlertolerant sind, sowie jeder GPIO an einem IOmcu, dessen Core 1 beim Booten nicht gestartet ist (bis zu einem Neustart läuft keine Erfassung). Mit BUSY abgewiesen (seit 4.17; davor BAD_VALUE), solange der Tap freigegeben ist: ein GPIO, der an einen Ausgang gebunden oder von SENSE, SUPPLY oder einem Programmierport gehalten ist, und eine Erfassung, die der IOmcu vorerst nicht starten kann (Core 1 in einem Durchlauf, oder keine PIO-State-Machine und kein DMA-Kanal übrig neben den Ausgängen und der Versorgung) ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird in ARMED wie in SAFE angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8 ms), der Ton des letzten Fensters in 0,1 Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der IOmcu hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1 ms; seine mittlere Tonhöhe in 0,1 Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500 ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8 µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des IOmcu gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86 kΩ), und der bleibt an, solange der Tap läuft |
 | 0x2E | BIND_CFG | lesen, schreiben | eine vorbereitete CHAN_CFG-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von CHAN_CFG. [Eine Bindung als Ganzes](#eine-bindung-als-ganzes) beschreibt die drei Pages |
 | 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
 | 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Ein Schreiben nimmt 28: das Kommando in den Registern 0 bis 3, ein Frame, das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 25 und Versorgungsspannung und -strom eines ENTER in 26 und 27. [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) nennt die Regeln. Nichts wird gehalten |
-| 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des Koprozessors gehalten |
-| 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des Koprozessors selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
+| 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 24 Register. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte. [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew und Endpunkte werden im Flash des IOmcu gehalten |
+| 0xF0 | UPDATE_CTL | lesen, schreiben | das Firmware-Update des IOmcu selbst (seit 4.22; über Majors eingefroren): 32 Register. Version, Zustand, Fehler, Slot, Sektoren je Slot, nächster Block, Größe des Images, dann das Kommando in Register 8 mit bis zu 3 Argumenten und ein SHA-256-Digest in Register 16 bis 31. Ein Schreiben, das kein Kommando ist, wird mit READ_ONLY abgelehnt. [Firmware-Update über den Link](#firmware-update-über-den-link) hat die Regeln. Nichts wird behalten |
 | 0xF1 | UPDATE_DATA | lesen, schreiben | die 64 Byte des aktuellen Blocks, in jedem Register das niederwertige Byte zuerst (seit 4.22; über Majors eingefroren): 32 Register. FINISH nimmt den erwarteten SHA-256 aus Register 0 bis 15. Nichts wird behalten |
 
 Fault-Bitmap: Bit 0 Link still, Bit 1 Überstrom, Bit 2 Übertemperatur, Bit 3
 Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
-Bit 6 der Flash-Speicher des Koprozessors ist für diesen Start aus (seit
+Bit 6 der Flash-Speicher des IOmcu ist für diesen Start aus (seit
 4.7): sein zweiter Core hat sich nicht für die Flash-Sperre angemeldet,
 also wird nichts gespeichert, und über den Link geschriebene
 Konfigurationen laufen bis zu einem Neustart aus dem RAM.
 Faults bleiben gesetzt, bis sie gelesen und gelöscht werden; Bit 6 bleibt
 bis zu einem Neustart gesetzt. Bit 0 setzt
 voraus, dass über den Link mindestens eine Anfrage gelaufen ist: der
-Koprozessor ist wach, bevor das Panel pollt, und das Warten auf die erste
+IOmcu ist wach, bevor das Panel pollt, und das Warten auf die erste
 Anfrage ist keine Stille.
 
 Capabilities-Bitmap: Bit 0 ESC-Ansteuerung, Bit 1 ESC-Telemetrie, Bit 2
@@ -879,28 +879,28 @@ SENSE-Page aus einem Lesen jünger als 100 ms, ab 100 ms nach Laufbeginn. Die be
 verschiedenen Quellen kommen und eine davon meist gar nicht kommt: ein ESC
 meldet seine eigene Temperatur über die erweiterte DShot-Telemetrie und weiß
 nichts über den Motor, den er treibt. Bis Protokoll 3.0 galt Bit 3 für beide —
-deshalb ist diese Änderung ein Major. Ein Koprozessor ohne
+deshalb ist diese Änderung ein Major. Ein IOmcu ohne
 Mess-Frontend setzt Bit 7, und das Panel zeichnet SIMULATION über den
 Bildschirm.
 
 MOTOR_POLES ist die Magnetzahl des geprüften Motors, gerade und zwischen 2 und
 42, oder null: dann hat es niemand gesagt. Ein bidirektionaler DShot-ESC meldet
 elektrische Perioden und weiß nicht, woran er angeschraubt ist; das ist also die
-eine Zahl, die die Leitung tragen muss, damit der Coprozessor eine mechanische
+eine Zahl, die die Leitung tragen muss, damit der IOmcu eine mechanische
 Drehzahl melden kann. Bei null meldet er keine Drehzahl statt einer aus einer
 Schätzung abgeleiteten. Das Panel sendet sie aus der Einstellung `Motorpole`,
-sobald ein Coprozessor zu antworten beginnt, erneut bei jeder Änderung der
+sobald ein IOmcu zu antworten beginnt, erneut bei jeder Änderung der
 Einstellung und im Frame, der auf ARMED schaltet, ob eine Änderung offen ist oder
 nicht. Ein Schreibvorgang,
 den niemand beantwortet, bleibt offen und geht beim nächsten 50-ms-Poll
-erneut hinaus; einer, den der Coprozessor ablehnt, wird nicht wiederholt,
+erneut hinaus; einer, den der IOmcu ablehnt, wird nicht wiederholt,
 denn dieselbe einmal abgelehnte Anfrage wird jedes Mal abgelehnt, und er
 wartet stattdessen auf die nächste Änderung oder die nächste
 Link-up-Flanke. Der Schutz bei null greift für eine nie gesendete Zahl, nicht
 für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
 den die Page annimmt.
 
-Der Coprozessor verweigert einen Pin, den er nicht treiben darf — die
+Der IOmcu verweigert einen Pin, den er nicht treiben darf — die
 Safety-Leitung, die Pins des CAN-Controllers, GP23, GP24, GP25 und GP29 (vom
 Modul belegt, nicht herausgeführt) und jede Nummer über GP29 — auf der
 OUTPUTS- und der SUPPLY-Page gleichermaßen. Ein OUTPUTS-Write mit einem Slot, den die Hardware nicht
@@ -916,7 +916,7 @@ ein Endpunkt, der länger ist als der Frame des PWM-Ausgangs, der ihn ausgibt
 ([Ein Puls nicht länger als sein Frame](#ein-puls-nicht-länger-als-sein-frame)). Ein
 Kommando außerhalb seines Bereichs wird begrenzt. Zwei Slots auf einem Pin
 oder zwei Slots, die denselben Kanal ausgeben, werden abgewiesen. Über das
-Schalten auf ARMED entscheidet der Koprozessor: ein Schreiben von ARM wird mit
+Schalten auf ARMED entscheidet der IOmcu: ein Schreiben von ARM wird mit
 NOT_ARMED abgewiesen, solange der Link im Failsafe ist, dem Heartbeat nicht
 vertraut wird oder der Arm-Latch gesetzt ist.
 
@@ -934,18 +934,18 @@ Der Arm-Latch und die Ablehnung in ARMED ändern kein Register und
 keinen Frame und tragen deshalb keine eigene Protokollversion. Was eine
 Gegenstelle sieht, die ohne sie gebaut wurde:
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
-| älter | dieser Stand | der Link kommt hoch und der Prüfstand schaltet auf ARMED: dieses Panel schreibt vor jedem Schalten auf ARMED CLEAR. Sein erstes Schalten auf ARMED nach einem STOP kann einmal mit NOT_ARMED abgewiesen werden, weil es feste 100 ms wartet; die Ablehnung lässt den Latch gesetzt, und das zweite Halten schaltet auf ARMED. Ein ARM = 1, das es nach einem Neustart des Koprozessors schreibt, wird abgewiesen, und bei ihm rastet ein Stopp ein |
-| dieser Stand | älter | der Link kommt hoch und der Prüfstand schaltet auf ARMED. Das Panel stoppt an der Flanke, an der der Link ausfällt; ein Neustart, den es bemerkt, schaltet also nichts auf ARMED. Ein Neustart, den es nicht bemerkt -- die Anfrage wird wiederholt, bis der Koprozessor wieder antwortet --, wird vom nächsten Poll wieder auf ARMED geschaltet, wie zwischen zwei älteren Ständen. Ein Heartbeat, dem kürzer als ein Poll-Abstand nicht vertraut wurde, setzt dort keinen Latch |
-| ein anderer Host | dieser Stand | ein ARM ohne CLEAR seit dem Start des Koprozessors wird mit NOT_ARMED abgewiesen; ein Schreiben auf CHAN_CFG oder OUTPUTS wie oben wird mit BAD_VALUE abgewiesen, solange ARM gesetzt ist |
+| älter | dieser Stand | der Link kommt hoch und der Prüfstand schaltet auf ARMED: dieses Panel schreibt vor jedem Schalten auf ARMED CLEAR. Sein erstes Schalten auf ARMED nach einem STOP kann einmal mit NOT_ARMED abgewiesen werden, weil es feste 100 ms wartet; die Ablehnung lässt den Latch gesetzt, und das zweite Halten schaltet auf ARMED. Ein ARM = 1, das es nach einem Neustart des IOmcu schreibt, wird abgewiesen, und bei ihm rastet ein Stopp ein |
+| dieser Stand | älter | der Link kommt hoch und der Prüfstand schaltet auf ARMED. Das Panel stoppt an der Flanke, an der der Link ausfällt; ein Neustart, den es bemerkt, schaltet also nichts auf ARMED. Ein Neustart, den es nicht bemerkt -- die Anfrage wird wiederholt, bis der IOmcu wieder antwortet --, wird vom nächsten Poll wieder auf ARMED geschaltet, wie zwischen zwei älteren Ständen. Ein Heartbeat, dem kürzer als ein Poll-Abstand nicht vertraut wurde, setzt dort keinen Latch |
+| ein anderer Host | dieser Stand | ein ARM ohne CLEAR seit dem Start des IOmcu wird mit NOT_ARMED abgewiesen; ein Schreiben auf CHAN_CFG oder OUTPUTS wie oben wird mit BAD_VALUE abgewiesen, solange ARM gesetzt ist |
 
 Ein Schalten des Panels auf ARMED sind zwei Transaktionen. CLEAR geht zuerst und allein:
-der Koprozessor prüft ARM gegen sein Failsafe, bevor er ein CLEAR aus
+der IOmcu prüft ARM gegen sein Failsafe, bevor er ein CLEAR aus
 demselben Frame anwendet, also wird ein Frame mit beidem genau dann mit
 NOT_ARMED abgewiesen, wenn das Clear nötig war. Danach gehen ARM, THROTTLE
 und MOTOR_POLES als ein Frame mit drei Registern ab Offset 0, sodass der
-Koprozessor den Lauf mit der Polzahl beginnt, die das Panel gesendet hat,
+IOmcu den Lauf mit der Polzahl beginnt, die das Panel gesendet hat,
 oder ihn nicht beginnt. Jeder Poll alle 50 ms danach schreibt ARM und
 THROTTLE; eine während eines Laufs geänderte Polzahl geht beim nächsten Poll
 in einem eigenen Write. Die Regeln der Page -- der Throttle-Bereich, die
@@ -954,10 +954,10 @@ Ablehnung nichts speichert -- stehen in `shared/link/link_control.c`, unter
 `test_link_pages`. Ob der Prüfstand auf ARMED schalten darf und was den Latch setzt
 und löst, steht in `shared/safety/safety_gate.c`, unter `test_safety_gate`.
 
-Vor dem CLEAR wartet das Panel, bis der Koprozessor dem Heartbeat vertraut:
+Vor dem CLEAR wartet das Panel, bis der IOmcu dem Heartbeat vertraut:
 100 ms nach dem vollendeten Halten liest es einmal je Durchlauf von 5 ms das
 Register 1 von STATUS, bis Bit 4 gelöscht ist, höchstens 200 ms länger. Der
-Koprozessor füllt die Register 0 und 1 von STATUS beim Lesen.
+IOmcu füllt die Register 0 und 1 von STATUS beim Lesen.
 
 ### Ein Arm für eine Rolle
 
@@ -968,7 +968,7 @@ Programmierport ist eine Surface.
 | ARM | Name | Treibt |
 | ---: | --- | --- |
 | 0x0000 | -- | nichts: ein Schalten auf SAFE |
-| 0x0001 | `LINK_ARM_ALL` | jeden Ausgang, wie ein Koprozessor vor 4.18 bei jedem Wert außer 0 |
+| 0x0001 | `LINK_ARM_ALL` | jeden Ausgang, wie ein IOmcu vor 4.18 bei jedem Wert außer 0 |
 | 0x0002 | `LINK_ARM_THROTTLE` | die Slots, deren Kanäle Throttles sind: Motoren und ESCs |
 | 0x0004 | `LINK_ARM_SURFACE` | die Slots, deren Kanäle Surfaces sind, und die Programmierports mit gesetztem `PWM`-Bit |
 | 0x0006 | beide Rollen-Bits | jeden Ausgang, wie 0x0001 |
@@ -1011,10 +1011,10 @@ Die Regeln sind `link_arm_value_ok()` und `link_control_write()` in
 `shared/safety/arming.c`, unter `test_link_pages`, `test_outputs`,
 `test_safety_gate` und `test_arming`.
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.18 | 4.18 | wie oben |
-| 4.18 | 4.17 oder älter | das Panel schreibt 0x0001, und der Koprozessor schaltet seine ganze Bank wie vor 4.18 auf ARMED: ein Arm auf dem SERVO-Bildschirm treibt auch die Throttle-Kanäle in ihrer Ruhe, einer auf MOTOR & ESC auch die Surfaces und einen pulsenden Programmierport |
+| 4.18 | 4.17 oder älter | das Panel schreibt 0x0001, und der IOmcu schaltet seine ganze Bank wie vor 4.18 auf ARMED: ein Arm auf dem SERVO-Bildschirm treibt auch die Throttle-Kanäle in ihrer Ruhe, einer auf MOTOR & ESC auch die Surfaces und einen pulsenden Programmierport |
 | 4.17 oder älter | 4.18 | dieses Panel schreibt 1, und jeder Ausgang ist ARMED |
 
 ### Ein Puls nicht länger als sein Frame
@@ -1065,7 +1065,7 @@ Programmierport als Ziel wird 560 Hz also nur abgewiesen, solange der Puls
 dieses Ports eingeschaltet ist und einen Endpunkt über 1784 µs hat. Eine
 gebundene PWM-Surface behält ihre eigene Rate und wird nicht beurteilt.
 
-Beim Start stellt der Koprozessor CHAN_CFG und OUTPUTS aus seinem Flash
+Beim Start stellt der IOmcu CHAN_CFG und OUTPUTS aus seinem Flash
 wieder her. Ein gespeicherter PWM-Slot, dessen Kanal einen Endpunkt hat, der
 länger ist als der Frame der eigenen Rate des Slots, startet ungebunden:
 OUTPUTS liest für ihn Treiber 0, wie für einen gespeicherten Slot auf den
@@ -1077,10 +1077,10 @@ Der PWM-Treiber (`firmware/iomcu/src/out_pwm.c`) kürzt einen Pegel über den
 letzten Zählerstand des Frames hinaus weiterhin auf diesen Zählerstand. Kein
 Schreiben einer Page erreicht das.
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.16 | 4.16 | wie oben. Der SERVO-Bildschirm des Panels hält zwischen zwei Pulsen eine Pause von mindestens 1000 µs (500 µs für ein Heli-Servo) und erhöht die Rate erst, nachdem der schmalere Bereich angekommen ist; mit OUTPUTS als Ziel verlangt er also keine abgewiesene Kombination. Mit einem Programmierport als Ziel schreibt er nur den Bereich des Ports, und seine Rate wird abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist; der Bildschirm zeigt dann ABGELEHNT. Vor einem Schreiben, das den Puls eines Ports einschaltet, schreibt das Panel dem Port den Bereich, den der Bildschirm nennt |
-| 4.16 | 4.15 oder älter | der Koprozessor nimmt einen längeren Endpunkt. Sein PWM-Treiber kürzt den Puls auf den letzten Zählerstand des Frames, 1784 µs bei 560 Hz, während Page, Panel und Log den geschriebenen Endpunkt zeigen. Den Bereich, den das Panel vor einem Puls schreibt, nimmt er wie jedes Schreiben eines Bereichs |
+| 4.16 | 4.15 oder älter | der IOmcu nimmt einen längeren Endpunkt. Sein PWM-Treiber kürzt den Puls auf den letzten Zählerstand des Frames, 1784 µs bei 560 Hz, während Page, Panel und Log den geschriebenen Endpunkt zeigen. Den Bereich, den das Panel vor einem Puls schreibt, nimmt er wie jedes Schreiben eines Bereichs |
 | 4.15 oder älter | 4.16 | der SERVO-Bildschirm verhält sich wie oben. Ein `PWM`-Schreiben auf einen Port wird abgewiesen, solange der Port einen Bereich aus einem früheren Profil hält, der nicht zur Port-Rate passt; dieses Panel liest PROG erneut und schreibt es bei seinem nächsten Durchlauf wieder, und der Port gibt keinen Puls aus, bis ein Kommando ihm einen passenden Bereich geschrieben hat |
 
 ### Die Frame Rate des Ziels
@@ -1114,15 +1114,15 @@ Raten laufen. Die Regeln, die einen Slice bei einer Rate halten:
   mit BAD_VALUE abgewiesen.
 
 Die Regeln sind `servo_page_write()` in `shared/outputs/servo_page.c` und
-`prog_port_write()` in `shared/outputs/prog_port.c`; der Koprozessor bindet
+`prog_port_write()` in `shared/outputs/prog_port.c`; der IOmcu bindet
 die Raten in `ports_apply()` und `target_sync()` in
 `firmware/iomcu/src/iomcu_pages.c`.
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.19 | 4.19 | wie oben. Das Panel verfolgt `TARGET` auf PROG: eine Änderung, die es liest oder bestätigt schreibt, zählt als Rate 0, und ein `TARGET`-Schreiben ohne Antwort zählt als unbekannte Rate, bis ein Schreiben der Rate ankommt. Der SERVO-Bildschirm zeigt die Rate als nicht gesendet, bis die nächste Position sie trägt |
-| 4.19 | 4.16 bis 4.18 | der Koprozessor fährt jede PWM-Surface und jeden Programmierport mit der Rate von SERVO, gleich was `TARGET` nennt, und behält sie über eine Änderung von `TARGET`. Das Panel verfolgt unter Minor 19 keine Änderung von `TARGET`, und sein SERVO-Bildschirm sagt, dass jede PWM-Surface mit der Rate läuft. Mit einem Programmierport als Ziel wird die Rate abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist |
-| 4.18 oder älter | 4.19 | der Koprozessor setzt die Rate bei einer Änderung von `TARGET` auf 0, während das Panel die Rate zählt, die es zuletzt geschrieben hat. Das Panel zählt dann eine Rate, die mindestens so schnell ist wie die geltende, die Seite, auf der kein Puls zu breit für seinen Frame gesendet wird, und es schreibt die Rate mit seiner nächsten Position wieder |
+| 4.19 | 4.16 bis 4.18 | der IOmcu fährt jede PWM-Surface und jeden Programmierport mit der Rate von SERVO, gleich was `TARGET` nennt, und behält sie über eine Änderung von `TARGET`. Das Panel verfolgt unter Minor 19 keine Änderung von `TARGET`, und sein SERVO-Bildschirm sagt, dass jede PWM-Surface mit der Rate läuft. Mit einem Programmierport als Ziel wird die Rate abgewiesen, solange eine gebundene PWM-Surface einen Endpunkt hat, der länger als der Frame ist |
+| 4.18 oder älter | 4.19 | der IOmcu setzt die Rate bei einer Änderung von `TARGET` auf 0, während das Panel die Rate zählt, die es zuletzt geschrieben hat. Das Panel zählt dann eine Rate, die mindestens so schnell ist wie die geltende, die Seite, auf der kein Puls zu breit für seinen Frame gesendet wird, und es schreibt die Rate mit seiner nächsten Position wieder |
 
 `test_servo_page`, `test_prog_port`, `test_prog_link` und `test_link_pages`
 halten die Rate unabhängig von den Slots, ein Port-Ziel bei 39, 40, 499,
@@ -1133,11 +1133,11 @@ geteilten Slice, der 0 und 50 Hz nimmt und 40, 300 und 560 Hz abweist, eine
 
 ### Die Zeichnung der Platine
 
-Ab 4.20 liefert der Koprozessor auf ARTWORK (0x26) und ART_DATA (0x27) eine
+Ab 4.20 liefert der IOmcu auf ARTWORK (0x26) und ART_DATA (0x27) eine
 Zeichnung seiner eigenen Platine: den Umriss, die Bauteile als flache Formen
 und jedes Pad mit dem, was es ist. PICK A PIN zeichnet die Platine daraus
 maßstäblich. Eine neue Platine bringt ihre Zeichnung im eigenen
-Koprozessor-Image mit; das Panel braucht dafür keine Änderung. Die Zeichnung
+IOmcu-Image mit; das Panel braucht dafür keine Änderung. Die Zeichnung
 des RP2350-CAN hat 1 560 Bytes in 26 Blöcken: 40 Pads und 102 Formen auf
 einem Umriss von 51,00 × 21,00 mm.
 
@@ -1169,17 +1169,17 @@ Das Panel behält eine geholte Zeichnung in seiner Flash-Partition
 Register 1. Beim Link-Aufbau liest es ARTWORK und zeigt die behaltene
 Zeichnung nur, wenn alle übereinstimmen: Format, Umriss, Länge, CRC und Hash.
 Jede andere Zeichnung unter derselben Board-ID wird neu geholt; ein
-Koprozessor, der mit einer geänderten Zeichnung geflasht wurde, wird also nie
+IOmcu, der mit einer geänderten Zeichnung geflasht wurde, wird also nie
 mit der alten gezeigt. Ein Abruf prüft die Nutzdaten gegen CRC und Hash,
 bevor sie gezeigt oder behalten werden.
 
-`tools/gen_board_drawing.py` schreibt die Zeichnung des Koprozessors,
+`tools/gen_board_drawing.py` schreibt die Zeichnung des IOmcu,
 `firmware/iomcu/src/board_drawing_rp2350_can.c`, aus
 `configurator/drawings/panel.json` des Konfigurators und weist eine
 Zeichnung ab, die das Panel abweisen würde. Die CI (Continuous Integration)
 führt es mit `--check` aus.
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.20 | 4.20 | wie oben |
 | 4.20 | 4.19 oder älter | das Panel liest ARTWORK nicht und zeichnet die Platine aus SHAPE. Das Log sagt `hardware 1 serves no board drawing (protocol 4.19); PICK A PIN draws its shape` |
@@ -1197,7 +1197,7 @@ Regeln.
 
 ### Abgelehnte Frames
 
-Ab 4.21 zählt der Koprozessor die CAN-Frames, die er empfängt und nicht
+Ab 4.21 zählt der IOmcu die CAN-Frames, die er empfängt und nicht
 dekodiert, und veröffentlicht die Zahl in STATUS (0x01) Register 8 und 9
 (`LINK_ST_REFUSED_LO` und `LINK_ST_REFUSED_HI`), die niederwertige Hälfte
 zuerst. Ein Frame wird an einer von zwei Stufen abgelehnt:
@@ -1213,10 +1213,10 @@ DLC 8 statt DLC 0 sendet, wird bei der Link-Dekodierung abgelehnt und
 gezählt.
 
 Die Zahl ist eine vorzeichenlose 32-Bit-Zahl. Sie ist 0 nach dem Einschalten
-und nach jedem Neustart des Koprozessors, nichts über den Link setzt sie
+und nach jedem Neustart des IOmcu, nichts über den Link setzt sie
 zurück, und sie läuft von 4.294.967.295 auf 0 über.
 
-Das Panel liest STATUS alle 500 ms. Einen 4.21-Koprozessor fragt es nach 10
+Das Panel liest STATUS alle 500 ms. Einen 4.21-IOmcu fragt es nach 10
 Registern, einen älteren nach den 8, die seine Page hat: eine 4.20-Page
 weist einen Lesezugriff auf 10 Register mit BAD_RANGE ab, und damit fehlte
 jeder Zähler von STATUS. Das Panel vergisst die Zahl bei jedem Link-up und
@@ -1228,7 +1228,7 @@ Fehlerzahl, solange der Link steht und die Zahl über 0 liegt:
 refused N` enthält sie ebenfalls. `ui_link_refused_label()` in
 `shared/ui/ui_band.c` baut das Label.
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.21 | 4.21 | wie oben |
 | 4.21 | 4.20 oder älter | das Panel liest 8 STATUS-Register; die Zahl ist 0, und MOTOR & ESC zeigt kein Label |
@@ -1237,19 +1237,19 @@ refused N` enthält sie ebenfalls. `ui_link_refused_label()` in
 `test_mcp2515` und `test_link_can` prüfen die Zahl an jeder Stufe, einen
 angenommenen Frame, der nichts hinzufügt, und den Überlauf bei 2^32.
 `test_link_bringup` trägt die Zahl über CAN-Frames von der Page eines
-Koprozessors zum Panel, mit einem abgelehnten READ mit DLC 8, 0x0001FFFF
+IOmcu zum Panel, mit einem abgelehnten READ mit DLC 8, 0x0001FFFF
 und dem Überlauf, und liest eine 4.20-Page ohne sie. `test_text` prüft das
 Label: verborgen bei 0 und ohne Link, gezeigt über 0 auf Englisch und
 Deutsch. Der Screenshot `docs/img/de/motor-refused.png` zeigt die Zahl 37.
 
 ### Firmware-Update über den Link
 
-Ab 4.22 schreibt das Panel ein neues Koprozessor-Image über CAN. Der
-Koprozessor ist ein RP2350; sein Boot-ROM hält zwei gleich große Image-Slots
+Ab 4.22 schreibt das Panel ein neues IOmcu-Image über CAN. Der
+IOmcu ist ein RP2350; sein Boot-ROM hält zwei gleich große Image-Slots
 hinter einer Partitionstabelle und startet ein neues Image auf Probe, als
 TBYB (Try Before You Buy). Einen eigenen Bootloader hat der Prüfstand nicht.
 
-Der Flash des Koprozessors (Modul mit 4 MB, RP2350A):
+Der Flash des IOmcu (Modul mit 4 MB, RP2350A):
 
 | Bereich | Größe | Vor 4.22 | Ab 4.22 |
 | --- | ---: | --- | --- |
@@ -1274,11 +1274,11 @@ Ein Speicher ohne Eintrag liest einmal den alten Speicher bei 0x3FE000,
 sodass die Bindungen das USB-Laden überstehen, das die Tabelle schreibt. Das
 erste Speichern geht in den neuen Speicher.
 
-Ein Koprozessor ohne die Tabelle -- ein Build vor 4.22 oder ein 4.22-Image,
+Ein IOmcu ohne die Tabelle -- ein Build vor 4.22 oder ein 4.22-Image,
 allein über USB auf ein Modul ohne Tabelle geladen -- läuft wie bisher und
 meldet keine Slots: das Panel sagt dann, dass ein USB-Laden nötig ist. Das
 eine USB-Laden, das die Tabelle schreibt, steht in
-[Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-koprozessors).
+[Erster Lauf](FirstRun-de.md#die-partitionstabelle-des-iomcu).
 
 #### Die Pages
 
@@ -1321,7 +1321,7 @@ einen Neustart.
 #### Die Übertragung
 
 1. Das Panel liest IDENTITY, dann UPDATE_CTL. BAD_PAGE auf UPDATE_CTL oder
-   `SLOT` 15 beendet hier: der Koprozessor nimmt Images nur über USB.
+   `SLOT` 15 beendet hier: der IOmcu nimmt Images nur über USB.
 2. Das Panel hasht das Image, das es mitbringt, 8 KiB je Schritt, und sendet
    BEGIN mit seiner Größe.
 3. Für jeden 64-Byte-Block, der Reihe nach ab Block 0: 8 Daten-Frames in
@@ -1330,26 +1330,26 @@ einen Neustart.
    Bytes des Blocks). Der letzte Block ist der Rest des Images, und sein CRC
    deckt nur diese Bytes. Jeder Frame wartet auf seine Bestätigung; nichts
    anderes ist unterwegs.
-4. Der Koprozessor puffert 64 Blöcke und schreibt einen 4-KiB-Sektor, wenn
+4. Der IOmcu puffert 64 Blöcke und schreibt einen 4-KiB-Sektor, wenn
    der letzte davon committet. Dieses COMMIT wird erst beantwortet, wenn der
    Sektor gelöscht und programmiert ist, etwa 19,2 ms.
-5. FINISH: der Koprozessor hasht den Slot wie geschrieben, mit dem ersten
+5. FINISH: der IOmcu hasht den Slot wie geschrieben, mit dem ersten
    Sektor, wie er sein wird, 1 KiB je Durchlauf, und vergleicht den Digest.
-6. ACTIVATE: der Koprozessor schreibt den ersten Sektor zuletzt, liest ihn
+6. ACTIVATE: der IOmcu schreibt den ersten Sektor zuletzt, liest ihn
    zurück, antwortet und startet 20 ms später als Flash-Update-Boot in den
    neuen Slot.
 7. Das Boot-ROM prüft den SHA-256 des Images und startet es auf Probe unter
    seinem Watchdog von 16,7 s. Das Panel wartet 500 ms, liest IDENTITY, bis
    das neue Image antwortet, und schreibt BUY. Das Boot-ROM löscht das
-   TBYB-Flag im Flash. Danach löscht der Koprozessor den ersten Sektor des
+   TBYB-Flag im Flash. Danach löscht der IOmcu den ersten Sektor des
    Slots, aus dem er kam, sodass das Boot-ROM beim nächsten Start ein Image
    zur Wahl hat. BUY wird bestätigt, sobald das Boot-ROM es angenommen hat.
    Ein Löschen, das scheitert oder auf die Sperre des Speichers wartet, bleibt
-   offen: `SLOT` Bit 9 ist gesetzt, der Koprozessor versucht es einmal je
+   offen: `SLOT` Bit 9 ist gesetzt, der IOmcu versucht es einmal je
    Sekunde erneut, solange die Sperre offen ist, und ein Start, der den
    ersten Sektor des anderen Slots außerhalb einer Sitzung oder einer Probe
    beschrieben findet, schuldet das Löschen erneut. Das Panel zeigt dafür
-   nichts an. Ein Koprozessor ohne eine Partitionstabelle, die er schreibt,
+   nichts an. Ein IOmcu ohne eine Partitionstabelle, die er schreibt,
    hat keinen anderen Slot und löscht nichts.
 
 Ein Block vor `NEXT_BLOCK` wird bestätigt und nicht noch einmal geschrieben:
@@ -1367,7 +1367,7 @@ Patch, 0.18.0 ist also Version 18.0.
 
 #### Grenzen und Fehler
 
-| Bedingung | Koprozessor | Panel |
+| Bedingung | IOmcu | Panel |
 | --- | --- | --- |
 | eine Sitzung oder ein Image auf Probe | lehnt ARM mit NOT_ARMED ab; SAFE wird nie abgelehnt | zeigt den Fortschritt, kein Band |
 | Sperre des Speichers zu (Bank treibt, Ausgang der Versorgung an, Sitzung der Servo-Programmierung) | lehnt BEGIN, COMMIT und ACTIVATE mit BUSY ab | fragt erneut, gibt nach 10 s auf |
@@ -1388,21 +1388,21 @@ Block 0.
 
 Versionen allein erkennen keinen Entwicklungs-Build. Beim Link-up vergleicht
 das Panel den SHA-256 des mitgebrachten Images, das TBYB-Flag als gelöscht
-gelesen, mit HASH_RUNNING des Koprozessors über dieselbe Zahl von Bytes.
+gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `Koprozessor nutzt einen anderen Build. Update im Menü verfügbar.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
-| ein Image auf Probe | schreibt sofort BUY und meldet `Neue Koprozessor-Firmware dauerhaft übernommen.` |
-| BAD_PAGE oder keine Slots | der Alarm `Koprozessor kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Update unter SETUP > UPDATES.`; die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
+| BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Firmware einmal über USB installieren.` |
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das
-Update bringt den Koprozessor auf die Major des Panels. Ein CANCEL gilt für
-diese Version des Koprozessors, bis das Panel neu startet. Ein älteres
+Update bringt den IOmcu auf die Major des Panels. Ein CANCEL gilt für
+diese Version des IOmcu, bis das Panel neu startet. Ein älteres
 mitgebrachtes Image wird ebenfalls angeboten; die Frage sagt das dann.
-[Screens](Screens-de.md#koprozessor-update) zeigt Frage und Fortschritt.
+[Screens](Screens-de.md#iomcu-update) zeigt Frage und Fortschritt.
 
 Ein Panel, das ohne `RCBENCH_IOMCU_BIN` gebaut ist, bringt kein Image mit,
 prüft nichts und bietet nichts an.
@@ -1414,29 +1414,29 @@ Für das Image von 0.18, 191.592 Byte: 2.994 Blöcke, 9 Exchanges je Block,
 160 µs, die Buszeit von Anfrage und Bestätigung ist also 7,1 bis 8,6 s, und
 das Schreiben der Sektoren fügt 0,9 s hinzu. Mit der Round Trip von 334 bis
 1400 µs aus [Budget](#budget) dauern die Exchanges 9,0 bis 37,7 s. Das ganze
-Update, die Hashes des Koprozessors und sein Neustart sind nicht gemessen.
+Update, die Hashes des IOmcu und sein Neustart sind nicht gemessen.
 
-Der simulierte Koprozessor der Host-Suite führt ein Update in voller Größe
+Der simulierte IOmcu der Host-Suite führt ein Update in voller Größe
 mit dem Image von 0.18.0 (184.872 Byte, 2.889 Blöcke) in 26.104 Exchanges
 aus.
 
 #### Kompatibilität des Updates
 
-| Panel | Koprozessor | Verhalten |
+| Panel | IOmcu | Verhalten |
 | --- | --- | --- |
 | 4.22 mit Image | 4.21 oder älter | BAD_PAGE: der USB-Alarm; der Link läuft wie bisher |
 | 4.22 mit Image | 4.22, ohne Tabelle | keine Slots: der USB-Alarm |
 | 4.22 mit Image | 4.22 oder spätere Minor, mit Tabelle | prüfen, anbieten, aktualisieren |
 | 4.22 mit Image | eine andere Major, 4.22 oder später | der Link bleibt unten; prüfen, anbieten, aktualisieren über die eingefrorenen Pages |
-| 4.21 oder älter | 4.22 | die Update-Pages werden nie gefragt; der Koprozessor läuft wie ein 4.21-Koprozessor |
+| 4.21 oder älter | 4.22 | die Update-Pages werden nie gefragt; der IOmcu läuft wie ein 4.21-IOmcu |
 
-`test_link_update` führt die Pages des Koprozessors und die Engine des Panels
+`test_link_update` führt die Pages des IOmcu und die Engine des Panels
 über die Link-Schicht gegen einen simulierten Flash und ein simuliertes
 Boot-ROM aus: Block 0, der letzte Teilblock, ein Image von genau einem Slot
 und eines mit einem Byte mehr, ein CRC-Fehler, Blöcke außer der Reihe und
 wiederholt, ein Neustart mitten in der Übertragung, NACKs, ein Linkausfall,
 ARM während der Sitzung, eine geschlossene Sperre, ein falscher Digest, ein
-fehlendes BUY, das BAD_PAGE eines 4.21-Koprozessors sowie eine andere Minor
+fehlendes BUY, das BAD_PAGE eines 4.21-IOmcu sowie eine andere Minor
 und Major. Dazu kommen ein Neustart des Panels, der die Sitzung in RECEIVING,
 RECEIVED, VERIFYING und VERIFIED zurücklässt, während das gewöhnliche Polling
 läuft, eine Sitzung, mit der nur das gewöhnliche Polling spricht, eine
@@ -1473,7 +1473,7 @@ freigegebenem Ausgangsencoder die Register 12 bis 31 (20 Register, ein
 Anfrage-Frame und fünf Daten-Frames), etwa 1,9 %, und solange der INA3221 eingeschaltet ist, die Register 0 bis 13 von SERVO_SENSE
 mit 20 Hz, jedes 50-ms-Fenster, etwa 1,6 %: zusammen etwa 3,2 %.
 
-An einem Koprozessor mit 4.11 und mit dem INA3221 auf CH1 liest das Panel
+An einem IOmcu mit 4.11 und mit dem INA3221 auf CH1 liest das Panel
 außerdem die Register 0 bis 15 von SERVO_WIN mit 20 Hz (16 Register, ein
 Anfrage-Frame und vier Daten-Frames, 0,78 ms Buszeit je Poll, etwa 1,6 %),
 und das Lesen von SENSE geht für `RESETS` bis Register 31 (ein Daten-Frame
@@ -1511,6 +1511,6 @@ umsortiert: geteilte Antworten in umgekehrter Reihenfolge, abgewiesene
 Schreibzugriffe, verlorene Teilstücke, die eine Anfrage unbeantwortet lassen
 statt halb beantwortet, und der Watchdog des Geräts, der auf einem stillen
 Bus feuert. `test_bind_link` lässt die Schreib- und Lesefolge einer Bindung
-gegen die Page-Regeln des Koprozessors laufen, über einen Bus mit dem
+gegen die Page-Regeln des IOmcu laufen, über einen Bus mit dem
 2-Frame-Puffer des XL2515: siehe [Eine Bindung als
 Ganzes](#eine-bindung-als-ganzes).

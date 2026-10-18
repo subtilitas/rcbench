@@ -52,7 +52,7 @@ static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
 {
     s->reset_step = false;
     if (!link_up || m == NULL) {
-        /* Nothing answers: what was said about the coprocessor that did,
+        /* Nothing answers: what was said about the IOmcu that did,
          * and not yet shown, goes with it. */
         s->up           = false;
         s->good         = false;
@@ -65,7 +65,7 @@ static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
     }
     s->up = true;
 
-    /* The older coprocessor, once per link and per switching on. */
+    /* The older IOmcu, once per link and per switching on. */
     const bool old = m->wanted && m->page && minor < SENSE_LINK_WIN_MINOR;
     if (old && !s->old_told) {
         s->events |= SERVO_SOURCE_EV_OLD;
@@ -79,7 +79,7 @@ static servo_source_id_t step(servo_source_t *s, uint32_t now_ms,
 
     /* Condition 6, from every read that carries the count: a reset found
      * and repaired between two reads shows nowhere else.  A set-up taken
-     * starts the count again at the coprocessor, and here. */
+     * starts the count again at the IOmcu, and here. */
     if (!m->status || !m->resets_read || m->setups != s->setups) {
         s->resets_known = false;
         s->setups       = m->setups;

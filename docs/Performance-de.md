@@ -112,7 +112,7 @@ anderen einen Frame zurück, was als Flackern erscheint.
 
 **Ein Stencil, das sich nicht bewegt, wird gecacht.** SIMULATION wird auf
 jedem Frame gezeichnet, sobald die Prüfstandswerte `LINK_BN_SIMULATED` tragen,
-also auch bei einem Coprozessor, der mit simulierten Werten antwortet.
+also auch bei einem IOmcu, der mit simulierten Werten antwortet.
 Gedrehter Text scannt seine gedrehte Bounding-Box, von Ecke zu Ecke also die
 ganze Canvas, und rotiert und dividiert je Pixel, um die 3 439 Pixel zu
 schreiben, die das Watermark bedeckt: 0,9 % der Canvas. `ui_watermark` nimmt
@@ -249,7 +249,7 @@ CI führt das Werkzeug auf dem Build mit ESP-IDF v5.4 mit `--check-doc` aus;
 das schlägt fehl, wenn die Tabelle oben oder die Zahl der Aufrufe über einen
 Zeiger von diesem Build abweicht.
 
-### Der Koprozessor
+### Der IOmcu
 
 `tools/stack_check.py --iomcu` liest das RP2350-Image auf dieselbe Weise.
 Kern 0 führt `main()` auf dem Main-Stack des pico-sdk aus: 4096 Bytes,
@@ -260,7 +260,7 @@ Keiner der beiden Stacks hat eine Schutzzone. Ein Interrupt läuft auf dem
 Stack des Kerns, den er unterbricht; jedem Kern werden deshalb seine tiefste
 Kette und ein Interrupt angerechnet: ein Exception-Frame von 108 Bytes und
 der tiefste Handler, den das Image installiert. CI führt das Werkzeug nach
-dem Koprozessor-Build aus und schlägt fehl, wenn Kette, ein Interrupt und
+dem IOmcu-Build aus und schlägt fehl, wenn Kette, ein Interrupt und
 eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |

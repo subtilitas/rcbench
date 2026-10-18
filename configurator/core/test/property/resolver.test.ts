@@ -225,10 +225,10 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       const tail = end.slice(dot + 1);
       if (head === 'can') {
         assert.ok(tail === 'H' || tail === 'L', `wire ${wire.n} ends on ${end} for ${where}`);
-        assert.ok(present.has('copro'), `wire ${wire.n} ends on ${end} without the coprocessor for ${where}`);
+        assert.ok(present.has('copro'), `wire ${wire.n} ends on ${end} without the IOmcu for ${where}`);
       } else if (head === 'pad') {
         assert.ok(/^[1-9][0-9]*$/.test(tail) && PADS.has(Number(tail)), `wire ${wire.n} ends on ${end} for ${where}`);
-        assert.ok(present.has('copro'), `wire ${wire.n} ends on ${end} without the coprocessor for ${where}`);
+        assert.ok(present.has('copro'), `wire ${wire.n} ends on ${end} without the IOmcu for ${where}`);
       } else {
         const part = PARTS.get(head);
         const pin = part?.pins.find((x) => x.id === tail);

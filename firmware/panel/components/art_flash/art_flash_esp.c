@@ -32,7 +32,7 @@ static const esp_partition_t *s_part;
  * that beats the safety line and polls the bench.
  *
  * A quarter-megabyte erase in one call therefore stops the heartbeat for as
- * long as it takes, the coprocessor's 200 ms silence timer trips, the
+ * long as it takes, the IOmcu's 200 ms silence timer trips, the
  * panel's own 1 s host timeout trips, and the screen says NO LINK while the
  * cable is fine. Putting the work on another task does not help: the stall
  * is the cache, not the scheduler.

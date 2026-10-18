@@ -84,7 +84,7 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
     assert.doesNotMatch(text, /Protokoll|Ausgang der Versorgung|Töne|Servohorn|Widerstandslast|Frame-Rate/, text);
   }
   assert.doesNotMatch(help('esc').de, /Leistung/);
-  // The emergency stop breaks no power line, and the coprocessor switches the PD mini off.
+  // The emergency stop breaks no power line, and the IOmcu switches the PD mini off.
   const estopPart = CATALOGUE.parts.find((p) => p.id === 'estop')!;
   for (const text of [help('estop').en, estopPart.role!.en]) {
     assert.doesNotMatch(text, /switches off no supply/);
@@ -97,10 +97,10 @@ test('the wording of the texts: no pad, the German labels of the panel, SAFE and
     assert.match(text, /Ausgang des PD mini (?:aus|gehen aus)/);
   }
   // Both name the bench switching to SAFE, not the PD mini alone.
-  assert.match(estopPart.role!.en, /the coprocessor switches the bench to SAFE and the output of the PD mini off\./);
-  assert.match(estopPart.role!.de, /der Koprozessor schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus\./);
-  assert.match(help('estop').en, /the coprocessor switches the bench to SAFE: its outputs and the output of the PD mini go off\./);
-  assert.match(help('estop').de, /schaltet der Koprozessor den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus\./);
+  assert.match(estopPart.role!.en, /the IOmcu switches the bench to SAFE and the output of the PD mini off\./);
+  assert.match(estopPart.role!.de, /der IOmcu schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus\./);
+  assert.match(help('estop').en, /the IOmcu switches the bench to SAFE: its outputs and the output of the PD mini go off\./);
+  assert.match(help('estop').de, /schaltet der IOmcu den Prüfstand auf SAFE: seine Ausgänge und der Ausgang des PD mini gehen aus\./);
   assert.match(help('estop').en, /an ESC battery or a servo supply of your own stays connected/);
 });
 

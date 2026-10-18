@@ -2,7 +2,7 @@
  * A pack, a motor and a propeller, modelled, so every screen runs without a
  * measurement front end.
  *
- * It runs on the panel, and only while no coprocessor answers: a coprocessor
+ * It runs on the panel, and only while no IOmcu answers: an IOmcu
  * that is answering reports what it measures and leaves the rest empty, so a
  * modelled number and a measured one never appear on the same screen.
  *
@@ -61,7 +61,7 @@ void telemetry_sim_init(telemetry_sim_t *s, const telemetry_sim_cfg_t *cfg);
 /**
  * Advance by @p dt_s at @p throttle_pct and fill @p out.
  *
- * Peaks are accumulated into @p out as the coprocessor accumulates them for
+ * Peaks are accumulated into @p out as the IOmcu accumulates them for
  * the BENCH page, so the screen sees the same behaviour from both sources.
  */
 void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,

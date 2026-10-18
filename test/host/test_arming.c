@@ -50,9 +50,9 @@ TEST_CASE(a_stop_latches_until_an_explicit_arm)
 
 /*
  * The deadlock this project shipped: the heartbeat is suppressed while a stop
- * is latched, the coprocessor refuses to arm while the heartbeat is not
+ * is latched, the IOmcu refuses to arm while the heartbeat is not
  * trusted, and the latch was only cleared after a successful arm. A stop with
- * a coprocessor attached could not be cleared without a reboot.
+ * an IOmcu attached could not be cleared without a reboot.
  */
 TEST_CASE(an_arm_clears_the_latch_before_it_needs_the_line)
 {
@@ -326,7 +326,7 @@ TEST_CASE(a_pressed_stop_is_counted_apart_from_the_benchs_own)
     CHECK_EQ(arming_stop_count(&ar), 1);
     CHECK_EQ(arming_pressed_count(&ar), 1);
     arming_stop(&ar);                        /* touch lost under a press */
-    arming_stop_from_far_end(&ar);           /* the coprocessor's */
+    arming_stop_from_far_end(&ar);           /* the IOmcu's */
     CHECK_EQ(arming_stop_count(&ar), 3);
     CHECK_EQ(arming_pressed_count(&ar), 1);
     /* Touch that stops answering for ARMING_TOUCH_DEAD_MS. */

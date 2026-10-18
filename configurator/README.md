@@ -4,7 +4,7 @@ A static page for release 0.20.0 of rcbench. The visitor ticks what the bench
 does. The page lists the parts, draws the wiring and prints a pin-to-pin table.
 The functions stand in groups by the bench hardware they need. A part of the
 result beyond the base setup has a remove control.
-Without a tick it shows the base setup: panel, coprocessor and the 4 wires
+Without a tick it shows the base setup: panel, IOmcu and the 4 wires
 between them.
 
 A servo and an ESC (electronic speed controller) are test objects: devices the
@@ -61,7 +61,7 @@ stays on the part.
 | `src/view/` | Chooser, result document, table, parts list (`buy.ts`: rows, search link, text and CSV), heat calculation of the motor simulator (`sim.ts`). |
 | `src/export/` | PDF export of the resolved setup. See "PDF export". |
 | `public/pictures/` | Pictures of the parts: photos as WebP, drawings as SVG. |
-| `drawings/` | Generator and check of the part drawings, anchor table, wire palette, and the panel drawing of the coprocessor board (`panel.json`). See `drawings/README.md`. |
+| `drawings/` | Generator and check of the part drawings, anchor table, wire palette, and the panel drawing of the IOmcu board (`panel.json`). See `drawings/README.md`. |
 | `public/drawings/` | The part drawings, written by `npm run drawings`: 23 SVG files in English, 23 in German under `de/`. |
 | `test/`, `drawings/test/` | Unit tests, run by `node --test`. |
 | `test/property/` | Properties of the hash codec, the markup and the texts over the whole selection space. |
@@ -255,9 +255,9 @@ state in words:
 
 A part carries one reason line. A part that a rule adds along with a bench part reads "Included with these parts: PD mini." (German: "Enthalten bei diesen Teilen: PD mini."), as the T-plug and the charger do. A part that a rule adds for another cause, such as an option or a test object, reads "Needed by: ESC power B." (German: "Nötig für: ESC-Versorgung B."). A part that a function needs reads "Needed by: <function>."
 
-4 variants follow the setup: connection to the coprocessor, INA228 board, ESC
+4 variants follow the setup: connection to the IOmcu, INA228 board, ESC
 power and servo power. Servo power is A, the visitor's own supply (default),
-or B, from the bench for a small servo: the 5 V pin of the coprocessor (pad
+or B, from the bench for a small servo: the 5 V pin of the IOmcu (pad
 40), or the V pin of the strip of the Osoyoo breakout board. With B the result
 and the PDF carry a note: the servo draws from the supply of the logic, which
 is prone to problems. On the V pin of the strip the jumper V Selector sits on
@@ -268,9 +268,9 @@ stated" for the current. "Small" carries no number: no source states a current
 limit. An ESC takes signal and GND only, in every variant.
 
 "Program a KST or Chaservo servo" (`servoprog`) needs the panel and the
-coprocessor alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
+IOmcu alone. Its tick moves the servo signal from wire 7 (pad 4, GP2,
 a slot of SETUP → OUTPUTS) to wire 64 (pad 17, GP13), the programming port
-of a coprocessor that has stored no other pin for it. The result carries 3
+of an IOmcu that has stored no other pin for it. The result carries 3
 notes and 1 unknown: SETTINGS → DUT → PWM TARGET is PROG PORT; with the PD
 mini, CONNECT sets the servo supply, 4.8 to 6.0 V or up to 8.4 V with HV
 SERVO on, and 50 to 3000 mA; without the PD mini the servo takes the supply
@@ -291,7 +291,7 @@ the resolver in the variants of the page:
 - "Connects: ..." names the test object the item connects.
 - "Variant: ..." names the variant the function sets.
 - A part names its supply wires, the wires of class logic and power that
-  end on it, with the note of the wire: "Supply, 3.3 V: Coprocessor 3V3
+  end on it, with the note of the wire: "Supply, 3.3 V: IOmcu 3V3
   (pad 36).", and for the PD mini its power input, "PD in: T-plug OUT, USB-C
   socket." and the note of the USB-C cable.
 - Without a further part the line reads "Needs no further part of the
@@ -478,7 +478,7 @@ repository README; `core/test/buy.test.ts` fails when one is missing.
 ## Drawing
 
 The drawing is 970 px wide. Its height follows the modules of the setup.
-Modules stand in a left and a right column, the coprocessor in the middle.
+Modules stand in a left and a right column, the IOmcu in the middle.
 Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
@@ -501,7 +501,7 @@ its own, fitted to the page width. The wire table is the reference: a wire
 number in the picture names the row with the same number.
 
 The picture places the part drawings of `public/drawings/` in columns, the
-coprocessor in the middle column, and routes every wire from wire point to
+IOmcu in the middle column, and routes every wire from wire point to
 wire point of `drawings/anchors.json`.
 
 | Rule | Value |
@@ -516,7 +516,7 @@ wire point of `drawings/anchors.json`.
 | Wire number | In a chip at both ends of the wire. |
 | Wires on 1 pin | Side by side along the edge of the part, up to 12 px from the wire point. |
 | Cable | A wire on the net `pd_in` is a USB-C cable between 2 sockets: a grey sheath of 7 px around a red core of 3 px. The nets are the table `CABLE_NETS` in `drawings/wires.ts`. |
-| Between | A part with `between` in the data file, with both named parts on its side of the coprocessor, makes that side 3 columns wide: the first named part alone in the outermost column, the part in the middle column, the second named part in the inner column. The T-plug stands between the PD charger and the PD mini. |
+| Between | A part with `between` in the data file, with both named parts on its side of the IOmcu, makes that side 3 columns wide: the first named part alone in the outermost column, the part in the middle column, the second named part in the inner column. The T-plug stands between the PD charger and the PD mini. |
 | Component | A wire of kind `component` in the data file is drawn as the component: a body of 12 px by 20 px on 2 leads with right-angle bends, 1 wire number, and a text of up to 2 lines. Between 2 pins of 1 part the body stands beside that part and the picture is 192 px wider for a text of 18 characters. The band is at end `a` of the wire. |
 | Not drawn | A wire with 1 end (`b: null`), such as the address bridge 31 on the INA3221 board. Its table row carries the note. |
 

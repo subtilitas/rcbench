@@ -1,5 +1,5 @@
 /*
- * The board's drawing: fetched from the coprocessor a slice of a poll at a
+ * The board's drawing: fetched from the IOmcu a slice of a poll at a
  * time on the control task, kept in flash a sector a pass on a safe bench,
  * and published for the picker on the UI task.
  *
@@ -73,7 +73,7 @@ static bool         s_keep_waited;  /* the wait is logged once a keep */
  * out by the UI task.
  *
  * Emptied on every link-up edge before anything else is asked, so a drawing
- * outlives neither the coprocessor it came from nor a reflash of it.  Filled
+ * outlives neither the IOmcu it came from nor a reflash of it.  Filled
  * only with bytes that match the ARTWORK page read on that link-up: fetched
  * and checked against its CRC and hash, or read from flash under an entry
  * whose every field equals the page (art_store_read_same()).  The board ID
@@ -246,7 +246,7 @@ static const art_transport_t s_art_link = {
  * show the kept copy only when it is this drawing -- else fetch it.
  *
  * Two transactions and at most one flash read here; a fetch happens a slice
- * of a poll at a time below.  A coprocessor older than 4.20 serves a
+ * of a poll at a time below.  An IOmcu older than 4.20 serves a
  * photograph or nothing, and is drawn from its shape.
  */
 void art_begin(uint16_t board)

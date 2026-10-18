@@ -12,7 +12,7 @@ import pytest
 import stack_iomcu as si
 
 
-# Instructions as arm-none-eabi-objdump prints them for the coprocessor
+# Instructions as arm-none-eabi-objdump prints them for the IOmcu
 # image: (address, first halfword, second halfword) -> what thumb() says.
 @pytest.mark.parametrize("pc, hw1, hw2, want", [
     (0x100021B4, 0xE92D, 0x4FF0, (4, "push", 36)),      # stmdb sp!, {r4-fp,lr}
@@ -184,9 +184,9 @@ def test_core_0s_row_is_held_to_the_measurement():
     moved = [said[0], said[1] + 8, said[2], said[3] - 8]
     out = si.check_iomcu_doc([("core 0", "main", *moved, calls), CORE1])
     assert out == [
-        f"Performance.md: the coprocessor table gives core 0 as {said}; "
+        f"Performance.md: the IOmcu table gives core 0 as {said}; "
         f"measured {moved}",
-        f"Performance-de.md: the coprocessor table gives Kern 0 as {said}; "
+        f"Performance-de.md: the IOmcu table gives Kern 0 as {said}; "
         f"measured {moved}",
         f"STATUS.md: gives core 0's depth as {said[1]}; measured {moved[1]}",
         f"STATUS.md: gives core 0's spare as {said[3]}; measured {moved[3]}",

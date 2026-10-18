@@ -1,8 +1,8 @@
 /*
- * The coprocessor's drawing of its own board, on a screen: whether it
+ * The IOmcu's drawing of its own board, on a screen: whether it
  * describes the board the panel knows, and drawing it into a box.
  *
- * The drawing comes from the coprocessor (link_drawing.h has the layout),
+ * The drawing comes from the IOmcu (link_drawing.h has the layout),
  * the pins the panel offers come from its catalogue.  A drawing whose pads
  * say something else than the catalogue -- another GPIO on a pad, a ground
  * where the catalogue has a rail, a pad off the shape's grid -- is refused

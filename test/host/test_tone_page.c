@@ -1,5 +1,5 @@
 /*
- * The TONE link page at the coprocessor (shared/outputs/tone_page.c).
+ * The TONE link page at the IOmcu (shared/outputs/tone_page.c).
  *
  * Under test: the set-up as a page starts; every value held to its range
  * at both ends, whether the tap is enabled or not; the combinations the

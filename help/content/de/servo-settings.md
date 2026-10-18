@@ -43,10 +43,10 @@ Die Seite AUSGANG sagt, was aus der Rate wurde:
 
 | Hinweis | Bedeutung |
 |---|---|
-| `Aktiv: AUSGÄNGE laufen mit 330 Hz.` | der Koprozessor fährt die Rate auf dem Ziel, das er hält |
-| `Die Pulsrate wird mit der nächsten Position an den Koprozessor gesendet.` | noch nicht geschrieben |
+| `Aktiv: AUSGÄNGE laufen mit 330 Hz.` | der IOmcu fährt die Rate auf dem Ziel, das er hält |
+| `Die Pulsrate wird mit der nächsten Position an den IOmcu gesendet.` | noch nicht geschrieben |
 | `ABGELEHNT: ...` | ein Puls ist länger als der Frame, oder ein Pin teilt den PWM-Slice mit anderer Rate; die Pins behalten ihre Rate |
-| `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein Koprozessor antwortet |
+| `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` | kein IOmcu antwortet |
 
 ## SWEEP
 
@@ -116,7 +116,7 @@ AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-in
 
 ![Die Zeile ZIEL mit PROG-PORT](view:servo-target)
 
-Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protokoll Pins`, und wählt es: ein Tipp öffnet AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. Sie bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
+Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protokoll Pins`, und wählt es: ein Tipp öffnet AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des IOmcu. Sie bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
 
 ![Die Auswahl des Ziels](view:servo-target-choice)
 
@@ -127,10 +127,10 @@ Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protok
 | `PROG-PORT GP13 PWM AUS` | der Port ist das Ziel und gibt keinen Puls aus |
 | `KEIN SERVO-PWM-PIN` | kein Pin ist als SERVO PWM gebunden |
 | `PINS NICHT AUSGELESEN` | keine Bindung wurde gelesen |
-| `UNBEKANNT` | die Programmierport-Seite des Koprozessors ist nicht gelesen |
-| `KEINE VERBINDUNG` | kein Koprozessor antwortet; der Tester sendet nichts |
+| `UNBEKANNT` | die Programmierport-Seite des IOmcu ist nicht gelesen |
+| `KEINE VERBINDUNG` | kein IOmcu antwortet; der Tester sendet nichts |
 
-Die Zeile folgt dem Ziel, das der Koprozessor hält, nicht der Einstellung. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
+Die Zeile folgt dem Ziel, das der IOmcu hält, nicht der Einstellung. Eine Änderung von ZIEL wartet auf einen ruhenden Prüfstand.
 
 ## Die Werte behalten
 

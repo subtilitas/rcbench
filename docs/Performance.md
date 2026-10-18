@@ -107,8 +107,8 @@ panel alternates between two buffers, so a screen that invalidates only the
 buffer being drawn leaves the other one a frame behind, which reads as flicker.
 
 **Cache a stencil that does not move.** SIMULATION is drawn on every frame
-whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes a
-coprocessor answering with simulated numbers. Rotated text scans its rotated
+whenever the bench numbers carry `LINK_BN_SIMULATED`, which includes an
+IOmcu answering with simulated numbers. Rotated text scans its rotated
 bounding box, which corner to corner is the whole canvas, and rotates and
 divides per pixel to write the 3,439 pixels the mark covers, 0.9% of the
 canvas. `ui_watermark` records those points once and writes them thereafter:
@@ -232,7 +232,7 @@ CI runs the tool with `--check-doc` on the ESP-IDF v5.4 build, which fails
 when the table above or the count of calls through a pointer differs from
 that build.
 
-### The coprocessor
+### The IOmcu
 
 `tools/stack_check.py --iomcu` reads the RP2350 image the same way. Core 0
 runs `main()` on the pico-sdk's main stack: 4096 bytes, `__StackBottom` to
@@ -241,7 +241,7 @@ runs `main()` on the pico-sdk's main stack: 4096 bytes, `__StackBottom` to
 its launch passes. Neither stack has a guard. An interrupt runs on the stack
 of the core it interrupts, so each core is charged its deepest chain and one
 interrupt: a 108-byte exception frame and the deepest handler the image
-installs. CI runs the tool after the coprocessor build and fails when a
+installs. CI runs the tool after the IOmcu build and fails when a
 core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |

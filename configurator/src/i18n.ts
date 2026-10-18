@@ -83,7 +83,7 @@ const S = {
     'Ein Haken fügt ein Teil hinzu. Ohne Haken entfällt das Teil. Die Seite fragt vorher.',
   ],
   variants: ['Variants', 'Varianten'],
-  vConn: ['Connections on the coprocessor', 'Anschlüsse am Koprozessor'],
+  vConn: ['Connections on the IOmcu', 'Anschlüsse am IOmcu'],
   vPads: ['Solder to the pads', 'An die Pads löten'],
   vOso: ['Osoyoo screw-terminal breakout board', 'Osoyoo-Schraubklemmen-Breakout-Platine'],
   vIna: ['INA228 board', 'INA228-Platine'],
@@ -230,8 +230,8 @@ const S = {
   mUp: ['Move up', 'Nach oben'],
   mDown: ['Move down', 'Nach unten'],
   padCap: [
-    'Coprocessor pads: 1 to 20 down the left side, 40 to 21 down the right side. The numbers are those printed on the module. Line colours are a legend; they are not the colours of your leads.',
-    'Pads des Koprozessors: 1 bis 20 links von oben nach unten, 40 bis 21 rechts von oben nach unten. Die Nummern stehen auf dem Modul. Die Linienfarben sind eine Legende, nicht die Farben der Leitungen.',
+    'IOmcu pads: 1 to 20 down the left side, 40 to 21 down the right side. The numbers are those printed on the module. Line colours are a legend; they are not the colours of your leads.',
+    'Pads des IOmcu: 1 bis 20 links von oben nach unten, 40 bis 21 rechts von oben nach unten. Die Nummern stehen auf dem Modul. Die Linienfarben sind eine Legende, nicht die Farben der Leitungen.',
   ],
   tabCap: [
     'Pin-to-pin table, {w} wires. A wire keeps its number in every selection, so numbers are skipped.',
@@ -272,7 +272,7 @@ const S = {
   footNotice: ['Trademark notice', 'Markenhinweis'],
   footHelp: ['Panel help', 'Panel-Hilfe'],
   printHead: [`rcbench bench configurator, release ${RELEASE}`, `rcbench Prüfstand-Konfigurator, Release ${RELEASE}`],
-  copro: ['Coprocessor', 'Koprozessor'],
+  copro: ['IOmcu', 'IOmcu'],
   coproSub: ['RP2350-CAN', 'RP2350-CAN'],
   coproSubOso: ['on Osoyoo breakout', 'auf Osoyoo-Breakout'],
   inaSubMatek: ['MATEK I2C-INA-BM', 'MATEK I2C-INA-BM'],

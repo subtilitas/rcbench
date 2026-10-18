@@ -151,7 +151,7 @@ uint8_t servo_page_write(servo_page_t *p, uint8_t off, uint8_t n,
         return LINK_NACK_READ_ONLY;
     }
     /*
-     * The page as a pass at this moment leaves it.  The coprocessor serves
+     * The page as a pass at this moment leaves it.  The IOmcu serves
      * a pass's writes before its servo_page_step(), so a write can land
      * after a sweep has run out -- unwritten for OUT_DEFAULT_TIMEOUT_MS,
      * disarmed, or past its last movement -- and before the pass that ends

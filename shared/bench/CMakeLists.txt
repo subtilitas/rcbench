@@ -5,7 +5,7 @@
 #
 # bench_state is the seam of the two-processor split: the screens see it and
 # never a register, so one screen renders measured and modelled numbers
-# without knowing which it has.  The coprocessor fills it from the ESC's
+# without knowing which it has.  The IOmcu fills it from the ESC's
 # DShot telemetry in the units of protocols/dshot (bench_state_from_telem()).
 set(SRCS
     bench_state.c
@@ -29,7 +29,7 @@ set(SRCS
 
 # kst_card.c stands between the programmer and the card layer in
 # shared/logfile.  It is built where that layer is: on the panel and on the
-# host, which adds shared/logfile before this directory.  The coprocessor has
+# host, which adds shared/logfile before this directory.  The IOmcu has
 # no card and builds this directory without it.
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} kst_card.c INCLUDE_DIRS include

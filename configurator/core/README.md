@@ -67,7 +67,7 @@ use in one setup.
 | `esc-battery`, `pd-esc` | ESC |
 
 The option `servoPower` is `external` (default) or `bench`. With `bench` the
-plus of the servo is on pad 40 (VBUS, 5 V) of the coprocessor, or on the V
+plus of the servo is on pad 40 (VBUS, 5 V) of the IOmcu, or on the V
 pin of the strip of the Osoyoo breakout board. The check entry
 `servo-bench-supply` is in every such setup: the source at the V pin depends
 on the jumper V Selector (5V from the converter of the DC input, 3V3 from the
@@ -96,10 +96,10 @@ The option `servoPort` is `outputs` (default) or `prog`. It is never shown
 and the hash holds no token for it: the function `servoprog` forces `prog`.
 With `outputs` the servo signal is wire 7, from pad 4 (GP2), a slot of
 SETUP → OUTPUTS. With `prog` it is wire 64, from pad 17 (GP13), the
-programming port of the coprocessor (`PROG_PORT_DEFAULT_PIN` in
+programming port of the IOmcu (`PROG_PORT_DEFAULT_PIN` in
 `shared/outputs/include/prog_port.h`), and SETTINGS → DUT → PWM TARGET is
 PROG PORT, so the other servo functions drive the same pin. The servo
-programmer needs the panel and the coprocessor alone. With the PD mini, the
+programmer needs the panel and the IOmcu alone. With the PD mini, the
 PD mini feeds the servo and CONNECT sets its voltage, 4.8 to 6.0 V or up to
 8.4 V with HV SERVO on, and its current limit, 50 to 3000 mA. Without it the servo takes the supply that
 `servoPower` names; the check entry `prog-supply-own` states that the
@@ -124,7 +124,7 @@ The order of work:
 4. Options forced by a chosen function. Functions are read in catalogue order; the first one that forces an option names it.
 5. Rules, once each, in array order.
 6. Wires, check entries and power sources whose condition holds.
-7. Functions: `enabled` is true when no needed part is missing, every forced option holds and the test object the function drives is connected. A function with `needs: []` and without `drives` runs on the panel and the coprocessor alone and is enabled in every setup.
+7. Functions: `enabled` is true when no needed part is missing, every forced option holds and the test object the function drives is connected. A function with `needs: []` and without `drives` runs on the panel and the IOmcu alone and is enabled in every setup.
 
 ## Groups and removal
 
@@ -421,7 +421,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 - The pin for the servo signal (GP2) is a proposal of this data file. The repository names no servo pin.
 - The pins of the PD mini serial lines (GP7 transmit, GP6 receive) come from an owner statement of 2026-10-11. The firmware default for both is -1 (off). The direction, transmit to D− and receive from D+, is from `shared/settings/settings.c`.
 - The INA228 module with XT90 plugs has its shunt in the minus line and both lines of the ESC supply on its 2 plugs, per the same owner statement. With this module the data holds no direct wire between the minus of the source and the minus of the ESC: wire 56 (battery) or wire 57 (PD mini) ends on the pin BAT− of the module and wire 58 runs from the pin ESC− to the ESC. The wires 15 and 23 belong to the MATEK board and to a setup without the sensor. The check entry `ina228-xt90-pads` states the pads and the 2 rails.
-- INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
+- INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the IOmcu. A connection between the minus output of the PD mini and GND of the IOmcu is a second path beside the shunt. The share of the ESC current that the sensor reads is not measured. The check entry `ina228-xt90-pd` is of kind `unknown`.
 - With the INA3221 on the sensor bus the sources disagree on the 2 pull-up resistors of 2.2 kΩ: the build guide lists none, `docs/FirstRun.md` lists both. The data follows the build guide and states the disagreement.
 - Servo on pad 40 (VBUS): the current limit of the pin is not stated. "Small servo" carries no number.
 - Osoyoo breakout board: the jumper V Selector (header H3) sets the V pins of all 40 strips: 3V3 from the regulator U1 (input VSYS), 5V from the XL1509 converter U9 (input DC jack, VIN terminal or 2-pin header H4). The sources are the schematic REV 1.0 (file of 2024-12-03), the XL1509 datasheet Rev 2.0 and the product page of 2024-12-02, cited by the source kind `doc`. The currents 2 A at 5 V and 500 mA at 3.3 V are vendor values, not measured. The DC input range differs between the print (7 to 16 V), the vendor (7 to 12 V recommended, 7 to 18 V limit) and the chip (7 to 40 V). With USB alone and the jumper on 3V3 the schematic and the product page disagree; not measured.

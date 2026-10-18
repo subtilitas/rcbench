@@ -410,9 +410,9 @@ static bool page_took_cmd(const kst_link_t *k, const uint16_t *regs)
 }
 
 /* Whether the page @p regs is one that started again since the status last
- * read, whatever its SEQ.  The coprocessor names the operation it last
+ * read, whatever its SEQ.  The IOmcu names the operation it last
  * started in LINK_KS_OP and keeps it until the next one; a refused command
- * leaves it.  Only a start of the coprocessor sets it back to NONE.  A
+ * leaves it.  Only a start of the IOmcu sets it back to NONE.  A
  * page that has started no operation yet reads NONE before and after a
  * start, and only its SEQ tells. */
 static bool op_went_back(const kst_link_t *k, const uint16_t *regs)
@@ -492,7 +492,7 @@ static void on_refused(kst_link_t *k, uint8_t kind, uint8_t nack)
 {
     switch (kind) {
     case X_STATUS:
-        /* BAD_PAGE: a coprocessor that reports the minor and has no page.
+        /* BAD_PAGE: an IOmcu that reports the minor and has no page.
          * kst_link_done() takes every other refusal of a status read as
          * an exchange without an answer. */
         k->page = false;

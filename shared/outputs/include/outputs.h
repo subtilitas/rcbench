@@ -13,7 +13,7 @@
  *
  *   Arming, clamping, slew and where to go when the link goes quiet are
  *   answered here for every output.  Only turning a command into edges is
- *   per-protocol, on the coprocessor.
+ *   per-protocol, on the IOmcu.
  *
  * The unit is a thousandth of the channel's own span.  Microseconds mean
  * nothing to DShot and a DShot code means nothing to a PWM (pulse-width
@@ -165,7 +165,7 @@ bool outputs_configure(outputs_t *o, uint8_t slot, const out_slot_t *cfg);
  * (Controller Area Network) controller, the safety line and the console.
  *
  * Setting the mask does not tear down a slot that is already using a pin in
- * it.  Reserve before configuring; the coprocessor does this once at boot,
+ * it.  Reserve before configuring; the IOmcu does this once at boot,
  * and the panel leaves the mask empty because it drives no pin of its own.
  */
 void outputs_reserve_pins(outputs_t *o, uint64_t mask);
@@ -310,7 +310,7 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  *
  *   The heartbeat.  Nothing here can see the safety line.  What armed means
  *   is settled by the end holding the wire before it calls outputs_arm(): the
- *   coprocessor recomputes it every pass from the ARM register, its link
+ *   IOmcu recomputes it every pass from the ARM register, its link
  *   failsafe and its heartbeat monitor, so a bank armed there already carries
  *   a beat that was judged this pass.  "This pass" is the whole of the
  *   guarantee: silence is noticed by a poll, so the line can have been dead
@@ -368,7 +368,7 @@ uint16_t outputs_pulse_us(const outputs_t *o, uint8_t ch);
  * The bank is what carries it; the pin can lag.  A driver with a setup
  * sequence sends that first: firmware/iomcu/src/outputs_hw.c sends
  * DSHOT_CMD_EDT_ENABLE for DSHOT_CMD_REPEATS (10) frames on the edge into
- * driving for a bidirectional DShot slot, which at the coprocessor's
+ * driving for a bidirectional DShot slot, which at the IOmcu's
  * 1,000 Hz update rate is the first 10 ms of the arm.  The command reaches
  * that ESC after them.
  *

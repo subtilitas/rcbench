@@ -2,7 +2,7 @@
  * Fetching a board's drawing: the order of the transactions, without the
  * link underneath them.
  *
- * The panel asks the coprocessor what its drawing is, then asks for it a
+ * The panel asks the IOmcu what its drawing is, then asks for it a
  * block at a time. The sequence is small and the failures are all quiet
  * ones: a block skipped, a reply for a block nobody asked for, a drawing
  * that arrives whole and wrong. Those are worth a test, and the task it
@@ -62,7 +62,7 @@ typedef struct {
  * What the far end says its drawing is: LINK_AW_COUNT registers into
  * @p meta_regs.
  *
- * False when it has none, when the page is not there at all -- a coprocessor
+ * False when it has none, when the page is not there at all -- an IOmcu
  * built before it -- or when what it says cannot be a drawing. Those are
  * different things to somebody reading a log, so @p why is set to which; it
  * may be NULL, and it is never left pointing at nothing.

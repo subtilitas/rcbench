@@ -318,9 +318,9 @@ typedef enum {
     ESC_STICK_R_STOP,         /**< STOP pressed                          */
     ESC_STICK_R_BENCH_STOP,   /**< a stop the bench raised itself: touch
                                    that stopped answering or was lost, the
-                                   coprocessor's refusal or failsafe       */
+                                   IOmcu's refusal or failsafe       */
     ESC_STICK_R_DISARMED,     /**< the bench disarmed under the run      */
-    ESC_STICK_R_LINK,         /**< the coprocessor stopped answering     */
+    ESC_STICK_R_LINK,         /**< the IOmcu stopped answering     */
     ESC_STICK_R_SUPPLY_OFF,   /**< the output went off: a trip, a lost ON */
     ESC_STICK_R_SUPPLY_LOST,  /**< the supply stopped answering          */
     ESC_STICK_R_STALE,        /**< no new reading for ESC_STICK_STALE_MS */

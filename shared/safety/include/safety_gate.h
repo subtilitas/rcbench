@@ -1,5 +1,5 @@
 /*
- * The coprocessor's decision to arm, once a pass and at every CONTROL
+ * The IOmcu's decision to arm, once a pass and at every CONTROL
  * write.
  *
  * The bank is armed while four things hold: the ARM register is set, the
@@ -13,7 +13,7 @@
  *     cleared  by CLEAR on the control page, and by nothing else
  *
  * The supply's ON and the STATUS page do not read the latch.  They read the
- * link failsafe and the heartbeat, so a coprocessor that has just started
+ * link failsafe and the heartbeat, so an IOmcu that has just started
  * takes a supply ON and reports no fault.
  *
  * Pure C with the clock passed in; the firmware's main loop samples the pin

@@ -88,7 +88,7 @@ bool supply_screen_model(void);
 void supply_screen_set_baud(uint32_t baud);
 
 /**
- * The PD mini's UART pins, coprocessor GPIO numbers, named in the header
+ * The PD mini's UART pins, IOmcu GPIO numbers, named in the header
  * ("PD MINI TX GP12 RX GP13").  A negative pin is not set; with either pin
  * not set the header says "PD MINI NO PINS".  Not shown for the model.
  */
@@ -140,7 +140,7 @@ void supply_screen_put(float v, float i);
 
 /** The output as the supply last reported it. */
 /**
- * Whether a servo programming port is out of PWM.  The coprocessor then
+ * Whether a servo programming port is out of PWM.  The IOmcu then
  * takes an OFF from the panel and no other command (supply_page.h), and
  * this screen offers the same: OUTPUT OFF and RESET PEAKS work, OUTPUT ON,
  * the sliders, the steps and the set points' keypads take no press and are
@@ -178,7 +178,7 @@ supply_by_t supply_screen_owner(void);
 /**
  * An output reported on that nobody here asked for becomes @p by's: the
  * servo programmer's CONNECT, which switches a PD mini on through the
- * coprocessor and not through this screen.  An owned output keeps its
+ * IOmcu and not through this screen.  An owned output keeps its
  * owner.
  */
 void supply_screen_claim(supply_by_t by);

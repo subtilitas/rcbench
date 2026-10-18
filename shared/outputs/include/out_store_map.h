@@ -1,5 +1,5 @@
 /*
- * Where the next copy of the output binding goes in the coprocessor's flash.
+ * Where the next copy of the output binding goes in the IOmcu's flash.
  *
  * The store is a run of record slots laid across two or more flash sectors.
  * A save programs one slot.  A sector is erased only when nothing in it is
@@ -10,7 +10,7 @@
  *
  * Why not one record rewritten in place.  Erasing a NOR (not-or) flash
  * sector is one command to the die, and the die cannot be read while it runs;
- * the coprocessor executes from that die, so an erase per save is an erase
+ * the IOmcu executes from that die, so an erase per save is an erase
  * window per save with the core answering nothing.  On the bring-up module a
  * save that erased and programmed inside one window measured 19,178 us,
  * against a CAN (Controller Area Network) frame time of about 130 us and two
@@ -30,7 +30,7 @@
  *   out_store_map_stale() offers a sector only while the live record is in
  *   another one, and out_store_map_write() erases only a sector it is
  *   leaving.  With one sector configured there is nowhere else for the record
- *   to be and that guarantee is gone; the coprocessor configures two.
+ *   to be and that guarantee is gone; the IOmcu configures two.
  *
  * Both guarantees need a partly written record to be rejected, and a checksum
  * is not enough for either.  An erase lifts bits towards 0xFF and a program

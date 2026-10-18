@@ -1,5 +1,5 @@
 /*
- * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the coprocessor.
+ * The SENSE, SERVO_SENSE and SERVO_WIN link pages at the IOmcu.
  *
  * Under test: the set-up as a page starts; an INA228 shunt and maximum
  * taken exactly when the driver's ina228_calibrate() takes them, and the

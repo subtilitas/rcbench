@@ -68,21 +68,21 @@ export const SPEC_GEO: Geometry = {
  *
  * - Module tops sit on a 20 px grid that starts at y = 34. Every module pin row
  *   then lies 10 px from the nearest pad row, and the two rows of the panel's
- *   CAN terminals meet the coprocessor's CAN rows in a straight line. Without
+ *   CAN terminals meet the IOmcu's CAN rows in a straight line. Without
  *   the grid a pin row can share its y with a pad row, and two wires of
  *   different nets then run on one line.
- * - Channels under the coprocessor: y = 549 + 10 k. They lie 5 px from the
+ * - Channels under the IOmcu: y = 549 + 10 k. They lie 5 px from the
  *   nearest pin row.
  * - Outer lanes: wires 10 and 21 use lane 2, wires 14 and 22 use lane 1. The
  *   second pill on OUT + of the PD mini then covers lanes of its own pin only.
  *   The second pill of an outer edge sits 21 px from the first.
- * - Right lanes of the 5 wires that cross under the coprocessor from the left
+ * - Right lanes of the 5 wires that cross under the IOmcu from the left
  *   modules: 13, 14, 16, 17, 18 in place of 16 to 20. The cross mark of a stub
  *   on a right module is at x = 750 and lanes 19 and 20 pass through it. The 3
  *   minus wires of the INA228 module with XT90 plugs use lanes 1 and 0 in place
  *   of 21 and 22, which lie outside the gutter.
  * - The 2 wires of the servo supply from pad 40: wire 59 uses right lane 5 and
- *   wire 60 right lane 13. Wire 59 runs the height of the coprocessor; lane 5
+ *   wire 60 right lane 13. Wire 59 runs the height of the IOmcu; lane 5
  *   holds wire 24 of the INA3221 board only, and wire 59 is absent with that
  *   board. Wire 60 is absent with wires 28 and 29, which use lane 13.
  * - The pill of a component between 2 pads sits 8 px from its line. It then

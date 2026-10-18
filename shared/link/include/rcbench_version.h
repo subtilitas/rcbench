@@ -1,7 +1,7 @@
 /*
  * The firmware version, as one number both images and the host suite agree on.
  *
- * It lives beside the link because its only job is to travel: the coprocessor
+ * It lives beside the link because its only job is to travel: the IOmcu
  * publishes it on the identity page and the panel prints what came back, so
  * the version on the wire and the version in the changelog are the same
  * claim.  Before this existed both images reported 0.0.0 while the repository

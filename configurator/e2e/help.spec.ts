@@ -309,7 +309,7 @@ test.describe('1280 px, keyboard and pointer', () => {
     await page.locator('#own-summary').click();
     await mark(page, 'p-ina228').hover();
     await expect(page.locator('#hb-p-ina228')).toContainText(role('ina228', 'de'));
-    await expect(page.locator('#hb-p-ina228')).toContainText('Versorgung, 5 V: Koprozessor VBUS (Pad 40).');
+    await expect(page.locator('#hb-p-ina228')).toContainText('Versorgung, 5 V: IOmcu VBUS (Pad 40).');
   });
 
   test('a tick Tab reaches during a smooth scroll stays in view with its bubble', async ({ page }) => {

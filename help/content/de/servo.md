@@ -25,7 +25,7 @@ Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwert
 
 ![SERVO bei SAFE](view:servo)
 
-Solange der Prüfstand SAFE ist, ist das Horn gedimmt gezeichnet, und die linke Karte von LIVE zeigt `ZUERST ARM`. Das Zifferblatt nimmt keine Position an. Der Koprozessor schreibt auf jeden Servo-PWM-Pin (Pulsweitenmodulation) einen Puls der Länge null.
+Solange der Prüfstand SAFE ist, ist das Horn gedimmt gezeichnet, und die linke Karte von LIVE zeigt `ZUERST ARM`. Das Zifferblatt nimmt keine Position an. Der IOmcu schreibt auf jeden Servo-PWM-Pin (Pulsweitenmodulation) einen Puls der Länge null.
 
 Die rechte Karte, von oben:
 
@@ -61,7 +61,7 @@ ARMED SERVO treibt die Servo-Ausgänge und einen pulsenden PROG PORT. Throttle-A
 | TEMPO | einstellbar | einstellbar; eine gehaltene Position wird mit der neuen Rate erneut gesendet |
 | TEST STARTEN | abgelehnt: `ZUERST ARM` | startet nach seinem Halten den automatischen Test |
 
-Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIMMUNG. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem Koprozessor älter als Protokoll 4.2.
+Das Schalten auf ARMED setzt den befohlenen Wert auf die Ruhe, die Mitte zwischen den Endpunkten des Kanals, ohne TRIMMUNG. Das erste Ziehen oder Drehen am Knopf beginnt dort. SWEEP ist grau ohne gebundenes Ruder, ohne Link oder an einem IOmcu älter als Protokoll 4.2.
 
 ## Das Messgerät der Servoschiene
 
@@ -75,7 +75,7 @@ Die Zeile über der Grafik nennt das Messgerät der Servoschiene:
 ![Der INA3221 als Messgerät der Schiene](view:servo-ina)
 ![Ein übersteuertes Fenster, in der Warnfarbe](view:servo-clipped)
 
-Der INA3221 wird 1000 ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Er ist unter SETUP, ANSCHLÜSSE mit CH1 eingeschaltet, der Koprozessor spricht Protokoll 4.11, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638 A an einem Shunt von 0,1 Ohm, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
+Der INA3221 wird 1000 ms, nachdem seine Bedingungen erfüllt sind, zum Messgerät: Er ist unter SETUP, ANSCHLÜSSE mit CH1 eingeschaltet, der IOmcu spricht Protokoll 4.11, und Fenster mit Strommesswerten kommen an. Ein Fenster, in dem ein Messwert das Ende des Bereichs erreicht hat, 1,638 A an einem Shunt von 0,1 Ohm, steht in der Warnfarbe: Sein Mittelwert ist dann eine Grenze.
 
 ![Das Netzteilmodell des Panels als Messgerät, mit der Marke SIMULIERT](view:servo-model)
 
@@ -97,7 +97,7 @@ Standardservos sind für 4,8 bis 6,0 V ausgelegt. Eine Spannung, die von 6,0 V o
 
 ## SWEEP und PAUSE
 
-SWEEP bewegt das Servo entlang der KURVE von OPTIONEN > SWEEP (Rechteck, Sinus oder Dreieck) mit deren TEMPO, 0,05 bis 5 Hz, über den BEREICH, 10 bis 100 % des Wegs. Der Koprozessor taktet die Kurve; das Timing des Links formt sie nicht. Solange ein Sweep läuft, lautet die Taste PAUSE. Ein Tipp hält das Servo, wo es steht, und die Taste lautet PAUSIERT; ein Tipp auf PAUSIERT setzt den Sweep von dieser Stelle fort.
+SWEEP bewegt das Servo entlang der KURVE von OPTIONEN > SWEEP (Rechteck, Sinus oder Dreieck) mit deren TEMPO, 0,05 bis 5 Hz, über den BEREICH, 10 bis 100 % des Wegs. Der IOmcu taktet die Kurve; das Timing des Links formt sie nicht. Solange ein Sweep läuft, lautet die Taste PAUSE. Ein Tipp hält das Servo, wo es steht, und die Taste lautet PAUSIERT; ein Tipp auf PAUSIERT setzt den Sweep von dieser Stelle fort.
 
 ![Ein angehaltener Sweep](view:servo-paused)
 
@@ -240,7 +240,7 @@ Der Bericht ist eine eigene `SERVOnnn.TXT`, geschrieben unabhängig von BERICHT.
 
 - Am Netzteilmodell des Panels sind die Ströme des Tests die Last des Modells, nicht die des Servos.
 - Die Einheit von LEFT ANGLE und RIGHT ANGLE ist unbekannt. Der Endlagenlauf nimmt den Weg als linear im Puls; das ist nicht gemessen.
-- Bis der Bildschirm eine Position sendet, laufen die Pins mit der Rate, die der Koprozessor hält, nach einem Neustart 50 Hz.
+- Bis der Bildschirm eine Position sendet, laufen die Pins mit der Rate, die der IOmcu hält, nach einem Neustart 50 Hz.
 
 ## Verwandte Seiten
 

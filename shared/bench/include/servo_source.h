@@ -8,9 +8,9 @@
  * The INA3221 is the meter while all of these hold:
  *
  *   1. SETUP INTERFACES has the INA3221 on with CH1 among its channels;
- *   2. the coprocessor speaks protocol 4.11 or newer, the one with the
+ *   2. the IOmcu speaks protocol 4.11 or newer, the one with the
  *      window ring (SERVO_WIN) and SENSE's RESETS;
- *   3. the coprocessor's SENSE page holds that set-up: registers 0 to 11
+ *   3. the IOmcu's SENSE page holds that set-up: registers 0 to 11
  *      equal, no write owed, no frame refused;
  *   4. the last SENSE read is younger than SERVO_SOURCE_FRESH_MS and its
  *      FLAGS have the INA3221 ONLINE and ID_OK and the bus not stuck;
@@ -23,7 +23,7 @@
  * The meter drops to the PD mini in the first step in which one of 1 to 6
  * fails, and returns SERVO_SOURCE_SETTLE_MS after they all hold again: a
  * part on a loose wire does not change the meter 20 times a second.  With
- * no coprocessor answering the meter is the model.
+ * no IOmcu answering the meter is the model.
  *
  * A clipped reading and a negative current are readings: neither is a
  * condition here.
@@ -33,13 +33,13 @@
  * the meter change after the step that changed it still learns the
  * condition: a reset shows as a condition for one step only.  A reset
  * count that moved in that step is the reason kept, whichever condition
- * failed first: the coprocessor takes a part it found reset offline in the
+ * failed first: the IOmcu takes a part it found reset offline in the
  * read that counts the reset.
  *
  * Two things are said to the operator, each once (servo_source_event()):
- * the INA3221 is on with CH1 and the coprocessor has SENSE and is older
- * than 4.11, at the link-up and when the part is switched on while such a
- * coprocessor answers; and the INA3221's reset count moved.
+ * the INA3221 is on with CH1 and the IOmcu has SENSE and is older
+ * than 4.11, at the link-up and when the part is switched on while such an
+ * IOmcu answers; and the INA3221's reset count moved.
  *
  * Pure C, no link and no clock of its own.  Control task only.
  *
@@ -67,15 +67,15 @@ extern "C" {
 typedef enum {
     SERVO_SOURCE_PDMINI  = 0,
     SERVO_SOURCE_INA3221 = 1,
-    SERVO_SOURCE_MODEL   = 2,   /**< no coprocessor answers */
+    SERVO_SOURCE_MODEL   = 2,   /**< no IOmcu answers */
 } servo_source_id_t;
 
 /** Why the INA3221 is not the meter: the first condition that fails. */
 typedef enum {
     SERVO_SOURCE_WHY_NONE = 0,   /**< it is the meter                     */
-    SERVO_SOURCE_WHY_NO_LINK,    /**< no coprocessor answers              */
+    SERVO_SOURCE_WHY_NO_LINK,    /**< no IOmcu answers              */
     SERVO_SOURCE_WHY_OFF,        /**< 1: not on with CH1 in SETUP         */
-    SERVO_SOURCE_WHY_OLD,        /**< 2: the coprocessor is older than 4.11 */
+    SERVO_SOURCE_WHY_OLD,        /**< 2: the IOmcu is older than 4.11 */
     SERVO_SOURCE_WHY_NOT_HELD,   /**< 3: the page does not hold the set-up */
     SERVO_SOURCE_WHY_SILENT,     /**< 4: no fresh SENSE read with the part
                                       online, identified, the bus free    */
@@ -86,7 +86,7 @@ typedef enum {
 
 /** Things the caller tells the operator about, each once. */
 enum {
-    /** The INA3221 is on with CH1 and the coprocessor is older than 4.11:
+    /** The INA3221 is on with CH1 and the IOmcu is older than 4.11:
      *  the PD mini is the meter. */
     SERVO_SOURCE_EV_OLD   = 0x01,
     /** The INA3221 reset itself: its reset count moved. */
@@ -100,14 +100,14 @@ typedef struct {
     servo_source_why_t dropped;  /**< why the INA3221 last stopped being
                                       the meter; NONE while it never did  */
     uint32_t dropped_at;    /**< changes as that step left it             */
-    bool     up;            /**< a coprocessor answered at the last step  */
+    bool     up;            /**< an IOmcu answered at the last step  */
     bool     good;          /**< conditions 1 to 6 held at the last step  */
     uint32_t good_ms;       /**< since when                               */
     bool     resets_known;  /**< resets was read under set-up setups      */
     bool     reset_step;    /**< the reset count moved in the last step   */
     uint8_t  resets;        /**< the INA3221's reset count, as last read  */
     uint16_t setups;        /**< sense_link_meter_t.setups, likewise      */
-    bool     old_told;      /**< the older coprocessor is said            */
+    bool     old_told;      /**< the older IOmcu is said            */
     uint32_t events;
     bool     event_given;
     uint32_t event_ms;
@@ -118,7 +118,7 @@ void servo_source_init(servo_source_t *s);
 
 /**
  * One poll: the conditions judged at @p now_ms from @p link_up, the
- * coprocessor's protocol minor @p minor and @p m, sense_link_meter()'s
+ * IOmcu's protocol minor @p minor and @p m, sense_link_meter()'s
  * answer of the same poll.  Returns the meter.
  */
 servo_source_id_t servo_source_step(servo_source_t *s, uint32_t now_ms,
@@ -149,7 +149,7 @@ servo_source_why_t servo_source_dropped(const servo_source_t *s,
                                         uint32_t *at);
 
 /**
- * One event for the alert band, the older coprocessor before the reset,
+ * One event for the alert band, the older IOmcu before the reset,
  * cleared; 0 while none waits or while the last one handed out is younger
  * than SERVO_SOURCE_EVENT_GAP_MS at @p now_ms.
  */
@@ -158,7 +158,7 @@ uint32_t servo_source_event(servo_source_t *s, uint32_t now_ms);
 /**
  * Put back an event servo_source_event() handed out that never reached
  * the band, so it is handed out again after the gap.  Not once the link
- * has gone: both events are about the coprocessor that answered.
+ * has gone: both events are about the IOmcu that answered.
  */
 void servo_source_event_back(servo_source_t *s, uint32_t ev);
 

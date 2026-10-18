@@ -6,7 +6,7 @@ order: 2
 
 # Status band and STOP
 
-The status band is the top 48 px of every screen except the splash, the bus-fault screen, PANEL UPDATE and the progress of a coprocessor update. It names the screen, shows the state of the bench and holds STOP.
+The status band is the top 48 px of every screen except the splash, the bus-fault screen, PANEL UPDATE and the progress of an IOmcu update. It names the screen, shows the state of the bench and holds STOP.
 
 ## What the band shows
 
@@ -14,9 +14,9 @@ From the left: the home tag with the screen's name, then the chips, then STOP at
 
 | Chip | Shows |
 |---|---|
-| LINK, NO LINK | whether the coprocessor answers on the CAN (Controller Area Network) bus |
-| BENCH, SIM | BENCH while the coprocessor answers and the screens drive its outputs; SIM while the panel runs its own model |
-| FAULT 01 to FAULT 7F | a fault code the coprocessor reports; absent while there is none |
+| LINK, NO LINK | whether the IOmcu answers on the CAN (Controller Area Network) bus |
+| BENCH, SIM | BENCH while the IOmcu answers and the screens drive its outputs; SIM while the panel runs its own model |
+| FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
 | SAFE, ARMED MOTOR, ARMED SERVO, ARMED | what the switch to ARMED drives |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |
 
@@ -29,7 +29,7 @@ The home tag goes to the [menu](overview.md).
 | SAFE | none |
 | ARMED MOTOR | the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER |
 | ARMED SERVO | the servo outputs and a pulsing PROG PORT, from SERVO |
-| ARMED | every bound output, on a coprocessor older than protocol 4.18 |
+| ARMED | every bound output, on an IOmcu older than protocol 4.18 |
 
 A channel with no command for 500 ms sits at rest while ARMED: a throttle at 0 %, a servo at the middle of its travel.
 
@@ -52,7 +52,7 @@ A tap on a chip opens a box under the band. It says what the chip's state means 
 
 ![LINK with 37 refused link frames](view:band-link-refused)
 
-While the coprocessor has refused link frames since its power-up, the LINK box ends with the count, for example `Rejected link frames: 37`.
+While the IOmcu has refused link frames since its power-up, the LINK box ends with the count, for example `Rejected link frames: 37`.
 
 ## FAULT codes
 
@@ -62,13 +62,13 @@ The FAULT box spans the panel, 784 px, with one paragraph per set bit:
 
 | Code | Name | Set in this release when |
 |---|---|---|
-| 01 | LINK_SILENT | the coprocessor heard no request for 200 ms and switched to SAFE; stays until the next arm |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200 ms and switched to SAFE; stays until the next arm |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
 | 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop, or an open heartbeat wire |
 | 20 | VERSION | never |
-| 40 | STORE_OFF | the coprocessor cannot write its flash this boot; set-ups sent to it last until it restarts |
+| 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
 
 For a bit this release never sets, the box says to flash both boards from one release.
 

@@ -25,7 +25,7 @@ electrically erasable programmable read-only memory.
 | Need | Part | Package | JLCPCB / Digi-Key stock, 2026-09-29 | Reason |
 | --- | --- | --- | --- | --- |
 | Cell monitor, 1 to 16 cells | ADBMS1818ASWAZ-RL (Analog Devices) | LQFP-64 | 12500 / 564 | total measurement error ±4.8 mV at 4.2 V over temperature, inside the ±6 mV check; rank 1 on JLCPCB stock and price of the parts that pass |
-| Converter for the accelerometer (Q4) | ADCS7476AIMFX/NOPB (Texas Instruments), 2 a board | SOT-23-6 | 2,312 / 88 | the owner's Q4 decision. ENOB (effective number of bits) 11.34 at least over −40 to 125 °C; aperture jitter 30 ps; a conversion starts on the chip-select edge the coprocessor drives |
+| Converter for the accelerometer (Q4) | ADCS7476AIMFX/NOPB (Texas Instruments), 2 a board | SOT-23-6 | 2,312 / 88 | the owner's Q4 decision. ENOB (effective number of bits) 11.34 at least over −40 to 125 °C; aperture jitter 30 ps; a conversion starts on the chip-select edge the IOmcu drives |
 | Accelerometer | ADXL316WBCSZ (Analog Devices), on the sensor board | LFCSP-12 | 104 / 387 | meets every value with 100 pF on XOUT: 1.000 µs of delay variation at 1,092 Hz against a 1.244 µs share; 210 µg/√Hz. The accelerometer's requirement figures are not verified (below) |
 | Magnetic pickup | DRV5015A1QDBZR (Texas Instruments) | SOT-23 | 339 / 2831 | 0.7 mT typical operate point, the lowest found; 20 kHz guaranteed bandwidth |
 | Phase-wire clip | TLV3201AIDBVR (Texas Instruments), 2 a board | SOT-23-5 | 41679 / 0 | 55 ns maximum delay over temperature and 40 µA supply current. Its second source is the alternate TLV3601DBVR (JLCPCB 1623) |

@@ -6,7 +6,7 @@ order: 63
 
 # Pin picker
 
-PICK A PIN shows the coprocessor board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md). Every visit opens with OFF selected: no key binds or unbinds a pin until a protocol is picked in the list, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`.
+PICK A PIN shows the IOmcu board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md). Every visit opens with OFF selected: no key binds or unbinds a pin until a protocol is picked in the list, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`.
 
 ## The board and its keys
 
@@ -64,7 +64,7 @@ The programming port's pin, GP13 (pad 17) by default, is grey while no protocol 
 
 ## The board drawing
 
-The coprocessor carries a drawing of itself: outline, parts and every pad, to scale in 0.01 mm. The panel fetches it over the link, keeps it in flash and shows it only when it matches the board's shape and pin catalogue.
+The IOmcu carries a drawing of itself: outline, parts and every pad, to scale in 0.01 mm. The panel fetches it over the link, keeps it in flash and shows it only when it matches the board's shape and pin catalogue.
 
 ![The picker drawn from the shape alone](view:picker-drawn)
 

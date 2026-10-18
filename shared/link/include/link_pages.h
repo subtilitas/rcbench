@@ -1,5 +1,5 @@
 /*
- * The page map: what the panel can ask the coprocessor for, and set.
+ * The page map: what the panel can ask the IOmcu for, and set.
  *
  * A page is a window of up to LINK_MAX_REGS 16-bit registers with one
  * function.  Adding a capability adds a page, not a message type, which
@@ -35,7 +35,7 @@ typedef enum {
     /*
      * 0x21 is reserved and not assigned.  A page number is part of the
      * contract between two firmwares flashed separately; a number that
-     * changes meaning lets an old panel write into a page the coprocessor
+     * changes meaning lets an old panel write into a page the IOmcu
      * interprets differently, and be acknowledged.
      */
     LINK_PAGE_OUTPUTS  = 0x22, /**< which driver drives what, on which pin */
@@ -57,20 +57,20 @@ typedef enum {
     LINK_PAGE_KST       = 0x32, /**< the KST servo programming port          */
     LINK_PAGE_PROG      = 0x33, /**< the programming ports: pin, pulse, target */
     /* Frozen: the same numbers, layout and meaning under every major. */
-    LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the coprocessor's own firmware update */
+    LINK_PAGE_UPDATE_CTL  = 0xF0, /**< the IOmcu's own firmware update */
     LINK_PAGE_UPDATE_DATA = 0xF1, /**< and the 64 bytes of the block in hand */
 } link_page_id_t;
 
 /*
  * The protocol version is register 0 of page 0: the one thing a host must be
- * able to read from a coprocessor whose other pages it might not understand.
+ * able to read from an IOmcu whose other pages it might not understand.
  * Bump the major when a register changes meaning or a page is renumbered;
  * bump the minor when a page or a register is added at the end, which an
  * older host can ignore.
  *
  * Only the major has to agree for the link to come up and the bench to arm.
  * The panel reads the minor at link-up and sends nothing to a page the
- * coprocessor's minor does not have: SUPPLY from 4.3, SENSE and
+ * IOmcu's minor does not have: SUPPLY from 4.3, SENSE and
  * SERVO_SENSE from 4.7, TONE from 4.8, and SENSE's output encoder (the
  * ENABLE bit LINK_SN_EN_AS5600 and registers 26 to 30) from 4.9, and
  * BIND_CFG, BIND_OUT and BIND from 4.10, and SERVO_WIN, SENSE's RESETS
@@ -78,39 +78,39 @@ typedef enum {
  * fields of KST, CAP_ARM bit 11 and SUPPLY FLAGS bit 11 from 4.13.  From
  * 4.14 the servo programming page (KST, 0x32) plans a write after the
  * command's frame and reports LINK_KST_RESULT_PLANNING, _NO_PATH and _TOO_COMPLEX; nothing is sent
- * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to a
- * coprocessor from 4.15 only.  From 4.16 CHAN_CFG and PROG refuse a slew
+ * differently for it.  LINK_KST_OP_LEAVE and LINK_KS_W_LEAVE_MS go to an
+ * IOmcu from 4.15 only.  From 4.16 CHAN_CFG and PROG refuse a slew
  * above 3000, and CHAN_CFG, OUTPUTS, BIND, SERVO and PROG refuse a write that would leave a PWM output with an endpoint longer
  * than its frame (out_pwm_pulse_max()); the panel states a port's range
- * before it switches the port's pulse on, which an older coprocessor takes
+ * before it switches the port's pulse on, which an older IOmcu takes
  * as well.  From 4.17 the
  * TONE page refuses a busy pin with LINK_NACK_BUSY and keeps BAD_VALUE for
  * a set-up no freed pin makes good; the panel offers the first frame again
  * after a BUSY only.  From 4.18 CONTROL's ARM names the roles it arms
  * (LINK_ARM_THROTTLE, LINK_ARM_SURFACE); the panel writes LINK_ARM_ALL to an
- * older coprocessor, which arms its whole bank on any non-zero ARM.  From
+ * older IOmcu, which arms its whole bank on any non-zero ARM.  From
  * 4.19 the SERVO rate reaches the tester's target only (the standard servo
  * ports' surfaces, or the one programming port PROG's TARGET names) and a
  * TARGET change returns it to 0; the panel then counts the rate as 0 after
  * a TARGET change it saw, and as not known after a TARGET write that went
  * unacknowledged.  From 4.20 ARTWORK serves the board's drawing
  * (LINK_ART_DRAWING) with a hash of its payload in registers 7 and 8; the
- * panel reads ARTWORK from 4.20 only and draws an older coprocessor's board
+ * panel reads ARTWORK from 4.20 only and draws an older IOmcu's board
  * from its shape page.  From 4.21 STATUS has 10 registers: registers 8 and
- * 9 count the CAN frames the coprocessor refused to decode; the panel asks
- * an older coprocessor for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
- * UPDATE_CTL and UPDATE_DATA take a new coprocessor image over the link;
- * an older coprocessor refuses both with LINK_NACK_BAD_PAGE, which the panel
- * answers by saying a USB (Universal Serial Bus) load is needed.  A
- * coprocessor never asks the panel's minor; a page an older panel does not
+ * 9 count the CAN frames the IOmcu refused to decode; the panel asks
+ * an older IOmcu for the 8 it has (LINK_ST_COUNT_V420).  From 4.22
+ * UPDATE_CTL and UPDATE_DATA take a new IOmcu image over the link;
+ * an older IOmcu refuses both with LINK_NACK_BAD_PAGE, which the panel
+ * answers by saying a USB (Universal Serial Bus) load is needed.  An
+ * IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
  * Frozen across majors.  Registers 0 to 6 of IDENTITY (LINK_ID_*) and the
  * two update pages keep their numbers, their layout and their meaning under
- * every later major, and a coprocessor of any later major answers them.  A
- * panel reads them before it compares majors, so a panel and a coprocessor
+ * every later major, and an IOmcu of any later major answers them.  A
+ * panel reads them before it compares majors, so a panel and an IOmcu
  * whose majors differ still find out what the other runs and can still move
- * the coprocessor to the panel's own image.  Changing one of them is not a
+ * the IOmcu to the panel's own image.  Changing one of them is not a
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
@@ -226,11 +226,11 @@ enum {
 
 /*
  * A channel's range before anything is written, and the widest range the
- * coprocessor accepts for the limits themselves.  The floor is a 760 us tail
+ * IOmcu accepts for the limits themselves.  The floor is a 760 us tail
  * servo's: its travel ends at 410 us, and a standard servo asked for that
  * buzzes rather than moves.
  *
- * The limits are enforced at the coprocessor, the end holding the wire, so a
+ * The limits are enforced at the IOmcu, the end holding the wire, so a
  * restarted, reflashed or wrong host cannot drive a servo into its stops.
  *
  * A PWM output's endpoints also fit its frame (since 4.16): neither longer
@@ -277,7 +277,7 @@ enum {
  *     the slots run at their own rates.  A port pin that shares its PWM
  *     slice with another port's pin takes only 0 or 50 (BAD_VALUE).  Every
  *     port that is not the target runs at 50 Hz, and a TARGET change sets
- *     FRAME_HZ to 0.  A coprocessor before 4.19 runs every surface and
+ *     FRAME_HZ to 0.  An IOmcu before 4.19 runs every surface and
  *     every port at FRAME_HZ, whatever the target.
  *
  *     SWEEP to SWEEP_DWELL_MS are a sweep (servo_sweep.h), four registers so
@@ -306,10 +306,10 @@ enum {
  *     write of 0, a curve written over it, a disarm, 500 ms unwritten or
  *     a restart -- and when
  *     SWEEP_MHZ, SPAN, DWELL_MS or MOVES no longer read what the paused
- *     sweep runs; NOT_ARMED on a disarmed bench.  A 4.5 coprocessor refuses
+ *     sweep runs; NOT_ARMED on a disarmed bench.  A 4.5 IOmcu refuses
  *     5 with BAD_VALUE, as any curve not written whole.
  *
- *     Not kept: a coprocessor restart drives every slot at its own rate
+ *     Not kept: an IOmcu restart drives every slot at its own rate
  *     again, which is the binding's 50 Hz for a servo, and runs no sweep. */
 enum {
     LINK_SV_FRAME_HZ       = 0,
@@ -327,7 +327,7 @@ enum {
 #define LINK_SV_RESUME 5u
 
 /* --- the SUPPLY page (protocol 4.3): a WeAct PD Power Mini V1 Buck on a
- *     PIO UART the coprocessor runs on two of its pins (shared/bench/
+ *     PIO UART the IOmcu runs on two of its pins (shared/bench/
  *     pdmini.h).
  *
  *     ENABLE to BAUD are its wiring, one frame: 1 to drive it, the GPIO the
@@ -373,7 +373,7 @@ enum {
  *     the input's state and voltage, and the counts of readings taken and
  *     of transactions that failed, modulo 65536.
  *
- *     The wiring is kept in the coprocessor's flash and driven at boot with
+ *     The wiring is kept in the IOmcu's flash and driven at boot with
  *     the output off, so a module left on is switched off after a restart;
  *     the command is not kept. */
 enum {
@@ -413,7 +413,7 @@ enum {
 #define LINK_SP_PORT         0x800u
 
 /* --- the SENSE page (protocol 4.7): two I2C (Inter-Integrated Circuit)
- *     current monitors on one bus the coprocessor runs on two of its pins,
+ *     current monitors on one bus the IOmcu runs on two of its pins,
  *     a TI INA228 in the ESC's power path and a TI INA3221 on the servo
  *     rail.
  *
@@ -473,8 +473,8 @@ enum {
  *     parameter of its own: the bus pins are the INA parts', and the angle
  *     comes back as the 12-bit count, 0 to 4095 for one turn (0.0879 degrees
  *     a count), with no centre applied -- the panel keeps that.  The
- *     coprocessor reads it at 500 Hz.  A bit 2 written to a 4.8 or older
- *     coprocessor is not sent: the panel gates it on minor >= 9.
+ *     IOmcu reads it at 500 Hz.  A bit 2 written to a 4.8 or older
+ *     IOmcu is not sent: the panel gates it on minor >= 9.
  *
  *     AS5600_FLAGS (link_sense_enc_flag_t) say whether it answers and what
  *     its magnet is doing.  AS5600_ANGLE is RAW ANGLE as last read, 0 until
@@ -491,20 +491,20 @@ enum {
  *     no sample and 0 while MD is clear: without a magnet the count is not
  *     a position, and the anchor starts afresh when MD returns.  A move that ends at time t_end, read at time t_read, shows
  *     STILL_MS = t_read - t_end to within the 2 ms sample interval, so the
- *     panel times the end of a move to the coprocessor's resolution
+ *     panel times the end of a move to the IOmcu's resolution
  *     whatever its own polling interval.
  *
  *     RESETS (register 31, protocol 4.11) counts the times a current
  *     monitor was found running on its power-on set-up and not the one
  *     written to it: the INA228 in the low byte, the INA3221 in the high
  *     byte, each modulo 256, since the set-up in force was taken.  The
- *     coprocessor reads the INA228's ADC_CONFIG and the INA3221's
+ *     IOmcu reads the INA228's ADC_CONFIG and the INA3221's
  *     Configuration back every 40 ms; a part found reset loses ONLINE and
  *     is set up again 1000 ms on.  The count shows a reset that was found
  *     and repaired between two reads of FLAGS.  Before 4.11 the register
  *     is reserved and reads 0.
  *
- *     ENABLE to register 11 are kept in the coprocessor's flash beside the
+ *     ENABLE to register 11 are kept in the IOmcu's flash beside the
  *     bindings and the supply's wiring, and the bus is opened at boot. */
 enum {
     LINK_SN_ENABLE          = 0,
@@ -541,7 +541,7 @@ enum {
     LINK_SN_RESETS          = 31,  /**< protocol 4.11; reads 0 before it    */
     LINK_SN_COUNT           = 32,
 };
-/** The registers a 4.8 coprocessor's page has. */
+/** The registers a 4.8 IOmcu's page has. */
 #define LINK_SN_COUNT_V48 26u
 /** The set-up, ENABLE to register 11: what a write may change, and what
  *  flash keeps. */
@@ -581,7 +581,7 @@ static inline bool link_sn_pins_pair(unsigned sda, unsigned scl)
     return (sda % 2u) == 0u && scl == sda + 1u;
 }
 
-/** What the coprocessor says about the bus and the two parts. */
+/** What the IOmcu says about the bus and the two parts. */
 typedef enum {
     LINK_SN_I228_ONLINE    = 1u << 0, /**< answering, identity good, in use */
     /** Its last identity read was an INA228's.  With ONLINE clear, it has
@@ -628,7 +628,7 @@ typedef enum {
 #define LINK_SN_ESC_CURRENT_OK 0x02u
 
 /* --- the SERVO_SENSE page (protocol 4.7): the INA3221's three channels,
- *     and a move timed on the coprocessor's clock.
+ *     and a move timed on the IOmcu's clock.
  *
  *     Registers 0 to 11, four a channel from CH1: the mean and the highest
  *     current in mA, signed, and the mean and the lowest bus voltage in mV,
@@ -671,7 +671,7 @@ typedef enum {
  *     unseen (no movement in that time) or lost (the INA3221 stopped
  *     answering, or no PWM edge came within 3000 ms of the arm).
  *
- *     Not kept: a coprocessor restart reads 0 throughout. */
+ *     Not kept: an IOmcu restart reads 0 throughout. */
 enum {
     LINK_SS_CH_MEAN_MA  = 0,   /**< channel n's at LINK_SS_CH_STRIDE * (n-1) */
     LINK_SS_CH_MAX_MA   = 1,
@@ -760,7 +760,7 @@ typedef enum {
  *     window holds up to 50 current samples and 2 or 3 voltage samples.
  *
  *     An entry's flags: bit 15 (LINK_SW_E_CLOSED) a window closed with
- *     this number -- clear for a number the coprocessor skipped because
+ *     this number -- clear for a number the IOmcu skipped because
  *     its tick ran late by more than a window, and for a number before
  *     the first window, and the entry then reads 0 throughout; bit 8
  *     (LINK_SW_E_CURRENT) the window holds current samples; bit 9
@@ -838,7 +838,7 @@ enum {
  *     past the bank, one the board reserves, or an ADC (analog to digital
  *     converter) pin: GP26 to GP29 on the RP2350A and GP40 to GP47 on the
  *     RP2354B, rated IOVDD + 0.5 V and not fault tolerant, and any pin on
- *     a coprocessor whose core 1 did not start at boot: no capture runs
+ *     an IOmcu whose core 1 did not start at boot: no capture runs
  *     before a restart.  Refused with
  *     BUSY (since 4.17, BAD_VALUE before): while the tap is enabled, a pin
  *     bound to an output or held by the SENSE, SUPPLY or PROG page, and a
@@ -854,7 +854,7 @@ enum {
  *     window's tone in 0.1 Hz, 0 with no tone; WIN_PERIODS, the periods in
  *     it.
  *
- *     The coprocessor keeps the last LINK_TN_RING beeps and numbers them
+ *     The IOmcu keeps the last LINK_TN_RING beeps and numbers them
  *     from 1 to 65535, then from 1 again.  BEEP_HEAD is the newest number,
  *     0 before the first beep.  EVT_SEL names the beep that EVT_SEQ to
  *     EVT_FLAGS show.  It is the one writable register after register 7,
@@ -879,7 +879,7 @@ enum {
  *
  *     The capture starts when the tap is enabled or its pin changes, and
  *     then empties the ring; the numbers go on.  Registers 0 to 6 are kept
- *     in the coprocessor's flash beside the SENSE set-up, and the tap starts
+ *     in the IOmcu's flash beside the SENSE set-up, and the tap starts
  *     at boot.  Nothing else is kept.
  *
  *     While the tap is disabled the pin is an input with its pull-down on,
@@ -928,7 +928,7 @@ enum {
 #define LINK_TN_GAP_MS_MAX    100u
 #define LINK_TN_PERIODS_MIN     1u
 #define LINK_TN_PERIODS_MAX    64u
-/** Beeps the coprocessor keeps. */
+/** Beeps the IOmcu keeps. */
 #define LINK_TN_RING           64u
 
 /** The set-up before anything is written: the tap off, on GP22 (pad 29);
@@ -940,7 +940,7 @@ enum {
 #define LINK_TN_DEFAULT_GAP_MS      3u
 #define LINK_TN_DEFAULT_PERIODS     3u
 
-/** What the coprocessor says about the tap. */
+/** What the IOmcu says about the tap. */
 typedef enum {
     /** The PIO state machine and its DMA ring run on the pin. */
     LINK_TN_RUNNING     = 1u << 0,
@@ -1000,7 +1000,7 @@ typedef enum {
  *
  * BIND has one register.  A write of LINK_BD_COMMIT carries the CRC (cyclic
  * redundancy check, out_stage_crc()) of the 64 prepared registers.  The
- * coprocessor compares it with the CRC of what it holds prepared and refuses
+ * IOmcu compares it with the CRC of what it holds prepared and refuses
  * a difference with BAD_VALUE; on a match it judges the two pages by every
  * rule a CHAN_CFG and an OUTPUTS write is judged by, CHAN_CFG first, and
  * puts both in force or neither.  The register reads the CRC of what is
@@ -1027,7 +1027,7 @@ enum {
 };
 
 /*
- * What the coprocessor has fitted, as opposed to what the panel has screens
+ * What the IOmcu has fitted, as opposed to what the panel has screens
  * for.  The menu marks derive from this bitmap, so a mark disappears when the
  * part is fitted.
  *
@@ -1069,11 +1069,11 @@ enum {
     LINK_ST_REFUSED_HI = 9,
     LINK_ST_COUNT      = 10,
 };
-/** The registers a 4.20 or older coprocessor's STATUS page has. */
+/** The registers a 4.20 or older IOmcu's STATUS page has. */
 #define LINK_ST_COUNT_V420 8u
 
 /**
- * What the coprocessor did on its own authority.  Sticky until read and
+ * What the IOmcu did on its own authority.  Sticky until read and
  * explicitly cleared: a fault that lasted 4 ms is still the reason the motor
  * stopped.
  */
@@ -1086,7 +1086,7 @@ typedef enum {
     LINK_FAULT_HEARTBEAT     = 1u << 4, /**< the safety line stopped edging */
     LINK_FAULT_VERSION       = 1u << 5, /**< the two ends disagree          */
     /**
-     * The coprocessor's flash store is off for this boot (protocol 4.7):
+     * The IOmcu's flash store is off for this boot (protocol 4.7):
      * its second core did not register for the flash lock-out, so no
      * erase or program may run.  Set-ups written over the link are taken
      * and run from RAM, and are gone at the next restart.  Set while it
@@ -1108,7 +1108,7 @@ typedef enum {
  * Fixed-point rather than floats: a register is 16 bits, and the scale is
  * part of the contract between the two firmwares.
  *
- * The peaks are tracked here rather than on the panel: the coprocessor has
+ * The peaks are tracked here rather than on the panel: the IOmcu has
  * the fast samples and the panel sees one poll in fifty of them.
  */
 enum {
@@ -1128,7 +1128,7 @@ enum {
     LINK_BN_COUNT        = 13,
 };
 
-/** What the coprocessor says about the numbers it is sending. */
+/** What the IOmcu says about the numbers it is sending. */
 typedef enum {
     LINK_BN_VOLTAGE_OK = 1u << 0, /**< a sensor answered; else the field is 0 */
     LINK_BN_CURRENT_OK = 1u << 1,
@@ -1138,7 +1138,7 @@ typedef enum {
      *
      * Its meaning changed at protocol 3.0: before that it validated both
      * temperature fields, which is why the change is a major and not an
-     * added bit.  A coprocessor that sets it and leaves temp_motor at zero
+     * added bit.  An IOmcu that sets it and leaves temp_motor at zero
      * would have told a 2.x panel that a motor it cannot measure is at 0 C.
      */
     LINK_BN_TEMP_OK    = 1u << 3,
@@ -1165,7 +1165,7 @@ typedef enum {
      */
     LINK_BN_TOTALS_OK  = 1u << 6,
     /**
-     * The numbers are modelled, not measured.  Set by a coprocessor running
+     * The numbers are modelled, not measured.  Set by an IOmcu running
      * without a front end and by the panel's own simulator; the panel draws
      * SIMULATION across the screen either way.
      */
@@ -1180,18 +1180,18 @@ typedef enum {
  *
  * A board describes itself so a panel that has never heard of it can still
  * offer the right pins.  What it cannot do is make a pin safe: the
- * coprocessor reserves its own set at its own end whatever it says here, so
+ * IOmcu reserves its own set at its own end whatever it says here, so
  * a page that lies costs a pin rather than the safety line.
  *
  * One register per pin and no count register.  A count would have to live in
- * the identity page, and lengthening that page breaks every coprocessor
+ * the identity page, and lengthening that page breaks every IOmcu
  * built before it: the panel asks for LINK_ID_COUNT registers, and a device
  * whose identity page is shorter refuses the read rather than returning what
  * it has -- which would leave the link down instead of degraded.  Instead a
  * pad number of zero means there is no pin in that slot, since pads are
  * numbered from one.
  *
- * A coprocessor built before this page answers NACK with LINK_NACK_BAD_PAGE,
+ * An IOmcu built before this page answers NACK with LINK_NACK_BAD_PAGE,
  * which is the panel's cue to use the catalogue compiled into it.
  */
 #define LINK_CAT_PINS  32u
@@ -1235,7 +1235,7 @@ typedef enum {
  * the wrong pad with the same confidence as the right one -- so the board
  * says its shape rather than the panel assuming one.
  *
- * A coprocessor that does not serve this page gets no drawn board.  That is
+ * An IOmcu that does not serve this page gets no drawn board.  That is
  * a screen the operator does not get, not a bench that does not work: the
  * outputs grid offers the same pins from the catalogue alone.
  *
@@ -1279,7 +1279,7 @@ typedef enum {
 /*
  * The board's drawing: its outline, its parts as flat shapes, and every pad
  * with what it is, so the picker shows the board in the operator's hands and
- * not only its outline.  The coprocessor carries the drawing of its own
+ * not only its outline.  The IOmcu carries the drawing of its own
  * board; a new board brings its drawing in its own firmware image, and the
  * panel needs no change for it.
  *
@@ -1288,13 +1288,13 @@ typedef enum {
  * of the RP2350-CAN is under 2 kB, at most 33 blocks: at 1 Mbit/s a block
  * is a write to say which one and a read to fetch it, about 1.4 ms the pair.
  *
- * LINK_AW_BLOCKS of zero means this coprocessor carries no drawing of
+ * LINK_AW_BLOCKS of zero means this IOmcu carries no drawing of
  * itself.  That is the ordinary answer, not a fault: the board is then drawn
  * from its shape page, and used from its catalogue when there is no shape.
  *
- * The panel keeps a drawing in its flash under the coprocessor's board ID
+ * The panel keeps a drawing in its flash under the IOmcu's board ID
  * together with every register of this page from LINK_AW_WIDTH on, and
- * shows the kept one only while all of them still match: a coprocessor
+ * shows the kept one only while all of them still match: an IOmcu
  * flashed with another drawing for the same board ID fetches the new one.
  */
 enum {
@@ -1419,7 +1419,7 @@ enum {
  * thirty-two registers, the catalogue is one per pin an output may have, and
  * a forty-pad board has more pads than that between the two of them.
  *
- * A coprocessor that does not serve this page has its grounds and rails
+ * An IOmcu that does not serve this page has its grounds and rails
  * unmarked, which is where the picker started. It is a lead placed by
  * reading the board instead of the screen, not a bench that does not work.
  */
@@ -1455,7 +1455,7 @@ typedef enum {
  * The servo programming page (KST, 0x32, since 4.12): the programming
  * port for KST and Chaservo servos.  One programming port (the PROG page) at a time leaves
  * PWM (pulse-width modulation) and carries the servo's programming protocol
- * (protocols/kst).  The session runs at the coprocessor: the panel writes
+ * (protocols/kst).  The session runs at the IOmcu: the panel writes
  * an operation and the images it needs, and reads the state, the result
  * and the servo's 32 registers.  shared/outputs/kst_port.h holds the
  * rules.
@@ -1725,7 +1725,7 @@ enum {
     LINK_PG_REGS   = 24,
 };
 enum {
-    LINK_PG_PIN    = 0,  /**< per port: the coprocessor GPIO, or
+    LINK_PG_PIN    = 0,  /**< per port: the IOmcu GPIO, or
                               LINK_PG_PIN_NONE */
     LINK_PG_CMD    = 1,  /**< the command, 0 to 1000 */
     LINK_PG_SLEW   = 2,  /**< as LINK_CC_SLEW */
@@ -1806,7 +1806,7 @@ enum {
 /* ----------------------------------------------------------------- update */
 
 /*
- * The coprocessor's firmware, written over the link into the flash slot it
+ * The IOmcu's firmware, written over the link into the flash slot it
  * is not running from.  Frozen: see LINK_PROTOCOL_MAJOR.  The registers are
  * versioned by LINK_UPD_VERSION in register 0, which only grows, and only by
  * registers or commands added at the end.
@@ -1815,7 +1815,7 @@ enum {
  * table.  The image goes to the slot that is not running, in 64-byte blocks
  * (LINK_UPD_BLOCK_BYTES), strictly in order, each staged in UPDATE_DATA and
  * then committed with its CRC-16 (cyclic redundancy check, link_crc() seeded
- * LINK_CRC_INIT over the block's bytes).  The coprocessor writes a 4 KiB
+ * LINK_CRC_INIT over the block's bytes).  The IOmcu writes a 4 KiB
  * sector once its 64 blocks are in, and acknowledges the COMMIT that filled
  * it only once the sector is erased and programmed.  The slot's first sector
  * is erased at BEGIN and written last, at ACTIVATE, so a slot written in part
@@ -1828,10 +1828,10 @@ enum {
  * image the panel sends carries the TBYB (try before you buy) flag, so the
  * boot ROM starts it under a 16.7 s watchdog; it stays only when the panel
  * reads its identity over the link and writes BUY.  Without the BUY the
- * watchdog restarts the coprocessor into the slot it came from.
+ * watchdog restarts the IOmcu into the slot it came from.
  *
  * A session runs from BEGIN to ACTIVATE, ABORT, a failure or a restart.
- * While one runs, and while a BUY is pending, the coprocessor refuses ARM
+ * While one runs, and while a BUY is pending, the IOmcu refuses ARM
  * with LINK_NACK_NOT_ARMED.  BEGIN, COMMIT and ACTIVATE need the store's
  * gate open -- the bank not driving, the supply's output off, no servo
  * programming session -- and refuse with LINK_NACK_BUSY while it is shut.
@@ -1843,7 +1843,7 @@ enum {
  *
  * After a BUY the slot the image came from must hold no image the boot ROM
  * could start, or a later normal boot may choose between two.  The
- * coprocessor erases that slot's first sector: at the BUY when the gate is
+ * IOmcu erases that slot's first sector: at the BUY when the gate is
  * open, and otherwise, or after an erase that failed, once a second while
  * the gate is open until the erase holds.  It owes the same erase after any
  * start that finds the other slot's first sector written outside a session

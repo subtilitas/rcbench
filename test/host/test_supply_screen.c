@@ -521,7 +521,7 @@ TEST_CASE(a_leave_switches_off_only_the_screens_own_output)
 
 /*
  * An output on that nobody here asked for -- the servo programmer's
- * CONNECT switches a PD mini on through the coprocessor -- is claimed by
+ * CONNECT switches a PD mini on through the IOmcu -- is claimed by
  * the screen that shows it; an owned one keeps its owner, and an output
  * that is off is nobody's to claim.
  */
@@ -1348,7 +1348,7 @@ static int differ_in(int x0, int y0, int x1, int y1)
 }
 
 /* While a servo programming port is out of PWM the screen offers what the
- * coprocessor takes: off, and nothing else. */
+ * IOmcu takes: off, and nothing else. */
 TEST_CASE(a_supply_held_by_a_port_takes_off_and_no_other_press)
 {
     supply_cmd_t c;

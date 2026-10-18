@@ -435,7 +435,7 @@ test.describe('pictures', () => {
           }
           return out;
         });
-        // Panel 1, coprocessor 2, PD mini 1, INA3221 2, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
+        // Panel 1, IOmcu 2, PD mini 1, INA3221 2, AS5600 1, INA228 2, emergency stop 2, T-plug 1.
         expect(cards.map((c) => c.src)).toHaveLength(12);
         for (const c of cards) {
           expect(c.ok, c.src).toBe(true);

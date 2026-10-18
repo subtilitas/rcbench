@@ -10,7 +10,7 @@ operated.
 The top band is shared by every screen. From the right: STOP, the run clock
 (while ARMED or after a run), the arm chip, a FAULT code when one is reported,
 the mode, and LINK or NO LINK. The mode is BENCH while the link is up and the
-panel drives the coprocessor's outputs, and SIM while no coprocessor answers
+panel drives the IOmcu's outputs, and SIM while no IOmcu answers
 and the panel runs on its own models.
 
 The arm chip names what the switch to ARMED drives:
@@ -20,7 +20,7 @@ The arm chip names what the switch to ARMED drives:
 | SAFE | none |
 | ARMED MOTOR | the throttle outputs, from MOTOR & ESC or a stick run on PROGRAMMER; no surface and no programming port |
 | ARMED SERVO | the surfaces and a pulsing PROG PORT, from SERVO; no throttle output |
-| ARMED | every bound output, on a coprocessor older than protocol 4.18 |
+| ARMED | every bound output, on an IOmcu older than protocol 4.18 |
 
 STOP works on every screen. It switches to SAFE and latches: the bench stays SAFE
 until it is ARMED again. Navigating away, an alert expiring or the link
@@ -88,7 +88,7 @@ STOP, and none reaches the alert band.
 - A finger dragging on the screen when a second finger opens a box is
   released as at the band's edge.
 
-While the link is up and the coprocessor has refused link frames, the LINK
+While the link is up and the IOmcu has refused link frames, the LINK
 box ends with the count, the same line MOTOR & ESC shows in its header
 strip: `Rejected link frames: 37` ([Refused frames](Link.md#refused-frames)).
 The line follows the count while the box is open and goes with the link.
@@ -97,13 +97,13 @@ The FAULT box names each bit, its code and what it means:
 
 | Code | Bit | Set by this release |
 | --- | --- | --- |
-| 01 | LINK_SILENT | the coprocessor heard no request for 200 ms; stays until the next arm |
+| 01 | LINK_SILENT | the IOmcu heard no request for 200 ms; stays until the next arm |
 | 02 | OVERCURRENT | never |
 | 04 | OVERTEMP | never |
 | 08 | STALL | never |
 | 10 | HEARTBEAT | the safety line from the panel stopped: after any STOP until the next arm, a pressed emergency stop or an open heartbeat wire |
 | 20 | VERSION | never |
-| 40 | STORE_OFF | the coprocessor cannot write its flash this boot |
+| 40 | STORE_OFF | the IOmcu cannot write its flash this boot |
 
 For a bit this release never sets, or one the panel has no name for, the box
 says to flash both boards from one release.
@@ -140,7 +140,7 @@ bottom of the screen, ARM included, while it shows.
 ![The feature menu](img/overview.png)
 
 A tile marked SIMULATED opens a screen whose source the bench does not
-report: the coprocessor reports no capability for it, or its sensor is not
+report: the IOmcu reports no capability for it, or its sensor is not
 enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
 from the model. The mark does not classify each value on a screen. ANALYSER
 and BATTERY carry the mark and show no values. SERVO without the mark shows the
@@ -149,13 +149,13 @@ enabled. Each screen names the source of its readings itself.
 
 | Tile | Without the mark when |
 | --- | --- |
-| MOTOR & ESC | the coprocessor drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
-| SERVO | the coprocessor drives servo PWM outputs |
-| SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the coprocessor reports; otherwise the panel runs its own model of a supply |
-| ANALYSER, BATTERY, BALANCE, PROGRAMMER | never in this release: no coprocessor reports these capabilities |
+| MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
+| SERVO | the IOmcu drives servo PWM outputs |
+| SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
+| ANALYSER, BATTERY, BALANCE, PROGRAMMER | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | always: they hold no measurement |
 
-The capability bits come from the coprocessor at bring-up. With no coprocessor
+The capability bits come from the IOmcu at bring-up. With no IOmcu
 answering, MOTOR & ESC and SERVO carry the mark too.
 
 The menu in the light theme:
@@ -167,13 +167,13 @@ The menu in the light theme:
 ![The splash](img/splash.png)
 
 Each subsystem reports its result as it comes up: board, display, touch, SD
-card, settings, link, coprocessor. The board line carries the panel's own
-firmware version, and the coprocessor line carries the protocol version and
-the firmware version that the coprocessor reported -- two boards can speak
+card, settings, link, IOmcu. The board line carries the panel's own
+firmware version, and the IOmcu line carries the protocol version and
+the firmware version that the IOmcu reported -- two boards can speak
 the same protocol and be different builds, and this is where that shows.
 
 A missing card or an unusable NVS (non-volatile storage) is a warning. A
-touch controller that does not answer, or a coprocessor with a different
+touch controller that does not answer, or an IOmcu with a different
 protocol major version, is a failure and the bench does not switch to ARMED.
 
 When every step has answered, the splash hands over to the menu after a hold
@@ -192,7 +192,7 @@ on, turning it moves the throttle ([the knob](#application-the-rotary-knob)).
 
 The throttle panel names the pins the throttle drives, left of the percentage:
 `TARGET: GP0 GP1`. They are the pins bound as MOTOR PWM or as a DShot
-protocol, read from the same SETUP > OUTPUTS pages the coprocessor's throttle
+protocol, read from the same SETUP > OUTPUTS pages the IOmcu's throttle
 role reads. The list is in pin order and holds as many pins as fit the field
 of 49 characters; the rest are counted. With GP0 to GP15 bound it reads
 `TARGET: GP0 GP1 GP2 GP3 GP4 GP5 GP6 GP7 GP8 +7`.
@@ -234,9 +234,9 @@ The strip above both columns carries the poll rate, the link's error count
 (cyclic redundancy check failures and resyncs added together) and three
 temperatures. ESC and MOT come from the bench page. MCU is the panel's own
 die, read from the ESP32-S3's sensor: it is the display board's temperature,
-not the coprocessor's. While the link is up and the coprocessor has refused
+not the IOmcu's. While the link is up and the IOmcu has refused
 link frames since its power-up, the strip shows how many after the error
-count: `Rejected link frames: 37`. A coprocessor older than protocol 4.21
+count: `Rejected link frames: 37`. An IOmcu older than protocol 4.21
 sends no count, and the strip shows none
 ([Refused frames](Link.md#refused-frames)).
 
@@ -322,8 +322,8 @@ value the field is drawn empty and no percentage is shown. The measured rpm/V
 is shown either way, being a measurement rather than an inference.
 
 While the values are simulated, SIMULATION is drawn across the screen. The
-panel simulates only while no coprocessor answers, so the watermark goes when
-one does. What replaces it is what that coprocessor can actually measure: rpm
+panel simulates only while no IOmcu answers, so the watermark goes when
+one does. What replaces it is what that IOmcu can actually measure: rpm
 from bidirectional DShot today, and its own sensors when a measurement front
 end is fitted. A quantity nothing measures is drawn as an empty field rather
 than as a modelled number.
@@ -337,7 +337,7 @@ answered for reads `--`.
 
 With the INA228 enabled on SETUP under INTERFACES and answering (BENCH flag
 bit 5), voltage, current and power are the INA228's: the means of the
-coprocessor's last 50 ms window, read at 20 Hz, with the run's peaks from its
+IOmcu's last 50 ms window, read at 20 Hz, with the run's peaks from its
 500 Hz samples. The heading names the source, `INA228`, and adds `CLIPPED`
 while a current read the end of the part's range in the last window or since
 the switch to ARMED: current and power, or their peaks, are then bounds and not values.
@@ -352,7 +352,7 @@ ESC's telemetry and `ESC SAYS` is not shown.
 
 The mAh and Wh under ARM are the INA228's own while BENCH flag bit 6 is
 set: its charge and energy since the switch to ARMED, accumulated in the part at every
-conversion and read in 0.01 mAh and 0.01 Wh steps. The coprocessor takes
+conversion and read in 0.01 mAh and 0.01 Wh steps. The IOmcu takes
 the last run's totals and bit 6 off the bench page on the switch to ARMED, and the panel
 counts the first 100 ms of a run itself as well, so a page built before the
 switch cannot carry the last run's totals into this one. Without bit 6 the panel counts both from the current
@@ -369,7 +369,7 @@ without one:
   about 19 rows per second. Other benches are not measured.
 - With the link down a sample is one step of the model, every 50 ms.
 - A sample is one row. With the INA3221 read through the window ring
-  (coprocessor protocol 4.11, CH1 enabled) a poll that brings more than one
+  (IOmcu protocol 4.11, CH1 enabled) a poll that brings more than one
   50 ms window writes one row for each: the rows of one poll carry the same
   `time`, the sample is in the last of them with the newest window, and the
   rows before it hold `window` and the channel columns and are empty
@@ -408,16 +408,16 @@ INA3221's 50 ms window -- per channel the mean and highest current and the
 lowest bus voltage -- on the first row after the panel read it and on no
 other, so each window is in the file once, under its number; a channel the
 window has no readings of is empty, and so are CH1's current cells or its
-voltage cell for a window that holds no sample of that quantity. With a
-coprocessor of protocol 4.11 and
+voltage cell for a window that holds no sample of that quantity. With an
+IOmcu of protocol 4.11 and
 CH1 enabled every CH1 window is in the file while two reads lie at most
 200 ms apart, and a step in `window` of more than 1 is a window that was
-lost or a number the coprocessor skipped. A window taken while the bench
+lost or a number the IOmcu skipped. A window taken while the bench
 was SAFE is in no file. CH1's figures count a clipped sample at the end
 of the range, 1.638 A on the 0.1 Ω shunt, and keep the sign of a negative
 current. CH2 and CH3 are on the row of their window when the panel read
 both pages within that window, and empty on a row the poll caught up. With
-an older coprocessor, or with CH1 off, the columns hold the last window of
+an older IOmcu, or with CH1 off, the columns hold the last window of
 each read: a poll longer than 50 ms skips windows, 1 in 17 at 53 ms, and a
 clipped sample is left out of the figures. LOGS groups `ina voltage`,
 `ina current` and `esc current` under INA228 and ESC, and the window's
@@ -482,7 +482,7 @@ command at once.
 **ARM before anything moves.** ARM here switches the surfaces and a pulsing PROG
 PORT to ARMED; a throttle output sends no pulse ([An arm for one
 role](Link.md#an-arm-for-one-role)). While the bench is SAFE for the
-surfaces the coprocessor writes a pulse of length zero to every PWM pin, and
+surfaces the IOmcu writes a pulse of length zero to every PWM pin, and
 the screen takes no position: the commanded value changes only while the servo follows it. The
 button is a two-second hold, the same
 gesture and the same fade as the one on MOTOR & ESC, and a press on it while
@@ -554,7 +554,7 @@ at once.
 | --- | --- | --- |
 | INA3221 CH1 | `INA3221 CH1` | CH1's last 50 ms window: the mean current, the mean bus voltage at the load side of the shunt, and their product. One point of the plot per window, 20 a second |
 | the PD mini | `PD MINI` | the supply's last sample. One point per sample |
-| the model, while no coprocessor answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
+| the model, while no IOmcu answers | `PD MINI` | the supply's last sample: the supply model's under the SIMULATION watermark, and no reading where SETUP INTERFACES enables the PD mini, which does not answer without the link |
 
 ![The INA3221 as the meter](img/servo-ina.png)
 
@@ -653,18 +653,18 @@ the change on both.
   belong to SERVO and are no leave. A press on OUTPUT OFF as the screen is
   left is sent as the OFF it was.
 
-**SWEEP drives the servo through a curve** on the coprocessor, where its
+**SWEEP drives the servo through a curve** on the IOmcu, where its
 timing does not depend on the link: SETTINGS > SWEEP's CURVE (square, sine
 or triangle) and SPEED (0.05 to 5 cycles a second), and the automatic test's
 DWELL TIME (the hold at each end), about PULSE CENTRE. RANGE is a share of the travel the servo may make:
 of TRAVEL, and of the nearer of PULSE MIN and MAX, so the sweep reaches
 neither end it may not. SPEED on the right card limits it as it limits a
 drag, and trim is not applied. The horn follows the same curve, computed on
-the panel and timed from when the coprocessor started its own. The panel
-draws only what the coprocessor is known to do: a sweep asked for, or
+the panel and timed from when the IOmcu started its own. The panel
+draws only what the IOmcu is known to do: a sweep asked for, or
 resumed, is drawn once its start is acknowledged, and until then the horn
 stays where the output is. Without feedback it is then worked on from where
-the output was when the coprocessor began, along the curve at SPEED. Two
+the output was when the IOmcu began, along the curve at SPEED. Two
 taps on the sweep button that reach the screen in one frame, before the
 first one's command has left, cancel out: nothing is sent and the sweep
 goes on as it was.
@@ -672,35 +672,35 @@ goes on as it was.
 **PAUSE pauses it.** While a sweep runs the button reads PAUSE in the accent
 colour. A tap stops the sweep where the output has got to -- which SPEED can
 leave behind the curve -- and holds it there; the button then reads PAUSED,
-filled in the warning colour. The coprocessor does the holding (the link's
+filled in the warning colour. The IOmcu does the holding (the link's
 HOLD, SWEEP register 4), because only it knows exactly where that is;
 without feedback the horn drawn on the panel is an estimate of it. The panel
 repeats the hold every 100 ms (`SERVO_HOLD_MS`), so a pause outlasts the
-coprocessor's 500 ms rule. A pause does not wait behind sweep writes already
+IOmcu's 500 ms rule. A pause does not wait behind sweep writes already
 on the wire. A tap on PAUSED carries the sweep on from the point of the
 curve it was paused at: its place in a dwell and the ends it has reached go
 on from there too, and the horn is drawn on from that phase. The phase is
-the curve's when the coprocessor acknowledged the HOLD, not at the tap: the
+the curve's when the IOmcu acknowledged the HOLD, not at the tap: the
 curve runs on there for the exchange in between, and so the drawing runs
 on too, at the SPEED in force at the tap, for at most 500 ms -- the longest
-the coprocessor runs a sweep it has not heard. Without feedback the drawn
+the IOmcu runs a sweep it has not heard. Without feedback the drawn
 horn is then put where the output had got at the acknowledgement: the curve
 to that phase, slewed as the drawing slews. A SPEED changed in between reaches the
-coprocessor only with the resume. A tap on PAUSED leaves the horn where it
+IOmcu only with the resume. A tap on PAUSED leaves the horn where it
 is until the resume is acknowledged; the panel then times the drawing from
-the phase the coprocessor kept, as it timed the two acknowledgements, also
+the phase the IOmcu kept, as it timed the two acknowledgements, also
 when the tap came before the HOLD's acknowledgement; that acknowledgement,
-arriving after the tap, still moves the horn to where the coprocessor held
-the output, and the resume goes on from there. The coprocessor
+arriving after the tap, still moves the horn to where the IOmcu held
+the output, and the resume goes on from there. The IOmcu
 keeps the phase while it holds and resumes the curve (`LINK_SV_RESUME`,
 protocol 4.6); the output slews from where it was held to the curve at
 SPEED's rate, at once at 100 %, and is normally already there. A curve
-changed on SETTINGS > SWEEP while paused starts as a new sweep instead. A
-coprocessor older than 4.6, or one that refuses the resume because its hold
+changed on SETTINGS > SWEEP while paused starts as a new sweep instead. An
+IOmcu older than 4.6, or one that refuses the resume because its hold
 has ended, starts the curve over from its beginning -- the centre for a
 sine or a triangle, the first end for a square -- and the alert band says
-so: `Coprocessor firmware older than 4.6. Sweep starts again.` or `Coprocessor could not resume. Sweep starts again.`. So does PAUSED tapped while
-the HOLD has gone unanswered, since the coprocessor may then be holding or
+so: `IOmcu firmware older than 4.6. Sweep starts again.` or `IOmcu could not resume. Sweep starts again.`. So does PAUSED tapped while
+the HOLD has gone unanswered, since the IOmcu may then be holding or
 still running: `Pause was not confirmed. Sweep starts again.`. A
 PAUSED tapped before a HOLD that the panel then lets go of (below) starts
 nothing: the pause ends with that HOLD.
@@ -710,10 +710,10 @@ nothing: the pause ends with that HOLD.
 A hold the link left unrepeated for 500 ms has been let go at the far end,
 so the panel releases the surfaces to their centre and the horn goes there.
 So does a HOLD answered only at a retry, or after longer than 500 ms: the
-coprocessor may have let it go and held again elsewhere, so where it holds
+IOmcu may have let it go and held again elsewhere, so where it holds
 is not known on the panel, and the pause ends rather than keep an angle a
 later change of profile would send to the servo. The link going ends a
-sweep or a pause too, and the horn is drawn at rest, as the coprocessor
+sweep or a pause too, and the horn is drawn at rest, as the IOmcu
 rests the surfaces 500 ms after the last write it heard; no sweep or hold
 asked for before is sent when the link comes back, and the next tap starts
 a sweep.
@@ -726,15 +726,15 @@ after the tap; without feedback it is the drawn estimate at the
 acknowledgement. A changed SPEED keeps the
 pause; the resume runs at the new SPEED. Touch events going missing pause a
 running sweep as PAUSE would. A changed setting starts a running sweep over
-with the new curve, drawn from when the coprocessor acknowledges it; until
-then the old curve is drawn on, as the coprocessor runs it, under the
+with the new curve, drawn from when the IOmcu acknowledges it; until
+then the old curve is drawn on, as the IOmcu runs it, under the
 pulses and TRAVEL it was sent with. Each acknowledgement is matched to the
 command it answers: a SPEED or curve changed while a start waits does not
 let the earlier command's acknowledgement draw the newer one. A changed
 profile or frame rate goes with it at once. SWEEP is offered while the
-bench is ARMED, with a surface bound and the link up, and a coprocessor speaking
+bench is ARMED, with a surface bound and the link up, and an IOmcu speaking
 protocol 4.2;
-greyed otherwise; the coprocessor stops a sweep the panel has not
+greyed otherwise; the IOmcu stops a sweep the panel has not
 repeated for 500 ms and leaves each surface where its output has got to.
 
 **SPEED LIMITS THE SWEEP** replaces SPEED's label on the right card, in the
@@ -954,25 +954,25 @@ the 23 characters of the value, then `+N`: 8 pins from GP40 read
 `SERVO PWM GP40 GP41 +6`. The row is in the warning colour, label and
 value, with no such pin (`NO SERVO PWM PIN`) and before a binding has been
 read (`PINS NOT READ`). With PROG PORT the row reads `PROG PORT GP13` in the
-warning colour; the pin is the GPIO the coprocessor reports for the
+warning colour; the pin is the GPIO the IOmcu reports for the
 programming port. The tester's commands then do not reach the SERVO PWM
 outputs; while the bank is ARMED they hold their rest pulse, the centre
 between their endpoints. A port target without a usable pin (none, refused
-at start, or a port the coprocessor does not have) reads `PROG PORT`, also in
+at start, or a port the IOmcu does not have) reads `PROG PORT`, also in
 the warning colour: the commands go to the port all the same. With PORT PWM
 off the port renders no pulse, and the row adds `PWM OFF`:
 `PROG PORT GP13 PWM OFF`, 22 characters with a two-digit pin. Two states name
 no target, both in the warning colour, and the tester sends no command in
-either: `NO LINK` while no coprocessor answers, and `UNKNOWN` while the
-coprocessor's programming-port page has not been read since the link came
+either: `NO LINK` while no IOmcu answers, and `UNKNOWN` while the
+IOmcu's programming-port page has not been read since the link came
 up, a write to it was not acknowledged, or a read of it went unanswered.
 While the servo programmer holds the port, the row does not change: it keeps
-naming the target the coprocessor holds, a port or the outputs; the
+naming the target the IOmcu holds, a port or the outputs; the
 programmer drives the port and the tester sends nothing. The page is read
-every 500 ms. A coprocessor without that page (protocol older than 4.13) has
-the standard outputs as target. The row follows the target the coprocessor
+every 500 ms. An IOmcu without that page (protocol older than 4.13) has
+the standard outputs as target. The row follows the target the IOmcu
 holds, not the setting: a TARGET change waits for a quiet bench and
-reaches the row once the coprocessor has taken it.
+reaches the row once the IOmcu has taken it.
 
 ![The TARGET row with PROG PORT](img/servo-target.png)
 
@@ -990,7 +990,7 @@ pulse + 1 ms): 333 Hz for 2000 us. The heli profiles run at Rotorflight's
 rates for digital cyclic and narrow-band tail servos, with at least 0.5 ms
 between pulses. A frame rate the pulses leave no pause for is refused, and a
 longer PULSE MAX is refused at a rate it does not fit. The pause is kept after
-the longest pulse the coprocessor can render, the top of the range a command
+the longest pulse the IOmcu can render, the top of the range a command
 carries: PULSE MAX, or past it when CENTRE is off the middle, by as much as
 CENTRE lies nearer MAX than MIN. So a CENTRE that would push that top past
 the rate's pause is refused too.
@@ -1006,7 +1006,7 @@ another one.
 
 ![The warning](img/servo-warning.png)
 
-**The frame rate reaches the pins** through the coprocessor's SERVO page
+**The frame rate reaches the pins** through the IOmcu's SERVO page
 (protocol 4.1). It applies to the TARGET alone. With OUTPUTS, the standard
 servo ports, as target that is every PWM output whose first channel is a surface; a
 PPM output keeps its own frame. With PROG PORT as target it is the
@@ -1025,19 +1025,19 @@ OUTPUT page says what became of it:
 
 | Note | Meaning |
 | --- | --- |
-| In force | the rate runs on the target the coprocessor holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against a coprocessor before protocol 4.19 the note reads "every PWM surface runs at": such a coprocessor runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: a coprocessor restarted while the link is down runs every pin at its own rate again |
+| In force | the rate runs on the target the IOmcu holds, named from its PROG page: `Active: OUTPUTS run at 330 Hz.` or `Active: PROG PORT GP13 runs at 330 Hz.` The note is in the warning colour while that target differs from the TARGET chosen (second line `The TARGET chosen is not active.`; PROG PORT with no pin bound to the port leaves OUTPUTS the target), while the port target has no pin, while PORT PWM is OFF (`PORT PWM is OFF. The port sends no pulses.`) and while the target is not known. Against an IOmcu before protocol 4.19 the note reads "every PWM surface runs at": such an IOmcu runs every PWM surface at the rate, whatever the TARGET. With no link both read `No link. The active frame rate is unknown.` in the warning colour: an IOmcu restarted while the link is down runs every pin at its own rate again |
 | The rate goes with the next position | not written yet |
 | REFUSED | a pulse of the target -- a surface, or the programming port while its pulse is on -- is longer than the frame at that rate, or a target pin shares a PWM slice with an output at another rate; the pins keep the rate they had |
-| This coprocessor takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
+| This IOmcu takes no frame rate | protocol 4.0: every PWM output runs at its binding's 50 Hz |
 
-A coprocessor restart, and every binding written on OUTPUTS, put each slot
+An IOmcu restart, and every binding written on OUTPUTS, put each slot
 back at its own rate, 50 Hz for a servo; the screen sends its rate again with
 its next position, against the binding then in force. A binding is not
 written while the reset to each slot's own rate goes unanswered (OUTPUTS says
 `NO LINK`) or is refused (`REFUSED`), and the bench
 does not switch to ARMED, from any screen, while the rate the TARGET runs at is not
 known: the switch to ARMED is refused with `Servo frame rate unknown. Hold ARM again.`, and
-a switch to ARMED made while the link was down reaches the coprocessor only once the
+a switch to ARMED made while the link was down reaches the IOmcu only once the
 reset has landed.
 
 The OUTPUT settings, HV SERVO, LIMIT RUN and SERVO PULSES are kept for the
@@ -1068,11 +1068,11 @@ Current limitations:
 
 Sets, switches and records a programmable supply: the PD mini, a USB-PD (USB
 Power Delivery) trigger controlled over a UART (universal asynchronous
-receiver-transmitter). The coprocessor drives it on a PIO (programmable
+receiver-transmitter). The IOmcu drives it on a PIO (programmable
 input/output) UART on two of its pins, through the SUPPLY link page
 (protocol 4.3). The panel writes the page and reads it every 100 ms. With
 the PD mini enabled on SETUP under INTERFACES, the header names the module
-and the coprocessor's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
+and the IOmcu's UART pins that carry it, `PD MINI TX GP12 RX GP13`,
 from the PD mini TX and PD mini RX settings. With either pin not set the
 header says `PD MINI NO PINS`. With the PD mini disabled, the panel runs a model of a supply in its place: the header
 says SIMULATED SUPPLY and the menu tile is marked SIMULATED.
@@ -1134,7 +1134,7 @@ separately.
 OFF is a tap. STOP switches the output off on every screen. So does every
 other stop the bench counts -- touch that stops answering, an ON whose touch
 events went missing before a whole frame saw the output on, and the
-coprocessor refusing to stay ARMED -- and a supply that stops answering, and a
+IOmcu refusing to stay ARMED -- and a supply that stops answering, and a
 trip. The output stays off until it is switched on again. Leaving the screen
 switches off an output SUPPLY switched on: one reported on, or an ON on its
 way. SERVO and ESC STICK do the same for the output each switched on, so an
@@ -1148,9 +1148,9 @@ question and the other overlays of SUPPLY are no leave. The link-lost screen,
 which has no STOP, does not open while the output is on.
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
-the panel owes it, and the coprocessor switches the output off itself when
+the panel owes it, and the IOmcu switches the output off itself when
 the panel's heartbeat stops. An enabled PD mini reads NOT ANSWERING while no
-coprocessor that speaks protocol 4.3 answers, or while the page's readings
+IOmcu that speaks protocol 4.3 answers, or while the page's readings
 are older than 1500 ms; an output that is on is switched off then. A page
 that answers while the module's reading count (SAMPLES) stands -- a display
 read that fails while the other reads answer -- keeps ONLINE: after
@@ -1192,7 +1192,7 @@ driver's gap is over 2.9 s, so the cut is possible from 263 ms. At rest the
 display read stands up to 2.5 s at 390 ms. It stands over 1.4 s from
 259 ms late and 1.5 s from 279 ms, so the cards can show dashes from about
 260 ms. The
-output is also switched off, with a line in the band, when the coprocessor
+output is also switched off, with a line in the band, when the IOmcu
 refuses an ON (no heartbeat) or lets one go (its heartbeat stopped, or it
 started again). The output is switched off too, and not on
 again until a new hold, when the module switches it off itself -- its
@@ -1202,7 +1202,7 @@ take. A pin or baud change, and enabling or disabling the PD mini, switch the
 output off.
 
 **A sagging input voltage switches the PD mini off.** While the output is on, the
-coprocessor reads the input voltage of the module every 500 ms with a module that
+IOmcu reads the input voltage of the module every 500 ms with a module that
 answers at once, and further apart with one that answers late (see above).
 When the input voltage reads under the set point plus 0.5 V on 2 reads in a
 row, it switches the output off at once, and the band names the input voltage
@@ -1266,7 +1266,7 @@ With the PD mini as the supply, SETTINGS also offers RESET PD MINI. It
 switches the output off and restarts the module (its SYSTEM_RESET command),
 for a module that shows ERR -- a set point over its input voltage puts it there --
 without unplugging it. The module is asked who it is again about 1 s later.
-Whether a restart clears every ERR is not measured. A coprocessor older than
+Whether a restart clears every ERR is not measured. An IOmcu older than
 protocol 4.4 has no reset: the output goes off and the band says so.
 
 ### The log
@@ -1288,7 +1288,7 @@ readings and `model` for the panel's model. The bench takes the log: switching t
 a supply run ends that run's file, and an output still on at the switch to SAFE starts
 a new file. That file's charge and energy go on from the totals counted since
 the output came on, as the screen's do, so its first row does not start at 0. The supply is stepped and logged on its own 50 ms cadence while
-the control task waits on the link, so an unanswered coprocessor does not thin
+the control task waits on the link, so an unanswered IOmcu does not thin
 out the supply's plot or its log.
 
 The model is a 6 ohm load with a 1.4 A burst for 0.6 s every 3 s, behind a
@@ -1297,8 +1297,8 @@ burst takes it into CC. Its readings are not measured and nothing on the bench
 is powered.
 
 The PD mini's wiring -- PD mini, PD mini TX, PD mini RX and PD mini baud -- is
-on SETUP under INTERFACES. TX and RX are coprocessor GPIO numbers: TX goes to
-the module's DM, RX comes from its DP. The coprocessor refuses a pin that is
+on SETUP under INTERFACES. TX and RX are IOmcu GPIO numbers: TX goes to
+the module's DM, RX comes from its DP. The IOmcu refuses a pin that is
 reserved, bound to an output or the other pin. Once the module has
 answered, a change waits for a state read of the module sent after it, at
 most about 1.2 s, and is taken only if that read shows the output off: the
@@ -1309,7 +1309,7 @@ that shows the output on, or fails, refuses the change, and the band says
 written again until the wiring changes in SETUP. PD mini baud is the module's
 own UART Baudrate setting: 9600, 19200 (as shipped), 38400, 57600,
 115200, 230400 or 460800 baud, or AUTO. AUTO, the default, lets the
-coprocessor find it: it tries each of the 7 rates, one a second. The
+IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
 
@@ -1473,7 +1473,7 @@ green is on while a beep is detected, for at least 150 ms:
 
 While the phase tap is enabled on SETUP the run's page adds a read-only
 readout under the current line: the tap's state, the pitch of its last 8 ms
-window, the counts of beeps the coprocessor lost and beeps the panel did not
+window, the counts of beeps the IOmcu lost and beeps the panel did not
 read, and the last four
 beeps with their number, length in ms and mean pitch in Hz. The run still
 counts its beeps from the supply current.
@@ -1485,8 +1485,8 @@ counts its beeps from the supply current.
 | `RUNNING` | the capture runs |
 | `OVERRUN` | it runs, and the capture ring or FIFO overran since the tap was enabled |
 | `WAITING` | no link, or the TONE page has not answered in the last 500 ms, or its flags say the tap runs and its window number has not moved for 1.5 s, or the tap was switched off and the page still holds it on |
-| `NO TONE PAGE` | the coprocessor speaks a protocol older than 4.8 |
-| `PIN NOT FREE` | the coprocessor holds the tap off: its pin is bound elsewhere, or the coprocessor runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the coprocessor |
+| `NO TONE PAGE` | the IOmcu speaks a protocol older than 4.8 |
+| `PIN NOT FREE` | the IOmcu holds the tap off: its pin is bound elsewhere, or the IOmcu runs no capture since its boot (core 1 not started) and its saved set-up has the tap enabled; the second clears only with a restart of the IOmcu |
 | `NOT RUNNING` | enabled, and the page holds the tap off or does not run it: the set-up was refused or is not written yet |
 
 PITCH and LOST are the page's values from the last status read. They read
@@ -1562,7 +1562,7 @@ directory under the name of the writer and a number from 001 to 999:
 | `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
 | `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
 
-With a coprocessor older than protocol 4.18, every switch to ARMED covers the
+With an IOmcu older than protocol 4.18, every switch to ARMED covers the
 throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.
 
 The numbers are one series across the three names: the next run takes one
@@ -1738,7 +1738,7 @@ wrong access codes. The card then says which, in one line:
 `Wi-Fi switched off after 10 min without a request.`,
 `Wi-Fi switched off after 16 wrong access codes.`, or `Wi-Fi could not start.` A STOP
 or a switch to ARMED also drops an uploaded image that waits on the panel.
-While the radio is up, the link to the coprocessor and the heartbeat run as
+While the radio is up, the link to the IOmcu and the heartbeat run as
 on every other screen.
 
 When Wi-Fi could not be set up at start (no memory for its lock or its
@@ -1856,8 +1856,8 @@ Current limitations:
 - An uploaded image is checked against its own SHA-256, not against a
   signature. Any image built as `rcbench-panel` for the ESP32-S3 installs
   after the 2 s hold, and on a home network a device between the browser
-  and the panel can replace the image on its way. The coprocessor image a
-  panel image carries comes with it and is offered to the coprocessor at the
+  and the panel can replace the image on its way. The IOmcu image a
+  panel image carries comes with it and is offered to the IOmcu at the
   next link-up.
 - The panel joins only while this screen is open. A panel that stays joined
   whenever the bench is SAFE is not built.
@@ -1931,13 +1931,13 @@ that runs already is not offered:
 
 INSTALL is a 2 s hold (`HOLD 2 s: INSTALL`). The browser cannot start it.
 It needs the bench SAFE, the supply output off, no log run open, no board
-drawing being fetched or kept and no update of the coprocessor running
-(`Installation is waiting for the coprocessor update to finish.`). CANCEL drops the image.
+drawing being fetched or kept and no update of the IOmcu running
+(`Installation is waiting for the IOmcu update to finish.`). CANCEL drops the image.
 
 ![Writing](img/panel-update.png)
 
 The hold switches the radio off first. Then the control task stops its polls
-and withholds the heartbeat on purpose, so the coprocessor holds its outputs
+and withholds the heartbeat on purpose, so the IOmcu holds its outputs
 in failsafe as it does at any restart of the panel. PANEL UPDATE takes the
 whole screen, with no band and no STOP: nothing can be switched to ARMED
 behind it. It writes the slot that is not running in pieces of 64 KiB and
@@ -2133,7 +2133,7 @@ across a third of its travel from -travel to +travel.
 
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
-The coprocessor reads two I2C (Inter-Integrated Circuit) current monitors on
+The IOmcu reads two I2C (Inter-Integrated Circuit) current monitors on
 one bus on two of its pins: a TI INA228 in the ESC's power path and a TI
 INA3221 on the servo rail. Their rows are at the top of INTERFACES:
 
@@ -2142,12 +2142,12 @@ INA3221 on the servo rail. Their rows are at the top of INTERFACES:
 | INA228 | ON, OFF | OFF | the monitor in the ESC's power path |
 | INA228 address | 0x40 to 0x4F | 0x45 | the MATEK I2C-INA-BM as shipped; its solder bridges give 0x44 or 0x41 |
 | INA228 shunt | 50 to 20000 µΩ, 1 µΩ steps | 200 | the MATEK's |
-| INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the coprocessor refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
+| INA228 max current | 1.0 to 300.0 A, 0.1 A steps | 204.8 | the current the range is set for: it chooses the ADC (analog-to-digital converter) range and nothing else. 300 A is the bench's design maximum; the IOmcu refuses more. Its refusal of a range past 2000 A full scale stays, and 300 A on the smallest shunt, 50 µΩ, does not reach it |
 | INA3221 | ON, OFF | OFF | the servo rail's three channels |
 | INA3221 address | 0x40 to 0x43 | 0x40 | the DAOKAI module with its A0 solder bridge closed to GND. As shipped all four A0 bridges are open and the address floats between 0x40 and 0x41 |
 | INA3221 shunt | 5.0 to 1000.0 mΩ, 0.1 mΩ steps | 100.0 | one a channel; the DAOKAI's R100 reads to 1.64 A |
 | INA3221 channels | CH1, CH1+2+3 | CH1 | CH1 is the servo test's; CH2 and CH3 a synchronised pair's |
-| Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | coprocessor GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
+| Sensor SDA | −1, 0, 4, 6, 14, 16, 18, 20, 26 | 16 | IOmcu GPIO (general-purpose input/output). `-` and `+` step from one of these values to the next and stop at −1 and at 26. −1: the pins are not set, and no part is enabled on the page |
 | Sensor SCL | SDA + 1, or −1 | 17 | the GPIO after Sensor SDA, and −1 with it. The row shows the value and has no keys |
 
 ![INTERFACES, the INA3221 and the bus's pins](img/setup-sensors.png)
@@ -2157,9 +2157,9 @@ SCL is the GPIO after it. Sensor SDA takes only the pins of such a pair that
 the RP2350-CAN brings out and does not reserve: GP2 is left out because GP3
 is the heartbeat, GP8 to GP12 are the CAN controller's, and GP22, GP24 and
 GP28 because the module does not bring out GP23, GP25 and GP29. The rule is
-the one the coprocessor's SENSE page judges a write by
+the one the IOmcu's SENSE page judges a write by
 (`link_sn_pins_pair()`, `settings_sense_sda_valid()`). A pin an output, the
-PD mini or the phase tap holds is offered all the same, and the coprocessor
+PD mini or the phase tap holds is offered all the same, and the IOmcu
 refuses it. With Sensor SDA at −1 the panel writes ENABLE 0, SDA 0 and SCL 0
 to the page.
 
@@ -2169,31 +2169,31 @@ Sensor SDA outside the values above loads as 16, with no alert and without
 marking the settings as changed.
 
 The bus runs at 400 kHz, which is not a setting:
-the coprocessor takes no other clock. A reading at the top of the INA3221's
+the IOmcu takes no other clock. A reading at the top of the INA3221's
 range, 163.8 mV across the shunt, is shown as clipped and never as a value.
 
-The panel writes the set-up to the coprocessor's SENSE page (protocol 4.7)
+The panel writes the set-up to the IOmcu's SENSE page (protocol 4.7)
 500 ms after the last edit, only while the bench is SAFE, and only what
-differs from what the page holds: the coprocessor refuses a change while it
+differs from what the page holds: the IOmcu refuses a change while it
 drives, and keeps each change in flash. It reads the page at every link-up
-first, so a set-up the coprocessor already keeps is not written again. When
+first, so a set-up the IOmcu already keeps is not written again. When
 a monitor's own values change while both are enabled, both are switched off
 on the page first and on again after, so no step on the way puts the two
-parts on one address. A
-coprocessor older than 4.7 is sent nothing. After a write is taken the panel
-reads the coprocessor's identity again: capability bits 3 and 4 follow the
+parts on one address. An
+IOmcu older than 4.7 is sent nothing. After a write is taken the panel
+reads the IOmcu's identity again: capability bits 3 and 4 follow the
 set-up, and with the INA228 enabled the MOTOR & ESC tile loses its SIMULATED
 mark.
 
 While a monitor is enabled, the panel reads SENSE's 14 read-only registers
 every 50 ms; while the INA3221 is, SERVO_SENSE's channel windows every
-50 ms, each 50 ms window once. With a coprocessor of protocol 4.11 and CH1
+50 ms, each 50 ms window once. With an IOmcu of protocol 4.11 and CH1
 among the INA3221's channels it also reads SERVO_WIN every 50 ms, which
 holds CH1's last four windows, and SENSE to register 31
 ([Link](Link.md#the-window-ring)).
 
 The servo rail has one meter at a time: the INA3221's CH1 while it is on
-with CH1, the coprocessor speaks protocol 4.11, the coprocessor holds the
+with CH1, the IOmcu speaks protocol 4.11, the IOmcu holds the
 set-up, the part answers as an INA3221 on a bus that is not stuck, a window
 with current samples closed in the last 200 ms, its reset count stands, and
 all of that has held for 1000 ms; the PD mini otherwise. The SERVO screen's
@@ -2206,20 +2206,20 @@ both said. In order:
 
 | Message | When |
 | --- | --- |
-| `Coprocessor has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the coprocessor speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
+| `IOmcu has no SENSE page. Current monitors cannot be read.` | a monitor is enabled and the IOmcu speaks a protocol older than 4.7; said at the link-up, and when a monitor is enabled while it answers |
 | `Sensor SDA or SCL not set. Check SETUP > INTERFACES.` | a monitor is enabled with a pin at −1; neither is enabled on the page |
 | `INA228 and INA3221 both use 0x40. Check SETUP > INTERFACES.` | both enabled on one address; neither is enabled on the page |
-| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the coprocessor refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
+| `Sensor pins GP16/GP17 rejected. Check SETUP > INTERFACES.` | the IOmcu refused the pins: bound to an output, held by the PD mini or the phase tap, or reserved; both monitors stay off. Shown for 30 s or until tapped, once per edit |
 | `INA228 shunt or maximum current rejected. Check SETUP > INTERFACES.` | the shunt's voltage at the max current passes 163.84 mV, or the range it gives passes 2000 A; the INA228 stays off |
 | `INA3221 settings rejected. Check SETUP > INTERFACES.` | the INA3221 stays off |
-| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the coprocessor found SDA held low and clocks it free |
-| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the coprocessor's address scan found something where the part could be |
+| `Sensor bus blocked: SDA low. Trying clock pulses to release it.` | the IOmcu found SDA held low and clocks it free |
+| `INA228 is not responding at 0x45.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did. `A device responds at 0x44.` is added when the IOmcu's address scan found something where the part could be |
 | `0x40 reports 1408h, not an INA3221. Device not used.` | something answers at the part's address with another identity |
 | `INA228 current at its range limit. Reading shows only the limit.` | the INA228 read the end of its range in the last 50 ms window or since the switch to ARMED |
 | `INA3221 CH1 clipped at 1.64 A. Reading shows only the limit.` | a channel the INA3221 reads hit the top of its range; the current is its full scale |
-| `Coprocessor storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the coprocessor saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
-| `Coprocessor firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the coprocessor speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
-| `INA3221 has reset. Check its power supply.` | the coprocessor found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
+| `IOmcu storage unavailable. Settings will be lost at restart.` | STATUS fault bit 6: the IOmcu saves nothing this boot, so the set-up, the bindings and the supply's wiring are lost at its restart; said once per link-up |
+| `IOmcu firmware older than 4.11. Servo current is read from the PD mini.` | the INA3221 is on with CH1 and the IOmcu speaks protocol 4.7 to 4.10: it has no window ring, and the PD mini is the servo rail's meter. Said at the link-up, and when the INA3221 is switched on while it answers |
+| `INA3221 has reset. Check its power supply.` | the IOmcu found the INA3221 on its power-on set-up and set it up again 1000 ms later; said once per reset. The windows of those 1000 ms hold no samples |
 
 A refused set-up is not written again until it changes on SETUP. Pins that
 are one I2C block's pair, refused because an output, the PD mini or the
@@ -2228,13 +2228,13 @@ freeing the pin on OUTPUTS or SUPPLY lets the bus open. A monitor
 that stops answering does not switch the bench to SAFE: nothing trips on the
 monitors' readings.
 
-#### A row the coprocessor does not hold
+#### A row the IOmcu does not hold
 
-![INTERFACES, pins the coprocessor has not taken](img/setup-unheld.png)
+![INTERFACES, pins the IOmcu has not taken](img/setup-unheld.png)
 
-A row whose value is not the one the coprocessor's page holds is marked: its
+A row whose value is not the one the IOmcu's page holds is marked: its
 edge and its value are drawn in the warning colour, and its help line reads
-`Not accepted by the coprocessor.`. The panel compares the set-up it asks for
+`Not accepted by the IOmcu.`. The panel compares the set-up it asks for
 with the one the page last acknowledged or read back (`sense_link_unheld()`,
 `tone_link_unheld()`). The mark covers the current monitors' rows, Sensor
 SDA and Sensor SCL (one mark, the pins are one frame), AS5600, and the phase
@@ -2244,11 +2244,11 @@ pitch split, Tap gap and Tap min periods.
 | The mark shows | Until |
 | --- | --- |
 | from an edit | the write is acknowledged: 500 ms after the last edit, and for the current monitors only once the bench is SAFE |
-| on a value the coprocessor refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
-| on INA228, INA3221 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, both monitors on one address, a coprocessor older than the part |
-| after a coprocessor restart or a link-up, on what its page reads differently | the panel has written it |
+| on a value the IOmcu refused | the value is changed to one it takes; for pins held elsewhere, until the 5 s retry is taken |
+| on INA228, INA3221 or AS5600 at ON while the page has the part off | the cause is gone: a refused frame, Sensor SDA at −1, both monitors on one address, an IOmcu older than the part |
+| after an IOmcu restart or a link-up, on what its page reads differently | the panel has written it |
 
-No row is marked while no coprocessor answers, or before the page has been
+No row is marked while no IOmcu answers, or before the page has been
 read after a link-up: there is nothing to compare with. AS5600 centre is the
 panel's own and is never marked. The alert on the band is separate and stays
 as described above.
@@ -2264,14 +2264,14 @@ sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
 | AS5600 centre | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTRE sets it from the live reading |
 
 The panel writes the enable bit with the rest of the bus frame, 500 ms after
-the last edit and only while the bench is SAFE, to a coprocessor that
+the last edit and only while the bench is SAFE, to an IOmcu that
 names protocol 4.9; an older one is sent nothing. While the encoder is
 enabled it reads SENSE's registers 12 to 31 every 40 ms. The band says, each
 once and one at a time like the monitors':
 
 | Message | When |
 | --- | --- |
-| `Coprocessor firmware older than 4.9. AS5600 not read.` | the encoder is enabled and the coprocessor speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
+| `IOmcu firmware older than 4.9. AS5600 not read.` | the encoder is enabled and the IOmcu speaks a protocol older than 4.9; said at the link-up, and when the encoder is enabled while it answers |
 | `AS5600 is not responding at 0x36.` | enabled, and not answering 2.5 s after its set-up was taken, or no longer answering after it did; also when something at 0x36 gives a STATUS no AS5600 gives, ML and MH both set |
 | `AS5600 detects no magnet. Check the magnet on the servo horn shaft.` | it answers, an angle has been read, and STATUS MD (magnet detected) is clear. The count is no angle: MEASURED shows `---`, ENC CENTRE sets nothing, and a run logs and judges no angle |
 | `AS5600: magnetic field too weak. Move the magnet closer.` | STATUS MD and ML are set. The angle is used; the sensor's datasheet specifies its noise for 30 to 90 mT only |
@@ -2288,26 +2288,26 @@ rise with the servo's pulse width.
 
 ![INTERFACES, the phase tap](img/setup-tap.png)
 
-The phase tap hears an ESC's beeps on one motor phase. One coprocessor
+The phase tap hears an ESC's beeps on one motor phase. One IOmcu
 GPIO reads the phase through a series resistor and a zener clamp; the
-coprocessor times the pin's edges and reports each beep's length and pitch.
+IOmcu times the pin's edges and reports each beep's length and pitch.
 The wiring is not in the build guide. The tap is an input: it drives
-nothing, and the coprocessor takes a change ARMED or not. Its rows follow
+nothing, and the IOmcu takes a change ARMED or not. Its rows follow
 the bus's pins:
 
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
-| Phase tap | ON, OFF | OFF | the capture runs on the coprocessor |
-| Tap pin | 0 to 47 | 22 | coprocessor GPIO; GP22 is pad 29. Refused: an ADC (analog-to-digital converter) pin, GP26 to GP29 on the RP2350A and GP40 to GP47 on the RP2354B; a pin bound to an output; a pin the SENSE or SUPPLY page holds |
+| Phase tap | ON, OFF | OFF | the capture runs on the IOmcu |
+| Tap pin | 0 to 47 | 22 | IOmcu GPIO; GP22 is pad 29. Refused: an ADC (analog-to-digital converter) pin, GP26 to GP29 on the RP2350A and GP40 to GP47 on the RP2354B; a pin bound to an output; a pin the SENSE or SUPPLY page holds |
 | Tap lowest tone | 50 to 2000 Hz, 10 Hz steps | 400 | a tone below it is not a beep |
 | Tap highest tone | 100 to 6900 Hz, 50 Hz steps | 6500 | above the lowest tone |
 | Tap pitch split | 0 to 50 %, 1 % steps | 8 | a pitch change this large starts a new beep with no silence between; 0 splits on silence only |
 | Tap gap | 1 to 100 ms | 3 | the silence that ends a beep; at least one period of the lowest tone, so 20 ms at 50 Hz |
 | Tap min periods | 1 to 64 | 3 | the tone periods that make a beep |
 
-The panel writes the set-up to the coprocessor's TONE page (protocol 4.8)
+The panel writes the set-up to the IOmcu's TONE page (protocol 4.8)
 500 ms after the last edit, and only what differs from what the page holds:
-the coprocessor keeps each change in flash. It reads the page at every
+the IOmcu keeps each change in flash. It reads the page at every
 link-up first. The set-up goes in two frames, the pin and the tone range,
 then the split, the gap and the periods. When both change, the one that
 leaves the page a valid set-up goes first: a lower tone with a gap shorter
@@ -2317,22 +2317,22 @@ the values the page holds and the tap disabled, whatever range is asked, so
 a range the page would refuse cannot keep the tap running; the range
 follows in a frame of its own. Until the page holds the tap off the screen
 shows `WAITING`, not off. A set-up kept in flash that met a busy pin at the
-coprocessor's boot is written again every 5 s, without another message,
+IOmcu's boot is written again every 5 s, without another message,
 while the page reports the pin refused. A change of ENABLE or of the pin
-empties the coprocessor's ring and the panel takes its place at the newest
+empties the IOmcu's ring and the panel takes its place at the newest
 beep number, so none is read twice and none counted as missed; a change
 of the range or of the other values leaves the ring and the numbering
-alone. A coprocessor older than 4.8 is sent nothing.
+alone. An IOmcu older than 4.8 is sent nothing.
 
 While the page holds the tap on, the panel reads its 16 read-only registers
 every 50 ms: the flags, the last 8 ms window's pitch, the number of the
 newest beep and the counts of beeps lost and lows ignored. A read whose
 flags say the tap runs speaks for it while its window number moves: the
-coprocessor closes a window every 8 ms, so a number that has stood for
+IOmcu closes a window every 8 ms, so a number that has stood for
 1.5 s (`TONE_LINK_WINDOW_STALE_MS`) is a capture that stopped while the
 page still answers, and the screen shows `WAITING` as for a read older
 than 500 ms. It takes the
-beeps one by one by number. The coprocessor keeps the last 64 beeps,
+beeps one by one by number. The IOmcu keeps the last 64 beeps,
 numbered 1 to 65535 and then 1 again, and a read does not remove one, so a
 reply lost on the link loses no beep. A beep that left the ring before it
 was read, or that the ring moved past while the panel was more than 64
@@ -2344,11 +2344,11 @@ current monitors:
 
 | Message | When |
 | --- | --- |
-| `Coprocessor has no TONE page. Phase tap not read.` | the tap is enabled and the coprocessor speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
-| `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` | the coprocessor refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older coprocessor, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
-| `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the coprocessor refused the second frame; not written again until a value changes |
-| `Phase tap pin GP22 is in use. Capture not running.` | the coprocessor reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The coprocessor runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the coprocessor lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the coprocessor kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
-| `Phase tap capture overflow. Beeps are incomplete.` | the coprocessor's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
+| `IOmcu has no TONE page. Phase tap not read.` | the tap is enabled and the IOmcu speaks a protocol older than 4.8; said at the link-up, and when the tap is enabled while it answers |
+| `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` | the IOmcu refused the first frame: the pin is not allowed, the tone range is not one it takes (the highest tone not above the lowest, or the gap shorter than the lowest tone's period), or it runs no capture since its boot (core 1 not started). A pin that an output, the sensor bus, the PD mini or a programming port holds is refused as busy (BUSY, protocol 4.17): offered again every 5 s without another message, so freeing the pin lets the tap start. Any other refusal is written again only after the next change on SETUP INTERFACES or link-up. From a 4.16 or older IOmcu, which says BAD_VALUE for both, the frame is offered again every 5 s when its tone range and gap are valid ([Link](Link.md#a-busy-pin-on-the-phase-tap)) |
+| `Phase tap split, gap or periods rejected. Check SETUP > INTERFACES.` | the IOmcu refused the second frame; not written again until a value changes |
+| `Phase tap pin GP22 is in use. Capture not running.` | the IOmcu reports the pin refused, for one of two causes. A set-up it kept in flash met a binding at its boot: the first frame is offered again every 5 s without another message, so freeing the pin lets the tap start. The IOmcu runs no capture since its boot (core 1 not started, protocol 4.17): no pin is bound and freeing one changes nothing. The next offer of the first frame is refused with BAD_VALUE without another message, and the frame is not offered again until the next change on SETUP INTERFACES or link-up; only a restart of the IOmcu lets the tap run. The band says `Phase tap on GP22, 400 to 6500 Hz rejected. Check SETUP > INTERFACES.` only for a set-up other than the one the IOmcu kept, written at link-up before the first status read or less than 5 s after the pin was first reported not free or last offered; a change made later goes out as a quiet offer |
+| `Phase tap capture overflow. Beeps are incomplete.` | the IOmcu's capture ring or FIFO (first in, first out buffer) overran since the tap was enabled; the beep under way was cut |
 
 ### Keeping the values
 
@@ -2422,7 +2422,7 @@ The strip's three columns hold the answers:
 | SAVE | Asks for a write as the save button does, then opens the menu. The write follows the same rule: the first idle frame. |
 
 DISCARD sets each value with the same call a key does, in schema order, so
-the coprocessor hears each pin and port that moves, and APPLICATION's
+the IOmcu hears each pin and port that moves, and APPLICATION's
 language, theme, brightness and contrast apply on the next frame. A PD mini
 wiring set back switches the supply output off and raises the alert a change by hand
 raises. PWM target and Port PWM are not set back while the servo programmer
@@ -2457,7 +2457,7 @@ coming back intact puts this on the panel instead of the menu.
 ![Frames cross and arrive changed](img/busfault.png)
 
 It exists because the fault is invisible from every other screen: a bus that
-does not carry frames looks exactly like a coprocessor that is not fitted, and
+does not carry frames looks exactly like an IOmcu that is not fitted, and
 both look like a bench that shows no numbers. The verdict is the heading, the
 list is what to check in the order that costs least to check, and the right
 column is what both ends counted.
@@ -2513,23 +2513,23 @@ console at all.
 
 [Bringing up the link](Link.md) has the verdicts and what each one means.
 
-## Coprocessor update
+## IOmcu update
 
-A panel built with the coprocessor's image carries it and offers it when the
-coprocessor runs another build. The check runs at every link-up and compares
+A panel built with the IOmcu's image carries it and offers it when the
+IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `Coprocessor runs a different build. An update is available in the menu.`, and the question opens on the menu while the bench is SAFE, the
+build raises the alert `IOmcu runs a different build. An update is available in the menu.`, and the question opens on the menu while the bench is SAFE, the
 supply's output is off, the panel's Wi-Fi radio is wholly off and no install
 of a panel image is under way. A START given while either holds is spent,
 and the question opens again once both have ended.
 
-![The coprocessor update question](img/coproc-update.png)
+![The IOmcu update question](img/coproc-update.png)
 
-The question names the version the coprocessor runs and the version this
+The question names the version the IOmcu runs and the version this
 panel carries. CANCEL is a tap: the question closes, and the panel does not
-ask again for that coprocessor version until it restarts. Leaving the
+ask again for that IOmcu version until it restarts. Leaving the
 question another way declines the same way. SETUP > UPDATES still starts
-the update after a decline ([The coprocessor](#the-coprocessor)). START
+the update after a decline ([The IOmcu](#the-iomcu)). START
 takes the 2 s hold, the ARM gesture and the same fade.
 
 An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
@@ -2537,7 +2537,7 @@ An older image is offered too. The question then says `The firmware on this pane
 ![An older image](img/coproc-update-older.png)
 
 Once START's hold completes, the update has the panel to itself: the link to
-the coprocessor goes down, the outputs are off, the coprocessor refuses ARM
+the IOmcu goes down, the outputs are off, the IOmcu refuses ARM
 until the update ends, and the progress fills the screen. It has no band and
 no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
 behind it.
@@ -2548,8 +2548,8 @@ behind it.
 | --- | --- |
 | `Preparing firmware.` | the panel hashes the image, 8 KiB a step |
 | `Sending firmware.` | the blocks go out, 64 bytes each; the bar and `Block 1497 of 2994, 50 %` count them |
-| `Coprocessor is checking the firmware.` | the coprocessor hashes the slot it wrote |
-| `Coprocessor is starting the new firmware.` | it restarts into the new slot, on trial |
+| `IOmcu is checking the firmware.` | the IOmcu hashes the slot it wrote |
+| `IOmcu is starting the new firmware.` | it restarts into the new slot, on trial |
 | `Keeping the new firmware.` | the panel reads the new image's identity and writes BUY |
 
 The screen returns to the menu when the update ends, or to UPDATES when
@@ -2557,19 +2557,19 @@ UPDATES' hold started it. The alert band then says how it ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `Coprocessor updated to 0.18.0.` | the new image runs and is kept |
-| `Coprocessor update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
-| `Coprocessor update stopped: refused, error 6. Previous firmware is running.` | the coprocessor refused a step; the error numbers are in [Link](Link.md#the-pages) |
-| `Coprocessor update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
-| `Coprocessor update stopped: flash memory stayed busy. Previous firmware is running.` | the store's gate stayed shut for 10 s |
-| `Coprocessor update stopped: coprocessor restarted 3 times. Previous firmware is running.` | three starts from block 0 |
-| `Coprocessor update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
-| `Coprocessor cannot update over CAN. Install firmware once via USB.` | a coprocessor without the update pages or without the partition table ([First run](FirstRun.md#the-coprocessors-partition-table)) |
-| `New coprocessor firmware kept.` | an image found on trial at link-up was bought |
+| `IOmcu updated to 0.18.0.` | the new image runs and is kept |
+| `IOmcu update stopped: no response. Previous firmware is running.` | nothing answered for 4 s |
+| `IOmcu update stopped: refused, error 6. Previous firmware is running.` | the IOmcu refused a step; the error numbers are in [Link](Link.md#the-pages) |
+| `IOmcu update stopped: firmware check failed. Previous firmware is running.` | the SHA-256 of the slot is not the image's |
+| `IOmcu update stopped: flash memory stayed busy. Previous firmware is running.` | the store's gate stayed shut for 10 s |
+| `IOmcu update stopped: IOmcu restarted 3 times. Previous firmware is running.` | three starts from block 0 |
+| `IOmcu update stopped: new firmware did not start. Previous firmware is running.` | no identity from the new image within 12 s; the boot ROM goes back to the old one |
+| `IOmcu cannot update over CAN. Install firmware once via USB.` | an IOmcu without the update pages or without the partition table ([First run](FirstRun.md#the-iomcus-partition-table)) |
+| `New IOmcu firmware kept.` | an image found on trial at link-up was bought |
 
-Power off during the update: the coprocessor starts its old image, and the
+Power off during the update: the IOmcu starts its old image, and the
 next link-up offers the update again. The update writes the slot the
-coprocessor does not run from. [Link](Link.md#firmware-update-over-the-link)
+IOmcu does not run from. [Link](Link.md#firmware-update-over-the-link)
 has the transfer, the flash layout and the limits. The transfer time is not
 measured.
 
@@ -2590,7 +2590,7 @@ asks the same question once per start of the panel.
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `REMINDER AT START: ON` / `OFF` | Switches the start-up check and its reminder. Kept with SAVE on SETUP, as every setting. On by default. |
 | `HOLD 2 s: DOWNLOAD & INSTALL` | Shown once a check found a newer release. Downloads, checks and installs it. |
-| `HOLD 2 s: UPDATE IOMCU` | Starts the coprocessor's update from the image this panel carries ([The coprocessor](#the-coprocessor)). |
+| `HOLD 2 s: UPDATE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 
 The card names the running version and the kept home network. Both the
 check and the download need:
@@ -2601,7 +2601,7 @@ check and the download need:
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;
-- no update of the coprocessor running and no panel install under way.
+- no update of the IOmcu running and no panel install under way.
 
 The download needs, as an install does, no board drawing being fetched or
 kept.
@@ -2635,7 +2635,7 @@ check:
 | `Unexpected answer from GitHub.` | The `Location` is missing or out of form; a second line says which (table below). |
 | `Wi-Fi switched off: bench ARMED.`, `...: supply output on.`, `...: a recording session started.`, `...: STOP.` | The check ended for that. |
 | `Stopped: the WI-FI screen is using Wi-Fi.` | WI-FI opened. |
-| `Stopped: the coprocessor update has started.` | The coprocessor's update began. |
+| `Stopped: the IOmcu update has started.` | The IOmcu's update began. |
 | `Cancelled.` | CANCEL. |
 | `Wi-Fi could not start.` | The radio did not come up. |
 
@@ -2655,31 +2655,31 @@ equal and PATCH is higher.
 | `The address is in an unexpected location.` | Not `https://github.com/subtilitas/rcbench/releases/tag/...`. |
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
-### The coprocessor
+### The IOmcu
 
-Under the buttons, UPDATES shows the coprocessor's update: the version the
-coprocessor runs (`Running: 0.17.0`), the version of the image this panel
+Under the buttons, UPDATES shows the IOmcu's update: the version the
+IOmcu runs (`Running: 0.17.0`), the version of the image this panel
 carries (`Carried: 0.18.0`), one line of state, and
 `HOLD 2 s: UPDATE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
-([Coprocessor update](#coprocessor-update)). It also starts it after that
+([IOmcu update](#iomcu-update)). It also starts it after that
 question was declined. When the update ends, or the START was spent
 without one, the screen returns to UPDATES.
 
-![The coprocessor section with another build](img/updates-coproc.png)
+![The IOmcu section with another build](img/updates-coproc.png)
 
 The hold is live only in the last row of the table below. Otherwise it is
 grey, and the line names the first reason that holds, in this order:
 
 | Line | Condition |
 | --- | --- |
-| `This panel carries no IOmcu firmware.` | The panel was built without the coprocessor's image. `Carried: not known`. |
-| `Waiting for the coprocessor update to finish.` | An update runs, an image found on trial is being kept, or a START is not taken yet. |
-| `No IOmcu is responding.` | No link, and no coprocessor of another protocol major answers. `Running: not known`. |
-| `Waiting for the IOmcu's build check.` | A coprocessor answers; its build was not compared yet. |
+| `This panel carries no IOmcu firmware.` | The panel was built without the IOmcu's image. `Carried: not known`. |
+| `Waiting for the IOmcu update to finish.` | An update runs, an image found on trial is being kept, or a START is not taken yet. |
+| `No IOmcu is responding.` | No link, and no IOmcu of another protocol major answers. `Running: not known`. |
+| `Waiting for the IOmcu's build check.` | An IOmcu answers; its build was not compared yet. |
 | `Checking the IOmcu's build.` | The SHA-256 comparison runs. |
 | `Build check failed. It runs again at the next link-up.` | The comparison ended without an answer. |
-| `No update over CAN. Install firmware once via USB.` | The coprocessor has no update pages or no partition table. |
+| `No update over CAN. Install firmware once via USB.` | The IOmcu has no update pages or no partition table. |
 | `IOmcu runs the build this panel carries.` | The digests are equal: there is nothing to send. |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on or switching on. |
 | `Waiting for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on, or it is still switching off. |
@@ -2687,11 +2687,11 @@ grey, and the line names the first reason that holds, in this order:
 | `Outputs stay off. ARMED is blocked until the update ends.` | The hold starts the update. For an older image the line reads `The firmware on this panel is older.` in the warning colour; for the same version number `Same version number, but a different build.` |
 
 The conditions are the question's: another build, the bench SAFE, the
-supply output off, the radio wholly off and no panel install. A coprocessor
+supply output off, the radio wholly off and no panel install. An IOmcu
 that runs the carried build gets no hold; the link-up's question does not
-open for it either. A coprocessor of another protocol major shows NO LINK in
+open for it either. An IOmcu of another protocol major shows NO LINK in
 the band and still takes the update, as the question offers it to that
-coprocessor too.
+IOmcu too.
 
 ### The reminder
 
@@ -2700,13 +2700,13 @@ coprocessor too.
 With REMINDER AT START on and a home network kept, the panel runs the check
 once after each start. It waits for a moment the bench allows: the splash
 gone, the bench SAFE, the supply output off, no log run open, WI-FI closed
-and no coprocessor update offered or running. A start-up check
+and no IOmcu update offered or running. A start-up check
 that has found no such moment 10 min after the start does not run at that
 start.
 
 When the check finds a newer release, the reminder opens on the menu
 (OVERVIEW). It does not open while the bench is ARMED or an arm waits,
-while the supply output is on, or while the coprocessor's update question or
+while the supply output is on, or while the IOmcu's update question or
 its progress is up: those come first, and the reminder opens once they have
 gone and the menu shows.
 
@@ -2780,7 +2780,7 @@ Current limitations:
 
 Behind the OUTPUTS tile on SETUP; its home tag leads back there. The
 protocols bound to the
-coprocessor's pins, and which pins each one drives. It opens on the
+IOmcu's pins, and which pins each one drives. It opens on the
 [overview](#the-overview-off): OFF selected, every bound pin named by its
 protocol, and no pin editable until a protocol is picked.
 
@@ -2812,10 +2812,10 @@ Full pulse: 1000 us and 2000 us by default, set under SETUP, ESC / BENCH, in
 steps of 10 us (Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us). The
 two settings reach the channels bound as a motor and no others: a SERVO PWM
 channel keeps 1000 to 2000 us, or the range the SERVO screen sends for the
-servo chosen there. An edit reaches the coprocessor 300 ms after the last
+servo chosen there. An edit reaches the IOmcu 300 ms after the last
 change while the bench is SAFE; one made while it is ARMED waits for the
-switch to SAFE. A coprocessor that links up is brought to the two settings before
-the bench drives it: with the bench already ARMED, the coprocessor is held
+switch to SAFE. An IOmcu that links up is brought to the two settings before
+the bench drives it: with the bench already ARMED, the IOmcu is held
 SAFE until it has them. An Idle pulse that is not below the Full pulse is not sent, and the
 band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
 
@@ -2844,7 +2844,7 @@ says so under its name. Hiding them would leave an operator hunting for GP10
 and finding a gap. [DShot and the output drivers](DShot.md#which-pin) has the
 whole map.
 
-The pin of the coprocessor's programming port, GP13 by default, is shown as
+The pin of the IOmcu's programming port, GP13 by default, is shown as
 `PROG PORT` and cannot be ticked either:
 
 ![GP13 held by the programming port](img/outputs-prog.png)
@@ -2853,7 +2853,7 @@ A stored binding that holds that pin keeps it: the port then has no pin, and
 the programmer's CONNECT ends with the line for a port without a pin
 ([the port](ServoProgrammer.md#the-port)).
 
-SERVO PWM and MOTOR PWM run on the PWM slices, and the coprocessor refuses
+SERVO PWM and MOTOR PWM run on the PWM slices, and the IOmcu refuses
 two bindings there ([Servo PWM](DShot.md#servo-pwm)). Under those two
 entries the screen holds such a pin, as it holds a pin of another protocol:
 grey, no tick, and the pin it clashes with named under its name.
@@ -2870,9 +2870,9 @@ first. DShot and PPM run on PIO (programmable I/O), not on a slice, and are
 offered both pins.
 
 Limitation: the slice rule needs the programming port's pin, which the panel
-reads from the coprocessor. Until that reading arrives, up to 500 ms after
+reads from the IOmcu. Until that reading arrives, up to 500 ms after
 the link comes up or the port's pin changes, GP28 is offered, and a tap on
-it ends in `LAST WRITE: REFUSED`. Other coprocessor checks, such as the
+it ends in `LAST WRITE: REFUSED`. Other IOmcu checks, such as the
 SERVO page's frame rate on a pin shared with MOTOR PWM, also refuse with no
 reason on this screen.
 
@@ -2883,23 +2883,23 @@ numbers arrive at the same pin.
 Ticking or unticking a pin writes the binding at once. There is no APPLY key:
 a screen holding a choice that has not been sent is a screen that disagrees
 with the bench, with nothing to say which of the two is driving. The panel
-then reads both pages back and shows what the coprocessor holds. What became
+then reads both pages back and shows what the IOmcu holds. What became
 of the write is under the protocol, as LAST WRITE:
 
 | LAST WRITE | Meaning |
 | --- | --- |
 | `NOT WRITTEN` | nothing has been written since the panel started, or a write was not sent because the binding on the screen was not one a read confirmed |
-| `WRITTEN` | the coprocessor acknowledged every exchange of the write |
+| `WRITTEN` | the IOmcu acknowledged every exchange of the write |
 | `NO LINK` | an exchange of the write got no answer within 1000 ms, or the link was down |
-| `REFUSED` | the coprocessor answered and refused: a pin it cannot bind, a change while the bench is ARMED, or a frame rate it could not put back |
+| `REFUSED` | the IOmcu answered and refused: a pin it cannot bind, a change while the bench is ARMED, or a frame rate it could not put back |
 
-To a coprocessor speaking protocol 4.10 the binding is written whole: the
+To an IOmcu speaking protocol 4.10 the binding is written whole: the
 two pages are prepared beside the ones in force and taken together by one
 commit ([Link](Link.md#a-binding-taken-whole)). `NO LINK` and `REFUSED` then
 leave the binding in force exactly as it was, except when the one
 acknowledgement of the commit is lost: the binding is then in force, the
 screen says `NO LINK`, and the read at the next link-up shows it. An older
-coprocessor takes the pages one entry at a time, and a write that stops part
+IOmcu takes the pages one entry at a time, and a write that stops part
 way leaves the entries before it in force.
 
 Picking a protocol in the list writes nothing. It says which set of pins the
@@ -2922,7 +2922,7 @@ red and struck through because it is the wiring rather than a choice.
 
 Four servo leads and an ESC, with DSHOT300 the protocol being edited. GP5 is
 ticked; GP0, GP1, GP2 and GP4 say SERVO PWM and cannot be ticked here; GP3 and
-GP8 to GP12 are red because the coprocessor reserves them:
+GP8 to GP12 are red because the IOmcu reserves them:
 
 ![Outputs with pins held by another protocol](img/outputs-held.png)
 
@@ -2936,7 +2936,7 @@ Every visit to the screen opens with OFF selected. OFF is the first entry of
 the list and binds nothing: it takes 0 pins, so no pin count is shown under
 it. With OFF selected, every bound pin shows the name of the
 protocol that holds it in full-brightness text, so the whole binding and
-every pin the coprocessor drives are on one screen. No pin can be ticked or
+every pin the IOmcu drives are on one screen. No pin can be ticked or
 unticked: a tap on a pin does nothing and writes nothing, and the line under
 the list says `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes
 nothing. Picking a protocol in the list leaves the overview, and picking OFF
@@ -2944,7 +2944,7 @@ goes back to it; neither writes or unbinds anything.
 
 OFF stays selected until another entry is picked: across read-backs,
 repaints, a link that goes down and comes back, and leaving the screen. A
-change of board selects OFF, whatever was selected: a coprocessor that
+change of board selects OFF, whatever was selected: an IOmcu that
 answers for the first time during the visit, or one swapped for another
 board. A protocol picked before is not carried to the board that answers,
 so the next tap writes nothing. A press on a pin draws no pressed face.
@@ -2976,7 +2976,7 @@ results:
 | both pages read and they describe a binding, one with no pin bound included | shows it and takes edits |
 | a page did not read: no answer within 1000 ms, a refusal, or the link is down | keeps the last binding read, dimmed, with `ASSIGNMENT NOT READ. EDITING LOCKED.` |
 | both pages read and no binding describes them: one pin in two slots, a rate or driver no protocol entry has, a pin off the board or reserved, channels out of slot order | keeps the last binding read, dimmed, with `NO VALID ASSIGNMENT IN THE PAGES` and the key `HOLD: CLEAR ALL PIN ASSIGNMENTS` |
-| the coprocessor is a board this build has no pin map for | shows no pins |
+| the IOmcu is a board this build has no pin map for | shows no pins |
 
 In the second and third state a tap on a pin does nothing here and on PICK
 A PIN, and no write is sent. A tick made just before the read failed is
@@ -2996,8 +2996,8 @@ before 2 s, and leaving the screen abandon the hold.
 
 ![Pages no binding describes](img/outputs-odd.png)
 
-A coprocessor older than 4.10 can be left in this state by a write that
-lost a frame part way. A coprocessor speaking 4.10 written by this panel is
+An IOmcu older than 4.10 can be left in this state by a write that
+lost a frame part way. An IOmcu speaking 4.10 written by this panel is
 not; it shows this state only for pages another host or an older panel left
 in its flash.
 
@@ -3023,7 +3023,7 @@ A key's colour says what a tap on it does:
 | ivory (row nearer the board) or ebony (row beyond it) | free | binds it to the selected protocol |
 | accent | bound in the selected protocol | gives it back |
 | grey | another protocol holds it, the programming port has it, the selected protocol can take no more pins, or the binding is not confirmed | changes nothing |
-| none, red cross on the pad | reserved by the coprocessor: GP3 heartbeat, GP8 to GP12 CAN | — |
+| none, red cross on the pad | reserved by the IOmcu: GP3 heartbeat, GP8 to GP12 CAN | — |
 
 Neighbouring keys differ in height and in colour, like the keys of a
 keyboard. A reserved pin has no key because a key under a pin that cannot be
@@ -3065,13 +3065,13 @@ run of channels, because that is what the OUTPUTS page carries. With OFF
 selected the PINS table is not drawn, because OFF holds no pin; the slot
 count and IN USE stay, and IN USE then lists every bound pin.
 
-The pin of the coprocessor's programming port, GP13 (pad 17) by default, is
+The pin of the IOmcu's programming port, GP13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN
 USE lists it first under `PROG PORT`, without a channel. A protocol whose
-stored binding holds that pin keeps it, the coprocessor gives the port no pin
+stored binding holds that pin keeps it, the IOmcu gives the port no pin
 then, and the key is that protocol's like any other.
 
-Under SERVO PWM and MOTOR PWM a key the coprocessor refuses on a PWM slice
+Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
 is grey too, as on the Outputs screen: GP28 while the port holds GP13, and
 the partner of a pin bound as PWM, GP16 beside GP0. A tap on it changes
 nothing and puts the Outputs screen's line under the count:
@@ -3101,7 +3101,7 @@ guessed shape points at the wrong pad as confidently as the right one, and
 this screen's whole job is finding a pad on the board in front of you. Its
 pins are still on the Outputs screen.
 
-The board's drawing comes from the board as well. The coprocessor carries a
+The board's drawing comes from the board as well. The IOmcu carries a
 drawing of itself, the one the configurator draws: the outline, the parts as
 flat shapes and every pad, to scale in 0.01 mm ([The board
 drawing](Link.md#the-board-drawing)). The panel draws it on the shape's pad
@@ -3120,7 +3120,7 @@ The drawing of the RP2350-CAN is 1,560 bytes, fetched over the link in 26
 blocks of 62 bytes in a 15 ms slice of each 50 ms poll. The time this takes
 on a bench is not measured. The panel keeps it in its flash with the
 drawing's length, CRC (cyclic redundancy check) and hash, and shows the kept
-copy only while the coprocessor still reports the same three; a coprocessor
+copy only while the IOmcu still reports the same three; an IOmcu
 flashed with another drawing is fetched again. Writing it to flash waits for
 a bench that is SAFE with the supply off and pauses between two 4 kB sectors
 when the bench is ARMED or the supply comes on
@@ -3150,24 +3150,24 @@ catalogue because they do not fit in it — a page is 32 registers and a
 serve it has its grounds and rails unmarked, and a lead is placed by reading
 the board rather than the screen.
 
-### The coprocessor keeps it, not the panel
+### The IOmcu keeps it, not the panel
 
 A binding describes wiring, and the panel is not the board the wires are in.
-The coprocessor writes the OUTPUTS and CHAN_CFG pages to its own flash and
+The IOmcu writes the OUTPUTS and CHAN_CFG pages to its own flash and
 restores them at boot; the panel never stores a binding and never sends one
 unasked. When the link comes up the panel reads the page and shows what is
 configured over there. After a panel restart, what this screen shows and what
 is driving pins are the same thing.
 
 Restoring configures the outputs. It does not drive them: every driver is
-gated on the pin's role being ARMED, which the coprocessor grants only while
+gated on the pin's role being ARMED, which the IOmcu grants only while
 the ARM register names that role, the link is out of failsafe and the heartbeat is trusted, so
 a restored binding claims its pins and holds them at idle until somebody switches to ARMED.
 Channel commands are not restored — a configuration survives a power cycle and
 a throttle position does not.
 
 The save waits for the bench to stop driving, and then for a gap in the
-traffic. Writing flash stops the coprocessor with interrupts off, and it
+traffic. Writing flash stops the IOmcu with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178 us, against a CAN
 frame of about 130 us and two frames of buffer in the controller. The figure is one
@@ -3176,13 +3176,13 @@ yet identified. The erase and the page program have not been timed apart from
 each other. The window is to be argued again against the flash part's
 datasheet maximum once the part is known. A request lost
 in that window costs the panel 1000 ms of waiting, which is past the
-coprocessor's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
+IOmcu's 200 ms silence failsafe, so one lost frame ends as `FAULT 01`
 (`LINK_FAULT_LINK_SILENT`) over a cable with nothing wrong with it.
 
 So the sector is not erased per save. Two sectors hold sixteen records each; a
 save writes the next record, and a sector is erased only once every record in
 it has been superseded. That erase is taken before the save that needs it: at
-boot before the coprocessor starts answering, or on a pass after the save that
+boot before the IOmcu starts answering, or on a pass after the save that
 first writes into the other sector, once the bus has been quiet for 5 ms. It
 is the sector left behind that is erased, not the one just filled, so the
 erase and the save that needs it are separated by the fifteen saves in

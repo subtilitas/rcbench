@@ -113,7 +113,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | refused | abgelehnt |
 | screen (eine Seite der Oberfläche) | Seite |
 | screen (das Display) | Anzeige |
-| coprocessor | Koprozessor |
+| IOmcu | IOmcu |
 | emergency stop | Not-Aus |
 | board | Platine |
 | pack, cell, spread (zwischen Zellen) | Akku, Zelle, Unterschied |
@@ -162,7 +162,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | verify (ein Servo gegen das Gelesene) | prüfen |
 | locked (ein Wert, der gezeigt und nicht geschrieben wird) | gesperrt |
 | speed, speed limit (eines programmierten Servos) | Tempo, Tempogrenze |
-| link (zum Koprozessor), NO LINK | Verbindung, KEINE VERBINDUNG |
+| link (zum IOmcu), NO LINK | Verbindung, KEINE VERBINDUNG |
 | binding (die Rolle eines Pins), bind | Zuordnung, zuordnen |
 | frame rate (eines Servos) | Pulsrate |
 | throttle | Gas |

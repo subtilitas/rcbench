@@ -1,6 +1,6 @@
 /*
  * A trace of INA3221 CH1's 1 ms samples as text lines, for a debug build
- * of the coprocessor (its SENSE_TRACE build option).  No released image
+ * of the IOmcu (its SENSE_TRACE build option).  No released image
  * links this file.
  *
  * Two sides, one on each core, with a ring of records between them:

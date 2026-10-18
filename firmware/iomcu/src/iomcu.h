@@ -1,5 +1,5 @@
 /*
- * The coprocessor application's own state, shared by the files it is cut
+ * The IOmcu application's own state, shared by the files it is cut
  * into.  Private to firmware/iomcu/src: nothing under shared/ or protocols/
  * includes it.
  *

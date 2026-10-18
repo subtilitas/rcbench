@@ -1,13 +1,13 @@
 /*
  * The servo rail's meter from the part to the panel, for a host suite: the
- * modelled INA3221 of fake_ina.h, read by the coprocessor's 1 ms schedule
+ * modelled INA3221 of fake_ina.h, read by the IOmcu's 1 ms schedule
  * (sense_svc), published into its pages (sense_page) every millisecond, and
  * read by the panel's sense_link over a link this header models.
  *
- * One clock runs both ends.  The coprocessor steps once per millisecond.
+ * One clock runs both ends.  The IOmcu steps once per millisecond.
  * The panel's tick is the same clock plus an offset, so a suite puts the
  * 2^32 ms wrap wherever it wants it.  An exchange takes ch.exch_ms, during
- * which the coprocessor runs on: a window closes between two exchanges of
+ * which the IOmcu runs on: a window closes between two exchanges of
  * one poll when the grid falls that way.
  *
  * CH1's current is a function of the window it is read in, 100 mA plus
@@ -40,11 +40,11 @@ typedef struct {
     sense_svc_t  svc;
     sense_snap_t snap;
     outputs_t    o;
-    sense_page_t pg;         /* the coprocessor's pages                 */
+    sense_page_t pg;         /* the IOmcu's pages                 */
     sense_link_t sl;         /* the panel's end                         */
-    uint64_t us;             /* the coprocessor's clock                 */
+    uint64_t us;             /* the IOmcu's clock                 */
     uint32_t tick0;          /* the panel's tick at us == 0             */
-    uint16_t minor;          /* the coprocessor's protocol minor        */
+    uint16_t minor;          /* the IOmcu's protocol minor        */
     unsigned exch_ms;        /* one exchange                            */
     bool     idle;           /* the bank, for the set-up's writes       */
     bool     no_win_page;    /* SERVO_WIN refused whatever the minor    */
@@ -102,7 +102,7 @@ static inline int chain_mean_ma(uint16_t number)
     return 100 + 2 * (int)(number % 500u);
 }
 
-/* The coprocessor, @p ms milliseconds: the order from the page, one tick
+/* The IOmcu, @p ms milliseconds: the order from the page, one tick
  * of core 1, and what it read into the pages. */
 static inline void chain_far(unsigned ms)
 {
@@ -129,14 +129,14 @@ static inline void chain_far(unsigned ms)
     }
 }
 
-/* The coprocessor's tick held for @p ms: its clock runs and nothing is
+/* The IOmcu's tick held for @p ms: its clock runs and nothing is
  * read. */
 static inline void chain_far_late(unsigned ms)
 {
     chain.us += (uint64_t)ms * 1000u;
 }
 
-/* The coprocessor as it starts: no window, the page's set-up kept. */
+/* The IOmcu as it starts: no window, the page's set-up kept. */
 static inline void chain_far_boot(void)
 {
     const sense_svc_io_t io = {
@@ -170,7 +170,7 @@ static inline sense_setup_t chain_setup(uint8_t channels)
 }
 
 /*
- * A bench with the INA3221 on the bus, a coprocessor of protocol minor
+ * A bench with the INA3221 on the bus, an IOmcu of protocol minor
  * @p minor that holds the set-up already, and a panel that has not linked.
  * The panel's tick reads @p tick0 now.
  */
@@ -204,13 +204,13 @@ static inline void chain_start(uint16_t minor, uint32_t tick0,
     sense_link_want(&chain.sl, &w, chain_now());
 }
 
-/* The link comes up: the panel has read the coprocessor's minor. */
+/* The link comes up: the panel has read the IOmcu's minor. */
 static inline void chain_link_up(void)
 {
     sense_link_came_up(&chain.sl, chain.minor, chain_now());
 }
 
-/* One exchange as the coprocessor answers it, after the time it takes. */
+/* One exchange as the IOmcu answers it, after the time it takes. */
 static inline int chain_exchange(const sense_link_op_t *op, uint16_t *regs)
 {
     chain_far(chain.exch_ms);

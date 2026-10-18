@@ -47,7 +47,7 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
  * The operator's own path: the key under Motor poles on SETUP.
  *
  * The model, the screen and the observer are one chain, and the panel hangs
- * the write to the coprocessor off the far end of it.  A break anywhere in
+ * the write to the IOmcu off the far end of it.  A break anywhere in
  * that chain leaves the panel with nothing to hang the write on, which is
  * the defect this guards, seen from where the finger is.
  */

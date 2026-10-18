@@ -3,7 +3,7 @@
  *
  * Wrong pins, a mismatched bit rate, a missing terminator and a firmware skew
  * all present as a link that does not work.  The counters read from both
- * ends and compared tell them apart: a coprocessor that decoded 100 requests
+ * ends and compared tell them apart: an IOmcu that decoded 100 requests
  * while the panel heard no answers is a return-path fault, which the panel's
  * own numbers cannot show.
  *
@@ -35,7 +35,7 @@ typedef struct {
     uint32_t rx_crc_errors; /**< frames this end received corrupt; 0 on CAN */
     uint32_t rx_resyncs;
 
-    /* The coprocessor's view of itself, read from the STATUS page.  Absent
+    /* The IOmcu's view of itself, read from the STATUS page.  Absent
      * until a status read succeeds, which is itself informative. */
     bool     have_status;
     uint32_t dev_frames;    /**< requests it decoded */
@@ -95,7 +95,7 @@ const char *link_diag_hint(link_diag_t d);
 /* ------------------------------------------------------------ status page */
 
 /**
- * How many STATUS registers to read from a coprocessor of protocol minor
+ * How many STATUS registers to read from an IOmcu of protocol minor
  * @p minor: LINK_ST_COUNT from LINK_MINOR_REFUSED, LINK_ST_COUNT_V420
  * before it.  An older page refuses the longer read with
  * LINK_NACK_BAD_RANGE, which would lose the counters it does have.
@@ -109,8 +109,8 @@ uint8_t link_bringup_status_count(uint16_t minor);
  * False, and nothing taken, for anything but a DATA reply from offset 0
  * with at least LINK_ST_COUNT_V420 registers.  A reply that ends before
  * LINK_ST_REFUSED_HI clears have_refused and dev_refused: an older
- * coprocessor counts no refusals, and a count is not carried over from a
- * coprocessor that answered before it.
+ * IOmcu counts no refusals, and a count is not carried over from an
+ * IOmcu that answered before it.
  */
 bool link_bringup_take_status(link_bringup_t *b, const link_msg_t *st,
                               uint16_t *faults);

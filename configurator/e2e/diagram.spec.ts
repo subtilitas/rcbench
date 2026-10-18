@@ -523,7 +523,7 @@ test('the schematic box keeps its scroll position while the picture is shown', a
   const left = (): Promise<number> => page.evaluate(() => (document.getElementById('pan') as HTMLElement).scrollLeft);
   await page.locator('#v-sch').click();
   await page.locator('svg.drawing').waitFor();
-  // The first showing opens on the wires between the panel and the coprocessor.
+  // The first showing opens on the wires between the panel and the IOmcu.
   expect(await left()).toBeGreaterThan(100);
   await page.evaluate(() => { (document.getElementById('pan') as HTMLElement).scrollLeft = 40; });
   await page.locator('#v-pic').click();

@@ -3,7 +3,7 @@
  * servo_link.c), against a far end that answers each frame, refuses it or
  * stays silent, over a link_port_t.
  *
- * The far end is a script, not a coprocessor: every frame is logged with its
+ * The far end is a script, not an IOmcu: every frame is logged with its
  * page, offset and registers, and acknowledged unless a case says otherwise.
  * The clock is the port's and moves only where a case moves it, or by
  * bus.exchange_ms an exchange.  The panel's callbacks are fakes that record

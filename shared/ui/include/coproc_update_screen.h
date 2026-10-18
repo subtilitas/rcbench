@@ -1,18 +1,18 @@
 /*
- * The coprocessor's firmware update, as the panel offers and shows it.
+ * The IOmcu's firmware update, as the panel offers and shows it.
  *
- * Two views.  The question: which version the coprocessor runs, which one
+ * Two views.  The question: which version the IOmcu runs, which one
  * this panel carries, whether that one is older, CANCEL and START.  START
  * takes the 2 s hold (UI_HOLD_S), the ARM gesture.  The progress: a full
  * screen without the band, like the bus-fault screen, with the step under
  * way and the blocks sent.  The bench cannot be armed while it shows: the
- * coprocessor refuses ARM for the whole update session.
+ * IOmcu refuses ARM for the whole update session.
  *
  * The screen decides nothing about the update.  The application offers it,
  * takes START or CANCEL from the latches, reports the step, and moves the
  * router away when the update has ended.
  *
- * SETUP > UPDATES starts the same update from its coprocessor section,
+ * SETUP > UPDATES starts the same update from its IOmcu section,
  * offered or declined: coproc_update_section() says whether it may and why
  * not, and coproc_update_drive() hands UPDATES that answer every frame,
  * takes its hold, opens the progress and returns to UPDATES at the end.
@@ -41,7 +41,7 @@ typedef enum {
 typedef enum {
     CU_STEP_PREPARE = 0,  /**< hashing the image before the first block */
     CU_STEP_SEND,         /**< blocks going out                          */
-    CU_STEP_VERIFY,       /**< the coprocessor hashes what it wrote      */
+    CU_STEP_VERIFY,       /**< the IOmcu hashes what it wrote      */
     CU_STEP_RESTART,      /**< it restarts into the new slot             */
     CU_STEP_BUY,          /**< and this panel keeps the new image        */
 } cu_step_t;
@@ -58,7 +58,7 @@ typedef struct {
 bool coproc_update_older(cu_version_t running, cu_version_t carried);
 
 /**
- * Offer the update: the question view, with the version the coprocessor
+ * Offer the update: the question view, with the version the IOmcu
  * runs and the one this panel carries.  Clears both latches.
  */
 void coproc_update_screen_offer(cu_version_t running, cu_version_t carried);
@@ -77,9 +77,9 @@ bool coproc_update_screen_take_cancel(void);
 
 void coproc_update_screen_invalidate(void);
 
-/** The control task's last look at the coprocessor's build. */
+/** The control task's last look at the IOmcu's build. */
 typedef enum {
-    CU_CHECK_NONE = 0,    /**< no coprocessor checked since the start      */
+    CU_CHECK_NONE = 0,    /**< no IOmcu checked since the start      */
     CU_CHECK_RUNNING,     /**< the build check runs                        */
     CU_CHECK_SAME,        /**< it runs the build this panel carries        */
     CU_CHECK_DIFFERENT,   /**< another build: offered, or declined         */
@@ -89,14 +89,14 @@ typedef enum {
 } cu_check_t;
 
 /**
- * UPDATES' coprocessor section: whether its hold may start the update, and
+ * UPDATES' IOmcu section: whether its hold may start the update, and
  * if not why.  coproc_update_section() picks the first that holds, in this
  * order.  Only CU_SEC_READY takes the hold.
  */
 typedef enum {
-    CU_SEC_NO_IMAGE = 0,  /**< this build carries no coprocessor image     */
+    CU_SEC_NO_IMAGE = 0,  /**< this build carries no IOmcu image     */
     CU_SEC_BUSY,          /**< an update runs, or a START is not yet taken */
-    CU_SEC_NO_LINK,       /**< no coprocessor answers                      */
+    CU_SEC_NO_LINK,       /**< no IOmcu answers                      */
     CU_SEC_UNKNOWN,       /**< it answers; its build was not looked at yet */
     CU_SEC_CHECKING,      /**< the build check runs                        */
     CU_SEC_FAILED,        /**< the build check ended without an answer     */
@@ -117,12 +117,12 @@ typedef struct {
     uint16_t     block;
     uint16_t     blocks;
     uint32_t     starts_taken;  /**< STARTs the update side has taken      */
-    cu_version_t running;       /**< the version the coprocessor runs       */
+    cu_version_t running;       /**< the version the IOmcu runs       */
     cu_version_t carried;       /**< the version this panel carries         */
     /* What UPDATES' section and the question's gate read.  All false is a
-     * panel that may start an update and knows nothing of the coprocessor. */
-    bool         have_image;    /**< this build carries a coprocessor image */
-    bool         reachable;     /**< a coprocessor answers: the link is up,
+     * panel that may start an update and knows nothing of the IOmcu. */
+    bool         have_image;    /**< this build carries an IOmcu image */
+    bool         reachable;     /**< an IOmcu answers: the link is up,
                                      or one of another protocol major
                                      answers its identity                   */
     cu_check_t   check;         /**< the control task's last build check    */
@@ -150,7 +150,7 @@ typedef struct {
  * waiting, or the supply's output on or coming.  A START handed over and
  * not yet taken (@p d's starts_sent against @p f's starts_taken) is BUSY.
  *
- * The hold asks for what the question asks for: a coprocessor that runs
+ * The hold asks for what the question asks for: an IOmcu that runs
  * another build (CU_CHECK_DIFFERENT; the same version number with another
  * build is one), offered or declined, a bench that is not @p unsafe, the
  * radio wholly off and no panel install.  An older image is READY, as the

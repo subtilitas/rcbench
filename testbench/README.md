@@ -164,7 +164,7 @@ a separate capture reads back `enabled` off and `output_frequency` 1000.
 Stimulus and capture have to be one command.
 
 The analyser has measured a signal it generated itself. It has not measured
-anything the coprocessor produced, which is what this bench exists for.
+anything the IOmcu produced, which is what this bench exists for.
 
 Clearing that gate means the driver exists. It says nothing about whether the
 analyser captures: the FX2 microcontroller firmware and the FPGA bitstreams
@@ -331,7 +331,7 @@ Hashing what was built rather than what runs would record one object and
 install another if anything strips or re-links between the two, and the bench
 would report a shadow on a correct install.
 
-**RP2350 board** — the same part as the bench coprocessor, in one of two roles
+**RP2350 board** — the same part as the bench IOmcu, in one of two roles
 per run:
 
 - **Stimulus.** Its programmable input/output (PIO) blocks generate protocol
@@ -390,19 +390,19 @@ Proposed channel map, to be checked against the wiring as built:
 
 | Channel | Signal | Source | Note |
 |---|---|---|---|
-| 0 | GP0 output | coprocessor | whatever OUTPUTS binds first |
-| 1 | GP1 output | coprocessor | |
-| 2 | GP2 output | coprocessor | the servo screen's own pin |
-| 3 | heartbeat | panel J8 / GPIO6 to coprocessor GP3 | an edge every 20 ms (40 ms cycle), the safety line |
-| 4 | CAN SCK | coprocessor GP10, pad 14 | the XL2515's SPI clock |
-| 5 | CAN MOSI | coprocessor GP11, pad 15 | |
-| 6 | CAN MISO | coprocessor GP12, pad 16 | with SCK and MOSI, every register the driver writes |
-| 7 | CAN CS | coprocessor GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
+| 0 | GP0 output | IOmcu | whatever OUTPUTS binds first |
+| 1 | GP1 output | IOmcu | |
+| 2 | GP2 output | IOmcu | the servo screen's own pin |
+| 3 | heartbeat | panel J8 / GPIO6 to IOmcu GP3 | an edge every 20 ms (40 ms cycle), the safety line |
+| 4 | CAN SCK | IOmcu GP10, pad 14 | the XL2515's SPI clock |
+| 5 | CAN MOSI | IOmcu GP11, pad 15 | |
+| 6 | CAN MISO | IOmcu GP12, pad 16 | with SCK and MOSI, every register the driver writes |
+| 7 | CAN CS | IOmcu GP9, pad 12 | frames the transaction, and is the cheapest thing to trigger on |
 | 8 | RXCAN | XL2515 to transceiver | the bit stream itself, which is when a frame actually arrived |
 | 9 | touch SCL | panel's I²C bus | the clock, shared by the real controller at 0x5D and the injector at 0x14 |
 | 10 | touch SDA | panel's I²C bus | with SCL, which address answered and what it said |
-| 11 | DShot reply | ESC to coprocessor | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
-| 12 | KST port | coprocessor GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
+| 11 | DShot reply | ESC to IOmcu | the same wire as channel 0 when bidirectional; kept separate so a probe can sit on the ESC end |
+| 12 | KST port | IOmcu GP13, pad 17, to the servo | the KST wire: the half-cell of each edge, and the start and length of the servo's reply after a read |
 | 13 | telemetry RX | ESC to bench | OpenYGE, and DShot extended telemetry |
 | 14 | SBUS | receiver to bench | inverted; the analyser reads it as it is and the decoder inverts |
 | 15 | TXCAN, or spare | XL2515 to transceiver | the other direction when a run wants both ends of an exchange |
@@ -570,7 +570,7 @@ Two host settings bear on it, both read on the bench host:
 - `libgpiod` is 2.2.1, so the option spellings in `WIRING.md` are the version 2
   ones.
 
-The same applies to the bench's own coprocessor if it is to be reflashed
+The same applies to the bench's own IOmcu if it is to be reflashed
 between runs.
 
 ---
@@ -768,7 +768,7 @@ what they cost:
 3. **A capture of another implementation** driving the same ESC, decoded by
    this decoder and compared.
 
-Until one of those has been done, a capture of the coprocessor says the
+Until one of those has been done, a capture of the IOmcu says the
 firmware and the decoder agree, and no more than that.
 
 ---

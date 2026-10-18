@@ -1,6 +1,6 @@
 /*
  * The panel's half of the SERVO screen on the link: a command onto the
- * coprocessor's CHAN_CFG, CHANNELS, SERVO and PROG pages, the position said
+ * IOmcu's CHAN_CFG, CHANNELS, SERVO and PROG pages, the position said
  * again every SERVO_HOLD_MS (100 ms), the release owed while a surface holds
  * a position, the frame rate and the sweep.
  *
@@ -37,7 +37,7 @@ extern "C" {
 
 /** The alerts a sweep's resume can raise, for servo_link_ctx_t.alert. */
 typedef enum {
-    SERVO_LINK_ALERT_RESUME_OLD = 0, /**< the coprocessor is older than 4.6 */
+    SERVO_LINK_ALERT_RESUME_OLD = 0, /**< the IOmcu is older than 4.6 */
     SERVO_LINK_ALERT_RESUME_REFUSED, /**< it refused the resume             */
     SERVO_LINK_ALERT_RESUME_UNTIMED, /**< the hold's phase is not known     */
 } servo_link_alert_t;
@@ -76,7 +76,7 @@ typedef struct {
 void servo_link_init(const servo_link_ctx_t *ctx);
 
 /**
- * A coprocessor of protocol minor @p minor started answering.  Whether it
+ * An IOmcu of protocol minor @p minor started answering.  Whether it
  * has a SERVO rate (4.1), a sweep (4.2) and a resume (4.6); each slot back
  * at its own rate, one exchange; the sweep's state not known until the next
  * command writes a stop.
@@ -132,7 +132,7 @@ void servo_link_service(bool link_up);
 bool servo_link_rate_settled(void);
 
 /**
- * What a rate reset left behind: @p page whether the coprocessor has the
+ * What a rate reset left behind: @p page whether the IOmcu has the
  * SERVO page, @p landed whether the reset was acknowledged.  For the reset
  * a binding's own sequence sends (bind_link_write()) and a TARGET change
  * (prog_link_rate()).
@@ -152,7 +152,7 @@ void servo_link_prog_service(void);
 /** Whether a release is owed: a surface may still hold a position. */
 bool servo_link_release_owed(void);
 
-/** The rate the coprocessor acknowledged, 0 for each slot's own, or
+/** The rate the IOmcu acknowledged, 0 for each slot's own, or
  *  SERVO_HZ_UNKNOWN. */
 uint16_t servo_link_hz_sent(void);
 
@@ -175,7 +175,7 @@ void servo_link_ask_hold(void);
 /** The rate's state and its Hz, as (servo_rate_state_t << 16) | Hz. */
 unsigned servo_link_rate_shown(void);
 
-/** Whether the coprocessor can sweep: protocol 4.2 or later. */
+/** Whether the IOmcu can sweep: protocol 4.2 or later. */
 bool servo_link_sweep_able(void);
 
 /** What servo_link_surfaces_publish() last published. */

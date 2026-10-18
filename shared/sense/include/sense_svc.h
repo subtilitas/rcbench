@@ -1,5 +1,5 @@
 /*
- * The coprocessor's sensor service: what core 1 does each 1 ms tick with
+ * The IOmcu's sensor service: what core 1 does each 1 ms tick with
  * the orders core 0 gives it, and the snapshot of what it read that core 0
  * publishes on the link.
  *

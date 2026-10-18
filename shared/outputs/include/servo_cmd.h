@@ -39,14 +39,14 @@ typedef enum {
      */
     SERVO_CMD_DISARM,
     /**
-     * Drive the surfaces through the curve in sweep_*, on the coprocessor.
+     * Drive the surfaces through the curve in sweep_*, on the IOmcu.
      * Repeated while it runs, which keeps it running; any other command
      * stops it.
      */
     SERVO_CMD_SWEEP,
     /**
      * Stop a sweep and hold every surface where its output is, which only
-     * the coprocessor knows exactly.  Repeated while held; any other
+     * the IOmcu knows exactly.  Repeated while held; any other
      * command ends it.
      */
     SERVO_CMD_HOLD,
@@ -79,7 +79,7 @@ typedef struct {
     uint16_t         slew_per_s;
     /**
      * The frame rate the profile in force runs at, in Hz.  The panel writes
-     * it to the coprocessor's SERVO page, which runs the PWM target at it:
+     * it to the IOmcu's SERVO page, which runs the PWM target at it:
      * every PWM output whose first channel is a surface, or from protocol
      * 4.19 the one programming port the target names; see
      * servo_screen_rate().
@@ -94,7 +94,7 @@ typedef struct {
      *  writes already on the wire or queued. */
     bool             ends_sweep;
     /** SERVO_CMD_SWEEP carrying on the sweep PAUSE held, from where it was
-     *  held: the panel asks the coprocessor to resume it (protocol 4.6),
+     *  held: the panel asks the IOmcu to resume it (protocol 4.6),
      *  and an older one, or one that refuses, starts the curve over. */
     bool             resume;
     /** SERVO_CMD_HOLD: which pause it is, given back with its
@@ -113,19 +113,19 @@ typedef struct {
 /** What became of a frame rate the panel wrote to the SERVO page. */
 typedef enum {
     SERVO_RATE_UNSENT = 0,  /**< not written yet: it goes with a position   */
-    SERVO_RATE_IN_FORCE,    /**< the target the coprocessor holds runs at
+    SERVO_RATE_IN_FORCE,    /**< the target the IOmcu holds runs at
                                  it (servo_in_force_note())                 */
     SERVO_RATE_REFUSED,     /**< a pulse longer than the frame, or a pin
                                  sharing a PWM slice with an output at
                                  another rate; the pins kept theirs         */
-    SERVO_RATE_UNSUPPORTED, /**< the coprocessor has no SERVO page: protocol
+    SERVO_RATE_UNSUPPORTED, /**< the IOmcu has no SERVO page: protocol
                                  4.0 runs each slot at its binding's rate   */
     SERVO_RATE_IN_FORCE_SURFACES, /**< every PWM surface runs at it,
                                        whatever the target: protocol 4.1 to
                                        4.18                                 */
 } servo_rate_state_t;
 
-/** The state an acknowledged rate is shown in, by the coprocessor's protocol
+/** The state an acknowledged rate is shown in, by the IOmcu's protocol
  *  minor @p minor: SERVO_RATE_IN_FORCE from LINK_MINOR_SERVO_TARGET_RATE
  *  (4.19), where the rate reaches the PWM TARGET alone, and
  *  SERVO_RATE_IN_FORCE_SURFACES below it. */
@@ -164,7 +164,7 @@ typedef struct {
  */
 bool servo_cmd_stale(servo_pause_end_t *e, const servo_cmd_t *c);
 
-/** Where the coprocessor's output was when it started a sweep. */
+/** Where the IOmcu's output was when it started a sweep. */
 typedef enum {
     SERVO_SWEEP_FROM_REST,    /**< where it was held before the sweep      */
     SERVO_SWEEP_FROM_HERE,    /**< carrying on: a changed curve            */

@@ -6,7 +6,7 @@ order: 30
 
 # Supply
 
-SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the coprocessor drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right.
+SUPPLY sets, switches and records a programmable supply: the PD mini, a USB-PD (USB Power Delivery) trigger that the IOmcu drives over a UART (universal asynchronous receiver-transmitter) on two of its pins. It opens from the SUPPLY tile on the [menu](overview.md). The plot and the set points take the left column; the readings, OUTPUT ON and RESET PEAKS take the right.
 
 ## The supply model
 
@@ -16,14 +16,14 @@ With the PD mini disabled on SETUP, INTERFACES, the panel runs a model of a supp
 
 ## The PD mini
 
-![The PD mini enabled, no coprocessor reading it: NOT ANSWERING](view:supply-offline)
+![The PD mini enabled, no IOmcu reading it: NOT ANSWERING](view:supply-offline)
 
-With the PD mini enabled, the header names the module and the coprocessor pins that carry it, for example `PD MINI TX GP12 RX GP13`, from the PD mini TX and PD mini RX settings. With either pin not set it reads `PD MINI NO PINS`. The panel reads the coprocessor's SUPPLY page every 100 ms.
+With the PD mini enabled, the header names the module and the IOmcu pins that carry it, for example `PD MINI TX GP12 RX GP13`, from the PD mini TX and PD mini RX settings. With either pin not set it reads `PD MINI NO PINS`. The panel reads the IOmcu's SUPPLY page every 100 ms.
 
 | Header | Meaning |
 |---|---|
 | `ONLINE 38400` | the module answers; the number is the baud rate in use |
-| `NOT ANSWERING` | no coprocessor that speaks protocol 4.3 answers, or the readings are older than 1500 ms; an output that is on is switched off |
+| `NOT ANSWERING` | no IOmcu that speaks protocol 4.3 answers, or the readings are older than 1500 ms; an output that is on is switched off |
 
 Before the first switch-on the plot reads `Output has not been switched on yet.`, and the cards show dashes until a reading arrives.
 

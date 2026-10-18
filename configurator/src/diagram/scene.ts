@@ -7,12 +7,12 @@ import type { Side } from '../../drawings/lib.ts';
 import { CABLE_NETS, colourOf, endPoints } from '../../drawings/wires.ts';
 import { t, tx } from '../i18n.ts';
 
-/** Column of the picture: left of the coprocessor, its own column, right of it. */
+/** Column of the picture: left of the IOmcu, its own column, right of it. */
 export type Lane = 'L' | 'C' | 'R';
 
 export type ScenePart = {
   id: string; file: string; w: number; h: number; column: Lane; order: number; name: Text;
-  /** The 2 parts this part sits between, from the data file: the first away from the coprocessor, the second towards it. */
+  /** The 2 parts this part sits between, from the data file: the first away from the IOmcu, the second towards it. */
   between?: [string, string];
 };
 

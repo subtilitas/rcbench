@@ -236,7 +236,7 @@ static bool parse(loaded_t *into, const char *text, size_t len)
             if (v < 0) {
                 return false;
             }
-            /* A pin of no coprocessor: the record stands, by its port. */
+            /* A pin of no IOmcu: the record stands, by its port. */
             if (v <= (long)KST_PROG_PIN_LAST) {
                 into->journal_pin = (uint8_t)v;
             }

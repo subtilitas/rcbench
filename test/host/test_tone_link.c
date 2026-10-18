@@ -1,9 +1,9 @@
 /*
  * The panel's half of the TONE page (protocol 4.8) against a small model of
- * the coprocessor's half that follows link_pages.h, and against a
- * coprocessor that speaks protocol 4.7.
+ * the IOmcu's half that follows link_pages.h, and against an
+ * IOmcu that speaks protocol 4.7.
  *
- * Under test: nothing sent to a coprocessor older than 4.8, and the
+ * Under test: nothing sent to an IOmcu older than 4.8, and the
  * operator told when the tap is enabled for one; the page read before
  * anything is written and only what differs written; the two frames of the
  * set-up in the order that leaves the page a valid set-up; a refused frame
@@ -27,7 +27,7 @@
 #include "link_pages.h"
 #include "tone_link.h"
 
-/* ----------------------------------------------------- the coprocessor */
+/* ----------------------------------------------------- the IOmcu */
 
 typedef struct {
     uint16_t seq;
@@ -179,7 +179,7 @@ static void fake_read(uint8_t off, uint8_t n, uint16_t *regs)
     memcpy(regs, &all[off], n * sizeof(uint16_t));
 }
 
-/* One beep, numbered as the coprocessor numbers them: 1 to 65535, then 1.
+/* One beep, numbered as the IOmcu numbers them: 1 to 65535, then 1.
  * Its length and pitch follow its number, so a test reads them back. */
 static void fake_beep(void)
 {
@@ -211,7 +211,7 @@ static void fake_head(uint16_t n)
     fake_beeps(1);
 }
 
-/* One exchange as the coprocessor answers it.  A 4.7 coprocessor has no
+/* One exchange as the IOmcu answers it.  A 4.7 IOmcu has no
  * TONE page and refuses it with BAD_PAGE. */
 static int far_exchange(const tone_link_op_t *op, uint16_t *regs)
 {
@@ -261,7 +261,7 @@ static void want(const tone_setup_t *w)
     tone_link_want(&tl, w, now);
 }
 
-/* The link up at tick @p t0 with a coprocessor speaking 4.@p m. */
+/* The link up at tick @p t0 with an IOmcu speaking 4.@p m. */
 static void fresh_at(uint16_t m, uint32_t t0)
 {
     fake_init();
@@ -339,7 +339,7 @@ TEST_CASE(nothing_is_sent_to_a_4_7_coprocessor)
     tone_setup_t w = setup_default();
     w.enable = true;
     want(&w);
-    /* Enabled for a coprocessor that cannot read it: said at once. */
+    /* Enabled for an IOmcu that cannot read it: said at once. */
     CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_NO_PAGE);
     polls(40);
     CHECK_EQ(to_tone, 0u);
@@ -360,7 +360,7 @@ TEST_CASE(a_tap_enabled_before_the_link_is_said_at_link_up)
     tone_setup_t w = setup_default();
     w.enable = true;
     want(&w);
-    CHECK_EQ(tone_link_event(&tl, now), 0u);    /* no coprocessor yet */
+    CHECK_EQ(tone_link_event(&tl, now), 0u);    /* no IOmcu yet */
     tone_link_came_up(&tl, 7u, now);
     CHECK_EQ(tone_link_event(&tl, now), TONE_LINK_EV_NO_PAGE);
     /* Disabled again, the event that waited goes. */
@@ -728,7 +728,7 @@ TEST_CASE(a_frame_is_unheld_until_the_page_takes_it)
     CHECK_EQ(tone_link_unheld(&tl), 0u);
     CHECK_EQ(fk.cfg[LINK_TN_ENABLE], 1u);
 
-    /* A coprocessor without the page holds no tap. */
+    /* An IOmcu without the page holds no tap. */
     fresh(7u);
     CHECK_EQ(tone_link_unheld(&tl), 0u);
     want(&w);
@@ -885,7 +885,7 @@ TEST_CASE(a_lost_link_reads_the_page_again)
     CHECK_EQ(r.state, TONE_STATE_WAITING);
 
     tone_link_came_up(&tl, 8u, now);
-    /* The coprocessor keeps its set-up: the read finds it as wanted and
+    /* The IOmcu keeps its set-up: the read finds it as wanted and
      * nothing is written. */
     const unsigned w0 = writes;
     polls(14);
@@ -1609,7 +1609,7 @@ TEST_CASE(events_are_handed_out_one_at_a_time_and_can_be_put_back)
     CHECK_EQ(tone_link_event(&tl, t0 + 3u * TONE_LINK_EVENT_GAP_MS),
              TONE_LINK_EV_OVERRUN);
 
-    /* Not for a coprocessor that has gone. */
+    /* Not for an IOmcu that has gone. */
     tone_link_lost(&tl);
     tone_link_event_back(&tl, TONE_LINK_EV_OVERRUN);
     CHECK_EQ(tone_link_event(&tl, t0 + 10u * TONE_LINK_EVENT_GAP_MS), 0u);
@@ -1625,7 +1625,7 @@ TEST_CASE(a_new_link_forgets_what_the_last_one_said)
     CHECK_EQ(tone_link_event(&tl, now + 100000u), 0u);
     tone_link_came_up(&tl, 8u, now);
     polls(14);
-    /* Still overrun on the coprocessor: news again. */
+    /* Still overrun on the IOmcu: news again. */
     CHECK_EQ(tone_link_event(&tl, now + 100000u), TONE_LINK_EV_OVERRUN);
 }
 

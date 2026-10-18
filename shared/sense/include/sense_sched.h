@@ -1,11 +1,11 @@
 /*
- * The coprocessor's sampling schedule for the sensor bus: what is read on
+ * The IOmcu's sampling schedule for the sensor bus: what is read on
  * each 1 ms tick, the 50 ms windows made from it, the run's peaks and
  * totals, and the servo move capture on INA3221 CH1.
  *
  * Pure logic.  The wire is a sense_i2c_t and the time a callback, both
  * given at init, so the host suite runs it against fake_ina.h; the
- * coprocessor gives its I2C (Inter-Integrated Circuit) block and its 64-bit
+ * IOmcu gives its I2C (Inter-Integrated Circuit) block and its 64-bit
  * microsecond timer.  Nothing here trips or disarms anything: the monitors
  * measure only.
  *
@@ -65,7 +65,7 @@
  * through, and with both parts offline the next one is a probe: the flag
  * can outlast a freed bus by up to SENSE_RETRY_MS.
  *
- * Windows.  Fixed SENSE_WINDOW_MS windows on the coprocessor clock,
+ * Windows.  Fixed SENSE_WINDOW_MS windows on the IOmcu clock,
  * counted in 64 bits from the first tick, each with its number.  A read is
  * stamped when it is done and counts in the window that time falls in,
  * whatever ran before it in the tick.  For each source -- INA3221 CH1 to
@@ -220,7 +220,7 @@ typedef enum {
 /** The wire, the clock and the bus recovery. */
 typedef struct {
     sense_i2c_t i2c;
-    uint64_t  (*now_us)(void *ctx);  /**< the coprocessor's µs timer     */
+    uint64_t  (*now_us)(void *ctx);  /**< the IOmcu's µs timer     */
     void      (*recover)(void *ctx); /**< 9 clocks, a STOP, the block
                                           re-initialised; NULL: none     */
     void       *ctx;

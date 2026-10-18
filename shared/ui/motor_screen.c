@@ -852,7 +852,7 @@ static void temp_text(char *out, size_t n, const char *label, float v,
 /*
  * The strip above both columns: what is driving the outputs on the left of
  * it, and how hot the three things that get hot on the right.  MCU is the
- * panel's own die, not the coprocessor's.
+ * panel's own die, not the IOmcu's.
  */
 static void draw_header(gfx_canvas_t *c)
 {
@@ -863,7 +863,7 @@ static void draw_header(gfx_canvas_t *c)
 
     /* The band already carries the output mode, so this strip does not
      * repeat it: what it adds is the poll rate and the link's error count,
-     * and while the coprocessor has refused a frame, how many. */
+     * and while the IOmcu has refused a frame, how many. */
     char line[64];
     snprintf(line, sizeof(line), TR(MO_RATE_ERR), (int)SAMPLE_HZ,
              (unsigned long)st->link_errors);
@@ -881,7 +881,7 @@ static void draw_header(gfx_canvas_t *c)
 
     /*
      * The protocol carries a flag per channel for exactly this: a bench whose
-     * coprocessor has no temperature sensor sends zero, and "ESC 0C" is a
+     * IOmcu has no temperature sensor sends zero, and "ESC 0C" is a
      * reading rather than a gap.
      */
     const bool temp_ok = s.bench.valid

@@ -310,7 +310,7 @@ TEST_CASE(abort_stop_and_disarm_end_the_run_safe)
     }
 }
 
-/* Without a coprocessor the bench is modelled, and the run is allowed;
+/* Without an IOmcu the bench is modelled, and the run is allowed;
  * only a link that was there and went is a reason to stop. */
 TEST_CASE(a_link_that_was_never_up_is_not_lost)
 {

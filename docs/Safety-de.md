@@ -13,22 +13,22 @@ verifiziert.
 | Mechanismus | Deckt ab | Stand |
 | --- | --- | --- |
 | Der Heartbeat bleibt aus | das Panel hängt, ist resettet, hat einen Brown-out oder ist abgesteckt; ein gedrücktes STOP | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
-| Stille-Watchdog des Koprozessors, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
+| Stille-Watchdog des IOmcu, 200 ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 
 Ein gedrücktes STOP stoppt den Heartbeat, schaltet das eigene
 Ausgangsmodell des Panels auf SAFE und schreibt ARM = 0 auf die Control-Page. Bei
 stehendem Link schreibt das Panel ARM und THROTTLE mit jedem Poll alle 50 ms;
-ein bewusstes Schalten auf ARMED wartet, bis der Koprozessor meldet, dass er dem
+ein bewusstes Schalten auf ARMED wartet, bis der IOmcu meldet, dass er dem
 Heartbeat vertraut, schreibt dann CLEAR (0x5AFE) allein, dann ARM, THROTTLE
 und MOTOR_POLES in einem Frame, und ein NACK (negative Quittung) des
-Koprozessors auf eines von beiden lässt das Panel SAFE.
+IOmcu auf eines von beiden lässt das Panel SAFE.
 
 ## Vorausgesetzte externe Schaltung: das Monoflop
 
 Die Sicherheitsleitung ist GPIO6 (General-Purpose Input/Output) des Panels
 auf dem Header J8 (3V3, GND, GPIO6). Sie trägt Flanken, keinen Pegel. Das
-Output Enable des Koprozessors und der Leistungspfad für Servos und ESC
+Output Enable des IOmcu und der Leistungspfad für Servos und ESC
 (Electronic Speed Controller, Motorregler) müssen hinter einem retriggerbaren
 Monoflop liegen, das nur angezogen bleibt, solange Flanken eintreffen.
 Absturz, hängender Task, Reset, Brown-out und abgestecktes Kabel führen dann
@@ -38,24 +38,24 @@ an beiden Enden.
 Fenster des Monoflops: etwa 150 ms. Der Heartbeat kommt aus dem Control-Task
 des Panels, der alle 5 ms auf dem Kern läuft, der nicht zeichnet, und dessen
 Periode damit nicht davon abhängt, was ein Frame kostet. Das Fenster bleibt
-bei 150 ms und liegt innerhalb des 200-ms-Link-Failsafes des Koprozessors,
+bei 150 ms und liegt innerhalb des 200-ms-Link-Failsafes des IOmcu,
 statt auf die neue Periode zu schrumpfen: die Reserve ist das, was einen
 verspäteten Task überlebt.
 
 Das Monoflop ist auf keiner Platine. Auf dem Aufbau-Prüfstand erreichen die
-Flanken über eine direkte Leitung von J8 den GP3 des Koprozessors, weshalb
+Flanken über eine direkte Leitung von J8 den GP3 des IOmcu, weshalb
 dieser Prüfstand auf ARMED schalten kann.
 
 Das Monoflop wird von den Flanken des Panels nachgetriggert und nimmt die
 Ausgänge weg, wenn diese ausbleiben. Was es gegenüber der direkten Leitung
-hinzufügt: Es tut das, ohne dass die Firmware des Koprozessors etwas tun muss.
+hinzufügt: Es tut das, ohne dass die Firmware des IOmcu etwas tun muss.
 Drei Fälle, und der mittlere ist die Lücke:
 
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
-| Das Panel hört auf zu schlagen, der Koprozessor ist gesund | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel hört auf zu schlagen und der Koprozessor kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
-| Das Panel ist gesund und der Koprozessor verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
+| Das Panel hört auf zu schlagen, der IOmcu ist gesund | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
+| Das Panel hört auf zu schlagen und der IOmcu kann nicht handeln -- hängt, oder bedient seinen Monitor nicht | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
+| Das Panel ist gesund und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel schlägt weiter, das Monoflop bleibt bestromt |
 
 Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
 Hardware in diesem Entwurf deckt sie ab. Solange das Bauteil fehlt, ist auch
@@ -64,7 +64,7 @@ Verriegelung.
 
 ## Heartbeat-Überwachung
 
-Der Koprozessor prüft den Heartbeat zusätzlich in der Firmware, weil ein
+Der IOmcu prüft den Heartbeat zusätzlich in der Firmware, weil ein
 Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 [`heartbeat.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/heartbeat.h):
 
@@ -76,7 +76,7 @@ Monoflop Heartbeat und Rauschen nicht unterscheiden kann. Die Konstanten aus
 
 Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
 wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
-weg. Der Koprozessor verweigert das Schalten auf ARMED, solange der Leitung nicht
+weg. Der IOmcu verweigert das Schalten auf ARMED, solange der Leitung nicht
 vertraut wird, und schaltet seine Ausgänge auf SAFE und setzt seinen Arm-Latch,
 sobald sie ausbleibt.
 
@@ -88,18 +88,18 @@ liest eine eigene Task, Priorität 5 auf Kern 0, dem Kern, der zeichnet. Der
 Control-Task nimmt deren Ereignisse aus einer Queue und beurteilt den
 Controller nach der Zeit seit dessen letzter Antwort: 500 ms ohne Antwort
 schalten den Prüfstand auf SAFE und stoppen den Heartbeat. Der Eingang des
-Koprozessors hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
+IOmcu hat einen Pull-down, sodass ein unversorgtes oder abgestecktes
 Panel als Leitung ohne Flanken gelesen wird.
 
 ## Arm-Latch
 
-Der Koprozessor hält einen Arm-Latch. Solange er gesetzt ist, wird ein
+Der IOmcu hält einen Arm-Latch. Solange er gesetzt ist, wird ein
 Schreiben von ARM mit NOT_ARMED abgewiesen, und die Bank bleibt SAFE,
 was immer im Register ARM steht.
 
 | Setzt den Latch | Bedingung |
 | --- | --- |
-| Ein Start des Koprozessors | Einschalten, ein Reset, der RUN-Pin, ein Neuflashen |
+| Ein Start des IOmcu | Einschalten, ein Reset, der RUN-Pin, ein Neuflashen |
 | Stille auf dem Link | 200 ms ohne Anfrage, zusammen mit dem Link-Failsafe |
 | Dem Heartbeat wird nicht mehr vertraut | ein Abstand unter 4 ms oder über 150 ms, oder 150 ms ohne Flanke |
 | Ein abgewiesenes ARM | ein ARM, das mit NOT_ARMED beantwortet wurde; ein CLEAR mit anschließend abgewiesenem ARM lässt den Latch also gesetzt |
@@ -108,17 +108,17 @@ Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
 Das Panel schreibt CLEAR an einer Stelle, beim Schalten auf ARMED, das eine Person
 durch 2 s Halten von ARM vollendet. Das ARM, das das Panel bei jedem
 Poll alle 50 ms einer Bank in ARMED schreibt, trägt kein CLEAR und bringt
-einen Koprozessor mit gesetztem Latch daher nie zurück.
+einen IOmcu mit gesetztem Latch daher nie zurück.
 
 Der Latch ist vom Link-Failsafe getrennt. Das ON der Versorgung und die
 STATUS-Page lesen das Failsafe und den Heartbeat und nicht den Latch: nach
 einem Start meldet STATUS Idle ohne Fault-Bit, und ein ON der Versorgung wird
 vor dem ersten Schalten auf ARMED angenommen. Der Latch steht nicht auf STATUS. Ein
-Koprozessor mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
-Panel als `Koprozessor hat auf SAFE geschaltet. ARM erneut halten.` meldet.
+IOmcu mit gesetztem Latch zeigt sich als abgewiesenes ARM, das das
+Panel als `IOmcu hat auf SAFE geschaltet. ARM erneut halten.` meldet.
 
 Das Panel hat für dieselben Ereignisse eine eigene Regel. Antwortet der
-Koprozessor nicht mehr, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
+IOmcu nicht mehr, während der Prüfstand ARMED ist oder ein Schalten auf ARMED
 auf die Leitung wartet, rastet am Panel bei diesem Poll ein Stopp ein: die
 eigene Bank wird auf SAFE geschaltet, das Gas geht auf null, eine gehaltene
 Servo-Position wird losgelassen, und der Heartbeat stoppt. Eine ausbleibende
@@ -131,39 +131,39 @@ Durchlauf des Control-Tasks als ausgefallen, und bis dahin sendet das Panel
 nichts mehr darauf. Solange der Prüfstand ARMED ist oder ein Schalten auf ARMED
 wartet, rastet der Stopp ein, sobald dieser Austausch endet, ohne auf den
 Durchlauf zu warten. Eine Bank,
-die ohne angeschlossenen Koprozessor ARMED ist, der simulierte Prüfstand,
-wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein Koprozessor zum
+die ohne angeschlossenen IOmcu ARMED ist, der simulierte Prüfstand,
+wird auf dieselbe Weise bei dem Poll gestoppt, bei dem ein IOmcu zum
 ersten Mal antwortet, bevor ein ARM an ihn geschrieben wird.
 
-### Neustart des Koprozessors während eines Laufs
+### Neustart des IOmcu während eines Laufs
 
-Der Koprozessor stellt seine Ausgangsbindung aus dem Flash wieder her und
+Der IOmcu stellt seine Ausgangsbindung aus dem Flash wieder her und
 startet mit gesetztem Latch und ohne Kommando. Die Bank des Panels ist noch
 bis zu 1000 ms ARMED. Zwei Fälle:
 
 - Das Panel bemerkt den Ausfall. Bei ihm rastet ein Stopp ein, und es
   schreibt von da an ARM = 0.
 - Das Panel bemerkt ihn nicht, weil die Anfrage wiederholt wurde, bis der neu
-  gestartete Koprozessor antwortete. Sein nächstes Schreiben von ARM wird
+  gestartete IOmcu antwortete. Sein nächstes Schreiben von ARM wird
   mit NOT_ARMED abgewiesen, und bei dieser Antwort rastet am Panel ein Stopp
   ein.
 
 In beiden bleiben die Ausgänge aus, bis eine Person ARM hält. Auf dem Host
 getestet in `test_safety_gate` für Ausfälle von 5, 30, 50, 60, 300, 1000 und
-5000 ms bei je 55 Reset-Phasen und drei Modellen der Leitung. Wie lange der Koprozessor vom Reset bis zu seinem ersten
+5000 ms bei je 55 Reset-Phasen und drei Modellen der Leitung. Wie lange der IOmcu vom Reset bis zu seinem ersten
 beantworteten Frame braucht, ist nicht gemessen.
 
 ### Das erste Schalten auf ARMED nach einem Stopp
 
 Der Heartbeat wird zurückgehalten, solange ein Stopp eingerastet ist. Ein
 Schalten auf ARMED löst den Stopp am Panel, der Heartbeat läuft wieder, und der Monitor
-des Koprozessors braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
+des IOmcu braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
 125 ms bei den 5 ms des Control-Tasks. Das Panel wartet 100 ms, liest dann
 einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
 gelöscht ist, und schreibt erst dann CLEAR und den Frame, der auf ARMED schaltet. Ist
 das Bit 300 ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
-das Schalten auf ARMED mit `Der Koprozessor hat den Wechsel zu ARMED abgelehnt.` auf und schreibt nichts, der
-Latch des Koprozessors bleibt also gesetzt. Eine Antwort, die später als
+das Schalten auf ARMED mit `Der IOmcu hat den Wechsel zu ARMED abgelehnt.` auf und schreibt nichts, der
+Latch des IOmcu bleibt also gesetzt. Eine Antwort, die später als
 diese 300 ms zurückkommt, wird nicht verwendet, was immer sie sagt.
 
 Dieselben 300 ms gelten durch die Schreibvorgänge, die folgen. Das Panel
@@ -172,20 +172,20 @@ weil das Freigeben des Servos davor und das CLEAR selbst spät beantwortet
 werden können. Ist die Frist vor dem CLEAR abgelaufen, wird das Schalten auf ARMED wie
 oben aufgegeben, und nichts wird geschrieben. Ist sie nach einem quittierten
 CLEAR abgelaufen, wird kein Frame geschrieben, und am Panel rastet ein Stopp
-ein: das CLEAR hat den Latch des Koprozessors gelöst, und kein Register
+ein: das CLEAR hat den Latch des IOmcu gelöst, und kein Register
 setzt ihn wieder, also hält der Stopp den Heartbeat zurück, und der
-Koprozessor setzt seinen Latch, sobald er der Leitung nicht mehr vertraut,
+IOmcu setzt seinen Latch, sobald er der Leitung nicht mehr vertraut,
 innerhalb von 150 ms. Die Grenze der Frist ist der Frame, der auf ARMED schaltet,
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000 ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
-Koprozessor hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
+IOmcu hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
 für MOTOR & ESC und PROGRAMMER, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
 unbeantwortet -- das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
 der Frame, der auf ARMED schaltet --, hat er den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schalten auf ARMED
 ausfällt, und am Panel rastet ein Stopp ein wie oben. Eine Ablehnung ist
 eine Antwort und lässt das Panel SAFE und ohne Stopp. Ohne
-angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
+angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 100 ms auf ARMED.
 
 ## Verhaltensweisen, die Absicht sind
@@ -201,10 +201,10 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   Modul einmal geantwortet hat, nur auf eine nach der Änderung gesendete
   Zustandslesung, die den Ausgang aus zeigt. Ein Modul, das sich in den
   500 ms zwischen zwei Lesungen selbst eingeschaltet hat, behält seine Pins
-  und damit seinen Weg zum OFF; der Koprozessor schaltet es ab.
+  und damit seinen Weg zum OFF; der IOmcu schaltet es ab.
 - Einen eingeschalteten Ausgang des PD mini, dessen Eingangsspannung bei 2 Lesungen
   hintereinander unter dem Sollwert plus 0,5 V liegt, schaltet der
-  Koprozessor ab und meldet es dem Panel danach. Eine vorsichtige Regel,
+  IOmcu ab und meldet es dem Panel danach. Eine vorsichtige Regel,
   ohne Messung gewählt: sie kann einen Lauf abbrechen, der durchgehalten
   hätte. Sollwerte sind auf 0,7 V unter der Eingangsspannung begrenzt, 0,2 V
   über dieser Linie: sinkt die Eingangsspannung unter Last um weniger als
@@ -369,7 +369,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
   ein Frame nur, wenn er in ARMED begann und den Strom vollständig fand. Der
   Control-Task sieht in jeder Wartezeit einer Link-Transaktion nach, nicht
   nur einmal pro Durchlauf, und stoppt von dort wie bei STOP: der Heartbeat
-  fällt sofort ab, und der Koprozessor geht innerhalb von 150 ms auf
+  fällt sofort ab, und der IOmcu geht innerhalb von 150 ms auf
   SAFE, wie lang der Rückstau hinter dem Schalten auf ARMED auch
   ist. Ein Frame, der
   vor dem Veröffentlichen begann, bricht Seiten ab, die den Prüfstand noch
@@ -479,32 +479,32 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
 - Antwortet der Touch-Controller 500 ms lang nicht, schaltet der Prüfstand auf SAFE
   und verweigert das Schalten auf ARMED. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.
-- Nach einem Link-Failsafe schaltet der Koprozessor nicht wieder auf ARMED, wenn
+- Nach einem Link-Failsafe schaltet der IOmcu nicht wieder auf ARMED, wenn
   Verkehr zurückkehrt. Das Failsafe wird durch das Schreiben eines definierten
   Werts (0x5AFE) auf die Control-Page verlassen. Dasselbe gilt nach einem
-  Start des Koprozessors und nach einem Heartbeat, dem nicht mehr vertraut
+  Start des IOmcu und nach einem Heartbeat, dem nicht mehr vertraut
   wurde: siehe [Arm-Latch](#arm-latch).
 - Ein Link, der bei einem Prüfstand in ARMED ausfällt, ist am Panel ein Stopp. Er
   rastet ein wie STOP und wird vom nächsten Schalten auf ARMED gelöst.
-- Solange der Prüfstand ARMED ist, weist der Koprozessor mit BAD_VALUE ein
+- Solange der Prüfstand ARMED ist, weist der IOmcu mit BAD_VALUE ein
   Schreiben auf OUTPUTS ab, das einen Slot ändert, und ein Schreiben auf
   CHAN_CFG, das die Rolle eines Kanals oder irgendetwas an einem
   Throttle-Kanal ändert. Slew und Pulsbereich einer Surface werden in ARMED
   angenommen: der SERVO-Bildschirm schreibt sie mit jeder Position. Das Panel
   schreibt eine Bindung und den Pulsbereich des Throttle nur in SAFE.
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
-  Koprozessor aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
+  IOmcu aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
 - Ein ARM nennt die Rollen, die es treibt ([Link, Ein Arm für eine
   Rolle](Link-de.md#ein-arm-für-eine-rolle)). MOTOR & ESC und ein
   Stick-Lauf auf PROGRAMMER schalten die Throttle-Ausgänge auf ARMED, ARM
   0x0002. SERVO schaltet die Surfaces und den Pin des PROG PORT auf ARMED, ARM
   0x0004. Ein Pin einer Rolle, die das ARM nicht nennt, sendet keinen Puls,
-  wie bei einem Prüfstand in SAFE. Ein Koprozessor älter als Protokoll
+  wie bei einem Prüfstand in SAFE. Ein IOmcu älter als Protokoll
   4.18 nimmt jedes ARM ungleich 0 als ganze Bank; an ihm treibt also jeder
   gebundene Pin.
 - Ein ARM für die andere Rolle geht über ein Schalten auf SAFE. Das Panel schreibt
   ARM = 0, wartet mindestens 100 ms und schreibt dann die neuen Rollen; den
-  Wechsel von einem ARM ungleich 0 zu einem anderen weist der Koprozessor
+  Wechsel von einem ARM ungleich 0 zu einem anderen weist der IOmcu
   mit BAD_VALUE ab.
 - STOP, das Ausbleiben des Heartbeat, Stille auf dem Link und ein
   Schalten auf SAFE setzen jeweils das ganze ARM auf 0, gleich welche Rollen es
@@ -538,7 +538,7 @@ angeschlossenen Koprozessor schaltet das Panel seine eigene Bank nach den
 - Die Einstellung `Rampengrenze`, 5 bis 300 %/s, gilt für die Gas-Bank des
   Panels. Diese Bank ist der modellierte Prüfstand: ihr geslewter Wert wird
   vom Telemetrie-Simulator gelesen und sonst von nichts, und nur solange der
-  Link unten ist. Einem antwortenden Koprozessor wird stattdessen das rohe
+  Link unten ist. Einem antwortenden IOmcu wird stattdessen das rohe
   Kommando geschickt, und `outbind_to_chan_cfg()` schreibt für keinen Kanal
   einen Slew, ein als Throttle gebundener Pin springt also im nächsten
   1-ms-Durchlauf darauf. Das physische Gas wird nicht gerampt, per

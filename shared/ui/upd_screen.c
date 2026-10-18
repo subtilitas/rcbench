@@ -25,7 +25,7 @@
 #define RX      400
 #define RW      384
 
-/* The coprocessor section, in the left column under the third button's
+/* The IOmcu section, in the left column under the third button's
  * row: its heading, the two versions, up to two lines of state, and the
  * hold in the sixth row, which ends 20 px above the body's foot. */
 #define CU_HEAD_Y  228
@@ -48,14 +48,14 @@ enum {
     HIT_DOWNLOAD,
     HIT_IGNORE,
     HIT_NEVER,
-    HIT_COPROC,         /* HOLD 2 s: UPDATE COPROCESSOR */
+    HIT_COPROC,         /* HOLD 2 s: UPDATE IOMCU */
 };
 
 /* What both screens show, and what they ask for. */
 static upd_view_t s_v;
 static unsigned   s_req;
 
-/* UPDATES' coprocessor section, and its hold's latch. */
+/* UPDATES' IOmcu section, and its hold's latch. */
 static upd_cu_view_t s_cu;
 static bool          s_cu_req;
 
@@ -65,7 +65,7 @@ static struct {
     uint8_t   press_id;
     bool      have_press;
     ui_hold_t hold;       /* DOWNLOAD & INSTALL */
-    ui_hold_t cu_hold;    /* UPDATE COPROCESSOR */
+    ui_hold_t cu_hold;    /* UPDATE IOMCU */
     unsigned  drawn_mask;
 } s;
 
@@ -614,7 +614,7 @@ static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
     }
 }
 
-/* The coprocessor section: heading, versions, state, hold. */
+/* The IOmcu section: heading, versions, state, hold. */
 static void render_coproc(gfx_canvas_t *c)
 {
     char ver[24], line[96];
@@ -952,7 +952,7 @@ void upd_remind_drive(upd_driver_t *d, const upd_feed_t *f)
              * application goes there itself. */
             ui_router_goto(SCREEN_OVERVIEW);
         } else if (!may) {
-            /* ARMED, the supply, the coprocessor's question: they come
+            /* ARMED, the supply, the IOmcu's question: they come
              * first.  The reminder comes back once they have gone. */
             s_rem.yield = true;
             ui_router_goto(SCREEN_OVERVIEW);

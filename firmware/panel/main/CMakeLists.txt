@@ -10,11 +10,11 @@ idf_component_register(
     LDFRAGMENTS "psram_bss.lf"
 )
 
-# The coprocessor image of the same release, carried so the panel can move
-# the coprocessor to it over CAN (Controller Area Network):
+# The IOmcu image of the same release, carried so the panel can move
+# the IOmcu to it over CAN (Controller Area Network):
 #   idf.py -D RCBENCH_IOMCU_BIN=<path>/rcbench-iomcu.bin build
 # A relative path is taken from firmware/panel.  A build without it carries
-# none and offers no coprocessor update.
+# none and offers no IOmcu update.
 if(RCBENCH_IOMCU_BIN)
     get_filename_component(rcbench_iomcu_bin "${RCBENCH_IOMCU_BIN}" ABSOLUTE
                            BASE_DIR "${CMAKE_SOURCE_DIR}")

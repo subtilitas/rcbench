@@ -174,7 +174,7 @@ static void test_cfg(servo_test_cfg_t *c)
     c->travel_deg = (uint8_t)s.travel_deg;
     c->range_pct  = (uint8_t)settings_get_int(SET_SERVO_TEST_RANGE);
     c->model      = supply_screen_model();
-    /* Only an encoder the coprocessor holds on reads angles: a set-up it
+    /* Only an encoder the IOmcu holds on reads angles: a set-up it
      * has not taken -- written only while disarmed -- gives a run none. */
     c->enc_on     = settings_get_bool(SET_ENC_EN) && s.enc_held;
     c->enc_centre = (uint16_t)settings_get_int(SET_ENC_CENTRE);

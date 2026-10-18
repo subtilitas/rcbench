@@ -1,6 +1,6 @@
 /*
  * The poll of the far end, once a control pass: the bench page and the
- * services while the coprocessor answers, its identity while it does not,
+ * services while the IOmcu answers, its identity while it does not,
  * the link-up and link-lost edges, the model and the log while nothing
  * answers, and the snapshot the screen reads.
  *
@@ -36,7 +36,7 @@
 
 static const char *TAG = "rcbench";
 
-/* LINK_ST_FAULTS from the coprocessor's last status poll, shown in the band. */
+/* LINK_ST_FAULTS from the IOmcu's last status poll, shown in the band. */
 static uint16_t s_dev_faults;
 
 /*
@@ -57,7 +57,7 @@ static bool poll_bench(bench_state_t *bench)
          * the write that arms carries the count of its own accord
          * (control_arm()).  STOP and a re-arm produce no link-down edge, so
          * without this a count edited on a live link would wait for the
-         * cable, a coprocessor reset or a panel reboot.
+         * cable, an IOmcu reset or a panel reboot.
          *
          * Costs a transaction only while the debt stands, which is one poll
          * per edit.
@@ -105,7 +105,7 @@ static bool poll_bench(bench_state_t *bench)
                            bench);
         /* And the phase tap's: an input, taken armed or not. */
         tone_link_service();
-        /* And the servo programmer's: the coprocessor decides what it
+        /* And the servo programmer's: the IOmcu decides what it
          * starts, armed or not. */
         kst_link_service();
         /* And the programming ports': the SERVO screen's target and the
@@ -113,7 +113,7 @@ static bool poll_bench(bench_state_t *bench)
         prog_link_service();
         if (!written && armed && ack.op == LINK_OP_NACK) {
             /*
-             * The coprocessor is in failsafe, has lost the heartbeat or
+             * The IOmcu is in failsafe, has lost the heartbeat or
              * holds its arm latch -- it started again, or the line was
              * distrusted for a moment.  A stop latches at this end too.
              */
@@ -127,7 +127,7 @@ static bool poll_bench(bench_state_t *bench)
 /*
  * Who is there, while nothing is answering.
  *
- * True only for a DATA identity page from a coprocessor speaking
+ * True only for a DATA identity page from an IOmcu speaking
  * LINK_PROTOCOL_MAJOR; reply then holds that page.
  */
 /* A protocol mismatch: reported, and whether its build check is owed. */
@@ -138,7 +138,7 @@ static bool probe_identity(link_msg_t *reply)
     bool answered;
     /*
      * The bus first, because a controller that has fallen off it cannot ask
-     * anything.  A transmitter nobody answers -- a coprocessor not powered
+     * anything.  A transmitter nobody answers -- an IOmcu not powered
      * yet, or one that has reset -- adds 8 to its error counter per attempt
      * and is off the bus in about four milliseconds, and the ESP32-S3's TWAI
      * does not come back on its own.  Without this the first quiet moment on
@@ -154,7 +154,7 @@ static bool probe_identity(link_msg_t *reply)
      * A NACK answers the request it refuses, so poll_page() is true for one
      * and regs[0] carries a refusal reason rather than the first identity
      * register.  Only a DATA reply holds an identity page, and only an
-     * identity page says there is a coprocessor there to talk to.
+     * identity page says there is an IOmcu there to talk to.
      */
     answered = poll_page(&s_host, LINK_PAGE_IDENTITY, LINK_ID_COUNT, reply)
                && reply->op == LINK_OP_DATA;
@@ -171,13 +171,13 @@ static bool probe_identity(link_msg_t *reply)
         const bool told = link_uph_mismatch_answers(&s_mismatch);
         if (link_uph_mismatch_probe(&s_mismatch, true)) {
             if (!told) {
-                ESP_LOGE(TAG, "coprocessor speaks protocol %u, we speak %u",
+                ESP_LOGE(TAG, "IOmcu speaks protocol %u, we speak %u",
                          (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
                          (unsigned)LINK_PROTOCOL_MAJOR);
                 control_alert(TR(ALERT_MISMATCH));
             }
             /* The identity registers and the update pages answer across
-             * majors (link_pages.h), so a coprocessor this panel cannot
+             * majors (link_pages.h), so an IOmcu this panel cannot
              * drive can still be moved to the image it carries. */
             cu_link_up(reply);
         }
@@ -231,7 +231,7 @@ static void learn_board_pins(void)
     } else if (answered_cat && cat.op == LINK_OP_NACK
                && cat.regs[0] == LINK_NACK_BAD_PAGE) {
         /*
-         * Not a fault, and not warned about: a coprocessor built before the
+         * Not a fault, and not warned about: an IOmcu built before the
          * page refuses it by design, every time the link comes up.  A warning
          * on every link-up for a bench that is working as built is a warning
          * nobody reads.
@@ -247,7 +247,7 @@ static void learn_board_pins(void)
 
 /* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
  * for the MOTOR & ESC screen's target line, and whether a binding was read.
- * The same pages the coprocessor's throttle role reads. */
+ * The same pages the IOmcu's throttle role reads. */
 atomic_ullong s_throttle_pins;
 atomic_bool   s_throttle_pins_known;
 
@@ -280,7 +280,7 @@ void post_no_reading(void)
 }
 
 /*
- * What the coprocessor's outputs already are, into the snapshot the outputs
+ * What the IOmcu's outputs already are, into the snapshot the outputs
  * and picker screens read.
  *
  * bind_link_read() reads both pages and tells four results apart: a binding
@@ -340,7 +340,7 @@ void read_outputs_binding(void)
 }
 
 /*
- * The edge: a coprocessor started answering.
+ * The edge: an IOmcu started answering.
  *
  * All of it costs a transaction and none of it changes while the link is up,
  * so it runs once per edge rather than once per 50 ms poll.  reply is the
@@ -352,7 +352,7 @@ static void link_came_up(const link_msg_t *reply)
      * Who answered, before anything is decoded against it.
      *
      * The identity read at bring-up runs once, with whatever was attached then
-     * -- which may have been nothing.  A coprocessor that turns up later, or
+     * -- which may have been nothing.  An IOmcu that turns up later, or
      * one swapped for another, would otherwise have its outputs page read
      * against a board identity from boot, or against zero, and the screen
      * would offer no pins for as long as it stayed plugged in.
@@ -365,14 +365,14 @@ static void link_came_up(const link_msg_t *reply)
      *
      * Nothing has to forget the board.  The edge fires only on an identity
      * page, and the pages below are decoded against it in the same pass, so no
-     * read of it can reach a value from an earlier coprocessor.
+     * read of it can reach a value from an earlier IOmcu.
      */
     s_board = reply->regs[LINK_ID_HARDWARE];
 
     /* A binding is prepared and committed whole from 4.10
      * (bind_link_write()), and written page by page before it. */
     s_far_minor = reply->regs[LINK_ID_PROTOCOL_MINOR];
-    /* A refusal count is the coprocessor's that sent it: the band shows
+    /* A refusal count is the IOmcu's that sent it: the band shows
      * none until this one's status page is read. */
     s_bring.have_refused = false;
     s_bring.dev_refused  = 0u;
@@ -381,7 +381,7 @@ static void link_came_up(const link_msg_t *reply)
 
     /*
      * Whether it drives the PD mini (4.3), and its page written again from
-     * the start: a coprocessor that started again holds nothing, and one
+     * the start: an IOmcu that started again holds nothing, and one
      * that only went quiet may hold an ON this panel has since let go.
      */
     s_supply_page = reply->regs[LINK_ID_PROTOCOL_MINOR] >= 3u;
@@ -396,7 +396,7 @@ static void link_came_up(const link_msg_t *reply)
 
     /*
      * And the current monitors' pages (4.7): what SENSE holds is read
-     * before anything is written, and a coprocessor older than that is sent
+     * before anything is written, and an IOmcu older than that is sent
      * nothing.  Its capability bits are this identity page's: bits 3 and 4
      * follow a SENSE set-up kept in its flash, whoever wrote it.
      */
@@ -424,16 +424,16 @@ static void link_came_up(const link_msg_t *reply)
     prog_drive_publish();
 
     /*
-     * A board this build ships no catalogue for describes its own pins, so a
-     * coprocessor newer than this panel is usable rather than blank.
+     * A board this build ships no catalogue for describes its own pins, so an
+     * IOmcu newer than this panel is usable rather than blank.
      *
      * Only when the build has none.  A board it knows uses its own catalogue:
      * that one has been read by somebody, names the exact signal holding each
      * reserved pin, and cannot change under a running bench.
      *
-     * Nothing here makes a pin safe.  The coprocessor reserves its own set at
+     * Nothing here makes a pin safe.  The IOmcu reserves its own set at
      * its own end whatever this page says, so a catalogue that is wrong costs
-     * a pin rather than the safety line.  A coprocessor built before the page
+     * a pin rather than the safety line.  An IOmcu built before the page
      * answers NACK, which is not a failure: the screen then offers nothing for
      * that board, as it did before.
      */
@@ -448,28 +448,28 @@ static void link_came_up(const link_msg_t *reply)
     art_begin(s_board);
 
     /*
-     * The pole count.  A coprocessor that has just started holds zero, and
+     * The pole count.  An IOmcu that has just started holds zero, and
      * one whose cable came back holds whatever it was last told, so the edge
      * sends it either way.
      *
      * The warning is here rather than in the payer.  A refusal means the
-     * register is not in that coprocessor's build, which is a fact about the
+     * register is not in that IOmcu's build, which is a fact about the
      * board that just answered and worth one line per edge; the retry at
      * every poll would repeat it twenty times a second.
      */
     atomic_store(&s_poles_owed, true);
     if (!poles_service()) {
-        ESP_LOGW(TAG, "coprocessor did not take the pole count -- rpm will "
+        ESP_LOGW(TAG, "IOmcu did not take the pole count -- rpm will "
                       "read empty");
     }
     /*
-     * The throttle's pulse endpoints, for the same reason: a coprocessor
+     * The throttle's pulse endpoints, for the same reason: an IOmcu
      * replaced or reflashed since the debt was last paid holds its own
      * CHAN_CFG, and the panel would go on showing a range the motor channels
      * do not have.  The far end is held disarmed until it is paid
      * (s_endpoints_hold), by endpoints_service() at the next poll,
      * which reads the page and writes it only if the throttle channels
-     * differ, so an edge to a coprocessor that already agrees costs a read.
+     * differ, so an edge to an IOmcu that already agrees costs a read.
      */
     atomic_store(&s_endpoints_owed, true);
     s_endpoints_hold = true;
@@ -486,7 +486,7 @@ static void link_came_up(const link_msg_t *reply)
 
 /*
  * The status page's counters, into the bring-up record.  A 4.21 or later
- * coprocessor is asked for its refusal count as well; an older one refuses
+ * IOmcu is asked for its refusal count as well; an older one refuses
  * a read past its 8 registers, so it is asked for those
  * (link_bringup_status_count()) and its count stays 0.
  */
@@ -550,7 +550,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
             s_link_is_up = false;
         }
         if (answered != *link_up) {
-            ESP_LOGI(TAG, "coprocessor %s",
+            ESP_LOGI(TAG, "IOmcu %s",
                      answered ? "answered" : "went quiet");
             if (answered) {
                 /* From here on an unanswered exchange is a link lost,
@@ -638,7 +638,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
          *
          * Taken before link_up moves, and from the branch rather than from
          * the answer.  While the link is down the question asked is the
-         * identity page, so an answer there says a coprocessor is there to
+         * identity page, so an answer there says an IOmcu is there to
          * talk to and says nothing about the bench: bench still holds
          * whatever it held, which at boot is zeros.
          */
@@ -717,7 +717,7 @@ static void servo_window_take(bench_state_t *bench)
  * at 1 Hz while the link is down, which would step the model once per
  * 1000 ms of wall clock instead of twenty times -- the plot's axis twenty
  * times slow.  Its step is the time that passed, capped at a second like
- * the totals: a probe for the coprocessor's identity can hold this loop for
+ * the totals: a probe for the IOmcu's identity can hold this loop for
  * its whole 1000 ms timeout.
  *
  * The log has no gate: a pass that brought a sample writes one row for
@@ -736,8 +736,8 @@ void advance_model_and_log(bool link_up, float emitted,
     /*
      * The run's totals, from the sample either source just wrote, over the
      * time since the last one -- measured, not the 50 ms the model's cadence
-     * aims at: a link probe can hold this loop for a second, and a
-     * coprocessor sample arrives on the poll's clock.
+     * aims at: a link probe can hold this loop for a second, and an
+     * IOmcu sample arrives on the poll's clock.
      */
     if (*new_sample) {
         const uint32_t t = now_ms();
@@ -750,7 +750,7 @@ void advance_model_and_log(bool link_up, float emitted,
      * Written over the source's own charge and energy before the screen or
      * the log sees them, on every pass and not only a counted one: the first
      * read after a link-up is not a new sample, and it has written the
-     * coprocessor's own empty registers over the totals.
+     * IOmcu's own empty registers over the totals.
      */
     bench_totals_show(&s_totals, bench);
     /* A supply run's rows are supply_pump()'s, on the supply's cadence. */
@@ -791,7 +791,7 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.supply      = s_supply;
     s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
-    /* A coprocessor this panel cannot drive still takes the update. */
+    /* An IOmcu this panel cannot drive still takes the update. */
     s_snap.cu.mismatch = link_uph_mismatch_answers(&s_mismatch);
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.armed_roles = outputs_armed_roles(&s_out);

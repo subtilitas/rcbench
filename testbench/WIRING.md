@@ -71,7 +71,7 @@ part of the wiring rather than something assumed:
 |---|---|
 | The Pi | its own supply |
 | The RP2350 | its own USB, from a charger or a powered hub -- **not from the Pi**, and **not from the Pi's 3.3 V pin**. A cable to the Pi grounds the two a second time, through the USB shell, and the star lead in step 2 is then one of two return paths rather than the only one |
-| The coprocessor | its own USB |
+| The IOmcu | its own USB |
 | The panel | its own USB-C, on the socket it is flashed from |
 | Relay coils | their own supply, through the driver |
 | The servo and ESC rails | their own supplies, switched by the monostable's power path and never from a board's rail |
@@ -255,8 +255,8 @@ step 7 without it.
 |---|---|---|
 | GP16 | panel RESET relay | out |
 | GP17 | panel BOOT relay | out |
-| GP18 | coprocessor RESET relay | out |
-| GP19 | coprocessor BOOT relay | out |
+| GP18 | IOmcu RESET relay | out |
+| GP19 | IOmcu BOOT relay | out |
 | GP22 | heartbeat injection, step 7 | out |
 
 GP22 is a plain output, and it is an input at every other moment. It drives
@@ -287,10 +287,10 @@ not accept a download.
   the release, so a contact left closed holds it in reset and looks exactly
   like a relay that is not wired.
 - Close BOOT, pulse RESET, release RESET, release BOOT: the board comes up in
-  its loader. The coprocessor appears as a mass-storage device; the panel
+  its loader. The IOmcu appears as a mass-storage device; the panel
   accepts a serial download.
 - **Pulse RESET again, and confirm the board is running.** Releasing BOOT
-  does not leave the loader: the coprocessor stays a mass-storage device
+  does not leave the loader: the IOmcu stays a mass-storage device
   until it is reset, and its application is what section 6 and everything
   after it capture. A board left in its loader shows no CAN traffic at all,
   which reads as a wiring fault on a bus that is wired correctly.
@@ -426,7 +426,7 @@ EXIO5, 0 for USB and 1 for CAN. Selecting CAN takes the panel's native USB
 away, which is worth knowing before it is the port a flash was going to use.
 `docs/Link.md` has the detail.
 
-Then four leads on the coprocessor's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
+Then four leads on the IOmcu's SPI to the XL2515 -- SCK on GP10 pad 14, MOSI
 on GP11 pad 15, MISO on GP12 pad 16, CS on GP9 pad 12 -- and one on RXCAN
 between the controller and its transceiver.
 
@@ -458,7 +458,7 @@ clock aliases and the decode is worse than no capture.
 **If CS moves and RXCAN is flat, do not move the probe first.** A crossed pair
 gives exactly this picture and the probe is already right: CANH to CANL
 measures the same 60 Ω, the panel keeps polling its controller over SPI, and
-the coprocessor's RXCAN sits recessive until the transmitter gives up and goes
+the IOmcu's RXCAN sits recessive until the transmitter gives up and goes
 bus-off. In order of what costs least to check:
 
 1. **The multiplexer.** The panel is only on the bus with CH422G EXIO5 set to
@@ -466,7 +466,7 @@ bus-off. In order of what costs least to check:
 2. **Polarity.** CANH to CANH and CANL to CANL. Crossed reads 60 Ω and works
    for nobody.
 3. **What the ends say.** The panel's start-up self-test gives a verdict, and
-   the coprocessor's error counters say whether it has been transmitting into
+   the IOmcu's error counters say whether it has been transmitting into
    silence. A transmitter that has gone bus-off is a bus fault, not a probe
    fault.
 4. **Then the probe**, which wants the logic-level pin between the controller
@@ -478,9 +478,9 @@ bus-off. In order of what costs least to check:
 
 GP0, GP1 and GP2 for whatever OUTPUTS binds.
 
-**The heartbeat does not go straight from the panel to the coprocessor.** It
+**The heartbeat does not go straight from the panel to the IOmcu.** It
 leaves the panel at GPIO6 on J8, drives the retriggerable monostable, and the
-monostable gates the coprocessor's output enable and the servo and ESC power
+monostable gates the IOmcu's output enable and the servo and ESC power
 path; GP3 sees the line as well so the firmware can judge it. `docs/Safety.md`
 sets this out and `docs/FirstRun.md` step 3 routes the wire through it.
 
@@ -496,11 +496,11 @@ What it has to do, so that a circuit can be designed against it and checked:
 |---|---|
 | Input | edges from the panel's GPIO6 on J8, nominally one every 20 ms, which is a 40 ms cycle: `heartbeat_gen_step()` toggles the level once per period |
 | Behaviour | retriggerable: asserted while edges keep arriving, deasserted no later than the window after the last one |
-| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the coprocessor's 200 ms link failsafe |
-| Gates | two, both downstream of the coprocessor's pins: its output enable, and the servo and ESC power path |
+| Window | about 150 ms. Above the 20 ms period with margin for a late task, and below the IOmcu's 200 ms link failsafe |
+| Gates | two, both downstream of the IOmcu's pins: its output enable, and the servo and ESC power path |
 | Fail-safe direction | unpowered, undriven or unbuilt means disabled. A failure of the interlock cannot be a bench that keeps driving |
 | Not defeatable | no firmware at either end is in the path, which is the whole point |
-| Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the coprocessor's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
+| Two links, both removable | one in the panel's GPIO6 branch and one in the monostable's trigger branch, meeting at a junction with the IOmcu's GP3. The differential test needs to split that node three ways, and the panel drives GPIO6 push-pull, so it cannot simply be joined |
 
 Part numbers are deliberately absent: `hardware/README.md` says a part is not
 chosen until it is available at a vendor, and this belongs in `hardware/` as
@@ -510,7 +510,7 @@ A direct wire is the failure this bench must not build. It satisfies the
 firmware's heartbeat monitor, so every check in this guide would pass, and the
 one thing the interlock exists for -- a panel that has crashed, wedged, reset
 or browned out taking the outputs down without asking firmware at either end
--- would be absent. The window is about 150 ms, inside the coprocessor's
+-- would be absent. The window is about 150 ms, inside the IOmcu's
 200 ms link failsafe.
 
 A servo or an ESC signal line that runs at 5 V goes through the translator on
@@ -523,7 +523,7 @@ its threshold set for it, which is a per-run setting and an argument to
     testbench/host/capture.sh heartbeat D3 1m 2m 1.65
 
 An edge every 20 ms, so a 40 ms cycle: 20 ms high then 20 ms low. A gap longer
-than 150 ms is what the monostable and the coprocessor both act on, and should
+than 150 ms is what the monostable and the IOmcu both act on, and should
 not be there on a healthy panel.
 
 **Check, two: the interlock, and only the interlock.** Stopping the edges is
@@ -598,7 +598,7 @@ same failure on another one.
 
 *The differential test.* Keep the firmware happy and starve only the hardware.
 
-The heartbeat is one node: the panel's GPIO6, the coprocessor's GP3 and the
+The heartbeat is one node: the panel's GPIO6, the IOmcu's GP3 and the
 monostable's trigger all meet on it. The panel drives its end **push-pull**
 (`firmware/panel/main/main.c`), so a second driver on that node is contention
 rather than a test -- a corrupted reading at best and a damaged pin at worst.
@@ -609,7 +609,7 @@ Split it before injecting anything, which is what the two links are for:
    next step is not contention.
 2. **Have the RP2350 drive the junction from GP22** with one edge every
    20 ms -- a 40 ms cycle, not a 40 ms edge spacing and not a 20 ms cycle --
-   so `heartbeat_poll()` on the coprocessor never expires. The monitor rejects only
+   so `heartbeat_poll()` on the IOmcu never expires. The monitor rejects only
    edges closer than 4 ms (`HEARTBEAT_MIN_GAP_MS`), so an edge every 10 ms is
    accepted and a wrong rate here is injected rather than caught.
 
@@ -677,7 +677,7 @@ is about 0.63 us: sampled once a microsecond, narrow activity leaking through
 a failed gate falls between samples and the load side is reported quiet. The
 rate has to out-sample whatever D0 is carrying, and DShot600 is the fastest
 this bench binds. 2m samples at 24 MHz is 83 ms, which is 83 DShot frames at
-the coprocessor's 1,000 Hz update rate and four servo frames at 50 Hz, so a
+the IOmcu's 1,000 Hz update rate and four servo frames at 50 Hz, so a
 leak that repeats at all repeats inside it.
 
 **`capture.sh` warns that D15 never changed, and here that warning is the
@@ -694,7 +694,7 @@ last edge at all. What has to go quiet is the monostable's own input, which is
 what the link disconnects. Move the lead, or put a second one there and
 capture it instead.
 
-The coprocessor keeps seeing GP22 on the junction throughout, so firmware
+The IOmcu keeps seeing GP22 on the junction throughout, so firmware
 stays happy and D0 keeps toggling. Only the interlock is starved, which is the
 whole point of the test.
 
@@ -752,12 +752,12 @@ In this order, and stop at the first step that does not do what it says:
 
 1. The Pi.
 2. The RP2350, and `selftest.sh` again now that everything is attached.
-3. The coprocessor.
+3. The IOmcu.
 4. The panel.
 
 The panel shows the splash, runs its CAN self-test inside it, and comes up
 with `LINK` and `SAFE`. There should be no `FAULT` at power-up: the
-coprocessor does not count the wait for the panel's first request as silence.
+IOmcu does not count the wait for the panel's first request as silence.
 
 **A `FAULT 01` here has two causes and they look identical.** Bit 0 is "the
 link was silent once", it latches, and nothing clears it until a switch to ARMED writes
@@ -765,19 +765,19 @@ the CLEAR register -- so the link can be back and showing `LINK` while the bit
 is still displayed. It says something happened, not that something is wrong
 now.
 
-- An older **coprocessor** image, which counts the wait for the panel's first
+- An older **IOmcu** image, which counts the wait for the panel's first
   request as silence. Only that board can produce this one: the pre-request
   watchdog is `link_dev_tick()`, and the panel does not run `link_dev` at all,
   so the panel's version does not cause it and reflashing the panel for this
   symptom changes nothing.
 - A real gap after the first request. `shared/link/link_dev.c` latches the
   failsafe after 200 ms of silence, and 200 ms of silence has causes that have
-  nothing to do with the build: a save to the coprocessor's flash stops that
+  nothing to do with the build: a save to the IOmcu's flash stops that
   core long enough to lose CAN frames, and an intermittent lead or a marginal
   termination does the same.
 
 Do not read it as a version problem without checking. Both boards' versions
-are in the splash, and the coprocessor's USB console counts what actually
+are in the splash, and the IOmcu's USB console counts what actually
 happened -- `requests served`, the receive-buffer overrun line, and `tx_err` /
 `rx_err`. A `FAULT 01` with a healthy bus and a climbing overrun count is
 frames arriving with nobody to collect them, not an old image.
@@ -800,7 +800,7 @@ show:
    `docs/Safety.md` rather than taken on trust.
 6. **The panel's touch connector**, close enough to read the silkscreen, with
    the tap and the injector's leads.
-7. **The coprocessor and its transceiver**, close enough to identify RXCAN.
+7. **The IOmcu and its transceiver**, close enough to identify RXCAN.
 8. **The analyser's probe ends**, labelled, against the channel map.
 9. **One frame from the camera**, showing the splash, so the calibration can
    be checked before anything depends on it.

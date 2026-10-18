@@ -140,7 +140,7 @@ static uint16_t max_pulse_for_rate(void)
     const unsigned period = 1000000u / (unsigned)s.frame_hz;
     unsigned top = (period > pause) ? period - pause : 0u;
     if (top > OUT_CEILING_US) {
-        top = OUT_CEILING_US;   /* what the coprocessor takes */
+        top = OUT_CEILING_US;   /* what the IOmcu takes */
     }
     return (uint16_t)top;
 }
@@ -267,7 +267,7 @@ static void choice_add(const char *label, int value)
  * The TARGET row tapped: OUTPUTS or PROG PORT, the TARGET setting's
  * options, over the left column.  Under the setting's rule: refused while
  * the row is locked, and a choice made waits for a bench at rest before
- * the coprocessor takes it.
+ * the IOmcu takes it.
  */
 void open_target_choice(void)
 {
@@ -355,7 +355,7 @@ static void edit_row(int i)
     /*
      * Each end at least 50 us from the centre, and the range a command
      * carries -- centred on CENTRE, out to the further end; see cmd_range()
-     * -- inside what the coprocessor takes and what the frame rate leaves
+     * -- inside what the IOmcu takes and what the frame rate leaves
      * a pause after (max_pulse_for_rate(), never above the ceiling).  So an
      * end may lie no further from the centre than the centre lies from the
      * floor or from that top.
@@ -911,7 +911,7 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     if (l1 == NULL || l2 == NULL || size == 0u) {
         return false;
     }
-    /* No link: the coprocessor may have restarted since the rate landed,
+    /* No link: the IOmcu may have restarted since the rate landed,
      * and a restart puts every pin back at its own rate, so no rate is
      * named.  The link-up resets the rate before a target is known. */
     if (target == SERVO_SCREEN_TARGET_NO_LINK) {
@@ -926,7 +926,7 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
         snprintf(l2, size, "%s", TR(SV_IN_FORCE_2));
         return true;
     }
-    /* The target the coprocessor holds, not the setting: the setting waits
+    /* The target the IOmcu holds, not the setting: the setting waits
      * for a bench at rest, and PROG PORT with no pin bound to the port
      * leaves the standard outputs the target. */
     const bool other = setting < 0 || (unsigned)setting != target;

@@ -1,10 +1,10 @@
-# The safety heartbeat, both ends: the panel generates, the coprocessor
+# The safety heartbeat, both ends: the panel generates, the IOmcu
 # judges, and they share a file so they share the numbers.  arming.c is the
 # panel's policy for when the bench may be armed, kept here because it is the
 # same subject and because it has to be testable on the host.  safety_gate.c
-# is the coprocessor's decision to arm, from the monitor and the link's
+# is the IOmcu's decision to arm, from the monitor and the link's
 # watchdog together.  flash_gate.c is the panel's rule for when a write of
-# its own flash may start, and the coprocessor's for when one of its own may
+# its own flash may start, and the IOmcu's for when one of its own may
 # not.
 set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c)
 

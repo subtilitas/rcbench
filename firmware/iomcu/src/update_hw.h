@@ -1,5 +1,5 @@
 /*
- * The coprocessor's firmware update over the link: link_update_dev on this
+ * The IOmcu's firmware update over the link: link_update_dev on this
  * board's flash and boot ROM.
  *
  * The flash holds the partition table of partitions.json: slots A and B of

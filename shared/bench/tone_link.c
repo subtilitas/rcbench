@@ -89,7 +89,7 @@ void tone_link_lost(tone_link_t *t)
     t->ring_empty  = false;
     t->quiet       = 0u;
     t->sel_ok      = false;
-    /* What the coprocessor that went said, and not yet shown, is about a
+    /* What the IOmcu that went said, and not yet shown, is about a
      * page nobody reads now. */
     t->events = 0u;
 }
@@ -141,7 +141,7 @@ void tone_link_want(tone_link_t *t, const tone_setup_t *w, uint32_t now_ms)
         return;
     }
     const bool was_on = t->want_set && t->want[LINK_TN_ENABLE] != 0u;
-    /* The tap enabled now, with a coprocessor answering that cannot read
+    /* The tap enabled now, with an IOmcu answering that cannot read
      * it: said now, not at the next link-up. */
     if (t->up && !t->page && w->enable && !was_on) {
         t->events |= TONE_LINK_EV_NO_PAGE;
@@ -537,7 +537,7 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
     }
     const bool is_read = op != TONE_LINK_OP_SELECT;
     if (result != TONE_LINK_ACK || (is_read && regs == NULL)) {
-        /* A request refused: a coprocessor that names 4.8 and has not the
+        /* A request refused: an IOmcu that names 4.8 and has not the
          * page.  Nothing more is sent to it until the link comes up
          * again. */
         t->page = false;

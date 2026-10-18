@@ -3,9 +3,9 @@
  * written to it, in what order, what is read from it and how often, and
  * what a read means for the operator.
  *
- * The coprocessor reads one motor phase on a GPIO (the phase tap) and
+ * The IOmcu reads one motor phase on a GPIO (the phase tap) and
  * turns its edges into beeps and their pitch; the panel sets the tap up
- * from SETUP INTERFACES and reads the beeps.  A coprocessor whose protocol
+ * from SETUP INTERFACES and reads the beeps.  An IOmcu whose protocol
  * minor is below TONE_LINK_MINOR has no such page and nothing is sent to
  * it: not a write and not a read.  With the tap enabled on SETUP, the
  * operator is told so.
@@ -43,10 +43,10 @@
  *
  * The tap is an input and drives nothing, so a write does not wait for an
  * idle bank.  It waits TONE_LINK_SETTLE_MS since the set-up's last edit,
- * because the coprocessor keeps each change in flash.
+ * because the IOmcu keeps each change in flash.
  *
  * While the page holds ENABLE set, registers 8 to 23 are read every
- * TONE_LINK_READ_MS.  The coprocessor keeps the last LINK_TN_RING beeps,
+ * TONE_LINK_READ_MS.  The IOmcu keeps the last LINK_TN_RING beeps,
  * numbered 1 to 65535 and then 1 again.  The panel asks for each number in
  * turn: it writes EVT_SEL, then reads EVT_SEQ to EVT_FLAGS.  A read does
  * not consume a beep, so a reply that does not come loses nothing: the same
@@ -76,7 +76,7 @@ extern "C" {
 
 /** A set-up rests this long after its last edit before it is written: a
  *  held + or - on SETUP steps a value about 30 times a second, and each
- *  write is a flash save at the coprocessor. */
+ *  write is a flash save at the IOmcu. */
 #define TONE_LINK_SETTLE_MS 500u
 
 /** Registers 8 to 23 are due this long after the last read while the tap
@@ -120,7 +120,7 @@ extern "C" {
 /** The set-up as SETUP INTERFACES has it. */
 typedef struct {
     bool     enable;          /**< the tap runs                         */
-    uint8_t  pin;             /**< coprocessor GPIO                     */
+    uint8_t  pin;             /**< IOmcu GPIO                     */
     uint16_t f_min_hz;        /**< 50 to 2000                           */
     uint16_t f_max_hz;        /**< above f_min_hz, to 6900              */
     uint8_t  split_pct;       /**< 0 (off) to 50                        */
@@ -130,14 +130,14 @@ typedef struct {
 
 /** Things the caller tells the operator about, each once. */
 enum {
-    /** The tap is enabled and the coprocessor has no TONE page. */
+    /** The tap is enabled and the IOmcu has no TONE page. */
     TONE_LINK_EV_NO_PAGE      = 0x01,
     /** The page refused the first frame: the pin, or the tone range. */
     TONE_LINK_EV_PIN_REFUSED  = 0x02,
     /** The page refused the second frame: split, gap or periods. */
     TONE_LINK_EV_SETUP_REFUSED = 0x04,
     /** FLAGS says the pin is not free: a set-up kept in the
-     *  coprocessor's flash met a binding at boot. */
+     *  IOmcu's flash met a binding at boot. */
     TONE_LINK_EV_PIN_BUSY     = 0x08,
     /** FLAGS says the capture overran: a beep was cut. */
     TONE_LINK_EV_OVERRUN      = 0x10,
@@ -176,7 +176,7 @@ typedef struct {
 /** What the tap is doing, for the screen. */
 typedef enum {
     TONE_STATE_OFF = 0,       /**< not enabled on SETUP                 */
-    TONE_STATE_NO_PAGE,       /**< enabled; the coprocessor has no page */
+    TONE_STATE_NO_PAGE,       /**< enabled; the IOmcu has no page */
     TONE_STATE_WAITING,       /**< enabled; no link, or nothing read yet */
     TONE_STATE_RUNNING,       /**< the capture runs                     */
     TONE_STATE_REFUSED,       /**< the pin is not free                  */
@@ -199,7 +199,7 @@ typedef struct {
     bool     beep;            /**< a beep is under way                  */
     uint16_t win_freq_dhz;    /**< the last window's pitch, 0.1 Hz; 0 none */
     uint16_t win_periods;
-    uint16_t lost;            /**< beeps the coprocessor dropped        */
+    uint16_t lost;            /**< beeps the IOmcu dropped        */
     uint16_t glitches;        /**< lows it ignored as too short         */
     uint32_t missed;          /**< beeps the panel did not read         */
     uint8_t  n;               /**< beeps held below                     */
@@ -207,8 +207,8 @@ typedef struct {
 } tone_readout_t;
 
 typedef struct {
-    bool     up;              /**< a coprocessor answers               */
-    bool     page;            /**< the coprocessor has TONE (4.8)      */
+    bool     up;              /**< an IOmcu answers               */
+    bool     page;            /**< the IOmcu has TONE (4.8)      */
 
     /* What is asked, as the page is to hold it. */
     bool     want_set;
@@ -267,13 +267,13 @@ void tone_link_init(tone_link_t *t);
 void tone_link_lost(tone_link_t *t);
 
 /**
- * A coprocessor answered with protocol minor @p minor.  Below
+ * An IOmcu answered with protocol minor @p minor.  Below
  * TONE_LINK_MINOR it has no page and nothing is sent to it, and the tap
  * enabled on SETUP raises TONE_LINK_EV_NO_PAGE.
  */
 void tone_link_came_up(tone_link_t *t, uint16_t minor, uint32_t now_ms);
 
-/** The set-up SETUP names now.  The tap enabled while a coprocessor
+/** The set-up SETUP names now.  The tap enabled while an IOmcu
  *  without the page answers raises TONE_LINK_EV_NO_PAGE.  A set-up with a
  *  value outside the page's range -- a zeroed snapshot -- is ignored:
  *  nothing is asked, and nothing is written for it. */
@@ -302,8 +302,8 @@ void tone_link_done(tone_link_t *t, int result, const uint16_t *regs,
 uint16_t tone_link_event(tone_link_t *t, uint32_t now_ms);
 
 /** Put back an event tone_link_event() handed out that never reached the
- *  band, so it is handed out again after the gap.  An event about a
- *  coprocessor is not put back once the link has gone. */
+ *  band, so it is handed out again after the gap.  An event about an
+ *  IOmcu is not put back once the link has gone. */
 void tone_link_event_back(tone_link_t *t, uint16_t ev);
 
 /** Whether nothing is owed: the page holds the set-up asked, less the
@@ -321,8 +321,8 @@ enum {
 /**
  * The frames whose values as asked are not the ones the page holds,
  * TONE_LINK_ROWS_*: not written yet, or refused.  The comparison is want
- * against held, the two this module writes from.  0 while no coprocessor
- * answers and before the page has been read.  A coprocessor without the
+ * against held, the two this module writes from.  0 while no IOmcu
+ * answers and before the page has been read.  An IOmcu without the
  * page holds no tap, and a tap that is on is named.
  */
 uint8_t tone_link_unheld(const tone_link_t *t);

@@ -75,7 +75,7 @@ SOURCES = [
     "shared/ui/servo_limit_panel.c",
     "shared/ui/servo_workbench.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
-    # what the views drive it with: the link module, the coprocessor's
+    # what the views drive it with: the link module, the IOmcu's
     # port and the core.
     "shared/ui/kst_panel.c",
     "shared/bench/kst_prog.c",
@@ -117,7 +117,7 @@ SOURCES = [
     "shared/esc/esc_det.c",
     "shared/esc/esc_stick_read.c",
     "shared/esc/esc_sim.c",
-    # The board drawing the coprocessor serves: generated data, so the
+    # The board drawing the IOmcu serves: generated data, so the
     # screenshot is the drawing a bench shows.
     "firmware/iomcu/src/board_drawing_rp2350_can.c",
     "shared/ui/board_drawing.c",
@@ -179,7 +179,7 @@ SCREENS = {
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
-    # A coprocessor that has refused link frames: the count after the
+    # An IOmcu that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
@@ -375,7 +375,7 @@ SCREENS = {
     # and drawn on to the INA3221's rows and the bus's pins.
     "setup-interfaces": ("setup-interfaces.png", "setup", "dark"),
     "setup-sensors": ("setup-sensors.png", "setup", "dark"),
-    # The same rows with the pins the coprocessor has not taken: the mark on
+    # The same rows with the pins the IOmcu has not taken: the mark on
     # Sensor SDA and Sensor SCL, and on the INA3221 that is off for them.
     "setup-unheld": ("setup-unheld.png", "setup", "dark"),
     # The same list past them, to the phase tap's rows, the tap enabled.
@@ -420,7 +420,7 @@ SCREENS = {
     "supply-offline": ("supply-offline.png", "supply", "dark"),
     "busfault-silent": ("busfault-silent.png", "busfault", "dark"),
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
-    # The coprocessor update: the question a link-up poses, the same with
+    # The IOmcu update: the question a link-up poses, the same with
     # an image older than the one running, and the progress half way.
     "coproc-update": ("coproc-update.png", "coproc-update", "dark"),
     "coproc-update-older": ("coproc-update-older.png", "coproc-update",
@@ -477,8 +477,8 @@ SCREENS = {
     "updates-newer": ("updates-newer.png", "updates", "dark"),
     "updates-current": ("updates-current.png", "updates", "dark"),
     "updates-failed": ("updates-failed.png", "updates", "dark"),
-    # Its coprocessor section with a coprocessor on another build: the
-    # hold that starts the coprocessor's update.
+    # Its IOmcu section with an IOmcu on another build: the
+    # hold that starts the IOmcu's update.
     "updates-coproc": ("updates-coproc.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
@@ -547,7 +547,7 @@ MIN_SHAPE = 8
 # Views the fit check draws and no page shows: the band's other bubbles,
 # so every string of every bubble is measured where it is drawn, and the
 # Wi-Fi screen's failure lines and its install question held by the
-# coprocessor's update, and UPDATES joining, refused, without a home
+# IOmcu's update, and UPDATES joining, refused, without a home
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
@@ -573,7 +573,7 @@ FIT_ONLY = {
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
-    # Every other state of UPDATES' coprocessor section.
+    # Every other state of UPDATES' IOmcu section.
     "updates-cu-older":    (None, "updates", "dark"),
     "updates-cu-rebuilt":  (None, "updates", "dark"),
     "updates-cu-noimage":  (None, "updates", "dark"),
@@ -609,8 +609,8 @@ FIT_ONLY = {
     "servo-kst-journal-p2": (None, "servo", "dark"),
     # The analyser on a frame the receiver flags as lost.
     "analyser-lost":    (None, "analyser", "dark"),
-    # The SERVO screen's OUTPUT page with the frame rate refused and with a
-    # coprocessor that cannot set it; the HV warning with the output on.
+    # The SERVO screen's OUTPUT page with the frame rate refused and with an
+    # IOmcu that cannot set it; the HV warning with the output on.
     "servo-rate-refused": (None, "servo", "dark"),
     "servo-rate-unsupported": (None, "servo", "dark"),
     "servo-hv-live":    (None, "servo", "dark"),

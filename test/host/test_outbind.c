@@ -80,7 +80,7 @@ TEST_CASE(the_reserved_set_holds_every_pin_the_header_does_not_offer)
     for (unsigned g = 30u; g <= OUT_MAX_PIN; ++g) {
         want |= 1ull << g;
     }
-    /* Pinned exactly: the coprocessor hands this to outputs_reserve_pins(),
+    /* Pinned exactly: the IOmcu hands this to outputs_reserve_pins(),
      * so a pin that quietly leaves this set becomes an output on the
      * heartbeat line, the CAN bus or the power converter. */
     CHECK_EQ(m, want);
@@ -194,7 +194,7 @@ TEST_CASE(ppm_takes_one_pin_and_pwm_takes_the_bank)
 
 /*
  * GP0 and GP16 are one compare register on two pads, as are GP1/17, GP2/18,
- * GP4/20, GP5/21 and GP6/22 on this header.  The coprocessor's
+ * GP4/20, GP5/21 and GP6/22 on this header.  The IOmcu's
  * out_pwm_bind() refuses the second pin of a pair, so a PWM protocol is not
  * offered it beside a pin bound as PWM in either PWM protocol.  DShot runs
  * on PIO and is offered it; the other channel of the slice is a register of
@@ -233,7 +233,7 @@ TEST_CASE(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered)
 
 /*
  * The two refusals as the screens ask for them.  The slice rule needs the
- * programming port's pin: GP28 is slice 6 with GP13, and the coprocessor's
+ * programming port's pin: GP28 is slice 6 with GP13, and the IOmcu's
  * prog_port_slots_check() refuses it to PWM while the port holds GP13.  A
  * slot on GP13 leaves the port without a pin, and the slice is free then.
  */
@@ -567,7 +567,7 @@ TEST_CASE(what_this_writes_is_what_the_bank_accepts)
 
 TEST_CASE(a_selection_survives_the_round_trip_through_the_page)
 {
-    /* The panel asks the coprocessor what its outputs are rather than
+    /* The panel asks the IOmcu what its outputs are rather than
      * remembering: what comes back has to be what was sent. */
     /* Every entry the catalogue offers, so an entry added later is covered
      * by the fact that it is offered rather than by remembering to list it
@@ -1213,7 +1213,7 @@ TEST_CASE(a_board_can_describe_itself_and_read_back_the_same)
 TEST_CASE(a_board_this_build_describes_is_not_the_wires_to_redescribe)
 {
     /*
-     * Otherwise a coprocessor could rename the pin holding the safety line,
+     * Otherwise an IOmcu could rename the pin holding the safety line,
      * or free it.  The compiled catalogue has been read by somebody and
      * cannot change under a running bench.
      */
@@ -1374,7 +1374,7 @@ TEST_CASE(a_pad_of_zero_ends_the_catalogue)
 {
     /*
      * There is no count register.  One would have to live in the identity
-     * page, and lengthening that page makes every older coprocessor refuse
+     * page, and lengthening that page makes every older IOmcu refuse
      * the identity read and the link never come up.  Pads are numbered from
      * one, so zero is the free way to say there is no pin here.
      */

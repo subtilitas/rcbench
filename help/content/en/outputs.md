@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -19,7 +19,7 @@ OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servo
 
 The count under the list, `4 OF 8 PINS`, says how many pins the protocol holds and how many it takes. A pin belongs to one protocol at most. Several protocols can be bound at once.
 
-Each ticked pin is one slot of the coprocessor's OUTPUTS page, in pin order across every protocol. The lowest ticked pin is channel 0. There are 8 slots and 8 channels, shared by all protocols.
+Each ticked pin is one slot of the IOmcu's OUTPUTS page, in pin order across every protocol. The lowest ticked pin is channel 0. There are 8 slots and 8 channels, shared by all protocols.
 
 ## The protocols
 
@@ -42,7 +42,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on SETUP, ESC / BENCH, in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the coprocessor 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on SETUP, ESC / BENCH, in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the IOmcu 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012 us, 980 us and 2020 us.
 
@@ -55,7 +55,7 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | ticked, `PAD 6` | bound in the selected protocol; the pad number printed on the board | gives it back |
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
-| `PROG PORT` | the pin of the coprocessor's programming port, GP13 by default | does nothing |
+| `PROG PORT` | the pin of the IOmcu's programming port, GP13 by default | does nothing |
 | greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
 | greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |
@@ -72,20 +72,20 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the coprocessor. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as a coprocessor that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
+Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as an IOmcu that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
 
 ## LAST WRITE
 
-Every tick is written at once. The panel then reads the coprocessor's pages back and shows what it holds.
+Every tick is written at once. The panel then reads the IOmcu's pages back and shows what it holds.
 
 | LAST WRITE | Meaning |
 |---|---|
 | `NOT WRITTEN` | nothing written since the panel started |
-| `WRITTEN` | the coprocessor acknowledged the write |
+| `WRITTEN` | the IOmcu acknowledged the write |
 | `NO LINK` | an exchange got no answer within 1000 ms, or the link is down |
-| `REFUSED` | the coprocessor refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
+| `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
 
-A coprocessor of protocol 4.10 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
+An IOmcu of protocol 4.10 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
 
 ## A binding that is not confirmed
 
@@ -97,9 +97,9 @@ The screen edits a binding only after reading it. While a page did not read, the
 
 When the pages read but describe no binding the screen knows, for example one pin in two slots, it reads `NO VALID ASSIGNMENT IN THE PAGES` and offers `HOLD: CLEAR ALL PIN ASSIGNMENTS`. Held for 2 s, it writes a binding with no pin, and edits are taken again. A finger that leaves the key, a lift before 2 s or leaving the screen abandons the hold.
 
-## The coprocessor keeps the binding
+## The IOmcu keeps the binding
 
-The coprocessor stores the binding in its own flash and restores it at boot; the panel never stores one. A restored binding claims its pins and holds them at rest until the bench is switched to ARMED. A power cut during a save leaves the binding from before it.
+The IOmcu stores the binding in its own flash and restores it at boot; the panel never stores one. A restored binding claims its pins and holds them at rest until the bench is switched to ARMED. A power cut during a save leaves the binding from before it.
 
 ## Related pages
 

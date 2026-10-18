@@ -447,7 +447,7 @@ void stop_sweep(void)
 
 /*
  * PAUSE: the sweep stops and every surface stays where its output had got
- * to, by the link's HOLD.  The coprocessor holds it there, because only it
+ * to, by the link's HOLD.  The IOmcu holds it there, because only it
  * knows where that is: SPEED can leave the output well behind the curve, and
  * without feedback the horn drawn here is an estimate.  The drawing stops
  * where it was.  The phase is kept, here and at the far end, for
@@ -512,8 +512,8 @@ static void record_start(void)
 
 /*
  * Start the sweep, or carry on with a changed one from its beginning, as the
- * coprocessor does.  Only while the value is live (value_live()) and on a
- * coprocessor that sweeps: the far end refuses one otherwise.  Drawn once
+ * IOmcu does.  Only while the value is live (value_live()) and on an
+ * IOmcu that sweeps: the far end refuses one otherwise.  Drawn once
  * the start is acknowledged (servo_screen_sweep_started()).
  */
 static void start_sweep(void)
@@ -537,7 +537,7 @@ static void start_sweep(void)
 
 /*
  * A running sweep's curve changed: the new one from its beginning, as the
- * coprocessor starts it when it is written.  Until that start is
+ * IOmcu starts it when it is written.  Until that start is
  * acknowledged the far end runs the old curve, so the old curve is drawn on
  * (the drain, as for a PAUSE on its way) at the SPEED it ran at, for at
  * most OUT_DEFAULT_TIMEOUT_MS.
@@ -578,7 +578,7 @@ static bool same_sweep(const sweep_cfg_t *a, const sweep_cfg_t *b)
 
 /*
  * A tap on PAUSED: the paused sweep carried on from where it was paused.
- * The command asks the panel for a resume; a coprocessor older than 4.6, or
+ * The command asks the panel for a resume; an IOmcu older than 4.6, or
  * one that refuses, starts the curve over instead.  Either way the far end
  * stays held until then, so the horn does too, and the acknowledgement
  * (servo_screen_sweep_started()) draws it from there.  A curve changed on
@@ -923,7 +923,7 @@ void servo_screen_set_sweep(bool able)
     }
     s.sweep_able = able;
     if (!able && (s.sweeping || s.paused)) {
-        /* The panel would go on repeating a sweep the coprocessor no longer
+        /* The panel would go on repeating a sweep the IOmcu no longer
          * takes: what it holds is ended, and the surfaces rest. */
         stop_sweep();
         release();
@@ -2961,7 +2961,7 @@ static void tick_body(float dt_s)
     }
     prog_page_follow();
     /* A PD mini the programmer's CONNECT switched on, through the
-     * coprocessor rather than through SUPPLY, is this screen's. */
+     * IOmcu rather than through SUPPLY, is this screen's. */
     if (supply_screen_port_held()) {
         supply_screen_claim(SUPPLY_BY_SERVO);
     }
@@ -2993,7 +2993,7 @@ static void tick_body(float dt_s)
     }
     if (s.sweeping) {
         /* A sweep whose curve a setting or the profile changed starts over,
-         * as the coprocessor's does when it is written. */
+         * as the IOmcu's does when it is written. */
         const sweep_cfg_t now = sweep_cfg_now();
         if (!same_sweep(&now, &s.sw.cfg)) {
             restart_sweep();

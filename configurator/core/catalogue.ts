@@ -161,10 +161,10 @@ const parts: Part[] = [
   {
     id: 'copro',
     name: t('Waveshare RP2350-CAN board', 'Waveshare-RP2350-CAN-Platine'),
-    short: t('Coprocessor', 'Koprozessor'),
+    short: t('IOmcu', 'IOmcu'),
     role: t(
-      'Coprocessor: drives the outputs, reads the sensors, sets the supply.',
-      'Koprozessor: treibt die Ausgänge, liest die Sensoren, stellt die Versorgung.',
+      'IOmcu: drives the outputs, reads the sensors, sets the supply.',
+      'IOmcu: treibt die Ausgänge, liest die Sensoren, stellt die Versorgung.',
     ),
     locked: true,
     selectable: false,
@@ -668,8 +668,8 @@ const parts: Part[] = [
     ),
     short: t('Emergency stop', 'Not-Aus'),
     role: t(
-      'Its NC (normally closed) contact opens the heartbeat wire. It breaks no power line; the coprocessor switches the bench to SAFE and the output of the PD mini off.',
-      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er trennt keine Versorgungsleitung; der Koprozessor schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus.',
+      'Its NC (normally closed) contact opens the heartbeat wire. It breaks no power line; the IOmcu switches the bench to SAFE and the output of the PD mini off.',
+      'Sein Öffner (NC) unterbricht den Heartbeat-Draht. Er trennt keine Versorgungsleitung; der IOmcu schaltet den Prüfstand auf SAFE und den Ausgang des PD mini aus.',
     ),
     locked: false,
     selectable: true,
@@ -773,8 +773,8 @@ const parts: Part[] = [
     ),
     short: t('T-plug', 'T-Stecker'),
     role: t(
-      'Sits between the USB-C PD charger and the PD mini: the charger on the socket IN, a USB-C cable from the socket OUT to the PD mini. Brings GND, D+ and D− to the coprocessor.',
-      'Sitzt zwischen USB-C-PD-Ladegerät und PD mini: das Ladegerät an der Buchse IN, ein USB-C-Kabel von der Buchse OUT zum PD mini. Führt GND, D+ und D− zum Koprozessor.',
+      'Sits between the USB-C PD charger and the PD mini: the charger on the socket IN, a USB-C cable from the socket OUT to the PD mini. Brings GND, D+ and D− to the IOmcu.',
+      'Sitzt zwischen USB-C-PD-Ladegerät und PD mini: das Ladegerät an der Buchse IN, ein USB-C-Kabel von der Buchse OUT zum PD mini. Führt GND, D+ und D− zum IOmcu.',
     ),
     between: ['charger', 'pdmini'],
     locked: false,
@@ -816,7 +816,7 @@ const parts: Part[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Pads of the coprocessor. [pad, name, gpio, line in out_bind.c at the release tag]
+// Pads of the IOmcu. [pad, name, gpio, line in out_bind.c at the release tag]
 // ---------------------------------------------------------------------------
 
 const CAN_RESERVED: Text = t(
@@ -923,8 +923,8 @@ const SERVO_BENCH_NOTE = t(
   'Für ein kleines Servo. Das Servo zieht seinen Strom aus der Versorgung, die auch die Logik speist.',
 );
 const SERVO_STRIP_NOTE = t(
-  'For a small servo. With the jumper V Selector on 5V the servo draws from the DC input of the board through the XL1509 converter, with the jumper on 3V3 from VSYS of the coprocessor board, the supply that also powers the logic.',
-  'Für ein kleines Servo. Mit dem Jumper V Selector auf 5V zieht das Servo aus dem DC-Eingang der Platine über den XL1509-Wandler, mit dem Jumper auf 3V3 aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist.',
+  'For a small servo. With the jumper V Selector on 5V the servo draws from the DC input of the board through the XL1509 converter, with the jumper on 3V3 from VSYS of the IOmcu board, the supply that also powers the logic.',
+  'Für ein kleines Servo. Mit dem Jumper V Selector auf 5V zieht das Servo aus dem DC-Eingang der Platine über den XL1509-Wandler, mit dem Jumper auf 3V3 aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist.',
 );
 const STRIP_V = t(
   'V pin of the S V G strip at GP2 of the Osoyoo breakout board',
@@ -973,8 +973,8 @@ const wires: Wire[] = [
     n: 4, kind: 'wire', a: 'panel.J8S', b: 'pad.5', net: 'hb', cls: 'hb',
     signal: HB,
     note: t(
-      'The interlock. The coprocessor refuses to arm without it.',
-      'Die Verriegelung. Ohne ihn schaltet der Koprozessor nicht auf ARMED.',
+      'The interlock. The IOmcu refuses to arm without it.',
+      'Die Verriegelung. Ohne ihn schaltet der IOmcu nicht auf ARMED.',
     ),
     when: { not: { has: 'estop' } }, stage: 1, route: { kind: 'L', lane: 3 }, pin: 'fixed',
     src: guide('wires'),
@@ -1012,8 +1012,8 @@ const wires: Wire[] = [
     n: 8, kind: 'wire', a: 'pad.8', b: 'servo.NEG', net: 'gnd', cls: 'gnd',
     signal: GND,
     note: t(
-      'Servo − also goes to coprocessor GND.',
-      'Servo − geht auch an GND des Koprozessors.',
+      'Servo − also goes to IOmcu GND.',
+      'Servo − geht auch an GND des IOmcu.',
     ),
     when: { has: 'servo' }, stage: 1, route: { kind: 'L', lane: 6 }, src: guide('wires'),
   },
@@ -1076,8 +1076,8 @@ const wires: Wire[] = [
     n: 16, kind: 'wire', a: 'pad.10', b: 'usbtap.DM', net: 'pd_tx', cls: 'uart',
     signal: t(`UART TX, ${V33_EN}`, `UART TX, ${V33_DE}`),
     note: t(
-      `Named from the coprocessor: its TX goes to D− of the T-plug. ${STATED.en} Optional 1 kΩ in series.`,
-      `Vom Koprozessor aus benannt: sein TX geht an D− des T-Steckers. ${STATED.de} Optional 1 kΩ in Reihe.`,
+      `Named from the IOmcu: its TX goes to D− of the T-plug. ${STATED.en} Optional 1 kΩ in series.`,
+      `Vom IOmcu aus benannt: sein TX geht an D− des T-Steckers. ${STATED.de} Optional 1 kΩ in Reihe.`,
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'L', lane: 9 }, pin: 'proposal',
     src: OWNER,
@@ -1237,8 +1237,8 @@ const wires: Wire[] = [
     net: 'as5600_dir', cls: 'nc',
     signal: t('direction strap', 'Richtungsbrücke'),
     note: t(
-      'Never leave DIR open. No wire to the coprocessor.',
-      'DIR nie offen lassen. Kein Draht zum Koprozessor.',
+      'Never leave DIR open. No wire to the IOmcu.',
+      'DIR nie offen lassen. Kein Draht zum IOmcu.',
     ),
     when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: guide('stage-4'),
   },
@@ -1368,8 +1368,8 @@ const wires: Wire[] = [
     net: 'gnd', cls: 'gnd',
     signal: t('GPO strap', 'GPO-Brücke'),
     note: t(
-      'docs/Building.md names the pin PGO. No wire to the coprocessor.',
-      'docs/Building.md nennt den Pin PGO. Kein Draht zum Koprozessor.',
+      'docs/Building.md names the pin PGO. No wire to the IOmcu.',
+      'docs/Building.md nennt den Pin PGO. Kein Draht zum IOmcu.',
     ),
     when: { has: 'as5600' }, stage: 4, route: { kind: 'S' }, src: repo('docs/Building.md', 123, '| PGO | GND |'),
   },
@@ -1407,8 +1407,8 @@ const wires: Wire[] = [
     stage: 5, route: { kind: 'X', left: 18, right: 22, channel: 6 }, src: OWNER,
   },
   // The servo fed by the bench itself. Wires 59 and 60: the 5 V pin of the
-  // coprocessor board. Wires 61 and 62: the V pin of the strip at the servo
-  // pin of the Osoyoo breakout board; the strip is no pad of the coprocessor,
+  // IOmcu board. Wires 61 and 62: the V pin of the strip at the servo
+  // pin of the Osoyoo breakout board; the strip is no pad of the IOmcu,
   // so the wire ends in the drawing as a stub with its target in words.
   {
     n: 59, kind: 'wire', a: 'servo.POS', b: 'pad.40', net: 'vbus', cls: 'power',
@@ -1449,19 +1449,19 @@ const wires: Wire[] = [
     ),
     when: { has: 'pdmini' }, stage: 2, route: { kind: 'O', lane: 4 }, src: OWNER,
   },
-  // The servo on the programming port of the coprocessor, in place of wire 7.
+  // The servo on the programming port of the IOmcu, in place of wire 7.
   {
     n: 64, kind: 'wire', a: 'pad.17', b: 'servo.SIG', net: 'servo_sig', cls: 'out',
     signal: t(`servo signal: PWM and programming, ${V33_EN}`, `Servosignal: PWM und Programmierung, ${V33_DE}`),
     note: t(
-      'In place of wire 7. The programming port, port 1: the pin of a coprocessor that has stored none. Set SETTINGS → DUT → PWM TARGET to PROG PORT.',
-      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines Koprozessors, der keinen gespeichert hat. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen.',
+      'In place of wire 7. The programming port, port 1: the pin of an IOmcu that has stored none. Set SETTINGS → DUT → PWM TARGET to PROG PORT.',
+      'Anstelle von Draht 7. Der Programmierport, Port 1: der Pin eines IOmcu, der keinen gespeichert hat. SETTINGS → DUT → PWM TARGET auf PROG PORT stellen.',
     ),
     when: SERVO_PROG, stage: 1, route: { kind: 'L', lane: 5 }, pin: 'default',
     src: repo(PROG_PORT, 61, '#define PROG_PORT_DEFAULT_PIN 13u'),
   },
   // The DC supply of the Osoyoo breakout board, for the jumper on 5V. The DC
-  // input is no pad of the coprocessor, so both leads end as stubs with their
+  // input is no pad of the IOmcu, so both leads end as stubs with their
   // target in words. The converter U9 joins this input to the V pins.
   {
     n: 65, kind: 'stub', a: 'dcsup.POS', b: null, to: DC_IN_POS, net: 'osoyoo_vin', cls: 'power',
@@ -1480,7 +1480,7 @@ const wires: Wire[] = [
 // ---------------------------------------------------------------------------
 // Functions. `src` is the statement of the function in the docs of the release.
 //
-// A function with `needs: []` runs on the panel and the coprocessor alone. It
+// A function with `needs: []` runs on the panel and the IOmcu alone. It
 // is enabled in every setup and the page offers no tick for it.
 // ---------------------------------------------------------------------------
 
@@ -1552,7 +1552,7 @@ const functions: Fn[] = [
   },
   {
     id: 'canupdate', group: 'bench',
-    name: t('Coprocessor firmware update over CAN from the panel', 'Firmware-Update des Koprozessors über CAN vom Panel'),
+    name: t('IOmcu firmware update over CAN from the panel', 'Firmware-Update des IOmcu über CAN vom Panel'),
     needs: [], src: repo('STATUS.md', 118, 'Coprocessor firmware update over CAN'),
   },
   {
@@ -1579,7 +1579,7 @@ const functions: Fn[] = [
   {
     id: 'servoprog', group: 'servo',
     name: t('Program a KST or Chaservo servo', 'KST- oder Chaservo-Servo programmieren'),
-    // The panel and the coprocessor suffice. The servo is on the programming
+    // The panel and the IOmcu suffice. The servo is on the programming
     // port. Its supply is the PD mini, where one is there, and CONNECT sets
     // it; else the supply the variant "Servo power" names. The SERVO screen's
     // PWM TARGET is PROG PORT, so the other servo functions drive the same pin.
@@ -1759,8 +1759,8 @@ const checks: Check[] = [
   {
     id: 'matek-pullup', kind: 'measure',
     text: t(
-      'MATEK board: the pull-up rail is not known. With the board powered and the coprocessor not connected, SDA and SCL read 3.3 V or less to GND.',
-      'MATEK-Platine: Die Pull-up-Schiene ist nicht bekannt. Platine versorgt, Koprozessor noch nicht verbunden: SDA und SCL liegen bei höchstens 3,3 V gegen GND.',
+      'MATEK board: the pull-up rail is not known. With the board powered and the IOmcu not connected, SDA and SCL read 3.3 V or less to GND.',
+      'MATEK-Platine: Die Pull-up-Schiene ist nicht bekannt. Platine versorgt, IOmcu noch nicht verbunden: SDA und SCL liegen bei höchstens 3,3 V gegen GND.',
     ),
     when: { all: [{ has: 'ina228' }, { opt: 'ina228Board', is: 'matek' }] },
     src: guide('wires'),
@@ -1786,8 +1786,8 @@ const checks: Check[] = [
   {
     id: 'ina228-xt90-pd', kind: 'unknown',
     text: t(
-      'INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the coprocessor. A connection between the minus output of the PD mini and GND of the coprocessor is a second path beside the shunt. The share of the ESC current that the sensor reads in this setup is not measured.',
-      'INA228-Modul mit XT90-Steckern und ESC-Versorgung B: G des Moduls ist das ESC-Ende des Shunts und liegt an GND des Koprozessors. Eine Verbindung zwischen dem Minus-Ausgang des PD mini und GND des Koprozessors ist ein zweiter Pfad neben dem Shunt. Der Anteil des ESC-Stroms, den der Sensor in diesem Aufbau misst, ist nicht gemessen.',
+      'INA228 module with XT90 plugs and ESC power B: G of the module is the ESC end of the shunt and is wired to GND of the IOmcu. A connection between the minus output of the PD mini and GND of the IOmcu is a second path beside the shunt. The share of the ESC current that the sensor reads in this setup is not measured.',
+      'INA228-Modul mit XT90-Steckern und ESC-Versorgung B: G des Moduls ist das ESC-Ende des Shunts und liegt an GND des IOmcu. Eine Verbindung zwischen dem Minus-Ausgang des PD mini und GND des IOmcu ist ein zweiter Pfad neben dem Shunt. Der Anteil des ESC-Stroms, den der Sensor in diesem Aufbau misst, ist nicht gemessen.',
     ),
     when: { all: [{ has: 'esc' }, XT90_SHUNT, { opt: 'escPower', is: 'pd' }] },
     src: OWNER,
@@ -1803,16 +1803,16 @@ const checks: Check[] = [
   {
     id: 'tap-ground', kind: 'measure',
     text: t(
-      'Phase tap: everything unpowered, ESC power negative to coprocessor GND (pad 28) reads near 0 Ω. With an opto-isolated ESC input the tap reads nothing.',
-      'Phasenabgriff: alles stromlos, Minus der ESC-Versorgung gegen GND des Koprozessors (Pad 28) liest nahe 0 Ω. Bei einem ESC-Eingang mit Optokoppler liest der Abgriff nichts.',
+      'Phase tap: everything unpowered, ESC power negative to IOmcu GND (pad 28) reads near 0 Ω. With an opto-isolated ESC input the tap reads nothing.',
+      'Phasenabgriff: alles stromlos, Minus der ESC-Versorgung gegen GND des IOmcu (Pad 28) liest nahe 0 Ω. Bei einem ESC-Eingang mit Optokoppler liest der Abgriff nichts.',
     ),
     when: { has: 'tap' }, src: guide('tap'),
   },
   {
     id: 'sim-ground', kind: 'note',
     text: t(
-      'No ground wire from the simulator to the coprocessor. It runs parallel to the ground of the ESC and can carry motor current.',
-      'Kein Massedraht vom Simulator zum Koprozessor. Er liegt parallel zur Masse des ESC und kann Motorstrom führen.',
+      'No ground wire from the simulator to the IOmcu. It runs parallel to the ground of the ESC and can carry motor current.',
+      'Kein Massedraht vom Simulator zum IOmcu. Er liegt parallel zur Masse des ESC und kann Motorstrom führen.',
     ),
     when: { has: 'sim' }, src: guide('tap'),
   },
@@ -1902,24 +1902,24 @@ const checks: Check[] = [
   {
     id: 'prog-level', kind: 'unknown',
     text: t(
-      "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the coprocessor powered and 3.63 V without. Power the coprocessor before the servo's supply.",
-      'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem Koprozessor und 3,63 V ohne Versorgung. Den Koprozessor vor der Versorgung des Servos einschalten.',
+      "High level of the servo's reply on GP13: not measured, at most 5 V and typically 3.3 V. GP13 is rated 5.5 V with the IOmcu powered and 3.63 V without. Power the IOmcu before the servo's supply.",
+      'Pegel der Antwort des Servos an GP13: nicht gemessen, höchstens 5 V und typisch 3,3 V. GP13 verträgt 5,5 V bei versorgtem IOmcu und 3,63 V ohne Versorgung. Den IOmcu vor der Versorgung des Servos einschalten.',
     ),
     when: SERVO_PROG, src: repo(PROGRAMMER, 162, 'The level is not measured. GP13 is rated 5.5 V while the'),
   },
   {
     id: 'servo-bench-supply', kind: 'note',
     text: t(
-      'The bench itself feeds the servo. At the 5 V pin of the coprocessor board the servo then draws its current from the supply that also powers the logic. This is prone to problems. At the V pin of the Osoyoo breakout board the source depends on the jumper V Selector. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.',
-      'Der Prüfstand selbst speist das Servo. Am 5-V-Pin der Koprozessor-Platine zieht das Servo seinen Strom dann aus der Versorgung, die auch die Logik speist. Das ist störanfällig. Am V-Pin der Osoyoo-Breakout-Platine hängt die Quelle vom Jumper V Selector ab. Für alles außer einem kleinen Servo einen 2S-LiPo-Akku oder eine andere externe Versorgung verwenden, die zum Servo passt.',
+      'The bench itself feeds the servo. At the 5 V pin of the IOmcu board the servo then draws its current from the supply that also powers the logic. This is prone to problems. At the V pin of the Osoyoo breakout board the source depends on the jumper V Selector. For anything but a small servo use a 2S LiPo battery or another external supply that matches the servo.',
+      'Der Prüfstand selbst speist das Servo. Am 5-V-Pin der IOmcu-Platine zieht das Servo seinen Strom dann aus der Versorgung, die auch die Logik speist. Das ist störanfällig. Am V-Pin der Osoyoo-Breakout-Platine hängt die Quelle vom Jumper V Selector ab. Für alles außer einem kleinen Servo einen 2S-LiPo-Akku oder eine andere externe Versorgung verwenden, die zum Servo passt.',
     ),
     when: SERVO_BENCH, src: OWNER,
   },
   {
     id: 'servo-5v-pin', kind: 'unknown',
     text: t(
-      'Current limit of the 5 V pin of the coprocessor board (VBUS, pad 40): not stated. How much current a small servo is: not stated.',
-      'Stromgrenze des 5-V-Pins der Koprozessor-Platine (VBUS, Pad 40): nicht angegeben. Wie viel Strom ein kleines Servo ist: nicht angegeben.',
+      'Current limit of the 5 V pin of the IOmcu board (VBUS, pad 40): not stated. How much current a small servo is: not stated.',
+      'Stromgrenze des 5-V-Pins der IOmcu-Platine (VBUS, Pad 40): nicht angegeben. Wie viel Strom ein kleines Servo ist: nicht angegeben.',
     ),
     when: SERVO_5V_PIN, src: OWNER,
   },
@@ -1982,8 +1982,8 @@ const checks: Check[] = [
   {
     id: 'strip-regulator', kind: 'note',
     text: t(
-      'Osoyoo breakout board, 3.3 V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3 V and 500 mA. A servo on the V pin in this position draws from VSYS of the coprocessor board, the supply that also powers the logic, so a servo that draws more than 0.5 A is outside the rating of the regulator. For USB alone with no voltage on the V pins, the vendor names a workaround: a Dupont cable from the S pin of the 3.3 V row to a V pin. Do not use it for the servo. The S pin of the 3.3 V row is the 3V3 pin of the coprocessor board (pad 36), the 3.3 V supply of its logic; its current limit is not stated. With the cable in place and the jumper cap on 5V, the 5 V of the converter reaches that supply. A cable already in place comes off before the jumper cap goes back on any position.',
-      'Osoyoo-Breakout-Platine, Stellung 3,3 V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3 V und 500 mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5 A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin. Für das Servo nicht verwenden. Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der Koprozessor-Platine (Pad 36), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben. Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5 V des Wandlers diese Versorgung. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird.',
+      'Osoyoo breakout board, 3.3 V position: the jumper cap sits on the 3V3 side as delivered (osoyoo.com page; osoyoo.store: not stated). The regulator is an ME6210A33M3G according to the vendor. The vendor rates it at 3.3 V and 500 mA. A servo on the V pin in this position draws from VSYS of the IOmcu board, the supply that also powers the logic, so a servo that draws more than 0.5 A is outside the rating of the regulator. For USB alone with no voltage on the V pins, the vendor names a workaround: a Dupont cable from the S pin of the 3.3 V row to a V pin. Do not use it for the servo. The S pin of the 3.3 V row is the 3V3 pin of the IOmcu board (pad 36), the 3.3 V supply of its logic; its current limit is not stated. With the cable in place and the jumper cap on 5V, the 5 V of the converter reaches that supply. A cable already in place comes off before the jumper cap goes back on any position.',
+      'Osoyoo-Breakout-Platine, Stellung 3,3 V: Die Jumperkappe sitzt im Lieferzustand auf der Seite 3V3 (Seite osoyoo.com; osoyoo.store: nicht angegeben). Der Regler ist laut Hersteller ein ME6210A33M3G. Der Hersteller gibt ihn mit 3,3 V und 500 mA an. Ein Servo am V-Pin in dieser Stellung zieht aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist; ein Servo mit mehr als 0,5 A liegt damit außerhalb der Angabe des Reglers. Bei USB allein ohne Spannung an den V-Pins nennt der Hersteller als Abhilfe ein Dupont-Kabel vom S-Pin der 3,3-V-Reihe zu einem V-Pin. Für das Servo nicht verwenden. Der S-Pin der 3,3-V-Reihe ist der 3V3-Pin der IOmcu-Platine (Pad 36), die 3,3-V-Versorgung ihrer Logik; seine Stromgrenze ist nicht angegeben. Mit gestecktem Kabel und der Jumperkappe auf 5V erreichen die 5 V des Wandlers diese Versorgung. Ein schon gestecktes Kabel kommt ab, bevor die Jumperkappe wieder auf eine Stellung gesteckt wird.',
     ),
     when: SERVO_STRIP, src: OSOYOO_PAGE,
   },
@@ -2051,7 +2051,7 @@ const checks: Check[] = [
 // ---------------------------------------------------------------------------
 
 const stages: Stage[] = [
-  { n: 1, title: t('Stage 1: panel and coprocessor', 'Stufe 1: Panel und Koprozessor'), src: guide('stage-1') },
+  { n: 1, title: t('Stage 1: panel and IOmcu', 'Stufe 1: Panel und IOmcu'), src: guide('stage-1') },
   {
     n: 2,
     title: t(
@@ -2096,15 +2096,15 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      '<b>The panel and the coprocessor never power the ESC.</b> Keep their 5 V and 3.3 V pins away from the ESC.',
-      '<b>Panel und Koprozessor versorgen den ESC nie.</b> Ihre 5-V- und 3,3-V-Pins bleiben vom ESC getrennt.',
+      '<b>The panel and the IOmcu never power the ESC.</b> Keep their 5 V and 3.3 V pins away from the ESC.',
+      '<b>Panel und IOmcu versorgen den ESC nie.</b> Ihre 5-V- und 3,3-V-Pins bleiben vom ESC getrennt.',
     ),
     src: guide('safety'),
   },
   {
     text: t(
-      '<b>ESC lead: only signal and ground</b> go to the coprocessor. The centre wire (BEC +) is connected nowhere.',
-      '<b>ESC-Kabel: nur Signal und Masse</b> zum Koprozessor. Die Mittelader (BEC +) wird nirgends angeschlossen.',
+      '<b>ESC lead: only signal and ground</b> go to the IOmcu. The centre wire (BEC +) is connected nowhere.',
+      '<b>ESC-Kabel: nur Signal und Masse</b> zum IOmcu. Die Mittelader (BEC +) wird nirgends angeschlossen.',
     ),
     src: guide('safety'),
   },
@@ -2117,8 +2117,8 @@ const safety: Catalogue['safety'] = [
   },
   {
     text: t(
-      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. A coprocessor that hangs while ARMED is not stopped by anything.',
-      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der Koprozessor in ARMED, stoppt ihn nichts.',
+      '<b>The heartbeat wire is the interlock.</b> The monostable that should back it in hardware is on no board yet, so the firmware at both ends is the whole interlock. An IOmcu that hangs while ARMED is not stopped by anything.',
+      '<b>Der Heartbeat-Draht ist die Verriegelung.</b> Das Monoflop, das ihn in Hardware absichern soll, sitzt noch auf keiner Platine; die Verriegelung ist allein die Firmware beider Platinen. Hängt der IOmcu in ARMED, stoppt ihn nichts.',
     ),
     src: guide('safety'),
   },
@@ -2232,8 +2232,8 @@ const powerSources: PowerSource[] = [
     id: 'usb', feeds: 'logic',
     label: t('USB, 5 V, one supply per board', 'USB, 5 V, je Platine eine Versorgung'),
     text: t(
-      'The panel and the coprocessor each run from their own USB-C cable. The panel is on a charger of at least 2 A with a short cable.',
-      'Panel und Koprozessor laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 2 A.',
+      'The panel and the IOmcu each run from their own USB-C cable. The panel is on a charger of at least 2 A with a short cable.',
+      'Panel und IOmcu laufen je an einem eigenen USB-C-Kabel. Das Panel hängt mit kurzem Kabel an einem Ladegerät mit mindestens 2 A.',
     ),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('Each board has its own supply.', 'Jede Platine hat ihre eigene Versorgung.')],
@@ -2241,15 +2241,15 @@ const powerSources: PowerSource[] = [
       'A servo on the 5 V pin, or on a V pin of the Osoyoo breakout board with the jumper on 3V3, draws from it.',
       'Ein Servo am 5-V-Pin, oder an einem V-Pin der Osoyoo-Breakout-Platine mit dem Jumper auf 3V3, zieht daraus.',
     )],
-    unknowns: [t('Current the coprocessor board draws: not stated.', 'Strom, den die Koprozessor-Platine zieht: nicht angegeben.')],
+    unknowns: [t('Current the IOmcu board draws: not stated.', 'Strom, den die IOmcu-Platine zieht: nicht angegeben.')],
     when: null, used: { has: 'usb' }, src: guide('also-needed'),
   },
   {
     id: 'copro-5v', feeds: 'servo',
-    label: t('5 V pin of the coprocessor board (VBUS, pad 40)', '5-V-Pin der Koprozessor-Platine (VBUS, Pad 40)'),
+    label: t('5 V pin of the IOmcu board (VBUS, pad 40)', '5-V-Pin der IOmcu-Platine (VBUS, Pad 40)'),
     text: t(
-      'For a small servo. The plus of the servo goes to VBUS, the 5 V of the USB cable of the coprocessor. Signal and GND come from the pads of the coprocessor.',
-      'Für ein kleines Servo. Das Plus des Servos geht an VBUS, die 5 V des USB-Kabels des Koprozessors. Signal und GND kommen von den Pads des Koprozessors.',
+      'For a small servo. The plus of the servo goes to VBUS, the 5 V of the USB cable of the IOmcu. Signal and GND come from the pads of the IOmcu.',
+      'Für ein kleines Servo. Das Plus des Servos geht an VBUS, die 5 V des USB-Kabels des IOmcu. Signal und GND kommen von den Pads des IOmcu.',
     ),
     volts: { min: 5, max: 5 }, amps: null, basis: null,
     pros: [t('It needs no further part.', 'Sie braucht kein weiteres Teil.')],
@@ -2292,8 +2292,8 @@ const powerSources: PowerSource[] = [
         'Die Angabe lautet 2 A bei 5 V und 500 mA bei 3,3 V (Herstellerwerte). Ein blockiertes Servo zieht mehr, wenn sein Blockierstrom höher liegt; der Blockierstrom des Servos steht hier nicht.',
       ),
       t(
-        'In position 3V3 the servo draws from VSYS of the coprocessor board, the supply that also powers the logic. A current peak can drop it and reset the boards.',
-        'In Stellung 3V3 zieht das Servo aus VSYS der Koprozessor-Platine, der Versorgung, die auch die Logik speist. Eine Stromspitze kann sie einbrechen lassen und die Platinen zurücksetzen.',
+        'In position 3V3 the servo draws from VSYS of the IOmcu board, the supply that also powers the logic. A current peak can drop it and reset the boards.',
+        'In Stellung 3V3 zieht das Servo aus VSYS der IOmcu-Platine, der Versorgung, die auch die Logik speist. Eine Stromspitze kann sie einbrechen lassen und die Platinen zurücksetzen.',
       ),
       t('The bench does not limit the current.', 'Der Prüfstand begrenzt den Strom nicht.'),
     ],
@@ -2424,8 +2424,8 @@ export const CATALOGUE: Catalogue = deepFreeze({
   notInRelease,
   // The heading of the functions that need no part.
   baseFunction: t(
-    'No further hardware: panel and coprocessor alone',
-    'Ohne weitere Hardware: Panel und Koprozessor allein',
+    'No further hardware: panel and IOmcu alone',
+    'Ohne weitere Hardware: Panel und IOmcu allein',
   ),
   pinDefaults,
   powerSources,

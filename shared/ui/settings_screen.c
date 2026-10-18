@@ -216,8 +216,8 @@ static struct {
 } s;
 
 /*
- * The rows the coprocessor does not hold, as the control task last said.
- * Outside s: what the coprocessor holds does not change when the screen
+ * The rows the IOmcu does not hold, as the control task last said.
+ * Outside s: what the IOmcu holds does not change when the screen
  * is reset.
  */
 static uint16_t s_sense_unheld;
@@ -746,7 +746,7 @@ static void release(int kind, int index, bool repeated, int x, int y)
         /*
          * Every changed value back to its stored one, each by the path an
          * edit by hand takes: the observer, which sends a pin or a port to
-         * the coprocessor, and settings_apply_ui() for the APPLICATION
+         * the IOmcu, and settings_apply_ui() for the APPLICATION
          * rows.  Never while ARMED, asked again at the release: a bench
          * that armed while the finger was down keeps its values.  After a
          * refused save settings_discard() also asks for a write.
@@ -901,7 +901,7 @@ static void draw_row(gfx_canvas_t *c, int index)
         return;
     }
 
-    /* A value the coprocessor does not hold: the row's edge, its value
+    /* A value the IOmcu does not hold: the row's edge, its value
      * and one line in place of its help, in the colour of a write that
      * waits. */
     const bool unheld = settings_screen_unheld(id);

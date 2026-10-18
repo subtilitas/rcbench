@@ -3,7 +3,7 @@
  * chain.
  *
  * The bench: the modelled INA3221 of fake_ina.h carries servo_sim's
- * current, the coprocessor's schedule and pages turn it into 50 ms
+ * current, the IOmcu's schedule and pages turn it into 50 ms
  * windows, the panel's sense_link takes each once, servo_source names the
  * meter, and the run reads what a render loop hands it every 20 ms
  * (sense_chain.h), beside a model of the PD mini read every 104 ms.  The
@@ -201,7 +201,7 @@ static void b_frames_ms(uint32_t ms)
     }
 }
 
-/* A bench at tick @p tick0 with a 4.11 coprocessor, the INA3221 on CH1 on
+/* A bench at tick @p tick0 with a 4.11 IOmcu, the INA3221 on CH1 on
  * 0.1 Ohm, a servo free between its ends and the link up for long enough
  * that the INA3221 is the rail's meter. */
 static void b_fresh(uint32_t tick0)
@@ -550,7 +550,7 @@ TEST_CASE(the_meter_failing_mid_run_never_switches_meter)
     CHECK(!bench.output);
 }
 
-/* The part resets itself during a run: the coprocessor counts it in
+/* The part resets itself during a run: the IOmcu counts it in
  * RESETS, the meter drops for that poll, and the run ends with that
  * reason although the render loop looks 20 ms later. */
 TEST_CASE(a_part_that_resets_itself_ends_the_run)

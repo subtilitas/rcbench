@@ -100,7 +100,7 @@ const upper = (lang: Lang, s: string): string => s.charAt(0).toLocaleUpperCase(l
 
 /**
  * The supply wires of a part in the setup with it, each with its note: the logic supply ("Supply, 3.3 V:
- * Coprocessor 3V3 (pad 36).") and the power input ("PD in: T-plug OUT, USB-C socket."), the wires of class logic and power that
+ * IOmcu 3V3 (pad 36).") and the power input ("PD in: T-plug OUT, USB-C socket."), the wires of class logic and power that
  * end on the part.
  */
 function supplyLines(view: View, setup: Setup, id: PartId): string[] {

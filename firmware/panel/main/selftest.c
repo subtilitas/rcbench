@@ -95,7 +95,7 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
             ESP_LOGE(TAG, "nothing is acknowledging: transmit errors reached "
                           "%lu, so no other node is answering on this bus",
                      (unsigned long)tec);
-            ESP_LOGE(TAG, "  coprocessor powered and its own console showing "
+            ESP_LOGE(TAG, "  IOmcu powered and its own console showing "
                           "CAN up? CANH/CANL the right way round?");
         }
         vTaskDelay(pdMS_TO_TICKS(2));
@@ -139,14 +139,14 @@ bool can_selftest_run(uint32_t ms, busfault_report_t *out)
                  remote.echoes, remote.overflows, remote.tx_errors,
                  remote.rx_errors, remote.flags);
         /*
-         * The comparison both ends make together.  Frames the coprocessor
+         * The comparison both ends make together.  Frames the IOmcu
          * answered but the panel never received are a return-path fault;
          * frames it never answered are an outbound fault; overflows are a
          * receive buffer that filled while its owner was busy, which no bus
          * counter records.
          */
         if (remote.overflows > 0u) {
-            ESP_LOGW(TAG, "  the coprocessor dropped %u frame(s) for want of "
+            ESP_LOGW(TAG, "  the IOmcu dropped %u frame(s) for want of "
                           "a free buffer -- not a bus fault",
                      remote.overflows);
         }

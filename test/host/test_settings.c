@@ -342,7 +342,7 @@ TEST_CASE(the_phase_tap_settings_are_the_tone_pages)
     CHECK_EQ((LINK_TN_DEFAULT_F_MIN - (int)d->min) % (int)d->step, 0);
     d = settings_def(SET_TONE_F_MAX);
     CHECK_EQ((LINK_TN_DEFAULT_F_MAX - (int)d->min) % (int)d->step, 0);
-    /* Pins as far as the coprocessor's bank. */
+    /* Pins as far as the IOmcu's bank. */
     CHECK_EQ((int)settings_def(SET_TONE_PIN)->min, 0);
     CHECK_EQ((int)settings_def(SET_TONE_PIN)->max, 47);
 }
@@ -372,7 +372,7 @@ TEST_CASE(observer_fires_only_on_real_changes)
 /*
  * The pole count reaches the observer by every path an operator has to it.
  *
- * The coprocessor holds a copy of this number and converts eRPM with it; the
+ * The IOmcu holds a copy of this number and converts eRPM with it; the
  * register is written and never refreshed, so the notification is the only
  * signal the panel gets that the copy is out of date.  A path that changes
  * the value without notifying leaves the far end converting with the old
@@ -423,7 +423,7 @@ TEST_CASE(a_pole_count_edit_reaches_the_observer)
 /*
  * And once at startup, with the value the store returned.
  *
- * A coprocessor that has just started holds zero in the register, so the
+ * An IOmcu that has just started holds zero in the register, so the
  * stored count has to go out like an edit rather than be assumed to be over
  * there already.  The load writes the values behind
  * the model's own setter, so the notification an observer acts on has to
@@ -452,7 +452,7 @@ TEST_CASE(startup_delivers_the_stored_pole_count)
 /*
  * Every count the schema can produce is one the CONTROL page takes.
  *
- * The coprocessor refuses an odd count and anything outside
+ * The IOmcu refuses an odd count and anything outside
  * LINK_POLES_MIN..LINK_POLES_MAX, and reads zero as "nobody has said".  A
  * value the far end refuses is a write that never lands, and a refusal is
  * not retried -- the same request refused once is refused every time -- so
