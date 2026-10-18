@@ -198,6 +198,32 @@ history is in git.
 - Performance, its German page and `STATUS.md` give 133 calls through a
   register reachable from core 0's `main`, the figure of the image CI
   builds with arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 gives 142.
+- `hardware/docs/IOBoard.md` cites `STATUS.md` by section and item name
+  instead of by line, so a coverage table that grows does not move the
+  citations. Its capability-word rows state that the panel reads the word
+  at bring-up, at each link-up and after a SENSE set-up the coprocessor
+  takes.
+- SETUP, APPLICATION, Rotary knob ON no longer blanks the panel. 0.20.0's
+  knob read an AS5600 at 0x36 on the panel's I2C (Inter-Integrated Circuit)
+  bus, and 0x36 is one of the CH422G I/O expander's command addresses: the
+  register pointer the knob wrote became the expander's output byte, which
+  switched the backlight off, took CAN (Controller Area Network) off the
+  link and could hold the touch controller in reset, until a restart. The
+  knob is an MT6701 at 0x06: each poll reads 0x03 (angle bits 13 to 6),
+  0x04 (bits 5 to 0) and 0x03 again, one byte each with a 5 ms timeout,
+  every 10 ms, and every 100 ms while it does not answer. A poll whose two
+  0x03 bytes differ is no reading. While the knob has no reference, an
+  address-only probe comes first, which the bus driver does not log. A
+  clockwise turn seen from the chip's top raises the value on the -STD
+  part with DIR at 0; a step is 360/16384 deg. The panel refuses to put the
+  knob, or any device of the builder's, at an address the board answers at
+  on that bus, 0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D, or at the I2C
+  reserved 0x00 to 0x03 and 0x78 to 0x7F
+  (`shared/bench/include/panel_i2c.h`). With no sensor fitted, Rotary knob
+  ON probes 0x06 every 100 ms; in the host tests' bus model that changes
+  nothing else, and on the panel it is not measured. The setting's help
+  line reads `MT6701 turns the active slider` (German `MT6701 dreht den
+  aktiven Regler`).
 - A HOLD on the SERVO screen that reaches the control task more than
   500 ms after the far end last took one keeps the release it owes. The
   pause ends there, the screen shows the surfaces released, and the next

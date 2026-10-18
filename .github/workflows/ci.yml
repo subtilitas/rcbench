@@ -242,8 +242,21 @@ jobs:
     name: Lint and static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # cppcheck is built from the official source archive of this tag;
+      # tools/install_cppcheck.sh stops when the SHA-256 differs.
+      CPPCHECK_VERSION: 2.17.1
+      CPPCHECK_SHA256: bfd681868248ec03855ca7c2aea7bcb1f39b8b18860d76aec805a92a967b966c
     steps:
       - uses: actions/checkout@v6
+
+      # The build is cached on the version and the hash; a hit builds nothing.
+      - name: Restore cppcheck
+        id: cppcheck-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/cppcheck-${{ env.CPPCHECK_VERSION }}
+          key: cppcheck-${{ env.CPPCHECK_VERSION }}-${{ env.CPPCHECK_SHA256 }}-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install the analysers
         run: |
@@ -254,10 +267,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             cmake ninja-build clang-tidy
-          # cppcheck 2.17.1 from the PyPI wheel (the distribution's package
-          # is 2.13); the version check fails the step when the pin drifts.
-          python3 -m pip install --quiet ruff==0.16.5 cppcheck==1.5.1
-          cppcheck --version | grep -qx 'Cppcheck 2\.17\.1.*'
+          python3 -m pip install --quiet ruff==0.16.5
+
+      - name: Build cppcheck
+        if: steps.cppcheck-cache.outputs.cache-hit != 'true'
+        run: |
+          tools/install_cppcheck.sh "$CPPCHECK_VERSION" "$CPPCHECK_SHA256" \
+            "$HOME/cppcheck-$CPPCHECK_VERSION"
+
+      # The distribution's cppcheck is 2.13; the version check fails the
+      # step when the build is not the pinned one.
+      - name: Put cppcheck on the path
+        run: |
+          echo "$HOME/cppcheck-$CPPCHECK_VERSION/bin" >> "$GITHUB_PATH"
+          "$HOME/cppcheck-$CPPCHECK_VERSION/bin/cppcheck" --version \
+            | grep -qx "Cppcheck $CPPCHECK_VERSION"
 
       # clang-tidy needs to know how each file is compiled, and CMake can say.
       - name: Describe the build

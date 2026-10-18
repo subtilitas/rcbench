@@ -372,15 +372,15 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   the first input after it starts from the rest. The release that ends a run
   of the automatic test does the same.
 - Leaving a bench screen switches the bench to SAFE.
-- The rotary knob (an AS5600 angle sensor; SETUP, APPLICATION, Rotary knob,
+- The rotary knob (an MT6701 angle sensor at 0x06; SETUP, APPLICATION, Rotary knob,
   OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
   how far it turns, as the slider does, and the same rules hold. It never
   switches to ARMED: the only way is the ARM hold. On both screens a turn while the bench
   is SAFE moves nothing and is not kept; after a switch to ARMED the knob goes on
   from 0 % on MOTOR & ESC and from the rest on SERVO. Leaving the screen
   switches the bench to SAFE. The first
-  reading after power-up, a reading the sensor flags (no magnet, too weak,
-  too strong, magnitude 0), a reading that does not arrive, and a step over
+  reading after power-up, a reading that does not arrive (a NACK or a
+  5 ms timeout), and a step over
   90 deg between two readings each set the reference again and move nothing,
   so a knob that stops answering stops contributing and no last value is held
   as a command. A finger on the track or dial owns the value against the
@@ -393,12 +393,25 @@ coprocessor connected the panel switches its own bank to ARMED after the 100 ms.
   a horn position that is waiting for the frame: a completed ARM, a DISARM, a
   release and a peak reset stay, and its motion is dropped. The knob is read by
   a task of its own on the core the renderer uses, never by the control task,
-  with a 5 ms bus timeout on each of the three transactions of a poll, so a
-  sensor that holds the shared I2C bus delays the touch read by at most 15 ms
-  per poll. The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use the I2C bus. On the Waveshare ESP32-S3 Touch LCD 7 the CH422G I/O expander
-  answers at I2C addresses 0x20 to 0x27 and 0x30 to 0x3F, which includes the
-  AS5600's fixed address 0x36, so an AS5600 knob cannot be read on that bus.
+  with a 5 ms bus timeout on each transaction of a poll: a probe while it
+  has no reference, then three reads. A failed transaction also costs the
+  driver's recovery, a controller reset and a bus clear that waits up to
+  50 ms more while SDA is held low. A sensor that holds SDA low therefore
+  delays the touch read by about 55 ms per transaction. That is under the
+  touch read's own 100 ms bus timeout (`GT911_I2C_TIMEOUT_MS`), and a touch
+  controller silent for 500 ms switches the bench to SAFE
+  (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
+  generates the heartbeat and does not use the I2C bus. The board answers at
+  0x14, 0x20 to 0x27, 0x30 to 0x3F and 0x5D on that bus, and the CH422G I/O
+  expander takes a transaction at its addresses as a command: at 0x30 to 0x3F
+  the written byte becomes its output byte, which holds the backlight, the
+  touch reset and the USB/CAN (Universal Serial Bus / Controller Area
+  Network) select. The panel refuses to put the knob, or any other device of
+  the builder's, at those addresses or at the ones the I2C specification
+  reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
+  That nothing on the board answers at the knob's 0x06 rests on the CH422G's
+  and the GT911's documented addressing: the board's one bus scan covered
+  0x08 to 0x77.
 - If the touch controller stops answering for 500 ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the coprocessor does not switch back to ARMED when traffic returns.

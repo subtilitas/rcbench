@@ -82,7 +82,9 @@ python3 tools/stack_check.py --iomcu firmware/iomcu/build --check-doc
 # With a pico-sdk checkout: the IO board's pin map.
 python3 tools/pinmap_check.py hardware/docs/ioboard-pinmap-draft.json --sdk "$PICO_SDK_PATH"
 
-# cppcheck 2.17.1, as in CI: python3 -m pip install cppcheck==1.5.1
+# cppcheck 2.17.1, as in CI: build the official source with
+#   tools/install_cppcheck.sh 2.17.1 <SHA-256 from ci.yml> ~/cppcheck-2.17.1
+# and put ~/cppcheck-2.17.1/bin on PATH, or use a distribution package of 2.17.1.
 mkdir -p /tmp/cppcheck-build
 cppcheck -j "$(nproc)" --error-exitcode=1 --std=c11 \
          --cppcheck-build-dir=/tmp/cppcheck-build \

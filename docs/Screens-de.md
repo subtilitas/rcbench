@@ -1629,11 +1629,11 @@ nummeriert Läufe nur über der höchsten `BENCHnnn`-Datei. Läuft sie wieder au
 einer Karte, die diese Firmware beschrieben hat, kann ein Lauf eine Nummer
 bekommen, die schon eine `ESCnnn`- oder `SERVOnnn`-Datei trägt. Nichts wird
 überschrieben: Die beiden Dateien haben verschiedene Namen, und die Liste
-ordnet sie nach dem Namen. Die Liste zeigt die
-CSV-Dateien und nicht die Berichte, und LÖSCHEN auf einem Lauf löscht den
-Bericht mit demselben Namen und derselben Nummer mit. Die Liste zeigt die
-Läufe nach Nummer, den neuesten zuerst, über alle drei Namen: `ESC043.CSV`,
-dann `SERVO042.CSV`, dann `BENCH041.CSV`.
+ordnet sie nach dem Namen. Sie zeigt die CSV-Dateien und nicht die
+Berichte, und LÖSCHEN auf einem Lauf löscht den Bericht mit demselben Namen
+und derselben Nummer mit. Die Läufe stehen nach Nummer, der neueste zuerst,
+über alle drei Namen: `ESC043.CSV`, dann `SERVO042.CSV`, dann
+`BENCH041.CSV`.
 
 Die Liste zeigt die Karte in Seiten zu 48 Einträgen, und eine Karte fasst bis
 zu 999 Läufe. Die Seiten beginnen mit dem neuesten Lauf: erst die Läufe nach
@@ -2162,8 +2162,8 @@ Zwei Grenzen:
 
 ### ANWENDUNG: der Drehknopf
 
-Ein magnetischer Winkelsensor AS5600 am I2C-Anschluss des Panels (I2C:
-Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
+Ein magnetischer Winkelsensor MT6701 unter 0x06 am I2C-Anschluss des Panels
+(I2C: Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
 das Gas auf MOTOR & ESC, das Horn auf SERVO. Verdrahtung:
 [Bauen](Building-de.md#verdrahtung-des-drehknopfs). Andere Bildschirme
 ignorieren ihn.
@@ -2186,9 +2186,17 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Sensors setzen eine Referenz und bewegen nichts; ein Knopf, der verdreht
   zurückkommt, lässt den Regler also nicht springen.
 - Der Sensor wird alle 10 ms gelesen, und alle 100 ms, solange er nicht
-  antwortet. Eine Messung ohne erkannten Magneten, mit zu schwachem oder zu
-  starkem Magneten oder mit Magnitude 0 gilt als keine Antwort. Ein Sprung von
-  mehr als 90 deg zwischen zwei Messungen gilt als Störung und wird verworfen.
+  antwortet. Eine Abfrage sind drei Lesezugriffe, 0x03, 0x04 und noch einmal
+  0x03, jeder mit 5 ms Bus-Timeout; ein NACK oder ein Timeout bei einem davon
+  gilt als keine Antwort. Solange der Knopf keine Referenz hat, geht eine
+  Adressprobe an 0x06 voraus (nur das Adressbyte), und die Lesezugriffe folgen
+  nur, wenn sie bestätigt wird. Eine Abfrage, deren zwei 0x03-Bytes sich
+  unterscheiden, bewegt nichts und behält die Referenz. Ein High-Byte, das sich
+  zwischen den zwei 0x03-Lesezugriffen ändert und wieder zurückändert, wird
+  angenommen; ein Schritt von bis zu 64 Zählern (0,52 % des Wegs bei 270 deg)
+  an einem Reglerende bleibt also möglich; wie oft, ist nicht gemessen. Der Sensor meldet über I2C keinen
+  Magnetstatus, also ist eine Antwort ein Messwert. Ein Sprung von mehr als 90 deg zwischen zwei Messungen
+  gilt als Störung und wird verworfen.
 - Ein Finger auf dem Gas-Track oder dem SERVO-Zifferblatt besitzt den Wert,
   solange er aufliegt, und für den ganzen Frame, in dem er das Bedienelement
   berührt hat, auch wenn er in diesem Frame abhebt. Auf SERVO nimmt der Knopf das Horn nicht aus einem
@@ -2212,7 +2220,16 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   in SAFE nichts und wird nicht aufgehoben; das Schalten auf SAFE setzt den
   Schieberegler auf 0 %, und die nächste Drehung nach einem ARM zählt von
   dort.
-- Bekannte Einschränkung: Auf dem Waveshare ESP32-S3 Touch LCD 7 antwortet der I/O-Expander CH422G des Boards an den I2C-Adressen 0x20 bis 0x27 und 0x30 bis 0x3F, darunter die feste Adresse 0x36 des AS5600; ein AS5600-Drehknopf lässt sich an diesem Bus daher nicht lesen. `Drehknopf` ist standardmäßig aus.
+- Das Panel legt weder den Knopf noch ein anderes selbst angeschlossenes
+  Gerät auf eine Adresse, auf der die Platine an diesem Bus antwortet, 0x14,
+  0x20 bis 0x27, 0x30 bis 0x3F und 0x5D, oder auf eine, die die
+  I2C-Spezifikation reserviert, 0x00 bis 0x03 und 0x78 bis 0x7F. Bei 0x20 bis
+  0x27 und 0x30 bis 0x3F erreicht ein Zugriff den Expander CH422G als Befehl.
+  Ohne Sensor sendet `Drehknopf` EIN alle 100 ms eine unbestätigte
+  Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
+  nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
+- Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
+  und sein Verhalten ohne Magnet darüber.
 
 ### ANSCHLÜSSE: die Strommonitore
 
