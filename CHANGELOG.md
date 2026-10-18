@@ -120,12 +120,11 @@ history is in git.
 
 ### Changed
 
-- The RP2350 board is named IOmcu (German `IOmcu`, masculine: `der IOmcu`)
-  in the panel texts, the help pages, the configurator and the
-  documentation. It was called the IOmcu (German `IOmcu`).
-  Upper-case texts read `IOMCU`, for example `IOMCU UPDATE`. Identifiers,
-  file names, CAN page names and the release notes of released versions keep
-  their wording.
+- The RP2350 board is named IOmcu (German `der IOmcu`) in the panel texts,
+  the help pages, the configurator and the documentation. It was called the
+  coprocessor (German `Koprozessor`). Upper-case texts read `IOMCU`, for
+  example `IOMCU UPDATE`. Identifiers, file names, CAN page names and the
+  entries of released versions keep their wording.
 - Band titles follow their tiles: SETUP (was SETTINGS), LOGS (was LOG
   VIEWER) and WI-FI (was FILES & UPDATE), English in both languages.
 - SETUP has a WI-FI tile between PICK A PIN and UPDATES, line `NETWORK,
@@ -659,7 +658,7 @@ erase and write.
   Bindings are read from the old store at 0x3FE000 until the first save. On
   an RP2350 of stepping A2 the load can erase 0x3FF000, the old store's
   second sector. Later coprocessor images come over CAN. See
-  [First run](docs/FirstRun.md#the-coprocessors-partition-table).
+  [First run](docs/FirstRun.md#the-iomcus-partition-table).
 - The bench configurator describes release 0.18.0. Every repository source
   of its data is a file and line at the tag `v0.18.0`; 28 sources carry the
   line of that tag. The sources of the logger, of the arm decision and of the
@@ -1904,7 +1903,7 @@ measured.
   job, and each pass of core 0's main loop runs 1 slice. A write command
   reaches 1,304 bytes of stack and a pass that plans 1,016. The time of a
   pass is not measured on hardware.
-  ([Performance](docs/Performance.md#the-coprocessor))
+  ([Performance](docs/Performance.md#the-iomcu))
 - **The write planner for KST and Chaservo servos takes 488 bytes of
   stack, down from 1,272.**
   Measured by `tools/stack_check.py --iomcu` from `kst_plan_edit` down on
@@ -1916,7 +1915,7 @@ measured.
   cost table. Every plan is the same byte for byte: `test_kst_plan` pins a
   digest over the result, the violated rules and the whole plan of
   495,068 planner calls. No function signature differs.
-  ([Performance](docs/Performance.md#the-coprocessor))
+  ([Performance](docs/Performance.md#the-iomcu))
 - **`kst_session_write()` takes 56 bytes of stack, down from 256.** The
   session builds the planner's plan for the comparison into its own copy
   of the running plan, which no operation reads at that time, and holds no
