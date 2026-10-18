@@ -147,6 +147,32 @@ link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
 /** Blocks committed, in thousandths of the image: 0 to 1000. */
 uint16_t link_uph_permille(const link_uph_t *u);
 
+/*
+ * An IOmcu of another protocol major answers its identity while the
+ * link stays down.  Its alert and its build check are owed once per
+ * mismatch, not at every probe of the 1 s the link-down probe repeats at;
+ * an update that ended owes the check again, since an IOmcu that kept
+ * its old image gives no link-up edge to start one.
+ */
+typedef struct {
+    bool told;   /**< a mismatched answer was reported, none other since */
+    bool owed;   /**< an update ended: the next mismatched answer checks  */
+} link_uph_mismatch_t;
+
+/**
+ * One identity probe: @p mismatch whether an IOmcu of another
+ * protocol major answered it.  True when the build check is owed now: the
+ * first such answer since a probe nobody or a matching IOmcu
+ * answered, or the first after link_uph_mismatch_rearm().
+ */
+bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch);
+
+/** Whether the last probe was answered by a mismatched IOmcu. */
+bool link_uph_mismatch_answers(const link_uph_mismatch_t *m);
+
+/** An update ended: the next mismatched answer owes the check again. */
+void link_uph_mismatch_rearm(link_uph_mismatch_t *m);
+
 #ifdef __cplusplus
 }
 #endif

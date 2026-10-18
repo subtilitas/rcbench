@@ -472,6 +472,9 @@ SCREENS = {
     "updates-newer": ("updates-newer.png", "updates", "dark"),
     "updates-current": ("updates-current.png", "updates", "dark"),
     "updates-failed": ("updates-failed.png", "updates", "dark"),
+    # Its IOmcu section with an IOmcu on another build: the
+    # hold that starts the IOmcu's update.
+    "updates-coproc": ("updates-coproc.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -562,6 +565,19 @@ FIT_ONLY = {
     "updates-unexpected": (None, "updates", "dark"),
     "updates-nonet":    (None, "updates", "dark"),
     "updates-blocked":  (None, "updates", "dark"),
+    # Every other state of UPDATES' IOmcu section.
+    "updates-cu-older":    (None, "updates", "dark"),
+    "updates-cu-rebuilt":  (None, "updates", "dark"),
+    "updates-cu-noimage":  (None, "updates", "dark"),
+    "updates-cu-busy":     (None, "updates", "dark"),
+    "updates-cu-nolink":   (None, "updates", "dark"),
+    "updates-cu-unknown":  (None, "updates", "dark"),
+    "updates-cu-checking": (None, "updates", "dark"),
+    "updates-cu-failed":   (None, "updates", "dark"),
+    "updates-cu-usb":      (None, "updates", "dark"),
+    "updates-cu-unsafe":   (None, "updates", "dark"),
+    "updates-cu-radio":    (None, "updates", "dark"),
+    "updates-cu-install":  (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),

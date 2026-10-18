@@ -130,8 +130,8 @@ static bool poll_bench(bench_state_t *bench)
  * True only for a DATA identity page from an IOmcu speaking
  * LINK_PROTOCOL_MAJOR; reply then holds that page.
  */
-/* A protocol mismatch has been reported and has not ended since. */
-static bool s_mismatch_told;
+/* A protocol mismatch: reported, and whether its build check is owed. */
+link_uph_mismatch_t s_mismatch;
 
 static bool probe_identity(link_msg_t *reply)
 {
@@ -166,13 +166,16 @@ static bool probe_identity(link_msg_t *reply)
          * Said once per mismatch, not at every poll: the probe repeats each
          * second while the link is down, and an alert raised again each
          * time would never expire and could not be tapped away.  A probe
-         * nobody answers, or one that matches, makes the next one news. */
-        if (!s_mismatch_told) {
-            ESP_LOGE(TAG, "IOmcu speaks protocol %u, we speak %u",
-                     (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
-                     (unsigned)LINK_PROTOCOL_MAJOR);
-            control_alert(TR(ALERT_MISMATCH));
-            s_mismatch_told = true;
+         * nobody answers, or one that matches, makes the next one news.
+         * An update that ended owes the build check again, not the alert. */
+        const bool told = link_uph_mismatch_answers(&s_mismatch);
+        if (link_uph_mismatch_probe(&s_mismatch, true)) {
+            if (!told) {
+                ESP_LOGE(TAG, "IOmcu speaks protocol %u, we speak %u",
+                         (unsigned)reply->regs[LINK_ID_PROTOCOL_MAJOR],
+                         (unsigned)LINK_PROTOCOL_MAJOR);
+                control_alert(TR(ALERT_MISMATCH));
+            }
             /* The identity registers and the update pages answer across
              * majors (link_pages.h), so an IOmcu this panel cannot
              * drive can still be moved to the image it carries. */
@@ -180,7 +183,7 @@ static bool probe_identity(link_msg_t *reply)
         }
         answered = false;
     } else {
-        s_mismatch_told = false;
+        (void)link_uph_mismatch_probe(&s_mismatch, false);
     }
     return answered;
 }
@@ -788,6 +791,8 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.supply      = s_supply;
     s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
+    /* An IOmcu this panel cannot drive still takes the update. */
+    s_snap.cu.mismatch = link_uph_mismatch_answers(&s_mismatch);
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.armed_roles = outputs_armed_roles(&s_out);
     s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);

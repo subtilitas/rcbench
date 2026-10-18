@@ -17,7 +17,7 @@ The question opens from the [menu](overview.md), with UPDATE in the band, while 
 | Control | What it does |
 |---|---|
 | HOLD 2 s TO START | starts the update after a 2 s hold, with the gesture and fade of ARM |
-| CANCEL | closes the question; the panel does not ask again for that version until it restarts |
+| CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
 
 Leaving the question another way declines it as CANCEL does.
 
@@ -43,7 +43,7 @@ The transfer time is not measured.
 
 ## How it ended
 
-The screen returns to the menu when the update ends, and the alert band says how:
+The screen returns to the menu when the update ends, or to [Updates](updates.md#the-iomcu) when its hold started the update, and the alert band says how:
 
 | Alert | Meaning |
 |---|---|

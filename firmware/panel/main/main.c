@@ -2264,7 +2264,8 @@ void app_main(void)
          * The IOmcu's update.  The question opens on the menu, on a
          * bench that is SAFE with the supply off, the panel's radio wholly
          * off and no install of the panel under way, once per offer; START
-         * and CANCEL go to the control task.  While the update runs the screen
+         * and CANCEL go to the control task.  SETUP > UPDATES' hold starts
+         * the same update, offered or declined, under the same conditions.  While the update runs the screen
          * shows its progress, and the menu comes back when it has ended --
          * the alert says how.
          */
@@ -2275,8 +2276,8 @@ void app_main(void)
                                || supply_live_or_coming(),
                            &cu);
         cu_render_service(armed || arm_wanted_now || supply_now
-                              || supply_live_or_coming() || !cu_may_start(),
-                          &cu);
+                              || supply_live_or_coming(),
+                          link_up, &cu);
 
         /*
          * A link that was up and has been gone for LINK_LOST_SCREEN_MS says

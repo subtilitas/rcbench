@@ -2738,8 +2738,10 @@ ist.
 Die Frage nennt die Version, die der IOmcu laufen hat, und die Version,
 die dieses Panel mitbringt. CANCEL ist ein Tippen: die Frage schließt sich,
 und das Panel fragt für diese IOmcu-Version nicht noch einmal, bis es
-neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab. START
-braucht das 2-s-Halten, die ARM-Geste mit demselben Überblenden.
+neu startet. Die Frage auf andere Weise zu verlassen lehnt ebenso ab.
+SETUP > UPDATES startet das Update auch nach einer Ablehnung
+([Der IOmcu](#der-iomcu)). START braucht das 2-s-Halten, die
+ARM-Geste mit demselben Überblenden.
 
 Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, und START braucht dasselbe
 Halten.
@@ -2762,8 +2764,9 @@ hinter ihm kann der Prüfstand nicht auf ARMED schalten.
 | `IOmcu startet die neue Firmware.` | er in den neuen Slot neu startet, auf Probe |
 | `Neue Firmware wird dauerhaft übernommen.` | das Panel die Identität des neuen Images liest und BUY schreibt |
 
-Der Bildschirm kehrt zum Menü zurück, wenn das Update endet. Das Alarmband
-sagt dann, wie es endete:
+Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, oder zu
+UPDATES, wenn das Halten auf UPDATES es gestartet hat. Das Alarmband sagt
+dann, wie es endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
@@ -2801,13 +2804,14 @@ pro Start des Panels.
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `ERINNERUNG BEIM START: EIN` / `AUS` | Schaltet die Suche beim Start und ihre Erinnerung. Gespeichert mit SPEICHERN auf SETUP, wie jede Einstellung. Ab Werk an. |
 | `2 s HALTEN: LADEN & INSTALLIEREN` | Erscheint, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
+| `2 s HALTEN: IOMCU AKTUALISIEREN` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
 
 - ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
   Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
-  `Speichere ein Netzwerk unter LOGS > WLAN.`, und NACH UPDATES SUCHEN ist grau;
+  `Speichere ein Netzwerk unter SETUP > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
   Sonst ist die Taste grau, und die Karte sagt
   `Für WLAN muss SAFE aktiv und das Netzteil aus sein.` und `Es darf kein Aufzeichnungslauf offen sein.`;
@@ -2866,6 +2870,45 @@ beide gleich und PATCH größer.
 | `Ein Byte liegt außerhalb von druckbarem ASCII.` | Ein Leerzeichen, ein Steuerzeichen oder ein Byte über 126. |
 | `Die Adresse steht an einer unerwarteten Stelle.` | Nicht `https://github.com/subtilitas/rcbench/releases/tag/...`. |
 | `Der Versionstext hat ein ungültiges Format.` | Der Tag verletzt die Regel oben. |
+
+### Der IOmcu
+
+Unter den Tasten zeigt UPDATES das Update des IOmcu: die Version, die
+der IOmcu laufen hat (`Läuft: 0.17.0`), die Version des Images, das
+dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`), eine Zeile Zustand und
+`2 s HALTEN: IOMCU AKTUALISIEREN`. Das Halten startet das Update, das
+die Frage beim Link-up startet, mit demselben Fortschritt
+([IOmcu-Update](#iomcu-update)). Es startet es auch, nachdem
+diese Frage abgelehnt wurde. Endet das Update, oder verfiel der START ohne
+eines, kehrt der Bildschirm zu UPDATES zurück.
+
+![Der IOmcu-Abschnitt mit einem anderen Build](img/de/updates-coproc.png)
+
+Das Halten ist nur in der letzten Zeile der Tabelle unten aktiv. Sonst ist
+es grau, und die Zeile nennt den ersten Grund, der gilt, in dieser
+Reihenfolge:
+
+| Zeile | Bedingung |
+| --- | --- |
+| `Dieses Panel enthält keine IOmcu-Firmware.` | Das Panel ist ohne das Image des IOmcu gebaut. `Auf diesem Panel: unbekannt`. |
+| `Wartet auf das Ende des IOmcu-Updates.` | Ein Update läuft, ein Image auf Probe wird übernommen, oder ein START ist noch nicht angenommen. |
+| `Kein IOmcu antwortet.` | Keine Verbindung, und kein IOmcu einer anderen Protokoll-Hauptversion antwortet. `Läuft: unbekannt`. |
+| `Wartet auf die Build-Prüfung des IOmcu.` | Ein IOmcu antwortet; sein Build ist noch nicht verglichen. |
+| `Build des IOmcu wird geprüft.` | Der SHA-256-Vergleich läuft. |
+| `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | Der Vergleich endete ohne Antwort. |
+| `Kein Update über CAN. Firmware einmal über USB installieren.` | Der IOmcu hat keine Update-Pages oder keine Partitionstabelle. |
+| `Der IOmcu nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
+| `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an oder schaltet ein. |
+| `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder der Bildschirm WI-FI hat den Funk an, oder er schaltet noch ab. |
+| `Wartet: Die Installation der Panel-Firmware läuft.` | Eine Panel-Installation ist im Gang. |
+| `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.` | Das Halten startet das Update. Bei einem älteren Image lautet die Zeile `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, bei gleicher Versionsnummer `Gleiche Versionsnummer, aber ein anderer Build.` |
+
+Die Bedingungen sind die der Frage: ein anderer Build, der Prüfstand SAFE,
+der Netzteilausgang aus, der Funk ganz aus und keine Panel-Installation. Ein
+IOmcu, der den mitgebrachten Build laufen hat, bekommt kein Halten;
+die Frage beim Link-up öffnet sich für ihn auch nicht. Ein IOmcu einer
+anderen Protokoll-Hauptversion zeigt KEINE VERBINDUNG im Band und nimmt das
+Update trotzdem, wie die Frage es auch ihm anbietet.
 
 ### Die Erinnerung
 
