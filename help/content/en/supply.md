@@ -17,7 +17,7 @@ The strip at the top holds two tasks, LIVE and SETTINGS. A tap switches the task
 | LIVE | the plot or the table, and the set points |
 | SETTINGS | the caps, the start values, the trips and the questions ([SETTINGS](#settings)) |
 
-The right column is the same on both tasks: the readings, OUTPUT ON and RESET PEAKS. The header is the row right of the strip: the supply, its state and the range the set points may take. It stays in sight on both tasks and under the keypad and the question. The home tag leaves SUPPLY for the menu from either task.
+The right column is the same on both tasks: the readings, OUTPUT ON and RESET PEAKS. The header is the row right of the strip: the supply, its state and the range the set points may take. It stays in sight on both tasks and under the keypad and the question. The home tag climbs one level at a time: over the question it drops the change, as CANCEL does; over a keypad it closes the keypad and keeps the value. A switch of task is no level: from LIVE or SETTINGS with nothing open it goes to the menu.
 
 ## The supply model
 
@@ -70,7 +70,7 @@ The keypad shows the range in its title row. OK takes a value inside the range, 
 
 ![The question before a change to a live output](view:supply-confirm)
 
-While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
+While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release; a drag that ends without its finger lifting, such as at the home tag tapped with a second finger, asks nothing, and the slider goes back. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
 
 ## OUTPUT ON and OFF
 

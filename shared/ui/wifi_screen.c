@@ -94,6 +94,7 @@ static struct {
     bool         have_press;
     ui_hold_t    hold;
     bool         installing;    /* INSTALL went: leaving keeps the image */
+    bool         q_cancelled;   /* the home tag answered the question */
     unsigned     drawn_mask;
 } s;
 
@@ -139,6 +140,9 @@ void wifi_screen_set(const wifi_view_t *v)
         return;
     }
     s.v = *v;
+    if (!staged()) {
+        s.q_cancelled = false;
+    }
     drop_hold_if_gone();
     touched();
 }
@@ -451,8 +455,41 @@ static void enter(void)
 {
     s.sub = SUB_MAIN;
     s.installing = false;
+    s.q_cancelled = false;
     ui_hold_reset(&s.hold);
     touched();
+}
+
+/*
+ * The home tag climbs one level, as CANCEL does.  Over the question about
+ * a staged image it answers CANCEL, and a list or keyboard under the
+ * question closes with it; a second tap while the image is still staged
+ * leaves.  From a keyboard it climbs to the network list, keeping nothing
+ * typed, and from the list to the buttons.
+ */
+static bool back(void)
+{
+    if (staged()) {
+        if (s.q_cancelled) {
+            return false;
+        }
+        ui_textkey_close(&s.tk);
+        s.sub = SUB_MAIN;
+        s.req |= WIFI_REQ_DISCARD;
+        s.q_cancelled = true;
+        touched();
+        return true;
+    }
+    if (s.sub == SUB_KEY_SSID || s.sub == SUB_KEY_PASS) {
+        ui_textkey_close(&s.tk);
+        s.sub = SUB_SCAN;
+    } else if (s.sub == SUB_SCAN) {
+        s.sub = SUB_MAIN;
+    } else {
+        return false;
+    }
+    touched();
+    return true;
 }
 
 static void leave(void)
@@ -809,6 +846,7 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *wifi_screen(void) { return &k_screen; }

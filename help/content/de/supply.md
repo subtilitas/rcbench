@@ -17,7 +17,7 @@ Die Leiste oben trägt zwei Aufgaben, LIVE und OPTIONEN. Ein Tipp wechselt die A
 | LIVE | die Grafik oder die Tabelle und die Sollwerte |
 | OPTIONEN | die Obergrenzen, die Startwerte, die Abschaltungen und die Rückfragen ([OPTIONEN](#optionen)) |
 
-Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN. Die Kopfzeile ist die Zeile rechts neben der Leiste: das Netzteil, sein Zustand und der Bereich, den die Sollwerte annehmen können. Sie bleibt auf beiden Aufgaben und unter dem Tastenfeld und der Rückfrage sichtbar. Das Home-Tag verlässt SUPPLY von beiden Aufgaben zum Menü.
+Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Messwerte, AUSGANG EIN und SPITZENWERTE ZURÜCKSETZEN. Die Kopfzeile ist die Zeile rechts neben der Leiste: das Netzteil, sein Zustand und der Bereich, den die Sollwerte annehmen können. Sie bleibt auf beiden Aufgaben und unter dem Tastenfeld und der Rückfrage sichtbar. Das Home-Tag führt eine Ebene nach der anderen zurück: Über der Rückfrage verwirft es die Änderung, wie ABBRECHEN; über einem Tastenfeld schließt es das Tastenfeld und behält den Wert. Ein Wechsel der Aufgabe ist keine Ebene: Von LIVE oder OPTIONEN führt es, wenn nichts offen ist, zum Menü.
 
 ## Das Netzteilmodell
 
@@ -70,7 +70,7 @@ Das Tastenfeld zeigt den Bereich in seiner Titelzeile. OK übernimmt einen Wert 
 
 ![Die Rückfrage vor einer Änderung an einem eingeschalteten Ausgang](view:supply-confirm)
 
-Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
+Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen; ein Ziehen, das endet, ohne dass sein Finger abhebt, etwa am Home-Tag mit einem zweiten Finger, fragt nichts, und der Schieberegler geht zurück. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
 
 ## AUSGANG EIN und AUS
 

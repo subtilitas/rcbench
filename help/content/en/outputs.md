@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) and from TARGET on [MOTOR & ESC](motor.md#target), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The home tag goes back to the screen it opened from. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) and from TARGET on [MOTOR & ESC](motor.md#target), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 

@@ -474,6 +474,115 @@ TEST_CASE(a_hidden_network_is_typed_and_cancel_keeps_nothing)
     CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
 }
 
+/*
+ * The home tag climbs one level (ui_screen_t.back), as CANCEL does: from a
+ * keyboard to the list, keeping nothing typed, from the list to the
+ * buttons, and from the buttons it leaves.  Climbing asks for nothing: the
+ * radio stays as it is until the screen is left.
+ */
+TEST_CASE(the_home_tag_climbs_from_the_list_to_the_buttons)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    scan_result();
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+    tap(BTN_CX(0), BTN_CY(0));               /* the buttons again */
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
+    CHECK(!scr()->back());
+}
+
+TEST_CASE(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing)
+{
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    (void)wifi_screen_take();
+    scan_result();
+    tap(ROW_CX(0), ROW_CY(0));               /* the password keyboard */
+    type_wifi("passw0rd");
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+    tap(RESCAN_CX, SCAN_BY);                 /* the list again */
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    tap(HIDDEN_CX, SCAN_BY);                 /* the name keyboard */
+    type_wifi("lab");
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+    tap(RESCAN_CX, SCAN_BY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    /* The name typed, then the password's keyboard: one tap to the list. */
+    tap(HIDDEN_CX, SCAN_BY);
+    type_wifi("lab");
+    key(UI_TK_OK);
+    type_wifi("passw0rd");
+    CHECK(scr()->back());
+    tap(RESCAN_CX, SCAN_BY);
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_SCAN);
+    CHECK(scr()->back());
+    CHECK(!scr()->back());
+    char ssid[WIFI_SSID_MAX + 1], pass[WIFI_PASS_MAX + 1];
+    wifi_screen_net(ssid, pass);
+    CHECK_STR_EQ(ssid, "");
+    CHECK_STR_EQ(pass, "");
+}
+
+/*
+ * Over the question about a staged image the first tap answers CANCEL: the
+ * image is dropped and the screen stays.  A list or keyboard under the
+ * question closes with it, so the next tap leaves.
+ */
+TEST_CASE(the_home_tag_answers_the_image_question_cancel)
+{
+    fresh();
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    v.up = WIFI_UP_IDLE;                     /* the image is dropped */
+    show();
+    CHECK(!scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+
+    fresh();
+    tap(BTN_CX(2), BTN_CY(2));
+    (void)wifi_screen_take();
+    scan_result();
+    tap(ROW_CX(0), ROW_CY(0));               /* a keyboard under it */
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    v.up = WIFI_UP_IDLE;
+    show();
+    tap(BTN_CX(0), BTN_CY(0));               /* the buttons, no keyboard */
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
+    CHECK(!scr()->back());
+}
+
+/* A second tap while the image is still staged leaves the screen, and
+ * asks nothing more itself: the leave drops the image. */
+TEST_CASE(a_second_home_tag_over_a_staged_image_leaves)
+{
+    fresh();
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    CHECK(!scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+    /* A new image after the first is dropped answers the first tap
+     * again. */
+    v.up = WIFI_UP_IDLE;
+    show();
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    /* And a new visit does too. */
+    scr()->leave();
+    (void)wifi_screen_take();
+    scr()->enter();
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+}
+
 /* ------------------------------------------------------- the question */
 
 TEST_CASE(install_is_a_2_s_hold_and_a_release_before_asks_nothing)
@@ -705,6 +814,10 @@ int main(void)
     RUN(the_running_views_draw_and_wifi_off_asks_off);
     RUN(a_network_picked_from_the_scan_is_kept_with_its_password);
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
+    RUN(the_home_tag_climbs_from_the_list_to_the_buttons);
+    RUN(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing);
+    RUN(the_home_tag_answers_the_image_question_cancel);
+    RUN(a_second_home_tag_over_a_staged_image_leaves);
     RUN(install_is_a_2_s_hold_and_a_release_before_asks_nothing);
     RUN(a_press_that_slides_off_install_asks_nothing);
     RUN(an_image_that_goes_away_under_the_hold_ends_it);
