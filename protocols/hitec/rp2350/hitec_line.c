@@ -191,9 +191,11 @@ hitec_line_err_t hitec_line_open(hitec_line_t *line, unsigned pin,
     pio_sm_exec(pio, sm, pio_encode_set(pio_pins, 0));
     pio_sm_exec(pio, sm, pio_encode_set(pio_pindirs, 0));
     set_pull(pin, family);
+    /* pio_gpio_init() writes the pin's whole control register, overrides
+     * included, so the input override comes after it. */
+    pio_gpio_init(pio, pin);
     gpio_set_inover(pin, family == HITEC_D ? GPIO_OVERRIDE_INVERT
                                            : GPIO_OVERRIDE_NORMAL);
-    pio_gpio_init(pio, pin);
     line_ready(pio, sm, offset);
     pio_sm_set_enabled(pio, sm, true);
     line->open = 1;
