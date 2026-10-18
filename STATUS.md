@@ -115,7 +115,7 @@ is taken in a gap ahead of the save that needs it.
 | Bring-up diagnosis, both ends' counters compared | built |
 | Heartbeat generator and monitor | built and driven at both ends; the monostable is not fitted |
 | Coprocessor firmware | answers the identity, status, control, bench and three output pages; fails safe at 200 ms. The decision to switch to ARMED is `shared/safety/safety_gate.c`, called once a pass and at every CONTROL write and host-tested in `test_safety_gate` against a model of both main loops: an arm latch set at a start, on link silence, on a distrusted heartbeat and by a refused ARM, released by CLEAR alone. CHAN_CFG and OUTPUTS refuse a role, a throttle channel's range and a slot change while ARMED. It publishes what the ESC reports over extended DShot telemetry -- speed, voltage, current, power and the ESC's own temperature. With an INA228 enabled on the SENSE page and answering, BENCH carries the INA228's voltage, current, power, peaks, charge and energy instead (see Current monitors). Core 0 runs the link and the outputs; core 1 runs the current monitors' bus and nothing else |
-| Coprocessor firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036 KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the coprocessor restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7 s watchdog returns to the old image. The coprocessor refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5 s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the coprocessor erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the coprocessor's build by SHA-256 at link-up and offers the update on a question that takes the 2 s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6 s. A coprocessor loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
+| Coprocessor firmware update over CAN | built and host-tested. The boot ROM's partition table holds slots A and B of 2036 KiB; the panel writes the slot that is not running through UPDATE_CTL (0xF0) and UPDATE_DATA (0xF1) in 64-byte blocks with a CRC-16 each and a SHA-256 over the image, the coprocessor restarts into it on trial (TBYB, try before you buy), and the panel's BUY keeps it; without the BUY the boot ROM's 16.7 s watchdog returns to the old image. The coprocessor refuses ARM for the whole session and writes flash only behind the store's gate. A session ends after 5 s without a request to either update page, and a panel that finds one at its check ends it with ABORT. After the BUY the coprocessor erases the old slot's first sector, and owes the erase until it holds when it fails or the gate is shut. The panel carries the image when built with `RCBENCH_IOMCU_BIN`, checks the coprocessor's build by SHA-256 at link-up and offers the update on a question that takes the 2 s hold. `test_link_update` runs both ends over the link layer against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the progress; `test_upd_coproc` SETUP > UPDATES' coprocessor section, whose 2 s hold starts the same update, also after a declined question. The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6 s. A coprocessor loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`. [Reference](docs/Link.md#firmware-update-over-the-link) |
 | Output drivers (PWM, PPM, DShot, bidirectional DShot) | built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice fold are host-tested. No instrument has been on any output pin. [Reference](docs/DShot.md) |
 | S.BUS decoder | built and tested; the PIO (programmable input/output) receiver is not written |
 | Motor pole count over the link | the panel sends `Motor poles` on the CONTROL page when the coprocessor answers, at every edit, and in the frame that switches to ARMED, so a run starts on the count that was sent or does not start; with none sent the coprocessor reports no speed rather than one derived from a guess |
@@ -210,7 +210,7 @@ build and so have no compile command; `tools/render_ui.py` builds the first
 with `-Werror`, and cppcheck reads both. The step over `firmware/` passes all 25. `docs.yml` and
 `release.yml` with the wait for CI have not run.
 
-The host suite is 160 binaries, one line per case: `test_gfx`, `test_touch_map`,
+The host suite is 161 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_touch_merge`, `test_inj_line_id`, `test_inj_emu`,
 `test_nav`, `test_widgets`, `test_workbench`, `test_prog_registry`, `test_keypad`, `test_pinlist`, `test_bench`, `test_supply`,
 `test_supply_screen`, `test_pdmini`,
@@ -224,7 +224,7 @@ The host suite is 160 binaries, one line per case: `test_gfx`, `test_touch_map`,
 `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_safety_gate`, `test_flash_gate`, `test_touch_loss`, `test_servo_limit`, `test_servo_limrun`, `test_servo_limrun_abort`, `test_servo_limrun_report`,
 `test_servo_sync`, `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_test_judge`, `test_servo_test_replay`, `test_servo_test_enc`, `test_servo_test_win`, `test_servo_test_win_read`, `test_servo_test_win_chain`, `test_servo_page`, `test_supply_page`, `test_sense_page`, `test_supply_link`, `test_sense_link`, `test_sense_link_view`, `test_sense_windows`, `test_servo_source`, `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`,
-`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
+`test_ppm`, `test_outbind`, `test_outputs_screen`, `test_picker_screen`, `test_board_drawing`, `test_busfault_screen`, `test_coproc_update_screen`, `test_upd_coproc`, `test_text`, `test_openyge_frame`, `test_openyge_status`,
 `test_openyge_params`, `test_esc_profiles`, `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`, `test_esc_stick_entry`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`, `test_sense_svc`, `test_sense_trace_feed`, `test_sense_trace`, `test_sense_trace_next`, `test_sense_trace_setup`, `test_sense_trace_lines`, `test_tone`, `test_edge_ring`, `test_tone_svc`, `test_tone_page`, `test_tone_pio`, `test_tone_link`, `test_knob`, `test_panel_i2c`, `test_bind_link`, `test_servo_link`, `test_logview`, `test_log_name`, `test_logwriter`, `test_log_cadence`, `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`, `test_kst_pio`, `test_kst_port`, `test_kst_link`, `test_prog_port`, `test_kst_file`, `test_kst_store`, `test_kst_prog`, `test_kst_prog_card`, `test_kst_panel`, `test_kst_panel_files`, `test_kst_panel_nocard`, `test_kst_panel_limrun`, `test_kst_card`, `test_prog_link`, `test_wifi_screen`, `test_fw_image`, `test_fw_install`, `test_fw_upload`, `test_fw_release`, `test_wa_session`, `test_wa_fetch`, `test_upd_screen`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`, `test_wa_page` and `test_wa_mdns`. The harness is
 `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -283,8 +283,8 @@ ctest runs one case more that is not a binary of the suite:
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift of the table
 below and of the figure in the two READMEs, and on a C file under `shared/`
 or a core file under `protocols/` that is in neither of its two lists, is not compiled, or has no counters.
-`render_ui.py --check` holds 426 committed screenshots to the current
-render, 213 in English and the same 213 in German, and `render_ui.py --fit`
+`render_ui.py --check` holds 428 committed screenshots to the current
+render, 214 in English and the same 214 in German, and `render_ui.py --fit`
 fails on a string that overflows where it is drawn, in either language,
 except an English overflow it lists as known (none listed); `frame_cost.py` holds a bench frame to 15,600 cache-line fills and a
 chrome-cached screen to 2,000. `stack_check.py` holds every panel task's
@@ -347,8 +347,8 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 323 | 320 | 99.1% |
 | `shared/ui/wifi_screen.c` | 587 | 570 | 97.1% |
-| `shared/ui/coproc_update_screen.c` | 210 | 209 | 99.5% |
-| `shared/ui/upd_screen.c` | 485 | 459 | 94.6% |
+| `shared/ui/coproc_update_screen.c` | 264 | 263 | 99.6% |
+| `shared/ui/upd_screen.c` | 574 | 549 | 95.6% |
 | `shared/settings/settings.c` | 290 | 283 | 97.6% |
 | `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
 | `shared/logfile/log_csv.c` | 468 | 444 | 94.9% |
@@ -417,7 +417,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/link/link_sha256.c` | 85 | 85 | 100.0% |
 | `shared/link/link_update_image.c` | 95 | 89 | 93.7% |
 | `shared/link/link_update_dev.c` | 277 | 276 | 99.6% |
-| `shared/link/link_update_host.c` | 428 | 425 | 99.3% |
+| `shared/link/link_update_host.c` | 444 | 441 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 219 | 215 | 98.2% |
@@ -474,7 +474,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **45197** | **44115** | **97.6%** |
+| **total** | **44835** | **43759** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -509,7 +509,7 @@ _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 | The control task has no test of its own | touch, STOP, the ARMED state, the outputs, the link and the heartbeat run in a task on the core that does not draw. Nothing exercises it deliberately: its files, `main.c`, `panel_link.c`, `panel_poll.c`, `panel_services.c`, `panel_supply.c`, `panel_arm.c`, `panel_art.c` and `panel_update.c` (the coprocessor's update), are not in the host suite. The `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same position. A multi-agent review found six defects in it, including a heartbeat that stopped for up to 1000 ms on an unanswered poll and a splash tap that latched STOP; those are fixed, and the rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss stop and the wait for the far end's word on the heartbeat included | a session with both boards: press ARM, drag the throttle while the screen is busy, press STOP, unplug the link, and confirm the heartbeat's period on a scope at J8. ESP-IDF warns that a second core touching PSRAM shares bandwidth with the bounce-buffer refill. A refill that finishes late shows stale lines in that frame; a refill interrupt held off for more than 512 us restarts the scan cleanly (`rgb_panel_rcbench.h`) at the first VBlank (vertical blanking interval) interrupt after it runs again, which can be mid-frame. The control task touches no framebuffer, which is the reason to expect it is clear, not evidence that it is |
 | Settings save disturbs the picture | `settings_save()` writes NVS while the panel scans. The refill interrupt is masked for the length of the write, so the bounce buffer starves. A write that holds it off for more than 512 us makes the driver restart the scan with the clean start of boot (`rgb_panel_rcbench.h`) at the first VBlank interrupt after the write ends, which can be mid-frame, so the picture is in place from the first whole frame after; the console logs `display: scan restarted` each time. How long a save holds the interrupt off is not measured | a photo of the home screen after a settings save and after a board drawing's keep, with the console's restart lines beside it. Beyond that nothing, unless the disturbance proves unacceptable. `CONFIG_SPI_FLASH_AUTO_SUSPEND` would remove it (the module's flash is 0x46 4018, an XMC die ESP-IDF grants `SPI_FLASH_CHIP_CAP_SUSPEND`), but ESP-IDF warns against it for a workload with an interrupt every 512 us |
 | Stick programming's beep timing | the engine, the PROGRAMMER tab and the simulated ESC are tested on the host only. No ESC's menu has been recorded, so the beep and gap lengths, the long beep, the gap between groups, the idle current and the current a beep adds are defaults chosen to be plausible, and the simulated ESC sounds numbers made up to match them. The PD mini is read 100 to 150 ms apart at the panel, and whether its current is an instant reading or an average is not known: a beep shorter than about 200 ms may not be seen. The ESC's tones after a selection are not decoded, so DONE does not say the ESC stored anything | one ESC of a profile the engine runs, on the PD mini with a resistor load, and once with a motor mounted solid without propeller: a recording of its menu's current at the fastest rate available, the module's read interval, and one run of each kind (two-stage, one-stage) checked afterwards with the ESC's program card |
-| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 213 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
+| The German interface | the tables, the fonts and the fit check are built and tested on the host, and the 214 German screenshots are rendered by the panel's code; An alert already on the band, and the title of a keypad or choice already open, keep the language they were raised in until replaced. | a beta tester's pass over every screen in German on a panel |
 
 ## Constraints
 

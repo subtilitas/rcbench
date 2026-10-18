@@ -130,6 +130,15 @@ static void cu_enter(cu_state_t st)
     atomic_store(&s_cu_busy, st == CU_UPDATING || st == CU_CONFIRMING);
 }
 
+/* Control task: what UPDATES' coprocessor section reads of the last build
+ * check. */
+static void cu_publish_check(cu_check_t check)
+{
+    snap_lock();
+    s_snap.cu.check = (uint8_t)check;
+    snap_unlock();
+}
+
 /* Whether the update may start: see fw_coproc_may_start().  From any task. */
 bool cu_may_start(void)
 {
@@ -196,9 +205,14 @@ static cu_step_t cu_step_of(uint8_t phase)
     }
 }
 
+/* An active update withdraws the offer in the same snapshot that shows its
+ * START taken. */
 static void cu_publish_progress(bool active)
 {
     snap_lock();
+    if (active) {
+        s_snap.cu.offered = false;
+    }
     s_snap.cu.active = active;
     s_snap.cu.step   = (uint8_t)cu_step_of(s_cu.phase);
     s_snap.cu.block  = s_cu.block;
@@ -223,6 +237,7 @@ void cu_link_up(const link_msg_t *reply)
     cu_publish_offer(false);
     link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
     cu_enter(CU_CHECKING);
+    cu_publish_check(CU_CHECK_RUNNING);
 }
 
 /* Why an update stopped, in the alert's words. */
@@ -263,8 +278,10 @@ static void cu_checked(void)
     case LINK_UPH_SAME:
         ESP_LOGI(TAG, "coprocessor runs the build this panel carries");
         cu_enter(CU_IDLE);
+        cu_publish_check(CU_CHECK_SAME);
         break;
     case LINK_UPH_DIFFERENT:
+        cu_publish_check(CU_CHECK_DIFFERENT);
         if (s_cu_declined
             && memcmp(&s_cu_declined_for, &s_cu_running,
                       sizeof(s_cu_running)) == 0) {
@@ -289,16 +306,19 @@ static void cu_checked(void)
         ESP_LOGI(TAG, "coprocessor runs an image on trial; buying it");
         link_uph_confirm(&s_cu, now_ms());
         cu_enter(CU_CONFIRMING);
+        cu_publish_check(CU_CHECK_UPDATING);
         break;
     case LINK_UPH_NEEDS_USB:
         ESP_LOGW(TAG, "coprocessor takes no update over CAN");
         control_alert(TR(ALERT_CU_USB));
         cu_enter(CU_IDLE);
+        cu_publish_check(CU_CHECK_USB);
         break;
     default:
         ESP_LOGW(TAG, "coprocessor build check ended %u, error %u",
                  (unsigned)s_cu.result, (unsigned)s_cu.error);
         cu_enter(CU_IDLE);
+        cu_publish_check(CU_CHECK_FAILED);
         break;
     }
 }
@@ -329,6 +349,11 @@ static __attribute__((noinline)) void cu_ended(void)
         cu_alert_failed();
     }
     cu_enter(CU_IDLE);
+    /* The link-up after the update checks the build again; a coprocessor of
+     * another protocol major gives no link-up, and its next answer to the
+     * probe checks it. */
+    cu_publish_check(CU_CHECK_NONE);
+    link_uph_mismatch_rearm(&s_mismatch);
     s_cu_took_down = false;
     s_cu_missed = false;
     /* The link-lost screen counts from here, not from the update's start:
@@ -362,18 +387,27 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         if (link_uph_step(&s_cu, &s_host, &k_port) == LINK_UPH_DONE) {
             if (s_cu.result == LINK_UPH_UPDATED) {
                 control_alert(TR(ALERT_CU_KEPT));
+                /* Bought, whichever panel sent it: whether it is the build
+                 * this panel carries is checked again, as at a link-up. */
+                link_uph_check(&s_cu, CU_IMG, CU_LEN, now_ms());
+                cu_enter(CU_CHECKING);
+                cu_publish_check(CU_CHECK_RUNNING);
             } else {
                 ESP_LOGW(TAG, "the image on trial was not bought: %u, "
                               "error %u", (unsigned)s_cu.result,
                          (unsigned)s_cu.error);
+                cu_enter(CU_IDLE);
+                cu_publish_check(CU_CHECK_FAILED);
             }
-            cu_enter(CU_IDLE);
         }
         return false;
     case CU_OFFERED:
+    case CU_DECLINED:
         /* A decline counts for the offer it was given on only: one that
-         * crossed a newer link-up's check is for an offer gone. */
-        if (atomic_load(&s_cu_declined_gen) == s_cu_offer_gen) {
+         * crossed a newer link-up's check is for an offer gone.  A declined
+         * update still starts from SETUP > UPDATES. */
+        if (s_cu_state == CU_OFFERED
+            && atomic_load(&s_cu_declined_gen) == s_cu_offer_gen) {
             ESP_LOGI(TAG, "coprocessor update declined");
             cu_enter(CU_DECLINED);
             s_cu_declined = true;
@@ -390,26 +424,28 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         if (!cu_may_start()) {
             /* The panel's radio is up or an install of the panel has
              * begun: the START is spent and the offer made again, so the
-             * question opens once both have ended. */
+             * question opens once both have ended.  A declined one stays
+             * declined: UPDATES says why its hold is grey. */
             ESP_LOGW(TAG, "coprocessor update refused: the radio is on or "
                           "the panel installs");
             atomic_store(&s_cu_busy, false);
-            cu_publish_offer(true);
+            cu_publish_offer(s_cu_state == CU_OFFERED);
             return false;
         }
         ESP_LOGI(TAG, "coprocessor update: %lu bytes",
                  (unsigned long)CU_LEN);
-        cu_publish_offer(false);
         link_uph_update(&s_cu, CU_IMG, CU_LEN, now_ms());
         cu_enter(CU_UPDATING);
         s_cu_took_down = false;
         s_cu_missed = false;
+        /* The START taken and the update running in one snapshot: a render
+         * side that saw the one without the other would take it for spent. */
         cu_publish_progress(true);
+        cu_publish_check(CU_CHECK_UPDATING);
         return true;
     case CU_UPDATING:
         break;
     case CU_IDLE:
-    case CU_DECLINED:
     default:
         /* A START given while nothing is offered is spent. */
         if (atomic_load(&s_cu_starts) != s_cu_starts_taken) {
@@ -928,7 +964,7 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
  * and its STARTs and decline go to the control task.
  * @p unsafe: armed, an arm waiting, or the supply's output on or coming.
  */
-void cu_render_service(bool unsafe, const cu_snap_t *cs)
+void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
 {
     static cu_driver_t driver;
 
@@ -942,6 +978,11 @@ void cu_render_service(bool unsafe, const cu_snap_t *cs)
         .starts_taken = cs->starts_taken,
         .running      = cs->running,
         .carried      = cu_carried(),
+        .have_image   = CU_LEN != 0u,
+        .reachable    = link_up || cs->mismatch,
+        .check        = (cu_check_t)cs->check,
+        .radio_up     = s_wifi_ok && !wifi_access_down(),
+        .installing   = atomic_load(&s_fw_installing),
     };
     cu_hand_t hand;
     coproc_update_drive(&driver, &feed, unsafe, &hand);

@@ -12,6 +12,7 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "upd_screen.h"
 
 /* The question, in the body under the band: the box and the buttons of
  * LOGS' DELETE question. */
@@ -328,6 +329,68 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
 /* ----------------------------------------------------------- the driver */
 
+cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
+                               bool unsafe)
+{
+    if (f == NULL || !f->have_image) {
+        return CU_SEC_NO_IMAGE;
+    }
+    if (f->active || f->check == CU_CHECK_UPDATING
+        || (d != NULL && d->starts_sent != f->starts_taken)) {
+        return CU_SEC_BUSY;
+    }
+    if (!f->reachable) {
+        return CU_SEC_NO_LINK;
+    }
+    switch (f->check) {
+    case CU_CHECK_NONE:      return CU_SEC_UNKNOWN;
+    case CU_CHECK_RUNNING:   return CU_SEC_CHECKING;
+    case CU_CHECK_FAILED:    return CU_SEC_FAILED;
+    case CU_CHECK_USB:       return CU_SEC_USB;
+    case CU_CHECK_SAME:      return CU_SEC_SAME;
+    case CU_CHECK_DIFFERENT: break;
+    case CU_CHECK_UPDATING:
+    default:                 return CU_SEC_BUSY;
+    }
+    if (unsafe) {
+        return CU_SEC_UNSAFE;
+    }
+    if (f->radio_up) {
+        return CU_SEC_RADIO;
+    }
+    if (f->installing) {
+        return CU_SEC_INSTALL;
+    }
+    return CU_SEC_READY;
+}
+
+/* UPDATES' hold, completed: the progress, and the START it hands over.
+ * The same as the question's START, from another screen. */
+static void start_from_updates(const cu_feed_t *f)
+{
+    s.running = f->running;
+    s.carried = f->carried;
+    s.view = CU_VIEW_PROGRESS;
+    s.step = CU_STEP_PREPARE;
+    s.block = 0u;
+    s.blocks = 0u;
+    s.start = true;
+    s.cancel = false;
+    drop_press();
+    ui_hold_reset(&s.hold);
+    s.drawn_mask = 0;
+    ui_router_goto(SCREEN_COPROC_UPDATE);
+}
+
+/* Where a progress that has ended goes.  The origin stays until another
+ * start sets it: a snapshot that shows the START taken a moment before it
+ * shows the update active lands here, and the progress the next frame
+ * opens again still returns to UPDATES. */
+static void progress_done(const cu_driver_t *d)
+{
+    ui_router_goto(d->from_updates ? SCREEN_UPDATES : SCREEN_OVERVIEW);
+}
+
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
                          cu_hand_t *out)
 {
@@ -337,6 +400,16 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
     }
     if (d == NULL || f == NULL || out == NULL) {
         return;
+    }
+
+    /* UPDATES' hold first: its START goes out with this frame's.  The
+     * section is read again here, a frame after the hold completed, and a
+     * hold the state no longer allows starts nothing. */
+    if (upd_screen_take_coproc()
+        && coproc_update_section(d, f, unsafe) == CU_SEC_READY
+        && ui_router_current() == SCREEN_UPDATES) {
+        d->from_updates = true;
+        start_from_updates(f);
     }
 
     /* Both latches, wherever the router is: a way off the question other
@@ -354,6 +427,17 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
         }
     }
 
+    /* What UPDATES' section shows, after this frame's START is counted. */
+    const upd_cu_view_t sec = {
+        .sec        = coproc_update_section(d, f, unsafe),
+        .known      = f->have_image && f->reachable
+                      && f->check != CU_CHECK_NONE,
+        .have_image = f->have_image,
+        .running    = f->running,
+        .carried    = f->carried,
+    };
+    upd_screen_set_coproc(&sec);
+
     if (f->active) {
         coproc_update_screen_progress(f->step, f->block, f->blocks);
         if (ui_router_current() != SCREEN_COPROC_UPDATE) {
@@ -366,7 +450,7 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
         if (s.view == CU_VIEW_PROGRESS) {
             /* Ended, or the START was spent on an offer that had gone. */
             if (f->starts_taken == d->starts_sent) {
-                ui_router_goto(SCREEN_OVERVIEW);
+                progress_done(d);
             }
         } else if (!f->offered) {
             /* The offer went -- another link-up checks again -- and with
@@ -378,8 +462,10 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
     }
 
     if (f->offered && f->offer_gen != d->shown_gen && !unsafe
+        && !f->radio_up && !f->installing
         && ui_router_current() == SCREEN_OVERVIEW) {
         d->shown_gen = f->offer_gen;
+        d->from_updates = false;
         coproc_update_screen_offer(f->running, f->carried);
         ui_router_goto(SCREEN_COPROC_UPDATE);
     }

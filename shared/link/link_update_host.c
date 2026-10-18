@@ -718,3 +718,32 @@ link_uph_phase_t link_uph_step(link_uph_t *u, link_host_t *h,
     }
     return u->phase;
 }
+
+/* ---------------------------------------------- the mismatched answer */
+
+bool link_uph_mismatch_probe(link_uph_mismatch_t *m, bool mismatch)
+{
+    if (m == NULL) {
+        return false;
+    }
+    if (!mismatch) {
+        m->told = false;
+        return false;
+    }
+    const bool due = !m->told || m->owed;
+    m->told = true;
+    m->owed = false;
+    return due;
+}
+
+bool link_uph_mismatch_answers(const link_uph_mismatch_t *m)
+{
+    return m != NULL && m->told;
+}
+
+void link_uph_mismatch_rearm(link_uph_mismatch_t *m)
+{
+    if (m != NULL) {
+        m->owed = true;
+    }
+}
