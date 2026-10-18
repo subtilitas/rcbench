@@ -12,19 +12,20 @@ The menu is the panel's home screen. It opens after the splash and holds one til
 
 ![The menu with the link up](view:overview)
 
-Nine tiles, 150 x 204 px each, in two rows:
+Eight tiles, 190 x 204 px each, in 4 columns and 2 rows: the workbenches in the first row, the instruments in the second, LOGS over SETUP in the last column.
 
 | Tile | Line under the name | Page |
 |---|---|---|
 | MOTOR & ESC | drive, V/A, rpm | [Motor and ESC](motor.md) |
 | SERVO | travel, current | [Servo](servo.md) |
 | SUPPLY | set and log V/A | [Supply](supply.md) |
-| ANALYSER | buses and frames | [Analyser](analyser.md) |
 | LOGS | record and view data | [Logs](logs.md) |
-| SETUP | pack and output | [Setup](setup.md) |
+| ANALYSER | buses and frames | [Analyser](analyser.md) |
 | BATTERY | cells, iR, mAh | [Battery](battery.md) |
 | BALANCE | vibration, phase | [Balance](balance.md) |
-| PROGRAMMER | ESC and servo | [Programmer](programmer.md) |
+| SETUP | pack and output | [Setup](setup.md) |
+
+Programming has no tile: ESCs are programmed on MOTOR & ESC's [PROGRAM](motor.md#program), servos on SERVO's PROGRAM.
 
 A tap opens a tile when the finger lifts on the same tile it pressed. A press that slides off the tile opens nothing.
 
@@ -39,7 +40,7 @@ The mark follows the capability bits the IOmcu reports at link-up:
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
 | SERVO | the IOmcu drives servo PWM (pulse-width modulation) outputs |
 | SUPPLY | the PD mini is enabled on SETUP, INTERFACES |
-| ANALYSER, BATTERY, BALANCE, PROGRAMMER | never in this release: no IOmcu reports these capabilities |
+| ANALYSER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | never marked: they hold no measurement |
 
 With no IOmcu answering, MOTOR & ESC and SERVO carry the mark too. SUPPLY follows the PD mini setting alone, link or not.

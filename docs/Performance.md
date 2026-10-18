@@ -27,40 +27,40 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            7,883      985 KiB     25.9      19.5
-frame-idle        1,303      163 KiB      4.3      39.0
-held             4,431      554 KiB     14.5      39.0
-sim              8,849     1106 KiB     29.0      19.5
-throttle         9,589     1199 KiB     31.5      19.5
-chrome          31,883     3985 KiB    104.6       7.8
-overview           990      124 KiB      3.2      39.0
-servo           14,678     1835 KiB     48.2      19.5
-servo-grip        2,998      375 KiB      9.8      39.0
-servo-current        4,023      503 KiB     13.2      39.0
-supply           8,600     1075 KiB     28.2      19.5
-supply-chrome       31,616     3952 KiB    103.8       7.8
-analyser           920      115 KiB      3.0      39.0
-logs               894      112 KiB      2.9      39.0
-settings           912      114 KiB      3.0      39.0
-settings-list          912      114 KiB      3.0      39.0
-battery            921      115 KiB      3.0      39.0
-balance            909      114 KiB      3.0      39.0
-programmer          948      118 KiB      3.1      39.0
-balance-sim        2,395      299 KiB      7.9      39.0
-settings-sim        2,378      297 KiB      7.8      39.0
-battery-sim        2,403      300 KiB      7.9      39.0
+frame            7,882      985 KiB     25.9      19.5
+frame-idle        1,294      162 KiB      4.2      39.0
+held             4,430      554 KiB     14.5      39.0
+sim              8,848     1106 KiB     29.0      19.5
+throttle         9,593     1199 KiB     31.5      19.5
+chrome          32,006     4001 KiB    105.0       7.8
+overview           963      120 KiB      3.2      39.0
+servo           14,680     1835 KiB     48.2      19.5
+servo-grip        2,988      374 KiB      9.8      39.0
+servo-current        4,006      501 KiB     13.1      39.0
+supply           8,580     1072 KiB     28.2      19.5
+supply-chrome       31,606     3951 KiB    103.7       7.8
+analyser           901      113 KiB      3.0      39.0
+logs               878      110 KiB      2.9      39.0
+settings           896      112 KiB      2.9      39.0
+settings-list          896      112 KiB      2.9      39.0
+battery            906      113 KiB      3.0      39.0
+balance            890      111 KiB      2.9      39.0
+motor-stick        1,049      131 KiB      3.4      39.0
+balance-sim        2,387      298 KiB      7.8      39.0
+settings-sim        2,373      297 KiB      7.8      39.0
+battery-sim        2,398      300 KiB      7.9      39.0
 analyser-chrome       39,464     4933 KiB    129.5       6.5
-logs-chrome       16,121     2015 KiB     52.9      13.0
-settings-chrome       18,639     2330 KiB     61.2      13.0
-settings-list-chrome       23,582     2948 KiB     77.4       9.8
-battery-chrome       37,077     4635 KiB    121.7       7.8
-balance-chrome       40,571     5071 KiB    133.2       6.5
-programmer-chrome       29,297     3662 KiB     96.2       9.8
-picker             931      116 KiB      3.1      39.0
-picker-chrome       22,044     2756 KiB     72.3      13.0
-wifi               895      112 KiB      2.9      39.0
+logs-chrome       16,120     2015 KiB     52.9      13.0
+settings-chrome       18,646     2331 KiB     61.2      13.0
+settings-list-chrome       23,576     2947 KiB     77.4       9.8
+battery-chrome       37,078     4635 KiB    121.7       7.8
+balance-chrome       40,572     5072 KiB    133.2       6.5
+motor-stick-chrome       31,191     3899 KiB    102.4       9.8
+picker             907      113 KiB      3.0      39.0
+picker-chrome       22,055     2757 KiB     72.4      13.0
+wifi               881      110 KiB      2.9      39.0
 wifi-chrome       13,717     1715 KiB     45.0      19.5
-wifi-keys       21,991     2749 KiB     72.2      13.0
+wifi-keys       21,992     2749 KiB     72.2      13.0
 clear           12,007     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
@@ -80,7 +80,7 @@ hlines               0        0 KiB      0.0      39.0
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
-| `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
 | `settings-list` | SETUP with APPLICATION's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
@@ -157,7 +157,7 @@ would repaint identical pixels, drawing slower would drop samples. CI
 | `servo` | 17,000 | the arm and grip drawing growing |
 | `servo-grip` | 4,000 | a breath repainting the whole card |
 | `servo-current` | 4,500 | a changed digit of the current repainting the whole card |
-| the eight per-screen modes | 1,200 | a screen that has started repainting |
+| `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | 1,200 | a screen that has started repainting |
 | `settings-list` | 1,200 | a SETUP list that has started repainting |
 | the three `-sim` modes | 2,800 | the watermark growing past a full canvas |
 | the ten `-chrome` modes | 45,000 | a full repaint growing |
@@ -218,7 +218,8 @@ bound for that reason:
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks, the start check's after
   an update, the SERVO screen link's callbacks into the panel and the
-  hooks of the programmers SERVO > PROGRAM opens, which it follows by name
+  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
+  which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`): 221 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
@@ -315,8 +316,11 @@ on. The same definition sizes that array.
 `-v` lists all of them, and each task's deepest chain.
 
 The UI keeps its frames small where it is cheap. A page's drawer is a
-separate function, so only the page on screen holds its buffers: on
-PROGRAMMER, `render()`'s frame is 32 bytes and the largest page's 464. A
+separate function, so only the page on screen holds its buffers: in ESC
+STICK, `esc_stick_panel_render()`'s frame is 32 bytes and the largest
+page's 464. MOTOR & ESC's `render()` takes 48 bytes and calls the session's
+way and its body's, 416 bytes, as two functions, so a session's pages do not
+sit on the body's frame. A
 line copied for display is copied without `snprintf()`, which reaches
 newlib's float conversion: 2,368 bytes deep in the call graph.
 
@@ -382,8 +386,8 @@ event handlers, the network interface, `esp_wifi_init`,
 tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
-What lives in PSRAM instead: the zero-initialised data (.bss) of 19 objects,
-163,324 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
+163,240 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
@@ -394,7 +398,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 19 objects,
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,412 |
-| `motor_screen` | ui | 19,992 |
+| `motor_screen` | ui | 20,008 |
 | `kst_card` | bench | 6,208 |
 | `esc_stick_panel` | ui | 6,096 |
 | `kst_panel` | ui | 5,185 |
@@ -405,9 +409,10 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 19 objects,
 | `wa_page` | webaccess | 1,408 |
 | `wifi_screen` | ui | 1,320 |
 | `ui_band` | ui | 1,040 |
-| `programmer_screen` | ui | 396 |
+| `esc_stick_pages` | ui | 252 |
 | `motor_settings_page` | ui | 128 |
 | `motor_workbench` | ui | 124 |
+| `motor_program_page` | ui | 44 |
 | `log_reader` | logfile | 1 |
 
 Read from the map file of the ESP-IDF v5.4 build. CI runs

@@ -29,6 +29,12 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PL_GRP_PROG_PORT]       = "SERVOS AM PROG-PORT",
     [TX_PL_NO_CAP]              = "IOMCU OHNE %s",
     [TX_PL_PORT_BUSY]           = "PORT BELEGT",
+    [TX_PL_STICK]               = "ESCs per Gasknüppel",
+    [TX_PL_GRP_STICK]           = "STICK-MENÜ",
+    [TX_PL_STRIP_SUP]           = "NETZTEIL %u.%02u V  %u.%02u A",
+    [TX_PL_STRIP_SUP_ON]        = "NETZTEIL EIN",
+    [TX_PL_STRIP_SUP_OFF]       = "NETZTEIL AUS",
+    [TX_PL_STRIP_SUP_NONE]      = "NETZTEIL --",
 
     /* ---------------------------------------------------------- the band */
     [TX_BAND_SAFE]              = "SAFE",
@@ -81,7 +87,6 @@ static const char *const k_text[TX_COUNT] = {
     [TX_OV_SETUP]               = "Akku und Ausgang",
     [TX_OV_BATTERY]             = "Zellen, iR, mAh",
     [TX_OV_BALANCE]             = "Vibration, Phase",
-    [TX_OV_PROGRAMMER]          = "ESC und Servo",
     [TX_OV_MODELLED]            = "SIMULIERT",
 
     /* ---------------------------------------------------------- splash */
@@ -507,10 +512,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_LOG_AT_ROW]             = "Zeile %d von %d   (keine Zeitspalte)",
     [TX_LOG_UNREADABLE_CELLS]   = "%d ZELLEN UNLESBAR",
 
-    /* ------------------------------------------------------ PROGRAMMER */
-    [TX_PG_BLURB_ESC]           = "Bootloader, CLI und Datenpakete",
-    [TX_PG_BLURB_SERVO]         = "Servos mit veröffentlichten Protokollen",
-    [TX_PG_BLURB_STICK]         = "Gasmenüs und Pieptöne",
+    /* --------------------------------------- the modelled protocols */
     [TX_PG_GROUP_MOTOR]         = "MOTOR",
     [TX_PG_GROUP_STARTUP]       = "ANLAUF",
     [TX_PG_GROUP_PROTECTION]    = "SCHUTZ",
@@ -551,21 +553,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_PG_DEVICE_ESCAPE32]     = "ESCape32 v9  auf  AT32F421",
     [TX_PG_DEVICE_VESC]         = "VESC 6.05  auf  STM32F405",
     [TX_PG_DEVICE_HITEC]        = "Hitec-Servo, D-Serie",
-    [TX_PG_PROFILES_RUN]        = "%d von %d Profilen ausführbar",
-    [TX_PG_PROTOCOL]            = "%d Protokoll",
-    [TX_PG_PROTOCOLS]           = "%d Protokolle",
-    [TX_PG_WHAT]                = "WAS WIRD PROGRAMMIERT?",
-    [TX_PG_NOTHING_ANSWERED]    = "Noch keine Antwort von einem Gerät.",
-    [TX_PG_CONNECT]             = "VERBINDEN",
-    [TX_PG_DISCONNECT]          = "TRENNEN",
-    [TX_PG_PARAMETERS]          = "PARAMETER",
-    [TX_PG_NO_DEVICE]           = "Kein Gerät verbunden. Keine Daten zum Anzeigen.",
     [TX_PG_RANGE_OF]            = "%d-%d von %d",
-    [TX_PG_WRITE_N]             = "SCHREIBEN %d",
-    [TX_PG_WRITE]               = "SCHREIBEN",
-    [TX_PG_READ]                = "AUSLESEN",
-    [TX_PG_MODELLED]            = "SIMULIERT",
-    [TX_PG_MODEL_NOTE]          = "Auf dem Panel simuliert. Kein Gerät wird angesprochen.",
 
     /* ------------------------------------------------------- ESC STICK */
     [TX_SP_NEEDS_V]             = "benötigt %u.%u V; Grenze %u.%u V",

@@ -930,7 +930,7 @@ What the screens write:
 
 | Screen | ARM |
 | --- | --- |
-| MOTOR & ESC, PROGRAMMER (the stick run) | 0x0002 |
+| MOTOR & ESC, its PROGRAM included (the stick run) | 0x0002 |
 | SERVO | 0x0004 |
 
 A SWEEP, HOLD or RESUME of the SERVO page and a SERVO_SENSE capture need

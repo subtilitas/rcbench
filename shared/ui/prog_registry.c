@@ -8,22 +8,34 @@
 #include <string.h>
 
 #include "esc_profile.h"
+#include "esc_stick_panel.h"
 #include "kst_panel.h"
 #include "link_pages.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
 /*
- * The rows.  One live row today: the programmer for KST and Chaservo
- * servos on the IOmcu's programming port 0 (GP13 on a board that has
- * stored no other pin).  Its port is a channel of the servo PWM bank
- * (prog_port.h), so it needs LINK_CAP_SERVO_PWM.
+ * The rows.  Two live rows:
+ *   - SERVO: the programmer for KST and Chaservo servos on the IOmcu's
+ *     programming port 0 (GP13 on a board that has stored no other pin).
+ *     Its port is a channel of the servo PWM bank (prog_port.h), so it
+ *     needs LINK_CAP_SERVO_PWM.
+ *   - MOTOR & ESC: ESC STICK, an ESC programmed through its throttle-stick
+ *     menu over the throttle output and the supply.  It holds no
+ *     programming port.  It needs no capability to open: its profiles read
+ *     without the IOmcu, and its RUN says itself what the bench lacks
+ *     (no throttle pin, the binding not read, the supply the panel's
+ *     model).  Full width: the stick panel is laid out for 776 px.
  *
- * The next maker is one more row here and its page_set.
+ * The modelled ESC and servo protocols of prog_models.h have no transport
+ * on the IOmcu and get no row.  The next maker is one more row here and
+ * its page_set.
  */
 static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST, TX_PL_GRP_PROG_PORT,
-      TX_SV_TARGET_PORT, 0u, LINK_CAP_SERVO_PWM, &kst_panel_pages },
+      TX_SV_TARGET_PORT, 0u, LINK_CAP_SERVO_PWM, &kst_panel_pages, false },
+    { PROG_DEV_MOTOR, UI_WB_PROGRAM, TX_PL_STICK, TX_PL_GRP_STICK,
+      TX_MO_SET_THROTTLE, PROG_REG_NO_PORT, 0u, &esc_stick_pages, true },
 };
 
 /* The table the lists are built from: k_rows, or one a test hands in. */
@@ -92,6 +104,10 @@ prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
             f = PROG_REG_BAD_PORT;
         } else if (!hooks_filled(r->page_set)) {
             f = PROG_REG_NO_PAGE_SET;
+        } else if (r->full_width != (r->device == PROG_DEV_MOTOR)) {
+            /* SERVO opens a session over its left column, MOTOR & ESC
+             * over the whole body: each host draws one layout. */
+            f = PROG_REG_BAD_WIDTH;
         } else {
             size_t list = 0;
             for (size_t j = 0; j < n; ++j) {
@@ -117,21 +133,132 @@ prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
     return PROG_REG_OK;
 }
 
-/* ------------------------------------------------------- a row's state */
+/* ------------------------------------------------- a device's sessions */
 
-/* The two hooks the registry calls, each from a function of its own, so
- * tools/stack_check.py follows them by name (PROG_CALLS). */
-static PROG_ONE_CALL bool prog_reg_call_holds(
-    const prog_page_set_t *ps)
+int prog_reg_sets(uint8_t device, const prog_page_set_t *out[PROG_LIST_MAX])
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    int k = 0;
+    for (size_t i = 0; i < n && k < PROG_LIST_MAX; ++i) {
+        if (rows[i].device != device || rows[i].page_set == NULL) {
+            continue;
+        }
+        bool seen = false;
+        for (int j = 0; j < k; ++j) {
+            seen = seen || out[j] == rows[i].page_set;
+        }
+        if (!seen) {
+            out[k++] = rows[i].page_set;
+        }
+    }
+    return k;
+}
+
+bool prog_reg_full_width(const prog_page_set_t *ps)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    for (size_t i = 0; ps != NULL && i < n; ++i) {
+        if (rows[i].page_set == ps && rows[i].full_width) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
+ * Each hook of a page set is called from one function of its own, so
+ * tools/stack_check.py follows the call by name (PROG_CALLS there) as it
+ * follows the screens' tables.
+ */
+PROG_ONE_CALL void prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area)
+{
+    ps->init(area);
+}
+
+PROG_ONE_CALL void prog_ps_entry(const prog_page_set_t *ps)
+{
+    ps->entry();
+}
+
+PROG_ONE_CALL void prog_ps_open(const prog_page_set_t *ps)
+{
+    ps->open();
+}
+
+PROG_ONE_CALL bool prog_ps_is_open(const prog_page_set_t *ps)
+{
+    return ps->is_open();
+}
+
+PROG_ONE_CALL void prog_ps_back(const prog_page_set_t *ps)
+{
+    ps->back();
+}
+
+PROG_ONE_CALL bool prog_ps_holds(const prog_page_set_t *ps)
 {
     return ps->holds_port();
 }
 
-static PROG_ONE_CALL uint8_t prog_reg_call_pin(
-    const prog_page_set_t *ps)
+PROG_ONE_CALL void prog_ps_armed(const prog_page_set_t *ps, bool armed)
+{
+    ps->armed(armed);
+}
+
+PROG_ONE_CALL void prog_ps_tick(const prog_page_set_t *ps, float dt_s)
+{
+    ps->tick(dt_s);
+}
+
+PROG_ONE_CALL bool prog_ps_has_press(const prog_page_set_t *ps, uint8_t id)
+{
+    return ps->has_press(id);
+}
+
+PROG_ONE_CALL void prog_ps_event(const prog_page_set_t *ps,
+                                 const touch_event_t *evt)
+{
+    ps->event(evt);
+}
+
+PROG_ONE_CALL void prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c)
+{
+    ps->render(c);
+}
+
+PROG_ONE_CALL uint32_t prog_ps_revision(const prog_page_set_t *ps)
+{
+    return ps->revision();
+}
+
+PROG_ONE_CALL uint32_t prog_ps_hold_revision(const prog_page_set_t *ps)
+{
+    return ps->hold_revision();
+}
+
+PROG_ONE_CALL gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps)
+{
+    return ps->hold_rect();
+}
+
+PROG_ONE_CALL void prog_ps_leave(const prog_page_set_t *ps)
+{
+    ps->leave();
+}
+
+PROG_ONE_CALL void prog_ps_cancel(const prog_page_set_t *ps)
+{
+    ps->cancel();
+}
+
+PROG_ONE_CALL uint8_t prog_ps_pin(const prog_page_set_t *ps)
 {
     return ps->pin();
 }
+
+/* ------------------------------------------------------- a row's state */
 
 uint16_t prog_reg_missing(const prog_reg_row_t *row, uint16_t caps)
 {
@@ -161,7 +288,7 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
         const prog_reg_row_t *o = &rows[j];
         if (j != i && o->port == r->port && o->page_set != r->page_set
             && o->page_set != NULL && o->page_set->holds_port != NULL
-            && prog_reg_call_holds(o->page_set)) {
+            && prog_ps_holds(o->page_set)) {
             return PROG_ROW_PORT_BUSY;
         }
     }
@@ -209,7 +336,7 @@ bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
         break;
     }
     const uint8_t pin = (r->page_set != NULL && r->page_set->pin != NULL)
-                            ? prog_reg_call_pin(r->page_set)
+                            ? prog_ps_pin(r->page_set)
                             : PROG_REG_NO_PIN;
     if (pin == PROG_REG_NO_PIN) {
         snprintf(out, size, "%s", ui_tr(r->transport));

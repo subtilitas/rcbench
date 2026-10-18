@@ -493,7 +493,7 @@ TEST_CASE(the_overlays_of_supply_are_no_leave)
 TEST_CASE(a_leave_switches_off_only_the_screens_own_output)
 {
     static const supply_by_t by[] = { SUPPLY_BY_SUPPLY, SUPPLY_BY_SERVO,
-                                      SUPPLY_BY_PROGRAMMER };
+                                      SUPPLY_BY_STICK };
     supply_cmd_t c;
 
     for (size_t a = 0; a < sizeof(by) / sizeof(by[0]); ++a) {

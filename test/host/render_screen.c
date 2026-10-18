@@ -46,7 +46,7 @@
 #include "outputs_screen.h"
 #include "picker_screen.h"
 #include "prog_registry.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 #include "esc_sim.h"
 #include "supply.h"
 #include "supply_screen.h"
@@ -68,6 +68,14 @@ extern const uint32_t board_drawing_rp2350_can_bytes;
 
 #define W 800
 #define H 480
+
+/* MOTOR & ESC's PROGRAM tab, the second of the strip's (112 px a tab, 4 px
+ * apart from x 9, 24 px high from y 6), and the STICK MENU row of its list,
+ * the first under its heading (prog_view.c). */
+#define MO_TAB_PROGRAM_X 181
+#define MO_TAB_Y         18
+#define MO_STICK_ROW_X   279
+#define MO_STICK_ROW_Y   65
 
 static gfx_color_t fb[W * H];
 
@@ -646,7 +654,7 @@ static void program_view(const char *view)
                 TX_SV_TARGET_PORT, 0u,
                 (i == 1) ? (uint16_t)LINK_CAP_CELLS
                          : (uint16_t)LINK_CAP_SERVO_PWM,
-                &kst_panel_pages };
+                &kst_panel_pages, false };
         }
         prog_registry_use(many, 12);
     }
@@ -1361,10 +1369,14 @@ typedef struct {
     bool      no_watch;     /* nobody taps DONE before the power-off */
 } stick_rig_t;
 
+/* Whether the last step of a stick run left the bench armed: the band says
+ * so as the output strip does. */
+static bool s_stick_armed;
+
 static void stick_step(stick_rig_t *r)
 {
     motor_cmd_t mc;
-    while (programmer_screen_poll_cmd(&mc)) {
+    while (esc_stick_panel_poll_cmd(&mc)) {
         if (mc.kind == MOTOR_CMD_ARM) {
             r->armed = true;
         } else if (mc.kind == MOTOR_CMD_DISARM) {
@@ -1380,7 +1392,9 @@ static void stick_step(stick_rig_t *r)
         supply_screen_set_output(r->on);
         supply_screen_set_on_coming(false);
     }
-    programmer_screen_bench(r->now, r->armed, r->stops, r->pressed, false);
+    esc_stick_panel_bench(r->now, r->armed, r->stops, r->pressed, false);
+    motor_screen_set_armed(r->armed);   /* the output strip's SAFE/ARMED */
+    s_stick_armed = r->armed;
     if (s_tone_fed) {
         /* The tap running on a phase that sounds 1523.4 Hz, and the last
          * four beeps it reported. */
@@ -1399,7 +1413,7 @@ static void stick_step(stick_rig_t *r)
             t.beeps[i].freq_dhz = (uint16_t)(15234u - 7u * i);
             t.beeps[i].bursts = 1u;
         }
-        programmer_screen_tone(&t);
+        esc_stick_panel_tone(&t);
     }
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->on,
                                     r->armed ? r->pct : -1.0f);
@@ -1415,15 +1429,16 @@ static void stick_step(stick_rig_t *r)
         st.mode = r->on ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
+        supply_screen_push(&st);    /* as the panel feeds both */
+        esc_stick_panel_supply(&st);
         r->next = r->now + 50u;
     }
     ui_router_tick(0.001f);
     /* The operator watching the ESC confirm taps DONE once it counts. */
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     if (!r->no_watch && run->phase == ESC_STICK_HAND_END
         && esc_stick_hand_ready(run)) {
-        tap(156, UI_BAND_H + 378);
+        tap(156, UI_BAND_H + 384);
     }
     r->now++;
 }
@@ -1439,7 +1454,7 @@ static void stick_type(const char *text)
                                  "ZXCVBNM*.";
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
-    ui_textkey_open_search(&k, (gfx_rect_t){ 352, 50, 442, 376 }, "", "",
+    ui_textkey_open_search(&k, (gfx_rect_t){ 352, 68, 442, 358 }, "", "",
                            UI_TEXTKEY_MAX);
     for (const char *p = text; *p != '\0'; ++p) {
         const char *at = strchr(k_keys, *p);
@@ -1463,44 +1478,45 @@ static void stick_supply_off(void)
         st.mode = SUPPLY_MODE_OFF;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
+        supply_screen_push(&st);
+        esc_stick_panel_supply(&st);
     }
-    programmer_screen_bench(300u, false, 0u, 0u, false);
+    esc_stick_panel_bench(300u, false, 0u, 0u, false);
     ui_router_tick(0.02f);
 }
 
 /* The ESC STICK list's row @p at, paged to first: the rows of
- * esc_stick_panel.c (SP_ROW_Y0 52, 36 px apart, 9 to a page) and its ^ and
- * v at 723 and 761 on the crumb row. */
+ * esc_stick_panel.c (SP_ROW_Y0 68, 36 px apart, 9 to a page) and its ^ and
+ * v at 723 and 761 on the crumb row, y 28 to 58. */
 static void stick_tap_row(int at)
 {
     int top = 0;
-    (void)programmer_screen_stick_listed(&top);
+    (void)esc_stick_panel_listed(&top);
     for (int g = 0; g < 64 && at < top; ++g) {
-        tap(723, UI_BAND_H + 27);
-        (void)programmer_screen_stick_listed(&top);
+        tap(723, UI_BAND_H + 45);
+        (void)esc_stick_panel_listed(&top);
     }
     for (int g = 0; g < 64 && at >= top + 9; ++g) {
-        tap(761, UI_BAND_H + 27);
-        (void)programmer_screen_stick_listed(&top);
+        tap(761, UI_BAND_H + 45);
+        (void)esc_stick_panel_listed(&top);
     }
-    tap(400, UI_BAND_H + 52 + (at - top) * 36 + 16);
+    tap(400, UI_BAND_H + 70 + (at - top) * 36 + 16);
 }
 
 /* On the makers, the one named @p name; on its models, the first of
  * profile @p id (NULL: stay on the models). */
 static void stick_open(const char *name, const char *id)
 {
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-        const char *m = programmer_screen_stick_maker_at(i);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        const char *m = esc_stick_panel_maker_at(i);
         if (m != NULL && strcmp(m, name) == 0) {
             stick_tap_row(i);
             break;
         }
     }
-    for (int i = 0; id != NULL && i < programmer_screen_stick_listed(NULL);
+    for (int i = 0; id != NULL && i < esc_stick_panel_listed(NULL);
          ++i) {
-        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        const esc_profile_t *p = esc_stick_panel_row(i, NULL);
         if (p != NULL && strcmp(p->id, id) == 0) {
             stick_tap_row(i);
             return;
@@ -1534,7 +1550,6 @@ static ui_screen_id_t id_of(const char *name)
         { "setup",      SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
-        { "programmer", SCREEN_PROGRAMMER },
         { "outputs",    SCREEN_OUTPUTS },
         { "picker",     SCREEN_PICKER },
         { "busfault",   SCREEN_BUSFAULT },
@@ -1944,7 +1959,7 @@ int main(int argc, char **argv)
                     || strcmp(view, "setup-unheld") == 0;
     s_tap_on = strcmp(view, "setup-tap") == 0;
     s_enc_on = strcmp(view, "servo-encoder") == 0;
-    s_tone_fed = strcmp(view, "programmer-stick-tone") == 0;
+    s_tone_fed = strcmp(view, "motor-stick-tone") == 0;
 
     ui_theme_set(light ? UI_THEME_LIGHT : UI_THEME_DARK);
     settings_set_store(&k_lang_store);
@@ -1970,10 +1985,19 @@ int main(int argc, char **argv)
      * time: spin up, hold, a burst, then settle.  One sample per plot column
      * at the panel's poll rate, 20 Hz.
      */
+    /* PROGRAM's views: a SAFE bench before a run, DSHOT300 on GP0 as the
+     * output strip names it. */
+    const bool mo_prog = id == SCREEN_MOTOR
+                         && (strncmp(view, "motor-program", 13) == 0
+                             || strncmp(view, "motor-stick", 11) == 0);
     if (id == SCREEN_MOTOR && strcmp(view, "motor-idle") == 0) {
         /* A linked bench before its first run: no sample, never armed, and
          * a binding read with no pin bound as a motor. */
         motor_screen_set_throttle_pins(0u, true);
+    } else if (mo_prog) {
+        motor_screen_set_armed(false);
+        motor_screen_set_throttle_pins(1u, true);
+        motor_screen_set_throttle_protocol(proto_named("DSHOT300"));
     } else if (id == SCREEN_MOTOR) {
         telemetry_sim_t tsim;
         bench_state_t bench;
@@ -2105,24 +2129,32 @@ int main(int argc, char **argv)
         }
     }
 
-    if (id == SCREEN_PROGRAMMER && strncmp(view, "programmer-stick", 16) == 0) {
+    if (id == SCREEN_MOTOR && strncmp(view, "motor-program", 13) == 0) {
+        /* MOTOR & ESC > PROGRAM: the strip's second tab, the registry's
+         * list with its STICK MENU row. */
+        ui_router_goto(SCREEN_MOTOR);
+        tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);
+    }
+    if (id == SCREEN_MOTOR && strncmp(view, "motor-stick", 11) == 0) {
         /*
-         * The ESC STICK class, walked by pressing.  Geometry from
-         * programmer_screen.c, the third tile, and esc_stick_panel.c, the
-         * makers and their models (hobbywing-flyfun-8item, by id), and the
-         * item rows' + steppers.
+         * ESC STICK, opened from PROGRAM's STICK MENU row and walked by
+         * pressing.  Geometry from motor_workbench.c (the PROGRAM tab),
+         * prog_view.c (the row), esc_stick_pages.c and esc_stick_panel.c:
+         * the makers and their models (hobbywing-flyfun-8item, by id), and
+         * the item rows' + steppers, all under the output strip.
          */
         const supply_caps_t caps = SUPPLY_CAPS_PPS_DEFAULT;
         supply_screen_set_caps(&caps);
         supply_screen_settings_loaded();
-        ui_router_goto(SCREEN_PROGRAMMER);
-        programmer_screen_bench(0u, false, 0u, 0u, false);
+        ui_router_goto(SCREEN_MOTOR);
+        esc_stick_panel_bench(0u, false, 0u, 0u, false);
         /* A binding read, with a throttle on channel 0, as a bench with
          * an ESC on it has. */
-        programmer_screen_set_throttle(true, 0x01u);
-        tap(660, UI_BAND_H + 180);              /* the ESC STICK tile */
+        esc_stick_panel_set_throttle(true, 0x01u);
+        tap(MO_TAB_PROGRAM_X, UI_BAND_H + MO_TAB_Y);    /* PROGRAM */
+        tap(MO_STICK_ROW_X, UI_BAND_H + MO_STICK_ROW_Y); /* STICK MENU */
         stick_supply_off();                     /* a panel's readings, off */
-        if (strcmp(view, "programmer-stick-hand-steps") == 0) {
+        if (strcmp(view, "motor-stick-hand-steps") == 0) {
             /*
              * An example card profile, maker "Example", with four long steps
              * before the power-up: the warning shows none cut and asks for
@@ -2166,15 +2198,14 @@ int main(int argc, char **argv)
             ex.manual_count = 4;
             esc_profiles_clear_overrides();
             (void)esc_profiles_override(&ex, NULL);
-            programmer_invalidate();
-            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
-            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            tap(66, UI_BAND_H + 45);            /* BACK, and the row again: */
+            tap(MO_STICK_ROW_X, UI_BAND_H + MO_STICK_ROW_Y); /* with the card */
             stick_open("Example", "example-steps");
-            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 142 + 30 + 10);    /* timing: automatic */
             stick_supply_off();
             tap(698, UI_BAND_H + 407);          /* RUN: the warning */
-        } else if (strcmp(view, "programmer-stick-hand-after") == 0) {
+        } else if (strcmp(view, "motor-stick-hand-after") == 0) {
             /*
              * An example card profile, maker "Example", with four long steps
              * after programming, run to its end: the steps open by
@@ -2220,16 +2251,15 @@ int main(int argc, char **argv)
             card.manual_count = 4;
             esc_profiles_clear_overrides();
             (void)esc_profiles_override(&card, NULL);
-            programmer_invalidate();
-            tap(66, UI_BAND_H + 27);            /* BACK, and the tile again: */
-            tap(660, UI_BAND_H + 180);          /* the list with the card */
+            tap(66, UI_BAND_H + 45);            /* BACK, and the row again: */
+            tap(MO_STICK_ROW_X, UI_BAND_H + MO_STICK_ROW_Y); /* with the card */
             stick_open("Example", "example-after");
-            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 132 + 30 + 10);    /* timing: automatic */
+            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 142 + 30 + 10);    /* timing: automatic */
             tap(698, UI_BAND_H + 407);          /* RUN: the warning */
             touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                                 .point = { .id = 2, .x = 156,
-                                           .y = UI_BAND_H + 378,
+                                           .y = UI_BAND_H + 384,
                                            .strength = 40 } };
             ui_router_event(&e);
             for (int i = 0; i < 9; ++i) {
@@ -2239,16 +2269,16 @@ int main(int argc, char **argv)
             ui_router_event(&e);
             static stick_rig_t arig;
             memset(&arig, 0, sizeof(arig));
-            esc_sim_init(&arig.sim, programmer_screen_stick()->p, NULL);
-            const esc_stick_t *run = programmer_screen_stick();
+            esc_sim_init(&arig.sim, esc_stick_panel_stick()->p, NULL);
+            const esc_stick_t *run = esc_stick_panel_stick();
             for (int ms = 0; ms < 400000 && esc_stick_running(run); ++ms) {
                 stick_step(&arig);
             }
             for (int i = 0; i < 10; ++i) {
                 stick_step(&arig);
             }
-        } else if (strcmp(view, "programmer-stick-hand-end") == 0
-                   || strcmp(view, "programmer-stick-hand-locked") == 0) {
+        } else if (strcmp(view, "motor-stick-hand-end") == 0
+                   || strcmp(view, "motor-stick-hand-locked") == 0) {
             /*
              * kontronik-kontrol-x mode 2, run to the step before the supply
              * goes off: the button pressed when asked, the mode stored, the
@@ -2256,14 +2286,14 @@ int main(int argc, char **argv)
              * live.  -locked: no DONE, the result.
              */
             stick_open("Kontronik", "kontronik-kontrol-x");
-            tap(684, UI_BAND_H + 378);          /* OK: the first opening */
-            tap(765, UI_BAND_H + 132 + 10);     /* mode 1 */
-            tap(765, UI_BAND_H + 132 + 10);     /* mode 2 */
+            tap(684, UI_BAND_H + 384);          /* OK: the first opening */
+            tap(765, UI_BAND_H + 142 + 10);     /* mode 1 */
+            tap(765, UI_BAND_H + 142 + 10);     /* mode 2 */
             stick_supply_off();
             tap(698, UI_BAND_H + 407);          /* RUN: the warning */
             touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                                 .point = { .id = 2, .x = 156,
-                                           .y = UI_BAND_H + 378,
+                                           .y = UI_BAND_H + 384,
                                            .strength = 40 } };
             ui_router_event(&e);
             for (int i = 0; i < 9; ++i) {
@@ -2277,8 +2307,8 @@ int main(int argc, char **argv)
             esc_sim_cfg_t ec;
             esc_sim_defaults(&ec);
             ec.wait_hand = true;                /* silent until the press */
-            esc_sim_init(&erig.sim, programmer_screen_stick()->p, &ec);
-            const esc_stick_t *run = programmer_screen_stick();
+            esc_sim_init(&erig.sim, esc_stick_panel_stick()->p, &ec);
+            const esc_stick_t *run = esc_stick_panel_stick();
             bool pressed = false;
             for (int ms = 0; ms < 400000 && esc_stick_running(run)
                              && run->phase != ESC_STICK_HAND_END; ++ms) {
@@ -2288,7 +2318,7 @@ int main(int argc, char **argv)
                 }
                 stick_step(&erig);
             }
-            const int wait = (strcmp(view, "programmer-stick-hand-end") == 0)
+            const int wait = (strcmp(view, "motor-stick-hand-end") == 0)
                                  ? (int)ESC_STICK_HAND_MIN_MS
                                  : (int)ESC_STICK_HAND_WAIT_MS + 1000;
             for (int ms = 0; ms < wait; ++ms) {
@@ -2297,33 +2327,33 @@ int main(int argc, char **argv)
             for (int i = 0; i < 10; ++i) {
                 stick_step(&erig);
             }
-        } else if (strcmp(view, "programmer-stick-hand-list") == 0) {
+        } else if (strcmp(view, "motor-stick-hand-list") == 0) {
             /* Kontronik's models, those with manual steps tagged. */
             stick_open("Kontronik", NULL);
-        } else if (strncmp(view, "programmer-stick-hand", 21) == 0) {
+        } else if (strncmp(view, "motor-stick-hand", 16) == 0) {
             /*
              * kontronik-jazz: a jumper fitted before the power-up and
              * pulled after the entry.  Its manual steps show by themselves
              * on the first opening; OK closes them.
              */
             stick_open("Kontronik", "kontronik-jazz");
-            if (strcmp(view, "programmer-stick-hand-info") != 0) {
-                tap(684, UI_BAND_H + 378);      /* OK */
+            if (strcmp(view, "motor-stick-hand-info") != 0) {
+                tap(684, UI_BAND_H + 384);      /* OK */
                 /* Mode 6, a car mode: powered up at MID. */
                 for (int i = 0; i < 6; ++i) {
-                    tap(765, UI_BAND_H + 132 + 10);
+                    tap(765, UI_BAND_H + 142 + 10);
                 }
             }
-            const bool prompt = strcmp(view, "programmer-stick-hand-prompt")
+            const bool prompt = strcmp(view, "motor-stick-hand-prompt")
                                 == 0;
-            if (prompt || strcmp(view, "programmer-stick-hand-warning") == 0) {
+            if (prompt || strcmp(view, "motor-stick-hand-warning") == 0) {
                 stick_supply_off();             /* the jumper on, unpowered */
                 tap(698, UI_BAND_H + 407);      /* RUN: the warning */
             }
             if (prompt) {
                 touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                                     .point = { .id = 2, .x = 156,
-                                               .y = UI_BAND_H + 378,
+                                               .y = UI_BAND_H + 384,
                                                .strength = 40 } };
                 ui_router_event(&e);
                 for (int i = 0; i < 9; ++i) {
@@ -2336,48 +2366,48 @@ int main(int argc, char **argv)
                 esc_sim_cfg_t hc;
                 esc_sim_defaults(&hc);
                 hc.wait_hand = true;            /* silent until the pull */
-                esc_sim_init(&hrig.sim, programmer_screen_stick()->p, &hc);
-                const esc_stick_t *run = programmer_screen_stick();
+                esc_sim_init(&hrig.sim, esc_stick_panel_stick()->p, &hc);
+                const esc_stick_t *run = esc_stick_panel_stick();
                 /* Asked, and a second on: DONE is live. */
                 for (int ms = 0; ms < 60000 && esc_stick_running(run)
                                  && !esc_stick_hand_ready(run); ++ms) {
                     stick_step(&hrig);
                 }
             }
-        } else if (strcmp(view, "programmer-stick-find") == 0
-            || strcmp(view, "programmer-stick-found") == 0) {
+        } else if (strcmp(view, "motor-stick-find") == 0
+            || strcmp(view, "motor-stick-found") == 0) {
             /* The search field, then typing: still typing for -find, OK
              * ("\n" is no key, so it lands on OK) for -found. */
-            tap(600, UI_BAND_H + 27);
-            stick_type(strcmp(view, "programmer-stick-find") == 0
+            tap(600, UI_BAND_H + 45);
+            stick_type(strcmp(view, "motor-stick-find") == 0
                            ? "SKY*V2" : "FLYFUN\n");
-            if (strcmp(view, "programmer-stick-found") == 0) {
+            if (strcmp(view, "motor-stick-found") == 0) {
                 stick_open("Hobbywing", NULL);  /* its FLYFUN models */
             }
-        } else if (strcmp(view, "programmer-stick") != 0) {
+        } else if (strcmp(view, "motor-stick") != 0) {
             stick_open("Hobbywing", "hobbywing-flyfun-8item");
-            if (strcmp(view, "programmer-stick-timing") == 0) {
-                tap(698, UI_BAND_H + 27);       /* TIMING */
+            if (strcmp(view, "motor-stick-timing") == 0) {
+                tap(698, UI_BAND_H + 45);       /* TIMING */
             } else {
                 /* Cutoff mode to hard, startup mode to soft. */
                 for (int i = 0; i < 2; ++i) {
-                    tap(765, UI_BAND_H + 132 + 2 * 30 + 10);
-                    tap(765, UI_BAND_H + 132 + 4 * 30 + 10);
+                    tap(765, UI_BAND_H + 142 + 2 * 30 + 10);
+                    tap(765, UI_BAND_H + 142 + 4 * 30 + 10);
                 }
             }
-            const bool runs = strcmp(view, "programmer-stick-run") == 0
-                || strcmp(view, "programmer-stick-tone") == 0
-                || strcmp(view, "programmer-stick-done") == 0
-                || strcmp(view, "programmer-stick-aborted") == 0
-                || strcmp(view, "programmer-stick-failed") == 0;
-            if (runs || strcmp(view, "programmer-stick-warning") == 0) {
+            const bool runs = strcmp(view, "motor-stick-run") == 0
+                || strcmp(view, "motor-stick-tone") == 0
+                || strcmp(view, "motor-stick-done") == 0
+                || strcmp(view, "motor-stick-aborted") == 0
+                || strcmp(view, "motor-stick-failed") == 0;
+            if (runs || strcmp(view, "motor-stick-warning") == 0) {
                 tap(698, UI_BAND_H + 407);      /* RUN: the warning */
             }
             if (runs) {
                 /* HOLD TO RUN, held its two seconds. */
                 touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                                     .point = { .id = 2, .x = 156,
-                                               .y = UI_BAND_H + 378,
+                                               .y = UI_BAND_H + 384,
                                                .strength = 40 } };
                 ui_router_event(&e);
                 for (int i = 0; i < 9; ++i) {
@@ -2387,25 +2417,25 @@ int main(int argc, char **argv)
                 ui_router_event(&e);
                 static stick_rig_t rig;
                 memset(&rig, 0, sizeof(rig));
-                esc_sim_init(&rig.sim, programmer_screen_stick()->p, NULL);
-                const esc_stick_t *run = programmer_screen_stick();
+                esc_sim_init(&rig.sim, esc_stick_panel_stick()->p, NULL);
+                const esc_stick_t *run = esc_stick_panel_stick();
                 for (int ms = 0; ms < 400000 && esc_stick_running(run);
                      ++ms) {
                     stick_step(&rig);
                     /* Inside a beep, so the green light is on. */
-                    if ((strcmp(view, "programmer-stick-run") == 0
-                         || strcmp(view, "programmer-stick-tone") == 0)
+                    if ((strcmp(view, "motor-stick-run") == 0
+                         || strcmp(view, "motor-stick-tone") == 0)
                         && run->phase == ESC_STICK_ITEMS && run->groups >= 4u
                         && esc_stick_beeps(run) >= 2u && run->det.high) {
                         break;
                     }
-                    if (strcmp(view, "programmer-stick-aborted") == 0
+                    if (strcmp(view, "motor-stick-aborted") == 0
                         && run->phase == ESC_STICK_ITEMS
                         && run->groups >= 2u && rig.stops == 0u) {
                         rig.stops = 1u;         /* STOP, pressed */
                         rig.pressed = 1u;
                     }
-                    if (strcmp(view, "programmer-stick-failed") == 0
+                    if (strcmp(view, "motor-stick-failed") == 0
                         && run->phase == ESC_STICK_ITEMS
                         && run->groups >= 2u && rig.on) {
                         /* The supply trips: SUPPLY OFF, red. */
@@ -2415,33 +2445,6 @@ int main(int argc, char **argv)
                 }
                 for (int i = 0; i < 10; ++i) {
                     stick_step(&rig);           /* the last commands out */
-                }
-            }
-        }
-    }
-
-    if (id == SCREEN_PROGRAMMER && strcmp(view, "programmer") != 0
-        && strncmp(view, "programmer-stick", 16) != 0) {
-        /*
-         * Walked down the hierarchy by pressing, not posed by setting flags,
-         * so each screenshot takes the path a finger takes.  The first tap
-         * selects the ESC (electronic speed controller) class.  Geometry
-         * from programmer_screen.c: if those values move, these move.
-         */
-        ui_router_goto(SCREEN_PROGRAMMER);
-        tap(210, UI_BAND_H + 180);              /* the ESC tile */
-        if (strcmp(view, "programmer-protocols") != 0) {
-            /* Slot two is AM32, whose timing is in degrees rather than
-             * named steps: the same renderer, a different kind. */
-            tap(400, UI_BAND_H + (strcmp(view, "programmer-am32") == 0
-                                  ? 92 + 1 * 68 : 92));
-            if (strcmp(view, "programmer-idle") != 0) {
-                tap(698, UI_BAND_H + 70);       /* CONNECT */
-                if (strcmp(view, "programmer-dirty") == 0) {
-                    /* Two staged edits, so the screenshot holds the
-                     * changed-but-not-written state. */
-                    tap(765, UI_BAND_H + 132 + 1 * 30 + 10);
-                    tap(765, UI_BAND_H + 132 + 3 * 30 + 10);
                 }
             }
         }
@@ -3084,7 +3087,8 @@ int main(int argc, char **argv)
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-refused") != 0
                            && strcmp(view, "motor-idle") != 0
-                           && strncmp(view, "motor-settings", 14) != 0);
+                           && strncmp(view, "motor-settings", 14) != 0
+                           && !mo_prog);
     /* An IOmcu that has refused 37 frames: the count in the header
      * strip after the error count. */
     if (strcmp(view, "motor-refused") == 0) {
@@ -3097,6 +3101,7 @@ int main(int argc, char **argv)
     st.armed     = (id == SCREEN_MOTOR
                     && strcmp(view, "motor-held") != 0
                     && strcmp(view, "motor-idle") != 0
+                    && !mo_prog
                     && (strncmp(view, "motor-settings", 14) != 0
                         || strcmp(view, "motor-settings-armed") == 0))
                    || strcmp(view, "servo-armed") == 0
@@ -3110,7 +3115,8 @@ int main(int argc, char **argv)
                        && strcmp(view, "servo-limrun-restore") != 0
                        && strcmp(view, "servo-limrun-stopped") != 0
                        && strcmp(view, "servo-limrun-range") != 0)
-                   || strcmp(view, "setup-leave-armed") == 0;
+                   || strcmp(view, "setup-leave-armed") == 0
+                   || (mo_prog && s_stick_armed);
     /* An arm covers the role of the screen that asked for it. */
     st.armed_roles = !st.armed ? 0u
                      : (id == SCREEN_MOTOR) ? UI_ARMED_MOTOR : UI_ARMED_SERVO;
@@ -3143,11 +3149,11 @@ int main(int argc, char **argv)
     if (strcmp(view, "motor-table") == 0) {
         tap(6 + 93, UI_BAND_H + 45);                    /* TABLE */
     }
-    /* MOTOR & ESC > SETTINGS: the strip's second tab; the keypad of
+    /* MOTOR & ESC > SETTINGS: the strip's third tab; the keypad of
      * Capacity, the second row; ARMED, the pulse rows locked and a save
      * asked for that waits for a SAFE bench. */
     if (strncmp(view, "motor-settings", 14) == 0) {
-        tap(9 + 112 + 4 + 56, UI_BAND_H + 6 + 12);      /* SETTINGS */
+        tap(9 + 2 * (112 + 4) + 56, UI_BAND_H + 6 + 12);    /* SETTINGS */
         if (strcmp(view, "motor-settings-keypad") == 0) {
             const gfx_rect_t box = motor_settings_box(1);
             tap(box.x + box.w / 2, UI_BAND_H + box.y + box.h / 2);

@@ -546,7 +546,7 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
                                     (i == 11) ? TX_PL_KST : TX_WB_LIVE,
                                     TX_PL_GRP_PROG_PORT, TX_SV_TARGET_PORT,
                                     PROG_REG_NO_PORT, LINK_CAP_SERVO_PWM,
-                                    &kst_panel_pages };
+                                    &kst_panel_pages, false };
     }
     prog_registry_use(rows, 12);
     fresh();
@@ -598,7 +598,7 @@ TEST_CASE(program_offers_search_over_nine_rows_and_narrows_the_list)
     prog_registry_use(NULL, 0);
     size_t n = 0;
     (void)prog_registry(&n);
-    CHECK_EQ(n, 1u);
+    CHECK_EQ(n, 2u);        /* the shipped table: KST and the stick menu */
 }
 
 int main(void)

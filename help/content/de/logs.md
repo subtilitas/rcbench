@@ -49,7 +49,7 @@ Eine Datei ist ein Lauf. Ihr Name sagt, welcher Schreiber sie angelegt hat:
 |---|---|
 | `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 
 An einem IOmcu älter als Protokoll 4.18 umfasst jedes Schalten auf ARMED auch die Throttle-Ausgänge. Ein Schalten auf ARMED von SERVO schreibt dann `ESCnnn.CSV`.

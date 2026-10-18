@@ -23,7 +23,7 @@
 #include "link_pages.h"
 #include "motor_screen.h"
 #include "overview_screen.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -386,7 +386,12 @@ TEST_CASE(the_band_titles_match_the_tiles)
     CHECK_STR_EQ(ui_router_title(SCREEN_SETUP), "SETUP");
     CHECK_STR_EQ(ui_router_title(SCREEN_LOGS), "LOGS");
     CHECK_STR_EQ(ui_router_title(SCREEN_WIFI), "WI-FI");
-    CHECK_STR_EQ(ui_router_title(SCREEN_PROGRAMMER), "PROGRAMMER");
+    /* No screen is PROGRAMMER any more: programming is a task of MOTOR &
+     * ESC and of SERVO. */
+    for (int id = 0; id < SCREEN_COUNT; ++id) {
+        CHECK(strcmp(ui_router_title((ui_screen_id_t)id), "PROGRAMMER")
+              != 0);
+    }
 }
 
 /* LOGS' WI-FI button, mirrored from log_viewer_screen.c (BR_WIFI): x 144
@@ -569,48 +574,88 @@ TEST_CASE(the_home_tag_climbs_one_level_from_every_screen)
     }
 }
 
-/* PROGRAMMER's layout, mirrored from programmer_rig.h, in panel y. */
-#define PG_TILE_X(i) (18 + (i) * 260 + 122)
-#define PG_TILE_Y    (UI_BAND_H + 180)
-#define PG_ROW_Y(n)  (UI_BAND_H + 64 + (n) * 68 + 29)
+/* MOTOR & ESC's PROGRAM tab and its list's first row, and ESC STICK's
+ * list rows, in panel y (motor_workbench.c, motor_program_page.c,
+ * esc_stick_panel.c). */
+#define MO_TAB_PROGRAM_X 181
+#define MO_TAB_Y         (UI_BAND_H + 18)
+#define MO_PROG_ROW_X    279
+#define MO_PROG_ROW_Y    (UI_BAND_H + 65)
+#define SP_ROW_Y(n)      (UI_BAND_H + 70 + (n) * 36 + 16)
+
+/* The makers' row of @p name, or -1. */
+static int stick_maker_row(const char *name)
+{
+    for (int i = 0; i < 9; ++i) {
+        const char *m = esc_stick_panel_maker_at(i);
+        if (m != NULL && strcmp(m, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 /*
- * PROGRAMMER through the router: a class, a protocol, the device page, and
- * the home tag climbs them one at a time as BACK does, the session closed
- * on the way.  The classes are the last level; the menu comes after them.
+ * MOTOR & ESC > PROGRAM through the router: the tab shows the list, its
+ * STICK MENU row opens ESC STICK full width, and a maker and a model go
+ * one level each.  The home tag climbs them one at a time as BACK does:
+ * the profile's page to the models, the models to the makers, the makers
+ * out of the session to the list, and only then to the menu, switching
+ * the bench to SAFE.
  */
-TEST_CASE(the_home_tag_climbs_the_programmer_one_level_at_a_time)
+TEST_CASE(the_home_tag_climbs_the_stick_session_one_level_at_a_time)
 {
     fresh();
     to_overview();
-    ui_router_goto(SCREEN_PROGRAMMER);
-    tap(PG_TILE_X(0), PG_TILE_Y);
-    CHECK(programmer_screen_mark() != NULL);         /* a class's protocols */
-    CHECK(programmer_screen_device_line() == NULL);
-    tap(400, PG_ROW_Y(0));
-    CHECK(programmer_screen_device_line() != NULL);  /* the device page */
+    ui_router_goto(SCREEN_MOTOR);
+    tap(MO_TAB_PROGRAM_X, MO_TAB_Y);
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK(!motor_screen_session_shown());
+    tap(MO_PROG_ROW_X, MO_PROG_ROW_Y);
+    CHECK(motor_screen_session_shown());
+    CHECK_EQ(esc_stick_panel_level(), 0);
+    const int dualsky = stick_maker_row("Dualsky");
+    if (dualsky < 0) {
+        T_FAIL("Dualsky is not on the makers' first page");
+        return;
+    }
+    tap(400, SP_ROW_Y(dualsky));
+    CHECK_EQ(esc_stick_panel_level(), 1);
+    tap(400, SP_ROW_Y(0));
+    if (esc_stick_panel_page() == NULL) {
+        T_FAIL("Dualsky's first model opened no page");
+        return;
+    }
 
     const uint32_t nav = ui_router_navigations();
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_PROGRAMMER);
-    CHECK(programmer_screen_device_line() == NULL);
-    CHECK(programmer_screen_mark() != NULL);
-    CHECK(!programmer_screen_connected());
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_PROGRAMMER);
-    CHECK(programmer_screen_mark() == NULL);         /* the classes */
+    motor_cmd_t mc;
+    while (motor_screen_poll_cmd(&mc)) {
+    }
+    tap_home();                                /* the page: the models */
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK_EQ(esc_stick_panel_level(), 1);
+    tap_home();                                /* the makers */
+    CHECK_EQ(esc_stick_panel_level(), 0);
+    CHECK(motor_screen_session_shown());
+    tap_home();                                /* out to the list */
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    CHECK(!motor_screen_session_shown());
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_PROGRAM);
     CHECK_EQ(ui_router_navigations(), nav);
-    tap_home();
+    CHECK(!motor_screen_poll_cmd(&mc));        /* nothing asked yet */
+    tap_home();                                /* the menu, SAFE */
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    CHECK(motor_screen_poll_cmd(&mc));
+    CHECK_EQ(mc.kind, MOTOR_CMD_DISARM);
 
-    /* The stick class's list climbs to the classes too, not to the menu. */
-    ui_router_goto(SCREEN_PROGRAMMER);
-    tap(PG_TILE_X(2), PG_TILE_Y);
-    CHECK_EQ(programmer_screen_stick_level(), 0);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_PROGRAMMER);
-    tap_home();
-    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    /* The tile opens LIVE again, and PROGRAM the list, the session
+     * closed. */
+    ui_router_goto(SCREEN_MOTOR);
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
+    tap(MO_TAB_PROGRAM_X, MO_TAB_Y);
+    CHECK(!motor_screen_session_shown());
+    CHECK_EQ(esc_stick_panel_stage(), 0);
 }
 
 /*
@@ -781,6 +826,86 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
     ui_router_render(&cv, 0);
     CHECK(memcmp(before, fb, (size_t)W * H * sizeof(gfx_color_t)) != 0);
     free(before);
+}
+
+/*
+ * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
+ * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments ANALYSER, BATTERY
+ * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
+ * PROGRAMMER.  Each tile is 190 x 204 px with 8 px margins, and a tap on
+ * it opens its screen.
+ */
+TEST_CASE(the_home_grid_is_four_by_two_by_kind)
+{
+    static const ui_screen_id_t k_want[] = {
+        SCREEN_MOTOR, SCREEN_SERVO, SCREEN_SUPPLY, SCREEN_LOGS,
+        SCREEN_ANALYSER, SCREEN_BATTERY, SCREEN_BALANCE, SCREEN_SETUP,
+    };
+    fresh();
+    CHECK_EQ(overview_screen_columns(), 4);
+    for (int i = 0; i < 8; ++i) {
+        CHECK_EQ(overview_screen_tile(i), k_want[i]);
+        CHECK(strcmp(overview_screen_tile_name(i), "PROGRAMMER") != 0);
+        const gfx_rect_t r = overview_screen_tile_rect(i);
+        CHECK_EQ(r.x, 8 + (i % 4) * 198);
+        CHECK_EQ(r.y, 8 + (i / 4) * 212);
+        CHECK_EQ(r.w, 190);
+        CHECK_EQ(r.h, 204);
+    }
+    /* Past the grid, and before it: no tile. */
+    CHECK_EQ(overview_screen_tile(8), SCREEN_COUNT);
+    CHECK_EQ(overview_screen_tile(-1), SCREEN_COUNT);
+    CHECK(overview_screen_tile_name(8) == NULL);
+    CHECK(overview_screen_tile_line(8) == NULL);
+    for (int i = 0; i < 8; ++i) {
+        to_overview();
+        const gfx_rect_t r = overview_screen_tile_rect(i);
+        tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+        CHECK_EQ(ui_router_current(), k_want[i]);
+    }
+    /* The margin between two tiles is no tile's. */
+    to_overview();
+    tap(8 + 190 + 4, UI_BAND_H + 100);
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * Every tile's name and line fit its 190 px in both languages: the name
+ * on one row of 23 cells, the line on one row or, broken at a space, on
+ * two (ui_tile()).
+ */
+TEST_CASE(every_home_tile_text_fits_in_both_languages)
+{
+    fresh();
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int i = 0; i < 8; ++i) {
+            const char *name = overview_screen_tile_name(i);
+            const char *line = overview_screen_tile_line(i);
+            if (name == NULL || line == NULL) {
+                T_FAIL("slot %d is empty", i);
+                continue;
+            }
+            CHECK(gfx_text_cells(name) <= 23);
+            const int cells = gfx_text_cells(line);
+            if (cells <= 23) {
+                continue;
+            }
+            /* The last space in the first 23 cells breaks it. */
+            size_t cut = 0;
+            for (size_t k = gfx_text_prefix(line, 23); k > 0u; --k) {
+                if (line[k] == ' ') {
+                    cut = k;
+                    break;
+                }
+            }
+            if (cut == 0u || gfx_text_cells(line + cut + 1) > 23) {
+                T_FAIL("lang %d slot %d: \"%s\" takes more than two rows",
+                       lang, i, line);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
 }
 
 TEST_CASE(a_tile_navigates_and_a_slip_does_not)
@@ -1773,7 +1898,7 @@ TEST_CASE(a_contact_that_came_down_on_the_band_reaches_no_screen)
 {
     static const ui_screen_id_t ids[] = {
         SCREEN_OVERVIEW, SCREEN_MOTOR, SCREEN_SERVO, SCREEN_SUPPLY,
-        SCREEN_SETUP, SCREEN_LOGS, SCREEN_PROGRAMMER,
+        SCREEN_SETUP, SCREEN_LOGS,
     };
     for (size_t i = 0; i < sizeof(ids) / sizeof(ids[0]); ++i) {
         on_screen(ids[i]);
@@ -3388,7 +3513,9 @@ int main(void)
     RUN(wifi_returns_to_the_screen_that_opened_it);
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
-    RUN(the_home_tag_climbs_the_programmer_one_level_at_a_time);
+    RUN(the_home_tag_climbs_the_stick_session_one_level_at_a_time);
+    RUN(the_home_grid_is_four_by_two_by_kind);
+    RUN(every_home_tile_text_fits_in_both_languages);
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);

@@ -26,6 +26,7 @@ set(SRCS
     motor_screen.c
     motor_workbench.c
     motor_settings_page.c
+    motor_program_page.c
     supply_screen.c
     servo_screen.c
     servo_settings_panel.c
@@ -36,8 +37,9 @@ set(SRCS
     analyser_screen.c
     balance_screen.c
     battery_screen.c
-    programmer_screen.c
+    esc_stick_pages.c
     esc_stick_panel.c
+    prog_models.c
     log_viewer_screen.c
     log_select.c
     settings_screen.c

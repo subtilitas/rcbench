@@ -668,12 +668,12 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
         { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "ANALYSER" },
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
-        { ui_icon_chip, "PROGRAMMER" },   { ui_icon_list, "OUTPUTS" },
+        { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },
         { ui_icon_board, "PICK A PIN" },  { ui_icon_wifi, "WI-FI" },
     };
-    /* The menu's tile: 150 x 202 px, the icon 64 px down. */
+    /* The menu's tile: 190 x 204 px, the icon 64 px down. */
     for (size_t i = 0; i < sizeof(menu) / sizeof(menu[0]); ++i) {
-        const gfx_rect_t r = gfx_rect_make(8, 8, 150, 202);
+        const gfx_rect_t r = gfx_rect_make(8, 8, 190, 204);
         memset(s_fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         ui_tile(&s_c, r, 64, menu[i].icon, menu[i].name, "", false);
         icon_over_name(r, 64, menu[i].name, menu[i].name);

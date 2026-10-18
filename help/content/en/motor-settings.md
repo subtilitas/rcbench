@@ -6,7 +6,7 @@ order: 11
 
 # Motor settings
 
-SETTINGS, the second tab of [MOTOR & ESC](motor.md)'s strip, holds the bench's 8 ESC (electronic speed controller) settings in the left column under three headings: PACK, MOTOR and THROTTLE OUTPUT. The right column stays in place and works: the readouts, TARGET, ARM, the totals and RESET PEAKS.
+SETTINGS, the third tab of [MOTOR & ESC](motor.md)'s strip, holds the bench's 8 ESC (electronic speed controller) settings in the left column under three headings: PACK, MOTOR and THROTTLE OUTPUT. The right column stays in place and works: the readouts, TARGET, ARM, the totals and RESET PEAKS.
 
 ![SETTINGS](view:motor-settings)
 

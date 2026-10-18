@@ -62,7 +62,7 @@ passen.
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
-  BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
+  BATTERY, BALANCE, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel und das Band des
   Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
   Seite nennt, nennt sie beim Titel: "der Seite SUPPLY".
@@ -225,7 +225,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 267 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 262 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 

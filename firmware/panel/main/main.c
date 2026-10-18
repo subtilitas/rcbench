@@ -33,7 +33,7 @@
  * tools/stack_check.py holds the UI's deepest chain to it.  ESP-IDF reads the
  * defaults only when it creates sdkconfig, so a checkout whose sdkconfig
  * predates that line still builds with 3584 bytes and overflows on
- * PROGRAMMER's first frame.  Such a build stops here. */
+ * ESC STICK's first frame.  Such a build stops here. */
 #if CONFIG_ESP_MAIN_TASK_STACK_SIZE < 8192
 #error "CONFIG_ESP_MAIN_TASK_STACK_SIZE is under 8192: delete firmware/panel/sdkconfig so sdkconfig.defaults applies"
 #endif
@@ -85,7 +85,7 @@
 #include "outputs_screen.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 #include "rcbench_version.h"
 #include "flash_gate.h"
 #include "safety_gate.h"
@@ -1855,25 +1855,26 @@ void app_main(void)
             supply_screen_cancel_on();
         }
         last_stops = stops_now;
-        /* And a stick run on PROGRAMMER, which ends on a stop, a disarm or
-         * a link that went, and steps on the frame's time.  The pressed
-         * count tells an operator's STOP from the bench's own. */
+        /* And a stick run on MOTOR & ESC > PROGRAM, which ends on a stop,
+         * a disarm or a link that went, and steps on the frame's time.
+         * The pressed count tells an operator's STOP from the bench's
+         * own. */
         /*
          * Each screen is told whether the bench is armed for its own role:
-         * an arm covers the role of the screen that asked for it (MOTOR and
-         * the PROGRAMMER stick run the throttle, SERVO the surfaces), and a
+         * an arm covers the role of the screen that asked for it (MOTOR & ESC
+         * and its stick run the throttle, SERVO the surfaces), and a
          * bench armed for the other role is a disarmed one to it.
          */
         const bool motor_armed_now =
             (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u;
         const bool servo_armed_now =
             (armed_roles_now & OUT_ROLE_BIT(OUT_ROLE_SURFACE)) != 0u;
-        programmer_screen_bench(now_ms(), motor_armed_now, stops_now,
+        esc_stick_panel_bench(now_ms(), motor_armed_now, stops_now,
                                 pressed_now, link_now);
         /* The phase tap's readout for the run's page, copied under the
          * lock from the snapshot. */
         snap_lock();
-        programmer_screen_tone(&s_snap.tone);
+        esc_stick_panel_tone(&s_snap.tone);
         snap_unlock();
         /* And the servo programmer on SERVO. */
         kst_ui_service();
@@ -2074,14 +2075,14 @@ void app_main(void)
                                         sup_item.dropped_at);
             servo_screen_supply_at(&sup, sup_item.source, sup_item.changes);
             /* And a stick run, which counts beeps in every reading. */
-            programmer_screen_supply(&sup);
+            esc_stick_panel_supply(&sup);
             supply_seen = sup.output;
         }
         /* The simulated ESC follows the run, while the model is the
          * supply; see escsim_load(). */
-        atomic_store(&s_escsim_runs, (unsigned)programmer_screen_stick_runs());
+        atomic_store(&s_escsim_runs, (unsigned)esc_stick_panel_runs());
         atomic_store(&s_escsim_profile,
-                     (uintptr_t)programmer_screen_stick_profile());
+                     (uintptr_t)esc_stick_panel_profile());
 
         if (drain_touch(stops_now)) {
             frame_lost = true;
@@ -2135,7 +2136,7 @@ void app_main(void)
                 ? outputs_role_channels(got.slots, got.cfg, OUT_ROLE_THROTTLE)
                 : 0u;
         }
-        programmer_screen_set_throttle(got_read, got_throttle);
+        esc_stick_panel_set_throttle(got_read, got_throttle);
         /* A pick in either list writes nothing and so reads nothing back:
          * the picker follows the outputs screen's selection, and whether
          * the binding is one a read confirmed, every frame. */

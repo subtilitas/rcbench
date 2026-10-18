@@ -19,7 +19,7 @@ Der Arm-Chip nennt, was ein ARM treibt:
 | Chip | Ausgänge, die treiben |
 | --- | --- |
 | SAFE | keine |
-| ARMED MOTOR | die Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER; keine Surface und kein Programmierport |
+| ARMED MOTOR | die Throttle-Ausgänge, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN; keine Surface und kein Programmierport |
 | ARMED SERVO | die Surfaces und ein pulsender PROG PORT, von SERVO; kein Throttle-Ausgang |
 | ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
 
@@ -150,6 +150,14 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 ![Das Funktionsmenü](img/de/overview.png)
 
+Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 190 x 204 px
+mit 8 px Rand. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
+SUPPLY; die zweite die Instrumente, ANALYSER, BATTERY und BALANCE; die
+letzte Spalte LOGS über SETUP. Eine vierte Werkbank oder ein viertes
+Instrument lässt den Build bei 4 Spalten scheitern
+(`shared/ui/overview_screen.c`). Das Programmieren hat keine Kachel: Es ist
+die Aufgabe PROGRAMMIEREN von MOTOR & ESC und von SERVO.
+
 Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
 der Prüfstand nicht meldet: Der IOmcu meldet dafür keine Fähigkeit, oder
 sein Sensor ist in SETUP unter ANSCHLÜSSE nicht aktiviert. Ein Bildschirm ohne
@@ -164,7 +172,7 @@ aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
-| ANALYSER, BATTERY, BALANCE, PROGRAMMER | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
+| ANALYSER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | immer: sie enthalten keine Messung |
 
 Die Capability-Bits meldet der IOmcu beim Hochfahren. Ohne antwortenden
@@ -193,31 +201,34 @@ Prüfstand schaltet nicht auf ARMED. Wenn alle Schritte geantwortet haben,
 
 ![Motor und ESC](img/de/motor.png)
 
-MOTOR & ESC ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE und
-OPTIONEN, je 112 x 24 px, und darunter eine Seite. Die Kachel im Menü öffnet
-immer LIVE. Ein Tipp auf einen Reiter wechselt die Aufgabe; ein Wechsel ist
-keine Navigationsebene und lässt die Ansicht von LIVE, GRAFIK oder TABELLE,
-wie sie war.
+MOTOR & ESC ist eine Werkbank: oben eine Leiste mit Aufgaben, LIVE,
+PROGRAMMIEREN und OPTIONEN, je 112 x 24 px, und darunter eine Seite. Die
+Kachel im Menü öffnet immer LIVE. Ein Tipp auf einen Reiter wechselt die
+Aufgabe; ein Wechsel ist keine Navigationsebene und lässt die Ansicht von
+LIVE, GRAFIK oder TABELLE, wie sie war.
 
 | Aufgabe | Die linke Spalte, 546 px |
 | --- | --- |
 | LIVE | der Plot oder die Tabelle über dem Gas |
+| PROGRAMMIEREN | die Liste der ESC-Programmierer; eine Zeile öffnet ihre Sitzung über den ganzen Körper ([Programmieren](#programmieren)) |
 | OPTIONEN | die 8 ESC-Einstellungen unter AKKU, MOTOR und GASAUSGANG ([Optionen](#motor--esc-optionen)) |
 
 Zwei Spalten. Die Seite nimmt die linke, die vier Anzeigen und die Karte
 STEUERUNG eine Leiste von 236 px auf der rechten, damit das Ablesen der Werte
 und das Bedienen des Gases nicht um denselben Teil des Bildschirms
-konkurrieren. Die rechte Leiste ist auf beiden Aufgaben dieselbe, und ARM
-wirkt auf beiden. Bei eingeschaltetem Drehknopf bewegt dessen Drehung auf
-LIVE das Gas ([der Knopf](#anwendung-der-drehknopf)); auf OPTIONEN bewegt
-eine Drehung nichts.
+konkurrieren. Die rechte Leiste ist auf LIVE, der Liste von PROGRAMMIEREN
+und OPTIONEN dieselbe, und ARM wirkt auf allen dreien; eine Sitzung aus
+PROGRAMMIEREN deckt sie ab. Bei eingeschaltetem Drehknopf bewegt dessen
+Drehung auf LIVE das Gas ([der Knopf](#anwendung-der-drehknopf)); auf
+PROGRAMMIEREN und OPTIONEN bewegt eine Drehung nichts.
 
 Das Home-Tag steigt eine Ebene nach der anderen:
 
 | Von | Das Home-Tag führt zu |
 | --- | --- |
 | dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
-| LIVE oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
+| einer Sitzung auf PROGRAMMIEREN | eine Ebene höher in der Sitzung; von ihrer obersten Ebene zur Liste von PROGRAMMIEREN ([Programmieren](#programmieren)) |
+| LIVE, der Liste von PROGRAMMIEREN oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
 
 ### ZIEL nennt das Protokoll und die Pins
 
@@ -328,7 +339,7 @@ und die Schritte `-1` und `+1` bleiben dann bis zum nächsten Schalten auf ARMED
 auf 0,0 %; das erste `+1` nach einem Schalten auf ARMED fordert also 1,0 % an,
 und die erste Knopfdrehung von 1 % fordert 1,0 % an. Auch ein Prüfstand, der
 ohne das Halten auf ARM auf ARMED schaltet, durch einen Knüppel-Lauf auf
-PROGRAMMER, beginnt bei 0 %. Ein Gas, das der Bildschirm gepostet und das
+PROGRAMMIEREN, beginnt bei 0 %. Ein Gas, das der Bildschirm gepostet und das
 Panel noch nicht gesendet hat, wenn der Prüfstand auf SAFE schaltet, wird nicht
 gesendet. Ein Finger, der auf dem Track liegt, wenn der Prüfstand auf ARMED
 oder SAFE schaltet, bewegt nichts, bis er abhebt und neu drückt.
@@ -560,6 +571,190 @@ Die Zeile unter den Einstellungen nennt den Stand des Speichers:
 | `SPEICHERN AUSSTEHEND` | das Schreiben ist angefordert und wartet auf einen ruhenden Prüfstand |
 | `NICHT GESPEICHERT` | das letzte Schreiben wurde abgelehnt |
 | `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT` | Werte sind ungespeichert, und kein Schreiben ist angefordert; die nächste Änderung hier schreibt sie |
+
+### Programmieren
+
+![Die Liste von PROGRAMMIEREN](img/de/motor-program.png)
+
+PROGRAMMIEREN in der Leiste zeigt die Liste der ESC-Programmierer im
+Seitenbereich, aus derselben Tabelle wie die Liste von SERVO
+(`shared/ui/prog_registry.c`, [Programmierer](#programmierer) auf SERVO).
+Die Liste hat eine Zeile, `ESCs per Gasknüppel`, in der Gruppe
+STICK-MENÜ; eine Liste zeichnet ihre Gruppenüberschriften erst über 8 Zeilen. Rechts steht in der
+Zeile `GASAUSGANG >`: Sie treibt die als Throttle gebundenen Pins, keinen
+Programmierport, und braucht keine Fähigkeit des IOmcu. Die Ausgangskarte
+bleibt rechts, solange die Liste zu sehen ist.
+
+Ein Tippen auf die Zeile öffnet ESC STICK, eine Ebene tiefer. ESC STICK ist
+eine Sitzung über die volle Breite: Sie deckt die linke Spalte, die Leiste
+und die Reiter ab, und solange sie offen ist, erreicht kein Druck ARM oder
+einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet
+ihn auf SAFE, auch bei einem DISARM, den ein anderer Finger hält. In der Zeile der Reiter steht an ihrer Stelle der
+Ausgangsstreifen, eine Zeile von 16 px ab x 12:
+
+![ESC STICK unter dem Ausgangsstreifen](img/de/motor-stick.png)
+
+```
+ZIEL DSHOT300 GP0 GP1   NETZTEIL 7.60 V  1.00 A   SAFE
+```
+
+| Teil | Zeigt |
+| --- | --- |
+| `ZIEL` | das Protokoll und die als Throttle gebundenen Pins, wie sie die Zeile ZIEL der Karte STEUERUNG nennt, in höchstens 26 Zeichen; in der Warnfarbe, solange kein Pin gebunden oder die Bindung nicht gelesen ist |
+| `NETZTEIL` | den Ausgang des PD mini, wie er liest: `NETZTEIL 7.60 V  1.00 A`; `NETZTEIL EIN`, solange er ohne Spannungs- und Stromwert an ist; `NETZTEIL AUS`; `NETZTEIL --`, solange das Netzteil nicht antwortet |
+| `SAFE` oder `ARMED` | der Prüfstand; ARMED in der Gefahrenfarbe |
+
+Der Streifen ist höchstens 97 Zeichen breit, 776 px, auf Englisch und auf
+Deutsch. Er wird neu gezeichnet, wenn sich sein Text ändert. Seine Werte
+stehen mit Dezimalpunkt, wie auf dem Panel.
+
+Von den Herstellern in ESC STICK schließt das Home-Tag die Sitzung zur Liste
+von PROGRAMMIEREN; von der Liste führt es zum Menü. Das Verlassen von MOTOR &
+ESC von jeder Ebene beendet einen Stick-Lauf, schaltet den Netzteilausgang
+aus, den der Lauf eingeschaltet hat, schaltet den Prüfstand auf SAFE und
+schließt ESC STICK. Zurück auf MOTOR & ESC zeigt PROGRAMMIEREN seine Liste.
+
+Die Parametertabellen für ESCs mit BLHeli_S-, AM32-, ESCape32- und
+VESC-Firmware und für Hitec-Servos der D-Serie sind ein Modell in der
+Firmware (`shared/ui/prog_models.c`). Kein Transport trägt ihre Protokolle,
+und keine Liste von PROGRAMMIEREN hat eine Zeile für sie. Der Prüfstand
+erkennt ESCs mit BLHeli_32-Firmware, steuert sie an und sendet die DShot
+Special Commands, kann ihre Parameter aber nicht lesen:
+[Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
+
+### ESC STICK
+
+ESC STICK programmiert einen ESC über sein Gasknüppel-Menü, nach einem
+ESC-Profil; [Stick-Programmierung](StickProgramming-de.md) beschreibt die
+Läufe.
+
+Jedes Bedienelement auf ESC STICK nimmt ein Tippen. Es wirkt, wenn der
+Finger innerhalb des Elements abhebt, das er gedrückt hat, in x und in y
+höchstens 8 px vom Aufsetzpunkt entfernt. Ein Finger, der auf einem Element
+aufsetzt und weiterwandert, drückt nichts, ebenso einer, der ein Element
+überquert. Ein Finger zur Zeit drückt ein Element. Drei Bedienelemente wirken
+schon beim Aufsetzen:
+
+- HALTEN ZUM STARTEN: Das Halten über 2 s beginnt mit dem Aufsetzen.
+- ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Abfrage
+  eines manuellen Schritts. Es hält einen Motor an, wartet deshalb nicht auf
+  das Abheben und reagiert auch auf einen zweiten Finger.
+- Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
+  folgen.
+
+ZURÜCK und das Home-Tag im Band gehen eine Ebene auf einmal zurück: die
+Seite eines Stick-Profils zur Liste, die Modelle eines Herstellers zu den
+Herstellern, die Hersteller zur Liste von PROGRAMMIEREN. Über der Warnung
+vor dem Lauf ist das Home-Tag ABBRECHEN, über den manuellen Schritten OK.
+Während eines Stick-Laufs ist es ABBRECHEN des Laufs: Der Lauf endet, und
+sein Ergebnis bleibt auf der Seite.
+
+Die Liste zeigt zuerst die Hersteller, alphabetisch, jeden mit der Zahl
+seiner Modelle, die laufen:
+
+![Die Hersteller](img/de/motor-stick.png)
+
+Ein Hersteller öffnet seine Modelle, eine Zeile je Modell, nach Strom, dann
+Spannung, dann Name, jedes mit seiner Familie und was das Profil ist oder
+warum es nicht läuft. Ein Modell öffnet das Profil seiner Familie:
+
+![Die Modelle von Kontronik](img/de/motor-stick-hand-list.png)
+
+SUCHE filtert die gezeigte Ebene. Ihre Tastatur dockt rechts an, die
+Zeilen werden daneben schmaler, und jede Taste filtert sofort. Ein Modell
+wird gefunden, wenn der Text in Hersteller und Familie steht, als ein Text
+gelesen, oder in Hersteller und seinem eigenen Namen; ein Hersteller
+erscheint, wenn eines seiner Modelle gefunden ist. Groß- und
+Kleinschreibung spielen keine Rolle, und `*` steht für eine beliebige Folge
+von Zeichen:
+
+![Eine Suche wird getippt](img/de/motor-stick-find.png)
+
+OK behält die Suche auf beiden Ebenen, X leert sie:
+
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/motor-stick-found.png)
+
+Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
+Wert; START zählt die gewählten Werte:
+
+![Zwei Werte gewählt](img/de/motor-stick-items.png)
+
+START öffnet eine Warnung über den ganzen Bildschirm, PROPELLER AB? MOTOR GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
+Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
+beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
+
+![Die Warnung](img/de/motor-stick-warning.png)
+
+START öffnet nichts, und die Zeile daneben nennt den Grund, solange kein Pin
+als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
+und solange das Netzteil das Modell des Panels ist; ein solcher Grund
+schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
+
+Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
+und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
+MANUELL und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
+Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
+Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
+späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
+([Handgriffe](StickProgramming-de.md#handgriffe)):
+
+![Ein Profil mit Handgriffen](img/de/motor-stick-hand.png)
+
+![Der Lauf wartet auf den Jumper](img/de/motor-stick-hand-prompt.png)
+
+Ein Kontronik-ESC, der sich sperrt, wenn sein Netzteil ausschaltet, bevor
+er den gespeicherten Modus bestätigt hat, hält den Lauf nach dem Speichern
+versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
+
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/motor-stick-hand-end.png)
+
+Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
+Gruppe und die letzte Gruppe. ABBRECHEN, das Home-Tag, STOP und das Verlassen
+des Bildschirms beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
+SAFE. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
+ist, mindestens 150 ms:
+
+![Ein Lauf](img/de/motor-stick-run.png)
+
+Solange der Phasenabgriff unter SETUP eingeschaltet ist, ergänzt die Seite des
+Laufs unter der Stromzeile eine reine Anzeige: den Zustand des Abgriffs, die
+Tonhöhe seines letzten 8-ms-Fensters, die Zähler der Pieptöne, die der
+IOmcu verlor, und der Pieptöne, die das Panel nicht gelesen hat, und die letzten vier Pieptöne
+mit Nummer, Länge in ms und mittlerer Tonhöhe in Hz. Der Lauf zählt seine
+Pieptöne weiter aus dem Netzteilstrom.
+
+![Ein Lauf mit laufendem Phasenabgriff](img/de/motor-stick-tone.png)
+
+| Zustand | Bedeutung |
+| --- | --- |
+| `LÄUFT` | die Aufnahme läuft |
+| `ÜBERLAUF` | sie läuft, und der Aufnahmering oder die FIFO ist seit dem Einschalten des Abgriffs übergelaufen |
+| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet, oder ihre Flags sagen, dass der Abgriff läuft, und ihre Fensternummer hat sich 1,5 s nicht bewegt, oder der Abgriff wurde ausgeschaltet, und die Page hält ihn noch an |
+| `KEINE TONE-PAGE` | der IOmcu spricht ein Protokoll älter als 4.8 |
+| `PIN BELEGT` | der IOmcu hält den Abgriff aus: sein Pin ist anderweitig gebunden, oder der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet), und seine gespeicherte Einstellung hat den Abgriff an; das Zweite endet nur mit einem Neustart des IOmcu |
+| `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
+
+TONHÖHE und VERLOREN sind Werte der Page aus dem letzten Status-Read. Sie
+zeigen `--`, und `ÜBERLAUF` erscheint nicht, solange kein Read jünger als
+500 ms den Zustand liefert: bei `WARTET`, bei `KEINE TONE-PAGE` und bei
+`LÄUFT NICHT`, solange die Einstellung der Page den Abgriff aus hat.
+VERPASST und die Pieptöne zählt und speichert das Panel selbst; sie bleiben.
+
+Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
+etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
+und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN, dem Home-Tag und
+dem Verlassen des Bildschirms ([die Liste](StickProgramming-de.md#wie-ein-lauf-endet)):
+
+![Fertig](img/de/motor-stick-done.png)
+
+![Gestoppt](img/de/motor-stick-aborted.png)
+
+![Vom Netzteil beendet](img/de/motor-stick-failed.png)
+
+TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
+davon ist gemessen:
+
+![Timing](img/de/motor-stick-timing.png)
 
 ## Servo
 
@@ -1058,8 +1253,8 @@ mehr als 9 Zeilen erhält ein Feld SUCHE, das die Buchstabentastatur öffnet,
 sie unter den Überschriften ihrer Gruppen; eine Liste, die höher ist als
 der Seitenbereich, blättert mit `^` und `v`. Eine Liste fasst höchstens 48
 Zeilen. Mit einer Zeile ist nichts davon gezeichnet. Modellierte Protokolle
-ohne Transport auf dem IOmcu, etwa die Hitec-Klasse auf PROGRAMMER, haben
-keine Zeile.
+ohne Transport auf dem IOmcu, die Hitec-Servos der D-Serie darunter, haben
+keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
 IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
@@ -1569,193 +1764,6 @@ jede Spur wird rot gezeichnet. FAILSAFE als Stopp behandeln, nicht als
 sechzehn gültige Kanäle. [Empfängerbusse](Receivers-de.md) beschreibt die
 Zustände.
 
-## Programmierer
-
-Die Reihenfolge: Geräteklasse, Protokoll, verbinden. ESC STICK, die dritte
-Klasse, listet ESC-Profile statt Protokollen und programmiert einen ESC über
-sein Gasknüppel-Menü; sie hat eine eigene Seite,
-[Stick-Programmierung](StickProgramming-de.md).
-
-![Geräteklasse](img/de/programmer.png)
-
-Die Klassen ESC und SERVO sind ein Modell im Panel. Kein Transport trägt
-ihre Protokolle: VERBINDEN, AUSLESEN und SCHREIBEN ändern die eigene Kopie des
-Panels von einem Gerät und senden nichts auf eine Leitung. Das nach
-VERBINDEN genannte Gerät stammt aus dem Modell, nicht aus einer Antwort der
-Hardware, und SCHREIBEN erreicht kein Gerät. Jede Seite der beiden Klassen
-trägt die Marke SIMULIERT: auf der Kachel der Klasse, auf jeder
-Protokollzeile und in der Gerätezeile, dort anstelle des Verbindungspunkts.
-Der Punkt der Marke ist bernsteinfarben, solange eine Sitzung offen ist,
-und grau, solange keine offen ist; grün wird er nie. Unter den Parametern
-sagt die Seite, dass kein Gerät erreicht wird. ESC STICK trägt keine Marke:
-ein Stick-Lauf läuft wie die Befehle des Bildschirms MOTOR über die
-Arming-Policy und die Ausgangsbank.
-
-Jede Protokollzeile nennt ihren Transport. Eine automatische Erkennung gibt
-es nicht:
-
-![Die Protokolle einer Klasse](img/de/programmer-protocols.png)
-
-Die ESC-Liste hat keinen Eintrag für ESCs mit BLHeli_32-Firmware. Der
-Prüfstand erkennt diese ESCs, steuert sie an und sendet die DShot Special
-Commands, kann ihre Parameter aber nicht lesen:
-[Parameter von ESCs mit BLHeli_32-Firmware](BLHeli32-de.md).
-
-Bevor VERBINDEN eine simulierte Sitzung öffnet, ist nichts editierbar:
-
-![Nichts hat geantwortet](img/de/programmer-idle.png)
-
-Bei offener Sitzung erscheinen die Parameter in Gruppen, mit der Hilfe zur
-ausgewählten Zeile unter der Liste:
-
-![Sitzung offen](img/de/programmer-params.png)
-
-Die Einstellungen jeder Firmware erscheinen in ihren eigenen Einheiten. Die
-Tabelle für BLHeli_S-Firmware zeigt das Timing als benannte Stufen, die
-anderen in Grad Vorzündung:
-
-![Grad statt benannter Stufen](img/de/programmer-am32.png)
-
-Ein geänderter Wert wird erst ins Modell geschrieben, wenn SCHREIBEN
-gedrückt wird. Vorgemerkte Änderungen tragen eine Markierung und eine eigene
-Farbe, und der SCHREIBEN-Knopf zeigt, wie viele vorgemerkt sind:
-
-![Zwei vorgemerkte Änderungen](img/de/programmer-dirty.png)
-
-Stepper halten an den Enden einer Liste an; sie springen nicht auf die andere
-Seite.
-
-Jedes Bedienelement auf PROGRAMMER nimmt ein Tippen. Es wirkt, wenn der
-Finger innerhalb des Elements abhebt, das er gedrückt hat, in x und in y
-höchstens 8 px vom Aufsetzpunkt entfernt. Ein Finger, der auf einem Element
-aufsetzt und weiterwandert, drückt nichts, ebenso einer, der ein Element
-überquert. Ein Finger zur Zeit drückt ein Element. Drei Bedienelemente wirken
-schon beim Aufsetzen:
-
-- HALTEN ZUM STARTEN: Das Halten über 2 s beginnt mit dem Aufsetzen.
-- ABBRECHEN eines Stick-Laufs, auf der Seite des Laufs und in der Abfrage
-  eines manuellen Schritts. Es hält einen Motor an, wartet deshalb nicht auf
-  das Abheben und reagiert auch auf einen zweiten Finger.
-- Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
-  folgen.
-
-Eine Ebene zurück schließt die Sitzung. ZURÜCK und das Home-Tag im Band
-gehen eine Ebene auf einmal zurück: eine Geräteseite zu ihren Protokollen,
-die Seite eines Stick-Profils zur Liste, die Modelle eines Herstellers zu den
-Herstellern, eine Liste zu den Klassen. Das Home-Tag verlässt PROGRAMMER nur
-von den Klassen aus. Über der Warnung vor dem Lauf ist das Home-Tag
-ABBRECHEN, über den manuellen Schritten OK. Während eines Stick-Laufs ist es
-ABBRECHEN des Laufs: Der Lauf endet, und sein Ergebnis bleibt auf der Seite.
-
-### ESC STICK
-
-Die Liste zeigt zuerst die Hersteller, alphabetisch, jeden mit der Zahl
-seiner Modelle, die laufen:
-
-![Die Hersteller](img/de/programmer-stick.png)
-
-Ein Hersteller öffnet seine Modelle, eine Zeile je Modell, nach Strom, dann
-Spannung, dann Name, jedes mit seiner Familie und was das Profil ist oder
-warum es nicht läuft. Ein Modell öffnet das Profil seiner Familie:
-
-![Die Modelle von Kontronik](img/de/programmer-stick-hand-list.png)
-
-SUCHE filtert die gezeigte Ebene. Ihre Tastatur dockt rechts an, die
-Zeilen werden daneben schmaler, und jede Taste filtert sofort. Ein Modell
-wird gefunden, wenn der Text in Hersteller und Familie steht, als ein Text
-gelesen, oder in Hersteller und seinem eigenen Namen; ein Hersteller
-erscheint, wenn eines seiner Modelle gefunden ist. Groß- und
-Kleinschreibung spielen keine Rolle, und `*` steht für eine beliebige Folge
-von Zeichen:
-
-![Eine Suche wird getippt](img/de/programmer-stick-find.png)
-
-OK behält die Suche auf beiden Ebenen, X leert sie:
-
-![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
-
-Die Punkte eines Profils stehen anfangs auf BEHALTEN. Die Stepper wählen einen
-Wert; START zählt die gewählten Werte:
-
-![Zwei Werte gewählt](img/de/programmer-stick-items.png)
-
-START öffnet eine Warnung über den ganzen Bildschirm, PROPELLER AB? MOTOR GESICHERT?: ein Motor am ESC muss fest montiert sein und darf keinen
-Propeller tragen, oder ein Lastwiderstand tritt an seine Stelle. Der Lauf
-beginnt, wenn HALTEN ZUM STARTEN 2 s gehalten ist:
-
-![Die Warnung](img/de/programmer-stick-warning.png)
-
-START öffnet nichts, und die Zeile daneben nennt den Grund, solange kein Pin
-als Throttle gebunden ist, solange die Ausgangsbindung nicht gelesen ist
-und solange das Netzteil das Modell des Panels ist; ein solcher Grund
-schließt eine offene Warnung ([Vor einem Lauf](StickProgramming-de.md#vor-einem-lauf)).
-
-Ein Profil, dessen ESC einen Menschen am ESC braucht -- einen Jumper stecken
-und abziehen, einen Taster drücken --, trägt in der Liste ein rotes Schild
-MANUELL und auf seiner Seite rot MANUELLER EINGRIFF NÖTIG. Der Knopf zeigt die
-Schritte und wann jeder fällig ist; ebenso das erste Öffnen des Profils. Die
-Warnung nennt die Schritte vor dem Einschalten, und der Lauf hält für jeden
-späteren Schritt mit ERLEDIGT und ABBRECHEN an und wartet höchstens 60 s
-([Handgriffe](StickProgramming-de.md#handgriffe)):
-
-![Ein Profil mit Handgriffen](img/de/programmer-stick-hand.png)
-
-![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
-
-Ein Kontronik-ESC, der sich sperrt, wenn sein Netzteil ausschaltet, bevor
-er den gespeicherten Modus bestätigt hat, hält den Lauf nach dem Speichern
-versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
-
-![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
-
-Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
-Gruppe und die letzte Gruppe. ABBRECHEN, das Home-Tag, STOP und das Verlassen
-des Bildschirms beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
-SAFE. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
-ist, mindestens 150 ms:
-
-![Ein Lauf](img/de/programmer-stick-run.png)
-
-Solange der Phasenabgriff unter SETUP eingeschaltet ist, ergänzt die Seite des
-Laufs unter der Stromzeile eine reine Anzeige: den Zustand des Abgriffs, die
-Tonhöhe seines letzten 8-ms-Fensters, die Zähler der Pieptöne, die der
-IOmcu verlor, und der Pieptöne, die das Panel nicht gelesen hat, und die letzten vier Pieptöne
-mit Nummer, Länge in ms und mittlerer Tonhöhe in Hz. Der Lauf zählt seine
-Pieptöne weiter aus dem Netzteilstrom.
-
-![Ein Lauf mit laufendem Phasenabgriff](img/de/programmer-stick-tone.png)
-
-| Zustand | Bedeutung |
-| --- | --- |
-| `LÄUFT` | die Aufnahme läuft |
-| `ÜBERLAUF` | sie läuft, und der Aufnahmering oder die FIFO ist seit dem Einschalten des Abgriffs übergelaufen |
-| `WARTET` | kein Link, oder die TONE-Page hat in den letzten 500 ms nicht geantwortet, oder ihre Flags sagen, dass der Abgriff läuft, und ihre Fensternummer hat sich 1,5 s nicht bewegt, oder der Abgriff wurde ausgeschaltet, und die Page hält ihn noch an |
-| `KEINE TONE-PAGE` | der IOmcu spricht ein Protokoll älter als 4.8 |
-| `PIN BELEGT` | der IOmcu hält den Abgriff aus: sein Pin ist anderweitig gebunden, oder der IOmcu führt seit seinem Start keine Erfassung aus (Core 1 nicht gestartet), und seine gespeicherte Einstellung hat den Abgriff an; das Zweite endet nur mit einem Neustart des IOmcu |
-| `LÄUFT NICHT` | eingeschaltet, und die Page hält den Abgriff aus oder lässt ihn nicht laufen: die Einstellung wurde abgelehnt oder ist noch nicht geschrieben |
-
-TONHÖHE und VERLOREN sind Werte der Page aus dem letzten Status-Read. Sie
-zeigen `--`, und `ÜBERLAUF` erscheint nicht, solange kein Read jünger als
-500 ms den Zustand liefert: bei `WARTET`, bei `KEINE TONE-PAGE` und bei
-`LÄUFT NICHT`, solange die Einstellung der Page den Abgriff aus hat.
-VERPASST und die Pieptöne zählt und speichert das Panel selbst; sie bleiben.
-
-Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
-etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
-und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN, dem Home-Tag und
-dem Verlassen des Bildschirms ([die Liste](StickProgramming-de.md#wie-ein-lauf-endet)):
-
-![Fertig](img/de/programmer-stick-done.png)
-
-![Gestoppt](img/de/programmer-stick-aborted.png)
-
-![Vom Netzteil beendet](img/de/programmer-stick-failed.png)
-
-TIMING enthält die Zeiten der Pieptöne und die Netzteil-Einstellungen. Keine
-davon ist gemessen:
-
-![Timing](img/de/programmer-stick-timing.png)
-
 ## Akku
 
 ![Zellenabweichung](img/de/battery.png)
@@ -1808,7 +1816,7 @@ dem Namen des Schreibers und einer Nummer von 001 bis 999 abgelegt:
 | --- | --- |
 | `SERVOnnn.CSV` | ein automatischer Servotest; sein Bericht ist `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | der Bericht eines Endlagenlaufs, ohne CSV daneben |
-| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| `ESCnnn.CSV` | ein Schalten der Throttle-Ausgänge auf ARMED, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | `BENCHnnn.CSV` | ein Schalten der Surfaces auf ARMED, von SERVO, oder ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 
 An einem IOmcu älter als Protokoll 4.18 umfasst jedes Schalten auf
@@ -2653,7 +2661,7 @@ Antwort kostet also keinen Piepton. Ein Piepton, der den Ring verlassen hat,
 bevor er gelesen wurde, oder an dem der Ring vorbeizog, während das Panel
 mehr als 64 zurücklag, wird als verpasst gezählt. Die letzten 8 Pieptöne
 hält das Panel für den Bildschirm; die Laufseite von ESC STICK zeigt 4
-davon ([Programmierer](#programmierer)).
+davon ([ESC STICK](#esc-stick)).
 
 Das Band sagt, was der Abgriff meldet, je einmal und eins nach dem anderen,
 wie bei den Strommonitoren:
