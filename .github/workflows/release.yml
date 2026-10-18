@@ -42,7 +42,7 @@ jobs:
   # The tag is the only thing that says which version this is, and the images
   # carry their own.  A tag pushed without moving rcbench_version.h would
   # publish a v0.8.0 archive holding a 0.7.0 image, and the panel prints what
-  # the coprocessor reports rather than what the archive was called.
+  # the IOmcu reports rather than what the archive was called.
   version:
     name: The tag matches the images
     runs-on: ubuntu-latest
@@ -115,8 +115,8 @@ jobs:
           SHA: ${{ steps.pin.outputs.sha }}
         run: python3 gate/tools/ci_gate.py --repo "$REPO" --sha "$SHA"
 
-  # Carries the coprocessor image the iomcu job built from the same commit,
-  # and offers it over CAN to a coprocessor running another build.
+  # Carries the IOmcu image the iomcu job built from the same commit,
+  # and offers it over CAN to an IOmcu running another build.
   panel:
     needs: [version, iomcu]
     name: Panel image
@@ -162,7 +162,7 @@ jobs:
           if-no-files-found: error
 
   iomcu:
-    name: Coprocessor image
+    name: IOmcu image
     needs: [version]
     runs-on: ubuntu-latest
     timeout-minutes: 30
