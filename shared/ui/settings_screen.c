@@ -1068,9 +1068,9 @@ static void draw_list(gfx_canvas_t *c)
     c->clip = saved;
 
     /* Scroll position, drawn only when there is somewhere to scroll to. */
-    if (s.scroll_max > 0 && n > 0) {
+    if (s.scroll_max > 0) {
         int track_h = LIST_H;
-        int knob_h = track_h * LIST_H / (n * ROW_PITCH);
+        int knob_h = track_h * LIST_H / ((n > 0 ? n : 1) * ROW_PITCH);
         if (knob_h < 24) { knob_h = 24; }
         int knob_y = LIST_Y + (track_h - knob_h) * s.scroll / s.scroll_max;
         gfx_fill_rect(c, LIST_X + LIST_W + 4, LIST_Y, 3, track_h, UI_PANEL_SUNK);
