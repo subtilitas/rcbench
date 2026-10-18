@@ -1411,7 +1411,7 @@ TEST_CASE(owed_endpoints_refuse_the_arm_before_clear)
     const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
 
     arming_hs_facts_t f = clear_way();
-    f.endpoints_owed = true;
+    f.endpoints_blocked = true;
     handed_out(t0, at);
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
              ARMING_HS_ENDPOINTS);
@@ -1469,7 +1469,7 @@ TEST_CASE(owed_endpoints_refuse_the_arm_before_clear)
              ARMING_HS_GO);
 
     /* At HANDED the debt is not this point's to say. */
-    f.endpoints_owed = true;
+    f.endpoints_blocked = true;
     handed_out(t0, at);
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_HANDED, &f, at),
              ARMING_HS_GO);
@@ -1490,7 +1490,7 @@ TEST_CASE(an_edit_during_clear_refuses_the_frame_that_arms)
     handed_out(t0, at);
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_PREPARED, &f, at + 1u),
              ARMING_HS_GO);
-    f.endpoints_owed = true;
+    f.endpoints_blocked = true;
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
              ARMING_HS_ENDPOINTS);
     CHECK(!a.armed);
@@ -1519,6 +1519,43 @@ TEST_CASE(an_edit_during_clear_refuses_the_frame_that_arms)
     handed_out(t0, at);
     CHECK_EQ(arming_handshake_step(&a, ARMING_HS_CLEARED, &f, at + 2u),
              ARMING_HS_WITHDRAWN);
+}
+
+/*
+ * After the frame that arms came back acknowledged: endpoints that are no
+ * longer in force -- an edit published while that frame was on the wire --
+ * take the arm back with no stop and the line up; otherwise the arm
+ * stands.  Nothing else is this point's to say.
+ */
+TEST_CASE(endpoints_blocked_after_the_arming_frame_take_the_arm_back)
+{
+    const uint32_t t0 = 1000u;
+    const uint32_t at = t0 + SETTLE_MS;
+    const uint32_t dl = t0 + SETTLE_MS + WAIT_MS;
+    arming_hs_facts_t f = clear_way();
+
+    handed_out(t0, at);
+    f.endpoints_blocked = true;
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_ARMED, &f, at + 2u),
+             ARMING_HS_ENDPOINTS);
+    CHECK(!a.armed);
+    CHECK(!a.arming);
+    CHECK(!a.stopped);
+    CHECK_EQ(arming_stop_count(&a), 0);
+    CHECK(arming_heartbeat(&a, at + 2u));
+    CHECK_EQ(arming_step(&a, at + 3u), ARMING_ACT_NONE);
+
+    /* Past the deadline, a disarm posted, the release or the rate: the
+     * frame has armed the far end, so the arm stands. */
+    f = clear_way();
+    f.disarm_asked = true;
+    f.release_owed = true;
+    f.rate_settled = false;
+    handed_out(t0, at);
+    CHECK_EQ(arming_handshake_step(&a, ARMING_HS_ARMED, &f, dl + 700u),
+             ARMING_HS_GO);
+    CHECK(a.armed);
+    CHECK(!a.stopped);
 }
 
 /*
@@ -2111,6 +2148,7 @@ int main(void)
     RUN(the_writes_before_clear_are_refused_in_order);
     RUN(owed_endpoints_refuse_the_arm_before_clear);
     RUN(an_edit_during_clear_refuses_the_frame_that_arms);
+    RUN(endpoints_blocked_after_the_arming_frame_take_the_arm_back);
     RUN(a_stop_after_arm_withdraws_it_after_clear);
     RUN(after_clear_a_disarm_withdraws_and_the_deadline_stops);
     RUN(a_stop_count_that_moves_without_the_latch_disarms_on_the_next_step);

@@ -178,31 +178,56 @@ IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
 
 The frame that switches to ARMED carries ARM, THROTTLE and the pole count,
 and no CHAN_CFG. The throttle's Idle pulse and Full pulse reach the IOmcu on
-their own path: an edit, a link-up edge or the panel's start owes the IOmcu
-the pair. The panel pays the debt at a 50 ms poll whose write of ARM = 0
-was acknowledged, once 300 ms (`ENDPOINTS_SETTLE_MS`) have passed since the
-last edit. It reads CHAN_CFG, puts the pair on the throttle channels and
-writes the page when it differs. The IOmcu applies a CHAN_CFG write to its
-outputs before it acknowledges it.
+their own path: an edit, a binding written on OUTPUTS or PICK A PIN, a
+link-up edge or the panel's start owes the IOmcu the pair. An IOmcu restart
+or update comes back as a link-up edge. The panel pays the debt at a 50 ms
+poll whose write of ARM = 0 was acknowledged, once 300 ms
+(`ENDPOINTS_SETTLE_MS`) have passed since the last edit. It reads CHAN_CFG,
+puts the pair on the throttle channels and writes the page when it differs.
+The IOmcu applies a CHAN_CFG write to its outputs before it acknowledges
+it, and the acknowledgement carries what it stored.
 
-| Payment | The debt |
-| --- | --- |
-| the page already holds the pair | paid, nothing written |
-| the write is acknowledged | paid |
-| the read or the write is not answered | owed, sent again at the next poll |
-| the read is refused | ended, `The IOmcu did not report its pulse range.` |
-| Idle pulse is not below Full pulse | ended, nothing sent, `Idle pulse must be shorter than full-throttle pulse. Not sent.` |
-| the write is refused | ended, `The IOmcu rejected the pulse range.` |
+| Payment | The debt | A switch to ARMED with the link up |
+| --- | --- | --- |
+| the page already holds the pair | paid, nothing written | goes on |
+| the write is acknowledged and every throttle channel stored the pair | paid | goes on |
+| the read or the write is not answered | owed, sent again at the next poll | `Pulse range not yet sent to the IOmcu. Hold ARM again.` |
+| the read is refused | ended, `The IOmcu did not report its pulse range.` | `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` |
+| Idle pulse is not below Full pulse | ended, nothing sent, `Idle pulse must be shorter than full-throttle pulse. Not sent.` | `Idle pulse is not below Full pulse. Change one, then hold ARM again.` |
+| the write is refused | ended, `The IOmcu rejected the pulse range.` | `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` |
+| the write is acknowledged and a throttle channel stored another pair | ended | `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` |
 
-While the debt stands with the link up, the panel refuses the switch to
-ARMED with `Pulse range not yet sent to the IOmcu. Hold ARM again.`. It
-asks before CLEAR, after the servo release and the frame rate, and writes
-nothing, CLEAR included; the bench stays SAFE with the outputs at rest. It asks again after an acknowledged CLEAR, for an edit
-that arrived while CLEAR was on the wire, and then writes no frame that
-switches to ARMED. The debt is paid on the control task, the task that
-writes the switch, so the switch never runs while a payment is on the wire.
-A refused switch is not tried again by itself: ARM is held again. STOP is
-not affected.
+The panel asks before CLEAR, after the servo release and the frame rate,
+and writes nothing, CLEAR included; the bench stays SAFE with the outputs at
+rest. It asks again after an acknowledged CLEAR, for an edit that arrived
+while CLEAR was on the wire, and then writes no frame that switches to
+ARMED. It asks a third time once the frame that switches to ARMED is
+acknowledged, for an edit that arrived while that frame was on the wire,
+and then writes ARM = 0 in the next exchange: the IOmcu is ARMED at rest
+on the range it held for that one exchange (time not measured), and the
+panel's bank does not switch to ARMED. The panel's own screens cannot
+publish an edit there: the two SETTINGS rows lock while ARM is held and
+while an ARM waits for its answer. SETUP's DISCARD, which can revert an
+unsaved value, is on another screen and takes no tap while the bench is
+ARMED, and leaving MOTOR & ESC or SERVO switches the bench to SAFE.
+
+The debt is paid on the control task, the task that writes the switch, so
+the switch never runs while a payment is on the wire. A refused switch is
+not tried again by itself: ARM is held again. STOP is not affected. A
+refusal or another pair stored is not sent again by itself either: the
+same request refused once is refused every time. The block ends at the
+first payment that finds the pair in force after an edit, a binding or a
+link-up, and not before; a payment that is refused again blocks again with
+its reason.
+
+An operator with an IOmcu that refuses the page reads `The IOmcu did not
+report its pulse range.` at the link-up, and `No pulse range from the
+IOmcu. Update the IOmcu firmware, then hold ARM again.` at every hold of
+ARM. The bench does not switch to ARMED with that IOmcu connected. The
+panel offers the IOmcu image it carries at the link-up, after its own 2 s
+hold; the IOmcu restarts after the update, and the link-up that follows
+owes the pair again. Without an IOmcu, the panel's own bank switches to
+ARMED as before.
 
 An edit at time 0 is paid at the first poll at or after 300 ms: a poll at
 299 ms leaves it owed, a poll at 300 ms pays it. The time is taken modulo
@@ -210,13 +235,12 @@ An edit at time 0 is paid at the first poll at or after 300 ms: a poll at
 SETTINGS rows for the two values lock while ARM is held, and the hold takes
 2 s, so an edit made before the press is normally paid inside the hold.
 
-A refusal ends the debt, and a switch to ARMED then runs on the pair the
-IOmcu holds; the alert says so. With no link the panel's own bank switches
-to ARMED and nothing is written. A link that comes back owes the pair again
-and holds the IOmcu SAFE until the pair is paid, so the refusal lasts until
-the first poll after the link-up. Host-tested in `test_endpoints_link` and
-`test_arming`. The panel's control task, which reads the flag and shows
-the alert, is not in the coverage figure.
+With no link the panel's own bank switches to ARMED and nothing is written.
+A link that comes back owes the pair again and holds the IOmcu SAFE until
+an answer, so a refusal from before the link-up lasts until the first
+poll after it, and then only if that poll is refused again. Host-tested in
+`test_endpoints_link` and `test_arming`. The panel's control task, which
+reads the state and shows the alert, is not in the coverage figure.
 
 ## Deliberate behaviours
 

@@ -15,6 +15,7 @@
 #include <stdint.h>
 
 #include "bench_state.h"
+#include "endpoints_link.h"
 #include "gfx.h"
 #include "settings.h"
 #include "ui_screen.h"
@@ -177,6 +178,12 @@ int motor_settings_rows(setting_id_t *out, int max);
 int motor_settings_heading(int row);
 /** Row @p row's value box, which a tap opens the keypad on. */
 gfx_rect_t motor_settings_box(int row);
+
+/** What the alert band says for a switch to ARMED refused because the pair
+ *  of Idle pulse and Full pulse is not in force at the IOmcu, by
+ *  endpoints_block(); NULL for ENDPOINTS_BLOCK_NONE and for a value outside
+ *  the enum. */
+const char *motor_endpoints_alert(endpoints_block_t why);
 
 float motor_screen_throttle(void);
 /** The application's hook: sets the slider on an armed or a disarmed bench

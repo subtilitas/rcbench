@@ -33,6 +33,17 @@ Idle pulse and Full pulse take a value on a SAFE bench only. While the bench is 
 
 A change of Idle pulse or Full pulse reaches the IOmcu at the first poll 300 ms or more after the last edit. Until then, with the IOmcu connected, ARM is refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and the bench stays SAFE. Hold ARM again: the 2 s hold gives the change the time to arrive.
 
+When the IOmcu does not take the pair, ARM stays refused until the pair is in force, and the band says what to change:
+
+| Band | What to do |
+|---|---|
+| `No pulse range from the IOmcu. Update the IOmcu firmware, then hold ARM again.` | update the IOmcu: the panel offers the image it carries when the IOmcu connects |
+| `Idle pulse is not below Full pulse. Change one, then hold ARM again.` | lower Idle pulse or raise Full pulse |
+| `The IOmcu rejected the pulse range. Change Idle pulse, Full pulse or OUTPUTS.` | shorten the pulse, or bind the motor pin at a slower rate on OUTPUTS: a pulse longer than its PWM frame is refused |
+| `The IOmcu holds another pulse range. Change Idle pulse or Full pulse.` | change either value; the panel sends the pair again |
+
+A binding written on OUTPUTS, and the IOmcu connecting again, also send the pair again.
+
 ## Keeping the values
 
 A changed value is in force at once and asks for a write. The panel writes on the first frame with the bench SAFE, the supply output off and no board drawing being fetched or kept. The settings are one store: the write keeps every unsaved value, those changed on SETUP included. The line under the rows says where the store stands:

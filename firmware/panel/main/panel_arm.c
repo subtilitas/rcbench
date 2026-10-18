@@ -346,13 +346,13 @@ void service_arming(bool link_up)
         facts.rate_settled = !link_up || facts.release_owed
                              || servo_link_rate_settled();
         /*
-         * And the throttle's pulse endpoints.  This task pays the debt
-         * (endpoints_service(), at the poll), so no payment is under way
-         * while this runs: the flag is either a debt or nothing.  An edit
-         * the settings screen publishes during the CLEAR is asked about
-         * again after it.
+         * And the throttle's pulse endpoints, owed or blocked by the last
+         * answer.  This task pays the debt (endpoints_service(), at the
+         * poll), so no payment is under way while this runs.  An edit the
+         * settings screen publishes during the CLEAR is asked about again
+         * after it, and one during the frame that arms after that.
          */
-        facts.endpoints_owed = endpoints_owed(&s_endpoints);
+        facts.endpoints_blocked = endpoints_blocked(&s_endpoints);
         switch (arming_handshake_step(&s_arm, ARMING_HS_PREPARED, &facts,
                                       now_ms())) {
         case ARMING_HS_SERVO_HELD:
@@ -379,14 +379,15 @@ void service_arming(bool link_up)
             break;
         case ARMING_HS_ENDPOINTS:
             /*
-             * An Idle pulse or Full pulse edit that has not reached the far
-             * end: the frame that arms carries no CHAN_CFG, so the throttle
-             * would run on the range held before the edit.  Refused like an
-             * unpaid release, nothing written; the poll pays the debt once
-             * the edit has rested ENDPOINTS_SETTLE_MS, and the operator
-             * holds ARM again.
+             * Idle pulse and Full pulse not in force at the far end: owed,
+             * or refused or stored otherwise by the last answer.  The frame
+             * that arms carries no CHAN_CFG, so the throttle would run on
+             * whatever range the far end holds.  Refused like an unpaid
+             * release, nothing written; the alert names what to change,
+             * and the operator holds ARM again.
              */
-            arm_write_failed(quiet, TR(ALERT_ARM_ENDPOINTS));
+            arm_write_failed(
+                quiet, motor_endpoints_alert(endpoints_block(&s_endpoints)));
             break;
         case ARMING_HS_CLOSED:
             /* Past the arm's deadline before CLEAR; see below. */
@@ -425,7 +426,7 @@ void service_arming(bool link_up)
                 break;
             }
             facts.disarm_asked   = atomic_load(&s_disarm_request);
-            facts.endpoints_owed = endpoints_owed(&s_endpoints);
+            facts.endpoints_blocked = endpoints_blocked(&s_endpoints);
             const arming_hs_t cleared =
                 arming_handshake_step(&s_arm, ARMING_HS_CLEARED, &facts,
                                       now_ms());
@@ -435,7 +436,8 @@ void service_arming(bool link_up)
                 break;
             }
             if (cleared == ARMING_HS_ENDPOINTS) {
-                control_alert(TR(ALERT_ARM_ENDPOINTS));
+                control_alert(
+                    motor_endpoints_alert(endpoints_block(&s_endpoints)));
                 break;
             }
             if (cleared != ARMING_HS_GO) {
@@ -444,6 +446,20 @@ void service_arming(bool link_up)
             }
             if (!control_arm(&ack)) {
                 arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
+                break;
+            }
+            /*
+             * An edit published while the frame that arms was on the wire.
+             * The far end is armed at rest on the range it held; ARM = 0
+             * goes in the next exchange, and the bank here is not armed.
+             */
+            facts.endpoints_blocked = endpoints_blocked(&s_endpoints);
+            if (arming_handshake_step(&s_arm, ARMING_HS_ARMED, &facts,
+                                      now_ms())
+                == ARMING_HS_ENDPOINTS) {
+                (void)disarm_here(link_up);
+                control_alert(
+                    motor_endpoints_alert(endpoints_block(&s_endpoints)));
             } else {
                 /* The roles the far end armed, which an older one makes
                  * every role. */
@@ -715,6 +731,9 @@ void drain_commands(bool link_up, bench_state_t *bench)
              */
             servo_link_forget_binding();
             servo_link_let_go();
+            /* And the throttle channels may have moved: the pair is asked
+             * again at the next poll, and a switch to ARMED waits for it. */
+            endpoints_recheck(&s_endpoints);
             read_outputs_binding();
             continue;
         }
