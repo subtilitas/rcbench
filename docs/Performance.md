@@ -37,8 +37,8 @@ overview           963      120 KiB      3.2      39.0
 servo           14,680     1835 KiB     48.2      19.5
 servo-grip        2,988      374 KiB      9.8      39.0
 servo-current        4,006      501 KiB     13.1      39.0
-supply           8,580     1072 KiB     28.2      19.5
-supply-chrome       31,606     3951 KiB    103.7       7.8
+supply           8,034     1004 KiB     26.4      19.5
+supply-chrome       30,543     3818 KiB    100.2       9.8
 analyser           901      113 KiB      3.0      39.0
 logs               878      110 KiB      2.9      39.0
 settings           896      112 KiB      2.9      39.0
@@ -387,7 +387,7 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
-163,240 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+163,336 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
@@ -397,7 +397,7 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 20 objects,
 | `log_viewer_screen` | ui | 35,400 |
 | `servo_screen` | ui | 29,509 |
 | `ui_watermark` | ui | 20,504 |
-| `supply_screen` | ui | 20,412 |
+| `supply_screen` | ui | 20,508 |
 | `motor_screen` | ui | 20,008 |
 | `kst_card` | bench | 6,208 |
 | `esc_stick_panel` | ui | 6,096 |
