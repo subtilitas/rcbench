@@ -350,9 +350,11 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
  * port renders no pulse: 22 characters at most, of the 23 cells the row's
  * value holds.
  *
- * The row is the control that picks the target: a tap opens the choice
- * OUTPUTS / PROG PORT, the TARGET setting.  It takes no press while
- * servo_screen_target_locked().
+ * The row is the control that picks the target: a tap opens SETUP >
+ * OUTPUTS on what the row shows -- the PROG PORT entry while the IOmcu
+ * drives the port, SERVO PWM while it drives the outputs, the overview
+ * while the target is not known -- where SERVO TESTER sets it.  It takes no press
+ * while servo_screen_target_locked().
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known);
@@ -373,6 +375,19 @@ int servo_screen_run_settings(void);
  * The row names the target all the same.
  */
 bool servo_screen_target_locked(void);
+
+/**
+ * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
+ * press: servo_screen_target_locked(), or the bench ARMED for the motor.
+ */
+bool servo_screen_tester_target_locked(void);
+
+/**
+ * Whether OUTPUTS' PORT PWM segment takes no press: OUTPUTS as the
+ * tester's target, the servo programmer holding the port, or a sweep or a
+ * run under way; and to switch it on, the bench ARMED or asked to arm.
+ */
+bool servo_screen_port_pwm_locked(void);
 
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */

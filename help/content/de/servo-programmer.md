@@ -24,7 +24,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 
 - Einen IOmcu mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
 - Das Servo am Programmierport des IOmcu, Port 1: GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist.
-- ZIEL auf der rechten Karte auf PROG-PORT ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
+- SERVO-TESTER auf dem Eintrag PROG-PORT von Ausgänge auf PROG-PORT; ein Tipp auf die Zeile ZIEL öffnet ihn ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
 ![Ein IOmcu ohne Programmierport](view:servo-kst-nopage)

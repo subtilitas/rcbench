@@ -144,6 +144,29 @@ history is in git.
 
 ### Changed
 
+- The TARGET row behaves the same on MOTOR & ESC and on SERVO: a tap opens
+  SETUP > OUTPUTS on what the workbench drives, and the home tag there
+  comes back to the workbench on the task the row was tapped on. From
+  MOTOR & ESC OUTPUTS opens on the protocol the throttle's pins are bound
+  as (the overview while they are bound as several or none is known),
+  from SERVO on what the row shows (the PROG PORT entry while the IOmcu
+  drives the port, SERVO PWM while it drives the outputs, the overview
+  while the target is not known), not on the TARGET setting; from SETUP's
+  tile on the overview. The row keeps its locks: ARMED, a sweep or a run,
+  the servo programmer holding the port.
+- OUTPUTS lists the IOmcu's programming ports as outputs: its protocol
+  list ends in one PROG PORT entry per port the IOmcu reports (1 today, at
+  most 4; one while the count is not known; none for an IOmcu older than
+  protocol 4.13), its rows 41 px tall instead of
+  46 px so 9 rows fit. The entry shows the port's pin lit and read-only
+  (`PIN GP13`), what the port carries (`CARRIES SERVO PWM AND KST/CHASERVO
+  PROGRAMMING`; no throttle protocol), and on port 1 SERVO TESTER (OUTPUTS
+  | PROG PORT) and PORT PWM (ON | OFF) as segments, locked under the
+  SERVO screen's rules with the reason under them. These two are the one
+  home of the PWM target and Port PWM settings. The servo programmer's
+  locked line reads `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`.
+  OUTPUTS and PICK A PIN hold every reported port's pin and check the PWM
+  slice rule against each, as the IOmcu does.
 - SUPPLY is a workbench with the LIVE | SETTINGS strip (German `LIVE`,
   `OPTIONEN`) of MOTOR & ESC and SERVO, two tabs of 112 x 24 px at the top
   left. The SETTINGS button at the top right and the overlay's CLOSE are
@@ -348,6 +371,9 @@ history is in git.
 
 ### Removed
 
+- SERVO's own choice OUTPUTS / PROG PORT behind its TARGET row, and the
+  PORT PWM row of SETTINGS > DUT; both settings are set on OUTPUTS' PROG
+  PORT entry.
 - The modelled ESC and SERVO classes of the PROGRAMMER screen, with their
   CONNECT, READ and WRITE on the panel's own copy of a device. Their
   parameter tables for BLHeli_S, AM32, ESCape32, VESC and Hitec D-series

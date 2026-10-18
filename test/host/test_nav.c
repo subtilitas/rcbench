@@ -23,6 +23,7 @@
 #include "link_pages.h"
 #include "motor_screen.h"
 #include "out_bind.h"
+#include "outputs_screen.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
 #include "esc_stick_panel.h"
@@ -786,6 +787,14 @@ static void open_wifi_keyboard(void)
     tap(400, UI_BAND_H + 400);                   /* HIDDEN: the name */
 }
 static void open_outputs_list(void)    { tap(149, UI_BAND_H + 71); }
+/* OUTPUTS on its PROG PORT entry, as SERVO's TARGET row opens it, and the
+ * list opened over that. */
+static void open_outputs_list_on_port(void)
+{
+    outputs_screen_select_port(0u);
+    CHECK_EQ(outputs_screen_port_shown(), 0);
+    open_outputs_list();
+}
 static void open_picker_list(void)
 {
     outbind_t b;
@@ -831,8 +840,9 @@ TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
 /*
  * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
- * screen stays; with nothing open it goes to the screen's parent.  SUPPLY's
- * SETTINGS is a task of its strip, no level: the tag leaves from it.
+ * screen stays; with nothing open it goes to the screen's parent, for
+ * OUTPUTS the workbench whose TARGET row opened it.  SUPPLY's SETTINGS is
+ * a task of its strip, no level: the tag leaves from it.
  */
 TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
 {
@@ -848,6 +858,9 @@ TEST_CASE(the_home_tag_closes_what_a_tool_screen_opened_first)
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_list,       1 },
         { SCREEN_WIFI,    SCREEN_SETUP,    open_wifi_keyboard,   2 },
         { SCREEN_OUTPUTS, SCREEN_SETUP,    open_outputs_list,    1 },
+        { SCREEN_OUTPUTS, SCREEN_MOTOR,    open_outputs_list,    1 },
+        { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list,    1 },
+        { SCREEN_OUTPUTS, SCREEN_SERVO,    open_outputs_list_on_port, 1 },
         { SCREEN_PICKER,  SCREEN_SETUP,    open_picker_list,     1 },
     };
     for (size_t k = 0; k < sizeof(k_cases) / sizeof(k_cases[0]); ++k) {

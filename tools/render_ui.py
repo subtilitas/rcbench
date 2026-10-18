@@ -105,6 +105,7 @@ SOURCES = [
     "shared/ui/esc_stick_pages.c",
     "shared/ui/esc_stick_panel.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/outputs_port.c",
     "shared/ui/picker_screen.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
@@ -199,9 +200,8 @@ SCREENS = {
     "servo-ina":      ("servo-ina.png",      "servo", "dark"),
     "servo-clipped":  ("servo-clipped.png",  "servo", "dark"),
     # The programming port as the target: the TARGET row in the warning
-    # colour.  And the row tapped: the choice of target.
+    # colour.
     "servo-target":   ("servo-target.png",   "servo", "dark"),
-    "servo-target-choice": ("servo-target-choice.png", "servo", "dark"),
     # The panel's model as the supply: the MODELLED pill on the plot.
     "servo-model":    ("servo-model.png",    "servo", "dark"),
     # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
@@ -389,6 +389,9 @@ SCREENS = {
     "outputs-odd": ("outputs-odd.png", "outputs", "dark"),
     # GP13 is the programming port's.
     "outputs-prog": ("outputs-prog.png", "outputs", "dark"),
+    # The PROG PORT entry, as SERVO's TARGET row opens it with the port as
+    # the tester's target: GP13 lit, SERVO TESTER and PORT PWM.
+    "outputs-port": ("outputs-port.png", "outputs", "dark"),
     "picker": ("picker.png", "picker", "dark"),
     "picker-drawn": ("picker-drawn.png", "picker", "dark"),
     # GP13 is the programming port's: held, and named under IN USE.

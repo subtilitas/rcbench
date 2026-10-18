@@ -1,10 +1,20 @@
 /*
  * The outputs screen: choose a protocol, then tick the pins it drives.
  *
- * Every visit opens on the overview: OFF selected, every bound pin named by
- * its protocol, and a tap on a pin changes nothing until a protocol is
- * picked.  Selecting OFF in the list goes back to the overview.  The pin
- * picker opens on it too.
+ * A visit from SETUP opens on the overview: OFF selected, every bound pin
+ * named by its protocol, and a tap on a pin changes nothing until a
+ * protocol is picked.  Selecting OFF in the list goes back to the overview.
+ * The pin picker opens on it too.  A visit from a workbench's TARGET row
+ * opens on what that workbench drives (outputs_screen_open_on()).
+ *
+ * The list ends in one PROG PORT entry per programming port the IOmcu
+ * reports (outputs_screen_set_prog_ports()).  A port is an output of its
+ * own kind, no slot and no protocol: its entry shows the port's pin lit and
+ * read-only, what the port carries, and for port 1 the two settings that
+ * make it the SERVO tester's output -- SERVO TESTER (SET_SERVO_TARGET) and
+ * PORT PWM (SET_SERVO_PORT_PWM), each a segment, locked under the SERVO
+ * screen's rules.  Neither writes a page from here: the control task takes
+ * them to the IOmcu on a bench at rest.
  *
  * One protocol and a set of pins rather than eight independent slots, because
  * that is the shape of the job in front of the operator -- four servo leads,
@@ -120,6 +130,61 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
  */
 void outputs_screen_set_prog_pin(uint8_t gpio);
 
+/** outputs_screen_set_prog_ports()'s count while the ports are not known
+ *  (PROG_LINK_COUNT_UNKNOWN). */
+#define OUTPUTS_PORTS_UNKNOWN 0xFFu
+
+/**
+ * The programming ports the IOmcu reports, @p count (OUTPUTS_PORTS_UNKNOWN
+ * while not known, the start value; 0 for an IOmcu without the PROG page),
+ * and their pins, @p pins[0] to @p pins[count - 1] (OUTPUTS_NO_PIN for a
+ * port without one); @p pins[0] is outputs_screen_set_prog_pin()'s, and
+ * stays its own while the count is not known.  The list shows one PROG
+ * PORT entry a port, at most LINK_PG_PORTS_MAX; none for a count of 0; and
+ * one for port 1 while the count is not known, so the tester's target can
+ * be set before the IOmcu answers.  An entry shown that the count drops
+ * goes back to the overview.  It stays across a reset of the screen.
+ */
+void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
+
+/** The PROG PORT entries the list shows: 0 to LINK_PG_PORTS_MAX. */
+uint8_t outputs_screen_port_entries(void);
+
+/** Port @p port's pin as the screen holds it, or OUTPUTS_NO_PIN. */
+uint8_t outputs_screen_port_pin(uint8_t port);
+
+/**
+ * Select the PROG PORT entry of port @p port (0 for port 1), as a pick in
+ * the list does: the overview's pins with the port's lit, none taking a
+ * tick.  A port past outputs_screen_port_entries() is ignored.
+ * outputs_screen_select() leaves it.
+ */
+void outputs_screen_select_port(uint8_t port);
+
+/** The PROG PORT entry shown, 0 for port 1, or -1 for a protocol. */
+int outputs_screen_port_shown(void);
+
+/**
+ * The next entry to this screen opens on protocol @p proto, or with
+ * outputs_screen_open_on_port() on the PROG PORT entry of port @p port,
+ * instead of the overview; once, then entries open on the overview again.
+ * A protocol past the table or a port the list does not show opens the
+ * overview.  The TARGET rows of MOTOR & ESC and SERVO call it before they
+ * open the screen.
+ */
+void outputs_screen_open_on(uint8_t proto);
+void outputs_screen_open_on_port(uint8_t port);
+
+/**
+ * Why the PROG PORT entry's segments take no press, as the screen draws it
+ * under them, or an empty string and false when they take one or the
+ * entry shown has none: the servo programmer holds the port, the bench is
+ * ARMED or a test or sweep runs, or PORT PWM with OUTPUTS as the tester's
+ * target.  outputs_screen_reason() returns the same while an entry is
+ * shown.
+ */
+bool outputs_screen_port_reason(char *buf, size_t cap);
+
 /**
  * The line under the protocol that says why no pin can be ticked, or why the
  * PWM pin last tapped cannot be (outputs_clash_reason()), until another pick
@@ -139,13 +204,14 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
 /**
  * The line under a pin's GPIO name for a pin the IOmcu refuses the
- * PWM generator (outbind_pwm_clash() with @p prog_gpio): "SLICE OF GP13"
- * beside the programming port's pin, "PWM CH OF GP0" beside a pin bound as
- * PWM.  An empty string and false for any other pin.  The pin picker names
- * the holder with the same line.
+ * PWM generator (outbind_pwm_clash_ports() with the @p count programming
+ * port pins @p ports): "SLICE OF GP13" beside a programming port's pin,
+ * "PWM CH OF GP0" beside a pin bound as PWM.  An empty string and false
+ * for any other pin.  The pin picker names the holder with the same line.
  */
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
-                         uint8_t prog_gpio, char *buf, size_t cap);
+                         const uint8_t *ports, uint8_t count, char *buf,
+                         size_t cap);
 
 /**
  * The line under the protocol for such a pin, catalogue entry @p index:
@@ -155,8 +221,9 @@ bool outputs_clash_label(const outbind_t *b, uint8_t index,
  * show it after outputs_reason_of(): a protocol that can take no pin at all
  * says that first.  The cell names the holder before any tap.
  */
-bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
-                          char *buf, size_t cap);
+bool outputs_clash_reason(const outbind_t *b, int index,
+                          const uint8_t *ports, uint8_t count, char *buf,
+                          size_t cap);
 
 /**
  * @p text in lines of @p font no wider than @p box, from its top down by

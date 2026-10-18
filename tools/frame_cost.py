@@ -98,6 +98,7 @@ SOURCES = [
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
     "shared/ui/outputs_screen.c",
+    "shared/ui/outputs_port.c",
     "shared/ui/picker_screen.c",
     "shared/ui/board_drawing.c",
     # The board drawing the IOmcu serves, which the picker draws.

@@ -92,7 +92,8 @@
  * The IN USE table, right of the board.  Its lines start under the heading,
  * the rule and the BY OTHERS line, and end at the area's foot.  A name is
  * 20 px; a pin is 28 px with the GPIO in the head face, or 20 px with it in
- * the label face when the 28 px rows run past the foot.
+ * the label face when the 28 px rows run past the foot, and 16 px when the
+ * 20 px rows do.
  */
 #define USE_X       (SCREEN_W - 132)
 #define USE_Y       8
@@ -102,10 +103,15 @@
 #define USE_NAME_H  20
 #define USE_PIN_H   28
 #define USE_PIN_H_C 20
+#define USE_PIN_H_D 16      /* where 20 px rows still pass the foot */
 
-/* The largest table, at 20 px a line, is under the heading. */
-_Static_assert(USE_TOP + (int)PICKER_USE_MAX * USE_PIN_H_C <= USE_FOOT,
-               "the IN USE table cannot hold every line");
+/* The most lines fit at the densest rows: every name and every pin. */
+_Static_assert(USE_TOP
+                   + (1 + (int)OUTBIND_PROTOS - 1) * USE_NAME_H
+                   + ((int)LINK_PG_PORTS_MAX + (int)LINK_OUT_SLOTS)
+                         * USE_PIN_H_D
+                   <= USE_FOOT,
+               "the IN USE table holds PICKER_USE_MAX lines");
 
 #define IVORY GFX_RGB(236, 235, 228)
 #define EBONY GFX_RGB(22, 23, 28)
@@ -136,9 +142,13 @@ static struct {
     bool     chrome_valid[MAX_FBS];
 } s;
 
-/* The GPIO the IOmcu's programming port is bound to, or none.  Kept
- * out of `s` so a reset of the screen does not forget it. */
-static uint8_t g_prog_gpio = PICKER_NO_PIN;
+/* The GPIOs the IOmcu's programming ports are bound to, PICKER_NO_PIN
+ * for none.  Kept out of `s` so a reset of the screen does not forget
+ * them. */
+static uint8_t g_prog_pins[LINK_PG_PORTS_MAX] = {
+    PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN, PICKER_NO_PIN
+};
+_Static_assert(LINK_PG_PORTS_MAX == 4u, "g_prog_pins' initialiser");
 
 /*
  * A change invalidates every framebuffer, and a render validates the one it
@@ -230,12 +240,23 @@ bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
     return ok;
 }
 
-void picker_screen_set_prog_pin(uint8_t gpio)
+void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 {
-    if (gpio != g_prog_gpio) {
-        g_prog_gpio = gpio;
+    bool moved = false;
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        const uint8_t pin = (pins != NULL && n < count) ? pins[n]
+                                                         : PICKER_NO_PIN;
+        moved = moved || pin != g_prog_pins[n];
+        g_prog_pins[n] = pin;
+    }
+    if (moved) {
         touched();
     }
+}
+
+void picker_screen_set_prog_pin(uint8_t gpio)
+{
+    picker_screen_set_prog_ports(1u, &gpio);
 }
 
 static const outbind_shape_t *shape(void)
@@ -577,11 +598,18 @@ bool picker_screen_list_open(void) { return s.open; }
  * IOmcu gives the port no pin then -- and can be unticked. */
 static bool prog_taken(uint8_t index)
 {
-    return g_prog_gpio != PICKER_NO_PIN
-           && index < outbind_pin_count(s.bind.board)
-           && !outbind_pins(s.bind.board)[index].reserved
-           && outbind_pins(s.bind.board)[index].gpio == g_prog_gpio
-           && outbind_group_of(&s.bind, index) == 0u;
+    if (index >= outbind_pin_count(s.bind.board)
+        || outbind_pins(s.bind.board)[index].reserved
+        || outbind_group_of(&s.bind, index) != 0u) {
+        return false;
+    }
+    const uint8_t gpio = outbind_pins(s.bind.board)[index].gpio;
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        if (g_prog_pins[n] != PICKER_NO_PIN && g_prog_pins[n] == gpio) {
+            return true;
+        }
+    }
+    return false;
 }
 
 uint8_t picker_screen_prog_listed(void)
@@ -589,7 +617,7 @@ uint8_t picker_screen_prog_listed(void)
     const uint8_t n = outbind_pin_count(s.bind.board);
     for (uint8_t i = 0; i < n; ++i) {
         if (prog_taken(i)) {
-            return g_prog_gpio;
+            return outbind_pins(s.bind.board)[i].gpio;
         }
     }
     return PICKER_NO_PIN;
@@ -632,13 +660,14 @@ picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap)
         return PICKER_PIN_LOCKED;
     }
     /* Free and offered, and the PWM generator cannot take it beside what it carries:
-     * held by the pin it clashes with.  outbind_pwm_clash() takes the port's
-     * pin as the IOmcu reads it, PICKER_NO_PIN being no pin. */
-    if (outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
+     * held by the pin it clashes with.  outbind_pwm_clash_ports() takes the
+     * ports' pins as the IOmcu reads them, PICKER_NO_PIN being no pin. */
+    if (outbind_pwm_clash_ports(&s.bind, index, g_prog_pins,
+                                LINK_PG_PORTS_MAX, NULL)
         != OUTBIND_CLASH_NONE) {
         if (holder != NULL) {
-            (void)outputs_clash_label(&s.bind, index, g_prog_gpio, holder,
-                                      cap);
+            (void)outputs_clash_label(&s.bind, index, g_prog_pins,
+                                      LINK_PG_PORTS_MAX, holder, cap);
         }
         return PICKER_PIN_HELD;
     }
@@ -713,7 +742,8 @@ bool picker_screen_reason(char *buf, size_t cap)
         return true;
     }
     return outputs_reason_of(&s.bind, buf, cap)
-           || outputs_clash_reason(&s.bind, s.refused, g_prog_gpio, buf, cap);
+           || outputs_clash_reason(&s.bind, s.refused, g_prog_pins,
+                                   LINK_PG_PORTS_MAX, buf, cap);
 }
 
 /* --------------------------------------------------------------- drawing */
@@ -934,7 +964,7 @@ static uint8_t use_add(picker_use_t *t, uint8_t n, picker_use_kind_t kind,
                        uint8_t proto, uint8_t gpio, int8_t channel)
 {
     if (n >= PICKER_USE_MAX) {
-        return n;               /* no binding gives more; kept in bounds */
+        return n;               /* no binding gives more (PICKER_USE_MAX) */
     }
     t[n].kind    = kind;
     t[n].proto   = proto;
@@ -957,10 +987,17 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
     const uint8_t n = outbind_pin_count(s.bind.board);
     uint8_t k = 0;
 
+    /* Every port's pin under the one name, in the board's order; a pin two
+     * ports report is listed once. */
     const uint8_t prog = picker_screen_prog_listed();
     if (prog != PICKER_NO_PIN) {
         k = use_add(t, k, PICKER_USE_NAME, PICKER_USE_PROG, prog, -1);
-        k = use_add(t, k, PICKER_USE_PIN, PICKER_USE_PROG, prog, -1);
+        for (uint8_t i = 0; i < n; ++i) {
+            if (prog_taken(i)) {
+                k = use_add(t, k, PICKER_USE_PIN, PICKER_USE_PROG,
+                            pins[i].gpio, -1);
+            }
+        }
     }
     uint32_t listed = 0u;
     for (uint8_t first = 0; first < n; ++first) {
@@ -975,16 +1012,20 @@ static uint8_t in_use(picker_use_t t[PICKER_USE_MAX])
         }
     }
 
-    /* 28 px pin rows while they reach no further than the foot. */
-    int full = 0;
+    /* 28 px pin rows while they reach no further than the foot, then 20,
+     * then 16. */
+    int names = 0, pins_n = 0;
     for (uint8_t i = 0; i < k; ++i) {
-        full += (t[i].kind == PICKER_USE_PIN) ? USE_PIN_H : USE_NAME_H;
+        if (t[i].kind == PICKER_USE_PIN) { ++pins_n; } else { ++names; }
     }
-    const bool compact = (USE_TOP + full > USE_FOOT);
+    const int room = USE_FOOT - USE_TOP - names * USE_NAME_H;
+    const bool compact = pins_n * USE_PIN_H > room;
+    const int pin_h = !compact ? USE_PIN_H
+                      : (pins_n * USE_PIN_H_C > room) ? USE_PIN_H_D
+                                                      : USE_PIN_H_C;
     int y = USE_TOP;
     for (uint8_t i = 0; i < k; ++i) {
-        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H
-                      : (compact ? USE_PIN_H_C : USE_PIN_H);
+        const int h = (t[i].kind == PICKER_USE_NAME) ? USE_NAME_H : pin_h;
         t[i].compact = compact;
         t[i].rect = gfx_rect_make(USE_X, y, USE_W, h);
         y += h;
@@ -1030,7 +1071,8 @@ static void draw_theirs(gfx_canvas_t *c)
             continue;
         }
         /* The port has no channel, so no CH. */
-        const int label_y = t[i].compact ? (r.y + 2) : (r.y + 6);
+        /* The label face's 16 px centred in a 20 or 16 px row. */
+        const int label_y = t[i].compact ? (r.y + (r.h - 16) / 2) : (r.y + 6);
         if (t[i].channel >= 0) {
             snprintf(row, sizeof(row), "CH%d", t[i].channel);
             gfx_text(c, r.x + 4, label_y, row, UI_FONT_LABEL, UI_TEXT_FAINT,
@@ -1165,7 +1207,8 @@ static void event(const touch_event_t *evt)
     const picker_pin_t st = picker_screen_pin((uint8_t)was, NULL, 0);
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
         if (st == PICKER_PIN_HELD
-            && outbind_pwm_clash(&s.bind, (uint8_t)was, g_prog_gpio, NULL)
+            && outbind_pwm_clash_ports(&s.bind, (uint8_t)was, g_prog_pins,
+                                       LINK_PG_PORTS_MAX, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;
         }

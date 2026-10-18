@@ -32,6 +32,7 @@
 #include "ui_tabs.h"
 #include "ui_value_gate.h"
 #include "kst_panel.h"
+#include "outputs_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
@@ -688,14 +689,18 @@ static void session_opened(void)
 }
 
 /*
- * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound.  The
- * router leaves this screen for it, which switches the bench to SAFE as any
- * way out does (leave()); the row takes the tap only on a SAFE bench.  The
- * home tag there comes back here (ui_router_parent()), on the task the row
- * was tapped on.
+ * The TARGET row tapped: OUTPUTS, where the throttle's pins are bound, on
+ * the protocol they are bound as; on the overview while they are bound as
+ * several or none is known.  The router leaves this screen for it, which
+ * switches the bench to SAFE as any way out does (leave()); the row takes
+ * the tap only on a SAFE bench.  The home tag there comes back here
+ * (ui_router_parent()), on the task the row was tapped on.
  */
 static void open_outputs(void)
 {
+    if (s.thr_proto != MOTOR_PROTO_MIXED && s.thr_proto < OUTBIND_PROTOS) {
+        outputs_screen_open_on(s.thr_proto);
+    }
     ui_router_goto(SCREEN_OUTPUTS);
     mwb_opened_outputs();
 }

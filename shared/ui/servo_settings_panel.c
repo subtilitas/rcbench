@@ -53,7 +53,6 @@ static const ov_row_t k_rows[] = {
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
     { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 2, false },
-    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 1, false },
 
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_BY,        TX_SV_ROW_LEN_BY,  0, 0, false },
     { PG_AUTO, R_SETTING, SET_SERVO_LEN_S,         TX_SV_ROW_LEN_S,  0, 1, false },
@@ -261,26 +260,6 @@ static void choice_add(const char *label, int value)
         s.ch.values[s.ch.count] = value;
         ++s.ch.count;
     }
-}
-
-/*
- * The TARGET row tapped: OUTPUTS or PROG PORT, the TARGET setting's
- * options, over the left column.  Under the setting's rule: refused while
- * the row is locked, and a choice made waits for a bench at rest before
- * the IOmcu takes it.
- */
-void open_target_choice(void)
-{
-    if (target_locked_for(SET_SERVO_TARGET)) {
-        return;
-    }
-    close_panels();
-    const setting_def_t *d = settings_def(SET_SERVO_TARGET);
-    open_choice(CH_ENUM, SET_SERVO_TARGET, TR(SV_TARGET));
-    for (int k = 0; k < d->option_count; ++k) {
-        choice_add(ui_setting_option(SET_SERVO_TARGET, k), k);
-    }
-    servo_invalidate();
 }
 
 static void open_keypad(int target, const char *title, const char *unit,

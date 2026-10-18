@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) and from TARGET on [MOTOR & ESC](motor.md#target), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on what that row shows: the [PROG PORT entry](#the-prog-port-entry) while the IOmcu drives the port, SERVO PWM while it drives the outputs, the overview while the target is not known. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -56,7 +56,7 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the IOmcu's programming port, GP13 by default | does nothing |
-| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
+| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
 | greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
@@ -68,11 +68,31 @@ When the selected protocol can take no more pins, the reason stands under the co
 
 A stored binding that holds GP13 keeps it: the programming port then has no pin, and the [servo programmer](servo-programmer.md) says so on CONNECT.
 
+## The PROG PORT entry
+
+![The PROG PORT entry](view:outputs-port)
+
+The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 1 on the bring-up build, at most 4, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Its entry shows:
+
+- every pin as the overview names it, the port's pin lit. No pin takes a tick; the port's pin is read-only.
+- `PIN GP13`, or `NO PIN KNOWN` in the warning colour.
+- `CARRIES SERVO PWM AND KST/CHASERVO PROGRAMMING`: the IOmcu renders no MOTOR PWM and no DShot on the port.
+- SERVO TESTER, OUTPUTS or PROG PORT: what the [SERVO](servo.md) tester drives. SERVO's TARGET row opens OUTPUTS here while the IOmcu drives the port.
+- PORT PWM, ON or OFF: the port's pulse while it is the tester's target.
+
+| Line under the two | Condition |
+|---|---|
+| `LOCKED: THE SERVO PROGRAMMER HOLDS THE PORT` | the [servo programmer](servo-programmer.md) has the port |
+| `LOCKED WHILE ARMED OR A TEST OR SWEEP RUNS` | the bench is ARMED, or a sweep or a test runs; PORT PWM still goes off |
+| `PORT PWM NEEDS PROG PORT AS THE TESTER'S TARGET` | PORT PWM with OUTPUTS as the tester's target |
+
+Picking the entry writes nothing to the IOmcu, and LAST WRITE is not shown on it. The two settings are kept on the panel and reach the IOmcu on a bench at rest. With more than one port the entries read `PROG PORT 1` to `PROG PORT 4`; the tester drives port 1 only.
+
 ## The overview: OFF
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-Every visit to OUTPUTS opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as an IOmcu that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
+Every visit from SETUP opens with OFF selected. OFF binds nothing and unbinds nothing. Every bound pin shows the name of its protocol, so the whole binding and every pin it drives are on one screen. A tap on a pin does nothing, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu. OFF stays selected until a protocol is picked, also across leaving the screen. A change of board, such as an IOmcu that answers during the visit or one swapped for another, selects OFF whatever was selected, so a protocol picked before is not carried to it. Pick a protocol to edit its pins; pick OFF to come back here. [PICK A PIN](picker.md) opens with OFF selected too.
 
 ## LAST WRITE
 

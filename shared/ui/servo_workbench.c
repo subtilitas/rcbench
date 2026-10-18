@@ -15,8 +15,12 @@
  * a session whose port is in programming asks for LEAVE first.
  *
  * The TARGET row reads what the tester drives as `protocol pins` and is
- * the control that picks it: a tap opens the choice OUTPUTS / PROG PORT,
- * the TARGET setting, under that setting's lock.
+ * the control that picks it, as MOTOR & ESC's is: a tap opens SETUP >
+ * OUTPUTS on what the tester drives -- the PROG PORT entry with the port
+ * as the TARGET setting, SERVO PWM otherwise -- where SERVO TESTER and
+ * PORT PWM are set.  The row takes no tap under the TARGET setting's lock,
+ * and the home tag there comes back here on the task the row was tapped
+ * on.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -28,6 +32,7 @@
 #include <string.h>
 
 #include "kst_panel.h"
+#include "outputs_screen.h"
 #include "servo_limrun.h"
 #include "prog_registry.h"
 #include "settings.h"
@@ -35,6 +40,7 @@
 #include "ui_target_row.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "ui_screen.h"
 #include "ui_widgets.h"
 #include "ui_workbench.h"
 
@@ -267,8 +273,13 @@ void draw_prog_page(gfx_canvas_t *c)
 
 /* ------------------------------------------------------------ the strip */
 
+/* ui_router_navigations() just after the TARGET row opened OUTPUTS, or 0:
+ * the entry one navigation later is the way back. */
+static uint32_t s_outputs_nav;
+
 void wb_init(void)
 {
+    s_outputs_nav = 0u;
     ui_wb_strip_init(&s.wb, SERVO_TASKS, UI_WB_STRIP_X, UI_WB_STRIP_Y);
     s.run_list = RL_NONE;
     ++s.strip_rev;
@@ -279,7 +290,17 @@ void wb_init(void)
 
 void wb_enter(void)
 {
-    ui_wb_strip_open(&s.wb);
+    /* Back from OUTPUTS, which the TARGET row opened, with no screen in
+     * between: the task it was opened from.  Any other entry is a tile's,
+     * which opens LIVE. */
+    const bool back = s_outputs_nav != 0u
+                      && ui_router_navigations() == s_outputs_nav + 1u;
+    s_outputs_nav = 0u;
+    if (!back) {
+        ui_wb_strip_open(&s.wb);
+    }
+    ui_wb_strip_cancel(&s.wb);
+    ui_target_row_cancel(&s.trow);
     ++s.strip_rev;
     servo_invalidate();
 }
@@ -355,6 +376,39 @@ static void task_changed(void)
     ++s.ctrl_rev;
 }
 
+/*
+ * The TARGET row tapped: SETUP > OUTPUTS, on what the row shows -- where
+ * the IOmcu sends the tester's commands now (s.drive_target), not the
+ * TARGET setting, which a write still pending or a port without a pin
+ * leaves apart from it.  Programming port n: its PROG PORT entry, the
+ * overview where the list has no such entry.  The standard outputs: SERVO
+ * PWM.  A target not known or no link: the overview, as the row names
+ * none.  The router leaves this screen for it, which switches the bench to
+ * SAFE and ends a sweep or a test as any way out does (leave()); the row
+ * takes the tap only under the TARGET setting's lock.
+ */
+static void open_outputs(void)
+{
+    const uint8_t target = s.drive_target;
+    if (target == SERVO_SCREEN_TARGET_UNKNOWN
+        || target == SERVO_SCREEN_TARGET_NO_LINK) {
+        outputs_screen_open_on(0u);
+    } else if (target != 0u) {
+        outputs_screen_open_on_port((uint8_t)(target - 1u));
+    } else {
+        const outbind_proto_t *p = outbind_protos();
+        for (uint8_t i = 0; i < OUTBIND_PROTOS; ++i) {
+            if (p[i].driver == OUT_DRIVER_PWM
+                && p[i].role == OUT_ROLE_SURFACE) {
+                outputs_screen_open_on(i);
+                break;
+            }
+        }
+    }
+    ui_router_goto(SCREEN_OUTPUTS);
+    s_outputs_nav = ui_router_navigations();
+}
+
 bool wb_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -396,7 +450,8 @@ bool wb_rest(const touch_event_t *evt)
         return false;
     }
     if (r == UI_TARGET_TAP) {
-        open_target_choice();
+        open_outputs();
+        return true;
     }
     ++s.ctrl_rev;
     return true;
@@ -567,4 +622,18 @@ int servo_screen_run_settings(void) { return (int)s.run_list; }
 bool servo_screen_target_locked(void)
 {
     return target_locked_for(SET_SERVO_TARGET);
+}
+
+/* On OUTPUTS this screen is left: a bench ARMED for the motor counts too,
+ * which no screen but this one's own ARM could arm while it was shown.
+ * PORT PWM goes off ARMED or not, as on this screen. */
+bool servo_screen_tester_target_locked(void)
+{
+    return target_locked_for(SET_SERVO_TARGET) || s.bench_armed;
+}
+
+bool servo_screen_port_pwm_locked(void)
+{
+    return target_locked_for(SET_SERVO_PORT_PWM)
+           || (!settings_get_bool(SET_SERVO_PORT_PWM) && s.bench_armed);
 }

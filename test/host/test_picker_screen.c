@@ -904,6 +904,67 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
 }
 
 /* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+static bool ends_with(const char *s, const char *tail);
+
+/*
+ * Every programming port's pin is held as port 1's is, IN USE lists each
+ * once under the one PROG PORT name, and a PWM pin is refused beside any of
+ * them: GP27 on GP26's slice, GP28 on GP13's.  Pins past the count, past
+ * LINK_PG_PORTS_MAX, or PICKER_NO_PIN are no port's.
+ */
+TEST_CASE(the_picker_holds_every_programming_ports_pin)
+{
+    static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 26u, PICKER_NO_PIN,
+                                                     13u };
+    char who[32];
+    picker_use_t line;
+
+    fresh();
+    picker_screen_set_prog_ports(4u, pins);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_HELD);
+    CHECK_EQ(picker_screen_pin(idx(26u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK_STR_EQ(who, TR(OUT_PROG_PORT));
+    CHECK_EQ(picker_screen_pin(idx(27u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK(ends_with(who, "GP26"));
+    CHECK_EQ(picker_screen_pin(idx(28u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK(ends_with(who, "GP13"));
+    CHECK_EQ(picker_screen_prog_listed(), 13u);
+    CHECK(picker_screen_in_use(0u, &line));
+    CHECK_EQ(line.kind, PICKER_USE_NAME);
+    CHECK_EQ(line.proto, PICKER_USE_PROG);
+    CHECK(picker_screen_in_use(1u, &line));
+    CHECK_EQ(line.gpio, 13u);
+    CHECK(picker_screen_in_use(2u, &line));
+    CHECK_EQ(line.gpio, 26u);
+    CHECK_EQ(line.proto, PICKER_USE_PROG);
+    CHECK(!picker_screen_in_use(3u, &line));     /* GP13 once */
+
+    /* A tap on the refused pin writes nothing and says why. */
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(27u), &r));
+    tap_rect(r);
+    CHECK_EQ(s_applied, 0);
+    CHECK(ends_with(reason(), "GP26"));
+
+    /* One port reported: GP26 and its slice are free again. */
+    picker_screen_set_prog_ports(1u, pins);
+    CHECK_EQ(picker_screen_pin(idx(26u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(27u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_HELD);
+    /* More than the page holds: the first LINK_PG_PORTS_MAX. */
+    picker_screen_set_prog_ports(200u, pins);
+    CHECK_EQ(picker_screen_pin(idx(26u), NULL, 0), PICKER_PIN_HELD);
+    /* None. */
+    picker_screen_set_prog_ports(0u, pins);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_prog_listed(), PICKER_NO_PIN);
+    picker_screen_set_prog_ports(4u, NULL);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(28u), NULL, 0), PICKER_PIN_FREE);
+}
+
+
+/* "GP1" at the end of @p s, not inside "GP17". */
 static bool ends_with(const char *s, const char *tail)
 {
     const size_t n = strlen(s), t = strlen(tail);
@@ -1535,8 +1596,9 @@ TEST_CASE(off_draws_no_pins_table_and_no_pressed_key)
 
 /*
  * The tallest IN USE table a binding gives: OFF selected, so every bound pin
- * is another protocol's; the programming port listed; and the 8 slots spread
- * over the 6 protocols that take one channel a pin.  Every pin is listed
+ * is another protocol's; the programming port listed, and then 4 of them on
+ * distinct pins, in 16 px pin rows; and the 8 slots spread over the 6
+ * protocols that take one channel a pin.  Every pin is listed
  * once under its own protocol, and every line is inside the table and the
  * canvas, clear of every other line, key, marker and text area, and drawn
  * on -- with the IOmcu's drawing and with the board drawn from its
@@ -1556,10 +1618,14 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
     };
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
-        for (int pass = 0; pass < 2; ++pass) {
+        for (int pass = 0; pass < 4; ++pass) {
+            /* Passes 2 and 3: 4 ports, distinct pins, beside the binding. */
+            static const uint8_t four[LINK_PG_PORTS_MAX] = { 13u, 26u, 27u,
+                                                             28u };
+            const bool ports = pass >= 2;
             fresh();
-            if (pass == 1) { CHECK(serve_drawing()); }
-            picker_screen_set_prog_pin(13u);
+            if ((pass & 1) != 0) { CHECK(serve_drawing()); }
+            picker_screen_set_prog_ports(ports ? 4u : 1u, four);
             for (unsigned g = 0; g < 6u; ++g) {
                 bind_more(spread[g].proto, spread[g].gp, spread[g].n, "OFF");
             }
@@ -1582,7 +1648,10 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
                    && picker_screen_in_use(lines, &line[lines])) {
                 ++lines;
             }
-            CHECK_EQ(lines, 16);      /* the port's 2, 6 names, 8 pins */
+            /* The port's name, its pins, 6 names, 8 pins: under the
+             * bound, nothing dropped. */
+            CHECK_EQ(lines, ports ? 19 : 16);
+            CHECK(lines < PICKER_USE_MAX);
 
             /* Every pin bound, and the port's, listed once in its group. */
             unsigned found = 0;
@@ -1594,7 +1663,9 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
                 }
                 CHECK_EQ(line[k].proto, group);
                 if (group == PICKER_USE_PROG) {
-                    CHECK_EQ(line[k].gpio, 13u);
+                    CHECK(line[k].gpio == 13u
+                          || (ports && line[k].gpio >= 26u
+                              && line[k].gpio <= 28u));
                     CHECK_EQ(line[k].channel, -1);
                 } else {
                     CHECK_EQ(outbind_group_of(b, idx(line[k].gpio)), group);
@@ -1604,7 +1675,9 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
             }
             CHECK_EQ(found, (1u << 0) | (1u << 1) | (1u << 2) | (1u << 4)
                             | (1u << 5) | (1u << 6) | (1u << 7) | (1u << 13)
-                            | (1u << 14));
+                            | (1u << 14)
+                            | (ports ? (1u << 26) | (1u << 27) | (1u << 28)
+                                     : 0u));
 
             const gfx_rect_t area = picker_screen_area(PICKER_AREA_IN_USE);
             const gfx_rect_t other[3] = {
@@ -1616,6 +1689,9 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
             for (uint8_t k = 0; k < lines; ++k) {
                 const gfx_rect_t r = line[k].rect;
                 CHECK(line[k].compact);
+                if (line[k].kind == PICKER_USE_PIN) {
+                    CHECK_EQ(r.h, ports ? 16 : 20);
+                }
                 if (r.x < area.x || r.y < area.y
                     || r.x + r.w > area.x + area.w
                     || r.y + r.h > area.y + area.h
@@ -1660,7 +1736,7 @@ TEST_CASE(the_in_use_table_lists_every_pin_of_the_fullest_binding)
                     T_FAIL("line %u is not drawn", k);
                 }
             }
-            picker_screen_set_prog_pin(PICKER_NO_PIN);
+            picker_screen_set_prog_ports(0u, NULL);
         }
     }
     ui_text_set_language(UI_LANG_EN);
@@ -1900,6 +1976,7 @@ int main(void)
     RUN(a_cancelled_press_toggles_nothing);
     RUN(a_release_the_tracker_makes_for_a_jump_binds_nothing);
     RUN(the_programming_ports_pin_is_held_and_named);
+    RUN(the_picker_holds_every_programming_ports_pin);
     RUN(every_button_is_clear_of_everything_else);
     RUN(a_full_bench_takes_no_ninth_pin_and_says_why);
     RUN(ppm_greys_the_board_and_the_reason_says_why);
