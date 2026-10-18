@@ -313,11 +313,14 @@ testing release 0.21.0, 0.22.1 a fix of the usable release 0.22.0.
 
 `release.yml` reads the kind with `tools/release_kind.py` before it waits
 for CI (continuous integration). A tag out of form fails the job, and
-nothing is built:
+nothing is built. At the publish it runs the tool again with the tags of
+the full releases GitHub holds then; one publish runs at a time across
+tags. A usable release older than a published one is not marked latest:
 
 ```bash
 python3 tools/release_kind.py v0.21.0   # kind=testing prerelease=true latest=false
 python3 tools/release_kind.py v0.22.0   # kind=usable prerelease=false latest=true
+python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=usable prerelease=false latest=false
 ```
 
 `https://github.com/subtilitas/rcbench/releases/latest` names the newest

@@ -13,7 +13,8 @@ name: Release
 # The minor number of the tag names the kind of release
 # (tools/release_kind.py): an odd minor number is a testing release,
 # published as a pre-release and never marked latest; an even minor number
-# is a usable release, published as a full release and marked latest.
+# is a usable release, published as a full release and marked latest
+# unless a newer full release exists.  Publish jobs run one at a time.
 # github.com/.../releases/latest, which the panel's update check reads by
 # default, names the newest usable release.
 #
@@ -64,7 +65,6 @@ jobs:
     outputs:
       sha: ${{ steps.pin.outputs.sha }}
       prerelease: ${{ steps.kind.outputs.prerelease }}
-      latest: ${{ steps.kind.outputs.latest }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -118,22 +118,15 @@ jobs:
 
       # Testing or usable, from the tag's minor number.  A tag out of form
       # fails here, before the wait for CI and before anything is built.
-      # The full releases GitHub holds go along, so a usable tag older than
-      # one of them is not marked latest and releases/latest never moves
-      # back.
+      # Whether a usable release becomes the latest is decided at the
+      # publish, against the releases GitHub holds then.
       - name: Release kind
         id: kind
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -o pipefail
-          published=$(gh api --paginate "repos/$REPO/releases" \
-            --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name')
-          # shellcheck disable=SC2086 # one word per tag
-          python3 gate/tools/release_kind.py "$TAG" $published \
-            | tee -a "$GITHUB_OUTPUT"
+          python3 gate/tools/release_kind.py "$TAG" | tee -a "$GITHUB_OUTPUT"
 
       # ci_gate.py waits up to 5400 s for the CI run on the pinned commit
       # and fails unless one passed.  The image jobs and the publish job
@@ -286,11 +279,27 @@ jobs:
     needs: [version, panel, iomcu]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # One publish at a time across every tag, so the latest mark is decided
+    # against releases that do not change under it.  A run waits for the
+    # one in progress; GitHub keeps one waiting run per group, so a third
+    # tag pushed while two publish jobs wait cancels the waiting one, which
+    # takes its draft away (the trap below) and is run again by hand.
+    concurrency:
+      group: release-publish
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v6
         with:
           # The commit the version job pinned, not the tag again.
           ref: ${{ needs.version.outputs.sha }}
+
+      # The workflow's own copy of the release rule, as in the version job.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
+          path: gate
+          sparse-checkout: tools/release_kind.py
+          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v7
         with:
@@ -325,7 +334,6 @@ jobs:
           REPO: ${{ github.repository }}
           SHA: ${{ needs.version.outputs.sha }}
           PRERELEASE: ${{ needs.version.outputs.prerelease }}
-          LATEST: ${{ needs.version.outputs.latest }}
         run: |
           # The pin holds for every checkout and not for the tag itself: a tag
           # force-moved after the version job leaves these images built from
@@ -380,24 +388,15 @@ jobs:
           assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
 
           # A testing release is a pre-release and never the latest; a
-          # usable release is a full release and the latest unless a newer
-          # full release exists.  The draft carries the pre-release mark;
-          # the latest mark goes with the publish, since a draft cannot be
-          # the latest.
-          if [ "$PRERELEASE" = true ] && [ "$LATEST" = false ]; then
-            kind=(--prerelease)
-            latest=(--prerelease --latest=false)
-          elif [ "$PRERELEASE" = false ] && [ "$LATEST" = true ]; then
-            kind=(--prerelease=false)
-            latest=(--prerelease=false --latest)
-          elif [ "$PRERELEASE" = false ] && [ "$LATEST" = false ]; then
-            kind=(--prerelease=false)
-            latest=(--prerelease=false --latest=false)
-          else
-            echo "::error::release kind not known: prerelease=$PRERELEASE latest=$LATEST"
-            exit 1
-          fi
-          echo "draft: ${kind[*]}; publish: ${latest[*]}"
+          # usable release is a full release.  The draft carries the
+          # pre-release mark; the latest mark goes with the publish, since
+          # a draft cannot be the latest.
+          case "$PRERELEASE" in
+            true) kind=(--prerelease) ;;
+            false) kind=(--prerelease=false) ;;
+            *) echo "::error::release kind not known: prerelease=$PRERELEASE"
+               exit 1 ;;
+          esac
 
           # --verify-tag, because a tag gh has to invent is created from the
           # default branch: without it a dispatch for a tag nobody pushed
@@ -414,5 +413,23 @@ jobs:
           # trap takes the draft away; the tag itself is left alone, because
           # where it should point is the operator's decision.
           check_tag
-          gh release edit "$TAG" --repo "$REPO" --draft=false "${latest[@]}"
+
+          # The latest mark, against the full releases published now: a
+          # usable release older than one of them is not marked latest, so
+          # releases/latest never moves back.  The concurrency group of this
+          # job holds every other publish off until this one ends.
+          set -o pipefail
+          published=$(gh api --paginate "repos/$REPO/releases" \
+            --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name')
+          # shellcheck disable=SC2086 # one word per tag
+          LATEST=$(python3 gate/tools/release_kind.py "$TAG" $published \
+                     | sed -n 's/^latest=//p')
+          case "$LATEST" in
+            true) latest=(--latest) ;;
+            false) latest=(--latest=false) ;;
+            *) echo "::error::latest mark not known: $LATEST"; exit 1 ;;
+          esac
+          echo "publish: ${kind[*]} ${latest[*]}"
+          gh release edit "$TAG" --repo "$REPO" --draft=false \
+            "${kind[@]}" "${latest[@]}"
           published=1

@@ -179,10 +179,11 @@ and of the update over CAN is not measured.
   The patch number carries fixes in either kind. `tools/release_kind.py`
   reads the tag in the form the panel's update check reads and prints
   `kind`, `prerelease` and `latest`; it exits 1 on a tag out of form.
-  `release.yml` runs it before it waits for CI, with the tags of the full
-  releases GitHub holds, and publishes by its lines: a usable tag older
-  than one of them is not marked latest, so `releases/latest` never moves
-  back.
+  `release.yml` runs it before it waits for CI, which fails a tag out of
+  form before anything is built, and again at the publish with the tags
+  of the full releases GitHub holds then: a usable tag older than one of
+  them is not marked latest, so `releases/latest` never moves back.
+  Publish jobs run one at a time across tags.
   [Building](docs/Building.md#releases) states the rule.
 - First run §1 names what a bench loads by the release it runs, and gives
   the load of a 0.20.0 bench in five steps: the panel over Wi-Fi through

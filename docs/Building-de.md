@@ -327,11 +327,16 @@ Test-Release 0.21.0, 0.22.1 das nutzbare Release 0.22.0.
 
 `release.yml` liest die Art mit `tools/release_kind.py`, bevor es auf CI
 (Continuous Integration) wartet. Ein Tag außerhalb der Form lässt den Job
-fehlschlagen, und nichts wird gebaut:
+fehlschlagen, und nichts wird gebaut. Beim Veröffentlichen läuft das
+Werkzeug noch einmal, mit den Tags der vollen Releases, die GitHub dann
+hält; über alle Tags läuft ein Veröffentlichen zur Zeit. Ein nutzbares
+Release, das älter als ein veröffentlichtes ist, wird nicht als Latest
+markiert:
 
 ```bash
 python3 tools/release_kind.py v0.21.0   # kind=testing prerelease=true latest=false
 python3 tools/release_kind.py v0.22.0   # kind=usable prerelease=false latest=true
+python3 tools/release_kind.py v0.22.0 v0.20.0 v0.24.0   # kind=usable prerelease=false latest=false
 ```
 
 `https://github.com/subtilitas/rcbench/releases/latest` nennt das neueste
