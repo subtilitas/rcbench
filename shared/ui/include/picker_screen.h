@@ -89,14 +89,25 @@ void picker_screen_set_select(picker_select_fn fn);
 
 /**
  * The GPIO the IOmcu's programming port is bound to, as its page reads
- * it, or PICKER_NO_PIN (the start value).  While no protocol holds that pin
- * its button is drawn held, a tap on it does nothing, and IN USE lists it
- * first under PROG PORT.  A pin a slot holds is that slot's: the IOmcu
- * gives the port no pin then.  It stays across a reset of the screen.
+ * it, or PICKER_NO_PIN (the start value): picker_screen_set_prog_ports()
+ * with that one port.  While no protocol holds that pin its button is
+ * drawn held, a tap on it does nothing, and IN USE lists it first under
+ * PROG PORT.  A pin a slot holds is that slot's: the IOmcu gives the port
+ * no pin then.  It stays across a reset of the screen.
  */
 void picker_screen_set_prog_pin(uint8_t gpio);
 
-/** The GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN. */
+/**
+ * Every programming port's pin: @p count of them (at most
+ * LINK_PG_PORTS_MAX are kept) from @p pins, PICKER_NO_PIN for a port
+ * without one; NULL or 0 for none.  Each pin is held as
+ * picker_screen_set_prog_pin() holds one, IN USE lists them all under the
+ * one PROG PORT name, and a PWM pin is refused beside any of them
+ * (outbind_pwm_clash_ports()).  It stays across a reset of the screen.
+ */
+void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
+
+/** The first GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN. */
 uint8_t picker_screen_prog_listed(void);
 
 /** What a pin's button shows and does. */

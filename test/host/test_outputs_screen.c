@@ -40,6 +40,9 @@
 #define CELL_H 53
 #define GRID_ROWS 7
 
+/* The programming port on GP13, for the clash lines. */
+static const uint8_t k_gp13[1] = { 13u };
+
 static int s_applied;
 static outbind_t s_last;
 
@@ -1758,18 +1761,21 @@ TEST_CASE(a_selection_from_the_picker_is_a_pick)
 
     /* The PWM clash lines take no missing binding, buffer or pin either. */
     strcpy(buf, "x");
-    CHECK(!outputs_clash_reason(NULL, 0, 13u, buf, sizeof(buf)));
+    CHECK(!outputs_clash_reason(NULL, 0, k_gp13, 1u, buf, sizeof(buf)));
     CHECK_STR_EQ(buf, "");
-    CHECK(!outputs_clash_reason(outputs_screen_binding(), -1, 13u, buf,
+    CHECK(!outputs_clash_reason(outputs_screen_binding(), -1, k_gp13, 1u, buf,
                                 sizeof(buf)));
     CHECK(!outputs_clash_reason(outputs_screen_binding(),
-                                (int)OUTBIND_PINS, 13u, buf, sizeof(buf)));
-    CHECK(!outputs_clash_reason(outputs_screen_binding(), 0, 13u, NULL, 0));
+                                (int)OUTBIND_PINS, k_gp13, 1u, buf,
+                                sizeof(buf)));
+    CHECK(!outputs_clash_reason(outputs_screen_binding(), 0, k_gp13, 1u,
+                                NULL, 0));
     strcpy(buf, "x");
-    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, 13u, buf,
+    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, k_gp13, 1u, buf,
                                sizeof(buf)));
     CHECK_STR_EQ(buf, "");
-    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, 13u, NULL, 0));
+    CHECK(!outputs_clash_label(outputs_screen_binding(), 0u, k_gp13, 1u,
+                               NULL, 0));
 }
 
 /*
@@ -1857,7 +1863,8 @@ static void fresh_port(void)
 /* The panel's start for the other cases: the count not known, no pin. */
 static void ports_back(void)
 {
-    outputs_screen_set_prog_ports(0u, NULL);
+    outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    outputs_screen_set_prog_pin(OUTPUTS_NO_PIN);
     settings_set_hold(NULL);
 }
 
@@ -1869,16 +1876,16 @@ static bool hold_port(setting_id_t id)
 
 /*
  * One entry a port the IOmcu reports, after the protocols: one while the
- * count is not known (0), at most LINK_PG_PORTS_MAX however many the page
- * claims.  A pick writes nothing; a protocol picked after leaves the entry,
+ * count is not known, none for a count of 0, at most LINK_PG_PORTS_MAX
+ * however many the page claims.  A pick writes nothing; a protocol picked after leaves the entry,
  * and an entry the count drops goes back to the overview.  Every list fits
  * the screen.
  */
 TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
 {
     static const struct { uint8_t count, entries; } k[] = {
-        { 0u, 1u }, { 1u, 1u }, { 2u, 2u }, { 4u, 4u }, { 5u, 4u },
-        { 255u, 4u },
+        { OUTPUTS_PORTS_UNKNOWN, 1u }, { 0u, 0u }, { 1u, 1u }, { 2u, 2u },
+        { 4u, 4u }, { 5u, 4u }, { 254u, 4u },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         fresh_port();
@@ -1892,9 +1899,13 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
             CHECK_EQ((int)outputs_screen_binding()->proto, 0);
         }
         CHECK_EQ(s_applied, 0);
-        /* A count not known knows no pin either. */
+        /* No port, no pin; a count not known keeps port 1's as the PIN
+         * register reads it. */
         CHECK_EQ(outputs_screen_port_pin(0),
                  k[i].count == 0u ? OUTPUTS_NO_PIN : 13u);
+        CHECK_EQ(outputs_screen_cell(idx(13u), NULL, 0),
+                 k[i].count == 0u ? OUTPUTS_CELL_FREE
+                                  : OUTPUTS_CELL_RESERVED);
         CHECK_EQ(outputs_screen_port_pin(k[i].entries), OUTPUTS_NO_PIN);
     }
     /* The pins of ports 2 to 4, as reported; none past the count. */
@@ -1921,11 +1932,15 @@ TEST_CASE(the_list_ends_in_one_prog_port_entry_per_port_reported)
     CHECK_EQ(outputs_screen_port_shown(), -1);
     outputs_screen_select_port(3u);              /* past the list */
     CHECK_EQ(outputs_screen_port_shown(), -1);
-    ports(0u, 13u);
+    ports(OUTPUTS_PORTS_UNKNOWN, 13u);
     outputs_screen_select_port(0u);
     CHECK_EQ(outputs_screen_port_shown(), 0);
     ports(1u, 13u);                              /* known now: stays */
     CHECK_EQ(outputs_screen_port_shown(), 0);
+    ports(0u, 13u);                              /* known: no port */
+    CHECK_EQ(outputs_screen_port_shown(), -1);
+    outputs_screen_select_port(0u);
+    CHECK_EQ(outputs_screen_port_shown(), -1);
     ports_back();
 }
 
@@ -2036,6 +2051,11 @@ TEST_CASE(the_next_entry_opens_on_the_entry_asked_for_once)
     ports(4u, 13u);
     scr()->enter();
     CHECK_EQ(outputs_screen_port_shown(), -1);
+    outputs_screen_open_on_port(0u);             /* no port: the overview */
+    ports(0u, 13u);
+    scr()->enter();
+    CHECK_EQ(outputs_screen_port_shown(), -1);
+    CHECK_EQ((int)outputs_screen_binding()->proto, 0);
 
     outputs_screen_open_on(dshot);
     scr()->reset();

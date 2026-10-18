@@ -43,9 +43,9 @@
 
 /* The GPIO the IOmcu's programming port 1 is bound to, or none. */
 static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
-/* The ports the IOmcu reports, 0 while not known, and the pins of ports 2
- * to 4 (port 1's is g_prog_gpio). */
-static uint8_t g_port_count;
+/* The ports the IOmcu reports, OUTPUTS_PORTS_UNKNOWN while not known, and
+ * the pins of ports 2 to 4 (port 1's is g_prog_gpio). */
+static uint8_t g_port_count = OUTPUTS_PORTS_UNKNOWN;
 static uint8_t g_port_pin[LINK_PG_PORTS_MAX] = {
     OUTPUTS_NO_PIN, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN
 };
@@ -76,7 +76,7 @@ void outputs_screen_set_prog_pin(uint8_t gpio)
 
 uint8_t outputs_screen_port_entries(void)
 {
-    if (g_port_count == 0u) {
+    if (g_port_count == OUTPUTS_PORTS_UNKNOWN) {
         return 1u;
     }
     return (g_port_count > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX
@@ -93,16 +93,23 @@ uint8_t outputs_screen_port_pin(uint8_t port)
 
 void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 {
+    const bool known = count != OUTPUTS_PORTS_UNKNOWN;
     bool moved = count != g_port_count;
     g_port_count = count;
     for (uint8_t n = 1; n < LINK_PG_PORTS_MAX; ++n) {
-        const uint8_t pin = (pins != NULL && n < count) ? pins[n]
-                                                         : OUTPUTS_NO_PIN;
+        const uint8_t pin = (known && pins != NULL && n < count)
+                                ? pins[n] : OUTPUTS_NO_PIN;
         moved = moved || pin != g_port_pin[n];
         g_port_pin[n] = pin;
     }
-    outputs_screen_set_prog_pin((pins != NULL && count > 0u)
-                                    ? pins[0] : OUTPUTS_NO_PIN);
+    /* Port 1's pin while the count is not known: the PIN register's, as
+     * outputs_screen_set_prog_pin() was given it. */
+    if (known) {
+        outputs_screen_set_prog_pin((pins != NULL && count > 0u)
+                                        ? pins[0] : OUTPUTS_NO_PIN);
+    } else if (pins != NULL) {
+        outputs_screen_set_prog_pin(pins[0]);
+    }
     /* A port the IOmcu no longer reports is no entry to stay on. */
     if (p.port >= (int)outputs_screen_port_entries()) {
         outputs_screen_select(0u);

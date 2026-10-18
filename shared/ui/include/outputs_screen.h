@@ -130,18 +130,24 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
  */
 void outputs_screen_set_prog_pin(uint8_t gpio);
 
+/** outputs_screen_set_prog_ports()'s count while the ports are not known
+ *  (PROG_LINK_COUNT_UNKNOWN). */
+#define OUTPUTS_PORTS_UNKNOWN 0xFFu
+
 /**
- * The programming ports the IOmcu reports, @p count (0 while not known),
+ * The programming ports the IOmcu reports, @p count (OUTPUTS_PORTS_UNKNOWN
+ * while not known, the start value; 0 for an IOmcu without the PROG page),
  * and their pins, @p pins[0] to @p pins[count - 1] (OUTPUTS_NO_PIN for a
- * port without one); @p pins[0] is outputs_screen_set_prog_pin()'s.  The
- * list shows one PROG PORT entry a port, at most LINK_PG_PORTS_MAX, and
+ * port without one); @p pins[0] is outputs_screen_set_prog_pin()'s, and
+ * stays its own while the count is not known.  The list shows one PROG
+ * PORT entry a port, at most LINK_PG_PORTS_MAX; none for a count of 0; and
  * one for port 1 while the count is not known, so the tester's target can
  * be set before the IOmcu answers.  An entry shown that the count drops
  * goes back to the overview.  It stays across a reset of the screen.
  */
 void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
-/** The PROG PORT entries the list shows: 1 to LINK_PG_PORTS_MAX. */
+/** The PROG PORT entries the list shows: 0 to LINK_PG_PORTS_MAX. */
 uint8_t outputs_screen_port_entries(void);
 
 /** Port @p port's pin as the screen holds it, or OUTPUTS_NO_PIN. */
@@ -198,13 +204,14 @@ bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap);
 
 /**
  * The line under a pin's GPIO name for a pin the IOmcu refuses the
- * PWM generator (outbind_pwm_clash() with @p prog_gpio): "SLICE OF GP13"
- * beside the programming port's pin, "PWM CH OF GP0" beside a pin bound as
- * PWM.  An empty string and false for any other pin.  The pin picker names
- * the holder with the same line.
+ * PWM generator (outbind_pwm_clash_ports() with the @p count programming
+ * port pins @p ports): "SLICE OF GP13" beside a programming port's pin,
+ * "PWM CH OF GP0" beside a pin bound as PWM.  An empty string and false
+ * for any other pin.  The pin picker names the holder with the same line.
  */
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
-                         uint8_t prog_gpio, char *buf, size_t cap);
+                         const uint8_t *ports, uint8_t count, char *buf,
+                         size_t cap);
 
 /**
  * The line under the protocol for such a pin, catalogue entry @p index:
@@ -214,8 +221,9 @@ bool outputs_clash_label(const outbind_t *b, uint8_t index,
  * show it after outputs_reason_of(): a protocol that can take no pin at all
  * says that first.  The cell names the holder before any tap.
  */
-bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
-                          char *buf, size_t cap);
+bool outputs_clash_reason(const outbind_t *b, int index,
+                          const uint8_t *ports, uint8_t count, char *buf,
+                          size_t cap);
 
 /**
  * @p text in lines of @p font no wider than @p box, from its top down by

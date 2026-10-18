@@ -907,12 +907,15 @@ TEST_CASE(a_write_to_another_register_leaves_the_target_record)
 
 TEST_CASE(the_port_count_is_the_page_s_up_to_the_ports_it_holds)
 {
-    /* Nothing known: no page, no read, a lost link, an old IOmcu. */
-    CHECK_EQ(prog_link_count(NULL), 0u);
+    /* Not known: no object, no link, the page not read yet. */
+    CHECK_EQ(prog_link_count(NULL), PROG_LINK_COUNT_UNKNOWN);
+    prog_link_init(&g_p);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
     fresh();
-    CHECK_EQ(prog_link_count(&g_p), 0u);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
     read_at(0u);
     CHECK_EQ(prog_link_count(&g_p), 1u);
+    /* A page that reports no port: known, 0. */
     g_page[LINK_PG_COUNT] = 0u;
     read_at(1u);
     CHECK_EQ(prog_link_count(&g_p), 0u);
@@ -926,13 +929,17 @@ TEST_CASE(the_port_count_is_the_page_s_up_to_the_ports_it_holds)
     g_page[LINK_PG_COUNT] = 0xFFFFu;
     read_at(4u);
     CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
+    /* A read gone stale, and a lost link: not known again. */
     prog_link_stale(&g_p);
-    CHECK_EQ(prog_link_count(&g_p), 0u);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
     read_at(5u);
+    CHECK_EQ(prog_link_count(&g_p), LINK_PG_PORTS_MAX);
     prog_link_lost(&g_p);
-    CHECK_EQ(prog_link_count(&g_p), 0u);
+    CHECK_EQ(prog_link_count(&g_p), PROG_LINK_COUNT_UNKNOWN);
+    /* An IOmcu older than the page: no port, known at the link-up. */
     prog_link_init(&g_p);
     prog_link_came_up(&g_p, LINK_MINOR_PROG - 1u);
+    CHECK_EQ(prog_link_count(&g_p), 0u);
     page_fresh();
     read_at(6u);
     CHECK_EQ(prog_link_count(&g_p), 0u);

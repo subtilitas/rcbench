@@ -263,8 +263,14 @@ void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack)
 
 uint8_t prog_link_count(const prog_link_t *p)
 {
-    if (!known(p)) {
+    if (p == NULL || !p->up) {
+        return PROG_LINK_COUNT_UNKNOWN;
+    }
+    if (!p->page) {
         return 0u;
+    }
+    if (!p->known) {
+        return PROG_LINK_COUNT_UNKNOWN;
     }
     const uint16_t n = p->regs[LINK_PG_COUNT];
     return (n > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX : (uint8_t)n;

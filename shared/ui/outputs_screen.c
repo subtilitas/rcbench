@@ -116,12 +116,23 @@ static uint8_t shown_port_pin(void)
                        : OUTPUTS_NO_PIN;
 }
 
+/* Every programming port's pin, OUTPUTS_NO_PIN past the entries. */
+static const uint8_t *port_pins(void)
+{
+    static uint8_t pins[LINK_PG_PORTS_MAX];
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        pins[n] = outputs_screen_port_pin(n);
+    }
+    return pins;
+}
+
 /* Whether the IOmcu would refuse pin @p index to the protocol being
  * edited: the programming port's slice, or a bound PWM pin's compare
  * register.  The port's own pin is prog_taken(), not this. */
 static bool clashes(uint8_t index)
 {
-    return outbind_pwm_clash(&s.bind, index, outputs_screen_port_pin(0u), NULL)
+    return outbind_pwm_clash_ports(&s.bind, index, port_pins(),
+                                   LINK_PG_PORTS_MAX, NULL)
            != OUTBIND_CLASH_NONE;
 }
 
@@ -614,19 +625,20 @@ bool outputs_screen_reason(char *buf, size_t cap)
         return true;
     }
     return outputs_reason_of(&s.bind, buf, cap)
-           || outputs_clash_reason(&s.bind, s.refused,
-                                   outputs_screen_port_pin(0u), buf, cap);
+           || outputs_clash_reason(&s.bind, s.refused, port_pins(),
+                                   LINK_PG_PORTS_MAX, buf, cap);
 }
 
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
-                         uint8_t prog_gpio, char *buf, size_t cap)
+                         const uint8_t *ports, uint8_t count, char *buf,
+                         size_t cap)
 {
     if (buf == NULL || cap == 0u) {
         return false;
     }
     buf[0] = '\0';
     uint8_t with;
-    switch (outbind_pwm_clash(b, index, prog_gpio, &with)) {
+    switch (outbind_pwm_clash_ports(b, index, ports, count, &with)) {
     case OUTBIND_CLASH_PROG_SLICE:
         snprintf(buf, cap, TR(OUT_SLICE_OF), (unsigned)with);
         return true;
@@ -639,8 +651,9 @@ bool outputs_clash_label(const outbind_t *b, uint8_t index,
     }
 }
 
-bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
-                          char *buf, size_t cap)
+bool outputs_clash_reason(const outbind_t *b, int index,
+                          const uint8_t *ports, uint8_t count, char *buf,
+                          size_t cap)
 {
     if (buf == NULL || cap == 0u) {
         return false;
@@ -653,8 +666,8 @@ bool outputs_clash_reason(const outbind_t *b, int index, uint8_t prog_gpio,
         return false;
     }
     uint8_t with;
-    const outbind_clash_t why = outbind_pwm_clash(b, (uint8_t)index,
-                                                  prog_gpio, &with);
+    const outbind_clash_t why = outbind_pwm_clash_ports(b, (uint8_t)index,
+                                                        ports, count, &with);
     if (why == OUTBIND_CLASH_NONE) {
         return false;
     }
@@ -743,9 +756,8 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
      * held by the pin it clashes with, which the line names. */
     if (clashes(index)) {
         if (label != NULL) {
-            (void)outputs_clash_label(&s.bind, index,
-                                      outputs_screen_port_pin(0u), label,
-                                      cap);
+            (void)outputs_clash_label(&s.bind, index, port_pins(),
+                                      LINK_PG_PORTS_MAX, label, cap);
         }
         return OUTPUTS_CELL_HELD;
     }

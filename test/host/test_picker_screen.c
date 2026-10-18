@@ -904,6 +904,67 @@ TEST_CASE(the_programming_ports_pin_is_held_and_named)
 }
 
 /* Whether @p s ends in @p tail: "GP1" at the end, not inside "GP17". */
+static bool ends_with(const char *s, const char *tail);
+
+/*
+ * Every programming port's pin is held as port 1's is, IN USE lists each
+ * once under the one PROG PORT name, and a PWM pin is refused beside any of
+ * them: GP27 on GP26's slice, GP28 on GP13's.  Pins past the count, past
+ * LINK_PG_PORTS_MAX, or PICKER_NO_PIN are no port's.
+ */
+TEST_CASE(the_picker_holds_every_programming_ports_pin)
+{
+    static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 26u, PICKER_NO_PIN,
+                                                     13u };
+    char who[32];
+    picker_use_t line;
+
+    fresh();
+    picker_screen_set_prog_ports(4u, pins);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_HELD);
+    CHECK_EQ(picker_screen_pin(idx(26u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK_STR_EQ(who, TR(OUT_PROG_PORT));
+    CHECK_EQ(picker_screen_pin(idx(27u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK(ends_with(who, "GP26"));
+    CHECK_EQ(picker_screen_pin(idx(28u), who, sizeof(who)), PICKER_PIN_HELD);
+    CHECK(ends_with(who, "GP13"));
+    CHECK_EQ(picker_screen_prog_listed(), 13u);
+    CHECK(picker_screen_in_use(0u, &line));
+    CHECK_EQ(line.kind, PICKER_USE_NAME);
+    CHECK_EQ(line.proto, PICKER_USE_PROG);
+    CHECK(picker_screen_in_use(1u, &line));
+    CHECK_EQ(line.gpio, 13u);
+    CHECK(picker_screen_in_use(2u, &line));
+    CHECK_EQ(line.gpio, 26u);
+    CHECK_EQ(line.proto, PICKER_USE_PROG);
+    CHECK(!picker_screen_in_use(3u, &line));     /* GP13 once */
+
+    /* A tap on the refused pin writes nothing and says why. */
+    gfx_rect_t r;
+    CHECK(picker_screen_button_rect(idx(27u), &r));
+    tap_rect(r);
+    CHECK_EQ(s_applied, 0);
+    CHECK(ends_with(reason(), "GP26"));
+
+    /* One port reported: GP26 and its slice are free again. */
+    picker_screen_set_prog_ports(1u, pins);
+    CHECK_EQ(picker_screen_pin(idx(26u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(27u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_HELD);
+    /* More than the page holds: the first LINK_PG_PORTS_MAX. */
+    picker_screen_set_prog_ports(200u, pins);
+    CHECK_EQ(picker_screen_pin(idx(26u), NULL, 0), PICKER_PIN_HELD);
+    /* None. */
+    picker_screen_set_prog_ports(0u, pins);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_prog_listed(), PICKER_NO_PIN);
+    picker_screen_set_prog_ports(4u, NULL);
+    CHECK_EQ(picker_screen_pin(idx(13u), NULL, 0), PICKER_PIN_FREE);
+    CHECK_EQ(picker_screen_pin(idx(28u), NULL, 0), PICKER_PIN_FREE);
+}
+
+
+/* "GP1" at the end of @p s, not inside "GP17". */
 static bool ends_with(const char *s, const char *tail)
 {
     const size_t n = strlen(s), t = strlen(tail);
@@ -1879,6 +1940,7 @@ int main(void)
     RUN(a_cancelled_press_toggles_nothing);
     RUN(a_release_the_tracker_makes_for_a_jump_binds_nothing);
     RUN(the_programming_ports_pin_is_held_and_named);
+    RUN(the_picker_holds_every_programming_ports_pin);
     RUN(every_button_is_clear_of_everything_else);
     RUN(a_full_bench_takes_no_ninth_pin_and_says_why);
     RUN(ppm_greys_the_board_and_the_reason_says_why);
