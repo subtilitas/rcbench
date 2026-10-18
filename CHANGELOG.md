@@ -8,20 +8,22 @@ history is in git.
 
 ### Added
 
-- SETUP > UPDATES has RELEASES: USABLE | TESTING (German `NUTZBAR` |
-  `TEST`, setting `upd_channel`, USABLE by default), kept with SAVE on
+- SETUP > UPDATES has RELEASES: USABLE | TESTING (the same words in
+  German, setting `upd_channel`, USABLE by default), kept with SAVE on
   SETUP. USABLE keeps the check on
   `https://github.com/subtilitas/rcbench/releases/latest`, which never names
   a pre-release. TESTING asks
-  `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1`
+  `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10`
   with `Accept: application/vnd.github+json` and
-  `X-GitHub-Api-Version: 2022-11-28`, and reads the newest release's
-  `tag_name`, testing or usable, by a scan of at most 16384 of the answer's
-  bytes that keeps nothing but the tag. The answer needs status 200 and a
-  `Content-Length` from 1 to 262144 bytes. A `tag_name` that is missing,
-  over 18 bytes, not a plain JSON (JavaScript Object Notation) string, or
-  not `v` and MAJOR.MINOR.PATCH, and a tag past the scan's bound, each have
-  their own second line under `Unexpected answer from GitHub.` A 403 or 429
+  `X-GitHub-Api-Version: 2022-11-28`, reads `tag_name` and `draft` of the
+  10 newest releases by date, testing or usable, and takes the highest
+  version among those that are no draft, by a scan that keeps nothing but
+  the tag under way and the highest. The answer needs status 200 and a
+  `Content-Length` from 1 to 262144 bytes; the 10 newest releases on
+  2026-10-18 were 108198 bytes. A `tag_name` that is missing, over 18
+  bytes, not a plain JSON (JavaScript Object Notation) string, or not `v`
+  and MAJOR.MINOR.PATCH in any of the 10 releases refuses the whole answer,
+  each with its own second line under `Unexpected answer from GitHub.` A 403 or 429
   answer is `GitHub's request limit is reached: HTTP 403.`, with no retry.
   The same 30 s budget for the join, the address and the request applies.
   The start-up check and its reminder follow RELEASES. A switch of RELEASES

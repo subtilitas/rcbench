@@ -39,7 +39,7 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 | RELEASES | Request | What is read |
 |---|---|---|
 | USABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | the tag from the `Location` header of the answer; GitHub's latest release is never a pre-release |
-| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1` | `tag_name` of the newest release, testing or usable, from the JSON (JavaScript Object Notation) answer; read up to the tag in pieces of 4096 bytes, 16384 bytes at most, and not stored |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` of each of the 10 newest releases by date, testing or usable, from the JSON (JavaScript Object Notation) answer; the highest version among those that are no draft is taken, whatever their order; read in pieces of 4096 bytes, 262,144 bytes at most, and not stored; one release out of form refuses the whole answer |
 
 On both settings only a release newer than the running build is offered. A panel on testing release 0.21.0 with USABLE is not offered usable release 0.20.0.
 
@@ -110,6 +110,6 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 - How long the check and the download take on a real network is not measured.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
-- TESTING reads the release GitHub lists first, by date. Releases published out of version order, for example a 0.20.1 after a 0.21.0, are untested.
+- TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
 - No certificate's dates are checked: the panel has no clock.
 - A release whose assets are not named `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` cannot be downloaded.

@@ -395,7 +395,8 @@ static void found(const wa_run_t *r, wa_fetch_res_t *out, fw_version_t v)
 
 /*
  * TESTING: the API's answer, read a piece at a time into the scan until it
- * ends.  The bytes after the tag are not read: the connection closes.
+ * ends.  The bytes after the 10th release are not read: the connection
+ * closes.
  */
 static void check_api(const wa_run_t *r, uint32_t left, wa_fetch_res_t *out)
 {

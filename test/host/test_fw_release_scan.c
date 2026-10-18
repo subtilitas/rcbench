@@ -1,12 +1,14 @@
 /*
- * The newest release's tag out of GitHub's API answer, and which release a
- * panel is offered.
+ * The highest release's tag out of GitHub's API answer of up to 10
+ * releases, and which release a panel is offered.
  *
  * The failure under test is a tag that is taken and should not be: one
- * deeper in the answer than the first release's own keys, one of a later
- * release, one past the scan's bound, one too long, one in an escaped or
- * non-string form, one that is not v + MAJOR.MINOR.PATCH, or one read out
- * of an answer whose JSON (JavaScript Object Notation) is out of form.  And
+ * deeper in the answer than a release's own keys, a draft's, one of an
+ * 11th release, the first by date instead of the highest, one past the
+ * scan's bound, one too long, one in an escaped or non-string form, one
+ * that is not v + MAJOR.MINOR.PATCH, or one read out of an answer whose
+ * JSON (JavaScript Object Notation) is out of form, a single release of
+ * it included.  And
  * an offer of a release that is not newer than the running one: equal,
  * older, a usable one older than a running testing one, a running version
  * that did not parse.  Each bound is tested on both sides, and every answer
@@ -74,10 +76,10 @@ static fw_rel_err_t scan(const char *text, fw_version_t *v)
     return whole;
 }
 
-/* A body string of @p pad bytes, then the tag: its closing quote is byte
- * PAD_FIXED + pad, counted from 1. */
+/* A body string of @p pad bytes, then the tag: the answer's last byte,
+ * the array's ']', is byte PAD_FIXED + pad, counted from 1. */
 #define PAD_HEAD  "[{\"body\":\""
-#define PAD_TAIL  "\",\"tag_name\":\"v1.2.3\""
+#define PAD_TAIL  "\",\"tag_name\":\"v1.2.3\"}]"
 #define PAD_FIXED (sizeof(PAD_HEAD) - 1u + sizeof(PAD_TAIL) - 1u)
 
 static char *padded(size_t pad)
@@ -89,7 +91,7 @@ static char *padded(size_t pad)
     size_t k = (size_t)sprintf(t, PAD_HEAD);
     memset(t + k, 'x', pad);
     k += pad;
-    sprintf(t + k, PAD_TAIL "}]");
+    sprintf(t + k, PAD_TAIL);
     return t;
 }
 
@@ -142,7 +144,7 @@ TEST_CASE(a_tag_name_deeper_or_as_a_value_is_not_the_releases)
     CHECK_EQ(v.patch, 2u);
 }
 
-TEST_CASE(only_the_first_release_counts)
+TEST_CASE(a_release_without_a_tag_refuses_the_answer)
 {
     CHECK_EQ(scan("[{\"name\":\"x\"},{\"tag_name\":\"v1.0.0\"}]", NULL),
              FW_REL_TAG_NONE);
@@ -162,6 +164,9 @@ TEST_CASE(an_answer_that_ends_before_the_tag_has_none)
     CHECK_EQ(scan("[", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"tag_name\":\"v0.21", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"tag_name\":", NULL), FW_REL_TAG_NONE);
+    /* A release whole, but not the array, and not 10 releases. */
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.21.0\"}", NULL), FW_REL_TAG_NONE);
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.21.0\"},", NULL), FW_REL_TAG_NONE);
     CHECK_EQ(scan("[{\"author\":{\"login\":\"x\"", NULL), FW_REL_TAG_NONE);
     /* Nothing fed, or nothing to feed. */
     fw_rel_scan_t s;
@@ -285,7 +290,7 @@ TEST_CASE(a_tag_that_is_not_a_version_is_refused)
 
 TEST_CASE(the_scan_stops_at_its_bound)
 {
-    /* The tag's closing quote at byte FW_REL_SCAN_MAX, the last byte the
+    /* The answer's last byte at byte FW_REL_SCAN_MAX, the last byte the
      * scan reads; then one byte later. */
     const size_t at_bound = FW_REL_SCAN_MAX - PAD_FIXED;
     char *t = padded(at_bound);
@@ -313,14 +318,177 @@ TEST_CASE(the_scan_keeps_little)
 {
     /* What the runner holds on its stack for the scan. */
     fprintf(stderr, "  fw_rel_scan_t: %zu bytes\n", sizeof(fw_rel_scan_t));
-    CHECK(sizeof(fw_rel_scan_t) <= 64u);
+    CHECK(sizeof(fw_rel_scan_t) <= 80u);
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_NONE), "no tag_name");
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_LONG), "tag_name too long");
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_TAG_FORM), "JSON out of form");
     CHECK_STR_EQ(fw_rel_err_str(FW_REL_SCAN_LONG),
                  "no tag_name within the scan");
     CHECK_STR_EQ(FW_REL_API_URL, "https://api.github.com/repos/subtilitas/"
-                                 "rcbench/releases?per_page=1");
+                                 "rcbench/releases?per_page=10");
+}
+
+/* An answer of @p n releases tagged @p tags, each with @p extra before its
+ * close, as GitHub writes them: newest by date first. */
+static char *releases(const char *const *tags, size_t n, const char *extra)
+{
+    char *t = malloc(n * 200u + 8u);
+    if (t == NULL) {
+        return NULL;
+    }
+    size_t k = (size_t)sprintf(t, "[");
+    for (size_t i = 0; i < n; ++i) {
+        k += (size_t)sprintf(t + k,
+                             "%s{\"id\":%zu,\"tag_name\":\"%s\","
+                             "\"assets\":[{\"name\":\"SHA256SUMS\"}]%s}",
+                             (i == 0u) ? "" : ",", i, tags[i], extra);
+    }
+    sprintf(t + k, "]");
+    return t;
+}
+
+static fw_rel_err_t scan_tags(const char *const *tags, size_t n,
+                              const char *extra, fw_version_t *v)
+{
+    char *t = releases(tags, n, extra);
+    if (t == NULL) {
+        return FW_REL_COUNT;
+    }
+    const fw_rel_err_t e = scan(t, v);
+    free(t);
+    return e;
+}
+
+TEST_CASE(the_highest_of_the_releases_is_taken_not_the_newest_by_date)
+{
+    /* 0.22.1 published after 0.23.0 and 0.23.1. */
+    static const char *const late[] = { "v0.22.1", "v0.23.1", "v0.23.0",
+                                        "v0.22.0", "v0.21.0" };
+    fw_version_t v = { 0u, 0u, 0u };
+    CHECK_EQ(scan_tags(late, 5u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 23u);
+    CHECK_EQ(v.patch, 1u);
+    /* Each part as a number: 0.10 over 0.9, 1.0.0 over 0.65535.65535. */
+    static const char *const nums[] = { "v0.9.9", "v0.10.0", "v0.9.10" };
+    CHECK_EQ(scan_tags(nums, 3u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 10u);
+    static const char *const big[] = { "v0.65535.65535", "v1.0.0" };
+    CHECK_EQ(scan_tags(big, 2u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.major, 1u);
+    /* All 10 the same. */
+    static const char *const same[] = {
+        "v0.21.0", "v0.21.0", "v0.21.0", "v0.21.0", "v0.21.0",
+        "v0.21.0", "v0.21.0", "v0.21.0", "v0.21.0", "v0.21.0",
+    };
+    CHECK_EQ(scan_tags(same, 10u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 21u);
+    CHECK_EQ(v.patch, 0u);
+    /* One release alone. */
+    CHECK_EQ(scan_tags(late, 1u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 22u);
+}
+
+TEST_CASE(ten_releases_are_read_and_an_eleventh_is_not)
+{
+    static const char *const tags[] = {
+        "v0.1.0", "v0.2.0", "v0.3.0", "v0.4.0", "v0.5.0",
+        "v0.6.0", "v0.7.0", "v0.8.0", "v0.9.0", "v0.10.0", "v9.0.0",
+    };
+    fw_version_t v = { 0u, 0u, 0u };
+    /* The highest is the 10th: taken. */
+    CHECK_EQ(scan_tags(tags, 10u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.minor, 10u);
+    /* An 11th, higher still, is not looked at, nor anything after the
+     * 10th release's close. */
+    CHECK_EQ(scan_tags(tags, 11u, "", &v), FW_REL_OK);
+    CHECK_EQ(v.major, 0u);
+    CHECK_EQ(v.minor, 10u);
+    char *t = releases(tags, 11u, "");
+    REQUIRE_ALLOC(t);
+    fw_rel_scan_t s;
+    fw_release_scan_init(&s);
+    CHECK(fw_release_scan_feed(&s, (const uint8_t *)t, strlen(t)));
+    CHECK_EQ(s.releases, 10u);
+    CHECK(t[s.seen - 1u] == '}');
+    CHECK(t[s.seen] == ',');
+    free(t);
+    /* An 11th out of form is not looked at either. */
+    static const char *const bad11[] = {
+        "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0",
+        "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "v0.1.0", "junk",
+    };
+    CHECK_EQ(scan_tags(bad11, 11u, "", &v), FW_REL_OK);
+    CHECK_EQ(scan_tags(bad11, 10u, "", &v), FW_REL_OK);
+}
+
+TEST_CASE(one_release_out_of_form_refuses_the_whole_answer)
+{
+    fw_version_t v = { 0u, 0u, 0u };
+    static const char *const bad[] = { "v0.21.0", "v0.23.0", "0.24.0",
+                                       "v0.22.0" };
+    CHECK_EQ(scan_tags(bad, 4u, "", &v), FW_REL_VERSION);
+    static const char *const at_end[] = { "v0.21.0", "v0.22.0",
+                                          "v0.23.0-rc1" };
+    CHECK_EQ(scan_tags(at_end, 3u, "", &v), FW_REL_VERSION);
+    static const char *const first[] = { "V0.25.0", "v0.22.0" };
+    CHECK_EQ(scan_tags(first, 2u, "", &v), FW_REL_VERSION);
+    static const char *const longer[] = { "v0.22.0",
+                                          "v65535.65535.655350" };
+    CHECK_EQ(scan_tags(longer, 2u, "", &v), FW_REL_TAG_LONG);
+    /* A release without its tag, one with two, between good ones. */
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\"},{\"id\":2},"
+                  "{\"tag_name\":\"v0.23.0\"}]", NULL),
+             FW_REL_TAG_NONE);
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\","
+                  "\"tag_name\":\"v0.23.0\"}]", NULL),
+             FW_REL_TAG_FORM);
+    /* The array between releases: a comma each, no trailing one. */
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\"} {\"tag_name\":\"v0.23.0\"}]",
+                  NULL),
+             FW_REL_TAG_FORM);
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\"},]", NULL), FW_REL_TAG_FORM);
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\"},,{\"tag_name\":\"v0.2.0\"}]",
+                  NULL),
+             FW_REL_TAG_FORM);
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.22.0\"},\"x\"]", NULL),
+             FW_REL_TAG_FORM);
+}
+
+TEST_CASE(a_draft_is_passed_over_wherever_its_key_stands)
+{
+    fw_version_t v = { 0u, 0u, 0u };
+    /* The highest is a draft: the next one is taken. */
+    CHECK_EQ(scan("[{\"draft\":true,\"tag_name\":\"v0.24.0\"},"
+                  "{\"tag_name\":\"v0.23.0\",\"draft\":false},"
+                  "{\"tag_name\":\"v0.25.0\",\"draft\" : true }]", &v),
+             FW_REL_OK);
+    CHECK_EQ(v.minor, 23u);
+    /* Only drafts: none. */
+    CHECK_EQ(scan("[{\"tag_name\":\"v0.24.0\",\"draft\":true}]", NULL),
+             FW_REL_TAG_NONE);
+    /* A draft's tag is held to the form too. */
+    CHECK_EQ(scan("[{\"draft\":true,\"tag_name\":\"draft-1\"},"
+                  "{\"tag_name\":\"v0.23.0\"}]", NULL),
+             FW_REL_VERSION);
+    /* draft as anything but true or false, or twice. */
+    static const char *const odd[] = {
+        "[{\"draft\":\"true\",\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":1,\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":null,\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":truex,\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":falsehood,\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":tru,\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":{},\"tag_name\":\"v1.0.0\"}]",
+        "[{\"draft\":false,\"draft\":false,\"tag_name\":\"v1.0.0\"}]",
+    };
+    for (size_t i = 0; i < sizeof(odd) / sizeof(odd[0]); ++i) {
+        CHECK_EQ(scan(odd[i], NULL), FW_REL_TAG_FORM);
+    }
+    /* Keys like it are not it, and a nested one is passed over. */
+    CHECK_EQ(scan("[{\"drafts\":true,\"draf\":true,\"a\":{\"draft\":true},"
+                  "\"tag_name\":\"v0.3.0\"}]", &v),
+             FW_REL_OK);
+    CHECK_EQ(v.minor, 3u);
 }
 
 /* ------------------------------------------------------------ the offer */
@@ -376,7 +544,7 @@ int main(void)
 {
     RUN(the_first_releases_tag_name_is_read);
     RUN(a_tag_name_deeper_or_as_a_value_is_not_the_releases);
-    RUN(only_the_first_release_counts);
+    RUN(a_release_without_a_tag_refuses_the_answer);
     RUN(an_answer_that_ends_before_the_tag_has_none);
     RUN(a_tag_name_over_its_bound_is_too_long);
     RUN(a_tag_name_that_is_no_plain_string_is_out_of_form);
@@ -385,6 +553,10 @@ int main(void)
     RUN(a_tag_that_is_not_a_version_is_refused);
     RUN(the_scan_stops_at_its_bound);
     RUN(the_scan_keeps_little);
+    RUN(the_highest_of_the_releases_is_taken_not_the_newest_by_date);
+    RUN(ten_releases_are_read_and_an_eleventh_is_not);
+    RUN(one_release_out_of_form_refuses_the_whole_answer);
+    RUN(a_draft_is_passed_over_wherever_its_key_stands);
     RUN(only_a_newer_release_is_offered);
     RUN(a_running_version_that_did_not_parse_is_offered_nothing);
     return test_summary("fw_release_scan");

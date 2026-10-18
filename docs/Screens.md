@@ -2789,7 +2789,7 @@ RELEASES sets the request:
 | RELEASES | Request | What is read |
 | --- | --- | --- |
 | `USABLE` | `GET https://github.com/subtilitas/rcbench/releases/latest` | The `Location` header of the redirect, which names the tag (`.../releases/tag/v0.20.0`). The body is not read. GitHub's latest release is never a pre-release. |
-| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` of the first release in the JSON (JavaScript Object Notation) answer: the newest release, testing or usable. The answer is read in pieces of 4096 bytes up to the tag, and is not stored. The rest is not read. |
+| `TESTING` | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` with `Accept: application/vnd.github+json` and `X-GitHub-Api-Version: 2022-11-28` | `tag_name` and `draft` of each of the 10 newest releases by date in the JSON (JavaScript Object Notation) answer, testing or usable. The highest version among those that are no draft is the newest release, whatever their order. The answer is read in pieces of 4096 bytes up to the 10th release's end, and is not stored. |
 
 Then the radio goes off. The join, the address and the request take 30 s at
 most, together. On either setting only a release newer than the running
@@ -2799,9 +2799,8 @@ offered usable release 0.20.0.
 Current limitations of `TESTING`: GitHub answers 60 API requests an hour for
 each public IP (Internet Protocol) address without an account, and the
 devices behind one address share them. Each check is one request, and the
-panel sends no retry. The release read is the one GitHub lists first, in
-GitHub's order by date, not by version number. Releases published out of
-version order, for example a 0.20.1 after a 0.21.0, are untested.
+panel sends no retry. A release older by date than the 10 newest is not
+seen, however high its version.
 
 ![A check under way](img/updates-checking.png)
 
@@ -2847,10 +2846,13 @@ equal and PATCH is higher.
 | `The version text has an invalid format.` | The tag fails the rule above. |
 
 The API's answer under `TESTING` is read as strictly. It needs status 200
-and a `Content-Length` from 1 to 262,144 bytes, not chunked. Of the answer,
-only the first release's own `tag_name` counts: one in a nested object, in a
-later release or inside a string is passed over. The scan reads the first
-16384 bytes at most; `tag_name` of v0.20.0's answer starts at byte 1503.
+and a `Content-Length` from 1 to 262,144 bytes, not chunked; the 10 newest
+releases on 2026-10-18, v0.12.0 to v0.20.0, were 108,198 bytes, the largest
+one 13,734. Of each release, only its own `tag_name` and `draft` count: a
+key in a nested object or inside a string is passed over. A release with
+`draft` true is passed over. A release out of form refuses the whole
+answer, a draft's included, and nothing is offered: the second line says
+why. An 11th release and anything after the 10th is not read.
 
 | Second line | Meaning |
 | --- | --- |
@@ -2859,11 +2861,11 @@ later release or inside a string is passed over. The scan reads the first
 | `The download is too large for the panel.` | A `Content-Length` over 262,144 bytes. |
 | `Received less data than expected.` | The answer ended before its `Content-Length`. |
 | `Received more data than expected.` | A read returned more bytes than asked for. |
-| `The answer names no tag_name.` | The first release has no `tag_name`, there is no release, or the answer ended before the tag did. |
+| `The answer names no tag_name.` | A release has no `tag_name`, there is no release but drafts, or the answer ended before its array or its 10th release did. |
 | `The tag_name is too long.` | A `tag_name` over 18 bytes. |
-| `The answer is not in the expected JSON form.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
-| `No tag_name in the first 16384 bytes.` | The scan's bound. |
-| `The version text has an invalid format.` | The tag fails the rule above. |
+| `The answer is not in the expected JSON form.` | Not an array of objects; a `tag_name` that is not a plain string (an escape, a control character, a number); a `draft` other than `true` or `false`; either key twice in a release; a control character in another string; a bracket closed by the other kind; nesting deeper than 32 levels. |
+| `The releases do not end within 262144 bytes.` | The scan's own bound of 262,144 bytes, which an answer within its `Content-Length` bound does not pass. |
+| `The version text has an invalid format.` | A tag fails the rule above. |
 
 ### The IOmcu
 

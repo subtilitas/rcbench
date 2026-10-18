@@ -5,9 +5,9 @@
  * older usable release offered to a panel on a testing one, an offer to a
  * panel whose own version did not parse, an offer that outlives a change
  * of the channel, and an API (application programming interface) answer
- * acted on that should not be -- over its size, out of form, without the
- * tag, the tag past the scan's bound -- or one read on past its tag, past
- * the budget or past an abort.  GitHub's request limit, 403 and 429, ends
+ * acted on that should not be -- over its size, out of form, without a
+ * tag, the first release by date taken over the highest -- or one read on
+ * past its 10th release, past the budget or past an abort.  GitHub's request limit, 403 and 429, ends
  * as its own result and asks nothing more.  The HTTP (hypertext transfer
  * protocol) client is scripted; the clock is the test's.
  *
@@ -192,26 +192,40 @@ static wa_fetch_res_t check(wa_channel_t ch, fw_version_t running, bool ok)
 
 /* ------------------------------------------------------- the channels */
 
-TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_tag)
+TEST_CASE(testing_asks_the_api_with_its_headers_and_stops_at_the_10th)
 {
-    uint32_t n;
-    char *body = api_body("v0.21.0", 40000u, &n);
-    REQUIRE_ALLOC(body);
+    /* 10 releases by date, 0.22.1 newest and 0.23.1 the highest, then an
+     * 11th of 40000 bytes that is never read. */
+    static char body[60000];
+    static const char *const tags[] = {
+        "v0.22.1", "v0.23.1", "v0.23.0", "v0.22.0", "v0.21.1",
+        "v0.21.0", "v0.20.0", "v0.19.0", "v0.18.0", "v0.17.0",
+    };
+    uint32_t n = (uint32_t)sprintf(body, "[");
+    for (size_t i = 0; i < 10u; ++i) {
+        n += (uint32_t)sprintf(body + n, "%s{\"tag_name\":\"%s\"}",
+                               (i == 0u) ? "" : ",", tags[i]);
+    }
+    n += (uint32_t)sprintf(body + n, ",{\"tag_name\":\"v9.0.0\",\"b\":\"");
+    memset(body + n, 'b', 40000u);
+    n += 40000u;
+    n += (uint32_t)sprintf(body + n, "\"}]");
     fresh(1000u);
     api_answer(body, n);
-    const wa_fetch_res_t out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    wa_run_t r = run_for(WA_CH_TESTING, V(0, 20, 0), true, g.now);
+    r.io_cap = 64u;
+    wa_fetch_res_t out;
+    wa_run_check(&r, &out);
     CHECK_EQ(out.got, WA_GOT_NEWER);
-    CHECK_EQ(out.found.minor, 21u);
+    CHECK_EQ(out.found.minor, 23u);
+    CHECK_EQ(out.found.patch, 1u);
     CHECK_STR_EQ(g.url, FW_REL_API_URL);
     CHECK(g.api);
     CHECK_EQ(g.opens, 1u);
     CHECK_EQ(g.closes, 1u);
-    /* One piece of 4096 bytes held the tag: the rest is never read. */
-    CHECK_EQ(g.reads, 1u);
-    CHECK_EQ(g.sent, (uint32_t)sizeof(g_io));
-    CHECK(g.sent < n);
+    /* Read up to the piece that closes the 10th release, and no further. */
+    CHECK(g.sent < 400u);
     CHECK_EQ(g.last_timeout, WA_FETCH_OP_MS);
-    free(body);
 }
 
 TEST_CASE(usable_keeps_the_latest_redirect)
@@ -369,21 +383,39 @@ TEST_CASE(a_tag_out_of_form_has_its_own_reason)
         CHECK_EQ(out.rel, cases[i].rel);
         CHECK_EQ(g.closes, 1u);
     }
-    /* A tag past the scan's bound: no more than the bound and one piece
-     * is read. */
-    long_tag = malloc(2u * FW_REL_SCAN_MAX + 64u);
+    /* An answer of exactly FW_REL_API_MAX bytes, the array's ']' its last
+     * byte: read whole and taken.  One byte more is refused by its length
+     * before a byte is read. */
+    long_tag = malloc(FW_REL_API_MAX + 64u);
     REQUIRE_ALLOC(long_tag);
+    static const char tail[] = "\",\"tag_name\":\"v0.21.0\"}]";
     n = (uint32_t)sprintf(long_tag, "[{\"body\":\"");
-    memset(long_tag + n, 'b', 2u * FW_REL_SCAN_MAX);
-    n += 2u * FW_REL_SCAN_MAX;
-    n += (uint32_t)sprintf(long_tag + n, "\",\"tag_name\":\"v0.21.0\"}]");
+    const uint32_t pad = FW_REL_API_MAX - n - (uint32_t)(sizeof(tail) - 1u);
+    memset(long_tag + n, 'b', pad);
+    n += pad;
+    n += (uint32_t)sprintf(long_tag + n, "%s", tail);
+    CHECK_EQ(n, FW_REL_API_MAX);
     fresh(0u);
     api_answer(long_tag, n);
-    const wa_fetch_res_t out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    wa_fetch_res_t out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_NEWER);
+    CHECK_EQ(g.sent, FW_REL_API_MAX);
+    fresh(0u);
+    api_answer(long_tag, n);
+    g.a.length = (int64_t)FW_REL_API_MAX + 1;
+    out = check(WA_CH_TESTING, V(0, 20, 0), true);
     CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
-    CHECK_EQ(out.rel, FW_REL_SCAN_LONG);
-    CHECK(g.sent <= FW_REL_SCAN_MAX + sizeof(g_io));
-    CHECK(g.sent < n);
+    CHECK_EQ(out.rel, FW_REL_TOO_BIG);
+    CHECK_EQ(g.reads, 0u);
+    /* A release out of form among good ones refuses the answer. */
+    static const char mixed[] = "[{\"tag_name\":\"v0.23.0\"},"
+                                "{\"tag_name\":\"v0.24\"},"
+                                "{\"tag_name\":\"v0.22.0\"}]";
+    fresh(0u);
+    api_answer(mixed, (uint32_t)strlen(mixed));
+    out = check(WA_CH_TESTING, V(0, 20, 0), true);
+    CHECK_EQ(out.got, WA_GOT_UNEXPECTED);
+    CHECK_EQ(out.rel, FW_REL_VERSION);
     free(long_tag);
 }
 
@@ -554,7 +586,7 @@ TEST_CASE(an_offer_holds_only_for_the_channel_it_was_found_on)
 
 int main(void)
 {
-    RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_tag);
+    RUN(testing_asks_the_api_with_its_headers_and_stops_at_the_10th);
     RUN(usable_keeps_the_latest_redirect);
     RUN(only_a_newer_release_is_offered_on_either_channel);
     RUN(the_request_limit_is_its_own_result);

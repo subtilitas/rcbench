@@ -266,13 +266,15 @@ fw_rel_err_t fw_release_parse_sums(const char *text, size_t n,
 /* ------------------------------------------------- the API's answer */
 
 /*
- * Where the next byte falls.  Level 1 is the array, level 2 the first
- * release's object, whose keys are read; anything deeper is passed over
- * with its strings and brackets followed.
+ * Where the next byte falls.  Level 1 is the array, level 2 a release's
+ * object, whose keys are read; anything deeper is passed over with its
+ * strings and brackets followed.
  */
 enum {
     SC_TOP = 0,     /* before the array                                 */
-    SC_FIRST,       /* after '[': the first release or ']'              */
+    SC_FIRST,       /* after '[': a release or ']'                      */
+    SC_NEXT,        /* after a release: ',' or ']'                      */
+    SC_ELEM,        /* after ',': a release                             */
     SC_KEY0,        /* after '{': a key or '}'                          */
     SC_KEY,         /* after ',': a key                                 */
     SC_KSTR,        /* in a key                                         */
@@ -289,7 +291,8 @@ enum {
     SC_DESC,        /* after '\' in it                                  */
 };
 
-static const char k_tag_key[] = "tag_name";
+/* Which key's value comes next. */
+enum { WANT_OTHER = 0, WANT_TAG, WANT_DRAFT };
 
 static bool json_space(uint8_t ch)
 {
@@ -330,8 +333,8 @@ static bool scan_open(fw_rel_scan_t *s, bool array)
     return true;
 }
 
-/* A level below the object closes with @p array's bracket: false when it
- * is the other's.  Only SC_DEEP calls it, at level 3 or deeper. */
+/* A level below the releases closes with @p array's bracket: false when
+ * it is the other's.  Only SC_DEEP calls it, at level 3 or deeper. */
 static bool scan_close(fw_rel_scan_t *s, bool array)
 {
     const bool was = (s->arrays >> (s->depth - 1u)) & 1u;
@@ -342,20 +345,121 @@ static bool scan_close(fw_rel_scan_t *s, bool array)
     return true;
 }
 
+/* The array closed, or FW_REL_API_RELEASES releases were read: the
+ * highest version among them that is no draft. */
+static void scan_finish(fw_rel_scan_t *s)
+{
+    if (s->have_best) {
+        s->found = s->best;
+        scan_end(s, FW_REL_OK);
+    } else {
+        scan_end(s, FW_REL_TAG_NONE);
+    }
+}
+
+static void scan_begin_release(fw_rel_scan_t *s)
+{
+    (void)scan_open(s, false);       /* level 2: always room */
+    s->have_tag = false;
+    s->have_draft = false;
+    s->draft = false;
+    s->st = SC_KEY0;
+}
+
+/* A release's '}': each needs its tag; a draft's is passed over. */
+static void scan_end_release(fw_rel_scan_t *s)
+{
+    --s->depth;
+    if (!s->have_tag) {
+        scan_end(s, FW_REL_TAG_NONE);
+        return;
+    }
+    if (!s->draft
+        && (!s->have_best || fw_version_cmp(s->cur, s->best) > 0)) {
+        s->best = s->cur;
+        s->have_best = true;
+    }
+    if (++s->releases >= FW_REL_API_RELEASES) {
+        scan_finish(s);
+    } else {
+        s->st = SC_NEXT;
+    }
+}
+
+/* A key whole: tag_name and draft, each once a release. */
+static void scan_key(fw_rel_scan_t *s)
+{
+    s->want = WANT_OTHER;
+    if (!s->klong && s->kn == 8u && memcmp(s->key, "tag_name", 8u) == 0) {
+        s->want = WANT_TAG;
+        if (s->have_tag) {
+            scan_end(s, FW_REL_TAG_FORM);
+        }
+    } else if (!s->klong && s->kn == 5u
+               && memcmp(s->key, "draft", 5u) == 0) {
+        s->want = WANT_DRAFT;
+        if (s->have_draft) {
+            scan_end(s, FW_REL_TAG_FORM);
+        }
+    }
+    s->st = SC_COLON;
+}
+
 /* tag_name's value whole: "v" and a version. */
 static void scan_tag(fw_rel_scan_t *s)
 {
-    fw_version_t v;
     if (s->tn < 2u || s->tag[0] != 'v'
-        || !fw_release_parse_version(s->tag + 1, s->tn - 1u, &v)) {
+        || !fw_release_parse_version(s->tag + 1, s->tn - 1u, &s->cur)) {
         scan_end(s, FW_REL_VERSION);
         return;
     }
-    s->found = v;
-    scan_end(s, FW_REL_OK);
+    s->have_tag = true;
+    s->st = SC_AFTER;
 }
 
-/* One byte at level 2, the first release's object. */
+/* draft's value whole: true or false, nothing else. */
+static void scan_draft(fw_rel_scan_t *s)
+{
+    if (s->dn == 4u && memcmp(s->dval, "true", 4u) == 0) {
+        s->draft = true;
+    } else if (!(s->dn == 5u && memcmp(s->dval, "false", 5u) == 0)) {
+        scan_end(s, FW_REL_TAG_FORM);
+        return;
+    }
+    s->have_draft = true;
+}
+
+/* A value starts after ':'. */
+static void scan_value(fw_rel_scan_t *s, uint8_t ch)
+{
+    if (s->want == WANT_TAG) {
+        if (ch == '"') {
+            s->st = SC_TSTR;
+            s->tn = 0u;
+        } else {
+            scan_end(s, FW_REL_TAG_FORM);    /* not a string */
+        }
+    } else if (s->want == WANT_DRAFT) {
+        if (json_scalar(ch)) {
+            s->dn = 1u;
+            s->dval[0] = (char)ch;
+            s->st = SC_SCALAR;
+        } else {
+            scan_end(s, FW_REL_TAG_FORM);    /* not true or false */
+        }
+    } else if (ch == '"') {
+        s->st = SC_VSTR;
+    } else if (ch == '{' || ch == '[') {
+        (void)scan_open(s, ch == '[');   /* level 3: always room */
+        s->st = SC_DEEP;
+    } else if (json_scalar(ch)) {
+        s->st = SC_SCALAR;
+    } else {
+        scan_end(s, FW_REL_TAG_FORM);
+    }
+}
+
+/* One byte at level 2, a release's object. */
 static void scan_object(fw_rel_scan_t *s, uint8_t ch)
 {
     switch (s->st) {
@@ -367,27 +471,25 @@ static void scan_object(fw_rel_scan_t *s, uint8_t ch)
         if (ch == '"') {
             s->st = SC_KSTR;
             s->kn = 0u;
-            s->kmatch = true;
+            s->klong = false;
         } else if (ch == '}' && s->st == SC_KEY0) {
-            scan_end(s, FW_REL_TAG_NONE);
+            scan_end_release(s);
         } else {
             scan_end(s, FW_REL_TAG_FORM);
         }
         return;
     case SC_KSTR:
         if (ch == '"') {
-            s->want = s->kmatch && s->kn == sizeof(k_tag_key) - 1u;
-            s->st = SC_COLON;
+            scan_key(s);
         } else if (ch < 0x20u) {
             scan_end(s, FW_REL_TAG_FORM);
         } else if (ch == '\\') {
-            s->kmatch = false;      /* an escaped key is not tag_name */
+            s->klong = true;        /* an escaped key is neither */
             s->st = SC_KESC;
-        } else if (s->kmatch && s->kn < sizeof(k_tag_key) - 1u
-                   && ch == (uint8_t)k_tag_key[s->kn]) {
-            ++s->kn;
+        } else if (s->kn < sizeof(s->key)) {
+            s->key[s->kn++] = (char)ch;
         } else {
-            s->kmatch = false;
+            s->klong = true;
         }
         return;
     case SC_KESC:
@@ -408,25 +510,8 @@ static void scan_object(fw_rel_scan_t *s, uint8_t ch)
         }
         return;
     case SC_VALUE:
-        if (json_space(ch)) {
-            return;
-        }
-        if (s->want) {
-            if (ch == '"') {
-                s->st = SC_TSTR;
-                s->tn = 0u;
-            } else {
-                scan_end(s, FW_REL_TAG_FORM);    /* not a string */
-            }
-        } else if (ch == '"') {
-            s->st = SC_VSTR;
-        } else if (ch == '{' || ch == '[') {
-            (void)scan_open(s, ch == '[');   /* level 3: always room */
-            s->st = SC_DEEP;
-        } else if (json_scalar(ch)) {
-            s->st = SC_SCALAR;
-        } else {
-            scan_end(s, FW_REL_TAG_FORM);
+        if (!json_space(ch)) {
+            scan_value(s, ch);
         }
         return;
     case SC_TSTR:
@@ -458,7 +543,21 @@ static void scan_object(fw_rel_scan_t *s, uint8_t ch)
         return;
     case SC_SCALAR:
         if (json_scalar(ch)) {
+            if (s->want == WANT_DRAFT) {
+                if (s->dn < sizeof(s->dval)) {
+                    s->dval[s->dn] = (char)ch;
+                }
+                if (s->dn < 0xFFu) {
+                    ++s->dn;
+                }
+            }
             return;
+        }
+        if (s->want == WANT_DRAFT) {
+            scan_draft(s);
+            if (s->ended) {
+                return;
+            }
         }
         s->st = SC_AFTER;
         scan_object(s, ch);          /* the byte that ended it */
@@ -471,7 +570,7 @@ static void scan_object(fw_rel_scan_t *s, uint8_t ch)
         if (ch == ',') {
             s->st = SC_KEY;
         } else if (ch == '}') {
-            scan_end(s, FW_REL_TAG_NONE);    /* the object closed */
+            scan_end_release(s);
         } else {
             scan_end(s, FW_REL_TAG_FORM);
         }
@@ -518,32 +617,38 @@ static void scan_deep(fw_rel_scan_t *s, uint8_t ch)
     }
 }
 
-static void scan_byte(fw_rel_scan_t *s, uint8_t ch)
+/* One byte at level 1, the array of releases. */
+static void scan_array(fw_rel_scan_t *s, uint8_t ch)
 {
-    switch (s->st) {
-    case SC_TOP:
-        if (json_space(ch)) {
-            return;
-        }
+    if (json_space(ch)) {
+        return;
+    }
+    if (s->st == SC_TOP) {
         if (ch == '[') {
             (void)scan_open(s, true);
             s->st = SC_FIRST;
         } else {
             scan_end(s, FW_REL_TAG_FORM);
         }
-        return;
+    } else if (ch == '{' && s->st != SC_NEXT) {
+        scan_begin_release(s);
+    } else if (ch == ']' && s->st != SC_ELEM) {
+        scan_finish(s);
+    } else if (ch == ',' && s->st == SC_NEXT) {
+        s->st = SC_ELEM;
+    } else {
+        scan_end(s, FW_REL_TAG_FORM);
+    }
+}
+
+static void scan_byte(fw_rel_scan_t *s, uint8_t ch)
+{
+    switch (s->st) {
+    case SC_TOP:
     case SC_FIRST:
-        if (json_space(ch)) {
-            return;
-        }
-        if (ch == '{') {
-            (void)scan_open(s, false);
-            s->st = SC_KEY0;
-        } else if (ch == ']') {
-            scan_end(s, FW_REL_TAG_NONE);     /* no release at all */
-        } else {
-            scan_end(s, FW_REL_TAG_FORM);
-        }
+    case SC_NEXT:
+    case SC_ELEM:
+        scan_array(s, ch);
         return;
     case SC_DEEP:
     case SC_DSTR:
@@ -577,11 +682,8 @@ bool fw_release_scan_feed(fw_rel_scan_t *s, const uint8_t *d, size_t n)
 
 fw_rel_err_t fw_release_scan_end(const fw_rel_scan_t *s, fw_version_t *out)
 {
-    if (s == NULL) {
-        return FW_REL_TAG_NONE;
-    }
-    if (!s->ended) {
-        return FW_REL_TAG_NONE;     /* the answer ended before the tag */
+    if (s == NULL || !s->ended) {
+        return FW_REL_TAG_NONE;     /* the answer ended before the tags */
     }
     if (s->err == FW_REL_OK && out != NULL) {
         *out = s->found;

@@ -9,9 +9,11 @@
  *             security) GET for the newest release of the job's channel.
  *             USABLE: FW_REL_LATEST_URL, whose redirect's Location names
  *             it (fw_release_parse_tag()).  TESTING: FW_REL_API_URL with
- *             GitHub's API headers, whose answer's first tag_name names
- *             it (fw_release_scan_feed()), read until the tag and no
- *             further; 403 and 429, GitHub's request limit, end as LIMIT.
+ *             GitHub's API headers, whose answer's 10 newest releases by
+ *             date name it, the highest version among them that is no
+ *             draft (fw_release_scan_feed()), read up to the 10th
+ *             release's end and no further; 403 and 429, GitHub's request
+ *             limit, end as LIMIT.
  *             Either way a release is NEWER only when
  *             fw_release_offered() says so.  Join, address and request
  *             take WA_FETCH_CHECK_MS at most, together.

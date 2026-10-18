@@ -14,7 +14,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 |---|---|
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
-| RELEASES: NUTZBAR / TEST | legt fest, welche Releases eine Suche anbietet, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk NUTZBAR; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+| RELEASES: USABLE / TESTING | legt fest, welche Releases eine Suche anbietet, siehe [Die Suche](#die-suche); gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk USABLE; ein Wechsel blendet das letzte Ergebnis aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
 | 2 s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
 | 2 s HALTEN: IOMCU AKTUALISIEREN | startet das [IOmcu-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
 
@@ -38,14 +38,14 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 
 | RELEASES | Anfrage | Was gelesen wird |
 |---|---|---|
-| NUTZBAR | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
-| TEST | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=1` | `tag_name` des neuesten Release, Test oder nutzbar, aus der JSON-Antwort (JavaScript Object Notation); gelesen bis zum Tag in Stücken von 4096 Bytes, höchstens 16384 Bytes, und nicht gespeichert |
+| USABLE | `GET https://github.com/subtilitas/rcbench/releases/latest` | der Tag aus dem `Location`-Header der Antwort; das Latest-Release von GitHub ist nie ein Pre-Release |
+| TESTING | `GET https://api.github.com/repos/subtilitas/rcbench/releases?per_page=10` | `tag_name` jedes der 10 nach Datum neuesten Releases, Test oder nutzbar, aus der JSON-Antwort (JavaScript Object Notation); genommen wird die höchste Version unter denen, die kein Entwurf sind, gleich in welcher Reihenfolge; gelesen in Stücken von 4096 Bytes, höchstens 262 144 Bytes, und nicht gespeichert; ein ungültiges Release lehnt die ganze Antwort ab |
 
-In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufende Build ist. Einem Panel mit Test-Release 0.21.0 und NUTZBAR wird das nutzbare Release 0.20.0 nicht angeboten.
+In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufende Build ist. Einem Panel mit Test-Release 0.21.0 und USABLE wird das nutzbare Release 0.20.0 nicht angeboten.
 
 ![Ein neueres Release](view:updates-newer)
 ![Aktuell](view:updates-current)
-![Ein Test-Release, gefunden mit TEST](view:updates-testing)
+![Ein Test-Release, gefunden mit TESTING](view:updates-testing)
 
 | Karte | Bedeutung |
 |---|---|
@@ -54,10 +54,10 @@ In beiden Einstellungen wird nur ein Release angeboten, das neuer als der laufen
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
 | `Keine Antwort innerhalb von 30 s.` | die 30 s sind abgelaufen |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten |
-| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | eine andere Antwort als ein Redirect, oder mit TEST eine andere als 200 |
-| `GitHub-Anfragelimit erreicht: HTTP 403.` | TEST: GitHub antwortete mit 403 oder 429; ohne Konto nimmt es 60 API-Anfragen pro Stunde und Adresse an |
+| `GitHub hat die Anfrage abgelehnt: HTTP 404.` | eine andere Antwort als ein Redirect, oder mit TESTING eine andere als 200 |
+| `GitHub-Anfragelimit erreicht: HTTP 403.` | TESTING: GitHub antwortete mit 403 oder 429; ohne Konto nimmt es 60 API-Anfragen pro Stunde und Adresse an |
 | `Die eigene Version des Panels ist nicht MAJOR.MINOR.PATCH: kein Update angeboten.` | die Version des laufenden Builds ist nicht lesbar; nichts wird angeboten |
-| `Unerwartete Antwort von GitHub.` | der `Location`-Header, oder mit TEST die Antwort, fehlt oder ist ungültig; eine zweite Zeile sagt, was |
+| `Unerwartete Antwort von GitHub.` | der `Location`-Header, oder mit TESTING die Antwort, fehlt oder ist ungültig; eine zweite Zeile sagt, was |
 | `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
 | `Abgebrochen: ...` | WI-FI, das Update des IOmcu oder ABBRECHEN beendeten die Suche |
 
@@ -109,7 +109,7 @@ Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum
 ## Aktuelle Einschränkungen
 
 - Wie lange Suche und Download in einem echten Netz dauern, ist nicht gemessen.
-- TEST: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
-- TEST liest das Release, das GitHub zuerst listet, nach Datum. Releases, die nicht in Versionsreihenfolge veröffentlicht sind, zum Beispiel ein 0.20.1 nach einem 0.21.0, sind ungetestet.
+- TESTING: GitHub beantwortet ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, geteilt von allen Geräten dahinter. Das Panel wiederholt keine Anfrage.
+- TESTING liest die 10 nach Datum neuesten Releases. Ein Release, das nach Datum älter ist, sieht das Panel nicht, wie hoch seine Version auch ist.
 - Die Daten der Zertifikate werden nicht geprüft: Das Panel hat keine Uhr.
 - Ein Release, dessen Dateien nicht `rcbench-panel-vX.Y.Z.bin` und `SHA256SUMS` heißen, lässt sich nicht laden.

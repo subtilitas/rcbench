@@ -1551,7 +1551,7 @@ UI_TEXT(UPD_REL_SUMS_TWICE,          88, "Two checksum entries for this firmware
 UI_TEXT(UPD_REL_TAG_NONE,            88, "The answer names no tag_name.")
 UI_TEXT(UPD_REL_TAG_LONG,            88, "The tag_name is too long.")
 UI_TEXT(UPD_REL_TAG_FORM,            88, "The answer is not in the expected JSON form.")
-UI_TEXT(UPD_REL_SCAN_LONG,           88, "No tag_name in the first 16384 bytes.")
+UI_TEXT(UPD_REL_SCAN_LONG,           88, "The releases do not end within 262144 bytes.")
 UI_TEXT(UPD_R_TITLE,                  0, "PANEL UPDATE AVAILABLE")
 UI_TEXT(UPD_R_VERSIONS,               0, "Version %s is available. This panel runs %s.")
 UI_TEXT(UPD_R_WHAT_1,                 0, "Hold to download the firmware from GitHub and check it.")
