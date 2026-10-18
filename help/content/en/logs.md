@@ -49,7 +49,7 @@ One file is one run. Its name says which writer made it:
 |---|---|
 | `SERVOnnn.CSV` | one automatic servo test; its report is `SERVOnnn.TXT` |
 | `SERVOnnn.TXT` | one limit run's report, with no CSV beside it |
-| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC or a stick run on PROGRAMMER |
+| `ESCnnn.CSV` | one switch of the throttle outputs to ARMED, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | `BENCHnnn.CSV` | one switch of the surfaces to ARMED, from SERVO, or one switch-on of the SUPPLY output while the bench is SAFE |
 
 With an IOmcu older than protocol 4.18, every switch to ARMED covers the throttle outputs too, so a switch to ARMED from SERVO writes `ESCnnn.CSV`.

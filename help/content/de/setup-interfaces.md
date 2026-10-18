@@ -78,7 +78,7 @@ Der Phasenabgriff hört die Pieptöne eines ESC an einer Motorphase. Ein GPIO de
 | Abgriff-Pause | 1 bis 100 ms | 3 | die Stille, die einen Piepton beendet |
 | Min. Perioden | 1 bis 64 | 3 | die Tonperioden, die einen Piepton ergeben |
 
-Der IOmcu lehnt einen ADC-Pin (Analog-Digital-Umsetzer), einen an einen Ausgang gebundenen Pin und einen Pin ab, den der Sensorbus oder der PD mini hält. Die Laufseite von [ESC STICK](programmer-stick.md) zeigt die Pieptöne.
+Der IOmcu lehnt einen ADC-Pin (Analog-Digital-Umsetzer), einen an einen Ausgang gebundenen Pin und einen Pin ab, den der Sensorbus oder der PD mini hält. Die Laufseite von [ESC STICK](motor-stick.md) zeigt die Pieptöne.
 
 ## Vibration und der optische Tacho
 

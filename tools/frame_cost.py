@@ -66,6 +66,7 @@ SOURCES = [
     "shared/ui/motor_screen.c",
     "shared/ui/motor_workbench.c",
     "shared/ui/motor_settings_page.c",
+    "shared/ui/motor_program_page.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
@@ -91,7 +92,8 @@ SOURCES = [
     "shared/ui/analyser_screen.c",
     "shared/ui/balance_screen.c",
     "shared/ui/battery_screen.c",
-    "shared/ui/programmer_screen.c",
+    "shared/ui/prog_models.c",
+    "shared/ui/esc_stick_pages.c",
     "shared/ui/esc_stick_panel.c",
     "shared/ui/log_viewer_screen.c",
     "shared/ui/settings_screen.c",
@@ -104,8 +106,8 @@ SOURCES = [
     "shared/ui/wifi_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
-    # The ESC profiles and the stick programmer the PROGRAMMER screen's
-    # ESC STICK class lists and runs.
+    # The ESC profiles and the stick programmer MOTOR & ESC > PROGRAM's
+    # ESC STICK session lists and runs.
     "shared/esc/esc_profiles_gen.c",
     "shared/esc/esc_json.c",
     "shared/esc/esc_json_lex.c",
@@ -169,10 +171,10 @@ MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
          "supply-chrome",
          "analyser", "logs", "settings", "settings-list", "battery",
          "balance",
-         "programmer", "balance-sim", "settings-sim", "battery-sim",
+         "motor-stick", "balance-sim", "settings-sim", "battery-sim",
          "analyser-chrome", "logs-chrome", "settings-chrome",
          "settings-list-chrome",
-         "battery-chrome", "balance-chrome", "programmer-chrome",
+         "battery-chrome", "balance-chrome", "motor-stick-chrome",
          "picker", "picker-chrome", "wifi", "wifi-chrome", "wifi-keys",
          "clear",
          "vlines", "hlines"]

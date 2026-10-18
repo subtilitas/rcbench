@@ -179,7 +179,7 @@ innerhalb von 150 ms. Die Grenze der Frist ist der Frame, der auf ARMED schaltet
 selbst. Er wird zur Frist oder davor geschrieben, und seine Quittung kann
 bis zum Timeout von 1000 ms (`LINK_HOST_TIMEOUT_MS`) später eintreffen; der
 IOmcu hat dann die angefragte Rolle auf ARMED geschaltet, in Ruhe: Gas 0
-für MOTOR & ESC und PROGRAMMER, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
+für MOTOR & ESC und dessen Stick-Läufe, Surfaces zentriert für SERVO. Das Panel macht das nicht rückgängig. Bleibt ein Austausch des Schaltens auf ARMED
 unbeantwortet -- das Lesen von STATUS, das Freigeben des Servos, CLEAR oder
 der Frame, der auf ARMED schaltet --, hat er den Timeout von 1000 ms abgewartet
 oder die Leitung nicht erreicht: das ist der Link, der unter einem Schalten auf ARMED
@@ -232,7 +232,7 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
   keine auffindbare Zeichnung für die Platine, und der nächste Link-Aufbau
   holt sie neu. Die Dauer eines Löschvorgangs auf dem Flash des Panels
   ist nicht gemessen.
-- Ein Stick-Lauf auf PROGRAMMER schaltet über dieselbe Policy auf ARMED, nachdem
+- Ein Stick-Lauf auf MOTOR & ESC > PROGRAMMIEREN schaltet über dieselbe Policy auf ARMED, nachdem
   seine Warnung (PROPELLER AB? MOTOR GESICHERT?) 2 s gehalten ist. Danach
   setzt er das Gas auf die Einstiegsstellung des Profils, bevor er das
   Netzteil einschaltet; bei den meisten ESCs ist das der Knüppel auf MAX: so
@@ -325,8 +325,8 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
   Finger, der sie gedrückt hat, innerhalb von ihr abhebt, in x und in y
   höchstens 8 px vom Aufsetzpunkt entfernt; die Liste scrollt von überall,
   die Tasten eingeschlossen, und ein Scrollen ändert keinen Wert. Eine
-  gehaltene Taste stellt ab 0,45 s nach dem Aufsetzen. Die Bedienelemente auf
-  PROGRAMMER folgen derselben Regel, VORGABEN und die Tasten des Stick-Timings
+  gehaltene Taste stellt ab 0,45 s nach dem Aufsetzen. Die Bedienelemente von
+  ESC STICK folgen derselben Regel, VORGABEN und die Tasten des Stick-Timings
   eingeschlossen. ABBRECHEN eines Stick-Laufs wirkt beim Aufsetzen, ebenso
   jedes Anhalten auf den Prüfstandsbildschirmen: Anhalten wartet nie auf ein
   Abheben, das ausbleiben kann.
@@ -413,7 +413,7 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
     postet also 1,0 %. Das Halten auf ARM setzt den Schieberegler auf 0 %,
     wenn es anfordert, und ebenso der Wechsel auf ARMED bei einem ARM, das
     dieses Halten nicht angefordert hat, wie bei einem Knüppel-Lauf auf
-    PROGRAMMER.
+    PROGRAMMIEREN.
   - SERVO: Das Zifferblatt, der Drehknopf, ZENTRIEREN und SWEEP sind die
     Bedienelemente. In SAFE bleiben das Horn und die gezeigte Pulsbreite
     auf der zuletzt gefahrenen Stellung. Bei einem ARM wird der Wert zur
@@ -495,8 +495,8 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 - Bei Überstrom, Übertemperatur, Stall-Timeout und totem Link handelt der
   IOmcu aus eigener Befugnis und meldet den Fehler beim nächsten Poll.
 - Ein ARM nennt die Rollen, die es treibt ([Link, Ein Arm für eine
-  Rolle](Link-de.md#ein-arm-für-eine-rolle)). MOTOR & ESC und ein
-  Stick-Lauf auf PROGRAMMER schalten die Throttle-Ausgänge auf ARMED, ARM
+  Rolle](Link-de.md#ein-arm-für-eine-rolle)). ARM auf MOTOR & ESC und ein
+  Stick-Lauf auf dessen PROGRAMMIEREN schalten die Throttle-Ausgänge auf ARMED, ARM
   0x0002. SERVO schaltet die Surfaces und den Pin des PROG PORT auf ARMED, ARM
   0x0004. Ein Pin einer Rolle, die das ARM nicht nennt, sendet keinen Puls,
   wie bei einem Prüfstand in SAFE. Ein IOmcu älter als Protokoll

@@ -10,21 +10,39 @@ MOTOR & ESC drives an ESC (electronic speed controller) and records a run: volta
 
 ## The strip
 
-The strip at the top holds two tasks, LIVE and SETTINGS. A tap switches the task. LIVE keeps its view, PLOT or TABLE, across a switch.
+The strip at the top holds three tasks, LIVE, PROGRAM and SETTINGS. A tap switches the task. LIVE keeps its view, PLOT or TABLE, across a switch.
 
 | Task | The left column |
 |---|---|
 | LIVE | the plot or the table, and the throttle |
+| PROGRAM | the list of ESC programmers ([PROGRAM](#program)) |
 | SETTINGS | [Motor settings](motor-settings.md): the pack, the motor and the throttle output |
 
-The right column is the same on both tasks: the temperatures, the four readouts and the CONTROL card with TARGET, ARM, the totals and RESET PEAKS. ARM works on either task.
+The right column is the same on the three tasks: the temperatures, the four readouts and the CONTROL card with TARGET, ARM, the totals and RESET PEAKS. ARM works on each. A session opened from PROGRAM covers it.
 
 The home tag at the top left climbs one level at a time:
 
 | From | The home tag leads to |
 |---|---|
 | the keypad on SETTINGS | SETTINGS; the value is not changed |
-| LIVE or SETTINGS | the menu; the bench switches to SAFE |
+| a session on PROGRAM | one level up in the session, then PROGRAM's list |
+| LIVE, PROGRAM's list or SETTINGS | the menu; the bench switches to SAFE |
+
+## PROGRAM
+
+![PROGRAM's list](view:motor-program)
+
+PROGRAM lists the ESC programmers. Its one row, `ESCs by throttle stick` in the group STICK MENU, drives the pins bound as throttle and opens [ESC STICK](motor-stick.md). The modelled tables for BLHeli_S, AM32, ESCape32 and VESC firmware have no transport and no row.
+
+ESC STICK opens full width, over the left column and the right column. In place of the tabs the strip row shows the output strip, one line:
+
+`TARGET DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE`
+
+- TARGET: the protocol and the pins the run drives, in the warning colour while no pin is bound or the binding is not read.
+- SUPPLY: the PD mini's output as it reads, `SUPPLY ON` without readings, `SUPPLY OFF`, or `SUPPLY --` while the supply does not answer.
+- SAFE or ARMED: the bench.
+
+No press reaches ARM or a tab while ESC STICK is open. Leaving MOTOR & ESC ends a run, switches the bench to SAFE and closes ESC STICK.
 
 ## Before the first run
 
@@ -117,6 +135,7 @@ One switch to ARMED writes one file, `ESCnnn.CSV`, on the panel's SD (Secure Dig
 ## Related pages
 
 - [Motor settings](motor-settings.md): the pack, Rated kV, Motor poles, the Idle and Full pulse.
+- [ESC STICK](motor-stick.md): programming an ESC through its throttle-stick menu.
 - [Outputs](outputs.md): which pins the throttle drives.
 - [Setup](setup.md): the rotary knob.
 - [Interfaces](setup-interfaces.md): the INA228.

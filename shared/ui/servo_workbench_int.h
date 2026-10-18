@@ -26,26 +26,7 @@ static inline ui_wb_task_t wb_task(void) { return ui_wb_strip_task(&s.wb); }
  * over the left column, the strip with it, one level down from PROGRAM's
  * list; while it holds its port it stays shown.
  */
-/* A page set's hooks, each called from its own function (stack_check.py's
- * PROG_CALLS). */
-void prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area);
-void prog_ps_entry(const prog_page_set_t *ps);
-void prog_ps_open(const prog_page_set_t *ps);
-bool prog_ps_is_open(const prog_page_set_t *ps);
-void prog_ps_back(const prog_page_set_t *ps);
-bool prog_ps_holds(const prog_page_set_t *ps);
-void prog_ps_armed(const prog_page_set_t *ps, bool armed);
-void prog_ps_tick(const prog_page_set_t *ps, float dt_s);
-bool prog_ps_has_press(const prog_page_set_t *ps, uint8_t id);
-void prog_ps_event(const prog_page_set_t *ps, const touch_event_t *evt);
-void prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c);
-uint32_t prog_ps_revision(const prog_page_set_t *ps);
-uint32_t prog_ps_hold_revision(const prog_page_set_t *ps);
-gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps);
-void prog_ps_leave(const prog_page_set_t *ps);
-void prog_ps_cancel(const prog_page_set_t *ps);
-uint8_t prog_ps_pin(const prog_page_set_t *ps);
-
+/* A page set's hooks are called through prog_ps_*() (prog_registry.h). */
 /* The session shown, or NULL. */
 const prog_page_set_t *prog_shown_set(void);
 static inline bool prog_shown(void) { return prog_shown_set() != NULL; }

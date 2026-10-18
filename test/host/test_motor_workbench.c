@@ -1,6 +1,6 @@
 /*
- * MOTOR & ESC as a workbench: the strip LIVE | SETTINGS and what each task
- * keeps, SETTINGS' rows, their keypad and the write when idle beside
+ * MOTOR & ESC as a workbench: the strip LIVE | PROGRAM | SETTINGS and what
+ * each task keeps, SETTINGS' rows, their keypad and the write when idle beside
  * SETUP's SAVE, the pulse rows' lock, the CONTROL card's TARGET row and its
  * lock, the way to OUTPUTS and back, and the home tag's levels.
  *
@@ -165,7 +165,7 @@ static void home_tag(void)
     feed_tap(FEED_LONE, r.x + r.w / 2, r.y + r.h / 2);
 }
 
-static void open_settings(void) { feed_tap(FEED_LONE, TAB_X(1), TAB_Y); }
+static void open_settings(void) { feed_tap(FEED_LONE, TAB_X(2), TAB_Y); }
 static void open_live(void)     { feed_tap(FEED_LONE, TAB_X(0), TAB_Y); }
 
 /* Row @p row's value box, tapped. */
@@ -230,17 +230,17 @@ static bool arm(void)
 /* ------------------------------------------------------------ the strip */
 
 /*
- * LIVE then SETTINGS, and nothing where a third tab would be: TEST and
- * PROGRAM are not drawn.  A tile opens LIVE; the tag leaves from either
- * task and the bench goes to SAFE.
+ * LIVE, PROGRAM, then SETTINGS, the plan's order with TEST not drawn, and
+ * nothing where a fourth tab would be.  A tile opens LIVE; the tag leaves
+ * from any task and the bench goes to SAFE.
  */
-TEST_CASE(the_strip_reads_live_then_settings_and_a_tile_opens_live)
+TEST_CASE(the_strip_reads_live_program_settings_and_a_tile_opens_live)
 {
     fresh();
     CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
+    feed_tap(FEED_LONE, TAB_X(1), TAB_Y);
+    CHECK_EQ(motor_screen_task(), (int)UI_WB_PROGRAM);
     open_settings();
-    CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
-    feed_tap(FEED_LONE, TAB_X(2), TAB_Y);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
     feed_tap(FEED_LONE, TAB_X(3), TAB_Y);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
@@ -253,11 +253,14 @@ TEST_CASE(the_strip_reads_live_then_settings_and_a_tile_opens_live)
     ui_router_goto(SCREEN_MOTOR);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
 
-    /* The labels: LIVE and SETTINGS, LIVE and OPTIONEN. */
+    /* The labels: LIVE, PROGRAM and SETTINGS; LIVE, PROGRAMMIEREN and
+     * OPTIONEN. */
     CHECK_STR_EQ(TR(WB_LIVE), "LIVE");
+    CHECK_STR_EQ(TR(KP_PROGRAM), "PROGRAM");
     CHECK_STR_EQ(TR(SUP_SETTINGS), "SETTINGS");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(TR(WB_LIVE), "LIVE");
+    CHECK_STR_EQ(TR(KP_PROGRAM), "PROGRAMMIEREN");
     CHECK_STR_EQ(TR(SUP_SETTINGS), "OPTIONEN");
     ui_text_set_language(UI_LANG_EN);
     /* The title keeps its 11 characters. */
@@ -303,7 +306,7 @@ TEST_CASE(a_tab_switch_ends_a_drag_and_the_throttle_is_out_of_reach)
     finger(1, TRACK_X + 100, TRACK_Y);
     glide(1, TRACK_X + 160, TRACK_Y, 8);
     CHECK_EQ(took().kind, MOTOR_CMD_THROTTLE);
-    feed_tap(2, TAB_X(1), TAB_Y);
+    feed_tap(2, TAB_X(2), TAB_Y);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_SETTINGS);
     const float at = motor_screen_throttle();
     glide(1, TRACK_X + 260, TRACK_Y, 8);
@@ -331,7 +334,7 @@ TEST_CASE(a_tab_switch_ends_a_drag_and_the_throttle_is_out_of_reach)
 TEST_CASE(a_cancel_drops_the_strips_press_and_the_pages)
 {
     fresh();
-    finger(FEED_LONE, TAB_X(1), TAB_Y);
+    finger(FEED_LONE, TAB_X(2), TAB_Y);
     ui_router_cancel_gestures();
     lift(FEED_LONE);
     CHECK_EQ(motor_screen_task(), (int)UI_WB_LIVE);
@@ -793,7 +796,7 @@ TEST_CASE(the_save_line_follows_the_store)
 
 int main(void)
 {
-    RUN(the_strip_reads_live_then_settings_and_a_tile_opens_live);
+    RUN(the_strip_reads_live_program_settings_and_a_tile_opens_live);
     RUN(each_task_keeps_its_view_and_the_tag_leaves_from_either);
     RUN(a_tab_switch_ends_a_drag_and_the_throttle_is_out_of_reach);
     RUN(a_cancel_drops_the_strips_press_and_the_pages);

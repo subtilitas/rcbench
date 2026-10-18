@@ -58,7 +58,7 @@ atomic_uint        s_supply_adopt_done;
 /*
  * The ESC a stick run programs, when the supply is the panel's model.
  *
- * The PROGRAMMER screen publishes the profile of a run under way, and how
+ * ESC STICK publishes the profile of a run under way, and how
  * many runs it has started, from the render loop; the control task makes
  * the model's current the simulated ESC's, so the run counts beeps from the
  * same samples the PD mini would give it.  The ESC sees the throttle the

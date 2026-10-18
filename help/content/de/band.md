@@ -27,7 +27,7 @@ Das Home-Tag führt zum [Menü](overview.md).
 | Chip | Ausgänge, die Pulse bekommen |
 |---|---|
 | SAFE | keine |
-| ARMED MOTOR | die Throttle-Ausgänge, von MOTOR & ESC oder einem Stick-Lauf auf PROGRAMMER |
+| ARMED MOTOR | die Throttle-Ausgänge, von ARM auf MOTOR & ESC oder einem Stick-Lauf auf dessen PROGRAMMIEREN |
 | ARMED SERVO | die Servo-Ausgänge und ein pulsender PROG PORT, von SERVO |
 | ARMED | jeder gebundene Ausgang, an einem IOmcu älter als Protokoll 4.18 |
 

@@ -30,6 +30,16 @@ UI_TEXT(PL_KST,                     0, "KST and Chaservo servos")
 UI_TEXT(PL_GRP_PROG_PORT,          40, "PROG PORT SERVOS")
 UI_TEXT(PL_NO_CAP,                  0, "IOMCU HAS NO %s")
 UI_TEXT(PL_PORT_BUSY,              26, "PORT IN USE")
+/* MOTOR & ESC's PROGRAM list: the ESC STICK row and its group's heading.
+ * The row's transport is MO_SET_THROTTLE. */
+UI_TEXT(PL_STICK,                   0, "ESCs by throttle stick")
+UI_TEXT(PL_GRP_STICK,              40, "STICK MENU")
+/* The output strip over a full-width session, after `TARGET <target>`
+ * (SV_TARGET): the supply as it reads now, then SAFE or ARMED. */
+UI_TEXT(PL_STRIP_SUP,               0, "SUPPLY %u.%02u V  %u.%02u A")
+UI_TEXT(PL_STRIP_SUP_ON,           26, "SUPPLY ON")
+UI_TEXT(PL_STRIP_SUP_OFF,          26, "SUPPLY OFF")
+UI_TEXT(PL_STRIP_SUP_NONE,         26, "SUPPLY --")
 
 /* ------------------------------------------------------------ the band */
 UI_TEXT(BAND_SAFE,                  0, "SAFE")
@@ -89,7 +99,6 @@ UI_TEXT(OV_LOGS,                    0, "record and view data")
 UI_TEXT(OV_SETUP,                   0, "pack and output")
 UI_TEXT(OV_BATTERY,                 0, "cells, iR, mAh")
 UI_TEXT(OV_BALANCE,                 0, "vibration, phase")
-UI_TEXT(OV_PROGRAMMER,              0, "ESC and servo")
 UI_TEXT(OV_MODELLED,                0, "SIMULATED")
 
 /* -------------------------------------------------------------- splash */
@@ -519,10 +528,9 @@ UI_TEXT(LOG_AT_TIME,                0, "t = %.3f s   sample %d/%d")
 UI_TEXT(LOG_AT_ROW,                50, "row %d of %d   (no time column)")
 UI_TEXT(LOG_UNREADABLE_CELLS,      50, "%d CELLS UNREADABLE")
 
-/* ---------------------------------------------------------- PROGRAMMER */
-UI_TEXT(PG_BLURB_ESC,               0, "bootloader, CLI and data packets")
-UI_TEXT(PG_BLURB_SERVO,             0, "servos with published protocols")
-UI_TEXT(PG_BLURB_STICK,             0, "throttle menus and beep codes")
+/* --------------------------------------------- the modelled protocols */
+/* The parameter tables of prog_models.c, which no list shows: no transport
+ * on the IOmcu carries these protocols. */
 UI_TEXT(PG_GROUP_MOTOR,            10, "MOTOR")
 UI_TEXT(PG_GROUP_STARTUP,          10, "STARTUP")
 UI_TEXT(PG_GROUP_PROTECTION,       10, "PROTECTION")
@@ -553,9 +561,9 @@ UI_TEXT(PG_HELP_DEADBAND,         192, "Sets how much position error is allowed 
 UI_TEXT(PG_HELP_RESOLUTION,       192, "Sets how finely the commanded position is resolved.")
 UI_TEXT(PG_HELP_OVERLOAD,         192, "The servo reduces power if it stays blocked for too long. This helps prevent overheating.")
 UI_TEXT(PG_HELP_FAILSAFE,         192, "Moves to a set position when the signal stops, instead of releasing the servo.")
-UI_TEXT(PG_TRANSPORT_ONEWIRE,       0, "one-wire bootloader, 19200 baud")
-UI_TEXT(PG_TRANSPORT_CLI,           0, "text commands over the signal wire")
-UI_TEXT(PG_TRANSPORT_PACKETS,       0, "framed data packets, 115200 baud")
+UI_TEXT(PG_TRANSPORT_ONEWIRE,      60, "one-wire bootloader, 19200 baud")
+UI_TEXT(PG_TRANSPORT_CLI,          60, "text commands over the signal wire")
+UI_TEXT(PG_TRANSPORT_PACKETS,      60, "framed data packets, 115200 baud")
 UI_TEXT(PG_TRANSPORT_HITEC,        60, "D-series servo protocol")
 UI_TEXT(PG_NAME_HITEC,             42, "Hitec servo")
 UI_TEXT(PG_DEVICE_BLHELI,          80, "BLHeli_S 16.7  on  EFM8BB21")
@@ -563,21 +571,7 @@ UI_TEXT(PG_DEVICE_AM32,            80, "AM32 2.15  on  STM32G071")
 UI_TEXT(PG_DEVICE_ESCAPE32,        80, "ESCape32 v9  on  AT32F421")
 UI_TEXT(PG_DEVICE_VESC,            80, "VESC 6.05  on  STM32F405")
 UI_TEXT(PG_DEVICE_HITEC,           80, "Hitec servo, D-series")
-UI_TEXT(PG_PROFILES_RUN,            0, "%d of %d profiles can run")
-UI_TEXT(PG_PROTOCOL,                0, "%d protocol")
-UI_TEXT(PG_PROTOCOLS,               0, "%d protocols")
-UI_TEXT(PG_WHAT,                    0, "WHAT ARE YOU PROGRAMMING?")
-UI_TEXT(PG_NOTHING_ANSWERED,        0, "No device has responded yet.")
-UI_TEXT(PG_CONNECT,                 0, "CONNECT")
-UI_TEXT(PG_DISCONNECT,              0, "DISCONNECT")
-UI_TEXT(PG_PARAMETERS,              0, "PARAMETERS")
-UI_TEXT(PG_NO_DEVICE,               0, "No device connected. Nothing to show.")
 UI_TEXT(PG_RANGE_OF,                0, "%d-%d of %d")
-UI_TEXT(PG_WRITE_N,                 0, "WRITE %d")
-UI_TEXT(PG_WRITE,                   0, "WRITE")
-UI_TEXT(PG_READ,                    0, "READ")
-UI_TEXT(PG_MODELLED,                0, "SIMULATED")
-UI_TEXT(PG_MODEL_NOTE,              0, "Simulated on the panel. No device is contacted.")
 
 /* ----------------------------------------------------------- ESC STICK */
 UI_TEXT(SP_NEEDS_V,                51, "needs %u.%u V; limit %u.%u V")

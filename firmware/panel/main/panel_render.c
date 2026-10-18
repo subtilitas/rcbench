@@ -19,7 +19,7 @@
 #include "kst_prog.h"
 #include "motor_screen.h"
 #include "panel.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
 #include "servo_link.h"
 #include "servo_screen.h"
 #include "settings.h"
@@ -334,9 +334,9 @@ void flush_screen_commands(uint32_t stops_now)
                            .consumed_seq = consumed };
         send_cmd(&pc);
     }
-    /* A stick run on PROGRAMMER moves the throttle and arms as the MOTOR
-     * screen does, through the same commands and the same policy. */
-    while (programmer_screen_poll_cmd(&mc)) {
+    /* A stick run on MOTOR & ESC > PROGRAM moves the throttle and arms as
+     * LIVE does, through the same commands and the same policy. */
+    while (esc_stick_panel_poll_cmd(&mc)) {
         panel_cmd_t pc = { .kind = PANEL_CMD_MOTOR, .motor = mc,
                            .stops = stops_now,
                            .lets_go = atomic_load(&s_lets_go),

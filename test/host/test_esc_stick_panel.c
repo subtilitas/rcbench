@@ -1,10 +1,10 @@
 /*
- * The ESC STICK class of the programmer: that a run starts only from the
- * warning held for its two seconds, that it is refused rather than adjusted
- * when the supply cannot give what it needs, and that leaving, ABORT and
- * STOP each end it with the bench let go.  The suite also covers the maker
+ * ESC STICK, the session MOTOR & ESC > PROGRAM opens: that a run starts
+ * only from the warning held for its two seconds, that it is refused
+ * rather than adjusted when the supply cannot give what it needs, and that
+ * leaving, ABORT and STOP each end it with the bench let go.  The suite also covers the maker
  * and model lists, the search, the manual steps, the result and the touch
- * rules of the class.
+ * rules of the session.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +17,8 @@
 #include "esc_sim.h"
 #include "gfx.h"
 #include "kst_panel.h"
-#include "programmer_screen.h"
+#include "esc_stick_panel.h"
+#include "motor_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
@@ -26,19 +27,20 @@
 #include "ui_theme.h"
 #include "touch_feed.h"
 
-#include "programmer_rig.h"
+#include "stick_rig.h"
 
 /* ------------------------------------------------------- ESC STICK */
 
-/* Mirrored from esc_stick_panel.c, as the rig's are from
- * programmer_screen.c. */
-#define SP_ROW_CY(n) (52 + (n) * 36 + 16)
+/* Mirrored from esc_stick_panel.c, as the rig's are from esc_stick_int.h:
+ * the list's rows from 70, the crumb row's controls at 30 to 60, and the
+ * panels' buttons from 362 to 406. */
+#define SP_ROW_CY(n) (70 + (n) * 36 + 16)
 #define LIST_DN_X    761
-#define LIST_CY      27
+#define LIST_CY      45
 #define TIMING_X     698
-#define TIMING_Y     27
+#define TIMING_Y     45
 #define HOLD_X       156
-#define HOLD_Y       378
+#define HOLD_Y       384
 #define CANCEL_X     684
 #define HOLD_ID      7
 
@@ -72,9 +74,9 @@ static void supply_reads_off(void)
         st.mode = SUPPLY_MODE_OFF;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
+        esc_stick_panel_supply(&st);
     }
-    programmer_screen_bench(300u, false, 0u, 0u, false);
+    esc_stick_panel_bench(300u, false, 0u, 0u, false);
     scr->tick(0.02f);
 }
 
@@ -98,14 +100,14 @@ static bool same_name(const char *a, const char *b)
 static void tap_listed(int at)
 {
     int top = 0;
-    (void)programmer_screen_stick_listed(&top);
+    (void)esc_stick_panel_listed(&top);
     for (int g = 0; g < 64 && at < top; ++g) {
         tap(723, LIST_CY);
-        (void)programmer_screen_stick_listed(&top);
+        (void)esc_stick_panel_listed(&top);
     }
     for (int g = 0; g < 64 && at >= top + 9; ++g) {
         tap(LIST_DN_X, LIST_CY);
-        (void)programmer_screen_stick_listed(&top);
+        (void)esc_stick_panel_listed(&top);
     }
     tap(ROW_CX, SP_ROW_CY(at - top));
 }
@@ -113,8 +115,8 @@ static void tap_listed(int at)
 /* On the makers: open the one named @p name. */
 static void open_maker(const char *name)
 {
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-        const char *m = programmer_screen_stick_maker_at(i);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        const char *m = esc_stick_panel_maker_at(i);
         if (m != NULL && same_name(m, name)) {
             tap_listed(i);
             return;
@@ -127,9 +129,9 @@ static void open_maker(const char *name)
  * @p model. */
 static void open_model(const char *id, const char *model)
 {
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
         int m = -1;
-        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        const esc_profile_t *p = esc_stick_panel_row(i, &m);
         if (p != NULL && strcmp(p->id, id) == 0
             && (model == NULL || strcmp(p->models[m].name, model) == 0)) {
             tap_listed(i);
@@ -143,8 +145,8 @@ static void open_model(const char *id, const char *model)
 /* The stick class, the profile's maker, and the profile's first model. */
 static void open_profile(const char *id)
 {
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     const esc_profile_t *p = esc_profiles_find(id);
     if (p == NULL) {
         T_FAIL("no profile %s", id);
@@ -171,7 +173,7 @@ static int drain_cmds(motor_cmd_kind_t want)
 {
     int n = 0;
     motor_cmd_t mc;
-    while (programmer_screen_poll_cmd(&mc)) {
+    while (esc_stick_panel_poll_cmd(&mc)) {
         n += (mc.kind == want) ? 1 : 0;
     }
     return n;
@@ -201,7 +203,7 @@ typedef struct {
 static void rig_step(rig_t *r)
 {
     motor_cmd_t mc;
-    while (programmer_screen_poll_cmd(&mc)) {
+    while (esc_stick_panel_poll_cmd(&mc)) {
         if (mc.kind == MOTOR_CMD_ARM) {
             r->armed = !r->no_arm;
             r->arms++;
@@ -235,7 +237,7 @@ static void rig_step(rig_t *r)
         r->moved_while_on++;
     }
     r->last_pct = eff;
-    programmer_screen_bench(r->now, r->armed, r->stops, r->pressed,
+    esc_stick_panel_bench(r->now, r->armed, r->stops, r->pressed,
                             !r->link_lost);
     const int32_t ma = esc_sim_step(&r->sim, r->now, r->module_on,
                                     r->armed ? r->pct : -1.0f);
@@ -251,12 +253,12 @@ static void rig_step(rig_t *r)
                                                    : SUPPLY_MODE_OFF;
         st.online = !r->offline;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
+        esc_stick_panel_supply(&st);
         r->next = r->now + ((r->every != 0u) ? r->every : 50u);
     }
     scr->tick(0.001f);
     /* The operator watching the ESC confirm taps DONE once it counts. */
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     if (!r->no_watch && run->phase == ESC_STICK_HAND_END
         && esc_stick_hand_ready(run)) {
         tap(HOLD_X, HOLD_Y);
@@ -271,12 +273,12 @@ static void rig_start(rig_t *r)
     esc_sim_cfg_t c;
     esc_sim_defaults(&c);
     c.wait_hand = true;     /* a before_menu menu starts at the action */
-    esc_sim_init(&r->sim, programmer_screen_stick()->p, &c);
+    esc_sim_init(&r->sim, esc_stick_panel_stick()->p, &c);
 }
 
 static void rig_run(rig_t *r, uint32_t ms)
 {
-    for (uint32_t i = 0; i < ms && esc_stick_running(programmer_screen_stick());
+    for (uint32_t i = 0; i < ms && esc_stick_running(esc_stick_panel_stick());
          ++i) {
         rig_step(r);
     }
@@ -290,14 +292,14 @@ static void rig_run(rig_t *r, uint32_t ms)
 TEST_CASE(a_profile_the_engine_cannot_run_goes_no_further)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Castle Creations");          /* a yes/no menu: cannot run */
     tap(ROW_CX, SP_ROW_CY(0));
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(esc_stick_panel_page() == NULL);
     tap(WRITE_X, BTN_CY);                    /* where RUN would be */
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     CHECK_EQ(drain_cmds(MOTOR_CMD_ARM), 0);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -332,10 +334,10 @@ TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
         pick_cutoff();
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), 0u);
-        CHECK(!esc_stick_running(programmer_screen_stick()));
-        CHECK(!programmer_screen_poll_cmd(&mc));
-        CHECK_STR_EQ(programmer_screen_stick_note(), TR(SP_KST_HELD));
+        CHECK_EQ(esc_stick_panel_runs(), 0u);
+        CHECK(!esc_stick_running(esc_stick_panel_stick()));
+        CHECK(!esc_stick_panel_poll_cmd(&mc));
+        CHECK_STR_EQ(esc_stick_panel_note(), TR(SP_KST_HELD));
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 0);
         CHECK(lit() > 20000);
@@ -343,7 +345,7 @@ TEST_CASE(no_run_starts_while_the_servo_programmer_holds_a_port)
         kst_port(LINK_KST_PWM);
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        CHECK_EQ(esc_stick_panel_runs(), 1u);
         scr->leave();
     }
     ui_text_set_language(UI_LANG_EN);
@@ -373,10 +375,10 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
                 want = TR(SP_SUPPLY_MODEL);
             } else if (k == R_NOT_READ) {
                 /* A mask with no read behind it is no throttle known. */
-                programmer_screen_set_throttle(false, 0x01u);
+                esc_stick_panel_set_throttle(false, 0x01u);
                 want = TR(SP_BIND_NOT_READ);
             } else {
-                programmer_screen_set_throttle(true, 0x00u);
+                esc_stick_panel_set_throttle(true, 0x00u);
                 want = TR(SP_NO_THROTTLE);
             }
             descend_to_hobbywing();
@@ -389,30 +391,30 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
             CHECK_EQ(fb[run_px], GFX_RGB(38, 46, 58));
             memcpy(before, fb, sizeof(before));
             tap(WRITE_X, BTN_CY);
-            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            CHECK_STR_EQ(esc_stick_panel_note(), want);
             memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
             scr->render(&cv, 0);
             CHECK(memcmp(before, fb, sizeof(before)) == 0);
             hold_for(2.25f);
-            CHECK_EQ(programmer_screen_stick_runs(), 0u);
-            CHECK(!esc_stick_running(programmer_screen_stick()));
-            CHECK(!programmer_screen_poll_cmd(&mc));
-            CHECK_STR_EQ(programmer_screen_stick_note(), want);
+            CHECK_EQ(esc_stick_panel_runs(), 0u);
+            CHECK(!esc_stick_running(esc_stick_panel_stick()));
+            CHECK(!esc_stick_panel_poll_cmd(&mc));
+            CHECK_STR_EQ(esc_stick_panel_note(), want);
             memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
             scr->render(&cv, 0);
             CHECK(lit() > 20000);
             /* Put right: the same RUN starts. */
             supply_screen_set_model(false);
-            programmer_screen_set_throttle(true, 0x80u);   /* channel 7 */
+            esc_stick_panel_set_throttle(true, 0x80u);   /* channel 7 */
             scr->tick(0.02f);
-            CHECK_STR_EQ(programmer_screen_stick_note(), "");
+            CHECK_STR_EQ(esc_stick_panel_note(), "");
             /* RUN takes a press again, drawn in the colour of danger. */
             memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
             scr->render(&cv, 0);
             CHECK_EQ(fb[run_px], ui_theme_color(UI_C_DANGER));
             tap(WRITE_X, BTN_CY);
             hold_for(2.25f);
-            CHECK_EQ(programmer_screen_stick_runs(), 1u);
+            CHECK_EQ(esc_stick_panel_runs(), 1u);
             scr->leave();
             supply_screen_set_model(false);
         }
@@ -437,26 +439,26 @@ TEST_CASE(a_bench_that_loses_its_throttle_closes_the_warning)
         if (k == 0) {
             supply_screen_set_model(true);
         } else if (k == 1) {
-            programmer_screen_set_throttle(false, 0x00u);
+            esc_stick_panel_set_throttle(false, 0x00u);
         } else {
-            programmer_screen_set_throttle(true, 0x00u);
+            esc_stick_panel_set_throttle(true, 0x00u);
         }
         scr->tick(0.02f);
         press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
-        CHECK_STR_EQ(programmer_screen_stick_note(),
+        CHECK_STR_EQ(esc_stick_panel_note(),
                      k == 0 ? TR(SP_SUPPLY_MODEL)
                      : k == 1 ? TR(SP_BIND_NOT_READ) : TR(SP_NO_THROTTLE));
         supply_screen_set_model(false);
-        programmer_screen_set_throttle(true, 0x01u);
+        esc_stick_panel_set_throttle(true, 0x01u);
         scr->tick(0.02f);
         hold_for(2.25f);
-        if (programmer_screen_stick_runs() != 0u) {
+        if (esc_stick_panel_runs() != 0u) {
             T_FAIL("reason %d left the warning open", k);
         }
         /* RUN again opens it, and the hold starts the run. */
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        CHECK_EQ(esc_stick_panel_runs(), 1u);
         scr->leave();
     }
 }
@@ -467,25 +469,25 @@ TEST_CASE(a_run_needs_a_change_and_the_warning_held_two_seconds)
     descend_to_hobbywing();
     tap(WRITE_X, BTN_CY);                    /* nothing picked: no RUN */
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 
     pick_cutoff();
     tap(WRITE_X, BTN_CY);                    /* RUN: the warning */
     hold_for(1.5f);                          /* let go early */
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     tap(CANCEL_X, HOLD_Y);                   /* and closed */
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    CHECK(esc_stick_running(programmer_screen_stick()));
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    CHECK(esc_stick_running(esc_stick_panel_stick()));
     /* It begins by arming, with the throttle at rest and the supply off. */
     motor_cmd_t mc;
-    CHECK(programmer_screen_poll_cmd(&mc));
+    CHECK(esc_stick_panel_poll_cmd(&mc));
     CHECK_EQ(mc.kind, MOTOR_CMD_ARM);
-    CHECK(!programmer_screen_poll_cmd(&mc));
+    CHECK(!esc_stick_panel_poll_cmd(&mc));
     CHECK(!supply_screen_output_live());
 }
 
@@ -506,13 +508,13 @@ TEST_CASE(a_hold_that_is_interrupted_starts_nothing)
         } else if (k == 1) {
             scr->cancel();                          /* touch went missing */
         } else {
-            programmer_screen_bench(0u, false, 1u, 1u, false);  /* STOP */
+            esc_stick_panel_bench(0u, false, 1u, 1u, false);  /* STOP */
         }
         for (int i = 0; i < 12; ++i) {
             scr->tick(0.25f);
         }
         press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
-        if (programmer_screen_stick_runs() != 0u) {
+        if (esc_stick_panel_runs() != 0u) {
             T_FAIL("interruption %d still started a run", k);
         }
     }
@@ -528,7 +530,7 @@ TEST_CASE(a_whole_run_on_the_modelled_bench_stores_and_lets_go)
     static rig_t r;
     rig_start(&r);
     rig_run(&r, 300000u);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     CHECK_EQ(run->phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
     CHECK_EQ(r.sim.stores, 1u);
@@ -539,7 +541,7 @@ TEST_CASE(a_whole_run_on_the_modelled_bench_stores_and_lets_go)
     CHECK(r.pct == 0.0f);
     /* The supply ran at the profile's two cells. */
     CHECK_NEAR(supply_screen_set_v(), 7.6f, 0.001f);
-    CHECK(programmer_screen_stick_profile() == NULL);
+    CHECK(esc_stick_panel_profile() == NULL);
 
     /* The result stands until OK, and the menu comes back after it. */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -570,14 +572,14 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
         }
         CHECK(r.on && r.armed);
         /* The supply the run switched on is ESC STICK's. */
-        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_PROGRAMMER);
-        CHECK(programmer_screen_stick_profile() != NULL);
+        CHECK_EQ(supply_screen_owner(), SUPPLY_BY_STICK);
+        CHECK(esc_stick_panel_profile() != NULL);
         esc_stick_reason_t want = ESC_STICK_R_LEFT;
         if (k == 0) {
             scr->leave();
         } else if (k == 1) {
             tap(BACK_X, BACK_Y);             /* not while it runs */
-            CHECK(esc_stick_running(programmer_screen_stick()));
+            CHECK(esc_stick_running(esc_stick_panel_stick()));
             tap(WRITE_X, BTN_CY);            /* ABORT */
             want = ESC_STICK_R_USER;
         } else if (k == 2) {
@@ -589,21 +591,26 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
             want = ESC_STICK_R_BENCH_STOP;
         }
         rig_run(&r, 1000u);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         CHECK_EQ(run->phase, ESC_STICK_ABORTED);
         CHECK_EQ(run->reason, want);
         /* An end the operator chose lights no red; the bench's own does. */
         bool red = true, green = true;
-        programmer_screen_stick_lights(&red, &green);
+        esc_stick_panel_lights(&red, &green);
         CHECK_EQ(red, want == ESC_STICK_R_BENCH_STOP);
         CHECK(!green);
         CHECK(!r.armed);
         CHECK(!r.on);
         CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
         CHECK_EQ(r.sim.stores, 0u);
-        memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-        scr->render(&cv, 0);
-        CHECK(lit() > 20000);
+        /* Leaving closes the session: PROGRAM's list shows.  Else the
+         * result stays on the page. */
+        CHECK_EQ(esc_stick_panel_stage() == 0, k == 0);
+        if (k != 0) {
+            memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+            scr->render(&cv, 0);
+            CHECK(lit() > 20000);
+        }
     }
 }
 
@@ -613,11 +620,11 @@ TEST_CASE(leaving_abort_and_stop_end_a_run_and_let_go)
 TEST_CASE(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run)
 {
     fresh();
-    supply_screen_ask_on(SUPPLY_BY_PROGRAMMER);
+    supply_screen_ask_on(SUPPLY_BY_STICK);
     supply_cmd_t sc;
     CHECK(supply_screen_poll_cmd(&sc) && sc.on);
     supply_screen_set_output(true);
-    CHECK(!esc_stick_running(programmer_screen_stick()));
+    CHECK(!esc_stick_running(esc_stick_panel_stick()));
     scr->leave();
     CHECK(supply_screen_poll_cmd(&sc));
     CHECK(sc.off && !sc.on);
@@ -636,7 +643,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -648,7 +655,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 
     /* A current limit over the SUPPLY cap. */
     fresh();
@@ -659,7 +666,7 @@ TEST_CASE(a_run_the_supply_cannot_give_is_refused)
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
 TEST_CASE(timing_steps_the_settings_and_closing_asks_for_a_save)
@@ -701,7 +708,7 @@ TEST_CASE(an_item_steps_from_keep_and_stops_at_its_ends)
     }
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     CHECK_EQ(run->n, 1);
     CHECK_EQ(run->ch[0].item, 0);
     CHECK_EQ(run->ch[0].value, 1);           /* the last value, "on" */
@@ -715,7 +722,7 @@ TEST_CASE(an_item_steps_from_keep_and_stops_at_its_ends)
     }
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     /* Paging reaches item 8, and BACK climbs to the list. */
     tap(PAGE_DN_X, PAGE_CY);
     tap(STEP_UP_X, STEP_CY(6));
@@ -730,14 +737,14 @@ TEST_CASE(an_item_steps_from_keep_and_stops_at_its_ends)
  * returns the phases seen, one bit each. */
 static unsigned run_drawing(rig_t *r, uint32_t ms)
 {
-    unsigned seen = 1u << programmer_screen_stick()->phase;
-    int last = (int)programmer_screen_stick()->phase;
+    unsigned seen = 1u << esc_stick_panel_stick()->phase;
+    int last = (int)esc_stick_panel_stick()->phase;
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     for (uint32_t i = 0; i < ms; ++i) {
         rig_step(r);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         if ((int)run->phase != last) {
             last = (int)run->phase;
             seen |= 1u << run->phase;
@@ -776,7 +783,7 @@ TEST_CASE(every_phase_of_a_run_draws)
     /* sunrise-pro: two changes, one a power-up. */
     fresh();
     open_profile("sunrise-pro");
-    CHECK_STR_EQ(programmer_screen_stick_page()->id, "sunrise-pro");
+    CHECK_STR_EQ(esc_stick_panel_page()->id, "sunrise-pro");
     tap(STEP_UP_X, STEP_CY(0));
     tap(STEP_UP_X, STEP_CY(0));
     tap(STEP_UP_X, STEP_CY(0));              /* battery: LiFe */
@@ -786,7 +793,7 @@ TEST_CASE(every_phase_of_a_run_draws)
     rig_start(&r);
     seen = run_drawing(&r, 300000u);
     CHECK(seen & (1u << ESC_STICK_CYCLE));
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 3);
     CHECK_EQ(esc_sim_stored(&r.sim, 2), 4);
 }
@@ -815,9 +822,9 @@ TEST_CASE(every_end_draws_its_reason)
         static rig_t r;
         memset(&r, 0, sizeof(r));
         /* The link answers at the start for LINK LOST, and only then. */
-        programmer_screen_bench(0u, false, 0u, 0u, want[k] == ESC_STICK_R_LINK);
+        esc_stick_panel_bench(0u, false, 0u, 0u, want[k] == ESC_STICK_R_LINK);
         hold_for(2.25f);
-        esc_sim_init(&r.sim, programmer_screen_stick()->p, NULL);
+        esc_sim_init(&r.sim, esc_stick_panel_stick()->p, NULL);
         switch (want[k]) {
         case ESC_STICK_R_NOT_ARMED: r.no_arm = true;          break;
         case ESC_STICK_R_NO_POWER:  r.no_power = true;        break;
@@ -839,7 +846,7 @@ TEST_CASE(every_end_draws_its_reason)
         default: break;
         }
         rig_run(&r, 200000u);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         if (run->reason != want[k]) {
             T_FAIL("case %u ended %s", (unsigned)k,
                    esc_stick_reason_text(run->reason));
@@ -847,17 +854,17 @@ TEST_CASE(every_end_draws_its_reason)
         CHECK(!r.on);
         /* Every one of these is an end nobody chose: red, until OK. */
         bool red = false, green = true;
-        programmer_screen_stick_lights(&red, &green);
+        esc_stick_panel_lights(&red, &green);
         CHECK(red && !green);
         scr->tick(0.25f);
-        programmer_screen_stick_lights(&red, NULL);
+        esc_stick_panel_lights(&red, NULL);
         CHECK(red);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 0);
         CHECK(lit() > 20000);
         /* BACK from the result goes to the list. */
         tap(BACK_X, BACK_Y);
-        programmer_screen_stick_lights(&red, NULL);
+        esc_stick_panel_lights(&red, NULL);
         CHECK(!red);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
         scr->render(&cv, 1);
@@ -874,40 +881,40 @@ TEST_CASE(a_run_that_cannot_start_says_why)
      * RUN asks for VOLTAGE, and with one it runs, the warning on the
      * page. */
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Dualsky");
     int row = -1;
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-        const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        const esc_profile_t *q = esc_stick_panel_row(i, NULL);
         row = (q != NULL && strcmp(q->id, "dualsky-xcontroller") == 0)
                   ? i : row;
     }
-    CHECK(programmer_screen_stick_row_why(row) == NULL);
-    const char *warn = programmer_screen_stick_row_warn(row);
+    CHECK(esc_stick_panel_row_why(row) == NULL);
+    const char *warn = esc_stick_panel_row_warn(row);
     CHECK(warn != NULL && strcmp(warn, "ESC voltage rating unknown.") == 0);
     open_model("dualsky-xcontroller", NULL);
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     tap(STEP_UP_X, STEP_CY(0));
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "Profile has no cell count. Set VOLTAGE on the TIMING page.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     settings_set(SET_STICK_V, 7.4f);
     scr->tick(0.02f);
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "VOLTAGE 7.4 V: check the ESC's voltage rating. It is unknown.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
     settings_set(SET_STICK_V, 0.0f);
 
@@ -921,7 +928,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -942,7 +949,7 @@ TEST_CASE(a_run_that_cannot_start_says_why)
     tap(WRITE_X, BTN_CY);
     supply_screen_ask_on(SUPPLY_BY_SERVO);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
 /* The pages step back as well as forward, and leaving with TIMING open
@@ -964,8 +971,17 @@ TEST_CASE(pages_step_back_and_leaving_closes_timing)
     scr->leave();
     CHECK(settings_save_asked());
     settings_cancel_save();
-    /* Back on the screen, TIMING is closed. */
+    /* Leaving closed the session; opened again it starts on the makers,
+     * and the profile's page comes back with TIMING closed. */
+    CHECK_EQ(esc_stick_panel_stage(), 0);
+    scr->enter();
+    open_stick();
+    CHECK_EQ(esc_stick_panel_level(), 0);
+    CHECK(esc_stick_panel_page() == NULL);
+    open_maker("Hobbywing");
+    open_model("hobbywing-flyfun-8item", NULL);
     tap(80, STEP_CY(0));
+    CHECK_EQ(esc_stick_panel_item_at(0) >= 0, true);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
@@ -987,19 +1003,19 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
         pick_cutoff();
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);                     /* ARM queued, not taken */
-        CHECK_EQ(programmer_screen_stick_runs(), 1u);
+        CHECK_EQ(esc_stick_panel_runs(), 1u);
         if (k == 0) {
-            programmer_screen_bench(10u, false, 1u, 1u, false);   /* STOP */
+            esc_stick_panel_bench(10u, false, 1u, 1u, false);   /* STOP */
         } else {
             scr->cancel();                   /* touch events lost */
         }
         motor_cmd_t mc;
         int arms = 0;
-        while (programmer_screen_poll_cmd(&mc)) {
+        while (esc_stick_panel_poll_cmd(&mc)) {
             arms += (mc.kind == MOTOR_CMD_ARM) ? 1 : 0;
         }
         CHECK_EQ(arms, 0);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         CHECK(!esc_stick_running(run));
         CHECK_EQ(run->reason, (k == 0) ? ESC_STICK_R_STOP : ESC_STICK_R_TOUCH);
         CHECK(!supply_screen_output_live());
@@ -1014,7 +1030,7 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
     hold_for(2.25f);
     CHECK_EQ(drain_cmds(MOTOR_CMD_ARM), 1);
     scr->cancel();
-    CHECK_EQ(programmer_screen_stick()->reason, ESC_STICK_R_TOUCH);
+    CHECK_EQ(esc_stick_panel_stick()->reason, ESC_STICK_R_TOUCH);
     CHECK_EQ(drain_cmds(MOTOR_CMD_DISARM), 1);
 
     /* Armed and running, a lost touch is the arm watch's to judge. */
@@ -1029,7 +1045,7 @@ TEST_CASE(a_stop_or_a_lost_touch_takes_a_queued_arm_away)
         rig_step(&r);
     }
     scr->cancel();
-    CHECK(esc_stick_running(programmer_screen_stick()));
+    CHECK(esc_stick_running(esc_stick_panel_stick()));
     scr->leave();
 }
 
@@ -1046,19 +1062,19 @@ TEST_CASE(the_screen_passes_the_supplys_own_state)
     rig_start(&r);
     r.off_lag = 300u;
     rig_run(&r, 300000u);
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_DONE);
     CHECK_EQ(r.moved_while_on, 0u);
     CHECK(!r.module_on);
     CHECK_EQ(esc_sim_stored(&r.sim, 3), 2);
 }
 
 /* The list follows VOLTAGE and the SUPPLY cap: its order and its count are
- * built again when either moves, not only when the class is opened. */
+ * built again when either moves, not only when the session opens. */
 TEST_CASE(the_list_follows_voltage_and_the_cap)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
@@ -1066,21 +1082,26 @@ TEST_CASE(the_list_follows_voltage_and_the_cap)
     /* Every hobbywing-flyfun-8item model needs 7.6 V or more now: its row
      * is a refused one and opens nothing. */
     open_model("hobbywing-flyfun-8item", NULL);
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(esc_stick_panel_page() == NULL);
     /* The cap back up: it opens again. */
     settings_set(SET_SUPPLY_V_MAX, 21.0f);
     supply_screen_limits_changed();
     scr->tick(0.02f);
     open_model("hobbywing-flyfun-8item", NULL);
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    CHECK_STR_EQ(programmer_screen_stick()->p->id, "hobbywing-flyfun-8item");
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    CHECK_STR_EQ(esc_stick_panel_stick()->p->id, "hobbywing-flyfun-8item");
     scr->leave();
-    /* And on the way back from a profile, and on entering the screen. */
+    /* And on the way back from a profile, and on opening the session
+     * again after the screen was left. */
     scr->enter();
+    open_stick();
+    open_maker("Hobbywing");
+    open_model("hobbywing-flyfun-8item", NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     tap(BACK_X, BACK_Y);
     settings_set(SET_STICK_V, 20.0f);
     settings_set(SET_SUPPLY_V_MAX, 12.0f);
@@ -1104,7 +1125,7 @@ TEST_CASE(reset_and_exit_rows_offer_no_value)
     CHECK(lit() > 20000);
     tap(WRITE_X, BTN_CY);
     hold_for(3.0f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
 /* A profile the supply cannot give the voltage for is refused in the list,
@@ -1114,8 +1135,8 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     fresh();
     settings_set(SET_SUPPLY_V_MAX, 7.0f);
     supply_screen_limits_changed();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1125,14 +1146,14 @@ TEST_CASE(a_profile_over_the_supply_cap_is_refused_in_the_list)
     tap(STEP_UP_X, STEP_CY(2));
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
+    CHECK(esc_stick_panel_page() == NULL);
     /* DualSky's XController states none, and opens, its rating
      * unknown. */
     tap(BACK_X, BACK_Y);
     open_maker("Dualsky");
     open_model("dualsky-xcontroller", NULL);
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     tap(TIMING_X, TIMING_Y);
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1159,15 +1180,15 @@ TEST_CASE(the_page_offers_only_the_models_items)
     };
     for (size_t c = 0; c < 2; ++c) {
         fresh();
-        programmer_screen_bench(0u, false, 0u, 0u, false);
-        tap(TILE_CX(2), TILE_CY);
+        esc_stick_panel_bench(0u, false, 0u, 0u, false);
+        open_stick();
         open_maker("Hobbywing");
         open_model("hobbywing-flyfun-v5", k[c].model);
-        CHECK(programmer_screen_stick_page() != NULL);
+        CHECK(esc_stick_panel_page() != NULL);
         bool seen = false;
         int rows = 0;
-        for (int i = 0; programmer_screen_stick_item_at(i) >= 0; ++i) {
-            seen = seen || programmer_screen_stick_item_at(i) == bec;
+        for (int i = 0; esc_stick_panel_item_at(i) >= 0; ++i) {
+            seen = seen || esc_stick_panel_item_at(i) == bec;
             ++rows;
         }
         CHECK_EQ(seen, k[c].has);
@@ -1186,41 +1207,41 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
 {
     fresh();
     settings_set(SET_STICK_V, 20.0f);
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     int six = -1;
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
         int m = -1;
-        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        const esc_profile_t *p = esc_stick_panel_row(i, &m);
         if (p != NULL && strcmp(p->id, "hobbywing-flyfun-8item") == 0
             && strcmp(p->models[m].name, "FlyFun-6A") == 0) {
             six = i;
         }
     }
     CHECK(six >= 0);
-    CHECK_STR_EQ(programmer_screen_stick_row_why(six),
+    CHECK_STR_EQ(esc_stick_panel_row_why(six),
                  "20.0 V; ESC maximum 8.4 V");
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(programmer_screen_stick_row_why(six),
+    CHECK_STR_EQ(esc_stick_panel_row_why(six),
                  "20.0 V; ESC höchstens 8.4 V");
     ui_text_set_language(UI_LANG_EN);
     open_model("hobbywing-flyfun-8item", "FlyFun-6A");
-    CHECK(programmer_screen_stick_page() == NULL);   /* refused */
+    CHECK(esc_stick_panel_page() == NULL);   /* refused */
 
     /* Set while the page is open: RUN says why, and nothing starts. */
     settings_set(SET_STICK_V, 7.6f);
     scr->tick(0.02f);
-    CHECK(programmer_screen_stick_row_why(six) == NULL);
+    CHECK(esc_stick_panel_row_why(six) == NULL);
     open_model("hobbywing-flyfun-8item", "FlyFun-6A");
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     pick_cutoff();
     settings_set(SET_STICK_V, 20.0f);
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "VOLTAGE 20.0 V exceeds the ESC limit of 8.4 V.");
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1229,22 +1250,22 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
 
     /* The automatic voltage: the model's 2 cells, 7.6 V, under 8.4 V. */
     fresh();
     settings_set(SET_STICK_V, 0.0f);
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     open_model("hobbywing-flyfun-8item", "FlyFun-6A");
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     pick_cutoff();
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7600u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_stick()->out.supply_mv, 7600u);
     scr->leave();
 
     /* CURRENT LIMIT over a rating a card profile states: a FlyFun-6A
@@ -1265,27 +1286,27 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     card.model_count = 1;
     CHECK(esc_profiles_override(&card, NULL));
     settings_set(SET_STICK_I, 2.0f);
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     int row = -1;
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-        const esc_profile_t *q = programmer_screen_stick_row(i, NULL);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        const esc_profile_t *q = esc_stick_panel_row(i, NULL);
         row = (q != NULL && strcmp(q->id, "card-one-amp") == 0) ? i : row;
     }
-    const char *why = programmer_screen_stick_row_why(row);
+    const char *why = esc_stick_panel_row_why(row);
     CHECK(why != NULL && strcmp(why, "2.0 A; ESC maximum 1 A") == 0);
     settings_set(SET_STICK_I, 1.0f);
     scr->tick(0.02f);
-    CHECK(programmer_screen_stick_row_why(row) == NULL);
+    CHECK(esc_stick_panel_row_why(row) == NULL);
     open_model("card-one-amp", NULL);
     pick_cutoff();
     settings_set(SET_STICK_I, 2.0f);
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "CURRENT LIMIT 2.0 A exceeds the ESC rating of 1 A.");
     settings_set(SET_STICK_I, 1.0f);
     scr->leave();
@@ -1294,26 +1315,26 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
     /* KOLIBRI-X 60 LV states no cell count and no rating: VOLTAGE 0 takes
      * the family's lowest cell count, opens, and says so. */
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Kontronik");
     int kx = -1;
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
         int m = -1;
-        const esc_profile_t *q = programmer_screen_stick_row(i, &m);
+        const esc_profile_t *q = esc_stick_panel_row(i, &m);
         kx = (q != NULL && strcmp(q->models[m].name, "KOLIBRI-X 60 LV") == 0)
                  ? i : kx;
     }
     CHECK(kx >= 0);
-    CHECK(programmer_screen_stick_row_why(kx) == NULL);
-    const char *warn = programmer_screen_stick_row_warn(kx);
+    CHECK(esc_stick_panel_row_why(kx) == NULL);
+    const char *warn = esc_stick_panel_row_warn(kx);
     CHECK(warn != NULL && strcmp(warn, "ESC voltage rating unknown.") == 0);
     ui_text_set_language(UI_LANG_DE);
-    warn = programmer_screen_stick_row_warn(kx);
+    warn = esc_stick_panel_row_warn(kx);
     CHECK(warn != NULL && strcmp(warn, "Zulässige ESC-Spannung unbekannt.") == 0);
     ui_text_set_language(UI_LANG_EN);
     open_model("kontronik-kontrol-x", "KOLIBRI-X 60 LV");
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
     tap(STEP_UP_X, STEP_CY(0));
     supply_reads_off();
@@ -1325,7 +1346,7 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
              "%u.%u V uses the family's lowest cell count. This ESC's "
              "rating is unknown.",
              (unsigned)(mv / 1000u), (unsigned)(mv % 1000u / 100u));
-    CHECK_STR_EQ(programmer_screen_stick_note(), want);
+    CHECK_STR_EQ(esc_stick_panel_note(), want);
     scr->leave();
 }
 
@@ -1335,8 +1356,8 @@ TEST_CASE(a_voltage_over_the_escs_rating_is_refused)
  * docked right of SP_DOCK_X below the crumb row. */
 #define FIND_X     600
 #define FIND_CLR_X 682
-#define FIND_Y     27
-static const gfx_rect_t k_dock = { 352, 50, 442, 376 };
+#define FIND_Y     45
+static const gfx_rect_t k_dock = { 352, 68, 442, 358 };
 
 /* One key of the docked search keyboard; "\n" is OK, "~" CANCEL, "<" DEL,
  * "#" CLR. */
@@ -1366,33 +1387,33 @@ static void find_type(const char *s)
 
 static int listed(void)
 {
-    return programmer_screen_stick_listed(NULL);
+    return esc_stick_panel_listed(NULL);
 }
 
 /* Every key filters the list at once, and the list stays in view. */
 TEST_CASE(the_search_filters_the_list_with_every_key)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
+    CHECK_EQ(esc_stick_panel_level(), 0);
     CHECK_EQ(listed(), 20);                  /* the makers */
-    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_STR_EQ(esc_stick_panel_search(), "");
     tap(LIST_DN_X, LIST_CY);                 /* a page down first */
     int top = 0;
-    (void)programmer_screen_stick_listed(&top);
+    (void)esc_stick_panel_listed(&top);
     CHECK_EQ(top, 9);
 
     tap(FIND_X, FIND_Y);
-    CHECK(programmer_screen_stick_typing());
+    CHECK(esc_stick_panel_typing());
     find_key('S');
-    CHECK_STR_EQ(programmer_screen_stick_search(), "S");
-    (void)programmer_screen_stick_listed(&top);
+    CHECK_STR_EQ(esc_stick_panel_search(), "S");
+    (void)esc_stick_panel_listed(&top);
     CHECK_EQ(top, 0);                        /* back to the top */
     const int after_s = listed();
     CHECK(after_s > 3 && after_s < 20);
     find_type("KY*V2");
-    CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
+    CHECK_STR_EQ(esc_stick_panel_search(), "SKY*V2");
     CHECK_EQ(listed(), 1);                   /* Hobbywing alone */
     find_key('<');                           /* DEL: "SKY*V" */
     CHECK(listed() >= 1);
@@ -1405,15 +1426,15 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
 
     /* The maker tapped while typing opens its models the search finds; no
      * maker opens by itself. */
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(esc_stick_panel_level(), 0);
     tap(100, SP_ROW_CY(0));
-    CHECK(!programmer_screen_stick_typing());
-    CHECK_EQ(programmer_screen_stick_level(), 1);
-    CHECK_STR_EQ(programmer_screen_stick_maker(), "Hobbywing");
+    CHECK(!esc_stick_panel_typing());
+    CHECK_EQ(esc_stick_panel_level(), 1);
+    CHECK_STR_EQ(esc_stick_panel_maker(), "Hobbywing");
     CHECK_EQ(listed(), 14);
     for (int i = 0; i < listed(); ++i) {
         int m = -1;
-        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
+        const esc_profile_t *p = esc_stick_panel_row(i, &m);
         CHECK(p != NULL && esc_model_matches(p, (unsigned)m, "SKY*V2"));
     }
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
@@ -1431,23 +1452,23 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
 
     /* A model opens its family's page; BACK returns with the search. */
     tap(ROW_CX, SP_ROW_CY(0));
-    const esc_profile_t *p = programmer_screen_stick_page();
+    const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL);
     CHECK(esc_profile_matches(p, "SKY*V2"));
     tap(BACK_X, BACK_Y);
-    CHECK(programmer_screen_stick_page() == NULL);
-    CHECK_EQ(programmer_screen_stick_level(), 1);
-    CHECK_STR_EQ(programmer_screen_stick_search(), "SKY*V2");
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK_EQ(esc_stick_panel_level(), 1);
+    CHECK_STR_EQ(esc_stick_panel_search(), "SKY*V2");
     CHECK_EQ(listed(), 14);
     tap(BACK_X, BACK_Y);
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(esc_stick_panel_level(), 0);
     CHECK_EQ(listed(), 1);
 
     /* X clears it. */
     tap(FIND_CLR_X, FIND_Y);
-    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_STR_EQ(esc_stick_panel_search(), "");
     CHECK_EQ(listed(), 20);
-    CHECK(!programmer_screen_stick_typing());
+    CHECK(!esc_stick_panel_typing());
 }
 
 /* OK keeps what was typed, CANCEL goes back to what the keyboard opened
@@ -1455,12 +1476,12 @@ TEST_CASE(the_search_filters_the_list_with_every_key)
 TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     tap(FIND_X, FIND_Y);
     find_type("FLYFUN\n");
-    CHECK(!programmer_screen_stick_typing());
-    CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
+    CHECK(!esc_stick_panel_typing());
+    CHECK_STR_EQ(esc_stick_panel_search(), "FLYFUN");
     CHECK_EQ(listed(), 1);
 
     tap(FIND_X, FIND_Y);
@@ -1470,28 +1491,28 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
     scr->render(&cv, 0);
     CHECK(lit() > 20000);
     find_key('~');                           /* CANCEL */
-    CHECK(!programmer_screen_stick_typing());
-    CHECK_STR_EQ(programmer_screen_stick_search(), "FLYFUN");
+    CHECK(!esc_stick_panel_typing());
+    CHECK_STR_EQ(esc_stick_panel_search(), "FLYFUN");
     CHECK_EQ(listed(), 1);
 
     tap(FIND_X, FIND_Y);
     find_type("#\n");                        /* CLR, OK: empty */
-    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_STR_EQ(esc_stick_panel_search(), "");
     CHECK_EQ(listed(), 20);
 
     /* The search holds its most, sixteen. */
     tap(FIND_X, FIND_Y);
     find_type("ABCDEFGHIJKLMNOPQRS");
-    CHECK_EQ((int)strlen(programmer_screen_stick_search()), 16);
+    CHECK_EQ((int)strlen(esc_stick_panel_search()), 16);
     /* BACK and leaving the screen close the keyboard, the search kept. */
     tap(BACK_X, BACK_Y);
-    CHECK(!programmer_screen_stick_typing());
-    tap(TILE_CX(2), TILE_CY);
-    CHECK_EQ((int)strlen(programmer_screen_stick_search()), 16);
+    CHECK(!esc_stick_panel_typing());
+    open_stick();
+    CHECK_EQ((int)strlen(esc_stick_panel_search()), 16);
     tap(FIND_X, FIND_Y);
-    CHECK(programmer_screen_stick_typing());
+    CHECK(esc_stick_panel_typing());
     scr->leave();
-    CHECK(!programmer_screen_stick_typing());
+    CHECK(!esc_stick_panel_typing());
     CHECK_EQ(listed(), 0);
 }
 
@@ -1499,8 +1520,8 @@ TEST_CASE(ok_keeps_the_search_cancel_restores_it_and_empty_clears_it)
 TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     tap(FIND_X, FIND_Y);
     ui_textkey_t k;
     memset(&k, 0, sizeof(k));
@@ -1514,8 +1535,8 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
     scr->cancel();
     e.type = TOUCH_EVENT_UP;
     scr->event(&e);
-    CHECK_STR_EQ(programmer_screen_stick_search(), "");
-    CHECK(programmer_screen_stick_typing());
+    CHECK_STR_EQ(esc_stick_panel_search(), "");
+    CHECK(esc_stick_panel_typing());
     /* A key slid off is no key either. */
     e.type = TOUCH_EVENT_DOWN;
     scr->event(&e);
@@ -1524,7 +1545,7 @@ TEST_CASE(a_lost_touch_drops_a_search_key_under_way)
     scr->event(&e);
     e.type = TOUCH_EVENT_UP;
     scr->event(&e);
-    CHECK_STR_EQ(programmer_screen_stick_search(), "");
+    CHECK_STR_EQ(esc_stick_panel_search(), "");
 }
 
 /* The footer's count, mirrored from esc_stick_panel.c: SP_COUNT_W, 360
@@ -1554,8 +1575,8 @@ TEST_CASE(the_header_fits_at_the_registrys_most)
         p.brand = brands[i];
         CHECK(esc_profiles_override(&p, NULL));
     }
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     tap(FIND_X, FIND_Y);
     find_type("*");
     const int makers = listed();
@@ -1564,7 +1585,7 @@ TEST_CASE(the_header_fits_at_the_registrys_most)
         tap(LIST_DN_X, LIST_CY);
     }
     int top = 0;
-    (void)programmer_screen_stick_listed(&top);
+    (void)esc_stick_panel_listed(&top);
     CHECK(top + 9 >= makers && top < makers);
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         static const ui_text_id_t k[] = {
@@ -1584,7 +1605,7 @@ TEST_CASE(the_header_fits_at_the_registrys_most)
         }
         ui_text_set_language((ui_lang_t)l);
         memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
-        programmer_invalidate();
+        stick_invalidate();
         scr->render(&cv, l & 1);
         CHECK(lit() > 20000);
     }
@@ -1608,13 +1629,13 @@ TEST_CASE(the_green_light_follows_the_beeps)
     rig_start(&r);
     unsigned on = 0u, off = 0u, rises = 0u;
     bool was = false, red = true;
-    for (int i = 0; i < 240000 && esc_stick_running(programmer_screen_stick());
+    for (int i = 0; i < 240000 && esc_stick_running(esc_stick_panel_stick());
          ++i) {
         rig_step(&r);
         bool g = false;
-        programmer_screen_stick_lights(&red, &g);
+        esc_stick_panel_lights(&red, &g);
         CHECK(!red);
-        if (programmer_screen_stick()->det.high) {
+        if (esc_stick_panel_stick()->det.high) {
             CHECK(g);                        /* never dark in a beep */
         }
         on += g ? 1u : 0u;
@@ -1627,11 +1648,11 @@ TEST_CASE(the_green_light_follows_the_beeps)
         }
     }
     rig_run(&r, 10u);
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_DONE);
     CHECK(on > 1000u && off > 1000u);
     CHECK(rises > 5u);
     bool g = true;
-    programmer_screen_stick_lights(&red, &g);
+    esc_stick_panel_lights(&red, &g);
     CHECK(!red && !g);                       /* DONE: both dark */
 }
 
@@ -1646,8 +1667,8 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
     }
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    CHECK_EQ(programmer_screen_stick()->n, 7);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_stick()->n, 7);
     tap(WRITE_X, BTN_CY);                    /* ABORT */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
@@ -1658,7 +1679,7 @@ TEST_CASE(a_result_of_many_changes_counts_the_rest)
 
 /* MANUAL INTERVENTION REQUIRED, in the item list's header. */
 #define HAND_X 264
-#define HAND_Y 115
+#define HAND_Y 124
 
 /* The stick class, page two, row five: kontronik-jazz, the fifth of the
  * Kontronik profiles that run. */
@@ -1680,42 +1701,42 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
 {
     fresh();
     descend_to_jazz();
-    const esc_profile_t *p = programmer_screen_stick_page();
+    const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL);
     if (p == NULL) {
         return;
     }
     CHECK_STR_EQ(p->id, "kontronik-jazz");
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     draws();
     tap(WRITE_X, BTN_CY);                    /* RUN's place: covered */
     tap(BACK_X, BACK_Y);
-    CHECK(programmer_screen_stick_hand_shown());
-    CHECK(programmer_screen_stick_page() == p);
+    CHECK(esc_stick_panel_hand_shown());
+    CHECK(esc_stick_panel_page() == p);
     tap(CANCEL_X, HOLD_Y);                   /* OK */
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     draws();
 
     /* Opened again, it stays closed; the button opens it. */
     tap(BACK_X, BACK_Y);
     open_model("kontronik-jazz", NULL);
-    CHECK(programmer_screen_stick_page() == p);
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_page() == p);
+    CHECK(!esc_stick_panel_hand_shown());
     tap(HAND_X, HAND_Y);
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
 
     /* A profile without steps has no button and no pop-up. */
     tap(BACK_X, BACK_Y);
     tap(BACK_X, BACK_Y);                     /* the makers */
     open_maker("Hobbywing");
     open_model("hobbywing-flyfun-8item", NULL);
-    CHECK_STR_EQ(programmer_screen_stick_page()->id,
+    CHECK_STR_EQ(esc_stick_panel_page()->id,
                  "hobbywing-flyfun-8item");
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     tap(HAND_X, HAND_Y);
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
 
     /* Leaving the screen closes it. */
     tap(BACK_X, BACK_Y);
@@ -1723,9 +1744,9 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
     open_maker("Kontronik");
     open_model("kontronik-jazz", NULL);
     tap(HAND_X, HAND_Y);
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     scr->leave();
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
 }
 
 /* A row the bench does not run opens nothing, unless it has manual steps:
@@ -1733,27 +1754,27 @@ TEST_CASE(manual_steps_show_once_by_themselves_and_on_their_button)
 TEST_CASE(a_row_that_does_not_run_shows_its_manual_steps)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     tap(FIND_X, FIND_Y);
     find_type("KOSMIK\n");
     CHECK_EQ(listed(), 1);                   /* one maker */
     tap(ROW_CX, SP_ROW_CY(0));
     CHECK_EQ(listed(), 12);                  /* its KOSMIK models */
     tap(ROW_CX, SP_ROW_CY(0));
-    CHECK(programmer_screen_stick_page() == NULL);
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK(esc_stick_panel_hand_shown());
     draws();
     tap(CANCEL_X, HOLD_Y);
-    CHECK(!programmer_screen_stick_hand_shown());
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(!esc_stick_panel_hand_shown());
+    CHECK(esc_stick_panel_page() == NULL);
 
     /* With the keyboard open, the tap closes it first. */
     tap(FIND_X, FIND_Y);
-    CHECK(programmer_screen_stick_typing());
+    CHECK(esc_stick_panel_typing());
     tap(100, SP_ROW_CY(0));
-    CHECK(!programmer_screen_stick_typing());
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_typing());
+    CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
 
     /* graupner-brushless-control-t: a person reads its LEDs; no steps. */
@@ -1761,8 +1782,8 @@ TEST_CASE(a_row_that_does_not_run_shows_its_manual_steps)
     tap(BACK_X, BACK_Y);                     /* the makers */
     open_maker("Graupner");
     tap(ROW_CX, SP_ROW_CY(0));
-    CHECK(!programmer_screen_stick_hand_shown());
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(!esc_stick_panel_hand_shown());
+    CHECK(esc_stick_panel_page() == NULL);
 }
 
 /* A whole JAZZ run: the warning holds the jumper step, the run stops after
@@ -1780,10 +1801,10 @@ TEST_CASE(a_run_asks_for_its_manual_step_and_goes_on_with_done)
     tap(WRITE_X, BTN_CY);
     draws();                                 /* the warning, with its step */
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     static rig_t r;
     rig_start(&r);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
@@ -1826,19 +1847,19 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
         return;
     }
     ui_text_set_language(UI_LANG_EN);
-    CHECK_STR_EQ(programmer_screen_step_text(&p->manual[1]),
+    CHECK_STR_EQ(esc_stick_panel_step_text(&p->manual[1]),
                  p->manual[1].action);
     ui_text_set_language(UI_LANG_DE);
-    CHECK_STR_EQ(programmer_screen_step_text(&p->manual[1]),
+    CHECK_STR_EQ(esc_stick_panel_step_text(&p->manual[1]),
                  "Nach 2 s oder der Tonfolge: JAZZ: Jumper abziehen. "
                  "MINIJAZZ: Taster dr\xC3\xBC" "cken.");
     /* No German in the step: the English. */
     esc_manual_t m = p->manual[0];
     m.action_de = "";
-    CHECK_STR_EQ(programmer_screen_step_text(&m), m.action);
+    CHECK_STR_EQ(esc_stick_panel_step_text(&m), m.action);
     m.action_de = NULL;
-    CHECK_STR_EQ(programmer_screen_step_text(&m), m.action);
-    CHECK_STR_EQ(programmer_screen_step_text(NULL), "");
+    CHECK_STR_EQ(esc_stick_panel_step_text(&m), m.action);
+    CHECK_STR_EQ(esc_stick_panel_step_text(NULL), "");
     for (size_t i = 0; i < esc_profiles_count(); ++i) {
         const esc_profile_t *q = esc_profiles_at(i);
         for (unsigned k = 0; k < q->manual_count; ++k) {
@@ -1853,7 +1874,7 @@ TEST_CASE(a_manual_step_shows_in_the_language_showing)
     fresh();
     ui_text_set_language(UI_LANG_DE);
     descend_to_jazz();
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     draws();
     ui_text_set_language(UI_LANG_EN);
 }
@@ -1871,10 +1892,10 @@ static const esc_stick_t *run_to_end_step(rig_t *r)
     supply_reads_off();
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     rig_start(r);
     r->no_watch = true;
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     bool pressed = false;
     for (uint32_t i = 0; i < 240000u && esc_stick_running(run)
                          && run->phase != ESC_STICK_HAND_END; ++i) {
@@ -1898,8 +1919,8 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     CHECK(r.on);
     CHECK(r.armed);
     CHECK(r.pct == ESC_STICK_PCT_MAX);
-    CHECK(programmer_screen_stick_hand_shown() == false);
-    CHECK_STR_EQ(programmer_screen_stick_left_text(),
+    CHECK(esc_stick_panel_hand_shown() == false);
+    CHECK_STR_EQ(esc_stick_panel_left_text(),
                  "Without DONE within %u s, the run ends and power switches "
                  "off. The ESC may lock itself.");
     draws();                                 /* the prompt */
@@ -1940,10 +1961,10 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     supply_reads_off();
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     rig_start(&r);
     r.no_watch = true;
-    run = programmer_screen_stick();
+    run = esc_stick_panel_stick();
     bool pulled = false;
     for (uint32_t i = 0; i < 240000u && esc_stick_running(run)
                          && run->phase != ESC_STICK_HAND_END; ++i) {
@@ -1955,7 +1976,7 @@ TEST_CASE(the_supply_stays_on_until_done_after_the_store)
     }
     CHECK_EQ(run->phase, ESC_STICK_HAND_END);
     CHECK(esc_stick_hand(run) != NULL && !esc_stick_hand(run)->locks);
-    CHECK_STR_EQ(programmer_screen_stick_left_text(),
+    CHECK_STR_EQ(esc_stick_panel_left_text(),
                  "Without DONE within %u s, the run ends and power switches "
                  "off. The mode may not be saved.");
     draws();                                 /* the prompt */
@@ -2004,7 +2025,7 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
         static rig_t r;
         rig_start(&r);
         r.no_watch = true;
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         CHECK_EQ(run->n, (uint8_t)picks);
         for (uint32_t i = 0; i < 900000u && esc_stick_running(run)
                              && run->phase != ESC_STICK_HAND_END; ++i) {
@@ -2017,13 +2038,13 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
         CHECK(esc_stick_cut_short(run));
         CHECK_EQ(esc_stick_made_count(run), (unsigned)picks - 1u);
         if (pass == 0) {
-            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+            CHECK_STR_EQ(esc_stick_panel_result_head(),
                          "5 of 6 selections completed.");
             /* The ESC's loop decides which selection comes last; here the
              * one being confirmed is shown on a row, and the line for the
              * two past the fourth counts both made. */
             CHECK(run->active < 4u && esc_stick_unsure(run, run->active));
-            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+            CHECK_STR_EQ(esc_stick_panel_result_more(),
                          "AND 2 MORE, 2 COMPLETED");
             /* The same end with the one being confirmed past the fourth
              * row: the line names it unsure (the run's state moved to
@@ -2032,19 +2053,19 @@ TEST_CASE(an_unsure_selection_is_not_counted_as_made)
             esc_stick_t *moved = (esc_stick_t *)(uintptr_t)run;
             moved->active = 5u;
             CHECK(esc_stick_unsure(run, 5u));
-            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+            CHECK_STR_EQ(esc_stick_panel_result_head(),
                          "5 of 6 selections completed.");
-            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+            CHECK_STR_EQ(esc_stick_panel_result_more(),
                          "AND 2 MORE, 1 COMPLETED, 1 UNCERTAIN");
             ui_text_set_language(UI_LANG_DE);
-            CHECK_STR_EQ(programmer_screen_stick_result_more(),
+            CHECK_STR_EQ(esc_stick_panel_result_more(),
                          "UND 2 WEITERE, 1 AUSGEFÜHRT, 1 UNKLAR");
             draws();
             ui_text_set_language(UI_LANG_EN);
         } else {
-            CHECK_STR_EQ(programmer_screen_stick_result_head(),
+            CHECK_STR_EQ(esc_stick_panel_result_head(),
                          "0 of 1 selections completed.");
-            CHECK_STR_EQ(programmer_screen_stick_result_more(), "");
+            CHECK_STR_EQ(esc_stick_panel_result_more(), "");
         }
         draws();
         scr->leave();
@@ -2066,7 +2087,7 @@ TEST_CASE(abort_on_the_prompt_ends_the_run)
     hold_for(2.25f);
     static rig_t r;
     rig_start(&r);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
@@ -2087,13 +2108,13 @@ TEST_CASE(abort_on_the_prompt_ends_the_run)
 TEST_CASE(makers_are_alphabetical_and_count_their_models)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
+    CHECK_EQ(esc_stick_panel_level(), 0);
     CHECK_EQ(listed(), 20);
     for (int i = 1; i < listed(); ++i) {
-        const char *a = programmer_screen_stick_maker_at(i - 1);
-        const char *b = programmer_screen_stick_maker_at(i);
+        const char *a = esc_stick_panel_maker_at(i - 1);
+        const char *b = esc_stick_panel_maker_at(i);
         char x[48], y[48];
         snprintf(x, sizeof(x), "%s", a);
         snprintf(y, sizeof(y), "%s", b);
@@ -2107,19 +2128,19 @@ TEST_CASE(makers_are_alphabetical_and_count_their_models)
             T_FAIL("%s listed before %s", a, b);
         }
     }
-    CHECK_STR_EQ(programmer_screen_stick_maker_at(0), "Align");
-    CHECK(programmer_screen_stick_maker_at(20) == NULL);
+    CHECK_STR_EQ(esc_stick_panel_maker_at(0), "Align");
+    CHECK(esc_stick_panel_maker_at(20) == NULL);
     /* Kontronik's models: every model of its 22 families. */
     open_maker("Kontronik");
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_EQ(esc_stick_panel_level(), 1);
     unsigned models = 0;
     for (size_t i = 0; i < esc_profiles_count(); ++i) {
         const esc_profile_t *p = esc_profiles_at(i);
         models += same_name(p->brand, "Kontronik") ? p->model_count : 0u;
     }
     CHECK_EQ(listed(), (int)models);
-    CHECK(programmer_screen_stick_maker_at(0) == NULL);
-    CHECK(programmer_screen_stick_row(listed(), NULL) == NULL);
+    CHECK(esc_stick_panel_maker_at(0) == NULL);
+    CHECK(esc_stick_panel_row(listed(), NULL) == NULL);
     draws();
     /* The second level's BACK keeps the first's page. */
     tap(BACK_X, BACK_Y);
@@ -2127,9 +2148,9 @@ TEST_CASE(makers_are_alphabetical_and_count_their_models)
     open_maker("Robbe");
     tap(BACK_X, BACK_Y);
     int top = 0;
-    (void)programmer_screen_stick_listed(&top);
+    (void)esc_stick_panel_listed(&top);
     CHECK_EQ(top, 9);
-    CHECK_STR_EQ(programmer_screen_stick_maker(), "");
+    CHECK_STR_EQ(esc_stick_panel_maker(), "");
 }
 
 /* One key of the order: smaller first, 0 -- not stated -- last. */
@@ -2152,14 +2173,14 @@ TEST_CASE(models_go_by_current_then_voltage_then_name)
                                      "Dualsky" };
     for (size_t b = 0; b < sizeof(k) / sizeof(k[0]); ++b) {
         fresh();
-        programmer_screen_bench(0u, false, 0u, 0u, false);
-        tap(TILE_CX(2), TILE_CY);
+        esc_stick_panel_bench(0u, false, 0u, 0u, false);
+        open_stick();
         open_maker(k[b]);
         bool missing = false;
         for (int i = 1; i < listed(); ++i) {
             int ma = -1, mb = -1;
-            const esc_profile_t *pa = programmer_screen_stick_row(i - 1, &ma);
-            const esc_profile_t *pb = programmer_screen_stick_row(i, &mb);
+            const esc_profile_t *pa = esc_stick_panel_row(i - 1, &ma);
+            const esc_profile_t *pb = esc_stick_panel_row(i, &mb);
             const esc_model_t *x = &pa->models[ma], *y = &pb->models[mb];
             missing = missing || x->current_a == 0u || x->v_max_mv == 0u
                       || y->current_a == 0u || y->v_max_mv == 0u;
@@ -2192,10 +2213,10 @@ TEST_CASE(models_go_by_current_then_voltage_then_name)
     /* Kontronik's first: the smallest current it lists. */
     int m = -1;
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Kontronik");
-    const esc_profile_t *p = programmer_screen_stick_row(0, &m);
+    const esc_profile_t *p = esc_stick_panel_row(0, &m);
     uint16_t least = 0xFFFFu;
     for (size_t i = 0; i < esc_profiles_count(); ++i) {
         const esc_profile_t *q = esc_profiles_at(i);
@@ -2215,13 +2236,13 @@ TEST_CASE(models_go_by_current_then_voltage_then_name)
 TEST_CASE(a_model_row_opens_its_family_at_its_own_voltage)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Kontronik");
     open_model("kontronik-jazz", "JAZZ 55 LV");
-    const esc_profile_t *p = programmer_screen_stick_page();
+    const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL && strcmp(p->id, "kontronik-jazz") == 0);
-    const int m = programmer_screen_stick_model();
+    const int m = esc_stick_panel_model();
     CHECK(m >= 0 && strcmp(p->models[m].name, "JAZZ 55 LV") == 0);
     tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
     draws();
@@ -2241,16 +2262,16 @@ TEST_CASE(a_model_row_opens_its_family_at_its_own_voltage)
         }
     }
     CHECK(esc_stick_model_mv(q, most) >= esc_stick_profile_mv(q));
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     open_model(q->id, q->models[most].name);
-    if (programmer_screen_stick_page() == q) {
+    if (esc_stick_panel_page() == q) {
         tap(STEP_UP_X, STEP_CY(0));
         tap(WRITE_X, BTN_CY);
         hold_for(2.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), 1u);
-        CHECK_EQ(programmer_screen_stick()->out.supply_mv,
+        CHECK_EQ(esc_stick_panel_runs(), 1u);
+        CHECK_EQ(esc_stick_panel_stick()->out.supply_mv,
                  esc_stick_model_mv(q, most));
         scr->leave();
     } else {
@@ -2265,31 +2286,31 @@ TEST_CASE(a_model_row_opens_its_family_at_its_own_voltage)
 TEST_CASE(the_search_finds_on_both_levels_and_back_keeps_it)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     tap(FIND_X, FIND_Y);
     find_type("*KONTR*JAZZ*55*");
     CHECK_EQ(listed(), 1);
-    CHECK_STR_EQ(programmer_screen_stick_maker_at(0), "Kontronik");
+    CHECK_STR_EQ(esc_stick_panel_maker_at(0), "Kontronik");
     draws();                                 /* docked, the makers */
     find_key('\n');
     tap(ROW_CX, SP_ROW_CY(0));
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_EQ(esc_stick_panel_level(), 1);
     CHECK_EQ(listed(), 1);
     int m = -1;
-    const esc_profile_t *p = programmer_screen_stick_row(0, &m);
+    const esc_profile_t *p = esc_stick_panel_row(0, &m);
     CHECK(p != NULL && strcmp(p->models[m].name, "JAZZ 55 LV") == 0);
     tap(FIND_X, FIND_Y);
     draws();                                 /* docked, the models */
     find_key('~');
     tap(ROW_CX, SP_ROW_CY(0));
-    CHECK(programmer_screen_stick_page() == p);
+    CHECK(esc_stick_panel_page() == p);
     tap(CANCEL_X, HOLD_Y);
     tap(BACK_X, BACK_Y);
     CHECK_EQ(listed(), 1);
     tap(BACK_X, BACK_Y);
-    CHECK_EQ(programmer_screen_stick_level(), 0);
-    CHECK_STR_EQ(programmer_screen_stick_search(), "*KONTR*JAZZ*55*");
+    CHECK_EQ(esc_stick_panel_level(), 0);
+    CHECK_STR_EQ(esc_stick_panel_search(), "*KONTR*JAZZ*55*");
     CHECK_EQ(listed(), 1);
 }
 
@@ -2306,10 +2327,10 @@ TEST_CASE(a_card_profile_joins_its_maker)
     other.id = "card-other";
     other.brand = "Bench Test";
     CHECK(esc_profiles_override(&other, NULL));
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     CHECK_EQ(listed(), 21);
-    CHECK_STR_EQ(programmer_screen_stick_maker_at(1), "Bench Test");
+    CHECK_STR_EQ(esc_stick_panel_maker_at(1), "Bench Test");
     open_maker("Kontronik");
     unsigned models = 0;
     bool found = false;
@@ -2319,7 +2340,7 @@ TEST_CASE(a_card_profile_joins_its_maker)
     }
     CHECK_EQ(listed(), (int)(models + card.model_count));
     for (int i = 0; i < listed(); ++i) {
-        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+        const esc_profile_t *p = esc_stick_panel_row(i, NULL);
         found = found || (p != NULL && strcmp(p->id, "card-jazz") == 0);
     }
     CHECK(found);
@@ -2351,14 +2372,14 @@ TEST_CASE(a_maker_at_its_most_models_lists_every_one)
     p.models = many;
     p.model_count = (uint16_t)(ESC_MAKER_MODELS_MAX - have);
     CHECK(esc_profiles_override(&p, NULL));
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Kontronik");
     CHECK_EQ(listed(), (int)ESC_MAKER_MODELS_MAX);
     int m = -1;
-    CHECK(programmer_screen_stick_row((int)ESC_MAKER_MODELS_MAX - 1, &m)
+    CHECK(esc_stick_panel_row((int)ESC_MAKER_MODELS_MAX - 1, &m)
           != NULL);
-    CHECK(programmer_screen_stick_row((int)ESC_MAKER_MODELS_MAX, &m) == NULL);
+    CHECK(esc_stick_panel_row((int)ESC_MAKER_MODELS_MAX, &m) == NULL);
     draws();
     for (int i = 0; i < 60; ++i) {
         tap(LIST_DN_X, LIST_CY);             /* to the last page */
@@ -2375,21 +2396,21 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
     fresh();
     open_profile("kontronik-sun-plus");
     tap(CANCEL_X, HOLD_Y);                   /* the steps, read */
-    CHECK_EQ(programmer_screen_stick_entry_shown(), 2000u);
+    CHECK_EQ(esc_stick_panel_entry_shown(), 2000u);
     for (int i = 0; i < 4; ++i) {
         tap(STEP_UP_X, STEP_CY(0));          /* KEEP, 1, 2, 3, 4 */
     }
-    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    CHECK_EQ(esc_stick_panel_entry_shown(), 5000u);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     static rig_t r;
     rig_start(&r);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
-    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    CHECK_EQ(esc_stick_panel_entry_shown(), 5000u);
     esc_sim_hand(&r.sim, r.now);
     for (uint32_t i = 0; i < 240000u && run->phase != ESC_STICK_STORE;
          ++i) {
@@ -2397,11 +2418,11 @@ TEST_CASE(the_page_shows_the_entry_the_run_waits)
     }
     CHECK_EQ(run->phase, ESC_STICK_STORE);
     CHECK_EQ(esc_stick_entry_ms(run), 2000u);    /* the next change's */
-    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    CHECK_EQ(esc_stick_panel_entry_shown(), 5000u);
     rig_run(&r, 300000u);
     CHECK_EQ(run->phase, ESC_STICK_DONE);
     CHECK_EQ(esc_sim_stored(&r.sim, 1), 4);
-    CHECK_EQ(programmer_screen_stick_entry_shown(), 5000u);
+    CHECK_EQ(esc_stick_panel_entry_shown(), 5000u);
     draws();
 }
 
@@ -2447,17 +2468,17 @@ TEST_CASE(the_hold_needs_every_pre_power_step_read)
     tap(WRITE_X, BTN_CY);                    /* the warning */
     draws();
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);      /* not yet */
+    CHECK_EQ(esc_stick_panel_runs(), 0u);      /* not yet */
     tap(STEPS_X, HOLD_Y);                    /* ALL STEPS */
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     draws();
     hold_for(2.25f);                         /* under the pop-up: nothing */
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     tap(CANCEL_X, HOLD_Y);                   /* OK: back to the warning */
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     draws();
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
 
     /* A new warning asks for them again. */
@@ -2467,13 +2488,13 @@ TEST_CASE(the_hold_needs_every_pre_power_step_read)
     tap(STEP_UP_X, STEP_CY(1));
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     tap(CANCEL_X, HOLD_Y);                   /* CANCEL the warning */
     tap(WRITE_X, BTN_CY);
     tap(STEPS_X, HOLD_Y);
     tap(CANCEL_X, HOLD_Y);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
     esc_profiles_clear_overrides();
 
@@ -2484,9 +2505,9 @@ TEST_CASE(the_hold_needs_every_pre_power_step_read)
     tap(STEP_UP_X, STEP_CY(0));
     tap(WRITE_X, BTN_CY);
     tap(STEPS_X, HOLD_Y);                    /* nothing there */
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
 }
 
 /* A family whose models need different voltages, with the SUPPLY cap
@@ -2498,36 +2519,36 @@ TEST_CASE(the_model_tapped_is_the_one_judged)
     fresh();
     settings_set(SET_SUPPLY_V_MAX, 12.0f);
     supply_screen_limits_changed();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Kontronik");
     /* The 14-cell model: refused on its row, and the steps say why. */
     open_model("kontronik-3sl", "3SL 25-14-32");
-    CHECK(programmer_screen_stick_page() == NULL);
-    CHECK(programmer_screen_stick_hand_shown());
-    const char *why = programmer_screen_stick_hand_why();
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK(esc_stick_panel_hand_shown());
+    const char *why = esc_stick_panel_hand_why();
     CHECK(why != NULL && strstr(why, "16.8") != NULL);
     draws();
     tap(CANCEL_X, HOLD_Y);
     /* A 6-cell model: opens, its steps say the run asks for them, and RUN
      * runs it at its own 7.2 V. */
     open_model("kontronik-3sl", "3SL 25-6-18");
-    const esc_profile_t *p = programmer_screen_stick_page();
+    const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL && strcmp(p->id, "kontronik-3sl") == 0);
-    CHECK(programmer_screen_stick_hand_shown());
-    CHECK(programmer_screen_stick_hand_why() == NULL);
+    CHECK(esc_stick_panel_hand_shown());
+    CHECK(esc_stick_panel_hand_why() == NULL);
     tap(CANCEL_X, HOLD_Y);
     tap(HAND_X, HAND_Y);                     /* the button: the same model */
-    CHECK(programmer_screen_stick_hand_shown());
-    CHECK(programmer_screen_stick_hand_why() == NULL);
+    CHECK(esc_stick_panel_hand_shown());
+    CHECK(esc_stick_panel_hand_why() == NULL);
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(0));              /* mode 1 */
     supply_reads_off();                      /* the jumper on */
     tap(WRITE_X, BTN_CY);
     draws();                                 /* the warning */
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
-    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7200u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_stick()->out.supply_mv, 7200u);
     scr->leave();
 }
 
@@ -2569,30 +2590,30 @@ TEST_CASE(every_step_after_programming_is_shown)
     card.manual_count = 4;
     CHECK(esc_profiles_override(&card, NULL));
     open_profile("card-after");
-    const esc_profile_t *p = programmer_screen_stick_page();
+    const esc_profile_t *p = esc_stick_panel_page();
     CHECK(p != NULL && strcmp(p->id, "card-after") == 0);
-    CHECK(programmer_screen_stick_hand_shown());   /* the first opening */
+    CHECK(esc_stick_panel_hand_shown());   /* the first opening */
     draws();
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(1));              /* timing: automatic */
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     static rig_t r;
     rig_start(&r);
     rig_run(&r, 300000u);
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_DONE);
     /* Ended: every step after programming shows by itself. */
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     draws();
     tap(CANCEL_X, HOLD_Y);                   /* OK: the result */
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     draws();                                 /* the count, and the button */
     tap(HAND_X, HAND_Y);
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
     tap(WRITE_X, BTN_CY);                    /* OK on the result */
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     esc_profiles_clear_overrides();
 
     /* The run ends on a supply sample, and a tap queued in the same
@@ -2605,15 +2626,15 @@ TEST_CASE(every_step_after_programming_is_shown)
     tap(STEP_UP_X, STEP_CY(1));
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     rig_start(&r);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     for (uint32_t i = 0; i < 300000u && run->phase != ESC_STICK_VALUES
                          && esc_stick_running(run); ++i) {
         rig_step(&r);
     }
     CHECK_EQ(run->phase, ESC_STICK_VALUES);
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK(!esc_stick_panel_hand_shown());
     supply_state_t st;
     memset(&st, 0, sizeof(st));
     st.samples = (uint16_t)++r.seq;
@@ -2623,11 +2644,11 @@ TEST_CASE(every_step_after_programming_is_shown)
     st.mode = SUPPLY_MODE_OFF;               /* the module went off */
     st.online = true;
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-    programmer_screen_supply(&st);
+    esc_stick_panel_supply(&st);
     CHECK(!esc_stick_running(run));
     tap(WRITE_X, BTN_CY);                    /* meant for ABORT: OK now */
     scr->tick(0.001f);
-    CHECK(programmer_screen_stick_hand_shown());
+    CHECK(esc_stick_panel_hand_shown());
     tap(CANCEL_X, HOLD_Y);
     esc_profiles_clear_overrides();
 
@@ -2639,8 +2660,8 @@ TEST_CASE(every_step_after_programming_is_shown)
     hold_for(2.25f);
     rig_start(&r);
     rig_run(&r, 300000u);
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_DONE);
-    CHECK(!programmer_screen_stick_hand_shown());
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_DONE);
+    CHECK(!esc_stick_panel_hand_shown());
 }
 
 /* A supply that reads live -- its output on, its own state on, or current
@@ -2665,11 +2686,11 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
         st.i = k[i].i;
         st.online = true;
         st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-        programmer_screen_supply(&st);
+        esc_stick_panel_supply(&st);
         scr->tick(0.02f);
         tap(WRITE_X, BTN_CY);                /* RUN: refused */
         hold_for(2.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), 0u);
+        CHECK_EQ(esc_stick_panel_runs(), 0u);
         draws();                             /* the note says why */
     }
 
@@ -2679,19 +2700,19 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     descend_to_jazz();
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(0));
-    programmer_screen_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
+    esc_stick_panel_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
                             false);
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     draws();                                 /* the note says why */
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     /* Reading off: RUN, the step shows and the hold runs it. */
     supply_reads_off();
     tap(WRITE_X, BTN_CY);
     draws();
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 1u);
+    CHECK_EQ(esc_stick_panel_runs(), 1u);
     scr->leave();
 
     /* Off, then live again during the hold: the hold ends, no run. */
@@ -2711,12 +2732,12 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     on.mode = SUPPLY_MODE_CV;
     on.online = true;
     on.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
-    programmer_screen_supply(&on);
+    esc_stick_panel_supply(&on);
     for (int i = 0; i < 10; ++i) {
         scr->tick(0.25f);
     }
     press(TOUCH_EVENT_UP, HOLD_X, HOLD_Y);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 
     /* A run that ends with the supply still on: the result and the steps
      * after it say not to touch the ESC. */
@@ -2748,15 +2769,15 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     for (int i = 0; i < 1000; ++i) {
         rig_step(&r);
     }
-    CHECK(!esc_stick_running(programmer_screen_stick()));
-    CHECK(programmer_screen_stick_hand_shown());
-    CHECK(!programmer_screen_stick_supply_reads_off());
+    CHECK(!esc_stick_running(esc_stick_panel_stick()));
+    CHECK(esc_stick_panel_hand_shown());
+    CHECK(!esc_stick_panel_supply_reads_off());
     draws();
     r.off_lag = 0u;                          /* off now */
     for (int i = 0; i < 1000; ++i) {
         rig_step(&r);
     }
-    CHECK(programmer_screen_stick_supply_reads_off());
+    CHECK(esc_stick_panel_supply_reads_off());
     draws();
     esc_profiles_clear_overrides();
 
@@ -2772,12 +2793,12 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     gone.stamped = true;
     gone.online = false;
     gone.mode = SUPPLY_MODE_OFF;
-    programmer_screen_supply(&gone);
+    esc_stick_panel_supply(&gone);
     scr->tick(0.02f);
-    CHECK(!programmer_screen_stick_supply_reads_off());
+    CHECK(!esc_stick_panel_supply_reads_off());
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     draws();
 
     /* A reading too old to say the supply is off now. */
@@ -2786,11 +2807,11 @@ TEST_CASE(no_step_at_the_esc_while_the_supply_reads_live)
     tap(CANCEL_X, HOLD_Y);
     tap(STEP_UP_X, STEP_CY(0));
     supply_reads_off();
-    programmer_screen_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
+    esc_stick_panel_bench(300u + ESC_STICK_STALE_MS + 1u, false, 0u, 0u,
                             false);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
 /* The frame drawn with the tap off, to count what the readout adds. */
@@ -2838,7 +2859,7 @@ static int tone_rows_warn(void)
 /* The tap's readout fed to the screen and one frame drawn after it. */
 static int tone_drawn(rig_t *r, const tone_readout_t *t, int buf)
 {
-    programmer_screen_tone(t);
+    esc_stick_panel_tone(t);
     rig_run(r, 2u);                 /* a tick: the page repaints on a change */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, buf);
@@ -2862,10 +2883,10 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     static rig_t r;
     rig_start(&r);
     for (int i = 0; i < 300000
-         && programmer_screen_stick()->phase != ESC_STICK_ITEMS; ++i) {
+         && esc_stick_panel_stick()->phase != ESC_STICK_ITEMS; ++i) {
         rig_step(&r);
     }
-    CHECK_EQ(programmer_screen_stick()->phase, ESC_STICK_ITEMS);
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_ITEMS);
 
     tone_readout_t t;
     memset(&t, 0, sizeof(t));
@@ -2943,7 +2964,7 @@ TEST_CASE(the_run_page_shows_the_phase_tap_while_it_is_enabled)
     CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
 
     /* A null readout changes nothing. */
-    programmer_screen_tone(NULL);
+    esc_stick_panel_tone(NULL);
     CHECK(tone_drawn(&r, &t, buf++ & 1) > bare);
 
     /* No status read speaks for the page: a readout that still carries an
@@ -3026,7 +3047,7 @@ static void f_lift(void)          { lift(TAP_ID); }
 static uint32_t look(void)
 {
     uint32_t h = 2166136261u;
-    programmer_invalidate();
+    stick_invalidate();
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->render(&cv, 0);
     for (int i = 0; i < W * H; ++i) {
@@ -3039,13 +3060,11 @@ static uint32_t look(void)
         h = (h ^ bits) * 16777619u;
     }
     const uint32_t more[] = {
-        (uint32_t)programmer_screen_protocol(),
-        programmer_screen_connected() ? 1u : 0u,
-        (uint32_t)programmer_screen_dirty(),
-        (uint32_t)programmer_screen_stick_level(),
-        programmer_screen_stick_runs(),
-        programmer_screen_stick_typing() ? 1u : 0u,
-        programmer_screen_stick_hand_shown() ? 1u : 0u,
+        (uint32_t)esc_stick_panel_stage(),
+        (uint32_t)esc_stick_panel_level(),
+        esc_stick_panel_runs(),
+        esc_stick_panel_typing() ? 1u : 0u,
+        esc_stick_panel_hand_shown() ? 1u : 0u,
         settings_save_asked() ? 1u : 0u,
     };
     for (size_t i = 0; i < sizeof(more) / sizeof(more[0]); ++i) {
@@ -3054,27 +3073,14 @@ static uint32_t look(void)
     return h;
 }
 
-/* The pages the controls are on. */
-static void at_classes(void)   { fresh(); }
-static void at_protocols(void) { fresh(); tap(TILE_CX(0), TILE_CY); }
-static void at_device(void)
-{
-    fresh();
-    tap(TILE_CX(0), TILE_CY);
-    tap(ROW_CX, ROW_CY(0));
-}
-static void at_staged(void)
-{
-    fresh();
-    descend_to_blheli();
-    tap(STEP_UP_X, STEP_CY(2));
-    tap(STEP_UP_X, STEP_CY(3));
-}
+/* The pages the controls are on.  Closed: PROGRAM's list shows, and the
+ * session is not open. */
+static void at_closed(void)    { fresh(); }
 static void at_makers(void)
 {
     fresh();
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
 }
 /* Hobbywing's models; s_model_y is the row of the first that runs. */
 static int s_model_y;
@@ -3085,8 +3091,8 @@ static void at_models(void)
     s_model_y = SP_ROW_CY(0);
     for (int i = 0; i < 9; ++i) {
         int m = -1;
-        const esc_profile_t *p = programmer_screen_stick_row(i, &m);
-        if (p != NULL && programmer_screen_stick_row_why(i) == NULL) {
+        const esc_profile_t *p = esc_stick_panel_row(i, &m);
+        if (p != NULL && esc_stick_panel_row_why(i) == NULL) {
             s_model_y = SP_ROW_CY(i);
             return;
         }
@@ -3125,18 +3131,6 @@ typedef struct {
 
 /* Every control of the screen that acts on a tap. */
 static const control_t k_controls[] = {
-    { "class tile",            at_classes,   TILE_CX(1), TILE_CY },
-    { "protocol row",          at_protocols, ROW_CX, ROW_CY(1) },
-    { "BACK, protocols",       at_protocols, BACK_X, BACK_Y },
-    { "CONNECT",               at_device,    CONNECT_X, CONNECT_Y },
-    { "BACK, device",          at_device,    BACK_X, BACK_Y },
-    { "READ",                  at_staged,    READ_X, BTN_CY },
-    { "WRITE",                 at_staged,    WRITE_X, BTN_CY },
-    { "step up",               at_staged,    STEP_UP_X, STEP_CY(4) },
-    { "step down",             at_staged,    STEP_DN_X, STEP_CY(2) },
-    { "page down",             at_staged,    PAGE_DN_X, PAGE_CY },
-    { "parameter name",        at_staged,    120, STEP_CY(5) },
-    { "DISCONNECT",            at_staged,    CONNECT_X, CONNECT_Y },
     { "maker row",             at_makers,    ROW_CX, SP_ROW_CY(1) },
     { "list down",             at_makers,    LIST_DN_X, LIST_CY },
     { "search field",          at_makers,    FIND_X, FIND_Y },
@@ -3301,7 +3295,7 @@ TEST_CASE(a_press_whose_control_changes_under_it_is_no_tap)
     f_at(CANCEL_X, HOLD_Y);                  /* CANCEL, pressed */
     scr->cancel();                           /* touch lost: nothing held */
     f_lift();
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
     const uint32_t open = look();
     /* Pressed, and the warning goes while it is down. */
     f_at(CANCEL_X, HOLD_Y);
@@ -3320,10 +3314,10 @@ TEST_CASE(a_press_whose_control_changes_under_it_is_no_tap)
     settings_set(SET_STICK_V, 5.0f);
     scr->tick(0.010f);
     f_lift();
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(esc_stick_panel_level(), 0);
     f_at(ROW_CX, SP_ROW_CY(1));
     f_lift();
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_EQ(esc_stick_panel_level(), 1);
 
     /* The search filters the list under a finger on one of its rows: a
      * second finger types a letter.  The row is not opened. */
@@ -3339,12 +3333,12 @@ TEST_CASE(a_press_whose_control_changes_under_it_is_no_tap)
         finger(1, r.x + r.w / 2, r.y + r.h / 2 + UI_BAND_H);
         lift(1);
     }
-    CHECK_STR_EQ(programmer_screen_stick_search(), "T");
+    CHECK_STR_EQ(esc_stick_panel_search(), "T");
     f_lift();
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(esc_stick_panel_level(), 0);
     f_at(100, SP_ROW_CY(0));
     f_lift();
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK_EQ(esc_stick_panel_level(), 1);
 }
 
 /* ABORT stops a motor and acts on the press, with no release and whatever
@@ -3360,7 +3354,7 @@ TEST_CASE(abort_acts_on_the_press)
             rig_step(&r);                    /* powered, in the menu */
         }
         CHECK(r.on && r.armed);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         CHECK(esc_stick_running(run));
         on_screen();
         if (k == 0) {
@@ -3412,7 +3406,7 @@ TEST_CASE(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press)
         hold_for(2.25f);
         static rig_t r;
         rig_start(&r);
-        const esc_stick_t *run = programmer_screen_stick();
+        const esc_stick_t *run = esc_stick_panel_stick();
         for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
             rig_step(&r);
         }
@@ -3463,7 +3457,7 @@ TEST_CASE(hold_to_run_keeps_its_two_seconds)
         }
         f_lift();
         scr->tick(0.25f);
-        CHECK_EQ(programmer_screen_stick_runs(), k[i].runs);
+        CHECK_EQ(esc_stick_panel_runs(), k[i].runs);
         scr->leave();
     }
     at_warning();
@@ -3477,31 +3471,45 @@ TEST_CASE(hold_to_run_keeps_its_two_seconds)
         scr->tick(0.25f);
     }
     f_lift();
-    CHECK_EQ(programmer_screen_stick_runs(), 0u);
+    CHECK_EQ(esc_stick_panel_runs(), 0u);
 }
 
-/* Through the router: a control carried into the band, or ended by the
- * tracker for a jump, is released for the screen and is not pressed. */
-TEST_CASE(a_programmer_control_released_for_the_finger_is_not_pressed)
+/* MOTOR & ESC's PROGRAM tab and its STICK MENU row, in body coordinates
+ * (motor_workbench.c's strip, motor_program_page.c's list). */
+#define MO_PROGRAM_TAB_X 181
+#define MO_TAB_Y         18
+#define MO_ROW_X         279
+#define MO_ROW_Y         65
+
+/* Through the router and MOTOR & ESC: a control carried into the band, or
+ * ended by the tracker for a jump, is released for the screen and is not
+ * pressed. */
+TEST_CASE(a_stick_control_released_for_the_finger_is_not_pressed)
 {
     fresh();
     ui_router_init();
-    ui_router_goto(SCREEN_PROGRAMMER);
+    ui_router_goto(SCREEN_MOTOR);
     feed_reset();
-    feed_tap(TAP_ID, TILE_CX(0), TILE_CY + UI_BAND_H);
-    /* BACK, 27 px under the band's edge, and up into the band. */
+    feed_tap(TAP_ID, MO_PROGRAM_TAB_X, MO_TAB_Y + UI_BAND_H);
+    feed_tap(TAP_ID, MO_ROW_X, MO_ROW_Y + UI_BAND_H);
+    CHECK(motor_screen_session_shown());
+    CHECK_EQ(esc_stick_panel_stage(), 1);            /* the makers */
+    /* BACK, 45 px under the band's edge, and up into the band. */
     finger(TAP_ID, BACK_X, BACK_Y + UI_BAND_H);
     finger(TAP_ID, BACK_X, UI_BAND_H - 8);
     lift(TAP_ID);
     /* BACK, then the contact reported 300 px away. */
     finger(TAP_ID, BACK_X, BACK_Y + UI_BAND_H);
-    finger(TAP_ID, BACK_X + 300, BACK_Y + UI_BAND_H + 380);
+    finger(TAP_ID, BACK_X + 300, BACK_Y + UI_BAND_H + 360);
     lift(TAP_ID);
-    /* Still on the protocols: the second row is AM32, and it connects. */
-    feed_tap(TAP_ID, ROW_CX, ROW_CY(1) + UI_BAND_H);
-    feed_tap(TAP_ID, CONNECT_X, CONNECT_Y + UI_BAND_H);
-    CHECK(programmer_screen_connected());
-    CHECK_EQ(programmer_screen_protocol(), 1);
+    /* Still on the makers; a tap on BACK closes the session to the
+     * list. */
+    CHECK_EQ(esc_stick_panel_stage(), 1);
+    CHECK(motor_screen_session_shown());
+    feed_tap(TAP_ID, BACK_X, BACK_Y + UI_BAND_H);
+    CHECK_EQ(esc_stick_panel_stage(), 0);
+    CHECK(!motor_screen_session_shown());
+    CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
     ui_router_goto(SCREEN_OVERVIEW);
 }
 
@@ -3517,11 +3525,11 @@ static void supply_gives(float v_min, float v_max)
 /* RUN held on the profile page: whether a run started. */
 static bool run_starts(void)
 {
-    const uint32_t before = programmer_screen_stick_runs();
+    const uint32_t before = esc_stick_panel_runs();
     scr->tick(0.02f);
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
-    return programmer_screen_stick_runs() == before + 1u;
+    return esc_stick_panel_runs() == before + 1u;
 }
 
 /*
@@ -3536,14 +3544,14 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     pick_cutoff();
     supply_gives(3.3f, 7.6f);
     CHECK(run_starts());
-    CHECK_EQ(programmer_screen_stick()->out.supply_mv, 7600u);
+    CHECK_EQ(esc_stick_panel_stick()->out.supply_mv, 7600u);
 
     fresh();
     descend_to_hobbywing();
     pick_cutoff();
     supply_gives(3.3f, 7.59f);
     CHECK(!run_starts());
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "7.60 V exceeds the SUPPLY limit of 7.59 V.");
 
     fresh();
@@ -3557,7 +3565,7 @@ TEST_CASE(a_voltage_equal_to_the_supplys_cap_or_minimum_runs)
     pick_cutoff();
     supply_gives(7.61f, 21.0f);
     CHECK(!run_starts());
-    CHECK_STR_EQ(programmer_screen_stick_note(),
+    CHECK_STR_EQ(esc_stick_panel_note(),
                  "VOLTAGE is below the supply minimum of 7.61 V.");
 }
 
@@ -3569,19 +3577,19 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
     fresh();
     supply_gives(3.3f, 7.6f);
     descend_to_hobbywing();
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
 
     fresh();
     supply_gives(3.3f, 7.59f);
-    programmer_screen_bench(0u, false, 0u, 0u, false);
-    tap(TILE_CX(2), TILE_CY);
+    esc_stick_panel_bench(0u, false, 0u, 0u, false);
+    open_stick();
     open_maker("Hobbywing");
     bool found = false;
-    for (int i = 0; i < programmer_screen_stick_listed(NULL); ++i) {
-        const esc_profile_t *p = programmer_screen_stick_row(i, NULL);
+    for (int i = 0; i < esc_stick_panel_listed(NULL); ++i) {
+        const esc_profile_t *p = esc_stick_panel_row(i, NULL);
         if (p != NULL && strcmp(p->id, "hobbywing-flyfun-8item") == 0) {
             found = true;
-            const char *why = programmer_screen_stick_row_why(i);
+            const char *why = esc_stick_panel_row_why(i);
             CHECK(why != NULL);
             if (why != NULL) {
                 CHECK_STR_EQ(why, "needs 7.6 V; limit 7.5 V");
@@ -3591,7 +3599,7 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
     }
     CHECK(found);
     open_model("hobbywing-flyfun-8item", NULL);
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(esc_stick_panel_page() == NULL);
 }
 
 /*
@@ -3618,14 +3626,14 @@ TEST_CASE(every_two_line_string_breaks_into_two_lines)
             for (size_t j = 0; j < sizeof(k) / sizeof(k[0]); ++j) {
                 if (strncmp(name, k[j].prefix, strlen(k[j].prefix)) == 0
                     && ui_text_cells((ui_text_id_t)i) == k[j].cells
-                    && programmer_screen_wrap_lines(s, k[j].line) > 2) {
+                    && esc_stick_panel_wrap_lines(s, k[j].line) > 2) {
                     T_FAIL("%s in language %d takes %d lines of %d", name,
-                           l, programmer_screen_wrap_lines(s, k[j].line),
+                           l, esc_stick_panel_wrap_lines(s, k[j].line),
                            k[j].line);
                 }
             }
         }
-        CHECK(programmer_screen_wrap_lines(
+        CHECK(esc_stick_panel_wrap_lines(
                   ui_tr_in((ui_lang_t)l, TX_SP_HAND_OVER_LIVE), 69) <= 2);
     }
 }
@@ -3633,11 +3641,11 @@ TEST_CASE(every_two_line_string_breaks_into_two_lines)
 /* A line of no cells, or fewer, still holds one: every text ends. */
 TEST_CASE(a_wrap_into_no_cells_still_ends)
 {
-    CHECK_EQ(programmer_screen_wrap_lines("abc", 0), 3);
-    CHECK_EQ(programmer_screen_wrap_lines("abc", -4), 3);
-    CHECK_EQ(programmer_screen_wrap_lines("a b", 0), 2);
-    CHECK_EQ(programmer_screen_wrap_lines("", 0), 0);
-    CHECK_EQ(programmer_screen_wrap_lines("abc", 1), 3);
+    CHECK_EQ(esc_stick_panel_wrap_lines("abc", 0), 3);
+    CHECK_EQ(esc_stick_panel_wrap_lines("abc", -4), 3);
+    CHECK_EQ(esc_stick_panel_wrap_lines("a b", 0), 2);
+    CHECK_EQ(esc_stick_panel_wrap_lines("", 0), 0);
+    CHECK_EQ(esc_stick_panel_wrap_lines("abc", 1), 3);
 }
 
 
@@ -3656,9 +3664,6 @@ static void at_typing(void)    { at_makers(); tap(FIND_X, FIND_Y); }
 TEST_CASE(the_home_tag_climbs_as_each_pages_way_back)
 {
     static const control_t k_ways[] = {
-        { "protocols",    at_protocols, BACK_X, BACK_Y },
-        { "device",       at_device,    BACK_X, BACK_Y },
-        { "staged",       at_staged,    BACK_X, BACK_Y },
         { "makers",       at_makers,    BACK_X, BACK_Y },
         { "models",       at_models,    BACK_X, BACK_Y },
         { "searched",     at_searched,  BACK_X, BACK_Y },
@@ -3688,7 +3693,7 @@ TEST_CASE(the_home_tag_climbs_as_each_pages_way_back)
                    w->name);
         }
     }
-    at_classes();
+    at_closed();
     const uint32_t was = look();
     CHECK(!scr->back());
     CHECK_EQ(look(), was);
@@ -3702,12 +3707,12 @@ TEST_CASE(the_home_tag_climbs_as_each_pages_way_back)
 TEST_CASE(the_home_tag_leaves_the_stick_class_one_level_at_a_time)
 {
     at_items();
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     CHECK(scr->back());
-    CHECK(programmer_screen_stick_page() == NULL);
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK_EQ(esc_stick_panel_level(), 1);
     CHECK(scr->back());
-    CHECK_EQ(programmer_screen_stick_level(), 0);
+    CHECK_EQ(esc_stick_panel_level(), 0);
     CHECK(scr->back());
     CHECK(!scr->back());
 
@@ -3716,9 +3721,9 @@ TEST_CASE(the_home_tag_leaves_the_stick_class_one_level_at_a_time)
     CHECK(!settings_save_asked());
     CHECK(scr->back());
     CHECK(settings_save_asked());
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     CHECK(scr->back());
-    CHECK(programmer_screen_stick_page() == NULL);
+    CHECK(esc_stick_panel_page() == NULL);
     settings_cancel_save();
 }
 
@@ -3740,19 +3745,19 @@ TEST_CASE(the_home_tag_ends_a_run_and_the_result_stays)
         rig_step(&r);
     }
     CHECK(r.on && r.armed);
-    CHECK(esc_stick_running(programmer_screen_stick()));
+    CHECK(esc_stick_running(esc_stick_panel_stick()));
     CHECK(scr->back());
     rig_run(&r, 1000u);
-    const esc_stick_t *run = programmer_screen_stick();
+    const esc_stick_t *run = esc_stick_panel_stick();
     CHECK_EQ(run->phase, ESC_STICK_ABORTED);
     CHECK_EQ(run->reason, ESC_STICK_R_USER);
     CHECK(!r.armed);
     CHECK(!r.on);
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_NONE);
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
     CHECK(scr->back());
-    CHECK(programmer_screen_stick_page() == NULL);
-    CHECK_EQ(programmer_screen_stick_level(), 1);
+    CHECK(esc_stick_panel_page() == NULL);
+    CHECK_EQ(esc_stick_panel_level(), 1);
 
     fresh();
     descend_to_jazz();
@@ -3764,7 +3769,7 @@ TEST_CASE(the_home_tag_ends_a_run_and_the_result_stays)
     tap(WRITE_X, BTN_CY);
     hold_for(2.25f);
     rig_start(&r);
-    run = programmer_screen_stick();
+    run = esc_stick_panel_stick();
     for (uint32_t i = 0; i < 60000u && !run->hand_menu; ++i) {
         rig_step(&r);
     }
@@ -3775,7 +3780,7 @@ TEST_CASE(the_home_tag_ends_a_run_and_the_result_stays)
     CHECK_EQ(run->reason, ESC_STICK_R_USER);
     CHECK(!r.armed);
     CHECK(!r.on);
-    CHECK(programmer_screen_stick_page() != NULL);
+    CHECK(esc_stick_panel_page() != NULL);
 }
 
 int main(void)
@@ -3839,7 +3844,7 @@ int main(void)
     RUN(abort_acts_on_the_press);
     RUN(a_manual_step_takes_done_as_a_tap_and_abort_on_the_press);
     RUN(hold_to_run_keeps_its_two_seconds);
-    RUN(a_programmer_control_released_for_the_finger_is_not_pressed);
+    RUN(a_stick_control_released_for_the_finger_is_not_pressed);
     RUN(a_voltage_equal_to_the_supplys_cap_or_minimum_runs);
     RUN(a_profile_at_the_supplys_cap_opens_from_the_list);
     RUN(every_two_line_string_breaks_into_two_lines);

@@ -997,7 +997,7 @@ Was die Bildschirme schreiben:
 
 | Bildschirm | ARM |
 | --- | --- |
-| MOTOR & ESC, PROGRAMMER (der Stick-Lauf) | 0x0002 |
+| MOTOR & ESC, dessen PROGRAMMIEREN eingeschlossen (der Stick-Lauf) | 0x0002 |
 | SERVO | 0x0004 |
 
 SWEEP, HOLD und RESUME der Page SERVO und eine Messung von SERVO_SENSE

@@ -166,7 +166,7 @@ The limit of the bound is the frame that switches to ARMED itself. It is written
 before the deadline, and its acknowledgement can arrive up to the 1000 ms
 exchange timeout (`LINK_HOST_TIMEOUT_MS`) later; the IOmcu has then
 switched the role it was asked for to ARMED, at rest: throttle 0 for MOTOR & ESC and
-PROGRAMMER, surfaces centred for SERVO. The panel does not
+its stick runs, surfaces centred for SERVO. The panel does not
 undo it. An exchange of the switch that nobody
 answers -- the STATUS read, the servo release, CLEAR or the frame that switches to ARMED
 -- has waited the 1000 ms exchange timeout or did not reach the wire: that is
@@ -209,7 +209,7 @@ IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
   cut by a power loss leaves no drawing findable for the board, and the next
   link-up fetches it again. The duration of
   one erase on the panel's flash is not measured.
-- A stick run on PROGRAMMER switches to ARMED through the same policy, after its warning
+- A stick run on MOTOR & ESC > PROGRAM switches to ARMED through the same policy, after its warning
   (PROPELLER REMOVED? MOTOR SECURED?) is held for 2 s. It then sets the throttle
   to the profile's entry position before it switches the supply on, which
   for most ESCs is the stick at MAX: that is how their menu is entered. The
@@ -287,7 +287,7 @@ IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
   a `-` or `+` key steps when the finger that pressed it lifts inside it, no
   more than 8 px from the press in x and in y; the list scrolls from
   anywhere, the keys included, and a scroll changes no value. A key held
-  steps from 0.45 s after the press. PROGRAMMER's controls follow the same
+  steps from 0.45 s after the press. ESC STICK's controls follow the same
   rule, DEFAULTS and the stick timing's keys included. ABORT of a stick run
   acts on the press, and so does every stop on the bench screens: stopping
   never waits for a lift that may not come.
@@ -359,7 +359,7 @@ IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
     there until the next switch to ARMED, so the first step after it posts 1.0 %.
     The ARM hold returns the slider to 0 % when it asks, and so does the
     change to ARMED for a switch the hold did not ask for, as for a stick run
-    on PROGRAMMER.
+    on PROGRAM.
   - SERVO: the dial, the knob, CENTRE and SWEEP are the controls. While SAFE,
     the horn and the pulse width shown stay at the position last driven. At
     a switch to ARMED the value becomes the surface's rest, which the pins drive once
@@ -428,8 +428,8 @@ IOmcu connected the panel switches its own bank to ARMED after the 100 ms.
 - The IOmcu acts on overcurrent, over-temperature, stall timeout and a
   lost link on its own authority and reports the fault at the next poll.
 - A switch to ARMED names the roles it drives ([Link, An arm for one
-  role](Link.md#an-arm-for-one-role)). MOTOR & ESC and a PROGRAMMER stick
-  run switch the throttle outputs to ARMED, ARM 0x0002. SERVO switches the surfaces and the
+  role](Link.md#an-arm-for-one-role)). MOTOR & ESC's ARM and a stick
+  run on its PROGRAM switch the throttle outputs to ARMED, ARM 0x0002. SERVO switches the surfaces and the
   PROG PORT pin to ARMED, ARM 0x0004. A pin of a role the ARM does not name sends no
   pulse, as while SAFE. An IOmcu older than protocol 4.18
   takes any non-zero ARM as the whole bank, so on it every bound pin drives.

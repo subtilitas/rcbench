@@ -2,9 +2,10 @@
  * MOTOR & ESC as a workbench (ui_workbench.h): the task strip at the top,
  * and the CONTROL card's TARGET row.
  *
- * The strip shows LIVE (the plot or the table, and the throttle) and
- * SETTINGS (the ESC / BENCH rows, motor_settings_page.c).  A tile opens
- * LIVE; a tab switch is no navigation level.  Leaving the screen switches
+ * The strip shows LIVE (the plot or the table, and the throttle), PROGRAM
+ * (the registry's MOTOR rows, motor_program_page.c) and SETTINGS (the ESC
+ * / BENCH rows, motor_settings_page.c).  A tile opens LIVE; a tab switch is
+ * no navigation level.  Leaving the screen switches
  * the bench to SAFE whichever task is shown (motor_screen.c's leave()).
  *
  * The TARGET row reads what the throttle drives as `protocol pins`
@@ -31,8 +32,9 @@
 /* Last: its layout macros have short names. */
 #include "motor_screen_int.h"
 
-/* MOTOR & ESC's tasks today: PROGRAM and TEST come with their pages. */
-#define MOTOR_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_SETTINGS))
+/* MOTOR & ESC's tasks.  TEST has no page and is not drawn. */
+#define MOTOR_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_PROGRAM) \
+                     | UI_WB_HAS(UI_WB_SETTINGS))
 
 _Static_assert(MOTOR_PROTO_MIXED == OUTBIND_PROTO_MIXED,
                "the screen's MIXED is the one outbind_role_proto() returns");

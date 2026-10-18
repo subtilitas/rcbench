@@ -1,8 +1,9 @@
 /*
  * The MOTOR & ESC screen's private seam between motor_screen.c, the screen
  * and LIVE's page, motor_workbench.c, its task strip and the CONTROL card's
- * TARGET row, and motor_settings_page.c, SETTINGS' page: the layout they
- * draw on and the functions each calls of the others.  Nothing outside
+ * TARGET row, motor_program_page.c, PROGRAM's list and its sessions, and
+ * motor_settings_page.c, SETTINGS' page: the layout they draw on and the
+ * functions each calls of the others.  Nothing outside
  * shared/ui includes this header; the screen's interface is
  * motor_screen.h.
  *
@@ -18,6 +19,7 @@
 #include <stdint.h>
 
 #include "gfx.h"
+#include "prog_registry.h"
 #include "touch_types.h"
 #include "ui_screen.h"
 #include "ui_workbench.h"
@@ -44,7 +46,7 @@
 #define RIGHT_W   (W - PAD - RIGHT_X)
 
 /*
- * The task strip at the top (ui_workbench.h), LIVE | SETTINGS.  Under it,
+ * The task strip at the top (ui_workbench.h), LIVE | PROGRAM | SETTINGS.  Under it,
  * on LIVE, the line with PLOT | TABLE, the poll rate, the link's errors and
  * the temperatures; on SETTINGS the temperatures alone, over the rail.
  */
@@ -75,9 +77,9 @@
 #define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
 
 /*
- * SETTINGS' page: the left column under the strip, down to the screen's
- * margin.  Its keypad covers the strip as well, so no tab switches the task
- * under an open keypad.
+ * SETTINGS' and PROGRAM's page: the left column under the strip, down to
+ * the screen's margin.  SETTINGS' keypad covers the strip as well, so no
+ * tab switches the task under an open keypad.
  */
 #define PAGE_X    LEFT_X
 #define PAGE_Y    UI_WB_PAGE_Y
@@ -117,6 +119,38 @@ void mwb_render_target(gfx_canvas_t *c, const char *value, bool warn,
 /* The strip's row with its trough, and the TARGET row. */
 gfx_rect_t mwb_strip_area(void);
 gfx_rect_t mwb_target_rect(void);
+
+/* --- motor_program_page.c: PROGRAM's list and its sessions --------------- */
+
+/* Laid out, each MOTOR session in the body under the output strip (reset);
+ * the screen entered; left (each session closes, a run ends); touch events
+ * lost; the bench armed or asked to arm; a frame. */
+void mpp_reset(void);
+void mpp_enter(void);
+void mpp_leave(void);
+void mpp_cancel(void);
+void mpp_armed(bool armed);
+void mpp_tick(float dt_s);
+/* The session shown on PROGRAM, or NULL: the list shows. */
+const prog_page_set_t *mpp_shown(void);
+/* The home tag in a session: its back() (one level up; from its top the
+ * session closes to the list).  Whether there was a session. */
+bool mpp_back(void);
+/* A touch event on the list; whether it was the list's.  A tap on a live
+ * row opens its session. */
+bool mpp_event(const touch_event_t *evt);
+/* Whether a press on the list is under way; drop it. */
+bool mpp_pressed(void);
+void mpp_cancel_press(void);
+/* Bumped when the list's look changes. */
+uint32_t mpp_revision(void);
+void mpp_render_page(gfx_canvas_t *c);
+/* The output strip above a full-width session (motor_output_strip()), and
+ * a number that changes whenever its text does. */
+void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
+                      bool known, bool armed);
+uint32_t mpp_strip_signature(uint8_t proto, uint64_t pins, bool known,
+                             bool armed);
 
 /* --- motor_settings_page.c: SETTINGS' page -------------------------------- */
 

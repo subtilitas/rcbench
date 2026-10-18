@@ -208,7 +208,7 @@ uint16_t s_arm_value;
 
 /*
  * The ARM value for the roles the policy asked for: the screen's own role
- * (MOTOR and the PROGRAMMER stick run the throttle, SERVO the surfaces).  An
+ * (MOTOR & ESC, a stick run included, the throttle; SERVO the surfaces).  An
  * IOmcu older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
  * arms its whole bank on it.
  */

@@ -136,10 +136,28 @@ bool motor_throttle_target(char *out, size_t size, uint8_t proto,
 unsigned motor_target_cells(void);
 
 /**
- * The task shown, a ui_wb_task_t: LIVE or SETTINGS.  A tile opens LIVE; the
- * home tag over SETTINGS' keypad closes the keypad (back()).
+ * The output strip a full-width session on PROGRAM shows in the strip row,
+ * in place of the tabs and the output card, as one line:
+ * `TARGET protocol pins   SUPPLY v V  i A   SAFE` ("ARMED" for an armed
+ * bench), the target as motor_throttle_target() puts it in 26 cells, the
+ * supply as it reads now (supply_screen_reading()): its voltage and current
+ * with the output on, OFF, ON without both readings, "--" while it does not
+ * answer.  Into @p out of @p size bytes; @p warn (may be NULL) gets whether
+ * the target is a warning.  Returns the length written.
+ */
+size_t motor_output_strip(char *out, size_t size, uint8_t proto,
+                          uint64_t pins, bool known, bool armed, bool *warn);
+
+/**
+ * The task shown, a ui_wb_task_t: LIVE, PROGRAM or SETTINGS.  A tile opens
+ * LIVE; the home tag over SETTINGS' keypad closes the keypad, and in
+ * PROGRAM's session climbs it one level (back()).
  */
 int motor_screen_task(void);
+
+/** Whether PROGRAM's session is shown, full width with the output strip
+ *  over it. */
+bool motor_screen_session_shown(void);
 
 /** LIVE's view shown, a motor_pane_t: PLOT or TABLE. */
 int motor_screen_pane(void);

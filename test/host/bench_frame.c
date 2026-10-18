@@ -33,8 +33,9 @@
  *   throttle  `frame` with the throttle control changing every frame, the
  *             drag case
  *   <screen>  one steady frame of analyser, logs, settings, battery,
- *             balance, programmer or picker; settings is SETUP's tiles,
- *             settings-list APPLICATION's list
+ *             balance, motor-stick or picker; settings is SETUP's tiles,
+ *             settings-list APPLICATION's list, motor-stick MOTOR & ESC's
+ *             ESC STICK session under the output strip, on its makers
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -153,7 +154,7 @@ int main(int argc, char **argv)
         { "settings-list", SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
         { "balance",    SCREEN_BALANCE },
-        { "programmer", SCREEN_PROGRAMMER },
+        { "motor-stick", SCREEN_MOTOR },
         /* The picker with the IOmcu's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
         { "picker",     SCREEN_PICKER },
@@ -198,6 +199,24 @@ int main(int argc, char **argv)
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     ui_router_goto(start);
+
+    if (strncmp(mode, "motor-stick", 11) == 0) {
+        /* PROGRAM, the strip's second tab at x 181, and its STICK MENU row
+         * at (279, 65): the session opens full width. */
+        static const int16_t at[2][2] = { { 181, 18 }, { 279, 65 } };
+        for (int k = 0; k < 2; ++k) {
+            const int16_t x = at[k][0];
+            const int16_t y = (int16_t)(UI_BAND_H + at[k][1]);
+            const touch_event_t tap[] = {
+                { .type = TOUCH_EVENT_DOWN,
+                  .point = { .id = 1, .x = x, .y = y } },
+                { .type = TOUCH_EVENT_UP,
+                  .point = { .id = 1, .x = x, .y = y } },
+            };
+            ui_router_event(&tap[0]);
+            ui_router_event(&tap[1]);
+        }
+    }
 
     if (strncmp(mode, "settings-list", 13) == 0) {
         /* SETUP opens on its tiles: the first, APPLICATION, opens its list. */

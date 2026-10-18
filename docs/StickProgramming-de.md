@@ -8,7 +8,8 @@ mit einem Lastwiderstand anstelle des Motors oder einem fest montierten
 Motor ohne Propeller. Er bewegt das Gas in die
 Stellungen, die das [ESC-Profil](EscProfiles-de.md) nennt, und zählt die
 Pieptöne des Menüs als Pulse im Versorgungsstrom. Auf dem Bildschirm ist es
-die Klasse ESC STICK des Bildschirms PROGRAMMER.
+ESC STICK, die Zeile STICK-MENÜ von MOTOR & ESC > PROGRAMMIEREN
+([Programmieren](Screens-de.md#programmieren)).
 
 Was sie nicht weiß:
 
@@ -59,9 +60,13 @@ Was sie nicht weiß:
 
 ## Auf dem Bildschirm
 
-PROGRAMMER, dann ESC STICK:
+MOTOR & ESC, dann PROGRAMMIEREN, dann die Zeile `ESCs per Gasknüppel`:
 
-![Geräteklasse](img/de/programmer.png)
+![Die Liste von PROGRAMMIEREN](img/de/motor-program.png)
+
+ESC STICK öffnet über die volle Breite, unter dem Ausgangsstreifen, der die
+Pins nennt, die der Lauf treibt, das Netzteil und den Prüfstand:
+`ZIEL DSHOT300 GP0   NETZTEIL --   SAFE`.
 
 Die Liste hat zwei Ebenen.
 
@@ -100,9 +105,9 @@ Zählung rechts davon zählt die Ebene: `1-9/20 Hersteller, 6 ausführbar` --
 die Hersteller mit einem laufenden Modell -- oder `1-9 von 82, 40
 ausführbar` für die Modelle eines Herstellers.
 
-![Die Hersteller](img/de/programmer-stick.png)
+![Die Hersteller](img/de/motor-stick.png)
 
-![Die Modelle von Kontronik mit dem Schild MANUELL](img/de/programmer-stick-hand-list.png)
+![Die Modelle von Kontronik mit dem Schild MANUELL](img/de/motor-stick-hand-list.png)
 
 ### Suche
 
@@ -139,9 +144,9 @@ bleibt. Bei geschlossener Tastatur leert X im Feld die Suche. Die Suche
 bleibt über beide Ebenen, die Seite eines Profils und zurück und beim
 Verlassen des Bildschirms erhalten und ist nach einem Neustart leer.
 
-![Eine Suche auf den Herstellern wird getippt](img/de/programmer-stick-find.png)
+![Eine Suche auf den Herstellern wird getippt](img/de/motor-stick-find.png)
 
-![Eine Suche angewendet, die Modelle von Hobbywing](img/de/programmer-stick-found.png)
+![Eine Suche angewendet, die Modelle von Hobbywing](img/de/motor-stick-found.png)
 
 Die Groß- und Kleinschreibung wird nur für die Buchstaben A bis Z
 ausgeglichen. Ä, Ö und Ü in einem Profil von der Karte passen nur auf
@@ -175,7 +180,7 @@ Modell nicht hat (`3 Cutoff mode ist bei diesem Modell nicht verfügbar.`). Eine
 Seite ohne gewähltes Modell, die nur ein Kartenprofil ohne Modelle öffnet,
 listet die Punkte, die jedes Modell hat.
 
-![Zwei Werte gewählt](img/de/programmer-stick-items.png)
+![Zwei Werte gewählt](img/de/motor-stick-items.png)
 
 ### Die Einschaltstellung
 
@@ -228,7 +233,7 @@ Bildschirm mit den Befehlen des nächsten Frames; ein STOP oder ein
 verlorenes Touch-Ereignis davor nimmt es zurück und beendet den Lauf, damit
 es keinen Stopp aufheben kann, der danach kam.
 
-![Die Warnung](img/de/programmer-stick-warning.png)
+![Die Warnung](img/de/motor-stick-warning.png)
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
@@ -239,7 +244,7 @@ nicht verfügbar. Die
 Signalsäule neben der Pieptonzahl ist [unten](#die-signalsäule)
 beschrieben.
 
-![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/programmer-stick-run.png)
+![Ein Lauf zählt Punktgruppen, ein Piepton läuft](img/de/motor-stick-run.png)
 
 Ist der Phasenabgriff unter SETUP bei ANSCHLÜSSE eingeschaltet, ergänzt die
 Seite unter der Stromzeile eine reine Anzeige des Abgriffs: seinen Zustand,
@@ -249,23 +254,23 @@ Pieptöne und der nicht gelesenen Pieptöne, und die letzten vier Pieptöne mit 
 Der Lauf zählt seine Pieptöne wie bisher aus dem Netzteilstrom; die Pieptöne
 des Abgriffs benutzt er nicht.
 
-![Ein Lauf mit laufendem Phasenabgriff](img/de/programmer-stick-tone.png)
+![Ein Lauf mit laufendem Phasenabgriff](img/de/motor-stick-tone.png)
 
 Das Ergebnis bleibt bis OK: welche Auswahlen getroffen wurden, und bei einem
 abgebrochenen Lauf der Grund. Bei mehr als fünf Änderungen zählt die letzte
 Zeile den Rest.
 
-![Fertig](img/de/programmer-stick-done.png)
+![Fertig](img/de/motor-stick-done.png)
 
-![Gestoppt: STOP, Rot aus](img/de/programmer-stick-aborted.png)
+![Gestoppt: STOP, Rot aus](img/de/motor-stick-aborted.png)
 
-![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/programmer-stick-failed.png)
+![Vom Netzteil beendet: NETZTEIL AUS, Rot an](img/de/motor-stick-failed.png)
 
 TIMING öffnet die Einstellungen unten. SCHLIESSEN fordert das Speichern an;
 gespeichert wird, während der Prüfstand SAFE ist und der Ausgang des
 Netzteils aus ist.
 
-![Die Zeiteinstellungen](img/de/programmer-stick-timing.png)
+![Die Zeiteinstellungen](img/de/motor-stick-timing.png)
 
 ### Handgriffe
 
@@ -291,9 +296,9 @@ wann jeder fällig ist, was er ist und ob der Lauf danach fragt. Beim ersten
 Öffnen des Profils nach einem Start erscheinen sie von selbst; OK schließt
 sie.
 
-![Ein Profil mit Handgriffen](img/de/programmer-stick-hand.png)
+![Ein Profil mit Handgriffen](img/de/motor-stick-hand.png)
 
-![Seine Handgriffe](img/de/programmer-stick-hand-info.png)
+![Seine Handgriffe](img/de/motor-stick-hand-info.png)
 
 Die Warnung vor einem Lauf nennt die Schritte vor dem Einschalten und sagt,
 wann der Lauf für weitere anhält. Sie nennt sie, und HALTEN ZUM STARTEN
@@ -307,7 +312,7 @@ stromlosen ESC, bis seine eigenen Messwerte dasselbe sagen; das Ergebnis
 und die Schritte nach einem Lauf sagen, den ESC nicht zu berühren, solange
 das Netzteil nicht aus meldet.
 
-![Die Warnung mit einem Schritt vor dem Einschalten](img/de/programmer-stick-hand-warning.png)
+![Die Warnung mit einem Schritt vor dem Einschalten](img/de/motor-stick-hand-warning.png)
 
 Schritte, die nicht alle ganz auf die Warnung passen -- jeder auf zwei
 Zeilen umbrochen, über HALTEN ZUM STARTEN --, erscheinen nicht
@@ -316,7 +321,7 @@ HALTEN ZUM STARTEN an. HALTEN ZUM STARTEN zählt erst, wenn ALLE HANDGRIFFE
 über dieser Warnung geöffnet und mit OK geschlossen wurde; das Halten
 bestätigt so jeden Schritt, und eine neue Warnung fragt wieder danach.
 
-![Vier Schritte vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen (ein Beispielprofil)](img/de/programmer-stick-hand-steps.png)
+![Vier Schritte vor dem Einschalten, unter ALLE HANDGRIFFE zu lesen (ein Beispielprofil)](img/de/motor-stick-hand-steps.png)
 
 Ein Schritt, nach dem der Lauf fragt, deckt die Seite ab: der Schritt, wo
 Netzteil und Knüppel stehen und wie lange der Lauf wartet. ERLEDIGT geht
@@ -330,7 +335,7 @@ sonst hält: ein versorgtes Warten beobachtet das Netzteil und seine
 Messwerte, und jedes Ende setzt Throttle auf MIN, schaltet das Netzteil aus
 und schaltet den Prüfstand auf SAFE.
 
-![Der Lauf wartet auf den Jumper](img/de/programmer-stick-hand-prompt.png)
+![Der Lauf wartet auf den Jumper](img/de/motor-stick-hand-prompt.png)
 
 **Bevor das Netzteil ausschaltet.** Ein Kontronik-ESC bestätigt einen
 gespeicherten Modus, indem er ihn als Pieptöne wiederholt (die Kontrollausgabe
@@ -368,9 +373,9 @@ KONTROL-X; die anderen zeigen den Schritt in ihrer Liste der Handgriffe.
 Die übrigen Kontronik-Handbücher nennen keine Sperre für ein Ausschalten
 während der Wiederholung.
 
-![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
+![Der Lauf wartet auf die Bestätigung des ESCs](img/de/motor-stick-hand-end.png)
 
-![Kein ERLEDIGT: der ESC kann gesperrt sein](img/de/programmer-stick-hand-locked.png)
+![Kein ERLEDIGT: der ESC kann gesperrt sein](img/de/motor-stick-hand-locked.png)
 
 **Die Handlung, die das Menü startet.** Ein Profil kennzeichnet den
 Schritt, dessen Handlung die Modusfolge startet, mit `"starts_menu": true`;
@@ -433,7 +438,7 @@ Schritten, öffnen sich seine Schritte von selbst, alle, auch wenn ein
 Tippen im selben Frame das Ergebnis schon geschlossen hat,
 und MANUELLER EINGRIFF NÖTIG im Kopf des Ergebnisses öffnet sie wieder.
 
-![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/programmer-stick-hand-after.png)
+![Vier Handgriffe nach dem Programmieren, über dem Ergebnis (ein Beispielprofil)](img/de/motor-stick-hand-after.png)
 
 Nach einem abgebrochenen Lauf eines Profils mit einem Schritt vor
 oder beim Einschalten sagt es, den ESC zu prüfen: ein für den Lauf
