@@ -65,7 +65,7 @@ Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das 
 | `KEIN MOTOR-PIN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden; Warnfarbe |
 | `PINS NICHT GELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
 
-Ein Tipp auf ZIEL öffnet [Ausgänge](outputs.md), und der Prüfstand schaltet auf SAFE wie bei jedem Weg vom Bildschirm. Das Home-Tag auf OUTPUTS führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde.
+Ein Tipp auf ZIEL öffnet [Ausgänge](outputs.md) auf dem Protokoll, an das die Gas-Pins gebunden sind, oder auf der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist, und der Prüfstand schaltet auf SAFE wie bei jedem Weg vom Bildschirm. Das Home-Tag auf OUTPUTS führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde.
 
 ZIEL nimmt keinen Tipp an und ist gesperrt gezeichnet:
 

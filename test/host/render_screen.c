@@ -2708,14 +2708,28 @@ int main(int argc, char **argv)
             outbind_set_proto(&b, proto_named("DSHOT300"));
             (void)outbind_toggle(&b, outbind_index_of(brd, 5));
         }
-        if (strcmp(view, "outputs-prog") == 0) {
+        if (strcmp(view, "outputs-prog") == 0
+            || strcmp(view, "outputs-port") == 0) {
             /* The IOmcu's programming port on GP13: not to be had. */
-            outputs_screen_set_prog_pin(13u);
+            static const uint8_t pins[LINK_PG_PORTS_MAX] = { 13u, 0xFFu,
+                                                             0xFFu, 0xFFu };
+            outputs_screen_set_prog_ports(1u, pins);
         }
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
-        ui_router_goto(SCREEN_OUTPUTS);
-        if (strcmp(view, "outputs-off") != 0) {
+        if (strcmp(view, "outputs-port") == 0) {
+            /* From SERVO's TARGET row with the port as the tester's
+             * target: on the PROG PORT entry, the servo PWM pins as the
+             * overview names them. */
+            settings_set(SET_SERVO_TARGET, 1.0f);
+            settings_set(SET_SERVO_PORT_PWM, 1.0f);
+            ui_router_goto(SCREEN_SERVO);
+            tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
+        } else {
+            ui_router_goto(SCREEN_OUTPUTS);
+        }
+        if (strcmp(view, "outputs-off") != 0
+            && strcmp(view, "outputs-port") != 0) {
             /* Every visit opens on the overview, OFF; the views of a
              * protocol being edited pick it, as the operator does. */
             outputs_screen_select(b.proto);
@@ -3057,8 +3071,6 @@ int main(int argc, char **argv)
             tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
             tap(SV_RUN_SET_X,
                 UI_BAND_H + SV_RUN_SET_Y(strcmp(view, "servo-limits") == 0));
-        } else if (strcmp(view, "servo-target-choice") == 0) {
-            tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
         } else if (strcmp(view, "servo-warning") == 0) {
             tap(100, UI_BAND_H + SV_ROW_Y(0));        /* TYPE */
             tap(130, UI_BAND_H + 212);                /* HELI CYCLIC */

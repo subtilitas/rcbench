@@ -28,41 +28,41 @@ panel 39.0 Hz, ~39 MB/s effective -> 976 KiB of traffic per panel frame
 
 mode       lines/frame     traffic   est. ms  est. fps
 -------------------------------------------------------
-frame            7,882      985 KiB     25.9      19.5
-frame-idle        1,294      162 KiB      4.2      39.0
-held             4,430      554 KiB     14.5      39.0
-sim              8,848     1106 KiB     29.0      19.5
-throttle         9,593     1199 KiB     31.5      19.5
-chrome          32,006     4001 KiB    105.0       7.8
-overview           963      120 KiB      3.2      39.0
-servo           14,680     1835 KiB     48.2      19.5
-servo-grip        2,988      374 KiB      9.8      39.0
-servo-current        4,006      501 KiB     13.1      39.0
-supply           8,580     1072 KiB     28.2      19.5
-supply-chrome       31,606     3951 KiB    103.7       7.8
-analyser           901      113 KiB      3.0      39.0
-logs               878      110 KiB      2.9      39.0
-settings           896      112 KiB      2.9      39.0
-settings-list          896      112 KiB      2.9      39.0
-battery            906      113 KiB      3.0      39.0
-balance            890      111 KiB      2.9      39.0
-motor-stick        1,049      131 KiB      3.4      39.0
-balance-sim        2,387      298 KiB      7.8      39.0
-settings-sim        2,373      297 KiB      7.8      39.0
-battery-sim        2,398      300 KiB      7.9      39.0
-analyser-chrome       39,464     4933 KiB    129.5       6.5
-logs-chrome       16,120     2015 KiB     52.9      13.0
-settings-chrome       18,646     2331 KiB     61.2      13.0
-settings-list-chrome       23,576     2947 KiB     77.4       9.8
-battery-chrome       37,078     4635 KiB    121.7       7.8
-balance-chrome       40,572     5072 KiB    133.2       6.5
-motor-stick-chrome       31,191     3899 KiB    102.4       9.8
-picker             907      113 KiB      3.0      39.0
-picker-chrome       22,055     2757 KiB     72.4      13.0
-wifi               881      110 KiB      2.9      39.0
-wifi-chrome       13,717     1715 KiB     45.0      19.5
-wifi-keys       21,992     2749 KiB     72.2      13.0
-clear           12,007     1501 KiB     39.4      19.5
+frame            7,623      953 KiB     25.0      39.0
+frame-idle        1,286      161 KiB      4.2      39.0
+held             4,194      524 KiB     13.8      39.0
+sim              8,639     1080 KiB     28.4      19.5
+throttle         9,349     1169 KiB     30.7      19.5
+chrome          31,558     3945 KiB    103.6       7.8
+overview           972      122 KiB      3.2      39.0
+servo           14,685     1836 KiB     48.2      19.5
+servo-grip        3,019      377 KiB      9.9      39.0
+servo-current        4,031      504 KiB     13.2      39.0
+supply           8,300     1038 KiB     27.2      19.5
+supply-chrome       31,150     3894 KiB    102.2       9.8
+analyser           874      109 KiB      2.9      39.0
+logs               880      110 KiB      2.9      39.0
+settings           879      110 KiB      2.9      39.0
+settings-list          879      110 KiB      2.9      39.0
+battery            887      111 KiB      2.9      39.0
+balance            869      109 KiB      2.9      39.0
+motor-stick        1,041      130 KiB      3.4      39.0
+balance-sim        2,424      303 KiB      8.0      39.0
+settings-sim        2,409      301 KiB      7.9      39.0
+battery-sim        2,435      304 KiB      8.0      39.0
+analyser-chrome       38,006     4751 KiB    124.7       7.8
+logs-chrome       16,312     2039 KiB     53.5      13.0
+settings-chrome       18,479     2310 KiB     60.6      13.0
+settings-list-chrome       23,433     2929 KiB     76.9       9.8
+battery-chrome       36,603     4575 KiB    120.1       7.8
+balance-chrome       40,451     5056 KiB    132.8       6.5
+motor-stick-chrome       31,463     3933 KiB    103.3       7.8
+picker             900      112 KiB      3.0      39.0
+picker-chrome       22,212     2776 KiB     72.9      13.0
+wifi               859      107 KiB      2.8      39.0
+wifi-chrome       13,756     1720 KiB     45.1      19.5
+wifi-keys       23,037     2880 KiB     75.6      13.0
+clear           12,006     1501 KiB     39.4      19.5
 vlines           8,160     1020 KiB     26.8      19.5
 hlines               0        0 KiB      0.0      39.0
 ```
@@ -237,7 +237,7 @@ Untergrenze:
   SERVO > PROGRAMMIEREN und MOTOR & ESC > PROGRAMMIEREN öffnen, denen es
   nach Namen folgt
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`): 222
+  `PROG_CALLS`): 221
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -371,15 +371,15 @@ Kartenübertragung, solange das WLAN läuft.
 
 | Posten | Was es ist | Bytes |
 | --- | --- | ---: |
-| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 127 136 |
-| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 298 848 |
+| `static` | interner RAM, den Code und Daten des Images belegen, bis `_heap_start` | 127 368 |
+| `heap` | interner Heap beim Start: `_heap_start` bis 0x3FCE9710 und der Bereich des ROM (Read-Only Memory) bis 0x3FCF0000, den der Heap nach dem Start übernimmt | 298 616 |
 | `start-up` | die Stacks und Kontrollblöcke der Tasks von ESP-IDF und des Panels, jede Queue und jede Semaphore, die beiden Bounce-Puffer des Displays und ein Zuschlag von 12 288 Bytes für die Treiber | 105 032 |
-| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 193 816 |
+| `before` | übriger Heap mit laufendem Panel und ausgeschaltetem WLAN | 193 584 |
 | `AP` | WLAN-HOTSPOT: das WLAN, der Server der Seite und seine Task | 98 724 |
 | `JOIN` | mit einem Heimnetz verbunden: das von AP und der mDNS-Responder | 103 160 |
 | `SCAN` | die Netzsuche: das WLAN allein | 86 096 |
 | `FETCH` | eine Release-Suche oder ein Download: das WLAN, die Task `wifi_get` und ein Zuschlag von 4 096 Bytes für TLS | 98 724 |
-| `left` | übriger Heap mit dem größten Modus | 90 656 |
+| `left` | übriger Heap mit dem größten Modus | 90 424 |
 
 Gelesen aus dem Build mit ESP-IDF v5.4. CI führt das Werkzeug auf diesem
 Build mit `--check-doc` aus; das schlägt fehl, wenn die Tabelle von ihm

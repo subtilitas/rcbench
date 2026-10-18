@@ -6,6 +6,8 @@
 
 #include "outputs_screen.h"
 
+#include "outputs_screen_int.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -17,20 +19,6 @@
 
 #define SCREEN_H (480 - UI_BAND_H)
 #define MAX_FBS  3
-
-/*
- * Left column: the protocol and what the choice adds up to.
- *
- * 266 px is the longest protocol name in the head face, 14 cells of 16 px
- * ("DSHOT600 BIDIR", 224 px), with 10 px before it and the chevron's 28 px
- * column and a 4 px gap after it.
- */
-#define COL_X    16
-#define COL_W    266
-#define COL_Y    16
-
-#define DD_Y     44
-#define DD_H     54
 
 /* Why no pin can be ticked: two lines of 18 px under the counts. */
 #define REASON_Y (DD_Y + DD_H + 60)
@@ -65,13 +53,16 @@
 #define BOX      20
 #define CELL_LABEL_X 5
 
-/* The dropdown, when it is open, covers the pins. */
+/* The dropdown, when it is open, covers the pins.  A row is POP_ROW tall,
+ * or less where the protocols and the PROG PORT entries would run past
+ * the screen: 41 px with the 8 protocols and 1 port. */
 #define POP_X    COL_X
 #define POP_W    300
 #define POP_Y    DD_Y
 #define POP_ROW  46
 
 enum { HIT_NONE = 0, HIT_DD, HIT_POP, HIT_CELL, HIT_CLEAR };
+
 
 static struct {
     outbind_t bind;
@@ -105,26 +96,24 @@ static void touched(void)
 
 static const outbind_proto_t *chosen_proto(void);
 
-/* The GPIO the IOmcu's programming port is bound to, or none. */
-static uint8_t g_prog_gpio = OUTPUTS_NO_PIN;
-
-void outputs_screen_set_prog_pin(uint8_t gpio)
-{
-    if (gpio != g_prog_gpio) {
-        g_prog_gpio = gpio;
-        touched();
-    }
-}
-
-/* Whether the programming port has pin @p index: it is the port's and no
+/* Whether a programming port has pin @p index: it is a port's and no
  * protocol holds it.  A pin a stored slot holds is that slot's -- the
  * IOmcu gives the port no pin then -- and can be unticked. */
 static bool prog_taken(uint8_t index)
 {
-    return g_prog_gpio != OUTPUTS_NO_PIN
-           && index < outbind_pin_count(s.bind.board)
-           && outbind_pins(s.bind.board)[index].gpio == g_prog_gpio
-           && outbind_group_of(&s.bind, index) == 0u;
+    if (index >= outbind_pin_count(s.bind.board)
+        || outbind_group_of(&s.bind, index) != 0u) {
+        return false;
+    }
+    return outputs_port_holds(outbind_pins(s.bind.board)[index].gpio);
+}
+
+/* The pin of the PROG PORT entry shown, or OUTPUTS_NO_PIN. */
+static uint8_t shown_port_pin(void)
+{
+    const int port = outputs_screen_port_shown();
+    return (port >= 0) ? outputs_screen_port_pin((uint8_t)port)
+                       : OUTPUTS_NO_PIN;
 }
 
 /* Whether the IOmcu would refuse pin @p index to the protocol being
@@ -132,7 +121,7 @@ static bool prog_taken(uint8_t index)
  * register.  The port's own pin is prog_taken(), not this. */
 static bool clashes(uint8_t index)
 {
-    return outbind_pwm_clash(&s.bind, index, g_prog_gpio, NULL)
+    return outbind_pwm_clash(&s.bind, index, outputs_screen_port_pin(0u), NULL)
            != OUTBIND_CLASH_NONE;
 }
 
@@ -276,6 +265,7 @@ void outputs_screen_select(uint8_t proto)
     outbind_set_proto(&s.bind, proto);
     s.off_picked = (proto == 0u);
     s.refused = -1;
+    outputs_port_hide();
     touched();
 }
 
@@ -298,16 +288,27 @@ static gfx_rect_t dd_rect(void)
     return gfx_rect_make(COL_X, DD_Y, COL_W, DD_H);
 }
 
+/* The list's rows: the protocols, then one PROG PORT entry a port. */
+static int pop_rows(void)
+{
+    return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
+}
+
+static int pop_row_h(void)
+{
+    const int fit = (SCREEN_H - POP_Y - 16) / pop_rows();
+    return (fit < POP_ROW) ? fit : POP_ROW;
+}
+
 static gfx_rect_t pop_rect(void)
 {
-    return gfx_rect_make(POP_X, POP_Y, POP_W,
-                         (int)(OUTBIND_PROTOS * POP_ROW) + 8);
+    return gfx_rect_make(POP_X, POP_Y, POP_W, pop_rows() * pop_row_h() + 8);
 }
 
 static gfx_rect_t pop_row_rect(int i)
 {
-    return gfx_rect_make(POP_X + 4, POP_Y + 4 + i * POP_ROW,
-                         POP_W - 8, POP_ROW);
+    return gfx_rect_make(POP_X + 4, POP_Y + 4 + i * pop_row_h(),
+                         POP_W - 8, pop_row_h());
 }
 
 static gfx_rect_t clear_rect(void)
@@ -350,29 +351,33 @@ static void reset(void)
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
     s.refused = -1;
+    outputs_port_reset();
     ui_hold_reset(&s.clear);
+    outputs_port_forget_open();
     touched();
 }
 
 /*
- * Every visit opens on the overview: OFF selected, so every bound pin names
- * its protocol and no tap edits.  The operator picks the protocol to edit,
- * and picking OFF again goes back to the overview.  Selecting writes
- * nothing, so opening the screen sends no page.  The pin picker opens on
- * OFF the same way.
+ * A visit from SETUP opens on the overview: OFF selected, so every bound
+ * pin names its protocol and no tap edits.  The operator picks the
+ * protocol to edit, and picking OFF again goes back to the overview.  A
+ * visit from a workbench's TARGET row opens on the entry that workbench
+ * drives (outputs_screen_open_on()), once.  Selecting writes nothing, so
+ * opening the screen sends no page.  The pin picker opens on OFF.
  */
 static void enter(void)
 {
     s.open = false;
     s.hit_kind = HIT_NONE;
     ui_hold_reset(&s.clear);
-    outputs_screen_select(0u);
+    outputs_port_open();
 }
 
 static void leave(void)
 {
     s.open = false;
     drop_clear_hold();
+    outputs_port_cancel();
 }
 
 /* UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for
@@ -390,6 +395,7 @@ static void unbind_all(void)
 
 static void tick(float dt_s)
 {
+    outputs_port_tick();
     if (s.hit_kind != HIT_CLEAR) {
         return;
     }
@@ -411,9 +417,13 @@ static void event(const touch_event_t *evt)
     }
     const int x = evt->point.x, y = evt->point.y;
 
+    if (!s.open && outputs_port_event(evt)) {
+        return;
+    }
+
     if (evt->type == TOUCH_EVENT_DOWN) {
         if (s.open) {
-            for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
+            for (int i = 0; i < pop_rows(); ++i) {
                 if (inside(pop_row_rect(i), x, y)) {
                     s.hit_kind = HIT_POP; s.hit_index = i; touched(); return;
                 }
@@ -468,7 +478,12 @@ static void event(const touch_event_t *evt)
     } else if (tap && kind == HIT_POP
                && inside(pop_row_rect(index), x, y)) {
         s.open = false;
-        outputs_screen_select((uint8_t)index);
+        if (index < (int)OUTBIND_PROTOS) {
+            outputs_screen_select((uint8_t)index);
+        } else {
+            outputs_screen_select_port(
+                (uint8_t)(index - (int)OUTBIND_PROTOS));
+        }
     } else if (tap && kind == HIT_CELL
                && inside(cell_rect(index), x, y)) {
         /* A refused tick is not silent: the cell flashes nothing, but the
@@ -587,6 +602,9 @@ bool outputs_screen_reason(char *buf, size_t cap)
         return false;
     }
     buf[0] = '\0';
+    if (outputs_screen_port_shown() >= 0) {
+        return outputs_screen_port_reason(buf, cap);
+    }
     if (s.read == BIND_READ_NONE) {
         snprintf(buf, cap, "%s", TR(OUT_NOT_READ));
         return true;
@@ -596,7 +614,8 @@ bool outputs_screen_reason(char *buf, size_t cap)
         return true;
     }
     return outputs_reason_of(&s.bind, buf, cap)
-           || outputs_clash_reason(&s.bind, s.refused, g_prog_gpio, buf, cap);
+           || outputs_clash_reason(&s.bind, s.refused,
+                                   outputs_screen_port_pin(0u), buf, cap);
 }
 
 bool outputs_clash_label(const outbind_t *b, uint8_t index,
@@ -724,7 +743,8 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
      * held by the pin it clashes with, which the line names. */
     if (clashes(index)) {
         if (label != NULL) {
-            (void)outputs_clash_label(&s.bind, index, g_prog_gpio, label,
+            (void)outputs_clash_label(&s.bind, index,
+                                      outputs_screen_port_pin(0u), label,
                                       cap);
         }
         return OUTPUTS_CELL_HELD;
@@ -737,6 +757,10 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap)
 
 static void draw_left(gfx_canvas_t *c)
 {
+    if (outputs_screen_port_shown() >= 0) {
+        outputs_port_draw(c, dd_rect(), s.hit_kind == HIT_DD, s.open);
+        return;
+    }
     const outbind_proto_t *p = chosen_proto();
 
     gfx_text(c, COL_X, COL_Y, TR(OUT_PROTOCOL), UI_FONT_LABEL, UI_TEXT_FAINT,
@@ -816,10 +840,16 @@ static void draw_cell(gfx_canvas_t *c, int i)
      * another protocol.  It is shown, and not offered.
      */
     const bool live = outputs_screen_editable();
-    const bool reserved = pin->reserved || prog_taken((uint8_t)i);
+    /* The pin of the PROG PORT entry shown: lit, as a ticked pin is, and
+     * read-only. */
+    const bool port_lit = shown_port_pin() != OUTPUTS_NO_PIN
+                          && pin->gpio == shown_port_pin()
+                          && prog_taken((uint8_t)i);
+    const bool reserved = pin->reserved
+                          || (prog_taken((uint8_t)i) && !port_lit);
     const bool can = live && !reserved && !clashes((uint8_t)i)
                      && outbind_can_add(&s.bind, (uint8_t)i);
-    const bool lit = live && on;
+    const bool lit = (live && on) || port_lit;
 
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
                              down ? UI_PANEL_HI : UI_PANEL);
@@ -858,7 +888,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
     char label[32];
     gfx_color_t lc = UI_TEXT_FAINT;
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
-    case OUTPUTS_CELL_RESERVED: lc = UI_DANGER;   break;
+    case OUTPUTS_CELL_RESERVED: lc = port_lit ? UI_TEXT : UI_DANGER; break;
     case OUTPUTS_CELL_HELD:
         /* The overview (OFF) edits no protocol, so what holds each bound
          * pin is the thing it shows: in full ink, apart from free pins and
@@ -876,7 +906,17 @@ static void draw_popup(gfx_canvas_t *c)
     ui_choice_list(c, pop_rect());
     const outbind_proto_t *p = outbind_protos();
     for (int i = 0; i < (int)OUTBIND_PROTOS; ++i) {
-        ui_choice_row(c, pop_row_rect(i), p[i].name, &p[i] == chosen_proto(),
+        ui_choice_row(c, pop_row_rect(i), p[i].name,
+                      outputs_screen_port_shown() < 0
+                          && &p[i] == chosen_proto(),
+                      s.hit_kind == HIT_POP && s.hit_index == i);
+    }
+    for (int n = 0; n < (int)outputs_screen_port_entries(); ++n) {
+        const int i = (int)OUTBIND_PROTOS + n;
+        char name[24];
+        outputs_port_name((uint8_t)n, name, sizeof(name));
+        ui_choice_row(c, pop_row_rect(i), name,
+                      outputs_screen_port_shown() == n,
                       s.hit_kind == HIT_POP && s.hit_index == i);
     }
 }
@@ -885,7 +925,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
 {
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
-        stale = !s.chrome_valid[buffer_index] || s.drawn_gen != s.gen;
+        stale = !s.chrome_valid[buffer_index]
+                || s.drawn_gen != s.gen + outputs_port_revision();
     }
     if (!stale) {
         return;
@@ -903,7 +944,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
-        s.drawn_gen = s.gen;
+        s.drawn_gen = s.gen + outputs_port_revision();
         /* One framebuffer is now current and the others are not; the next
          * pass into each of them repaints. */
         for (int i = 0; i < MAX_FBS; ++i) {
@@ -924,6 +965,8 @@ static void cancel(void)
 {
     s.hit_kind  = HIT_NONE;
     s.hit_index = -1;
+    /* And a segment acts on its release, as a pin does. */
+    outputs_port_cancel();
     /* And a hold completes on a timer: one whose release went missing would
      * finish with nothing on the glass. */
     ui_hold_reset(&s.clear);

@@ -1472,7 +1472,8 @@ static void tap(const ui_screen_t *scr, int x, int y)
 #define COL_W  266
 #define DD_Y   44
 #define DD_H   54
-#define POP_ROW 46
+/* 41 px: the 8 protocols and 1 PROG PORT entry in the screen's height. */
+#define POP_ROW 41
 #define CLR_Y  (DD_Y + DD_H + 100)
 #define CLR_H  48
 #define GRID_X 288

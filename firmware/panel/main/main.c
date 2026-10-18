@@ -1970,6 +1970,15 @@ void app_main(void)
                          settings_get_bool(SET_SERVO_PORT_PWM));
             const uint8_t prog_pin = (uint8_t)atomic_load(&s_prog_pin);
             outputs_screen_set_prog_pin(prog_pin);
+            {
+                const unsigned ports = atomic_load(&s_prog_ports);
+                uint8_t pins[LINK_PG_PORTS_MAX];
+                pins[0] = prog_pin;
+                for (unsigned n = 1; n < LINK_PG_PORTS_MAX; ++n) {
+                    pins[n] = (uint8_t)(ports >> (8u * n));
+                }
+                outputs_screen_set_prog_ports((uint8_t)(ports & 0xFFu), pins);
+            }
             picker_screen_set_prog_pin(prog_pin);
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));

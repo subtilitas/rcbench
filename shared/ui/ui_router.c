@@ -100,7 +100,7 @@ static bool has_band(ui_screen_id_t id);
  * The screens with more than one opener, each opener on a row of its own.
  * The home tag of such a screen returns to the one that opened it: WI-FI
  * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, OUTPUTS from
- * MOTOR & ESC's TARGET row and from SETUP's OUTPUTS tile.
+ * the TARGET rows of MOTOR & ESC and SERVO and from SETUP's OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
@@ -109,6 +109,7 @@ static const struct {
     { SCREEN_WIFI,    SCREEN_LOGS },
     { SCREEN_WIFI,    SCREEN_SETUP },
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
+    { SCREEN_OUTPUTS, SCREEN_SERVO },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
 };
 

@@ -193,6 +193,10 @@ prog_link_rate_t prog_link_rate(prog_link_t *p);
  *  with the standard outputs as target. */
 bool prog_link_pwm(const prog_link_t *p);
 
+/** The ports the IOmcu's page reports (register COUNT), at most
+ *  LINK_PG_PORTS_MAX; 0 with no page or no read. */
+uint8_t prog_link_count(const prog_link_t *p);
+
 /** The GPIO port @p port is bound to, or PROG_LINK_NO_PIN: no page, no
  *  read, no such port, no pin, or a pin the IOmcu refused. */
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port);

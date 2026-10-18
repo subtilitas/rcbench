@@ -83,28 +83,48 @@ bevor man sich auf ein Schreiben verlässt.
 ## Das Ziel
 
 Der Tester des SERVO-Bildschirms treibt die Standard-Servoausgänge oder den
-Programmierport. Zwei Bedienelemente stellen es:
+Programmierport. Zwei Bedienelemente stellen es, auf dem Eintrag PROG-PORT
+von **SETUP** > **OUTPUTS**:
 
 | Bedienelement | Werte | Wirkung |
 | --- | --- | --- |
-| ZIEL, die Zeile auf der rechten Karte | **AUSGÄNGE**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben; ein Tippen öffnet die Auswahl |
-| PORT-PWM, auf **OPTIONEN** > PRÜFLING | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
+| SERVO-TESTER | **AUSGÄNGE**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
+| PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
+
+Ein Tippen auf die Zeile ZIEL der rechten Karte öffnet **OUTPUTS** auf dem
+Eintrag PROG-PORT, solange der Port das Ziel ist, sonst auf SERVO PWM. Die
+Home-Tag dort führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile
+angetippt wurde. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE
+und beendet einen Sweep oder einen Test, wie jeder Weg aus dem Bildschirm.
+
+![Der Eintrag PROG-PORT von OUTPUTS](img/de/outputs-port.png)
 
 Beide werden mit den SERVO-Einstellungen gehalten. Die Zeile ZIEL nennt das
 aktive Ziel mit Protokoll und Pins: `PROG-PORT GP13` in der Warnfarbe oder
-`SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. **ZIEL** wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
+`SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. **SERVO-TESTER**
+wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den IOmcu um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
 aus, wenn der Port nicht im Programmieren ist und weder Sweep noch Test
-läuft, in ARMED wie in SAFE: **STOP** und
-**DISARM** beenden einen Sweep oder einen Test. Mit **AUSGÄNGE** als Ziel
-ist **PORT-PWM** gesperrt.
+läuft, in ARMED wie in SAFE. Mit **AUSGÄNGE** als Ziel ist **PORT-PWM**
+gesperrt. Ein gesperrtes Segment ist umrandet und ohne Akzentfarbe
+gezeichnet, und die Zeile darunter nennt den Grund:
+
+| Zeile | Bedingung |
+| --- | --- |
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der Programmierer hat den Port |
+| `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED oder soll es werden, oder ein Sweep oder ein Test läuft |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | **PORT-PWM** mit **AUSGÄNGE** als Ziel |
+
+Die Zeile ZIEL auf der rechten Karte nimmt kein Tippen an, solange der
+Prüfstand ARMED ist, ein Sweep oder ein Test läuft oder der Programmierer
+den Port hat.
 
 Solange der Programmierer den Port hat, ändert sich keine der beiden
 Zeilen: von **VERBINDEN** bis der Port nach **VERLASSEN** wieder in PWM
 ist, während jedes Vorgangs und solange der IOmcu den Port außerhalb
-von PWM meldet. Beide Zeilen sind gesperrt gezeichnet, ein Zurücksetzen der
+von PWM meldet. Die Zeile ZIEL und beide Segmente sind gesperrt gezeichnet, ein Zurücksetzen der
 Einstellungen lässt die zwei Werte stehen, das Panel schreibt nichts in die
 Seite des Ports im IOmcu, und der Tester sendet dem Port kein
 Kommando und keine Freigabe. Eine dem Port geschuldete Freigabe geht
@@ -116,7 +136,7 @@ was immer die Zeile sagt.
 
 Mit den Standardausgängen als Ziel zeigt der Programmierer
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und jedes
+`Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
@@ -893,7 +913,7 @@ Backup-Datei auf der Karte bleibt dort.
 ## Der Endlagenlauf
 
 Der Endlagenlauf des SERVO-Bildschirms führt den Programmierer selbst,
-sobald ZIEL auf PROG-PORT steht
+sobald SERVO-TESTER auf PROG-PORT steht
 ([Servoverfahren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
 Seine erste Sitzung liest das Servo, auch bei NUR SUCHE: VERBINDEN mit
 seinem Lesen, VERLASSEN. Mit SERVOPULSE auf 1000-2000 schreibt diese
@@ -1055,7 +1075,7 @@ Die Zustandszeile zeigt
 Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Die Taste
 heißt **ABBRECHEN**, solange das Warten läuft. Danach steht
 `Der Port ist wieder im Testermodus.`, und der Tester treibt den Port sofort,
-mit **ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
+mit **SERVO-TESTER** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
 **VERBINDEN** beginnt eine neue Sitzung mit eigenem Lesen.
 
 ### Das Warten vor PWM
@@ -1155,7 +1175,7 @@ Codes.
 - Mit dem simulierten Netzteil (kein PD mini verdrahtet) dimmt das Panel
   dieselben Bedienelemente, und die Versorgung des Servos ist, was es
   speist.
-- Die Zeilen **ZIEL** und **PORT-PWM** folgen dem Zustand des Ports
+- Die Zeile ZIEL und die Segmente **SERVO-TESTER** und **PORT-PWM** folgen dem Zustand des Ports
   einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
   die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
   Lesung des Ports.

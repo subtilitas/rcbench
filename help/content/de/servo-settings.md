@@ -108,17 +108,16 @@ Die Spannungs- und Stromgrenzen, in denen die Sollwerte und die Stufen eines Lau
 | NAME | der Prüfling, bis 23 Zeichen; steht über jedem Bericht |
 | BERICHT | ein Textbericht, `SERVOnnn.TXT`, neben dem Log jedes Tests |
 | SENSOR-MITTE | ein Tipp übernimmt den aktuellen Zählwert, 0 bis 4095, als Mitte, mit dem Servo in Neutral |
-| PORT-PWM | EIN oder AUS: der Puls auf dem Programmierport, solange er das Ziel ist |
 
-AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet.
+AS5600, der Winkelsensor an der Hornwelle, wird nur unter [Anschlüsse](setup-interfaces.md) geschaltet. PORT-PWM, der Puls auf dem Programmierport, wird nur auf dem Eintrag PROG-PORT von [Ausgänge](outputs.md#der-eintrag-prog-port) gestellt.
 
 ## Die Zeile ZIEL
 
 ![Die Zeile ZIEL mit PROG-PORT](view:servo-target)
 
-Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protokoll Pins`, und wählt es: ein Tipp öffnet AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des IOmcu. Sie bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
+Die Zeile ZIEL der Ausgangskarte nennt, was der Tester jetzt treibt, als `Protokoll Pins`, und wählt es, wie auf MOTOR & ESC: ein Tipp öffnet [Ausgänge](outputs.md#der-eintrag-prog-port), auf dem Eintrag PROG-PORT, solange der Programmierport das Ziel ist, sonst auf SERVO PWM. Dort wählt SERVO-TESTER AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des IOmcu. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf OUTPUTS führt zurück zu SERVO, auf dieselbe Aufgabe. Die Zeile bleibt auf jeder Aufgabe sichtbar, unter den Seiten und unter dem Servo-Programmierer. Gesperrt ist sie bei ARMED, während eines Sweeps, eines automatischen Tests oder eines Endlagenlaufs und solange der Servo-Programmierer den Port hält.
 
-![Die Auswahl des Ziels](view:servo-target-choice)
+![Der Eintrag PROG-PORT von OUTPUTS](view:outputs-port)
 
 | Zeile | Bedeutung |
 |---|---|

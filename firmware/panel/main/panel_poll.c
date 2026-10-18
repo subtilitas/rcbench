@@ -627,6 +627,7 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
              * screen's TARGET row says no link. */
             prog_link_lost(&s_prog_link);
             atomic_store(&s_prog_pin, PROG_LINK_NO_PIN);
+            atomic_store(&s_prog_ports, PROG_PORTS_NONE);
             prog_drive_publish();
             servo_link_surfaces_publish();
             atomic_store(&s_sense_unheld, 0u);

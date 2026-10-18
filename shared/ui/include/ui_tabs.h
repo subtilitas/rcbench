@@ -47,6 +47,13 @@ bool ui_tabs_event(ui_tabs_t *t, const touch_event_t *evt);
  */
 void ui_tabs_cancel(ui_tabs_t *t);
 void ui_tabs_render(const ui_tabs_t *t, gfx_canvas_t *c);
+/**
+ * The tabs as ui_tabs_render() draws them, or with @p locked as a control
+ * that takes no press: the trough outlined, the selected tab's label dim
+ * rather than in the accent, a press under way not drawn.  The screen
+ * feeds a locked control no event.
+ */
+void ui_tabs_render_locked(const ui_tabs_t *t, gfx_canvas_t *c, bool locked);
 
 #ifdef __cplusplus
 }

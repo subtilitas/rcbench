@@ -38,7 +38,7 @@ Die rechte Karte, von oben:
 | Messzeile und Grafik | Spannung, Strom und Leistung der Schiene, aufgetragen über die letzten 13 s |
 | SOLL | Spannung und Strombegrenzung des Netzteils und sein Ausgangsschalter |
 | TEMPO | die Rate, mit der der Prüfstand den Ausgang bewegen darf; 100 % gibt den Befehl unverändert weiter |
-| ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT GP13` oder eine Warnung; ein Tipp wählt es ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
+| ZIEL | was der Tester treibt, `Protokoll Pins`: `SERVO PWM GP2`, `PROG-PORT GP13` oder eine Warnung; ein Tipp öffnet Ausgänge, wo es gewählt wird ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)) |
 
 ## ARMED
 

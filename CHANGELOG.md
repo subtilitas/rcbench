@@ -131,6 +131,25 @@ history is in git.
 
 ### Changed
 
+- The TARGET row behaves the same on MOTOR & ESC and on SERVO: a tap opens
+  SETUP > OUTPUTS on what the workbench drives, and the home tag there
+  comes back to the workbench on the task the row was tapped on. From
+  MOTOR & ESC OUTPUTS opens on the protocol the throttle's pins are bound
+  as (the overview while they are bound as several or none is known),
+  from SERVO on the PROG PORT entry while the programming port is the
+  tester's target and on SERVO PWM otherwise; from SETUP's tile on the
+  overview. The row keeps its locks: ARMED, a sweep or a run, the servo
+  programmer holding the port.
+- OUTPUTS lists the IOmcu's programming ports as outputs: its protocol
+  list ends in one PROG PORT entry per port the IOmcu reports (1 today, at
+  most 4; one while the count is not known), its rows 41 px tall instead of
+  46 px so 9 rows fit. The entry shows the port's pin lit and read-only
+  (`PIN GP13`), what the port carries (`CARRIES SERVO PWM AND KST/CHASERVO
+  PROGRAMMING`; no throttle protocol), and on port 1 SERVO TESTER (OUTPUTS
+  | PROG PORT) and PORT PWM (ON | OFF) as segments, locked under the
+  SERVO screen's rules with the reason under them. These two are the one
+  home of the PWM target and Port PWM settings. The servo programmer's
+  locked line reads `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`.
 - The menu tile ANALYSER and the title of its screen read RECEIVER, in
   English and in German. The SETUP category and tile APPLICATION read PANEL
   (German `ANWENDUNG` reads `PANEL`). The identifiers `SCREEN_ANALYSER` and
@@ -322,6 +341,9 @@ history is in git.
 
 ### Removed
 
+- SERVO's own choice OUTPUTS / PROG PORT behind its TARGET row, and the
+  PORT PWM row of SETTINGS > DUT; both settings are set on OUTPUTS' PROG
+  PORT entry.
 - The modelled ESC and SERVO classes of the PROGRAMMER screen, with their
   CONNECT, READ and WRITE on the panel's own copy of a device. Their
   parameter tables for BLHeli_S, AM32, ESCape32, VESC and Hitec D-series

@@ -261,6 +261,15 @@ void prog_link_written(prog_link_t *p, const prog_link_write_t *w, bool ack)
     p->regs[w->off] = w->value;
 }
 
+uint8_t prog_link_count(const prog_link_t *p)
+{
+    if (!known(p)) {
+        return 0u;
+    }
+    const uint16_t n = p->regs[LINK_PG_COUNT];
+    return (n > LINK_PG_PORTS_MAX) ? (uint8_t)LINK_PG_PORTS_MAX : (uint8_t)n;
+}
+
 uint8_t prog_link_pin(const prog_link_t *p, uint8_t port)
 {
     uint16_t pin;

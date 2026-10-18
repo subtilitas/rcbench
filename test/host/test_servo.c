@@ -17,6 +17,7 @@
 #include "greatest.h"
 #include "touch_feed.h"
 
+#include "outputs_screen.h"
 #include "servo_screen.h"
 #include "servo_sim.h"
 #include "servo_sweep.h"
@@ -3427,53 +3428,105 @@ TEST_CASE(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedbac
     free(row_b);
 }
 
-/* The TARGET row on the right card picks what the tester drives, on a
- * bench at rest: a tap opens OUTPUTS / PROG PORT, the TARGET setting.
- * PORT PWM stays on SETTINGS' DUT page, its row at the right column's
- * row 1. */
-TEST_CASE(the_target_row_sets_what_the_tester_drives_on_a_bench_at_rest)
+/*
+ * SETUP > OUTPUTS' PROG PORT entry, which the TARGET row opens: its SERVO
+ * TESTER segment (OUTPUTS | PROG PORT, left column x 19 to 279, y 204 to
+ * 240) and its PORT PWM segment (ON | OFF, y 274 to 310), two tabs of
+ * 128 px 4 px apart.  Mirrored from outputs_screen.c.
+ */
+#define OSEG_X(i)      (19 + 64 + (i) * 132)
+#define OSEG_TESTER_Y  (184 + 20 + 18)
+#define OSEG_PWM_Y     (254 + 20 + 18)
+
+static void out_ev(int x, int y, touch_event_type_t type)
+{
+    const touch_event_t e = { .type = type,
+                              .point = { .id = 2, .x = (int16_t)x,
+                                         .y = (int16_t)y, .strength = 40 } };
+    outputs_screen()->event(&e);
+}
+
+static void out_tap(int x, int y)
+{
+    out_ev(x, y, TOUCH_EVENT_DOWN);
+    out_ev(x, y, TOUCH_EVENT_UP);
+}
+
+/* OUTPUTS on its PROG PORT entry, as the TARGET row opens it. */
+static void out_open_port(void)
+{
+    outputs_screen()->reset();
+    outputs_screen_set_prog_ports(1u, (const uint8_t[]){ 13u, 0xFFu, 0xFFu,
+                                                         0xFFu });
+    outputs_screen_open_on_port(0u);
+    outputs_screen()->enter();
+    CHECK_EQ(outputs_screen_port_shown(), 0);
+}
+
+/* What the tester drives is set on OUTPUTS' PROG PORT entry, on a bench at
+ * rest: SERVO TESTER, the TARGET setting, and PORT PWM, which has no port
+ * to switch while the tester drives the outputs.  SETTINGS' DUT page holds
+ * no PORT PWM row: its right column's row 1 takes no tap. */
+TEST_CASE(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest)
 {
     fresh();
+    out_open_port();
     open_settings();
     tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
-    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    tap(ROW_R_X, ROW_Y(1));                    /* where PORT PWM was */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
     /* With the outputs as target PORT PWM has no port to switch. */
-    tap(ROW_R_X, ROW_Y(1));
+    CHECK(servo_screen_port_pwm_locked());
+    out_tap(OSEG_X(1), OSEG_PWM_Y);            /* OFF */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
-    CHECK(!servo_screen_target_locked());
-    tap(SV_TARGET_X, SV_TARGET_Y);             /* TARGET */
-    tap(CH_X(1), CH_Y(1));                     /* PROG PORT */
+    CHECK(!servo_screen_tester_target_locked());
+    out_tap(OSEG_X(1), OSEG_TESTER_Y);         /* PROG PORT */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     CHECK(settings_save_asked());
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(1), OSEG_PWM_Y);            /* OFF */
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(0), OSEG_PWM_Y);            /* ON */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 
-    /* Armed: the target stays, and no list opens over the page -- REPORT,
-     * under where the list's PROG PORT would be, still takes its tap. */
+    /* Armed: the target stays. */
     servo_screen_set_armed(true);
     CHECK(servo_screen_target_locked());
-    const bool report = settings_get_bool(SET_SERVO_REPORT);
-    tap(SV_TARGET_X, SV_TARGET_Y);
-    tap(ROW_L_X, ROW_Y(1));                    /* REPORT */
-    CHECK_EQ(settings_get_bool(SET_SERVO_REPORT), !report);
+    CHECK(servo_screen_tester_target_locked());
+    out_tap(OSEG_X(0), OSEG_TESTER_Y);         /* OUTPUTS */
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
     /* The pulse goes off under an armed bench and does not come back. */
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(0), OSEG_PWM_Y);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     /* Disarmed it does, and the target goes back. */
     servo_screen_set_armed(false);
-    CHECK(!servo_screen_target_locked());
-    tap(ROW_R_X, ROW_Y(1));
+    CHECK(!servo_screen_tester_target_locked());
+    out_tap(OSEG_X(0), OSEG_PWM_Y);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
-    tap(SV_TARGET_X, SV_TARGET_Y);
-    tap(CH_X(0), CH_Y(0));
+
+    /* The bench ARMED for the motor, which this screen does not arm: the
+     * target stays, the pulse goes off and stays off. */
+    servo_screen_set_bench_armed(true);
+    CHECK(!servo_screen_target_locked());
+    CHECK(servo_screen_tester_target_locked());
+    out_tap(OSEG_X(0), OSEG_TESTER_Y);
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
+    out_tap(OSEG_X(1), OSEG_PWM_Y);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    out_tap(OSEG_X(0), OSEG_PWM_Y);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    servo_screen_set_bench_armed(false);
+    out_tap(OSEG_X(0), OSEG_PWM_Y);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    out_tap(OSEG_X(0), OSEG_TESTER_Y);
     CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 0);
+    /* OUTPUTS again: PORT PWM is locked and keeps its value. */
+    CHECK(servo_screen_port_pwm_locked());
+    out_tap(OSEG_X(1), OSEG_PWM_Y);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
 }
 
 /*
@@ -3885,35 +3938,33 @@ TEST_CASE(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep)
 {
     /* A sweep. */
     fresh();
+    out_open_port();
     settings_set(SET_SERVO_TARGET, 1.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
     servo_screen_set_armed(true);
     servo_screen_set_sweep(true);
     tap(SWEEP_X, BTN_Y);
     CHECK(servo_screen_sweeping());
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
-    tap(ROW_R_X, ROW_Y(1));                    /* PORT PWM */
+    CHECK(servo_screen_port_pwm_locked());
+    out_tap(OSEG_X(1), OSEG_PWM_Y);            /* PORT PWM OFF */
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_sweeping());
 
     /* A test. */
     bench_fresh();
+    out_open_port();
     settings_set(SET_SERVO_TARGET, 1.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    open_settings();
-    tap(TAB_X(PAGE_DUT), TAB_Y);
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
     CHECK(servo_screen_testing());
     /* The run over, armed still: the pulse goes off. */
     open_test();
     tap(START_X, START_Y);                     /* STOP */
     CHECK(!servo_screen_testing());
-    open_settings();                           /* DUT, kept */
-    tap(ROW_R_X, ROW_Y(1));
+    out_tap(OSEG_X(1), OSEG_PWM_Y);
     CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
     settings_set(SET_SERVO_TARGET, 0.0f);
     settings_set(SET_SERVO_PORT_PWM, 1.0f);
@@ -3927,46 +3978,45 @@ static bool port_hold(setting_id_t id)
         && (id == SET_SERVO_TARGET || id == SET_SERVO_PORT_PWM);
 }
 
-/* While the programmer has the port, neither the TARGET row nor the DUT
- * page changes what the tester drives or the port's pulse -- the pulse is
- * not switched off either -- and a list opened before takes no choice. */
-TEST_CASE(the_target_row_and_pulse_stay_while_the_port_is_held)
+/* While the programmer has the port, neither OUTPUTS' SERVO TESTER nor its
+ * PORT PWM changes what the tester drives or the port's pulse -- the pulse
+ * is not switched off either -- and a press begun before the hold takes no
+ * choice on its release.  The TARGET row opens nothing. */
+TEST_CASE(the_tester_target_and_pulse_stay_while_the_port_is_held)
 {
     for (int pwm = 0; pwm < 2; ++pwm) {
         for (int target = 0; target < 2; ++target) {
             fresh();
+            out_open_port();
             settings_set_hold(port_hold);
             s_port_held = false;
             settings_set(SET_SERVO_TARGET, (float)target);
             settings_set(SET_SERVO_PORT_PWM, (float)pwm);
-            settings_set(SET_SERVO_REPORT, 0.0f);
-            open_settings();
-            tap(TAB_X(PAGE_DUT), TAB_Y);           /* DUT */
             s_port_held = true;
             CHECK(servo_screen_target_locked());
-            /* No list opens over the page: REPORT, under where its second
-             * entry would be, takes its tap. */
-            tap(SV_TARGET_X, SV_TARGET_Y);         /* TARGET */
-            tap(ROW_L_X, ROW_Y(1));                /* REPORT */
-            CHECK(settings_get_bool(SET_SERVO_REPORT));
-            tap(ROW_R_X, ROW_Y(1));                /* PORT PWM */
-            tap(ROW_R_X, ROW_Y(1));
-            tap(ROW_R_X, ROW_Y(1));
+            CHECK(servo_screen_tester_target_locked());
+            CHECK(servo_screen_port_pwm_locked());
+            char why[96];
+            CHECK(outputs_screen_port_reason(why, sizeof(why)));
+            CHECK_STR_EQ(why, TR(OUT_PORT_HELD));
+            out_tap(OSEG_X(1 - target), OSEG_TESTER_Y);
+            out_tap(OSEG_X(pwm), OSEG_PWM_Y);  /* the other value */
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
             CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), pwm);
-            /* A list that was open when the port was taken. */
+            /* A press begun before the port was taken. */
             s_port_held = false;
-            tap(SV_TARGET_X, SV_TARGET_Y);
+            out_ev(OSEG_X(1 - target), OSEG_TESTER_Y, TOUCH_EVENT_DOWN);
             s_port_held = true;
-            tap(CH_X(1 - target), CH_Y(1 - target));
+            out_ev(OSEG_X(1 - target), OSEG_TESTER_Y, TOUCH_EVENT_UP);
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), target);
             /* The hold over, both take their taps. */
             s_port_held = false;
             CHECK(!servo_screen_target_locked());
-            tap(SV_TARGET_X, SV_TARGET_Y);
-            tap(CH_X(1), CH_Y(1));
+            CHECK(!outputs_screen_port_reason(why, sizeof(why))
+                  || target == 0);
+            out_tap(OSEG_X(1), OSEG_TESTER_Y);
             CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
-            tap(ROW_R_X, ROW_Y(1));
+            out_tap(OSEG_X(pwm), OSEG_PWM_Y);
             CHECK_EQ((int)settings_get_bool(SET_SERVO_PORT_PWM), 1 - pwm);
             settings_set_hold(NULL);
         }
@@ -5542,14 +5592,14 @@ int main(void)
     RUN(an_encoder_the_coprocessor_does_not_hold_gives_the_run_no_angle_columns);
     RUN(the_encoders_angle_replaces_the_dashes_in_the_measured_row);
     RUN(an_enabled_encoder_without_a_reading_does_not_fall_back_to_the_feedback);
-    RUN(the_target_row_sets_what_the_tester_drives_on_a_bench_at_rest);
+    RUN(outputs_prog_port_entry_sets_what_the_tester_drives_at_rest);
     RUN(the_servo_screen_names_the_pins_the_tester_drives);
     RUN(the_target_line_lists_the_pins_that_fit_and_counts_the_rest);
     RUN(the_target_row_stays_in_sight_under_the_settings_and_a_keypad);
     RUN(the_tag_row_carries_the_pulse_range);
     RUN(the_rail_line_names_the_pd_mini_and_a_modelled_supply);
     RUN(the_port_pulse_is_not_switched_off_under_a_test_or_a_sweep);
-    RUN(the_target_row_and_pulse_stay_while_the_port_is_held);
+    RUN(the_tester_target_and_pulse_stay_while_the_port_is_held);
     RUN(the_dut_page_sets_the_encoders_centre_from_the_live_count);
     RUN(a_link_that_goes_down_takes_the_encoders_angle_with_it);
     RUN(a_run_with_the_encoder_on_writes_the_angle_columns);

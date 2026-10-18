@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) und über ZIEL auf [MOTOR & ESC](motor.md#ziel), auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der Programmierport das Ziel des Testers ist, sonst auf SERVO PWM. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 
@@ -68,11 +68,31 @@ Kann das gewählte Protokoll keine Pins mehr nehmen, steht der Grund in Amber un
 
 Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat dann keinen Pin, und der [Servo-Programmierer](servo-programmer.md) sagt das bei VERBINDEN.
 
+## Der Eintrag PROG-PORT
+
+![Der Eintrag PROG-PORT](view:outputs-port)
+
+Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Sein Eintrag zeigt:
+
+- jeden Pin, wie die Übersicht ihn benennt, den Pin des Ports hervorgehoben. Kein Pin nimmt einen Haken an; der Pin des Ports ist nur lesbar.
+- `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe.
+- `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`: der IOmcu gibt auf dem Port kein MOTOR PWM und kein DShot aus.
+- SERVO-TESTER, AUSGÄNGE oder PROG-PORT: was der Tester von [SERVO](servo.md) treibt. Die Zeile ZIEL von SERVO öffnet OUTPUTS hier, solange der Port das Ziel ist.
+- PORT-PWM, EIN oder AUS: der Puls des Ports, solange er das Ziel des Testers ist.
+
+| Zeile unter den beiden | Bedingung |
+|---|---|
+| `GESPERRT: DER SERVO-PROGRAMMIERER BELEGT DEN PORT` | der [Servo-Programmierer](servo-programmer.md) hat den Port |
+| `GESPERRT, SOLANGE ARMED ODER EIN TEST ODER SWEEP LÄUFT` | der Prüfstand ist ARMED, oder ein Sweep oder ein Test läuft; PORT-PWM geht trotzdem aus |
+| `PORT-PWM BRAUCHT PROG-PORT ALS ZIEL DES TESTERS` | PORT-PWM mit AUSGÄNGE als Ziel des Testers |
+
+Das Wählen des Eintrags schreibt nichts an den IOmcu, und LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt. Die zwei Einstellungen hält das Panel, und sie erreichen den IOmcu bei einem Prüfstand in Ruhe. Bei mehr als einem Port heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`; der Tester treibt nur Port 1.
+
 ## Die Übersicht: OFF
 
 ![OFF zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Jeder Besuch von OUTPUTS öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren. [PICK A PIN](picker.md) öffnet ebenfalls mit OFF gewählt.
+Jeder Besuch von SETUP aus öffnet mit OFF gewählt. OFF bindet nichts und löst nichts. Jeder gebundene Pin zeigt den Namen seines Protokolls; die ganze Bindung und jeder Pin, den sie treibt, stehen auf einem Bildschirm. Ein Tipp auf einen Pin tut nichts, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. Das Öffnen des Bildschirms schreibt nichts an den IOmcu. OFF bleibt gewählt, bis ein Protokoll gewählt wird, auch über das Verlassen des Bildschirms. Ein Wechsel der Platine, etwa ein IOmcu, der während des Besuchs antwortet, oder einer, der gegen einen anderen getauscht wird, wählt OFF, was auch gewählt war; ein zuvor gewähltes Protokoll geht also nicht auf ihn über. Ein Protokoll wählen, um seine Pins zu ändern; OFF wählen, um hierher zurückzukehren. [PICK A PIN](picker.md) öffnet ebenfalls mit OFF gewählt.
 
 ## LETZTER SCHREIBVORGANG
 

@@ -44,6 +44,7 @@ set(SRCS
     log_select.c
     settings_screen.c
     outputs_screen.c
+    outputs_port.c
     picker_screen.c
     board_drawing.c
     busfault_screen.c

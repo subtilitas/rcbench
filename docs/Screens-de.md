@@ -265,7 +265,9 @@ DSHOT300 gebunden, steht dort `DSHOT300 GP0 +7`.
 Das Gas bewegt sich in den beiden Warnzuständen weiter. ARM schaltet die
 ganze Bank auf ARMED, nicht nur die hier genannten Pins.
 
-Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs). Das Verlassen schaltet den
+Ein Tipp auf ZIEL öffnet [OUTPUTS](#outputs) auf dem Protokoll, an das die
+Gas-Pins gebunden sind, auf der Übersicht, solange sie an mehrere gebunden
+sind oder keines bekannt ist. Das Verlassen schaltet den
 Prüfstand auf SAFE, wie jeder Weg vom Bildschirm. Das Home-Tag auf OUTPUTS
 führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde; ein
 anderer Bildschirm dazwischen macht den nächsten Eintritt zu dem einer
@@ -1273,8 +1275,8 @@ keine Zeile ([Programmieren](#programmieren) auf MOTOR & ESC).
 Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
 IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
 und liest und schreibt die Einstellungen des Servos über dessen
-Signalleitung. Er verbindet nur, wenn ZIEL auf der rechten Karte auf
-PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+Signalleitung. Er verbindet nur, wenn SERVO-TESTER auf SETUP > OUTPUTS auf
+PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Unter SETUP > OUTPUTS den SERVO-TESTER auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
 bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
 VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
 tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
@@ -1323,7 +1325,6 @@ Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 | OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
 | OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
 | OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
-| OPTIONEN > PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit ZIEL auf AUSGÄNGE; EIN nach der Regel von ZIEL, AUS in ARMED wie in SAFE, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
 
 AS5600, der Ausgangsencoder, wird nur auf SETUP > ANSCHLÜSSE ein- und
 ausgeschaltet ([der Ausgangsencoder](#anschlüsse-der-ausgangsencoder)); der
@@ -1340,17 +1341,21 @@ A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
 
 Die Zeile ZIEL der Ausgangskarte, zwischen TEMPO und ZENTRIEREN, nennt, was
 der Tester treibt, als `Protokoll Pins`, mittig in ihrem Wertfeld, und ist
-das Bedienelement, das es wählt. Ein Tippen auf das Feld öffnet die Liste
-AUSGÄNGE / PROG-PORT, die Einstellung ZIEL, im NVS (Non-Volatile Storage)
-gespeichert. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
+das Bedienelement, das es wählt, wie die Zeile ZIEL von MOTOR & ESC. Ein
+Tippen auf das Feld öffnet SETUP > OUTPUTS auf dem Eintrag PROG-PORT,
+solange der Port das Ziel des Testers ist, sonst auf SERVO PWM
+([Outputs](#outputs)). Dort wählt SERVO-TESTER AUSGÄNGE oder PROG-PORT, die
+Einstellung ZIEL, und PORT-PWM den Puls des Ports, beide im NVS
+(Non-Volatile Storage) gespeichert. Das Verlassen von SERVO schaltet den
+Prüfstand auf SAFE und beendet einen Sweep oder einen Test; das Home-Tag auf
+OUTPUTS führt zurück zu SERVO, auf die Aufgabe, auf der die Zeile angetippt
+wurde. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
 nimmt keinen Druck --, solange der Prüfstand ARMED ist, während eines
 Sweeps (laufend oder pausiert), eines automatischen Tests oder eines
 Endlagenlaufs und solange der Servo-Programmierer den Port hält; das Ziel
 nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
 Tastenfeldern und dem Servo-Programmierer sichtbar, die Zeile nennt den Pin
 also auch, während einer davon die linke Spalte bedeckt.
-
-![Die Auswahl des Ziels](img/de/servo-target-choice.png)
 
 Mit AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen
 Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
@@ -1376,7 +1381,7 @@ IOmcu hält, einen Port oder die Ausgänge; der Programmer treibt den
 Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein
 IOmcu ohne diese Seite (Protokoll älter als 4.13) hat die
 Standardausgänge als Ziel. Die Zeile folgt dem Ziel, das der IOmcu
-hält, nicht der Einstellung: eine Änderung von ZIEL wartet auf einen
+hält, nicht der Einstellung: eine Änderung von SERVO-TESTER wartet auf einen
 ruhigen Prüfstand und erscheint in der Zeile, sobald der IOmcu sie
 übernommen hat.
 
@@ -2337,7 +2342,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC geöffnet, zurück zu MOTOR & ESC |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS, OUTPUTS, aus ZIEL auf MOTOR & ESC oder SERVO geöffnet, dorthin zurück |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -3166,12 +3171,20 @@ Aktuelle Einschränkungen:
 
 ## Outputs
 
-Hinter der Kachel OUTPUTS auf SETUP; das Home-Tag führt dorthin zurück.
-Die Protokolle, die an die
-Pins des IOmcu gebunden sind, und welche Pins jedes davon treibt. Der
-Bildschirm öffnet auf der [Übersicht](#die-übersicht-off): OFF gewählt,
-jeder gebundene Pin mit seinem Protokoll benannt, und kein Pin änderbar, bis
-ein Protokoll gewählt ist.
+Hinter der Kachel OUTPUTS auf SETUP und hinter den Zeilen ZIEL von
+MOTOR & ESC und SERVO; das Home-Tag führt zu dem Bildschirm zurück, der ihn
+geöffnet hat. Die Protokolle, die an die Pins des IOmcu gebunden sind,
+welche Pins jedes davon treibt, und die Programmierports des IOmcu. Von
+SETUP aus öffnet der Bildschirm auf der [Übersicht](#die-übersicht-off):
+OFF gewählt, jeder gebundene Pin mit seinem Protokoll benannt, und kein Pin
+änderbar, bis ein Protokoll gewählt ist. Von einer Zeile ZIEL aus öffnet er
+auf dem, was diese Werkbank treibt:
+
+| Geöffnet von | Öffnet auf |
+| --- | --- |
+| der Kachel OUTPUTS auf SETUP | der Übersicht, OFF |
+| der Zeile ZIEL von MOTOR & ESC | dem Protokoll, an das die Gas-Pins gebunden sind; der Übersicht, solange sie an mehrere gebunden sind (`GEMISCHT`) oder keines bekannt ist |
+| der Zeile ZIEL von SERVO | dem Eintrag PROG-PORT, solange SERVO-TESTER auf PROG-PORT steht; sonst SERVO PWM |
 
 ![Outputs](img/de/outputs.png)
 
@@ -3246,6 +3259,36 @@ wird als `PROG-PORT` gezeigt und lässt sich ebenfalls nicht anhaken:
 Eine gespeicherte Bindung, die diesen Pin hält, behält ihn: der Port hat
 dann keinen Pin, und VERBINDEN im Programmierer endet mit der Zeile für
 einen Port ohne Pin ([der Port](ServoProgrammer-de.md#der-port)).
+
+### Der Eintrag PROG-PORT
+
+Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport,
+den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4. Solange die
+Anzahl nicht bekannt ist (keine Verbindung, die Seite nicht gelesen, ein
+IOmcu älter als Protokoll 4.13), hält die Liste einen Eintrag, für Port 1.
+Bei mehr als einem heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`. Ein
+Programmierport ist ein Ausgang eigener Art, kein Slot und kein Protokoll
+([Link](Link-de.md#die-programmierports)). Sein Eintrag zeigt:
+
+- die Pins, wie die Übersicht sie benennt, den eigenen Pin des Ports
+  hervorgehoben; kein Pin nimmt einen Haken an, und der Pin des Ports ist
+  nur lesbar;
+- `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe;
+- was der Port trägt: `TRÄGT SERVO PWM UND KST/CHASERVO-PROGRAMMIERUNG`.
+  Der IOmcu gibt auf einem Port kein Gas-Protokoll aus: kein MOTOR PWM,
+  kein DShot;
+- auf Port 1 SERVO-TESTER (AUSGÄNGE | PROG-PORT) und PORT-PWM (EIN | AUS),
+  zwei Segmente unter ihren Beschriftungen, mit dem Grund darunter, solange
+  eines gesperrt ist ([das Ziel](ServoProgrammer-de.md#das-ziel)). Der
+  SERVO-Tester treibt nur Port 1; der Eintrag eines anderen Ports sagt
+  `DER SERVO-TESTER STEUERT NUR PROG-PORT 1 AN`.
+
+![Der Eintrag PROG-PORT](img/de/outputs-port.png)
+
+Keines der beiden Segmente schreibt von diesem Bildschirm eine Seite: die
+Einstellung wird im NVS gehalten, und das Panel bringt sie bei einem
+Prüfstand in Ruhe zum IOmcu. Das Wählen des Eintrags schreibt nichts, und
+LETZTER SCHREIBVORGANG wird auf ihm nicht gezeigt.
 
 SERVO PWM und MOTOR PWM laufen auf den PWM-Slices, und der IOmcu lehnt
 dort zwei Bindungen ab ([Servo-PWM](DShot-de.md#servo-pwm)). Unter diesen
@@ -3330,7 +3373,8 @@ reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
 
 ### Die Übersicht: OFF
 
-Jeder Besuch des Bildschirms öffnet mit OFF gewählt. OFF ist der erste
+Jeder Besuch von SETUP aus öffnet mit OFF gewählt; eine Zeile ZIEL öffnet
+den Bildschirm auf dem, was ihre Werkbank treibt. OFF ist der erste
 Eintrag der Liste und bindet nichts: er nimmt 0 Pins, darum steht unter ihm
 keine Pin-Zählung. Mit OFF gewählt zeigt jeder gebundene Pin den
 Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
@@ -3439,7 +3483,7 @@ Outputs-Bildschirm. Sie nennt das gewählte Protokoll. Ein Tippen öffnet sie
 Taste zufällt, auf diesem Bildschirm und auf dem Outputs-Bildschirm, und
 schreibt nichts. Ein Tippen neben die offene Liste schließt sie und wählt
 nichts. Jeder Besuch öffnet mit OFF gewählt, auf diesem Bildschirm und auf
-dem Outputs-Bildschirm: keine Taste bindet oder löst einen Pin, bis ein
+dem Outputs-Bildschirm von SETUP aus: keine Taste bindet oder löst einen Pin, bis ein
 Protokoll gewählt ist, und die Zeile unter der Liste sagt
 `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`. OFF bleibt über das Zurücklesen
 gewählt, bis ein Protokoll gewählt wird, und ein Wechsel der Platine wählt
