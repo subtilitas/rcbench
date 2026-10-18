@@ -1546,8 +1546,8 @@ const functions: Fn[] = [
   {
     id: 'wifi', group: 'bench',
     name: t('Panel update and card files in a browser over Wi-Fi', 'Panel-Update und Kartendateien im Browser über WLAN'),
-    // The FILES & UPDATE screen. The upload works with no card; the file
-    // list then says the card is missing (docs/Screens.md, "Files & update").
+    // The WI-FI screen. The upload works with no card; the file
+    // list then says the card is missing (docs/Screens.md, "Wi-Fi").
     needs: [], src: repo('STATUS.md', 103, 'Panel firmware update and card files over Wi-Fi'),
   },
   {

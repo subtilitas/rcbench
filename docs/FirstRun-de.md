@@ -62,8 +62,8 @@ mit 0.19.0 nimmt kein Image über WLAN: WLAN-HOTSPOT endet beim Drücken mit
 `WLAN konnte nicht starten.`, und nach der Schätzung des internen RAM
 (Random-Access Memory) in [Performance](Performance-de.md#interner-ram)
 endet MIT HEIMNETZ VERBINDEN genauso. Ab 0.20.0 installiert das Panel ein
-Release über WLAN ([Bildschirme: Dateien &
-Update](Screens-de.md#dateien--update)) oder lädt es von GitHub
+Release über WLAN ([Bildschirme:
+WLAN](Screens-de.md#wlan)) oder lädt es von GitHub
 ([Bildschirme: Updates](Screens-de.md#updates)), und der Koprozessor bekommt
 sein Image vom Panel über CAN.
 
@@ -252,7 +252,7 @@ picotool load -v -x -p 0 firmware/iomcu/build/rcbench-iomcu.uf2
 
 Der Flash des Panels hat zwei Anwendungs-Slots mit je 4 063 232 Bytes,
 `ota_0` und `ota_1`, damit es sich über WLAN selbst aktualisieren kann
-([Bildschirme: Dateien & Update](Screens-de.md#dateien--update)). Ein Panel,
+([Bildschirme: WLAN](Screens-de.md#wlan)). Ein Panel,
 das mit 0.18.0 oder älter geflasht ist, hat einen 3 MiB großen
 `factory`-Slot und bekommt das neue Layout mit einem Flash über USB:
 

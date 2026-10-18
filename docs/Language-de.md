@@ -27,7 +27,7 @@ Aktuelle Einschränkungen:
   gelöscht wird. Der gehaltene Alarm für einen Touch-Controller, der beim
   Start nicht antwortete, entsteht in der Sprache aus dem NVS und bleibt bis
   zum Neustart; ohne Touch lässt sich die Sprache bis dahin nicht ändern.
-- Die Meldezeile von LOG VIEWER (eine Datei, die sich nicht öffnen oder
+- Die Meldezeile von LOGS (eine Datei, die sich nicht öffnen oder
   löschen ließ, eine gelöschte Datei) bleibt in ihrer Sprache, bis die
   nächste geöffnete oder gelöschte Datei sie ersetzt oder leert.
 - Der Titel eines schon offenen Tastenfelds oder einer Auswahlliste bleibt
@@ -62,9 +62,10 @@ passen.
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
 - Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
-  SETTINGS, BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, LOG VIEWER,
-  CAN BUS FAULT, LINK LOST, FILES & UPDATE, PANEL UPDATE. Ein Hinweis, der eine Seite nennt, nennt sie
-  beim Titel: "der Seite SUPPLY".
+  BATTERY, BALANCE, PROGRAMMER, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
+  CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel und das Band des
+  Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
+  Seite nennt, nennt sie beim Titel: "der Seite SUPPLY".
 - Protokoll- und Modusnamen: DShot, PWM (Pulse-Width Modulation), PPM
   (Pulse-Position Modulation), OneShot, S.BUS, CAN (Controller Area
   Network), BLHeli_S, AM32, ESCape32, VESC, KISS, PD mini, AUTO, CV

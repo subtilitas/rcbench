@@ -1043,7 +1043,7 @@ static void render_browse(gfx_canvas_t *c)
     }
     ui_button(c, BR_RESCAN, TR(LOG_RESCAN), UI_PANEL_HI, s.press_btn == 0,
               true);
-    /* FILES & UPDATE: the card's files to a browser, over the panel's
+    /* WI-FI: the card's files to a browser, over the panel's
      * Wi-Fi.  The screen there says when Wi-Fi may not start. */
     ui_button(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3, true);
     int msg_end = BR_OPEN.x;
@@ -2228,8 +2228,32 @@ static void enter(void)
     log_viewer_invalidate();
 }
 
+/*
+ * The home tag climbs one level, as each view's BACK: the plot to the
+ * import, the import to the file list.  Over the DELETE question it is
+ * CANCEL: the file stays.  On the file list it leaves the screen.  A press
+ * held, a drag, a pan and a pinch end with the view they were made on.
+ */
+static bool back(void)
+{
+    cancel();
+    if (s.doomed[0] != '\0') {
+        s.doomed[0] = '\0';
+        return true;
+    }
+    if (s.view == VIEW_PLOT) {
+        s.view = VIEW_IMPORT;
+        return true;
+    }
+    if (s.view == VIEW_IMPORT) {
+        s.view = VIEW_BROWSE;
+        return true;
+    }
+    return false;
+}
+
 static const ui_screen_t s_screen = {
-    .title = "LOG VIEWER",
+    .title = "LOGS",
     .reset = reset,
     .enter = enter,
     .leave = NULL,
@@ -2237,6 +2261,7 @@ static const ui_screen_t s_screen = {
     .event = event,
     .cancel = cancel,
     .render = render,
+    .back = back,
 };
 
 const ui_screen_t *log_viewer_screen(void)

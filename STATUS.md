@@ -100,7 +100,7 @@ is taken in a gap ahead of the save that needs it.
 | CSV (comma-separated values) and number parsing, log viewer | built and tested against the fixture corpus |
 | Logger | built: a run is written while ARMED, or while the supply's output is on with the bench SAFE, in the format the viewer reads. The log of a bench in ARMED has one row per sample the control task takes -- an answered BENCH read with the link up, a 50 ms model step with it down -- and its time column is the wall time since the switch to ARMED; a poll that brings more than one INA3221 window writes one row for each, the sample in the last; the rule is `shared/bench/log_cadence.c`, host-tested in `test_log_cadence` against a model of the control task's pass grid and in `test_logwriter` against the modelled INA3221 through the coprocessor's pages. A file is named by its writer -- `SERVOnnn` for the servo test and the limit run, `ESCnnn` for an arm of the throttle outputs, `BENCHnnn` for the rest -- and the numbers are one series across the three names (`shared/logfile/log_name.c`, host-tested in `test_log_name`). An automatic servo test's CSV and report take the next run number, and the bench log writes no row while the test runs (`log_cadence_bench_run()`): its time column steps over the test. The card is written by the `runlog` task, not by the control task that beats the safety line, and the file is committed every 20 rows or 1000 ms of run, so a power cut mid-run costs that much of it plus whatever the queue to that task holds -- under 1.0 s while the card keeps up, 84 rows and 4.20 s at 20 Hz with the queue full. A row the cut stops part way through has no line feed; the reader leaves it out and reports it (`log_analysis_t.cut_row`), host-tested at every cut position of a row in `test_logwriter` |
 | Board, display, GT911, SD card | built; the panel boots and reports each step on the splash |
-| Panel firmware update and card files over Wi-Fi | built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_screen`); the panel side is `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the coprocessor's update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the install waits while the coprocessor's update or BUY runs, and the coprocessor's question opens and its START is taken only with the radio wholly off and no install under way. Not run on a panel: the transfer rate, the range, the time of an erase and a write, what the glass shows during an erase and the free internal heap with the radio and the display up are not measured. [Files & update](docs/Screens.md#files--update), [migration](docs/FirstRun.md#1-flash-both-boards) |
+| Panel firmware update and card files over Wi-Fi | built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_screen`); the panel side is `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the coprocessor's update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the install waits while the coprocessor's update or BUY runs, and the coprocessor's question opens and its START is taken only with the radio wholly off and no install under way. Not run on a panel: the transfer rate, the range, the time of an erase and a write, what the glass shows during an erase and the free internal heap with the radio and the display up are not measured. [Wi-Fi](docs/Screens.md#wi-fi), [migration](docs/FirstRun.md#1-flash-both-boards) |
 | Release check, reminder and download from GitHub | built and host-tested: the strict reading of the release tag, the redirects and `SHA256SUMS` (`shared/fwupdate/fw_release.c`, `test_fw_release`), the check and the download with their budgets, aborts and a scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), and UPDATES, the reminder and the download's screen (`shared/ui/upd_screen.c`, `test_upd_screen`). The panel side is `wifi_access_fetch_*()` over esp_http_client in `firmware/panel/components/wifi_access/`. Not run on a panel or against GitHub: the TLS (transport layer security) handshakes, the durations of the check and the download, and the free internal heap while a TLS connection runs are not measured. [Updates](docs/Screens.md#updates) |
 | Shell: band, router, splash, menu, simulation watermark | built |
 | Motor & ESC (electronic speed controller) screen | built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the throttle are written to the coprocessor's control page at every 50 ms poll while the link is up; switching to ARMED writes CLEAR on its own, then ARM, THROTTLE and MOTOR_POLES in one frame, and a NACK to either leaves the panel SAFE. The throttle changes only while ARMED: while SAFE, the slider, its `-1` and `+1` steps and the rotary knob are refused and the value is 0 %, which every switch to SAFE returns it to; both bench screens read the value's state (OFF, ARMING, LIVE, LEAVING) from `ui_value_gate.h` (`test_motor_arm`, `test_value_state`; host suite only) |
@@ -310,14 +310,14 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/touch/touch_merge.c` | 92 | 92 | 100.0% |
 | `shared/ui/ui_theme.c` | 42 | 41 | 97.6% |
 | `shared/ui/ui_widgets.c` | 285 | 278 | 97.5% |
-| `shared/ui/ui_icons.c` | 155 | 155 | 100.0% |
+| `shared/ui/ui_icons.c` | 162 | 162 | 100.0% |
 | `shared/ui/ui_band.c` | 241 | 229 | 95.0% |
 | `shared/ui/ui_watermark.c` | 42 | 40 | 95.2% |
 | `shared/ui/ui_plot.c` | 194 | 184 | 94.8% |
 | `shared/ui/ui_slider.c` | 163 | 154 | 94.5% |
 | `shared/ui/ui_tabs.c` | 79 | 70 | 88.6% |
 | `shared/ui/ui_text.c` | 93 | 92 | 98.9% |
-| `shared/ui/ui_router.c` | 328 | 322 | 98.2% |
+| `shared/ui/ui_router.c` | 339 | 333 | 98.2% |
 | `shared/ui/splash_screen.c` | 60 | 57 | 95.0% |
 | `shared/ui/overview_screen.c` | 72 | 71 | 98.6% |
 | `shared/ui/motor_screen.c` | 631 | 615 | 97.5% |
@@ -333,9 +333,9 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/ui/analyser_screen.c` | 241 | 237 | 98.3% |
 | `shared/ui/balance_screen.c` | 323 | 323 | 100.0% |
 | `shared/ui/battery_screen.c` | 201 | 196 | 97.5% |
-| `shared/ui/programmer_screen.c` | 419 | 409 | 97.6% |
-| `shared/ui/esc_stick_panel.c` | 1977 | 1884 | 95.3% |
-| `shared/ui/log_viewer_screen.c` | 1186 | 1115 | 94.0% |
+| `shared/ui/programmer_screen.c` | 421 | 411 | 97.6% |
+| `shared/ui/esc_stick_panel.c` | 2009 | 1916 | 95.4% |
+| `shared/ui/log_viewer_screen.c` | 1198 | 1129 | 94.2% |
 | `shared/ui/log_select.c` | 73 | 72 | 98.6% |
 | `shared/ui/settings_screen.c` | 516 | 511 | 99.0% |
 | `shared/ui/outputs_screen.c` | 455 | 447 | 98.2% |
@@ -470,7 +470,7 @@ ceilings the pages state to the headers, the tools and `ci.yml`.
 | `shared/webaccess/wa_zip.c` | 349 | 333 | 95.4% |
 | `shared/webaccess/wa_page.c` | 148 | 143 | 96.6% |
 | `shared/webaccess/wa_mdns.c` | 119 | 118 | 99.2% |
-| **total** | **44327** | **43259** | **97.6%** |
+| **total** | **44391** | **43325** | **97.6%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

@@ -1,12 +1,12 @@
 ---
 screen: WIFI
-title: Files and update
+title: Wi-Fi
 order: 51
 ---
 
-# Files and update
+# Wi-Fi
 
-FILES & UPDATE runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and a panel firmware image to upload. It opens from [LOGS](logs.md), with WI-FI in the bottom row. The radio runs only while this screen is open. It is off at every start of the panel.
+WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the SD (Secure Digital) card to download, and a panel firmware image to upload. It opens from the WI-FI tile on [SETUP](setup.md) and from WI-FI in the bottom row of [LOGS](logs.md). Its home tag returns to the screen that opened it. The radio runs only while this screen is open. It is off at every start of the panel.
 
 ## The start screen
 

@@ -872,7 +872,7 @@ void cu_link_up(const link_msg_t *reply);
 bool cu_service(bool *link_up, bench_state_t *bench,
                 uint32_t *last_poll, uint32_t *last_status);
 
-/* Once a frame on app_main: FILES & UPDATE, the reminder, SETUP > UPDATES
+/* Once a frame on app_main: WI-FI, the reminder, SETUP > UPDATES
  * and the coprocessor update's screen. */
 void wifi_service(bool armed, uint32_t stops_now);
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);

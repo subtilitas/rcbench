@@ -61,11 +61,11 @@ Keine der Zeiten ist gemessen. SCHLIESSEN fordert das Speichern an; das Speicher
 
 ![PROPELLER AB? MOTOR GESICHERT?](view:programmer-stick-warning)
 
-START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2 s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN schließt die Warnung.
+START öffnet eine Warnung über den ganzen Bildschirm: PROPELLER AB? MOTOR GESICHERT?. Sie nennt das Profil, die Sollwerte des Netzteils und die Zahl der Änderungen. HALTEN ZUM STARTEN startet den Lauf nach einem Halten von 2 s, wie ARM. Ein Finger, der die Taste verlässt, oder ein STOP während des Haltens bricht es ab; ABBRECHEN oder das Home-Tag schließt die Warnung.
 
 ![Ein Lauf zählt Punktgruppen](view:programmer-stick-run)
 
-Der Lauf schaltet den Prüfstand auf ARMED MOTOR. Die Seite zeigt die Phase, die Pieptöne der laufenden Gruppe, die letzte Gruppe und ob sie in Folge war, und den Strom gegen seinen Grundwert. ABBRECHEN, STOP und das Verlassen des Bildschirms beenden den Lauf mit dem Throttle auf MIN, dem Netzteil aus und dem Prüfstand SAFE.
+Der Lauf schaltet den Prüfstand auf ARMED MOTOR. Die Seite zeigt die Phase, die Pieptöne der laufenden Gruppe, die letzte Gruppe und ob sie in Folge war, und den Strom gegen seinen Grundwert. ABBRECHEN, das Home-Tag, STOP und das Verlassen des Bildschirms beenden den Lauf mit dem Throttle auf MIN, dem Netzteil aus und dem Prüfstand SAFE. Nach ABBRECHEN oder dem Home-Tag bleibt das Ergebnis auf der Seite.
 
 Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt wird, mindestens 150 ms.
 
@@ -91,7 +91,7 @@ Das Ergebnis bleibt bis OK: welche Auswahlen ausgeführt wurden, und bei einem b
 ![Durch STOP beendet: Rot dunkel](view:programmer-stick-aborted)
 ![Vom Netzteil beendet: Rot leuchtet](view:programmer-stick-failed)
 
-Das Rot der Signalsäule leuchtet, wenn der Lauf endete, weil etwas nicht wie erwartet war, einschließlich eines Stopps, den der Prüfstand selbst ausgelöst hat. Es bleibt dunkel bei FERTIG, einem gedrückten STOP, ABBRECHEN und dem Verlassen des Bildschirms.
+Das Rot der Signalsäule leuchtet, wenn der Lauf endete, weil etwas nicht wie erwartet war, einschließlich eines Stopps, den der Prüfstand selbst ausgelöst hat. Es bleibt dunkel bei FERTIG, einem gedrückten STOP, ABBRECHEN, dem Home-Tag und dem Verlassen des Bildschirms.
 
 ## Handgriffe
 

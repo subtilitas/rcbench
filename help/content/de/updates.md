@@ -20,7 +20,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche und Download brauchen:
 
-- ein unter [Dateien und Update](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, und NACH UPDATES SUCHEN ist grau;
+- ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf. Sonst ist die Taste grau, und die Karte sagt `Für WLAN muss SAFE aktiv und das Netzteil aus sein.`;
 - kein laufendes Update des Koprozessors und keine Panel-Installation im Gang.
 
@@ -45,7 +45,7 @@ Das Panel verbindet sich mit dem Heimnetz, sendet eine HTTPS-Anfrage (HTTP über
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | eine andere Antwort als ein Redirect |
 | `Unerwartete Antwort von GitHub.` | der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was |
 | `WLAN ausgeschaltet: Prüfstand ARMED.` und ähnliche | ARMED, der Netzteilausgang, ein Log-Lauf oder STOP beendeten die Suche |
-| `Abgebrochen: ...` | FILES & UPDATE, das Update des Koprozessors oder ABBRECHEN beendeten die Suche |
+| `Abgebrochen: ...` | WI-FI, das Update des Koprozessors oder ABBRECHEN beendeten die Suche |
 
 ![Eine Suche ohne Antwort](view:updates-failed)
 

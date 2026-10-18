@@ -232,8 +232,10 @@ es keinen Stopp aufheben kann, der danach kam.
 
 Während des Laufs zeigt die Seite die Phase, die Pieptöne der laufenden
 Gruppe, die letzte Gruppe und ob sie in der Reihenfolge war, und den Strom
-neben seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso STOP im Band und das
-Verlassen des Bildschirms. ZURÜCK und TIMING sind nicht verfügbar. Die
+neben seinem Grundwert. ABBRECHEN beendet den Lauf, ebenso das Home-Tag im
+Band, STOP im Band und das Verlassen des Bildschirms. Das Home-Tag beendet ihn
+wie ABBRECHEN, und das Ergebnis bleibt auf der Seite. ZURÜCK und TIMING sind
+nicht verfügbar. Die
 Signalsäule neben der Pieptonzahl ist [unten](#die-signalsäule)
 beschrieben.
 
@@ -477,8 +479,8 @@ Grün auf einem hellgrauen Fuß.
 - **Rot** leuchtet auf einem Ergebnis, dessen Lauf endete, weil etwas nicht
   wie erwartet war, und bleibt bis OK an. Die Gründe stehen unter
   [Wie ein Lauf endet](#wie-ein-lauf-endet). Bei FERTIG und bei den Enden,
-  die ein Bediener wählt, bleibt es aus: gedrücktes STOP, ABBRECHEN und das
-  Verlassen des Bildschirms. Ein Stopp, den der Prüfstand selbst auslöst,
+  die ein Bediener wählt, bleibt es aus: gedrücktes STOP, ABBRECHEN oder das
+  Home-Tag und das Verlassen des Bildschirms. Ein Stopp, den der Prüfstand selbst auslöst,
   PRÜFSTAND GESTOPPT, schaltet es ein.
 
 Ändert sich eine der beiden Leuchten, werden beide Bildpuffer neu
@@ -723,7 +725,7 @@ Liste.
 | STROM BLEIBT HOCH | ein Puls länger als zweimal LANG MAX | an |
 | ZEITLIMIT | innerhalb von ZEITLIMIT auf keine gewünschte Gruppe reagiert | an |
 | NICHT BESTÄTIGT | kein ERLEDIGT für einen Handgriff innerhalb von 60 s | an |
-| ABGEBROCHEN | ABBRECHEN | aus |
+| ABGEBROCHEN | ABBRECHEN, oder das Home-Tag während des Laufs | aus |
 | SEITE VERLASSEN | der Bildschirm wurde verlassen | aus |
 
 Die Spalte der roten Leuchte ist `esc_stick_reason_is_fault()` in

@@ -51,14 +51,14 @@ settings-sim        2,395      299 KiB      7.9      39.0
 battery-sim        2,384      298 KiB      7.8      39.0
 analyser-chrome       39,240     4905 KiB    128.8       6.5
 logs-chrome       16,179     2022 KiB     53.1      13.0
-settings-chrome       18,710     2339 KiB     61.4      13.0
+settings-chrome       19,686     2461 KiB     64.6      13.0
 settings-list-chrome       23,868     2984 KiB     78.3       9.8
 battery-chrome       36,994     4624 KiB    121.4       7.8
 balance-chrome       40,811     5101 KiB    133.9       6.5
 programmer-chrome       29,257     3657 KiB     96.0       9.8
 picker             874      109 KiB      2.9      39.0
 picker-chrome       22,084     2760 KiB     72.5      13.0
-wifi             1,007      126 KiB      3.3      39.0
+wifi               897      112 KiB      2.9      39.0
 wifi-chrome       13,870     1734 KiB     45.5      19.5
 wifi-keys       22,168     2771 KiB     72.8      13.0
 clear           12,006     1501 KiB     39.4      19.5
@@ -82,7 +82,7 @@ hlines               0        0 KiB      0.0      39.0
 | `supply` | the supply screen with its output on, a sample landing every frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `programmer`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles |
 | `settings-list` | SETUP with ESC / BENCH's list open, chrome cached |
-| `wifi-keys` | FILES & UPDATE with the Wi-Fi keyboard open, a key typed every frame |
+| `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -326,7 +326,7 @@ stand in for. `esp_wifi_init()` takes the Wi-Fi driver's static RX
 (receive) and TX (transmit) buffers: 16 of each, about 1,600 bytes each,
 51,200 bytes of DMA-capable (direct memory access) internal RAM.
 `CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP` makes the TX buffers static. When
-they do not fit, the radio does not start, and FILES & UPDATE shows "Wi-Fi could not start.".
+they do not fit, the radio does not start, and WI-FI shows "Wi-Fi could not start.".
 
 `tools/ram_budget.py` reads the internal heap a panel build leaves and
 subtracts what the panel allocates at run time, then what each Wi-Fi mode
@@ -339,15 +339,15 @@ engines' buffers and a card transfer take from it while the radio runs.
 
 | Item | What it is | Bytes |
 | --- | --- | ---: |
-| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,072 |
-| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,912 |
+| `static` | internal RAM the image's code and data hold, up to `_heap_start` | 127,080 |
+| `heap` | internal heap at start: `_heap_start` to 0x3FCE9710, and the ROM's (read-only memory's) region to 0x3FCF0000, which the heap takes over after start-up | 298,904 |
 | `start-up` | the task stacks and control blocks of ESP-IDF and of the panel, every queue and semaphore, the display's two bounce buffers, and an allowance of 12,288 bytes for the drivers | 105,032 |
-| `before` | heap left with the panel up and the radio off | 193,880 |
+| `before` | heap left with the panel up and the radio off | 193,872 |
 | `AP` | ACCESS POINT: the radio, the page's server and its task | 98,724 |
 | `JOIN` | joined to a home network: AP's and the mDNS responder | 103,160 |
 | `SCAN` | the network search: the radio alone | 86,096 |
 | `FETCH` | a release check or download: the radio, the `wifi_get` task and an allowance of 4,096 bytes for TLS | 98,724 |
-| `left` | heap left with the largest mode up | 90,720 |
+| `left` | heap left with the largest mode up | 90,712 |
 
 Read from the ESP-IDF v5.4 build. CI runs the tool with `--check-doc` on
 that build, which fails when the table differs from it. `-v` lists every

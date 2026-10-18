@@ -55,7 +55,7 @@ Mit offener Sitzung nennt die Gerätezeile die simulierte Firmware und den Chip,
 - `-` und `+` ändern einen Wert schrittweise. Sie halten an den Enden einer Liste an; sie springen nicht herum.
 - `^` und `v` scrollen die Liste; der Zähler zeigt die sichtbaren Zeilen, `1-7 von 8`.
 - AUSLESEN übernimmt die Werte des Modells erneut und verwirft vorgemerkte Änderungen.
-- ZURÜCK geht eine Ebene hoch und schließt die Sitzung. Das Home-Tag im Band verlässt den Bildschirm.
+- ZURÜCK geht eine Ebene hoch und schließt die Sitzung. Das Home-Tag im Band tut dasselbe und verlässt den Bildschirm nur von den Klassen aus.
 
 ![Grad Vorzündung bei AM32](view:programmer-am32)
 

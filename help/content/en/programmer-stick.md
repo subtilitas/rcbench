@@ -61,11 +61,11 @@ None of the timings is measured. CLOSE asks for them to be saved; the save waits
 
 ![PROPELLER REMOVED? MOTOR SECURED?](view:programmer-stick-warning)
 
-RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2 s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL closes the warning.
+RUN opens a warning over the whole screen: PROPELLER REMOVED? MOTOR SECURED?. It names the profile, the supply's set points and the number of changes. HOLD TO RUN starts the run after a 2 s hold, as ARM does. A finger that leaves the button or a STOP during the hold abandons it; CANCEL or the home tag closes the warning.
 
 ![A run counting item groups](view:programmer-stick-run)
 
-The run switches the bench to ARMED MOTOR. The page shows the phase, the beeps of the group under way, the last group and whether it was in order, and the current against its floor. ABORT, STOP and leaving the screen end the run with the throttle at MIN, the supply off and the bench SAFE.
+The run switches the bench to ARMED MOTOR. The page shows the phase, the beeps of the group under way, the last group and whether it was in order, and the current against its floor. ABORT, the home tag, STOP and leaving the screen end the run with the throttle at MIN, the supply off and the bench SAFE. After ABORT or the home tag the result stays on the page.
 
 The stack light's green is lit while a beep is detected, for at least 150 ms.
 
@@ -91,7 +91,7 @@ The result stays until OK: which selections were made, and for an ended run the 
 ![Stopped by STOP: red dark](view:programmer-stick-aborted)
 ![Ended by the supply: red lit](view:programmer-stick-failed)
 
-The stack light's red is lit when the run ended because something was not as expected, a stop the bench raised itself included. It stays dark on DONE, a STOP pressed, ABORT and leaving the screen.
+The stack light's red is lit when the run ended because something was not as expected, a stop the bench raised itself included. It stays dark on DONE, a STOP pressed, ABORT, the home tag and leaving the screen.
 
 ## Manual steps
 

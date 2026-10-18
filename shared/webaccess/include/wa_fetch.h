@@ -24,7 +24,7 @@
  * runs on a task of its own against an HTTP client the platform passes in
  * (wa_http_t), so the host suite runs it against a scripted one.  A job
  * ended from outside -- the budget, STOP, ARMED, the supply, a log run,
- * FILES & UPDATE, CANCEL -- stays ended: what the runner reports after it is
+ * WI-FI, CANCEL -- stays ended: what the runner reports after it is
  * dropped (the job's generation).
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
@@ -102,7 +102,7 @@ typedef enum {
     WA_WHY_SUPPLY,     /**< the supply's output on or coming on         */
     WA_WHY_RUN,        /**< a log run open                              */
     WA_WHY_STOP,
-    WA_WHY_FILES,      /**< FILES & UPDATE opened: it takes the radio   */
+    WA_WHY_FILES,      /**< WI-FI opened: it takes the radio   */
     WA_WHY_COPROC,     /**< the coprocessor's update runs               */
     WA_WHY_INSTALL,    /**< a panel install runs                        */
     WA_WHY_CANCEL,     /**< the operator cancelled                      */

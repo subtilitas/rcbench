@@ -352,8 +352,7 @@ static void reset(void)
 {
     memset(&s, 0, sizeof(s));
     memset(&pg, 0, sizeof(pg));
-    s.drawn[0] = UINT32_MAX;
-    s.drawn[1] = UINT32_MAX;
+    programmer_invalidate();
     pg.stage   = STAGE_CLASS;
 
     const int tw = (W - 2 * PAD - 24 - 16 * (CLASS_COUNT - 1)) / CLASS_COUNT;
@@ -552,6 +551,18 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/* One level up, BACK's and the home tag's; from the classes, none. */
+static bool back(void)
+{
+    if (pg.klass == CLASS_STICK || pg.stage == STAGE_CLASS) {
+        return pg.stage != STAGE_CLASS && esc_stick_panel_back();
+    }
+    pg.stage = (pg.stage == STAGE_DEVICE) ? STAGE_PROTOCOL : STAGE_CLASS;
+    s.connected = false;            /* the session closes */
+    ++pg.rev;
+    return true;
+}
+
 /* The controls under the point of @p evt, in the order they cover each
  * other; see hit(). */
 static void press_at(const touch_event_t *evt)
@@ -563,13 +574,8 @@ static void press_at(const touch_event_t *evt)
         return;
     }
 
-    /* Back climbs one level; the band's home tag leaves the screen. */
-    if (pg.stage != STAGE_CLASS && hit(pg.back, px, py)) {
-        pg.stage = (pg.stage == STAGE_DEVICE) ? STAGE_PROTOCOL : STAGE_CLASS;
-        if (pg.stage == STAGE_PROTOCOL) {
-            s.connected = false;
-        }
-        ++pg.rev;
+    /* BACK climbs one level, as the band's home tag does. */
+    if (pg.stage != STAGE_CLASS && hit(pg.back, px, py) && back()) {
         return;
     }
 
@@ -987,6 +993,7 @@ static const ui_screen_t k_screen = {
     .event  = event,
     .cancel = esc_stick_panel_cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *programmer_screen(void) { return &k_screen; }
