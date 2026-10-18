@@ -1233,6 +1233,127 @@ TEST_CASE(leaving_drops_the_question_and_the_overlays)
     CHECK_NEAR(supply_screen_set_v(), 6.2f, 1e-4f);
 }
 
+/* ------------------------------------------------------ the home tag */
+
+/*
+ * The home tag climbs one level (ui_screen_t.back): a question about a live
+ * output is answered CANCEL and the screen stays.  The output this screen
+ * switched on stays on and owned; with nothing open the tag leaves.
+ */
+TEST_CASE(the_home_tag_answers_supplys_question_cancel_first)
+{
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_output(true);
+    tap(V_UP_X, V_ROW_Y);                    /* the question */
+    CHECK(scr->back());
+    tap(APPLY_X, ASK_Y);                     /* no question to answer */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    CHECK(supply_screen_output_on());
+    CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SUPPLY);
+    CHECK(!scr->back());
+    /* And the set points are the screen's again: the next step asks. */
+    tap(V_UP_X, V_ROW_Y);
+    tap(APPLY_X, ASK_Y);
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+}
+
+/* A set point's keypad closes with nothing typed kept. */
+TEST_CASE(the_home_tag_closes_a_set_point_keypad_first)
+{
+    fresh();
+    tap(CARD_X, CARD_V_Y);
+    key(UI_KEY_7);
+    CHECK(scr->back());
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);                    /* the keypad is gone */
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    CHECK(!scr->back());
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/*
+ * The settings, and a keypad over them: the keypad first, the settings
+ * next, one a tap, and the setting typed into the keypad unchanged.
+ */
+TEST_CASE(the_home_tag_closes_a_settings_keypad_then_the_settings)
+{
+    fresh();
+    const float vmax = settings_get(SET_SUPPLY_V_MAX);
+    tap(SETB_X, SETB_Y);                     /* SETTINGS */
+    tap(ROW_L_X, VMAX_Y);                    /* VOLTAGE MAX's keypad */
+    key(UI_KEY_8);
+    CHECK(scr->back());
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), vmax, 1e-4f);
+    tap(V_UP_X, V_ROW_Y);                    /* still under the settings */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK(scr->back());
+    tap(V_UP_X, V_ROW_Y);                    /* the settings are gone */
+    CHECK_NEAR(supply_screen_set_v(), 6.1f, 1e-4f);
+    CHECK(!scr->back());
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
+/*
+ * The router releases a drag before it asks back() (ui_router.c,
+ * router_back()), with a release the finger did not make.  That release
+ * opens no question, so the home tag finds nothing open and leaves.  With
+ * the question on and the output live the drag changed nothing; otherwise
+ * it moved the set point live and keeps that.
+ */
+TEST_CASE(a_drag_the_home_tag_releases_opens_no_question)
+{
+    for (int k = 0; k < 4; ++k) {
+        const bool ask  = (k & 1) != 0;
+        const bool live = (k & 2) != 0;
+        fresh();
+        settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
+        supply_screen_set_output(live);
+        const float was = supply_screen_set_v();
+        ev(TRACK_X + 10, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+        ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+        const touch_event_t up = { .type = TOUCH_EVENT_UP,
+                                   .point = { .id = 1, .x = TRACK_X + 200,
+                                              .y = V_ROW_Y, .strength = 40 },
+                                   .flags = TOUCH_FLAG_NO_TAP };
+        scr->event(&up);
+        if (scr->back()) {
+            T_FAIL("ask %d live %d: a question was open", ask, live);
+        }
+        if (ask && live) {
+            CHECK_NEAR(supply_screen_set_v(), was, 1e-4f);
+        } else {
+            CHECK(fabsf(supply_screen_set_v() - was) > 0.05f);
+        }
+        const float now = supply_screen_set_v();
+        tap(APPLY_X, ASK_Y);                 /* no question to answer */
+        CHECK_NEAR(supply_screen_set_v(), now, 1e-4f);
+        settings_cancel_save();
+    }
+}
+
+/* A question asked from a set point's keypad over the settings: the
+ * question goes first, and the settings stay. */
+TEST_CASE(the_home_tag_closes_a_question_over_the_settings_first)
+{
+    fresh();
+    supply_screen_set_output(true);
+    tap(SETB_X, SETB_Y);                     /* SETTINGS */
+    tap(CARD_X, CARD_V_Y);                   /* a set point's keypad */
+    keys("7");                               /* the question */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK(scr->back());
+    /* The settings are open still: SETTINGS, which waits while a question
+     * is asked, closes them. */
+    tap(SETB_X, SETB_Y);
+    CHECK(!scr->back());
+    tap(APPLY_X, ASK_Y);                     /* the change was dropped */
+    CHECK_NEAR(supply_screen_set_v(), 6.0f, 1e-4f);
+    CHECK(!supply_screen_poll_cmd(NULL));
+}
+
 /* Pixels that differ in the header strip, y 0..23, between the two
  * buffers. */
 static int header_differs(void)
@@ -2274,6 +2395,11 @@ int main(void)
     RUN(the_output_switch_works_under_every_overlay);
     RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);
     RUN(leaving_drops_the_question_and_the_overlays);
+    RUN(the_home_tag_answers_supplys_question_cancel_first);
+    RUN(the_home_tag_closes_a_set_point_keypad_first);
+    RUN(the_home_tag_closes_a_settings_keypad_then_the_settings);
+    RUN(the_home_tag_closes_a_question_over_the_settings_first);
+    RUN(a_drag_the_home_tag_releases_opens_no_question);
     RUN(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);

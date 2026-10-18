@@ -9,6 +9,10 @@
  * locked under the SERVO screen's rules.  Neither writes a page from here:
  * the control task takes the settings to the IOmcu on a bench at rest.
  *
+ * The lines that name a PWM pin the IOmcu refuses beside a port's pin or a
+ * bound PWM pin (outputs_clash_label(), outputs_clash_reason()) are here
+ * too, for OUTPUTS and PICK A PIN alike.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -392,4 +396,64 @@ void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
         (void)outputs_wrap(c, gfx_rect_make(COL_X, PORT_WHY_Y, COL_W, 16), 18,
                            buf, 2, UI_FONT_LABEL, UI_WARN, false);
     }
+}
+
+/* -------------------------------------------------------- the clashes */
+
+const uint8_t *outputs_port_pins(void)
+{
+    static uint8_t pins[LINK_PG_PORTS_MAX];
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        pins[n] = outputs_screen_port_pin(n);
+    }
+    return pins;
+}
+
+bool outputs_clash_label(const outbind_t *b, uint8_t index,
+                         const uint8_t *ports, uint8_t count, char *buf,
+                         size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    uint8_t with;
+    switch (outbind_pwm_clash_ports(b, index, ports, count, &with)) {
+    case OUTBIND_CLASH_PROG_SLICE:
+        snprintf(buf, cap, TR(OUT_SLICE_OF), (unsigned)with);
+        return true;
+    case OUTBIND_CLASH_COMPARE:
+        snprintf(buf, cap, TR(OUT_COMPARE_OF), (unsigned)with);
+        return true;
+    case OUTBIND_CLASH_NONE:
+    default:
+        return false;
+    }
+}
+
+bool outputs_clash_reason(const outbind_t *b, int index,
+                          const uint8_t *ports, uint8_t count, char *buf,
+                          size_t cap)
+{
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    if (b == NULL) {
+        return false;
+    }
+    if (index < 0 || index >= (int)outbind_pin_count(b->board)) {
+        return false;
+    }
+    uint8_t with;
+    const outbind_clash_t why = outbind_pwm_clash_ports(b, (uint8_t)index,
+                                                        ports, count, &with);
+    if (why == OUTBIND_CLASH_NONE) {
+        return false;
+    }
+    snprintf(buf, cap,
+             (why == OUTBIND_CLASH_PROG_SLICE) ? TR(OUT_SLICE_WHY)
+                                               : TR(OUT_COMPARE_WHY),
+             (unsigned)outbind_pins(b->board)[index].gpio, (unsigned)with);
+    return true;
 }

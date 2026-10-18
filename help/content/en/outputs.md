@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on the [PROG PORT entry](#the-prog-port-entry) while the programming port is the tester's target and on SERVO PWM otherwise. The home tag goes back to the screen it opened from. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the IOmcu's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. From TARGET on [MOTOR & ESC](motor.md#target) it opens on the protocol the throttle's pins are bound as (the overview while they are bound as several or none is known), and from TARGET on [SERVO](servo-settings.md#the-target-row) on the [PROG PORT entry](#the-prog-port-entry) while the programming port is the tester's target and on SERVO PWM otherwise. The home tag goes back to the screen it opened from; over the open protocol list it closes the list first, choosing nothing. The protocol list and LAST WRITE take the left column; the IOmcu's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -56,7 +56,7 @@ An ESC calibrated on a transmitter takes that transmitter's shortest pulse as ze
 | greyed, the other protocol's name | held by another protocol | does nothing |
 | red, struck through | reserved: GP3 carries the safety heartbeat, GP8 to GP12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the IOmcu's programming port, GP13 by default | does nothing |
-| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with the programming port's pin; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
+| greyed, `SLICE OF GP13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GP28 and GP13 are slice 6 | does nothing; `GP28: SHARES PWM SLICE WITH PROG PORT GP13` under the count |
 | greyed, `PWM CH OF GP0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22) | does nothing; `GP16: SAME PWM CHANNEL AS GP0` under the count |
 | free, `PAD 7` | not bound | binds it |
 
@@ -72,7 +72,7 @@ A stored binding that holds GP13 keeps it: the programming port then has no pin,
 
 ![The PROG PORT entry](view:outputs-port)
 
-The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 1 on the bring-up build, at most 4, and one for port 1 while the count is not known. A programming port is an output of its own kind, no protocol and no slot. Its entry shows:
+The protocol list ends in one PROG PORT entry per programming port the IOmcu reports: 1 on the bring-up build, at most 4, and one for port 1 while the count is not known. An IOmcu older than protocol 4.13 has no programming port and no entry. A programming port is an output of its own kind, no protocol and no slot. Its entry shows:
 
 - every pin as the overview names it, the port's pin lit. No pin takes a tick; the port's pin is read-only.
 - `PIN GP13`, or `NO PIN KNOWN` in the warning colour.

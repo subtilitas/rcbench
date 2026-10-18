@@ -142,7 +142,8 @@ history is in git.
   programmer holding the port.
 - OUTPUTS lists the IOmcu's programming ports as outputs: its protocol
   list ends in one PROG PORT entry per port the IOmcu reports (1 today, at
-  most 4; one while the count is not known), its rows 41 px tall instead of
+  most 4; one while the count is not known; none for an IOmcu older than
+  protocol 4.13), its rows 41 px tall instead of
   46 px so 9 rows fit. The entry shows the port's pin lit and read-only
   (`PIN GP13`), what the port carries (`CARRIES SERVO PWM AND KST/CHASERVO
   PROGRAMMING`; no throttle protocol), and on port 1 SERVO TESTER (OUTPUTS
@@ -150,6 +151,8 @@ history is in git.
   SERVO screen's rules with the reason under them. These two are the one
   home of the PWM target and Port PWM settings. The servo programmer's
   locked line reads `Set SERVO TESTER to PROG PORT on SETUP > OUTPUTS.`.
+  OUTPUTS and PICK A PIN hold every reported port's pin and check the PWM
+  slice rule against each, as the IOmcu does.
 - The menu tile ANALYSER and the title of its screen read RECEIVER, in
   English and in German. The SETUP category and tile APPLICATION read PANEL
   (German `ANWENDUNG` reads `PANEL`). The identifiers `SCREEN_ANALYSER` and
@@ -352,6 +355,18 @@ history is in git.
 
 ### Fixed
 
+- The home tag on SUPPLY, WI-FI, OUTPUTS and PICK A PIN climbs one level a
+  tap, as on MOTOR & ESC, SERVO, SETUP and LOGS. On SUPPLY it drops the
+  change a question holds, as CANCEL does, then closes a keypad with the
+  value unchanged, then SETTINGS. On WI-FI it climbs from a keyboard to the
+  network list, keeping nothing typed, and from the list to the buttons;
+  over the question about an uploaded image it is CANCEL, and a second tap
+  while the image is still there leaves. On OUTPUTS
+  and PICK A PIN it closes the open protocol list, choosing nothing. The
+  first tap left the screen before, and a typed SSID or password went with
+  it. A SUPPLY drag that ends without its finger lifting, at the home tag
+  under a second finger or a contact the touch controller loses, asks no
+  question.
 - A switch to ARMED with the IOmcu connected is refused while the IOmcu
   does not hold the panel's Idle pulse and Full pulse: the CHAN_CFG read
   refused, Idle pulse not below Full pulse, the write refused, or an

@@ -6,7 +6,7 @@ order: 63
 
 # Pin-Auswahl
 
-PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md). Jeder Besuch öffnet mit OFF gewählt: Keine Taste bindet oder löst einen Pin, bis ein Protokoll in der Liste gewählt ist, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`.
+PICK A PIN zeigt die Platine des IOmcu, wie sie auf dem Prüfstand liegt, und bindet einen Pin über eine Taste an einer Leiterbahn zu seinem Pad. Der Bildschirm hält dieselbe Bindung wie [Ausgänge](outputs.md): Die Liste beantwortet, welcher GPIO (General-Purpose Input/Output) gebunden ist, die Pin-Auswahl, wo das Kabel hin muss. Er öffnet über PICK A PIN auf [SETUP](setup.md), und sein Home-Tag führt dorthin zurück; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Jeder Besuch öffnet mit OFF gewählt: Keine Taste bindet oder löst einen Pin, bis ein Protokoll in der Liste gewählt ist, und die Zeile unter der Liste lautet `PROTOKOLL WÄHLEN, DANN PIN TIPPEN`.
 
 ## Die Platine und ihre Tasten
 
@@ -58,7 +58,7 @@ PINS, links abwärts, listet die Pins des gewählten Protokolls in Kanalreihenfo
 
 ![GP13 vom Programmierport gehalten](view:picker-prog)
 
-Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`.
+Der Pin des Programmierports, ab Werk GP13 (Pad 17), ist grau, solange kein Protokoll ihn hält, und BELEGT listet ihn zuerst unter `PROG-PORT`. Jeder weitere Port, den der IOmcu meldet, hält seinen Pin ebenso, unter demselben Namen gelistet.
 
 ![OFF gewählt: jeder gebundene Pin unter BELEGT](view:picker-off)
 

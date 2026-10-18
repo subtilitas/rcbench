@@ -486,8 +486,8 @@ columns under INA3221.
 
 ![SETTINGS](img/motor-settings.png)
 
-SETTINGS holds the 8 settings of the ESC / BENCH category (`SET_CAT_ESC`)
-in schema order, under three headings:
+SETTINGS holds the 8 settings of the motor, the pack and the throttle
+output (`SET_CAT_ESC` in the settings schema) in schema order, under three headings:
 
 | Heading | Settings |
 | --- | --- |
@@ -1413,7 +1413,10 @@ point as it was.
 point from the slider or its step buttons, or from the keypad, opens a
 question that names the change. APPLY gives it to the supply; CANCEL drops it
 and the slider goes back. A drag asks once, on the release, and the supply
-holds the old set point until then. With the output off nothing is asked.
+holds the old set point until then. A drag that ends without its finger
+lifting -- the home tag tapped with a second finger, or a contact the touch
+controller loses -- asks nothing, and the slider goes back. With the output
+off nothing is asked.
 STOP closes the question unanswered: an APPLY tapped in the same frame
 (about 50 ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
 separately.
@@ -1433,9 +1436,19 @@ exception: an output SERVO switched on stays on after SERVO is left while the
 servo programmer holds its port, until the port lets go (see SERVO). A servo
 is powered from SERVO and an ESC from ESC STICK. MOTOR & ESC switches no
 supply; an ESC run there is powered from its own source. An output another
-screen switched on stays as it is when SUPPLY is left. The keypad, the HV
+screen switched on stays as it is when SUPPLY is left. The keypad, the
 question and the other overlays of SUPPLY are no leave. The link-lost screen,
 which has no STOP, does not open while the output is on.
+
+**The home tag climbs one level at a time.** The output stays as it is
+while it climbs:
+
+| From | The home tag leads to |
+| --- | --- |
+| the question | what is under it; the change is dropped, as CANCEL drops it |
+| a keypad | what is under it, SUPPLY or SETTINGS; the value is not changed |
+| SETTINGS | SUPPLY |
+| SUPPLY | the menu; an output SUPPLY switched on goes off |
 
 **With the PD mini**, an OFF goes to the SUPPLY page before anything else
 the panel owes it, and the IOmcu switches the output off itself when
@@ -1830,7 +1843,13 @@ WI-FI runs the panel's Wi-Fi for two jobs in a browser: every file on the
 card to download, and a panel firmware image to upload. It opens from the
 WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
 [LOGS](#logs). Its home tag returns to the screen that opened it, SETUP or
-LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. The
+LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. Over
+the network list or a keyboard the home tag climbs one level first, as
+CANCEL does: from a keyboard to the list, keeping nothing typed, and from the
+list to the buttons. Over the question about an uploaded image the home tag
+is CANCEL: the image is dropped, a list or keyboard under the question
+closes with it, and the screen stays. A second tap while the image is still
+there leaves the screen. The
 radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off
@@ -2099,7 +2118,8 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 - Two categories: PANEL and INTERFACES, the bench-wide settings.
   Each tile names its number of settings. A tap opens the category's list.
-  The ESC / BENCH settings are on MOTOR & ESC
+  The settings of the pack, the motor and the throttle output are on
+  MOTOR & ESC > SETTINGS
   ([MOTOR & ESC settings](#motor--esc-settings)).
 - Four screens of their own: OUTPUTS ([Outputs](#outputs)), PICK A PIN
   ([Pick a pin](#pick-a-pin)), WI-FI ([Wi-Fi](#wi-fi)) and UPDATES
@@ -2131,7 +2151,7 @@ The home tag climbs one level at a time:
 | --- | --- |
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC or SERVO goes back there. A list or a keyboard open on one of them closes first ([Outputs](#outputs), [Pick a pin](#pick-a-pin), [Wi-Fi](#wi-fi)) |
 
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
@@ -2903,9 +2923,10 @@ Current limitations:
 ## Outputs
 
 Behind the OUTPUTS tile on SETUP, and behind the TARGET rows of MOTOR & ESC
-and SERVO; its home tag leads back to the screen that opened it. The
-protocols bound to the IOmcu's pins, which pins each one drives, and the
-IOmcu's programming ports. From SETUP it opens on the
+and SERVO; its home tag leads back to the screen that opened it. Over the
+open protocol list the home tag closes the list, choosing nothing, and the
+screen stays. The protocols bound to the IOmcu's pins, which pins each one
+drives, and the IOmcu's programming ports. From SETUP it opens on the
 [overview](#the-overview-off): OFF selected, every bound pin named by its
 protocol, and no pin editable until a protocol is picked. From a TARGET row
 it opens on what that workbench drives:
@@ -2989,8 +3010,9 @@ the programmer's CONNECT ends with the line for a port without a pin
 
 The protocol list ends in one PROG PORT entry per programming port the
 IOmcu reports: 1 on the bring-up build, at most 4. While the count is
-not known (no link, the page not read, an IOmcu older than protocol 4.13)
-the list holds one entry, for port 1. With more than one the entries are
+not known (no link, the page not read since the link came up) the list
+holds one entry, for port 1. An IOmcu older than protocol 4.13 has no
+programming port, and the list holds no entry. With more than one the entries are
 named `PROG PORT 1` to `PROG PORT 4`. A programming port is an output of
 its own kind, no slot and no protocol
 ([Link](Link.md#the-programming-ports)). Its entry shows:
@@ -3020,7 +3042,7 @@ grey, no tick, and the pin it clashes with named under its name.
 
 | Cell | Line after a tap on it | Rule |
 | --- | --- | --- |
-| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with the programming port's pin while the port holds it; GP13 and GP28 are slice 6 |
+| `SLICE OF GP13` | `GP28: SHARES PWM SLICE WITH PROG PORT GP13` | the pin shares a slice with a programming port's pin while the port holds it, checked against every port the IOmcu reports; GP13 and GP28 are slice 6 |
 | `PWM CH OF GP0` | `GP16: SAME PWM CHANNEL AS GP0` | the pin shares a compare register with a pin bound as SERVO PWM or MOTOR PWM: GP0 and GP16, GP1 and GP17, GP2 and GP18, GP4 and GP20, GP5 and GP21, GP6 and GP22 |
 
 The line stands under the protocol, in amber, until the next pick, the next
@@ -3165,6 +3187,8 @@ in its flash.
 ### Pick a pin
 
 Behind the PICK A PIN tile on SETUP, and its home tag leads back there.
+Over the open protocol list the home tag closes the list, choosing
+nothing, and the screen stays.
 The same binding the
 Outputs screen holds. The list answers "which GPIO is bound"; this answers
 "where do I put the lead".
@@ -3228,9 +3252,11 @@ count and IN USE stay, and IN USE then lists every bound pin.
 
 The pin of the IOmcu's programming port, GP13 (pad 17) by default, is
 drawn grey while no protocol holds it, a tap on it changes nothing, and IN
-USE lists it first under `PROG PORT`, without a channel. A protocol whose
-stored binding holds that pin keeps it, the IOmcu gives the port no pin
-then, and the key is that protocol's like any other.
+USE lists it first under `PROG PORT`, without a channel. Every port the
+IOmcu reports, at most 4, holds its pin so, each listed once under the
+one `PROG PORT` name, and the slice rule below is checked against each.
+A protocol whose stored binding holds that pin keeps it, the IOmcu gives
+the port no pin then, and the key is that protocol's like any other.
 
 Under SERVO PWM and MOTOR PWM a key the IOmcu refuses on a PWM slice
 is grey too, as on the Outputs screen: GP28 while the port holds GP13, and

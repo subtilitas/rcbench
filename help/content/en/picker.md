@@ -6,7 +6,7 @@ order: 63
 
 # Pin picker
 
-PICK A PIN shows the IOmcu board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md). Every visit opens with OFF selected: no key binds or unbinds a pin until a protocol is picked in the list, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`.
+PICK A PIN shows the IOmcu board as it lies on the bench and binds a pin by a key on a trace to its pad. It holds the same binding as [Outputs](outputs.md): the list answers which GPIO (general-purpose input/output) is bound, the picker where to put the lead. It opens from PICK A PIN on [SETUP](setup.md), and its home tag leads back there; over the open protocol list it closes the list first, choosing nothing. Every visit opens with OFF selected: no key binds or unbinds a pin until a protocol is picked in the list, and the line under the list reads `CHOOSE A PROTOCOL, THEN TAP PINS`.
 
 ## The board and its keys
 
@@ -58,7 +58,7 @@ PINS, down the left, lists the selected protocol's pins in channel order with th
 
 ![GP13 held by the programming port](view:picker-prog)
 
-The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`.
+The programming port's pin, GP13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
 
 ![OFF selected: every bound pin under IN USE](view:picker-off)
 

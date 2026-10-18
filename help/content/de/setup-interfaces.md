@@ -6,7 +6,7 @@ order: 61
 
 # Anschlüsse
 
-ANSCHLÜSSE, die dritte Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: zwei Strommonitore und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff und das Netzteil PD mini. Ihre 26 Einstellungen stehen in vier Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN und NETZTEIL; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
+ANSCHLÜSSE, die zweite Kategorie auf [SETUP](setup.md), verdrahtet die Teile, die der IOmcu liest: zwei Strommonitore und einen Winkelsensor an einem I2C-Bus (Inter-Integrated Circuit), den Phasenabgriff und das Netzteil PD mini. Ihre 26 Einstellungen stehen in vier Abschnitten unter den Überschriften I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN und NETZTEIL; eine Überschrift ist eine eigene Zeile ohne Tasten. Die Einstellungen werden wie jede andere Einstellung auf SETUP gehalten und gespeichert. Das Panel schreibt jede Einstellung 500 ms nach der letzten Änderung an den IOmcu, und nur, was von dem abweicht, was der IOmcu hält.
 
 ## Die Strommonitore
 

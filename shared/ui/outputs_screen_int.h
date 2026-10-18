@@ -68,3 +68,7 @@ void outputs_port_open(void);
 
 /* What outputs_screen_open_on() asked for is dropped, as at a reset. */
 void outputs_port_forget_open(void);
+
+/* Every programming port's pin, LINK_PG_PORTS_MAX of them, OUTPUTS_NO_PIN
+ * past the entries: what outbind_pwm_clash_ports() checks a pin beside. */
+const uint8_t *outputs_port_pins(void);

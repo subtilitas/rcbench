@@ -1252,6 +1252,18 @@ static void leave(void)
     s.open = false;
 }
 
+/* The home tag closes an open protocol list without choosing; with none
+ * open it leaves the screen. */
+static bool back(void)
+{
+    if (!s.open) {
+        return false;
+    }
+    leave();
+    touched();
+    return true;
+}
+
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     if (buffer_index >= 0 && buffer_index < MAX_FBS
@@ -1330,6 +1342,7 @@ static const ui_screen_t s_screen = {
     .event  = event,
     .cancel = cancel,
     .render = render,
+    .back   = back,
 };
 
 const ui_screen_t *picker_screen(void) { return &s_screen; }

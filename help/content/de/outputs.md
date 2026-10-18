@@ -6,7 +6,7 @@ order: 62
 
 # Ausgänge
 
-OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der Programmierport das Ziel des Testers ist, sonst auf SERVO PWM. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
+OUTPUTS bindet die Pins des IOmcu an Ausgabeprotokolle: welche Pins Servos treiben, welche ESCs (Electronic Speed Controller), und mit welchem Signal. Der Bildschirm öffnet über OUTPUTS auf [SETUP](setup.md) auf der [Übersicht](#die-übersicht-off): OFF gewählt und jeder gebundene Pin mit seinem Protokoll benannt. Über ZIEL auf [MOTOR & ESC](motor.md#ziel) öffnet er auf dem Protokoll, an das die Gas-Pins gebunden sind (der Übersicht, solange sie an mehrere gebunden sind oder keines bekannt ist), und über ZIEL auf [SERVO](servo-settings.md#die-zeile-ziel) auf dem [Eintrag PROG-PORT](#der-eintrag-prog-port), solange der Programmierport das Ziel des Testers ist, sonst auf SERVO PWM. Das Home-Tag führt zurück zu dem Bildschirm, aus dem er geöffnet wurde; über der offenen Protokollliste schließt es zuerst die Liste, ohne zu wählen. Die Protokollliste und LETZTER SCHREIBVORGANG belegen die linke Spalte; die Pins des IOmcu die rechte. [PICK A PIN](picker.md) hält dieselbe Bindung auf einer Zeichnung der Platine.
 
 ## Pins binden
 
@@ -56,7 +56,7 @@ Ein ESC, der an einem Sender kalibriert wurde, nimmt den kürzesten Puls dieses 
 | ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
 | rot, durchgestrichen | reserviert: GP3 trägt den Sicherheits-Heartbeat, GP8 bis GP12 den CAN-Controller (Controller Area Network) | tut nichts |
 | `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GP13 | tut nichts |
-| ausgegraut, `SLICE VON GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin des Programmierports; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` unter der Zahl |
+| ausgegraut, `SLICE VON GP13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GP28 und GP13 sind Slice 6 | tut nichts; `GP28: TEILT PWM-SLICE MIT PROG-PORT GP13` unter der Zahl |
 | ausgegraut, `KANAL VON GP0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM gebundenen Pin (GP0 und GP16, GP1 und GP17, GP2 und GP18, GP4 und GP20, GP5 und GP21, GP6 und GP22) | tut nichts; `GP16: GLEICHER PWM-KANAL WIE GP0` unter der Zahl |
 | frei, `PAD 7` | nicht gebunden | bindet ihn |
 
@@ -72,7 +72,7 @@ Eine gespeicherte Bindung, die GP13 hält, behält ihn: Der Programmierport hat 
 
 ![Der Eintrag PROG-PORT](view:outputs-port)
 
-Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Sein Eintrag zeigt:
+Die Protokollliste endet mit einem Eintrag PROG-PORT je Programmierport, den der IOmcu meldet: 1 beim Bring-up-Build, höchstens 4, und einer für Port 1, solange die Anzahl nicht bekannt ist. Ein IOmcu älter als Protokoll 4.13 hat keinen Programmierport und keinen Eintrag. Ein Programmierport ist ein Ausgang eigener Art, kein Protokoll und kein Slot. Sein Eintrag zeigt:
 
 - jeden Pin, wie die Übersicht ihn benennt, den Pin des Ports hervorgehoben. Kein Pin nimmt einen Haken an; der Pin des Ports ist nur lesbar.
 - `PIN GP13`, oder `KEIN PIN BEKANNT` in der Warnfarbe.
