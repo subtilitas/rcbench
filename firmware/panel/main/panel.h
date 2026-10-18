@@ -133,6 +133,9 @@ typedef struct {
     uint16_t     block;
     uint16_t     blocks;
     uint32_t     starts_taken;
+    uint8_t      check;     /* a cu_check_t: the last build check        */
+    bool         mismatch;  /* a coprocessor of another protocol major
+                               answers its identity (the link stays down) */
 } cu_snap_t;
 
 /* What the screen reads.  Written by the control task, copied by app_main. */
@@ -878,4 +881,4 @@ void wifi_service(bool armed, uint32_t stops_now);
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
-void cu_render_service(bool unsafe, const cu_snap_t *cs);
+void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);

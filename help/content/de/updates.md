@@ -15,6 +15,7 @@ UPDATES fragt GitHub, welches Release der Panel-Firmware das neueste ist, und in
 | NACH UPDATES SUCHEN | fragt GitHub einmal; dieselbe Taste heißt ABBRECHEN, solange die Suche läuft |
 | ERINNERUNG BEIM START: EIN / AUS | schaltet die Suche beim Start und ihre Erinnerung; gespeichert mit SPEICHERN unter [Setup](setup.md#die-werte-behalten); ab Werk an |
 | 2 s HALTEN: LADEN & INSTALLIEREN | erscheint, sobald eine Suche ein neueres Release gefunden hat; lädt, prüft und installiert es |
+| 2 s HALTEN: KOPROZESSOR AKTUALISIEREN | startet das [Koprozessor-Update](coproc_update.md) aus dem Image, das dieses Panel mitbringt, auch nachdem seine Frage abgelehnt wurde |
 
 ## Was die Suche braucht
 
@@ -67,6 +68,30 @@ Erst dann schreibt das [Panel-Update](update.md) es, so wie INSTALL. Vorher ber�
 ABBRECHEN beendet den Download. STOP, ARMED, der Netzteilausgang, ein Log-Lauf, eine geladene Platinenzeichnung und 180 s nach dem Halten beenden ihn auch. Der laufende Build bleibt; SCHLIESSEN geht zurück zu UPDATES, oder zum Menü, wenn das Halten das der Erinnerung war.
 
 ![Ein abgebrochener Download](view:panel-download-failed)
+
+## Der Koprozessor
+
+![Ein anderer Build auf dem Koprozessor](view:updates-coproc)
+
+Unter den Tasten nennt UPDATES die Version, die der Koprozessor laufen hat (`Läuft: 0.17.0`), und die Version des Images, das dieses Panel mitbringt (`Auf diesem Panel: 0.18.0`). 2 s HALTEN: KOPROZESSOR AKTUALISIEREN startet das Update, das die Frage beim Link-up startet, mit demselben Fortschritt. Endet das Update, oder verfiel der START, kehrt der Bildschirm zu UPDATES zurück.
+
+Das Halten braucht, was die Frage braucht: einen Koprozessor mit einem anderen Build, den Prüfstand SAFE, den Netzteilausgang aus, den WLAN-Funk ganz aus und keine Panel-Installation im Gang. Sonst ist es grau, und die Zeile darüber sagt, warum, das Erste davon, das gilt:
+
+| Zeile | Bedingung |
+|---|---|
+| `Dieses Panel enthält keine Koprozessor-Firmware.` | das Panel ist ohne das Image des Koprozessors gebaut |
+| `Wartet auf das Ende des Koprozessor-Updates.` | ein Update läuft, oder sein START ist noch nicht angenommen |
+| `Kein Koprozessor antwortet.` | keine Verbindung; `Läuft: unbekannt` |
+| `Wartet auf die Build-Prüfung des Koprozessors.` | ein Koprozessor antwortet; sein Build ist noch nicht verglichen |
+| `Build des Koprozessors wird geprüft.` | der SHA-256-Vergleich läuft |
+| `Build-Prüfung fehlgeschlagen. Sie läuft bei der nächsten Verbindung erneut.` | der Vergleich endete ohne Antwort |
+| `Kein Update über CAN. Firmware einmal über USB installieren.` | der Koprozessor hat keine Update-Pages oder keine Partitionstabelle |
+| `Koprozessor nutzt den Build dieses Panels.` | es gibt nichts zu senden |
+| `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an |
+| `Wartet, bis das WLAN des Panels aus ist.` | eine Suche, ein Download oder Dateien und Update hat den Funk an |
+| `Wartet: Die Installation der Panel-Firmware läuft.` | eine Panel-Installation ist im Gang |
+
+Ist das Halten aktiv, lautet die Zeile `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.`, oder `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe für ein älteres Image.
 
 ## Aktuelle Einschränkungen
 

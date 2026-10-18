@@ -7,6 +7,15 @@
  * check on and off (SET_UPD_REMIND).  When a newer release was found, HOLD
  * 2 s: DOWNLOAD & INSTALL fetches and installs it.
  *
+ * Its coprocessor section, under the buttons: the version the coprocessor
+ * runs, the version of the image this panel carries, and HOLD 2 s: UPDATE
+ * COPROCESSOR, which starts the update the link-up's question starts, also
+ * after that question was declined.  The hold is live only while
+ * coproc_update_section() reads CU_SEC_READY; any other state greys it and
+ * says why in the line above it.  coproc_update_drive() hands the section
+ * in (upd_screen_set_coproc()) and drains the hold
+ * (upd_screen_take_coproc()).
+ *
  * The reminder (SCREEN_UPD_REMIND): the start-up check found a newer
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
  * off, and never over the coprocessor's update question or its progress,
@@ -34,6 +43,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "coproc_update_screen.h"
 #include "ui_screen.h"
 #include "wifi_screen.h"
 
@@ -146,6 +156,29 @@ typedef struct {
 
 /** Hand the screens what to show. */
 void upd_screen_set(const upd_view_t *v);
+
+/** UPDATES' coprocessor section. */
+typedef struct {
+    cu_sec_t     sec;
+    bool         known;      /**< running is a version a coprocessor named */
+    bool         have_image; /**< carried is an image this panel holds     */
+    cu_version_t running;
+    cu_version_t carried;
+} upd_cu_view_t;
+
+/** Hand UPDATES its coprocessor section; a hold the state no longer
+ *  allows ends unfired. */
+void upd_screen_set_coproc(const upd_cu_view_t *v);
+
+/** What the section shows, for the driver and the tests. */
+const upd_cu_view_t *upd_screen_coproc(void);
+
+/** True once after HOLD 2 s: UPDATE COPROCESSOR completed. */
+bool upd_screen_take_coproc(void);
+
+/** The section's state line for @p v, and its colour. */
+void upd_cu_text(const upd_cu_view_t *v, const char **line,
+                 gfx_color_t *col);
 
 /** What is showing, for the application and the tests. */
 const upd_view_t *upd_screen_view(void);

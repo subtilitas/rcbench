@@ -788,6 +788,8 @@ void publish_snapshot(const bench_state_t *bench, bool link_up,
     s_snap.supply      = s_supply;
     s_snap.supply_gen  = s_supply_gen;
     s_snap.link_up     = link_up;
+    /* A coprocessor this panel cannot drive still takes the update. */
+    s_snap.cu.mismatch = s_mismatch_told;
     s_snap.armed       = outputs_armed(&s_out);
     s_snap.armed_roles = outputs_armed_roles(&s_out);
     s_snap.arm_wanted  = arming_link_needed(&s_arm, s_snap.armed);

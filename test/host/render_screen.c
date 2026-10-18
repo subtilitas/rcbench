@@ -1738,6 +1738,51 @@ static void pose_upd(const char *view)
         }
     }
     upd_screen_set(&v);
+
+    /* The coprocessor section: a coprocessor on the build this panel
+     * carries, 0.18.0, as on the panel's card; updates-coproc a coprocessor
+     * on 0.17.0 the hold may move to 0.18.0; updates-cu-* every other
+     * state, measured by the fit check. */
+    static const struct {
+        const char *view;
+        cu_sec_t    sec;
+    } k_cu[] = {
+        { "updates-coproc",      CU_SEC_READY },
+        { "updates-cu-older",    CU_SEC_READY },
+        { "updates-cu-rebuilt",  CU_SEC_READY },
+        { "updates-cu-noimage",  CU_SEC_NO_IMAGE },
+        { "updates-cu-busy",     CU_SEC_BUSY },
+        { "updates-cu-nolink",   CU_SEC_NO_LINK },
+        { "updates-cu-unknown",  CU_SEC_UNKNOWN },
+        { "updates-cu-checking", CU_SEC_CHECKING },
+        { "updates-cu-failed",   CU_SEC_FAILED },
+        { "updates-cu-usb",      CU_SEC_USB },
+        { "updates-cu-unsafe",   CU_SEC_UNSAFE },
+        { "updates-cu-radio",    CU_SEC_RADIO },
+        { "updates-cu-install",  CU_SEC_INSTALL },
+    };
+    upd_cu_view_t cu = {
+        .sec = CU_SEC_SAME, .known = true, .have_image = true,
+        .running = { 0, 18, 0 }, .carried = { 0, 18, 0 },
+    };
+    for (size_t i = 0; i < sizeof(k_cu) / sizeof(k_cu[0]); ++i) {
+        if (strcmp(view, k_cu[i].view) == 0) {
+            cu.sec = k_cu[i].sec;
+            cu.running = (cu_version_t){ 0, 17, 0 };
+        }
+    }
+    if (strcmp(view, "updates-cu-older") == 0) {
+        cu.running = (cu_version_t){ 0, 19, 0 };
+    } else if (strcmp(view, "updates-cu-rebuilt") == 0) {
+        cu.running = cu.carried;
+    } else if (strcmp(view, "updates-cu-noimage") == 0) {
+        cu.known = false;
+        cu.have_image = false;
+    } else if (strcmp(view, "updates-cu-nolink") == 0
+               || strcmp(view, "updates-cu-unknown") == 0) {
+        cu.known = false;
+    }
+    upd_screen_set_coproc(&cu);
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the

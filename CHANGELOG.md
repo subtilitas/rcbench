@@ -117,9 +117,21 @@ history is in git.
   tolerance of 100 for six of them. It fails on an unlisted file over
   1,000 lines, a listed file at or under 1,000 and a count outside its
   tolerance. CI runs it with the tree checks.
+- SETUP > UPDATES has a coprocessor section under its buttons: the version
+  the coprocessor runs, the version of the image the panel carries, a line
+  of state and `HOLD 2 s: UPDATE COPROCESSOR`. The 2 s hold starts the
+  update the link-up's question starts, also after that question was
+  declined, and the progress returns to UPDATES. It takes what the question
+  takes: another build, SAFE, the supply output off, the Wi-Fi radio wholly
+  off and no panel install. Otherwise it is grey and the line names the
+  first of 11 reasons that holds. After an image found on trial is kept,
+  the panel compares the coprocessor's build with its own again.
 
 ### Changed
 
+- UPDATES' hint without a home network reads
+  `Save a network under SETUP > WI-FI.` (German
+  `Speichere ein Netzwerk unter SETUP > WI-FI.`).
 - `ram_budget.py --check-doc` holds the PSRAM .bss table in Performance
   and its German page to the build's map file: each object
   `psram_bss.lf` names, the count, the total and ESP-IDF's own 13,742
