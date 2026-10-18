@@ -358,6 +358,19 @@ int motor_settings_heading(int row)
                                          : -1;
 }
 
+const char *motor_endpoints_alert(endpoints_block_t why)
+{
+    switch (why) {
+    case ENDPOINTS_BLOCK_OWED:    return TR(ALERT_ARM_ENDPOINTS);
+    case ENDPOINTS_BLOCK_UNKNOWN: return TR(ALERT_ARM_RANGE_UNKNOWN);
+    case ENDPOINTS_BLOCK_ORDER:   return TR(ALERT_ARM_RANGE_ORDER);
+    case ENDPOINTS_BLOCK_REFUSED: return TR(ALERT_ARM_RANGE_REFUSED);
+    case ENDPOINTS_BLOCK_DIFFERS: return TR(ALERT_ARM_RANGE_DIFFERS);
+    case ENDPOINTS_BLOCK_NONE:
+    default:                      return NULL;
+    }
+}
+
 gfx_rect_t motor_settings_box(int row)
 {
     return (row >= 0 && row < ROW_COUNT) ? box_rect(row)

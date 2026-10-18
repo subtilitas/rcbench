@@ -1,7 +1,7 @@
 /*
  * The panel's half of the throttle's pulse endpoints, Idle pulse and Full
- * pulse, on the CHAN_CFG (0x23) link page: when a debt is paid and what
- * each outcome of paying it leaves owed.
+ * pulse, on the CHAN_CFG (0x23) link page: when a debt is paid, what each
+ * outcome of paying it leaves, and whether a switch to ARMED may go on.
  *
  * An edit of either setting, a link-up edge and the panel's start owe the
  * IOmcu the pair.  The debt is paid at a poll whose control write put
@@ -12,15 +12,23 @@
  * throttle channels and writes the page when it differs.
  *
  * The IOmcu applies a CHAN_CFG write to its outputs before it
- * acknowledges it.  An ACK, or a read that already holds the pair, is the
- * pair in force; a read or a write nobody answered leaves the debt owed.
- * A refusal ends the debt with an alert, and the IOmcu keeps the pair it
- * held: the same request refused once is refused every time.
+ * acknowledges it, and the acknowledgement carries what it stored.  A read
+ * that already holds the pair, or an ACK whose stored throttle channels
+ * hold it, is the pair in force; a read or a write nobody answered leaves
+ * the debt owed.
  *
- * The frame that switches to ARMED carries no CHAN_CFG.  While the debt
- * stands with the link up, a switch to ARMED is refused
- * (arming_hs_facts_t.endpoints_owed): one that went on would run the
- * throttle on the range the IOmcu held before the edit.
+ * Any other answer ends the debt and blocks the switch to ARMED
+ * (endpoints_block()): the read refused, Idle pulse not below Full pulse,
+ * the write refused, or an ACK whose throttle channels hold another pair.
+ * The same request refused once is refused every time, so the debt is not
+ * sent again by itself.  A new edit, a new binding (endpoints_recheck())
+ * or a link-up edge, an IOmcu restart or update included, owes the pair
+ * again, and the payment that follows decides afresh.
+ *
+ * The frame that switches to ARMED carries no CHAN_CFG.  While the pair is
+ * not in force -- owed or blocked -- with the link up, a switch to ARMED is
+ * refused (arming_hs_facts_t.endpoints_blocked): one that went on would run
+ * the throttle on whatever range the IOmcu holds.
  *
  * The debt crosses two tasks: the settings screen publishes an edit
  * (endpoints_publish()) and the control task, which owns the link, pays
@@ -83,9 +91,37 @@ typedef enum {
     ENDPOINTS_HELD,
     /** The write came back acknowledged: the pair is in force. */
     ENDPOINTS_TAKEN,
-    /** The write came back refused: the IOmcu keeps the pair it held. */
+    /** The write came back refused: the IOmcu keeps the pair it held, or
+     *  the frames of the page before the refused one. */
     ENDPOINTS_WRITE_REFUSED,
+    /** The write came back acknowledged, and what the IOmcu stored on a
+     *  throttle channel is not the pair. */
+    ENDPOINTS_DIFFERS,
 } endpoints_outcome_t;
+
+/** Why a switch to ARMED is refused for the pair, endpoints_block(). */
+typedef enum {
+    /** The pair is in force, or nothing was ever owed. */
+    ENDPOINTS_BLOCK_NONE = 0,
+    /** Owed: an edit, a binding or a link-up not yet paid. */
+    ENDPOINTS_BLOCK_OWED,
+    /** The IOmcu refused the read: its range is not known. */
+    ENDPOINTS_BLOCK_UNKNOWN,
+    /** Idle pulse is not below Full pulse: nothing was sent. */
+    ENDPOINTS_BLOCK_ORDER,
+    /** The IOmcu refused the write. */
+    ENDPOINTS_BLOCK_REFUSED,
+    /** The IOmcu acknowledged and stored another pair. */
+    ENDPOINTS_BLOCK_DIFFERS,
+} endpoints_block_t;
+
+/**
+ * Whether every throttle channel of a CHAN_CFG page @p page
+ * (LINK_CC_COUNT registers) holds @p min_us and @p max_us.  A page with no
+ * throttle channel holds any pair.  False for NULL.
+ */
+bool endpoints_page_holds(const uint16_t *page, uint16_t min_us,
+                          uint16_t max_us);
 
 /**
  * Whether the debt stands after an attempt that ended in @p outcome: true
@@ -93,7 +129,8 @@ typedef enum {
  */
 bool endpoints_owed_after(endpoints_outcome_t outcome);
 
-/** The debt.  Zeroed is nothing owed, no hold, a pair of 0 and 0. */
+/** The debt.  Zeroed is nothing owed, no hold, no block, a pair of 0 and
+ *  0. */
 typedef struct {
     atomic_uint pair;     /**< min << 16 | max, in us                  */
     atomic_uint edit_ms;  /**< when the last edit was published        */
@@ -104,6 +141,9 @@ typedef struct {
      * missing answer, and when nothing is owed.
      */
     bool hold;
+    /** Control task only: what the last answered payment left, an
+     *  endpoints_block_t in one byte. */
+    uint8_t refused;
 } endpoints_debt_t;
 
 /**
@@ -121,6 +161,19 @@ void endpoints_link_up(endpoints_debt_t *d);
 /** Whether a pair is owed: true refuses a switch to ARMED with the link
  *  up.  False for NULL. */
 bool endpoints_owed(const endpoints_debt_t *d);
+
+/** A binding was written: the throttle channels may have moved, so the pair
+ *  is owed again, due at the next poll once its edit has rested.  Control
+ *  task only. */
+void endpoints_recheck(endpoints_debt_t *d);
+
+/** Why a switch to ARMED with the link up is refused for the pair:
+ *  ENDPOINTS_BLOCK_OWED while owed, else what the last answered payment
+ *  left.  ENDPOINTS_BLOCK_NONE for NULL. */
+endpoints_block_t endpoints_block(const endpoints_debt_t *d);
+
+/** endpoints_block() is not ENDPOINTS_BLOCK_NONE. */
+bool endpoints_blocked(const endpoints_debt_t *d);
 
 /** Whether the far end is held disarmed for the debt.  False for NULL. */
 bool endpoints_held(const endpoints_debt_t *d);
@@ -146,8 +199,9 @@ endpoints_next_t endpoints_take(endpoints_debt_t *d, bool far_disarmed,
                                 uint32_t now_ms);
 
 /** The end of a payment endpoints_take() handed out: owed again on a
- *  missing answer, the hold kept with it; otherwise paid and the hold
- *  ended. */
+ *  missing answer, the hold and the block kept with it; otherwise paid,
+ *  the hold ended, and the block set from @p outcome -- none for
+ *  ENDPOINTS_HELD and ENDPOINTS_TAKEN. */
 void endpoints_paid(endpoints_debt_t *d, endpoints_outcome_t outcome);
 
 #ifdef __cplusplus

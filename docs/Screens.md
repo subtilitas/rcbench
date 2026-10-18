@@ -500,8 +500,10 @@ closes when ARM is pressed or the bench leaves SAFE. The 2 s hold of ARM
 leaves an edit made before the press the time to reach the IOmcu. While an
 edit is still owed to the IOmcu with the link up, the switch to ARMED is
 refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and
-the bench stays SAFE ([A pulse range on its
-way](Safety.md#a-pulse-range-on-its-way)). The other 6 rows take a value at any time.
+the bench stays SAFE. A pair the IOmcu refused, or stored otherwise, keeps
+the switch refused with a text that names what to change, until an edit
+here, a binding on OUTPUTS or a link-up brings the pair into force ([A
+pulse range on its way](Safety.md#a-pulse-range-on-its-way)). The other 6 rows take a value at any time.
 
 The settings are one store. Every value OK sets is in force at once and asks
 for a write; the panel writes the whole store on the first frame with the

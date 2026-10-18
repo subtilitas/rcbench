@@ -358,6 +358,10 @@ static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
         control_alert(TR(ALERT_PULSE_REFUSED));
         return ENDPOINTS_WRITE_REFUSED;
     }
+    /* The acknowledgement carries what the far end stored. */
+    if (!endpoints_page_holds(reply.regs, lo, hi)) {
+        return ENDPOINTS_DIFFERS;
+    }
     return ENDPOINTS_TAKEN;
 }
 
@@ -373,10 +377,11 @@ static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
  * the disarm; the hold after a link-up (endpoints_link_up()) is what
  * makes the far end disarmed for that pass on a bench armed here.
  *
- * The same refusal rules as poles_service(): a write nobody answered is
- * owed again, one the far end refused is reported and waits for a new edit.
- * The hold ends with every outcome but a missing answer, so an IOmcu
- * that refuses the page is armed on its own range rather than never.
+ * A write nobody answered is owed again.  Any other answer ends the debt
+ * and the hold; a refusal, or another pair stored, blocks a switch to
+ * ARMED until a new edit, a binding or a link-up pays the pair
+ * (endpoints_block()).  The alert for a refusal is said here, once; the
+ * switch to ARMED says what to change.
  *
  * The debt is taken before the exchanges and given back on a missing
  * answer, so an edit the settings screen publishes while they run stays

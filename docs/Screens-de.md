@@ -548,7 +548,10 @@ verlässt. Das Halten von ARM über 2 s lässt einer Änderung vor dem Druck die
 Zeit, den IOmcu zu erreichen. Solange bei bestehendem Link eine Änderung dem
 IOmcu noch geschuldet ist, wird das Schalten auf ARMED mit `Pulsbereich noch
 nicht an den IOmcu gesendet. ARM erneut halten.` abgelehnt, und der
-Prüfstand bleibt SAFE ([Ein Pulsbereich
+Prüfstand bleibt SAFE. Ein Paar, das der IOmcu abgelehnt oder anders
+gespeichert hat, hält das Schalten mit einem Text gesperrt, der nennt, was zu
+ändern ist, bis eine Änderung hier, eine Zuordnung auf OUTPUTS oder ein
+Link-up das Paar in Kraft bringt ([Ein Pulsbereich
 unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)). Die anderen 6 Zeilen nehmen
 jederzeit einen Wert an.
 
