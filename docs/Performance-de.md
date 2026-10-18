@@ -415,7 +415,7 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 20
-Objekten, 163 240 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 163 336 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
@@ -425,7 +425,7 @@ wpa_supplicant, 13 742 Bytes.
 | `log_viewer_screen` | ui | 35 400 |
 | `servo_screen` | ui | 29 509 |
 | `ui_watermark` | ui | 20 504 |
-| `supply_screen` | ui | 20 412 |
+| `supply_screen` | ui | 20 508 |
 | `motor_screen` | ui | 20 008 |
 | `kst_card` | bench | 6 208 |
 | `esc_stick_panel` | ui | 6 096 |
