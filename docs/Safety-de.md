@@ -338,7 +338,7 @@ nicht in der Coverage-Zahl.
   auf ARMED oder quittiert; die Kacheln der Übersicht, die Zellen des Outputs-
   und des Picker-Bildschirms, die Tasten des Einstellungs-Bildschirms, die
   Tasten, Zeilen und die LÖSCHEN-Rückfrage des Log-Viewers und die Tab-Zeilen
-  von MOTOR & ESC, ANALYSER und BALANCE wirken stattdessen auf das Release,
+  von MOTOR & ESC, RECEIVER und BALANCE wirken stattdessen auf das Release,
   und ein gehaltener Druck besitzt eine Track-ID, die der Controller
   wiederverwendet -- ein späterer Kontakt, der woanders begann, wird dann für
   das fehlende Release gehalten. Die LÖSCHEN-Rückfrage bleibt bei einem Abbruch
@@ -477,7 +477,7 @@ nicht in der Coverage-Zahl.
   erste Eingabe danach beginnt bei der Ruhelage. Die Freigabe, mit der ein
   Lauf des automatischen Tests endet, tut dasselbe.
 - Das Verlassen eines Prüfstandsbildschirms schaltet auf SAFE.
-- Der Drehknopf (ein Winkelsensor MT6701 unter 0x06; SETUP, ANWENDUNG, `Drehknopf`,
+- Der Drehknopf (ein Winkelsensor MT6701 unter 0x06; SETUP, PANEL, `Drehknopf`,
   standardmäßig AUS) bewegt das Gas auf MOTOR & ESC und das Horn auf SERVO um
   die Strecke, die er gedreht wird, wie der Slider, und es gelten dieselben
   Regeln. Er schaltet nie auf ARMED: Das einzige Schalten auf ARMED ist der ARM-Hold. Auf beiden

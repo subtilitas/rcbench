@@ -100,7 +100,7 @@ Der Kopf nennt die Datei, ihre Zeilen, ihre Dauer und ihre Abtastrate. Jede Spal
 
 - Ein Finger, `<` und `>` bewegen den Cursor. Die Zeile unten rechts zeigt seine Zeit und seinen Messpunkt.
 - Zwei Finger zoomen: spreizen zum Vergrößern, zusammenziehen zum Verkleinern, beide bewegen zum Verschieben. Die engste Ansicht sind 8 Messpunkte, die weiteste der ganze Lauf.
-- Mit SETUP, ANWENDUNG, Ein Finger schiebt eingeschaltet verschiebt ein Finger, der sich mehr als 10 px bewegt, eine vergrößerte Ansicht seitwärts.
+- Mit SETUP, PANEL, Ein Finger schiebt eingeschaltet verschiebt ein Finger, der sich mehr als 10 px bewegt, eine vergrößerte Ansicht seitwärts.
 - ZURÜCK führt zur Importansicht.
 
 Die Zeilen stehen gleichmäßig nach Zeilennummer. Die Beschriftungen unter der Grafik sind die Zeitspalte der Datei; eine Lücke in den Zeilen ist ein Sprung in den Beschriftungen.

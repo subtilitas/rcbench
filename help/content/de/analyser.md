@@ -1,22 +1,22 @@
 ---
 screen: ANALYSER
-title: Analyser
+title: Receiver
 order: 40
 ---
 
-# Analyser
+# Receiver
 
-ANALYSER zeigt, was ein Empfänger auf einer S.BUS-Leitung sendet: sechzehn Kanäle mit ihrem Verlauf, die beiden digitalen Kanäle, die Frame Rate und die Zähler des Decoders. Der Bildschirm öffnet über die Kachel ANALYSER im [Menü](overview.md). Die Kachel trägt in diesem Release die Marke SIMULIERT.
+RECEIVER zeigt, was ein Empfänger auf einer S.BUS-Leitung sendet: sechzehn Kanäle mit ihrem Verlauf, die beiden digitalen Kanäle, die Frame Rate und die Zähler des Decoders. Der Bildschirm öffnet über die Kachel RECEIVER im [Menü](overview.md). Die Kachel trägt in diesem Release die Marke SIMULIERT.
 
 ## Am Prüfstand: KEIN SIGNAL
 
-![Der Analyser ohne Signal auf der Leitung](view:analyser-silent)
+![Der RECEIVER-Bildschirm ohne Signal auf der Leitung](view:analyser-silent)
 
 In diesem Release speist kein Firmware-Image diesen Bildschirm. Der S.BUS-Decoder ist gebaut und getestet, aber keine der beiden Platinen hat eine Bytequelle für ihn. Der Bildschirm zeigt daher KEIN SIGNAL und `Kein Signal auf der Leitung.`. Die Spuren sind leer, die Werte zeigen `---`, und ROHDATEN zeigt `Noch keine Daten dekodiert.`.
 
 ## Was ein gespeister Bildschirm zeigt
 
-![Der Analyser, im Host-Renderer mit S.BUS-Frames gespeist](view:analyser)
+![Der RECEIVER-Bildschirm, im Host-Renderer mit S.BUS-Frames gespeist](view:analyser)
 
 Die Bilder dieses Abschnitts stammen aus dem Host-Renderer, der den Bildschirm mit Frames speist. Sie zeigen, was der Bildschirm zeichnet, sobald es eine Bytequelle gibt.
 

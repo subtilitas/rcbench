@@ -264,9 +264,14 @@ static inline void tap(int x, int y)
     ui_router_event(&e);
 }
 
+/* The middle of the row of the @p index-th setting of the open list, which
+ * lies below the headings above it (INTERFACES has four). */
 static inline int row_y(int index)
 {
-    return LIST_Y + index * ROW_PITCH + ROW_H / 2;
+    const int cat = settings_screen_category();
+    const int row = settings_screen_row_of(cat >= 0 ? (setting_cat_t)cat
+                                                    : LIST_CAT, index);
+    return LIST_Y + (row >= 0 ? row : index) * ROW_PITCH + ROW_H / 2;
 }
 
 /* The mean of the SAVE button's face, as the panel would show it. */

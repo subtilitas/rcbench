@@ -103,7 +103,7 @@ TEST_CASE(every_list_at_its_end_shows_its_last_row_whole)
         for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
             gesture_screen((setting_cat_t)cat);
             ui_text_set_language((ui_lang_t)lang);
-            const int n = settings_in_category((setting_cat_t)cat, NULL, 0);
+            const int n = settings_screen_rows((setting_cat_t)cat);
             int max = 0;
             for (int k = 0; k < 2 * n; ++k) {
                 swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 248, 4);
@@ -393,7 +393,8 @@ TEST_CASE(the_gap_between_two_rows_is_no_key)
     setting_id_t ids[64];
     settings_in_category(SET_CAT_IFACE, ids, 64);
     const int row = 2;
-    const int top = LIST_Y + row * ROW_PITCH;
+    const int top = LIST_Y + settings_screen_row_of(SET_CAT_IFACE, row)
+                             * ROW_PITCH;
     for (int y = top + ROW_H; y < top + ROW_PITCH; ++y) {
         feed_tap(FEED_LONE, XM, y);
         feed_tap(FEED_LONE, XP, y);
@@ -564,9 +565,11 @@ TEST_CASE(a_category_takes_the_press_the_tracker_made_for_a_jump)
  * (v0.14.0 went on stepping with no finger on the glass). */
 TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
 {
-    /* Straight into the band in one report: the release is at the press. */
+    /* Straight into the band in one report: the release is at the press.
+     * The list's first row is a heading; the key is the first setting's. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM, LIST_Y + 4);
+    const int top = row_y(0) - ROW_H / 2 + 4;
+    finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
     CHECK_EQ(changed(), 0);
     idle(3.0f);
@@ -577,8 +580,8 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
 
     /* 8 px up inside the body first. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM, LIST_Y + 12);
-    finger(FEED_LONE, XM, LIST_Y + 4);
+    finger(FEED_LONE, XM, top + 8);
+    finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
     idle(3.0f);
     lift(FEED_LONE);
@@ -603,13 +606,13 @@ TEST_CASE(a_key_carried_into_the_band_steps_nothing_and_never_repeats)
     /* The same contact back in the body is the router's: it steps nothing.
      * The next one is a tap. */
     gesture_screen(SET_CAT_IFACE);
-    finger(FEED_LONE, XM, LIST_Y + 4);
+    finger(FEED_LONE, XM, top);
     finger(FEED_LONE, XM, UI_BAND_H - 8);
-    finger(FEED_LONE, XM, LIST_Y + 4);
+    finger(FEED_LONE, XM, top);
     idle(1.0f);
     lift(FEED_LONE);
     CHECK_EQ(changed(), 0);
-    feed_tap(FEED_LONE, XM, LIST_Y + 4);
+    feed_tap(FEED_LONE, XM, top);
     CHECK_EQ(changed(), 1);
 }
 

@@ -1,5 +1,6 @@
 /*
- * The receiver-bus analyser: what a receiver is actually sending.
+ * The RECEIVER screen: what a receiver is actually sending.  The code keeps
+ * the name analyser; the screen's title and tile are RECEIVER.
  *
  * SPDX-License-Identifier: MIT
  */

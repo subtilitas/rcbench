@@ -2,7 +2,7 @@
 
 [Deutsch](Language-de.md)
 
-The panel shows its interface in English or in German. SETUP, APPLICATION,
+The panel shows its interface in English or in German. SETUP, PANEL,
 Language picks it (ENGLISH, DEUTSCH). The choice is applied with the theme,
 so the next frame is drawn in the new language; nothing restarts. It is
 kept in NVS (non-volatile storage) like every setting, once SAVE takes it.
@@ -59,7 +59,7 @@ manual beside the bench.
   English as the servo test's phase name. PAUSED, the sweep button of a
   paused sweep, is a state rather than the control and reads PAUSIERT;
   PAUSE, the control, stays English.
-- The screen titles: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
+- The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile and the band of the screen
   it opens carry the same word. A note that names a screen names it by its
@@ -168,7 +168,7 @@ One German word per English concept, on every screen and in the report.
 | log (a recording), log run | Aufzeichnung, Aufzeichnungslauf |
 | IP address | IP-Adresse |
 | acknowledge, confirm | bestätigen |
-| SILENT (the ANALYSER's verdict) | KEIN SIGNAL |
+| SILENT (the RECEIVER's verdict) | KEIN SIGNAL |
 
 A label is a noun where a noun will do. An instruction speaks to the
 operator in the du-imperative (Prüfe, Tippe, Halte); no "Sie". An uppercase label

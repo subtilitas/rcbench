@@ -100,7 +100,7 @@ The header names the file, its rows, its duration and its sample rate. Each colu
 
 - One finger, `<` and `>` move the cursor. The line at the bottom right shows its time and sample.
 - Two fingers zoom: spread to zoom in, pinch to zoom out, move both to pan. The narrowest view is 8 samples, the widest the whole run.
-- With SETUP, APPLICATION, One finger pans on, a finger that moves more than 10 px drags a zoomed view sideways.
+- With SETUP, PANEL, One finger pans on, a finger that moves more than 10 px drags a zoomed view sideways.
 - BACK returns to the import view.
 
 The rows are spaced evenly by row number. The labels under the plot are the file's time column, so a gap in the rows is a jump in the labels.

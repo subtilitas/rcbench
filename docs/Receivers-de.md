@@ -3,7 +3,7 @@
 <sub>[English](Receivers.md) · **Deutsch**</sub>
 
 Einen Empfänger an den Prüfstand anschließen und seine Ausgabe auf dem
-Analyser-Bildschirm lesen.
+RECEIVER-Bildschirm lesen.
 
 ## Unterstützung
 
@@ -17,14 +17,14 @@ Externe Bauteile sind nicht nötig.
 
 ## Zustände
 
-Keine Firmware speist den Analyser: Der S.BUS-Decoder ist in das Panel-Image
+Keine Firmware speist den RECEIVER-Bildschirm: Der S.BUS-Decoder ist in das Panel-Image
 und die Host-Tests eingebunden, auf keinem der beiden Boards gibt es eine
 Bytequelle, und nichts ruft `analyser_screen_push()` oder
 `analyser_screen_silent()` auf. Der Bildschirm zeigt daher KEIN SIGNAL. Die
 folgenden Zustände sind das, was der Bildschirm zeichnet, wenn er gespeist
 wird, wie die Host-Tests ihn ausführen.
 
-Der Analyser zeigt sechzehn Kanäle mit Verlauf, die zwei Digitalkanäle, die
+Der RECEIVER-Bildschirm zeigt sechzehn Kanäle mit Verlauf, die zwei Digitalkanäle, die
 Frame Rate und die Zähler (Frames, Resyncs, Bad Footers). Der Zustandsblock
 zeigt einen von:
 

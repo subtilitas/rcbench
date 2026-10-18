@@ -152,17 +152,31 @@ steht, verdeckt es den unteren Rand des Bildschirms, ARM eingeschlossen.
 
 Das Menü ist ein Raster aus 4 Spalten und 2 Reihen, jede Kachel 190 x 204 px
 mit 8 px Rand. Die erste Reihe hält die Werkbänke, MOTOR & ESC, SERVO und
-SUPPLY; die zweite die Instrumente, ANALYSER, BATTERY und BALANCE; die
+SUPPLY; die zweite die Instrumente, RECEIVER, BATTERY und BALANCE; die
 letzte Spalte LOGS über SETUP. Eine vierte Werkbank oder ein viertes
 Instrument lässt den Build bei 4 Spalten scheitern
 (`shared/ui/overview_screen.c`). Das Programmieren hat keine Kachel: Es ist
 die Aufgabe PROGRAMMIEREN von MOTOR & ESC und von SERVO.
 
+Jede Kachel trägt unter ihrem Namen eine Zeile, 2 Reihen zu höchstens 23
+Zeichen:
+
+| Kachel | Zeile |
+| --- | --- |
+| MOTOR & ESC | Antrieb, V/A, Drehzahl |
+| SERVO | Weg, Strom, Programm |
+| SUPPLY | V/A einstellen, aufzeichnen |
+| LOGS | Läufe und Dateien |
+| RECEIVER | S.BUS, PPM, Frames |
+| BATTERY | Zellen, iR, mAh |
+| BALANCE | Vibration, Phase |
+| SETUP | Pins, Sensoren, Panel |
+
 Eine Kachel mit der Marke SIMULIERT öffnet einen Bildschirm, dessen Quelle
 der Prüfstand nicht meldet: Der IOmcu meldet dafür keine Fähigkeit, oder
 sein Sensor ist in SETUP unter ANSCHLÜSSE nicht aktiviert. Ein Bildschirm ohne
 seine Hardware öffnet trotzdem und arbeitet aus dem Modell. Die Marke ordnet
-nicht jeden Wert auf einem Bildschirm ein. ANALYSER und BATTERY tragen die
+nicht jeden Wert auf einem Bildschirm ein. RECEIVER und BATTERY tragen die
 Marke und zeigen keine Werte. SERVO ohne Marke zeigt das Versorgungsmodell des
 Panels als Messung der Servoschiene, wenn weder ein PD mini noch ein INA3221
 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
@@ -172,7 +186,7 @@ aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge ansteuert |
 | SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist, unabhängig davon, was der IOmcu meldet; sonst rechnet das Panel sein eigenes Modell eines Netzteils |
-| ANALYSER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
+| RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | immer: sie enthalten keine Messung |
 
 Die Capability-Bits meldet der IOmcu beim Hochfahren. Ohne antwortenden
@@ -219,7 +233,7 @@ und das Bedienen des Gases nicht um denselben Teil des Bildschirms
 konkurrieren. Die rechte Leiste ist auf LIVE, der Liste von PROGRAMMIEREN
 und OPTIONEN dieselbe, und ARM wirkt auf allen dreien; eine Sitzung aus
 PROGRAMMIEREN deckt sie ab. Bei eingeschaltetem Drehknopf bewegt dessen
-Drehung auf LIVE das Gas ([der Knopf](#anwendung-der-drehknopf)); auf
+Drehung auf LIVE das Gas ([der Knopf](#panel-der-drehknopf)); auf
 PROGRAMMIEREN und OPTIONEN bewegt eine Drehung nichts.
 
 Das Home-Tag steigt eine Ebene nach der anderen:
@@ -792,7 +806,7 @@ und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Schalten auf SAFE oder durch das
 Verlassen des Bildschirms, was auf SAFE schaltet. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
-([der Knopf](#anwendung-der-drehknopf)), nur auf LIVE: auf TEST, auf
+([der Knopf](#panel-der-drehknopf)), nur auf LIVE: auf TEST, auf
 PROGRAMMIEREN, auf OPTIONEN, unter einem Feld und unter einem
 Programmierer ist das
 Zifferblatt nicht zu sehen, und eine Drehung bewegt nichts. Eine Drehung im
@@ -1739,9 +1753,9 @@ finden: er versucht jede der 7 Raten, eine pro Sekunde. Die Kopfzeile von
 SUPPLY zeigt die Rate in Gebrauch hinter ONLINE, z. B. `ONLINE 38400`, bei
 AUTO wie bei einer festen Rate.
 
-## Analyser
+## Receiver
 
-![Analyser](img/de/analyser.png)
+![Receiver](img/de/analyser.png)
 
 Sechzehn Kanäle, jeder mit etwa 1,7 s Verlauf (118 Werte) und einem Balken für den aktuellen
 Wert. CH17 und CH18 sind die beiden Digitalkanäle. Ein Glitch ist eine Spitze
@@ -1923,7 +1937,7 @@ Prüfstands in ARMED ist die Zeit die Uhrzeit seit dem ARM, die Dauer also
 die des Laufs; bei einer Datei von Firmware 0.15.0 oder älter ist sie kürzer
 als der Lauf (siehe Motor & ESC, die CSV-Datei).
 
-SETUP → ANWENDUNG → Ein Finger schiebt, standardmäßig aus, lässt einen
+SETUP → PANEL → Ein Finger schiebt, standardmäßig aus, lässt einen
 einzelnen Finger den vergrößerten Ausschnitt verschieben. Ist die Einstellung
 an und der Ausschnitt vergrößert, zieht ein Finger, der sich mehr als 10 px
 von der Stelle entfernt, an der er aufgesetzt wurde, den Ausschnitt zur Seite,
@@ -2284,7 +2298,7 @@ Namen.
 
 ![Setup](img/de/setup.png)
 
-- Zwei Kategorien: ANWENDUNG und ANSCHLÜSSE, die Einstellungen für den
+- Zwei Kategorien: PANEL und ANSCHLÜSSE, die Einstellungen für den
   ganzen Prüfstand. Jede Kachel nennt die Zahl ihrer Einstellungen. Ein
   Tippen öffnet die Liste der Kategorie. Die Einstellungen von
   ESC / PRÜFSTAND stehen unter MOTOR & ESC
@@ -2312,7 +2326,7 @@ y 442 des Panels, 4 px über dem Alert-Band ([Das Alert-Band](#das-alert-band)).
 Ein Alert verdeckt damit weder eine Taste noch eine Zeile, KATEGORIE
 ZURÜCKSETZEN oder SPEICHERN, auf den Kacheln wie auf einer Liste.
 
-![ANWENDUNG](img/de/setup-application.png)
+![PANEL](img/de/setup-application.png)
 
 Das Home-Tag führt eine Ebene nach der anderen zurück:
 
@@ -2325,7 +2339,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
 
-Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
+Sprache unter PANEL schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
 bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
@@ -2333,7 +2347,7 @@ Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
 [Logs](#logs) beschrieben.
 
 Neun Einstellungen werden gespeichert und angezeigt, und kein Teil der
-Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter ANWENDUNG;
+Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter PANEL;
 Zellen, Kapazität und Innenwiderstand unter MOTOR & ESC; Vibration, Optischer Tacho und
 Tacho-Pin. Rampengrenze wird nur als Anstieg des simulierten Prüfstands
 gelesen.
@@ -2373,7 +2387,7 @@ Zwei Grenzen:
   und hebt dort ab, ohne sich zu bewegen, ist es ein Tippen. Wie oft der
   GT911 einen bewegten Kontakt in einem Report auslässt, ist nicht gemessen.
 
-### ANWENDUNG: der Drehknopf
+### PANEL: der Drehknopf
 
 Ein magnetischer Winkelsensor MT6701 unter 0x06 am I2C-Anschluss des Panels
 (I2C: Inter-Integrated Circuit) dreht den Regler des obersten Prüfstandsbildschirms:
@@ -2445,6 +2459,15 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   und sein Verhalten ohne Magnet darüber.
 
 ### ANSCHLÜSSE: die Strommonitore
+
+ANSCHLÜSSE listet seine 26 Einstellungen in vier Abschnitten. Eine
+Überschrift über der ersten Zeile jedes Abschnitts benennt ihn: I2C-BUS (die
+beiden Strommonitore, Sensor SDA und SCL und der AS5600), PHASENABGRIFF,
+BALANCE-SENSOREN (Vibration und Optischer Tacho) und NETZTEIL (der PD mini).
+Eine Überschrift ist eine eigene Zeile, 54 px hoch bei 58 px Zeilenabstand
+der Liste, in der Akzentfarbe über einer Linie, ohne Tasten und ohne Wert:
+ein Tippen darauf ändert nichts, und ein Ziehen verschiebt die Liste. Die
+Liste ist 30 Zeilen lang.
 
 ![ANSCHLÜSSE, die Strommonitore](img/de/setup-interfaces.png)
 
@@ -2758,7 +2781,7 @@ Die drei Spalten der Leiste tragen die Antworten:
 
 VERWERFEN setzt jeden Wert mit demselben Aufruf wie eine Taste, in der
 Reihenfolge des Schemas. Der IOmcu erfährt so jeden Pin und Port, der
-sich bewegt, und Sprache, Theme, Helligkeit und Kontrast aus ANWENDUNG
+sich bewegt, und Sprache, Theme, Helligkeit und Kontrast aus PANEL
 gelten ab dem nächsten Frame. Eine zurückgestellte Verdrahtung des PD mini
 schaltet den Netzteilausgang ab und meldet denselben Alert wie eine Änderung
 von Hand. PWM-Ziel und Port-PWM werden nicht zurückgestellt, solange der

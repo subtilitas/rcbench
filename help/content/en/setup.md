@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's bench-wide settings in two categories: APPLICATION and INTERFACES. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in two categories: PANEL and INTERFACES. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -14,7 +14,7 @@ SETUP holds the panel's bench-wide settings in two categories: APPLICATION and I
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| APPLICATION | `10 SETTINGS` | the list of APPLICATION |
+| PANEL | `10 SETTINGS` | the list of PANEL |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each IOmcu pin, as a list |
 | PICK A PIN | `ON THE BOARD DRAWING` | the [pin picker](picker.md): the same, on a drawing of the board |
@@ -94,9 +94,9 @@ A change on [MOTOR & ESC, SETTINGS](motor-settings.md) asks for a write itself, 
 
 No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, PICK A PIN, WI-FI and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
 
-## APPLICATION
+## PANEL
 
-![APPLICATION](view:setup-application)
+![PANEL](view:setup-application)
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -125,7 +125,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. The panel never
 
 ## INTERFACES
 
-INTERFACES holds the current monitors, the output encoder, the phase tap, the vibration sensor, the optical tacho and the PD mini. [Interfaces](setup-interfaces.md) describes them.
+INTERFACES holds the current monitors, the output encoder, the phase tap, the vibration sensor, the optical tacho and the PD mini. The list has four headings: I2C BUS, PHASE TAP, BALANCE SENSORS and SUPPLY. [Interfaces](setup-interfaces.md) describes them.
 
 ## Related pages
 

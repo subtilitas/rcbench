@@ -167,8 +167,8 @@ breakout's own pull-ups go to its VDD, here 3.3 V.
   angle rises clockwise, a part with DIR = 1, or a sensor mounted to be seen
   from below turns the knob the other way.
 
-The knob is off until SETUP, APPLICATION, Rotary knob is switched on.
-[Screens](Screens.md#application-the-rotary-knob) describes what it does.
+The knob is off until SETUP, PANEL, Rotary knob is switched on.
+[Screens](Screens.md#panel-the-rotary-knob) describes what it does.
 
 ## Commands
 

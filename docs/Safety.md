@@ -300,7 +300,7 @@ the alert, is not in the coverage figure.
   timer, so a lost release there switches to ARMED or acknowledges on its own; the
   overview's tiles, the outputs and picker screens' cells, the settings
   screen's keys, the log viewer's buttons, rows and DELETE question and the
-  tab rows of MOTOR & ESC, ANALYSER and BALANCE act on the release instead,
+  tab rows of MOTOR & ESC, RECEIVER and BALANCE act on the release instead,
   and a press left latched owns a track id the controller reuses, so a later
   contact that began elsewhere is taken for the missing release. The DELETE
   question stays open through a cancel and takes the next fresh press. HOME
@@ -416,7 +416,7 @@ the alert, is not in the coverage figure.
   the first input after it starts from the rest. The release that ends a run
   of the automatic test does the same.
 - Leaving a bench screen switches the bench to SAFE.
-- The rotary knob (an MT6701 angle sensor at 0x06; SETUP, APPLICATION, Rotary knob,
+- The rotary knob (an MT6701 angle sensor at 0x06; SETUP, PANEL, Rotary knob,
   OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
   how far it turns, as the slider does, and the same rules hold. It never
   switches to ARMED: the only way is the ARM hold. On both screens a turn while the bench
