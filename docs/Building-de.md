@@ -175,8 +175,8 @@ SCL nach VDD; die eigenen Pull-ups eines Breakouts gehen an dessen VDD, hier
   Teil mit DIR = 1 oder ein von unten gesehen montierter Sensor dreht den
   Knopf andersherum.
 
-Der Knopf ist aus, bis SETUP, ANWENDUNG, `Drehknopf` eingeschaltet wird.
-[Bildschirme](Screens-de.md#anwendung-der-drehknopf) beschreibt, was er tut.
+Der Knopf ist aus, bis SETUP, PANEL, `Drehknopf` eingeschaltet wird.
+[Bildschirme](Screens-de.md#panel-der-drehknopf) beschreibt, was er tut.
 
 ## Befehle
 

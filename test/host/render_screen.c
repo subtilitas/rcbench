@@ -3172,7 +3172,7 @@ int main(int argc, char **argv)
     if (strcmp(view, "setup-dirty") == 0) {
         setup_tile(SET_CAT_IFACE);
     }
-    /* SETUP's APPLICATION category: the language, the theme, the knob. */
+    /* SETUP's PANEL category: the language, the theme, the knob. */
     if (strcmp(view, "setup-application") == 0) {
         setup_tile(SET_CAT_APP);
     }
@@ -3193,16 +3193,17 @@ int main(int argc, char **argv)
         }
         if (strcmp(view, "setup-sensors") == 0
             || strcmp(view, "setup-unheld") == 0) {
-            /* Four rows of 58 px, and the 8 px the finger travels before
-             * the screen takes it for a scroll. */
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
+            /* Five rows of 58 px, the I2C BUS heading and the four of the
+             * INA228, and the 8 px the finger travels before the screen
+             * takes it for a scroll. */
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
         } else if (strcmp(view, "setup-tap") == 0) {
-            /* Past the ten rows of the current monitors and their bus:
-             * three drags, as one longer than the list is high leaves the
-             * screen. */
+            /* Past the 13 rows above the PHASE TAP heading (the I2C BUS
+             * section and its heading): three drags, as one longer than
+             * the list is high leaves the screen. */
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
             drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (4 * 58 + 8));
-            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (2 * 58 + 8));
+            drag(300, UI_BAND_H + 340, UI_BAND_H + 340 - (5 * 58 + 8));
         }
     }
 

@@ -34,7 +34,7 @@
  *             drag case
  *   <screen>  one steady frame of analyser, logs, settings, battery,
  *             balance, motor-stick or picker; settings is SETUP's tiles,
- *             settings-list APPLICATION's list, motor-stick MOTOR & ESC's
+ *             settings-list PANEL's list, motor-stick MOTOR & ESC's
  *             ESC STICK session under the output strip, on its makers
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
@@ -219,7 +219,7 @@ int main(int argc, char **argv)
     }
 
     if (strncmp(mode, "settings-list", 13) == 0) {
-        /* SETUP opens on its tiles: the first, APPLICATION, opens its list. */
+        /* SETUP opens on its tiles: the first, PANEL, opens its list. */
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
         (void)settings_hub_slot(0, &r);
         const int16_t x = (int16_t)(r.x + r.w / 2);

@@ -17,13 +17,13 @@ Eight tiles, 190 x 204 px each, in 4 columns and 2 rows: the workbenches in the 
 | Tile | Line under the name | Page |
 |---|---|---|
 | MOTOR & ESC | drive, V/A, rpm | [Motor and ESC](motor.md) |
-| SERVO | travel, current | [Servo](servo.md) |
+| SERVO | travel, current, program | [Servo](servo.md) |
 | SUPPLY | set and log V/A | [Supply](supply.md) |
-| LOGS | record and view data | [Logs](logs.md) |
-| ANALYSER | buses and frames | [Analyser](analyser.md) |
+| LOGS | runs and files | [Logs](logs.md) |
+| RECEIVER | S.BUS, PPM, frames | [Receiver](analyser.md) |
 | BATTERY | cells, iR, mAh | [Battery](battery.md) |
 | BALANCE | vibration, phase | [Balance](balance.md) |
-| SETUP | pack and output | [Setup](setup.md) |
+| SETUP | pins, sensors, panel | [Setup](setup.md) |
 
 Programming has no tile: ESCs are programmed on MOTOR & ESC's [PROGRAM](motor.md#program), servos on SERVO's PROGRAM.
 
@@ -31,7 +31,7 @@ A tap opens a tile when the finger lifts on the same tile it pressed. A press th
 
 ## The SIMULATED mark
 
-The SIMULATED mark on a tile says that the IOmcu reports no capability for that screen, or that its sensor is not enabled. It does not classify each value on the screen: ANALYSER and BATTERY carry the mark and show no values at all, and SERVO without the mark shows the panel's supply model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each screen names the source of its readings itself.
+The SIMULATED mark on a tile says that the IOmcu reports no capability for that screen, or that its sensor is not enabled. It does not classify each value on the screen: RECEIVER and BATTERY carry the mark and show no values at all, and SERVO without the mark shows the panel's supply model as its rail meter when neither a PD mini nor an INA3221 is enabled. Each screen names the source of its readings itself.
 
 The mark follows the capability bits the IOmcu reports at link-up:
 
@@ -40,7 +40,7 @@ The mark follows the capability bits the IOmcu reports at link-up:
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
 | SERVO | the IOmcu drives servo PWM (pulse-width modulation) outputs |
 | SUPPLY | the PD mini is enabled on SETUP, INTERFACES |
-| ANALYSER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
+| RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | never marked: they hold no measurement |
 
 With no IOmcu answering, MOTOR & ESC and SERVO carry the mark too. SUPPLY follows the PD mini setting alone, link or not.
@@ -49,7 +49,7 @@ With no IOmcu answering, MOTOR & ESC and SERVO carry the mark too. SUPPLY follow
 
 ![The menu in the light theme](view:overview-light)
 
-SETUP, APPLICATION, Theme switches between DARK and LIGHT. The change applies on the next frame.
+SETUP, PANEL, Theme switches between DARK and LIGHT. The change applies on the next frame.
 
 ## An alert at the bottom
 

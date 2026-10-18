@@ -1,22 +1,22 @@
 ---
 screen: ANALYSER
-title: Analyser
+title: Receiver
 order: 40
 ---
 
-# Analyser
+# Receiver
 
-ANALYSER shows what a receiver sends on an S.BUS line: sixteen channels with their history, the two digital channels, the frame rate and the decoder's counters. It opens from the ANALYSER tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
+RECEIVER shows what a receiver sends on an S.BUS line: sixteen channels with their history, the two digital channels, the frame rate and the decoder's counters. It opens from the RECEIVER tile on the [menu](overview.md). The tile carries the SIMULATED mark in this release.
 
 ## On the bench: NO SIGNAL
 
-![The analyser with nothing on the wire](view:analyser-silent)
+![The receiver screen with nothing on the wire](view:analyser-silent)
 
 No firmware image feeds this screen in this release. The S.BUS decoder is built and tested, but neither board has a byte source for it. The screen therefore shows NO SIGNAL and `No signal on the wire.`. The lanes are empty, the values read `---`, and RAW DATA reads `No data decoded yet.`.
 
 ## What a fed screen shows
 
-![The analyser fed with S.BUS frames in the host renderer](view:analyser)
+![The receiver screen fed with S.BUS frames in the host renderer](view:analyser)
 
 The pictures in this section come from the host renderer, which feeds the screen with frames. They show what the screen draws once a byte source exists.
 

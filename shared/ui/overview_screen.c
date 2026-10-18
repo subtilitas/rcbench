@@ -58,7 +58,7 @@ static const tile_t k_workbenches[] = {
 };
 
 static const tile_t k_instruments[] = {
-    { SCREEN_ANALYSER,   "ANALYSER",    TX_OV_ANALYSER,      ui_icon_chart,
+    { SCREEN_ANALYSER,   "RECEIVER",    TX_OV_RECEIVER,      ui_icon_chart,
       LINK_CAP_RECEIVER, false },
     { SCREEN_BATTERY,    "BATTERY",     TX_OV_BATTERY,       ui_icon_battery,
       LINK_CAP_CELLS, false },

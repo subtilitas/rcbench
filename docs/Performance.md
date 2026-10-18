@@ -81,7 +81,7 @@ hlines               0        0 KiB      0.0      39.0
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
 | `supply` | the supply screen with its output on, a sample landing every frame |
 | `analyser`, `logs`, `settings`, `battery`, `balance`, `motor-stick`, `picker`, `wifi` | one steady frame of that screen, chrome cached; `settings` is SETUP's tiles, `motor-stick` ESC STICK open on MOTOR & ESC > PROGRAM |
-| `settings-list` | SETUP with APPLICATION's list open, chrome cached |
+| `settings-list` | SETUP with PANEL's list open, chrome cached |
 | `wifi-keys` | WI-FI with the Wi-Fi keyboard open, a key typed every frame |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
@@ -221,7 +221,7 @@ bound for that reason:
   hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`): 221 such
+  `PROG_CALLS`): 222 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - calls into the ESP32-S3's ROM (read-only memory), whose frames are not in

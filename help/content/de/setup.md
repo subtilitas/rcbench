@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kategorien: ANWENDUNG und ANSCHLÜSSE. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
+SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kategorien: PANEL und ANSCHLÜSSE. Die ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Der Bildschirm öffnet über die Kachel SETUP im [Menü](overview.md) auf einer Seite mit Kacheln, 3 mal 3. Die Kachel einer Kategorie öffnet ihre Liste über die ganze Breite des Bildschirms.
 
 ## Die Kacheln
 
@@ -14,7 +14,7 @@ SETUP hält die Einstellungen des Panels für den ganzen Prüfstand in zwei Kate
 
 | Kachel | Zweite Zeile | Was sie öffnet |
 |---|---|---|
-| ANWENDUNG | `10 EINSTELLUNGEN` | die Liste von ANWENDUNG |
+| PANEL | `10 EINSTELLUNGEN` | die Liste von PANEL |
 | ANSCHLÜSSE | `26 EINSTELLUNGEN` | die Liste von ANSCHLÜSSE |
 | OUTPUTS | `PROTOKOLLE UND PINS` | [Ausgänge](outputs.md): die Rolle jedes IOmcu-Pins, als Liste |
 | PICK A PIN | `AUF DER PLATINE` | die [Pin-Auswahl](picker.md): dasselbe, auf einer Zeichnung der Platine |
@@ -94,9 +94,9 @@ Eine Änderung unter [MOTOR & ESC, OPTIONEN](motor-settings.md) fordert selbst d
 
 Keine Warnung erscheint, wenn nichts ungespeichert ist, wenn ein Speichern angefordert ist (`BEI STILLSTAND`) und auf dem Weg zu OUTPUTS, PICK A PIN, WI-FI und UPDATES. STOP stoppt den Prüfstand und lässt die Warnung offen. Ein Bildschirm, den das Panel selbst öffnet, etwa der Busfehler-Bildschirm nach einem Verbindungsverlust, schließt die Warnung; die Werte gelten weiter und bleiben ungespeichert.
 
-## ANWENDUNG
+## PANEL
 
-![ANWENDUNG](view:setup-application)
+![PANEL](view:setup-application)
 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
@@ -125,7 +125,7 @@ Der Sensor ist ein MT6701 in seinem I2C-Modus, Pin MODE high, unter 0x06. Das Pa
 
 ## ANSCHLÜSSE
 
-ANSCHLÜSSE hält die Strommonitore, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho und den PD mini. [Anschlüsse](setup-interfaces.md) beschreibt sie.
+ANSCHLÜSSE hält die Strommonitore, den Winkelsensor, den Phasenabgriff, den Vibrationssensor, den optischen Tacho und den PD mini. Die Liste hat vier Überschriften: I2C-BUS, PHASENABGRIFF, BALANCE-SENSOREN und NETZTEIL. [Anschlüsse](setup-interfaces.md) beschreibt sie.
 
 ## Verwandte Seiten
 

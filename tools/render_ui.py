@@ -358,7 +358,7 @@ SCREENS = {
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-hub-dirty": ("setup-hub-dirty.png", "setup", "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
-    # APPLICATION: the language, the theme and the knob.
+    # PANEL: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
     # INTERFACES with both current monitors enabled, at the top of the list
     # and drawn on to the INA3221's rows and the bus's pins.

@@ -50,6 +50,17 @@ bool settings_screen_unheld(setting_id_t id);
  */
 int settings_screen_scroll(int *max);
 
+/**
+ * The list row that shows the @p index-th setting of @p cat (as
+ * settings_in_category() orders them), or -1 past the last.  A category
+ * with section headings has a row for each, above its section, so the row
+ * is the index plus the headings above it.
+ */
+int settings_screen_row_of(setting_cat_t cat, int index);
+
+/** The rows of @p cat's list: its settings and its headings. */
+int settings_screen_rows(setting_cat_t cat);
+
 /** The category whose list is open, or -1 while the hub's tiles show. */
 int settings_screen_category(void);
 

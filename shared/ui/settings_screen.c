@@ -3,7 +3,7 @@
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
- * holds (APPLICATION, INTERFACES), and one per screen of its own that SETUP
+ * holds (PANEL, INTERFACES), and one per screen of its own that SETUP
  * reaches (OUTPUTS, PICK A PIN, WI-FI, UPDATES).  A category's tile opens its list across the screen's width.
  * The list walks the rows shared/settings declares and draws each row by
  * its type: a stepper for a number, a toggle for a bool, a choice for an
@@ -75,6 +75,75 @@
 #define VALUE_R  (PLUS_X - 8)
 
 #define MAX_ROWS 32
+
+/*
+ * Section headings.  A list over 8 rows groups its settings under
+ * headings: INTERFACES' 26 rows fall into four sections.  A heading is a
+ * row of the list's own pitch, ROW_PITCH px, with no keys, drawn above the
+ * setting that opens its section; it does not count as a setting.
+ */
+typedef struct {
+    setting_id_t first;      /**< the section's first setting            */
+    ui_text_id_t text;
+} heading_t;
+
+static const heading_t k_headings[] = {
+    { SET_INA228_EN, TX_SET_HD_I2C },       /* INA228, INA3221, bus, AS5600 */
+    { SET_TONE_EN,   TX_SET_HD_TAP },       /* the phase tap                */
+    { SET_VIBE_EN,   TX_SET_HD_BALANCE },   /* vibration, optical tacho     */
+    { SET_PDMINI_EN, TX_SET_HD_SUPPLY },    /* the PD mini                  */
+};
+
+#define N_HEADINGS ((int)(sizeof(k_headings) / sizeof(k_headings[0])))
+#define MAX_ENTRIES (MAX_ROWS + N_HEADINGS)
+
+/* One row of a list: a setting, or a heading above the next one. */
+typedef struct {
+    setting_id_t id;
+    int8_t       heading;    /**< index into k_headings, or -1           */
+} entry_t;
+
+/* The list of @p cat in row order, headings included; the number of rows,
+ * counted past @p max. */
+static int entries(setting_cat_t cat, entry_t *out, int max)
+{
+    setting_id_t ids[MAX_ROWS];
+    const int n = settings_in_category(cat, ids, MAX_ROWS);
+    int rows = 0;
+    for (int i = 0; i < n && i < MAX_ROWS; ++i) {
+        for (int h = 0; h < N_HEADINGS; ++h) {
+            if (k_headings[h].first == ids[i]) {
+                if (out != NULL && rows < max) {
+                    out[rows] = (entry_t){ ids[i], (int8_t)h };
+                }
+                ++rows;
+            }
+        }
+        if (out != NULL && rows < max) {
+            out[rows] = (entry_t){ ids[i], -1 };
+        }
+        ++rows;
+    }
+    return rows;
+}
+
+int settings_screen_row_of(setting_cat_t cat, int index)
+{
+    entry_t e[MAX_ENTRIES];
+    const int n = entries(cat, e, MAX_ENTRIES);
+    int seen = -1;
+    for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
+        if (e[r].heading < 0 && ++seen == index) {
+            return r;
+        }
+    }
+    return -1;
+}
+
+int settings_screen_rows(setting_cat_t cat)
+{
+    return entries(cat, NULL, 0);
+}
 
 /*
  * A "-" or "+" key is a tap: the press arms it and the release steps it
@@ -455,7 +524,7 @@ static bool hold(ui_screen_id_t to)
 
 static int row_count(void)
 {
-    return settings_in_category(s.cat, NULL, 0);
+    return entries(s.cat, NULL, 0);
 }
 
 static void clamp_scroll(void)
@@ -486,11 +555,25 @@ static int row_at(int x, int y)
     return (idx >= 0 && idx < row_count()) ? idx : -1;
 }
 
+/* The entry of row @p index; a heading's carries heading >= 0. */
+static entry_t row_entry(int index)
+{
+    entry_t e[MAX_ENTRIES];
+    const int n = entries(s.cat, e, MAX_ENTRIES);
+    if (index < 0 || index >= n || index >= MAX_ENTRIES) {
+        return (entry_t){ (setting_id_t)0, -1 };
+    }
+    return e[index];
+}
+
+static bool row_is_heading(int index)
+{
+    return row_entry(index).heading >= 0;
+}
+
 static setting_id_t row_setting(int index)
 {
-    setting_id_t ids[MAX_ROWS];
-    int n = settings_in_category(s.cat, ids, MAX_ROWS);
-    return (index >= 0 && index < n) ? ids[index] : (setting_id_t)0;
+    return row_entry(index).id;
 }
 
 /*
@@ -507,7 +590,7 @@ static bool on_key(int kind, int index, int x, int y)
     }
     /* A row whose value follows another setting has no keys: a press
      * there is a press on the list. */
-    if (settings_derived(row_setting(index))) {
+    if (row_is_heading(index) || settings_derived(row_setting(index))) {
         return false;
     }
     return gfx_rect_contains(row_rect(index), x, y);
@@ -517,6 +600,9 @@ static bool on_key(int kind, int index, int x, int y)
 
 static void step_row(int index, int steps)
 {
+    if (row_is_heading(index)) {
+        return;
+    }
     setting_id_t id = row_setting(index);
     const setting_def_t *d = settings_def(id);
     if (!d) {
@@ -747,7 +833,7 @@ static void release(int kind, int index, bool repeated, int x, int y)
         /*
          * Every changed value back to its stored one, each by the path an
          * edit by hand takes: the observer, which sends a pin or a port to
-         * the IOmcu, and settings_apply_ui() for the APPLICATION
+         * the IOmcu, and settings_apply_ui() for the PANEL
          * rows.  Never while ARMED, asked again at the release: a bench
          * that armed while the finger was down keeps its values.  After a
          * refused save settings_discard() also asks for a write.
@@ -896,7 +982,16 @@ static void draw_row(gfx_canvas_t *c, int index)
     if (r.y + r.h <= LIST_Y || r.y >= LIST_Y + LIST_H) {
         return;
     }
-    setting_id_t id = row_setting(index);
+    const entry_t e = row_entry(index);
+    if (e.heading >= 0) {
+        /* The heading stands on the row's lower edge, over a rule. */
+        const gfx_font_t *hf = UI_FONT_HEAD;
+        gfx_text(c, r.x + 16, r.y + ROW_H - gfx_text_height(hf, 1) - 6,
+                 ui_tr(k_headings[e.heading].text), hf, UI_ACCENT, 1);
+        ui_rule(c, r.x, r.y + ROW_H - 2, r.w, UI_EDGE);
+        return;
+    }
+    setting_id_t id = e.id;
     const setting_def_t *d = settings_def(id);
     if (!d) {
         return;
@@ -975,7 +1070,7 @@ static void draw_list(gfx_canvas_t *c)
     /* Scroll position, drawn only when there is somewhere to scroll to. */
     if (s.scroll_max > 0) {
         int track_h = LIST_H;
-        int knob_h = track_h * LIST_H / (n * ROW_PITCH);
+        int knob_h = track_h * LIST_H / ((n > 0 ? n : 1) * ROW_PITCH);
         if (knob_h < 24) { knob_h = 24; }
         int knob_y = LIST_Y + (track_h - knob_h) * s.scroll / s.scroll_max;
         gfx_fill_rect(c, LIST_X + LIST_W + 4, LIST_Y, 3, track_h, UI_PANEL_SUNK);

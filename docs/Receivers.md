@@ -2,7 +2,7 @@
 
 <sub>**English** · [Deutsch](Receivers-de.md)</sub>
 
-Connecting a receiver to the bench and reading its output on the analyser
+Connecting a receiver to the bench and reading its output on the RECEIVER
 screen.
 
 ## Support
@@ -17,13 +17,13 @@ parts are needed.
 
 ## States
 
-No firmware image feeds the analyser: the S.BUS decoder is linked into the
+No firmware image feeds the RECEIVER screen: the S.BUS decoder is linked into the
 panel image and the host tests, no byte source exists on either board, and
 nothing calls `analyser_screen_push()` or `analyser_screen_silent()`. The
 screen therefore shows NO SIGNAL. The states below are what the screen draws
 when it is fed, as the host tests exercise it.
 
-The analyser shows sixteen channels with history, the two digital channels, the
+The RECEIVER screen shows sixteen channels with history, the two digital channels, the
 frame rate and the counters (frames, resyncs, bad footers). The state block
 shows one of:
 

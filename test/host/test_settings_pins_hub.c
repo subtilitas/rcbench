@@ -254,13 +254,16 @@ TEST_CASE(the_scl_key_is_saved_with_the_derived_pin)
     CHECK_EQ(settings_get_int(SET_SENSE_SCL), -1);
 }
 
-/* INTERFACES scrolled so Sensor SDA and Sensor SCL are both on the glass. */
+/* INTERFACES scrolled so Sensor SDA and Sensor SCL are both on the glass:
+ * the I2C BUS heading and the 8 monitor rows above them, 9 rows of 58 px,
+ * less the 8 px a finger moves before the list takes it for a scroll. */
 static void pins_screen(void)
 {
     gesture_screen(SET_CAT_IFACE);
     swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
     swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 132, 4);
-    CHECK_EQ(settings_screen_scroll(NULL), 232);
+    swipe(XL, LIST_Y + LIST_H - 8, XL, LIST_Y + LIST_H - 66, 4);
+    CHECK_EQ(settings_screen_scroll(NULL), 282);
     snap();
 }
 
@@ -665,7 +668,7 @@ TEST_CASE(every_tile_icon_is_centred_over_its_name)
     fresh_hub();
     static const struct { ui_icon_fn icon; const char *name; } menu[] = {
         { ui_icon_motor, "MOTOR & ESC" }, { ui_icon_servo, "SERVO" },
-        { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "ANALYSER" },
+        { ui_icon_supply, "SUPPLY" },     { ui_icon_chart, "RECEIVER" },
         { ui_icon_record, "LOGS" },       { ui_icon_sliders, "SETUP" },
         { ui_icon_battery, "BATTERY" },   { ui_icon_balance, "BALANCE" },
         { ui_icon_chip, "INTERFACES" },   { ui_icon_list, "OUTPUTS" },

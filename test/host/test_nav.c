@@ -308,7 +308,7 @@ static void tap_home(void)
  * SETUP's tiles.  They are the only way to either outputs view and to
  * UPDATES, so a tile that stopped navigating would leave a screen nobody
  * can reach.  The table's order, row by row: the two categories,
- * APPLICATION and INTERFACES, and OUTPUTS, then PICK A PIN, WI-FI and
+ * PANEL and INTERFACES, and OUTPUTS, then PICK A PIN, WI-FI and
  * UPDATES; the third row stays free.  ESC / BENCH is no tile: its rows are
  * MOTOR & ESC > SETTINGS'.
  */
@@ -324,7 +324,7 @@ TEST_CASE(the_setup_tiles_open_the_outputs_the_picker_wifi_and_updates)
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 2);           /* APPLICATION, INTERFACES */
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 2);           /* PANEL, INTERFACES */
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
         tap_tile(cat);
@@ -830,7 +830,7 @@ TEST_CASE(a_cancel_reaches_a_screen_left_during_the_frame)
 
 /*
  * The menu is 4 x 2, each tile in a fixed place by kind: the workbenches
- * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments ANALYSER, BATTERY
+ * MOTOR & ESC, SERVO and SUPPLY in row 1, the instruments RECEIVER, BATTERY
  * and BALANCE in row 2, LOGS over SETUP in the last column.  No tile is
  * PROGRAMMER.  Each tile is 190 x 204 px with 8 px margins, and a tap on
  * it opens its screen.
@@ -904,6 +904,59 @@ TEST_CASE(every_home_tile_text_fits_in_both_languages)
                        lang, i, line);
             }
         }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
+ * The tiles' names and their lines, in slot order: the name is the title of
+ * the screen the tile opens, English in both languages, and the line is the
+ * menu plan's, German with the protocol and unit names as the field writes
+ * them (S.BUS, PPM, V/A, iR, mAh).  No line carries the name ANALYSER.
+ */
+TEST_CASE(the_home_tiles_carry_the_planned_names_and_lines)
+{
+    static const char *const k_name[8] = {
+        "MOTOR & ESC", "SERVO", "SUPPLY", "LOGS",
+        "RECEIVER", "BATTERY", "BALANCE", "SETUP",
+    };
+    static const char *const k_line[UI_LANG_COUNT][8] = {
+        [UI_LANG_EN] = {
+            "drive, V/A, rpm", "travel, current, program", "set and log V/A",
+            "runs and files", "S.BUS, PPM, frames", "cells, iR, mAh",
+            "vibration, phase", "pins, sensors, panel",
+        },
+        [UI_LANG_DE] = {
+            "Antrieb, V/A, Drehzahl", "Weg, Strom, Programm",
+            "V/A einstellen, aufzeichnen", "Läufe und Dateien",
+            "S.BUS, PPM, Frames", "Zellen, iR, mAh", "Vibration, Phase",
+            "Pins, Sensoren, Panel",
+        },
+    };
+    fresh();
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        for (int i = 0; i < 8; ++i) {
+            CHECK_STR_EQ(overview_screen_tile_name(i), k_name[i]);
+            CHECK_STR_EQ(overview_screen_tile_line(i), k_line[lang][i]);
+            /* The band of the screen the tile opens reads the tile's name. */
+            CHECK_STR_EQ(ui_router_title(overview_screen_tile(i)), k_name[i]);
+            CHECK(strstr(overview_screen_tile_line(i), "ANALYSER") == NULL);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/* The SETUP hub's first tile is PANEL in both languages, and the category's
+ * name is the one the list draws. */
+TEST_CASE(the_setup_hub_names_its_first_category_panel_in_both_languages)
+{
+    fresh();
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_APP), "PANEL");
+        CHECK_STR_EQ(ui_setting_category(SET_CAT_IFACE),
+                     lang == UI_LANG_DE ? "ANSCHLÜSSE" : "INTERFACES");
     }
     ui_text_set_language(UI_LANG_EN);
 }
@@ -3516,6 +3569,8 @@ int main(void)
     RUN(the_home_tag_climbs_the_stick_session_one_level_at_a_time);
     RUN(the_home_grid_is_four_by_two_by_kind);
     RUN(every_home_tile_text_fits_in_both_languages);
+    RUN(the_home_tiles_carry_the_planned_names_and_lines);
+    RUN(the_setup_hub_names_its_first_category_panel_in_both_languages);
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);

@@ -131,6 +131,21 @@ history is in git.
 
 ### Changed
 
+- The menu tile ANALYSER and the title of its screen read RECEIVER, in
+  English and in German. The SETUP category and tile APPLICATION read PANEL
+  (German `ANWENDUNG` reads `PANEL`). The identifiers `SCREEN_ANALYSER` and
+  `analyser_screen_*`, the render view names and the help page file
+  `analyser.md` keep their names.
+- The 8 menu tiles carry new lines under the name, 2 rows of at most 23
+  characters: MOTOR & ESC `drive, V/A, rpm`, SERVO `travel, current,
+  program`, SUPPLY `set and log V/A`, LOGS `runs and files`, RECEIVER
+  `S.BUS, PPM, frames`, BATTERY `cells, iR, mAh`, BALANCE `vibration,
+  phase`, SETUP `pins, sensors, panel`. The German lines are in
+  `docs/Screens-de.md`.
+- SETUP > INTERFACES shows its 26 settings under 4 headings: I2C BUS, PHASE
+  TAP, BALANCE SENSORS and SUPPLY (German `I2C-BUS`, `PHASENABGRIFF`,
+  `BALANCE-SENSOREN`, `NETZTEIL`). A heading is a row of its own, 54 px at
+  the 58 px pitch, with no keys; the list is 30 rows long.
 - The RP2350 board is named IOmcu (German `der IOmcu`) in the panel texts,
   the help pages, the configurator and the documentation. It was called the
   coprocessor (German `Koprozessor`). Upper-case texts read `IOMCU`, for

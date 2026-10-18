@@ -17,13 +17,13 @@ Acht Kacheln zu je 190 x 204 px, in 4 Spalten und 2 Reihen: die Werkbänke in de
 | Kachel | Zeile unter dem Namen | Seite |
 |---|---|---|
 | MOTOR & ESC | Antrieb, V/A, Drehzahl | [Motor und ESC](motor.md) |
-| SERVO | Weg, Strom | [Servo](servo.md) |
+| SERVO | Weg, Strom, Programm | [Servo](servo.md) |
 | SUPPLY | V/A einstellen, aufzeichnen | [Netzteil](supply.md) |
-| LOGS | Daten aufzeichnen und ansehen | [Logs](logs.md) |
-| ANALYSER | Busse, Frames | [Analyser](analyser.md) |
+| LOGS | Läufe und Dateien | [Logs](logs.md) |
+| RECEIVER | S.BUS, PPM, Frames | [Receiver](analyser.md) |
 | BATTERY | Zellen, iR, mAh | [Akku](battery.md) |
 | BALANCE | Vibration, Phase | [Wuchten](balance.md) |
-| SETUP | Akku und Ausgang | [Setup](setup.md) |
+| SETUP | Pins, Sensoren, Panel | [Setup](setup.md) |
 
 Das Programmieren hat keine Kachel: ESCs werden auf [PROGRAMMIEREN](motor.md#programmieren) von MOTOR & ESC programmiert, Servos auf PROGRAMMIEREN von SERVO.
 
@@ -31,7 +31,7 @@ Ein Tipp öffnet eine Kachel, wenn der Finger auf derselben Kachel abhebt, auf d
 
 ## Die Marke SIMULIERT
 
-Die Marke SIMULIERT auf einer Kachel sagt, dass der IOmcu für diesen Bildschirm keine Fähigkeit meldet oder dass sein Sensor nicht aktiviert ist. Sie ordnet nicht jeden Wert auf dem Bildschirm ein: ANALYSER und BATTERY tragen die Marke und zeigen gar keine Werte, und SERVO ohne Marke zeigt das Versorgungsmodell des Panels als Messung der Servoschiene, wenn weder ein PD mini noch ein INA3221 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
+Die Marke SIMULIERT auf einer Kachel sagt, dass der IOmcu für diesen Bildschirm keine Fähigkeit meldet oder dass sein Sensor nicht aktiviert ist. Sie ordnet nicht jeden Wert auf dem Bildschirm ein: RECEIVER und BATTERY tragen die Marke und zeigen gar keine Werte, und SERVO ohne Marke zeigt das Versorgungsmodell des Panels als Messung der Servoschiene, wenn weder ein PD mini noch ein INA3221 aktiviert ist. Jeder Bildschirm nennt die Quelle seiner Werte selbst.
 
 Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 
@@ -40,7 +40,7 @@ Die Marke folgt den Fähigkeits-Bits, die der IOmcu beim Link-Aufbau meldet:
 | MOTOR & ESC | der IOmcu ESCs ansteuert und eine INA228-Einstellung hält, die unter SETUP, ANSCHLÜSSE eingeschaltet ist |
 | SERVO | der IOmcu Servo-PWM-Ausgänge (Pulsweitenmodulation) ansteuert |
 | SUPPLY | der PD mini unter SETUP, ANSCHLÜSSE eingeschaltet ist |
-| ANALYSER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
+| RECEIVER, BATTERY, BALANCE | in diesem Release nie: kein IOmcu meldet diese Fähigkeiten |
 | LOGS, SETUP | nie markiert: sie enthalten keine Messung |
 
 Ohne antwortenden IOmcu tragen MOTOR & ESC und SERVO die Marke ebenfalls. SUPPLY folgt allein der Einstellung PD mini, mit oder ohne Link.
@@ -49,7 +49,7 @@ Ohne antwortenden IOmcu tragen MOTOR & ESC und SERVO die Marke ebenfalls. SUPPLY
 
 ![Das Menü im hellen Design](view:overview-light)
 
-SETUP, ANWENDUNG, Design schaltet zwischen DUNKEL und HELL. Die Änderung gilt ab dem nächsten Frame.
+SETUP, PANEL, Design schaltet zwischen DUNKEL und HELL. Die Änderung gilt ab dem nächsten Frame.
 
 ## Ein Alert am unteren Rand
 

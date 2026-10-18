@@ -80,11 +80,11 @@ static const char *const k_text[TX_COUNT] = {
 
     /* ---------------------------------------------------------- overview */
     [TX_OV_MOTOR]               = "Antrieb, V/A, Drehzahl",
-    [TX_OV_SERVO]               = "Weg, Strom",
+    [TX_OV_SERVO]               = "Weg, Strom, Programm",
     [TX_OV_SUPPLY]              = "V/A einstellen, aufzeichnen",
-    [TX_OV_ANALYSER]            = "Busse, Frames",
-    [TX_OV_LOGS]                = "Daten aufzeichnen und ansehen",
-    [TX_OV_SETUP]               = "Akku und Ausgang",
+    [TX_OV_RECEIVER]            = "S.BUS, PPM, Frames",
+    [TX_OV_LOGS]                = "Läufe und Dateien",
+    [TX_OV_SETUP]               = "Pins, Sensoren, Panel",
     [TX_OV_BATTERY]             = "Zellen, iR, mAh",
     [TX_OV_BALANCE]             = "Vibration, Phase",
     [TX_OV_MODELLED]            = "SIMULIERT",
@@ -331,6 +331,10 @@ static const char *const k_text[TX_COUNT] = {
     [TX_SET_HUB_PICKER]         = "AUF DER PLATINE",
     [TX_SET_HUB_WIFI]           = "NETZWERK, DATEIEN, UPLOAD",
     [TX_SET_HUB_UPDATES]        = "VERSIONEN AUF GITHUB",
+    [TX_SET_HD_I2C]             = "I2C-BUS",
+    [TX_SET_HD_TAP]             = "PHASENABGRIFF",
+    [TX_SET_HD_BALANCE]         = "BALANCE-SENSOREN",
+    [TX_SET_HD_SUPPLY]          = "NETZTEIL",
     [TX_SET_RESET]              = "KATEGORIE ZURÜCKSETZEN",
     [TX_SET_SAVED]              = "GESPEICHERT",
     [TX_SET_WHEN_IDLE]          = "BEI STILLSTAND",
@@ -1733,7 +1737,7 @@ static const char *const *const k_options[SETTING_COUNT] = {
 
 static const char *const k_category[SET_CAT_COUNT] = {
     [SET_CAT_ESC]             = "ESC / PRÜFSTAND",
-    [SET_CAT_APP]             = "ANWENDUNG",
+    [SET_CAT_APP]             = "PANEL",
     [SET_CAT_IFACE]           = "ANSCHLÜSSE",
     [SET_CAT_SUPPLY]          = "NETZTEIL",
     [SET_CAT_SERVO]           = "SERVOTEST",

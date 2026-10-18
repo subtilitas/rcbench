@@ -3,7 +3,7 @@
 [English](Language.md)
 
 Das Panel zeigt seine Oberfläche auf Englisch oder auf Deutsch. SETUP,
-ANWENDUNG, Sprache wählt sie (ENGLISH, DEUTSCH). Die Wahl gilt zusammen mit
+PANEL, Sprache wählt sie (ENGLISH, DEUTSCH). Die Wahl gilt zusammen mit
 dem Design, das nächste Bild erscheint in der neuen Sprache; nichts startet
 neu. Sie liegt wie jede Einstellung im NVS (Non-Volatile Storage), sobald
 SPEICHERN sie übernimmt.
@@ -61,7 +61,7 @@ passen.
   fährt, heißt ZENTRIEREN. HOLD bleibt als Phasenname des Servotests Englisch. PAUSED,
   der Sweep-Knopf eines angehaltenen Sweeps, ist ein Zustand und nicht die
   Bedienung und heißt PAUSIERT; PAUSE, die Bedienung, bleibt Englisch.
-- Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, ANALYSER, LOGS, SETUP,
+- Die Seitentitel: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, PICK A PIN, WI-FI, UPDATES, UPDATE,
   CAN BUS FAULT, LINK LOST, PANEL UPDATE. Eine Kachel und das Band des
   Bildschirms, den sie öffnet, tragen dasselbe Wort. Ein Hinweis, der eine
@@ -171,7 +171,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | log (eine Aufzeichnung), log run | Aufzeichnung, Aufzeichnungslauf |
 | IP address | IP-Adresse |
 | acknowledge, confirm | bestätigen |
-| SILENT (das Urteil des ANALYSER) | KEIN SIGNAL |
+| SILENT (das Urteil des RECEIVER) | KEIN SIGNAL |
 
 Eine Beschriftung ist ein Substantiv, wo ein Substantiv reicht. Eine
 Anweisung spricht den Bediener im Imperativ mit du an (Prüfe, Tippe, Halte);

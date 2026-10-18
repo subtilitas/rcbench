@@ -1,5 +1,5 @@
 /*
- * The receiver-bus analyser screen.
+ * The RECEIVER screen (analyser_*: the code's name for it).
  *
  * A receiver in failsafe sends sixteen well-formed channel values, so the
  * state block (SILENT, FAILSAFE, FRAME LOST, LIVE) is the largest element on
@@ -506,7 +506,7 @@ static void cancel(void)
 }
 
 static const ui_screen_t k_screen = {
-    .title  = "ANALYSER",
+    .title  = "RECEIVER",
     .reset  = reset,
     .enter  = NULL,
     .leave  = NULL,

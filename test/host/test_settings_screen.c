@@ -713,8 +713,72 @@ TEST_CASE(setup_changes_no_held_setting)
     }
 }
 
+/* ------------------------------------------------------------ headings */
+
+/* INTERFACES carries four headings, each above the first row of its
+ * section; no other list has one. */
+TEST_CASE(interfaces_has_four_headings_above_its_sections)
+{
+    fresh_hub();
+    setting_id_t ids[64];
+    const int n = settings_in_category(SET_CAT_IFACE, ids, 64);
+    CHECK_EQ(settings_screen_rows(SET_CAT_IFACE), n + 4);
+    static const setting_id_t first[4] = { SET_INA228_EN, SET_TONE_EN,
+                                           SET_VIBE_EN, SET_PDMINI_EN };
+    int prev = -1;
+    for (int h = 0; h < 4; ++h) {
+        const int row = settings_screen_row_of(SET_CAT_IFACE,
+                                               row_of(first[h]));
+        /* The heading stands on the row above, the section's first. */
+        CHECK(row > prev + 1);
+        CHECK_EQ(row, row_of(first[h]) + h + 1);
+        prev = row;
+    }
+    CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, 0), 1);
+    CHECK_EQ(settings_screen_row_of(SET_CAT_IFACE, n), -1);
+    for (int c = 0; c < SET_CAT_SETUP_COUNT; ++c) {
+        if (c != SET_CAT_IFACE) {
+            CHECK_EQ(settings_screen_rows((setting_cat_t)c),
+                     settings_in_category((setting_cat_t)c, ids, 64));
+        }
+    }
+}
+
+/* The heading shows its text in the accent colour in both languages, and
+ * its row has no key. */
+TEST_CASE(a_heading_shows_its_text_and_has_no_keys)
+{
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        fresh_screen();
+        gesture_screen(SET_CAT_IFACE);
+        ui_router_render(&s_c, 0);
+        int accent = 0;
+        for (int y = LIST_Y; y < LIST_Y + ROW_H; ++y) {
+            for (int x = 0; x < 300; ++x) {
+                accent += (gfx_pixel_get(&s_c, x, y) == UI_ACCENT) ? 1 : 0;
+            }
+        }
+        CHECK(accent > 40);
+        /* No key column pixel above the rule differs from the row's
+         * background. */
+        const gfx_color_t bg = gfx_pixel_get(&s_c, MINUS_X, LIST_Y + 2);
+        for (int y = LIST_Y + 2; y < LIST_Y + ROW_H - 4; ++y) {
+            CHECK(gfx_pixel_get(&s_c, MINUS_X + 4, y) == bg);
+            CHECK(gfx_pixel_get(&s_c, PLUS_X + BTN_W - 4, y) == bg);
+        }
+        feed_tap(FEED_LONE, XM, LIST_Y + ROW_H / 2);
+        feed_tap(FEED_LONE, XP, LIST_Y + ROW_H / 2);
+        feed_tap(FEED_LONE, XL, LIST_Y + ROW_H / 2);
+        CHECK_EQ(changed(), 0);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
+    RUN(interfaces_has_four_headings_above_its_sections);
+    RUN(a_heading_shows_its_text_and_has_no_keys);
     RUN(a_held_setting_is_left_by_every_call_that_changes_one);
     RUN(setup_changes_no_held_setting);
     RUN(the_encoder_settings_start_off_with_a_12_bit_centre);

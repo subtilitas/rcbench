@@ -141,15 +141,28 @@ bottom of the screen, ARM included, while it shows.
 
 The menu is a grid of 4 columns by 2 rows, each tile 190 x 204 px with 8 px
 margins. The first row holds the workbenches, MOTOR & ESC, SERVO and
-SUPPLY; the second the instruments, ANALYSER, BATTERY and BALANCE; the last
+SUPPLY; the second the instruments, RECEIVER, BATTERY and BALANCE; the last
 column LOGS over SETUP. A fourth workbench or a fourth instrument fails the
 build at 4 columns (`shared/ui/overview_screen.c`). Programming has no tile:
 it is the PROGRAM task of MOTOR & ESC and of SERVO.
 
+Each tile carries a line under its name, 2 rows of at most 23 characters:
+
+| Tile | Line |
+| --- | --- |
+| MOTOR & ESC | drive, V/A, rpm |
+| SERVO | travel, current, program |
+| SUPPLY | set and log V/A |
+| LOGS | runs and files |
+| RECEIVER | S.BUS, PPM, frames |
+| BATTERY | cells, iR, mAh |
+| BALANCE | vibration, phase |
+| SETUP | pins, sensors, panel |
+
 A tile marked SIMULATED opens a screen whose source the bench does not
 report: the IOmcu reports no capability for it, or its sensor is not
 enabled on SETUP under INTERFACES. A screen without its hardware opens and runs
-from the model. The mark does not classify each value on a screen. ANALYSER
+from the model. The mark does not classify each value on a screen. RECEIVER
 and BATTERY carry the mark and show no values. SERVO without the mark shows the
 panel's supply model as its rail meter when neither a PD mini nor an INA3221 is
 enabled. Each screen names the source of its readings itself.
@@ -159,7 +172,7 @@ enabled. Each screen names the source of its readings itself.
 | MOTOR & ESC | the IOmcu drives ESCs and holds an INA228 set-up enabled on SETUP, INTERFACES |
 | SERVO | the IOmcu drives servo PWM outputs |
 | SUPPLY | the PD mini is enabled on SETUP, INTERFACES, whatever the IOmcu reports; otherwise the panel runs its own model of a supply |
-| ANALYSER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
+| RECEIVER, BATTERY, BALANCE | never in this release: no IOmcu reports these capabilities |
 | LOGS, SETUP | always: they hold no measurement |
 
 The capability bits come from the IOmcu at bring-up. With no IOmcu
@@ -207,7 +220,7 @@ take a rail of 236 px on the right, so reading the numbers and working the
 throttle do not compete for the same part of the screen. The rail is the same
 on LIVE, PROGRAM's list and SETTINGS, and ARM works on all three; a session
 opened from PROGRAM covers it. With the rotary knob on, turning it moves the
-throttle on LIVE ([the knob](#application-the-rotary-knob)); on PROGRAM and
+throttle on LIVE ([the knob](#panel-the-rotary-knob)); on PROGRAM and
 SETTINGS a turn moves nothing.
 
 The home tag climbs one level at a time:
@@ -730,7 +743,7 @@ position every SERVO_HOLD_MS, so a servo stays where it was put. **RELEASE**,
 the button, is what returns the surfaces to centre -- and even that leaves the
 pins bound and driving, at the middle of their travel. A switch to SAFE, or leaving
 the screen, which switches to SAFE, is what stops the edges. With the rotary knob on,
-turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)),
+turning it moves the horn from where it is ([the knob](#panel-the-rotary-knob)),
 on LIVE alone: on TEST, on PROGRAM, on SETTINGS, under a panel and under a
 programmer the dial is out of sight and a turn moves nothing. A turn in the
 frame in which LIVE comes back moves nothing either; the next one does.
@@ -1586,9 +1599,9 @@ IOmcu find it: it tries each of the 7 rates, one a second. The
 SUPPLY header shows the rate in use after ONLINE, e.g. `ONLINE 38400`, with
 AUTO and with a fixed rate alike.
 
-## Analyser
+## Receiver
 
-![Analyser](img/analyser.png)
+![Receiver](img/analyser.png)
 
 Sixteen channels, each with about 1.7 s of history (118 samples) and a bar for its current value.
 CH17 and CH18 are the two digital channels. A glitch is a spike in one lane; a
@@ -1749,7 +1762,7 @@ a run with the bench in ARMED the time is wall time, so the duration is the run'
 for a file written by firmware 0.15.0 or older it is shorter than the run
 (see Motor & ESC, the CSV file).
 
-SETUP → APPLICATION → One finger pans, off by default, lets a single finger
+SETUP → PANEL → One finger pans, off by default, lets a single finger
 pan a zoomed view. While it is on and the view is zoomed in, a finger that
 moves more than 10 px from where it touched down drags the view sideways, and
 the sample under the finger stays under it. A touch that stays within 10 px
@@ -2080,7 +2093,7 @@ style. Each tile is 256 x 108 px, its icon centred over its name.
 
 ![Setup](img/setup.png)
 
-- Two categories: APPLICATION and INTERFACES, the bench-wide settings.
+- Two categories: PANEL and INTERFACES, the bench-wide settings.
   Each tile names its number of settings. A tap opens the category's list.
   The ESC / BENCH settings are on MOTOR & ESC
   ([MOTOR & ESC settings](#motor--esc-settings)).
@@ -2106,7 +2119,7 @@ and SAVE. The strip ends at panel y 442, 4 px above the alert band
 ([The alert band](#the-alert-band)), so an alert never covers a key, a row,
 RESET CATEGORY or SAVE, on the tiles or on a list.
 
-![APPLICATION](img/setup-application.png)
+![PANEL](img/setup-application.png)
 
 The home tag climbs one level at a time:
 
@@ -2119,14 +2132,14 @@ The home tag climbs one level at a time:
 The menu's SETUP tile always opens the tiles. Leaving SETUP writes nothing,
 from the tiles or from a list.
 
-APPLICATION's Language switches the whole interface between English and
+PANEL's Language switches the whole interface between English and
 German on the next frame, with no restart. What follows it, what stays
 English and why: [Interface language](Language.md). One finger pans, in the
 same category, sets whether one finger pans the zoomed log plot; it is off by
 default and is described under [Logs](#logs).
 
 Nine settings are stored and shown, and no part of the firmware reads them:
-Backlight, Units and Dim after under APPLICATION; Cells, Capacity and
+Backlight, Units and Dim after under PANEL; Cells, Capacity and
 Internal R on MOTOR & ESC; Vibration, Optical tacho and Tacho pin. Ramp limit is read only
 as the slew of the modelled bench.
 
@@ -2162,7 +2175,7 @@ Two limits:
   moving, it is a tap. How often the GT911 drops a moving contact from a
   report is not measured.
 
-### APPLICATION: the rotary knob
+### PANEL: the rotary knob
 
 An MT6701 magnetic angle sensor at 0x06 on the panel's I2C terminal (I2C:
 Inter-Integrated Circuit) turns the slider of the bench screen on top: the
@@ -2228,6 +2241,14 @@ across a third of its travel from -travel to +travel.
   behaviour with no magnet over it.
 
 ### INTERFACES: the current monitors
+
+INTERFACES lists its 26 settings in four sections. A heading above the first
+row of each names it: I2C BUS (the two current monitors, Sensor SDA and
+SCL, and the AS5600), PHASE TAP, BALANCE SENSORS (Vibration and Optical
+tacho) and SUPPLY (the PD mini). A heading is a row of its own, 54 px high
+at the list's 58 px pitch, in the accent colour over a rule, with no keys
+and no value: a tap or a drag on it changes nothing, and a drag scrolls the
+list. The list is 30 rows long.
 
 ![INTERFACES, the current monitors](img/setup-interfaces.png)
 
@@ -2521,7 +2542,7 @@ The strip's three columns hold the answers:
 | SAVE | Asks for a write as the save button does, then opens the menu. The write follows the same rule: the first idle frame. |
 
 DISCARD sets each value with the same call a key does, in schema order, so
-the IOmcu hears each pin and port that moves, and APPLICATION's
+the IOmcu hears each pin and port that moves, and PANEL's
 language, theme, brightness and contrast apply on the next frame. A PD mini
 wiring set back switches the supply output off and raises the alert a change by hand
 raises. PWM target and Port PWM are not set back while the servo programmer
