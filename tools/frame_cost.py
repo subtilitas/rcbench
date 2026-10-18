@@ -56,6 +56,7 @@ SOURCES = [
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_workbench.c",
     "shared/ui/ui_target_row.c",
+    "shared/ui/prog_registry.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/ui_text.c",

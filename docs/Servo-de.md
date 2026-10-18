@@ -913,7 +913,7 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 | `Prüfstand SAFE` | DISARM oder alles andere, was den Prüfstand auf SAFE geschaltet hat |
 | `Link verloren` | der Link zum IOmcu ging während des Laufs verloren |
 | `Seite SERVO verlassen` | eine andere Seite wurde geöffnet |
-| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, PROGRAMMIEREN |
+| `vom Bediener gestoppt` | TEST BEENDEN, ein Finger auf der Skala, ZENTRIEREN, SWEEP, FREIGEBEN, ein Tippen auf einen Sollwert, ein Programmierer, geöffnet aus der Liste von PROGRAMMIEREN |
 | `Servo-Optionen geändert` | Typ, Frame Rate, Impulse, Trim, Weg, Reverse oder TEMPO geändert |
 | `Touch-Ereignisse verloren` | zwischen zwei Frames gingen Ereignisse verloren |
 | `Netzteil antwortet nicht` | ein Messwert als nicht antwortend markiert |

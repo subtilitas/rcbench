@@ -4,11 +4,14 @@
 
 The programmer reads the 32 registers of a KST or Chaservo servo over its
 signal wire, shows them as settings, and writes changed settings back. The
-servos of the two brands share one protocol and one register set. It is an
-overlay on the [SERVO screen](Screens.md#servo), opened with **PROGRAM** in
-the strip's row over the right card; it covers the left column, the strip's
-tabs with it. **PROGRAM** ends a running automatic test as
-`stopped by the operator`.
+servos of the two brands share one protocol and one register set. It opens
+from its row `KST and Chaservo servos` on **PROGRAM** of the
+[SERVO screen](Screens.md#servo), one level down, and covers the left
+column, the strip's tabs with it. **CLOSE** or the home tag returns to
+PROGRAM's list. Opening it ends a running automatic test as
+`stopped by the operator`. The row is dimmed with `IOMCU HAS NO SERVO PWM`
+and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM,
+which includes no IOmcu answering.
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench
 is independent: it is not affiliated with, endorsed by or sponsored by them.
@@ -136,9 +139,11 @@ without a result.
 ![A write running](img/servo-kst-writing.png)
 
 While the port is in programming the overlay stays open, the strip's tabs
-under it take no press, and the tester's controls send nothing to the port. **STOP** on the
-right card works. Leaving the SERVO screen leaves the port as it is; the
-overlay is open again at the next entry.
+under it take no press, and the tester's controls send nothing to the port.
+**CLOSE** and the home tag open LEAVE PROGRAMMING; over an open keypad,
+list, warning or keyboard the home tag closes that one first. **STOP** on
+the right card works. Leaving the SERVO screen leaves the port as it is;
+the overlay is open again on PROGRAM at the next entry.
 
 | **CONNECT** ends with | Meaning |
 | --- | --- |

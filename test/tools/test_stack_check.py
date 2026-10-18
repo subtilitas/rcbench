@@ -293,3 +293,45 @@ def test_servo_calls_name_every_callback_of_the_panel_servo_link():
             else:
                 want |= ctx[f]
         assert set(sc.SERVO_CALLS[caller]) == want, caller
+
+
+def page_set_fields():
+    """{hook: {function}} over every prog_page_set_t defined in shared/ui."""
+    found = {}
+    for src in sorted(sc.UI_DIR.glob("*.c")):
+        text = src.read_text(encoding="utf-8")
+        for m in re.finditer(r"\bprog_page_set_t\s+\w+\s*=\s*\{([^}]*)\}",
+                             text):
+            for field, value in re.findall(r"\.(\w+)\s*=\s*(\w+)",
+                                           m.group(1)):
+                found.setdefault(field, set()).add(value)
+    return found
+
+
+def page_set_callers():
+    """{function: {hook}} over the shared/ui files that call a page set's
+    hook: ps->hook( in a function's body."""
+    out = {}
+    for src in sorted(sc.UI_DIR.glob("*.c")):
+        text = src.read_text(encoding="utf-8")
+        for m in re.finditer(r"^\w[^\n]*?\b(\w+)\(\s*(?:\n[^)]*)?[^)]*\)"
+                             r"\s*\{(.*?)^\}", text, re.S | re.M):
+            hooks = set(re.findall(r"\bps->(\w+)\(", m.group(2)))
+            if hooks:
+                out[m.group(1)] = hooks
+    return out
+
+
+def test_prog_calls_name_every_hook_of_every_page_set():
+    """A page set's hook PROG_CALLS leaves out, or one called from a
+    function the table does not name, is a call the graph does not
+    follow."""
+    fields, callers = page_set_fields(), page_set_callers()
+    assert fields and callers
+    assert set(sc.PROG_CALLS) == set(callers)
+    for caller, hooks in callers.items():
+        assert len(hooks) == 1, caller
+        want = set()
+        for h in hooks:
+            want |= fields[h]
+        assert set(sc.PROG_CALLS[caller]) == want, caller

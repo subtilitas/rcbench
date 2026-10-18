@@ -5,11 +5,14 @@
 Der Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über
 dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte
 Einstellungen zurück. Die Servos der zwei Marken teilen ein Protokoll und
-einen Registersatz. Er ist ein Overlay auf dem
-[SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMMIEREN** in der
-Zeile der Leiste über der rechten Karte geöffnet; er bedeckt die linke
-Spalte samt den Reitern der Leiste. **PROGRAMMIEREN** beendet einen laufenden
-automatischen Test als `vom Bediener gestoppt`.
+einen Registersatz. Er öffnet sich mit seiner Zeile `KST- und
+Chaservo-Servos` auf **PROGRAMMIEREN** des
+[SERVO-Bildschirms](Screens-de.md#servo), eine Ebene tiefer, und bedeckt die
+linke Spalte samt den Reitern der Leiste. **SCHLIESSEN** oder das Home-Tag
+führt zurück zur Liste von PROGRAMMIEREN. Das Öffnen beendet einen laufenden
+automatischen Test als `vom Bediener gestoppt`. Die Zeile ist mit
+`IOMCU OHNE SERVO PWM` gedimmt und öffnet nichts, solange der IOmcu, die
+RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
 ist unabhängig: es ist mit ihnen nicht verbunden und wird von ihnen weder
@@ -151,9 +154,12 @@ das Schreiben ohne Ergebnis endet.
 
 Solange der Port im Programmieren ist, bleibt das Overlay offen, die
 Reiter der Leiste darunter nehmen keinen Druck, und die Bedienelemente des Testers senden nichts an
-den Port. **STOP** auf der rechten Karte arbeitet. Das Verlassen des
-SERVO-Bildschirms lässt den Port, wie er ist; beim nächsten Aufruf ist das
-Overlay wieder offen.
+den Port. **SCHLIESSEN** und das Home-Tag öffnen PROGRAMMIERMODUS
+VERLASSEN; über einem offenen Tastenfeld, einer Liste, einer Warnung oder
+der Buchstabentastatur schließt das Home-Tag zuerst dieses Feld. **STOP**
+auf der rechten Karte arbeitet. Das Verlassen des SERVO-Bildschirms lässt
+den Port, wie er ist; beim nächsten Aufruf ist das Overlay auf
+PROGRAMMIEREN wieder offen.
 
 | **VERBINDEN** endet mit | Bedeutung |
 | --- | --- |

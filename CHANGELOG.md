@@ -230,8 +230,9 @@ history is in git.
   wording, and `docs/Language.md` lists the German terms that change, among
   them VERBINDUNG for the link, ZUORDNUNG for a binding, GAS for the
   throttle and FIRMWARE for an image.
-- SERVO is a workbench. A strip under the band holds LIVE, TEST and
-  SETTINGS (German `LIVE`, `TEST`, `OPTIONEN`), 112 px a tab; the tile
+- SERVO is a workbench. A strip under the band holds LIVE, TEST, PROGRAM
+  and SETTINGS (German `LIVE`, `TEST`, `PROGRAMMIEREN`, `OPTIONEN`), 112 px
+  a tab; the tile
   opens LIVE, each task keeps its page for the session, and a tab switch is
   no navigation level. LIVE holds the dial. TEST holds two run cards,
   AUTOMATIC TEST and LIMIT RUN, each with a summary line, its start hold,
@@ -244,7 +245,21 @@ history is in git.
   the target: a tap opens OUTPUTS / PROG PORT. It is locked while ARMED,
   during a sweep or a run, and while the servo programmer holds the port.
   PWM TARGET leaves the DUT page, and AS5600 leaves it for SETUP >
-  INTERFACES alone. PROGRAM moves to the strip's row over the right card.
+  INTERFACES alone.
+- SERVO > PROGRAM lists the programmers from one table,
+  `shared/ui/prog_registry.c`, a row each: its name, and what it drives
+  with the pin. The one row, `KST and Chaservo servos` (German `KST- und
+  Chaservo-Servos`) with `PROG PORT GP13`, opens the KST and Chaservo
+  programmer over the left column, one level down. CLOSE or the home tag
+  returns to the list; while the port is in programming both open LEAVE
+  PROGRAMMING, and over an editor in the programmer the home tag closes the
+  editor. A row whose capability the IOmcu does not report is dimmed with
+  its reason, `IOMCU HAS NO SERVO PWM`, and opens nothing: with no IOmcu
+  answering, the KST row too. A row whose port another row's programmer
+  holds reads `PORT IN USE`. A list of more than 9 rows gets SEARCH,
+  more than 8 rows shown get group headings, and a list taller than the
+  page pages with `^` and `v`. Back on SERVO with the port held, the
+  programmer is open on PROGRAM.
 - SUPPLY's voltage and current caps are no longer set on SERVO. TEST and
   DUT show them read-only, `Caps 21.00 V 5.00 A: SUPPLY > SETTINGS`.
 - The limit run's report and box name the output with its protocol,

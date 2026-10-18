@@ -195,6 +195,35 @@ SERVO_CALLS = {
     "sl_arm_surfaces": ("servo_ctx_arm_surfaces",),
 }
 
+# The prog_page_set_t hooks of the programmers' registry
+# (shared/ui/prog_registry.h): the sessions the SERVO screen opens from
+# PROGRAM's list, on the main task.  Each hook is called from one function
+# of its own, in shared/ui/servo_workbench.c and shared/ui/prog_registry.c,
+# and every page set's function for that hook is named here.  The same
+# checks as PORT_CALLS; test/tools/test_stack_check.py holds the table to
+# those callers and to every page set in shared/ui.
+PROG_CALLS = {
+    "prog_ps_init": ("kst_panel_init",),
+    "prog_ps_entry": ("kst_panel_screen_entry",),
+    "prog_ps_open": ("kst_panel_open",),
+    "prog_ps_is_open": ("kst_panel_is_open",),
+    "prog_ps_back": ("kst_panel_back",),
+    "prog_ps_holds": ("kst_panel_holds_port",),
+    "prog_ps_armed": ("kst_panel_bench_armed",),
+    "prog_ps_tick": ("kst_panel_tick",),
+    "prog_ps_has_press": ("kst_panel_has_press",),
+    "prog_ps_event": ("kst_panel_event",),
+    "prog_ps_render": ("kst_panel_render",),
+    "prog_ps_revision": ("kst_panel_revision",),
+    "prog_ps_hold_revision": ("kst_panel_hold_revision",),
+    "prog_ps_hold_rect": ("kst_panel_apply_rect",),
+    "prog_ps_leave": ("kst_panel_leave",),
+    "prog_ps_cancel": ("kst_panel_cancel",),
+    "prog_ps_pin": ("kst_panel_pin",),
+    "prog_reg_call_holds": ("kst_panel_holds_port",),
+    "prog_reg_call_pin": ("kst_panel_pin",),
+}
+
 # The fw_boot_ops_t callbacks shared/fwupdate calls: the panel's start
 # check after an update, in components/fw_ota, which writes otadata on the
 # main task.  The same checks as PORT_CALLS.
@@ -672,7 +701,8 @@ def main() -> int:
                                ("BOOT_CALLS", "shared/fwupdate",
                                 BOOT_CALLS),
                                ("SERVO_CALLS", "shared/outputs",
-                                SERVO_CALLS)):
+                                SERVO_CALLS),
+                               ("PROG_CALLS", "shared/ui", PROG_CALLS)):
         for caller, callbacks in calls.items():
             addrs = by_name.get(caller, [])
             if len(addrs) != 1:

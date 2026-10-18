@@ -57,6 +57,7 @@ SOURCES = [
     "shared/ui/ui_tabs.c",
     "shared/ui/ui_workbench.c",
     "shared/ui/ui_target_row.c",
+    "shared/ui/prog_registry.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/ui_text.c",
@@ -231,6 +232,10 @@ SCREENS = {
     # The programmer for KST and Chaservo servos over the left card: each
     # tab, each list and each page that asks for a hold, against the
     # simulated servo.
+    # SERVO > PROGRAM: the registry's list, the KST and Chaservo row live
+    # with the port's pin; with no IOmcu answering, dimmed with its reason.
+    "servo-program": ("servo-program.png", "servo", "dark"),
+    "servo-program-nocap": ("servo-program-nocap.png", "servo", "sim"),
     "servo-kst": ("servo-kst.png", "servo", "dark"),
     "servo-kst-nopage": ("servo-kst-nopage.png", "servo", "dark"),
     # The tester drives the standard outputs: PROGRAM is locked.
@@ -547,6 +552,9 @@ MIN_SHAPE = 8
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
     "band-fault-all":   (None, "overview", "dark"),
+    # SERVO > PROGRAM with a table of 12 rows: SEARCH, the page keys, two
+    # group headings and a row dimmed with its reason.
+    "servo-program-many": (None, "servo", "dark"),
     "band-nolink":      (None, "overview", "sim"),
     "band-bench":       (None, "overview", "dark"),
     "band-sim":         (None, "overview", "sim"),

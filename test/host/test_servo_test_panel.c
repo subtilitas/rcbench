@@ -84,18 +84,20 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
     lift(FEED_LONE);
 }
 
-/* PROGRAM ends a run: the programmer covers the run's card, and a run
- * left going would step the rail and the position of the port that
- * CONNECT takes out of PWM. */
+/* Opening the programmer from PROGRAM's list ends a run: a run left
+ * going would step the rail and the position of the port that CONNECT
+ * takes out of PWM.  The tab alone ends nothing. */
 TEST_CASE(program_ends_a_run)
 {
     bench_fresh();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    tap(SV_PROGRAM_X, SV_TAB_Y);                  /* PROGRAM */
+    open_program();
+    CHECK(servo_screen_testing());
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));         /* KST and Chaservo */
     CHECK(!servo_screen_testing());
     CHECK(kst_panel_is_open());
-    tap(SV_PROGRAM_X, SV_TAB_Y);
+    close_kst();
     CHECK(!kst_panel_is_open());
     CHECK(!servo_screen_testing());
 }

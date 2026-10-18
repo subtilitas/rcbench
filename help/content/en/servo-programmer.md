@@ -6,7 +6,13 @@ order: 22
 
 # Servo programmer
 
-The servo programmer reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servos of the two brands share one protocol and one register set. PROGRAM, in the strip's row over the right card of [SERVO](servo.md), opens it over the left column, the strip's tabs with it; PROGRAM again closes it to the task it covered. PROGRAM ends a running automatic test.
+The servo programmer reads the 32 registers of a KST or Chaservo servo over its signal wire, shows them as settings and writes changed settings back. The servos of the two brands share one protocol and one register set. On [SERVO](servo.md), PROGRAM in the strip lists the programmers. The row `KST and Chaservo servos` opens this one over the left column, the strip's tabs with it, one level down; CLOSE or the home tag returns to the list. Opening it ends a running automatic test.
+
+![PROGRAM's list](view:servo-program)
+
+The row names what it drives, `PROG PORT GP13`. It is dimmed and opens nothing while the IOmcu, the RP2350 board, reports no servo PWM, which includes no IOmcu answering: the row then reads `IOMCU HAS NO SERVO PWM`.
+
+![The row dimmed](view:servo-program-nocap)
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench is not affiliated with, endorsed by or sponsored by them. The names say which servos the programmer works with.
 
@@ -155,7 +161,7 @@ A write counts as interrupted when the link goes, a board restarts, ABORT or a s
 
 ![LEAVE PROGRAMMING](view:servo-kst-leave)
 
-LEAVE, or CLOSE in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD TO LEAVE takes it after 2 s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay.
+LEAVE, or CLOSE or the home tag in programming, opens LEAVE PROGRAMMING: the port goes back to servo PWM, the supply stays as it is, and the servo may move. HOLD TO LEAVE takes it after 2 s. The port holds its line low for WAIT BEFORE PWM, then gives the pin to the tester. Leaving the SERVO screen is no LEAVE: the session and the port stay, and the programmer is open again on PROGRAM at the next entry. Over a keypad, a list, a warning or the keyboard in the programmer the home tag closes that one first.
 
 ## Related pages
 

@@ -2685,7 +2685,7 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
     fresh_screen();
     link_up();
     CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     CHECK(kst_panel_is_open());
     tap(val(PG_SERVO, 0, 0));
     CHECK(kst_panel_holds_port());
@@ -2703,38 +2703,122 @@ TEST_CASE(commanded_shows_no_pulse_while_the_programmer_holds_the_port)
     CHECK(strstr(servo_screen_commanded_text(), " us") != NULL);
 }
 
-TEST_CASE(program_opens_the_programmer_over_the_left_card_and_closes_it)
+TEST_CASE(program_lists_the_programmer_and_its_row_opens_it_a_level_down)
 {
     fresh_screen();
     link_up();
     CHECK(!kst_panel_is_open());
+    /* PROGRAM is a tab: its list, no session yet. */
     screen_tap(PROG_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK(!kst_panel_is_open());
+    /* The row opens the session over the left column, and the session
+     * takes the taps there. */
+    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
-    /* The overlay takes the taps on the left card. */
     tap(val(PG_SERVO, 2, 1));
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_cancel_rect());
     CHECK_EQ(kst_panel_editor(), 0);
-    screen_tap(PROG_X, BTN_Y);
+    /* CLOSE climbs to the list. */
+    program_close();
     CHECK(!kst_panel_is_open());
-    /* The programmer covers the strip with the left card: a tap where
-     * SETTINGS is goes to the programmer (its own page tabs), and the
-     * task stays. */
-    screen_tap(PROG_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    /* The session covers the strip: a tap where LIVE is goes to the
+     * session (its own page tabs), and the task stays. */
+    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
     CHECK(kst_panel_is_open());
-    screen_tap(SETB_X, BTN_Y);
+    screen_tap(LIVE_X, BTN_Y);
     CHECK(kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
-    screen_tap(PROG_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    program_close();
     CHECK(!kst_panel_is_open());
-    /* Over SETTINGS it opens the same, and closes back to SETTINGS. */
+    /* Under the one row the list opens nothing. */
+    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(3));
+    CHECK(!kst_panel_is_open());
+    /* Another task and back: the list, not a session. */
     screen_tap(SETB_X, BTN_Y);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
     screen_tap(PROG_X, BTN_Y);
-    CHECK(kst_panel_is_open());
-    screen_tap(PROG_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
     CHECK(!kst_panel_is_open());
-    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+}
+
+/*
+ * The home tag in the session (the router calls the screen's back()): over
+ * an editor it closes the editor; while the port moves it does nothing;
+ * with the port in programming it asks for LEAVE and the session stays,
+ * and over that question it closes the question; once the port is back in
+ * PWM it climbs to PROGRAM's list, and the next one lets the screen go.
+ */
+TEST_CASE(the_home_tag_in_a_held_session_asks_for_leave_then_climbs)
+{
+    fresh_screen();
+    link_up();
+    program_open();
+    /* MORE's list: one tag closes it, the session stays. */
+    tap(val(PG_SERVO, 2, 1));
+    CHECK_EQ(kst_panel_editor(), 2);
+    CHECK(scr->back());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK(kst_panel_is_open());
+    /* CONNECT: while the port goes into programming the tag waits. */
+    tap(val(PG_SERVO, 0, 0));
+    CHECK(kst_panel_holds_port());
+    CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
+    CHECK(scr->back());
+    CHECK(kst_panel_is_open());
+    CHECK_EQ(kst_panel_editor(), 0);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    /* In programming: the tag asks for LEAVE and stays on PROGRAM. */
+    CHECK(scr->back());
+    CHECK(kst_panel_is_open());
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    /* Over the question it closes the question; the port stays held. */
+    CHECK(scr->back());
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK(kst_panel_is_open());
+    CHECK(kst_panel_holds_port());
+    /* Asked again, and LEAVE held: the port is back in PWM. */
+    CHECK(scr->back());
+    CHECK_EQ(kst_panel_editor(), 3);
+    hold(2.1f);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK(!kst_panel_holds_port());
+    /* Now the tag climbs to the list, then lets the screen go. */
+    CHECK(scr->back());
+    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK(!scr->back());
+}
+
+/* PROGRAM's row names the pin of the port the session works on (the
+ * TARGET's) once the feed carries it, and the transport alone without. */
+TEST_CASE(the_kst_row_names_the_ports_pin_from_the_feed)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    char out[48];
+    char want[24];
+
+    fresh_screen();
+    link_up();
+    settle();
+    CHECK_EQ(kst_panel_pin(), (uint8_t)RIG_PIN);
+    CHECK(!prog_reg_detail(rows, n, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
+    snprintf(want, sizeof(want), "PROG PORT GP%u", (unsigned)RIG_PIN);
+    CHECK_STR_EQ(out, want);
+
+    fresh_screen();
+    g_rig.no_pin = true;
+    link_up();
+    settle();
+    CHECK_EQ(kst_panel_pin(), (uint8_t)PROG_REG_NO_PIN);
+    CHECK(!prog_reg_detail(rows, n, 0, LINK_CAP_SERVO_PWM, out, sizeof(out)));
+    CHECK_STR_EQ(out, "PROG PORT");
 }
 
 /* Every call that changes a setting, on the tester's target and the port's
@@ -2908,16 +2992,17 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
 
     fresh_screen();
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
-    /* A tap where the strip's SETTINGS is does not uncover it. */
-    ev(SETB_X, BTN_Y, TOUCH_EVENT_DOWN, 1);
-    ev(SETB_X, BTN_Y, TOUCH_EVENT_UP, 1);
+    /* A tap where the strip's LIVE is does not uncover it. */
+    ev(LIVE_X, BTN_Y, TOUCH_EVENT_DOWN, 1);
+    ev(LIVE_X, BTN_Y, TOUCH_EVENT_UP, 1);
     CHECK(kst_panel_is_open());
-    /* PROGRAM asks for the way back and closes nothing. */
-    screen_tap(PROG_X, BTN_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    /* CLOSE asks for the way back and closes nothing. */
+    program_close();
     CHECK(kst_panel_is_open());
     CHECK_EQ(kst_panel_editor(), 3);
     tap(kst_panel_cancel_rect());
@@ -2929,8 +3014,11 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK(kst_prog_write_enabled(M));
     scr->enter();
     CHECK(!kst_prog_write_enabled(M));
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
     scr->tick(0.02f);
+    /* On PROGRAM, one level down, as the port is held. */
     CHECK(kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
     scr->render(&cv, 0);
     scr->render(&cv, 1);
     /* Leaving programming gives the tester its screen back. */
@@ -2939,7 +3027,7 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     hold(2.1f);
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
-    screen_tap(PROG_X, BTN_Y);
+    program_close();
     CHECK(!kst_panel_is_open());
     /* The tester's controls answer: the strip switches tasks. */
     while (servo_screen_take(&junk)) { }
@@ -2992,7 +3080,7 @@ static void connect_powered(void)
 {
     g_rig.rail = true;
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
@@ -3018,9 +3106,9 @@ TEST_CASE(leaving_servo_switches_its_supply_off_once_the_port_lets_go)
     link_up();
     servo_output_on();
     CHECK_EQ(supply_screen_owner(), SUPPLY_BY_SERVO);
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     CHECK(kst_panel_is_open());
-    screen_tap(PROG_X, BTN_Y);
+    program_close();
     CHECK(!kst_panel_is_open());
     screen_tap(SUP_V_X, SUP_ROW_Y);
     screen_key(UI_KEY_CANCEL);
@@ -3094,7 +3182,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     fresh_screen();
     g_rig.rail = true;
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     CHECK(!supply_screen_port_held());
     const float v0 = supply_screen_set_v();
     const float i0 = supply_screen_set_i();
@@ -3154,7 +3242,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK(!supply_screen_port_held());
     /* And free again. */
-    screen_tap(PROG_X, BTN_Y);
+    program_close();
     CHECK(!kst_panel_is_open());
     screen_tap(SUP_V_X, SUP_ROW_Y);
     screen_key(UI_KEY_5);
@@ -3165,7 +3253,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     fresh_screen();
     g_rig.rail = true;
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     ev(SUP_OUT_X, SUP_ROW_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 20; ++i) {
         scr->tick(0.025f);
@@ -3183,7 +3271,7 @@ TEST_CASE(the_supplys_controls_are_held_for_as_long_as_the_port)
     /* A refused CONNECT holds nothing. */
     fresh_screen();
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     servo_screen_set_armed(true);
     tap(val(PG_SERVO, 0, 0));
     settle();
@@ -3207,7 +3295,7 @@ TEST_CASE(connect_is_refused_over_the_supplys_limits)
             supply_screen_settings_loaded();
             g_rig.rail = true;
             link_up();
-            screen_tap(PROG_X, BTN_Y);
+            program_open();
             const unsigned starts = g_rig.starts;
             tap(val(PG_SERVO, 0, 0));
             settle();
@@ -3239,7 +3327,7 @@ TEST_CASE(a_panel_that_starts_under_a_session_reads_its_options_at_the_entry)
     for (int wait = 0; wait <= 10000; wait += 2500) {
         fresh_screen();
         link_up();
-        screen_tap(PROG_X, BTN_Y);
+        program_open();
         tap(val(PG_SERVO, 0, 0));
         settle();
         CHECK(kst_panel_holds_port());
@@ -3277,7 +3365,7 @@ TEST_CASE(an_armed_bench_is_not_connected_and_a_held_port_takes_no_arm)
         fresh_screen();
         ui_text_set_language((ui_lang_t)lang);
         link_up();
-        screen_tap(PROG_X, BTN_Y);
+        program_open();
         /* Armed: CONNECT is refused by name and nothing is sent. */
         servo_screen_set_armed(true);
         tap(val(PG_SERVO, 0, 0));
@@ -3332,7 +3420,7 @@ TEST_CASE(a_port_found_held_ends_a_hold_of_arm)
 
     fresh_screen();
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     tap(val(PG_SERVO, 0, 0));
     settle();
     CHECK(kst_panel_holds_port());
@@ -3415,7 +3503,7 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
     const gfx_rect_t apply = (fresh_screen(), kst_panel_apply_rect());
 
     link_up();
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     tap(val(PG_SERVO, 0, 0));
     settle();
     tap(val(PG_SERVO, 3, 0));
@@ -3779,7 +3867,9 @@ int main(void)
     RUN(every_wrapped_text_takes_two_rows_at_most);
     RUN(no_german_text_writes_a_number_with_a_comma);
     RUN(commanded_shows_no_pulse_while_the_programmer_holds_the_port);
-    RUN(program_opens_the_programmer_over_the_left_card_and_closes_it);
+    RUN(program_lists_the_programmer_and_its_row_opens_it_a_level_down);
+    RUN(the_home_tag_in_a_held_session_asks_for_leave_then_climbs);
+    RUN(the_kst_row_names_the_ports_pin_from_the_feed);
     RUN(no_setting_that_reaches_the_port_changes_while_it_is_held);
     RUN(the_programmer_stays_on_the_screen_while_the_port_is_held);
     RUN(leaving_servo_switches_its_supply_off_once_the_port_lets_go);

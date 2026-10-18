@@ -4,8 +4,11 @@
  * servo_screen_int.h and servo_workbench.c.  If the layout moves these move
  * with it.  Taken by servo_rig.h and render_screen.c.
  *
- *   - the strip: LIVE, TEST, SETTINGS from x 9, 112 px each, 4 px apart,
- *     y 6 to 30; PROGRAM in the same row over the right card;
+ *   - the strip: LIVE, TEST, PROGRAM, SETTINGS from x 9, 112 px each, 4 px
+ *     apart, y 6 to 30;
+ *   - PROGRAM's list (prog_registry.h): rows from x 16 to 484, y 48, 34 px
+ *     each and 40 px apart, with no bar over them (9 rows or fewer that
+ *     fit); the first row is the KST and Chaservo programmer;
  *   - SETTINGS' own page tabs OUTPUT, SWEEP, DUT from x 16, 104 px each,
  *     y 46 to 72, and their rows from y 82, 40 px apart;
  *   - TEST's two run cards from y 46 and 224, each with SETTINGS top right
@@ -20,8 +23,10 @@
 #define SV_TAB_Y           18
 #define SV_TAB_LIVE_X      65
 #define SV_TAB_TEST_X      181
-#define SV_TAB_SETTINGS_X  297
-#define SV_PROGRAM_X       740
+#define SV_TAB_PROGRAM_X   297
+#define SV_TAB_SETTINGS_X  413
+#define SV_PROG_ROW_X      250
+#define SV_PROG_ROW_Y(r)   (65 + 40 * (r))
 
 #define SV_PAGE_X(i)       (68 + 108 * (i))
 #define SV_PAGE_Y          59

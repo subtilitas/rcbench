@@ -232,9 +232,11 @@ Untergrenze:
 - Aufrufe über einen Funktionszeiger, außer den Aufrufen des Routers in einen
   Bildschirm, die das Werkzeug aus der Tabelle jedes Bildschirms liest, und
   den Callbacks des Link-Ports, den Flash-Callbacks des Zeichnungsspeichers,
-  denen der Startprüfung nach einem Update und den Callbacks des Links des
-  SERVO-Bildschirms in das Panel, denen es nach Namen folgt
-  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`): 221
+  denen der Startprüfung nach einem Update, den Callbacks des Links des
+  SERVO-Bildschirms in das Panel und den Hooks der Programmierer, die
+  SERVO > PROGRAMMIEREN öffnet, denen es nach Namen folgt
+  (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
+  `PROG_CALLS`): 221
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Aufrufe in das ROM (Read-Only Memory) des ESP32-S3, dessen Frames nicht in
@@ -409,7 +411,7 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 17
-Objekten, 163 016 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 163 048 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
@@ -417,7 +419,7 @@ wpa_supplicant, 13 742 Bytes.
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35 400 |
-| `servo_screen` | ui | 29 477 |
+| `servo_screen` | ui | 29 509 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 412 |
 | `motor_screen` | ui | 19 968 |

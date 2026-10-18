@@ -23,6 +23,7 @@
 #include "kst_panel.h"
 #include "kst_reg.h"
 #include "kst_rig.h"
+#include "link_pages.h"
 #include "pdmini.h"
 #include "sense_link.h"
 #include "servo_limrun.h"
@@ -46,9 +47,8 @@
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
 static const gfx_rect_t AREA = { 6, 6, 488, 420 };
 
-/* PROGRAM over the SERVO screen's right card, and the strip's LIVE and
- * SETTINGS tabs, all in the strip's row (servo_spots.h). */
-#define PROG_X SV_PROGRAM_X
+/* The strip's PROGRAM, LIVE and SETTINGS tabs (servo_spots.h). */
+#define PROG_X SV_TAB_PROGRAM_X
 #define SETB_X SV_TAB_SETTINGS_X
 #define LIVE_X SV_TAB_LIVE_X
 #define BTN_Y  SV_TAB_Y
@@ -103,6 +103,11 @@ static inline void fresh_screen(void)
     scr = servo_screen();
     scr->reset();
     rig_fresh();
+    /* An IOmcu that reports its servo PWM bank, which the programming
+     * port is a channel of: PROGRAM's KST row is live. */
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = LINK_CAP_SERVO_PWM;
+    ui_router_set_status(&st);
     scr->enter();
 }
 
@@ -353,4 +358,20 @@ static inline void screen_tap(int x, int y)
     ev(x, y, TOUCH_EVENT_UP, 1);
     scr->tick(0.02f);
     scr->render(&cv, 0);
+}
+
+/* PROGRAM, then its KST and Chaservo row: the session opens one level
+ * down, over the left column. */
+static inline void program_open(void)
+{
+    screen_tap(PROG_X, BTN_Y);
+    screen_tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+}
+
+/* The session's CLOSE: back to PROGRAM's list, or the question for LEAVE
+ * while the port is in programming. */
+static inline void program_close(void)
+{
+    const gfx_rect_t r = kst_panel_close_rect();
+    screen_tap(r.x + r.w / 2, r.y + r.h / 2);
 }
