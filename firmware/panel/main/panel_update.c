@@ -204,9 +204,14 @@ static cu_step_t cu_step_of(uint8_t phase)
     }
 }
 
+/* An active update withdraws the offer in the same snapshot that shows its
+ * START taken. */
 static void cu_publish_progress(bool active)
 {
     snap_lock();
+    if (active) {
+        s_snap.cu.offered = false;
+    }
     s_snap.cu.active = active;
     s_snap.cu.step   = (uint8_t)cu_step_of(s_cu.phase);
     s_snap.cu.block  = s_cu.block;
@@ -343,8 +348,11 @@ static __attribute__((noinline)) void cu_ended(void)
         cu_alert_failed();
     }
     cu_enter(CU_IDLE);
-    /* The link-up after the update checks the build again. */
+    /* The link-up after the update checks the build again; a coprocessor of
+     * another protocol major gives no link-up, and its next answer to the
+     * probe checks it. */
     cu_publish_check(CU_CHECK_NONE);
+    link_uph_mismatch_rearm(&s_mismatch);
     s_cu_took_down = false;
     s_cu_missed = false;
     /* The link-lost screen counts from here, not from the update's start:
@@ -425,13 +433,14 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         }
         ESP_LOGI(TAG, "coprocessor update: %lu bytes",
                  (unsigned long)CU_LEN);
-        cu_publish_offer(false);
         link_uph_update(&s_cu, CU_IMG, CU_LEN, now_ms());
         cu_enter(CU_UPDATING);
-        cu_publish_check(CU_CHECK_UPDATING);
         s_cu_took_down = false;
         s_cu_missed = false;
+        /* The START taken and the update running in one snapshot: a render
+         * side that saw the one without the other would take it for spent. */
         cu_publish_progress(true);
+        cu_publish_check(CU_CHECK_UPDATING);
         return true;
     case CU_UPDATING:
         break;

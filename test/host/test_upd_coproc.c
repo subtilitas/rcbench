@@ -4,7 +4,9 @@
  * two lines of the left column; the hold at 1.99 s and 2.00 s, slid off,
  * cancelled and left; a link lost under it; a second hold while one runs;
  * the progress the driver opens for it and the way back to UPDATES, after
- * the update and after a START the control task spent; and the question's
+ * the update, after a START the control task spent and across a snapshot
+ * that shows the START taken before the update active; a mismatched
+ * coprocessor's build check owed again after an update; and the question's
  * gate on the radio and a panel install.
  *
  * SPDX-License-Identifier: MIT
@@ -16,6 +18,7 @@
 #include "guard_canvas.h"
 
 #include "coproc_update_screen.h"
+#include "link_update_host.h"
 #include "settings.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -433,6 +436,79 @@ TEST_CASE(a_start_from_updates_the_control_task_spends_returns_to_updates)
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_RADIO);
 }
 
+/*
+ * The START taken a snapshot before the update shows active: the frame
+ * between finds the START spent and goes to UPDATES; the next opens the
+ * progress again, and its end still returns to UPDATES, not the menu.
+ */
+TEST_CASE(a_start_seen_taken_before_active_still_returns_to_updates)
+{
+    on_updates();
+    hold_for(2.00f);
+    cu_hand_t h = frame();
+    CHECK_EQ(h.starts, 1u);
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    g_feed.starts_taken = 1u;          /* taken, not active yet */
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    g_feed.active = true;
+    g_feed.check = CU_CHECK_UPDATING;
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
+    g_feed.active = false;
+    g_feed.check = CU_CHECK_NONE;
+    (void)frame();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+}
+
+/*
+ * A coprocessor of another protocol major answers every probe while the
+ * link stays down.  Its check is owed once per mismatch, and again after
+ * an update that ended with the old image still answering, so UPDATES does
+ * not wait for a check that never comes.
+ */
+TEST_CASE(a_mismatched_coprocessor_is_checked_again_after_an_update)
+{
+    link_uph_mismatch_t m;
+    memset(&m, 0, sizeof(m));
+    CHECK(!link_uph_mismatch_answers(&m));
+    CHECK(link_uph_mismatch_probe(&m, true));    /* first answer: check */
+    CHECK(link_uph_mismatch_answers(&m));
+    CHECK(!link_uph_mismatch_probe(&m, true));   /* every later one: none */
+    CHECK(!link_uph_mismatch_probe(&m, true));
+    /* An update ended; the old image answers the next probe. */
+    link_uph_mismatch_rearm(&m);
+    CHECK(link_uph_mismatch_answers(&m));        /* still there meanwhile */
+    CHECK(link_uph_mismatch_probe(&m, true));
+    CHECK(!link_uph_mismatch_probe(&m, true));
+    /* Rearmed, then nobody answers: the next answer is news anyway. */
+    link_uph_mismatch_rearm(&m);
+    CHECK(!link_uph_mismatch_probe(&m, false));
+    CHECK(!link_uph_mismatch_answers(&m));
+    CHECK(link_uph_mismatch_probe(&m, true));
+    CHECK(!link_uph_mismatch_probe(&m, true));
+    /* A matching answer ends the mismatch. */
+    CHECK(!link_uph_mismatch_probe(&m, false));
+    CHECK(link_uph_mismatch_probe(&m, true));
+    /* No state: nothing owed, nothing answers. */
+    CHECK(!link_uph_mismatch_probe(NULL, true));
+    CHECK(!link_uph_mismatch_answers(NULL));
+    link_uph_mismatch_rearm(NULL);
+
+    /* UPDATES through it: a mismatched coprocessor's update failed, the
+     * check owed again runs and finds the other build: the hold is back. */
+    on_updates();
+    g_feed.check = CU_CHECK_NONE;      /* the failed update's end */
+    (void)frame();
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_UNKNOWN);
+    link_uph_mismatch_rearm(&m);
+    if (link_uph_mismatch_probe(&m, true)) {
+        g_feed.check = CU_CHECK_DIFFERENT;   /* cu_link_up()'s check */
+    }
+    (void)frame();
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_READY);
+}
+
 TEST_CASE(a_link_loss_during_the_hold_ends_it_unfired)
 {
     on_updates();
@@ -720,6 +796,8 @@ int main(void)
     RUN(the_updates_hold_at_2_00_s_starts_once_and_opens_the_progress);
     RUN(a_declined_offer_starts_from_updates_and_returns_there);
     RUN(a_start_from_updates_the_control_task_spends_returns_to_updates);
+    RUN(a_start_seen_taken_before_active_still_returns_to_updates);
+    RUN(a_mismatched_coprocessor_is_checked_again_after_an_update);
     RUN(a_link_loss_during_the_hold_ends_it_unfired);
     RUN(every_gate_greys_the_hold_and_takes_no_press);
     RUN(a_second_hold_while_one_runs_starts_nothing);

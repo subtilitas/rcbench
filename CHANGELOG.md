@@ -125,7 +125,9 @@ history is in git.
   takes: another build, SAFE, the supply output off, the Wi-Fi radio wholly
   off and no panel install. Otherwise it is grey and the line names the
   first of 11 reasons that holds. After an image found on trial is kept,
-  the panel compares the coprocessor's build with its own again.
+  the panel compares the coprocessor's build with its own again, and after
+  an update of a coprocessor of another protocol major ends, its next
+  answer to the 1 s identity probe starts that comparison.
 
 ### Changed
 

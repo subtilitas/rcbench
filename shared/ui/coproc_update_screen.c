@@ -382,11 +382,13 @@ static void start_from_updates(const cu_feed_t *f)
     ui_router_goto(SCREEN_COPROC_UPDATE);
 }
 
-/* Where a progress that has ended goes. */
-static void progress_done(cu_driver_t *d)
+/* Where a progress that has ended goes.  The origin stays until another
+ * start sets it: a snapshot that shows the START taken a moment before it
+ * shows the update active lands here, and the progress the next frame
+ * opens again still returns to UPDATES. */
+static void progress_done(const cu_driver_t *d)
 {
     ui_router_goto(d->from_updates ? SCREEN_UPDATES : SCREEN_OVERVIEW);
-    d->from_updates = false;
 }
 
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,

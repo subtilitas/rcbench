@@ -32,6 +32,7 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "link_port.h"
+#include "link_update_host.h"
 #include "log_cadence.h"
 #include "log_viewer_screen.h"
 #include "motor_screen.h"
@@ -864,6 +865,10 @@ void art_slice(void);
 extern atomic_bool s_fw_quiet_req;
 extern atomic_bool s_fw_quiet_ack;
 extern bool        s_wifi_ok;
+
+/* A coprocessor of another protocol major answering the probe; control
+ * task.  panel_poll.c. */
+extern link_uph_mismatch_t s_mismatch;
 
 /* Whether the coprocessor's update may start: see fw_coproc_may_start().
  * From any task. */

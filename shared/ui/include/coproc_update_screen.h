@@ -134,7 +134,8 @@ typedef struct {
 typedef struct {
     uint32_t shown_gen;         /**< the offer the question opened for      */
     uint32_t starts_sent;       /**< STARTs handed to the update side       */
-    bool     from_updates;      /**< the progress was opened from UPDATES   */
+    bool     from_updates;      /**< the last update started from UPDATES;
+                                     the question's opening clears it      */
 } cu_driver_t;
 
 /** What one frame hands to the update side. */
