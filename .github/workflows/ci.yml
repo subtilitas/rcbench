@@ -114,7 +114,7 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
-      # The board drawings the coprocessor serves are generated from the
+      # The board drawings the IOmcu serves are generated from the
       # configurator's panel drawing and checked in, so the firmware build
       # needs no Python and no Node.js.
       - name: The checked-in board drawings match the configurator's
@@ -425,7 +425,7 @@ jobs:
 
   panel:
     name: Panel (ESP-IDF ${{ matrix.idf }})
-    # The v5.4 build carries the coprocessor image of this commit, as the
+    # The v5.4 build carries the IOmcu image of this commit, as the
     # release does; the v5.5.3 build carries none, as a build without the
     # option does.
     needs: [iomcu]
@@ -450,7 +450,7 @@ jobs:
 
       # Inside firmware/panel, the directory the build runs in, so the
       # container sees it under the same relative path.
-      - name: Fetch the coprocessor image
+      - name: Fetch the IOmcu image
         if: matrix.image
         uses: actions/download-artifact@v7
         with:
@@ -480,7 +480,7 @@ jobs:
 
       # The symbol target_add_binary_data() names the embedded image by:
       # present in the build with the image, absent in the one without.
-      - name: The coprocessor image is carried only when asked for
+      - name: The IOmcu image is carried only when asked for
         env:
           IMAGE: ${{ matrix.image }}
         run: |
@@ -490,7 +490,7 @@ jobs:
           else
             carried=false
           fi
-          echo "carries the coprocessor image: $carried"
+          echo "carries the IOmcu image: $carried"
           [ "$carried" = "${IMAGE:-false}" ]
 
       # Every task's deepest call chain, read out of the ELF, against its
@@ -566,7 +566,7 @@ jobs:
     # The env context is not available in a job name (only github, needs,
     # strategy, matrix, vars and inputs are), so the pin is spelled out here
     # and lives in env.PICO_SDK_TAG below.
-    name: Coprocessor (pico-sdk 2.3.0)
+    name: IOmcu (pico-sdk 2.3.0)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -679,7 +679,7 @@ jobs:
             cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi \
             libstdc++-arm-none-eabi-newlib libusb-1.0-0-dev
 
-      # The same key as the coprocessor job: one SDK checkout for both.
+      # The same key as the IOmcu job: one SDK checkout for both.
       - name: Cache the pico-sdk
         id: sdk-cache
         uses: actions/cache@v6

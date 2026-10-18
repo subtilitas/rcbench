@@ -1356,8 +1356,8 @@ def check_sdk_tags(problems: list[str]) -> None:
     found.append(("release.yml PICO_SDK_TAG", first(
         "PICO_SDK_TAG in release.yml", r"PICO_SDK_TAG:\s*'([\d.]+)'", rel)))
     found.append(("ci.yml job name", first(
-        "'Coprocessor (pico-sdk X)' job name in ci.yml",
-        r"name: Coprocessor \(pico-sdk ([\d.]+)\)", ci)))
+        "'IOmcu (pico-sdk X)' job name in ci.yml",
+        r"name: IOmcu \(pico-sdk ([\d.]+)\)", ci)))
     for page, build_on, build_by in (
             ("Building.md", r"IOmcu build on pico-sdk ([\d.]+)",
              r"CI builds ([\d.]+) \|"),

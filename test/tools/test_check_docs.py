@@ -322,7 +322,7 @@ def sdk_tree(tree, **change):
         ".github/workflows/ci.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n"
             "        idf: [v5.4, v5.5]\n"
-            "    name: Coprocessor (pico-sdk 2.3.0)\n",
+            "    name: IOmcu (pico-sdk 2.3.0)\n",
         ".github/workflows/release.yml":
             "env:\n  PICO_SDK_TAG: '2.3.0'\n  esp_idf_version: v5.4\n",
         "docs/Building.md":
