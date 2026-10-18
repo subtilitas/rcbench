@@ -276,7 +276,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
          * it, and puts it back. */
         lr.armed = false;
         lr_ms(40u);
-        screen_tap(PROG_X, BTN_Y);
+        program_open();
         CHECK(kst_panel_is_open());
         tap(val(PG_SERVO, 0, 0));
         settle();
@@ -671,7 +671,7 @@ TEST_CASE(a_session_after_a_limit_run_saves_its_own_backup)
     CHECK(left < 150u && right < 150u);
     lr.armed = false;
     lr_ms(40u);
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     CHECK(kst_panel_is_open());
     tap(val(PG_SERVO, 0, 0));
     settle();
@@ -712,7 +712,7 @@ TEST_CASE(a_run_write_refused_before_it_is_sent_switches_write_enable_off)
     lr_fresh(false);
     lr.armed = false;
     lr_ms(40u);
-    screen_tap(PROG_X, BTN_Y);
+    program_open();
     CHECK(kst_panel_is_open());
     tap(val(PG_SERVO, 0, 0));
     settle();

@@ -21,6 +21,8 @@
 #include "greatest.h"
 
 #include "gfx.h"
+#include "kst_panel.h"
+#include "link_pages.h"
 #include "servo_screen.h"
 #include "settings.h"
 #include "supply_screen.h"
@@ -65,6 +67,11 @@ static inline void fresh(void)
     supply_screen_settings_loaded();
     scr = servo_screen();
     scr->reset();
+    /* An IOmcu that reports its servo PWM bank: PROGRAM's KST row is
+     * live. */
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = LINK_CAP_SERVO_PWM;
+    ui_router_set_status(&st);
     servo_cmd_t junk;
     while (servo_screen_take(&junk)) { }
 }
@@ -121,6 +128,18 @@ static inline void tap(int x, int y) { ev(x, y, TOUCH_EVENT_DOWN, 1);
 static inline void open_settings(void)  { tap(SV_TAB_SETTINGS_X, SV_TAB_Y); }
 static inline void close_settings(void) { tap(SV_TAB_LIVE_X, SV_TAB_Y); }
 static inline void open_test(void)      { tap(SV_TAB_TEST_X, SV_TAB_Y); }
+static inline void open_program(void)   { tap(SV_TAB_PROGRAM_X, SV_TAB_Y); }
+/* PROGRAM's KST and Chaservo row, and the session's CLOSE. */
+static inline void open_kst(void)
+{
+    open_program();
+    tap(SV_PROG_ROW_X, SV_PROG_ROW_Y(0));
+}
+static inline void close_kst(void)
+{
+    const gfx_rect_t r = kst_panel_close_rect();
+    tap(r.x + r.w / 2, r.y + r.h / 2);
+}
 /* A run card's SETTINGS on TEST: the run's settings, one level down. */
 static inline void open_run_settings(int k)
 {

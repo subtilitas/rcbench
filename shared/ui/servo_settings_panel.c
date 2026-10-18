@@ -317,7 +317,7 @@ bool target_locked_for(setting_id_t id)
         }
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
-           || servo_limrun_running(&s.lim) || kst_panel_holds_port();
+           || servo_limrun_running(&s.lim) || prog_holds();
 }
 
 static bool target_locked(const ov_row_t *r)
@@ -626,7 +626,11 @@ void ov_rest(const touch_event_t *evt)
         if (up) {
             ov_let_go();
         }
-        if (r == UI_TEXTKEY_OK) {
+        /* The keyboard covers the strip: on PROGRAM it types the list's
+         * search, on DUT the name. */
+        if (r == UI_TEXTKEY_OK && wb_task() == UI_WB_PROGRAM) {
+            prog_search_done(name);
+        } else if (r == UI_TEXTKEY_OK) {
             settings_set_text(SET_TEXT_DUT_NAME, name);
             settings_request_save();
         }
@@ -791,23 +795,6 @@ void ov_rest(const touch_event_t *evt)
             lim_end_now(SERVO_TEST_AB_OPERATOR);
         }
         ++s.test_rev;
-        break;
-    case OP_PROGRAM:
-        if (gfx_rect_contains(s.prog_btn, x, y)) {
-            /* PROGRAM opens the programmer over the left card and asks it
-             * to close; it stays while the port is in programming.  The
-             * settings give way to it. */
-            if (kst_panel_is_open()) {
-                kst_panel_close();
-            } else {
-                /* A run would go on behind the programmer, stepping the
-                 * rail and the position of the port CONNECT takes. */
-                test_end_now(SERVO_TEST_AB_OPERATOR);
-                close_panels();
-                kst_panel_open();
-            }
-            servo_invalidate();
-        }
         break;
     case OP_RUN_SET:
         /* A run card's SETTINGS: that run's settings, one level down. */

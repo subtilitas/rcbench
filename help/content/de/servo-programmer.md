@@ -6,7 +6,13 @@ order: 22
 
 # Servo-Programmierer
 
-Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte von [SERVO](servo.md), öffnet ihn über der linken Spalte samt den Reitern der Leiste; PROGRAMMIEREN schließt ihn wieder zu der Aufgabe, die er bedeckte. PROGRAMMIEREN beendet einen laufenden automatischen Test.
+Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. Auf [SERVO](servo.md) listet PROGRAMMIEREN in der Leiste die Programmierer. Die Zeile `KST- und Chaservo-Servos` öffnet diesen über der linken Spalte samt den Reitern der Leiste, eine Ebene tiefer; SCHLIESSEN oder das Home-Tag führt zurück zur Liste. Das Öffnen beendet einen laufenden automatischen Test.
+
+![Die Liste von PROGRAMMIEREN](view:servo-program)
+
+Die Zeile nennt, was sie ansteuert, `PROG-PORT GP13`. Sie ist gedimmt und öffnet nichts, solange der IOmcu, die RP2350-Platine, kein Servo-PWM meldet, auch wenn kein IOmcu antwortet: die Zeile zeigt dann `IOMCU OHNE SERVO PWM`.
+
+![Die Zeile gedimmt](view:servo-program-nocap)
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench ist mit ihnen nicht verbunden, wird von ihnen nicht empfohlen und nicht gefördert. Die Namen sagen, mit welchen Servos der Programmierer arbeitet.
 
@@ -155,7 +161,7 @@ Ein Schreiben gilt als unterbrochen, wenn der Link abreißt, eine Platine neu st
 
 ![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
 
-VERLASSEN, oder SCHLIESSEN im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2 s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben.
+VERLASSEN, oder SCHLIESSEN oder das Home-Tag im Programmiermodus, öffnet PROGRAMMIERMODUS VERLASSEN: Der Port geht zurück auf Servo-PWM, die Versorgung bleibt, wie sie ist, und das Servo kann fahren. HALTEN ZUM VERLASSEN übernimmt es nach 2 s. Der Port hält seine Leitung für WARTEZEIT VOR PWM auf low und gibt den Pin dann dem Tester. Das Verlassen des Bildschirms SERVO ist kein VERLASSEN: Sitzung und Port bleiben, und beim nächsten Aufruf ist der Programmierer auf PROGRAMMIEREN wieder offen. Über einem Tastenfeld, einer Liste, einer Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag zuerst dieses Feld.
 
 ## Verwandte Seiten
 

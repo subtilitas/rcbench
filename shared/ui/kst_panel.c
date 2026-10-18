@@ -2116,6 +2116,31 @@ void kst_panel_close(void)
     ++k.rev;
 }
 
+void kst_panel_back(void)
+{
+    if (kst_panel_editor() != 0) {
+        /* Over an editor, the home tag is its CANCEL: the editor closes
+         * and the page under it stays. */
+        kst_panel_cancel();
+        close_editors();
+        ++k.rev;
+        return;
+    }
+    kst_panel_close();
+}
+
+uint8_t kst_panel_pin(void)
+{
+    const uint8_t port = port_no();
+
+    if (port >= LINK_PG_PORTS_MAX
+        || (k.prog.f.port_pin_known & (1u << port)) == 0u
+        || k.prog.f.port_pin[port] > KST_PROG_PIN_LAST) {
+        return PROG_REG_NO_PIN;
+    }
+    return k.prog.f.port_pin[port];
+}
+
 static void rest(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -3586,3 +3611,24 @@ void kst_panel_render(gfx_canvas_t *c)
     }
     draw_page(c);
 }
+
+/* The session SERVO > PROGRAM opens from its row (prog_registry.h). */
+const prog_page_set_t kst_panel_pages = {
+    .init          = kst_panel_init,
+    .entry         = kst_panel_screen_entry,
+    .open          = kst_panel_open,
+    .is_open       = kst_panel_is_open,
+    .back          = kst_panel_back,
+    .holds_port    = kst_panel_holds_port,
+    .armed         = kst_panel_bench_armed,
+    .tick          = kst_panel_tick,
+    .has_press     = kst_panel_has_press,
+    .event         = kst_panel_event,
+    .render        = kst_panel_render,
+    .revision      = kst_panel_revision,
+    .hold_revision = kst_panel_hold_revision,
+    .hold_rect     = kst_panel_apply_rect,
+    .leave         = kst_panel_leave,
+    .cancel        = kst_panel_cancel,
+    .pin           = kst_panel_pin,
+};

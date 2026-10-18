@@ -428,24 +428,26 @@ columns under INA3221.
 ![Servo](img/servo.png)
 
 SERVO is a workbench. The strip under the band holds its tasks, **LIVE**,
-**TEST** and **SETTINGS** (German `LIVE`, `TEST`, `OPTIONEN`), 112 px a
-tab. The tile opens LIVE. A tab switch is no navigation level: the home tag
-goes home from every task, and climbs one level only from a run's settings
-back to TEST. Each task keeps its page and what is selected on it until the
-panel restarts. Leaving SERVO switches the bench to SAFE, from any task.
+**TEST**, **PROGRAM** and **SETTINGS** (German `LIVE`, `TEST`,
+`PROGRAMMIEREN`, `OPTIONEN`), 112 px a tab. The tile opens LIVE. A tab
+switch is no navigation level: the home tag goes home from every task, and
+climbs one level only from a run's settings back to TEST and from a
+programmer back to PROGRAM's list. Each task keeps its page and what is
+selected on it until the panel restarts. Leaving SERVO switches the bench to
+SAFE, from any task.
 
 | Task | Left card, the page area |
 | --- | --- |
 | LIVE | the dial, and a run's box over it while a run is under way or its result is shown |
 | TEST | the AUTOMATIC TEST and LIMIT RUN cards, and SUPPLY's caps, read-only |
+| PROGRAM | the list of programmers, one row each; a row opens its programmer over the left column |
 | SETTINGS | the pages OUTPUT, SWEEP and DUT |
 
 The right card is the output card, the same on every task: the readings,
-the SET line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM.
-PROGRAM sits in the strip's row over the right card. A panel -- a keypad,
-the keyboard, a list, a warning, the question or the servo programmer --
-covers the whole left column, the strip's tabs with it, and is answered or
-closed before the task changes.
+the SET line, SPEED, the TARGET row, CENTRE, SWEEP, RELEASE and ARM. A
+panel -- a keypad, the keyboard, a list, a warning, the question or a
+programmer -- covers the whole left column, the strip's tabs with it, and
+is answered or closed before the task changes.
 
 On LIVE, while the bench is ARMED, drag anywhere on the sweep to command a position. The solid arm is the measured
 position; the faint arm is the commanded position. The gap between them is the
@@ -456,7 +458,7 @@ the button, is what returns the surfaces to centre -- and even that leaves the
 pins bound and driving, at the middle of their travel. A switch to SAFE, or leaving
 the screen, which switches to SAFE, is what stops the edges. With the rotary knob on,
 turning it moves the horn from where it is ([the knob](#application-the-rotary-knob)),
-on LIVE alone: on TEST, on SETTINGS, under a panel and under the servo
+on LIVE alone: on TEST, on PROGRAM, on SETTINGS, under a panel and under a
 programmer the dial is out of sight and a turn moves nothing. A turn in the
 frame in which LIVE comes back moves nothing either; the next one does.
 
@@ -835,16 +837,46 @@ automatic test's reasons end it with the output off.
 
 ### Programmer
 
-PROGRAM, in the strip's row over the right card, opens the programmer for
-KST and Chaservo servos over the left column, the strip's tabs with it;
-PROGRAM again closes it to the task it covered. It takes the coprocessor's
-programming port, GP13 on pad 17 by default, out of PWM (pulse-width
-modulation) and reads and writes the servo's settings on its signal wire.
-It connects only with TARGET on the right card set to PROG PORT; with
-OUTPUTS it shows `Use the programming port to program a servo.` and `Set
-TARGET on the right card to PROG PORT.`, and CONNECT is locked. While it
-holds the port it stays open and a tap on PROGRAM closes nothing; ARM is drawn disabled and takes no
-press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
+![PROGRAM's list](img/servo-program.png)
+![A row the IOmcu lacks the capability for](img/servo-program-nocap.png)
+
+PROGRAM in the strip shows the list of programmers in the page area, one
+row each: the name on the left, and on the right what the row drives with
+its pin, `PROG PORT GP13`, then `>`. The list has one row, `KST and
+Chaservo servos` (German `KST- und Chaservo-Servos`). A tap on a live row
+opens its programmer over the left column, the strip's tabs with it, one
+level down, and ends a running automatic test. CLOSE in the programmer, or
+the home tag, climbs back to the list; the next home tag goes home. Over a
+keypad, a list, a warning or the keyboard in the programmer the home tag
+closes that one, and the programmer stays.
+
+A row is drawn dimmed, with its reason in place of its port, and a tap on
+it opens nothing:
+
+| Reason | When |
+| --- | --- |
+| `IOMCU HAS NO SERVO PWM` | the IOmcu, the RP2350 board, does not report the capability the row needs; with no IOmcu answering it reports none. The capability's name is the link's, the same in German |
+| `PORT IN USE` | another row's programmer holds the same programming port |
+
+The rows come from one table in the firmware, `shared/ui/prog_registry.c`.
+A new servo maker is one row there and its programmer, never a tile or a
+tab. A list of more than 9 rows gets a SEARCH box that opens the keyboard,
+`*` for any text; a list showing more than 8 rows draws them under their
+group headings; a list taller than the page area pages with `^` and `v`. A
+list holds 48 rows at most. With one row none of these is drawn. Modelled
+protocols without a transport on the IOmcu, such as the Hitec class on
+PROGRAMMER, have no row.
+
+The KST and Chaservo programmer takes the IOmcu's programming port, GP13 on
+pad 17 by default, out of PWM (pulse-width modulation) and reads and writes
+the servo's settings on its signal wire. It connects only with TARGET on
+the right card set to PROG PORT; with OUTPUTS it shows `Use the programming
+port to program a servo.` and `Set TARGET on the right card to PROG PORT.`,
+and CONNECT is locked. While it holds the port it stays open: CLOSE and the
+home tag open LEAVE PROGRAMMING, and while the port moves into or out of
+programming they do nothing. Leaving SERVO leaves the port as it is; back
+on SERVO the programmer is open again on PROGRAM. ARM is drawn disabled and
+takes no press, CENTRE, RELEASE and STOP work, and COMMANDED reads `---`: the
 tester sends no pulse to the port. In PWM with a PD mini answering, the
 programmer's PORT row names the voltage and the current limit CONNECT sets,
 `PORT  5.0 V  1000 mA`. The set points and OUTPUT ON of

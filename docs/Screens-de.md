@@ -469,10 +469,11 @@ ESC und die Spalten des Fensters unter INA3221.
 ![Servo](img/de/servo.png)
 
 SERVO ist eine Werkbank. Die Leiste unter dem Band trägt ihre Aufgaben,
-**LIVE**, **TEST** und **OPTIONEN**, 112 px je Reiter. Die Kachel öffnet
-LIVE. Ein Wechsel des Reiters ist keine Navigationsebene: das Home-Tag führt
-von jeder Aufgabe nach Hause und steigt nur aus den Einstellungen eines
-Laufs eine Ebene zurück zu TEST. Jede Aufgabe behält ihre Seite und ihre
+**LIVE**, **TEST**, **PROGRAMMIEREN** und **OPTIONEN**, 112 px je Reiter.
+Die Kachel öffnet LIVE. Ein Wechsel des Reiters ist keine Navigationsebene:
+das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den
+Einstellungen eines Laufs eine Ebene zurück zu TEST und aus einem
+Programmierer zurück zur Liste von PROGRAMMIEREN. Jede Aufgabe behält ihre Seite und ihre
 Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den
 Prüfstand auf SAFE, aus jeder Aufgabe.
 
@@ -480,13 +481,13 @@ Prüfstand auf SAFE, aus jeder Aufgabe.
 | --- | --- |
 | LIVE | das Zifferblatt, darüber das Feld eines Laufs, solange er läuft oder sein Ergebnis steht |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF und die Grenzen von SUPPLY, nur lesbar |
+| PROGRAMMIEREN | die Liste der Programmierer, eine Zeile je Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
 
 Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die
 Messwerte, die Zeile SOLL, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP,
-FREIGEBEN und ARM. PROGRAMMIEREN sitzt in der Zeile der Leiste über der
-rechten Karte. Ein Feld -- ein Tastenfeld, die Buchstabentastatur, eine
-Liste, eine Warnung, die Frage oder der Servo-Programmierer -- bedeckt die
+FREIGEBEN und ARM. Ein Feld -- ein Tastenfeld, die Buchstabentastatur,
+eine Liste, eine Warnung, die Frage oder ein Programmierer -- bedeckt die
 ganze linke Spalte samt den Reitern der Leiste und wird beantwortet oder
 geschlossen, bevor die Aufgabe wechselt.
 
@@ -503,7 +504,8 @@ ihres Wegs. Beendet werden die Flanken durch ein Schalten auf SAFE oder durch da
 Verlassen des Bildschirms, was auf SAFE schaltet. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
 ([der Knopf](#anwendung-der-drehknopf)), nur auf LIVE: auf TEST, auf
-OPTIONEN, unter einem Feld und unter dem Servo-Programmierer ist das
+PROGRAMMIEREN, auf OPTIONEN, unter einem Feld und unter einem
+Programmierer ist das
 Zifferblatt nicht zu sehen, und eine Drehung bewegt nichts. Eine Drehung im
 Frame, in dem LIVE zurückkommt, bewegt ebenfalls nichts; die nächste
 bewegt.
@@ -929,15 +931,48 @@ ausgeschaltetem Ausgang.
 
 ### Programmierer
 
-PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte, öffnet den
-Programmierer für KST- und Chaservo-Servos über der linken Spalte samt den
-Reitern der Leiste; PROGRAMMIEREN schließt ihn wieder zu der Aufgabe, die er
-bedeckte. Er nimmt den Programmierport des Koprozessors, im
-Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation) und liest
-und schreibt die Einstellungen des Servos über dessen Signalleitung. Er
-verbindet nur, wenn ZIEL auf der rechten Karte auf PROG-PORT steht; mit
-AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
-bleibt er offen, und ein Tippen auf PROGRAMMIEREN schließt nichts; ARM ist gesperrt gezeichnet
+![Die Liste von PROGRAMMIEREN](img/de/servo-program.png)
+![Eine Zeile, deren Fähigkeit der IOmcu fehlt](img/de/servo-program-nocap.png)
+
+PROGRAMMIEREN in der Leiste zeigt die Liste der Programmierer im
+Seitenbereich, eine Zeile je Programmierer: links der Name, rechts, was die
+Zeile ansteuert, mit dem Pin, `PROG-PORT GP13`, dann `>`. Die Liste hat
+eine Zeile, `KST- und Chaservo-Servos`. Ein Tippen auf eine aktive Zeile
+öffnet ihren Programmierer über der linken Spalte samt den Reitern der
+Leiste, eine Ebene tiefer, und beendet einen laufenden automatischen Test.
+SCHLIESSEN im Programmierer oder das Home-Tag steigt zurück zur Liste; das
+nächste Home-Tag führt nach Hause. Über einem Tastenfeld, einer Liste, einer
+Warnung oder der Buchstabentastatur im Programmierer schließt das Home-Tag
+dieses Feld, und der Programmierer bleibt.
+
+Eine Zeile wird gedimmt gezeichnet, mit ihrem Grund an der Stelle des Ports,
+und ein Tippen auf sie öffnet nichts:
+
+| Grund | Wann |
+| --- | --- |
+| `IOMCU OHNE SERVO PWM` | der IOmcu, die RP2350-Platine, meldet die Fähigkeit nicht, die die Zeile braucht; antwortet kein IOmcu, meldet er keine. Der Name der Fähigkeit ist der des Links und bleibt englisch |
+| `PORT BELEGT` | der Programmierer einer anderen Zeile hält denselben Programmierport |
+
+Die Zeilen stammen aus einer Tabelle in der Firmware,
+`shared/ui/prog_registry.c`. Ein neuer Servohersteller ist dort eine Zeile
+und sein Programmierer, nie eine Kachel und nie ein Reiter. Eine Liste mit
+mehr als 9 Zeilen erhält ein Feld SUCHE, das die Buchstabentastatur öffnet,
+`*` für beliebigen Text; eine Liste, die mehr als 8 Zeilen zeigt, zeichnet
+sie unter den Überschriften ihrer Gruppen; eine Liste, die höher ist als
+der Seitenbereich, blättert mit `^` und `v`. Eine Liste fasst höchstens 48
+Zeilen. Mit einer Zeile ist nichts davon gezeichnet. Modellierte Protokolle
+ohne Transport auf dem IOmcu, etwa die Hitec-Klasse auf PROGRAMMER, haben
+keine Zeile.
+
+Der Programmierer für KST- und Chaservo-Servos nimmt den Programmierport des
+IOmcu, im Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation)
+und liest und schreibt die Einstellungen des Servos über dessen
+Signalleitung. Er verbindet nur, wenn ZIEL auf der rechten Karte auf
+PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+bleibt er offen: SCHLIESSEN und das Home-Tag öffnen PROGRAMMIERMODUS
+VERLASSEN, und während der Port ins Programmieren oder hinaus wechselt,
+tun sie nichts. Das Verlassen von SERVO lässt den Port, wie er ist; zurück
+auf SERVO ist der Programmierer auf PROGRAMMIEREN wieder offen. ARM ist gesperrt gezeichnet
 und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
 SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die

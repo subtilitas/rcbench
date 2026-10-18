@@ -843,7 +843,7 @@ left as they are.
 | `bench SAFE` | DISARM, or anything else that switched the bench to SAFE |
 | `link lost` | the link to the coprocessor went down during the run |
 | `SERVO screen left` | another screen opened |
-| `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, PROGRAM |
+| `stopped by the operator` | STOP TEST, a finger on the dial, CENTRE, SWEEP, RELEASE, a tap on a set point, a programmer opened from PROGRAM's list |
 | `servo settings changed` | the type, frame rate, pulses, trim, travel, reverse or SPEED changed |
 | `touch events lost` | events went missing between two frames |
 | `supply not answering` | a reading marked not answering |

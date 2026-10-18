@@ -45,6 +45,7 @@
 #include "splash_screen.h"
 #include "outputs_screen.h"
 #include "picker_screen.h"
+#include "prog_registry.h"
 #include "programmer_screen.h"
 #include "esc_sim.h"
 #include "supply.h"
@@ -306,6 +307,9 @@ static const log_viewer_io_t k_io = {
  * zeroes: a band with nothing in it would make the golden image agree with a
  * band that had stopped working.
  */
+/* The capabilities a view's IOmcu reports: SERVO's views only. */
+static uint16_t s_caps;
+
 static const ui_bench_status_t k_status = {
     .link_up     = true,
     .armed       = false,
@@ -624,9 +628,41 @@ static bool kst_file_view(const char *v)
 }
 
 /*
+ * SERVO > PROGRAM's list: the registry's KST row, live with the pin the
+ * feed carries (servo-program), or with no IOmcu answering, dimmed with its
+ * reason (servo-program-nocap).
+ */
+static void program_view(const char *view)
+{
+    rig_fresh();
+    if (strcmp(view, "servo-program-many") == 0) {
+        /* The fit check only: a table of 12 rows under two headings,
+         * SEARCH and the page keys over them, one row dimmed. */
+        static prog_reg_row_t many[12];
+        for (int i = 0; i < 12; ++i) {
+            many[i] = (prog_reg_row_t){
+                PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST,
+                (i >= 3) ? TX_SV_TARGET_PORT : TX_PL_GRP_PROG_PORT,
+                TX_SV_TARGET_PORT, 0u,
+                (i == 1) ? (uint16_t)LINK_CAP_CELLS
+                         : (uint16_t)LINK_CAP_SERVO_PWM,
+                &kst_panel_pages };
+        }
+        prog_registry_use(many, 12);
+    }
+    if (strcmp(view, "servo-program") == 0
+        || strcmp(view, "servo-program-many") == 0) {
+        (void)rig_link_up(LINK_PROTOCOL_MINOR);
+    }
+    ui_router_goto(SCREEN_SERVO);
+    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
+    ui_router_tick(0.02f);
+}
+
+/*
  * The programmer on SERVO, driven by taps against the simulated servo of
- * kst_sim.h on programming port 1.  Geometry from kst_panel.h; PROGRAM is left of SETTINGS
- * at the top of the right card.
+ * kst_sim.h on programming port 1.  Geometry from kst_panel.h: PROGRAM in
+ * the strip, then its KST row on the list.
  */
 static void kst_view(const char *view)
 {
@@ -666,7 +702,8 @@ static void kst_view(const char *view)
         tap(330, UI_BAND_H + SV_LIST_ROW_Y(2));        /* HV SERVO */
         tap(SV_TAB_LIVE_X, UI_BAND_H + SV_TAB_Y);
     }
-    tap(SV_PROGRAM_X, UI_BAND_H + SV_TAB_Y);        /* PROGRAM */
+    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);    /* PROGRAM */
+    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0)); /* KST row */
     ui_router_tick(0.02f);
     if (v[0] == '\0' || nopage || strcmp(v, "-target") == 0
         || strcmp(v, "-supply") == 0) {
@@ -2827,6 +2864,15 @@ int main(int argc, char **argv)
     }
 
     if (id == SCREEN_SERVO) {
+        /* What the IOmcu reports (its output drivers'), so PROGRAM's KST row
+         * is live; none with no IOmcu answering. */
+        s_caps = (strcmp(view, "servo-program-nocap") == 0)
+                     ? 0u
+                     : (uint16_t)(LINK_CAP_SERVO_PWM | LINK_CAP_ESC_DRIVE
+                                  | LINK_CAP_ESC_TELEM);
+        ui_bench_status_t cst = k_status;
+        cst.capabilities = s_caps;
+        ui_router_set_status(&cst);
         /* Driven by the servo model the limit search is tested against, so
          * the screenshot shows a servo that lags its command and draws
          * current. */
@@ -2937,6 +2983,8 @@ int main(int argc, char **argv)
         }
         if (strncmp(view, "servo-limrun", 12) == 0) {
             limrun_view(view);
+        } else if (strncmp(view, "servo-program", 13) == 0) {
+            program_view(view);
         } else if (strncmp(view, "servo-kst", 9) == 0) {
             /* A view with -p2 is its view with the notes turned to their
              * second page: a tap on them. */
@@ -3024,6 +3072,7 @@ int main(int argc, char **argv)
     }
 
     ui_bench_status_t st = k_status;
+    st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-refused") != 0

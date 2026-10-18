@@ -10,15 +10,16 @@ SERVO steuert ein Servo, misst seinen Strom auf der Servoschiene, führt einen a
 
 ## Die Werkbank
 
-Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST und OPTIONEN. Ein Wechsel des Reiters ist keine Ebene: das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den Optionen eines Laufs eine Ebene zurück zu TEST. Jede Aufgabe behält ihre Seite und Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
+Die Leiste unter dem Band trägt die Aufgaben von SERVO: LIVE, TEST, PROGRAMMIEREN und OPTIONEN. Ein Wechsel des Reiters ist keine Ebene: das Home-Tag führt von jeder Aufgabe nach Hause und steigt nur aus den Optionen eines Laufs eine Ebene zurück zu TEST und aus einem Programmierer zurück zur Liste von PROGRAMMIEREN. Jede Aufgabe behält ihre Seite und Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den Prüfstand auf SAFE.
 
 | Aufgabe | Linke Karte |
 |---|---|
 | LIVE | das Zifferblatt, darüber der Kasten eines Laufs |
 | TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF, jede mit ihren OPTIONEN, einer Zusammenfassung, ihrem Start-Halten, dem letzten Ergebnis und seiner Datei; die Grenzen von SUPPLY, nur lesbar |
+| PROGRAMMIEREN | die Liste der Programmierer; eine Zeile öffnet ihren Programmierer über der linken Spalte ([Servo-Programmierer](servo-programmer.md)) |
 | OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING ([Servo-Optionen](servo-settings.md)) |
 
-Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwerte, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte, öffnet den [Servo-Programmierer](servo-programmer.md). Der Drehknopf bewegt das Horn nur auf LIVE.
+Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die Messwerte, die Netzteilzeile, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP, FREIGEBEN und ARM. Der Drehknopf bewegt das Horn nur auf LIVE.
 
 ## In Ruhe
 
@@ -244,5 +245,5 @@ Der Bericht ist eine eigene `SERVOnnn.TXT`, geschrieben unabhängig von BERICHT.
 ## Verwandte Seiten
 
 - [Servo-Optionen](servo-settings.md): Typ, Frame Rate, Pulse, der Sweep, die Optionen jedes Laufs und das Ziel.
-- [Servo-Programmierer](servo-programmer.md): PROGRAMMIEREN, für KST- und Chaservo-Servos.
+- [Servo-Programmierer](servo-programmer.md): die Zeile auf PROGRAMMIEREN für KST- und Chaservo-Servos.
 - [Netzteil](supply.md) und [Anschlüsse](setup-interfaces.md): der PD mini, der INA3221 und der AS5600.

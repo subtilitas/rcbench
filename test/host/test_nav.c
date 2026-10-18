@@ -19,6 +19,8 @@
 #include "touch_feed.h"
 
 #include "gfx.h"
+#include "kst_panel.h"
+#include "link_pages.h"
 #include "motor_screen.h"
 #include "overview_screen.h"
 #include "programmer_screen.h"
@@ -638,6 +640,47 @@ TEST_CASE(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves)
     CHECK_EQ(ui_router_current(), SCREEN_SERVO);
     CHECK_EQ(servo_screen_run_settings(), 0);
     CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * SERVO > PROGRAM through the router: the tab shows the list, its row the
+ * programmer one level down; the home tag climbs from the programmer to
+ * the list, from the list to the menu, one level a tap.  With SERVO PWM
+ * not reported the row is dimmed and the tag climbs from the list.
+ */
+TEST_CASE(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu)
+{
+    fresh();
+    to_overview();
+    ui_bench_status_t st = *ui_router_status();
+    st.capabilities = LINK_CAP_SERVO_PWM;
+    ui_router_set_status(&st);
+    ui_router_goto(SCREEN_SERVO);
+    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK(!kst_panel_is_open());
+    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0));
+    CHECK(kst_panel_is_open());
+    const uint32_t nav = ui_router_navigations();
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK(!kst_panel_is_open());
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_PROGRAM);
+    CHECK_EQ(ui_router_navigations(), nav);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    /* The tile opens LIVE again; with no SERVO PWM the row opens
+     * nothing. */
+    st.capabilities = 0u;
+    ui_router_set_status(&st);
+    ui_router_goto(SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    tap(SV_TAB_PROGRAM_X, UI_BAND_H + SV_TAB_Y);
+    tap(SV_PROG_ROW_X, UI_BAND_H + SV_PROG_ROW_Y(0));
+    CHECK(!kst_panel_is_open());
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
@@ -3345,6 +3388,7 @@ int main(void)
     RUN(the_home_tag_climbs_one_level_from_every_screen);
     RUN(the_home_tag_climbs_the_programmer_one_level_at_a_time);
     RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
+    RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
     RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);

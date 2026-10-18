@@ -23,6 +23,13 @@ UI_TEXT(SPACE,                      0, "SPACE")
 /* A workbench's first task (ui_workbench.h); TEST, PROGRAM and SETTINGS
  * reuse SV_PG_TEST, KP_PROGRAM and SUP_SETTINGS. */
 UI_TEXT(WB_LIVE,                    0, "LIVE")
+/* A workbench's PROGRAM list (prog_registry.h): a row's name, its group's
+ * heading, and the reason a dimmed row gives in place of its transport.
+ * The capability's name is the link's, the same in every language. */
+UI_TEXT(PL_KST,                     0, "KST and Chaservo servos")
+UI_TEXT(PL_GRP_PROG_PORT,          40, "PROG PORT SERVOS")
+UI_TEXT(PL_NO_CAP,                  0, "IOMCU HAS NO %s")
+UI_TEXT(PL_PORT_BUSY,              26, "PORT IN USE")
 
 /* ------------------------------------------------------------ the band */
 UI_TEXT(BAND_SAFE,                  0, "SAFE")
