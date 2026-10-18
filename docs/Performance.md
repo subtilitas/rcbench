@@ -249,8 +249,8 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 | core 1 | `core1_main` | 4,096 | 640 | 528 | 2,672 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
-13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row
-differs from that build. Core 1's row is not held: its chain moves with the
+13.2.1. CI runs the tool with `--check-doc`, which fails when core 0's row,
+or the count of calls through a register below, differs from that build. Core 1's row is not held: its chain moves with the
 compiler (ARM GNU 14.2 gives 644 bytes), and CI builds the image with the
 runner's packaged one. The frames named below are those of a build with
 ARM GNU 14.2, which gives 1,692 bytes for core 0.
@@ -291,8 +291,9 @@ in it is not measured. The heartbeat gap that switches every output off is
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 137 such calls
-  are reachable from `main`;
+  handler, which the tool reads out of the link's page table: 133 such calls
+  are reachable from `main` in the image CI builds (arm-none-eabi-gcc
+  13.2.1; ARM GNU 14.2 gives 142);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
   `strstr()` calls it for a needle of 255 characters or more, and the two
   needles in the firmware are 3 and 5 characters. The tool fails on a
@@ -381,14 +382,14 @@ tasks. A network interface ESP-IDF cannot allocate stops the panel with an
 assertion inside ESP-IDF instead, and the panel restarts.
 
 What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
-162,832 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
+162,904 bytes, named in `firmware/panel/main/psram_bss.lf`, and, through
 `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`, ESP-IDF's own choice of the
 .bss of lwIP (lightweight IP stack), net80211, pp and wpa_supplicant,
 13,742 bytes.
 
 | Object | Component | .bss (bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35,328 |
+| `log_viewer_screen` | ui | 35,400 |
 | `servo_screen` | ui | 29,365 |
 | `ui_watermark` | ui | 20,504 |
 | `supply_screen` | ui | 20,412 |
@@ -405,6 +406,15 @@ What lives in PSRAM instead: the zero-initialised data (.bss) of 17 objects,
 | `ui_band` | ui | 1,040 |
 | `programmer_screen` | ui | 396 |
 | `log_reader` | logfile | 1 |
+
+Read from the map file of the ESP-IDF v5.4 build. CI runs
+`tools/ram_budget.py --check-doc` on that build, which fails when a row,
+the count, the total or ESP-IDF's 13,742 bytes differ from the map, or
+when a row is given twice. It also fails on a line of `psram_bss.lf` other
+than `object (extram_bss)` entries under a `[mapping:...]` header, on an
+object the fragment names and the map places no .bss of, and on an object
+in PSRAM that the fragment does not name, outside lwIP, net80211, pp and
+wpa_supplicant. `-v` lists every object.
 
 An object moves only when its state
 

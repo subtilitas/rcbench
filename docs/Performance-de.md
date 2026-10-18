@@ -268,7 +268,8 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 13.2.1.
 CI führt das Werkzeug mit `--check-doc` aus; das schlägt fehl, wenn die
-Zeile von Kern 0 von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
+Zeile von Kern 0 oder die Zahl der Aufrufe über ein Register weiter unten
+von diesem Build abweicht. Die Zeile von Kern 1 wird nicht
 gehalten: ihre Kette ändert sich mit dem Compiler (ARM GNU 14.2 ergibt 644
 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des Runners.
 Die unten genannten Frames stammen aus einem Build mit ARM GNU 14.2, der
@@ -312,7 +313,8 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 137 solche Aufrufe sind von `main` aus erreichbar;
+  Links liest: 133 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  das CI baut (arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 ergibt 142);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und
   die beiden Suchmuster der Firmware sind 3 und 5 Zeichen lang. Das Werkzeug
@@ -407,14 +409,14 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 17
-Objekten, 162 832 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 162 904 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
 
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
-| `log_viewer_screen` | ui | 35 328 |
+| `log_viewer_screen` | ui | 35 400 |
 | `servo_screen` | ui | 29 365 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 412 |
@@ -431,6 +433,16 @@ wpa_supplicant, 13 742 Bytes.
 | `ui_band` | ui | 1 040 |
 | `programmer_screen` | ui | 396 |
 | `log_reader` | logfile | 1 |
+
+Gelesen aus der Map-Datei des Builds mit ESP-IDF v5.4. CI führt
+`tools/ram_budget.py --check-doc` auf diesem Build aus; das schlägt fehl,
+wenn eine Zeile, die Anzahl, die Summe oder die 13 742 Bytes von ESP-IDF
+von der Map abweichen oder eine Zeile doppelt steht. Es schlägt auch fehl
+bei einer Zeile in `psram_bss.lf`, die kein Eintrag `object (extram_bss)`
+unter einem Kopf `[mapping:...]` ist, bei einem Objekt, das das Fragment
+nennt und von dem die Map keine .bss platziert, und bei einem Objekt im
+PSRAM, das das Fragment nicht nennt, außerhalb von lwIP, net80211, pp und
+wpa_supplicant. `-v` listet jedes Objekt.
 
 Ein Objekt zieht nur um, wenn seinen Zustand
 

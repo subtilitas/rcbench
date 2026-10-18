@@ -112,9 +112,21 @@ history is in git.
   DISCARD also asks for a write of the values put back. The copy of the
   stored values takes 400 bytes of internal RAM; the heap left with the
   largest Wi-Fi mode up is 91,224 bytes.
+- `tools/check_sizes.py --check` holds the files over 1,000 lines to
+  `tools/check_sizes.txt`, one reason per file and a line count with a
+  tolerance of 100 for six of them. It fails on an unlisted file over
+  1,000 lines, a listed file at or under 1,000 and a count outside its
+  tolerance. CI runs it with the tree checks.
 
 ### Changed
 
+- `ram_budget.py --check-doc` holds the PSRAM .bss table in Performance
+  and its German page to the build's map file: each object
+  `psram_bss.lf` names, the count, the total and ESP-IDF's own 13,742
+  bytes.
+- `stack_check.py --iomcu --check-doc` holds the count of calls through a
+  register reachable from core 0's `main` in both Performance pages, and
+  core 0's sentence in `STATUS.md`.
 - Run logs are named by the writer that made them: `SERVOnnn.CSV` and
   `SERVOnnn.TXT` for the automatic servo test and the limit run,
   `ESCnnn.CSV` for a switch of the throttle outputs to ARMED (MOTOR & ESC, a
@@ -180,6 +192,12 @@ history is in git.
 
 ### Fixed
 
+- Performance and its German page give `log_viewer_screen`'s PSRAM .bss
+  as 35,400 bytes and the 17 objects' total as 162,904 bytes, as the
+  ESP-IDF v5.4 build places them.
+- Performance, its German page and `STATUS.md` give 133 calls through a
+  register reachable from core 0's `main`, the figure of the image CI
+  builds with arm-none-eabi-gcc 13.2.1; ARM GNU 14.2 gives 142.
 - `hardware/docs/IOBoard.md` cites `STATUS.md` by section and item name
   instead of by line, so a coverage table that grows does not move the
   citations. Its capability-word rows state that the panel reads the word
