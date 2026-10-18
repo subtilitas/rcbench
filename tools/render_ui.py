@@ -65,6 +65,8 @@ SOURCES = [
     "shared/ui/splash_screen.c",
     "shared/ui/overview_screen.c",
     "shared/ui/motor_screen.c",
+    "shared/ui/motor_workbench.c",
+    "shared/ui/motor_settings_page.c",
     "shared/ui/supply_screen.c",
     "shared/ui/ui_keypad.c",
     "shared/ui/ui_textkey.c",
@@ -182,6 +184,10 @@ SCREENS = {
     # A coprocessor that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
+    # SETTINGS: ESC / BENCH's rows under PACK, MOTOR and THROTTLE OUTPUT on
+    # a SAFE bench after a run, and the keypad of Capacity over them.
+    "motor-settings": ("motor-settings.png", "motor", "dark"),
+    "motor-settings-keypad": ("motor-settings-keypad.png", "motor", "dark"),
     "servo":      ("servo.png",      "servo",      "dark"),
     # The same bench ARMED: DISARM, the dial live.
     "servo-armed": ("servo-armed.png", "servo", "dark"),
@@ -363,11 +369,10 @@ SCREENS = {
     "logs-import":("logs-import.png","logs",       "dark"),
     "logs-plot":  ("logs-plot.png",  "logs",       "dark"),
     "logs-delete":("logs-delete.png","logs",       "dark"),
-    # SETUP's tiles, clean and with a value unsaved; ESC / BENCH's list
-    # across the screen, clean and with a value unsaved.
+    # SETUP's tiles, clean and with a value unsaved; INTERFACES' list
+    # across the screen with a value unsaved.
     "setup":      ("setup.png",      "setup",      "dark"),
     "setup-hub-dirty": ("setup-hub-dirty.png", "setup", "dark"),
-    "setup-esc":  ("setup-esc.png",  "setup",      "dark"),
     "setup-dirty":("setup-dirty.png","setup",      "dark"),
     # APPLICATION: the language, the theme and the knob.
     "setup-application": ("setup-application.png", "setup", "dark"),
@@ -589,6 +594,9 @@ FIT_ONLY = {
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
+    # MOTOR & ESC > SETTINGS ARMED: the pulse rows locked with their reason,
+    # a save waiting for a SAFE bench.
+    "motor-settings-armed": (None, "motor", "dark"),
     # The bus fault's other two verdicts and its other four controller
     # states, so every meaning and check is measured where it wraps.
     "busfault-lossy":   (None, "busfault", "dark"),

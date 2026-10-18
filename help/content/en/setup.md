@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION and INTERFACES. It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
+SETUP holds the panel's bench-wide settings in two categories: APPLICATION and INTERFACES. The ESC (electronic speed controller) settings are on [MOTOR & ESC, SETTINGS](motor-settings.md). It opens from the SETUP tile on the [menu](overview.md) on a page of tiles, 3 by 3. A category's tile opens its list across the screen's width.
 
 ## The tiles
 
@@ -14,7 +14,6 @@ SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION a
 
 | Tile | Second line | What it opens |
 |---|---|---|
-| ESC / BENCH | `8 SETTINGS` | the list of ESC / BENCH |
 | APPLICATION | `10 SETTINGS` | the list of APPLICATION |
 | INTERFACES | `26 SETTINGS` | the list of INTERFACES |
 | OUTPUTS | `PROTOCOLS AND PINS` | [Outputs](outputs.md): the role of each coprocessor pin, as a list |
@@ -22,7 +21,7 @@ SETUP holds the panel's settings in three categories: ESC / BENCH, APPLICATION a
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the card's files and a panel firmware upload in a browser, and the home network |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 
-Two slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+Three slots stay free. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -32,11 +31,11 @@ The home tag at the top left climbs one level at a time:
 |---|---|
 | a category's list | the tiles; the list keeps its position |
 | the tiles | the menu; with a value unsaved, the warning first ([Leaving with values unsaved](#leaving-with-values-unsaved)) |
-| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | the tiles; WI-FI opened from LOGS goes back to LOGS, OUTPUTS opened from TARGET on MOTOR & ESC goes back to MOTOR & ESC |
 
 ## Changing a value
 
-![ESC / BENCH, everything saved](view:setup-esc)
+![INTERFACES, everything saved](view:setup-interfaces)
 
 The list spans the screen and shows 6 rows. Under it a strip holds the category's name, RESET CATEGORY and the save button. The strip ends 4 px above the band an alert shows across the bottom, so an alert covers no key, row or button.
 
@@ -75,7 +74,7 @@ The write happens on the first frame with the bench SAFE, the supply output off 
 
 ![One value unsaved, at the home tag](view:setup-leave)
 
-The home tag on the tiles leads to the menu. While the save button reads `SAVE` or `NOT SAVED`, it opens a warning first. The warning lists each value that differs from the stored one as `name: stored -> now`, with the value and unit as the list shows them. The stored values are the ones loaded at start-up or written by the last successful save. The list includes the DUT (device under test) name and the values set on other screens, such as SERVO or ESC STICK: one save keeps them all.
+The home tag on the tiles leads to the menu. While the save button reads `SAVE` or `NOT SAVED`, it opens a warning first. The warning lists each value that differs from the stored one as `name: stored -> now`, with the value and unit as the list shows them. The stored values are the ones loaded at start-up or written by the last successful save. The list includes the DUT (device under test) name and the values set on other screens, such as SERVO, ESC STICK or MOTOR & ESC: one save keeps them all.
 
 | Button | What it does |
 |---|---|
@@ -91,22 +90,9 @@ The home tag on the tiles leads to the menu. While the save button reads `SAVE` 
 
 ![Twelve values unsaved](view:setup-leave-many)
 
+A change on [MOTOR & ESC, SETTINGS](motor-settings.md) asks for a write itself, and that write keeps SETUP's unsaved values too.
+
 No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, PICK A PIN, WI-FI and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
-
-## ESC / BENCH
-
-| Setting | Range | Default | What it does |
-|---|---|---|---|
-| Cells | 1 to 14 S | 6 | stored; no screen uses it in this release |
-| Capacity | 0 to 30000 mAh, 100 mAh steps | 5000 | stored; no screen uses it in this release |
-| Internal R | 0 to 200 mOhm | 18.0 | stored; no screen uses it in this release |
-| Motor poles | 2 to 42, steps of 2 | 14 | rpm is eRPM (electrical rpm) divided by poles/2 |
-| Rated kV | 0 to 10000 rpm/V, steps of 10 | 0 | the kV on [MOTOR & ESC](motor.md#kv-rpm-v-and-eff); 0 leaves it empty |
-| Idle pulse | 800 to 1600 us, steps of 10 | 1000 | the PWM (pulse-width modulation) width at 0 % throttle |
-| Full pulse | 1400 to 2400 us, steps of 10 | 2000 | the PWM width at 100 % throttle |
-| Ramp limit | 5 to 300 %/s, steps of 5 | 55 | the throttle slew of the panel's model, used while no coprocessor answers |
-
-Idle pulse and Full pulse go to the coprocessor at link-up and on every change. The coprocessor ramps no throttle: a bound pin steps to the command.
 
 ## APPLICATION
 
@@ -146,4 +132,4 @@ INTERFACES holds the current monitors, the output encoder, the phase tap, the vi
 - [Interfaces](setup-interfaces.md)
 - [Outputs](outputs.md) and [Pin picker](picker.md)
 - [Updates](updates.md)
-- [Supply](supply.md) and [Servo settings](servo-settings.md): the settings kept on their own screens.
+- [Supply](supply.md), [Servo settings](servo-settings.md) and [Motor settings](motor-settings.md): the settings kept on their own screens.

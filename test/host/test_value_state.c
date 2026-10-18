@@ -203,7 +203,7 @@ TEST_CASE(the_gate_moves_between_its_four_states)
 #define M_DOWN_X   33
 #define M_UP_X     519
 #define M_ARM_X    676
-#define M_ARM_Y    P(318)
+#define M_ARM_Y    P(342)
 #define M_HINT_Y   P(390)
 #define M_PX_PCT   (100.0f / 413.0f)
 

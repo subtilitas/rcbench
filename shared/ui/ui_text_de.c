@@ -371,9 +371,13 @@ static const char *const k_text[TX_COUNT] = {
     [TX_MO_THROTTLE]            = "GAS",
     [TX_MO_NO_RUN]              = "Noch kein Lauf aufgezeichnet.",
     [TX_MO_HINT]                = "BALKEN ZIEHEN. AN DEN ENDEN TIPPEN, UM EINEN PUNKT ZU ÄNDERN.",
-    [TX_MO_TARGET]              = "ZIEL: %s",
-    [TX_MO_TARGET_NONE]         = "ZIEL: KEIN MOTOR-PIN ZUGEORDNET",
-    [TX_MO_TARGET_UNREAD]       = "ZIEL: ZUORDNUNG NICHT AUSGELESEN",
+    [TX_MO_TGT_NONE]            = "KEIN MOTOR-PIN",
+    [TX_MO_TGT_UNREAD]          = "PINS NICHT GELESEN",
+    [TX_MO_TGT_MIXED]           = "GEMISCHT",
+    [TX_MO_SET_PACK]            = "AKKU",
+    [TX_MO_SET_MOTOR]           = "MOTOR",
+    [TX_MO_SET_THROTTLE]        = "GASAUSGANG",
+    [TX_MO_SET_SAFE_ONLY]       = "Nur bei SAFE einstellbar",
     [TX_MO_RESET_PEAKS]         = "SPITZENWERTE ZURÜCKSETZEN",
 
     /* ---------------------------------------------------------- SUPPLY */

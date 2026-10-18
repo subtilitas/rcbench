@@ -472,6 +472,25 @@ uint8_t outbind_to_slots(const outbind_t *b, uint16_t *regs);
 bool outbind_from_slots(outbind_t *b, uint16_t board,
                         const uint16_t *regs, const uint16_t *chan_cfg);
 
+/** outbind_role_proto(): the role's slots are bound as several entries. */
+#define OUTBIND_PROTO_MIXED 0xFFu
+
+/**
+ * The entry the slots of @p role are bound as, an index into
+ * outbind_protos(), read from an OUTPUTS page and the CHAN_CFG page that
+ * came back with it: what MOTOR & ESC's TARGET row names before the
+ * throttle's pins.
+ *
+ * A slot is the role's when its first channel carries the role on @p
+ * chan_cfg, as outbind_from_slots() reads it; its entry is the one of that
+ * role with the slot's driver and rate.  Returns 0 when no slot is the
+ * role's, when a page is NULL, or when the role's one slot set matches no
+ * entry, and OUTBIND_PROTO_MIXED when the role's slots match two entries
+ * or one matches none beside one that does.
+ */
+uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
+                           out_role_t role);
+
 /**
  * Render the channel configuration to match.
  *

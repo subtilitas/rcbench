@@ -1,0 +1,141 @@
+/*
+ * The MOTOR & ESC screen's private seam between motor_screen.c, the screen
+ * and LIVE's page, motor_workbench.c, its task strip and the CONTROL card's
+ * TARGET row, and motor_settings_page.c, SETTINGS' page: the layout they
+ * draw on and the functions each calls of the others.  Nothing outside
+ * shared/ui includes this header; the screen's interface is
+ * motor_screen.h.
+ *
+ * Each file keeps its own state; psram_bss.lf places each one's .bss.
+ * Included last: its layout macros have short names (W, H, PAD), which no
+ * header included after it may meet.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include "gfx.h"
+#include "touch_types.h"
+#include "ui_screen.h"
+#include "ui_workbench.h"
+
+#define W 800
+#define H (480 - UI_BAND_H)   /* the router owns the band */
+
+/* Horizontal bands, not columns: seventeen full-height vertical lines cost
+ * about 8,160 cache-line fills on this panel, and the same pixels drawn as
+ * horizontal lines cost none. */
+#define PAD       6                    /* the screen's outer margin */
+#define INNER     6                    /* a panel's own padding */
+
+/*
+ * Two columns.  The page on the left, the readouts and the CONTROL card on
+ * a rail on the right, so a glance at the numbers and a hand on the
+ * throttle do not compete for the same part of the screen.  The rail is
+ * the same on every task.
+ */
+#define COL_GAP   6
+#define LEFT_X    PAD
+#define LEFT_W    546
+#define RIGHT_X   (LEFT_X + LEFT_W + COL_GAP)
+#define RIGHT_W   (W - PAD - RIGHT_X)
+
+/*
+ * The task strip at the top (ui_workbench.h), LIVE | SETTINGS.  Under it,
+ * on LIVE, the line with PLOT | TABLE, the poll rate, the link's errors and
+ * the temperatures; on SETTINGS the temperatures alone, over the rail.
+ */
+#define HDR_Y     36
+#define HDR_H     18
+
+/* Upper row: LIVE's plot on the left, the four readouts on the right. */
+#define UP_Y      58
+#define LO_Y      272
+#define UP_H      (LO_Y - 6 - UP_Y)
+
+/* Lower row: the throttle on the left, the CONTROL card on the right. */
+#define LO_H      (H - LO_Y - PAD)
+
+/* A panel's title strip. */
+#define TITLE_H   20
+
+/*
+ * The CONTROL card, top down: the TARGET row, ARM, the run's totals and
+ * RESET PEAKS, 4 px apart.  The TARGET row is the card's width less its
+ * padding: TARGET's 64 px, and a value box of 18 cells.
+ */
+#define BTN_H     36
+#define TARGET_Y  (LO_Y + TITLE_H + 6)
+#define TARGET_H  22
+#define ARM_Y     (TARGET_Y + TARGET_H + 4)
+#define TOTALS_Y  (ARM_Y + BTN_H + 4)
+#define RESET_Y   (LO_H + LO_Y - PAD - BTN_H)
+
+/*
+ * SETTINGS' page: the left column under the strip, down to the screen's
+ * margin.  Its keypad covers the strip as well, so no tab switches the task
+ * under an open keypad.
+ */
+#define PAGE_X    LEFT_X
+#define PAGE_Y    UI_WB_PAGE_Y
+#define PAGE_W    LEFT_W
+#define PAGE_H    (H - PAGE_Y - PAD)
+
+/* --- motor_workbench.c: the strip and the TARGET row ---------------------- */
+
+/* What a touch event was to the strip or the TARGET row. */
+typedef enum {
+    MWB_NONE = 0,     /* neither's                                   */
+    MWB_TAKEN,        /* theirs; nothing to do                       */
+    MWB_TASK,         /* the strip switched the task                 */
+    MWB_TARGET,       /* a tap on the TARGET row: open the choice    */
+} mwb_ev_t;
+
+/* Laid out, LIVE shown (reset); a tile's entry: LIVE, unless the screen
+ * comes back from the OUTPUTS screen its TARGET row opened; touch events
+ * lost. */
+void mwb_reset(void);
+void mwb_enter(void);
+void mwb_cancel(void);
+/* The TARGET row opened the OUTPUTS screen: the navigation count to come
+ * back on. */
+void mwb_opened_outputs(void);
+ui_wb_task_t mwb_task(void);
+/* A touch event.  @p strip: whether the strip takes presses (no keypad
+ * over it); @p locked: whether the TARGET row does. */
+mwb_ev_t mwb_event(const touch_event_t *evt, bool strip, bool locked);
+/* Whether the strip or the TARGET row owns a press under way. */
+bool mwb_pressed(void);
+/* Bumped when the strip's look changes. */
+uint32_t mwb_revision(void);
+void mwb_render_strip(gfx_canvas_t *c);
+void mwb_render_target(gfx_canvas_t *c, const char *value, bool warn,
+                       bool locked);
+/* The strip's row with its trough, and the TARGET row. */
+gfx_rect_t mwb_strip_area(void);
+gfx_rect_t mwb_target_rect(void);
+
+/* --- motor_settings_page.c: SETTINGS' page -------------------------------- */
+
+/* Laid out (reset); the screen left; touch events lost. */
+void msp_reset(void);
+void msp_leave(void);
+void msp_cancel(void);
+/* Whether the keypad is open over the page and the strip. */
+bool msp_modal(void);
+/* The home tag: the keypad closes, as its CANCEL does.  Whether it did. */
+bool msp_back(void);
+/* A touch event on the page.  @p safe: the bench is SAFE, nothing asked of
+ * it (ui_value_gate.h's OFF); the pulse rows take a press only then. */
+void msp_event(const touch_event_t *evt, bool safe);
+/* Whether a press of the page's is under way. */
+bool msp_pressed(void);
+/* A frame: a keypad for a pulse row closes on a bench that is no longer
+ * SAFE, and the save line follows the store. */
+void msp_tick(bool safe);
+/* Bumped when the page's look changes. */
+uint32_t msp_revision(void);
+void msp_render(gfx_canvas_t *c, bool safe);

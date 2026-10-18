@@ -15,6 +15,8 @@
 #include <stdint.h>
 
 #include "bench_state.h"
+#include "gfx.h"
+#include "settings.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -103,23 +105,60 @@ void motor_screen_set_esc_kv(int kv);
  * The GPIOs the throttle drives now: every pin bound as MOTOR PWM or DShot,
  * bit n for GPIO n, from the binding the application last read.  @p known is
  * false while no binding was read; the mask is then taken as empty.  The
- * throttle panel names them, or says there are none or that the binding is
- * not read.
+ * CONTROL card's TARGET row names them, or says there are none or that the
+ * binding is not read.
  */
 void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known);
 
-/**
- * The throttle panel's target line, "TARGET: GP0 GP1 +2", in at most
- * @p cells characters.  Returns true when the line is a warning (the binding
- * is not read, or no pin is bound as a motor), which the panel draws in the
- * warning colour.
- */
-bool motor_throttle_target(char *out, size_t size, uint64_t pins, bool known,
-                           unsigned cells);
+/** The throttle's pins are bound as more than one protocol. */
+#define MOTOR_PROTO_MIXED 0xFFu
 
-/** The throttle panel's target field in 8-pixel cells: from the panel's
- *  inner edge to 8 px before the widest throttle reading, 100.0. */
+/**
+ * The protocol the throttle's pins are bound as, an index into
+ * outbind_protos() (outbind_role_proto()): 0 when none is known,
+ * MOTOR_PROTO_MIXED when they are bound as several.  The TARGET row puts its
+ * name before the pins.
+ */
+void motor_screen_set_throttle_protocol(uint8_t proto);
+
+/**
+ * The TARGET row's value, `protocol pins` ("DSHOT300 GP0 GP1"), in at most
+ * @p cells characters: the protocol's catalogue name for @p proto, MIXED for
+ * MOTOR_PROTO_MIXED, the pins alone for a protocol not known, and as many
+ * pins as fit, then "+N" (ui_target_text()).  Returns true when the value is
+ * a warning (the binding is not read, or no pin is bound as a motor), which
+ * the row draws in the warning colour.
+ */
+bool motor_throttle_target(char *out, size_t size, uint8_t proto,
+                           uint64_t pins, bool known, unsigned cells);
+
+/** The TARGET row's value box in 8-pixel cells (ui_target_row_cells()). */
 unsigned motor_target_cells(void);
+
+/**
+ * The task shown, a ui_wb_task_t: LIVE or SETTINGS.  A tile opens LIVE; the
+ * home tag over SETTINGS' keypad closes the keypad (back()).
+ */
+int motor_screen_task(void);
+
+/** LIVE's view shown, a motor_pane_t: PLOT or TABLE. */
+int motor_screen_pane(void);
+
+/** Whether the TARGET row takes no press now: the bench is not SAFE (an ARM
+ *  held, asked or in force, or a DISARM not yet answered), or the servo
+ *  programmer holds its port. */
+bool motor_screen_target_locked(void);
+
+/** The setting SETTINGS' keypad types, or -1 while it is closed. */
+int motor_screen_keypad_setting(void);
+
+/** SETTINGS' rows in their order, at most @p max into @p out (NULL counts
+ *  them).  Returns how many there are. */
+int motor_settings_rows(setting_id_t *out, int max);
+/** The heading row @p row sits under, a ui_text_id_t; -1 out of range. */
+int motor_settings_heading(int row);
+/** Row @p row's value box, which a tap opens the keypad on. */
+gfx_rect_t motor_settings_box(int row);
 
 float motor_screen_throttle(void);
 /** The application's hook: sets the slider on an armed or a disarmed bench
@@ -130,8 +169,9 @@ void motor_screen_set_throttle(float pct);
  * Move the throttle by @p span_fraction of the slider's span, from the
  * rotary knob (knob.h).  Relative: the value changes by how far the knob
  * turned.  Nothing happens for a zero fraction, while a finger is dragging
- * the slider, or while the bench is not armed: a turn made then is not kept
- * for the next arm.  It posts the same throttle command a touch does and
+ * the slider, while the bench is not armed, or on a task other than LIVE,
+ * where the throttle is out of sight: a turn made then is not kept for the
+ * next arm.  It posts the same throttle command a touch does and
  * never arms.  It posts only into an empty slot or over a throttle: any other
  * pending command (an arm, a disarm, a peak reset) stays and the knob's
  * motion is dropped.

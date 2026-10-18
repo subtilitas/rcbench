@@ -972,6 +972,42 @@ static out_role_t role_of_slot(const uint16_t *chan_cfg, const uint16_t *r)
             == LINK_CC_ROLE_THROTTLE) ? OUT_ROLE_THROTTLE : OUT_ROLE_SURFACE;
 }
 
+uint8_t outbind_role_proto(const uint16_t *regs, const uint16_t *chan_cfg,
+                           out_role_t role)
+{
+    if (regs == NULL || chan_cfg == NULL) {
+        return 0u;
+    }
+    uint8_t found = 0u;
+    bool unknown = false;
+    for (uint8_t slot = 0; slot < LINK_OUT_SLOTS; ++slot) {
+        const uint16_t *r = &regs[(size_t)slot * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] == (uint16_t)LINK_DRIVER_NONE
+            || role_of_slot(chan_cfg, r) != role) {
+            continue;
+        }
+        uint8_t entry = 0u;
+        for (uint8_t i = 1; i < OUTBIND_PROTOS; ++i) {
+            if (link_driver_of(k_protos[i].driver) == r[LINK_OS_DRIVER]
+                && k_protos[i].rate == r[LINK_OS_RATE_HZ]
+                && k_protos[i].role == role) {
+                entry = i;
+                break;
+            }
+        }
+        if (entry == 0u) {
+            unknown = true;
+        } else if (found == 0u) {
+            found = entry;
+        } else if (found != entry) {
+            return OUTBIND_PROTO_MIXED;
+        }
+    }
+    /* A slot no entry describes beside one an entry does: not one
+     * protocol. */
+    return (unknown && found != 0u) ? OUTBIND_PROTO_MIXED : found;
+}
+
 bool outbind_from_slots(outbind_t *b, uint16_t board, const uint16_t *regs,
                         const uint16_t *chan_cfg)
 {

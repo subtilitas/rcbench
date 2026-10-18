@@ -6,7 +6,7 @@ order: 62
 
 # Outputs
 
-OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
+OUTPUTS binds the coprocessor's pins to output protocols: which pins drive servos, which drive ESCs (electronic speed controllers), and with what signal. It opens from OUTPUTS on [SETUP](setup.md) and from TARGET on [MOTOR & ESC](motor.md#target), on the [overview](#the-overview-off): OFF selected and every bound pin named by its protocol. The home tag goes back to the screen it opened from. The protocol list and LAST WRITE take the left column; the coprocessor's pins take the right. [PICK A PIN](picker.md) holds the same binding on a drawing of the board.
 
 ## Binding pins
 
@@ -42,7 +42,7 @@ Picking a protocol writes nothing. It chooses which pins show as ticked and whic
 
 ## Idle pulse and Full pulse
 
-A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on SETUP, ESC / BENCH, in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the coprocessor 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
+A MOTOR PWM channel sends 0 % throttle as Idle pulse and 100 % as Full pulse, 1000 us and 2000 us by default. Both are on [MOTOR & ESC, SETTINGS](motor-settings.md), in steps of 10 us: Idle pulse 800 to 1600 us, Full pulse 1400 to 2400 us. A SERVO PWM channel keeps 1000 to 2000 us, or the range SERVO sends. A change reaches the coprocessor 300 ms after the last edit while the bench is SAFE. An Idle pulse that is not below Full pulse is not sent, and the band says `Idle pulse must be shorter than full-throttle pulse. Not sent.`.
 
 An ESC calibrated on a transmitter takes that transmitter's shortest pulse as zero. Set Idle pulse at or below that pulse and Full pulse at or above the longest one: for a transmitter that sends 985 to 2012 us, 980 us and 2020 us.
 
@@ -104,5 +104,5 @@ The coprocessor stores the binding in its own flash and restores it at boot; the
 ## Related pages
 
 - [Pin picker](picker.md): the same binding on the board.
-- [Motor and ESC](motor.md#the-throttle-panel-names-its-pins): the pins the throttle drives.
+- [Motor and ESC](motor.md#target): the pins the throttle drives.
 - [Servo settings](servo-settings.md#the-target-row): the pins the servo tester drives.

@@ -6,7 +6,25 @@ order: 10
 
 # Motor und ESC
 
-MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen Lauf auf: Spannung, Strom, Leistung und Drehzahl über der Zeit. Der Bildschirm öffnet über die Kachel MOTOR & ESC im [Menü](overview.md). Die Grafik und der Throttle belegen die linke Spalte; die vier Anzeigen, ARM und die Summen die rechte.
+MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen Lauf auf: Spannung, Strom, Leistung und Drehzahl über der Zeit. Der Bildschirm öffnet über die Kachel MOTOR & ESC im [Menü](overview.md), immer auf LIVE.
+
+## Die Leiste
+
+Die Leiste oben hält zwei Aufgaben, LIVE und OPTIONEN. Ein Tipp wechselt die Aufgabe. LIVE behält beim Wechsel seine Ansicht, GRAFIK oder TABELLE.
+
+| Aufgabe | Die linke Spalte |
+|---|---|
+| LIVE | die Grafik oder die Tabelle, und der Throttle |
+| OPTIONEN | [Motor-Optionen](motor-settings.md): der Akku, der Motor und der Gasausgang |
+
+Die rechte Spalte ist auf beiden Aufgaben dieselbe: die Temperaturen, die vier Anzeigen und die Karte STEUERUNG mit ZIEL, ARM, den Summen und SPITZENWERTE ZURÜCKSETZEN. ARM wirkt auf beiden Aufgaben.
+
+Das Home-Tag oben links steigt eine Ebene nach der anderen:
+
+| Von | Das Home-Tag führt zu |
+|---|---|
+| dem Tastenfeld auf OPTIONEN | OPTIONEN; der Wert bleibt unverändert |
+| LIVE oder OPTIONEN | dem Menü; der Prüfstand schaltet auf SAFE |
 
 ## Vor dem ersten Lauf
 
@@ -15,17 +33,27 @@ MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet einen L
 - Das Tag der Grafik lautet `TELEMETRIE INAKTIV`, und die Grafik zeigt `Noch kein Lauf aufgezeichnet.`, bis zum ersten Schalten auf ARMED.
 - Die Zeile unter dem Balken lautet `ZUERST ARM`, solange der Prüfstand SAFE ist. Der Balken und die Tasten `-1` und `+1` sind gedimmt und nehmen keinen Befehl an.
 - Die Anzeigen zeigen `---`, solange nichts einen Wert gemeldet hat.
-- `ZIEL: KEIN MOTOR-PIN ZUGEORDNET`, in der Warnfarbe, sagt: Die Bindung ist gelesen, und kein Pin ist als Motor gebunden. Einen Pin unter [Ausgänge](outputs.md) binden.
+- ZIEL lautet `KEIN MOTOR-PIN` in der Warnfarbe: Die Bindung ist gelesen, und kein Pin ist als Motor gebunden. Einen Pin unter [Ausgänge](outputs.md) binden.
 
-## Das Throttle-Feld nennt seine Pins
+## ZIEL
 
-Das Throttle-Feld nennt links neben dem Prozentwert die Pins, die der Throttle treibt: `ZIEL: GP0 GP1`. Es sind die Pins, die unter SETUP, OUTPUTS als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Die Zeile fasst 49 Zeichen; Pins, die nicht passen, werden gezählt, `+7`.
+Die Zeile ZIEL oben auf der Karte STEUERUNG nennt, was der Throttle treibt: das Protokoll, dann die Pins, `DSHOT300 GP0 GP1`. Es sind die Pins, die unter [Ausgänge](outputs.md) als MOTOR PWM oder mit einem DShot-Protokoll gebunden sind. Das Wertefeld fasst 18 Zeichen; Pins, die nicht passen, werden gezählt, `DSHOT300 GP0 +7`.
 
-| Zeile | Bedingung |
+| ZIEL lautet | Bedingung |
 |---|---|
-| `ZIEL: GP0 GP1` | die Pins, die der Throttle treibt, in Pin-Reihenfolge |
-| `ZIEL: KEIN MOTOR-PIN ZUGEORDNET` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden |
-| `ZIEL: ZUORDNUNG NICHT AUSGELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte |
+| `DSHOT300 GP0 GP1` | das Protokoll und die Pins, die der Throttle treibt, in Pin-Reihenfolge |
+| `GEMISCHT GP0 GP4` | die Throttle-Pins laufen mit zwei oder mehr Protokollen, oder einer davon mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
+| `GP0 GP1` | jeder Throttle-Pin läuft mit einer Pulsrate, die kein Protokoll von OUTPUTS hat |
+| `KEIN MOTOR-PIN` | die Bindung ist gelesen, und kein Pin ist als Motor gebunden; Warnfarbe |
+| `PINS NICHT GELESEN` | der Link steht nicht, die Seiten wurden nicht gelesen, oder die Platine hat keine Pin-Karte; Warnfarbe |
+
+Ein Tipp auf ZIEL öffnet [Ausgänge](outputs.md), und der Prüfstand schaltet auf SAFE wie bei jedem Weg vom Bildschirm. Das Home-Tag auf OUTPUTS führt zurück zu MOTOR & ESC, auf die Aufgabe, auf der ZIEL getippt wurde.
+
+ZIEL nimmt keinen Tipp an und ist gesperrt gezeichnet:
+
+- solange der Prüfstand nicht SAFE ist: ARMED, ein ARM gefragt und nicht beantwortet, ein DISARM gefragt und nicht beantwortet;
+- solange ARM gehalten wird;
+- solange der [Servo-Programmierer](servo-programmer.md) einen Port hält.
 
 ARM schaltet die ganze Gruppe der Throttle-Ausgänge auf ARMED, nicht nur die hier genannten Pins.
 
@@ -46,9 +74,9 @@ Bei ARMED lautet das Tag der Grafik `TELEMETRIE LIVE`, und am rechten Rand der G
 | Drehknopf | abgelehnt; die Drehung wird nicht gemerkt | bewegt den Throttle von seinem Wert aus |
 | ARM | schaltet nach 2 s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
-| GRAFIK, TABELLE | wechseln die Ansicht | wechseln die Ansicht |
+| GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
-Das Verlassen des Bildschirms, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0 %.
+Das Verlassen des Bildschirms, ZIEL, ein verlorener Link oder ein Touch-Controller, der nicht mehr antwortet, schaltet ebenfalls auf SAFE und setzt den Throttle auf 0 %.
 
 Solange kein Koprozessor antwortet, zeigt das Band SIM, und SIMULATION steht quer über dem Bildschirm: Jeder Wert ist das Modell des Panels.
 
@@ -60,11 +88,11 @@ Das Schalten auf SAFE hält die Grafik, wie sie stand: Das Tag lautet `LETZTE TE
 
 Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben immer live, ARMED oder nicht.
 
-## Der Streifen über der Grafik
+## Die Zeile unter der Leiste
 
-Der Streifen trägt die Abfragerate, die Fehlerzahl des Links und drei Temperaturen: ESC und MOT von der Prüfstandsseite des Koprozessors, MCU vom Chip des ESP32-S3 im Panel. Hat der Koprozessor seit seinem Einschalten Link-Frames abgelehnt, fügt der Streifen ihre Zahl an.
+Auf LIVE trägt die Zeile unter der Leiste GRAFIK und TABELLE, die Abfragerate, die Fehlerzahl des Links und drei Temperaturen: ESC und MOT von der Prüfstandsseite des IOmcu, MCU vom Chip des ESP32-S3 im Panel. Hat der IOmcu seit seinem Einschalten Link-Frames abgelehnt, fügt die Zeile ihre Zahl an. Auf OPTIONEN hält die Zeile nur die Temperaturen, über der rechten Spalte.
 
-![37 abgelehnte Link-Frames auf dem Streifen](view:motor-refused)
+![37 abgelehnte Link-Frames in der Zeile](view:motor-refused)
 
 ## TABELLE
 
@@ -80,7 +108,7 @@ TABELLE listet Spannung, Strom, Leistung und Drehzahl, jeweils mit ihrer Spitze.
 
 ## kV, rpm/V und EFF
 
-Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und EFF, das Zweite geteilt durch das Erste, begrenzt auf 199 %. Der Nenn-kV-Wert ist die Einstellung `Nenn-kV` unter SETUP, ESC / PRÜFSTAND, 0 bis 10000 rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF fehlt. EFF zählt nur Kupferverluste und schließt die Verluste des ESC ein; es ist eine obere Grenze, kein Wirkungsgrad an der Welle.
+Der Kopf der Grafik zeigt den Nenn-kV-Wert, die gemessene Drehzahl je Volt und EFF, das Zweite geteilt durch das Erste, begrenzt auf 199 %. Der Nenn-kV-Wert ist die Einstellung `Nenn-kV` unter MOTOR & ESC, OPTIONEN, 0 bis 10000 rpm/V, Vorgabe 0. Bei 0 bleibt das kV-Feld leer, und EFF fehlt. EFF zählt nur Kupferverluste und schließt die Verluste des ESC ein; es ist eine obere Grenze, kein Wirkungsgrad an der Welle.
 
 ## Das Log eines Laufs
 
@@ -88,6 +116,7 @@ Jedes Schalten auf ARMED schreibt eine Datei, `ESCnnn.CSV`, auf die SD-Karte (Se
 
 ## Verwandte Seiten
 
-- [Ausgänge](outputs.md): welche Pins der Throttle treibt, und Leerlaufpuls und Vollpuls.
-- [Setup](setup.md): Nenn-kV, Motorpole, der Drehknopf.
+- [Motor-Optionen](motor-settings.md): der Akku, Nenn-kV, Motorpole, Leerlaufpuls und Vollpuls.
+- [Ausgänge](outputs.md): welche Pins der Throttle treibt.
+- [Setup](setup.md): der Drehknopf.
 - [Anschlüsse](setup-interfaces.md): der INA228.

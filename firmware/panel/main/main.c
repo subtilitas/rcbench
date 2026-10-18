@@ -1979,6 +1979,8 @@ void app_main(void)
             picker_screen_set_prog_pin(prog_pin);
             motor_screen_set_throttle_pins(atomic_load(&s_throttle_pins),
                                            atomic_load(&s_throttle_pins_known));
+            motor_screen_set_throttle_protocol(
+                (uint8_t)atomic_load(&s_throttle_proto));
             servo_screen_set_pins(atomic_load(&s_servo_pins),
                                   atomic_load(&s_servo_pins_known));
             servo_screen_set_enc_held(atomic_load(&s_enc_held));

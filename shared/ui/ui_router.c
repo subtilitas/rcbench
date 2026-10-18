@@ -35,9 +35,10 @@
 
 static struct {
     ui_screen_id_t    current;
-    /* The screen that opened the one with two openers, for its home tag;
-     * SCREEN_COUNT until one has.  One field: WI-FI is the only screen
-     * with two openers. */
+    /* The screen that opened one with two openers, for its home tag;
+     * SCREEN_COUNT until one has.  One field for WI-FI and OUTPUTS: only
+     * the screen on top reads it, and entering either from an opener sets
+     * it. */
     ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
@@ -99,14 +100,17 @@ static bool has_band(ui_screen_id_t id);
 /*
  * The screens with more than one opener, each opener on a row of its own.
  * The home tag of such a screen returns to the one that opened it: WI-FI
- * opens from LOGS' WI-FI button and from SETUP's WI-FI tile.
+ * opens from LOGS' WI-FI button and from SETUP's WI-FI tile, OUTPUTS from
+ * MOTOR & ESC's TARGET row and from SETUP's OUTPUTS tile.
  */
 static const struct {
     ui_screen_id_t screen;
     ui_screen_id_t opener;
 } k_openers[] = {
-    { SCREEN_WIFI, SCREEN_LOGS },
-    { SCREEN_WIFI, SCREEN_SETUP },
+    { SCREEN_WIFI,    SCREEN_LOGS },
+    { SCREEN_WIFI,    SCREEN_SETUP },
+    { SCREEN_OUTPUTS, SCREEN_MOTOR },
+    { SCREEN_OUTPUTS, SCREEN_SETUP },
 };
 
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)

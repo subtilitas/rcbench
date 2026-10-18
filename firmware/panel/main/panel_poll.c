@@ -21,6 +21,7 @@
 #include "link_bringup.h"
 #include "link_host.h"
 #include "link_pages.h"
+#include "out_bind.h"
 #include "outputs.h"
 #include "outputs_pages.h"
 #include "panel.h"
@@ -246,10 +247,12 @@ static void learn_board_pins(void)
 }
 
 /* The GPIOs bound as throttle (MOTOR PWM, DShot) in the last binding read,
- * for the MOTOR & ESC screen's target line, and whether a binding was read.
- * The same pages the coprocessor's throttle role reads. */
+ * for the MOTOR & ESC screen's TARGET row, whether a binding was read, and
+ * the protocol they are bound as (outbind_role_proto()).  The same pages
+ * the IOmcu's throttle role reads. */
 atomic_ullong s_throttle_pins;
 atomic_bool   s_throttle_pins_known;
+atomic_uint   s_throttle_proto;
 
 /* A reading, into the snapshot the outputs and picker screens take. */
 static void post_reading(const bind_reading_t *r)
@@ -261,6 +264,10 @@ static void post_reading(const bind_reading_t *r)
                  known ? outputs_role_pins(r->slots, r->cfg, OUT_ROLE_THROTTLE)
                        : 0u);
     atomic_store(&s_throttle_pins_known, known);
+    atomic_store(&s_throttle_proto,
+                 known ? (unsigned)outbind_role_proto(r->slots, r->cfg,
+                                                      OUT_ROLE_THROTTLE)
+                       : 0u);
     if (xSemaphoreTake(s_snap_lock, portMAX_DELAY) == pdTRUE) {
         s_outputs_read = *r;
         s_outputs_read_fresh = true;

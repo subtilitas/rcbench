@@ -26,7 +26,7 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
 {
     fresh_screen();
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
 
     int before = settings_get_int(ids[0]);
     tap(PLUS_X + BTN_W / 2, row_y(0));
@@ -44,38 +44,35 @@ TEST_CASE(plus_and_minus_change_the_setting_under_them)
 }
 
 /*
- * The operator's own path: the key under Motor poles on SETUP.
+ * The operator's own path: the key under a SETUP row that the IOmcu (the
+ * RP2350 board) is sent, INA228 SHUNT on INTERFACES.
  *
  * The model, the screen and the observer are one chain, and the panel hangs
- * the write to the coprocessor off the far end of it.  A break anywhere in
- * that chain leaves the panel with nothing to hang the write on, which is
- * the defect this guards, seen from where the finger is.
+ * the write to the IOmcu off the far end of it.  A break anywhere in that
+ * chain leaves the panel with nothing to hang the write on, which is the
+ * defect this guards, seen from where the finger is.  Motor poles, the
+ * row this used before it moved to MOTOR & ESC > SETTINGS, is held to the
+ * same chain there (test_motor_workbench).
  */
-TEST_CASE(the_poles_key_notifies_once_per_press)
+TEST_CASE(a_setup_key_notifies_once_per_press)
 {
     fresh_screen();
-    setting_id_t ids[64];
-    int n = settings_in_category(SET_CAT_ESC, ids, 64);
-    int poles_row = -1;
-    for (int i = 0; i < n; ++i) {
-        if (ids[i] == SET_MOTOR_POLES) { poles_row = i; }
-    }
-    CHECK(poles_row >= 0);
+    const int row = row_of(SET_INA228_UOHM);
+    CHECK(row >= 0);
 
-    s_poles_seen = 0;
     s_observed = 0;
-    settings_set_observer(poles_observer);
+    settings_set_observer(observer);
 
-    int before = settings_get_int(SET_MOTOR_POLES);
-    tap(PLUS_X + BTN_W / 2, row_y(poles_row));
-    CHECK_EQ(settings_get_int(SET_MOTOR_POLES) - before,
-             (long)settings_def(SET_MOTOR_POLES)->step);
-    CHECK_EQ(s_poles_seen, 1);
+    int before = settings_get_int(SET_INA228_UOHM);
+    tap(PLUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM) - before,
+             (long)settings_def(SET_INA228_UOHM)->step);
     CHECK_EQ(s_observed, 1);
+    CHECK_EQ(s_last_observed, SET_INA228_UOHM);
 
-    tap(MINUS_X + BTN_W / 2, row_y(poles_row));
-    CHECK_EQ(settings_get_int(SET_MOTOR_POLES), before);
-    CHECK_EQ(s_poles_seen, 2);
+    tap(MINUS_X + BTN_W / 2, row_y(row));
+    CHECK_EQ(settings_get_int(SET_INA228_UOHM), before);
+    CHECK_EQ(s_observed, 2);
 
     settings_set_observer(NULL);
 }
@@ -107,7 +104,7 @@ TEST_CASE(a_drag_scrolls_instead_of_pressing)
 {
     fresh_screen();
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
     int before = settings_get_int(ids[0]);
 
     /* Press on the + key, then move well past the slop before releasing.
@@ -136,16 +133,19 @@ TEST_CASE(holding_a_key_repeats_with_acceleration)
 {
     fresh_screen();
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
 
-    /* Row 1 is capacity: 0..30000 in steps of 100, which is why holding has
-     * to work at all. */
+    /* INA228 SHUNT: 50..20000 uOhm in steps of 1, which is why holding has
+     * to work at all.  ids[] holds it at its row. */
+    const int row = row_of(SET_INA228_UOHM);
+    CHECK(row >= 0);
+    ids[1] = SET_INA228_UOHM;
     settings_set(ids[1], settings_def(ids[1])->def);
     int start = settings_get_int(ids[1]);
 
     touch_event_t e = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = PLUS_X + BTN_W / 2,
-                                   .y = (int16_t)row_y(1) } };
+                                   .y = (int16_t)row_y(row) } };
     ui_router_event(&e);
     int after_press = settings_get_int(ids[1]);
     CHECK_EQ(after_press, start);       /* armed: the press steps nothing */
@@ -180,7 +180,7 @@ TEST_CASE(reset_button_restores_the_open_category)
 {
     fresh_screen();
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
 
     settings_set(ids[0], settings_def(ids[0])->max);
     settings_set(SET_BRIGHTNESS, 50);
@@ -202,7 +202,7 @@ TEST_CASE(leaving_the_screen_no_longer_saves_on_its_own)
     s_save_calls = 0;
 
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     CHECK(settings_dirty());
 
@@ -224,7 +224,7 @@ TEST_CASE(the_save_button_asks_and_the_application_decides_when)
     s_save_calls = 0;
 
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     CHECK(settings_dirty());
     CHECK(!settings_save_asked());
@@ -261,7 +261,7 @@ TEST_CASE(the_request_outlives_the_screen)
     s_save_calls = 0;
 
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
     tap(PLUS_X + BTN_W / 2, row_y(0));
     tap(SAVE_X + 100, SAVE_Y + SAVE_H / 2);
     CHECK(settings_save_asked());
@@ -288,7 +288,7 @@ TEST_CASE(a_press_while_the_save_is_pending_changes_nothing)
     s_save_calls = 0;
 
     setting_id_t ids[64];
-    settings_in_category(SET_CAT_ESC, ids, 64);
+    settings_in_category(LIST_CAT, ids, 64);
     tap(PLUS_X + BTN_W / 2, row_y(0));
 
     /* Offered: holding it down changes the face. */
@@ -346,10 +346,10 @@ TEST_CASE(a_cancelled_hit_presses_nothing)
     fresh_hub();
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
 
-    /* Press the tile of the outputs screen, the fourth, then the events
-     * stop arriving. */
-    const int dx = tile_x(3);
-    const int dy = tile_y(3);
+    /* Press the tile of the outputs screen, the first after the
+     * categories', then the events stop arriving. */
+    const int dx = tile_x(SET_CAT_SETUP_COUNT);
+    const int dy = tile_y(SET_CAT_SETUP_COUNT);
     touch_event_t d = { .type = TOUCH_EVENT_DOWN,
                         .point = { .id = 1, .x = (int16_t)dx,
                                    .y = (int16_t)dy } };
@@ -650,8 +650,8 @@ TEST_CASE(setup_changes_no_held_setting)
     for (int row = 0; row < 2; ++row) {
         setting_id_t ids[64];
 
-        gesture_screen(SET_CAT_ESC);
-        settings_in_category(SET_CAT_ESC, ids, 64);
+        gesture_screen(LIST_CAT);
+        settings_in_category(LIST_CAT, ids, 64);
         s_row_held = ids[row];
         const setting_id_t other = ids[1 - row];
         settings_set_hold(row_hold);
@@ -720,7 +720,7 @@ int main(void)
     RUN(the_encoder_settings_start_off_with_a_12_bit_centre);
     RUN(screen_switches_category_and_renders);
     RUN(plus_and_minus_change_the_setting_under_them);
-    RUN(the_poles_key_notifies_once_per_press);
+    RUN(a_setup_key_notifies_once_per_press);
     RUN(changing_the_theme_from_the_screen_takes_effect);
     RUN(a_drag_scrolls_instead_of_pressing);
     RUN(holding_a_key_repeats_with_acceleration);

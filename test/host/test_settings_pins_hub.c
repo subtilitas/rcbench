@@ -564,7 +564,7 @@ TEST_CASE(the_tiles_show_and_save_what_a_list_left_unsaved)
     s_save_calls = 0;
     const unsigned clean = save_face();
 
-    open_category(SET_CAT_ESC);
+    open_category(LIST_CAT);
     const unsigned list_clean = save_face();
     CHECK_EQ(list_clean, clean);
     tap(XP, row_y(0));

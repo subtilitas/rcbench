@@ -34,7 +34,7 @@
  *             drag case
  *   <screen>  one steady frame of analyser, logs, settings, battery,
  *             balance, programmer or picker; settings is SETUP's tiles,
- *             settings-list ESC / BENCH's list
+ *             settings-list APPLICATION's list
  *   <screen>-chrome  the same, repainted in full every frame
  *   <screen>-sim     the same with the SIMULATION watermark
  *
@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     ui_router_goto(start);
 
     if (strncmp(mode, "settings-list", 13) == 0) {
-        /* SETUP opens on its tiles: the first, ESC / BENCH, opens its list. */
+        /* SETUP opens on its tiles: the first, APPLICATION, opens its list. */
         gfx_rect_t r = gfx_rect_make(0, 0, 0, 0);
         (void)settings_hub_slot(0, &r);
         const int16_t x = (int16_t)(r.x + r.w / 2);
