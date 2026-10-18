@@ -345,6 +345,14 @@ void service_arming(bool link_up)
          * exchange. */
         facts.rate_settled = !link_up || facts.release_owed
                              || servo_link_rate_settled();
+        /*
+         * And the throttle's pulse endpoints.  This task pays the debt
+         * (endpoints_service(), at the poll), so no payment is under way
+         * while this runs: the flag is either a debt or nothing.  An edit
+         * the settings screen publishes during the CLEAR is asked about
+         * again after it.
+         */
+        facts.endpoints_owed = endpoints_owed(&s_endpoints);
         switch (arming_handshake_step(&s_arm, ARMING_HS_PREPARED, &facts,
                                       now_ms())) {
         case ARMING_HS_SERVO_HELD:
@@ -368,6 +376,17 @@ void service_arming(bool link_up)
              * take, and nothing here knows otherwise; refused like an
              * unpaid release, and asked again on the next attempt. */
             arm_write_failed(quiet, TR(ALERT_SERVO_RATE));
+            break;
+        case ARMING_HS_ENDPOINTS:
+            /*
+             * An Idle pulse or Full pulse edit that has not reached the far
+             * end: the frame that arms carries no CHAN_CFG, so the throttle
+             * would run on the range held before the edit.  Refused like an
+             * unpaid release, nothing written; the poll pays the debt once
+             * the edit has rested ENDPOINTS_SETTLE_MS, and the operator
+             * holds ARM again.
+             */
+            arm_write_failed(quiet, TR(ALERT_ARM_ENDPOINTS));
             break;
         case ARMING_HS_CLOSED:
             /* Past the arm's deadline before CLEAR; see below. */
@@ -405,13 +424,18 @@ void service_arming(bool link_up)
                 arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
                 break;
             }
-            facts.disarm_asked = atomic_load(&s_disarm_request);
+            facts.disarm_asked   = atomic_load(&s_disarm_request);
+            facts.endpoints_owed = endpoints_owed(&s_endpoints);
             const arming_hs_t cleared =
                 arming_handshake_step(&s_arm, ARMING_HS_CLEARED, &facts,
                                       now_ms());
             if (cleared == ARMING_HS_WITHDRAWN) {
                 /* Stopped or disarmed while the clear was in flight.  No
                  * alert: the operator asked for this and knows. */
+                break;
+            }
+            if (cleared == ARMING_HS_ENDPOINTS) {
+                control_alert(TR(ALERT_ARM_ENDPOINTS));
                 break;
             }
             if (cleared != ARMING_HS_GO) {
@@ -462,7 +486,8 @@ static bool write_output_binding(const outbind_t *bind)
 {
     uint16_t cfg[LINK_CC_COUNT];
     uint16_t slots[LINK_OS_COUNT];
-    outbind_to_chan_cfg(bind, cfg, endpoints_min(), endpoints_max());
+    outbind_to_chan_cfg(bind, cfg, endpoints_min(&s_endpoints),
+                        endpoints_max(&s_endpoints));
     (void)outbind_to_slots(bind, slots);
 
     /*

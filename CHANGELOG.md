@@ -291,6 +291,17 @@ history is in git.
 
 ### Fixed
 
+- A switch to ARMED with the IOmcu connected is refused while an Idle pulse
+  or Full pulse edit is still owed to it, with `Pulse range not yet sent to
+  the IOmcu. Hold ARM again.` (German `Pulsbereich noch nicht an den IOmcu
+  gesendet. ARM erneut halten.`). The frame that switches to ARMED carries
+  no CHAN_CFG, and an edit reaches the IOmcu at the first poll 300 ms or
+  more after it, so a switch that won the race ran the throttle on the
+  range held before the edit. The panel asks before CLEAR, writing nothing,
+  and again after it. The bench stays SAFE, ARM is held again, and STOP is
+  unchanged. A pair the IOmcu acknowledged, or a page that already holds
+  it, ends the debt; a read or a write nobody answered keeps it, and a
+  link-up owes it again until the first poll pays it.
 - Performance and its German page give `log_viewer_screen`'s PSRAM .bss
   as 35,400 bytes and the 17 objects' total as 162,904 bytes, as the
   ESP-IDF v5.4 build places them.

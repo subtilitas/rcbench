@@ -325,6 +325,12 @@ typedef struct {
      */
     bool rate_settled;
     bool disarm_asked;  /**< a disarm is posted and not yet delivered     */
+    /**
+     * The throttle's pulse endpoints are owed to the far end: an edit, a
+     * link-up or a write nobody answered left them unpaid, so the far end
+     * may hold another range.  The frame that arms carries no CHAN_CFG.
+     */
+    bool endpoints_owed;
 } arming_hs_facts_t;
 
 /** What the panel does next with the arm, after arming_handshake_step(). */
@@ -344,6 +350,11 @@ typedef enum {
     ARMING_HS_SERVO_HELD,
     /** The surfaces' rate is not known; the same as ARMING_HS_SERVO_HELD. */
     ARMING_HS_SERVO_RATE,
+    /** The throttle's pulse endpoints are owed to the far end.  At
+     *  ARMING_HS_PREPARED the same as ARMING_HS_SERVO_HELD; at
+     *  ARMING_HS_CLEARED given up as arming_refused() gives one up, and the
+     *  frame that arms is not written. */
+    ARMING_HS_ENDPOINTS,
     /** Past the arm's deadline: given up as arming_handshake_open() gives
      *  it up, before CLEAR as a refusal and after it as a stop. */
     ARMING_HS_CLOSED,
@@ -361,9 +372,11 @@ typedef enum {
  *     PREPARED   link down                       ARMING_HS_LOCAL
  *                release owed                    ARMING_HS_SERVO_HELD
  *                rate not settled                ARMING_HS_SERVO_RATE
+ *                endpoints owed                  ARMING_HS_ENDPOINTS
  *                deadline passed                 ARMING_HS_CLOSED
  *                otherwise                       ARMING_HS_GO, write CLEAR
  *     CLEARED    stopped, or a disarm asked      ARMING_HS_WITHDRAWN
+ *                endpoints owed                  ARMING_HS_ENDPOINTS
  *                deadline passed                 ARMING_HS_CLOSED
  *                otherwise                       ARMING_HS_GO, write ARM
  *

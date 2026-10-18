@@ -486,7 +486,11 @@ switch to ARMED sends none. While the bench is ARMED, ARM is held, or an ARM
 or a DISARM waits for its answer, their help line reads `Set on a SAFE bench
 only` in the warning colour and the box takes no tap; a keypad open for one
 closes when ARM is pressed or the bench leaves SAFE. The 2 s hold of ARM
-leaves an edit made before the press the time to reach the IOmcu. The other 6 rows take a value at any time.
+leaves an edit made before the press the time to reach the IOmcu. While an
+edit is still owed to the IOmcu with the link up, the switch to ARMED is
+refused with `Pulse range not yet sent to the IOmcu. Hold ARM again.` and
+the bench stays SAFE ([A pulse range on its
+way](Safety.md#a-pulse-range-on-its-way)). The other 6 rows take a value at any time.
 
 The settings are one store. Every value OK sets is in force at once and asks
 for a write; the panel writes the whole store on the first frame with the

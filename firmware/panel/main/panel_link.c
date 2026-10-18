@@ -324,49 +324,18 @@ bool poles_service(void)
  * Nothing is written when nothing changed, which is the case at every
  * link-up after the first: the far end keeps the page in flash.
  *
- * Only when @p far_disarmed: the control write of this same pass put
- * ARM = 0 at the far end and was acknowledged.  The bank's own flag is not
- * enough -- a disarm whose write never left leaves the far end driving
- * while this end reads disarmed -- and a pulse range that moves under a
- * running motor moves its throttle.  An edit made during a run waits for
- * the disarm; the hold after a link-up (s_endpoints_hold) is what makes the
- * far end disarmed for that pass on a bench armed here.
- *
- * The same refusal rules as poles_service(): a write nobody answered is
- * owed again, one the far end refused is reported and waits for a new edit.
- * The hold ends with every outcome but a missing answer, so an IOmcu
- * that refuses the page is armed on its own range rather than never.
+ * Returns how it went; the alerts for a refusal are said here.
  */
-void endpoints_service(bool far_disarmed)
+static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
 {
-    if (!atomic_load(&s_endpoints_owed)) {
-        s_endpoints_hold = false;
-        return;
-    }
-    if (!far_disarmed) {
-        return;
-    }
-    if ((uint32_t)(now_ms() - atomic_load(&s_endpoints_at_ms))
-        < ENDPOINTS_SETTLE_MS) {
-        return;
-    }
-    if (!atomic_exchange(&s_endpoints_owed, false)) {
-        return;
-    }
-    const uint16_t lo = endpoints_min();
-    const uint16_t hi = endpoints_max();
-
     link_msg_t ccr;
     memset(&ccr, 0, sizeof(ccr));
     if (!poll_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, &ccr)) {
-        atomic_store(&s_endpoints_owed, true);
-        return;
+        return ENDPOINTS_NO_ANSWER;
     }
-    const bool held = s_endpoints_hold;
-    s_endpoints_hold = false;
     if (ccr.op == LINK_OP_NACK) {
         control_alert(TR(ALERT_PULSE_RANGE_UNKNOWN));
-        return;
+        return ENDPOINTS_READ_REFUSED;
     }
     uint16_t cfg[LINK_CC_COUNT];
     memcpy(cfg, ccr.regs, sizeof(cfg));
@@ -375,21 +344,54 @@ void endpoints_service(bool far_disarmed)
          * 1400 to 2400 us), so the pair can be inverted while it is being
          * edited.  Said, and the far end keeps the last pair it took. */
         control_alert(TR(ALERT_PULSE_ORDER));
-        return;
+        return ENDPOINTS_ORDER;
     }
     if (memcmp(cfg, ccr.regs, sizeof(cfg)) == 0) {
-        return;
+        return ENDPOINTS_HELD;
     }
     link_msg_t reply;
     memset(&reply, 0, sizeof(reply));
     if (!write_page(&s_host, LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg, &reply)) {
-        atomic_store(&s_endpoints_owed, true);
-        s_endpoints_hold = held;
-        return;
+        return ENDPOINTS_NO_ANSWER;
     }
     if (reply.op != LINK_OP_ACK) {
         control_alert(TR(ALERT_PULSE_REFUSED));
+        return ENDPOINTS_WRITE_REFUSED;
     }
+    return ENDPOINTS_TAKEN;
+}
+
+/*
+ * The endpoint debt, once a poll; endpoints_take() decides when it is due
+ * and endpoints_paid() what an attempt leaves.
+ *
+ * Only when @p far_disarmed: the control write of this same pass put
+ * ARM = 0 at the far end and was acknowledged.  The bank's own flag is not
+ * enough -- a disarm whose write never left leaves the far end driving
+ * while this end reads disarmed -- and a pulse range that moves under a
+ * running motor moves its throttle.  An edit made during a run waits for
+ * the disarm; the hold after a link-up (endpoints_link_up()) is what
+ * makes the far end disarmed for that pass on a bench armed here.
+ *
+ * The same refusal rules as poles_service(): a write nobody answered is
+ * owed again, one the far end refused is reported and waits for a new edit.
+ * The hold ends with every outcome but a missing answer, so an IOmcu
+ * that refuses the page is armed on its own range rather than never.
+ *
+ * The debt is taken before the exchanges and given back on a missing
+ * answer, so an edit the settings screen publishes while they run stays
+ * owed.  A switch to ARMED asks it on this task (service_arming()), so
+ * never between the taking and the outcome.
+ */
+void endpoints_service(bool far_disarmed)
+{
+    if (endpoints_take(&s_endpoints, far_disarmed, now_ms())
+        != ENDPOINTS_PAY) {
+        return;
+    }
+    endpoints_paid(&s_endpoints,
+                   endpoints_pay(endpoints_min(&s_endpoints),
+                                 endpoints_max(&s_endpoints)));
 }
 
 /*

@@ -83,7 +83,7 @@ static bool poll_bench(bench_state_t *bench)
          * disarm can land in poles_service() as well.
          */
         const bool armed = outputs_armed(&s_out) && !servo_link_release_owed()
-                           && !s_endpoints_hold
+                           && !endpoints_held(&s_endpoints)
                            && servo_link_hz_sent() != SERVO_HZ_UNKNOWN
                            && !arming_stopped(&s_arm)
                            && !atomic_load(&s_disarm_request);
@@ -96,7 +96,8 @@ static bool poll_bench(bench_state_t *bench)
          * write only when the page differs.
          */
         endpoints_service(written && !armed
-                          && (!outputs_armed(&s_out) || s_endpoints_hold));
+                          && (!outputs_armed(&s_out)
+                              || endpoints_held(&s_endpoints)));
         /* And the supply's page, a write only when one is owed. */
         supply_link_service();
         /* And the current monitors': a set-up only with ARM written 0 and
@@ -474,12 +475,11 @@ static void link_came_up(const link_msg_t *reply)
      * replaced or reflashed since the debt was last paid holds its own
      * CHAN_CFG, and the panel would go on showing a range the motor channels
      * do not have.  The far end is held disarmed until it is paid
-     * (s_endpoints_hold), by endpoints_service() at the next poll,
+     * (endpoints_link_up()), by endpoints_service() at the next poll,
      * which reads the page and writes it only if the throttle channels
      * differ, so an edge to an IOmcu that already agrees costs a read.
      */
-    atomic_store(&s_endpoints_owed, true);
-    s_endpoints_hold = true;
+    endpoints_link_up(&s_endpoints);
     /*
      * And what its outputs already are.  The screen shows what is configured
      * over there, not what this panel last sent: after a panel restart those

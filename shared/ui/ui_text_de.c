@@ -1003,6 +1003,7 @@ static const char *const k_text[TX_COUNT] = {
     [TX_ALERT_TOUCH_STOPPED]    = "Touchscreen antwortet nicht mehr. Auf SAFE geschaltet.",
     [TX_ALERT_SERVO_NOT_RELEASED]= "Servoausgang nicht freigegeben. ARM erneut halten.",
     [TX_ALERT_SERVO_RATE]       = "Pulsrate des Servos unbekannt. ARM erneut halten.",
+    [TX_ALERT_ARM_ENDPOINTS]    = "Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.",
     [TX_ALERT_ARM_REFUSED]      = "Der IOmcu hat den Wechsel zu ARMED abgelehnt.",
     [TX_ALERT_ARM_PROG]         = "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.",
     [TX_ALERT_SWEEP_RESUME_OLD] = "IOmcu-Firmware älter als 4.6. Sweep beginnt von vorn.",

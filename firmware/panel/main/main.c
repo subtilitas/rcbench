@@ -596,34 +596,27 @@ static void publish_poles(void)
  *
  * Published the way the pole count is, and for the same reason: the settings
  * screen writes the model from app_main and the control task owns the link,
- * so the values travel in an atomic beside the debt rather than being read
- * from settings.c on the control task.  Both in one word, min in the high
- * half, so a write never pairs one edit's minimum with another's maximum.
+ * so the values travel in atomics beside the debt rather than being read
+ * from settings.c on the control task (endpoints_link.h).
  *
  * The time of the last edit travels too.  A key held on + or - steps the
  * value every few hundred milliseconds, and each write of CHAN_CFG is a
  * flash write at the far end; the debt is paid once the value has rested for
  * ENDPOINTS_SETTLE_MS.
+ *
+ * Its hold is raised at a link-up edge, control task only: the far end is
+ * held disarmed until its throttle endpoints have been brought to the
+ * settings.  A bench armed with no link -- the simulator, or a cable pulled
+ * mid-run -- would otherwise arm an IOmcu that has just answered on
+ * whatever range it kept in flash, and keep that range for the whole run.
  */
-atomic_bool s_endpoints_owed;
-/*
- * Raised at a link-up edge, control task only: the far end is held disarmed
- * until its throttle endpoints have been brought to the settings.  A bench
- * armed with no link -- the simulator, or a cable pulled mid-run -- would
- * otherwise arm an IOmcu that has just answered on whatever range it
- * kept in flash, and keep that range for the whole run.
- */
-bool        s_endpoints_hold;
-atomic_uint s_endpoints_value;
-atomic_uint s_endpoints_at_ms;
+endpoints_debt_t s_endpoints;
 
 static void publish_endpoints(void)
 {
-    const unsigned lo = (unsigned)settings_get_int(SET_OUT_MIN_US);
-    const unsigned hi = (unsigned)settings_get_int(SET_OUT_MAX_US);
-    atomic_store(&s_endpoints_value, (lo << 16) | (hi & 0xFFFFu));
-    atomic_store(&s_endpoints_at_ms, (unsigned)now_ms());
-    atomic_store(&s_endpoints_owed, true);
+    endpoints_publish(&s_endpoints,
+                      (uint16_t)settings_get_int(SET_OUT_MIN_US),
+                      (uint16_t)settings_get_int(SET_OUT_MAX_US), now_ms());
 }
 
 /* The PD mini's wiring, as the settings screen left it; see
