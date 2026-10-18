@@ -55,6 +55,8 @@ SOURCES = [
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
+    "shared/ui/ui_workbench.c",
+    "shared/ui/ui_target_row.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/ui_text.c",
@@ -70,6 +72,7 @@ SOURCES = [
     "shared/ui/servo_settings_panel.c",
     "shared/ui/servo_test_panel.c",
     "shared/ui/servo_limit_panel.c",
+    "shared/ui/servo_workbench.c",
     # The programmer for KST and Chaservo servos on SERVO, and under it
     # what the views drive it with: the link module, the coprocessor's
     # port and the core.
@@ -186,13 +189,18 @@ SCREENS = {
     # with the last window clipped, its current in the warning colour.
     "servo-ina":      ("servo-ina.png",      "servo", "dark"),
     "servo-clipped":  ("servo-clipped.png",  "servo", "dark"),
-    # PWM TARGET on the programming port: the TARGET row in the warning
-    # colour.
+    # The programming port as the target: the TARGET row in the warning
+    # colour.  And the row tapped: the choice of target.
     "servo-target":   ("servo-target.png",   "servo", "dark"),
+    "servo-target-choice": ("servo-target-choice.png", "servo", "dark"),
     # The panel's model as the supply: the MODELLED pill on the plot.
     "servo-model":    ("servo-model.png",    "servo", "dark"),
+    # SETTINGS' OUTPUT and SWEEP pages; TEST's run cards; the AUTOMATIC
+    # TEST card's settings and the LIMIT RUN card's, one level down.
     "servo-settings": ("servo-settings.png", "servo", "dark"),
+    "servo-sweep-page": ("servo-sweep-page.png", "servo", "dark"),
     "servo-test":     ("servo-test.png",     "servo", "dark"),
+    "servo-test-settings": ("servo-test-settings.png", "servo", "dark"),
     "servo-limits":   ("servo-limits.png",   "servo", "dark"),
     "servo-warning":  ("servo-warning.png",  "servo", "dark"),
     "servo-name":     ("servo-name.png",     "servo", "dark"),
@@ -206,8 +214,9 @@ SCREENS = {
     # result box, the line and the plot.
     "servo-result-ina": ("servo-result-ina.png", "servo", "dark"),
     "servo-sweep":    ("servo-sweep.png",    "servo", "dark"),
-    # The limit run on LIMITS (servo_limrun.h) against the simulated KST
-    # servo on the programming port: SEARCH+PROG chosen, a run partway, run
+    # The limit run from TEST's LIMIT RUN card (servo_limrun.h) against
+    # the simulated KST servo on the programming port: SEARCH+PROG chosen,
+    # a run partway, run
     # out to PASS, SEARCH ONLY on the bench's own output, STOP after a write
     # with RESTORE named, RESTORE's list in the programmer after a STOP in a
     # session, and SERVO PULSES at KEEP refused: the servo's 900-2100 us
@@ -597,6 +606,12 @@ FIT_ONLY = {
     "servo-rate-refused": (None, "servo", "dark"),
     "servo-rate-unsupported": (None, "servo", "dark"),
     "servo-hv-live":    (None, "servo", "dark"),
+    # TEST after a run by movements and after a limit run on PROG PORT:
+    # the cards' summaries and LAST lines; the limit run's settings on the
+    # port, SEARCH + PROGRAM and SERVO PULSES with their note.
+    "servo-test-done":  (None, "servo", "dark"),
+    "servo-limrun-card": (None, "servo", "dark"),
+    "servo-limrun-settings": (None, "servo", "dark"),
 }
 
 # Views that open a drop-down, a chip's help bubble or the alert band over

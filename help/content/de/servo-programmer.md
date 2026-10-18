@@ -6,7 +6,7 @@ order: 22
 
 # Servo-Programmierer
 
-Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. PROGRAMMIEREN, oben auf der rechten Karte von [SERVO](servo.md), öffnet ihn über der linken Karte. PROGRAMMIEREN beendet einen laufenden automatischen Test.
+Der Servo-Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte Einstellungen zurück. Die Servos beider Marken teilen ein Protokoll und einen Registersatz. PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte von [SERVO](servo.md), öffnet ihn über der linken Spalte samt den Reitern der Leiste; PROGRAMMIEREN schließt ihn wieder zu der Aufgabe, die er bedeckte. PROGRAMMIEREN beendet einen laufenden automatischen Test.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench ist mit ihnen nicht verbunden, wird von ihnen nicht empfohlen und nicht gefördert. Die Namen sagen, mit welchen Servos der Programmierer arbeitet.
 
@@ -18,7 +18,7 @@ Registerbelegung und Timing stammen von 1 KST Tool Card #2 und 1 Chaservo-Servo.
 
 - Einen Koprozessor mit Protokoll 4.13 oder neuer; VERLASSEN braucht 4.15.
 - Das Servo am Programmierport des Koprozessors, Port 1: GP13, Pad 17, solange kein anderer Pin dafür gespeichert ist.
-- PWM-ZIEL auf PROG-PORT in den [Servo-Optionen](servo-settings.md#prüfling).
+- ZIEL auf der rechten Karte auf PROG-PORT ([die Zeile ZIEL](servo-settings.md#die-zeile-ziel)).
 - Den Prüfstand SAFE. VERBINDEN wird bei ARMED abgelehnt mit `Zuerst DISARM tippen. Bei ARMED kann der Port nicht übernommen werden.` Solange der Port gehalten wird, schaltet kein Bildschirm den Prüfstand auf ARMED.
 
 ![Ein Koprozessor ohne Programmierport](view:servo-kst-nopage)

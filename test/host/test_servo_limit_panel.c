@@ -1,6 +1,6 @@
 /*
  * What the SERVO screen's limit run decides: START LIMIT RUN on
- * the LIMITS page, what refuses it, its report and every source
+ * TEST's LIMIT RUN card, what refuses it, its report and every source
  * that aborts it.
  *
  * The screen and its fixtures are servo_rig.h, the bench
@@ -29,34 +29,51 @@
 /* ------------------------------------------------------------ the limit run */
 
 /*
- * START LIMIT RUN, mirrored from servo_limit_panel.c and
- * servo_screen_int.h: at START TEST's place on the LIMITS page, LIMIT RUN
- * across both columns of row 5 (servo_settings_panel.c), and the page's
- * three lines under them from 2 px under the top of row 7, 18 px apart.
+ * The LIMIT RUN card, mirrored from servo_limit_panel.c and
+ * servo_screen_int.h: TEST's second card at y 224, its lines from 98 px
+ * down, 18 px apart, their text 10 px into the card (x 26); the run's own
+ * settings list with LIMIT RUN across row 0 and the mode's note 6 px under
+ * the top of row 2 (y 154, servo_settings_panel.c).
  */
-#define LIM_TAB     2
-#define LIM_MODE_Y  ROW_Y(5)
-#define LIM_LINE_Y(i) (54 + 7 * 42 + 2 + 18 * (i))
+#define LIM_CARD    1
+#define LIM_MODE_Y  LROW_Y(0)
+#define LIM_LINE_Y(i) (224 + 98 + 18 * (i))
+#define LIM_NOTE_Y  154
 
-/* Buffer 0 drawn with the LIMITS page open, and whether its line @p i
- * reads @p text in @p col on the page's background, and nothing else. */
+/* Buffer 0 drawn with TEST open, and whether the LIMIT RUN card's line
+ * @p i reads @p text in @p col on the card's fill, and nothing else. */
 static bool lim_line_reads(int i, const char *text, ui_color_id_t col)
 {
     scr->render(&cv, 0);
     want_fresh();
     const int y = LIM_LINE_Y(i);
+    const gfx_color_t bg = fb[(size_t)y * W + 20u];
+    gfx_fill_rect(&want_cv, 18, (int16_t)y, 464, 16, bg);
+    gfx_text(&want_cv, 26, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
+    return same_in(fb, want_fb, 18, y, 464, 16);
+}
+
+/* Buffer 0 drawn with the LIMIT RUN settings open, and whether the mode's
+ * note reads @p text in @p col on the page's fill, and nothing else. */
+static bool lim_note_reads(const char *text, ui_color_id_t col)
+{
+    scr->render(&cv, 0);
+    want_fresh();
+    const int y = LIM_NOTE_Y;
     const gfx_color_t bg = fb[(size_t)y * W + 12u];
     gfx_fill_rect(&want_cv, 10, (int16_t)y, 478, 16, bg);
     gfx_text(&want_cv, 16, y, text, &gfx_font_8x16, ui_theme_color(col), 1);
     return same_in(fb, want_fb, 10, y, 478, 16);
 }
 
-/* Line @p i of the limit run's box on the left card: its text at the
- * box's left edge on the box's own fill, compared across the box. */
+/* Line @p i of the limit run's box on LIVE's left card: its text at the
+ * box's left edge on the box's own fill, compared across the box.  It
+ * opens LIVE, where the box is; a run started stays on TEST. */
 #define LIM_BOX_X 16
-#define LIM_BOX_Y 16
+#define LIM_BOX_Y 48
 static bool lim_box_reads(int i, const char *text, ui_color_id_t col)
 {
+    close_settings();
     scr->render(&cv, 0);
     want_fresh();
     const int y = LIM_BOX_Y + 8 + 20 * i;
@@ -84,14 +101,13 @@ static void lim_bench(void)
 
 static void lim_hold(float secs)
 {
-    hold_start_on(LIM_TAB, secs);
+    hold_start_on(LIM_CARD, secs);
 }
 
-/* The settings open on the LIMITS page. */
+/* TEST open, its LIMIT RUN card in sight. */
 static void lim_page(void)
 {
-    open_settings();
-    tap(TAB_X(LIM_TAB), TAB_Y);
+    open_test();
 }
 
 /* The run to its end, 120 s at most. */
@@ -261,18 +277,21 @@ TEST_CASE(a_limit_run_needs_a_powered_rail_and_a_bound_output)
 }
 
 /* The bench's own output is no programming port: SEARCH+PROG is not
- * offered, the page says why, and a tap on LIMIT RUN keeps SEARCH ONLY. */
+ * offered, the LIMIT RUN settings say why, and a tap on LIMIT RUN keeps
+ * SEARCH ONLY; the card says nothing of it while SEARCH ONLY is chosen. */
 TEST_CASE(programming_is_not_offered_off_the_programming_port)
 {
     for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
         ui_text_set_language((ui_lang_t)lang);
         lim_bench();
-        lim_page();
-        CHECK(lim_line_reads(2, TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
+        open_run_settings(LIM_CARD);
+        CHECK(lim_note_reads(TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
         tap(ROW_L_X, LIM_MODE_Y);
-        CHECK(lim_line_reads(2, TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
-        /* The line naming the output and the meter. */
+        CHECK(lim_note_reads(TR(SV_LIM_PROG_PORT), UI_C_TEXT_DIM));
+        CHECK(home_tag());
+        /* The card's state line, and no reason under it. */
         CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+        CHECK(lim_line_reads(3, "", UI_C_WARN));
         close_settings();
     }
     ui_text_set_language(UI_LANG_EN);
@@ -321,10 +340,11 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     snprintf(z, sizeof(z), "%u us", hi);
     snprintf(want, sizeof(want), TR(SV_LIM_ENDS), a, z);
     CHECK(lim_box_reads(1, want, UI_C_TEXT));
-    /* Under them the output they were found on, GP2.  It stays GP2 when
+    /* Under them the output they were found on, SERVO PWM GP2.  It stays
+     * so when
      * the bench is switched to SAFE and another output is bound before
      * CLOSE: the ends belong to the run, not to the target now. */
-    CHECK(lim_box_reads(2, "GP2", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(2, "SERVO PWM GP2", UI_C_TEXT_DIM));
     /* And under the output the report's name: until the logger answers,
      * WRITING; with its number, SERVOnnn.TXT -- the servo writer's prefix,
      * whatever the arm covers -- and never BENCHnnn.TXT. */
@@ -340,13 +360,17 @@ TEST_CASE(a_search_only_limit_run_finds_both_ends_and_reports_them)
     servo_screen_set_armed(false);
     servo_screen_set_pins(PIN(5), true);
     bench_frames(100u);
-    CHECK(lim_box_reads(2, "GP2", UI_C_TEXT_DIM));
+    CHECK(lim_box_reads(2, "SERVO PWM GP2", UI_C_TEXT_DIM));
     servo_screen_set_pins(PIN(2), true);
     servo_screen_set_armed(true);
     bench_frames(100u);
-    /* The page says how it ended. */
+    /* The card says how it ended and where the report is, and offers the
+     * next run. */
     lim_page();
-    CHECK(!lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+    CHECK(lim_line_reads(1, TR(SV_HOLD_START), UI_C_TEXT_FAINT));
+    snprintf(want, sizeof(want), TR(SV_CARD_LAST),
+             ui_servo_str(SERVO_STR_L_FOUND), "SERVO012.TXT");
+    CHECK(lim_line_reads(2, want, UI_C_TEXT_DIM));
 }
 
 /* A run's report taken from the outbox but its OPEN or END not answered
@@ -361,7 +385,7 @@ TEST_CASE(no_run_starts_while_the_logger_holds_the_last_report)
     lim_run_out();
     servo_screen_test_logger_busy(true);
     bench_frames(100u);
-    lim_hold(2.3f);                       /* the settings stay open */
+    lim_hold(2.3f);                       /* TEST stays open */
     CHECK(!servo_screen_limit_running());
     CHECK(lim_line_reads(1, ui_servo_str(SERVO_STR_START_BUSY), UI_C_WARN));
     close_settings();
@@ -455,9 +479,9 @@ TEST_CASE(every_abort_source_ends_a_limit_run_with_the_output_off)
             servo_screen_supply(&st);
             break;
         }
-        case 7:                         /* STOP RUN on the LIMITS page */
+        case 7:                         /* STOP RUN on the LIMIT RUN card */
             lim_page();
-            tap(START_X, START_Y);
+            tap(START_X, LIM_START_Y);
             close_settings();
             break;
         default:                        /* the screen reset under it */

@@ -20,6 +20,7 @@
 #include "settings.h"
 #include "supply_screen.h"
 #include "ui_screen.h"
+#include "ui_workbench.h"
 #include "ui_theme.h"
 
 #include "servo_bench_rig.h"
@@ -27,9 +28,10 @@
 
 /* ------------------------------------------------ the automatic test */
 
-/* START TEST runs only from a two-second hold on an armed bench: the run
- * closes the settings, asks the first set point and the output on, and
- * steps the servo to its centre with no slew. */
+/* START TEST on TEST's AUTOMATIC TEST card runs only from a two-second
+ * hold on an armed bench: the run asks the first set point and the output
+ * on and steps the servo to its centre with no slew, and the workbench
+ * stays on TEST. */
 TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
 {
     fresh();
@@ -39,14 +41,18 @@ TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
     scr->render(&cv, 0);
 
     bench_fresh();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     tap(START_X, START_Y);                        /* a tap is not the hold */
     CHECK(!servo_screen_testing());
-    close_settings();
     hold_start(1.0f);
     CHECK(!servo_screen_testing());
-    close_settings();
+    close_settings();                             /* a switch drops a hold */
+    ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);    /* LIVE: not START */
+    for (int i = 0; i < 120; ++i) {
+        scr->tick(0.02f);
+    }
+    ev(START_X, START_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!servo_screen_testing());
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     supply_cmd_t c;
@@ -57,9 +63,7 @@ TEST_CASE(start_test_is_a_two_second_hold_on_an_armed_bench)
     CHECK_EQ(sc.kind, SERVO_CMD_POSITION);
     CHECK_EQ(sc.value_us, 1500u);
     CHECK_EQ(sc.slew_per_s, 0u);
-    /* The settings closed: the run shows on the left card. */
-    scr->render(&cv, 0);
-    CHECK(fb[6 * W + 6] != ui_theme_color(UI_C_ACCENT));
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
 }
 
 /* START TEST reads STOP while a run is under way, and a release ends the
@@ -69,9 +73,6 @@ TEST_CASE(a_run_stops_on_a_release_the_tracker_makes_for_a_jump)
 {
     bench_fresh();
     hold_start(2.3f);
-    CHECK(servo_screen_testing());
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
     CHECK(servo_screen_testing());
     feed_reset();
     feed_to_screen(scr);
@@ -91,10 +92,10 @@ TEST_CASE(program_ends_a_run)
     bench_fresh();
     hold_start(2.3f);
     CHECK(servo_screen_testing());
-    tap(632, 24);                                 /* PROGRAM */
+    tap(SV_PROGRAM_X, SV_TAB_Y);                  /* PROGRAM */
     CHECK(!servo_screen_testing());
     CHECK(kst_panel_is_open());
-    tap(632, 24);
+    tap(SV_PROGRAM_X, SV_TAB_Y);
     CHECK(!kst_panel_is_open());
     CHECK(!servo_screen_testing());
 }
@@ -132,7 +133,9 @@ TEST_CASE(a_run_through_the_screen_ends_and_restores_the_set_points)
     CHECK(both_whole());
     servo_screen_test_files(-1, false);
     CHECK(both_whole());
-    /* CLOSE puts it away. */
+    /* CLOSE on LIVE's box puts it away. */
+    close_settings();
+    CHECK(both_whole());
     tap(BOXBTN_X, BOXBTN_Y);
     CHECK(both_whole());
 }
@@ -144,9 +147,9 @@ TEST_CASE(a_run_above_6_v_starts_through_the_hv_hold)
 {
     bench_fresh();
     short_runs();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_run_settings(0);
     tap(ROW_R_X, HV_ROW_Y);                       /* HV SERVO on */
+    CHECK(home_tag());                            /* back to the cards */
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 120; ++i) {
         scr->tick(0.02f);
@@ -186,15 +189,18 @@ TEST_CASE(every_way_out_of_a_run_switches_off_and_lets_go)
         case 3: scr->leave(); break;
         case 4: scr->cancel(); break;                          /* touch */
         case 5: {                                              /* the dial */
+            close_settings();
             int x, y;
             dial_at(30.0f, ARC_R - 20, &x, &y);
             tap(x, y);
             break;
         }
-        case 6: tap(BOXBTN_X, BOXBTN_Y); break;                /* STOP TEST */
-        case 7:                                     /* the page's STOP TEST */
-            open_settings();
-            tap(TAB_X(1), TAB_Y);
+        case 6:                                     /* LIVE's STOP TEST */
+            close_settings();
+            tap(BOXBTN_X, BOXBTN_Y);
+            break;
+        case 7:                                     /* the card's STOP TEST */
+            open_test();
             tap(START_X, START_Y);
             break;
         case 8:                                     /* the profile changed */
@@ -460,7 +466,8 @@ static void a_run_ends_armed(int profile, bool by_operator)
         }
         CHECK(bench.cmd != first);
         CHECK_EQ(servo_screen_commanded(), bench.cmd);
-        tap(BOXBTN_X, BOXBTN_Y);        /* STOP TEST */
+        close_settings();
+        tap(BOXBTN_X, BOXBTN_Y);        /* LIVE's STOP TEST */
         CHECK(!servo_screen_testing());
         CHECK_EQ(servo_screen_commanded(), rest);
         CHECK_EQ(last_cmd().kind, SERVO_CMD_RELEASE);
@@ -475,7 +482,10 @@ static void a_run_ends_armed(int profile, bool by_operator)
     bench_frames(200u);
     CHECK_EQ(servo_screen_commanded(), rest);
     CHECK_EQ(servo_screen_drawn(), rest);
-    /* The first 1 % of the knob goes on from the rest. */
+    /* The first 1 % of the knob goes on from the rest, on LIVE: a run
+     * that ends by itself leaves the workbench on TEST, where the knob
+     * does not move the servo. */
+    close_settings();
     servo_screen_knob_frame();
     servo_screen_knob(0.01f);
     const servo_cmd_t c = last_cmd();
@@ -501,8 +511,7 @@ TEST_CASE(the_runs_faces_draw_as_a_full_redraw_would)
     short_runs();
     settle_drawn();
     two_buffers();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     CHECK(both_whole());
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 40; ++i) {
@@ -516,25 +525,26 @@ TEST_CASE(the_runs_faces_draw_as_a_full_redraw_would)
     ev(START_X, 10, TOUCH_EVENT_UP, 1);
     CHECK(!servo_screen_testing());
     CHECK(both_whole());
-    close_settings();
 
-    /* Running, phase by phase. */
+    /* Running, phase by phase: on TEST's card and on LIVE's box. */
     hold_start(2.3f);
     CHECK(servo_screen_testing());
     for (int i = 0; i < 12; ++i) {
+        if (i == 6) {
+            close_settings();
+        }
         bench_frames(700u);
         settle_drawn();
-        CHECK(both_whole_in(16, 16, 270, 112));           /* the box */
+        CHECK(both_whole_in(16, 48, 270, 132));           /* the box */
         CHECK(both_whole_in(496, 0, W - 496, H));          /* the right card */
+        CHECK(both_whole());
     }
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     CHECK(both_whole());                              /* RUNNING, STOP TEST */
 
     /* A STOP mid-hold starts nothing. */
     bench_fresh();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
+    open_test();
     ev(START_X, START_Y, TOUCH_EVENT_DOWN, 1);
     for (int i = 0; i < 50; ++i) {
         scr->tick(0.02f);
@@ -944,12 +954,11 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
 TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
 {
     bench_fresh();
-    open_settings();
-    tap(TAB_X(1), TAB_Y);
-    /* START TEST's lines, mirrored from servo_test_panel.c: the plan 2 px
-     * under the top of row 7 (54 + 7 * 42), the state 18 px under the
-     * plan and the note 36 px under it. */
-    const int y = 54 + 7 * 42 + 2 + 36;
+    open_test();
+    /* The AUTOMATIC TEST card's lines, mirrored from servo_test_panel.c:
+     * the card at y 46, its state line 98 px down and the note 36 px under
+     * that. */
+    const int y = 46 + 98 + 36;
     /* As shipped: 2.00 A at a limit of 2.00 A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
     /* One step of STALL AT's 0.05 A under the limit. */

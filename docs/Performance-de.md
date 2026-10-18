@@ -35,7 +35,7 @@ sim              9,799     1225 KiB     32.2      19.5
 throttle        10,761     1345 KiB     35.3      19.5
 chrome          33,199     4150 KiB    109.0       7.8
 overview           947      118 KiB      3.1      39.0
-servo           15,555     1944 KiB     51.1      19.5
+servo           14,776     1847 KiB     48.5      19.5
 servo-grip        3,061      383 KiB     10.0      39.0
 servo-current        4,060      508 KiB     13.3      39.0
 supply           8,565     1071 KiB     28.1      19.5
@@ -204,7 +204,7 @@ abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 440 | 1 728 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 5 072 | 2 096 |
 | `control` | `control_task` | 6 144 | 4 384 | 736 |
 | `runlog` | `log_task` | 4 608 | 3 408 | 176 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 328 | 720 |
@@ -409,7 +409,7 @@ Eine Netzwerkschnittstelle, die ESP-IDF nicht belegen kann, hält das Panel
 stattdessen mit einer Assertion in ESP-IDF an, und das Panel startet neu.
 
 Was stattdessen im PSRAM liegt: die nullinitialisierten Daten (.bss) von 17
-Objekten, 162 904 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
+Objekten, 163 016 Bytes, benannt in `firmware/panel/main/psram_bss.lf`, und
 über `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY` nach der Auswahl von
 ESP-IDF selbst die .bss von lwIP (Lightweight IP Stack), net80211, pp und
 wpa_supplicant, 13 742 Bytes.
@@ -417,7 +417,7 @@ wpa_supplicant, 13 742 Bytes.
 | Objekt | Komponente | .bss (Bytes) |
 | --- | --- | ---: |
 | `log_viewer_screen` | ui | 35 400 |
-| `servo_screen` | ui | 29 365 |
+| `servo_screen` | ui | 29 477 |
 | `ui_watermark` | ui | 20 504 |
 | `supply_screen` | ui | 20 412 |
 | `motor_screen` | ui | 19 968 |

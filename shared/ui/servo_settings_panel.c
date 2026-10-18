@@ -1,11 +1,13 @@
 /*
- * The SERVO screen's settings overlay: SETTINGS, top right, opens it over
- * the left card.  Its four pages -- OUTPUT, TEST, LIMITS and DUT -- hold
- * the servo's type, frame rate and pulse widths, the automatic test, its
- * limits and the device under test.  It opens the keypad, the keyboard,
- * the list, the profile warning, the HV warning and SUPPLY's question
- * about a live output, all over the left card.  The right card stays where
- * it is and works.
+ * The SERVO screen's pages of rows and the panels they open.  SETTINGS, a
+ * task of the strip, holds three pages under its own tabs -- OUTPUT, SWEEP
+ * and DUT: the servo's type, frame rate and pulse widths, the sweep's
+ * curve, and the device under test.  Each run card on TEST opens its run's
+ * settings as one more page, one level down: the automatic test's steps,
+ * length, timing and pass/fail limits, and the limit run's mode.  The rows
+ * open the keypad, the keyboard, the list, the profile warning, the HV
+ * warning and SUPPLY's question about a live output, all over the left
+ * column.  The right card stays where it is and works.
  *
  * The screen is servo_screen.c; the state and the layout both share are
  * servo_screen_int.h.
@@ -44,48 +46,47 @@ static const ov_row_t k_rows[] = {
     { PG_OUTPUT, R_TRAVEL,  SETTING_COUNT, TX_SV_ROW_TRAVEL,  0, 4, false },
     { PG_OUTPUT, R_REVERSE, SETTING_COUNT, TX_SV_ROW_REVERSE,  1, 4, false },
 
-    { PG_TEST, R_SETTING, SET_SERVO_CURVE,       TX_SV_ROW_CURVE,  0, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_HZ,     TX_SV_ROW_SPEED,  0, 1, false },
-    { PG_TEST, R_SETTING, SET_SERVO_TEST_RANGE,  TX_SV_ROW_RANGE,  0, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_BY,      TX_SV_ROW_LEN_BY,  0, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_S,       TX_SV_ROW_LEN_S,  0, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_LEN_MOVES,   TX_SV_ROW_MOVES,  0, 5, false },
-    { PG_TEST, R_SETTING, SET_SERVO_DWELL_MS,    TX_SV_ROW_DWELL,  0, 6, false },
-    { PG_TEST, R_SETTING, SET_SERVO_SETTLE_MS,   TX_SV_ROW_SETTLE,  0, 7, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_48,     TX_SV_ROW_STEP_48,  1, 0, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_60,     TX_SV_ROW_STEP_60,  1, 1, false },
-    { PG_TEST, R_HV,      SETTING_COUNT,         TX_SV_ROW_HV,  1, 2, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_74,     TX_SV_ROW_STEP_74,  1, 3, false },
-    { PG_TEST, R_SETTING, SET_SERVO_STEP_84,     TX_SV_ROW_STEP_84,  1, 4, false },
-    { PG_TEST, R_SETTING, SET_SERVO_BROWNOUT,    TX_SV_ROW_BROWNOUT,  1, 5, false },
-
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_V_MAX,        TX_SV_ROW_V_MAX,  0, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SUPPLY_I_MAX,        TX_SV_ROW_I_MAX,  0, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_STALL_A,       TX_SV_ROW_STALL,  0, 2, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  1, 0, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  1, 1, false },
-    { PG_LIMITS, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 2, false },
-    { PG_LIMITS, R_LIM_MODE, SETTING_COUNT,          TX_SV_ROW_LIM_MODE,  0, 5, true  },
-    { PG_LIMITS, R_LIM_PULSES, SETTING_COUNT,        TX_SV_ROW_LIM_PULSES,  0, 6, false },
+    { PG_SWEEP, R_SETTING, SET_SERVO_CURVE,      TX_SV_ROW_CURVE,  0, 0, false },
+    { PG_SWEEP, R_SETTING, SET_SERVO_TEST_HZ,    TX_SV_ROW_SPEED,  0, 1, false },
+    { PG_SWEEP, R_SETTING, SET_SERVO_TEST_RANGE, TX_SV_ROW_RANGE,  0, 2, false },
 
     { PG_DUT, R_TEXT,    SETTING_COUNT,    TX_SV_ROW_NAME,  0, 0, true  },
     { PG_DUT, R_SETTING, SET_SERVO_REPORT, TX_SV_ROW_REPORT,  0, 1, false },
-    { PG_DUT, R_SETTING, SET_ENC_EN,       TX_SV_ROW_ENC,  0, 2, false },
-    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 3, false },
-    { PG_DUT, R_SETTING, SET_SERVO_TARGET,   TX_SV_ROW_TARGET,    1, 1, false },
-    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 2, false },
+    { PG_DUT, R_ENC_CENTRE, SETTING_COUNT, TX_SV_ROW_ENC_CENTRE,  0, 2, false },
+    { PG_DUT, R_SETTING, SET_SERVO_PORT_PWM, TX_SV_ROW_PORT_PWM,  1, 1, false },
+
+    { PG_AUTO, R_SETTING, SET_SERVO_LEN_BY,        TX_SV_ROW_LEN_BY,  0, 0, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_LEN_S,         TX_SV_ROW_LEN_S,  0, 1, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_LEN_MOVES,     TX_SV_ROW_MOVES,  0, 2, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_DWELL_MS,      TX_SV_ROW_DWELL,  0, 3, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_SETTLE_MS,     TX_SV_ROW_SETTLE,  0, 4, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_STALL_A,       TX_SV_ROW_STALL,  0, 5, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_IDLE_MAX,      TX_SV_ROW_IDLE,  0, 6, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_HOLD_MAX,      TX_SV_ROW_HOLD,  0, 7, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_STEP_48,       TX_SV_ROW_STEP_48,  1, 0, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_STEP_60,       TX_SV_ROW_STEP_60,  1, 1, false },
+    { PG_AUTO, R_HV,      SETTING_COUNT,           TX_SV_ROW_HV,  1, 2, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_STEP_74,       TX_SV_ROW_STEP_74,  1, 3, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_STEP_84,       TX_SV_ROW_STEP_84,  1, 4, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_BROWNOUT,      TX_SV_ROW_BROWNOUT,  1, 5, false },
+    { PG_AUTO, R_SETTING, SET_SERVO_TRAVEL_MAX_MS, TX_SV_ROW_TRAVEL_TIME,  1, 6, false },
+
+    { PG_LIMRUN, R_LIM_MODE,   SETTING_COUNT, TX_SV_ROW_LIM_MODE,  0, 0, true  },
+    { PG_LIMRUN, R_LIM_PULSES, SETTING_COUNT, TX_SV_ROW_LIM_PULSES,  0, 1, false },
 };
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
 
-/* --------------------------------------------------------------- the overlay */
+/* ------------------------------------------------------------ the pages */
 
-/* A row's rectangle: its column, or both for a wide one. */
+/* A row's rectangle: its column, or both for a wide one.  A run's rows
+ * start under the run's name, SETTINGS' under its page tabs. */
 static gfx_rect_t row_rect(int i)
 {
     const ov_row_t *r = &k_rows[i];
     const int x = (r->col == 0) ? OV_X + 10 : OV_X + 20 + OV_COL_W;
     const int w = r->wide ? OV_W - 20 : OV_COL_W;
-    return (gfx_rect_t){ (int16_t)x, (int16_t)(OV_ROW0 + r->row * OV_PITCH),
+    const int y0 = (r->page >= PG_COUNT) ? RL_ROW0 : OV_ROW0;
+    return (gfx_rect_t){ (int16_t)x, (int16_t)(y0 + r->row * OV_PITCH),
                          (int16_t)w, OV_ROW_H };
 }
 
@@ -102,12 +103,6 @@ static gfx_rect_t trim_rect(int i, bool up)
 {
     const gfx_rect_t v = value_rect(i);
     return (gfx_rect_t){ (int16_t)(up ? v.x + v.w - 30 : v.x), v.y, 30, v.h };
-}
-
-static gfx_rect_t close_rect(void)
-{
-    return (gfx_rect_t){ (int16_t)(OV_X + OV_W - 10 - 90), (int16_t)(OV_Y + 6),
-                         90, 30 };
 }
 
 static gfx_rect_t choice_rect(int i)
@@ -153,10 +148,6 @@ static uint16_t max_pulse_for_rate(void)
 /* A set point tapped: the keypad, over the left card as the settings' is. */
 static void open_set_point(int target)
 {
-    if (!s.ov_open) {
-        s.ov_open  = true;
-        s.kp_alone = true;
-    }
     close_panels();
     const supply_caps_t caps = supply_screen_caps();
     if (target == KT_SUP_V) {
@@ -218,10 +209,6 @@ static void set_point_typed(int target, float typed)
  */
 void ask_hv_on(void)
 {
-    if (!s.ov_open) {
-        s.ov_open  = true;
-        s.kp_alone = true;
-    }
     close_panels();
     s.ask.open      = true;
     s.ask.hv        = true;
@@ -276,6 +263,26 @@ static void choice_add(const char *label, int value)
     }
 }
 
+/*
+ * The TARGET row tapped: OUTPUTS or PROG PORT, the TARGET setting's
+ * options, over the left column.  Under the setting's rule: refused while
+ * the row is locked, and a choice made waits for a bench at rest before
+ * the coprocessor takes it.
+ */
+void open_target_choice(void)
+{
+    if (target_locked_for(SET_SERVO_TARGET)) {
+        return;
+    }
+    close_panels();
+    const setting_def_t *d = settings_def(SET_SERVO_TARGET);
+    open_choice(CH_ENUM, SET_SERVO_TARGET, TR(SV_TARGET));
+    for (int k = 0; k < d->option_count; ++k) {
+        choice_add(ui_setting_option(SET_SERVO_TARGET, k), k);
+    }
+    servo_invalidate();
+}
+
 static void open_keypad(int target, const char *title, const char *unit,
                         float value, float lo, float hi, int decimals)
 {
@@ -291,16 +298,15 @@ static void open_keypad(int target, const char *title, const char *unit,
  * test or a sweep: one that went on would step and record a servo that
  * gets no pulse.  STOP and DISARM end those.
  */
-static bool target_locked(const ov_row_t *r)
+bool target_locked_for(setting_id_t id)
 {
-    if (r->kind != R_SETTING
-        || (r->id != SET_SERVO_TARGET && r->id != SET_SERVO_PORT_PWM)) {
+    if (id != SET_SERVO_TARGET && id != SET_SERVO_PORT_PWM) {
         return false;
     }
-    if (settings_held(r->id)) {
+    if (settings_held(id)) {
         return true;                    /* the programmer has the port */
     }
-    if (r->id == SET_SERVO_PORT_PWM) {
+    if (id == SET_SERVO_PORT_PWM) {
         if (settings_get_int(SET_SERVO_TARGET) == 0) {
             return true;                /* no port to switch */
         }
@@ -312,6 +318,11 @@ static bool target_locked(const ov_row_t *r)
     }
     return s.gate.armed || s.sweeping || servo_test_running(&s.test)
            || servo_limrun_running(&s.lim) || kst_panel_holds_port();
+}
+
+static bool target_locked(const ov_row_t *r)
+{
+    return r->kind == R_SETTING && target_locked_for(r->id);
 }
 
 /* A settings row tapped: the editor its kind takes. */
@@ -495,21 +506,10 @@ static void keypad_done(ui_keypad_result_t r, float v)
         case KT_RATE:
             ask_profile(s.type, us);
             break;
-        case KT_SETTING: {
-            const setting_def_t *d = settings_def(s.kp_setting);
-            /* A cap rounds down onto its step, as on SUPPLY. */
-            if (d->step > 0.0f && (s.kp_setting == SET_SUPPLY_V_MAX
-                                   || s.kp_setting == SET_SUPPLY_I_MAX)) {
-                v = d->min + floorf((v - d->min) / d->step + 1e-3f) * d->step;
-            }
+        case KT_SETTING:
             settings_set(s.kp_setting, v);
-            if (s.kp_setting == SET_SUPPLY_V_MAX
-                || s.kp_setting == SET_SUPPLY_I_MAX) {
-                supply_screen_limits_changed();
-            }
             settings_request_save();
             break;
-        }
         default:
             break;
         }
@@ -517,7 +517,7 @@ static void keypad_done(ui_keypad_result_t r, float v)
     ++s.ctrl_rev;
 }
 
-/* A press landing in the overlay: on whichever of its panels is up. */
+/* A press on a page of rows or a panel: on whichever is up. */
 void ov_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -567,46 +567,17 @@ void ov_down(const touch_event_t *evt)
         }
         return;
     }
-    if (gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
-                                        OV_TAB_W, OV_TAB_H }, x, y)) {
+    /* SETTINGS' page tabs; a run's settings have none. */
+    if (wb_task() == UI_WB_SETTINGS
+        && gfx_rect_contains((gfx_rect_t){ (int16_t)(OV_X + 10), OV_TAB_Y,
+                                           OV_TAB_W, OV_TAB_H }, x, y)) {
         ov_take(evt, OP_TAB, -1);
         (void)ui_tabs_event(&s.tabs, evt);
         return;
     }
-    if (gfx_rect_contains(close_rect(), x, y)) {
-        ov_take(evt, OP_CLOSE, -1);
-        return;
-    }
-    if (s.tabs.selected == PG_TEST
-        && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_TEST_START, -1);
-        /* A hold, unless a run is under way (a tap stops it), a step is
-         * past 6.0 V (a tap opens the HV warning, whose hold starts it), or
-         * it cannot run now (a tap says why). */
-        s.test_note = 0;
-        if (!servo_test_running(&s.test) && test_blocked() == 0
-            && !test_needs_hv()) {
-            s.test_down = true;
-            ui_hold_begin(&s.test_hold);
-        }
-        ++s.test_rev;
-        return;
-    }
-    if (s.tabs.selected == PG_LIMITS
-        && gfx_rect_contains(test_start_rect(), x, y)) {
-        ov_take(evt, OP_LIM_START, -1);
-        /* A hold, unless the run is under way (a tap stops it) or it
-         * cannot run now (a tap says why). */
-        s.lim_note = NULL;
-        if (!servo_limrun_running(&s.lim) && lim_blocked() == NULL) {
-            s.lim_down = true;
-            ui_hold_begin(&s.lim_hold);
-        }
-        ++s.test_rev;
-        return;
-    }
+    const int page = rows_page();
     for (int i = 0; i < ROW_COUNT; ++i) {
-        if (k_rows[i].page != s.tabs.selected || row_hidden(&k_rows[i])) {
+        if (k_rows[i].page != page || row_hidden(&k_rows[i])) {
             continue;
         }
         if (k_rows[i].kind == R_TRIM) {
@@ -630,7 +601,7 @@ void ov_down(const touch_event_t *evt)
     }
 }
 
-/* The rest of an overlay press: its moves and its release. */
+/* The rest of such a press: its moves and its release. */
 void ov_rest(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
@@ -714,7 +685,7 @@ void ov_rest(const touch_event_t *evt)
         }
         if (!up) {
             /* A finger that leaves START LIMIT RUN abandons the hold. */
-            if (!gfx_rect_contains(test_start_rect(), x, y)
+            if (!gfx_rect_contains(lim_start_rect(), x, y)
                 && ui_hold_leave(&s.lim_hold)) {
                 s.lim_down = false;
                 ++s.test_rev;
@@ -759,14 +730,6 @@ void ov_rest(const touch_event_t *evt)
         return;
     }
     switch (was) {
-    case OP_CLOSE:
-        if (gfx_rect_contains(close_rect(), x, y)) {
-            s.ov_open = false;
-            s.kp_alone = false;
-            close_panels();
-            servo_invalidate();
-        }
-        break;
     case OP_ROW:
         if (which >= 0 && gfx_rect_contains(row_rect(which), x, y)) {
             edit_row(which);
@@ -823,7 +786,7 @@ void ov_rest(const touch_event_t *evt)
         ++s.test_rev;
         break;
     case OP_LIM_START:
-        if (gfx_rect_contains(test_start_rect(), x, y)
+        if (gfx_rect_contains(lim_start_rect(), x, y)
             && servo_limrun_running(&s.lim)) {
             lim_end_now(SERVO_TEST_AB_OPERATOR);
         }
@@ -840,28 +803,17 @@ void ov_rest(const touch_event_t *evt)
                 /* A run would go on behind the programmer, stepping the
                  * rail and the position of the port CONNECT takes. */
                 test_end_now(SERVO_TEST_AB_OPERATOR);
-                s.ov_open = false;
-                s.kp_alone = false;
                 close_panels();
                 kst_panel_open();
             }
             servo_invalidate();
         }
         break;
-    case OP_SETTINGS:
-        /* The settings would cover a programmer that holds the port. */
-        if (kst_panel_holds_port()) {
-            break;
-        }
-        if (gfx_rect_contains(s.set_btn, x, y)) {
-            kst_panel_leave();
-            /* SETTINGS opens the overlay and closes it, taking whatever is
-             * open in it; a warning not held is a profile not applied.  The
-             * servo's lead runs out past the left card, where the overlay
-             * does not reach, so the change is a whole repaint. */
-            s.ov_open = !s.ov_open;
-            s.kp_alone = false;     /* whatever opened it, it is shut now */
-            close_panels();
+    case OP_RUN_SET:
+        /* A run card's SETTINGS: that run's settings, one level down. */
+        if (which >= 0 && gfx_rect_contains(run_set_rect(which), x, y)
+            && wb_task() == UI_WB_TEST) {
+            s.run_list = (which == 0) ? RL_AUTO : RL_LIMIT;
             servo_invalidate();
         }
         break;
@@ -1012,7 +964,7 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
     return warn;
 }
 
-/* A line of a page's note: the overlay less 10 px each side, 58 cells. */
+/* A line of a page's note: the page less 10 px each side, 58 cells. */
 #define NOTE_CELLS ((OV_W - 20) / 8)
 
 /* Whether the frame rate reached the pins, in two lines or more. */
@@ -1067,14 +1019,26 @@ static void draw_rate_note(gfx_canvas_t *c, int x, int y)
     (void)wrap_text(c, x, y + 18 * n1, 18, l2, NOTE_CELLS, col);
 }
 
-static void draw_page(gfx_canvas_t *c)
+/*
+ * A page of rows in the page area: SETTINGS' page under its tabs, or a
+ * run's settings under the run's name.  Its notes, and the save line.
+ */
+void draw_rows_page(gfx_canvas_t *c)
 {
-    ui_tabs_render(&s.tabs, c);
-    ui_button(c, close_rect(), TR(SUP_CLOSE), ui_theme_color(UI_C_PANEL_SUNK),
-              s.ov_have && s.ov_pressed == OP_CLOSE, true);
+    const int page = rows_page();
+    const gfx_rect_t a = page_area();
+    gfx_fill_rect(c, a.x + 1, a.y + 1, a.w - 2, a.h - 2,
+                  ui_theme_color(UI_C_PANEL));
+    if (page < PG_COUNT) {
+        ui_tabs_render(&s.tabs, c);
+    } else {
+        gfx_text(c, OV_X + 10, CARD_Y + 8,
+                 (page == PG_AUTO) ? TR(SV_AUTO_TEST) : TR(SV_ROW_LIM_MODE),
+                 &gfx_font_8x16, ui_theme_color(UI_C_ACCENT), 1);
+    }
     for (int i = 0; i < ROW_COUNT; ++i) {
         const ov_row_t *r = &k_rows[i];
-        if (r->page != s.tabs.selected || row_hidden(r)) {
+        if (r->page != page || row_hidden(r)) {
             continue;
         }
         const gfx_rect_t rr = row_rect(i);
@@ -1112,7 +1076,7 @@ static void draw_page(gfx_canvas_t *c)
     }
 
     const int nx = OV_X + 10;
-    if (s.tabs.selected == PG_OUTPUT) {
+    if (page == PG_OUTPUT) {
         char l1[96], l2[96];
         snprintf(l1, sizeof(l1), TR(SV_FASTEST),
                  (unsigned)max_rate_for(s.type, cmd_top()),
@@ -1121,22 +1085,17 @@ static void draw_page(gfx_canvas_t *c)
         const char *const lines[] = { l1, l2 };
         draw_note(c, nx, OV_NOTE_Y, lines, 2);
         draw_rate_note(c, nx, OV_NOTE_Y + 2 * 18);
-    } else if (s.tabs.selected == PG_TEST) {
-        draw_test_start(c);
-        draw_test_lines(c);
-    } else if (s.tabs.selected == PG_LIMITS) {
-        const char *const lines[] = {
-            TR(SV_LIMITS_1), TR(SV_LIMITS_2), TR(SV_LIMITS_3),
-            TR(SV_LIMITS_4),
-        };
-        draw_note(c, nx, OV_ROW0 + 3 * OV_PITCH + 6, lines, 4);
-        draw_lim_start(c);
-        draw_lim_lines(c);
-    } else {
+    } else if (page == PG_AUTO) {
+        draw_test_stall(c, nx, RL_ROW0 + 8 * OV_PITCH - 4);
+    } else if (page == PG_LIMRUN) {
+        draw_lim_mode_note(c, nx, RL_ROW0 + 2 * OV_PITCH + 6);
+    } else if (page == PG_DUT) {
         const char *const lines[] = {
             TR(SV_DUT_NOTE), TR(SV_ENC_NOTE_1), TR(SV_ENC_NOTE_2),
         };
-        draw_note(c, nx, OV_ROW0 + 4 * OV_PITCH + 6, lines, 3);
+        const int y = OV_ROW0 + 3 * OV_PITCH + 6;
+        draw_note(c, nx, y, lines, 3);
+        draw_caps_line(c, nx, y + 4 * 18);
     }
     draw_save_line(c);
 }
@@ -1177,7 +1136,8 @@ void draw_warn_apply(gfx_canvas_t *c)
               s.warn.down, true);
 }
 
-/* A line of a warning: the overlay less 20 px each side, in 8 px cells. */
+/* A line of a warning: the left column less 20 px each side, in 8 px
+ * cells. */
 #define WARN_CELLS ((OV_W - 40) / 8)
 
 /*
@@ -1312,6 +1272,7 @@ static void draw_ask(gfx_canvas_t *c)
               s.ov_have && s.ov_pressed == OP_ASK_CANCEL, true);
 }
 
+/* The panel open over the left column, if any. */
 void draw_overlay(gfx_canvas_t *c)
 {
     const gfx_rect_t a = overlay_area();
@@ -1335,7 +1296,5 @@ void draw_overlay(gfx_canvas_t *c)
     gfx_draw_rect(c, a.x, a.y, a.w, a.h, ui_theme_color(UI_C_ACCENT));
     if (s.ch.open) {
         draw_choice(c);
-        return;
     }
-    draw_page(c);
 }

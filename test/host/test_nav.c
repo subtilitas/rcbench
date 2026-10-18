@@ -33,6 +33,9 @@
 #include "ui_theme.h"
 #include "ui_watermark.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
+
+#include "servo_spots.h"
 
 #define W 800
 #define H 480
@@ -602,6 +605,39 @@ TEST_CASE(the_home_tag_climbs_the_programmer_one_level_at_a_time)
     CHECK_EQ(programmer_screen_stick_level(), 0);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_PROGRAMMER);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/*
+ * SERVO through the router's home tag: over a list it closes the list and
+ * SERVO stays on SETTINGS; from a run's settings it climbs to TEST; from a
+ * task it goes to the menu, and the tile opens LIVE again.
+ */
+TEST_CASE(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves)
+{
+    fresh();
+    to_overview();
+    ui_router_goto(SCREEN_SERVO);
+    tap(SV_TAB_SETTINGS_X, UI_BAND_H + SV_TAB_Y);
+    tap(100, UI_BAND_H + SV_ROW_Y(0));                 /* TYPE's list */
+    const uint32_t nav = ui_router_navigations();
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_SETTINGS);
+    CHECK_EQ(ui_router_navigations(), nav);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+
+    ui_router_goto(SCREEN_SERVO);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_LIVE);
+    tap(SV_TAB_TEST_X, UI_BAND_H + SV_TAB_Y);
+    tap(SV_RUN_SET_X, UI_BAND_H + SV_RUN_SET_Y(0));
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    tap_home();
+    CHECK_EQ(ui_router_current(), SCREEN_SERVO);
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
 }
@@ -2543,15 +2579,14 @@ TEST_CASE(reset_peaks_needs_the_fingers_release_and_disarm_does_not)
     motor_screen_set_armed(false);
 }
 
-/* SERVO: SETTINGS and the overlay's CLOSE lie 24 px and 27 px under the
- * band.  Carried into it, they are released for the screen where they were
- * pressed, and neither acts. */
-TEST_CASE(servo_settings_and_close_carried_into_the_band_do_nothing)
+/* SERVO: the strip's SETTINGS and LIVE tabs lie 18 px under the band.
+ * Carried into it, they are released for the screen where they were
+ * pressed, and neither switches the task. */
+TEST_CASE(servo_strip_tabs_carried_into_the_band_do_nothing)
 {
-    /* Mirrored from servo_screen.c (SETTINGS) and servo_settings_panel.c
-     * (CLOSE). */
-    const int set_x = 734, set_y = UI_BAND_H + 24;
-    const int close_x = 439, close_y = UI_BAND_H + 27;
+    /* Mirrored from ui_workbench.h (servo_spots.h). */
+    const int set_x = SV_TAB_SETTINGS_X, set_y = UI_BAND_H + SV_TAB_Y;
+    const int close_x = SV_TAB_LIVE_X, close_y = UI_BAND_H + SV_TAB_Y;
     fresh();
     to_overview();
     ui_router_goto(SCREEN_SERVO);
@@ -3309,6 +3344,7 @@ int main(void)
     RUN(wifi_keeps_its_opener_over_stop_link_loss_and_home);
     RUN(the_home_tag_climbs_one_level_from_every_screen);
     RUN(the_home_tag_climbs_the_programmer_one_level_at_a_time);
+    RUN(the_home_tag_on_servo_closes_a_panel_climbs_and_leaves);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
     RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);
@@ -3370,7 +3406,7 @@ int main(void)
     RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
     RUN(a_release_made_for_the_finger_activates_nothing_but_stop);
     RUN(reset_peaks_needs_the_fingers_release_and_disarm_does_not);
-    RUN(servo_settings_and_close_carried_into_the_band_do_nothing);
+    RUN(servo_strip_tabs_carried_into_the_band_do_nothing);
     RUN(the_armed_chip_names_the_role);
     RUN(the_band_renders_the_role_of_the_arm);
     RUN(a_tap_on_each_chip_opens_its_bubble);

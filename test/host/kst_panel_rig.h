@@ -36,6 +36,9 @@
 #include "ui_text.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
+
+#include "servo_spots.h"
 
 #define W 800
 #define H 480
@@ -43,10 +46,12 @@
 /* The SERVO screen's left card, as servo_screen.c hands it over. */
 static const gfx_rect_t AREA = { 6, 6, 488, 420 };
 
-/* PROGRAM and SETTINGS at the top of the SERVO screen's right card. */
-#define PROG_X 632
-#define SETB_X 734
-#define BTN_Y  24
+/* PROGRAM over the SERVO screen's right card, and the strip's LIVE and
+ * SETTINGS tabs, all in the strip's row (servo_spots.h). */
+#define PROG_X SV_PROGRAM_X
+#define SETB_X SV_TAB_SETTINGS_X
+#define LIVE_X SV_TAB_LIVE_X
+#define BTN_Y  SV_TAB_Y
 #define ARM_X  648
 #define ARM_Y  404
 

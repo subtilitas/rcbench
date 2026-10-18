@@ -6,8 +6,9 @@ Der Programmierer liest die 32 Register eines KST- oder Chaservo-Servos über
 dessen Signalleitung, zeigt sie als Einstellungen und schreibt geänderte
 Einstellungen zurück. Die Servos der zwei Marken teilen ein Protokoll und
 einen Registersatz. Er ist ein Overlay auf dem
-[SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMMIEREN** oben auf
-der rechten Karte geöffnet. **PROGRAMMIEREN** beendet einen laufenden
+[SERVO-Bildschirm](Screens-de.md#servo) und wird mit **PROGRAMMIEREN** in der
+Zeile der Leiste über der rechten Karte geöffnet; er bedeckt die linke
+Spalte samt den Reitern der Leiste. **PROGRAMMIEREN** beendet einen laufenden
 automatischen Test als `vom Bediener gestoppt`.
 
 KST und Chaservo sind Namen oder Marken ihrer jeweiligen Inhaber. rcbench
@@ -41,7 +42,7 @@ bevor man sich auf ein Schreiben verlässt.
 - Das Servo hängt am Programmierport des Koprozessors, Port 1: GP13, Pad 17
   des Bring-up-Moduls, solange kein anderer Pin dafür gespeichert ist. Der
   Port ist kein Ausgangskanal und kein Slot von OUTPUTS.
-- **PWM-ZIEL** des SERVO-Bildschirms steht auf **PROG-PORT**
+- **ZIEL** des SERVO-Bildschirms steht auf **PROG-PORT**
   ([das Ziel](#das-ziel)). Mit den Standardausgängen als Ziel ist der
   Programmierer gesperrt.
 - Ein Servo zur Zeit.
@@ -79,17 +80,16 @@ bevor man sich auf ein Schreiben verlässt.
 ## Das Ziel
 
 Der Tester des SERVO-Bildschirms treibt die Standard-Servoausgänge oder den
-Programmierport. **OPTIONEN**, Reiter PRÜFLING, hält die zwei Zeilen:
+Programmierport. Zwei Bedienelemente stellen es:
 
-| Zeile | Werte | Wirkung |
+| Bedienelement | Werte | Wirkung |
 | --- | --- | --- |
-| PWM-ZIEL | **AUSGÄNGE**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben |
-| PORT-PWM | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
+| ZIEL, die Zeile auf der rechten Karte | **AUSGÄNGE**, **PROG-PORT** | was der Sweep, **ZENTRIEREN**, **FREIGEBEN**, das Halten einer Stellung und der automatische Test treiben; ein Tippen öffnet die Auswahl |
+| PORT-PWM, auf **OPTIONEN** > PRÜFLING | **EIN**, **AUS** | ob der Programmierport den Puls des Testers ausgibt, solange er das Ziel ist |
 
-Beide Zeilen werden mit den SERVO-Einstellungen gehalten. Der
-SERVO-Bildschirm nennt das aktive Ziel mit den Pins in der Zeile ZIEL der
-rechten Karte: `PROG-PORT GP13` in der Warnfarbe oder `GP4` für die als
-SERVO PWM gebundenen Pins. **PWM-ZIEL** wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
+Beide werden mit den SERVO-Einstellungen gehalten. Die Zeile ZIEL nennt das
+aktive Ziel mit Protokoll und Pins: `PROG-PORT GP13` in der Warnfarbe oder
+`SERVO PWM GP4` für die als SERVO PWM gebundenen Pins. **ZIEL** wechselt nur bei einem Prüfstand in SAFE, ohne laufenden Sweep
 und ohne laufenden Test, und wenn der Port nicht im Programmieren ist; das
 Panel gibt eine gehaltene Stellung frei, bevor es den Koprozessor um das
 andere Ziel bittet. **PORT-PWM** geht nach derselben Regel ein. Es geht
@@ -113,7 +113,7 @@ was immer die Zeile sagt.
 
 Mit den Standardausgängen als Ziel zeigt der Programmierer
 `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und
-`Unter SERVO > PRÜFLING das PWM-ZIEL auf PROG-PORT stellen.`, und jedes
+`Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und jedes
 Bedienelement außer **SCHLIESSEN** ist aus.
 
 ![Die Standardausgänge sind das Ziel](img/de/servo-kst-target.png)
@@ -149,8 +149,8 @@ das Schreiben ohne Ergebnis endet.
 
 ![Ein laufendes Schreiben](img/de/servo-kst-writing.png)
 
-Solange der Port im Programmieren ist, bleibt das Overlay offen,
-**OPTIONEN** ist aus, und die Bedienelemente des Testers senden nichts an
+Solange der Port im Programmieren ist, bleibt das Overlay offen, die
+Reiter der Leiste darunter nehmen keinen Druck, und die Bedienelemente des Testers senden nichts an
 den Port. **STOP** auf der rechten Karte arbeitet. Das Verlassen des
 SERVO-Bildschirms lässt den Port, wie er ist; beim nächsten Aufruf ist das
 Overlay wieder offen.
@@ -239,8 +239,8 @@ Abfallen braucht, ist nicht gemessen.
 ![Die Tastatur für die Spannung](img/de/servo-kst-voltage.png)
 ![Die Tastatur für das Warten](img/de/servo-kst-wait.png)
 
-Eine Spannung über 6,0 V braucht **HV-SERVO** auf dem Reiter TEST von
-**OPTIONEN**; ohne es endet die Tastatur bei 6,0 V. Mit ihm öffnet ein Wert
+Eine Spannung über 6,0 V braucht **HV-SERVO** in den Optionen der Karte
+AUTOMATISCHER TEST auf TEST; ohne es endet die Tastatur bei 6,0 V. Mit ihm öffnet ein Wert
 über 6,0 V die Warnseite der Hochspannungs-Einstellung des
 SERVO-Bildschirms, und **HALTEN ZUM ÜBERNEHMEN** übernimmt ihn nach 2 s.
 Das Ausschalten von **HV-SERVO** setzt eine Programmierspannung über 6,0 V
@@ -887,7 +887,7 @@ Backup-Datei auf der Karte bleibt dort.
 ## Der Endlagenlauf
 
 Der Endlagenlauf des SERVO-Bildschirms führt den Programmierer selbst,
-sobald PWM-ZIEL auf PROG-PORT steht
+sobald ZIEL auf PROG-PORT steht
 ([Servoverfahren](Servo-de.md#die-weggrenzen-des-servos-programmieren)).
 Seine erste Sitzung liest das Servo, auch bei NUR SUCHE: VERBINDEN mit
 seinem Lesen, VERLASSEN. Mit SERVOPULSE auf 1000-2000 schreibt diese
@@ -1049,7 +1049,7 @@ Die Zustandszeile zeigt
 Bedienelemente des Testers bleiben aus, bis der Port PWM meldet. Die Taste
 heißt **ABBRECHEN**, solange das Warten läuft. Danach steht
 `Der Port ist wieder im Testermodus.`, und der Tester treibt den Port sofort,
-mit **PWM-ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
+mit **ZIEL** auf **PROG-PORT** und **PORT-PWM** ein. Das nächste
 **VERBINDEN** beginnt eine neue Sitzung mit eigenem Lesen.
 
 ### Das Warten vor PWM
@@ -1149,7 +1149,7 @@ Codes.
 - Mit dem simulierten Netzteil (kein PD mini verdrahtet) dimmt das Panel
   dieselben Bedienelemente, und die Versorgung des Servos ist, was es
   speist.
-- Die Zeilen **PWM-ZIEL** und **PORT-PWM** folgen dem Zustand des Ports
+- Die Zeilen **ZIEL** und **PORT-PWM** folgen dem Zustand des Ports
   einen Frame des Bildschirms nach der Control-Task. Die Control-Task hält
   die Seite des Ports und die Kommandos des Testers nach ihrer eigenen
   Lesung des Ports.

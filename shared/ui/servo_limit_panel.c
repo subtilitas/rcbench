@@ -1,10 +1,10 @@
 /*
- * The SERVO screen's limit run (servo_limrun.h).  START LIMIT RUN, on the
- * LIMITS page, starts it.  This file holds what that button checks first,
+ * The SERVO screen's limit run (servo_limrun.h).  START LIMIT RUN, on
+ * TEST's LIMIT RUN card, starts it.  This file holds what that button checks first,
  * the run's steps done the way a finger does them (the servo's position,
  * ARM and DISARM, SUPPLY's output), and the programmer's sessions with a
  * KST or Chaservo servo on the programming port.  It also draws the run's
- * box on the left card and its lines on the LIMITS page.
+ * box on LIVE's card, its card's lines on TEST and its settings' note.
  *
  * The screen is servo_screen.c; the state and the layout the files share
  * are servo_screen_int.h.
@@ -361,8 +361,8 @@ void lim_meter_follow(servo_source_id_t id, uint32_t changes)
     lim_end_now(why);
 }
 
-/* START LIMIT RUN's hold completed: the run starts and the settings close
- * so the left card shows it. */
+/* START LIMIT RUN's hold completed: the run starts.  A panel open closes;
+ * TEST's card and LIVE's box show the run. */
 void lim_begin(void)
 {
     ui_hold_reset(&s.lim_hold);
@@ -402,8 +402,6 @@ void lim_begin(void)
     s.lim_report = false;
     s.lim_box    = true;
     s.test_box   = false;
-    s.ov_open    = false;
-    s.kp_alone   = false;
     close_panels();
     if (kst_panel_is_open() && !kst_panel_holds_port()) {
         kst_panel_close();
@@ -435,12 +433,12 @@ void lim_tick(void)
     lim_poll();
     lim_step();
     lim_ended();
-    /* The box and the LIMITS page, where they show. */
+    /* The box and the LIMIT RUN card, where they show. */
     const uint32_t sig = lim_signature();
     if (sig != s.lim_sig) {
         s.lim_sig = sig;
         ++s.test_rev;
-        if (s.lim_box || (s.ov_open && s.tabs.selected == PG_LIMITS)) {
+        if (s.lim_box || wb_task() == UI_WB_TEST) {
             ++s.ctrl_rev;
         }
     }
@@ -448,7 +446,7 @@ void lim_tick(void)
 
 /* ----------------------------------------------------------------- drawing */
 
-/* The limit run's report, as the box and the LIMITS page name it. */
+/* The limit run's report, as the box and the LIMIT RUN card name it. */
 static void lim_file_name(char *b, size_t n)
 {
     if (s.lim_file > 0) {
@@ -585,7 +583,7 @@ void draw_lim_box(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_DIM), 1);
 }
 
-/* START LIMIT RUN, on the LIMITS page where START TEST is on TEST. */
+/* START LIMIT RUN, on the LIMIT RUN card under the AUTOMATIC TEST one. */
 void draw_lim_start(gfx_canvas_t *c)
 {
     const bool running = servo_limrun_running(&s.lim);
@@ -596,26 +594,67 @@ void draw_lim_start(gfx_canvas_t *c)
         fill = ui_hold_fill(fill, ui_theme_color(UI_C_DANGER),
                             s.lim_hold.held_s);
     }
-    ui_button(c, test_start_rect(),
+    ui_button(c, lim_start_rect(),
               running ? TR(SV_LIM_STOP) : TR(SV_LIM_START), fill,
               s.ov_have && s.ov_pressed == OP_LIM_START,
               running || lim_blocked() == NULL);
 }
 
-/* Under it, across the card: what the run drives and reads, what it does
- * or why it cannot, and whether it programs. */
+/* Why SEARCH+PROG is not offered, or what the mode does, at (@p x, @p y):
+ * the LIMIT RUN settings' note. */
+void draw_lim_mode_note(gfx_canvas_t *c, int x, int y)
+{
+    const char *why = lim_prog_why();
+    const bool running = servo_limrun_running(&s.lim);
+    const bool prog = running ? s.lim.cfg.program : lim_programs();
+    if (why != NULL && !running) {
+        /* Why SEARCH+PROG is not offered: the run searches only. */
+        gfx_text(c, x, y, why, &gfx_font_8x16,
+                 s.lim_prog ? ui_theme_color(UI_C_WARN)
+                            : ui_theme_color(UI_C_TEXT_DIM), 1);
+        return;
+    }
+    const bool pulses = running ? s.lim.cfg.set_pulses
+                                : (lim_reads() && s.lim_pulses);
+    gfx_text(c, x, y,
+             prog     ? TR(SV_LIM_PROG_NOTE)
+             : pulses ? TR(SV_LIM_PULSES_NOTE)
+                      : TR(SV_LIM_SEARCH_NOTE),
+             &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/*
+ * The LIMIT RUN card's lines: over START LIMIT RUN the mode, and under it
+ * what the run drives and reads, why it cannot start or what it does now,
+ * the last result and its report, and the mode's note.
+ */
 void draw_lim_lines(gfx_canvas_t *c)
 {
-    const int x = OV_X + 10;
-    const int y = OV_ROW0 + 7 * OV_PITCH + 2;
-    char out[32], line[96];
+    const gfx_rect_t k = run_card_rect(1);
+    const int x = k.x + 10;
+    const bool running = servo_limrun_running(&s.lim);
+    const bool prog = running ? s.lim.cfg.program : lim_programs();
+    const bool pulses = running ? s.lim.cfg.set_pulses
+                                : (lim_reads() && s.lim_pulses);
+    char line[96];
+    const char *mode = prog ? TR(SV_LIM_PROGRAM) : TR(SV_LIM_SEARCH);
+    if (running ? s.lim.cfg.read : lim_reads()) {
+        snprintf(line, sizeof(line), TR(SV_SUM_LIM), mode,
+                 pulses ? TR(SV_LIM_PULSES_STD) : TR(SV_LIM_PULSES_KEEP));
+    } else {
+        snprintf(line, sizeof(line), "%s", mode);
+    }
+    gfx_text(c, x, k.y + 34, line, &gfx_font_8x16,
+             ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    const int y = k.y + RUN_LINE_DY;
+    char out[32];
     (void)servo_target_line(out, sizeof(out), s.drive_target, s.drive_pin,
                             s.drive_pwm, s.pins, s.pins_known);
     snprintf(line, sizeof(line), TR(SV_LIM_LINE), out);
     gfx_text(c, x, y, line, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_DIM), 1);
 
     gfx_color_t col = ui_theme_color(UI_C_TEXT_FAINT);
-    const bool running = servo_limrun_running(&s.lim);
     const char *blocked = running ? NULL : lim_blocked();
     if (blocked != NULL || s.lim_note != NULL) {
         snprintf(line, sizeof(line), "%s",
@@ -624,30 +663,22 @@ void draw_lim_lines(gfx_canvas_t *c)
     } else if (running) {
         snprintf(line, sizeof(line), TR(SV_LIM_RUNNING),
                  ui_servo_str(servo_limrun_phase_str(s.lim.phase)));
-    } else if (s.lim.state == SERVO_LIMRUN_DONE) {
-        char f[LOG_RUN_NAME_MAX + 4];
-        lim_file_name(f, sizeof(f));
-        snprintf(line, sizeof(line), TR(SV_LAST),
-                 ui_servo_str(servo_limrun_verdict_str(s.lim.verdict)), f);
     } else {
         snprintf(line, sizeof(line), "%s", TR(SV_HOLD_START));
     }
     gfx_text(c, x, y + 18, line, &gfx_font_8x16, col, 1);
 
-    const char *why = lim_prog_why();
-    const bool prog = running ? s.lim.cfg.program : lim_programs();
-    if (why != NULL && !running) {
-        /* Why SEARCH+PROG is not offered: the run searches only. */
-        gfx_text(c, x, y + 36, why, &gfx_font_8x16,
-                 s.lim_prog ? ui_theme_color(UI_C_WARN)
-                            : ui_theme_color(UI_C_TEXT_DIM), 1);
-    } else {
-        const bool pulses = running ? s.lim.cfg.set_pulses
-                                    : (lim_reads() && s.lim_pulses);
-        gfx_text(c, x, y + 36,
-                 prog     ? TR(SV_LIM_PROG_NOTE)
-                 : pulses ? TR(SV_LIM_PULSES_NOTE)
-                          : TR(SV_LIM_SEARCH_NOTE),
-                 &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+    if (s.lim.state == SERVO_LIMRUN_DONE && !running) {
+        char f[LOG_RUN_NAME_MAX + 4];
+        lim_file_name(f, sizeof(f));
+        snprintf(line, sizeof(line), TR(SV_CARD_LAST),
+                 ui_servo_str(servo_limrun_verdict_str(s.lim.verdict)), f);
+        gfx_text(c, x, y + 36, line, &gfx_font_8x16,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+    }
+    /* SEARCH+PROG chosen and not offered: why, in the warning colour. */
+    if (!running && s.lim_prog && lim_prog_why() != NULL) {
+        gfx_text(c, x, y + 54, lim_prog_why(), &gfx_font_8x16,
+                 ui_theme_color(UI_C_WARN), 1);
     }
 }

@@ -468,7 +468,29 @@ ESC und die Spalten des Fensters unter INA3221.
 
 ![Servo](img/de/servo.png)
 
-Auf einem Prüfstand in ARMED an beliebiger Stelle auf dem Bogen ziehen, um
+SERVO ist eine Werkbank. Die Leiste unter dem Band trägt ihre Aufgaben,
+**LIVE**, **TEST** und **OPTIONEN**, 112 px je Reiter. Die Kachel öffnet
+LIVE. Ein Wechsel des Reiters ist keine Navigationsebene: das Home-Tag führt
+von jeder Aufgabe nach Hause und steigt nur aus den Einstellungen eines
+Laufs eine Ebene zurück zu TEST. Jede Aufgabe behält ihre Seite und ihre
+Auswahl bis zum Neustart des Panels. Das Verlassen von SERVO schaltet den
+Prüfstand auf SAFE, aus jeder Aufgabe.
+
+| Aufgabe | Linke Karte, der Seitenbereich |
+| --- | --- |
+| LIVE | das Zifferblatt, darüber das Feld eines Laufs, solange er läuft oder sein Ergebnis steht |
+| TEST | die Karten AUTOMATISCHER TEST und ENDLAGENLAUF und die Grenzen von SUPPLY, nur lesbar |
+| OPTIONEN | die Seiten AUSGANG, SWEEP und PRÜFLING |
+
+Die rechte Karte ist die Ausgangskarte, auf jeder Aufgabe dieselbe: die
+Messwerte, die Zeile SOLL, TEMPO, die Zeile ZIEL, ZENTRIEREN, SWEEP,
+FREIGEBEN und ARM. PROGRAMMIEREN sitzt in der Zeile der Leiste über der
+rechten Karte. Ein Feld -- ein Tastenfeld, die Buchstabentastatur, eine
+Liste, eine Warnung, die Frage oder der Servo-Programmierer -- bedeckt die
+ganze linke Spalte samt den Reitern der Leiste und wird beantwortet oder
+geschlossen, bevor die Aufgabe wechselt.
+
+Auf LIVE bei einem Prüfstand in ARMED an beliebiger Stelle auf dem Bogen ziehen, um
 eine Stellung zu befehlen. Der
 kräftige Arm ist die gemessene Stellung, der blasse Arm die befohlene. Der
 Abstand zwischen beiden ist die Verzögerung des Servos selbst. Die Ringe um
@@ -480,7 +502,11 @@ und auch dann bleiben die Pins gebunden und treiben weiter, auf der Mitte
 ihres Wegs. Beendet werden die Flanken durch ein Schalten auf SAFE oder durch das
 Verlassen des Bildschirms, was auf SAFE schaltet. Bei eingeschaltetem Drehknopf
 bewegt dessen Drehung das Horn von dort aus, wo es steht
-([der Knopf](#anwendung-der-drehknopf)).
+([der Knopf](#anwendung-der-drehknopf)), nur auf LIVE: auf TEST, auf
+OPTIONEN, unter einem Feld und unter dem Servo-Programmierer ist das
+Zifferblatt nicht zu sehen, und eine Drehung bewegt nichts. Eine Drehung im
+Frame, in dem LIVE zurückkommt, bewegt ebenfalls nichts; die nächste
+bewegt.
 
 Ein Finger zieht das Zifferblatt. Ein Druck eines zweiten Fingers irgendwo
 auf dem Bildschirm beendet den Drag, wie er einen Drag auf TEMPO beendet: Das
@@ -525,12 +551,13 @@ Was jedes Bedienelement auf einem Prüfstand in SAFE tut:
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
 | TEMPO | wird gesetzt; sendet nichts | wird gesetzt; eine gehaltene Stellung wird mit der neuen Rate erneut gesendet |
-| OPTIONEN: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
+| OPTIONEN > AUSGANG: TYP, PULSRATE, PULS MIN, MITTE und MAX, TRIMMUNG, WEG, UMKEHREN | werden gesetzt; senden nichts | werden gesetzt; eine gehaltene Stellung oder die Ruhelage wird unter ihnen erneut gesendet |
+| ZIEL | ein Tippen öffnet AUSGÄNGE / PROG-PORT | gesperrt; nennt das Ziel |
 | SOLL, AUSGANG EIN, AUSGANG AUS | wie auf SUPPLY | wie auf SUPPLY |
 | START TEST | abgelehnt: `ZUERST ARM` | startet den Lauf nach seinem Halten |
 
-In SAFE wird das Horn gedimmt gezeichnet, und die linke Karte zeigt `ZUERST
-ARM`. Horn und SOLL-PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
+In SAFE wird das Horn gedimmt gezeichnet, und die linke Karte von LIVE zeigt
+`ZUERST ARM`. Horn und SOLL-PULSBREITE zeigen die zuletzt gefahrene Stellung, nach einem
 Neustart PULS MITTE. Eine in SAFE geänderte Pulsbreiten-Einstellung ändert
 die Mikrosekunden, die SOLL-PULSBREITE für diesen Winkel zeigt, und WEG begrenzt
 ihn nicht. Von einem DISARM an, das der Bildschirm anfordert, durch den Tap
@@ -697,9 +724,9 @@ Kopie: eine Änderung auf einem Bildschirm ist die Änderung auf beiden.
   OFF gesendet, das er war.
 
 **SWEEP fährt das Servo eine Kurve ab**, auf dem Koprozessor, wo das Timing
-nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck), TEMPO (0,05 bis
-5 Zyklen je Sekunde) und HALTEZEIT (die Haltezeit an jedem Ende) von der
-TEST-Seite, um PULS MITTE herum. BEREICH ist ein Anteil des Wegs, den das
+nicht vom Link abhängt: KURVE (Rechteck, Sinus oder Dreieck) und TEMPO
+(0,05 bis 5 Zyklen je Sekunde) von OPTIONEN > SWEEP und HALTEZEIT (die
+Haltezeit an jedem Ende) des automatischen Tests, um PULS MITTE herum. BEREICH ist ein Anteil des Wegs, den das
 Servo machen darf: von WEG und vom näheren von PULS MIN und MAX, damit die
 Kurve kein Ende erreicht, das sie nicht erreichen darf. TEMPO auf der rechten
 Karte begrenzt sie wie ein Ziehen, Trim gilt nicht. Das Horn folgt derselben
@@ -741,7 +768,7 @@ hat, und das Fortsetzen geht von dort weiter. Der
 Koprozessor behält die Phase, solange er hält, und setzt die Kurve fort
 (`LINK_SV_RESUME`, Protokoll 4.6); der Ausgang fährt mit der Rate von TEMPO
 von der gehaltenen Stelle zur Kurve, bei 100 % sofort, und ist meist schon
-dort. Eine während der Pause auf der TEST-Seite geänderte Kurve startet
+dort. Eine während der Pause auf OPTIONEN > SWEEP geänderte Kurve startet
 stattdessen als neuer Sweep. Ein Koprozessor älter als 4.6, oder einer, der
 das Fortsetzen abweist, weil sein Halten geendet hat, startet die Kurve von
 ihrem Anfang -- in der Mitte bei Sinus und Dreieck, am ersten Ende beim
@@ -794,27 +821,30 @@ KURVE: Rechteck, Sinus und Dreieck laufen alle als Rampen mit der Rate von
 TEMPO und sehen gleich aus, und der Ausgang kann umkehren, bevor er ein Ende
 erreicht. Die Zeile folgt den Einstellungen; sie erscheint also schon vor
 dem Druck auf SWEEP und ebenso, während ein Sweep läuft. TEMPO erhöhen oder
-TEMPO (die Rate in Hz) oder BEREICH auf der TEST-Seite senken, dann
+TEMPO (die Rate in Hz) oder BEREICH auf OPTIONEN > SWEEP senken, dann
 verschwindet sie. Ein Rechteck springt zwischen seinen Enden, daher erscheint
-sie dort bei jedem TEMPO unter 100 %. Mit den Vorgaben der TEST-Seite
+sie dort bei jedem TEMPO unter 100 %. Mit den Vorgaben der Seite SWEEP
 (Sinus, 0,5 Hz, BEREICH 80 %) und WEG +/-90 Grad verschwindet sie
 ab TEMPO 63 %, beim Dreieck ab 40 %.
 [Servoverfahren](Servo-de.md#sweep-und-tempo) nennt die Regel.
 
 ![TEMPO begrenzt einen Sweep](img/de/servo-sweep.png)
 
-**TEST STARTEN startet den automatischen Test** auf der TEST-Seite: das Servo
+**TEST STARTEN startet den automatischen Test** von der Karte AUTOMATISCHER TEST auf TEST: das Servo
 wird durch die dort gewählten Spannungen geführt, sein Strom in Ruhe, in
 Bewegung und beim Halten gemessen, seine Stellzeit gemessen, und die
 Spannung gesucht, bei der es sich nicht mehr bewegt. [Servoverfahren](Servo-de.md#automatischer-test)
-beschreibt das Verfahren und die Dateien. TEST STARTEN braucht einen Prüfstand
-in ARMED und ein Netzteil, das antwortet; die Zeile darunter sagt ZUERST ARM,
+beschreibt das Verfahren und die Dateien. Die Karte trägt den Namen des
+Laufs und seine OPTIONEN, eine Zusammenfassung (`4.8 6.0 V BROWN-OUT, JE
+60 s` oder `..., JE 20 BEWEGUNGEN`), TEST STARTEN, die Zustandszeile, das
+letzte Ergebnis mit seinen Dateien (`ZULETZT: BESTANDEN SERVO004.CSV +
+.TXT`) und den Hinweis zu BLOCKIERT AB. TEST STARTEN braucht einen Prüfstand
+in ARMED und ein Netzteil, das antwortet; die Zustandszeile sagt ZUERST ARM,
 KEINE STUFE GEWÄHLT, NETZTEIL ANTWORTET NICHT, BEREICH ZU KLEIN (die Enden aus BEREICH
 und WEG fallen auf PULS MITTE), STUFE ÜBER DEN OBERGRENZEN (eine
 gewählte Stufe über der geltenden Spannungsgrenze, geprüft, bevor eine
 Warnung aufgeht) oder LETZTER BERICHT SCHREIBT NOCH und folgt dem Prüfstand und
-den Einstellungen, wenn sie sich ändern. Eine dritte Zeile, quer über die
-Karte unter beiden Spalten, sagt, wenn kein Messwert BLOCKIERT AB
+den Einstellungen, wenn sie sich ändern. Der Hinweis unter dem letzten Ergebnis sagt, wenn kein Messwert BLOCKIERT AB
 überschreiten kann: `BLOCKIERT AB 2.00 A unerreichbar: Strombegrenzung
 2.00 A`, solange BLOCKIERT AB bei oder über der Strombegrenzung der Zeile
 SOLL liegt, sonst `BLOCKIERT AB 2.00 A unerreichbar: INA3221-Bereich
@@ -828,15 +858,15 @@ stattdessen NUR HV-SERVOS mit der höchsten Stufe, und der Lauf startet erst,
 nachdem HALTEN ZUM ÜBERNEHMEN 2 s gehalten wurde. HV-SERVO gilt für die Sitzung:
 jeder Neustart schaltet es aus.
 
-Die Einstellungen schließen sich beim Start, und Stufe und Phase stehen oben
-auf der linken Karte, daneben, neben TEST BEENDEN, das Messgerät, das der
-Lauf liest: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Es ist das Messgerät der
+TEST bleibt beim Start zu sehen, und die Zustandszeile der Karte nennt die
+Stufe. LIVE zeigt oben auf der linken Karte das Feld des Laufs: Stufe und
+Phase, neben TEST BEENDEN das Messgerät, das der Lauf liest: `PD mini`, `INA3221 CH1` oder `SIMULATION`. Es ist das Messgerät der
 Servo-Schiene bei TEST STARTEN, und der Lauf liest es bis zu seinem Ende
 ([Der Strommesser des Laufs](Servo-de.md#der-strommesser-des-laufs)). Der
 Lauf führt das Servo und die Sollwerte und den Schalter von SUPPLY, bis er
 endet. Er endet vorzeitig, mit ausgeschaltetem
-Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (auf der linken
-Karte oder der TEST-Seite), STOP, einem DISARM, wenn der Link geht, beim
+Ausgang und dem Servo zur Mitte freigegeben, bei TEST BEENDEN (im Feld auf LIVE
+oder auf der Karte), STOP, einem DISARM, wenn der Link geht, beim
 Verlassen der Seite, bei einem Finger auf der Skala, ZENTRIEREN, SWEEP,
 FREIGEBEN, einem Tippen auf einen Sollwert, einer Änderung an Typ, Impulsen,
 Trim, Weg, Reverse oder TEMPO des Servos, bei verlorenen Touch-Ereignissen
@@ -853,7 +883,8 @@ dem Ende des Laufs geändert wurden, bleiben, wie sie sind.
 
 ![Ein Lauf](img/de/servo-run.png)
 
-Das Ergebnis bleibt bis SCHLIESSEN auf der linken Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
+Das Ergebnis bleibt bis SCHLIESSEN im Feld auf LIVE und bis zum nächsten Lauf in
+der Zeile ZULETZT der Karte: BESTANDEN, NICHT BESTANDEN oder ABGEBROCHEN
 und der Grund, die längste Stellzeit und der höchste Haltestrom, und die
 Dateien, die die Karte angenommen hat: `SERVOnnn.CSV`, und `+ .TXT`, sobald
 die Karte den Bericht vollständig angenommen hat.
@@ -865,8 +896,8 @@ Ein Lauf, der die Fenster des INA3221 las, nennt ihn dort, wie die Zeile
 
 ![Ein Ergebnis am INA3221](img/de/servo-result-ina.png)
 
-**ENDLAGENLAUF STARTEN führt die Endlagensuche aus**, auf der Seite
-GRENZEN: das Servo wird in Schritten von 10 us nach außen gefahren, bis
+**ENDLAGENLAUF STARTEN führt die Endlagensuche aus**, von der Karte
+ENDLAGENLAUF auf TEST: das Servo wird in Schritten von 10 us nach außen gefahren, bis
 sein Strom ein angelaufenes Gestänge zeigt, und mit ENDLAGENLAUF auf
 SUCHEN + PROGRAMMIEREN werden LEFT ANGLE und RIGHT ANGLE eines KST- oder
 Chaservo-Servos gesenkt, bis kein Ende mehr anläuft. An einem SERVO-PWM-Pin
@@ -876,10 +907,14 @@ bis zu seinem eigenen PULSE LOWER und PULSE UPPER.
 [Servoverfahren](Servo-de.md#eingebaute-mechanische-endlage) beschreibt
 das Verfahren, die Schutzmechanismen und den Bericht. Es ist ein Halten von
 2 s bei einem Prüfstand in ARMED und dem INA3221 als Messgerät der
-Servoschiene; die Zeile darunter nennt den Ausgang, den er treibt, und das
-Messgerät, `AUSGANG PROG-PORT GP13, STROM INA3221 CH1`, und die nächste
-Zeile sagt, warum er nicht starten kann. Die Einstellungen schließen sich
-beim Start. Sein Feld auf der linken Karte zeigt die geschriebenen Werte
+Servoschiene. Darüber nennt die Zusammenfassung der Karte die Betriebsart,
+`NUR SUCHE` oder `SUCHEN + PROGRAMMIEREN`, und SERVOPULSE, solange der Lauf
+den Port liest. Darunter nennt eine Zeile den Ausgang, den er treibt, und
+das Messgerät, `AUSGANG PROG-PORT GP13, STROM INA3221 CH1` oder `AUSGANG
+SERVO PWM GP2, STROM INA3221 CH1`, die nächste sagt, warum er nicht starten
+kann oder was er gerade tut, dann folgen das letzte Ergebnis und sein
+Bericht. TEST bleibt beim Start zu sehen. Sein Feld auf der linken Karte von
+LIVE zeigt die geschriebenen Werte
 von 8, die Phase mit Seite und Puls und den Ausgang, den er treibt, mit
 LAUF BEENDEN; nach dem Lauf bis SCHLIESSEN das Urteil, die Werte oder die
 Enden und `SERVOnnn.TXT`. Der Lauf schaltet den Prüfstand für jedes
@@ -894,13 +929,15 @@ ausgeschaltetem Ausgang.
 
 ### Programmierer
 
-PROGRAMMIEREN, neben OPTIONEN, öffnet den Programmierer für KST- und
-Chaservo-Servos über der linken Karte. Er nimmt den Programmierport des
-Koprozessors, im Auslieferzustand GP13 an Pad 17, aus PWM
-(Pulsweitenmodulation) und liest und schreibt die Einstellungen des Servos
-über dessen Signalleitung. Er verbindet nur, wenn PWM-ZIEL auf der Seite
-PRÜFLING auf PROG-PORT steht; mit AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und VERBINDEN ist gesperrt. Solange er den Port hält,
-bleibt das Overlay offen und OPTIONEN ist aus; ARM ist gesperrt gezeichnet
+PROGRAMMIEREN, in der Zeile der Leiste über der rechten Karte, öffnet den
+Programmierer für KST- und Chaservo-Servos über der linken Spalte samt den
+Reitern der Leiste; PROGRAMMIEREN schließt ihn wieder zu der Aufgabe, die er
+bedeckte. Er nimmt den Programmierport des Koprozessors, im
+Auslieferzustand GP13 an Pad 17, aus PWM (Pulsweitenmodulation) und liest
+und schreibt die Einstellungen des Servos über dessen Signalleitung. Er
+verbindet nur, wenn ZIEL auf der rechten Karte auf PROG-PORT steht; mit
+AUSGÄNGE zeigt er `Zum Programmieren muss das Servo am Programmierport angeschlossen sein.` und `Rechts auf der Karte das ZIEL auf PROG-PORT stellen.`, und VERBINDEN ist gesperrt. Solange er den Port hält,
+bleibt er offen, und ein Tippen auf PROGRAMMIEREN schließt nichts; ARM ist gesperrt gezeichnet
 und nimmt keinen Druck, ZENTRIEREN, FREIGEBEN und STOP funktionieren, und
 SOLL-PULSBREITE zeigt `---`: der Tester sendet keinen Puls auf den Port. In PWM
 mit einem antwortenden PD mini nennt die Zeile PORT des Programmierers die
@@ -914,50 +951,70 @@ beschreibt ihn.
 
 ### Einstellungen
 
-OPTIONEN, oben auf der rechten Karte, öffnet die Einstellungen des Servos über
-der linken Karte. ARM, ZENTRIEREN, FREIGEBEN und STOP bleiben, wo sie sind, und
-funktionieren. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
+OPTIONEN in der Leiste zeigt die Einstellungen des Servos im Seitenbereich,
+auf drei Seiten unter eigenen Reitern: AUSGANG, SWEEP und PRÜFLING. Die
+Einstellungen jedes Laufs öffnen sich mit OPTIONEN auf seiner Karte auf
+TEST, als Liste im Seitenbereich eine Ebene tiefer; das Home-Tag oder eine
+andere Aufgabe schließt sie. Die Ausgangskarte bleibt, wo sie ist, und
+funktioniert. Ein Wert öffnet die Tastatur, eine Liste eine Liste, ein
 Schalter kippt beim Tippen, und der Name öffnet eine Buchstabentastatur.
 
 ![Die Einstellungen des Servos](img/de/servo-settings.png)
+![Die Seite SWEEP](img/de/servo-sweep-page.png)
 
-| Seite | Einstellung | Wirkung |
+| Ort | Einstellung | Wirkung |
 | --- | --- | --- |
-| AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
-| AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über die Tastatur |
-| AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist MITTE, +90 Grad ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400 us oder 2500 us |
-| AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
-| AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
-| AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
-| TEST | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
-| TEST | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
-| TEST | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende; Wartezeit nach einer Spannungsstufe vor dem Messen |
-| TEST | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV-SERVO an |
-| TEST | HV-SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
-| TEST | TEST STARTEN | der automatische Test: 2 s Halten bei einem Prüfstand in ARMED; TEST BEENDEN, solange er läuft |
-| GRENZEN | SPANNUNG MAX, STROM MAX | die Grenzen des Bildschirms SUPPLY, dieselben Einstellungen |
-| GRENZEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
-| GRENZEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
-| GRENZEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund unter ENDLAGENLAUF STARTEN. Für die Sitzung |
-| GRENZEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit PWM-ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0 us. Vorgabe BEHALTEN; für die Sitzung |
-| GRENZEN | ENDLAGENLAUF STARTEN | die Endlagensuche: 2 s Halten bei einem Prüfstand in ARMED und dem INA3221 als Messgerät der Servoschiene; LAUF BEENDEN, solange sie läuft |
-| PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
-| PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
-| PRÜFLING | AS5600 | der Ausgangsencoder, dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600: fügt den Winkel des Horns der Zeile GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu ([Servo](Servo-de.md#der-ausgangsencoder)) |
-| PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
-| PRÜFLING | PWM-ZIEL | was der Tester treibt: AUSGÄNGE, die als SERVO PWM gebundenen Pins, oder PROG-PORT, den Programmierport des Koprozessors. PROG-PORT braucht der Programmierer. Gesperrt, solange der Prüfstand ARMED ist, während eines Sweeps oder Tests und solange der Programmierer den Port hält ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
-| PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit PWM-ZIEL auf AUSGÄNGE; EIN nach der Regel von PWM-ZIEL, AUS in ARMED wie in SAFE, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
+| OPTIONEN > AUSGANG | TYP | das Servoprofil: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC oder HELI TAIL 760 |
+| OPTIONEN > AUSGANG | PULSRATE | wie oft ein Impuls gesendet wird; die Liste des Typs oder EIGENE EINSTELLUNG über die Tastatur |
+| OPTIONEN > AUSGANG | PULS MIN, PULS MITTE, PULS MAX | die Impulsbreiten, auf die der Weg abgebildet wird, 400 bis 2500 us: -90 Grad ist MIN, 0 ist MITTE, +90 Grad ist MAX, und FREIGEBEN ruht auf MITTE. Ein Ende liegt nicht weiter von MITTE entfernt als MITTE von 400 us oder 2500 us |
+| OPTIONEN > AUSGANG | TRIMMUNG | zur Mitte addiert, 5 us je Schritt, bis 200 us in jede Richtung |
+| OPTIONEN > AUSGANG | WEG | wie weit der Arm in jede Richtung darf, 10 bis 90 Grad |
+| OPTIONEN > AUSGANG | UMKEHREN | die Richtung, in der der Winkel auf den Impuls abgebildet wird |
+| OPTIONEN > SWEEP | KURVE, TEMPO, BEREICH | die Bewegung von SWEEP: Rechteck, Sinus oder Dreieck, 0,05 bis 5 Hz, 10 bis 100 % des Wegs. Der automatische Test springt zwischen den Enden, die BEREICH ergibt |
+| AUTOMATISCHER TEST > OPTIONEN | TESTDAUER NACH, TESTZEIT, BEWEGUNGEN | wie lange jede Spannungsstufe läuft: eine Zeit oder eine Zahl von Bewegungen |
+| AUTOMATISCHER TEST > OPTIONEN | HALTEZEIT, EINSCHWINGZEIT | Haltezeit an jedem Ende, im Test und bei SWEEP; Wartezeit nach einer Spannungsstufe vor dem Messen |
+| AUTOMATISCHER TEST > OPTIONEN | STUFE 4.8 / 6.0 / 7.4 / 8.4 V, BROWN-OUT | die Spannungsstufen und der Brown-out-Lauf ab 5,0 V abwärts; 7,4 und 8,4 V laufen nur mit HV-SERVO an |
+| AUTOMATISCHER TEST > OPTIONEN | HV-SERVO | nimmt die Stufen 7,4 und 8,4 V hinzu, vorgegeben aus und nach jedem Neustart aus; ein Lauf mit ihnen startet nur über NUR HV-SERVOS |
+| AUTOMATISCHER TEST > OPTIONEN | BLOCKIERT AB | über diesem Strom gilt das Servo als blockiert |
+| AUTOMATISCHER TEST > OPTIONEN | RUHESTROM, HALTESTROM, STELLZEIT | Pass/Fail-Grenzen; 0 wird nicht geprüft |
+| ENDLAGENLAUF > OPTIONEN | ENDLAGENLAUF | NUR SUCHE oder SUCHEN + PROGRAMMIEREN, ein Tippen schaltet um; SUCHEN + PROGRAMMIEREN wird nur für ein Servo am Programmierport angeboten, sonst lautet die Zeile NUR SUCHE mit dem Grund darunter. Für die Sitzung |
+| ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000, ein Tippen schaltet um; nur mit ZIEL auf PROG-PORT angezeigt. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0 us. Vorgabe BEHALTEN; für die Sitzung |
+| OPTIONEN > PRÜFLING | NAME | das Testobjekt, bis 23 Zeichen, für den Bericht |
+| OPTIONEN > PRÜFLING | BERICHT | ein Textbericht neben dem Log jedes Tests |
+| OPTIONEN > PRÜFLING | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert vom aktuellen Link (keinen nach einem Linkverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, ANSCHLÜSSE, AS5600-Mitte |
+| OPTIONEN > PRÜFLING | PORT-PWM | der Puls am Programmierport, EIN oder AUS. Gesperrt mit ZIEL auf AUSGÄNGE; EIN nach der Regel von ZIEL, AUS in ARMED wie in SAFE, aber nicht während eines Sweeps oder Tests, und beides nicht, solange der Programmierer den Port hält |
+
+AS5600, der Ausgangsencoder, wird nur auf SETUP > ANSCHLÜSSE ein- und
+ausgeschaltet ([der Ausgangsencoder](#anschlüsse-der-ausgangsencoder)); der
+Hinweis auf PRÜFLING sagt das. Er fügt den Winkel des Horns der Zeile
+GEMESSEN sowie der CSV und dem Bericht eines Laufs hinzu
+([Servo](Servo-de.md#der-ausgangsencoder)).
+
+Die Grenzen von SUPPLY, Spannung und Strom, in denen die Sollwerte und die
+Stufen eines Laufs bleiben, stehen nur lesbar unter den Karten auf TEST und
+auf PRÜFLING, mit ihrem Ort und den geltenden Werten: `Grenzen 21.00 V 5.00
+A: SUPPLY > OPTIONEN`. Eingestellt werden sie auf SUPPLY > OPTIONEN.
 
 ![Die Seite PRÜFLING mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
 
-Das aktive PWM-ZIEL steht in der Zeile ZIEL der rechten Karte, zwischen
-TEMPO und ZENTRIEREN. Die rechte Karte bleibt unter den Einstellungen, ihren
-Tastenfeldern und dem Servo-Programmer sichtbar, die Zeile nennt den Pin also
-auch, während einer davon die linke Karte bedeckt. Mit AUSGÄNGE nennt die
-Zeile die GPIOs, die in der vom Tester getriebenen Bindung als SERVO PWM
-gebunden sind: `GP4`, `GP2 GP4`; so viele Pins, wie in die 23
-Zeichen des Werts passen, dann `+N`: 6 Pins ab GP40 lauten
-`GP40 GP41 GP42 GP43 +2`. Der Wert steht rechtsbündig neben dem Namen. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
+Die Zeile ZIEL der Ausgangskarte, zwischen TEMPO und ZENTRIEREN, nennt, was
+der Tester treibt, als `Protokoll Pins`, mittig in ihrem Wertfeld, und ist
+das Bedienelement, das es wählt. Ein Tippen auf das Feld öffnet die Liste
+AUSGÄNGE / PROG-PORT, die Einstellung ZIEL, im NVS (Non-Volatile Storage)
+gespeichert. Die Zeile ist gesperrt -- umrandet, ihr Wert gedimmt, und sie
+nimmt keinen Druck --, solange der Prüfstand ARMED ist, während eines
+Sweeps (laufend oder pausiert), eines automatischen Tests oder eines
+Endlagenlaufs und solange der Servo-Programmierer den Port hält; das Ziel
+nennt sie trotzdem. Die Ausgangskarte bleibt unter den Seiten, ihren
+Tastenfeldern und dem Servo-Programmierer sichtbar, die Zeile nennt den Pin
+also auch, während einer davon die linke Spalte bedeckt.
+
+![Die Auswahl des Ziels](img/de/servo-target-choice.png)
+
+Mit AUSGÄNGE nennt die Zeile die GPIOs, die in der vom Tester getriebenen
+Bindung als SERVO PWM gebunden sind: `SERVO PWM GP4`, `SERVO PWM GP2 GP4`;
+so viele Pins, wie in die 23 Zeichen des Werts passen, dann `+N`: 8 Pins ab
+GP40 lauten `SERVO PWM GP40 GP41 +6`. Die Zeile ist in der Warnfarbe, Name und Wert, ohne einen solchen Pin
 (`KEIN SERVO-PWM-PIN`) und bevor eine Bindung gelesen wurde
 (`PINS NICHT AUSGELESEN`). Mit PROG-PORT lautet sie `PROG-PORT GP13` in der
 Warnfarbe; der Pin ist der GPIO, den der Koprozessor für den Programmierport
@@ -978,7 +1035,7 @@ Koprozessor hält, einen Port oder die Ausgänge; der Programmer treibt den
 Port, und der Tester sendet nichts. Die Seite wird alle 500 ms gelesen. Ein
 Koprozessor ohne diese Seite (Protokoll älter als 4.13) hat die
 Standardausgänge als Ziel. Die Zeile folgt dem Ziel, das der Koprozessor
-hält, nicht der Einstellung: eine Änderung von PWM-ZIEL wartet auf einen
+hält, nicht der Einstellung: eine Änderung von ZIEL wartet auf einen
 ruhigen Prüfstand und erscheint in der Zeile, sobald der Koprozessor sie
 übernommen hat.
 
@@ -1018,7 +1075,7 @@ anderes gedacht war.
 ![Die Warnung](img/de/servo-warning.png)
 
 **Die Frame Rate erreicht die Pins** über die SERVO-Page des Koprozessors
-(Protokoll 4.1). Sie gilt nur für das PWM-ZIEL. Mit AUSGÄNGE, den Standard-Servoports,
+(Protokoll 4.1). Sie gilt nur für das ZIEL. Mit AUSGÄNGE, den Standard-Servoports,
 als Ziel ist das jeder PWM-Ausgang, dessen erster Kanal die Rolle surface hat; ein
 PPM-Ausgang behält seinen eigenen Frame. Mit PROG-PORT als Ziel ist es der Pin
 des Programmierports, und jeder Slot behält seine eigene Rate (Protokoll
@@ -1026,7 +1083,7 @@ des Programmierports, und jeder Slot behält seine eigene Rate (Protokoll
 seinen PWM-Slice mit dem Pin eines anderen Programmierports teilt, läuft nur
 mit 50 Hz: der RP2350 gibt beiden Pins eines Slices einen Teiler und einen
 Wrap, eine schnellere Rate dort wird also abgelehnt. Eine Änderung des
-PWM-ZIELS setzt die Rate auf 0 zurück, jeden Ausgang auf seine eigene Rate,
+ZIELS setzt die Rate auf 0 zurück, jeden Ausgang auf seine eigene Rate,
 und die Seite sendet ihre Rate mit der nächsten Stellung erneut. Sie geht mit jeder
 gehaltenen Stellung hinaus, und ein Profilwechsel, während das Servo in ARMED
 ruht, setzt die Ruhelage mit ihr neu; einer, der während eines laufenden Arm
@@ -1038,7 +1095,7 @@ Die AUSGANG-Seite sagt, was aus ihr wurde:
 
 | Hinweis | Bedeutung |
 | --- | --- |
-| Aktiv | die Rate läuft auf dem Ziel, das der Koprozessor hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel von der Einstellung PWM-ZIEL abweicht (zweite Zeile `Die Einstellung PWM-ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem Koprozessor vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher Koprozessor fährt jede PWM-Surface mit der Rate, gleich was PWM-ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein Koprozessor, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
+| Aktiv | die Rate läuft auf dem Ziel, das der Koprozessor hält, benannt nach seiner PROG-Seite: `Aktiv: AUSGÄNGE laufen mit 330 Hz.` oder `Aktiv: PROG-PORT GP13 läuft mit 330 Hz.` Der Hinweis steht in der Warnfarbe, solange dieses Ziel vom gewählten ZIEL abweicht (zweite Zeile `Das gewählte ZIEL ist nicht aktiv.`; PROG-PORT ohne an den Port gebundenen Pin lässt AUSGÄNGE das Ziel), solange das Port-Ziel keinen Pin hat, solange PORT-PWM AUS ist (`PORT-PWM ist AUS. Der Port gibt keine Pulse aus.`) und solange das Ziel unbekannt ist. Mit einem Koprozessor vor Protokoll 4.19 lautet der Hinweis "jedes PWM-Ruder läuft mit": ein solcher Koprozessor fährt jede PWM-Surface mit der Rate, gleich was ZIEL nennt. Ohne Link lauten beide `Keine Verbindung. Die aktive Pulsrate ist unbekannt.` in der Warnfarbe: ein Koprozessor, der bei unterbrochenem Link neu startet, fährt jeden Pin wieder mit seiner eigenen Rate |
 | Die Pulsrate wird mit der nächsten Position | noch nicht geschrieben |
 | ABGELEHNT | ein Puls des Ziels -- einer Surface, oder des Programmierports, solange sein Puls eingeschaltet ist -- ist länger als der Frame bei dieser Rate, oder ein Pin des Ziels teilt sich einen PWM-Slice mit einem Ausgang auf einer anderen Rate; die Pins behalten ihre Rate |
 | Dieser Koprozessor nimmt keine Frame Rate | Protokoll 4.0: jeder PWM-Ausgang läuft mit den 50 Hz seiner Bindung |
@@ -1049,17 +1106,22 @@ ihre Rate mit der nächsten Stellung erneut, gegen die dann geltende Bindung.
 Eine Bindung wird nicht geschrieben, solange das Zurücksetzen auf die eigene
 Rate jedes Slots unbeantwortet bleibt (OUTPUTS meldet `KEINE VERBINDUNG`) oder
 abgelehnt wird (`ABGELEHNT`), und der Prüfstand wird von keiner
-Seite aus ARMED, solange die Rate des PWM-ZIELS nicht bekannt ist: Der Arm
+Seite aus ARMED, solange die Rate des ZIELS nicht bekannt ist: Der Arm
 wird mit `Pulsrate des Servos unbekannt. ARM erneut halten.` abgelehnt, und ein Arm, der
 bei unterbrochenem Link gemacht wurde, erreicht den Koprozessor erst, wenn das
 Zurücksetzen angekommen ist.
 
-Die AUSGANG-Einstellungen und HV-SERVO gelten für die Sitzung; die übrigen
-Einstellungen unter TEST, GRENZEN und PRÜFLING liegen im NVS (Non-Volatile Storage)
-und werden wie bei SUPPLY geschrieben.
+Die AUSGANG-Einstellungen, HV-SERVO, ENDLAGENLAUF und SERVOPULSE gelten für
+die Sitzung; die Einstellungen von SWEEP, des automatischen Tests und von
+PRÜFLING und ZIEL liegen im NVS. Eine Änderung fordert das Schreiben sofort
+an; der Speicher nimmt es im ersten Frame, in dem der Prüfstand ruht
+([Werte behalten](#werte-behalten)). Die Speicherzeile unten auf
+jeder Seite sagt `GESPEICHERT`, `SPEICHERN AUSSTEHEND`, `NICHT GESPEICHERT`
+oder `ÄNDERUNGEN IN SETUP NICHT GESPEICHERT`.
 
-![Die Einstellungen des automatischen Tests](img/de/servo-test.png)
-![Die Grenzen](img/de/servo-limits.png)
+![TEST mit seinen zwei Laufkarten](img/de/servo-test.png)
+![Die Einstellungen des automatischen Tests](img/de/servo-test-settings.png)
+![Die Einstellungen des Endlagenlaufs](img/de/servo-limits.png)
 ![Der Name](img/de/servo-name.png)
 
 Aktuelle Einschränkungen:

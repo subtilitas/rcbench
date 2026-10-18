@@ -5,8 +5,9 @@
 The programmer reads the 32 registers of a KST or Chaservo servo over its
 signal wire, shows them as settings, and writes changed settings back. The
 servos of the two brands share one protocol and one register set. It is an
-overlay on the [SERVO screen](Screens.md#servo), opened with **PROGRAM** at
-the top of the right card. **PROGRAM** ends a running automatic test as
+overlay on the [SERVO screen](Screens.md#servo), opened with **PROGRAM** in
+the strip's row over the right card; it covers the left column, the strip's
+tabs with it. **PROGRAM** ends a running automatic test as
 `stopped by the operator`.
 
 KST and Chaservo are names or trademarks of their respective owners. rcbench
@@ -38,7 +39,7 @@ before a write is relied on.
 - The servo is on the coprocessor's programming port, port 1: GP13, pad 17
   of the bring-up module, unless another pin is stored for it. The port is
   no output channel and no slot of OUTPUTS.
-- The SERVO screen's **PWM TARGET** is **PROG PORT**
+- The SERVO screen's **TARGET** is **PROG PORT**
   ([the target](#the-target)). With the standard outputs as target the
   programmer is locked.
 - One servo at a time.
@@ -70,18 +71,17 @@ before a write is relied on.
 ## The target
 
 The tester of the SERVO screen drives the standard servo outputs or the
-programming port. **SETTINGS**, tab DUT, holds the two rows:
+programming port. Two controls set it:
 
-| Row | Values | Does |
+| Control | Values | Does |
 | --- | --- | --- |
-| PWM TARGET | **OUTPUTS**, **PROG PORT** | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive |
-| PORT PWM | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
+| TARGET, the row on the right card | **OUTPUTS**, **PROG PORT** | what the sweep, **CENTRE**, **RELEASE**, the hold of a position and the automatic test drive; a tap opens the choice |
+| PORT PWM, on **SETTINGS** > DUT | **ON**, **OFF** | whether the programming port renders the tester's pulse while it is the target |
 
-Both rows are kept with the SERVO settings. The SERVO screen names the
-active target in the TARGET row of the right card, with the pins:
-`PROG PORT GP13` in the warning colour, or `GP4` for the pins bound as SERVO
-PWM.
-**PWM TARGET** changes only
+Both are kept with the SERVO settings. The TARGET row names the active
+target with its protocol and pins: `PROG PORT GP13` in the warning colour,
+or `SERVO PWM GP4` for the pins bound as SERVO PWM.
+**TARGET** changes only
 with the bench SAFE, no sweep and no test running, and the port not in
 programming; the panel releases a held position before it asks the
 coprocessor for the other target. **PORT PWM** goes on under the same
@@ -101,7 +101,7 @@ A port without a pin cannot be the target: a slot of OUTPUTS that holds
 GP13 leaves the port none. The tester then keeps the standard outputs,
 whatever the row says.
 
-With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `On SERVO > DUT, set PWM TARGET to PROG PORT.`, and every control but **CLOSE** is off.
+With the standard outputs as target the programmer shows `Use the programming port to program a servo.` and `Set TARGET on the right card to PROG PORT.`, and every control but **CLOSE** is off.
 
 ![The standard outputs are the target](img/servo-kst-target.png)
 
@@ -135,8 +135,8 @@ without a result.
 
 ![A write running](img/servo-kst-writing.png)
 
-While the port is in programming the overlay stays open, **SETTINGS** is
-off and the tester's controls send nothing to the port. **STOP** on the
+While the port is in programming the overlay stays open, the strip's tabs
+under it take no press, and the tester's controls send nothing to the port. **STOP** on the
 right card works. Leaving the SERVO screen leaves the port as it is; the
 overlay is open again at the next entry.
 
@@ -216,7 +216,7 @@ after its off command is not measured.
 ![The voltage keypad](img/servo-kst-voltage.png)
 ![The wait keypad](img/servo-kst-wait.png)
 
-A voltage above 6.0 V needs **HV SERVO** on the TEST tab of **SETTINGS**;
+A voltage above 6.0 V needs **HV SERVO** in the AUTOMATIC TEST card's settings on TEST;
 without it the keypad ends at 6.0 V. With it, a value above 6.0 V opens the
 warning page of the SERVO screen's high-voltage setting, and **HOLD TO
 APPLY** takes it after 2 s. Switching **HV SERVO** off sets a programming
@@ -952,7 +952,7 @@ The page is the same with a PD mini answering.
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
 **ABORT** while the wait runs. Then `The port is back in tester mode.` and
-the tester drives the port at once, with **PWM TARGET** on **PROG PORT**
+the tester drives the port at once, with **TARGET** on **PROG PORT**
 and **PORT PWM** on. The next **CONNECT** starts a new session with its own
 read.
 
@@ -1041,7 +1041,7 @@ line. [The link page](LinkKST.md) lists the codes.
   GP13 ([the signal level](#the-signal-level)).
 - With the simulated supply selected (no PD mini wired) the panel dims the
   same controls, and the servo's supply is whatever feeds it.
-- The rows **PWM TARGET** and **PORT PWM** follow the port's state one
+- The rows **TARGET** and **PORT PWM** follow the port's state one
   frame of the screen after the control task does. The control task holds
   the page of the port and the tester's commands from its own reading of
   the port.

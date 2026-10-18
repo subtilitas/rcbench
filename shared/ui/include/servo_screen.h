@@ -2,6 +2,13 @@
  * The servo bench: the outputs the binding marks as surfaces, commanded
  * together by dragging one horn.
  *
+ * A workbench (ui_workbench.h): the strip under the band shows LIVE (the
+ * dial, SWEEP, CENTRE, RELEASE), TEST (the AUTOMATIC TEST and LIMIT RUN
+ * cards, each opening its run's settings one level down) and SETTINGS
+ * (OUTPUT, SWEEP, DUT).  The output card on the right -- the readings, the
+ * TARGET row, ARM -- is the same on every task.  A tile opens LIVE; leaving
+ * the screen switches it to SAFE, whichever task is shown.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -26,9 +33,12 @@ const ui_screen_t *servo_screen(void);
  * Move the horn by @p span_fraction of its travel (-travel to +travel),
  * from the rotary knob (knob.h).  Relative to the commanded angle.  Nothing
  * happens for a zero fraction, on a disarmed bench, under a disarm waiting
- * to be taken, while a finger is on the dial, while the
- * settings panel is open, or while a sweep (running or paused) or a test run owns the horn: the
- * knob does not take the horn from them as a finger does.  A turn that moves
+ * to be taken, while a finger is on the dial, while the dial is out of
+ * sight, or while a sweep (running or paused) or a test run owns the horn:
+ * the knob does not take the horn from them as a finger does.  The dial is
+ * out of sight on every task but LIVE (TEST with or without a run's
+ * settings open, SETTINGS on any page), under any panel (keypad, keyboard,
+ * list, warning, question) and under the servo programmer.  A turn that moves
  * nothing is not kept: the first turn after an arm starts from the value the
  * arm set.  It posts the
  * position command a touch does and never arms.  It posts only into an empty
@@ -39,11 +49,12 @@ void servo_screen_knob(float span_fraction);
 
 /**
  * Start of a frame, before its touch events: forget that a finger owned the
- * dial or that the settings, a sweep or a test owned the horn.  The knob
- * moves nothing in a frame in which a finger owned the dial at any point,
- * including a press and release inside it, or in which the settings were
- * open, a sweep or a test ran at any point, even if it ended before the
- * turn is applied.
+ * dial or that the dial was out of sight, a sweep or a test owned the horn.
+ * The knob moves nothing in a frame in which a finger owned the dial at any
+ * point, including a press and release inside it, or in which the dial was
+ * out of sight (another task, a panel, the programmer), a sweep or a test
+ * ran at any point, even if it ended before the turn is applied: a tap on
+ * LIVE in the frame of the turn does not let the turn through.
  */
 void servo_screen_knob_frame(void);
 
@@ -270,7 +281,7 @@ float servo_screen_power_sample(int series, int back);
  * "In force: PROG PORT GP13 runs at 560 Hz.", the port without a known pin,
  * or the target not known (the page not known).  With no link it names no
  * rate: "No link: the rate in force is not known.".  The second line
- * says "The PWM TARGET setting is not in force." while the setting and the
+ * says "The TARGET chosen is not active." while the setting and the
  * drive differ, "PORT PWM is OFF" while the port renders no pulse, else
  * that a PPM output keeps its own frame.  Returns whether the note takes
  * the warning colour: the setting and the drive differ, no link, the
@@ -315,7 +326,7 @@ void servo_screen_set_enc_held(bool held);
  *  the standard outputs, 1 + n for programming port n,
  *  SERVO_SCREEN_TARGET_UNKNOWN or SERVO_SCREEN_TARGET_NO_LINK; @p gpio that
  *  port's GPIO or SERVO_SCREEN_NO_PIN, and @p pwm whether the port renders
- *  its pulse.  The TARGET row follows it, not the PWM TARGET setting.
+ *  its pulse.  The TARGET row follows it, not the TARGET setting.
  *  @p gpio and @p pwm are ignored without a port target. */
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
@@ -329,16 +340,39 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
  * The TARGET row's value in the current language, into @p out of @p size
  * bytes, for the drive @p target / @p gpio / @p pwm (as
  * servo_screen_set_drive()) and the SERVO PWM pins @p pins / @p known (as
- * servo_screen_set_pins()).  Returns whether the line takes the warning
- * colour: a port target, no SERVO PWM pin, no binding read, the target not
- * known, or no link.  The outputs read "GP2 GP4 GP5": as many pins as the
- * 23 cells hold, then a count ("GP2 GP4 GP5 +2").  A port target reads
- * "PROG PORT GPn", or "PROG PORT" without a known pin, each with " PWM OFF"
- * after it while the port renders no pulse: 22 characters at most, of the
- * 23 cells the row's value holds.
+ * servo_screen_set_pins()): `protocol pins`.  Returns whether the line
+ * takes the warning colour: a port target, no SERVO PWM pin, no binding
+ * read, the target not known, or no link.  The outputs read
+ * "SERVO PWM GP2 GP4", the protocol name the same in every language: as
+ * many pins as the 23 cells hold after it, then a count
+ * ("SERVO PWM GP2 +2").  A port target reads "PROG PORT GPn", or
+ * "PROG PORT" without a known pin, each with " PWM OFF" after it while the
+ * port renders no pulse: 22 characters at most, of the 23 cells the row's
+ * value holds.
+ *
+ * The row is the control that picks the target: a tap opens the choice
+ * OUTPUTS / PROG PORT, the TARGET setting.  It takes no press while
+ * servo_screen_target_locked().
  */
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known);
+
+/** The task the strip shows, a ui_wb_task_t.  For tests. */
+int servo_screen_task(void);
+
+/** The page SETTINGS shows: 0 OUTPUT, 1 SWEEP, 2 DUT.  For tests. */
+int servo_screen_settings_page(void);
+
+/** Which run's settings TEST shows, one level down from its card: 0 none,
+ *  1 the automatic test's, 2 the limit run's.  For tests. */
+int servo_screen_run_settings(void);
+
+/**
+ * Whether the TARGET row takes no press: the bench ARMED, a sweep (running
+ * or paused) or a run under way, the servo programmer holding the port.
+ * The row names the target all the same.
+ */
+bool servo_screen_target_locked(void);
 
 /** A sweep command found no surface to sweep and was not sent: the screen
  *  stops waiting for its start and ends the sweep. */
@@ -400,11 +434,11 @@ void servo_screen_set_commanded(float deg);
 /* ------------------------------------------------- the automatic test */
 
 /*
- * START TEST on the TEST page runs servo_test.h's automatic test from this
- * screen: a two-second hold, or HV SERVOS ONLY held for two seconds when a
- * step is above 6.0 V.  It needs an armed bench and a supply that answers,
+ * START TEST on TEST's AUTOMATIC TEST card runs servo_test.h's automatic
+ * test from this screen: a two-second hold, or HV SERVOS ONLY held for two
+ * seconds when a step is above 6.0 V.  It needs an armed bench and a supply that answers,
  * and it commands the servo and SUPPLY's set points and output itself.
- * Progress and the result are shown on the left card.
+ * Progress and the result are shown on its card and in LIVE's box.
  */
 
 /**

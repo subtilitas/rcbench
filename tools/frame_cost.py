@@ -54,6 +54,8 @@ SOURCES = [
     "shared/ui/ui_plot.c",
     "shared/ui/ui_slider.c",
     "shared/ui/ui_tabs.c",
+    "shared/ui/ui_workbench.c",
+    "shared/ui/ui_target_row.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/ui_text.c",
@@ -69,6 +71,7 @@ SOURCES = [
     "shared/ui/servo_settings_panel.c",
     "shared/ui/servo_test_panel.c",
     "shared/ui/servo_limit_panel.c",
+    "shared/ui/servo_workbench.c",
     # The programmer for KST and Chaservo servos SERVO opens, and the
     # core its model takes fields and limits from.
     "shared/ui/kst_panel.c",

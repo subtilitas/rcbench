@@ -23,6 +23,7 @@
 #include "ui_textkey.h"
 #include "ui_theme.h"
 #include "ui_widgets.h"
+#include "ui_workbench.h"
 #include "link_pages.h"
 #include "outputs.h"
 #include "outputs_pages.h"
@@ -324,13 +325,14 @@ TEST_CASE(reverse_and_the_pulse_widths_reshape_the_command)
     CHECK_EQ(c.min_us, 900);
 }
 
-TEST_CASE(the_test_and_limit_settings_are_kept)
+/* SWEEP's rows and a run's own rows are kept and saved; SUPPLY's caps are
+ * not edited here (their home is SUPPLY > SETTINGS), and the run's
+ * settings close to TEST with the home tag. */
+TEST_CASE(the_sweep_and_run_settings_are_kept)
 {
     fresh();
     open_settings();
-    tap(TAB_X(1), TAB_Y);                      /* TEST */
-    tap(ROW_R_X, ROW_Y(0));                    /* STEP 4.8 V: a switch */
-    CHECK(!settings_get_bool(SET_SERVO_STEP_48));
+    tap(TAB_X(PAGE_SWEEP), TAB_Y);             /* SWEEP */
     tap(ROW_L_X, ROW_Y(0));                    /* CURVE: a list */
     tap(CH_X(2), CH_Y(2));                     /* TRIANGLE */
     CHECK_EQ(settings_get_int(SET_SERVO_CURVE), 2);
@@ -339,16 +341,24 @@ TEST_CASE(the_test_and_limit_settings_are_kept)
     CHECK_NEAR(settings_get(SET_SERVO_TEST_HZ), 1.25f, 1e-4f);
     CHECK(settings_save_asked());
 
-    tap(TAB_X(2), TAB_Y);                      /* LIMITS */
-    tap(ROW_L_X, ROW_Y(0));                    /* VOLTAGE MAX: SUPPLY's cap */
-    keys("8.41");
-    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 8.40f, 1e-4f);
-    CHECK_NEAR(supply_screen_limits().v_max, 8.40f, 1e-4f);
-    tap(ROW_R_X, ROW_Y(0));                    /* IDLE CURRENT */
+    open_run_settings(0);                      /* AUTOMATIC TEST's */
+    CHECK_EQ(servo_screen_run_settings(), 1);
+    tap(ROW_R_X, LROW_Y(0));                   /* STEP 4.8 V: a switch */
+    CHECK(!settings_get_bool(SET_SERVO_STEP_48));
+    tap(ROW_L_X, LROW_Y(6));                   /* IDLE CURRENT */
     keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
+    tap(ROW_L_X, LROW_Y(5));                   /* STALL AT */
+    keys("1.5");
+    CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);
+    CHECK(home_tag());
+    CHECK_EQ(servo_screen_run_settings(), 0);
+    CHECK_EQ(servo_screen_task(), (int)UI_WB_TEST);
+    CHECK(!home_tag());                        /* TEST climbs no further */
 
-    tap(TAB_X(3), TAB_Y);                      /* DUT */
+    open_settings();
+    tap(TAB_X(PAGE_DUT), TAB_Y);               /* DUT */
     tap(ROW_L_X, ROW_Y(0));                    /* NAME: the keyboard */
     ui_textkey_t probe;
     memset(&probe, 0, sizeof(probe));
@@ -487,24 +497,32 @@ static void text_key(int k)
 }
 
 /*
- * Each face of the overlay -- the four pages, a list, the keypad, the
- * keyboard and the warning with a hold let go part way -- leaves both
- * buffers as one drawn whole, and a list or a warning cancelled leaves the
- * page as it was.  Opening and closing it leave nothing behind either: the
- * servo's lead runs out past the left card, where the overlay ends.
+ * Each face of the workbench -- TEST's cards and each run's settings,
+ * SETTINGS' three pages, a list, the keypad, the keyboard and the warning
+ * with a hold let go part way -- leaves both buffers as one drawn whole,
+ * and a list or a warning cancelled leaves the page as it was.  A panel
+ * covers the strip's tabs with the left column, and the page and the strip
+ * come back whole when it goes.
  */
 TEST_CASE(each_face_of_the_overlay_draws_as_a_full_redraw_would)
 {
     fresh();
     two_buffers();
+    open_test();
+    CHECK(both_whole());
+    open_run_settings(0);
+    CHECK(both_whole());
+    CHECK(home_tag());
+    CHECK(both_whole());
+    open_run_settings(1);
+    CHECK(both_whole());
     open_settings();
     CHECK(both_whole());
-    CHECK_EQ(fb[6 * W + 6], ui_theme_color(UI_C_ACCENT));
     gfx_color_t *page = malloc(FB_BYTES);
     REQUIRE_ALLOC(page);
     memcpy(page, fb, FB_BYTES);
 
-    for (int tab = 1; tab < 4; ++tab) {
+    for (int tab = 1; tab < 3; ++tab) {
         tap(TAB_X(tab), TAB_Y);
         CHECK(both_whole());
         CHECK(memcmp(fb, page, FB_BYTES) != 0);
@@ -588,16 +606,16 @@ TEST_CASE(the_output_page_says_whether_the_rate_reached_the_pins)
 
 /*
  * What an acknowledged rate reaches depends on the coprocessor.  From 4.19
- * the PWM TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
+ * the TARGET alone runs at it; a 4.1 to 4.18 coprocessor runs every PWM
  * surface at it, whatever the target, and the note says that instead in
  * its first line.  Both are news, not a warning.
  */
 /* The rate note on the OUTPUT page, mirrored from servo_settings_panel.c:
- * its first line at OV_NOTE_Y + 2 * 18 (306), its second 18 px below,
+ * its first line at OV_NOTE_Y + 2 * 18 (324), its second 18 px below,
  * each 16 px high, from x 16 to x 490, inside the overlay's border at
  * x 493. */
 #define NOTE_X    16
-#define NOTE_L1_Y 306
+#define NOTE_L1_Y 324
 #define NOTE_L2_Y (NOTE_L1_Y + 18)
 #define NOTE_R    490
 
@@ -690,7 +708,7 @@ TEST_CASE(the_in_force_note_names_what_the_coprocessor_runs_at_the_rate)
     free(target);
 }
 
-/* The states the note is held to: the PWM TARGET setting, the drive the
+/* The states the note is held to: the TARGET setting, the drive the
  * coprocessor holds, the English lines it must give and the warning colour. */
 typedef struct {
     int         setting;    /* SET_SERVO_TARGET */
@@ -703,7 +721,7 @@ typedef struct {
 } note_state_t;
 
 #define PPM_LINE "PPM outputs keep their own frame rate."
-#define NOT_SET  "The PWM TARGET setting is not active."
+#define NOT_SET  "The TARGET chosen is not active."
 static const note_state_t k_note[] = {
     { 0, 0u, SERVO_SCREEN_NO_PIN, false, "Active: OUTPUTS run at 50 Hz.",
       PPM_LINE, false },
@@ -733,7 +751,7 @@ static const note_state_t k_note[] = {
 #define NOTE_N ((int)(sizeof(k_note) / sizeof(k_note[0])))
 
 /* The note on the OUTPUT page follows the target the coprocessor holds, not
- * the PWM TARGET setting: the outputs, the port with its pin, the port
+ * the TARGET setting: the outputs, the port with its pin, the port
  * without one, and a target not known.  The warning colour marks a setting
  * the drive does not follow, a port without a pin or with its pulse off,
  * and a target not known. */
@@ -780,9 +798,9 @@ TEST_CASE(the_in_force_note_names_the_target_the_coprocessor_holds)
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: AUSGÄNGE laufen mit 50 Hz.",
-          "Die Einstellung PWM-ZIEL ist nicht aktiv." },
+          "Das gewählte ZIEL ist nicht aktiv." },
         { "Aktiv: PROG-PORT GP13 läuft mit 50 Hz.",
-          "Die Einstellung PWM-ZIEL ist nicht aktiv." },
+          "Das gewählte ZIEL ist nicht aktiv." },
         { "Aktiv: 50 Hz am PROG-PORT. Ihm ist kein Pin zugeordnet.",
           "PPM-Ausgänge behalten ihre eigene Pulsrate." },
         { "Aktiv: PROG-PORT GP63 läuft mit 50 Hz.",
@@ -927,8 +945,8 @@ TEST_CASE(a_refused_save_repaints_only_the_save_line)
     fresh();
     two_buffers();
     open_settings();
-    tap(TAB_X(1), TAB_Y);
-    tap(ROW_R_X, ROW_Y(0));                    /* STEP 4.8 V: asks to save */
+    tap(TAB_X(PAGE_DUT), TAB_Y);
+    tap(ROW_L_X, ROW_Y(1));                    /* REPORT: asks to save */
     CHECK(settings_save_asked());
     CHECK(both_whole());
     gfx_color_t *was = malloc(FB_BYTES);
@@ -1593,7 +1611,7 @@ int main(void)
     RUN(standard_pwm_keeps_a_millisecond_between_pulses);
     RUN(a_restart_is_standard_pwm_at_50_hz);
     RUN(reverse_and_the_pulse_widths_reshape_the_command);
-    RUN(the_test_and_limit_settings_are_kept);
+    RUN(the_sweep_and_run_settings_are_kept);
     RUN(the_overlay_leaves_the_right_card_working);
     RUN(the_tag_is_red_while_a_dangerous_profile_is_in_force);
     RUN(a_supply_sample_repaints_only_the_power_plot_and_the_current_row);

@@ -37,7 +37,7 @@ Pulsweite als Endpunkt.
 Am Prüfstand sucht der Endlagenlauf (`shared/servo/servo_limrun.c`) zuerst
 die untere Seite, dann die obere. Wo, hängt vom Ziel ab:
 
-| PWM-ZIEL | Zuerst gelesen | Suche |
+| ZIEL | Zuerst gelesen | Suche |
 | --- | --- | --- |
 | ein SERVO-PWM-Pin auf AUSGÄNGE | nichts | PULS MITTE bis PULS MIN und PULS MAX |
 | PROG-PORT | eine Lesesitzung des [Programmierers](ServoProgrammer-de.md) | NEUTRAL des Servos bis zu seinem eigenen PULSE LOWER und PULSE UPPER, nie darüber hinaus |
@@ -53,21 +53,23 @@ Servo auf unter 12 s. Ein Lauf am Prüfstand ist nicht gemessen.
 
 ### Starten
 
-Die Seite GRENZEN der Servo-Einstellungen enthält den Lauf.
-**ENDLAGENLAUF** wählt mit einem Tippen NUR SUCHE oder SUCHEN + PROGRAMMIEREN.
-**SERVOPULSE**, nur mit PWM-ZIEL auf PROG-PORT angezeigt, wählt mit einem
-Tippen BEHALTEN oder 1000-2000; es beginnt bei BEHALTEN.
-**ENDLAGENLAUF STARTEN** startet den Lauf nach 2 s Halten, wie TEST
-STARTEN; ein Tippen oder ein kürzeres Halten startet nichts.
+Die Karte ENDLAGENLAUF auf der Aufgabe TEST des SERVO-Bildschirms enthält
+den Lauf; ihr **OPTIONEN** öffnet die Einstellungen des Laufs eine Ebene
+tiefer. Dort wählt **ENDLAGENLAUF** mit einem Tippen NUR SUCHE oder SUCHEN +
+PROGRAMMIEREN. **SERVOPULSE**, nur mit ZIEL auf PROG-PORT angezeigt, wählt
+mit einem Tippen BEHALTEN oder 1000-2000; es beginnt bei BEHALTEN. Das
+Home-Tag führt zurück zur Karte. **ENDLAGENLAUF STARTEN** auf der Karte
+startet den Lauf nach 2 s Halten, wie TEST STARTEN; ein Tippen oder ein
+kürzeres Halten startet nichts.
 
 ![Der Endlagenlauf, bereit](img/de/servo-limrun-ready.png)
 
 Die Zeile unter der Schaltfläche nennt die ganze Zeit, was der Lauf treibt
-und liest: `AUSGANG PROG-PORT GP13, STROM INA3221 CH1`, oder mit PWM-ZIEL
-auf AUSGÄNGE die als SERVO PWM gebundenen GPIOs. Während der Lauf geht,
-zeigt die linke Karte sein Feld: die Phase, die Seite und den befohlenen
+und liest: `AUSGANG PROG-PORT GP13, STROM INA3221 CH1`, oder mit ZIEL
+auf AUSGÄNGE `AUSGANG SERVO PWM GP2, STROM INA3221 CH1`. Während der Lauf
+geht, zeigt die linke Karte von LIVE sein Feld: die Phase, die Seite und den befohlenen
 Puls, und in der dritten Zeile wieder den Ausgang. Die Zeile ZIEL der
-rechten Karte bleibt ebenfalls sichtbar.
+Ausgangskarte bleibt ebenfalls sichtbar.
 
 ![Der Endlagenlauf beim Programmieren](img/de/servo-limrun.png)
 
@@ -83,22 +85,22 @@ Schaltfläche bleibt grau, und die Zeile darunter sagt warum.
 | `INA3221 NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich bewegt |
 | `NOCH KEINE INA3221-MESSFENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist kürzer als 1000 ms gehalten, oder kein Fenster mit Strom in den letzten 200 ms |
 | `SERVOVERSORGUNG UNTER 3.0 V ODER NICHT AUSGELESEN` | das letzte INA3221-Fenster enthält keine Schienenspannung, oder ihr Mittel liegt unter 3,0 V (`SERVO_LIMRUN_RAIL_MIN_MV`). Ein ausgeschalteter Ausgang liest 0 V, und eine Suche dort fände zwei freie Enden an einem Servo, das sich nie bewegt hat. 3,0 V liegen unter den 4,8 V, für die Servos üblicherweise angegeben sind, so dass die Schiene einer einzelnen Lithiumzelle noch startet; die Spannung, bei der ein bestimmtes Servo stehen bleibt, ist nicht gemessen |
-| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | PWM-ZIEL auf PROG-PORT mit PORT-PWM aus |
-| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | PWM-ZIEL auf den Ausgängen des Prüfstands, ohne einen als SERVO PWM gebundenen Ausgang, oder die Bindung noch nicht gelesen: die Worte der Zeile ZIEL |
+| `PORT-PWM AUS. KEINE PULSE AN DIESEM PORT.` | ZIEL auf PROG-PORT mit PORT-PWM aus |
+| `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | ZIEL auf den Ausgängen des Prüfstands, ohne einen als SERVO PWM gebundenen Ausgang, oder die Bindung noch nicht gelesen: die Worte der Zeile ZIEL |
 | `MITTE MUSS ZWISCHEN PULS MIN UND PULS MAX LIEGEN` | PULS MITTE liegt nicht zwischen PULS MIN und PULS MAX |
 
 ### Die Weggrenzen des Servos programmieren
 
-SUCHEN + PROGRAMMIEREN wird für ein Servo am Programmierport angeboten: PWM-ZIEL auf
+SUCHEN + PROGRAMMIEREN wird für ein Servo am Programmierport angeboten: ZIEL auf
 PROG-PORT, der Port in PWM und eine Versorgung von 4,8 V oder mehr. Mit
 einem antwortenden PD mini muss dessen Ausgang eingeschaltet sein, und sein
 Sollwert zählt; ohne ihn der Mittelwert
 der Servoschiene im letzten Fenster des INA3221. An den Ausgängen des
-Prüfstands sucht der Lauf nur, die Zeile lautet NUR SUCHE, und die dritte
-Zeile lautet `PROGRAMMIEREN ERFORDERT EIN SERVO AM PROG-PORT`. Am PROG-PORT
+Prüfstands sucht der Lauf nur, die Zeile lautet NUR SUCHE, und der Hinweis
+darunter in den Einstellungen des Laufs lautet `PROGRAMMIEREN ERFORDERT EIN SERVO AM PROG-PORT`. Am PROG-PORT
 beginnt jeder Lauf mit einer Lesesitzung, deshalb halten die übrigen
-Bedingungen auch NUR SUCHE an: die Schaltfläche bleibt grau, und die dritte
-Zeile nennt die Bedingung.
+Bedingungen auch NUR SUCHE an: die Schaltfläche bleibt grau, und die
+Zustandszeile der Karte nennt die Bedingung.
 
 | Zeile | Bedingung |
 | --- | --- |
@@ -118,7 +120,7 @@ schaltet den Prüfstand auf ARMED. Vorher wird nichts angesteuert.
   `Programmierport ohne Abschluss`, wenn VERBINDEN oder sein Lesen nicht
   abschließt; NICHT BESTANDEN, `kein KST- oder Chaservo-Servo`, wenn das
   gelesene Servo Werte hält, die die harten Regeln nicht annehmen. Ein
-  Servo, das kein KST oder Chaservo ist, wird mit PWM-ZIEL auf einem
+  Servo, das kein KST oder Chaservo ist, wird mit ZIEL auf einem
   SERVO-PWM-Pin gesucht.
 - NEUTRAL nicht zwischen PULSE LOWER und PULSE UPPER beendet ihn als NICHT
   BESTANDEN, `NEUTRAL außerhalb LOWER/UPPER`.
@@ -140,8 +142,8 @@ zurück. NEUTRAL wird nicht geschrieben. Ein Servo, das diese Werte schon
 hält, bekommt kein Schreiben. NEUTRAL außerhalb des neuen Bereichs beendet
 den Lauf als NICHT BESTANDEN, bevor etwas angesteuert wird, mit
 ZURÜCKSPIELEN im Angebot. Die Einstellung wirkt mit NUR SUCHE und mit
-SUCHEN + PROGRAMMIEREN; mit NUR SUCHE sind die Pulse das einzige Schreiben, und die
-dritte Zeile sagt `NUR SUCHE: SETZT NUR PULSE LOWER/UPPER`.
+SUCHEN + PROGRAMMIEREN; mit NUR SUCHE sind die Pulse das einzige Schreiben, und der
+Hinweis in den Einstellungen des Laufs sagt `NUR SUCHE: SETZT NUR PULSE LOWER/UPPER`.
 
 #### Die Register und das Modell
 
@@ -298,7 +300,7 @@ modelliertes Servo getestet; keines der beiden Firmware-Images ruft es auf.
 
 ### Was einen Endlagenlauf beendet
 
-STOP, LAUF BEENDEN im Feld oder auf der Seite GRENZEN, ein Umschalten auf
+STOP, LAUF BEENDEN im Feld auf LIVE oder auf der Karte ENDLAGENLAUF, ein Umschalten auf
 SAFE durch den Bediener, Linkverlust, das Verlassen des Bildschirms, der
 Bediener, der das Servo nimmt, eine Änderung an den Einstellungen des
 Servos, verlorene Touch-Ereignisse, der INA3221 nicht mehr das Messgerät,
@@ -358,7 +360,7 @@ an dem der Lauf begann, und den Dateinamen des Berichts.
 
 Der Bericht ist eine eigene `SERVOnnn.TXT` ohne CSV-Datei daneben, unter
 der nächsten freien Nummer, geschrieben unabhängig davon, was BERICHT auf
-der Seite PRÜFLING sagt. Während eines Laufs schreiben weder das
+PRÜFLING sagt. Während eines Laufs schreiben weder das
 Prüfstandslog noch das Netzteillog eine Zeile; die Zeit des Netzteillogs
 läuft durch den Lauf weiter, wie seine Summen. Vom Start des Laufs, bis die
 Karte den Bericht geschlossen hat, gilt er als offener Log-Lauf: WLAN und ein Update warten
@@ -481,13 +483,13 @@ Servo-Schiene und das Netzteil der PD mini, liest der Lauf stattdessen CH1
 des INA3221, in 50-ms-Fenstern: siehe
 [Der Strommesser des Laufs](#der-strommesser-des-laufs).
 
-TEST STARTEN auf der TEST-Seite von SERVO startet ihn;
+TEST STARTEN auf der Karte AUTOMATISCHER TEST der Aufgabe TEST von SERVO startet ihn;
 [Bildschirme](Screens-de.md#servo) beschreibt die Bedienung. Die Engine ist
 `shared/servo/servo_test.c`; die Konstanten unten stehen in `servo_test.h`.
 
 ### Verfahren
 
-Die Spannungsstufen sind STUFE 4.8 V und STUFE 6.0 V der TEST-Seite, und mit HV-SERVO an STUFE 7.4 V und STUFE 8.4 V. HV-SERVO ist nach jedem Neustart aus. Ein
+Die Spannungsstufen sind STUFE 4.8 V und STUFE 6.0 V des Laufs (OPTIONEN der Karte), und mit HV-SERVO an STUFE 7.4 V und STUFE 8.4 V. HV-SERVO ist nach jedem Neustart aus. Ein
 Lauf mit einer Stufe über 6,0 V startet nur über die Warnung NUR HV-SERVOS,
 2 s gehalten. Die Strombegrenzung im Lauf ist die der Zeile SOLL.
 
@@ -496,7 +498,7 @@ Jede Stufe durchläuft diese Phasen:
 | Phase | Das Servo | Endet |
 | --- | --- | --- |
 | SETZEN | auf PULS MITTE; die Spannung wird verlangt; die erste Stufe schaltet den Ausgang ein | wenn das Netzteil den Sollwert auf 0,05 V genau zurückliest, spätestens nach 3000 ms |
-| EINSCHWINGZEIT | auf PULS MITTE | nach EINSCHWINGZEIT der TEST-Seite |
+| EINSCHWINGZEIT | auf PULS MITTE | nach EINSCHWINGZEIT des Laufs |
 | RUHE | auf PULS MITTE: der Ruhestrom ist der Mittelwert der Messwerte, das Ruherauschen ihre Standardabweichung | nach 1000 ms |
 | BEWEGEN | ein Sprung auf ein Ende, ohne Rampe: TEMPO gilt nicht | bei der Ankunft oder nach 3000 ms plus der Verzögerung des Strommessers (3300 ms am PD mini): verspätet mit erkannter Bewegung, unerkannt ohne |
 | HOLD | an diesem Ende: der Haltestrom ist der Mittelwert der Messwerte | nach HALTEZEIT, mindestens 600 ms |
@@ -741,8 +743,8 @@ PWM-Frame misst, verwendet der Lauf nicht.
 | 1 s über BLOCKIERT AB | Messwerte über BLOCKIERT AB über 1000 ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1 s über BLOCKIERT AB` |
 | 1 s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000 ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1 s im Konstantstrom`, gleich wie BLOCKIERT AB steht |
 | Konstantstrom unter 1 s | | nichts endet und nichts fällt durch; die Berichtszeile `Konstantstrom` nennt die Zahl solcher Messwerte und die längste Folge vom ersten bis zum letzten |
-| BLOCKIERT AB bei oder über der Strombegrenzung | bei TEST STARTEN | der Lauf startet. Die TEST-Seite und der Bericht sagen `BLOCKIERT AB 3.00 A unerreichbar: Strombegrenzung 2.00 A` |
-| BLOCKIERT AB bei oder über dem Bereich des INA3221 | bei TEST STARTEN mit dem INA3221 als Messgerät | der Lauf startet. Die TEST-Seite und der Bericht sagen `BLOCKIERT AB 2.00 A unerreichbar: INA3221-Bereich 1.638 A` |
+| BLOCKIERT AB bei oder über der Strombegrenzung | bei TEST STARTEN | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00 A unerreichbar: Strombegrenzung 2.00 A` |
+| BLOCKIERT AB bei oder über dem Bereich des INA3221 | bei TEST STARTEN mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00 A unerreichbar: INA3221-Bereich 1.638 A` |
 
 - Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und BLOCKIERT AB
   geschieht in ganzen mA, im Urteil wie im Bericht: ein Messwert von 0,050 A
@@ -785,7 +787,7 @@ eingeschaltet hält: wird AS5600 bei einer Bank in ARMED eingeschaltet, hat der 
 keine Winkelspalten, bis das Setup in SAFE übernommen ist.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
-oder SENSOR-MITTE auf der Seite PRÜFLING, die den aktuellen Zählerstand nimmt,
+oder SENSOR-MITTE auf OPTIONEN > PRÜFLING, die den aktuellen Zählerstand nimmt,
 wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
 Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
 nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
@@ -966,7 +968,7 @@ MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
 längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
 `nicht gemessen, keine Bewegung kam an`, an jedem Strommesser.
 
-Ein Wert 0 auf der GRENZEN-Seite wird nicht geprüft; BLOCKIERT AB immer. Ein
+Eine Pass/Fail-Grenze von 0 wird nicht geprüft; BLOCKIERT AB immer. Ein
 Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 [Blockieren und Konstantstrom](#blockieren-und-konstantstrom).
 
@@ -975,7 +977,7 @@ Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 Ein Lauf nimmt die nächste Laufnummer auf der Karte, wie ein Prüfstand
 in ARMED, und die eigene Task der SD-Karte schreibt seine Dateien:
 `SERVOnnn.CSV`, eine Zeile je Messwert des Messgeräts des Laufs, und mit
-BERICHT an (PRÜFLING-Seite) `SERVOnnn.TXT`. Die Nummer gehört zu einer
+BERICHT an (OPTIONEN > PRÜFLING) `SERVOnnn.TXT`. Die Nummer gehört zu einer
 Reihe mit den Läufen `BENCHnnn.CSV` und `ESCnnn.CSV` auf der Karte
 ([Logs](Screens-de.md#logs)). Ein Lauf ist eine CSV: das eigene
 Lauflog des Prüfstands in ARMED schreibt keine Zeile, solange ein Lauf
@@ -1135,14 +1137,14 @@ gemessen.
 
 ## Sweep und TEMPO
 
-SWEEP auf der Seite SERVO fährt das Servo die Kurve der TEST-Seite ab.
+SWEEP auf der Seite SERVO fährt das Servo die Kurve von OPTIONEN > SWEEP ab.
 TEMPO auf der rechten Karte begrenzt, wie schnell sich der Ausgang bewegen
 darf. Ist TEMPO langsamer als die schnellste Änderung, die die Kurve
 verlangt, bestimmt TEMPO die Bewegung statt der Kurve, und die Zeile von
 TEMPO lautet in der Warnfarbe TEMPO BEGRENZT DEN SWEEP
 ([Bildschirme](Screens-de.md#servo)).
 
-Die schnellste Änderung, mit f der Rate der TEST-Seite in Hz und A der
+Die schnellste Änderung, mit f der Rate von SWEEP in Hz und A der
 Amplitude in Grad (BEREICH des Wegs zu beiden Seiten von PULS MITTE):
 
 | KURVE | Schnellste Änderung | Wo |
@@ -1160,14 +1162,14 @@ während er läuft. `sweep_slew_limited()` in `shared/servo/servo_sweep.c`
 entscheidet das, in den Befehlseinheiten, in denen der Koprozessor die Rampe
 fährt.
 
-| TEST-Seite | A | Schnellste Änderung | Verschwindet ab TEMPO |
+| Seite SWEEP | A | Schnellste Änderung | Verschwindet ab TEMPO |
 | --- | ---: | ---: | ---: |
 | Sinus, 0,5 Hz, BEREICH 80 %, WEG +/-90 Grad | 72 Grad | 226 Grad/s | 63 % |
 | Dreieck, 0,5 Hz, BEREICH 80 %, WEG +/-90 Grad | 72 Grad | 144 Grad/s | 40 % |
 | Rechteck, beliebig | beliebig | ein Sprung | 100 % |
 
 Die Zeile verschwindet, wenn TEMPO steigt oder TEMPO (die Rate) oder
-BEREICH auf der TEST-Seite sinkt.
+BEREICH auf der Seite SWEEP sinkt.
 
 Die Zeile vergleicht die Kurve nur mit TEMPO. Ein Servo, das langsamer ist
 als beide, begrenzt den Sweep ebenfalls; nichts auf dem Prüfstand misst das

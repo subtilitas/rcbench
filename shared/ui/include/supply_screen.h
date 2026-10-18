@@ -114,8 +114,8 @@ void supply_screen_settings_loaded(void);
 /** The operator's limits as the screen last read them from the settings. */
 supply_limits_t supply_screen_limits(void);
 
-/** The caps were changed in the settings from elsewhere -- the SERVO
- *  screen's LIMITS page -- so read them again. */
+/** The caps were changed in the settings from elsewhere, so read them
+ *  again. */
 void supply_screen_limits_changed(void);
 
 /*

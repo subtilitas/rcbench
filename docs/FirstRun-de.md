@@ -801,8 +801,9 @@ wird nachgespielt. Eine Taste wird beim Drücken gesendet, ohne Enter.
 5. Servo in Ruhe: neue Mitschnittdatei. Das Servo anschließen, auf ARMED
    schalten, in der Mitte lassen, Netzteil an bei 4,80 V. `t` drücken und
    auf die Zeile `$Z` warten.
-6. Bewegungen, in denselben Mitschnitt: auf der Seite TEST des Bildschirms
-   SERVO TESTDAUER NACH auf BEWEGUNGEN, BEWEGUNGEN 20, HALTEZEIT 1000 ms,
+6. Bewegungen, in denselben Mitschnitt: auf der Aufgabe TEST des
+   Bildschirms SERVO, in den OPTIONEN der Karte AUTOMATISCHER TEST,
+   TESTDAUER NACH auf BEWEGUNGEN, BEWEGUNGEN 20, HALTEZEIT 1000 ms,
    STUFE 4.8 V an, jede andere Stufe und BROWN-OUT aus. TEST STARTEN. Der
    Trace läuft von der ersten Bewegung bis 4 s nach der letzten; auf seine
    Zeile `$Z` warten, dann PuTTY schließen.

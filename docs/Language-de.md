@@ -106,7 +106,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | report | Bericht |
 | reading | Messwert |
 | setting (ein Eintrag in SETUP) | Einstellung |
-| SETTINGS (das eigene Overlay einer Seite) | OPTIONEN |
+| SETTINGS (die eigenen Einstellungen einer Seite) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
@@ -225,7 +225,7 @@ dieselben Argumente in derselben Reihenfolge wie sein Englisch.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 256 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 262 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
