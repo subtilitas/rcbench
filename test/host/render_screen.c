@@ -2728,11 +2728,12 @@ int main(int argc, char **argv)
         outputs_screen_set_binding(&b);
         outputs_screen_set_result(OUTPUTS_OK);
         if (strcmp(view, "outputs-port") == 0) {
-            /* From SERVO's TARGET row with the port as the tester's
-             * target: on the PROG PORT entry, the servo PWM pins as the
-             * overview names them. */
+            /* From SERVO's TARGET row with the IOmcu driving the port: on
+             * the PROG PORT entry, the servo PWM pins as the overview
+             * names them. */
             settings_set(SET_SERVO_TARGET, 1.0f);
             settings_set(SET_SERVO_PORT_PWM, 1.0f);
+            servo_screen_set_drive(1u, 13u, true);
             ui_router_goto(SCREEN_SERVO);
             tap(SV_TARGET_X, UI_BAND_H + SV_TARGET_Y);
         } else {
