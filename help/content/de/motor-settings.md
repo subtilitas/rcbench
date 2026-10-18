@@ -31,6 +31,8 @@ Leerlaufpuls und Vollpuls gehen beim Link-Aufbau und bei jeder Änderung an den 
 
 Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert an. Solange der Prüfstand ARMED ist, ARM gehalten wird oder ein ARM oder ein DISARM auf seine Antwort wartet, lautet ihre Hilfezeile `Nur bei SAFE einstellbar` in der Warnfarbe, und der Wert nimmt keinen Tipp an. Ein offenes Tastenfeld für einen von beiden schließt, wenn ARM gedrückt wird oder der Prüfstand SAFE verlässt. Die anderen 6 Zeilen nehmen jederzeit einen Wert an.
 
+Eine Änderung von Leerlaufpuls oder Vollpuls erreicht den IOmcu beim ersten Poll 300 ms oder mehr nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` abgelehnt, und der Prüfstand bleibt SAFE. ARM erneut halten: Das Halten über 2 s gibt der Änderung die Zeit anzukommen.
+
 ## Die Werte behalten
 
 Ein geänderter Wert gilt sofort und fordert das Schreiben an. Das Panel schreibt im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Die Einstellungen sind ein Speicher: Das Schreiben behält jeden ungespeicherten Wert, auch die unter SETUP geänderten. Die Zeile unter den Einstellungen sagt, wo der Speicher steht:

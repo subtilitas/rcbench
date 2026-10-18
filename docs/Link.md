@@ -822,6 +822,19 @@ is refused every time, and it waits for the next edit or link-up edge instead.
 The guard at zero covers a count never sent and not one that is out of date:
 every count the setting allows is inside the range the page takes.
 
+The throttle channels' endpoints, the `Idle pulse` and `Full pulse`
+settings, travel on CHAN_CFG and not in the frame that switches to ARMED.
+The panel sends them when an IOmcu starts answering and after each edit,
+once the edit has rested 300 ms, at a poll whose write of ARM = 0 was
+acknowledged: it reads the page and writes it only when the throttle
+channels differ. A read or a write nobody answers stays owed, and a
+refusal ends the debt with an alert. While they are owed with the link up,
+the panel writes no switch to ARMED and says `Pulse range not yet sent to
+the IOmcu. Hold ARM again.`; [A pulse range on its
+way](Safety.md#a-pulse-range-on-its-way) has the rules. The rule is the
+panel's: the IOmcu takes a CHAN_CFG write before it acknowledges it and
+has no rule of its own for an edit it has not received.
+
 The IOmcu refuses a pin it must not drive -- the safety line, the CAN
 controller's pins, GP23, GP24, GP25 and GP29 (used by the module, not brought
 out) and any number above GP29 -- on the OUTPUTS and SUPPLY pages alike. An

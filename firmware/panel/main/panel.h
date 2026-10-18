@@ -26,6 +26,7 @@
 #include "bind_link.h"
 #include "busfault_screen.h"
 #include "coproc_update_screen.h"
+#include "endpoints_link.h"
 #include "kst_link.h"
 #include "kst_prog.h"
 #include "link_bringup.h"
@@ -239,24 +240,11 @@ extern uint32_t    s_arm_gen;
 extern atomic_bool s_poles_owed;
 extern atomic_uint s_poles_value;
 
-/* The throttle endpoints the IOmcu holds: owed, held disarmed at a
- * link-up, and the time of the last edit.  The debt is paid once the value
- * has rested for ENDPOINTS_SETTLE_MS. */
-#define ENDPOINTS_SETTLE_MS 300u
-extern atomic_bool s_endpoints_owed;
-extern bool        s_endpoints_hold;
-extern atomic_uint s_endpoints_value;
-extern atomic_uint s_endpoints_at_ms;
-
-static inline uint16_t endpoints_min(void)
-{
-    return (uint16_t)(atomic_load(&s_endpoints_value) >> 16);
-}
-
-static inline uint16_t endpoints_max(void)
-{
-    return (uint16_t)(atomic_load(&s_endpoints_value) & 0xFFFFu);
-}
+/* The throttle endpoints the IOmcu holds (endpoints_link.h): owed, held
+ * disarmed at a link-up, the pair and the time of the last edit.  The debt
+ * is paid once the pair has rested ENDPOINTS_SETTLE_MS, and a switch to
+ * ARMED with the link up is refused while it stands. */
+extern endpoints_debt_t s_endpoints;
 
 /* Where the PD mini is wired, from SETUP INTERFACES, in one word; see
  * main.c. */

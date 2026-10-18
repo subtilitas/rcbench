@@ -200,6 +200,7 @@ TRACKED = [
     "shared/bench/sense_link_view.c",
     "shared/bench/servo_source.c",
     "shared/bench/tone_link.c",
+    "shared/bench/endpoints_link.c",
     "shared/bench/knob.c",
     "shared/bench/panel_i2c.c",
     "shared/bench/log_writer.c",

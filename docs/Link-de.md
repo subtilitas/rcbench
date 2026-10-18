@@ -900,6 +900,20 @@ Link-up-Flanke. Der Schutz bei null greift für eine nie gesendete Zahl, nicht
 für eine veraltete: jede Zahl, die die Einstellung zulässt, liegt im Bereich,
 den die Page annimmt.
 
+Die Endpunkte der Gaskanäle, die Einstellungen `Leerlaufpuls` und
+`Vollpuls`, gehen über CHAN_CFG und nicht im Frame, der auf ARMED schaltet.
+Das Panel sendet sie, wenn ein IOmcu zu antworten beginnt, und nach jeder
+Änderung, sobald die Änderung 300 ms geruht hat, bei einem Poll, dessen
+Schreiben von ARM = 0 quittiert wurde: es liest die Page und schreibt sie nur,
+wenn die Gaskanäle abweichen. Ein Lesen oder Schreiben, das niemand
+beantwortet, bleibt offen, und eine Ablehnung beendet die Schuld mit einem
+Hinweis. Solange sie bei bestehendem Link offen sind, schreibt das Panel kein
+Schalten auf ARMED und meldet `Pulsbereich noch nicht an den IOmcu gesendet.
+ARM erneut halten.`; [Ein Pulsbereich unterwegs](Safety-de.md#ein-pulsbereich-unterwegs)
+hat die Regeln. Die Regel ist die des Panels: Der IOmcu übernimmt ein
+Schreiben von CHAN_CFG, bevor er es quittiert, und hat keine eigene Regel für
+eine Änderung, die er nicht empfangen hat.
+
 Der IOmcu verweigert einen Pin, den er nicht treiben darf — die
 Safety-Leitung, die Pins des CAN-Controllers, GP23, GP24, GP25 und GP29 (vom
 Modul belegt, nicht herausgeführt) und jede Nummer über GP29 — auf der
