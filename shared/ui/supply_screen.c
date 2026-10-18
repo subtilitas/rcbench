@@ -1297,7 +1297,13 @@ static void event(const touch_event_t *evt)
         }
         if (up) {
             let_go();
-            propose(FROM_SLIDER);
+            /* A release the finger did not make -- the router's, at the
+             * home tag or a change of screen, or the tracker's for a jump
+             * -- asks no question: the drag ends as drop_press() ends one,
+             * with what it already gave the supply live and nothing more. */
+            if (touch_event_is_tap_up(evt)) {
+                propose(FROM_SLIDER);
+            }
             /* The drag is over, so the slider can be written: it shows the
              * set point it was snapped to, or, while a question is open,
              * the one the supply keeps until it is answered. */

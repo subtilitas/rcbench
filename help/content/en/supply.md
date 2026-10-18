@@ -59,7 +59,7 @@ The keypad shows the range in its title row. OK takes a value inside the range, 
 
 ![The question before a change to a live output](view:supply-confirm)
 
-While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
+While the output is on, a new set point opens a question that names the change. APPLY gives it to the supply; CANCEL drops it and the slider goes back. A drag asks once, on the release; a drag that ends without its finger lifting, such as at the home tag tapped with a second finger, asks nothing, and the slider goes back. With the output off nothing is asked. SETTINGS switches the question off for the slider and for the keypad separately.
 
 ## OUTPUT ON and OFF
 

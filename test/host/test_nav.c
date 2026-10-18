@@ -792,6 +792,37 @@ static void open_picker_list(void)
 }
 
 /*
+ * A drag on SUPPLY's voltage track and the home tag under a second finger:
+ * the router releases the drag first, and that release opens no question,
+ * so the tag leaves SUPPLY for the menu, with the question on and off and
+ * the output live and not.
+ */
+TEST_CASE(the_home_tag_leaves_supply_under_a_drag)
+{
+    for (int k = 0; k < 4; ++k) {
+        const bool ask  = (k & 1) != 0;
+        const bool live = (k & 2) != 0;
+        fresh();
+        settings_init();
+        to_overview();
+        settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
+        ui_router_goto(SCREEN_SUPPLY);
+        supply_screen_set_output(live);
+        touch(82, UI_BAND_H + 335, TOUCH_EVENT_DOWN, 1);
+        touch(282, UI_BAND_H + 335, TOUCH_EVENT_MOVE, 1);
+        const gfx_rect_t home = ui_home_tag_rect("SUPPLY");
+        touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_DOWN, 2);
+        touch(home.x + home.w / 2, home.y + home.h / 2, TOUCH_EVENT_UP, 2);
+        if (ui_router_current() != SCREEN_OVERVIEW) {
+            T_FAIL("ask %d live %d: the home tag led to %d", ask, live,
+                   ui_router_current());
+        }
+        touch(282, UI_BAND_H + 335, TOUCH_EVENT_UP, 1);
+        settings_cancel_save();
+    }
+}
+
+/*
  * SUPPLY, WI-FI, OUTPUTS and PICK A PIN through the router's home tag:
  * over what the screen opened the tag closes it, one level a tap, and the
  * screen stays; with nothing open it goes to the screen's parent.
@@ -3647,6 +3678,7 @@ int main(void)
     RUN(the_home_tag_climbs_from_the_programmer_to_its_list_to_the_menu);
     RUN(the_home_tag_climbs_from_a_setup_list_to_the_tiles_to_the_menu);
     RUN(the_home_tag_closes_what_a_tool_screen_opened_first);
+    RUN(the_home_tag_leaves_supply_under_a_drag);
     RUN(home_under_a_setup_scroll_leaves_the_contact_to_no_screen);
     RUN(a_tile_navigates_and_a_slip_does_not);
     RUN(every_screen_renders_something_and_has_a_title);

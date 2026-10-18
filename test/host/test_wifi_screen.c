@@ -527,21 +527,60 @@ TEST_CASE(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing)
     CHECK_STR_EQ(pass, "");
 }
 
-/* Over the question about a staged image the tag leaves the screen, and
- * the leave drops the image, keyboard or list under it or not. */
-TEST_CASE(the_home_tag_leaves_over_the_image_question)
+/*
+ * Over the question about a staged image the first tap answers CANCEL: the
+ * image is dropped and the screen stays.  A list or keyboard under the
+ * question closes with it, so the next tap leaves.
+ */
+TEST_CASE(the_home_tag_answers_the_image_question_cancel)
 {
     fresh();
     staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    v.up = WIFI_UP_IDLE;                     /* the image is dropped */
+    show();
     CHECK(!scr()->back());
+    CHECK_EQ(wifi_screen_take(), 0u);
+
     fresh();
     tap(BTN_CX(2), BTN_CY(2));
     (void)wifi_screen_take();
     scan_result();
-    tap(ROW_CX(0), ROW_CY(0));
+    tap(ROW_CX(0), ROW_CY(0));               /* a keyboard under it */
     staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    v.up = WIFI_UP_IDLE;
+    show();
+    tap(BTN_CX(0), BTN_CY(0));               /* the buttons, no keyboard */
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_AP);
+    CHECK(!scr()->back());
+}
+
+/* A second tap while the image is still staged leaves the screen, and
+ * asks nothing more itself: the leave drops the image. */
+TEST_CASE(a_second_home_tag_over_a_staged_image_leaves)
+{
+    fresh();
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
     CHECK(!scr()->back());
     CHECK_EQ(wifi_screen_take(), 0u);
+    /* A new image after the first is dropped answers the first tap
+     * again. */
+    v.up = WIFI_UP_IDLE;
+    show();
+    staged(WIFI_OFFER_NEWER, WIFI_GATE_OPEN);
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
+    /* And a new visit does too. */
+    scr()->leave();
+    (void)wifi_screen_take();
+    scr()->enter();
+    CHECK(scr()->back());
+    CHECK_EQ(wifi_screen_take(), WIFI_REQ_DISCARD);
 }
 
 /* ------------------------------------------------------- the question */
@@ -777,7 +816,8 @@ int main(void)
     RUN(a_hidden_network_is_typed_and_cancel_keeps_nothing);
     RUN(the_home_tag_climbs_from_the_list_to_the_buttons);
     RUN(the_home_tag_climbs_from_a_keyboard_to_the_list_keeping_nothing);
-    RUN(the_home_tag_leaves_over_the_image_question);
+    RUN(the_home_tag_answers_the_image_question_cancel);
+    RUN(a_second_home_tag_over_a_staged_image_leaves);
     RUN(install_is_a_2_s_hold_and_a_release_before_asks_nothing);
     RUN(a_press_that_slides_off_install_asks_nothing);
     RUN(an_image_that_goes_away_under_the_hold_ends_it);

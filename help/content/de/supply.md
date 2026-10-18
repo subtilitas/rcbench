@@ -59,7 +59,7 @@ Das Tastenfeld zeigt den Bereich in seiner Titelzeile. OK übernimmt einen Wert 
 
 ![Die Rückfrage vor einer Änderung an einem eingeschalteten Ausgang](view:supply-confirm)
 
-Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
+Solange der Ausgang ein ist, öffnet ein neuer Sollwert eine Rückfrage, die die Änderung nennt. ÜBERNEHMEN gibt ihn dem Netzteil; ABBRECHEN verwirft ihn, und der Schieberegler geht zurück. Ein Ziehen fragt einmal, beim Loslassen; ein Ziehen, das endet, ohne dass sein Finger abhebt, etwa am Home-Tag mit einem zweiten Finger, fragt nichts, und der Schieberegler geht zurück. Bei abgeschaltetem Ausgang wird nichts gefragt. OPTIONEN schaltet die Rückfrage für den Schieberegler und das Tastenfeld getrennt ab.
 
 ## AUSGANG EIN und AUS
 

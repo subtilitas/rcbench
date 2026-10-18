@@ -1409,7 +1409,10 @@ point as it was.
 point from the slider or its step buttons, or from the keypad, opens a
 question that names the change. APPLY gives it to the supply; CANCEL drops it
 and the slider goes back. A drag asks once, on the release, and the supply
-holds the old set point until then. With the output off nothing is asked.
+holds the old set point until then. A drag that ends without its finger
+lifting -- the home tag tapped with a second finger, or a contact the touch
+controller loses -- asks nothing, and the slider goes back. With the output
+off nothing is asked.
 STOP closes the question unanswered: an APPLY tapped in the same frame
 (about 50 ms) as STOP applies nothing. SETTINGS switches the question off for the slider and for the keypad
 separately.
@@ -1429,7 +1432,7 @@ exception: an output SERVO switched on stays on after SERVO is left while the
 servo programmer holds its port, until the port lets go (see SERVO). A servo
 is powered from SERVO and an ESC from ESC STICK. MOTOR & ESC switches no
 supply; an ESC run there is powered from its own source. An output another
-screen switched on stays as it is when SUPPLY is left. The keypad, the HV
+screen switched on stays as it is when SUPPLY is left. The keypad, the
 question and the other overlays of SUPPLY are no leave. The link-lost screen,
 which has no STOP, does not open while the output is on.
 
@@ -1839,8 +1842,10 @@ WI-FI tile on [SETUP](#setup) and from WI-FI in the bottom row of
 LOGS; so does CLOSE on PANEL UPDATE after an upload's install failed. Over
 the network list or a keyboard the home tag climbs one level first, as
 CANCEL does: from a keyboard to the list, keeping nothing typed, and from the
-list to the buttons. Over the question about an uploaded image it leaves the
-screen, and the image is dropped. The
+list to the buttons. Over the question about an uploaded image the home tag
+is CANCEL: the image is dropped, a list or keyboard under the question
+closes with it, and the screen stays. A second tap while the image is still
+there leaves the screen. The
 radio runs only while
 this screen is open, and for the release check and the download of
 [Updates](#updates). It is off at every start of the panel, and it goes off

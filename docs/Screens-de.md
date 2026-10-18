@@ -1538,7 +1538,10 @@ Ausgang an ist, öffnet ein neuer Sollwert vom Schieber oder seinen
 Schrittknöpfen oder von der Tastatur eine Frage, die die Änderung nennt.
 ÜBERNEHMEN gibt sie dem Netzteil; ABBRECHEN verwirft sie, und der Schieber geht
 zurück. Ein Ziehen fragt einmal, beim Loslassen, und bis dahin hält das
-Netzteil den alten Sollwert. Bei ausgeschaltetem Ausgang wird nichts gefragt.
+Netzteil den alten Sollwert. Ein Ziehen, das endet, ohne dass sein Finger
+abhebt -- das Home-Tag mit einem zweiten Finger getippt oder ein Kontakt,
+den der Touch-Controller verliert --, fragt nichts, und der Schieber geht
+zurück. Bei ausgeschaltetem Ausgang wird nichts gefragt.
 STOP schließt die Frage unbeantwortet: ein ÜBERNEHMEN im selben Frame (etwa
 50 ms) wie STOP übernimmt nichts. OPTIONEN schaltet die Frage für den Schieber und für die Tastatur getrennt
 ab.
@@ -1562,7 +1565,7 @@ der Port loslässt (siehe SERVO). Ein Servo wird von SERVO versorgt, ein ESC von
 ESC STICK. MOTOR & ESC schaltet keine Versorgung; ein ESC, der dort läuft, wird
 aus seiner eigenen Quelle versorgt. Ein Ausgang, den ein anderer Bildschirm
 eingeschaltet hat, bleibt beim Verlassen von SUPPLY, wie er ist. Das Tastenfeld,
-die HV-Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
+die Frage und die übrigen Overlays von SUPPLY sind kein Verlassen. Der
 Bildschirm für den verlorenen Link, der kein STOP hat, öffnet sich nicht,
 solange der Ausgang an ist.
 
@@ -2030,7 +2033,10 @@ UPDATE, nachdem die Installation eines Uploads scheiterte. Über der
 Netzwerkliste oder einer Tastatur führt das Home-Tag zuerst eine Ebene
 zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu
 behalten, und von der Liste zu den Tasten. Über der Frage zu einem
-hochgeladenen Image verlässt es den Bildschirm, und das Image wird verworfen. Der Funk läuft nur, solange dieser Bildschirm offen ist,
+hochgeladenen Image ist das Home-Tag ABBRECHEN: Das Image wird verworfen,
+eine Liste oder Tastatur unter der Frage schließt mit ihr, und der
+Bildschirm bleibt. Ein zweites Tippen, solange das Image noch da ist,
+verlässt den Bildschirm. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min

@@ -1296,6 +1296,44 @@ TEST_CASE(the_home_tag_closes_a_settings_keypad_then_the_settings)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
+/*
+ * The router releases a drag before it asks back() (ui_router.c,
+ * router_back()), with a release the finger did not make.  That release
+ * opens no question, so the home tag finds nothing open and leaves.  With
+ * the question on and the output live the drag changed nothing; otherwise
+ * it moved the set point live and keeps that.
+ */
+TEST_CASE(a_drag_the_home_tag_releases_opens_no_question)
+{
+    for (int k = 0; k < 4; ++k) {
+        const bool ask  = (k & 1) != 0;
+        const bool live = (k & 2) != 0;
+        fresh();
+        settings_set(SET_SUPPLY_CONFIRM_SLIDE, ask ? 1.0f : 0.0f);
+        supply_screen_set_output(live);
+        const float was = supply_screen_set_v();
+        ev(TRACK_X + 10, V_ROW_Y, TOUCH_EVENT_DOWN, 1);
+        ev(TRACK_X + 200, V_ROW_Y, TOUCH_EVENT_MOVE, 1);
+        const touch_event_t up = { .type = TOUCH_EVENT_UP,
+                                   .point = { .id = 1, .x = TRACK_X + 200,
+                                              .y = V_ROW_Y, .strength = 40 },
+                                   .flags = TOUCH_FLAG_NO_TAP };
+        scr->event(&up);
+        if (scr->back()) {
+            T_FAIL("ask %d live %d: a question was open", ask, live);
+        }
+        if (ask && live) {
+            CHECK_NEAR(supply_screen_set_v(), was, 1e-4f);
+        } else {
+            CHECK(fabsf(supply_screen_set_v() - was) > 0.05f);
+        }
+        const float now = supply_screen_set_v();
+        tap(APPLY_X, ASK_Y);                 /* no question to answer */
+        CHECK_NEAR(supply_screen_set_v(), now, 1e-4f);
+        settings_cancel_save();
+    }
+}
+
 /* A question asked from a set point's keypad over the settings: the
  * question goes first, and the settings stay. */
 TEST_CASE(the_home_tag_closes_a_question_over_the_settings_first)
@@ -2361,6 +2399,7 @@ int main(void)
     RUN(the_home_tag_closes_a_set_point_keypad_first);
     RUN(the_home_tag_closes_a_settings_keypad_then_the_settings);
     RUN(the_home_tag_closes_a_question_over_the_settings_first);
+    RUN(a_drag_the_home_tag_releases_opens_no_question);
     RUN(a_reading_that_did_not_arrive_is_not_plotted_as_the_last_one);
     RUN(a_trip_shows_on_the_mode_card);
     RUN(a_supply_held_by_a_port_takes_off_and_no_other_press);

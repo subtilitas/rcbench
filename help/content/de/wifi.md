@@ -6,7 +6,7 @@ order: 51
 
 # WLAN
 
-WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet über die Kachel WI-FI auf [SETUP](setup.md) und über WLAN in der unteren Reihe von [LOGS](logs.md). Sein Home-Tag führt zu dem Bildschirm zurück, der ihn geöffnet hat. Über der Netzwerkliste oder einer Tastatur führt es zuerst eine Ebene zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu behalten, und von der Liste zu den Tasten. Über der Frage zu einem hochgeladenen Image verlässt es den Bildschirm, und das Image wird verworfen. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
+WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei der SD-Karte (Secure Digital) zum Herunterladen und ein Firmware-Image des Panels zum Hochladen. Der Bildschirm öffnet über die Kachel WI-FI auf [SETUP](setup.md) und über WLAN in der unteren Reihe von [LOGS](logs.md). Sein Home-Tag führt zu dem Bildschirm zurück, der ihn geöffnet hat. Über der Netzwerkliste oder einer Tastatur führt es zuerst eine Ebene zurück, wie ABBRECHEN: von einer Tastatur zur Liste, ohne das Getippte zu behalten, und von der Liste zu den Tasten. Über der Frage zu einem hochgeladenen Image ist es ABBRECHEN: Das Image wird verworfen, und der Bildschirm bleibt; ein zweites Tippen, solange das Image noch da ist, verlässt ihn. Das Funkmodul läuft nur, solange dieser Bildschirm offen ist. Bei jedem Start des Panels ist es aus.
 
 ## Der Startbildschirm
 
