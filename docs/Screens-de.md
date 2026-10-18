@@ -585,7 +585,8 @@ bleibt rechts, solange die Liste zu sehen ist.
 Ein Tippen auf die Zeile öffnet ESC STICK, eine Ebene tiefer. ESC STICK ist
 eine Sitzung über die volle Breite: Sie deckt die linke Spalte, die Leiste
 und die Reiter ab, und solange sie offen ist, erreicht kein Druck ARM oder
-einen Reiter. In der Zeile der Reiter steht an ihrer Stelle der
+einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet
+ihn auf SAFE, auch bei einem DISARM, den ein anderer Finger hält. In der Zeile der Reiter steht an ihrer Stelle der
 Ausgangsstreifen, eine Zeile von 16 px ab x 12:
 
 ![ESC STICK unter dem Ausgangsstreifen](img/de/motor-stick.png)

@@ -665,10 +665,15 @@ static void task_changed(void)
  * A session opened over the body: the presses the screen held go, as at a
  * change of task -- a hold of ARM, a throttle drag, a step button, a tab --
  * and the session's first frame is painted whole.  ARM and the throttle
- * are out of sight under it.
+ * are out of sight under it, so a bench that is not SAFE switches to SAFE
+ * first: a DISARM held by another finger, whose release the session takes,
+ * is posted here, and no output drives under a session that hides DISARM.
  */
 static void session_opened(void)
 {
+    if (!bench_safe()) {
+        post(MOTOR_CMD_DISARM, 0.0f);
+    }
     end_drag();
     ui_tabs_cancel(&s.tabs);
     mwb_cancel();

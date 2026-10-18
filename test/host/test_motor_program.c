@@ -483,6 +483,42 @@ TEST_CASE(leaving_with_a_session_open_disarms_and_closes_it)
     CHECK(motor_screen_session_shown());
 }
 
+/*
+ * PROGRAM's list on an armed bench, the throttle at 40 %: a second finger
+ * opens ESC STICK while the first holds DISARM.  The session covers DISARM
+ * and takes the first finger's release, so the opening itself switches the
+ * bench to SAFE; so does an opening with no finger on DISARM.
+ */
+TEST_CASE(opening_a_session_on_an_armed_bench_disarms_it)
+{
+    for (int held = 0; held < 2; ++held) {
+        fresh();
+        motor_screen_set_armed(true);
+        motor_screen_set_throttle(40.0f);
+        drain();
+        frames(2);
+        if (held) {
+            finger(1, ARM_X, ARM_Y);        /* DISARM, pressed */
+            frames(1);
+            CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+        }
+        feed_tap(2, ROW_X, ROW_Y);
+        frames(1);
+        CHECK(motor_screen_session_shown());
+        CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        if (held) {
+            lift(1);                         /* the release the session takes */
+            frames(1);
+        }
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    }
+    /* On a SAFE bench the opening asks for nothing. */
+    fresh();
+    open_session();
+    CHECK(motor_screen_session_shown());
+    CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+}
+
 /* A second contact while the row is pressed opens nothing of its own, and
  * the first one's release still opens the row. */
 TEST_CASE(a_second_finger_on_the_list_does_not_take_the_row)
@@ -507,6 +543,7 @@ int main(void)
     RUN(the_strip_repaints_on_the_supply_and_the_bench);
     RUN(the_home_tag_climbs_the_session_then_leaves);
     RUN(leaving_with_a_session_open_disarms_and_closes_it);
+    RUN(opening_a_session_on_an_armed_bench_disarms_it);
     RUN(a_second_finger_on_the_list_does_not_take_the_row);
     free(fb);
     return test_summary("motor_program");

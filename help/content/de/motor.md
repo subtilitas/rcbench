@@ -42,7 +42,7 @@ ESC STICK öffnet über die volle Breite, über der linken und der rechten Spalt
 - NETZTEIL: der Ausgang des PD mini, wie er liest, `NETZTEIL EIN` ohne Messwerte, `NETZTEIL AUS` oder `NETZTEIL --`, solange das Netzteil nicht antwortet.
 - SAFE oder ARMED: der Prüfstand.
 
-Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Verlassen von MOTOR & ESC beendet einen Lauf, schaltet den Prüfstand auf SAFE und schließt ESC STICK.
+Solange ESC STICK offen ist, erreicht kein Druck ARM oder einen Reiter. Das Öffnen auf einem Prüfstand, der nicht SAFE ist, schaltet ihn auf SAFE. Das Verlassen von MOTOR & ESC beendet einen Lauf, schaltet den Prüfstand auf SAFE und schließt ESC STICK.
 
 ## Vor dem ersten Lauf
 

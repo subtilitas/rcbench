@@ -42,7 +42,7 @@ ESC STICK opens full width, over the left column and the right column. In place 
 - SUPPLY: the PD mini's output as it reads, `SUPPLY ON` without readings, `SUPPLY OFF`, or `SUPPLY --` while the supply does not answer.
 - SAFE or ARMED: the bench.
 
-No press reaches ARM or a tab while ESC STICK is open. Leaving MOTOR & ESC ends a run, switches the bench to SAFE and closes ESC STICK.
+No press reaches ARM or a tab while ESC STICK is open. Opening it on a bench that is not SAFE switches the bench to SAFE. Leaving MOTOR & ESC ends a run, switches the bench to SAFE and closes ESC STICK.
 
 ## Before the first run
 

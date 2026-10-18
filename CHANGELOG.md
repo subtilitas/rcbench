@@ -272,7 +272,8 @@ history is in git.
   STICK full width: over the left column, the rail and the tabs, one level
   down. In place of the tabs the strip row holds the output strip, `TARGET
   DSHOT300 GP0 GP1   SUPPLY 7.60 V  1.00 A   SAFE` (German `ZIEL`,
-  `NETZTEIL`), at most 97 characters. The home tag climbs ESC STICK one
+  `NETZTEIL`), at most 97 characters. Opening ESC STICK on a bench that
+  is not SAFE switches it to SAFE. The home tag climbs ESC STICK one
   level at a time, then closes it to the list; leaving MOTOR & ESC ends a
   run, switches the bench to SAFE and closes the session.
 - MOTOR & ESC is a workbench. The strip holds LIVE, PROGRAM and SETTINGS

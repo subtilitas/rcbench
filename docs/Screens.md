@@ -534,7 +534,9 @@ on the right while the list shows.
 
 A tap on the row opens ESC STICK, one level down. ESC STICK is a full-width
 session: it covers the left column, the rail and the strip's tabs, and no
-press reaches ARM or a tab while it is open. The strip row holds the output
+press reaches ARM or a tab while it is open. Opening it on a bench that is
+not SAFE switches the bench to SAFE, a DISARM held by another finger
+included. The strip row holds the output
 strip in their place, one line of 16 px from x 12:
 
 ![ESC STICK under the output strip](img/motor-stick.png)
