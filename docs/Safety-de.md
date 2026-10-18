@@ -192,34 +192,61 @@ angeschlossenen IOmcu schaltet das Panel seine eigene Bank nach den
 
 Der Frame, der auf ARMED schaltet, trägt ARM, THROTTLE und die Polzahl,
 aber kein CHAN_CFG. Leerlaufpuls und Vollpuls des Gases erreichen den IOmcu
-auf einem eigenen Weg: eine Änderung, eine Link-up-Flanke oder der Start des
-Panels schuldet dem IOmcu das Paar. Das Panel begleicht die Schuld bei einem
-Poll im 50-ms-Takt, dessen Schreiben von ARM = 0 quittiert wurde, sobald
-300 ms (`ENDPOINTS_SETTLE_MS`) seit der letzten Änderung vergangen sind. Es
-liest CHAN_CFG, setzt das Paar auf die Gaskanäle und schreibt die Seite,
-wenn sie abweicht. Der IOmcu übernimmt ein Schreiben von CHAN_CFG in seine
-Ausgänge, bevor er es quittiert.
+auf einem eigenen Weg: eine Änderung, eine auf OUTPUTS oder PICK A PIN
+geschriebene Zuordnung, eine Link-up-Flanke oder der Start des Panels
+schuldet dem IOmcu das Paar. Ein Neustart oder ein Update des IOmcu kommt
+als Link-up-Flanke zurück. Das Panel begleicht die Schuld bei einem Poll im
+50-ms-Takt, dessen Schreiben von ARM = 0 quittiert wurde, sobald 300 ms
+(`ENDPOINTS_SETTLE_MS`) seit der letzten Änderung vergangen sind. Es liest
+CHAN_CFG, setzt das Paar auf die Gaskanäle und schreibt die Seite, wenn sie
+abweicht. Der IOmcu übernimmt ein Schreiben von CHAN_CFG in seine Ausgänge,
+bevor er es quittiert, und die Quittung trägt, was er gespeichert hat.
 
-| Begleichen | Die Schuld |
-| --- | --- |
-| die Seite hält das Paar schon | beglichen, nichts geschrieben |
-| das Schreiben wird quittiert | beglichen |
-| das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet |
-| das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` |
-| der Leerlaufpuls liegt nicht unter dem Vollpuls | beendet, nichts gesendet, `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.` |
-| das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` |
+| Begleichen | Die Schuld | Ein Schalten auf ARMED bei bestehendem Link |
+| --- | --- | --- |
+| die Seite hält das Paar schon | beglichen, nichts geschrieben | geht weiter |
+| das Schreiben wird quittiert, und jeder Gaskanal hat das Paar gespeichert | beglichen | geht weiter |
+| das Lesen oder das Schreiben bleibt unbeantwortet | offen, beim nächsten Poll erneut gesendet | `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` |
+| das Lesen wird abgelehnt | beendet, `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` | `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` |
+| der Leerlaufpuls liegt nicht unter dem Vollpuls | beendet, nichts gesendet, `Leerlaufpuls muss kürzer als Vollgaspuls sein. Nicht gesendet.` | `Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.` |
+| das Schreiben wird abgelehnt | beendet, `Der IOmcu hat den Pulsbereich abgelehnt.` | `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.` |
+| das Schreiben wird quittiert, und ein Gaskanal hat ein anderes Paar gespeichert | beendet | `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` |
 
-Solange die Schuld bei bestehendem Link offen ist, lehnt das Panel das
-Schalten auf ARMED mit `Pulsbereich noch nicht an den IOmcu gesendet. ARM
-erneut halten.` ab. Es fragt vor dem CLEAR, nach dem Freigeben des Servos
-und der Pulsrate, und schreibt nichts, auch kein CLEAR; der Prüfstand bleibt
-SAFE mit den Ausgängen in Ruhe. Es fragt nach einem
-quittierten CLEAR erneut, für eine Änderung, die eintraf, während das CLEAR
-unterwegs war, und schreibt dann keinen Frame, der auf ARMED schaltet. Die
-Schuld wird auf dem Control-Task beglichen, dem Task, der das Schalten
+Das Panel fragt vor dem CLEAR, nach dem Freigeben des Servos und der
+Pulsrate, und schreibt nichts, auch kein CLEAR; der Prüfstand bleibt SAFE mit
+den Ausgängen in Ruhe. Es fragt nach einem quittierten CLEAR erneut, für
+eine Änderung, die eintraf, während das CLEAR unterwegs war, und schreibt
+dann keinen Frame, der auf ARMED schaltet. Es fragt ein drittes Mal, sobald
+der Frame, der auf ARMED schaltet, quittiert ist, für eine Änderung, die
+eintraf, während dieser Frame unterwegs war, und schreibt dann ARM = 0 im
+nächsten Austausch: der IOmcu ist für diesen einen Austausch in Ruhe ARMED
+auf dem Bereich, den er hielt (Dauer nicht gemessen), und die Bank des
+Panels schaltet nicht auf ARMED. Die Bildschirme des Panels können dort
+keine Änderung veröffentlichen: die beiden Zeilen auf OPTIONEN sind
+gesperrt, solange ARM gehalten wird und solange ein ARM auf seine Antwort
+wartet. VERWERFEN auf SETUP, das einen ungespeicherten Wert zurücksetzen
+kann, liegt auf einem anderen Bildschirm und nimmt keinen Tipp an, solange
+der Prüfstand ARMED ist, und das Verlassen von MOTOR & ESC oder SERVO
+schaltet den Prüfstand auf SAFE.
+
+Die Schuld wird auf dem Control-Task beglichen, dem Task, der das Schalten
 schreibt, also läuft das Schalten nie, während ein Begleichen unterwegs ist.
 Ein abgelehntes Schalten wird nicht von selbst wiederholt: ARM wird erneut
-gehalten. STOP ist davon nicht berührt.
+gehalten. STOP ist davon nicht berührt. Eine Ablehnung oder ein anders
+gespeichertes Paar wird auch nicht von selbst erneut gesendet: dieselbe
+einmal abgelehnte Anfrage wird jedes Mal abgelehnt. Die Sperre endet beim
+ersten Begleichen nach einer Änderung, einer Zuordnung oder einem Link-up,
+das das Paar in Kraft findet, und nicht vorher; ein Begleichen, das erneut
+abgelehnt wird, sperrt erneut mit seinem Grund.
+
+Wer einen IOmcu angeschlossen hat, der die Seite ablehnt, liest beim
+Link-up `Der IOmcu hat seinen Pulsbereich nicht gemeldet.` und bei jedem
+Halten von ARM `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren,
+dann ARM erneut halten.`. Mit diesem IOmcu schaltet der Prüfstand nicht auf
+ARMED. Das Panel bietet beim Link-up das IOmcu-Image an, das es mitbringt,
+nach seinem eigenen Halten von 2 s; der IOmcu startet nach dem Update neu,
+und der folgende Link-up schuldet das Paar erneut. Ohne IOmcu schaltet die
+eigene Bank des Panels wie bisher auf ARMED.
 
 Eine Änderung zur Zeit 0 wird beim ersten Poll ab 300 ms beglichen: ein Poll
 bei 299 ms lässt sie offen, ein Poll bei 300 ms begleicht sie. Die Zeit wird
@@ -228,14 +255,13 @@ Millisekundenuhr hinweg. Die Zeilen der beiden Werte auf OPTIONEN sind
 gesperrt, solange ARM gehalten wird, und das Halten dauert 2 s, also ist eine
 Änderung vor dem Druck in der Regel innerhalb des Haltens beglichen.
 
-Eine Ablehnung beendet die Schuld, und ein Schalten auf ARMED läuft dann auf
-dem Paar, das der IOmcu hält; der Hinweis sagt das. Ohne Link schaltet die
-eigene Bank des Panels auf ARMED, und nichts wird geschrieben. Ein Link, der
-zurückkommt, schuldet das Paar erneut und hält den IOmcu SAFE, bis das Paar
-beglichen ist; die Ablehnung dauert also bis zum ersten Poll nach dem
-Link-up. Auf dem Host getestet in `test_endpoints_link` und `test_arming`.
-Der Control-Task des Panels, der das Flag liest und den Hinweis zeigt, ist
-nicht in der Coverage-Zahl.
+Ohne Link schaltet die eigene Bank des Panels auf ARMED, und nichts wird
+geschrieben. Ein Link, der zurückkommt, schuldet das Paar erneut und hält
+den IOmcu SAFE bis zu einer Antwort; eine Ablehnung von vor dem Link-up
+dauert also bis zum ersten Poll danach, und nur dann weiter, wenn dieser
+Poll erneut abgelehnt wird. Auf dem Host getestet in `test_endpoints_link`
+und `test_arming`. Der Control-Task des Panels, der den Zustand liest und
+den Hinweis zeigt, ist nicht in der Coverage-Zahl.
 
 ## Verhaltensweisen, die Absicht sind
 

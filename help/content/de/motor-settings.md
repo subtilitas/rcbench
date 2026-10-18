@@ -33,6 +33,17 @@ Leerlaufpuls und Vollpuls nehmen nur bei einem Prüfstand in SAFE einen Wert an.
 
 Eine Änderung von Leerlaufpuls oder Vollpuls erreicht den IOmcu beim ersten Poll 300 ms oder mehr nach der letzten Eingabe. Bis dahin wird ARM bei angeschlossenem IOmcu mit `Pulsbereich noch nicht an den IOmcu gesendet. ARM erneut halten.` abgelehnt, und der Prüfstand bleibt SAFE. ARM erneut halten: Das Halten über 2 s gibt der Änderung die Zeit anzukommen.
 
+Übernimmt der IOmcu das Paar nicht, bleibt ARM abgelehnt, bis das Paar in Kraft ist, und das Band sagt, was zu ändern ist:
+
+| Band | Was tun |
+|---|---|
+| `Kein Pulsbereich vom IOmcu. IOmcu-Firmware aktualisieren, dann ARM erneut halten.` | den IOmcu aktualisieren: Das Panel bietet das mitgebrachte Image an, wenn der IOmcu sich verbindet |
+| `Leerlaufpuls liegt nicht unter Vollpuls. Einen ändern, dann ARM erneut halten.` | Leerlaufpuls senken oder Vollpuls erhöhen |
+| `Der IOmcu hat den Pulsbereich abgelehnt. Leerlaufpuls, Vollpuls oder OUTPUTS ändern.` | den Puls kürzen oder den Motor-Pin auf OUTPUTS mit einer langsameren Rate zuordnen: Ein Puls, der länger als sein PWM-Frame ist, wird abgelehnt |
+| `Der IOmcu hält einen anderen Pulsbereich. Leerlaufpuls oder Vollpuls ändern.` | einen der beiden Werte ändern; das Panel sendet das Paar erneut |
+
+Eine auf OUTPUTS geschriebene Zuordnung und ein erneutes Verbinden des IOmcu senden das Paar ebenfalls erneut.
+
 ## Die Werte behalten
 
 Ein geänderter Wert gilt sofort und fordert das Schreiben an. Das Panel schreibt im ersten Frame mit dem Prüfstand SAFE, abgeschaltetem Netzteilausgang und ohne Platinenzeichnung, die geladen oder gespeichert wird. Die Einstellungen sind ein Speicher: Das Schreiben behält jeden ungespeicherten Wert, auch die unter SETUP geänderten. Die Zeile unter den Einstellungen sagt, wo der Speicher steht:

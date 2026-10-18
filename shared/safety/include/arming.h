@@ -310,6 +310,8 @@ typedef enum {
     /** CLEAR came back acknowledged.  A value outside this enum takes
      *  this point's rules. */
     ARMING_HS_CLEARED,
+    /** The frame that arms came back acknowledged: the far end is armed. */
+    ARMING_HS_ARMED,
 } arming_hs_at_t;
 
 /** What the panel learned for the arm since the last point. */
@@ -326,11 +328,13 @@ typedef struct {
     bool rate_settled;
     bool disarm_asked;  /**< a disarm is posted and not yet delivered     */
     /**
-     * The throttle's pulse endpoints are owed to the far end: an edit, a
-     * link-up or a write nobody answered left them unpaid, so the far end
-     * may hold another range.  The frame that arms carries no CHAN_CFG.
+     * The throttle's pulse endpoints are not known to be in force at the
+     * far end: owed (an edit, a binding or a link-up not yet paid, or a
+     * write nobody answered) or blocked by the last answer (refused, or
+     * another pair stored); see endpoints_block().  The frame that arms
+     * carries no CHAN_CFG.
      */
-    bool endpoints_owed;
+    bool endpoints_blocked;
 } arming_hs_facts_t;
 
 /** What the panel does next with the arm, after arming_handshake_step(). */
@@ -350,10 +354,12 @@ typedef enum {
     ARMING_HS_SERVO_HELD,
     /** The surfaces' rate is not known; the same as ARMING_HS_SERVO_HELD. */
     ARMING_HS_SERVO_RATE,
-    /** The throttle's pulse endpoints are owed to the far end.  At
+    /** The throttle's pulse endpoints are not in force at the far end.  At
      *  ARMING_HS_PREPARED the same as ARMING_HS_SERVO_HELD; at
      *  ARMING_HS_CLEARED given up as arming_refused() gives one up, and the
-     *  frame that arms is not written. */
+     *  frame that arms is not written; at ARMING_HS_ARMED the arm is taken
+     *  back as arming_request_disarm() takes one back, and the caller
+     *  writes the disarm at once. */
     ARMING_HS_ENDPOINTS,
     /** Past the arm's deadline: given up as arming_handshake_open() gives
      *  it up, before CLEAR as a refusal and after it as a stop. */
@@ -372,13 +378,15 @@ typedef enum {
  *     PREPARED   link down                       ARMING_HS_LOCAL
  *                release owed                    ARMING_HS_SERVO_HELD
  *                rate not settled                ARMING_HS_SERVO_RATE
- *                endpoints owed                  ARMING_HS_ENDPOINTS
+ *                endpoints blocked               ARMING_HS_ENDPOINTS
  *                deadline passed                 ARMING_HS_CLOSED
  *                otherwise                       ARMING_HS_GO, write CLEAR
  *     CLEARED    stopped, or a disarm asked      ARMING_HS_WITHDRAWN
- *                endpoints owed                  ARMING_HS_ENDPOINTS
+ *                endpoints blocked               ARMING_HS_ENDPOINTS
  *                deadline passed                 ARMING_HS_CLOSED
  *                otherwise                       ARMING_HS_GO, write ARM
+ *     ARMED      endpoints blocked               ARMING_HS_ENDPOINTS
+ *                otherwise                       ARMING_HS_GO
  *
  * The verdicts that end the arm change the policy as their comments say;
  * ARMING_HS_GO and ARMING_HS_LOCAL change nothing.  The CLEAR and the frame

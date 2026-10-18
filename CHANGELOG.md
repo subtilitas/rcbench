@@ -291,6 +291,21 @@ history is in git.
 
 ### Fixed
 
+- A switch to ARMED with the IOmcu connected is refused while the IOmcu
+  does not hold the panel's Idle pulse and Full pulse: the CHAN_CFG read
+  refused, Idle pulse not below Full pulse, the write refused, or an
+  acknowledgement whose throttle channels stored another pair. Each has its
+  own text, which names what to change (`No pulse range from the IOmcu.
+  Update the IOmcu firmware, then hold ARM again.`, `Idle pulse is not below
+  Full pulse. Change one, then hold ARM again.`, `The IOmcu rejected the
+  pulse range. Change Idle pulse, Full pulse or OUTPUTS.`, `The IOmcu holds
+  another pulse range. Change Idle pulse or Full pulse.`, in German as
+  well). The refusal ends at the first payment that finds the pair in force
+  after an edit, a binding written on OUTPUTS or PICK A PIN, or a link-up.
+  A refused pair ran the throttle on the IOmcu's own range before.
+- An Idle pulse or Full pulse edit published while the frame that switches
+  to ARMED is on the wire switches the bench to SAFE again in the next
+  exchange, with `Pulse range not yet sent to the IOmcu. Hold ARM again.`.
 - A switch to ARMED with the IOmcu connected is refused while an Idle pulse
   or Full pulse edit is still owed to it, with `Pulse range not yet sent to
   the IOmcu. Hold ARM again.` (German `Pulsbereich noch nicht an den IOmcu
