@@ -63,6 +63,14 @@ static void line_restart(hitec_line_t *l)
     pio_sm_set_enabled(pio, l->sm, true);
 }
 
+/* Whether the answer is still to go out with @p n bytes received: a
+ * restart now cuts it. */
+static bool answer_due(const hitec_line_t *l, unsigned n)
+{
+    return hitec_pio_answer_due(&l->run, n,
+                                pio_sm_get_pc(line_pio(l), l->sm) - l->offset);
+}
+
 /* Bytes the receive channel has written. */
 static unsigned rx_count(const hitec_line_t *l)
 {
@@ -187,6 +195,7 @@ void hitec_line_close(hitec_line_t *line)
     line->open = 0;
     line->busy = 0;
     line->aborted = 0;
+    line->cut = 0;
 }
 
 bool hitec_line_is_open(const hitec_line_t *line)
@@ -213,6 +222,7 @@ void hitec_line_abort(hitec_line_t *line)
      * the restart stops the channel. */
     line->aborted = 1;
     line->kept = line->run.max_rx > 0u ? (uint8_t)rx_count(line) : 0u;
+    line->cut = answer_due(line, line->kept) ? 1u : 0u;
     line_restart(line);
 }
 
@@ -260,6 +270,7 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
     hitec_line_t *l = (hitec_line_t *)ctx;
     bool full = false;
     bool lost = false;
+    bool cut = false;
     unsigned n;
 
     if (l == NULL || out == NULL || l->open == 0u || l->busy == 0u) {
@@ -267,15 +278,13 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
     }
     if (l->aborted != 0u) {
         n = l->kept;
+        cut = l->cut != 0u;
     } else {
         n = l->run.max_rx > 0u ? rx_count(l) : 0u;
         full = l->run.max_rx > 0u && n >= l->run.max_rx;
         /* A count of 1 is reached before the answer goes out: the restart
          * waits for it. */
-        if (full
-            && hitec_pio_answer_due(&l->run, n,
-                                    pio_sm_get_pc(line_pio(l), l->sm)
-                                        - l->offset)) {
+        if (full && answer_due(l, n)) {
             full = false;
         }
         if (!full && !line_idle(l)) {
@@ -288,15 +297,17 @@ bool hitec_line_poll(void *ctx, hitec_capture_t *out)
         /* A receive that ended at its count or ran past its time still
          * runs: the pad is released and the machine waits again. */
         if (full || lost) {
+            cut = answer_due(l, n);
             line_restart(l);
         } else {
             dma_channel_abort((uint)l->dma_rx);
         }
     }
     hitec_pio_capture(&l->clock, &l->run, l->rx, n, full, lost,
-                      l->aborted != 0u, out);
+                      l->aborted != 0u, cut, out);
     l->busy = 0;
     l->aborted = 0;
+    l->cut = 0;
     return true;
 }
 

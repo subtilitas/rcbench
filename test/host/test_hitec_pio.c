@@ -254,24 +254,6 @@ TEST_CASE(a_d_read_drives_low_88_us_then_sends_back_to_back_and_releases)
     CHECK_NEAR(cyc_ns(2u * run.window_ticks), 25e6, cyc_ns(2));
 }
 
-/* The D485HW's answer as the bench shows it: the line high until the servo
- * pulls it low, the answer, a byte 0x00 back to back, the line low for
- * 150 us, then released. */
-static void d_answer(double first_ns, const uint8_t *a, unsigned n)
-{
-    const double bit = bit_ns(HITEC_D);
-    double t = first_ns;
-
-    ext_clear(true);
-    ext_edge(300000.0, false);
-    for (unsigned i = 0; i < n; ++i) {
-        ext_byte(HITEC_D, t, bit, a[i], true);
-        t += 10.0 * bit;
-    }
-    ext_byte(HITEC_D, t, bit, 0x00, true);
-    ext_edge(t + 10.0 * bit + 150000.0, true);
-}
-
 TEST_CASE(a_d_answer_is_taken_with_the_byte_after_it_and_decodes)
 {
     static const uint8_t a[] = { 0x69, 0x00, 0x0C, 0x02, 0xC3, 0x3B, 0x0C };
@@ -317,7 +299,8 @@ TEST_CASE(the_release_after_the_answer_reads_as_a_byte_with_a_bad_stop_bit)
      * window ends. */
     CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 10, 0));
     CHECK_EQ(m.n_rx, 9u);
-    hitec_pio_capture(&clk, &run, m.rx, m.n_rx, false, false, false, &cap);
+    hitec_pio_capture(&clk, &run, m.rx, m.n_rx, false, false, false, false,
+                      &cap);
     CHECK_EQ(cap.n, 9);
     CHECK_EQ(cap.byte[8].value, 0x00);
     CHECK_EQ(cap.byte[8].framing, 1);
@@ -565,7 +548,8 @@ TEST_CASE(an_abort_releases_the_pad_and_the_next_transaction_runs)
         hitec_capture_t cap;
         hitec_reply_t r;
 
-        hitec_pio_capture(&clk, &run, m.rx, 0, false, false, true, &cap);
+        hitec_pio_capture(&clk, &run, m.rx, 0, false, false, true, false,
+                          &cap);
         CHECK_EQ(cap.aborted, 1);
         CHECK_EQ(hitec_d_decode(&cap, 0x32, &r), HITEC_RX_ERR_ABORTED);
     }
@@ -605,13 +589,13 @@ TEST_CASE(a_stamp_no_count_gives_is_an_overflow)
     CHECK(hitec_pio_tx(&clk, HITEC_DRIVE_OPEN_DRAIN, &x, m.tx, &run) != 0u);
     /* Above the window. */
     s[0] = (run.window_ticks + 1u) << 9 | 0x12u;
-    hitec_pio_capture(&clk, &run, s, 1, false, false, false, &cap);
+    hitec_pio_capture(&clk, &run, s, 1, false, false, false, false, &cap);
     CHECK_EQ(cap.overflow, 1);
     CHECK_EQ(cap.n, 0);
     /* Above the one before. */
     s[0] = (run.window_ticks - 10u) << 9 | 0x100u | 0x12u;
     s[1] = (run.window_ticks - 9u) << 9 | 0x100u | 0x13u;
-    hitec_pio_capture(&clk, &run, s, 2, false, false, false, &cap);
+    hitec_pio_capture(&clk, &run, s, 2, false, false, false, false, &cap);
     CHECK_EQ(cap.overflow, 1);
     CHECK_EQ(cap.n, 1);
     CHECK_EQ(cap.byte[0].value, 0x12);
@@ -621,7 +605,7 @@ TEST_CASE(a_stamp_no_count_gives_is_an_overflow)
     s[0] = run.window_ticks << 9 | 0x100u;
     s[1] = 0x100u;                           /* counter 0 */
     s[2] = 0u;
-    hitec_pio_capture(&clk, &run, s, 3, false, false, false, &cap);
+    hitec_pio_capture(&clk, &run, s, 3, false, false, false, false, &cap);
     CHECK_EQ(cap.overflow, 0);
     CHECK_EQ(cap.n, 3);
     CHECK_NEAR(cap.byte[0].at_ns, cyc_ns(1) - 2e9 / 150e6, 2.0);
@@ -634,60 +618,17 @@ TEST_CASE(a_stamp_no_count_gives_is_an_overflow)
         s[i] = (run.window_ticks - i) << 9 | 0x100u;
     }
     hitec_pio_capture(&clk, &run, s, HITEC_RX_MAX + 1u, false, false, false,
-                      &cap);
+                      false, &cap);
     CHECK_EQ(cap.overflow, 1);
     CHECK_EQ(cap.n, HITEC_RX_MAX);
-    hitec_pio_capture(&clk, &run, s, 2, false, true, false, &cap);
+    hitec_pio_capture(&clk, &run, s, 2, false, true, false, false, &cap);
     CHECK_EQ(cap.overflow, 1);
     CHECK_EQ(cap.n, 2);
-    hitec_pio_capture(&clk, &run, s, 0, false, false, false, &cap);
+    hitec_pio_capture(&clk, &run, s, 0, false, false, false, false, &cap);
     CHECK_EQ(cap.n, 0);
     CHECK_EQ(cap.overflow, 0);
     CHECK_EQ(cap.window_ns, 1000000u);
     CHECK_EQ(cap.family, HITEC_CLASSIC);
-}
-
-static void check_clock_runs(uint32_t hz)
-{
-    hitec_xfer_t x;
-    hitec_capture_t cap;
-    hitec_reply_t r;
-    uint8_t got[8] = { 0 };
-    uint64_t at[8] = { 0 };
-    static const uint8_t a[] = { 0x69, 0x00, 0x4E, 0x02, 0x01, 0x00, 0x51 };
-
-    /* Classic: a command and its reply. */
-    hitec_c_xfer(HITEC_C_READ_EEPROM, 0x13, 0x00, &x);
-    memset(&m, 0, sizeof(m));
-    ext_clear(true);
-    ext_byte(HITEC_CLASSIC, 45000.0, bit_ns(HITEC_CLASSIC), 0xC2, true);
-    ext_byte(HITEC_CLASSIC, 45000.0 + 516000.0, bit_ns(HITEC_CLASSIC), 0x2B,
-             true);
-    CHECK(transact(hz, HITEC_DRIVE_OPEN_DRAIN, &x, 2, 0));
-    CHECK(clk.err_ppm <= 489u);
-    CHECK_NEAR((double)hitec_pio_bit_ns(&clk), bit_ns(HITEC_CLASSIC),
-               bit_ns(HITEC_CLASSIC) * 0.0005 + 1.0);
-    CHECK_EQ(wire_bytes(0, m.release + 1u, false, got, at, 8), 4u);
-    CHECK_EQ(got[1], 0x13);
-    captured(&cap, true);
-    CHECK_EQ(hitec_c_decode(&cap, HITEC_C_EXPECT_VALUE, &r), HITEC_RX_OK);
-    CHECK_EQ(r.value, 0xC2);
-    check_at(cap.byte[0].at_ns, 45000.0);
-
-    /* D series, where the clock gives a divider. */
-    if (!hitec_pio_clock(hz, HITEC_D, &clk)) {
-        return;
-    }
-    hitec_d_read_xfer(0x00, 0x4E, &x);
-    memset(&m, 0, sizeof(m));
-    d_answer(6000000.0, a, sizeof(a));
-    CHECK(transact(hz, HITEC_DRIVE_OPEN_DRAIN, &x, 8, 0));
-    CHECK_EQ(wire_bytes(0, m.release - 16u, true, got, at, 8), 5u);
-    CHECK_EQ(got[2], 0x4E);
-    captured(&cap, true);
-    CHECK_EQ(hitec_d_decode(&cap, 0x4E, &r), HITEC_RX_OK);
-    CHECK_EQ(r.value, 1u);
-    check_at(cap.byte[0].at_ns, 6000000.0);
 }
 
 TEST_CASE(other_system_clocks_give_the_bit_within_0_05_percent)
@@ -700,25 +641,6 @@ TEST_CASE(other_system_clocks_give_the_bit_within_0_05_percent)
     CHECK_EQ(clk.div256 >> 8, 6u);          /* D series at 12 MHz: 6.51 */
     check_clock_runs(2000000u);             /* classic only */
     CHECK(!hitec_pio_clock(2000000u, HITEC_D, &clk));
-}
-
-/* The smallest clock @p family takes, found by bisection. */
-static uint32_t lowest_clock(uint8_t family)
-{
-    uint32_t lo = 1;
-    uint32_t hi = 20000000u;
-    hitec_pio_clock_t c;
-
-    while (lo < hi) {
-        const uint32_t mid = lo + (hi - lo) / 2u;
-
-        if (hitec_pio_clock(mid, family, &c)) {
-            hi = mid;
-        } else {
-            lo = mid + 1u;
-        }
-    }
-    return lo;
 }
 
 TEST_CASE(a_clock_below_4_cycles_a_state_machine_cycle_is_refused)
@@ -874,6 +796,7 @@ TEST_CASE(a_one_byte_listen_holds_its_restart_until_the_answer_is_out)
     uint8_t got[4] = { 0 };
     uint64_t at[4] = { 0 };
     uint64_t edge;
+    uint64_t due_end;
 
     CHECK(hitec_listen_xfer(HITEC_CLASSIC, 20000u, 1, true, HITEC_C_ACK,
                             &x));
@@ -896,6 +819,30 @@ TEST_CASE(a_one_byte_listen_holds_its_restart_until_the_answer_is_out)
     /* And it turns false at the release after the answer's 16 bit
      * times, not later. */
     CHECK(m.due_end <= edge + HITEC_PIO_ANSWER_BITS * 16u + 2u);
+    due_end = m.due_end;
+
+    /* An abort inside the answer cuts it: the capture says so.  One after
+     * it does not. */
+    for (unsigned k = 0; k < 2u; ++k) {
+        const uint64_t cut_at = k == 0u ? edge + 3u * 16u : due_end + 4u;
+        hitec_capture_t cap;
+        bool cut;
+
+        memset(&m, 0, sizeof(m));
+        ext_clear(true);
+        ext_byte(HITEC_CLASSIC, 1000000.0, bit_ns(HITEC_CLASSIC), 0x2B, true);
+        CHECK(transact(150000000u, HITEC_DRIVE_OPEN_DRAIN, &x, 1, cut_at));
+        cut = hitec_pio_answer_due(&run, m.n_rx, m.abort_pc);
+        CHECK_EQ(cut, k == 0u);
+        /* Cut: the released line reads as ones, not as the answer. */
+        got[0] = 0;
+        (void)wire_bytes(edge - 1u, cut_at + 400u, false, got, at, 4);
+        CHECK_EQ(got[0] == HITEC_C_ACK, k != 0u);
+        hitec_pio_capture(&clk, &run, m.rx, m.n_rx, false, false, true, cut,
+                          &cap);
+        CHECK_EQ(cap.n, 1);
+        CHECK_EQ(cap.answered, k == 0u ? 0 : 1);
+    }
 
     /* The addresses it answers for, and the refusals. */
     CHECK(hitec_pio_answer_due(&run, 1, HITEC_PIO_ASK_PC));

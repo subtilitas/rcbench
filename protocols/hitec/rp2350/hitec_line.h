@@ -81,6 +81,7 @@ typedef struct {
     uint8_t  busy;
     uint8_t  aborted;
     uint8_t  kept;      /**< bytes received before an abort */
+    uint8_t  cut;       /**< the abort came while the answer was due */
     uint32_t tx[HITEC_PIO_TX_WORDS];
     uint32_t rx[HITEC_RX_MAX];
 } hitec_line_t;

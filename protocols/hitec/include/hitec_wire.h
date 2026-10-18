@@ -264,7 +264,8 @@ typedef struct {
     uint8_t  family;
     uint8_t  n;          /**< bytes held */
     uint8_t  full;       /**< 1: max_rx bytes came and ended the receive */
-    uint8_t  answered;   /**< 1: the answer went out after byte 0 */
+    uint8_t  answered;   /**< 1: the answer went out whole after byte 0;
+                          *   0 when a restart cut it */
     uint8_t  overflow;   /**< 1: a stamp no count gives, or the driver ended
                           *   a receiver that ran past its time */
     uint8_t  aborted;    /**< 1: the transaction was cut */

@@ -275,7 +275,7 @@ bool hitec_pio_answer_due(const hitec_pio_run_t *run, unsigned n,
 void hitec_pio_capture(const hitec_pio_clock_t *clock,
                        const hitec_pio_run_t *run, const uint32_t *stamps,
                        unsigned n, bool full, bool lost, bool aborted,
-                       hitec_capture_t *out)
+                       bool cut, hitec_capture_t *out)
 {
     const uint32_t sync_ns = (uint32_t)(((uint64_t)HITEC_PIO_SYNC_SYS_CYCLES
                                          * 1000000000u + clock->sys_hz / 2u)
@@ -310,5 +310,5 @@ void hitec_pio_capture(const hitec_pio_clock_t *clock,
         out->byte[k].framing = ((s >> 8) & 1u) == 0u ? 1u : 0u;
         out->n = (uint8_t)(k + 1u);
     }
-    out->answered = run->answer != 0u && out->n > 0u ? 1u : 0u;
+    out->answered = run->answer != 0u && out->n > 0u && !cut ? 1u : 0u;
 }

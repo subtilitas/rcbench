@@ -190,13 +190,16 @@ bool hitec_pio_answer_due(const hitec_pio_run_t *run, unsigned n,
  * The capture from the @p n words the program pushed, in their order.
  * @p full says the receive ended at max_rx bytes, @p lost that the driver
  * ended a program that ran past run->span_us, @p aborted that the
- * transaction was cut.  A counter above the window or above the one before
- * sets overflow and ends the capture there; so does @p lost.
+ * transaction was cut, @p cut that the driver restarted the machine while
+ * hitec_pio_answer_due() was true, so the answer did not go out whole.  A
+ * counter above the window or above the one before sets overflow and ends
+ * the capture there; so does @p lost.  answered is set for a run with an
+ * answer, 1 byte or more and no @p cut.
  */
 void hitec_pio_capture(const hitec_pio_clock_t *clock,
                        const hitec_pio_run_t *run, const uint32_t *stamps,
                        unsigned n, bool full, bool lost, bool aborted,
-                       hitec_capture_t *out);
+                       bool cut, hitec_capture_t *out);
 
 #ifdef __cplusplus
 }

@@ -268,7 +268,9 @@ Limits:
 - A receive that reaches `max_rx` ends at the next `poll()`; until then the
   receiver takes further bytes and drops them. With an answer and a
   `max_rx` of 1 the end waits until the answer is out
-  (`hitec_pio_answer_due()`).
+  (`hitec_pio_answer_due()`). An abort or a restart past the
+  transaction's time that comes while the answer goes out cuts it; the
+  capture's `answered` is then 0.
 - A restart, an abort and the open put the state machine at the drain,
   which empties the output shift register before the next stream.
 - The answer follows the first byte received, also one with a bad stop bit

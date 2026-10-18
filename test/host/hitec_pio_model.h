@@ -223,6 +223,7 @@ typedef struct {
     unsigned answers;         /* passes through the answer */
     unsigned pushes;
     uint64_t due_end;
+    unsigned abort_pc;        /* where the machine was at the restart */
 } model_t;
 
 static uint64_t t_of(const model_t *m, uint64_t cyc)
@@ -321,6 +322,7 @@ static void run_model(model_t *m, uint64_t max_cycles)
              * cleared, the machine at the drain.  The output shift
              * register is left full of ones, the worst a restart can
              * leave: the drain has to empty it. */
+            m->abort_pc = pc;
             dir = false;
             n_txf = 0;
             n_rxf = 0;
@@ -551,7 +553,8 @@ static bool transact(uint32_t hz, uint8_t drive, const hitec_xfer_t *x,
 
 static void captured(hitec_capture_t *out, bool full)
 {
-    hitec_pio_capture(&clk, &run, m.rx, m.n_rx, full, false, false, out);
+    hitec_pio_capture(&clk, &run, m.rx, m.n_rx, full, false, false, false,
+                      out);
 }
 
 /* The bytes a UART reads off the wire from cycle @p from on: idle to start,
@@ -626,6 +629,89 @@ static void check_at(double got_ns, double want_ns)
     const double slack = cyc_ns(1) + 2e9 / (double)clk.sys_hz + 2.0;
 
     CHECK_NEAR(got_ns, want_ns, slack);
+}
+
+
+/* The D485HW's answer as the bench shows it: the line high until the servo
+ * pulls it low, the answer, a byte 0x00 back to back, the line low for
+ * 150 us, then released. */
+static void d_answer(double first_ns, const uint8_t *a, unsigned n)
+{
+    const double bit = bit_ns(HITEC_D);
+    double t = first_ns;
+
+    ext_clear(true);
+    ext_edge(300000.0, false);
+    for (unsigned i = 0; i < n; ++i) {
+        ext_byte(HITEC_D, t, bit, a[i], true);
+        t += 10.0 * bit;
+    }
+    ext_byte(HITEC_D, t, bit, 0x00, true);
+    ext_edge(t + 10.0 * bit + 150000.0, true);
+}
+
+/* A classic command and its reply, and a D read and its answer where the
+ * clock gives the D series a divider, at a system clock of @p hz. */
+static void check_clock_runs(uint32_t hz)
+{
+    hitec_xfer_t x;
+    hitec_capture_t cap;
+    hitec_reply_t r;
+    uint8_t got[8] = { 0 };
+    uint64_t at[8] = { 0 };
+    static const uint8_t a[] = { 0x69, 0x00, 0x4E, 0x02, 0x01, 0x00, 0x51 };
+
+    /* Classic: a command and its reply. */
+    hitec_c_xfer(HITEC_C_READ_EEPROM, 0x13, 0x00, &x);
+    memset(&m, 0, sizeof(m));
+    ext_clear(true);
+    ext_byte(HITEC_CLASSIC, 45000.0, bit_ns(HITEC_CLASSIC), 0xC2, true);
+    ext_byte(HITEC_CLASSIC, 45000.0 + 516000.0, bit_ns(HITEC_CLASSIC), 0x2B,
+             true);
+    CHECK(transact(hz, HITEC_DRIVE_OPEN_DRAIN, &x, 2, 0));
+    CHECK(clk.err_ppm <= 489u);
+    CHECK_NEAR((double)hitec_pio_bit_ns(&clk), bit_ns(HITEC_CLASSIC),
+               bit_ns(HITEC_CLASSIC) * 0.0005 + 1.0);
+    CHECK_EQ(wire_bytes(0, m.release + 1u, false, got, at, 8), 4u);
+    CHECK_EQ(got[1], 0x13);
+    captured(&cap, true);
+    CHECK_EQ(hitec_c_decode(&cap, HITEC_C_EXPECT_VALUE, &r), HITEC_RX_OK);
+    CHECK_EQ(r.value, 0xC2);
+    check_at(cap.byte[0].at_ns, 45000.0);
+
+    /* D series, where the clock gives a divider. */
+    if (!hitec_pio_clock(hz, HITEC_D, &clk)) {
+        return;
+    }
+    hitec_d_read_xfer(0x00, 0x4E, &x);
+    memset(&m, 0, sizeof(m));
+    d_answer(6000000.0, a, sizeof(a));
+    CHECK(transact(hz, HITEC_DRIVE_OPEN_DRAIN, &x, 8, 0));
+    CHECK_EQ(wire_bytes(0, m.release - 16u, true, got, at, 8), 5u);
+    CHECK_EQ(got[2], 0x4E);
+    captured(&cap, true);
+    CHECK_EQ(hitec_d_decode(&cap, 0x4E, &r), HITEC_RX_OK);
+    CHECK_EQ(r.value, 1u);
+    check_at(cap.byte[0].at_ns, 6000000.0);
+}
+
+/* The smallest clock @p family takes, found by bisection. */
+static uint32_t lowest_clock(uint8_t family)
+{
+    uint32_t lo = 1;
+    uint32_t hi = 20000000u;
+    hitec_pio_clock_t c;
+
+    while (lo < hi) {
+        const uint32_t mid = lo + (hi - lo) / 2u;
+
+        if (hitec_pio_clock(mid, family, &c)) {
+            hi = mid;
+        } else {
+            lo = mid + 1u;
+        }
+    }
+    return lo;
 }
 
 #endif /* HITEC_PIO_MODEL_H */
