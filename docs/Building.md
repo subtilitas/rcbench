@@ -249,7 +249,7 @@ pin budget is 27 to 32 GPIO (general-purpose input/output).
 | `tools/pinmap_check.py` | checks the IO board's draft pin map, `hardware/docs/ioboard-pinmap-draft.json`, against the pin functions in the pico-sdk's `io_bank0.h`; needs a pico-sdk checkout |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | generate the checked-in board drawings and ESC profile tables from their JSON sources (the board drawing from the configurator's `configurator/drawings/panel.json`); `--check` fails if the committed tables differ |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
-| `tools/release_kind.py` | reads a release tag and prints its kind, `testing` for an odd minor number and `usable` for an even one, with the `prerelease` and `latest` flags `release.yml` publishes by; exits 1 on a tag out of form ([Releases](#releases)) |
+| `tools/release_kind.py` | reads a release tag and prints its kind, `testing` for an odd minor number and `usable` for an even one, with the `prerelease` and `latest` flags `release.yml` publishes by; with the tags of the full releases on GitHub after it, `latest` is `false` for a usable tag older than one of them; exits 1 on a tag out of form ([Releases](#releases)) |
 | `tools/patch_rgb_driver.py` | runs in the panel's configure step: writes a copy of ESP-IDF's RGB panel driver (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) into the build directory in which every restart of the scan is the clean start of boot, and fails the build when one of its 3 patches does not match the driver exactly once ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest cases for the tools above: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | static analysis and lint configuration; every finding is an error |
@@ -306,7 +306,7 @@ its kind:
 | Minor number | Kind | On GitHub | Examples |
 | --- | --- | --- | --- |
 | odd | testing release | pre-release, never marked latest | 0.21.0, 0.21.3, 0.23.0, 1.3.0 |
-| even | usable release | full release, marked latest | 0.22.0, 0.22.3, 1.4.0 |
+| even | usable release | full release, marked latest unless a newer full release exists | 0.22.0, 0.22.3, 1.4.0 |
 
 The patch number carries fixes in either kind: 0.21.1 is a fix of the
 testing release 0.21.0, 0.22.1 a fix of the usable release 0.22.0.

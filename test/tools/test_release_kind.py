@@ -88,6 +88,39 @@ def test_the_command_prints_the_lines_for_github_output():
     assert result.stdout == "kind=usable\nprerelease=false\nlatest=true\n"
 
 
-def test_a_wrong_number_of_arguments_is_exit_2():
+def test_no_tag_is_exit_2():
     assert run().returncode == 2
-    assert run("v0.21.0", "v0.22.0").returncode == 2
+
+
+def test_an_older_usable_tag_is_not_marked_latest():
+    """A late build of an older usable tag leaves releases/latest alone."""
+    assert rk.is_latest("v0.22.0", ["v0.20.0", "v0.18.0"])
+    assert rk.is_latest("v0.22.0", ["v0.22.0"])          # a retry
+    assert not rk.is_latest("v0.22.0", ["v0.24.0"])
+    assert not rk.is_latest("v0.22.0", ["v0.22.1"])      # a newer patch
+    assert not rk.is_latest("v0.22.3", ["v1.0.0"])       # a newer major
+    assert rk.is_latest("v0.22.3", ["v0.22.2", "v0.20.9"])
+    assert rk.is_latest("v1.0.0", ["v0.98.0"])
+    assert rk.outputs("v0.22.0", ["v0.24.0"]) == [
+        "kind=usable", "prerelease=false", "latest=false"]
+
+
+def test_every_full_release_counts_and_malformed_tags_do_not():
+    # Full releases from before the rule carry odd minor numbers (0.19.0);
+    # a newer one of them keeps the latest mark as well.
+    assert not rk.is_latest("v0.18.2", ["v0.19.0"])
+    assert rk.is_latest("v0.20.0", ["v0.19.0", "v0.17.0"])
+    assert rk.is_latest("v0.22.0", ["v9.9", "nightly", "v0.024.0", ""])
+    # A testing tag is never the latest, whatever is published.
+    assert not rk.is_latest("v0.21.0", [])
+    assert not rk.is_latest("v0.23.0", ["v0.20.0"])
+
+
+def test_the_command_compares_with_the_published_tags():
+    result = run("v0.22.0", "v0.20.0", "v0.24.0")
+    assert result.returncode == 0
+    assert result.stdout == "kind=usable\nprerelease=false\nlatest=false\n"
+    result = run("v0.24.0", "v0.20.0", "v0.22.0", "bogus")
+    assert result.stdout == "kind=usable\nprerelease=false\nlatest=true\n"
+    # The tag itself out of form fails, published tags or not.
+    assert run("v0.22", "v0.20.0").returncode == 1

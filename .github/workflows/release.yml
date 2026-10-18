@@ -118,13 +118,22 @@ jobs:
 
       # Testing or usable, from the tag's minor number.  A tag out of form
       # fails here, before the wait for CI and before anything is built.
+      # The full releases GitHub holds go along, so a usable tag older than
+      # one of them is not marked latest and releases/latest never moves
+      # back.
       - name: Release kind
         id: kind
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          python3 gate/tools/release_kind.py "$TAG" | tee -a "$GITHUB_OUTPUT"
-          exit "${PIPESTATUS[0]}"
+          set -o pipefail
+          published=$(gh api --paginate "repos/$REPO/releases" \
+            --jq '.[] | select(.draft == false and .prerelease == false) | .tag_name')
+          # shellcheck disable=SC2086 # one word per tag
+          python3 gate/tools/release_kind.py "$TAG" $published \
+            | tee -a "$GITHUB_OUTPUT"
 
       # ci_gate.py waits up to 5400 s for the CI run on the pinned commit
       # and fails unless one passed.  The image jobs and the publish job
@@ -371,15 +380,19 @@ jobs:
           assets=(dist/*.zip dist/*.bin dist/SHA256SUMS)
 
           # A testing release is a pre-release and never the latest; a
-          # usable release is a full release and the latest.  The draft
-          # carries the pre-release mark; the latest mark goes with the
-          # publish, since a draft cannot be the latest.
+          # usable release is a full release and the latest unless a newer
+          # full release exists.  The draft carries the pre-release mark;
+          # the latest mark goes with the publish, since a draft cannot be
+          # the latest.
           if [ "$PRERELEASE" = true ] && [ "$LATEST" = false ]; then
             kind=(--prerelease)
             latest=(--prerelease --latest=false)
           elif [ "$PRERELEASE" = false ] && [ "$LATEST" = true ]; then
             kind=(--prerelease=false)
             latest=(--prerelease=false --latest)
+          elif [ "$PRERELEASE" = false ] && [ "$LATEST" = false ]; then
+            kind=(--prerelease=false)
+            latest=(--prerelease=false --latest=false)
           else
             echo "::error::release kind not known: prerelease=$PRERELEASE latest=$LATEST"
             exit 1

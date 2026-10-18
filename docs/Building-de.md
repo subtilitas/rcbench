@@ -259,7 +259,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/pinmap_check.py` | prüft die vorläufige Pinbelegung des IO-Boards, `hardware/docs/ioboard-pinmap-draft.json`, gegen die Pinfunktionen in `io_bank0.h` des pico-sdk; braucht einen Checkout des pico-sdk |
 | `tools/gen_board_drawing.py`, `tools/gen_esc_profiles.py` | erzeugen die eingecheckten Tabellen der Platinenzeichnungen und der ESC-Profile aus ihren JSON-Quellen (die Platinenzeichnung aus `configurator/drawings/panel.json` des Konfigurators); `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
-| `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `usable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
+| `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `usable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen nutzbaren Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
 | `tools/patch_rgb_driver.py` | läuft im Configure-Schritt des Panels: schreibt eine Kopie des RGB-Panel-Treibers von ESP-IDF (`components/esp_lcd/rgb/esp_lcd_panel_rgb.c`) ins Build-Verzeichnis, in der jeder Neustart der Ausgabe der saubere Start des Bootens ist, und lässt den Build fehlschlagen, wenn einer seiner 3 Patches nicht genau einmal im Treiber passt ([Constraints](../STATUS.md#constraints)) |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben: `python3 -m pytest test/tools` |
 | `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler |
@@ -320,7 +320,7 @@ Minor-Nummer nennt seine Art:
 | Minor-Nummer | Art | Auf GitHub | Beispiele |
 | --- | --- | --- | --- |
 | ungerade | Test-Release | Pre-Release, nie als Latest markiert | 0.21.0, 0.21.3, 0.23.0, 1.3.0 |
-| gerade | nutzbares Release | volles Release, als Latest markiert | 0.22.0, 0.22.3, 1.4.0 |
+| gerade | nutzbares Release | volles Release, als Latest markiert, außer ein neueres volles Release existiert | 0.22.0, 0.22.3, 1.4.0 |
 
 Die Patch-Nummer trägt Korrekturen in beiden Arten: 0.21.1 korrigiert das
 Test-Release 0.21.0, 0.22.1 das nutzbare Release 0.22.0.
