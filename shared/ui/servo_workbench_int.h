@@ -79,8 +79,6 @@ static inline bool live_shown(void)
  * the programmer holding the port (servo_settings_panel.c).  @p id is
  * SET_SERVO_TARGET or SET_SERVO_PORT_PWM. */
 bool target_locked_for(setting_id_t id);
-/* The choice of target, opened by a tap on the TARGET row. */
-void open_target_choice(void);
 /* The pages of rows, their presses (ov_down()) included. */
 void draw_rows_page(gfx_canvas_t *c);
 

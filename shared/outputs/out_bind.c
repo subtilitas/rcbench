@@ -819,6 +819,13 @@ bool outbind_can_add(const outbind_t *b, uint8_t index)
 outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
                                   uint8_t prog_gpio, uint8_t *with)
 {
+    return outbind_pwm_clash_ports(b, index, &prog_gpio, 1u, with);
+}
+
+outbind_clash_t outbind_pwm_clash_ports(const outbind_t *b, uint8_t index,
+                                        const uint8_t *ports, uint8_t count,
+                                        uint8_t *with)
+{
     if (with != NULL) {
         *with = OUTBIND_NO_GPIO;
     }
@@ -838,13 +845,17 @@ outbind_clash_t outbind_pwm_clash(const outbind_t *b, uint8_t index,
      * the screens draw it as the port.  A slot on the port's pin leaves the
      * port without one, and then its slice is free.
      */
-    if (prog_gpio <= OUT_MAX_PIN && prog_gpio != gpio
-        && outbind_group_of(b, outbind_index_of(b->board, prog_gpio)) == 0u
-        && out_pwm_same_slice(gpio, prog_gpio)) {
-        if (with != NULL) {
-            *with = prog_gpio;
+    for (uint8_t n = 0; ports != NULL && n < count; ++n) {
+        const uint8_t prog_gpio = ports[n];
+        if (prog_gpio <= OUT_MAX_PIN && prog_gpio != gpio
+            && outbind_group_of(b, outbind_index_of(b->board, prog_gpio))
+                   == 0u
+            && out_pwm_same_slice(gpio, prog_gpio)) {
+            if (with != NULL) {
+                *with = prog_gpio;
+            }
+            return OUTBIND_CLASH_PROG_SLICE;
         }
-        return OUTBIND_CLASH_PROG_SLICE;
     }
     for (uint8_t i = 0; i < bd->count; ++i) {
         const uint8_t g = outbind_group_of(b, i);

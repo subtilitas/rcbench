@@ -2164,11 +2164,59 @@ TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
     CHECK(!outbind_from_slots(&b, BOARD, NULL, NULL));
 }
 
+/*
+ * The slice rule against every programming port, as the IOmcu's
+ * prog_port_slots_check() applies it: GP28 shares slice 6 with GP13 (port
+ * 1) and GP27 slice 5 with GP26 (port 2, say).  A port without a pin, or
+ * none at all, is no clash; the first port that clashes is named.
+ */
+TEST_CASE(the_pwm_clash_checks_every_programming_port)
+{
+    outbind_t b;
+    uint8_t with = 0u;
+    init(&b);
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    const uint8_t ports[4] = { 13u, 26u, OUTBIND_NO_GPIO, 29u };
+
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(27), ports, 4u, &with),
+             OUTBIND_CLASH_PROG_SLICE);
+    CHECK_EQ(with, 26u);
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(28), ports, 4u, &with),
+             OUTBIND_CLASH_PROG_SLICE);
+    CHECK_EQ(with, 13u);
+    /* Port 2 alone counted: GP27 is free beside port 1 only. */
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(27), ports, 1u, NULL),
+             OUTBIND_CLASH_NONE);
+    /* A port's own pin is the port's; no ports, no slice clash. */
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(26), ports, 4u, NULL),
+             OUTBIND_CLASH_NONE);
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(27), NULL, 4u, &with),
+             OUTBIND_CLASH_NONE);
+    CHECK_EQ(with, OUTBIND_NO_GPIO);
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(27), ports, 0u, NULL),
+             OUTBIND_CLASH_NONE);
+    /* The compare rule still applies after the ports. */
+    CHECK(outbind_toggle(&b, idx(0)));
+    CHECK_EQ(outbind_pwm_clash_ports(&b, idx(16), ports, 4u, &with),
+             OUTBIND_CLASH_COMPARE);
+    CHECK_EQ(with, 0u);
+    /* The one-port form is the same question about one port. */
+    for (uint8_t i = 0; i < 29u; ++i) {
+        const uint8_t k = idx(i);
+        if (k >= outbind_pin_count(b.board)) {
+            continue;
+        }
+        CHECK_EQ(outbind_pwm_clash(&b, k, 13u, NULL),
+                 outbind_pwm_clash_ports(&b, k, ports, 1u, NULL));
+    }
+}
+
 int main(void)
 {
     RUN(the_catalogue_is_the_header_and_nothing_else);
     RUN(a_pwm_pin_on_a_bound_pins_compare_register_is_not_offered);
     RUN(the_pwm_clash_names_the_rule_and_the_pin);
+    RUN(the_pwm_clash_checks_every_programming_port);
     RUN(the_reserved_set_holds_every_pin_the_header_does_not_offer);
     RUN(an_output_is_refused_on_each_pin_the_module_keeps_or_lacks);
     RUN(the_pad_numbers_match_the_ones_printed_on_the_board);
