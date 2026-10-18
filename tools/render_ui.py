@@ -422,7 +422,7 @@ SCREENS = {
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
     "programmer": ("programmer.png", "programmer", "dark"),
-    # FILES & UPDATE from LOGS: the radio off with nothing kept; a home
+    # WI-FI from LOGS: the radio off with nothing kept; a home
     # network kept whose join failed, the access code off; the gate shut.
     "wifi": ("wifi.png", "wifi", "dark"),
     "wifi-home": ("wifi-home.png", "wifi", "dark"),

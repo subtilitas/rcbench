@@ -21,7 +21,7 @@ UPDATES asks GitHub which panel firmware release is the newest and installs it. 
 
 The card names the running version and the kept home network. The check and the download need:
 
-- a home network kept on [Files and update](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` and CHECK FOR UPDATES is grey;
+- a home network kept on [Wi-Fi](wifi.md#choosing-a-home-network). Without one the card says `No home network saved.` and CHECK FOR UPDATES is grey;
 - the bench SAFE, the supply output off and no log run open. Otherwise the key is grey and the card says `Wi-Fi requires SAFE, the supply output off,`;
 - no coprocessor update running and no panel install under way.
 
@@ -46,7 +46,7 @@ The panel joins the home network, sends one HTTPS (HTTP over Transport Layer Sec
 | `GitHub rejected the request: HTTP 404.` | an answer other than a redirect |
 | `Unexpected answer from GitHub.` | the `Location` is missing or out of form; a second line says which |
 | `Wi-Fi switched off: bench ARMED.` and the like | ARMED, the supply output, a log run or STOP ended the check |
-| `Stopped: ...` | FILES & UPDATE, the coprocessor's update or CANCEL ended the check |
+| `Stopped: ...` | WI-FI, the coprocessor's update or CANCEL ended the check |
 
 ![A check that found no answer](view:updates-failed)
 
@@ -88,7 +88,7 @@ The hold takes what the question takes: a coprocessor that runs another build, t
 | `No update over CAN. Install firmware once via USB.` | the coprocessor has no update pages or no partition table |
 | `Coprocessor runs the build this panel carries.` | nothing to send |
 | `The update requires SAFE and the supply output off.` | ARMED, an arm waiting, or the supply output on |
-| `Waiting for the panel's Wi-Fi to switch off.` | a check, a download or Files and update has the radio on |
+| `Waiting for the panel's Wi-Fi to switch off.` | a check, a download or [Wi-Fi](wifi.md) has the radio on |
 | `Waiting: panel firmware installation is running.` | a panel install is under way |
 
 With the hold live the line reads `Outputs stay off. ARMED is blocked until the update ends.`, or `The firmware on this panel is older.` in the warning colour for an older image.

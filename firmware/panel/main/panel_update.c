@@ -1,6 +1,6 @@
 /*
  * The updates: the coprocessor's over CAN (Controller Area Network) from
- * the image this panel carries, the panel's own from FILES & UPDATE or
+ * the image this panel carries, the panel's own from WI-FI or
  * from GitHub, and the coprocessor update's screen on the render side.
  * cu_service() runs on the control task; the rest runs on app_main.
  *
@@ -63,8 +63,9 @@ static atomic_bool s_fw_installing;
 static atomic_bool s_cu_busy;
 /* False when wifi_access_init() failed: no call into wifi_access then. */
 bool        s_wifi_ok;
-/* Where PANEL UPDATE's CLOSE leads: back to FILES & UPDATE's LOGS after an
- * upload's install, to UPDATES or OVERVIEW after a download. */
+/* Where PANEL UPDATE's CLOSE leads: to the screen that opened WI-FI, LOGS
+ * or SETUP, after an upload's install, to UPDATES or OVERVIEW after a
+ * download. */
 static ui_screen_id_t s_update_back = SCREEN_LOGS;
 
 
@@ -591,7 +592,7 @@ static void fw_install_run(void)
 }
 
 /*
- * FILES & UPDATE without Wi-Fi: the screen says so and offers nothing, and
+ * The WI-FI screen without Wi-Fi: it says so and offers nothing, and
  * what it asks for is dropped.
  */
 static void wifi_unavailable_service(void)
@@ -603,7 +604,7 @@ static void wifi_unavailable_service(void)
 }
 
 /*
- * FILES & UPDATE, once a frame: the radio's gate, STOP, what the screen
+ * WI-FI, once a frame: the radio's gate, STOP, what the screen
  * asked for, and what it shows.
  *
  * The radio's gate is wa_gate(): SAFE, the supply off and no log run open.
@@ -669,7 +670,7 @@ void wifi_service(bool armed, uint32_t stops_now)
         (void)wifi_access_start(WA_MODE_SCAN, gate);
     }
     if ((req & WIFI_REQ_INSTALL) != 0u) {
-        s_update_back = SCREEN_LOGS;
+        s_update_back = ui_router_parent(SCREEN_WIFI);
         fw_install_run();
     }
     if (update_screen_take_close()) {
@@ -742,7 +743,7 @@ void wifi_service(bool armed, uint32_t stops_now)
  * and neither a panel install nor the coprocessor's update.  A download
  * needs what an install needs (fw_gate_now()): it is one, from its hold
  * on, and says so in s_fw_installing before it reads the coprocessor's
- * flag.  Each frame a running job is ended for STOP, for FILES & UPDATE
+ * flag.  Each frame a running job is ended for STOP, for WI-FI
  * opening, for CANCEL, and for its gate closing.
  */
 static upd_driver_t s_upd;

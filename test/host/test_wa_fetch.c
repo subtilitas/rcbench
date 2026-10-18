@@ -2,7 +2,7 @@
  * The panel asking GitHub for its newest release, and fetching it.
  *
  * The failures under test: a job that holds the radio past its budget, one
- * that goes on after STOP, ARMED, the supply, a log run, FILES & UPDATE or
+ * that goes on after STOP, ARMED, the supply, a log run, WI-FI or
  * CANCEL, a late report from the runner that revives an ended job, and a
  * download that leaves an image staged that GitHub did not vouch for -- a
  * redirect elsewhere, a size over the slot, a body shorter than announced,
@@ -935,7 +935,7 @@ TEST_CASE(the_session_going_off_ends_the_job_with_its_reason)
             CHECK_EQ(f.join, WA_JOIN_PASSWORD);
         }
     }
-    /* FILES & UPDATE took the radio: another mode. */
+    /* WI-FI took the radio: another mode. */
     wa_fetch_t f;
     wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
     (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, true, WA_WHY_NONE, 0u);

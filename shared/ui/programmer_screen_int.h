@@ -294,6 +294,10 @@ void esc_stick_panel_cancel(void);
  * class's and the screen's controls are not asked. */
 bool esc_stick_panel_down(const touch_event_t *evt);
 
+/* The home tag on the class's pages: true when it closed what covers the
+ * page, ended a run or climbed a level, as BACK does. */
+bool esc_stick_panel_back(void);
+
 /* A MOVE or an UP: the search's keys and the warning's hold follow it. */
 void esc_stick_panel_follow(const touch_event_t *evt);
 

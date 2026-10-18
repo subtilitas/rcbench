@@ -35,6 +35,10 @@
 
 static struct {
     ui_screen_id_t    current;
+    /* The screen that opened the one with two openers, for its home tag;
+     * SCREEN_COUNT until one has.  One field: WI-FI is the only screen
+     * with two openers. */
+    ui_screen_id_t    opener;
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
     ui_bench_status_t status;
@@ -92,6 +96,29 @@ static struct {
 
 static bool has_band(ui_screen_id_t id);
 
+/*
+ * The screens with more than one opener, each opener on a row of its own.
+ * The home tag of such a screen returns to the one that opened it: WI-FI
+ * opens from LOGS' WI-FI button and from SETUP's WI-FI tile.
+ */
+static const struct {
+    ui_screen_id_t screen;
+    ui_screen_id_t opener;
+} k_openers[] = {
+    { SCREEN_WIFI, SCREEN_LOGS },
+    { SCREEN_WIFI, SCREEN_SETUP },
+};
+
+static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
+{
+    for (size_t i = 0; i < sizeof(k_openers) / sizeof(k_openers[0]); ++i) {
+        if (k_openers[i].screen == id && k_openers[i].opener == opener) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static const ui_screen_t *screen_for(ui_screen_id_t id)
 {
     switch (id) {
@@ -127,6 +154,7 @@ const char *ui_router_title(ui_screen_id_t id)
 void ui_router_init(void)
 {
     memset(&s, 0, sizeof(s));
+    s.opener = SCREEN_COUNT;
     for (int id = 0; id < SCREEN_COUNT; ++id) {
         const ui_screen_t *scr = screen_for((ui_screen_id_t)id);
         if (scr != NULL && scr->reset != NULL) {
@@ -150,6 +178,11 @@ void ui_router_goto(ui_screen_id_t id)
     if (old != NULL && old->leave != NULL) {
         old->leave();
     }
+    /* Recorded on the way in from an opener only: entered from anywhere
+     * else, the screen keeps the opener it had. */
+    if (opens(s.current, id)) {
+        s.opener = s.current;
+    }
     s.current = id;
     ++s.nav_count;
     const ui_screen_t *now = screen_for(id);
@@ -168,6 +201,14 @@ void ui_router_goto(ui_screen_id_t id)
 }
 
 ui_screen_id_t ui_router_current(void) { return s.current; }
+
+ui_screen_id_t ui_router_parent(ui_screen_id_t id)
+{
+    if (s.opener != SCREEN_COUNT && opens(s.opener, id)) {
+        return s.opener;
+    }
+    return settings_screen_opens(id) ? SCREEN_SETUP : SCREEN_OVERVIEW;
+}
 uint32_t ui_router_navigations(void) { return s.nav_count; }
 uint32_t ui_router_dispatched(void) { return s.dispatched; }
 
@@ -360,8 +401,8 @@ static void help_open(ui_band_chip_t chip)
 
 /*
  * The home tag, tapped.  The screen on top goes up a level of its own when
- * it has one; otherwise a screen SETUP's tiles open goes back to SETUP and
- * every other to the menu, unless the screen holds that navigation.  A
+ * it has one; otherwise it leaves for ui_router_parent(), unless the screen
+ * holds that navigation.  A
  * level change inside a screen and a held navigation are a change of what
  * is on the glass, as a change of screen is: the contacts the screen owned
  * are released first and are nobody's until they lift.  Not inlined, so
@@ -370,8 +411,7 @@ static void help_open(ui_band_chip_t chip)
 static __attribute__((noinline)) void router_back(void)
 {
     const ui_screen_t *scr = screen_for(s.current);
-    const ui_screen_id_t to = settings_screen_opens(s.current)
-                                  ? SCREEN_SETUP : SCREEN_OVERVIEW;
+    const ui_screen_id_t to = ui_router_parent(s.current);
     if (scr != NULL && (scr->back != NULL || scr->hold != NULL)) {
         release_owned();
         if ((scr->back != NULL && scr->back())

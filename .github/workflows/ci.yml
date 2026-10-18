@@ -211,8 +211,8 @@ jobs:
              settings-list-chrome picker-chrome supply-chrome wifi-chrome
              --max-lines 45000
 
-      # A key typed on the Wi-Fi keyboard repaints the whole FILES & UPDATE
-      # screen, about 22,200 fills; 24,000 catches a key that repaints more.
+      # A key typed on the Wi-Fi keyboard repaints the whole WI-FI
+      # screen, about 21,900 fills; 24,000 catches a key that repaints more.
       - name: A key of the Wi-Fi keyboard costs one repaint
         run: python3 tools/frame_cost.py wifi-keys --max-lines 24000
 

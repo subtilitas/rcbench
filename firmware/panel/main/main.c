@@ -2291,8 +2291,8 @@ void app_main(void)
          * the link is gone, and the screen waits for the disarm.  Nor while
          * the supply's output is on, by the snapshot or by the newest
          * sample: the supply does not need the link, and STOP and OUTPUT
-         * OFF stay on screen for as long as it is live.  Nor over FILES &
-         * UPDATE, whose Wi-Fi does not need the link, nor over PANEL
+         * OFF stay on screen for as long as it is live.  Nor over WI-FI,
+         * whose Wi-Fi does not need the link, nor over PANEL
          * UPDATE, which withholds the heartbeat on purpose while it writes.
          *
          * The timestamp is read once and tested twice.  The control task

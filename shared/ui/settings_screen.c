@@ -148,6 +148,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_CATEGORY(SET_CAT_IFACE, ui_icon_chip),
     HUB_SCREEN(SCREEN_OUTPUTS, TX_SET_HUB_OUTPUTS, ui_icon_list),
     HUB_SCREEN(SCREEN_PICKER,  TX_SET_HUB_PICKER,  ui_icon_board),
+    HUB_SCREEN(SCREEN_WIFI,    TX_SET_HUB_WIFI,    ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
 };
 
@@ -1091,7 +1092,7 @@ static void cancel(void)
 }
 
 static const ui_screen_t s_screen = {
-    .title = "SETTINGS",
+    .title = "SETUP",
     .reset = reset,
     .enter = enter,
     .leave = leave,

@@ -120,7 +120,7 @@ void wifi_access_release(void);
  * DOWNLOAD drops an image the page left staged first; while one is taken,
  * or the last job's task has not ended yet, it is BLOCKED for BUSY.
  * Refused on a session another screen runs: the caller starts no job
- * while FILES & UPDATE is open.
+ * while WI-FI is open.
  */
 wa_got_t wifi_access_fetch_start(wa_job_t job, fw_version_t want,
                                  wa_why_t gate);

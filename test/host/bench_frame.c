@@ -157,7 +157,7 @@ int main(int argc, char **argv)
         /* The picker with the coprocessor's drawing of the RP2350-CAN: an
          * outline, 102 shapes and 40 pad rings on a full repaint. */
         { "picker",     SCREEN_PICKER },
-        /* FILES & UPDATE with the access point up; "wifi-keys" is the same
+        /* WI-FI with the access point up; "wifi-keys" is the same
          * screen with the Wi-Fi keyboard open, a key typed every frame. */
         { "wifi-keys",  SCREEN_WIFI },
         { "wifi",       SCREEN_WIFI },

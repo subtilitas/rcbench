@@ -255,3 +255,17 @@ void ui_icon_board(gfx_canvas_t *c, int x, int y, int size,
     }
     gfx_fill_circle(c, left + pad + bw * 5 / 8, top + 5, 2, color);
 }
+
+void ui_icon_wifi(gfx_canvas_t *c, int x, int y, int size,
+                  gfx_color_t color)
+{
+    /* A dot at the foot and three arcs over it, 80 degrees each about the
+     * vertical: a radio's waves.  The outer arc's ends stay inside the
+     * box's width. */
+    const int cy = y + size / 2 - 4;
+    const int thick = (size >= 30) ? 3 : 2;
+    gfx_fill_circle(c, x, cy, size / 12, color);
+    for (int i = 1; i <= 3; ++i) {
+        gfx_arc(c, x, cy, size * 7 * i / 30, thick, 50.0f, 130.0f, color);
+    }
+}

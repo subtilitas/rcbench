@@ -283,7 +283,7 @@ jobs:
           (cd artifacts/panel && zip -r "../../dist/rcbench-panel-$TAG.zip" .)
           (cd artifacts/iomcu && zip -r "../../dist/rcbench-iomcu-$TAG.zip" .)
           # And the panel's application on its own: the file the panel's
-          # Wi-Fi page takes for an update (FILES & UPDATE).
+          # Wi-Fi page takes for an update (WI-FI).
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-$TAG.bin"
           (cd dist && sha256sum ./*.zip ./*.bin > SHA256SUMS)
           ls -l dist

@@ -61,17 +61,14 @@ Band sind die oberen 48 px des Panels.
   noch auf dem Glas liegt, auf dem Bildschirm, zu dem das Tag führt, nichts.
 
 Aktuelle Einschränkung: Die Chips stehen von STOP aus nach links. Eine
-Reihe, die x 274 erreichen würde, wo das breiteste Home-Tag (FILES & UPDATE)
-endet, beginnt jede Beschriftung 16 px statt 24 px im Chip. Drei Reihen sind
-trotzdem breiter und reichen unter das Home-Tag mancher Bildschirme. Ein
-Tipp dort wirkt auf das Home-Tag, nicht auf den Chip:
+Reihe, die x 226 erreichen würde, wo das breiteste Home-Tag (MOTOR & ESC)
+endet, beginnt jede Beschriftung 16 px statt 24 px im Chip. Eine Reihe ist
+trotzdem breiter und reicht unter das Home-Tag von MOTOR & ESC: ARMED mit
+einem FEHLER-Code, auf Englisch bis x 224, auf Deutsch bis x 216. Ein Tipp
+dort wirkt auf das Home-Tag, nicht auf den Chip.
 
-- ARMED mit einem FEHLER-Code: bis x 216.
-- ARMED MOTOR oder ARMED SERVO mit KEINE VERBINDUNG: bis x 234.
-- SAFE mit einem FEHLER-Code und einer Laufzeituhr ab 10 h: x 272.
-
-Die Home-Tags enden bei x 226 (MOTOR & ESC), x 242 (PANEL UPDATE), x 274
-(FILES & UPDATE) und auf den anderen Bildschirmen bei x 210 oder weniger.
+Die Home-Tags enden bei x 226 (MOTOR & ESC) und auf den anderen
+Bildschirmen bei x 210 oder weniger.
 
 ### Hilfe zu den Chips
 
@@ -246,7 +243,7 @@ an derselben Flanke schliesst.
 Das Schalten auf ARMED löscht den Plot, und ein eingerasteter Stopp wird durch
 Schalten auf ARMED gelöst -- die Kurve eines Laufs, den ein STOP beendet hat,
 überlebt es also nicht, den Prüfstand wieder benutzbar zu machen. Ein
-Schalten auf ARMED schreibt eine CSV-Datei, und der Log-Viewer stellt sie dar.
+Schalten auf ARMED schreibt eine CSV-Datei, und LOGS stellt sie dar.
 
 
 Der Streifen über beiden Spalten trägt die Abfragerate, die Fehlerzahl des
@@ -436,7 +433,7 @@ time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (m
 ist `measured` in einer Zeile, deren Werte ein Messgerät geliefert hat, und
 `model` in einer Zeile, die das Modell des Panels geliefert hat (die Marke
 SIMULIERT); eine Netzteil-Datei hat dieselbe letzte Spalte. Eine Datei ohne
-die Spalte endet bei `ch3 voltage` oder `energy`; der Log-Viewer und die
+die Spalte endet bei `ch3 voltage` oder `energy`; LOGS und die
 Werkzeuge lesen beide Formen, denn `source` ist eine Textspalte und
 wird nie gezeichnet.
 `ina voltage` und `ina current` sind die des INA228 und leer, solange er
@@ -463,7 +460,7 @@ innerhalb dieses Fensters gelesen hat, und sind leer in einer Zeile, die
 der Poll nachgeholt hat. Mit einem älteren Koprozessor oder ohne CH1 halten
 die Spalten das letzte Fenster jedes Lesens: ein Poll, der länger als 50 ms
 dauert, überspringt Fenster, 1 von 17 bei 53 ms, und eine übersteuerte
-Messung bleibt aus den Werten heraus. Der Log-Viewer
+Messung bleibt aus den Werten heraus. LOGS
 gruppiert `ina voltage`, `ina current` und `esc current` unter INA228 und
 ESC und die Spalten des Fensters unter INA3221.
 
@@ -1448,8 +1445,13 @@ schon beim Aufsetzen:
 - Die Tasten der Such-Tastatur, die ihrem eigenen Aufsetzen und Abheben
   folgen.
 
-Eine Ebene zurück schließt die Sitzung. Zurück geht eine Ebene auf einmal;
-das Home-Tag im Band verlässt den Bildschirm.
+Eine Ebene zurück schließt die Sitzung. ZURÜCK und das Home-Tag im Band
+gehen eine Ebene auf einmal zurück: eine Geräteseite zu ihren Protokollen,
+die Seite eines Stick-Profils zur Liste, die Modelle eines Herstellers zu den
+Herstellern, eine Liste zu den Klassen. Das Home-Tag verlässt PROGRAMMER nur
+von den Klassen aus. Über der Warnung vor dem Lauf ist das Home-Tag
+ABBRECHEN, über den manuellen Schritten OK. Während eines Stick-Laufs ist es
+ABBRECHEN des Laufs: Der Lauf endet, und sein Ergebnis bleibt auf der Seite.
 
 ### ESC STICK
 
@@ -1513,8 +1515,8 @@ versorgt, den Knüppel, wo er speicherte, bis ERLEDIGT:
 ![Der Lauf wartet auf die Bestätigung des ESCs](img/de/programmer-stick-hand-end.png)
 
 Während er läuft, zeigt die Seite die Phase, die Pieptöne der laufenden
-Gruppe und die letzte Gruppe. ABBRECHEN, STOP und das Verlassen des Bildschirms
-beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
+Gruppe und die letzte Gruppe. ABBRECHEN, das Home-Tag, STOP und das Verlassen
+des Bildschirms beenden ihn mit dem Gas auf MIN, dem Netzteil aus und dem Prüfstand
 SAFE. Das Grün der Signalsäule leuchtet, solange ein Piepton erkannt
 ist, mindestens 150 ms:
 
@@ -1546,7 +1548,7 @@ VERPASST und die Pieptöne zählt und speichert das Panel selbst; sie bleiben.
 
 Das Ergebnis bleibt bis OK. Sein Rot leuchtet, wenn der Lauf endete, weil
 etwas nicht wie erwartet war, ein Stopp des Prüfstands selbst eingeschlossen,
-und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN und
+und bleibt aus bei FERTIG, gedrücktem STOP, ABBRECHEN, dem Home-Tag und
 dem Verlassen des Bildschirms ([die Liste](StickProgramming-de.md#wie-ein-lauf-endet)):
 
 ![Fertig](img/de/programmer-stick-done.png)
@@ -1583,6 +1585,11 @@ plotten:
 
 ![Die Importansicht](img/de/logs-import.png)
 ![Der Plot](img/de/logs-plot.png)
+
+Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht,
+von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der
+Rückfrage zu LÖSCHEN ist es ABBRECHEN. WLAN, in der unteren Reihe neben
+AKTUALISIEREN, öffnet [WLAN](#wlan).
 
 Der Reader für CSV (Comma-Separated Values) akzeptiert Dezimalkomma und
 Dezimalpunkt, eine Einheitenzeile und Zeilen ungleicher Länge; die
@@ -1784,14 +1791,16 @@ Datei steht in ihrem Verzeichniseintrag und wird beim Schließen geschrieben, ei
 noch offener Lauf stünde also mit seiner zuletzt festgeschriebenen Länge in der
 Liste und läse sich wie ein fertiger.
 
-## Dateien & Update
+## WLAN
 
-![FILES & UPDATE, kein Heimnetz gespeichert](img/de/wifi.png)
+![WI-FI, kein Heimnetz gespeichert](img/de/wifi.png)
 
-FILES & UPDATE betreibt das WLAN des Panels für zwei Aufgaben im Browser:
-jede Datei der Karte zum Herunterladen und ein Panel-Firmware-Image zum
-Hochladen. Der Bildschirm öffnet aus LOGS, mit WLAN in der unteren Reihe
-neben AKTUALISIEREN. Der Funk läuft nur, solange dieser Bildschirm offen ist,
+WI-FI betreibt das WLAN des Panels für zwei Aufgaben im Browser: jede Datei
+der Karte zum Herunterladen und ein Panel-Firmware-Image zum Hochladen. Der
+Bildschirm öffnet über die Kachel WI-FI auf [SETUP](#setup) und über WLAN in
+der unteren Reihe von [LOGS](#logs). Sein Home-Tag führt zu dem Bildschirm
+zurück, der ihn geöffnet hat, SETUP oder LOGS; ebenso SCHLIESSEN auf PANEL
+UPDATE, nachdem die Installation eines Uploads scheiterte. Der Funk läuft nur, solange dieser Bildschirm offen ist,
 und für die Release-Suche und den Download unter [Updates](#updates). Er
 ist bei jedem Start des Panels aus und geht aus, wenn der Bildschirm
 verlassen wird, bevor eine Installation den Flash schreibt und nach 10 min
@@ -1835,7 +1844,7 @@ ein Telefon oder ein Rechner braucht:
 | IP-Adresse | `http://192.168.4.1/` |
 | Reichweite | nicht gemessen |
 
-1. LOGS → WLAN → WLAN-HOTSPOT.
+1. SETUP → WI-FI → WLAN-HOTSPOT, oder LOGS → WLAN → WLAN-HOTSPOT.
 2. Am Telefon oder Rechner dem Netz beitreten, das der Bildschirm nennt, mit
    dem Passwort, das er zeigt.
 3. `http://192.168.4.1/` öffnen und den Zugangscode eingeben, den der
@@ -2040,7 +2049,8 @@ startet neu.
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.19.0 installiert.`. Ein Schreiben, das fehlschlägt, ändert
 nichts, was startet: Der laufende Build bleibt, und SCHLIESSEN geht zurück
-zu LOGS, nach einem Download von GitHub dorthin, wo der Download begann.
+zu dem Bildschirm, der WI-FI geöffnet hat, SETUP oder LOGS, nach einem
+Download von GitHub dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
 
@@ -2078,9 +2088,11 @@ Namen.
 - Drei Kategorien: ESC / PRÜFSTAND, ANWENDUNG und ANSCHLÜSSE. Jede Kachel
   nennt die Zahl ihrer Einstellungen. Ein Tippen öffnet die Liste der
   Kategorie.
-- Drei eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
-  ([Pin auswählen](#pin-auswählen)) und UPDATES ([Updates](#updates)).
-- Drei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
+- Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), PICK A PIN
+  ([Pin auswählen](#pin-auswählen)), WI-FI ([WLAN](#wlan)) und UPDATES
+  ([Updates](#updates)). Das Band jedes Bildschirms nennt ihn wie seine
+  Kachel, und das Band dieser Seite zeigt SETUP.
+- Zwei Plätze sind frei. Ein zehnter Eintrag hat keinen Platz: Die Seite
   fasst 9, und der Build scheitert am zehnten.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -2107,7 +2119,7 @@ Das Home-Tag führt eine Ebene nach der anderen zurück:
 | --- | --- |
 | der Liste einer Kategorie | den Kacheln; die Liste behält ihre Position |
 | den Kacheln | dem Menü; mit einem ungespeicherten Wert zuerst der Warnung ([Mit ungespeicherten Werten verlassen](#mit-ungespeicherten-werten-verlassen)) |
-| OUTPUTS, PICK A PIN, UPDATES | den Kacheln |
+| OUTPUTS, PICK A PIN, WI-FI, UPDATES | den Kacheln; WI-FI, aus LOGS geöffnet, führt zurück zu LOGS |
 
 Die SETUP-Kachel des Menüs öffnet immer die Kacheln. SETUP zu verlassen
 schreibt nichts, von den Kacheln wie von einer Liste.
@@ -2116,8 +2128,8 @@ Sprache unter ANWENDUNG schaltet die ganze Oberfläche ab dem nächsten Bild
 zwischen Englisch und Deutsch um, ohne Neustart. Was ihr folgt, was Englisch
 bleibt und warum: [Sprache der Oberfläche](Language-de.md). Ein Finger
 schiebt, in derselben Kategorie, legt fest, ob ein Finger die vergrößerte
-Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht bei der
-Logansicht beschrieben.
+Log-Grafik verschiebt; die Einstellung ist standardmäßig aus und steht unter
+[Logs](#logs) beschrieben.
 
 Neun Einstellungen werden gespeichert und angezeigt, und kein Teil der
 Firmware liest sie: Beleuchtung, Einheiten und Dimmen nach unter ANWENDUNG;
@@ -2566,8 +2578,8 @@ Die Warnung hält nur das Home-Tag:
 
 - Nichts ungespeichert oder ein Speichern angefordert (`BEI STILLSTAND`):
   keine Warnung, das Menü öffnet.
-- OUTPUTS, PICK A PIN und UPDATES öffnen von einer Kachel und kehren zu
-  SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
+- OUTPUTS, PICK A PIN, WI-FI und UPDATES öffnen von einer Kachel und kehren
+  zu SETUP zurück: keine Warnung auf dem Hin- oder Rückweg.
 - Das Home-Tag über der Warnung ist BLEIBEN.
 - STOP stoppt den Prüfstand und lässt die Warnung, wie sie ist.
 - Ein Bildschirm, den das Panel selbst öffnet, etwa der Bus-Fehler-Bildschirm
@@ -2735,7 +2747,7 @@ pro Start des Panels.
 Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
 und Download brauchen:
 
-- ein auf FILES & UPDATE gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
+- ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
   Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` und
   `Speichere ein Netzwerk unter SETUP > WI-FI.`, und NACH UPDATES SUCHEN ist grau;
 - den Prüfstand SAFE, den Netzteilausgang aus und keinen offenen Log-Lauf.
@@ -2770,13 +2782,13 @@ Karte bis zur nächsten Suche:
 | --- | --- |
 | `Version 0.20.0 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
 | `Aktuell. Panel-Version: 0.19.0.` und `Neuestes Release auf GitHub: 0.19.0.` | Das neueste Release ist die laufende Version oder älter. |
-| `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf FILES & UPDATE. |
+| `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15 s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
 | `Keine Antwort innerhalb von 30 s.` | Die 30 s sind abgelaufen. |
 | `Keine Verbindung zu GitHub.` | Namensauflösung, Verbindung oder Zertifikatsprüfung scheiterten. |
 | `GitHub hat die Anfrage abgelehnt: HTTP 404.` | Eine andere Antwort als ein Redirect. |
 | `Unerwartete Antwort von GitHub.` | Der `Location`-Header fehlt oder ist ungültig; eine zweite Zeile sagt, was (Tabelle unten). |
 | `WLAN ausgeschaltet: Prüfstand ARMED.`, `...: Netzteilausgang ein.`, `...: Aufzeichnungslauf gestartet.`, `...: STOP.` | Die Suche endete deshalb. |
-| `Abgebrochen: FILES & UPDATE nutzt das WLAN.` | FILES & UPDATE wurde geöffnet. |
+| `Abgebrochen: Der Bildschirm WI-FI nutzt das WLAN.` | WI-FI wurde geöffnet. |
 | `Abgebrochen: Koprozessor-Update gestartet.` | Das Update des Koprozessors begann. |
 | `Abgebrochen.` | ABBRECHEN. |
 | `WLAN konnte nicht starten.` | Der Funk kam nicht hoch. |
@@ -2825,7 +2837,7 @@ Reihenfolge:
 | `Kein Update über CAN. Firmware einmal über USB installieren.` | Der Koprozessor hat keine Update-Pages oder keine Partitionstabelle. |
 | `Koprozessor nutzt den Build dieses Panels.` | Die Digests sind gleich: es gibt nichts zu senden. |
 | `Für das Update muss SAFE aktiv und der Netzteilausgang aus sein.` | ARMED, ein wartendes Arm, oder der Netzteilausgang ist an oder schaltet ein. |
-| `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder FILES & UPDATE hat den Funk an, oder er schaltet noch ab. |
+| `Wartet, bis das WLAN des Panels aus ist.` | Eine Suche, ein Download oder der Bildschirm WI-FI hat den Funk an, oder er schaltet noch ab. |
 | `Wartet: Die Installation der Panel-Firmware läuft.` | Eine Panel-Installation ist im Gang. |
 | `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.` | Das Halten startet das Update. Bei einem älteren Image lautet die Zeile `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, bei gleicher Versionsnummer `Gleiche Versionsnummer, aber ein anderer Build.` |
 
@@ -2843,7 +2855,7 @@ Update trotzdem, wie die Frage es auch ihm anbietet.
 Mit ERINNERUNG BEIM START an und einem gespeicherten Heimnetz sucht das
 Panel einmal nach jedem Start. Die Suche wartet auf einen Moment, den der
 Prüfstand erlaubt: Splash vorbei, Prüfstand SAFE, Netzteilausgang aus, kein
-offener Log-Lauf, FILES & UPDATE geschlossen und kein Update des
+offener Log-Lauf, WI-FI geschlossen und kein Update des
 Koprozessors angeboten oder im Gang. Findet sie 10 min nach dem Start keinen
 solchen Moment, läuft sie bei diesem Start nicht.
 

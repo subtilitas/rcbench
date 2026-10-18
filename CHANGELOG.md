@@ -131,6 +131,24 @@ history is in git.
 
 ### Changed
 
+- Band titles follow their tiles: SETUP (was SETTINGS), LOGS (was LOG
+  VIEWER) and WI-FI (was FILES & UPDATE), English in both languages.
+- SETUP has a WI-FI tile between PICK A PIN and UPDATES, line `NETWORK,
+  FILES, UPLOAD` (German `NETZWERK, DATEIEN, UPLOAD`). It opens the WI-FI
+  screen, which LOGS' WI-FI button opens too. WI-FI's home tag returns to
+  the screen that opened it, and so does CLOSE on PANEL UPDATE after an
+  upload's install failed. UPDATES' `Stopped:` line for it reads `Stopped:
+  the WI-FI screen is using Wi-Fi.`
+- The home tag climbs one level on PROGRAMMER and LOGS, as their BACK
+  does: a device page to its protocols, a maker's models to the makers, a
+  list to the classes, the plot to the import, the import to the file
+  list. Over the RUN warning it is CANCEL, over the manual steps OK, over
+  the DELETE question CANCEL. A stick run under way ends as ABORT ends it,
+  and its result stays on the page. The home tag leaves PROGRAMMER from
+  the classes and LOGS from the file list.
+- The band's chips use their 24 px label inset until a row would reach
+  x 226, where MOTOR & ESC's home tag ends, the widest. ARMED with a FAULT
+  code still reaches under that tag, to x 224, in German x 216.
 - UPDATES' hint without a home network reads
   `Save a network under SETUP > WI-FI.` (German
   `Speichere ein Netzwerk unter SETUP > WI-FI.`).

@@ -6,7 +6,7 @@ order: 50
 
 # Logs
 
-LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) im Hauptverzeichnis der Karte, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Er öffnet über die Kachel LOGS im [Menü](overview.md); das Band nennt ihn LOG VIEWER. WLAN, unten links, öffnet [Dateien und Update](wifi.md).
+LOGS liest die SD-Karte (Secure Digital) des Panels: Der Bildschirm listet die CSV-Dateien (Comma-Separated Values) im Hauptverzeichnis der Karte, zeigt, was der Import in einer davon gefunden hat, und zeichnet bis zu 4 ihrer Spalten. Er öffnet über die Kachel LOGS im [Menü](overview.md). WLAN, unten links, öffnet [WLAN](wifi.md). Das Home-Tag geht eine Ebene zurück, wie ZURÜCK: vom Plot zur Importansicht, von der Importansicht zur Dateiliste, von der Dateiliste zum Menü. Über der Rückfrage zu LÖSCHEN ist es ABBRECHEN.
 
 ## Keine Karte
 
@@ -24,7 +24,7 @@ Der Kopf nennt die Karte mit ihrer Datenträgerbezeichnung; eine Karte ohne Beze
 |---|---|
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
-| WLAN | öffnet [Dateien und Update](wifi.md) |
+| WLAN | öffnet [WLAN](wifi.md) |
 | LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
 | ÖFFNEN | öffnet die gewählte Datei in der Importansicht; grau, solange nichts gewählt ist |
 
@@ -113,5 +113,5 @@ LÖSCHEN öffnet eine Rückfrage, die die Datei und ihre Größe nennt. Nur ihr 
 
 ## Verwandte Seiten
 
-- [Dateien und Update](wifi.md): die Dateien der Karte im Browser herunterladen.
+- [WLAN](wifi.md): die Dateien der Karte im Browser herunterladen.
 - [Motor und ESC](motor.md), [Netzteil](supply.md) und [Servo](servo.md): die Läufe, die diese Dateien enthalten.

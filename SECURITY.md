@@ -9,7 +9,7 @@ output off and no log run open.
 
 The first is the panel's Wi-Fi page: an HTTP (hypertext transfer protocol)
 server that lists and sends the card's files and takes a panel firmware
-image. It runs only while the FILES & UPDATE screen is open, and goes off
+image. It runs only while the WI-FI screen is open, and goes off
 after 10 min without a request. It runs as a WPA2 (Wi-Fi Protected Access 2)
 access point for 1 client or joins a WPA2 or WPA3 home network. An
 8-character access code, new at every start of the radio, guards the page
@@ -26,7 +26,7 @@ status and the `Location` header of the redirect, not the body, within 30 s
 for the join, the address and the request together; then the radio goes
 off. A request carries the User-Agent `rcbench-panel` and nothing about the
 bench; the DHCP (dynamic host configuration protocol) request of the join
-carries the panel's name as host name, as a join from FILES & UPDATE does.
+carries the panel's name as host name, as a join from WI-FI does.
 The version text is read strictly (`shared/fwupdate` below). A 2 s hold on
 the panel, after a check found a newer release, downloads that release's
 `rcbench-panel-vX.Y.Z.bin` and `SHA256SUMS` into PSRAM (pseudo-static
